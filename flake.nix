@@ -1,12 +1,12 @@
 {
   description = "nix flake for simplex-chat";
-  # hkm/stable-haskell: use the same compiler and boot libraries on every target.
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/ae3b6dfec6a1591b74c74e5849c9a39c504a60e6";
+  # Same compiler and boot libraries on every target. This pin is master (#2643).
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/f6d1d821f67249c3a8059117498bc0d5b25db590";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs";
   inputs.mac2ios.url = "github:zw3rk/mobile-core-tools";
   inputs.hackage = {
     # Match the compiler integration's package index to reuse its cached builds.
-    url = "github:input-output-hk/hackage.nix/dc08bb4627efd6ff85d421b6dde5f52ada218afa";
+    url = "github:ican-group/hackage.nix/4205256efc1de5936f4819398fb733794787749b";
     flake = false;
   };
   inputs.haskellNix.inputs.hackage.follows = "hackage";
