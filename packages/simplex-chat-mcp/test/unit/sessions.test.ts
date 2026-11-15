@@ -1139,14 +1139,14 @@ describe("session channel", () => {
     await until(() => chat.updates.length === 2)
     await session.turn({id: id1, at: 10, step: {id: "toolu_4", text: "🤖 Agent: Review"}})
     await session.endLive()
-    await session.turn({id: id1, at: 11, step: {id: "toolu_5", text: "📝 Write rfcs/steps.md"}})
+    await session.turn({id: id1, at: 11, step: {id: "toolu_5", text: "✏️ Write rfcs/steps.md"}})
     await hub.stop()
     expect(chat.updates).toEqual([
       {chatId: 20, itemId: lines, text: "💻 Run the tests"},
       {chatId: 20, itemId: lines + 1, text: "📖 Read src/hook.ts"},
       {chatId: 20, itemId: lines + 2, text: "✏️ Edit src/hub.ts"},
       {chatId: 20, itemId: lines + 3, text: "🤖 Agent: Review"},
-      {chatId: 20, itemId: lines + 4, text: "📝 Write rfcs/steps.md"},
+      {chatId: 20, itemId: lines + 4, text: "✏️ Write rfcs/steps.md"},
     ])
     expect(sentTo(chat, 20)).toHaveLength(5)
   })
