@@ -1192,7 +1192,7 @@ object ChatModel {
     if (cItem.mergeCategory != null && idx != null) {
       while (idx < reversedChatItems.size) {
         val ci = reversedChatItems[idx]
-        if (ci.mergeCategory != cItem.mergeCategory) break
+        if (!cItem.mergesWith(ci)) break
         val m = ci.memberConnected
         if (m != null) {
           ns.add(m.displayName)
@@ -1206,13 +1206,13 @@ object ChatModel {
 
   // returns the index of the first item in the same merged group (the first hidden item)
   // and the previous visible item with another merge category
-  fun getPrevShownChatItem(ciIndex: Int?, ciCategory: CIMergeCategory?, reversedChatItems: List<ChatItem>): Pair<Int?, ChatItem?> {
+  fun getPrevShownChatItem(ciIndex: Int?, cItem: ChatItem, reversedChatItems: List<ChatItem>): Pair<Int?, ChatItem?> {
     var i = ciIndex ?: return null to null
     val fst = reversedChatItems.lastIndex
     while (i < fst) {
       i++
       val ci = reversedChatItems[i]
-      if (ciCategory == null || ciCategory != ci.mergeCategory) {
+      if (!cItem.mergesWith(ci)) {
         return i - 1 to ci
       }
     }
@@ -3650,6 +3650,8 @@ data class ChatItem (
           is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.MemberAccepted, is SndGroupEvent.UserPendingReview -> null
           else -> CIMergeCategory.SndGroupEvent
         }
+        is CIContent.SndMsgContent, is CIContent.RcvMsgContent ->
+          if (content.msgContent is MsgContent.MCStatus) CIMergeCategory.Status else null
         else ->
           null
       }
@@ -3701,7 +3703,7 @@ data class ChatItem (
   val showNotification: Boolean get() =
     when (content) {
       is CIContent.SndMsgContent -> false
-      is CIContent.RcvMsgContent -> meta.itemDeleted == null
+      is CIContent.RcvMsgContent -> meta.itemDeleted == null && content.msgContent !is MsgContent.MCStatus
       is CIContent.SndDeleted -> false
       is CIContent.RcvDeleted -> false
       is CIContent.SndCall -> false
@@ -4007,6 +4009,15 @@ enum class CIMergeCategory {
   SndItemDeleted,
   RcvItemDeleted,
   ChatFeature,
+  Status,
+}
+
+fun ChatItem.mergesWith(other: ChatItem?): Boolean =
+  other != null && mergeCategory != null && mergeCategory == other.mergeCategory && (mergeCategory != CIMergeCategory.Status || sameSender(other))
+
+private fun ChatItem.sameSender(other: ChatItem): Boolean = when (val dir = chatDir) {
+  is CIDirection.GroupRcv -> (other.chatDir as? CIDirection.GroupRcv)?.groupMember?.groupMemberId == dir.groupMember.groupMemberId
+  else -> other.chatDir !is CIDirection.GroupRcv && other.chatDir.sent == dir.sent
 }
 
 @Serializable
@@ -4989,6 +5000,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCReport(override val text: String, val reason: ReportReason): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCStatus(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val isVoice: Boolean get() =
@@ -5073,6 +5085,9 @@ object MsgContentSerializer : KSerializer<MsgContent> {
       element<String>("text")
       element<MsgChatLink>("chatLink")
     })
+    element("MCStatus", buildClassSerialDescriptor("MCStatus") {
+      element<String>("text")
+    })
     element("MCUnknown", buildClassSerialDescriptor("MCUnknown"))
   }
 
@@ -5112,6 +5127,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
             val ownerSig = json["ownerSig"]?.let { decoder.json.decodeFromJsonElement<LinkOwnerSig>(it) }
             MsgContent.MCChat(text, chatLink, ownerSig)
           }
+          "status" -> MsgContent.MCStatus(text)
           else -> MsgContent.MCUnknown(t, text, json)
         }
       } else {
@@ -5172,6 +5188,11 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("text", value.text)
           put("chatLink", json.encodeToJsonElement(value.chatLink))
           value.ownerSig?.let { put("ownerSig", json.encodeToJsonElement(it)) }
+        }
+      is MsgContent.MCStatus ->
+        buildJsonObject {
+          put("type", "status")
+          put("text", value.text)
         }
       is MsgContent.MCUnknown -> value.json
     }

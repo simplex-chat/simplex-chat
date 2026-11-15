@@ -355,7 +355,7 @@ class ArchiveConfig(
 
 ### ArchiveError
 
-Defined at [SimpleXAPI.kt#L7658](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7658):
+Defined at [SimpleXAPI.kt#L7673](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7673):
 
 ```kotlin
 sealed class ArchiveError {

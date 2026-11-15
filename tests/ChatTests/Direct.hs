@@ -74,6 +74,7 @@ chatDirectTests = do
     it "direct message delete multiple" testDirectMessageDeleteMultiple
     it "direct message delete multiple (many chat batches)" testDirectMessageDeleteMultipleManyBatches
     it "direct live message" testDirectLiveMessage
+    it "direct status message" testDirectStatusMessage
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
@@ -946,7 +947,15 @@ testDirectLiveMessage =
     bob .<## ": hello 2"
     bob .<## ":"
 
-testDirectTimedMessage :: HasCallStack => TestParams -> IO ()
+testDirectStatusMessage :: HasCallStack => TestParams -> IO ()
+testDirectStatusMessage =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"status\", \"text\": \"Run unit tests\"}}]"
+    alice <# "@bob Run unit tests"
+    bob <# "alice> Run unit tests"
+    alice #> "@bob done"
+    bob <# "alice> done"
 testDirectTimedMessage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do

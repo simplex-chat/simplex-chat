@@ -1232,11 +1232,11 @@ final class ChatModel: ObservableObject {
     func getConnectedMemberNames(_ chatItem: ChatItem) -> (Int, [String]) {
         var count = 0
         var ns: [String] = []
-        if let ciCategory = chatItem.mergeCategory,
+        if chatItem.mergeCategory != nil,
            var i = getChatItemIndex(im, chatItem) { // TODO [knocking] review: use getCIItemsModel?
             while i < im.reversedChatItems.count {
                 let ci = im.reversedChatItems[i]
-                if ci.mergeCategory != ciCategory { break }
+                if !chatItem.mergesWith(ci) { break }
                 if let m = ci.memberConnected {
                     ns.append(m.displayName)
                 }
@@ -1258,13 +1258,13 @@ final class ChatModel: ObservableObject {
 
     // returns the index of the first item in the same merged group (the first hidden item)
     // and the previous visible item with another merge category
-    func getPrevShownChatItem(_ ciIndex: Int?, _ ciCategory: CIMergeCategory?) -> (Int?, ChatItem?) {
+    func getPrevShownChatItem(_ ciIndex: Int?, _ item: ChatItem) -> (Int?, ChatItem?) {
         guard var i = ciIndex else { return (nil, nil) }
         let fst = im.reversedChatItems.count - 1
         while i < fst {
             i = i + 1
             let ci = im.reversedChatItems[i]
-            if ciCategory == nil || ciCategory != ci.mergeCategory {
+            if item.mergeCategory == nil || !item.mergesWith(ci) {
                 return (i - 1, ci)
             }
         }

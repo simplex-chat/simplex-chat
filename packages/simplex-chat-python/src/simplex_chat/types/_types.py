@@ -2054,6 +2054,7 @@ class FullGroupPreferences(TypedDict):
     sessions: "RoleGroupPreference"
     comments: "CommentsGroupPreference"
     signMessages: "GroupPreference"
+    statusMessages: "RoleGroupPreference"
     commands: list["ChatBotCommand"]
 
 class FullPreferences(TypedDict):
@@ -2097,7 +2098,7 @@ class GroupDirectInvitation(TypedDict):
     fromGroupMemberConnId_: NotRequired[int]  # int64
     groupDirectInvStartedConnection: bool
 
-GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages"]
+GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages", "statusMessages"]
 
 GroupFeatureEnabled = Literal["on", "off"]
 
@@ -2249,6 +2250,7 @@ class GroupPreferences(TypedDict):
     sessions: NotRequired["RoleGroupPreference"]
     comments: NotRequired["CommentsGroupPreference"]
     signMessages: NotRequired["GroupPreference"]
+    statusMessages: NotRequired["RoleGroupPreference"]
     commands: NotRequired[list["ChatBotCommand"]]
 
 class GroupProfile(TypedDict):
@@ -2551,6 +2553,10 @@ class MsgContent_chat(TypedDict):
     chatLink: "MsgChatLink"
     ownerSig: NotRequired["LinkOwnerSig"]
 
+class MsgContent_status(TypedDict):
+    type: Literal["status"]
+    text: str
+
 class MsgContent_unknown(TypedDict):
     type: Literal["unknown"]
     tag: str
@@ -2566,12 +2572,13 @@ MsgContent = (
     | MsgContent_file
     | MsgContent_report
     | MsgContent_chat
+    | MsgContent_status
     | MsgContent_unknown
 )
 
-MsgContent_Tag = Literal["text", "link", "image", "video", "voice", "file", "report", "chat", "unknown"]
+MsgContent_Tag = Literal["text", "link", "image", "video", "voice", "file", "report", "chat", "status", "unknown"]
 
-MsgContentTag = Literal["text", "link", "image", "video", "voice", "file", "report", "chat"]
+MsgContentTag = Literal["text", "link", "image", "video", "voice", "file", "report", "chat", "status"]
 
 MsgDecryptError = Literal["ratchetHeader", "tooManySkipped", "ratchetEarlier", "other", "ratchetSync"]
 

@@ -82,8 +82,8 @@ ComposeView
 
 | Function | Line | Description |
 |----------|------|-------------|
-| [`saveCurrentDraft()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1663) | L1663 | Saves compose state to `ChatModel.draft` |
-| [`clearCurrentDraft()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1669) | L1669 | Clears persisted draft |
+| [`saveCurrentDraft()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1665) | L1665 | Saves compose state to `ChatModel.draft` |
+| [`clearCurrentDraft()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1671) | L1671 | Clears persisted draft |
 
 - When navigating away from a chat, compose state is saved to `ChatModel.draft` / `ChatModel.draftChatId`
 - When returning to the same chat, draft is restored
@@ -310,12 +310,12 @@ Optional feature where the recipient sees typing in real-time.
 
 | Function | Line | Description |
 |----------|------|-------------|
-| [`showLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1677) | L1677 | Triggers link preview loading |
-| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1697) | L1697 | Extracts URLs from formatted text |
-| [`isSimplexLink()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1708) | L1708 | Checks if URL is a SimpleX link |
-| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1712) | L1712 | Cancels pending preview |
-| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1724) | L1724 | Fetches OpenGraph metadata |
-| [`resetLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1741) | L1741 | Resets preview state |
+| [`showLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1679) | L1679 | Triggers link preview loading |
+| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1699) | L1699 | Extracts URLs from formatted text |
+| [`isSimplexLink()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1710) | L1710 | Checks if URL is a SimpleX link |
+| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1714) | L1714 | Cancels pending preview |
+| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1726) | L1726 | Fetches OpenGraph metadata |
+| [`resetLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1743) | L1743 | Resets preview state |
 
 ### Behavior
 - Only the first URL in the message generates a preview

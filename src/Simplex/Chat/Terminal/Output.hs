@@ -27,7 +27,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..))
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (MsgContent (..), msgContentText)
+import Simplex.Chat.Protocol (MsgContent (..), isStatus, msgContentText)
 import Simplex.Chat.Remote.Types (RHKey (..), RemoteHostId, RemoteHostInfo (..), RemoteHostSession (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
@@ -176,7 +176,7 @@ chatEventNotification :: ChatTerminal -> ChatController -> ChatEvent -> IO ()
 chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   -- At the moment of writing received items are created one at a time
   CEvtNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) : _) ->
-    when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ do
+    when (not (isStatus mc) && chatDirNtf u cInfo chatDir (isUserMention ci)) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
@@ -185,8 +185,8 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
         _ -> pure ()
     where
       text = msgText mc formattedText
-  CEvtChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
-    whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ setActiveChat t cInfo
+  CEvtChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc}) ->
+    whenCurrUser cc u $ when (not (isStatus mc) && chatDirNtf u cInfo chatDir (isUserMention ci)) $ setActiveChat t cInfo
   CEvtContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")

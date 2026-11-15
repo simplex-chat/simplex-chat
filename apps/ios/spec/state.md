@@ -1,6 +1,6 @@
 # SimpleX Chat iOS -- State Management
 
-**Source:** [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1404) | [`ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1-L5377)
+**Source:** [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1404) | [`ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1-L5421)
 
 > Technical specification for the app's state architecture: ChatModel, ItemsModel, Chat, ChatInfo, and preference storage.
 >
@@ -311,7 +311,7 @@ Represents a single conversation in the chat list. Each `Chat` is an independent
 | `chatStats` | `ChatStats` | Unread counts and min unread item ID | [L1304](../Shared/Model/ChatModel.swift#L1304) |
 | `created` | `Date` | Creation timestamp | [L1305](../Shared/Model/ChatModel.swift#L1305) |
 
-### [ChatStats](../SimpleXChat/ChatTypes.swift#L1881-L1903)
+### [ChatStats](../SimpleXChat/ChatTypes.swift#L1899-L1924)
 
 ```swift
 struct ChatStats: Decodable, Hashable {
@@ -334,7 +334,7 @@ struct ChatStats: Decodable, Hashable {
 
 ---
 
-## 7. [ChatInfo](../SimpleXChat/ChatTypes.swift#L1374-L1856)
+## 7. [ChatInfo](../SimpleXChat/ChatTypes.swift#L1374-L1871)
 
 **Enum**: `public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable`
 **Source**: [`SimpleXChat/ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1374)
@@ -383,25 +383,25 @@ A **channel** is a group with `groupInfo.useRelays == true`. These types support
 | Type | Field | Type | Description | Line |
 |------|-------|------|-------------|------|
 | `User` | `userChatRelay` | `Bool` | Whether user acts as a chat relay | [L46](../SimpleXChat/ChatTypes.swift#L46) |
-| `GroupInfo` | `useRelays` | `Bool` | Whether group uses relay infrastructure (channel mode) | [L2343](../SimpleXChat/ChatTypes.swift#L2343) |
-| `GroupInfo` | `relayOwnStatus` | `RelayStatus?` | Current user's relay status in this group | [L2344](../SimpleXChat/ChatTypes.swift#L2344) |
-| `GroupProfile` | `publicGroup` | `PublicGroupProfile?` | Channel-specific profile data (type, link, ID) | [L2472](../SimpleXChat/ChatTypes.swift#L2472) |
+| `GroupInfo` | `useRelays` | `Bool` | Whether group uses relay infrastructure (channel mode) | [L2374](../SimpleXChat/ChatTypes.swift#L2374) |
+| `GroupInfo` | `relayOwnStatus` | `RelayStatus?` | Current user's relay status in this group | [L2375](../SimpleXChat/ChatTypes.swift#L2375) |
+| `GroupProfile` | `publicGroup` | `PublicGroupProfile?` | Channel-specific profile data (type, link, ID) | [L2503](../SimpleXChat/ChatTypes.swift#L2503) |
 
 #### New Types
 
 | Type | Kind | Description | Line |
 |------|------|-------------|------|
-| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive`, `.rsInactive`, `.rsRejected` | [L2506](../SimpleXChat/ChatTypes.swift#L2506) |
-| `RelayStatus.text` | `extension` | Localized display text: New/Invited/Accepted/Active/Inactive/Rejected | [L2565](../SimpleXChat/ChatTypes.swift#L2565) |
-| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status). Fetched at runtime via `apiGetGroupRelays` (owner only) | [L2555](../SimpleXChat/ChatTypes.swift#L2555) |
-| `UserChatRelay` | `struct` | User's chat relay configuration (ID, SMP address, name, domains, preset/tested/enabled/deleted flags) | [L2513](../SimpleXChat/ChatTypes.swift#L2513) |
+| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive`, `.rsInactive`, `.rsRejected` | [L2537](../SimpleXChat/ChatTypes.swift#L2537) |
+| `RelayStatus.text` | `extension` | Localized display text: New/Invited/Accepted/Active/Inactive/Rejected | [L2596](../SimpleXChat/ChatTypes.swift#L2596) |
+| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status). Fetched at runtime via `apiGetGroupRelays` (owner only) | [L2586](../SimpleXChat/ChatTypes.swift#L2586) |
+| `UserChatRelay` | `struct` | User's chat relay configuration (ID, SMP address, name, domains, preset/tested/enabled/deleted flags) | [L2544](../SimpleXChat/ChatTypes.swift#L2544) |
 
 #### New Enum Cases
 
 | Enum | Case | Description | Line |
 |------|------|-------------|------|
-| `GroupMemberRole` | `.relay` | Role for relay members (below `.observer`) | [L2807](../SimpleXChat/ChatTypes.swift#L2807) |
-| `CIDirection` | `.channelRcv` | Message direction for channel-received messages (via relay) | [L3529](../SimpleXChat/ChatTypes.swift#L3529) |
+| `GroupMemberRole` | `.relay` | Role for relay members (below `.observer`) | [L2838](../SimpleXChat/ChatTypes.swift#L2838) |
+| `CIDirection` | `.channelRcv` | Message direction for channel-received messages (via relay) | [L3560](../SimpleXChat/ChatTypes.swift#L3560) |
 
 ---
 

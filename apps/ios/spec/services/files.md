@@ -188,11 +188,11 @@ public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(300) // 5 minutes (300 second
 
 ---
 
-## [7. CryptoFile -- At-Rest Encryption](../../SimpleXChat/ChatTypes.swift#L4241)
+## [7. CryptoFile -- At-Rest Encryption](../../SimpleXChat/ChatTypes.swift#L4284)
 
 When [`apiSetEncryptLocalFiles(enable: true)`](../../Shared/Model/SimpleXAPI.swift#L384) is configured, files stored on the device are AES-encrypted.
 
-### [`CryptoFile`](../../SimpleXChat/ChatTypes.swift#L4241) Type
+### [`CryptoFile`](../../SimpleXChat/ChatTypes.swift#L4284) Type
 
 ```swift
 struct CryptoFile {
@@ -206,7 +206,7 @@ struct CryptoFileArgs {
 }
 ```
 
-> Defined in [`ChatTypes.swift` L4241](../../SimpleXChat/ChatTypes.swift#L4241) (`CryptoFile`) and [L4289](../../SimpleXChat/ChatTypes.swift#L4289) (`CryptoFileArgs`).
+> Defined in [`ChatTypes.swift` L4284](../../SimpleXChat/ChatTypes.swift#L4284) (`CryptoFile`) and [L4332](../../SimpleXChat/ChatTypes.swift#L4332) (`CryptoFileArgs`).
 
 ### Encryption Operations (C FFI)
 

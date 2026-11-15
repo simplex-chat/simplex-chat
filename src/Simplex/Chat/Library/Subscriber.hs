@@ -2267,6 +2267,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case publicGroup of
             Just pgp | maybe False (binding ==) (expectedBinding pgp) -> c
             _ -> MCChat {text, chatLink, ownerSig = Nothing}
+          MCStatus {} -> allowedGroupContent (fullGroupPreferences gInfo) (maybe GROwner memberRole' m_) c
           _ -> c
         expectedBinding PublicGroupProfile {publicGroupId}
           | sentAsGroup = Just $ encodeChatBinding CBChannel (smpEncode publicGroupId)
@@ -2322,7 +2323,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           groupMsgToView cInfo ci' {reactions}
 
     groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
-    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_
+    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId rcvMC mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_
       | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
       | otherwise = do
@@ -2361,6 +2362,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
                     pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
+        mc = allowedGroupContent (fullGroupPreferences gInfo) (maybe GROwner memberRole' m_) rcvMC
         content = CIRcvMsgContent mc
         ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
         live = fromMaybe False live_

@@ -1660,6 +1660,8 @@ struct ComposeView: View {
             case let .chat(_, chatLink, ownerSig):
                 let text = msgText.isEmpty ? chatLink.connLinkStr : msgText + "\n" + chatLink.connLinkStr
                 return .chat(text: text, chatLink: chatLink, ownerSig: ownerSig)
+            case .status:
+                return .status(text: msgText)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }

@@ -24,10 +24,12 @@ struct MergedItems: Hashable, Equatable {
         hasher.combine("\(items.hashValue)")
     }
 
-    static func create(_ im: ItemsModel, _ revealedItems: Set<Int64>) -> MergedItems {
+    static func create(_ im: ItemsModel, _ revealedSet: Set<Int64>) -> MergedItems {
         if im.reversedChatItems.isEmpty {
             return MergedItems(im: im, items: [], splits: [], indexInParentItems: [:])
         }
+
+        let revealedItems = revealedStatusRuns(im.reversedChatItems, revealedSet)
 
         let unreadCount = im.chatState.unreadTotal
 
@@ -52,7 +54,6 @@ struct MergedItems: Hashable, Equatable {
             let prev = index >= 1 ? im.reversedChatItems[index - 1] : nil
             let next = index + 1 < im.reversedChatItems.count ? im.reversedChatItems[index + 1] : nil
             let olderShown = im.reversedChatItems[(index + 1)...].first { !$0.isHidden(developerTools: developerTools) }
-            let category = item.mergeCategory
             let itemIsSplit = itemSplits.contains(item.id)
 
             if item.id == unreadAfterItemId {
@@ -63,7 +64,7 @@ struct MergedItems: Hashable, Equatable {
             }
 
             let revealed = item.mergeCategory == nil || revealedItems.contains(item.id)
-            if recent != nil, case let .grouped(items, _, _, _, mergeCategory, unreadIds, _, _) = recent, mergeCategory == category, let first = items.boxedValue.first, !revealedItems.contains(first.item.id) && !itemIsSplit {
+            if recent != nil, case let .grouped(items, _, _, _, _, unreadIds, _, _) = recent, let first = items.boxedValue.first, first.item.mergesWith(item), !revealedItems.contains(first.item.id) && !itemIsSplit {
                 let listItem = ListItem(item: item, prevItem: newerShown, nextItem: olderShown, unreadBefore: unreadBefore)
                 items.boxedValue.append(listItem)
 
@@ -80,7 +81,7 @@ struct MergedItems: Hashable, Equatable {
                 visibleItemIndexInParent += 1
                 let listItem = ListItem(item: item, prevItem: newerShown, nextItem: olderShown, unreadBefore: unreadBefore)
                 if item.mergeCategory != nil {
-                    if item.mergeCategory != prev?.mergeCategory || lastRevealedIdsInMergedItems == nil {
+                    if !item.mergesWith(prev) || lastRevealedIdsInMergedItems == nil {
                         lastRevealedIdsInMergedItems = BoxedValue(revealedItems.contains(item.id) ? [item.id] : [])
                     } else if revealed, let lastRevealedIdsInMergedItems {
                         lastRevealedIdsInMergedItems.boxedValue.append(item.id)
@@ -132,6 +133,20 @@ struct MergedItems: Hashable, Equatable {
         )
     }
 
+    private static func revealedStatusRuns(_ items: [ChatItem], _ revealedSet: Set<Int64>) -> Set<Int64> {
+        var revealedIds = revealedSet
+        var i = items.count - 2
+        while i >= 0 {
+            let item = items[i]
+            let older = items[i + 1]
+            if item.mergeCategory == .status && !revealedIds.contains(item.id) && revealedIds.contains(older.id) && item.mergesWith(older) {
+                revealedIds.insert(item.id)
+            }
+            i -= 1
+        }
+        return revealedIds
+    }
+
     func olderShownRow(of row: MergedItem) -> MergedItem? {
         guard let older = row.oldest().nextItem, let index = indexInParentItems[older.id] else { return nil }
         return items[index]
@@ -166,7 +181,7 @@ enum MergedItem: Identifiable, Hashable, Equatable {
     var hash: String {
         switch self {
         case .single(_, _, let hash): hash + " 1"
-        case .grouped(let items, _, _, _, _, _, _, let hash): hash + " \(items.boxedValue.count)"
+        case .grouped(let items, _, _, _, _, _, _, let hash): hash + " \(items.boxedValue.count) \(items.boxedValue.last?.nextItem?.id ?? 0) \(items.boxedValue.last?.nextItem?.isOneLine ?? false)"
         }
     }
 

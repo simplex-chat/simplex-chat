@@ -209,7 +209,7 @@ The secondary context is used for:
 
 ### ActiveChatState
 
-Defined at [`ChatItemsMerger.kt line 196`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatItemsMerger.kt#L196):
+Defined at [`ChatItemsMerger.kt line 210`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatItemsMerger.kt#L210):
 
 ```kotlin
 data class ActiveChatState(

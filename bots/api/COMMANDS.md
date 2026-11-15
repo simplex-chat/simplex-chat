@@ -2267,7 +2267,7 @@ Get chat messages.
 **Syntax**:
 
 ```
-/_get chat <str(chatRef)>[ content=text|link|image|video|voice|file|report|chat] <str(chatPagination)>[ search=<search>]
+/_get chat <str(chatRef)>[ content=text|link|image|video|voice|file|report|chat|status] <str(chatPagination)>[ search=<search>]
 ```
 
 ```javascript

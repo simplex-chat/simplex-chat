@@ -898,8 +898,8 @@ struct ChatView: View {
         reversedChatItems
             .enumerated()
             .filter { (index, chatItem) in
-                if let mergeCategory = chatItem.mergeCategory, index > 0 {
-                    mergeCategory != reversedChatItems[index - 1].mergeCategory
+                if chatItem.mergeCategory != nil, index > 0 {
+                    !chatItem.mergesWith(reversedChatItems[index - 1])
                 } else {
                     true
                 }
@@ -1766,7 +1766,10 @@ struct ChatView: View {
         @State private var swipeExclusionFrames: [CGRect] = []
         @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
-        var revealed: Bool { revealedItems.contains(chatItem.id) }
+        var revealed: Bool {
+            if case let .grouped(_, revealed, _, _, _, _, _, _) = merged { return revealed }
+            return revealedItems.contains(chatItem.id)
+        }
 
         private var memberImageSize: CGFloat {
             scaledMemberImageSize(userFont)
@@ -2259,12 +2262,27 @@ struct ChatView: View {
             member.memberRole > .member ? member.memberRole.text(isChannel: groupInfo.isChannel) : nil
         }
 
+        private func statusRunCount(_ count: Int) -> some View {
+            HStack(spacing: 2) {
+                Text(verbatim: "\(count)")
+                Image(systemName: "chevron.down").font(.caption2)
+            }
+            .font(.footnote)
+            .foregroundColor(theme.colors.secondary)
+            .padding(.leading, 8)
+            .padding(.trailing, 6)
+            .padding(.vertical, 2)
+            .background(theme.colors.secondary.opacity(0.12))
+            .clipShape(Capsule())
+        }
+
         func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
             let alignEnd = ci.chatDir.sent && !terminal
             let alignment: Alignment = alignEnd ? .trailing : .leading
             let markedDeleted = ci.meta.itemDeleted != nil && (!revealed || ci.isDeletedContent)
             let live = composeState.liveMessage != nil
             let canReply = ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote && selectedChatItems == nil && chat.chatInfo.sendMsgEnabled
+            let statusRun = ci.content.msgContent?.isStatus == true && !revealed ? range?.count ?? 1 : 1
             return ZStack(alignment: .trailing) {
                 Image(systemName: "arrowshape.turn.up.left")
                     .font(.system(size: 18))
@@ -2275,6 +2293,7 @@ struct ChatView: View {
                     HStack {
                         if alignEnd {
                             goToItemButton(true)
+                            if statusRun > 1 { statusRunCount(statusRun) }
                         }
                         ChatItemView(
                             chat: chat,
@@ -2291,6 +2310,12 @@ struct ChatView: View {
                         .if(!terminal) { $0.modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed))) }
                         .contextMenu { menu(ci, range, live: live) }
                         .accessibilityLabel("")
+                        .if(ci.mergeCategory == .status) {
+                            $0.simultaneousGesture(TapGesture().onEnded {
+                                if (range?.count ?? 0) > 1 || revealed { reveal(!revealed) }
+                            })
+                        }
+                        if !alignEnd && statusRun > 1 { statusRunCount(statusRun) }
                         if !alignEnd && (!terminal || searchIsNotBlank || markedDeleted) {
                             goToItemButton(false)
                         }
@@ -2783,8 +2808,8 @@ struct ChatView: View {
             Button(role: .destructive) {
                 if !revealed,
                    let currIndex = m.getChatItemIndex(im, ci),
-                   let ciCategory = ci.mergeCategory {
-                    let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
+                   ci.mergeCategory != nil {
+                    let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ci)
                     if let range = itemsRange(currIndex, prevHidden) {
                         var itemIds: [Int64] = []
                         for i in range {
@@ -2927,8 +2952,8 @@ struct ChatView: View {
             var itemIds: [Int64] = []
             if !revealed,
                let currIndex = m.getChatItemIndex(im, ci),
-               let ciCategory = ci.mergeCategory {
-                let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
+               ci.mergeCategory != nil {
+                let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ci)
                 if let range = itemsRange(currIndex, prevHidden) {
                     for i in range {
                         itemIds.append(im.reversedChatItems[i].id)
