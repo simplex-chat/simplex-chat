@@ -255,8 +255,7 @@ docs                 x.msg.new priority in the protocol doc and schema; bots/REA
 part                         approved section    work
 x.msg.update priority        2                   XMsgUpdate.priority, last field, at its positional uses
 UpdatedMessage.priority      2                   /_update item json with "priority": 1
-PriorityRaised               2                   newAttention :: Bool, wasSilent :: Bool (wasSilent is new, 11.3)
-CEvtChatItemUpdated          2                   priorityRaised :: Maybe PriorityRaised
+CEvtChatItemUpdated          2                   prevChatItem :: Maybe ACChatItem (#8219); a raise: high chatItem, prevChatItem not high
 ChatStats                    1, 6                unreadHighPriority :: IntDef, groups only
 preference                   3                   GFMsgPriority, MsgPriorityGroupPreference, default on for admins
                                                  /set priority #<group> on|off [<role>], CLI views; no feature items, no app screens
@@ -266,7 +265,7 @@ receiving                    5                   rcvPriorityAllowed; userMention
 storage                      6                   updateGroupChatItem_ writes item_priority and user_mention
 notifications                1, 8                attention item in mode "Mentions"; raise notified once, unread or read
 apps model                   8                   CIMeta.highPriority, unreadHighPriority counters, priorityTags, raise event handling
-                                                 NSE: chatItemUpdated with priorityRaised handled as newChatItems
+                                                 counters by previous vs new; NSE: a raise handled as newChatItems
 apps views                   9                   bell in the chat list badge, list label, item meta (both layouts), item info row
 terminal                     10                  marks "!!", notification for a raise
 libraries                    11                  optional priority in apiSendTextMessage, apiSendTextReply, apiUpdateChatItem (Node.js)
@@ -283,7 +282,8 @@ The apps send normal priority. The compose control stays deferred, as in open qu
 approved text                                      becomes
 1, 2  limited to -1 .. 1                           unchanged; the built -1 .. 0 returns to -1 .. 1
 4     sent value per chat                          sndPriority takes the chat: contact keeps -1 only; group keeps -1, and 1 when allowed
-2     PriorityRaised {newAttention}                adds wasSilent: a raised silent item leaves the gray tier
+2     PriorityRaised {newAttention}                removed: chatItemUpdated has prevChatItem (#8219); a raised silent item leaves the gray tier
+                                                   (decided by the user on 2026-11-15, built as a separate pull request from master)
 6     migration M20261013_msg_priority             M20261113_item_priority, with the indexes
 6     "indexes are unchanged"                      two partial indexes (Q4 B, decision 16)
 6     high priority sums inside ChatStats          one partial index of group items with item_priority <> 0 counts both tiers
@@ -342,7 +342,7 @@ unreadCount == unreadSilent  gray outline count (Q5 B)
 otherwise                    count, as now
 ```
 
-A raise of a silent item, for an unread item: `unreadSilent` - 1, `unreadHighPriority` + 1, `unreadMentions` + 1 when `newAttention`, and the user's counter + 1 in mode "All", because the item is no longer left out.
+A raise changes the counters by the previous and the new item (#8219). For an unread silent item: `unreadSilent` - 1, `unreadHighPriority` + 1, `unreadMentions` + 1 when the previous item was not a mention, and the user's counter + 1 in mode "All", because the item is no longer left out.
 
 ### 11.5 Delivery
 

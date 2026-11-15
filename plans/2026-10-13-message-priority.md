@@ -77,12 +77,8 @@ Controller.hs
   ComposedMessage (:1335)      priority :: Maybe Int      -- new; FromJSON (:1934): v .:? "priority"
   UpdatedMessage (:1343)       priority :: Maybe Int      -- new last field; JSON derived (:1947)
                                positional uses: Library/Commands.hs:798, 2697, 2701, 6562; apps/simplex-badge-service/src/BadgeService/Group.hs:344
-  PriorityRaised               new record
-                                 newAttention :: Bool     -- userMention of the item was False before the update
-  CEvtChatItemUpdated (:980)   priorityRaised :: Maybe PriorityRaised    -- new last field; Just for the update that raised the priority
-                               Nothing at: Library/Internal.hs:709, 855, 888; Library/Commands.hs:4847;
-                                 Library/Subscriber.hs:420, 439, 726, 1227, 1572, 1601, 2027, 2077, 2085, 2104, 2334
-                               positional patterns: View.hs:455; Terminal/Output.hs:150, 188
+  CEvtChatItemUpdated (:980)   prevChatItem :: Maybe ACChatItem    -- #8219: the item before the update
+                               a raise: chatItem is high priority, prevChatItem is not
 ```
 - In a signed message `priority` is covered by the signature. The chat protocol version is unchanged.
 
@@ -169,7 +165,7 @@ updateCI (:2368), new parameters: priority of the update; cd of the item (the va
   condition    :2371: changed || the item is live || requested
   edited       :2377: changed && itemLive /= Just True
   item         when raise: CIMeta.priority = Just 1 and userMention = True, before updateGroupChatItem (:2379)
-  event        :2382: priorityRaised = Just PriorityRaised {newAttention = userMention of the item was False}, when raise
+  event        :2382: chatItemUpdated with prevChatItem, the item before the raise (#8219)
   delivery     as now (:2384)
 ```
 - The status of a raised item is unchanged: an unread item is counted by the stats queries; a read item stays read. The item priority is unchanged by an update without `priority` or with a value of 0 or below.
@@ -218,7 +214,7 @@ getGroupUnreadCount_ :1739       :1743: the same sum in COALESCE; returns count,
 /_update item #1 5 json {"msgContent": {"type": "text", "text": "done"}, "mentions": {}, "priority": 1}
 ```
 - Streamed message: sent with `live=on`, updated with `live=on`, completed by `/_update item` without `live` and with `"priority": 1`. A message that is not live is raised by the same command, with or without a change of the text.
-- For a contact and a note folder `priority` is ignored by both commands. Responses and events: `CIMeta.priority` in chat items; `ChatStats.unreadHighPriority` where the other counters are returned; `priorityRaised` in the event `chatItemUpdated`.
+- For a contact and a note folder `priority` is ignored by both commands. Responses and events: `CIMeta.priority` in chat items; `ChatStats.unreadHighPriority` where the other counters are returned; a raise is the event `chatItemUpdated` with a high priority `chatItem` and a `prevChatItem` that is not.
 
 ## 8. Apps: model
 `K`: `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/`. `I`: `apps/ios/`.
@@ -242,14 +238,15 @@ item read or removed   events chatItemsStatusesUpdated, chatItemUpdated, chatIte
                          are reduced by the flags of the item; calls :675 (pItem), :725 (cItem), :777 (item)
                        I removeChatItem ChatModel.swift:850, removeMemberItems :885: third delta
                          UnreadCollector :1062, changeUnreadCounter(_:by:unreadMentions:) :1162: third delta
-priority raised        event chatItemUpdated with priorityRaised: K CR.ChatItemUpdated (model/SimpleXAPI.kt:6805); I ChatEvent (Shared/Model/AppAPITypes.swift:1188)
-                       active profile, unread item: unreadHighPriority + 1; unreadMentions + 1 when newAttention; list labels by the rule below
-                       other profile, unread item, MFMentions, newAttention: profile total + 1 (as K :3026, I :2636 for a new item)
-                       notification: notifyMessageReceived, for an unread and for a read item
-                       K chatItemUpdateNotify (model/SimpleXAPI.kt:3762): new parameter priorityRaised; notify() also when it is present (:3775)
-                       I case .chatItemUpdated (Shared/Model/SimpleXAPI.swift:2670), after chatItemSimpleUpdate (:3128); showNotification as at :2645
-                       NSE: new case chatItemUpdated in NSEChatEvent (SimpleX NSE/NSEAPITypes.swift:87)
-                         receivedMsgNtf (SimpleX NSE/NotificationService.swift:1003): with priorityRaised as .newChatItems (:1024-1030); otherwise nil
+priority raised        event chatItemUpdated: chatItem high priority, prevChatItem (#8219) not
+                       active profile: unreadCount, unreadMentions, unreadSilent and unreadHighPriority change by previous vs new
+                         K applyChatItemUpdate (model/ChatModel.kt); I applyChatItemUpdate (Shared/Model/ChatModel.swift)
+                       user total: previous vs new of the items counted for the user, silent items left out in MFAll
+                       other profile: previous vs new of the items counted with ntfsEnabled, silent items left out in MFAll
+                       notification: notifyMessageReceived for a raise, for an unread and for a read item
+                         K chatItemUpdateNotify (model/SimpleXAPI.kt); I chatItemUpdate (Shared/Model/SimpleXAPI.swift), ChatItem.isRaised(from:)
+                       NSE: case chatItemUpdated in NSEChatEvent (SimpleX NSE/NSEAPITypes.swift)
+                         receivedMsgNtf (SimpleX NSE/NotificationService.swift:1003): a raise as .newChatItems; otherwise nil
 ```
 `ntfsEnabled` (K `model/ChatModel.kt:1809`; I `ChatTypes.swift:2290`) is computed from `userMention`, unchanged. Unchanged notification paths of new items:
 ```
@@ -302,10 +299,10 @@ received    #team alice!!> done      ttyFromGroupAttention (:3100), fromGroupAtt
 sent        #team !! done            ttyTo "!! " after ttyToGroup (:739)
 updated     the same marks in viewItemUpdate (:864), at :892 and :901, also with "[edited]"
 ```
-- `Terminal/Output.hs:188`: `sendNtf` for an event with `priorityRaised`, as for a new item (`:181-185`). `markRead` (`:161`) and `setActiveChat` depend on `isUserMention`, unchanged.
+- `Terminal/Output.hs:188`: `sendNtf` for a raise, a high priority item with a previous item that is not, as for a new item (`:181-185`). `markRead` (`:161`) and `setActiveChat` depend on `isUserMention`, unchanged.
 
 ## 11. Libraries and docs
-- `bots/src/API/TypeInfo.hs`: `"IntDef" -> ST TInt []` (`:174`); `MsgPriorityGroupPreference` in `roleGroupPrefTypes` (`:248`). `bots/src/API/Docs/Types.hs`: `PriorityRaised` registered as `UpdatedMessage` (`:402`, `:641`).
+- `bots/src/API/TypeInfo.hs`: `"IntDef" -> ST TInt []` (`:174`); `MsgPriorityGroupPreference` in `roleGroupPrefTypes` (`:248`).
 - Generated files are written by `tests/APIDocs.hs` (`testGenerate`, `:153`): `bots/api/TYPES.md`, `bots/api/EVENTS.md`, and the types and events files of `packages/simplex-chat-client/types/typescript/src` and `packages/simplex-chat-python/src/simplex_chat/types`.
 - New optional parameter `priority`, set in the composed or the updated message; `apiSendMessages` (`api.ts:443`) and `api_send_messages` (`api.py:196`) are unchanged:
   - `packages/simplex-chat-nodejs/src/api.ts`: `apiSendTextMessage` (`:466`), `apiSendTextReply` (`:474`), `apiUpdateChatItem` (`:482`)
@@ -323,7 +320,7 @@ forwarding host or relay before         signed message: forwarded as received by
 owner before this release               the preference is absent: the default; the received preference JSON is kept (prefsToRow, Types/Preferences.hs:181) and parsed after an upgrade
                                         preferences saved by an app before this release are sent without msgPriority: the default applies again
 remote desktop                          host JSON is decoded by the controller core (Remote/Protocol.hs:71, :185)
-                                        newer desktop, older mobile: priority absent, unreadHighPriority 0, msgPriority by omittedField, priorityRaised absent
+                                        newer desktop, older mobile: priority absent, unreadHighPriority 0, msgPriority by omittedField, prevChatItem absent
                                         older desktop, newer mobile: a high priority item is shown as a mention; a raise is shown as an update, without a notification
 bots                                    priority of ComposedMessage and UpdatedMessage is optional and ignored by a core before this release (Controller.hs:1934, :1947); the response fields of section 7 are added
 downgrade                               item_priority is dropped; user_mention = 1 is kept: the items are shown as mentions
@@ -341,7 +338,7 @@ downgrade                               item_priority is dropped; user_mention =
 - after `/_read chat items` for the high priority item: `unreadHighPriority = 0`; `"priority": -1`: a normal item with `priority = -1`; member blocked by the recipient: normal priority
 - message forwarded by the host to a member without a direct connection, and history (unsigned and signed item): high priority
 - channel through a relay: an owner post with priority is high priority for a subscriber; business chat: high priority for a message of the business, normal for a message of the customer
-- raise: normal message, then `/_update item` with `"priority": 1` and the same text: sender `#team !! done`, members `#team alice!!> done`; one `chatItemUpdated` with `priorityRaised`; `newAttention` false for an item that mentions the user; raise of a read item: the item stays read, `unreadHighPriority = 0`, the item has priority 1
+- raise: normal message, then `/_update item` with `"priority": 1` and the same text: sender `#team !! done`, members `#team alice!!> done`; one `chatItemUpdated` with a high priority item and a previous item that is not; raise of a read item: the item stays read, `unreadHighPriority = 0`, the item has priority 1
 - streamed message: `live=on`, live updates, completion with `"priority": 1`: high priority; a later edit without `priority`: priority kept
 - raise by a member below the role: the update is sent without the field; raise in a member support chat: ignored; update with `"priority": 1` for an item deleted by the recipient: the created item is high priority
 - message to a contact with `"priority": 1`, and its update with `"priority": 1`: sent without the field; the items have priority 0
@@ -362,8 +359,7 @@ core types        MsgContainer.priority
                   CIMeta.priority
                   NewSndChatItemData.priority
                   ChatStats.unreadHighPriority
-                  PriorityRaised
-                  CEvtChatItemUpdated.priorityRaised
+                  CEvtChatItemUpdated.prevChatItem (#8219)
                   IntDef
 core functions    limitPriority
                   cmPriority
