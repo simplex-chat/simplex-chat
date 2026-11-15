@@ -233,6 +233,25 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(prefs.statusMessages, RoleGroupPreference(enable: .on, role: .owner))
     }
 
+    @MainActor
+    func testGroupedRowHashHasOlderItem() {
+        let im = ItemsModel(secondaryIMFilter: nil)
+        let ts = Date(timeIntervalSince1970: 1_736_935_200)
+        func status(_ id: Int64) -> ChatItem {
+            ChatItem(chatDir: .groupRcv(groupMember: GroupMember.sampleData), meta: CIMeta.getSample(id, ts, "Read src/hub.ts", .rcvRead), content: .rcvMsgContent(msgContent: .status(text: "Read src/hub.ts")))
+        }
+        func rowHash(_ olderId: Int64, _ olderText: String) -> String {
+            im.reversedChatItems = [status(3), status(2), ChatItem.getSample(olderId, .groupSnd, ts, olderText)]
+            let merged = MergedItems.create(im, [])
+            XCTAssertEqual(merged.items.count, 2)
+            return merged.items[0].hash
+        }
+        let oneLine = rowHash(1, "Run the tests")
+        XCTAssertEqual(oneLine, rowHash(1, "Run the tests"))
+        XCTAssertNotEqual(oneLine, rowHash(1, "Run the tests\nand fix them"))
+        XCTAssertNotEqual(oneLine, rowHash(4, "Run the tests"))
+    }
+
     func testSanitizeMessageKeepsMarkdown() {
         let sanitize = { (uri: String) -> String? in uri.contains("?utm_source=a") ? uri.replacingOccurrences(of: "?utm_source=a", with: "") : nil }
         let r1 = sanitizeMessage(

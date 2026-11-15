@@ -181,7 +181,7 @@ enum MergedItem: Identifiable, Hashable, Equatable {
     var hash: String {
         switch self {
         case .single(_, _, let hash): hash + " 1"
-        case .grouped(let items, _, _, _, _, _, _, let hash): hash + " \(items.boxedValue.count)"
+        case .grouped(let items, _, _, _, _, _, _, let hash): hash + " \(items.boxedValue.count) \(items.boxedValue.last?.nextItem?.id ?? 0) \(items.boxedValue.last?.nextItem?.isOneLine ?? false)"
         }
     }
 
