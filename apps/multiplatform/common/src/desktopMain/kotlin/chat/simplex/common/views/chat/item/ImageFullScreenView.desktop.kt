@@ -8,7 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.awt.awtEventOrNull
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.*
@@ -22,14 +22,12 @@ import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface
-import java.awt.event.MouseWheelEvent
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
 private const val WHEEL_ZOOM_STEP = 1.2f
-private const val MAC_PRECISE_UNITS_PER_NOTCH = 3f
+private const val MAC_SCROLL_UNITS_PER_NOTCH = 3f
 private val DRAG_THRESHOLD = 4.dp
 
 @Composable
@@ -113,7 +111,7 @@ private fun Modifier.zoomable(content: ImageBitmap): Modifier {
           if (event.type != PointerEventType.Scroll) continue
           val change = event.changes.first()
           if (change.scrollDelta.y == 0f) continue
-          val notches = wheelNotches(change.scrollDelta.y, event.awtEventOrNull as? MouseWheelEvent, desktopPlatform)
+          val notches = wheelNotches(change.scrollDelta.y, desktopPlatform)
           val zoomed = (scale * WHEEL_ZOOM_STEP.pow(-notches)).coerceIn(1f, 20f)
           val pointer = change.position - Offset(size.width / 2f, size.height / 2f) - translation
           val shift = pointer * (1 - zoomed / scale)
@@ -123,6 +121,7 @@ private fun Modifier.zoomable(content: ImageBitmap): Modifier {
         }
       }
     }
+    .clipToBounds()
     .graphicsLayer {
       scaleX = scale
       scaleY = scale
@@ -154,6 +153,5 @@ private suspend fun PointerInputScope.detectDragPastThreshold(onDrag: (Offset) -
   } while (change.pressed)
 }
 
-internal fun wheelNotches(scrollDelta: Float, wheel: MouseWheelEvent?, platform: DesktopPlatform): Float =
-  if (platform.isMac() && wheel != null && abs(wheel.preciseWheelRotation - wheel.wheelRotation) > 0.001) scrollDelta / MAC_PRECISE_UNITS_PER_NOTCH
-  else scrollDelta
+internal fun wheelNotches(scrollDelta: Float, platform: DesktopPlatform): Float =
+  if (platform.isMac()) scrollDelta / MAC_SCROLL_UNITS_PER_NOTCH else scrollDelta

@@ -1,6 +1,7 @@
 package chat.simplex.app
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -26,9 +27,6 @@ import chat.simplex.common.views.chat.item.wheelNotches
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
-import java.awt.Component
-import java.awt.event.MouseEvent
-import java.awt.event.MouseWheelEvent
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
@@ -236,16 +234,24 @@ class ImageFullScreenZoomTest {
   }
 
   @Test
-  fun testMacPreciseScrollCountsAThirdOfANotch() {
-    fun wheel(rotation: Int, preciseRotation: Double) =
-      MouseWheelEvent(object : Component() {}, MouseEvent.MOUSE_WHEEL, 0, 0, 0, 0, 0, 0, 0, false, MouseWheelEvent.WHEEL_UNIT_SCROLL, 1, rotation, preciseRotation)
+  fun testZoomedImageIsClippedToItsView() {
+    val provider = gallery(quadrants(400, 200))
+    simplexWindowState.windowState = WindowState(size = DpSize(800.dp, 600.dp))
+    ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
+      Box(Modifier.padding(bottom = 100.dp)) {
+        ImageFullScreenView({ provider }) {}
+      }
+    }.use { scene ->
+      scene.wheel(400f, -8f)
+      assertEquals(listOf(Shown.GREEN, Shown.BACKGROUND), listOf(scene.shownAt(300, 490), scene.shownAt(300, 510)))
+    }
+  }
+
+  @Test
+  fun testMacScrollCountsAThirdOfANotch() {
     assertEquals(
-      listOf(-0.5f, -1f, -1.5f),
-      listOf(
-        wheelNotches(-1.5f, wheel(-1, -1.5), DesktopPlatform.MAC_AARCH64),
-        wheelNotches(-1f, wheel(-1, -1.0), DesktopPlatform.MAC_AARCH64),
-        wheelNotches(-1.5f, wheel(-1, -1.5), DesktopPlatform.WINDOWS_X86_64),
-      )
+      listOf(-0.5f, -1.5f),
+      listOf(wheelNotches(-1.5f, DesktopPlatform.MAC_AARCH64), wheelNotches(-1.5f, DesktopPlatform.WINDOWS_X86_64))
     )
   }
 }
