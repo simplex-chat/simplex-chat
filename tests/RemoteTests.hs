@@ -200,7 +200,13 @@ remoteHandshakeRejectTest = testRemote3 $ \compress mobile desktop mobileBob -> 
   inv <- getTermLine desktop
   mobileBob ##> ("/connect remote ctrl " <> inv)
   mobileBob <## ("connecting new remote controller: My desktop, v" <> versionNumber)
-  mobileBob <## "remote controller stopped: this link was used with another controller, please create a new link on the host"
+  getTermLine mobileBob >>= \case
+    "new remote controller connected" -> do
+      mobileBob <## "Compare session code with controller and use:"
+      void $ getTermLine mobileBob
+      mobileBob ##> "/stop remote ctrl"
+      mobileBob <## "ok"
+    l -> l `shouldBe` "remote controller stopped: this link was used with another controller, please create a new link on the host"
 
   -- the server remains active after rejecting invalid client
   mobile ##> ("/connect remote ctrl " <> inv)
