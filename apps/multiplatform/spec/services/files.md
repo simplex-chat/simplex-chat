@@ -56,7 +56,7 @@ FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
 
 ## 3. CryptoFile
 
-[`CryptoFile.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt) (62 lines)
+[`CryptoFile.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt) (58 lines)
 
 Provides encrypted file I/O backed by the chat core's native cryptography (via JNI/JNA calls to `chatWriteFile`, `chatReadFile`, `chatEncryptFile`, `chatDecryptFile`).
 
@@ -78,10 +78,10 @@ sealed class WriteFileResult {
 
 | Function | Line | Signature | Description |
 |---|---|---|---|
-| `writeCryptoFile` | [L24](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt#L24) | `(path: String, data: ByteArray): CryptoFileArgs` | Writes data to an encrypted file via a direct `ByteBuffer`. Returns the generated key and nonce. Requires initialized `ChatController`. |
-| `readCryptoFile` | [L36](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt#L36) | `(path: String, cryptoArgs: CryptoFileArgs): ByteArray` | Reads and decrypts a file given its key and nonce. Returns the plaintext bytes. Throws on error (status != 0). |
-| `encryptCryptoFile` | [L47](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt#L47) | `(fromPath: String, toPath: String): CryptoFileArgs` | Encrypts an existing plaintext file to a new encrypted file. Returns the generated key and nonce. |
-| `decryptCryptoFile` | [L57](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt#L57) | `(fromPath: String, cryptoArgs: CryptoFileArgs, toPath: String)` | Decrypts an encrypted file to a plaintext output file. Throws on non-empty error string. |
+| `writeCryptoFile` | [L23](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt#L23) | `(path: String, data: ByteArray): CryptoFileArgs` | Writes data to an encrypted file via a direct `ByteBuffer`. Returns the generated key and nonce. Requires initialized `ChatController`. |
+| `readCryptoFile` | [L32](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt#L32) | `(path: String, cryptoArgs: CryptoFileArgs): ByteArray` | Reads and decrypts a file given its key and nonce. Returns the plaintext bytes. Throws on error (status != 0). |
+| `encryptCryptoFile` | [L43](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt#L43) | `(fromPath: String, toPath: String): CryptoFileArgs` | Encrypts an existing plaintext file to a new encrypted file. Returns the generated key and nonce. |
+| `decryptCryptoFile` | [L53](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt#L53) | `(fromPath: String, cryptoArgs: CryptoFileArgs, toPath: String)` | Decrypts an encrypted file to a plaintext output file. Throws on non-empty error string. |
 
 All functions delegate to native C library functions through the chat core JNI bridge.
 
@@ -205,7 +205,7 @@ When `auto = true`, relay approval alerts are suppressed (the file is silently r
 
 | File | Path | Lines | Description |
 |---|---|---|---|
-| `CryptoFile.kt` | [`common/src/commonMain/.../model/CryptoFile.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt) | 62 | Encrypted file read/write via native crypto |
+| `CryptoFile.kt` | [`common/src/commonMain/.../model/CryptoFile.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt) | 58 | Encrypted file read/write via native crypto |
 | `Files.kt` | [`common/src/commonMain/.../platform/Files.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt) | 191 | Common file path declarations, theme I/O, file helpers |
 | `Files.android.kt` | [`common/src/androidMain/.../platform/Files.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/platform/Files.android.kt) | 79 | Android file path implementations |
 | `Files.desktop.kt` | [`common/src/desktopMain/.../platform/Files.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/Files.desktop.kt) | 116 | Desktop file path implementations |

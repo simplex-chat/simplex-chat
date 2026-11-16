@@ -201,11 +201,15 @@ func hideSecrets(_ cItem: ChatItem, isChannel: Bool = false) -> String {
     if let md = cItem.formattedText {
         var res = ""
         for ft in md {
-            if case .secret = ft.format {
-                res = res + "..."
-            } else {
-                res = res + ft.text
+            switch ft.format {
+            case .secret: res = res + "..."
+            case let .markup(token): res = res + token.previewText
+            case .escape: ()
+            default: res = res + ft.text
             }
+        }
+        if case .report = cItem.content.msgContent {
+            return String.localizedStringWithFormat(NSLocalizedString("Report: %@", comment: "report in notification"), res)
         }
         return res
     } else {

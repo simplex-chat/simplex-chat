@@ -8,7 +8,7 @@
 
 > **fromLocalProfile**(`__namedParameters`): `Profile`
 
-Defined in: [src/util.ts:56](../src/util.ts#L56)
+Defined in: [src/util.ts:57](../util.ts#L57)
 
 ## Parameters
 

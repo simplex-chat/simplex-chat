@@ -451,7 +451,7 @@ struct YourServersView_Previews: PreviewProvider {
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
             serverErrors: Binding.constant([]),
             serverWarnings: Binding.constant([]),
-            operatorIndex: 1
+            operatorIndex: 0
         )
     }
 }

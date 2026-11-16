@@ -39,7 +39,7 @@ cp usr/lib/simplex.png usr/share/icons
 
 ln -s usr/bin/*imple* AppRun
 cp $multiplatform_dir/desktop/src/jvmMain/resources/distribute/*imple*.desktop chat.simplex.app.desktop
-sed -i 's|Exec=.*|Exec=simplex|g' *imple*.desktop
+sed -i 's|^Exec=[^ ]*|Exec=simplex|' *imple*.desktop
 sed -i 's|Icon=.*|Icon=simplex|g' *imple*.desktop
 cp *imple*.desktop usr/share/applications/
 cp $multiplatform_dir/desktop/src/jvmMain/resources/distribute/*.appdata.xml usr/share/metainfo

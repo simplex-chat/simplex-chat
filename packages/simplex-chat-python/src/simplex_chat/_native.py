@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import ctypes
 import errno
+import hashlib
 import os
 import platform
 import sys
@@ -18,7 +19,7 @@ from ctypes import POINTER, c_char_p, c_int, c_uint8, c_void_p
 from pathlib import Path
 from typing import Any, Literal
 
-from ._version import LIBS_VERSION
+from ._version import LIBS_RELEASE, LIBS_SHA256
 
 Backend = Literal["sqlite", "postgres"]
 
@@ -59,11 +60,14 @@ def _libname() -> str:
     return _LIBNAME[sys.platform]
 
 
-def _libs_url(backend: Backend) -> str:
+def _libs_asset(backend: Backend) -> str:
     suffix = "-postgres" if backend == "postgres" else ""
+    return f"simplex-chat-libs-{_platform_tag()}{suffix}.zip"
+
+
+def _libs_url(backend: Backend) -> str:
     return (
-        f"https://github.com/{_GITHUB_REPO}/releases/download/"
-        f"v{LIBS_VERSION}/simplex-chat-libs-{_platform_tag()}{suffix}.zip"
+        f"https://github.com/{_GITHUB_REPO}/releases/download/{LIBS_RELEASE}/{_libs_asset(backend)}"
     )
 
 
@@ -84,7 +88,7 @@ def _resolve_libs_dir(backend: Backend) -> Path:
             "postgres backend is only supported on linux-x86_64; "
             f"current platform is {_platform_tag()}"
         )
-    target = _cache_root() / f"v{LIBS_VERSION}" / backend
+    target = _cache_root() / LIBS_RELEASE / backend
     if not (target / _libname()).exists():
         _download(target, backend)
     return target
@@ -125,16 +129,21 @@ def _download(target: Path, backend: Backend) -> None:
     what we need and proceed. NEVER rmtree the target: that creates a TOCTOU
     window where another process is reading/loading the file we're deleting.
     """
+    asset = _libs_asset(backend)
+    sha256 = LIBS_SHA256.get(asset)
+    if sha256 is None:
+        raise RuntimeError(f"no SHA-256 is pinned for {asset}")
     target.parent.mkdir(parents=True, exist_ok=True)
     url = _libs_url(backend)
     print(
-        f"Downloading libsimplex ({_platform_tag()}, {backend}) v{LIBS_VERSION} from {url} ...",
+        f"Downloading libsimplex ({_platform_tag()}, {backend}) {LIBS_RELEASE} from {url} ...",
         file=sys.stderr,
         flush=True,
     )
     with tempfile.TemporaryDirectory(dir=target.parent) as tmp:
         zip_path = Path(tmp) / "libs.zip"
         _stream_to_file(url, zip_path, timeout=60.0)
+        _verify_sha256(zip_path, sha256, url)
         with zipfile.ZipFile(zip_path) as zf:
             zf.extractall(tmp)
         # zip layout: <tmp>/libs/libsimplex.* + libHS*.*
@@ -156,6 +165,16 @@ def _download(target: Path, backend: Backend) -> None:
                     f"another process partially populated {target} but libsimplex "
                     f"is missing; remove the directory manually and retry"
                 ) from e
+
+
+def _verify_sha256(file: Path, expected: str, url: str) -> None:
+    digest = hashlib.sha256()
+    with file.open("rb") as f:
+        while chunk := f.read(_DOWNLOAD_CHUNK):
+            digest.update(chunk)
+    actual = digest.hexdigest()
+    if actual != expected:
+        raise RuntimeError(f"SHA-256 of {url} is {actual}, expected {expected}")
 
 
 _lock = threading.Lock()
@@ -230,8 +249,8 @@ def lib_for(backend: Backend) -> ctypes.CDLL:
         if _lib is not None:
             if _backend != backend:
                 raise RuntimeError(
-                    f"libsimplex already loaded with backend={_backend!r}; "
-                    f"cannot switch to {backend!r} in the same process"
+                    f"libsimplex already loaded with backend={_backend}; "
+                    f"cannot switch to {backend} in the same process"
                 )
             return _lib
         libs_dir = _resolve_libs_dir(backend)
@@ -258,17 +277,30 @@ def lib() -> ctypes.CDLL:
     return _lib
 
 
-QUEUE_SIZE_UNSUPPORTED = (
-    "loaded libsimplex does not export chat_migrate_init_queue; queue size needs a newer libsimplex"
-)
+def _optional_export(name: str, feature: str, argtypes: list[Any]) -> Any:
+    try:
+        fn = getattr(lib(), name)
+    except AttributeError as e:
+        raise RuntimeError(
+            f"loaded libsimplex does not export {name}; {feature} needs a newer libsimplex"
+        ) from e
+    fn.argtypes = argtypes
+    fn.restype = c_void_p
+    return fn
 
 
 def migrate_init_queue() -> Any:
     """`chat_migrate_init_queue`, which older libsimplex releases do not export."""
-    try:
-        fn = lib().chat_migrate_init_queue
-    except AttributeError as e:
-        raise RuntimeError(QUEUE_SIZE_UNSUPPORTED) from e
-    fn.argtypes = [c_char_p, c_char_p, c_char_p, c_int, POINTER(c_void_p)]
-    fn.restype = c_void_p
-    return fn
+    return _optional_export(
+        "chat_migrate_init_queue",
+        "queue size",
+        [c_char_p, c_char_p, c_char_p, c_int, POINTER(c_void_p)],
+    )
+
+
+def resize_image() -> Any:
+    return _optional_export("chat_resize_image", "image resizing", [c_char_p, c_int, c_int, c_int])
+
+
+def resize_image_uri() -> Any:
+    return _optional_export("chat_resize_image_uri", "image resizing", [c_char_p, c_int, c_int])

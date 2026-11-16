@@ -1,5 +1,27 @@
 import {ChatEvent, ChatResponse, T} from "@simplex-chat/types"
+import * as libs from "./libs"
 import * as simplex from "./simplex"
+
+export type Backend = "sqlite" | "postgres"
+
+let loading: {backend: Backend, promise: Promise<void>} | undefined
+
+/**
+ * Resolve (downloading on first use) and load libsimplex for the backend.
+ * One libsimplex per process: the Haskell runtime is initialized once, and another backend is rejected.
+ */
+export function loadLibrary(backend: Backend): Promise<void> {
+  if (loading) {
+    if (loading.backend === backend) return loading.promise
+    return Promise.reject(new Error(`libsimplex already loaded with backend=${loading.backend}; cannot switch to ${backend} in the same process`))
+  }
+  const promise = Promise.all([libs.resolveLibsDir(backend), libs.resolveAddonPath()])
+    .then(([dir, addon]) => simplex.load(addon, libs.libPath(dir)))
+  loading = {backend, promise}
+  // a failed download or load can be retried
+  promise.catch(() => { loading = undefined })
+  return promise
+}
 
 /**
  * Initialize chat controller
@@ -87,6 +109,43 @@ function cryptoArgsResult(res: string): CryptoArgs {
   }  
 }
 
+/**
+ * Resize image to a data URI of at most maxSize characters
+ */
+export async function chatResizeImageUri(image: ArrayBuffer | Uint8Array, maxSize: number): Promise<string> {
+  return resizedImage(await simplex.chat_resize_image_uri(image, maxSize))
+}
+
+/**
+ * Resize image to JPEG or PNG of at most maxSize bytes
+ */
+export async function chatResizeImage(image: ArrayBuffer | Uint8Array, maxSize: number, format: "jpeg" | "png"): Promise<Buffer> {
+  return resizeImageData(image, maxSize, format === "png" ? 1 : 0)
+}
+
+/**
+ * Resize image to the app size limit: JPEG or PNG for an image, a data URI for a preview
+ */
+export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize.Image): Promise<Buffer>
+export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize.ProfilePreview | ImageSize.MessagePreview): Promise<string>
+export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize): Promise<Buffer | string>
+export async function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize): Promise<Buffer | string> {
+  switch (size) {
+    case ImageSize.Image: return resizeImageData(image, 261120, -1)
+    case ImageSize.ProfilePreview: return chatResizeImageUri(image, 12500)
+    case ImageSize.MessagePreview: return chatResizeImageUri(image, 14000)
+  }
+}
+
+async function resizeImageData(image: ArrayBuffer | Uint8Array, maxSize: number, png: number): Promise<Buffer> {
+  return Buffer.from(resizedImage(await simplex.chat_resize_image(image, maxSize, png)), "base64")
+}
+
+function resizedImage(res: string): string {
+  if (res === "") throw new Error("image cannot be decoded or does not fit maxSize")
+  return res
+}
+
 export interface APIResult<R> {
   result?: R
   error?: T.ChatError
@@ -106,6 +165,15 @@ export enum MigrationConfirmation {
   YesUpDown = "yesUpDown",
   Console = "console",
   Error = "error"
+}
+
+/**
+ * App image size limit
+ */
+export enum ImageSize {
+  Image = "image",
+  ProfilePreview = "profilePreview",
+  MessagePreview = "messagePreview"
 }
 
 /**

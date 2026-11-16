@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -264,9 +265,12 @@ fun ChatView(
       }
     }
     val clipboard = LocalClipboardManager.current
+    val terminal = chatInfo.activeChatLayout(user) == ChatLayoutMode.Terminal
     CompositionLocalProvider(
       LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false),
       LocalSelectionManager provides selectionManager,
+      LocalTerminalLayout provides terminal,
+      LocalBubbleLayout provides !terminal,
     ) {
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
@@ -409,6 +413,7 @@ fun ChatView(
                 var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
                 var preloadedCode: String? = null
                 var preloadedLink: GroupLink? = null
+                var preloadedChatId: ChatId? = chatInfo.id
                 if (chatInfo is ChatInfo.Direct) {
                   preloadedContactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                   preloadedCode = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
@@ -424,27 +429,35 @@ fun ChatView(
                   ModalView(close, cardScreen = true, appBar = appBar.value) {
                     val chatInfo = remember { activeChat }.value?.chatInfo
                     if (chatInfo is ChatInfo.Direct) {
-                      var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
-                      var code: String? by remember { mutableStateOf(preloadedCode) }
-                      KeyChangeEffect(chatInfo.id) {
+                      var contactInfo: Pair<ConnectionStats?, Profile?>? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedContactInfo else null) }
+                      var code: String? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedCode else null) }
+                      LaunchedEffect(chatInfo.id) {
+                        if (chatInfo.id == preloadedChatId) return@LaunchedEffect
+                        preloadedChatId = null
                         contactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                         preloadedContactInfo = contactInfo
                         code = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
                         preloadedCode = code
+                        preloadedChatId = chatInfo.id
                       }
                       ChatInfoView(chatsCtx, chatModel, chatInfo.contact, contactInfo?.first, contactInfo?.second, chatInfo.localAlias, code, close) {
                         showSearch.value = true
                       }
                     } else if (chatInfo is ChatInfo.Group) {
-                      var link: GroupLink? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
-                      KeyChangeEffect(chatInfo.id) {
+                      var link: GroupLink? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedLink else null) }
+                      var linkLoaded by remember(chatInfo.id) { mutableStateOf(chatInfo.id == preloadedChatId) }
+                      LaunchedEffect(chatInfo.id) {
+                        if (chatInfo.id == preloadedChatId && chatModel.membersLoaded.value) return@LaunchedEffect
+                        preloadedChatId = null
                         setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
                         link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
+                        linkLoaded = true
                         preloadedLink = link
+                        preloadedChatId = chatInfo.id
                       }
-                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link, selectedItems, appBar, scrollToItemId, {
+                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link, linkLoaded, selectedItems, appBar, scrollToItemId, {
                         link = it
-                        preloadedLink = it
+                        if (chatInfo.id == preloadedChatId) preloadedLink = it
                       }, close, { showSearch.value = true })
                     } else {
                       LaunchedEffect(Unit) {
@@ -523,14 +536,16 @@ fun ChatView(
                 val stats = r?.second
                 val (updatedMember, code) = if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != GroupMemberRole.Relay) {
                   val memCode = chatModel.controller.apiGetGroupMemberCode(chatRh, groupInfo.apiId, member.groupMemberId)
-                  (memCode?.first ?: r?.first ?: member) to memCode?.second
+                  (memCode?.first ?: r?.first) to memCode?.second
                 } else {
-                  (r?.first ?: member) to null
+                  r?.first to null
                 }
                 if (!isActive || chatModel.chatId.value != groupInfo.id) return@launch
                 // members are not loaded in large groups, so only the opened member is added to the model
-                withContext(Dispatchers.Main) {
-                  chatModel.chatsContext.upsertGroupMember(chatRh, groupInfo, updatedMember)
+                if (updatedMember != null) {
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.upsertGroupMember(chatRh, groupInfo, updatedMember)
+                  }
                 }
                 connStats.value = stats
                 connectionCode.value = code
@@ -723,35 +738,39 @@ fun ChatView(
                 ciInfo
               }
               groupMembersJob.cancel()
-              groupMembersJob = scope.launch(Dispatchers.Default) {
-                var initialCiInfo = loadChatItemInfo() ?: return@launch
+              groupMembersJob = scope.launch {
+                var initialCiInfo = withContext(Dispatchers.Default) { loadChatItemInfo() } ?: return@launch
                 if (!ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
                   ModalManager.end.closeModals()
+                } else if (ModalManager.end.isTopModalOpen(ModalViewId.CHAT_ITEM_INFO)) {
+                  ModalManager.end.closeModal()
                 }
-                ModalManager.end.showModalCloseable(endButtons = {
+                ModalManager.end.showModalCloseable(id = ModalViewId.CHAT_ITEM_INFO, endButtons = {
                   ShareButton {
                     clipboard.shareText(itemInfoShareText(chatModel, initialCiInfo.first, initialCiInfo.second, chatModel.controller.appPrefs.developerTools.get()))
                   }
                 }) { close ->
-                  var ciInfo by remember(cItem.id) { mutableStateOf(initialCiInfo) }
-                  val (item, info) = ciInfo
-                  ChatItemInfoView(chatRh, item, info, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
-                  LaunchedEffect(cItem.id) {
-                    withContext(Dispatchers.Default) {
-                      for (msg in controller.messagesChannel) {
-                        if (msg.rhId == chatRh &&
-                          msg is API.Result &&
-                          msg.res is CR.ChatItemsStatusesUpdated &&
-                          msg.res.chatItems.any { it.chatItem.id == cItem.id }
-                        ) {
-                          ciInfo = loadChatItemInfo() ?: return@withContext
-                          initialCiInfo = ciInfo
+                  key(this) {
+                    var ciInfo by remember(cItem.id) { mutableStateOf(initialCiInfo) }
+                    val (item, info) = ciInfo
+                    ChatItemInfoView(chatRh, item, info, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
+                    LaunchedEffect(cItem.id) {
+                      withContext(Dispatchers.Default) {
+                        for (msg in controller.messagesChannel) {
+                          if (msg.rhId == chatRh &&
+                            msg is API.Result &&
+                            msg.res is CR.ChatItemsStatusesUpdated &&
+                            msg.res.chatItems.any { it.chatItem.id == cItem.id }
+                          ) {
+                            ciInfo = loadChatItemInfo() ?: return@withContext
+                            initialCiInfo = ciInfo
+                          }
                         }
                       }
                     }
-                  }
-                  KeyChangeEffect(chatModel.chatId.value) {
-                    close()
+                    KeyChangeEffect(chatModel.chatId.value) {
+                      close()
+                    }
                   }
                 }
               }
@@ -795,7 +814,7 @@ fun ChatView(
                 }
               }
             },
-            changeNtfsState = { enabled, currentValue -> toggleNotifications(chatRh, chatInfo, enabled, chatModel, currentValue) },
+            changeNtfsState = { enabled -> toggleNotifications(chatRh, chatInfo, enabled, chatModel) },
             onSearchValueChanged = onSearchValueChanged,
             closeSearch = {
               if (chatModel.openAroundItemId.value == null) {
@@ -811,7 +830,7 @@ fun ChatView(
               }
             },
             onComposed,
-            developerTools = chatModel.controller.appPrefs.developerTools.get(),
+            developerTools = remember { chatModel.controller.appPrefs.developerTools.state }.value,
             showViaProxy = chatModel.controller.appPrefs.showSentViaProxy.get(),
             showSearch = showSearch,
             showCommandsMenu = showCommandsMenu,
@@ -959,7 +978,7 @@ fun ChatLayout(
   openGroupLink: (GroupInfo) -> Unit,
   markItemsRead: (List<Long>) -> Unit,
   markChatRead: () -> Unit,
-  changeNtfsState: (MsgFilter, currentValue: MutableState<MsgFilter>) -> Unit,
+  changeNtfsState: (MsgFilter) -> Unit,
   onSearchValueChanged: (String) -> Unit,
   closeSearch: () -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
@@ -1000,7 +1019,7 @@ fun ChatLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       val composeViewHeight = remember { mutableStateOf(0.dp) }
-      Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer, drawWallpaper = chatsCtx.secondaryContextFilter == null)) {
+      Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer, drawWallpaper = chatsCtx.secondaryContextFilter == null, drawWallpaperImage = !LocalTerminalLayout.current)) {
         val remoteHostId = remember { remoteHostId }.value
         val chat = remember { chat }.value
         val chatInfo = chat?.chatInfo
@@ -1200,7 +1219,7 @@ fun BoxScope.ChatInfoToolbar(
   endCall: () -> Unit,
   addMembers: (GroupInfo) -> Unit,
   openGroupLink: (GroupInfo) -> Unit,
-  changeNtfsState: (MsgFilter, currentValue: MutableState<MsgFilter>) -> Unit,
+  changeNtfsState: (MsgFilter) -> Unit,
   onSearchValueChanged: (String) -> Unit,
   showSearch: MutableState<Boolean>,
   contentFilter: MutableState<ContentFilter?>,
@@ -1355,8 +1374,7 @@ fun BoxScope.ChatInfoToolbar(
 
   val enableNtfs = chatInfo.chatSettings?.enableNtfs
   if (((chatInfo is ChatInfo.Direct && chatInfo.contact.ready && chatInfo.contact.active) || chatInfo is ChatInfo.Group) && enableNtfs != null) {
-    val ntfMode = remember { mutableStateOf(enableNtfs) }
-    val nextNtfMode by remember { derivedStateOf { ntfMode.value.nextMode(chatInfo.hasMentions) } }
+    val nextNtfMode = enableNtfs.nextMode(chatInfo.hasMentions)
     menuItems.add {
       ItemAction(
         stringResource(nextNtfMode.text(chatInfo.hasMentions)),
@@ -1366,7 +1384,7 @@ fun BoxScope.ChatInfoToolbar(
           // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
           scope.launch {
             delay(200)
-            changeNtfsState(nextNtfMode, ntfMode)
+            changeNtfsState(nextNtfMode)
           }
         }
       )
@@ -1574,15 +1592,15 @@ fun ownersContributorsCountStr(count: Int, withContributors: Boolean): String =
   else String.format(generalGetString(MR.strings.channel_owner_count_plural), count)
 
 @Composable
-fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
+fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 33.dp, imageBox: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
   Row(
     horizontalArrangement = Arrangement.Center,
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (cInfo.incognito) {
-      IncognitoImage(size = 36.dp * fontSizeSqrtMultiplier, Indigo)
+      IncognitoImage(size = 30.dp * fontSizeSqrtMultiplier, Indigo, Modifier.centeredIn(36.dp * fontSizeSqrtMultiplier))
     }
-    ChatInfoImage(cInfo, size = imageSize * fontSizeSqrtMultiplier, iconColor)
+    ChatInfoImage(cInfo, size = imageSize * fontSizeSqrtMultiplier, iconColor, modifier = Modifier.centeredIn(imageBox * fontSizeSqrtMultiplier))
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
@@ -1809,9 +1827,9 @@ fun BoxScope.ChatItemsList(
   val searchValueIsNotBlank = remember { derivedStateOf { searchValue.value.isNotBlank() || contentFilter.value != null } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
   // not using reversedChatItems inside to prevent possible derivedState bug in Compose when one derived state access can cause crash asking another derived state
-  val mergedItems = remember {
+  val mergedItems = remember(developerTools) {
     derivedStateOf {
-      MergedItems.create(chatsCtx.chatItems.value.asReversed(), unreadCount, revealedItems.value, chatsCtx.chatState)
+      MergedItems.create(chatsCtx.chatItems.value.asReversed(), unreadCount, revealedItems.value, chatsCtx.chatState, developerTools)
     }
   }
   val reversedChatItems = remember { derivedStateOf { chatsCtx.chatItems.value.asReversed() } }
@@ -1926,6 +1944,7 @@ fun BoxScope.ChatItemsList(
     cItem: ChatItem,
     itemSeparation: ItemSeparation,
     previousItemSeparationLargeGap: Boolean,
+    terminalGap: TextUnit,
     revealed: State<Boolean>,
     reveal: (Boolean) -> Unit
   ) {
@@ -1950,11 +1969,10 @@ fun BoxScope.ChatItemsList(
       }
 
       @Composable
-      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true, swipeOffset: Float = 0f) {
+      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true, swipeOffset: Float = 0f, highlighted: State<Boolean> = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }, bubbleInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() }) {
         tryOrShowError("${cItem.id}ChatItem", error = {
-          CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
+          CIBrokenComposableView(if (cItem.chatDir.sent && !LocalTerminalLayout.current) Alignment.CenterEnd else Alignment.CenterStart)
         }) {
-          val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
           LaunchedEffect(Unit) {
             snapshotFlow { highlighted.value }
               .distinctUntilChanged()
@@ -1964,7 +1982,7 @@ fun BoxScope.ChatItemsList(
                 highlightedItems.value = setOf()
               }
           }
-          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset)
+          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset, bubbleInteractionSource = bubbleInteractionSource)
         }
       }
 
@@ -1990,18 +2008,19 @@ fun BoxScope.ChatItemsList(
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
         )
         val sent = cItem.chatDir.sent
+        val itemTopGap = (if (previousItemSeparationLargeGap) BUBBLE_FAR_GAP else BUBBLE_CLOSE_GAP).toDp() / 2
 
         @Composable
-        fun ChatItemBox(modifier: Modifier = Modifier, content: @Composable () -> Unit = { }) {
+        fun ChatItemBox(modifier: Modifier = Modifier, top: Dp = itemTopGap, bottom: Dp? = null, content: @Composable () -> Unit = { }) {
           Box(
             modifier = modifier.padding(
               bottom = if (itemSeparation.largeGap) {
                 if (itemAtZeroIndexInWholeList) {
                   8.dp
                 } else {
-                  4.dp
+                  bottom ?: BUBBLE_FAR_GAP.toDp() / 2
                 }
-              } else 1.dp, top = if (previousItemSeparationLargeGap) 4.dp else 1.dp
+              } else bottom ?: BUBBLE_CLOSE_GAP.toDp() / 2, top = top
             ),
             contentAlignment = Alignment.CenterStart
           ) {
@@ -2011,9 +2030,7 @@ fun BoxScope.ChatItemsList(
 
         @Composable
         fun adjustTailPaddingOffset(originalPadding: Dp, start: Boolean): Dp {
-          val chatItemTail = remember { appPreferences.chatItemTail.state }
-          val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
-          val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+          val tailRendered = chatItemTailRendered(cItem, itemSeparation.largeGap, revealed = true)
 
           return originalPadding + (if (tailRendered) 0.dp else if (start) msgTailWidthDp * 2 else msgTailWidthDp)
         }
@@ -2021,14 +2038,38 @@ fun BoxScope.ChatItemsList(
         Box {
           val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
           val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
-          val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
+          val terminal = LocalTerminalLayout.current
+          val selectionOffset by animateDpAsState(if (selectionVisible && (!sent || terminal)) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
-          if (chatInfo is ChatInfo.Group) {
+          if (terminal) {
+            val rowInteractionSource = remember { TerminalRowInteractionSource() }
+            val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
+            val rowColor = animateColorAsState(
+              when {
+                selectedChatItems.value?.contains(cItem.id) == true -> MaterialTheme.colors.primary.copy(alpha = 0.1f)
+                highlighted.value -> MaterialTheme.colors.primary.copy(alpha = 0.14f)
+                else -> Color.Transparent
+              }
+            )
+            ChatItemBox(Modifier.drawBehind { drawRect(rowColor.value) }.terminalRowIndication(rowInteractionSource), top = 0.dp, bottom = if (itemSeparation.date != null) TERMINAL_LEVEL_STEP.toDp() else 0.dp) {
+              AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+              }
+              TerminalChatItemRow(
+                if (showAvatar) chatItemSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null,
+                terminalGutter(chatInfo),
+                terminalGap.toDp(),
+                Modifier.terminalStartOffset { selectionOffset }.then(if (selectionVisible) Modifier else swipeableModifier)
+              ) {
+                ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value, highlighted = highlighted, bubbleInteractionSource = rowInteractionSource)
+              }
+            }
+          } else if (chatInfo is ChatInfo.Group) {
             if (cItem.chatDir is CIDirection.GroupRcv) {
               if (showAvatar) {
                 Column(
                   Modifier
-                    .padding(top = 8.dp)
+                    .padding(top = if (cItem.content.isEvent) 0.dp else 8.dp)
                     .padding(start = 8.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
                     .then(swipeableModifier),
@@ -2051,7 +2092,7 @@ fun BoxScope.ChatItemsList(
                         memberNames(member, prevMember, memCount),
                         if (prevMember == null && memCount == 1) member.nameBadge else null,
                         Modifier
-                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp)
                           .weight(1f, false),
                         fontSize = 13.5.sp,
                         color = MaterialTheme.colors.secondary,
@@ -2059,9 +2100,7 @@ fun BoxScope.ChatItemsList(
                         maxLines = 1
                       )
                       if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
-                        val chatItemTail = remember { appPreferences.chatItemTail.state }
-                        val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
-                        val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+                        val tailRendered = chatItemTailRendered(cItem, itemSeparation.largeGap, revealed = true)
 
                         Text(
                           member.memberRole.text(isChannel = chatInfo.isChannel),
@@ -2084,7 +2123,7 @@ fun BoxScope.ChatItemsList(
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
                         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-                          MemberImage(member)
+                          MemberImage(member, 31.dp * fontSizeSqrtMultiplier, Modifier.centeredIn(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier))
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                           ChatItemViewShortHand(cItem, itemSeparation, range, false, dismissState.offset.value)
@@ -2120,7 +2159,7 @@ fun BoxScope.ChatItemsList(
               if (showAvatar) {
                 Column(
                   Modifier
-                    .padding(top = 8.dp)
+                    .padding(top = if (cItem.content.isEvent) 0.dp else 8.dp)
                     .padding(start = 8.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
                     .then(swipeableModifier),
@@ -2133,16 +2172,14 @@ fun BoxScope.ChatItemsList(
                       Text(
                         chatInfo.groupInfo.chatViewName,
                         Modifier
-                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp)
                           .weight(1f, false),
                         fontSize = 13.5.sp,
                         color = MaterialTheme.colors.secondary,
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 1
                       )
-                      val chatItemTail = remember { appPreferences.chatItemTail.state }
-                      val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
-                      val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+                      val tailRendered = chatItemTailRendered(cItem, itemSeparation.largeGap, revealed = true)
                       Text(
                         generalGetString(MR.strings.channel_role_label),
                         Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
@@ -2163,10 +2200,11 @@ fun BoxScope.ChatItemsList(
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         Box(Modifier.clickable { showChatInfo() }) {
                           ProfileImage(
-                            MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier,
+                            31.dp * fontSizeSqrtMultiplier,
                             chatInfo.groupInfo.image,
                             chatInfo.groupInfo.chatIconName,
-                            backgroundColor = MaterialTheme.colors.background
+                            backgroundColor = MaterialTheme.colors.background,
+                            modifier = Modifier.centeredIn(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier)
                           )
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
@@ -2240,10 +2278,12 @@ fun BoxScope.ChatItemsList(
           }
         }
       }
-      if (itemSeparation.date != null) {
-        DateSeparator(itemSeparation.date)
+      if (!cItem.hiddenInChat(developerTools)) {
+        if (itemSeparation.date != null) {
+          DateSeparator(itemSeparation.date)
+        }
+        ChatItemView(cItem, range, itemSeparation, previousItemSeparationLargeGap)
       }
-      ChatItemView(cItem, range, itemSeparation, previousItemSeparationLargeGap)
     }
   }
 
@@ -2310,12 +2350,10 @@ fun BoxScope.ChatItemsList(
         modifier = bannerModifier
           .padding(horizontal = DEFAULT_PADDING)
           .padding(bottom = DEFAULT_PADDING)
-          // ChatInfoImage has its own padding somewhere,
-          // also not doing verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF) because of it
-          .padding(top = DEFAULT_PADDING_HALF)
+          .padding(top = DEFAULT_PADDING)
           .background(MaterialTheme.appColors.receivedMessage)
       ) {
-        ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f))
+        ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f), modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF))
         val bannerBadge = chatInfo.nameBadge
         val uriHandler = LocalUriHandler.current
         Text(
@@ -2418,27 +2456,36 @@ fun BoxScope.ChatItemsList(
         }
       } else {
         val isLastItem = index == mergedItemsValue.items.lastIndex
-        val last = if (isLastItem) reversedChatItems.value.lastOrNull() else null
+        val last = if (!isLastItem) null else if (item.hiddenInChat(developerTools)) listItem.prevItem else reversedChatItems.value.lastOrNull()
         val range = if (merged is MergedItem.Grouped) {
           merged.rangeInReversed.value
         } else {
           null
         }
-        val showAvatar = shouldShowAvatar(item, merged.oldest().nextItem)
+        val older = merged.oldest().nextItem
+        val showAvatar = if (LocalTerminalLayout.current) terminalItemShowsSender(item, older) else shouldShowAvatar(item, older)
+        val terminalGap = if (!LocalTerminalLayout.current) 0.sp else terminalRowGap(
+          item, older,
+          separated = terminalRowsSeparated(mergedItemsValue.olderShownRow(merged)),
+          largeGap = older != null && getItemSeparationLargeGap(older, merged.oldest().item),
+          hasSenderRow = showAvatar
+        )
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-        val itemSeparation: ItemSeparation
+        val eventGapBelow = if (LocalTerminalLayout.current) null else eventRunLargeGap(item, listItem.prevItem)
+        val itemSeparation = rowItemSeparation(merged, LocalTerminalLayout.current).let { if (eventGapBelow == null) it else it.copy(timestamp = it.timestamp || eventGapBelow, largeGap = eventGapBelow) }
+        val eventGapAbove = if (LocalTerminalLayout.current) null else eventRunLargeGap(merged.oldest().item, older)
         val prevItemSeparationLargeGap: Boolean
-        if (merged is MergedItem.Single || isRevealed.value) {
+        if (eventGapAbove != null) {
+          prevItemSeparationLargeGap = eventGapAbove
+        } else if (merged is MergedItem.Single || isRevealed.value) {
           val prev = listItem.prevItem
-          itemSeparation = getItemSeparation(item, prev)
           val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
           prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
         } else {
-          itemSeparation = getItemSeparation(item, null)
           prevItemSeparationLargeGap = false
         }
         CompositionLocalProvider(LocalItemContext provides ItemContext(selectionIndex = index)) {
-          ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
+          ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, terminalGap, isRevealed) {
             if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
           }
         }
@@ -2832,8 +2879,8 @@ private suspend fun preloadItemsAfter(
 val MEMBER_IMAGE_SIZE: Dp = 37.dp
 
 @Composable
-fun MemberImage(member: GroupMember) {
-  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, backgroundColor = MaterialTheme.colors.background)
+fun MemberImage(member: GroupMember, size: Dp, modifier: Modifier = Modifier) {
+  MemberProfileImage(size, member, backgroundColor = MaterialTheme.colors.background, modifier = modifier)
 }
 
 @Composable
@@ -3501,7 +3548,7 @@ private fun markUnreadChatAsRead(chatId: String) {
 }
 
 @Composable
-private fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount: Int): String {
+fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount: Int): String {
   val name = member.displayName
   val prevName = prevMember?.displayName
   return if (prevName != null) {
@@ -3520,9 +3567,10 @@ fun Modifier.chatViewBackgroundModifier(
   wallpaper: AppWallpaper,
   backgroundGraphicsLayerSize: MutableState<IntSize>?,
   backgroundGraphicsLayer: GraphicsLayer?,
-  drawWallpaper: Boolean
+  drawWallpaper: Boolean,
+  drawWallpaperImage: Boolean
 ): Modifier {
-  val wallpaperImage = wallpaper.type.image
+  val wallpaperImage = if (drawWallpaperImage) wallpaper.type.image else null
   val wallpaperType = wallpaper.type
   val backgroundColor = if (drawWallpaper) wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, colors.background) else colors.background
   val tintColor = wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
@@ -3752,7 +3800,7 @@ private fun handleForwardConfirmation(
   )
 }
 
-private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSeparation {
+private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?, terminal: Boolean): ItemSeparation {
   if (prevItem == null) {
     return ItemSeparation(timestamp = true, largeGap = true, date = null)
   }
@@ -3763,12 +3811,27 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
     true
   } else chatItem.chatDir.sent == prevItem.chatDir.sent
   val largeGap = !sameMemberAndDirection || (abs(prevItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+  val prevDeletedInFlat = terminal && (prevItem.meta.itemDeleted != null || prevItem.isDeletedContent)
 
   return ItemSeparation(
-    timestamp = largeGap || prevItem.meta.timestampText != chatItem.meta.timestampText,
+    timestamp = largeGap || prevDeletedInFlat || prevItem.meta.timestampText != chatItem.meta.timestampText,
     largeGap = largeGap,
-    date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(prevItem.meta.itemTs)) null else prevItem.meta.itemTs
+    date = separationDate(chatItem, prevItem)
   )
+}
+
+private fun separationDate(chatItem: ChatItem, prevItem: ChatItem?): Instant? =
+  if (prevItem == null || getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(prevItem.meta.itemTs)) null else prevItem.meta.itemTs
+
+private fun rowItemSeparation(row: MergedItem, terminal: Boolean): ItemSeparation {
+  val newest = row.newest()
+  return getItemSeparation(newest.item, if (row.revealed) newest.prevItem else null, terminal)
+}
+
+fun terminalRowsSeparated(olderRow: MergedItem?): Boolean {
+  if (olderRow == null) return false
+  val newest = olderRow.newest()
+  return newest.item.content is CIContent.ChatBanner || separationDate(newest.item, if (olderRow.revealed) newest.prevItem else null) != null
 }
 
 private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
@@ -3783,6 +3846,11 @@ private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): 
   } else chatItem.chatDir.sent == nextItem.chatDir.sent
   return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
 }
+
+private fun eventRunLargeGap(item: ChatItem, neighbour: ChatItem?): Boolean? =
+  if (neighbour != null && (item.content.isEvent || neighbour.content.isEvent)) item.content.isEvent != neighbour.content.isEvent else null
+
+private val CIContent.isEvent: Boolean get() = !hasTerminalSender && this !is CIContent.ChatBanner
 
 private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {
   val oldIsGroupRcv = older?.chatDir is CIDirection.GroupRcv || older?.chatDir is CIDirection.ChannelRcv
@@ -3806,30 +3874,30 @@ private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {
   name = "Dark Mode"
 )*/
 @Composable
-fun PreviewChatLayout() {
+fun PreviewChatLayout() = BubblePreview {
   SimpleXTheme {
     val chatItems = listOf(
       ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+        1, CIDirection.DirectSnd(), previewDate, "hello"
       ),
       ChatItem.getSampleData(
-        2, CIDirection.DirectRcv(), Clock.System.now(), "hello"
-      ),
-      ChatItem.getDeletedContentSampleData(3),
+        2, CIDirection.DirectRcv(), previewDate, "hello"
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
+      ChatItem.getDeletedContentSampleData(3, ts = previewDate),
       ChatItem.getSampleData(
-        4, CIDirection.DirectSnd(), Clock.System.now(), "hello"
-      ),
-      ChatItem.getSampleData(
-        5, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+        4, CIDirection.DirectSnd(), previewDate, "hello"
       ),
       ChatItem.getSampleData(
-        6, CIDirection.DirectRcv(), Clock.System.now(), "hello"
-      )
+        5, CIDirection.DirectSnd(), previewDate, "hello"
+      ),
+      ChatItem.getSampleData(
+        6, CIDirection.DirectRcv(), previewDate, "hello"
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
-      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
+      chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } },
       remoteHostId = remember { mutableStateOf(null) },
       chat = remember { mutableStateOf(Chat.sampleData) },
       unreadCount = unreadCount,
@@ -3841,7 +3909,7 @@ fun PreviewChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      selectedChatItems = remember { mutableStateOf(setOf()) },
+      selectedChatItems = remember { mutableStateOf(null) },
       back = {},
       info = {},
       showReports = {},
@@ -3872,7 +3940,7 @@ fun PreviewChatLayout() {
       openGroupLink = {},
       markItemsRead = { _ -> },
       markChatRead = {},
-      changeNtfsState = { _, _ -> },
+      changeNtfsState = { _ -> },
       onSearchValueChanged = {},
       closeSearch = {},
       onComposed = {},
@@ -3889,32 +3957,36 @@ fun PreviewChatLayout() {
 
 @Preview
 @Composable
-fun PreviewGroupChatLayout() {
+fun PreviewGroupChatLayout() = GroupChatLayoutPreview(
+  listOf(
+    ChatItem.getSampleData(
+      1, CIDirection.GroupSnd(), previewDate, "hello"
+    ),
+    ChatItem.getSampleData(
+      2, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
+    ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
+    ChatItem.getDeletedContentSampleData(3, CIDirection.GroupRcv(GroupMember.sampleData), previewDate),
+    ChatItem.getSampleData(
+      4, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
+    ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello"))),
+    ChatItem.getSampleData(
+      5, CIDirection.GroupSnd(), previewDate, "hello"
+    ),
+    ChatItem.getSampleData(
+      6, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "hello"
+    ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
+  )
+)
+
+@Composable
+private fun GroupChatLayoutPreview(chatItems: List<ChatItem>) = BubblePreview {
   SimpleXTheme {
-    val chatItems = listOf(
-      ChatItem.getSampleData(
-        1, CIDirection.GroupSnd(), Clock.System.now(), "hello"
-      ),
-      ChatItem.getSampleData(
-        2, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
-      ),
-      ChatItem.getDeletedContentSampleData(3),
-      ChatItem.getSampleData(
-        4, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
-      ),
-      ChatItem.getSampleData(
-        5, CIDirection.GroupSnd(), Clock.System.now(), "hello"
-      ),
-      ChatItem.getSampleData(
-        6, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
-      )
-    )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
-      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
+      chatsCtx = remember { ChatModel.ChatsContext(secondaryContextFilter = null).also { it.chatItems.replaceAll(chatItems) } },
       remoteHostId = remember { mutableStateOf(null) },
-      chat = remember { mutableStateOf(Chat.sampleData) },
+      chat = remember { mutableStateOf(Chat.sampleData.copy(chatInfo = ChatInfo.Group.sampleData)) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = { _ -> },
@@ -3924,7 +3996,7 @@ fun PreviewGroupChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      selectedChatItems = remember { mutableStateOf(setOf()) },
+      selectedChatItems = remember { mutableStateOf(null) },
       back = {},
       info = {},
       showReports = {},
@@ -3955,7 +4027,7 @@ fun PreviewGroupChatLayout() {
       openGroupLink = {},
       markItemsRead = { _ -> },
       markChatRead = {},
-      changeNtfsState = { _, _ -> },
+      changeNtfsState = { _ -> },
       onSearchValueChanged = {},
       closeSearch = {},
       onComposed = {},
@@ -3968,6 +4040,153 @@ fun PreviewGroupChatLayout() {
       searchPlaceholder = null
     )
   }
+}
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminal() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  PreviewGroupChatLayout()
+}
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminalMedia() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  GroupChatLayoutPreview(
+    listOf(
+      ChatItem.getSampleData(
+        1, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "a photo"
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("a photo"))),
+      ChatItem.getSampleData(
+        2, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, ""
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCImage("", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAeCAIAAADRv8uKAAAAK0lEQVR42u3NMQ0AAAgDsElDB5oQjQw4mvRvavpExGKxWCwWi8VisVj8N16BwmJsLEkbxwAAAABJRU5ErkJggg=="))),
+      ChatItem.getSampleData(
+        3, CIDirection.GroupSnd(), previewDate, "nice view"
+      ),
+      ChatItem.getSampleData(
+        4, CIDirection.GroupRcv(GroupMember.sampleData), previewDate, "thanks"
+      ).copy(content = CIContent.RcvMsgContent(MsgContent.MCText("thanks")))
+    )
+  )
+}
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutHiddenItems() = GroupChatLayoutPreview(hiddenItemsPreview())
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminalHiddenItems() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  GroupChatLayoutPreview(hiddenItemsPreview())
+}
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminalDefects() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  GroupChatLayoutPreview(defectsPreview())
+}
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutBanner() = GroupChatLayoutPreview(
+  listOf(
+    previewRcv(1, GroupMember.sampleData, 0, CIContent.ChatBanner),
+    previewRcv(2, GroupMember.sampleData, 60, previewText("hello"))
+  )
+)
+
+@Preview
+@Composable
+fun PreviewGroupChatLayoutTerminalSession() = CompositionLocalProvider(LocalTerminalLayout provides true) {
+  GroupChatLayoutPreview(sessionPreview())
+}
+
+private fun previewMember(id: Long, name: String) =
+  GroupMember.sampleData.copy(groupMemberId = id, memberId = name, localDisplayName = name, memberProfile = LocalProfile.sampleData.copy(profileId = id, displayName = name, fullName = ""))
+
+private fun previewRcv(id: Long, member: GroupMember, seconds: Int, content: CIContent) =
+  ChatItem.getSampleData(id, CIDirection.GroupRcv(member), previewDate.plus(seconds, DateTimeUnit.SECOND), content.text).copy(content = content)
+
+private fun previewSnd(id: Long, seconds: Int, text: String, status: CIStatus = CIStatus.SndNew()) =
+  ChatItem.getSampleData(id, CIDirection.GroupSnd(), previewDate.plus(seconds, DateTimeUnit.SECOND), text, status)
+
+private fun previewText(text: String) = CIContent.RcvMsgContent(MsgContent.MCText(text))
+
+private fun hiddenItemsPreview(): List<ChatItem> {
+  val bob = previewMember(2, "bob")
+  val carol = previewMember(3, "carol")
+  return listOf(
+    previewRcv(1, GroupMember.sampleData, 0, previewText("Welcome, carol!")),
+    previewRcv(2, carol, 120, previewText("Thanks!")),
+    previewRcv(3, bob, 130, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 1))),
+    previewRcv(4, carol, 140, previewText("Glad to be here")),
+    previewRcv(5, carol, 240, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(2, 2))),
+    previewRcv(6, bob, 300, CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(3, 3))),
+    previewSnd(7, 360, "ok")
+  )
+}
+
+private fun defectsPreview(): List<ChatItem> {
+  val bob = previewMember(2, "bob")
+  val carol = previewMember(3, "carol")
+  val code = previewRcv(1, GroupMember.sampleData, 0, previewText("Run:\n```\nnpm run publish\n```")).copy(
+    formattedText = listOf(
+      FormattedText("Run:"),
+      FormattedText("\n", Format.Markup(BlockToken.LineBreak())),
+      FormattedText("```", Format.Markup(BlockToken.FenceMark())),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())),
+      FormattedText("npm run publish"),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())),
+      FormattedText("```", Format.Markup(BlockToken.FenceMark()))
+    ),
+    markdownBlocks = listOf(MarkdownBlock.Paragraph(SegmentRange(0, 1)), MarkdownBlock.CodeBlock(content = SegmentRange(4, 5)))
+  )
+  return listOf(
+    code,
+    previewSnd(2, 120, "👍", CIStatus.SndSent(SndCIStatusProgress.Complete)),
+    previewSnd(3, 130, "ok", CIStatus.SndSent(SndCIStatusProgress.Complete)),
+    previewRcv(4, bob, 180, previewText("nice")).copy(reactions = listOf(CIReactionCount(MsgReaction.Emoji(MREmojiChar.Heart), userReacted = false, totalReacted = 2))),
+    previewRcv(9, bob, 185, previewText("on my way")).let { it.copy(meta = it.meta.copy(itemStatus = CIStatus.RcvNew())) },
+    previewRcv(5, bob, 190, previewText("see you there")),
+    previewRcv(6, carol, 240, previewText("hello")),
+    ChatItem.getDeletedContentSampleData(7, CIDirection.GroupRcv(carol), previewDate.plus(250, DateTimeUnit.SECOND)),
+    previewRcv(8, carol, 360, previewText("The release goes out tomorrow"))
+  )
+}
+
+private fun sessionPreview(): List<ChatItem> {
+  val claude = previewMember(5, "Claude").let { it.copy(memberRole = GroupMemberRole.Owner, memberProfile = it.memberProfile.copy(peerType = ChatPeerType.Agent)) }
+  val delivered = CIStatus.SndRcvd(MsgReceiptStatus.Ok, SndCIStatusProgress.Complete)
+  val answer = previewRcv(6, claude, 170, previewText("543 of 544 pass. One test fails:\n```\nFAIL hub.test.ts (1 of 544)\n```\nShall I fix it?")).copy(
+    quotedItem = CIQuote(CIDirection.GroupSnd(), 2, sentAt = previewDate.plus(60, DateTimeUnit.SECOND), content = MsgContent.MCText("Are the tests passing?")),
+    formattedText = listOf(
+      FormattedText("543 of 544 pass. One test fails:"),
+      FormattedText("\n", Format.Markup(BlockToken.LineBreak())),
+      FormattedText("```", Format.Markup(BlockToken.FenceMark())),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())),
+      FormattedText("FAIL hub.test.ts (1 of 544)"),
+      FormattedText("\n", Format.Markup(BlockToken.HardBreak())),
+      FormattedText("```", Format.Markup(BlockToken.FenceMark())),
+      FormattedText("\n", Format.Markup(BlockToken.LineBreak())),
+      FormattedText("Shall I fix it?")
+    ),
+    markdownBlocks = listOf(MarkdownBlock.Paragraph(SegmentRange(0, 1)), MarkdownBlock.CodeBlock(content = SegmentRange(4, 5)), MarkdownBlock.Paragraph(SegmentRange(8, 9)))
+  )
+  val image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAeCAIAAADRv8uKAAAAK0lEQVR42u3NMQ0AAAgDsElDB5oQjQw4mvRvavpExGKxWCwWi8VisVj8N16BwmJsLEkbxwAAAABJRU5ErkJggg=="
+  return listOf(
+    previewRcv(1, claude, 0, previewText("alice is an owner and can send prompts to Claude and the group's commands, and approve tool use.")),
+    previewSnd(2, 60, "Are the tests passing?", delivered),
+    previewRcv(3, claude, 70, previewText("Checking the test suite.")),
+    previewRcv(4, claude, 80, previewText("I want to use Bash: Run unit tests\nnpm test\n/approve 1 or /reject 1")),
+    previewSnd(5, 100, "/approve 1", delivered),
+    answer,
+    previewSnd(7, 245, "Yes, fix it.", delivered),
+    previewSnd(8, 250, "Then run the tests again.", delivered),
+    previewSnd(9, 255, "And commit.", delivered),
+    previewRcv(10, claude, 300, previewText("Fixing hub.ts.")),
+    previewRcv(11, claude, 305, previewText("Running the tests.")),
+    previewRcv(12, claude, 310, previewText("Done: the answer now quotes its own prompt.\n544 of 544 pass.\nCommitted as 1f3c2a9.")),
+    previewRcv(13, claude, 330, CIContent.RcvMsgContent(MsgContent.MCImage("Coverage after the fix", image)))
+  )
 }
 
 enum class ContentFilter(

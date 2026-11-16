@@ -8,7 +8,7 @@
 
 > **chatInfoRef**(`cInfo`): `ChatRef` \| `undefined`
 
-Defined in: [src/util.ts:4](../src/util.ts#L4)
+Defined in: [src/util.ts:4](../util.ts#L4)
 
 ## Parameters
 

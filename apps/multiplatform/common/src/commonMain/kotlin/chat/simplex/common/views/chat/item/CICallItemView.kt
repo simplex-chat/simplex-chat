@@ -25,30 +25,32 @@ fun CICallItemView(
   timedMessagesTTL: Int?
 ) {
   val sent = cItem.chatDir.sent
-  Column(
-    Modifier
-      .padding(horizontal = 4.dp)
-      .padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-    @Composable fun ConnectingCallIcon() = Icon(painterResource(MR.images.ic_settings_phone), stringResource(MR.strings.icon_descr_call_connecting), tint = SimplexGreen)
-    when (status) {
-      CICallStatus.Pending -> if (sent) {
-        Icon(painterResource(MR.images.ic_call), stringResource(MR.strings.icon_descr_call_pending_sent))
-      } else {
-        AcceptCallButton(cInfo, acceptCall)
+  ItemWithMeta(meta = { CIMetaView(cItem, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
+    Column(
+      Modifier
+        .padding(horizontal = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 4.dp)
+        .padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+      @Composable fun ConnectingCallIcon() = Icon(painterResource(MR.images.ic_settings_phone), stringResource(MR.strings.icon_descr_call_connecting), tint = SimplexGreen)
+      when (status) {
+        CICallStatus.Pending -> if (sent) {
+          Icon(painterResource(MR.images.ic_call), stringResource(MR.strings.icon_descr_call_pending_sent))
+        } else {
+          AcceptCallButton(cInfo, acceptCall)
+        }
+        CICallStatus.Missed -> Icon(painterResource(MR.images.ic_call), stringResource(MR.strings.icon_descr_call_missed), tint = Color.Red)
+        CICallStatus.Rejected -> Icon(painterResource(MR.images.ic_call_end), stringResource(MR.strings.icon_descr_call_rejected), tint = Color.Red)
+        CICallStatus.Accepted -> ConnectingCallIcon()
+        CICallStatus.Negotiated -> ConnectingCallIcon()
+        CICallStatus.Progress -> Icon(painterResource(MR.images.ic_phone_in_talk_filled), stringResource(MR.strings.icon_descr_call_progress), tint = SimplexGreen)
+        CICallStatus.Ended -> Row {
+          Icon(painterResource(MR.images.ic_call_end), stringResource(MR.strings.icon_descr_call_ended), tint = MaterialTheme.colors.secondary, modifier = Modifier.padding(end = 4.dp))
+          Text(durationText(duration), color = MaterialTheme.colors.secondary)
+        }
+        CICallStatus.Error -> {}
       }
-      CICallStatus.Missed -> Icon(painterResource(MR.images.ic_call), stringResource(MR.strings.icon_descr_call_missed), tint = Color.Red)
-      CICallStatus.Rejected -> Icon(painterResource(MR.images.ic_call_end), stringResource(MR.strings.icon_descr_call_rejected), tint = Color.Red)
-      CICallStatus.Accepted -> ConnectingCallIcon()
-      CICallStatus.Negotiated -> ConnectingCallIcon()
-      CICallStatus.Progress -> Icon(painterResource(MR.images.ic_phone_in_talk_filled), stringResource(MR.strings.icon_descr_call_progress), tint = SimplexGreen)
-      CICallStatus.Ended -> Row {
-        Icon(painterResource(MR.images.ic_call_end), stringResource(MR.strings.icon_descr_call_ended), tint = MaterialTheme.colors.secondary, modifier = Modifier.padding(end = 4.dp))
-        Text(durationText(duration), color = MaterialTheme.colors.secondary)
-      }
-      CICallStatus.Error -> {}
-    }
 
-    CIMetaView(cItem, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp)
+      inlineMeta?.invoke()
+    }
   }
 }
 

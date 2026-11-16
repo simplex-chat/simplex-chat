@@ -539,6 +539,8 @@ struct ConnectDesktopView: View {
     }
 }
 
-#Preview {
-    ConnectDesktopView()
+struct ConnectDesktopView_Previews: PreviewProvider {
+    static var previews: some View {
+        ConnectDesktopView()
+    }
 }

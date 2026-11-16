@@ -85,7 +85,7 @@
     <string name="you_wont_lose_your_contacts_if_delete_address">പിന്നീട് നിങ്ങളുടെ വിലാസം ഇല്ലാതാക്കിയാൽ നിങ്ങളുടെ കോൺടാക്റ്റുകൾ നഷ്‌ടമാകില്ല.</string>
     <string name="stop_chat_confirmation">നിർത്തുക</string>
     <string name="delete_group_menu_action">ഇല്ലാതാക്കുക</string>
-    <string name="delete_address__question">വിലാസം ഇല്ലാതാക്കണോ\?</string>
+    <string name="delete_address__question">വിലാസം ഇല്ലാതാക്കണോ?</string>
     <string name="settings_notifications_mode_title">അറിയിപ്പ് സേവനം</string>
     <string name="secret_text">രഹസ്യം</string>
     <string name="error_creating_address">വിലാസം സൃഷ്ടിക്കുന്നതിൽ പിശക്</string>
@@ -99,7 +99,7 @@
     <string name="icon_descr_received_msg_status_unread">വായിക്കാത്തത്</string>
     <string name="image_descr">ചിത്രം</string>
     <string name="icon_descr_server_status_error">പിശക്</string>
-    <string name="allow_voice_messages_question">ശബ്ദ സന്ദേശങ്ങൾ അനുവദിക്കണോ\?</string>
+    <string name="allow_voice_messages_question">ശബ്ദ സന്ദേശങ്ങൾ അനുവദിക്കണോ?</string>
     <string name="send_disappearing_message_custom_time">ഇഷ്ടാനുസൃത സമയം</string>
     <string name="no_details">വിശദാംശങ്ങളില്ല</string>
     <string name="reset_verb">പുനഃസജ്ജമാക്കുക</string>
@@ -209,7 +209,7 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">ഉപയോക്തൃ മാര്‍ഗ്ഗദര്‍ശിയിൽ</font> കൂടുതൽ വായിക്കുക.]]></string>
     <string name="smp_servers_check_address">സെർവർ വിലാസം പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.</string>
     <string name="network_session_mode_entity">ബന്ധം</string>
-    <string name="stop_sharing_address">വിലാസം പങ്കിടുന്നത് നിർത്തണോ\?</string>
+    <string name="stop_sharing_address">വിലാസം പങ്കിടുന്നത് നിർത്തണോ?</string>
     <string name="continue_to_next_step">തുടരുക</string>
     <string name="create_simplex_address">SimpleX വിലാസം സൃഷ്ടിക്കുക</string>
     <string name="colored_text">നിറമുള്ള</string>
@@ -217,7 +217,7 @@
     <string name="your_calls">നിങ്ങളുടെ വിളികൾ</string>
     <string name="submit_passcode">സമർപ്പിക്കുക</string>
     <string name="leave_group_button">വിടവാങ്ങുക</string>
-    <string name="leave_group_question">സംഘം വിടണോ\?</string>
+    <string name="leave_group_question">സംഘം വിടണോ?</string>
     <string name="rcv_group_event_member_left">ഉപേക്ഷിച്ച</string>
     <string name="rcv_group_event_changed_member_role">%s-ന്റെ കര്‍ത്തവ്യം %s-ലേക്ക് മാറ്റി</string>
     <string name="rcv_group_event_changed_your_role">നിങ്ങളുടെ കര്‍ത്തവ്യം %s ആയി മാറ്റി</string>
@@ -268,11 +268,11 @@
     <string name="la_could_not_be_verified">നിങ്ങളെ പരിശോധിക്കാൻ കഴിഞ്ഞില്ല; ദയവായി വീണ്ടും ശ്രമിക്കുക.</string>
     <string name="custom_time_unit_weeks">ആഴ്ചകൾ</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">അനധികൃത അയക്കുക</string>
-    <string name="switch_receiving_address_question">സ്വീകരിക്കുന്ന വിലാസം മാറണോ\?</string>
-    <string name="member_role_will_be_changed_with_invitation">കര്‍ത്തവ്യം "%s" ആയി മാറ്റും. അംഗത്തിന് പുതിയ ക്ഷണം ലഭിക്കും.</string>
+    <string name="switch_receiving_address_question">സ്വീകരിക്കുന്ന വിലാസം മാറണോ?</string>
+    <string name="member_role_will_be_changed_with_invitation">കര്‍ത്തവ്യം %s ആയി മാറ്റും. അംഗത്തിന് പുതിയ ക്ഷണം ലഭിക്കും.</string>
     <string name="la_lock_mode_system">സംവിധാനം പ്രാമാണീകരണം</string>
     <string name="skip_inviting_button">അംഗങ്ങളെ ക്ഷണിക്കുന്നത് ഒഴിവാക്കുക</string>
-    <string name="save_welcome_message_question">സ്വാഗത സന്ദേശം സംരക്ഷിക്കണോ\?</string>
+    <string name="save_welcome_message_question">സ്വാഗത സന്ദേശം സംരക്ഷിക്കണോ?</string>
     <string name="remove_passphrase">നീക്കം ചെയ്യുക</string>
     <string name="sender_you_pronoun">നിങ്ങൾ</string>
     <string name="notifications_mode_periodic">ഇടയ്ക്കിടെ ആരംഭിക്കുന്നു</string>
@@ -293,8 +293,8 @@
     <string name="network_use_onion_hosts_prefer">ലഭ്യമാകുമ്പോൾ</string>
     <string name="network_session_mode_transport_isolation">ഗതാഗത ഒറ്റപ്പെടൽ</string>
     <string name="stop_sharing">പങ്കിടുന്നത് നിർത്തുക</string>
-    <string name="save_settings_question">ക്രമീകരണങ്ങൾ സംരക്ഷിക്കണോ\?</string>
-    <string name="save_preferences_question">മുൻഗണനകൾ സംരക്ഷിക്കണോ\?</string>
+    <string name="save_settings_question">ക്രമീകരണങ്ങൾ സംരക്ഷിക്കണോ?</string>
+    <string name="save_preferences_question">മുൻഗണനകൾ സംരക്ഷിക്കണോ?</string>
     <string name="callstate_starting">ആരംഭിക്കുന്നു</string>
     <string name="callstate_received_answer">ഉത്തരം ലഭിച്ചു…</string>
     <string name="alert_title_skipped_messages">ഒഴിവാക്കിയ സന്ദേശങ്ങൾ</string>
@@ -321,7 +321,7 @@
     <string name="whats_new_read_more">കൂടുതൽ വായിക്കുക</string>
     <string name="v4_5_transport_isolation">ഗതാഗത ഒറ്റപ്പെടൽ</string>
     <string name="custom_time_picker_select">തിരഞ്ഞെടുക്കുക</string>
-    <string name="abort_switch_receiving_address_question">വിലാസം മാറ്റുന്നത് നിർത്തണോ\?</string>
+    <string name="abort_switch_receiving_address_question">വിലാസം മാറ്റുന്നത് നിർത്തണോ?</string>
     <string name="enter_welcome_message">സ്വാഗത സന്ദേശം നൽകുക…</string>
     <string name="error_with_info">പിശക്: %s</string>
     <string name="service_notifications">തൽക്ഷണ അറിയിപ്പുകൾ!</string>
@@ -351,7 +351,7 @@
     <string name="error_sending_message">സന്ദേശം അയയ്ക്കുന്നതിൽ പിശക്</string>
     <string name="error_setting_address">വിലാസം ക്രമീകരിക്കുന്നതിൽ പിശക്</string>
     <string name="icon_descr_instant_notifications">തൽക്ഷണ അറിയിപ്പുകൾ</string>
-    <string name="delete_message__question">സന്ദേശം ഇല്ലാതാക്കണോ\?</string>
+    <string name="delete_message__question">സന്ദേശം ഇല്ലാതാക്കണോ?</string>
     <string name="icon_descr_email">ഇമെയിൽ</string>
     <string name="how_to">എങ്ങനെ</string>
     <string name="delete_messages">സന്ദേശങ്ങൾ ഇല്ലാതാക്കുക</string>

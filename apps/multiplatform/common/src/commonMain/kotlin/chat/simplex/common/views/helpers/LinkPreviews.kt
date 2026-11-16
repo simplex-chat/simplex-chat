@@ -22,7 +22,9 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.common.views.chat.item.CHAT_IMAGE_LAYOUT_ID
-import chat.simplex.common.views.chat.item.imageViewFullWidth
+import chat.simplex.common.views.chat.item.fixedMediaWidth
+import chat.simplex.common.views.chat.item.isTallMedia
+import chat.simplex.common.views.chat.item.mediaWidth
 import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -169,13 +171,18 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
       Image(
         imageBitmap,
         stringResource(MR.strings.image_descr_link_preview),
-        modifier = Modifier.width(80.dp).height(60.dp).padding(end = 8.dp)
+        modifier = Modifier.padding(start = 12.dp).width(80.dp).height(60.dp)
       )
-      Column(Modifier.fillMaxWidth().weight(1F)) {
+      Column(
+        Modifier.fillMaxWidth().weight(1F).padding(start = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+      ) {
         Text(linkPreview.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(
           linkPreview.uri, maxLines = 1, overflow = TextOverflow.Ellipsis,
-          style = MaterialTheme.typography.body2
+          color = MaterialTheme.colors.secondary,
+          fontSize = 12.sp
         )
       }
     }
@@ -195,10 +202,11 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 @Composable
 fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongClick: () -> Unit) {
   val image = remember(linkPreview.image) { base64ToBitmap(linkPreview.image) }
+  val tall = isTallMedia(image.width, image.height)
   Column(
     Modifier
     .layoutId(CHAT_IMAGE_LAYOUT_ID)
-    .width(if (image.width * 0.97 <= image.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+    .mediaWidth(fixedMediaWidth(tall), tall)
   ) {
     val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
     Image(

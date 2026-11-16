@@ -7,7 +7,7 @@ const repoDir = path.resolve(__dirname, "..")
 const docs = {
   from: "docs",
   to: "src/docs",
-  exclude: [/^contributing\//, /^rfcs\//, /^dependencies\//, /^LINKS\.md$/, /^lang\/[^/]+\/README\.md$/],
+  exclude: [/^contributing\//, /^rfcs\//, /^dependencies\//, /^LINKS\.md$/, /^DOWNLOADS\.md$/, /^lang\/[^/]+\/README\.md$/],
 }
 
 const sources = [

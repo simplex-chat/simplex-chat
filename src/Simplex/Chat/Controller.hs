@@ -77,7 +77,7 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
+import Simplex.Messaging.Agent.Store.Common (DBStore, IsolationLevel, withTransaction, withTransactionIsolation, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
 import Simplex.Messaging.Agent.Store.DB (SQLError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -85,7 +85,8 @@ import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyM
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
 import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, StatementEntry)
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeState (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeIssueFailure, BadgeState (..), OpenStorePurchase (..), StoreReceiptOrigin, SubscriptionState)
+import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -153,6 +154,13 @@ data ChatConfig = ChatConfig
     badgeCurrentTime :: IO UTCTime,
     -- how long a badge worker waits before repeating a renewal that failed for a passing reason
     badgeRetryInterval :: RetryInterval,
+    -- attempts a store receipt gets in one turn before its next one waits for the stored schedule
+    badgeConsecutiveRetries :: Int,
+    -- set only by builds for a dev badge service: allows /_badge request, sent off the shared schedule
+    badgeDevRequests :: Bool,
+    -- Local testing only: the badge worker treats a request as due this often, instead of near the
+    -- credential's expiry, so a renewal can be watched without waiting weeks.
+    badgeDevRequestInterval :: Maybe NominalDiffTime,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
@@ -329,6 +337,7 @@ data ChatController = ChatController
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     -- one badge worker per user: badge state is per profile, and one profile must not stall another
     badgeWorkers :: TMap UserId (SessionVar BadgeWorker),
+    storeReceiptWorkers :: TMap UserId Worker,
     badgeSeq :: TVar Int,
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,
@@ -481,7 +490,7 @@ data ChatCommand
   | APIDeleteGroupLink {groupId :: GroupId}
   | APIGetGroupLink {groupId :: GroupId}
   | APIAddGroupShortLink GroupId
-  | APICreateMemberContact GroupId GroupMemberId
+  | APICreateMemberContact {groupId :: GroupId, groupMemberId :: GroupMemberId}
   | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | APIAcceptMemberContact ContactId
   | GetUserProtoServers AProtocolType
@@ -496,7 +505,7 @@ data ChatCommand
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)
-  | APIGetUserServers UserId
+  | APIGetUserServers {userId :: UserId}
   | APISetUserServers UserId (NonEmpty UpdatedUserOperatorServers)
   | APIValidateServers UserId [UpdatedUserOperatorServers] -- response is CRUserServersValidation
   | APIGetUsageConditions
@@ -509,7 +518,7 @@ data ChatCommand
   | APISetChatTTL {userId :: UserId, chatRef :: ChatRef, seconds :: Maybe Int64}
   | SetChatTTL ChatName (Maybe Int64)
   | GetChatTTL ChatName
-  | APISetNetworkConfig NetworkConfig
+  | APISetNetworkConfig {networkConfig :: NetworkConfig}
   | APIGetNetworkConfig
   | SetNetworkConfig SimpleNetCfg
   | APISetNetworkInfo UserNetworkInfo
@@ -517,7 +526,7 @@ data ChatCommand
   | ReconnectServer UserId SMPServer
   | APISetChatSettings {chatRef :: ChatRef, chatSettings :: ChatSettings}
   | APISetMemberSettings GroupId GroupMemberId GroupMemberSettings
-  | APIContactInfo ContactId
+  | APIContactInfo {contactId :: ContactId}
   | APIGroupInfo GroupId
   | APIGetUpdatedGroupLinkData {groupId :: GroupId}
   | APIGroupMemberInfo GroupId GroupMemberId
@@ -562,8 +571,8 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan {userId :: UserId, connectTarget :: Maybe AConnectTarget, resolveMode :: PlanResolveMode, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectTarget is used to report parsing failure as special error
-  | APIPrepareContact UserId ACreatedConnLink (Maybe SimplexDomain) ContactShortLinkData
-  | APIPrepareGroup UserId CreatedLinkContact DirectLink (Maybe SimplexDomain) GroupShortLinkData
+  | APIPrepareContact {userId :: UserId, connLink :: ACreatedConnLink, verifiedDomain :: Maybe (StrJSON "SimplexDomain" SimplexDomain), contactSLinkData :: ContactShortLinkData}
+  | APIPrepareGroup {userId :: UserId, connLinkContact :: CreatedLinkContact, direct :: DirectLink, verifiedDomain :: Maybe (StrJSON "SimplexDomain" SimplexDomain), groupSLinkData :: GroupShortLinkData}
   | APIChangePreparedContactUser ContactId UserId
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
@@ -572,7 +581,7 @@ data ChatCommand
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe AConnectTarget}
   | APIVerifyContactDomain {contactId :: ContactId}
   | APIVerifyGroupDomain {groupId :: GroupId}
-  | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
+  | APIConnectContactViaAddress {userId :: UserId, incognito :: IncognitoEnabled, contactId :: ContactId}
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
   | ClearContact ContactName
@@ -589,7 +598,7 @@ data ChatCommand
   | APISetProfileAddress {userId :: UserId, enable :: Bool}
   | SetProfileAddress Bool
   | APISetAddressSettings {userId :: UserId, pqRatchet :: Maybe Bool, settings :: AddressSettings}
-  | SetAddressSettings {pqRatchet :: Maybe Bool, settings :: AddressSettings}
+  | SetAddressSettings {pqRatchet :: Maybe Bool, settings :: AddressSettings, chatLayout :: Maybe (Maybe ChatLayout)}
   | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName Bool
   | ForwardMessage {toChatName :: ChatName, fromContactName :: ContactName, forwardedMsg :: Text}
@@ -662,17 +671,22 @@ data ChatCommand
   | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
+  | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, origin :: StoreReceiptOrigin, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
+  | APISetBadgeSubscriptionStatus {status :: SubscriptionState, payment :: ServicePayment} -- the device store's view of a credited subscription, which changes what is shown and alerted, and retires its badge once ended
+  | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
   | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
   | APIGetBadgeLedger {userId :: UserId, badgePurchaseId :: Int64} -- the purchase's ledger, oldest first
   -- episode is last because it is free text: it is the value that makes one occurrence of an
   -- alert distinct from the next, and the app returns whatever it was given
   | APIAckBadgeAlert {userId :: UserId, badgePurchaseId :: Int64, alertKind :: BadgeAlertKind, snooze :: Bool, episode :: Text}
+  | APIRequestBadge {userId :: UserId}
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
   | SetGroupFeature AGroupFeatureNoRole GroupName GroupFeatureEnabled
   | SetGroupFeatureRole AGroupFeatureRole GroupName GroupFeatureEnabled (Maybe GroupMemberRole)
   | SetGroupMemberAdmissionReview GroupName (Maybe MemberCriteria)
+  | SetGroupChatLayout GroupName (Maybe ChatLayout)
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
@@ -770,6 +784,7 @@ allowRemoteCommand = \case
   DeleteRemoteCtrl _ -> False
   ExecChatStoreSQL _ -> False
   ExecAgentStoreSQL _ -> False
+  APIRequestBadge {} -> False
   _ -> True
 
 data RelayConnectionResult = RelayConnectionResult
@@ -872,7 +887,9 @@ data ChatResponse
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
-  | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
+  | CRBadgeInvoice {user :: User, invoiceId :: Text}
+  | CRStoreReceiptNotRecorded {user :: User}
+  | CRBadgeState {user :: User, badgeState :: Maybe BadgeState, storePurchases :: [OpenStorePurchase]}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
@@ -995,6 +1012,8 @@ data ChatEvent
   | CEvtServiceReplySent {connectionId :: AgentConnId}
   | CEvtBadgeChanged {user :: User, badgeState :: Maybe BadgeState} -- badge state changed, including a renewal that arrived without a command
   | CEvtBadgeAlert {user :: User, badgeAlert :: BadgeAlert}
+  | CEvtStorePurchaseCredited {user :: User, invoiceId :: Text} -- the held store receipt of this invoice was credited, so its store transaction can be finished
+  | CEvtStorePurchaseRefused {user :: User, invoiceId :: Text, refusal :: BadgeIssueFailure} -- the held store receipt of this invoice was refused
   | CEvtContactRequestRejected {user :: User, contact :: Contact, rejectionReason :: Maybe ContactRejectionReason}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
   | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
@@ -1047,6 +1066,7 @@ data ChatEvent
   | CEvtUnknownMemberCreated {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
   | CEvtUnknownMemberBlocked {user :: User, groupInfo :: GroupInfo, blockedByMember :: GroupMember, member :: GroupMember}
   | CEvtUnknownMemberAnnounced {user :: User, groupInfo :: GroupInfo, announcingMember :: GroupMember, unknownMember :: GroupMember, announcedMember :: GroupMember}
+  | CEvtDuplicateGroupMessage {user :: User, member :: GroupMember}
   | CEvtGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, msgSigned :: Maybe MsgSigStatus}
   | CEvtGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember, msgSigned :: Maybe MsgSigStatus} -- there is the same command response
   | CEvtAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
@@ -1128,11 +1148,11 @@ data SendRef
   deriving (Eq, Show)
 
 data ChatPagination
-  = CPLast Int
-  | CPAfter ChatItemId Int
-  | CPBefore ChatItemId Int
-  | CPAround ChatItemId Int
-  | CPInitial Int
+  = CPLast {count :: Int}
+  | CPAfter {chatItemId :: ChatItemId, count :: Int}
+  | CPBefore {chatItemId :: ChatItemId, count :: Int}
+  | CPAround {chatItemId :: ChatItemId, count :: Int}
+  | CPInitial {count :: Int}
   deriving (Show)
 
 data PaginationByTime
@@ -1509,10 +1529,13 @@ data SimplexDomainError
   | SDENameWarning {nameWarning :: NameWarning}
   deriving (Eq, Show)
 
+-- | Why acquiring a badge failed, for a code and for a store purchase alike.
 data BadgeRedeemError
   = BREInvalidCode -- format or check character
+  | BREInvalidReceipt -- names no transaction, or is not a store payment
   | BREServiceNotConfigured
   | BREBadgeActive
+  | BREStorePurchaseOpen -- a store receipt held for this profile may still be credited
   | BREServiceError {serviceError :: BadgeServiceErrorCode}
   | BREInvalidResponse {message :: String}
   | BREUnknownKeyIndex
@@ -1826,6 +1849,11 @@ withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
 withStorePriority priority action = do
   ChatController {chatStore} <- ask
   liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `catchOwn'` handleDBErrors
+
+withStoreIsolation' :: IsolationLevel -> (DB.Connection -> IO a) -> CM a
+withStoreIsolation' isolation action = do
+  ChatController {chatStore} <- ask
+  liftIOEither $ withTransactionIsolation chatStore isolation (fmap Right . action) `catchOwn'` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do

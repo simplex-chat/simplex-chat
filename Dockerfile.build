@@ -5,11 +5,17 @@ FROM ubuntu:${TAG}@${HASH} AS build
 
 ### Build stage
 
+# Ubuntu archive state that all apt packages are installed from; bump it to pick up package updates
+ARG UBUNTU_SNAPSHOT=20261021T000000Z
 ARG GHC=9.6.3
 ARG CABAL=3.10.2.0
-ARG JAVA_VER=17.0.17.10.1
-ARG JAVA_HASH_AMD64=e3e11daa5c22a45153bbeff1a0c21bf08631791e4e8d8ed14deba31c7cf9af1a
-ARG JAVA_HASH_ARM64=2b460859b681757b33a7591b6238ecaf51569d05d2684984e5f0a89c6514acbc
+ARG GHCUP_VER=0.2.6.2
+ARG GHCUP_HASH_AMD64=9ed5da5449b48043a0d17e767c05d2ef585e25a639bb934329496c6d2fad9cf8
+ARG GHCUP_HASH_ARM64=65a5f05120288ee4f1a81d28825374b6af317456a351a586adfce90c6dc29e3b
+ARG GHCUP_METADATA=https://raw.githubusercontent.com/haskell/ghcup-metadata/ff5a77f2ee34afd9c49b970a45abfb7dac01cb8a/ghcup-0.1.0.yaml
+ARG JAVA_VER=17.0.21.0.10
+ARG JAVA_HASH_AMD64=8e7577ddeb5b17a13c73a6fe80b592f6e70299cd19f54d06976986b0bc7ada87
+ARG JAVA_HASH_ARM64=c400e8ae70ee9565c23667bc3b4dd0fe5f7c403629ebb2cf9648c1d756b6b926
 
 ENV TZ=Etc/UTC \
     DEBIAN_FRONTEND=noninteractive
@@ -18,8 +24,15 @@ ARG USER_UID=1000
 ARG USER_GID=1000
 ARG USER_NAME=builder
 
+# The base image has no CA certificates, so they are fetched without TLS peer verification;
+# apt still verifies every index against the GPG-signed InRelease files.
+RUN sed -i -E "s#http://(archive|security|ports)\.ubuntu\.com/ubuntu(-ports)?/?#https://snapshot.ubuntu.com/ubuntu/${UBUNTU_SNAPSHOT}/#" \
+        $(grep -rlsE 'http://(archive|security|ports)\.ubuntu\.com' /etc/apt/sources.list /etc/apt/sources.list.d) && \
+    apt-get -o Acquire::https::Verify-Peer=false update --error-on=any && \
+    apt-get -o Acquire::https::Verify-Peer=false install -y ca-certificates
+
 # Install curl, git and and simplex-chat dependencies
-RUN apt-get update && \
+RUN apt-get update --error-on=any && \
     apt-get install -y curl \
                        libpq-dev \
                        git \
@@ -58,7 +71,7 @@ RUN apt-get update && \
 # to fix this :(
 RUN export JAVA_FILENAME='java-corretto.deb' \
            JAVA_VER_MAJOR=$(printf "${JAVA_VER}" | awk -F. '{print $1}') \
-           JAVA_VER_DEB=$(printf "${JAVA_VER}" | sed 's/\.1$/-1/') && \
+           JAVA_VER_DEB="${JAVA_VER}-1" && \
     case "$(uname -m)" in \
         x86_64)  export JAVA_ARCH='amd64' JAVA_HASH="$JAVA_HASH_AMD64" ;; \
         aarch64) export JAVA_ARCH='arm64' JAVA_HASH="$JAVA_HASH_ARM64" ;; \
@@ -83,35 +96,38 @@ RUN mkdir /nix /out && chown ${USER_NAME}:${USER_NAME} /nix /out
 USER ${USER_NAME}
 WORKDIR /home/${USER_NAME}
 
-# Specify bootstrap Haskell versions
-ENV BOOTSTRAP_HASKELL_GHC_VERSION=${GHC}
-ENV BOOTSTRAP_HASKELL_CABAL_VERSION=${CABAL}
-
-# Do not install Stack
-ENV BOOTSTRAP_HASKELL_INSTALL_NO_STACK=true
-ENV BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=true
-
-# Install ghcup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh
-
 # Setup basic env variables (required)
 ENV HOME="/home/${USER_NAME}" USER="${USER_NAME}"
 # Adjust PATH
 ENV PATH="$HOME/.cabal/bin:$HOME/.ghcup/bin:$PATH"
 
-# Set both as default
-RUN ghcup set ghc "${GHC}" && \
-    ghcup set cabal "${CABAL}"
+# Install ghcup, GHC and cabal
+RUN case "$(uname -m)" in \
+        x86_64)  export GHCUP_HASH="$GHCUP_HASH_AMD64" ;; \
+        aarch64) export GHCUP_HASH="$GHCUP_HASH_ARM64" ;; \
+        *) echo "unknown arch $(uname -m)" && exit 1 ;; \
+    esac && \
+    mkdir -p "$HOME/.ghcup/bin" && \
+    curl --proto '=https' --tlsv1.2 -sSf \
+         "https://downloads.haskell.org/~ghcup/${GHCUP_VER}/$(uname -m)-linux-ghcup-${GHCUP_VER}" \
+         -o "$HOME/.ghcup/bin/ghcup" && \
+    echo "${GHCUP_HASH}  $HOME/.ghcup/bin/ghcup" | sha256sum -c - && \
+    chmod +x "$HOME/.ghcup/bin/ghcup" && \
+    ghcup config set url-source "${GHCUP_METADATA}" && \
+    ghcup install ghc "${GHC}" --set && \
+    ghcup install cabal "${CABAL}" --set
 
 #=====================
 # Install Android SDK
 #=====================
 ARG SDK_VERSION=13114758
+ARG SDK_HASH=7ec965280a073311c339e571cd5de778b9975026cfcbe79f2b1cdcb1e15317ee
 
 ENV SDK_VERSION="$SDK_VERSION" \
     ANDROID_HOME="$HOME"
 
 RUN curl -L -o tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-${SDK_VERSION}_latest.zip" && \
+    echo "${SDK_HASH}  tools.zip" | sha256sum -c - && \
     unzip tools.zip && rm tools.zip && \
     mv cmdline-tools tools && mkdir "$ANDROID_HOME/cmdline-tools" && mv tools "$ANDROID_HOME/cmdline-tools/" && \
     ln -s "$ANDROID_HOME/cmdline-tools/tools" "$ANDROID_HOME/cmdline-tools/latest"
@@ -128,7 +144,13 @@ ENV PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools"
 
 # Android reproducibility scripts
 RUN python3 -m venv "$HOME/.venv"
-RUN "$HOME/.venv/bin/pip" install apksigcopier repro-apk
+RUN printf '%s\n' \
+        'apksigcopier==1.1.1 --hash=sha256:0834bb7d6f3607bb0994cf8cd2e26b8f0c9d481e13b75872e0fa9cec052e519b' \
+        'repro-apk==0.3.0 --hash=sha256:09091a5e6d725d73ad418aa98ec72d0737452d3ce3803b56dd5c270b887fceb9' \
+        'click==8.5.0 --hash=sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360' \
+        > /tmp/requirements.txt && \
+    "$HOME/.venv/bin/pip" install --require-hashes --only-binary=:all: -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
 
 ENV PATH="$HOME/.venv/bin:$PATH"
 

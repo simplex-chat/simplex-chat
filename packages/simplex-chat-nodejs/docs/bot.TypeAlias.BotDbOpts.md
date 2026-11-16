@@ -8,7 +8,7 @@
 
 > **BotDbOpts** = [`DbConfig`](api.TypeAlias.DbConfig.md) & `object`
 
-Defined in: [src/bot.ts:7](../src/bot.ts#L7)
+Defined in: [src/bot.ts:7](../bot.ts#L7)
 
 ## Type Declaration
 

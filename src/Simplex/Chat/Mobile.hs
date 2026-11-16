@@ -41,7 +41,7 @@ import Simplex.Chat
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
-import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList, parseUri, sanitizeUri)
+import Simplex.Chat.Markdown (parseUri, parsedMarkdown, sanitizeUri)
 import Simplex.Chat.Mobile.Badges
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
@@ -163,6 +163,18 @@ foreign export ccall "chat_read_file" cChatReadFile :: CString -> CString -> CSt
 foreign export ccall "chat_encrypt_file" cChatEncryptFile :: StablePtr ChatController -> CString -> CString -> IO CJSONString
 
 foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
+
+foreign export ccall "chat_resize_image_uri" cChatResizeImageUri :: Ptr Word8 -> CInt -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image" cChatResizeImage :: Ptr Word8 -> CInt -> CInt -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image_file_uri" cChatResizeImageFileUri :: CString -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image_file" cChatResizeImageFile :: CString -> CInt -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image_fd_uri" cChatResizeImageFdUri :: CInt -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image_fd" cChatResizeImageFd :: CInt -> CInt -> CInt -> IO CString
 
 -- | check / migrate database and initialize chat controller on success
 -- For postgres first param is schema prefix, second param is database connection string.
@@ -393,7 +405,7 @@ chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString
 chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)
 
 chatParseMarkdown :: ByteString -> JSONByteString
-chatParseMarkdown = J.encode . ParsedMarkdown . parseMaybeMarkdownList . safeDecodeUtf8
+chatParseMarkdown = J.encode . parsedMarkdown . safeDecodeUtf8
 {-# INLINE chatParseMarkdown #-}
 
 chatParseServer :: ByteString -> JSONByteString

@@ -8,7 +8,7 @@
 
 > **contactAddressStr**(`link`): `string`
 
-Defined in: [src/util.ts:44](../src/util.ts#L44)
+Defined in: [src/util.ts:44](../util.ts#L44)
 
 ## Parameters
 

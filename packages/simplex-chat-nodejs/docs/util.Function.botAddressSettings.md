@@ -8,7 +8,7 @@
 
 > **botAddressSettings**(`__namedParameters`): [`BotAddressSettings`](api.Interface.BotAddressSettings.md)
 
-Defined in: [src/util.ts:48](../src/util.ts#L48)
+Defined in: [src/util.ts:48](../util.ts#L48)
 
 ## Parameters
 

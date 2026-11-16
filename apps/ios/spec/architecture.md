@@ -58,15 +58,15 @@ The app follows a strict layered model where each layer communicates only with i
 | State | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L337) | `ChatModel`, `ItemsModel`, `Chat` classes | L337, L74, L1271 |
 | API | [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L93) | FFI bridge functions | L93 |
 | API | [`Shared/Model/AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L15) | `ChatCommand`, `ChatResponse`, `ChatEvent` enums | L15, L649, L1055 |
-| FFI | [`SimpleXChat/SimpleX.h`](../SimpleXChat/SimpleX.h#L1-L49) | C header declaring Haskell exports | |
+| FFI | [`SimpleXChat/SimpleX.h`](../SimpleXChat/SimpleX.h#L1-L63) | C header declaring Haskell exports | |
 | FFI | [`SimpleXChat/APITypes.swift`](../SimpleXChat/APITypes.swift#L27) | `APIResult<R>`, `ChatError`, `ChatCmdProtocol` | L27, L699, L17 |
 | Core | `../../src/Simplex/Chat/Controller.hs` | Haskell command processor — see `processCommand` in `Controller.hs` | |
 
 ---
 
-## [2. FFI Bridge](../SimpleXChat/SimpleX.h#L1-L49)
+## [2. FFI Bridge](../SimpleXChat/SimpleX.h#L1-L63)
 
-### [C Functions (SimpleX.h)](../SimpleXChat/SimpleX.h#L1-L49)
+### [C Functions (SimpleX.h)](../SimpleXChat/SimpleX.h#L1-L63)
 
 The Haskell core exposes these C functions, declared in `SimpleXChat/SimpleX.h`:
 
@@ -97,6 +97,12 @@ char *chat_write_file(chat_ctrl ctl, char *path, char *data, int len);
 char *chat_read_file(char *path, char *key, char *nonce);
 char *chat_encrypt_file(chat_ctrl ctl, char *fromPath, char *toPath);
 char *chat_decrypt_file(char *fromPath, char *key, char *nonce, char *toPath);
+
+// Image resizing
+char *chat_resize_image(char *data, int len, int maxSize, int png);
+char *chat_resize_image_uri(char *data, int len, int maxSize);
+char *chat_resize_image_file(char *path, int maxSize, int png);
+char *chat_resize_image_file_uri(char *path, int maxSize);
 ```
 
 ### [Swift Bridge Functions (SimpleXAPI.swift)](../Shared/Model/SimpleXAPI.swift#L93-L221)
@@ -327,7 +333,7 @@ Chat relays are SMP servers that forward messages to channel subscribers. They a
 | App state | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L337) | L337 |
 | API types | [`Shared/Model/AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L15) | L15 |
 | Shared types | [`SimpleXChat/APITypes.swift`](../SimpleXChat/APITypes.swift#L27) | L27 |
-| C header | [`SimpleXChat/SimpleX.h`](../SimpleXChat/SimpleX.h#L1-L49) | |
+| C header | [`SimpleXChat/SimpleX.h`](../SimpleXChat/SimpleX.h#L1-L63) | |
 | NSE | [`SimpleX NSE/NotificationService.swift`](../SimpleX%20NSE/NotificationService.swift#L1-L1228) | |
 | Haskell core | `../../src/Simplex/Chat/Controller.hs` — see `processCommand` in `Controller.hs` | |
 | Chat protocol (x-events, message envelopes) | `../../src/Simplex/Chat/Protocol.hs` | |

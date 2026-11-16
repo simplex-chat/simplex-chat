@@ -15,7 +15,7 @@ permalink: /privacy/index.html
 - [undelivered messages and files](#storage-of-messages-and-files-on-the-servers) stored on the servers.
 - [how users connect](#connections-with-other-users) without any user profile identifiers.
 - [iOS push notifications](#ios-push-notifications) privacy limitations.
-- [user support](#user-support), [SimpleX directory](#simplex-directory) and [any other data](#another-information-stored-on-the-servers) that may be stored on the servers.
+- [user support](#user-support), [SimpleX directory](#simplex-directory), [supporter badges](#supporter-badges) and [any other data](#another-information-stored-on-the-servers) that may be stored on the servers.
 - [preset server operators](#preset-server-operators) and the [information they may share](#information-preset-server-operators-may-share).
 - [source code license](#source-code-license) and [updates to this document](#updates).
 
@@ -87,7 +87,7 @@ The messages are irreversibly removed from the preset relay servers as soon as t
 
 Other relay servers may use message logs that would result in longer storage of delivered messages, until the log file is rotated, which normally should happen within one month if servers use the same code as preset servers.
 
-The files are stored on file relay servers for the time configured in the relay servers you use (48 hours for preset file servers).
+The files are stored on file relay servers for the time configured in the relay servers you use (48 hours for preset file servers, and 7 or 21 days for files sent with a supporter or legend badge, respectively).
 
 #### Connections with other users
 
@@ -149,6 +149,14 @@ Public addresses contain profile name, picture and other profile details. This d
 
 The app includes support contact operated by SimpleX Chat Ltd. If you contact support, any personal data you share is kept only for the purposes of researching the issue and contacting you about your case. We recommend contacting support [via chat](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw) when it is possible, and avoid sharing any personal information.
 
+#### Supporter badges
+
+A badge is a credential from the SimpleX Chat Ltd store service, kept on your device and presented as zero-knowledge proofs in chats, except incognito ones, and to your file servers. Only the badge type, the expiry date, rounded to a week, and the number of the signing key are disclosed. The store service's public keys are preset in the app; the service signs all badges of all users with one key and may periodically switch to the next one, so no user can be identified by the key. Nothing else in a proof can be linked to other proofs or to the purchase.
+
+The store service has no user accounts: purchases are identified by random keys or codes from your device. The app sends requests end-to-end encrypted and without your profile. The store service never receives your IP address with these requests, and with private routing (the default), its servers do not see it either. Stripe (card), App Store and Google Play process payments; cryptocurrency payments are accepted directly to SimpleX Chat Ltd's addresses.
+
+For tax purposes, the store service keeps for 6 years each order's keys, badge type, months, dates, credentials and payment: amount, currency, reference, code hash, cryptocurrency address or store transaction.
+
 ### Preset Server Operators
 
 Preset server operators will not share the information or any metadata on their servers with each other, other than aggregate usage statistics.
@@ -204,7 +212,7 @@ Client applications must not include any code that could compromise the security
 
 **Accessing the infrastructure**. For the efficiency of the network access, the client Software by default accesses all queues your app creates on any relay server within one user profile via the same network (TCP/IP) connection. At the cost of additional traffic this configuration can be changed to use different transport session for each connection. Relay servers do not collect information about which queues were created or accessed via the same connection, so the relay servers cannot establish which queues belong to the same user profile. Whoever might observe your network traffic would know which relay servers you use, and how much data you send, but not to whom it is sent - the data that leaves the servers is always different from the data they receive - there are no identifiers or ciphertext in common, even inside TLS encryption layer. Please refer to the [technical design document](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information about the privacy model and known security and privacy risks.
 
-**Privacy of user data**. Servers do not retain any data you transmit for any longer than necessary to deliver the messages between apps. Preset server operators collect aggregate statistics across all their servers, as supported by published code and can be enabled by any infrastructure operator, but not any statistics per-user, or per geographic location, or per IP address, or per transport session. SimpleX Chat Ltd does not have information about how many people use SimpleX Chat applications, it only knows an approximate number of app installations and the aggregate traffic through the preset servers. In any case, preset server operators do not and will not sell or in any way monetize user data. The future business model assumes charging for some optional Software features instead, in a transparent and fair way.
+**Privacy of user data**. Servers do not retain any data you transmit for any longer than necessary to deliver the messages between apps. Preset server operators collect aggregate statistics across all their servers, as supported by published code and can be enabled by any infrastructure operator, but not any statistics per-user, or per geographic location, or per IP address, or per transport session. SimpleX Chat Ltd does not have information about how many people use SimpleX Chat applications, it only knows an approximate number of app installations, the aggregate traffic through the preset servers and the number of issued supporter badges. In any case, preset server operators do not and will not sell or in any way monetize user data. The business model assumes charging for some optional Software features instead, such as supporter badges, in a transparent and fair way.
 
 **Operating Infrastructure**. For the purpose of using SimpleX Chat Software, if you continue using preset servers, you agree that your end-to-end encrypted messages are transferred via the preset servers in any countries where preset server operators have or use facilities and service providers or partners. The information about geographic location and hosting providers of the preset messaging servers is available on server pages.
 
@@ -257,4 +265,4 @@ Client applications must not include any code that could compromise the security
 
 **Ending these conditions**. You may end these Conditions with SimpleX Chat Ltd and preset server operators at any time by deleting the Applications from your devices and discontinuing use of the Infrastructure of SimpleX Chat Ltd and preset server operators. The provisions related to Licenses, Disclaimers, Limitation of Liability, Resolving dispute, Availability, Changes to the conditions, Enforcing the conditions, and Ending these conditions will survive termination of your relationship with SimpleX Chat Ltd and/or preset server operators.
 
-Updated April 18, 2026
+Updated November 1, 2026

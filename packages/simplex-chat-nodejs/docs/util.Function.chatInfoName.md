@@ -8,7 +8,7 @@
 
 > **chatInfoName**(`cInfo`): `string`
 
-Defined in: [src/util.ts:18](../src/util.ts#L18)
+Defined in: [src/util.ts:18](../util.ts#L18)
 
 ## Parameters
 

@@ -46,20 +46,25 @@ import kotlin.math.sin
 private const val CARD_HEIGHT_RATIO = 0.75f
 private const val GRADIENT_ANGLE_RAD = 80.0 * Math.PI / 180.0
 
-// the onboarding cards replace the whole chat list, and the support-ended banner lives in the
-// list - a lapsed supporter is not a newcomer, and must be told even with no conversations yet
+// the onboarding cards replace the whole chat list, and the badge alert banner lives in the
+// list - a supporter is not a newcomer, and must be told even with no conversations yet
 @Composable
 fun shouldShowOnboarding(): Boolean {
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val chats = chatModel.chats.value
-  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats) && !supportEnded() && !badgeIssueFailed()
+  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats) && bannerBadgeAlert() == null
 }
 
-fun supportEnded(): Boolean =
-  BadgeModel.alert.value?.kind == BadgeAlertKind.SupportEnded && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
-
-fun badgeIssueFailed(): Boolean =
-  BadgeModel.alert.value?.kind == BadgeAlertKind.IssueFailed && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
+// the current profile's badge alert, if it is a kind the chat list has a banner for
+fun bannerBadgeAlert(): BadgeAlert? {
+  val alert = BadgeModel.alert.value
+  if (alert == null || !BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)) return null
+  return when (alert.kind) {
+    is BadgeAlertKind.SupportEnded, is BadgeAlertKind.IssueFailed, is BadgeAlertKind.SubscriptionEnded,
+    is BadgeAlertKind.PaymentIssue, is BadgeAlertKind.SubscriptionCancelled, is BadgeAlertKind.RenewalApproaching -> alert
+    is BadgeAlertKind.PrepaidEnding, is BadgeAlertKind.Unknown -> null
+  }
+}
 
 // false until the badge state loads: if the pitch rendered before that, it would lock the slot, and a supporter's badge
 // arriving a moment later would hide it, leaving the slot empty for the session

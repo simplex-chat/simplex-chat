@@ -22,9 +22,7 @@ func showMarkdownFile(_ file: CIFile) {
             let data = try getFileData(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs)
             let text = decodedText(data)
             let lines = text.components(separatedBy: "\n")
-            let html = withinMarkdownLimits(lines)
-                ? MarkdownParser(modifiers: [Modifier(target: .html) { escapedHTML($0.markdown) }, imagesWithinBudget()]).html(from: text)
-                : nil
+            let html = withinMarkdownLimits(lines) ? htmlShowingTagsAsText(text) : nil
             let shownLines = lines.flatMap(chunkedLine)
             let hasBidiControls = text.unicodeScalars.contains(where: isBidiControl)
             await MainActor.run {
@@ -55,6 +53,15 @@ private func decodedText(_ data: Data) -> String {
 
 private func replacingControlChar(_ s: Unicode.Scalar) -> Unicode.Scalar {
     s.value < 0x20 && s != "\t" && s != "\n" && s != "\r" ? "?" : s
+}
+
+// decodedText replaces control characters, so the text has no U+0001 of its own
+private let lessThanStandIn = "\u{1}"
+
+private func htmlShowingTagsAsText(_ text: String) -> String {
+    MarkdownParser(modifiers: [imagesWithinBudget()])
+        .html(from: text.replacingOccurrences(of: "<", with: lessThanStandIn, options: .literal))
+        .replacingOccurrences(of: lessThanStandIn, with: "&lt;", options: .literal)
 }
 
 private func withinMarkdownLimits(_ lines: [String]) -> Bool {
@@ -112,6 +119,7 @@ private func imagesWithinBudget() -> Modifier {
         guard parts.count == 2,
               parts[0].hasSuffix(";base64"),
               let data = Data(base64Encoded: String(parts[1])),
+              ImageFileType.jpeg.matches(data) || ImageFileType.png.matches(data),
               let size = UIImage(data: data)?.size,
               size.width <= MAX_MARKDOWN_IMAGE_DIMENSION,
               size.height <= MAX_MARKDOWN_IMAGE_DIMENSION,

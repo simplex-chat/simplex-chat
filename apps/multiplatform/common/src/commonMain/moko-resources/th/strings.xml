@@ -14,11 +14,11 @@
     <string name="chat_item_ttl_day">1 วัน</string>
     <string name="chat_item_ttl_month">1 เดือน</string>
     <string name="accept">รับ</string>
-    <string name="accept_connection_request__question">รับการขอเชื่อมต่อหรือไม่\?</string>
+    <string name="accept_connection_request__question">รับการขอเชื่อมต่อหรือไม่?</string>
     <string name="one_time_link_short">ลิงก์สำหรับใช้ 1 ครั้ง</string>
     <string name="send_disappearing_message_5_minutes">5 นาที</string>
     <string name="about_simplex">เกี่ยวกับ SimpleX</string>
-    <string name="network_enable_socks_info">เข้าถึงเซิร์ฟเวอร์ผ่านพร็อกซี SOCKS บนพอร์ต %d หรือไม่\? ต้องเริ่มพร็อกซีก่อนที่จะเปิดใช้งานตัวเลือกนี้</string>
+    <string name="network_enable_socks_info">เข้าถึงเซิร์ฟเวอร์ผ่านพร็อกซี SOCKS บนพอร์ต %d หรือไม่? ต้องเริ่มพร็อกซีก่อนที่จะเปิดใช้งานตัวเลือกนี้</string>
     <string name="add_address_to_your_profile">เพิ่มที่อยู่ลงในโปรไฟล์ของคุณ เพื่อให้ผู้ติดต่อของคุณสามารถแชร์กับผู้อื่นได้ การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ</string>
     <string name="color_primary_variant">เน้นสีเพิ่มเติม</string>
     <string name="settings_section_title_icon">ไอคอนแอป</string>
@@ -87,7 +87,7 @@
     <string name="allow_irreversible_message_deletion_only_if">อนุญาตให้ลบข้อความแบบถาวรเฉพาะในกรณีที่ผู้ติดต่อของคุณอนุญาตให้คุณเท่านั้น</string>
     <string name="allow_message_reactions_only_if">อนุญาตการแสดงปฏิกิริยาต่อข้อความเฉพาะเมื่อผู้ติดต่อของคุณอนุญาตเท่านั้น</string>
     <string name="allow_to_send_voice">อนุญาตให้ส่งข้อความเสียง</string>
-    <string name="allow_voice_messages_question">อนุญาตข้อความเสียงหรือไม่\?</string>
+    <string name="allow_voice_messages_question">อนุญาตข้อความเสียงหรือไม่?</string>
     <string name="allow_voice_messages_only_if">อนุญาตข้อความเสียงเฉพาะเมื่อผู้ติดต่อของคุณอนุญาตเท่านั้น</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">ผู้ติดต่อทั้งหมดของคุณจะยังคงเชื่อมต่ออยู่. การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ.</string>
     <string name="chat_preferences_always">เสมอ</string>
@@ -141,7 +141,7 @@
     <string name="feature_cancelled_item">ยกเลิกเรียบร้อยแล้ว %s</string>
     <string name="alert_title_cant_invite_contacts">ไม่สามารถเชิญผู้ติดต่อได้!</string>
     <string name="change_verb">เปลี่ยน</string>
-    <string name="change_database_passphrase_question">เปลี่ยนรหัสผ่านฐานข้อมูล\?</string>
+    <string name="change_database_passphrase_question">เปลี่ยนรหัสผ่านฐานข้อมูล?</string>
     <string name="rcv_group_event_changed_your_role">เปลี่ยนบทบาทของคุณเป็น %s เรียบร้อยแล้ว</string>
     <string name="change_lock_mode">เปลี่ยนโหมดล็อค</string>
     <string name="chat_database_deleted">ลบฐานข้อมูลแชทแล้ว</string>
@@ -155,15 +155,15 @@
     <string name="connection_request_sent">ส่งคําขอเชื่อมต่อแล้ว!</string>
     <string name="connection_error">การเชื่อมต่อผิดพลาด</string>
     <string name="connection_timeout">หมดเวลาการเชื่อมต่อ</string>
-    <string name="connect_via_group_link">เชื่อมต่อผ่านลิงค์กลุ่ม\?</string>
+    <string name="connect_via_group_link">เชื่อมต่อผ่านลิงค์กลุ่ม?</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">ผู้ติดต่อและข้อความทั้งหมดจะถูกลบ - ไม่สามารถยกเลิกได้!</string>
     <string name="maximum_supported_file_size">ขนาดไฟล์สูงสุดที่รองรับในปัจจุบันคือ %1$s</string>
     <string name="v5_1_custom_themes">ธีมที่กำหนดเอง</string>
     <string name="developer_options">ID ฐานข้อมูลและตัวเลือกการแยกการส่งผ่าน</string>
     <string name="info_row_database_id">ID ฐานข้อมูล</string>
     <string name="server_connecting">กำลังเชื่อมต่อ</string>
-    <string name="connect_via_contact_link">เชื่อมต่อผ่านลิงค์ติดต่อ\?</string>
-    <string name="connect_via_invitation_link">เชื่อมต่อผ่านลิงค์เชิญ\?</string>
+    <string name="connect_via_contact_link">เชื่อมต่อผ่านลิงค์ติดต่อ?</string>
+    <string name="connect_via_invitation_link">เชื่อมต่อผ่านลิงค์เชิญ?</string>
     <string name="display_name_connecting">กำลังเชื่อมต่อ…</string>
     <string name="display_name_connection_established">สร้างการเชื่อมต่อแล้ว</string>
     <string name="connection_local_display_name">การเชื่อมต่อ %1$d</string>
@@ -189,7 +189,7 @@
     <string name="copied">คัดลอกไปที่คลิปบอร์ดแล้ว</string>
     <string name="create_group">สร้างกลุ่มลับ</string>
     <string name="clear_verb">ล้าง</string>
-    <string name="clear_chat_question">ล้างแชท\?</string>
+    <string name="clear_chat_question">ล้างแชท?</string>
     <string name="clear_chat_menu_action">ลบ</string>
     <string name="alert_title_contact_connection_pending">ผู้ติดต่อยังไม่ได้เชื่อมต่อ!</string>
     <string name="icon_descr_close_button">ปุ่มปิด</string>
@@ -266,7 +266,7 @@
     <string name="set_password_to_export_desc">ฐานข้อมูลถูก encrypt โดยใช้รหัสผ่านแบบสุ่ม โปรดเปลี่ยนก่อนส่งออก</string>
     <string name="decryption_error">ข้อผิดพลาดในการ decrypt</string>
     <string name="rcv_group_event_group_deleted">กลุ่มที่ถูกลบ</string>
-    <string name="delete_group_question">ลบกลุ่ม\?</string>
+    <string name="delete_group_question">ลบกลุ่ม?</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">การตรวจสอบอุปกรณ์ไม่ได้ถูกเปิดใช้งาน คุณสามารถเปิด SimpleX Lock ผ่านการตั้งค่าได้ เมื่อคุณเปิดใช้งานการตรวจสอบอุปกรณ์แล้ว</string>
     <string name="enter_welcome_message_optional">ใส่ข้อความต้อนรับ… (ไม่บังคับ)</string>
     <string name="server_error">ข้อผิดพลาด</string>
@@ -310,8 +310,8 @@
     <string name="hide_verb">ซ่อน</string>
     <string name="delete_verb">ลบ</string>
     <string name="edit_history">ประวัติ</string>
-    <string name="delete_message__question">ลบข้อความ\?</string>
-    <string name="delete_member_message__question">ลบข้อความสมาชิก\?</string>
+    <string name="delete_message__question">ลบข้อความ?</string>
+    <string name="delete_member_message__question">ลบข้อความสมาชิก?</string>
     <string name="for_everybody">สําหรับทุกคน</string>
     <string name="for_me_only">ลบให้ฉัน</string>
     <string name="revoke_file__message">ไฟล์จะถูกลบออกจากเซิร์ฟเวอร์</string>
@@ -322,7 +322,7 @@
     <string name="file_saved">บันทึกไฟล์แล้ว</string>
     <string name="file_will_be_received_when_contact_completes_uploading">จะได้รับไฟล์เมื่อผู้ติดต่อของคุณอัปโหลดเสร็จ</string>
     <string name="button_delete_contact">ลบผู้ติดต่อ</string>
-    <string name="delete_contact_question">ลบผู้ติดต่อ\?</string>
+    <string name="delete_contact_question">ลบผู้ติดต่อ?</string>
     <string name="error_saving_file">เกิดข้อผิดพลาดในการบันทึกไฟล์</string>
     <string name="icon_descr_server_status_disconnected">ตัดการเชื่อมต่อแล้ว</string>
     <string name="icon_descr_server_status_error">ข้อผิดพลาด</string>
@@ -333,7 +333,7 @@
     <string name="clear_chat_button">ล้างแชท</string>
     <string name="delete_contact_menu_action">ลบ</string>
     <string name="delete_group_menu_action">ลบ</string>
-    <string name="delete_pending_connection__question">ลบการเชื่อมต่อที่รอดำเนินการหรือไม่\?</string>
+    <string name="delete_pending_connection__question">ลบการเชื่อมต่อที่รอดำเนินการหรือไม่?</string>
     <string name="icon_descr_help">ความช่วยเหลือ</string>
     <string name="icon_descr_email">อีเมล</string>
     <string name="database_passphrase_and_export">รหัสผ่านฐานข้อมูล &amp; ส่งออก</string>
@@ -346,9 +346,8 @@
     <string name="error_saving_ICE_servers">เกิดข้อผิดพลาดในการบันทึกเซิร์ฟเวอร์ ICE</string>
     <string name="host_verb">โฮสต์</string>
     <string name="hide_dev_options">ซ่อน:</string>
-    <string name="delete_address__question">ลบที่อยู่\?</string>
-    <string name="email_invite_body">สวัสดี!
-\nเชื่อมต่อกับฉันผ่าน SimpleX Chat: %s</string>
+    <string name="delete_address__question">ลบที่อยู่?</string>
+    <string name="email_invite_body">สวัสดี! \nเชื่อมต่อกับฉันผ่าน SimpleX Chat: %s</string>
     <string name="delete_address">ลบที่อยู่</string>
     <string name="full_name__field">ชื่อเต็ม:</string>
     <string name="display_name__field">ชื่อที่แสดง:</string>
@@ -387,22 +386,22 @@
     <string name="error_deleting_database">เกิดข้อผิดพลาดในการลบฐานข้อมูลแชท</string>
     <string name="error_exporting_chat_database">เกิดข้อผิดพลาดในการส่งออกฐานข้อมูลแชท</string>
     <string name="error_importing_database">เกิดข้อผิดพลาดในการนำเข้าฐานข้อมูลแชท</string>
-    <string name="delete_chat_profile_question">ลบโปรไฟล์แชทไหม\?</string>
+    <string name="delete_chat_profile_question">ลบโปรไฟล์แชทไหม?</string>
     <string name="files_and_media_section">ไฟล์และสื่อ</string>
     <string name="delete_files_and_media_all">ลบไฟล์ทั้งหมด</string>
-    <string name="delete_files_and_media_question">ลบไฟล์และสื่อ\?</string>
+    <string name="delete_files_and_media_question">ลบไฟล์และสื่อ?</string>
     <string name="delete_files_and_media_for_all_users">ลบไฟล์สําหรับโปรไฟล์แชททั้งหมด</string>
     <string name="total_files_count_and_size">%d ไฟล์ที่มีขนาดรวมเป็น %s</string>
     <string name="delete_messages_after">ลบข้อความหลังจาก</string>
     <string name="delete_messages">ลบข้อความ</string>
-    <string name="enable_automatic_deletion_question">เปิดใช้งานการลบข้อความอัตโนมัติ\?</string>
+    <string name="enable_automatic_deletion_question">เปิดใช้งานการลบข้อความอัตโนมัติ?</string>
     <string name="error_changing_message_deletion">เกิดข้อผิดพลาดในการเปลี่ยนการตั้งค่า</string>
     <string name="encrypt_database">Encrypt</string>
     <string name="error_encrypting_database">เกิดข้อผิดพลาดในการ encrypt ฐานข้อมูล</string>
     <string name="encrypted_with_random_passphrase">ฐานข้อมูลถูก encrypt โดยใช้รหัสผ่านแบบสุ่ม คุณสามารถเปลี่ยนได้</string>
     <string name="database_will_be_encrypted_and_passphrase_stored">ฐานข้อมูลจะถูก encrypt และรหัสผ่านจะถูกจัดเก็บไว้ใน Keystore</string>
     <string name="database_will_be_encrypted">ฐานข้อมูลจะถูก encrypt</string>
-    <string name="encrypt_database_question">Encrypt ฐานข้อมูล\?</string>
+    <string name="encrypt_database_question">Encrypt ฐานข้อมูล?</string>
     <string name="encrypted_database">Encrypt ฐานข้อมูลเรียบร้อยแล้ว</string>
     <string name="file_with_path">ไฟล์: %s</string>
     <string name="passphrase_is_different">รหัสผ่านของฐานข้อมูลแตกต่างจากที่บันทึกไว้ใน Keystore</string>
@@ -424,7 +423,7 @@
     <string name="num_contacts_selected">%d เลือกผู้ติดต่อแล้ว</string>
     <string name="button_delete_group">ลบกลุ่ม</string>
     <string name="group_link">ลิงค์กลุ่ม</string>
-    <string name="delete_link_question">ลบลิงค์ ไหม\?</string>
+    <string name="delete_link_question">ลบลิงค์ ไหม?</string>
     <string name="button_edit_group_profile">แก้ไขโปรไฟล์กลุ่ม</string>
     <string name="delete_link">ลบลิงค์</string>
     <string name="error_creating_link_for_group">เกิดข้อผิดพลาดในการสร้างลิงก์กลุ่ม</string>
@@ -445,7 +444,7 @@
     <string name="error_saving_group_profile">เกิดข้อผิดพลาดในการบันทึกโปรไฟล์กลุ่ม</string>
     <string name="network_option_enable_tcp_keep_alive">เปิดใช้งาน TCP Keep-alive</string>
     <string name="user_hide">ซ่อน</string>
-    <string name="users_delete_question">ลบโปรไฟล์แชทไหม\?</string>
+    <string name="users_delete_question">ลบโปรไฟล์แชทไหม?</string>
     <string name="users_delete_profile_for">ลบโปรไฟล์แชทสําหรับ</string>
     <string name="enter_password_to_show">ใส่รหัสผ่านในการค้นหา</string>
     <string name="dont_show_again">ไม่ต้องแสดงอีก</string>
@@ -509,10 +508,7 @@
     <string name="incognito_info_protects">โหมดไม่ระบุตัวตนปกป้องความเป็นส่วนตัวของชื่อและรูปภาพโปรไฟล์หลักของคุณ — สำหรับผู้ติดต่อใหม่แต่ละราย จะมีการสร้างโปรไฟล์ใหม่แบบสุ่ม</string>
     <string name="conn_level_desc_indirect">ทางอ้อม (%1$s)</string>
     <string name="install_simplex_chat_for_terminal">ติดตั้ง SimpleX Chat สำหรับเทอร์มินัล</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">มันสามารถเกิดขึ้นได้เมื่อ:
-\n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเซิร์ฟเวอร์หลังจาก 30 วัน
-\n2. การถอดรหัสข้อความล้มเหลว เนื่องจากคุณหรือผู้ติดต่อของคุณใช้การสำรองฐานข้อมูลเก่า
-\n3. การเชื่อมต่อถูกบุกรุก</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">มันสามารถเกิดขึ้นได้เมื่อ: \n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเซิร์ฟเวอร์หลังจาก 30 วัน \n2. การถอดรหัสข้อความล้มเหลว เนื่องจากคุณหรือผู้ติดต่อของคุณใช้การสำรองฐานข้อมูลเก่า \n3. การเชื่อมต่อถูกบุกรุก</string>
     <string name="join_group_incognito_button">เข้าร่วมแบบไม่ระบุตัวตน</string>
     <string name="thousand_abbreviation">เค</string>
     <string name="invalid_message_format">รูปแบบข้อความไม่ถูกต้อง</string>
@@ -562,16 +558,16 @@
     <string name="settings_section_title_incognito">โหมดไม่ระบุตัวตน</string>
     <string name="import_database">นำเข้าฐานข้อมูล</string>
     <string name="import_database_confirmation">นำเข้า</string>
-    <string name="import_database_question">นำเข้าฐานข้อมูลแชท\?</string>
+    <string name="import_database_question">นำเข้าฐานข้อมูลแชท?</string>
     <string name="keychain_error">ข้อผิดพลาดของ Keychain</string>
     <string name="incompatible_database_version">เวอร์ชันฐานข้อมูลที่เข้ากันไม่ได้</string>
     <string name="invalid_migration_confirmation">การยืนยันการย้ายข้อมูลไม่ถูกต้อง</string>
     <string name="group_invitation_item_description">คำเชิญเข้าร่วมกลุ่ม %1$s</string>
     <string name="join_group_button">เข้าร่วม</string>
-    <string name="join_group_question">เข้าร่วมกลุ่ม\?</string>
+    <string name="join_group_question">เข้าร่วมกลุ่ม?</string>
     <string name="joining_group">กำลังจะเข้าร่วมกลุ่ม</string>
     <string name="leave_group_button">ออกจาก</string>
-    <string name="leave_group_question">ออกจากกลุ่ม\?</string>
+    <string name="leave_group_question">ออกจากกลุ่ม?</string>
     <string name="alert_title_group_invitation_expired">คำเชิญหมดอายุแล้ว!</string>
     <string name="icon_descr_add_members">เชิญสมาชิก</string>
     <string name="rcv_group_event_member_added">เชิญแล้ว %1$s</string>
@@ -711,9 +707,7 @@
     <string name="v4_5_message_draft">ร่างข้อความ</string>
     <string name="v4_5_reduced_battery_usage_descr">การปรับปรุงเพิ่มเติมกำลังจะมาเร็ว ๆ นี้!</string>
     <string name="v4_6_reduced_battery_usage_descr">การปรับปรุงเพิ่มเติมกำลังจะมาเร็ว ๆ นี้!</string>
-    <string name="v4_6_group_moderation_descr">ขณะนี้ผู้ดูแลระบบสามารถ:
-\n- ลบข้อความของสมาชิก
-\n- ปิดการใช้งานสมาชิก (บทบาท "ผู้สังเกตการณ์")</string>
+    <string name="v4_6_group_moderation_descr">ขณะนี้ผู้ดูแลระบบสามารถ: \n- ลบข้อความของสมาชิก \n- ปิดการใช้งานสมาชิก (บทบาท ผู้สังเกตการณ์)</string>
     <string name="v5_1_message_reactions">ปฏิกิริยาต่อข้อความ</string>
     <string name="custom_time_unit_minutes">นาที</string>
     <string name="custom_time_unit_months">เดือน</string>
@@ -777,7 +771,7 @@
     <string name="reveal_verb">เปิดเผย</string>
     <string name="stop_rcv_file__message">การรับไฟล์จะหยุดลง</string>
     <string name="revoke_file__confirm">ถอน</string>
-    <string name="revoke_file__title">ถอนไฟล์\?</string>
+    <string name="revoke_file__title">ถอนไฟล์?</string>
     <string name="revoke_file__action">ถอนไฟล์</string>
     <string name="icon_descr_record_voice_message">บันทึกข้อความเสียง</string>
     <string name="reset_verb">รีเซ็ต</string>
@@ -797,10 +791,10 @@
     <string name="restart_the_app_to_use_imported_chat_database">รีสตาร์ทแอปเพื่อใช้ฐานข้อมูลการแชทที่นำเข้า</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">รีสตาร์ทแอปเพื่อสร้างโปรไฟล์แชทใหม่</string>
     <string name="remove_passphrase">ลบ</string>
-    <string name="remove_passphrase_from_keychain">ลบรหัสผ่านออกจาก Keystore หรือไม่\?</string>
+    <string name="remove_passphrase_from_keychain">ลบรหัสผ่านออกจาก Keystore หรือไม่?</string>
     <string name="restore_database">คืนค่าการสำรองฐานข้อมูล</string>
     <string name="restore_database_alert_confirm">คืนค่า</string>
-    <string name="restore_database_alert_title">คืนค่าฐานข้อมูลสำรองไหม\?</string>
+    <string name="restore_database_alert_title">คืนค่าฐานข้อมูลสำรองไหม?</string>
     <string name="database_restore_error">กู้คืนข้อผิดพลาดของฐานข้อมูล</string>
     <string name="rcv_group_event_member_deleted">ลบแล้ว %1$s</string>
     <string name="rcv_group_event_user_deleted">ลบคุณออกแล้ว</string>
@@ -822,7 +816,7 @@
     <string name="shutdown_alert_desc">การแจ้งเตือนจะหยุดทํางานจนกว่าคุณจะปิดและเปิดแอปอีกครั้ง</string>
     <string name="settings_restart_app">รีสตาร์ท</string>
     <string name="save_passphrase_and_open_chat">บันทึกรหัสผ่านและเปิดแชท</string>
-    <string name="save_settings_question">บันทึกการตั้งค่า\?</string>
+    <string name="save_settings_question">บันทึกการตั้งค่า?</string>
     <string name="custom_time_unit_seconds">วินาที</string>
     <string name="self_destruct_passcode">รหัสผ่านแบบทําลายตัวเอง</string>
     <string name="secret_text">ความลับ</string>
@@ -830,8 +824,7 @@
     <string name="self_destruct_passcode_enabled">เปิดใช้งานรหัสผ่านแบบทําลายตัวเองแล้ว!</string>
     <string name="send_disappearing_message_send">ส่ง</string>
     <string name="send_live_message_desc">ส่งข้อความสด - มันจะอัปเดตสําหรับผู้รับในขณะที่คุณพิมพ์</string>
-    <string name="send_disappearing_message">ข้อความที่จะหายไปหลังเวลาที่กําหนด
-\n(disappearing message)</string>
+    <string name="send_disappearing_message">ข้อความที่จะหายไปหลังเวลาที่กําหนด \n(disappearing message)</string>
     <string name="sender_cancelled_file_transfer">ผู้ส่งยกเลิกการโอนไฟล์</string>
     <string name="info_row_sent_at">ส่งเมื่อ</string>
     <string name="share_message">แชร์ข้อความ…</string>
@@ -874,7 +867,7 @@
     <string name="smp_servers_save">บันทึกเซิร์ฟเวอร์</string>
     <string name="smp_servers_test_failed">การทดสอบเซิร์ฟเวอร์ล้มเหลว!</string>
     <string name="smp_servers_scan_qr">สแกนคิวอาร์โค้ดของเซิร์ฟเวอร์</string>
-    <string name="smp_save_servers_question">บันทึกเซิร์ฟเวอร์\?</string>
+    <string name="smp_save_servers_question">บันทึกเซิร์ฟเวอร์?</string>
     <string name="saved_ICE_servers_will_be_removed">เซิร์ฟเวอร์ WebRTC ICE ที่บันทึกไว้จะถูกลบออก</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[ตั้ง <i>ใช้โฮสต์ .onion</i> เป็น ไม่ หากพร็อกซี SOCKS ไม่รองรับ]]></string>
     <string name="show_dev_options">แสดง:</string>
@@ -882,7 +875,7 @@
     <string name="share_link">แชร์ลิงก์</string>
     <string name="share_address_with_contacts_question">แชร์ที่อยู่กับผู้ติดต่อ?</string>
     <string name="share_with_contacts">แชร์กับผู้ติดต่อ</string>
-    <string name="save_preferences_question">บันทึกการตั้งค่า\?</string>
+    <string name="save_preferences_question">บันทึกการตั้งค่า?</string>
     <string name="show_call_on_lock_screen">แสดง</string>
     <string name="send_link_previews">ส่งตัวอย่างลิงก์</string>
     <string name="self_destruct">ทําลายตัวเอง</string>
@@ -890,7 +883,7 @@
     <string name="select_contacts">เลือกผู้ติดต่อ</string>
     <string name="share_address">แชร์ที่อยู่</string>
     <string name="button_send_direct_message">ส่งข้อความโดยตรง</string>
-    <string name="save_welcome_message_question">บันทึกข้อความต้อนรับ\?</string>
+    <string name="save_welcome_message_question">บันทึกข้อความต้อนรับ?</string>
     <string name="conn_stats_section_title_servers">เซิร์ฟเวอร์</string>
     <string name="save_group_profile">บันทึกโปรไฟล์กลุ่ม</string>
     <string name="network_option_seconds_label">วินาที</string>
@@ -910,14 +903,14 @@
     <string name="callstate_starting">กำลังเริ่มต้น…</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">หยุดแชทเพื่อส่งออก นำเข้า หรือลบฐานข้อมูลแชท คุณจะไม่สามารถรับและส่งข้อความได้ในขณะที่การแชทหยุดลง</string>
     <string name="v4_6_audio_video_calls_descr">รองรับบลูทูธและการปรับปรุงอื่นๆ</string>
-    <string name="stop_sharing_address">หยุดแชร์ที่อยู่ไหม\?</string>
+    <string name="stop_sharing_address">หยุดแชร์ที่อยู่ไหม?</string>
     <string name="language_system">ระบบ</string>
     <string name="network_option_tcp_connection_timeout">หมดเวลาการเชื่อมต่อ TCP</string>
     <string name="v4_4_french_interface_descr">ขอบคุณผู้ใช้ – มีส่วนร่วมผ่าน Weblate!</string>
     <string name="v4_5_italian_interface_descr">ขอบคุณผู้ใช้ – มีส่วนร่วมผ่าน Weblate!</string>
     <string name="database_backup_can_be_restored">ความพยายามในการเปลี่ยนรหัสผ่านของฐานข้อมูลไม่เสร็จสมบูรณ์</string>
     <string name="alert_text_msg_bad_hash">แฮชของข้อความก่อนหน้านี้แตกต่างกัน</string>
-    <string name="shutdown_alert_question">ปิด\?</string>
+    <string name="shutdown_alert_question">ปิด?</string>
     <string name="stop_sharing">หยุดแชร์</string>
     <string name="settings_shutdown">ปิด</string>
     <string name="group_invitation_tap_to_join">แตะเพื่อเข้าร่วม</string>
@@ -941,10 +934,10 @@
     <string name="auth_stop_chat">หยุดแชท</string>
     <string name="lock_not_enabled">ไม่ได้เปิดใช้งาน SimpleX Lock!</string>
     <string name="stop_file__action">หยุดไฟล์</string>
-    <string name="stop_snd_file__title">หยุดส่งไฟล์ไหม\?</string>
+    <string name="stop_snd_file__title">หยุดส่งไฟล์ไหม?</string>
     <string name="stop_file__confirm">หยุด</string>
-    <string name="stop_rcv_file__title">หยุดรับไฟล์\?</string>
-    <string name="switch_receiving_address_question">เปลี่ยนที่อยู่ผู้รับ\?</string>
+    <string name="stop_rcv_file__title">หยุดรับไฟล์?</string>
+    <string name="switch_receiving_address_question">เปลี่ยนที่อยู่ผู้รับ?</string>
     <string name="add_contact_or_create_group">เริ่มแชทใหม่</string>
     <string name="thank_you_for_installing_simplex">ขอบคุณสำหรับการติดตั้ง SimpleX Chat!</string>
     <string name="chat_help_tap_button">แตะปุ่ม</string>
@@ -967,7 +960,7 @@
     <string name="la_mode_system">ระบบ</string>
     <string name="settings_section_title_support">สนับสนุน SimpleX Chat</string>
     <string name="stop_chat_confirmation">หยุด</string>
-    <string name="stop_chat_question">หยุดแชท\?</string>
+    <string name="stop_chat_question">หยุดแชท?</string>
     <string name="chat_item_ttl_seconds">%s วินาที</string>
     <string name="skip_inviting_button">ข้ามการเชิญสมาชิก</string>
     <string name="switch_receiving_address">เปลี่ยนที่อยู่ผู้รับ</string>
@@ -976,18 +969,16 @@
     <string name="theme_system">ระบบ</string>
     <string name="v4_6_chinese_spanish_interface_descr">ขอบคุณผู้ใช้ – มีส่วนร่วมผ่าน Weblate!</string>
     <string name="v5_0_polish_interface_descr">ขอบคุณผู้ใช้ – มีส่วนร่วมผ่าน Weblate!</string>
-    <string name="member_role_will_be_changed_with_notification">บทบาทจะถูกเปลี่ยนเป็น "%s" ทุกคนในกลุ่มจะได้รับแจ้ง</string>
+    <string name="member_role_will_be_changed_with_notification">บทบาทจะถูกเปลี่ยนเป็น %s ทุกคนในกลุ่มจะได้รับแจ้ง</string>
     <string name="delete_files_and_media_desc">การดำเนินการนี้ไม่สามารถยกเลิกได้ ไฟล์และสื่อที่ได้รับและส่งทั้งหมดจะถูกลบ รูปภาพความละเอียดต่ำจะยังคงอยู่</string>
     <string name="to_reveal_profile_enter_password">หากต้องการเปิดเผยโปรไฟล์ที่ซ่อนอยู่ของคุณ ให้ป้อนรหัสผ่านแบบเต็มในช่องค้นหาในหน้าโปรไฟล์แชทของคุณ</string>
     <string name="network_session_mode_transport_isolation">การแยกการขนส่ง</string>
     <string name="unhide_chat_profile">ยกเลิกการซ่อนโปรไฟล์การแชท</string>
     <string name="update_database">อัปเดต</string>
-    <string name="use_simplex_chat_servers__question">ใช้เซิร์ฟเวอร์ SimpleX Chat ไหม\?</string>
+    <string name="use_simplex_chat_servers__question">ใช้เซิร์ฟเวอร์ SimpleX Chat ไหม?</string>
     <string name="video_call_no_encryption">การสนทนาทางวิดีโอ (ไม่ได้ encrypt จากต้นจนจบ)</string>
     <string name="using_simplex_chat_servers">กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่</string>
-    <string name="v5_1_better_messages_descr">- ข้อความเสียงนานสุด 5 นาที
-\n- เวลาที่กำหนดเองที่จะหายไป
-\n- ประวัติการแก้ไข</string>
+    <string name="v5_1_better_messages_descr">- ข้อความเสียงนานสุด 5 นาที \n- เวลาที่กำหนดเองที่จะหายไป \n- ประวัติการแก้ไข</string>
     <string name="callstate_waiting_for_confirmation">รอการยืนยัน…</string>
     <string name="whats_new">มีอะไรใหม่</string>
     <string name="onboarding_notifications_mode_off">เมื่อแอพกำลังทำงาน</string>
@@ -1002,13 +993,13 @@
     <string name="your_current_profile">โปรไฟล์ปัจจุบันของคุณ</string>
     <string name="invite_prohibited_description">คุณกำลังพยายามเชิญผู้ติดต่อที่คุณแบ่งปันโปรไฟล์ที่ไม่ระบุตัวตนไปยังกลุ่มที่คุณใช้โปรไฟล์หลักของคุณ</string>
     <string name="your_privacy">ความเป็นส่วนตัวของคุณ</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น  เซิร์ฟเวอร์ SimpleX  ไม่สามารถดูโปรไฟล์ของคุณได้</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้</string>
     <string name="settings_section_title_you">คุณ</string>
     <string name="you_are_invited_to_group">คุณได้รับเชิญให้เข้าร่วมกลุ่ม</string>
     <string name="incognito_random_profile">โปรไฟล์แบบสุ่มของคุณ</string>
     <string name="theme">ธีม</string>
     <string name="error_connecting_to_server_to_receive_messages">กำลังพยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: %1$s)</string>
-    <string name="app_name">SimpleX</string>
+    <string name="app_name" translatable="false">SimpleX</string>
     <string name="connected_to_server_to_receive_messages_from_contact">คุณเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
     <string name="profile_will_be_sent_to_contact_sending_link">โปรไฟล์ของคุณจะถูกส่งไปยังผู้ติดต่อที่ส่งลิงก์นี้มาให้คุณ</string>
     <string name="trying_to_connect_to_server_to_receive_messages">พยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
@@ -1026,9 +1017,8 @@
     <string name="connection_error_auth_desc">เว้นแต่ผู้ติดต่อของคุณลบการเชื่อมต่อหรือลิงก์นี้ถูกใช้ไปแล้ว อาจเป็นข้อผิดพลาด โปรดรายงาน \nในการเชื่อมต่อ โปรดขอให้ผู้ติดต่อของคุณสร้างลิงก์การเชื่อมต่ออื่น และตรวจสอบว่าคุณมีการเชื่อมต่อเครือข่ายที่เสถียร</string>
     <string name="smp_server_test_upload_file">อัปโหลดไฟล์</string>
     <string name="enter_passphrase_notification_desc">หากต้องการรับการแจ้งเตือน โปรดป้อนรหัสผ่านของฐานข้อมูล</string>
-    <string name="simplex_service_notification_title">บริการ  SimpleX Chat </string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">เพื่อปกป้องข้อมูลของคุณ ให้เปิด SimpleX Lock
-\nคุณจะได้รับแจ้งให้ยืนยันตัวตนให้เสร็จสมบูรณ์ก่อนที่จะเปิดใช้งานคุณลักษณะนี้</string>
+    <string name="simplex_service_notification_title">บริการ SimpleX Chat</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">เพื่อปกป้องข้อมูลของคุณ ให้เปิด SimpleX Lock \nคุณจะได้รับแจ้งให้ยืนยันตัวตนให้เสร็จสมบูรณ์ก่อนที่จะเปิดใช้งานคุณลักษณะนี้</string>
     <string name="la_notice_turn_on">เปิด</string>
     <string name="la_could_not_be_verified">เราไม่สามารถยืนยันคุณได้ กรุณาลองอีกครั้ง</string>
     <string name="auth_unlock">ปลดล็อค</string>
@@ -1071,8 +1061,7 @@
     <string name="you_invited_a_contact">คุณได้เชิญผู้ติดต่อของคุณ</string>
     <string name="you_accepted_connection">คุณยอมรับการเชื่อมต่อแล้ว</string>
     <string name="contact_wants_to_connect_with_you">ต้องการเชื่อมต่อกับคุณ!</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">ผู้ติดต่อของคุณจะต้องออนไลน์เพื่อให้การเชื่อมต่อเสร็จสมบูรณ์
-\nคุณสามารถยกเลิกการเชื่อมต่อนี้และลบผู้ติดต่อออก (และลองใหม่ในภายหลังด้วยลิงก์ใหม่)</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">ผู้ติดต่อของคุณจะต้องออนไลน์เพื่อให้การเชื่อมต่อเสร็จสมบูรณ์ \nคุณสามารถยกเลิกการเชื่อมต่อนี้และลบผู้ติดต่อออก (และลองใหม่ในภายหลังด้วยลิงก์ใหม่)</string>
     <string name="icon_descr_address">ที่อยู่ SimpleX</string>
     <string name="image_descr_simplex_logo">โลโก้ SimpleX</string>
     <string name="icon_descr_simplex_team">SimpleX ทีม</string>
@@ -1089,8 +1078,8 @@
     <string name="smp_servers_use_server_for_new_conn">ใช้สำหรับการเชื่อมต่อใหม่</string>
     <string name="your_ICE_servers">เซิร์ฟเวอร์ ICE ของคุณ</string>
     <string name="network_socks_toggle_use_socks_proxy">ใช้พร็อกซี SOCKS</string>
-    <string name="network_disable_socks">ใช้การเชื่อมต่ออินเทอร์เน็ตโดยตรงหรือไม่\?</string>
-    <string name="network_enable_socks">ใช้พร็อกซี SOCKS หรือไม่\?</string>
+    <string name="network_disable_socks">ใช้การเชื่อมต่ออินเทอร์เน็ตโดยตรงหรือไม่?</string>
+    <string name="network_enable_socks">ใช้พร็อกซี SOCKS หรือไม่?</string>
     <string name="network_use_onion_hosts">ใช้โฮสต์ .onion</string>
     <string name="network_use_onion_hosts_prefer">เมื่อพร้อมใช้งาน</string>
     <string name="theme_colors_section_title">สีของธีม</string>
@@ -1106,13 +1095,11 @@
     <string name="icon_descr_video_off">ปิดวิดีโอ</string>
     <string name="icon_descr_video_on">เปิดวิดีโอ</string>
     <string name="integrity_msg_skipped">%1$d ข้อความที่ถูกข้าม</string>
-    <string name="alert_text_msg_bad_id">ID ของข้อความถัดไปไม่ถูกต้อง (น้อยกว่าหรือเท่ากับข้อความก่อนหน้า)
-\nอาจเกิดขึ้นได้เนื่องจากข้อบกพร่องบางอย่างหรือเมื่อการเชื่อมต่อถูกบุกรุก</string>
+    <string name="alert_text_msg_bad_id">ID ของข้อความถัดไปไม่ถูกต้อง (น้อยกว่าหรือเท่ากับข้อความก่อนหน้า) \nอาจเกิดขึ้นได้เนื่องจากข้อบกพร่องบางอย่างหรือเมื่อการเชื่อมต่อถูกบุกรุก</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d ข้อความถูกข้ามไป</string>
     <string name="settings_section_title_themes">ธีม</string>
     <string name="your_chat_database">ฐานข้อมูลการแชทของคุณ</string>
-    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">ฐานข้อมูลแชทปัจจุบันของคุณจะถูกลบและแทนที่ด้วยฐานข้อมูลที่นำเข้า
-\nการดำเนินการนี้ไม่สามารถยกเลิกได้ - โปรไฟล์ ผู้ติดต่อ ข้อความ และไฟล์ของคุณจะสูญหายไปอย่างถาวร</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">ฐานข้อมูลแชทปัจจุบันของคุณจะถูกลบและแทนที่ด้วยฐานข้อมูลที่นำเข้า \nการดำเนินการนี้ไม่สามารถยกเลิกได้ - โปรไฟล์ ผู้ติดต่อ ข้อความ และไฟล์ของคุณจะสูญหายไปอย่างถาวร</string>
     <string name="you_must_use_the_most_recent_version_of_database">คุณต้องใช้ฐานข้อมูลแชทเวอร์ชันล่าสุดบนอุปกรณ์เครื่องเดียวเท่านั้น มิฉะนั้น คุณอาจหยุดได้รับข้อความจากผู้ติดต่อบางคน</string>
     <string name="enable_automatic_deletion_message">การดำเนินการนี้ไม่สามารถเลิกทำได้ - ข้อความที่ส่งและรับก่อนหน้าที่เลือกไว้จะถูกลบ อาจใช้เวลาหลายนาที</string>
     <string name="update_database_passphrase">อัปเดตรหัสผ่านของฐานข้อมูล</string>
@@ -1139,11 +1126,11 @@
     <string name="button_welcome_message">ข้อความต้อนรับ</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">คุณสามารถแชร์ลิงก์หรือคิวอาร์โค้ดได้ ทุกคนจะสามารถเข้าร่วมกลุ่มได้ คุณจะไม่สูญเสียสมาชิกของกลุ่มหากคุณลบในภายหลัง</string>
     <string name="you_can_share_this_address_with_your_contacts">คุณสามารถแบ่งปันที่อยู่นี้กับผู้ติดต่อของคุณเพื่อให้พวกเขาเชื่อมต่อกับ %s</string>
-    <string name="member_role_will_be_changed_with_invitation">บทบาทจะถูกเปลี่ยนเป็น "%s" สมาชิกจะได้รับคำเชิญใหม่</string>
+    <string name="member_role_will_be_changed_with_invitation">บทบาทจะถูกเปลี่ยนเป็น %s สมาชิกจะได้รับคำเชิญใหม่</string>
     <string name="group_welcome_title">ข้อความต้อนรับ</string>
     <string name="group_main_profile_sent">โปรไฟล์การแชทของคุณจะถูกส่งไปยังสมาชิกในกลุ่ม</string>
     <string name="update_network_settings_confirmation">อัปเดต</string>
-    <string name="update_network_settings_question">อัปเดตการตั้งค่าเครือข่ายไหม\?</string>
+    <string name="update_network_settings_question">อัปเดตการตั้งค่าเครือข่ายไหม?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง</string>
     <string name="user_unhide">ยกเลิกการซ่อน</string>
     <string name="user_unmute">เปิดเสียง</string>
@@ -1184,7 +1171,7 @@
     <string name="files_and_media_prohibited">ไฟล์และสื่อต้องห้าม!</string>
     <string name="no_filtered_chats">ไม่มีการแชทที่กรองแล้ว</string>
     <string name="abort_switch_receiving_address_confirm">ยกเลิก</string>
-    <string name="abort_switch_receiving_address_question">ยกเลิกการเปลี่ยนที่อยู่\?</string>
+    <string name="abort_switch_receiving_address_question">ยกเลิกการเปลี่ยนที่อยู่?</string>
     <string name="favorite_chat">ที่ชอบ</string>
     <string name="unfavorite_chat">ลบที่ชื่นชอบ</string>
     <string name="strikethrough_text">ตี</string>
@@ -1201,7 +1188,7 @@
     <string name="conn_event_ratchet_sync_started">เห็นด้วยกับการ encryption…</string>
     <string name="snd_conn_event_ratchet_sync_started">กำลังตกลงการ encryption สำหรับ %s</string>
     <string name="receipts_section_contacts">ติดต่อ</string>
-    <string name="receipts_contacts_title_enable">เปิดใช้งานใบเสร็จ\?</string>
+    <string name="receipts_contacts_title_enable">เปิดใช้งานใบเสร็จ?</string>
     <string name="receipts_contacts_override_enabled">การส่งใบเสร็จถูกเปิดใช้งานสำหรับผู้ติดต่อ %d</string>
     <string name="snd_conn_event_ratchet_sync_agreed">ตกลง encryption สำหรับ %s</string>
     <string name="sender_at_ts">%s ที่ %s</string>
@@ -1215,7 +1202,7 @@
     <string name="you_can_enable_delivery_receipts_later">คุณสามารถเปิดใช้งานในภายหลังผ่านการตั้งค่า</string>
     <string name="error_enabling_delivery_receipts">เกิดข้อผิดพลาดในการเปิดใช้ใบเสร็จการจัดส่ง!</string>
     <string name="choose_file_title">เลือกไฟล์</string>
-    <string name="receipts_contacts_title_disable">ปิดใช้งานใบเสร็จ\?</string>
+    <string name="receipts_contacts_title_disable">ปิดใช้งานใบเสร็จ?</string>
     <string name="receipts_contacts_disable_for_all">ปิดการใช้งานสำหรับทุกคน</string>
     <string name="receipts_contacts_enable_for_all">เปิดใช้งานสําหรับทุกคน</string>
     <string name="settings_section_title_delivery_receipts">ส่งใบเสร็จรับการจัดส่งข้อความไปที่</string>
@@ -1235,9 +1222,7 @@
     <string name="receipts_contacts_enable_keep_overrides">เปิดใช้งาน (เก็บการแทนที่)</string>
     <string name="conn_event_ratchet_sync_agreed">ตกลง encryption</string>
     <string name="fix_connection_confirm">แก้ไข</string>
-    <string name="v5_2_more_things_descr">- การส่งข้อความมีเสถียรภาพมากขึ้น
-\n- กลุ่มที่ดีขึ้นเล็กน้อย
-\n- และอื่น ๆ!</string>
+    <string name="v5_2_more_things_descr">- การส่งข้อความมีเสถียรภาพมากขึ้น \n- กลุ่มที่ดีขึ้นเล็กน้อย \n- และอื่น ๆ!</string>
     <string name="receipts_groups_enable_for_all">เปิดใช้งานสำหรับทุกกลุ่ม</string>
     <string name="sync_connection_force_desc">encryption กำลังทำงานและไม่จำเป็นต้องใช้ข้อตกลง encryption ใหม่ อาจทำให้การเชื่อมต่อผิดพลาดได้!</string>
     <string name="sync_connection_force_confirm">เจรจาใหม่</string>
@@ -1252,7 +1237,7 @@
     <string name="receipts_groups_disable_keep_overrides">ปิดใช้งาน (เก็บการแทนที่กลุ่ม)</string>
     <string name="snd_conn_event_ratchet_sync_required">จำเป็นต้องมีการเจรจา encryption อีกครั้งสำหรับ %s</string>
     <string name="v5_2_disappear_one_message_descr">แม้ในขณะที่ปิดใช้งานในการสนทนา</string>
-    <string name="fix_connection_question">แก้ไขการเชื่อมต่อ\?</string>
+    <string name="fix_connection_question">แก้ไขการเชื่อมต่อ?</string>
     <string name="v5_2_message_delivery_receipts">ใบเสร็จการส่งข้อความ!</string>
     <string name="fix_connection_not_supported_by_contact">การแก้ไขไม่รองรับโดยผู้ติดต่อ</string>
     <string name="fix_connection_not_supported_by_group_member">การแก้ไขไม่สนับสนุนโดยสมาชิกกลุ่ม</string>
@@ -1269,7 +1254,7 @@
     <string name="send_receipts_disabled_alert_msg">กลุ่มนี้มีสมาชิกมากกว่า %1$d ไม่มีการส่งใบเสร็จข้อความที่ส่งมา</string>
     <string name="you_can_enable_delivery_receipts_later_alert">คุณสามารถเปิดใช้งานได้ในภายหลังผ่านการตั้งค่าความเป็นส่วนตัวและความปลอดภัยของแอป</string>
     <string name="receipts_section_groups">กลุ่มเล็ก (สูงสุด 20 คน)</string>
-    <string name="sync_connection_force_question">เจรจา enryption ใหม่หรือไม่\?</string>
+    <string name="sync_connection_force_question">เจรจา enryption ใหม่หรือไม่?</string>
     <string name="v5_2_fix_encryption_descr">แก้ไข encryption หลังจากกู้คืนข้อมูลสำรอง</string>
     <string name="error_synchronizing_connection">เกิดข้อผิดพลาดในการซิงโครไนซ์การเชื่อมต่อ</string>
     <string name="in_reply_to">ในการตอบกลับถึง</string>

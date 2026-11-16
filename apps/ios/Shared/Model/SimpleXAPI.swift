@@ -12,6 +12,7 @@ import UIKit
 import Dispatch
 import BackgroundTasks
 import SwiftUI
+import StoreKit
 @preconcurrency import SimpleXChat
 
 private var chatController: chat_ctrl?
@@ -1117,6 +1118,11 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
                 NSLocalizedString("Connection link removed", comment: ""),
                 message: NSLocalizedString("Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link.", comment: "")
             )
+        case .errorAgent(.CONN(.DUPLICATE, _)):
+            showAlert(
+                NSLocalizedString("Already connected?", comment: ""),
+                message: String.localizedStringWithFormat(NSLocalizedString("It seems like you are already connected via this link. If it is not the case, there was an error (%@).", comment: ""), "CONN DUPLICATE")
+            )
         case let .errorAgent(.SMP(_, .BLOCKED(info))):
             showAlert(
                 NSLocalizedString("Connection blocked", comment: ""),
@@ -1852,8 +1858,8 @@ func apiSendCallAnswer(_ contact: Contact, _ rtcSession: String, _ rtcIceCandida
     try await sendCommandOkResp(.apiSendCallAnswer(contact: contact, answer: answer))
 }
 
-func apiSendCallExtraInfo(_ contact: Contact, _ rtcIceCandidates: String) async throws {
-    let extraInfo = WebRTCExtraInfo(rtcIceCandidates: rtcIceCandidates)
+func apiSendCallExtraInfo(_ contact: Contact, _ rtcSession: String?, _ rtcIceCandidates: String) async throws {
+    let extraInfo = WebRTCExtraInfo(rtcSession: rtcSession, rtcIceCandidates: rtcIceCandidates)
     try await sendCommandOkResp(.apiSendCallExtraInfo(contact: contact, extraInfo: extraInfo))
 }
 
@@ -2202,31 +2208,89 @@ func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: 
     throw r.unexpected
 }
 
+// a refusal is thrown, as BREServiceError with the code
+enum BadgePurchaseResult {
+    case held(user: UserRef, badgeState: BadgeState?, storePurchases: [OpenStorePurchase])
+    case credited(user: User, badgeState: BadgeState?)
+    // listed, and no record here has it: another device's purchase on the same Apple ID
+    case notRecorded
+}
+
+// log: false because a store receipt is a bearer secret, like a badge code - it is in the command.
+func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, origin: StoreReceiptOrigin, _ payment: ServicePayment) async throws -> BadgePurchaseResult {
+    let r: ChatResponse2 = try await chatSendCmd(.apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, origin: origin, payment: payment), log: false)
+    switch r {
+    case let .badgeState(user, badgeState, storePurchases): return .held(user: user, badgeState: badgeState, storePurchases: storePurchases ?? [])
+    case let .badgeRedeemed(user, _, _, badgeState): return .credited(user: user, badgeState: badgeState)
+    case .storeReceiptNotRecorded: return .notRecorded
+    default: throw r.unexpected
+    }
+}
+
+// the device store's view of a subscription it charges, which changes what is shown and alerted, and retires its badge once ended
+func apiSetBadgeSubscriptionStatus(_ status: BadgeSubscriptionState, _ payment: ServicePayment) async throws {
+    let r: ChatResponse2 = try await chatSendCmd(.apiSetBadgeSubscriptionStatus(status: status, payment: payment), log: false)
+    if case .cmdOk = r { return }
+    throw r.unexpected
+}
+
+func apiCreateBadgeInvoice(_ userId: Int64) async throws -> String {
+    let r: ChatResponse2 = try await chatSendCmd(.apiCreateBadgeInvoice(userId: userId))
+    if case let .badgeInvoice(_, invoiceId) = r { return invoiceId }
+    throw r.unexpected
+}
+
 // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
-func redeemErrorText(_ error: Error) -> String {
+func redeemErrorText(_ error: Error, purchase: Bool) -> String {
     if case let .error(.badgeRedeemError(e)) = error as? ChatError {
         switch e {
         case .invalidCode: return NSLocalizedString("This code is not valid.", comment: "alert message")
-        case .serviceNotConfigured: return NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
-        case .badgeActive: return NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
+        case .invalidReceipt: break
+        case .serviceNotConfigured:
+            return purchase
+                ? NSLocalizedString("This app version cannot buy badges.", comment: "alert message")
+                : NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
+        case .badgeActive:
+            return NSLocalizedString("This profile already has a badge.", comment: "alert message")
+        case .storePurchaseOpen:
+            return purchase
+                ? NSLocalizedString("A store purchase is being added to this profile.", comment: "alert message")
+                : NSLocalizedString("A purchase is being added to this profile. Try again later.", comment: "alert message")
         case let .serviceError(code): if let text = badgeServiceErrorText(code) { return text }
         case let .invalidResponse(message):
             return String.localizedStringWithFormat(NSLocalizedString("The badge service sent an unexpected response: %@", comment: "alert message"), message)
         case .unknownKeyIndex, .credentialNotVerified: return NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
         }
     }
+    if case .subscribedBefore? = error as? BadgeStoreError {
+        return NSLocalizedString("Subscribed on another profile.", comment: "alert message")
+    }
+    if let e = error as? Product.PurchaseError {
+        switch e {
+        case .productUnavailable: return NSLocalizedString("This badge is not on sale.", comment: "alert message")
+        case .purchaseNotAllowed: return NSLocalizedString("Purchases are off on this device.", comment: "alert message")
+        default: break
+        }
+    }
+    if let e = error as? StoreKitError {
+        switch e {
+        case .networkError: return NSLocalizedString("The store could not be reached.", comment: "alert message")
+        case .notAvailableInStorefront: return NSLocalizedString("This badge is not on sale.", comment: "alert message")
+        default: break
+        }
+    }
     return String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
 }
 
-func apiGetBadgeState(_ userId: Int64) async throws -> BadgeState? {
+func apiGetBadgeState(_ userId: Int64) async throws -> (badgeState: BadgeState?, storePurchases: [OpenStorePurchase]) {
     let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeState(userId: userId))
-    if case let .badgeState(_, badgeState) = r { return badgeState }
+    if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases ?? []) }
     throw r.unexpected
 }
 
-func apiGetBadgeStateSync(_ userId: Int64) throws -> BadgeState? {
+func apiGetBadgeStateSync(_ userId: Int64) throws -> (badgeState: BadgeState?, storePurchases: [OpenStorePurchase]) {
     let r: ChatResponse2 = try chatSendCmdSync(.apiGetBadgeState(userId: userId))
-    if case let .badgeState(_, badgeState) = r { return badgeState }
+    if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases ?? []) }
     throw r.unexpected
 }
 
@@ -2238,7 +2302,7 @@ func apiGetBadgeLedger(_ userId: Int64, _ badgePurchaseId: Int64) async throws -
 
 func apiAckBadgeAlert(_ userId: Int64, _ badgePurchaseId: Int64, _ alertKind: BadgeAlertKind, snooze: Bool, episode: String) async throws -> BadgeState? {
     let r: ChatResponse2 = try await chatSendCmd(.apiAckBadgeAlert(userId: userId, badgePurchaseId: badgePurchaseId, alertKind: alertKind, snooze: snooze, episode: episode))
-    if case let .badgeState(_, badgeState) = r { return badgeState }
+    if case let .badgeState(_, badgeState, _) = r { return badgeState }
     throw r.unexpected
 }
 
@@ -2367,6 +2431,7 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
+    Task { await BadgeStore.shared.presentUnfinished() }
     if shouldDeleteDatabaseBackupsDefault.get() {
         deleteDatabaseBackups()
         shouldDeleteDatabaseBackupsDefault.set(false)
@@ -2395,6 +2460,7 @@ private func changeActiveUser_(_ userId: Int64, viewPwd: String?) throws {
     m.currentUser = try apiSetActiveUser(userId, viewPwd: viewPwd)
     m.users = try listUsers()
     try getUserChatData()
+    Task { await BadgeStore.shared.presentUnfinished() }
 }
 
 func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?, keepingChatId: String? = nil) async throws {
@@ -2410,6 +2476,7 @@ func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?, keepingChatId: S
         m.users = users
     }
     try await getUserChatDataAsync(keepingChatId: keepingChatId)
+    Task { await BadgeStore.shared.presentUnfinished() }
     await MainActor.run {
         if let currentUser = currentUser, var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
             invitation.user = currentUser
@@ -2437,19 +2504,29 @@ func getUserChatData() throws {
 private func loadBadgeState() {
     do {
         let userId = try currentUserId("loadBadgeState")
-        let badgeState = try apiGetBadgeStateSync(userId)
+        let (badgeState, storePurchases) = try apiGetBadgeStateSync(userId)
         BadgeModel.shared.set(userId: userId, badgeState: badgeState)
+        BadgeStore.shared.setStorePurchases(userId, storePurchases)
     } catch let error {
         logger.error("loadBadgeState: \(responseError(error))")
     }
 }
 
-private func loadBadgeStateAsync(_ userId: Int64) async {
+func loadBadgeStateAsync(_ userId: Int64) async {
     do {
-        let badgeState = try await apiGetBadgeState(userId)
-        await MainActor.run { BadgeModel.shared.set(userId: userId, badgeState: badgeState) }
+        let (badgeState, storePurchases) = try await apiGetBadgeState(userId)
+        await MainActor.run {
+            BadgeModel.shared.set(userId: userId, badgeState: badgeState)
+            BadgeStore.shared.setStorePurchases(userId, storePurchases)
+        }
     } catch let error {
         logger.error("loadBadgeState: \(responseError(error))")
+    }
+}
+
+func loadCurrentBadgeState() async {
+    if let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) {
+        await loadBadgeStateAsync(userId)
     }
 }
 
@@ -2964,7 +3041,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         }
     case let .callExtraInfo(_, contact, extraInfo):
         await withCall(contact) { _ in
-            await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates))
+            await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates, session: extraInfo.rtcSession))
         }
     case let .callEnded(_, contact):
         if let invitation = await MainActor.run(body: { m.callInvitations.removeValue(forKey: contact.id) }) {
@@ -3079,6 +3156,10 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 BadgeModel.shared.setAlert(userId: user.userId, alert: badgeAlert)
             }
         }
+    case let .storePurchaseCredited(user, invoiceId):
+        Task { await BadgeStore.shared.storePurchaseCredited(user, invoiceId) }
+    case let .storePurchaseRefused(user, invoiceId, refusal):
+        Task { await BadgeStore.shared.storePurchaseRefused(user, invoiceId, refusal) }
     default:
         logger.debug("unsupported event: \(res.responseType)")
     }

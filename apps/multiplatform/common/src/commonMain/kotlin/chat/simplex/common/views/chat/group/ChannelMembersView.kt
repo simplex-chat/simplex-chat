@@ -44,7 +44,7 @@ fun ModalData.ChannelMembersView(
   val s = searchText.value.text.trim().lowercase()
   val subscriberCount = groupInfo.groupSummary.publicMemberCount ?: (members.size + 1).toLong()
   val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
-  val title = if (groupInfo.isOwner) {
+  val title = if (groupInfo.canModerate) {
     generalGetString(MR.strings.channel_members_title_subscribers)
   } else {
     generalGetString(MR.strings.channel_members_section_owners)
@@ -57,7 +57,7 @@ fun ModalData.ChannelMembersView(
     item {
       AppBarTitle(title)
     }
-    if (groupInfo.isOwner) {
+    if (groupInfo.canModerate) {
       val showSearch = members.size > 8
       item {
         SectionView(title = subscriberCountStr(subscriberCount)) {
@@ -72,7 +72,7 @@ fun ModalData.ChannelMembersView(
           }
         }
       }
-      val filtered = if (s.isEmpty()) members else members.filter { it.anyNameContains(s) }
+      val filtered = if (!showSearch || s.isEmpty()) members else members.filter { it.anyNameContains(s) }
       channelMemberItems(filtered, groupInfo, GroupMemberRole.Member, dividerAboveFirst = true, showMemberInfo)
     } else {
       val contributors = members.filter { it.memberRole >= GroupMemberRole.Member && it.memberStatus != GroupMemberStatus.MemUnknown }
@@ -96,7 +96,7 @@ fun ModalData.ChannelMembersView(
           }
         }
       }
-      val filtered = if (s.isEmpty()) contributors else contributors.filter { it.anyNameContains(s) }
+      val filtered = if (!showSearch || s.isEmpty()) contributors else contributors.filter { it.anyNameContains(s) }
       channelMemberItems(filtered, groupInfo, GroupMemberRole.Moderator, dividerAboveFirst = showSearch || showUserRow, showMemberInfo)
     }
     item {

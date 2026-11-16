@@ -122,7 +122,7 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
               c.contact_profile_id, c.local_display_name, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, c.contact_used, c.contact_status, c.enable_ntfs, c.send_rcpts, c.favorite,
               p.preferences, p.preferences_json, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.conn_full_link_to_connect, c.conn_short_link_to_connect, c.welcome_shared_msg_id, c.request_shared_msg_id, c.contact_request_id, cr2.rejection_supported,
               c.contact_group_member_id, c.contact_grp_inv_sent, c.grp_direct_inv_link, c.grp_direct_inv_from_group_id, c.grp_direct_inv_from_group_member_id, c.grp_direct_inv_from_member_conn_id, c.grp_direct_inv_started_connection,
-              c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl,
+              c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl, c.chat_layout,
               p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx,
               p.contact_domain, p.contact_domain_proof, p.contact_domain_verified
             FROM contacts c
@@ -132,7 +132,7 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
           |]
           (userId, contactId, CSActive)
     toContact' :: UTCTime -> Int64 -> Connection -> [ChatTagId] -> ContactRow' -> Contact
-    toContact' currentTs contactId conn chatTags ((profileId, localDisplayName, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, rejectionSupported_, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. domainRow) =
+    toContact' currentTs contactId conn chatTags ((profileId, localDisplayName, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, rejectionSupported_, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL, chatLayout) :. badgeRow :. domainRow) =
       let preferences = chatPrefsFromRow encodedPrefs receivedPrefs
           profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, contactDomain = rowToContactDomain domainRow, contactDomainVerified = rowToDomainVerified domainRow, peerType, localBadge = rowToBadge currentTs badgeRow, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
@@ -141,7 +141,7 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
           preparedContact = toPreparedContact preparedContactRow
           contactRequest = UserContactRequestRef <$> contactRequestId <*> (unBI <$> rejectionSupported_)
           groupDirectInv = toGroupDirectInvitation groupDirectInvRow
-       in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
+       in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatLayout, chatDeleted, customData}
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO ((GroupInfo, GroupKeysRow), GroupMember)
     getGroupAndMember_ groupMemberId c = do
       currentTs <- liftIO getCurrentTime
@@ -155,7 +155,7 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
                   -- GroupInfo
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
                   gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-                  g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.preferences_json, gp.member_admission,
+                  g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.preferences_json, gp.member_admission, gp.chat_layout,
                   g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
                   g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
                   g.business_chat, g.business_member_id, g.customer_member_id,

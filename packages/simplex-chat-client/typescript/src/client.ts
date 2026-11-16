@@ -104,18 +104,32 @@ export class ChatClient {
   }
 
   async enableAddressAutoAccept(userId: number, autoReply?: T.MsgContent, businessAddress = false): Promise<void> {
-    const r = await this.sendChatCmd(
-      CC.APISetAddressSettings.cmdString({userId, settings: {businessAddress, autoAccept: {acceptIncognito: false}, autoReply}})
-    )
-    if (r.type !== "userContactLinkUpdated") {
-      throw new ChatCommandError("error changing user contact address mode", r)
-    }
+    const settings = await this.apiGetAddressSettings(userId)
+    await this.apiSetAddressSettings(userId, {...settings, businessAddress, autoAccept: {acceptIncognito: false}, autoReply})
   }
 
   async disableAddressAutoAccept(userId: number, businessAddress = false): Promise<void> {
-    const r = await this.sendChatCmd(CC.APISetAddressSettings.cmdString({userId, settings: {businessAddress}}))
+    const settings = await this.apiGetAddressSettings(userId)
+    await this.apiSetAddressSettings(userId, {...settings, businessAddress, autoAccept: undefined, autoReply: undefined})
+  }
+
+  async apiGetAddressSettings(userId: number): Promise<T.AddressSettings | undefined> {
+    const r = await this.sendChatCmd(CC.APIShowMyAddress.cmdString({userId}))
+    switch (r.type) {
+      case "userContactLink":
+        return r.contactLink.addressSettings
+      default:
+        if (r.type === "chatCmdError" && r.chatError.type === "errorStore" && r.chatError.storeError.type === "userContactLinkNotFound") {
+          return undefined
+        }
+        throw new ChatCommandError("error loading user address", r)
+    }
+  }
+
+  async apiSetAddressSettings(userId: number, settings: T.AddressSettings): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetAddressSettings.cmdString({userId, settings}))
     if (r.type !== "userContactLinkUpdated") {
-      throw new ChatCommandError("error changing user contact address mode", r)
+      throw new ChatCommandError("error changing user contact address settings", r)
     }
   }
 

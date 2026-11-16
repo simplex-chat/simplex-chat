@@ -31,7 +31,7 @@ fun MarkdownHelpView() {
     val colored = stringResource(MR.strings.colored_text)
     val secret = stringResource(MR.strings.secret_text)
 
-    MdFormat("*$bold*", bold, Format.Bold())
+    MdFormat("**$bold**", bold, Format.Bold())
     MdFormat("_${italic}_", italic, Format.Italic())
     MdFormat("~$strikethrough~", strikethrough, Format.StrikeThrough())
     MdFormat("`$equation`", equation, Format.Snippet())

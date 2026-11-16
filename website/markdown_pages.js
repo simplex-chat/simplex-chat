@@ -16,10 +16,10 @@ const htmlPages = new Set([
   "crowdfunding",
   "crowdfunding-news",
   "news",
-  "livestream",
   "blog",
   "links",
   "directory",
+  "downloads",
 ])
 
 const removedTags = new Set([

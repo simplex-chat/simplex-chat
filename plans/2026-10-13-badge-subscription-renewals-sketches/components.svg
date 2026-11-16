@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="604" viewBox="0 0 980 604" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Components: the apps buy in the store and hand receipts to core, also from Restore; core holds receipts, each held for a purchase, a move or a tier change, and the client ledger, and talks only to the badge service; the service verifies with the App Store Server API and the Play Developer API, credits, renews, changes tier and moves a subscription to another key.">
+  <defs>
+    <marker id="c-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
+    <marker id="c-arr-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#5b6577"/></marker>
+  </defs>
+  <rect width="980" height="604" fill="#f7f8fb"/>
+
+  <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">Who holds what</text>
+  <text x="24" y="57" font-size="12.5" fill="#5b6577">The apps buy, restore and report; core holds receipts and the ledger and never calls a store; the service verifies, credits, renews.</text>
+
+  <!-- Apps -->
+  <rect x="24" y="78" width="250" height="280" rx="10" fill="#ffffff" stroke="#c9cfdb"/>
+  <path d="M24,88 a10,10 0 0 1 10,-10 h230 a10,10 0 0 1 10,10 v24 h-250 z" fill="#eef1f5"/>
+  <text x="38" y="100" font-size="14" font-weight="600" fill="#334155">Apps</text>
+  <text x="260" y="100" font-size="11.5" fill="#5b6577" text-anchor="end">iOS · Android · desktop</text>
+  <text x="38" y="138" font-size="12" fill="#1a2030">Buy, then hand the receipt to core</text>
+  <text x="38" y="157" font-size="11" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge purchase [listed|restored]</text>
+  <text x="38" y="184" font-size="12" fill="#1a2030">Report what the store says</text>
+  <text x="38" y="203" font-size="11" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge subscription &lt;state&gt;</text>
+  <text x="38" y="230" font-size="12" fill="#1a2030">Your badge: Renews, Payment</text>
+  <text x="38" y="248" font-size="12" fill="#1a2030">problem, Ends; Manage subscription</text>
+  <text x="38" y="275" font-size="12" fill="#1a2030">Check your order: disclosure, links</text>
+  <text x="38" y="293" font-size="12" fill="#1a2030">Support SimpleX: Restore purchases</text>
+  <text x="38" y="320" font-size="12" fill="#1a2030">One chat-list banner per alert</text>
+  <text x="38" y="342" font-size="11.5" fill="#5b6577">Desktop: state only, no store rows</text>
+
+  <!-- Core -->
+  <rect x="344" y="78" width="272" height="280" rx="10" fill="#ffffff" stroke="#c9cfdb"/>
+  <path d="M344,88 a10,10 0 0 1 10,-10 h252 a10,10 0 0 1 10,10 v24 h-272 z" fill="#e3f1f3"/>
+  <text x="358" y="100" font-size="14" font-weight="600" fill="#0f5f69">Chat core</text>
+  <text x="602" y="100" font-size="11.5" fill="#5b6577" text-anchor="end">client database</text>
+  <text x="358" y="138" font-size="11.5" fill="#0f5f69" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">badge_store_receipts</text>
+  <text x="358" y="155" font-size="11.5" fill="#5b6577">held with fresh keys; + hold_kind</text>
+  <text x="358" y="180" font-size="11.5" fill="#0f5f69" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">badge_purchases</text>
+  <text x="358" y="197" font-size="11.5" fill="#5b6577">+ subscription_status,</text>
+  <text x="358" y="213" font-size="11.5" fill="#5b6577">unrenewed_since, last_unrenewed_at</text>
+  <text x="358" y="238" font-size="11.5" fill="#0f5f69" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">badge_ledger</text>
+  <text x="358" y="255" font-size="11.5" fill="#5b6577">replica; a charge credit = subscription</text>
+  <text x="358" y="282" font-size="12" fill="#1a2030">receipt worker: buy, move, tier raise</text>
+  <text x="358" y="302" font-size="12" fill="#1a2030">badge worker → issueBadge, also at</text>
+  <text x="358" y="320" font-size="12" fill="#1a2030">zero months; derives the alerts;</text>
+  <text x="358" y="338" font-size="12" fill="#1a2030">retires on ended or after 67 days</text>
+
+  <!-- Service -->
+  <rect x="706" y="78" width="250" height="280" rx="10" fill="#ffffff" stroke="#c9cfdb"/>
+  <path d="M706,88 a10,10 0 0 1 10,-10 h230 a10,10 0 0 1 10,10 v24 h-250 z" fill="#eceefe"/>
+  <text x="720" y="100" font-size="14" font-weight="600" fill="#3a3fa6">Badge service</text>
+  <text x="720" y="138" font-size="12" fill="#1a2030">Three serial lanes:</text>
+  <text x="720" y="156" font-size="12" fill="#1a2030">main · purchase · renewal</text>
+  <text x="720" y="180" font-size="11.5" fill="#1a2030">Subscription purchases, in memory:</text>
+  <text x="720" y="198" font-size="11.5" fill="#1a2030">a claim hourly; Play ≤ 300 a minute</text>
+  <text x="720" y="224" font-size="11.5" fill="#3a3fa6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">payments</text>
+  <text x="720" y="241" font-size="11.5" fill="#5b6577">+ subscription_state, checked_at,</text>
+  <text x="720" y="257" font-size="11.5" fill="#5b6577">provider_token, rebound_at (moved)</text>
+  <text x="720" y="282" font-size="11.5" fill="#3a3fa6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">subscription_charges</text>
+  <text x="720" y="299" font-size="11.5" fill="#5b6577">one row per store charge</text>
+  <text x="720" y="324" font-size="11.5" fill="#3a3fa6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">badge_ledger</text>
+  <text x="720" y="341" font-size="11.5" fill="#5b6577">+ charge_id, from/to_purchase_id</text>
+
+  <!-- Apps <-> Core -->
+  <line x1="276" y1="170" x2="342" y2="170" stroke="#5b6577" stroke-width="1.5" marker-start="url(#c-arr-start)" marker-end="url(#c-arr)"/>
+  <text x="309" y="162" font-size="11" fill="#5b6577" text-anchor="middle">commands</text>
+  <text x="309" y="186" font-size="11" fill="#5b6577" text-anchor="middle">events</text>
+
+  <!-- Core <-> Service -->
+  <line x1="618" y1="170" x2="704" y2="170" stroke="#5b6577" stroke-width="1.5" marker-start="url(#c-arr-start)" marker-end="url(#c-arr)"/>
+  <text x="661" y="122" font-size="10.5" fill="#5b6577" text-anchor="middle">upgradeBadge…</text>
+  <text x="661" y="135" font-size="10.5" fill="#5b6577" text-anchor="middle">transferBadge</text>
+  <text x="661" y="148" font-size="10.5" fill="#5b6577" text-anchor="middle">purchaseBadge</text>
+  <text x="661" y="161" font-size="10.5" fill="#5b6577" text-anchor="middle">issueBadge</text>
+  <text x="661" y="186" font-size="10.5" fill="#5b6577" text-anchor="middle">credential,</text>
+  <text x="661" y="199" font-size="10.5" fill="#5b6577" text-anchor="middle">subscription</text>
+
+  <!-- Apps -> device stores -->
+  <line x1="83.5" y1="358" x2="83.5" y2="416" stroke="#5b6577" stroke-width="1.5" marker-end="url(#c-arr)"/>
+  <line x1="214.5" y1="358" x2="214.5" y2="416" stroke="#5b6577" stroke-width="1.5" marker-end="url(#c-arr)"/>
+  <text x="149" y="392" font-size="11" fill="#5b6577" text-anchor="middle">buy · list · status</text>
+
+  <!-- Service -> store APIs -->
+  <line x1="765.5" y1="358" x2="765.5" y2="416" stroke="#5b6577" stroke-width="1.5" marker-end="url(#c-arr)"/>
+  <line x1="896.5" y1="358" x2="896.5" y2="416" stroke="#5b6577" stroke-width="1.5" marker-end="url(#c-arr)"/>
+  <text x="831" y="392" font-size="11" fill="#5b6577" text-anchor="middle">check · acknowledge</text>
+
+  <!-- Device stores -->
+  <rect x="24" y="418" width="119" height="106" rx="8" fill="#e7f4ec" stroke="#8cc6a3"/>
+  <text x="36" y="440" font-size="12" font-weight="600" fill="#11713f">Play Billing</text>
+  <text x="36" y="478" font-size="10.5" fill="#334155">purchase tokens</text>
+  <text x="36" y="494" font-size="10.5" fill="#334155">isAutoRenewing</text>
+  <text x="36" y="510" font-size="10.5" fill="#334155">subscriptions page</text>
+
+  <rect x="155" y="418" width="119" height="106" rx="8" fill="#e9f1fc" stroke="#8db4e8"/>
+  <text x="167" y="440" font-size="12" font-weight="600" fill="#0b5cbf">StoreKit 2</text>
+  <text x="167" y="478" font-size="10.5" fill="#334155">signed purchases</text>
+  <text x="167" y="494" font-size="10.5" fill="#334155">renewal status</text>
+  <text x="167" y="510" font-size="10.5" fill="#334155">manage sheet</text>
+
+  <!-- Store APIs -->
+  <rect x="706" y="418" width="119" height="106" rx="8" fill="#e9f1fc" stroke="#8db4e8"/>
+  <text x="718" y="440" font-size="12" font-weight="600" fill="#0b5cbf">App Store</text>
+  <text x="718" y="455" font-size="12" font-weight="600" fill="#0b5cbf">Server API</text>
+  <text x="718" y="478" font-size="10.5" fill="#334155">statuses by</text>
+  <text x="718" y="494" font-size="10.5" fill="#334155">original id</text>
+  <text x="718" y="510" font-size="10.5" fill="#334155">signed answers</text>
+
+  <rect x="837" y="418" width="119" height="106" rx="8" fill="#e7f4ec" stroke="#8cc6a3"/>
+  <text x="849" y="440" font-size="12" font-weight="600" fill="#11713f">Google Play</text>
+  <text x="849" y="455" font-size="12" font-weight="600" fill="#11713f">Developer API</text>
+  <text x="849" y="478" font-size="10.5" fill="#334155">subscriptionsv2</text>
+  <text x="849" y="494" font-size="10.5" fill="#334155">acknowledge</text>
+  <text x="849" y="510" font-size="10.5" fill="#334155">by token</text>
+
+  <!-- Core note -->
+  <text x="480" y="448" font-size="12.5" font-style="italic" fill="#5b6577" text-anchor="middle">Core never calls a store: the apps</text>
+  <text x="480" y="466" font-size="12.5" font-style="italic" fill="#5b6577" text-anchor="middle">hand it receipts and the device's</text>
+  <text x="480" y="484" font-size="12.5" font-style="italic" fill="#5b6577" text-anchor="middle">view, and the service tells it</text>
+  <text x="480" y="502" font-size="12.5" font-style="italic" fill="#5b6577" text-anchor="middle">what the store charged.</text>
+
+  <!-- One store, two faces -->
+  <polyline points="214.5,524 214.5,548 765.5,548 765.5,524" fill="none" stroke="#0b5cbf" stroke-width="1.3" stroke-dasharray="5 4"/>
+  <text x="490" y="542" font-size="11" fill="#0b5cbf" text-anchor="middle">one Apple ID: the same transactions on both sides</text>
+  <polyline points="83.5,524 83.5,578 896.5,578 896.5,524" fill="none" stroke="#11713f" stroke-width="1.3" stroke-dasharray="5 4"/>
+  <text x="490" y="572" font-size="11" fill="#11713f" text-anchor="middle">one Google account: the same purchase tokens on both sides</text>
+</svg>

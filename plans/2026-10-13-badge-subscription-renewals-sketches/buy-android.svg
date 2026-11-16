@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="1016" viewBox="0 0 980 1016" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Buying a subscription on Android: the app creates the record in core, buys with Play Billing, hands the token to core without acknowledging it, core's worker sends purchaseBadge, the service reads the subscription from Play by token before any one-time verification, acknowledges it just before crediting, and writes the payment, charge and ledger in one transaction.">
+  <defs>
+    <marker id="a-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
+  </defs>
+  <rect width="980" height="1016" fill="#f7f8fb"/>
+
+  <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">Buying a subscription on Android</text>
+  <text x="24" y="57" font-size="12.5" fill="#5b6577">The app sends the product id and token; the service reads the subscription from Play and acknowledges it itself, just before crediting.</text>
+
+  <!-- lifelines -->
+  <line x1="130" y1="108" x2="130" y2="870" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="390" y1="108" x2="390" y2="870" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="640" y1="108" x2="640" y2="870" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="885" y1="108" x2="885" y2="870" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+
+  <rect x="30" y="72" width="200" height="36" rx="8" fill="#eef1f5" stroke="#c9cfdb"/>
+  <text x="130" y="95" font-size="12.5" font-weight="600" fill="#334155" text-anchor="middle">Android app · Play Billing</text>
+  <rect x="300" y="72" width="180" height="36" rx="8" fill="#e3f1f3" stroke="#b5dadd"/>
+  <text x="390" y="95" font-size="12.5" font-weight="600" fill="#0f5f69" text-anchor="middle">Chat core</text>
+  <rect x="550" y="72" width="180" height="36" rx="8" fill="#eceefe" stroke="#c5c8f0"/>
+  <text x="640" y="95" font-size="12.5" font-weight="600" fill="#3a3fa6" text-anchor="middle">Badge service</text>
+  <rect x="790" y="72" width="182" height="36" rx="8" fill="#e7f4ec" stroke="#8cc6a3"/>
+  <text x="881" y="95" font-size="12.5" font-weight="600" fill="#11713f" text-anchor="middle">Play Developer API</text>
+
+  <!-- step numbers -->
+  <g font-size="11" font-weight="600" fill="#8a93a6" text-anchor="middle">
+    <text x="14" y="150">1</text>
+    <text x="14" y="217">2</text>
+    <text x="14" y="266">3</text>
+    <text x="14" y="386">4</text>
+    <text x="14" y="448">5</text>
+    <text x="14" y="510">6</text>
+    <text x="14" y="597">7</text>
+    <text x="14" y="650">8</text>
+    <text x="14" y="731">9</text>
+    <text x="14" y="784">10</text>
+    <text x="14" y="824">11</text>
+  </g>
+
+  <!-- 1 -->
+  <line x1="130" y1="146" x2="388" y2="146" stroke="#5b6577" stroke-width="1.4" marker-end="url(#a-arr)"/>
+  <text x="260" y="140" font-size="11" fill="#334155" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge invoice</text>
+  <line x1="390" y1="170" x2="132" y2="170" stroke="#5b6577" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#a-arr)"/>
+  <text x="260" y="164" font-size="11.5" fill="#1a2030" text-anchor="middle">invoiceId</text>
+
+  <!-- 2 -->
+  <rect x="30" y="186" width="200" height="54" rx="6" fill="#f3f5f8" stroke="#cfd5df"/>
+  <text x="40" y="201" font-size="11.5" fill="#1a2030">launchBillingFlow: the base</text>
+  <text x="40" y="216" font-size="11.5" fill="#1a2030">plan's own offer, account id =</text>
+  <text x="40" y="231" font-size="11.5" fill="#1a2030">invoiceId → purchase token</text>
+
+  <!-- 3 -->
+  <line x1="130" y1="262" x2="388" y2="262" stroke="#5b6577" stroke-width="1.4" marker-end="url(#a-arr)"/>
+  <text x="260" y="256" font-size="11" fill="#334155" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge purchase {google}</text>
+  <text x="260" y="277" font-size="11" fill="#5b6577" text-anchor="middle">product id + token</text>
+  <line x1="390" y1="304" x2="132" y2="304" stroke="#5b6577" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#a-arr)"/>
+  <text x="260" y="298" font-size="11.5" fill="#1a2030" text-anchor="middle">held</text>
+  <rect x="30" y="318" width="200" height="38" rx="6" fill="#fff4e0" stroke="#e7c48a"/>
+  <text x="40" y="333" font-size="11.5" fill="#1a2030">no acknowledgement here for a</text>
+  <text x="40" y="348" font-size="11.5" fill="#1a2030">subscription (one-time: yes)</text>
+  <rect x="290" y="318" width="200" height="38" rx="6" fill="#eef7f8" stroke="#b5dadd"/>
+  <text x="300" y="333" font-size="11.5" fill="#1a2030">held under the Buy record's</text>
+  <text x="300" y="348" font-size="11.5" fill="#1a2030">keys, claimed by token hash</text>
+
+  <!-- 4 -->
+  <line x1="390" y1="382" x2="638" y2="382" stroke="#5b6577" stroke-width="1.4" marker-end="url(#a-arr)"/>
+  <text x="515" y="376" font-size="11" fill="#334155" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">purchaseBadge {google}</text>
+  <text x="515" y="397" font-size="11" fill="#5b6577" text-anchor="middle">signed by the purchase key</text>
+
+  <!-- 5 -->
+  <rect x="525" y="412" width="230" height="70" rx="6" fill="#f3f4ff" stroke="#c5c8f0"/>
+  <text x="535" y="427" font-size="11.5" fill="#1a2030">purchase lane</text>
+  <text x="535" y="442" font-size="11.5" fill="#1a2030">routed before verifyReceipt</text>
+  <text x="535" y="457" font-size="11.5" fill="#1a2030">asked &lt; 1 h ago → payment_pending</text>
+  <text x="535" y="472" font-size="11.5" fill="#1a2030">no Play read left → rate_limited</text>
+
+  <!-- 6 -->
+  <line x1="640" y1="506" x2="883" y2="506" stroke="#5b6577" stroke-width="1.4" marker-end="url(#a-arr)"/>
+  <text x="762" y="500" font-size="11" fill="#334155" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">subscriptionsv2.get(token)</text>
+  <line x1="885" y1="552" x2="642" y2="552" stroke="#5b6577" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#a-arr)"/>
+  <text x="762" y="532" font-size="11.5" fill="#1a2030" text-anchor="middle">state; line item: basePlanId,</text>
+  <text x="762" y="546" font-size="11.5" fill="#1a2030" text-anchor="middle">expiryTime, order id, offerPhase</text>
+
+  <!-- 7 -->
+  <rect x="525" y="570" width="230" height="54" rx="6" fill="#f3f4ff" stroke="#c5c8f0"/>
+  <text x="535" y="585" font-size="11.5" fill="#1a2030">grantable? start = expiryTime</text>
+  <text x="535" y="600" font-size="11.5" fill="#1a2030">less the plan's months (clipped);</text>
+  <text x="535" y="615" font-size="11.5" fill="#1a2030">does it still fund a month now?</text>
+
+  <!-- 8 -->
+  <line x1="640" y1="646" x2="883" y2="646" stroke="#5b6577" stroke-width="1.4" marker-end="url(#a-arr)"/>
+  <text x="762" y="640" font-size="11.5" fill="#1a2030" text-anchor="middle">read again, then :acknowledge</text>
+  <text x="762" y="661" font-size="11" fill="#5b6577" text-anchor="middle">unless already acknowledged</text>
+  <line x1="885" y1="688" x2="642" y2="688" stroke="#5b6577" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#a-arr)"/>
+  <text x="762" y="682" font-size="11.5" fill="#1a2030" text-anchor="middle">acknowledged</text>
+
+  <!-- 9 -->
+  <rect x="525" y="704" width="230" height="54" rx="6" fill="#f3f4ff" stroke="#c5c8f0"/>
+  <text x="535" y="719" font-size="11.5" fill="#1a2030">one transaction: payment + token,</text>
+  <text x="535" y="734" font-size="11.5" fill="#1a2030">charge (hashed order id), ledger</text>
+  <text x="535" y="749" font-size="11.5" fill="#1a2030">(grant at period start), issuance</text>
+
+  <!-- 10 -->
+  <line x1="640" y1="780" x2="392" y2="780" stroke="#5b6577" stroke-width="1.4" marker-end="url(#a-arr)"/>
+  <text x="515" y="774" font-size="11" fill="#1a2030" text-anchor="middle">badgeCredential, subscription: renewing</text>
+
+  <!-- 11 -->
+  <line x1="390" y1="820" x2="132" y2="820" stroke="#5b6577" stroke-width="1.4" marker-end="url(#a-arr)"/>
+  <text x="260" y="814" font-size="11.5" fill="#1a2030" text-anchor="middle">event: storePurchaseCredited</text>
+  <rect x="30" y="834" width="200" height="26" rx="6" fill="#f3f5f8" stroke="#cfd5df"/>
+  <text x="40" y="851" font-size="11.5" fill="#1a2030">finish: nothing to do</text>
+
+  <!-- footer -->
+  <rect x="24" y="882" width="932" height="114" rx="8" fill="#eef1f5"/>
+  <text x="40" y="902" font-size="12" fill="#1a2030">Play lists the subscription until it ends; the sweep hands it over as listed and it resolves to the credited record by its token.</text>
+  <text x="40" y="919" font-size="12" fill="#1a2030">If it is never acknowledged (any refusal before step 8), Play refunds it after three days. If anything fails after step 8,</text>
+  <text x="40" y="936" font-size="12" fill="#b3261e">it stays paid and acknowledged, and only a later retry credits it. Renewals keep the token; the service asks Play itself.</text>
+  <text x="40" y="953" font-size="12" fill="#1a2030">Step 8's read is not counted against the 300 subscription checks a minute.</text>
+  <text x="40" y="970" font-size="12" fill="#1a2030">Subscribing again gets a new token: a new purchase. The sweep also hands over tokens core has no record of; core leaves them</text>
+  <text x="40" y="987" font-size="12" fill="#1a2030">for Restore. A retired purchase's token that Play charges again resumes it: up to 24 tries each time the sweep hands it over.</text>
+</svg>

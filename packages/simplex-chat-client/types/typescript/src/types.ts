@@ -25,6 +25,7 @@ export interface AddRelayResult {
 export interface AddressSettings {
   businessAddress: boolean
   autoAccept?: AutoAccept
+  chatLayout?: ChatLayout
   autoReply?: MsgContent
 }
 
@@ -249,8 +250,10 @@ export interface BadgeProof {
 
 export type BadgeRedeemError = 
   | BadgeRedeemError.InvalidCode
+  | BadgeRedeemError.InvalidReceipt
   | BadgeRedeemError.ServiceNotConfigured
   | BadgeRedeemError.BadgeActive
+  | BadgeRedeemError.StorePurchaseOpen
   | BadgeRedeemError.ServiceError
   | BadgeRedeemError.InvalidResponse
   | BadgeRedeemError.UnknownKeyIndex
@@ -259,8 +262,10 @@ export type BadgeRedeemError =
 export namespace BadgeRedeemError {
   export type Tag = 
     | "invalidCode"
+    | "invalidReceipt"
     | "serviceNotConfigured"
     | "badgeActive"
+    | "storePurchaseOpen"
     | "serviceError"
     | "invalidResponse"
     | "unknownKeyIndex"
@@ -274,12 +279,20 @@ export namespace BadgeRedeemError {
     type: "invalidCode"
   }
 
+  export interface InvalidReceipt extends Interface {
+    type: "invalidReceipt"
+  }
+
   export interface ServiceNotConfigured extends Interface {
     type: "serviceNotConfigured"
   }
 
   export interface BadgeActive extends Interface {
     type: "badgeActive"
+  }
+
+  export interface StorePurchaseOpen extends Interface {
+    type: "storePurchaseOpen"
   }
 
   export interface ServiceError extends Interface {
@@ -312,12 +325,15 @@ export enum BadgeServiceErrorCode {
   Payment_not_entitled = "payment_not_entitled",
   Payment_pending = "payment_pending",
   Provider_unavailable = "provider_unavailable",
+  Provider_not_configured = "provider_not_configured",
   Rate_limited = "rate_limited",
   Code_invalid = "code_invalid",
   Code_used = "code_used",
   Code_expired = "code_expired",
   Receipt_invalid = "receipt_invalid",
   Receipt_used = "receipt_used",
+  Transfer_limited = "transfer_limited",
+  Test_purchase = "test_purchase",
   Internal = "internal",
 }
 
@@ -333,6 +349,112 @@ export enum BadgeType {
   Supporter = "supporter",
   Legend = "legend",
   Investor = "investor",
+}
+
+export type BlockToken = 
+  | BlockToken.LineBreak
+  | BlockToken.SoftBreak
+  | BlockToken.HardBreak
+  | BlockToken.ParagraphBreak
+  | BlockToken.Indent
+  | BlockToken.HeadingMark
+  | BlockToken.HeadingClose
+  | BlockToken.HeadingUnderline
+  | BlockToken.ListMark
+  | BlockToken.QuoteMark
+  | BlockToken.FenceMark
+  | BlockToken.RowMark
+  | BlockToken.CellMark
+  | BlockToken.DelimiterRow
+  | BlockToken.RuleMark
+
+export namespace BlockToken {
+  export type Tag = 
+    | "lineBreak"
+    | "softBreak"
+    | "hardBreak"
+    | "paragraphBreak"
+    | "indent"
+    | "headingMark"
+    | "headingClose"
+    | "headingUnderline"
+    | "listMark"
+    | "quoteMark"
+    | "fenceMark"
+    | "rowMark"
+    | "cellMark"
+    | "delimiterRow"
+    | "ruleMark"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface LineBreak extends Interface {
+    type: "lineBreak"
+  }
+
+  export interface SoftBreak extends Interface {
+    type: "softBreak"
+  }
+
+  export interface HardBreak extends Interface {
+    type: "hardBreak"
+  }
+
+  export interface ParagraphBreak extends Interface {
+    type: "paragraphBreak"
+    lineBreaks: number // int
+  }
+
+  export interface Indent extends Interface {
+    type: "indent"
+  }
+
+  export interface HeadingMark extends Interface {
+    type: "headingMark"
+    level: number // int
+  }
+
+  export interface HeadingClose extends Interface {
+    type: "headingClose"
+  }
+
+  export interface HeadingUnderline extends Interface {
+    type: "headingUnderline"
+    level: number // int
+  }
+
+  export interface ListMark extends Interface {
+    type: "listMark"
+    number?: string
+  }
+
+  export interface QuoteMark extends Interface {
+    type: "quoteMark"
+  }
+
+  export interface FenceMark extends Interface {
+    type: "fenceMark"
+    language?: string
+  }
+
+  export interface RowMark extends Interface {
+    type: "rowMark"
+  }
+
+  export interface CellMark extends Interface {
+    type: "cellMark"
+  }
+
+  export interface DelimiterRow extends Interface {
+    type: "delimiterRow"
+    columns: TableAlign[]
+  }
+
+  export interface RuleMark extends Interface {
+    type: "ruleMark"
+  }
 }
 
 export interface BlockingInfo {
@@ -990,6 +1112,7 @@ export interface CIQuote {
   sentAt: string // ISO-8601 timestamp
   content: MsgContent
   formattedText?: FormattedText[]
+  markdownBlocks?: MarkdownBlock[]
 }
 
 export interface CIReaction {
@@ -1752,6 +1875,7 @@ export interface ChatItem {
   content: CIContent
   mentions: {[key: string]: CIMention}
   formattedText?: FormattedText[]
+  markdownBlocks?: MarkdownBlock[]
   quotedItem?: CIQuote
   reactions: CIReactionCount[]
   file?: CIFile
@@ -1761,6 +1885,27 @@ export interface ChatItem {
 export interface ChatItemDeletion {
   deletedChatItem: AChatItem
   toChatItem?: AChatItem
+}
+
+export interface ChatItemInfo {
+  itemVersions: ChatItemVersion[]
+  memberDeliveryStatuses?: MemberDeliveryStatus[]
+  forwardedFromChatItem?: AChatItem
+  fileXftpServers: string[]
+}
+
+export interface ChatItemVersion {
+  chatItemVersionId: number // int64
+  msgContent: MsgContent
+  formattedText?: FormattedText[]
+  markdownBlocks?: MarkdownBlock[]
+  itemVersionTs: string // ISO-8601 timestamp
+  createdAt: string // ISO-8601 timestamp
+}
+
+export enum ChatLayout {
+  Classic = "classic",
+  Terminal = "terminal",
 }
 
 export type ChatListQuery = ChatListQuery.Filters | ChatListQuery.Search
@@ -1784,10 +1929,58 @@ export namespace ChatListQuery {
   }
 }
 
+export type ChatPagination = 
+  | ChatPagination.Last
+  | ChatPagination.After
+  | ChatPagination.Before
+  | ChatPagination.Around
+  | ChatPagination.Initial
+
+export namespace ChatPagination {
+  export type Tag = "last" | "after" | "before" | "around" | "initial"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Last extends Interface {
+    type: "last"
+    count: number // int
+  }
+
+  export interface After extends Interface {
+    type: "after"
+    chatItemId: number // int64
+    count: number // int
+  }
+
+  export interface Before extends Interface {
+    type: "before"
+    chatItemId: number // int64
+    count: number // int
+  }
+
+  export interface Around extends Interface {
+    type: "around"
+    chatItemId: number // int64
+    count: number // int
+  }
+
+  export interface Initial extends Interface {
+    type: "initial"
+    count: number // int
+  }
+
+  export function cmdString(self: ChatPagination): string {
+    return self.type == 'last' ? 'count=' + self.count : self.type == 'after' ? 'after=' + self.chatItemId + ' count=' + self.count : self.type == 'before' ? 'before=' + self.chatItemId + ' count=' + self.count : self.type == 'around' ? 'around=' + self.chatItemId + ' count=' + self.count : 'initial=' + self.count
+  }
+}
+
 export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
   Business = "business",
+  Agent = "agent",
 }
 // Used in API commands. Chat scope can only be passed with groups.
 
@@ -1944,6 +2137,27 @@ export interface ComposedMessage {
   quotedItemId?: number // int64
   msgContent: MsgContent
   mentions: {[key: string]: number} // string : int64
+}
+
+export type ConditionsAcceptance = ConditionsAcceptance.Accepted | ConditionsAcceptance.Required
+
+export namespace ConditionsAcceptance {
+  export type Tag = "accepted" | "required"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Accepted extends Interface {
+    type: "accepted"
+    acceptedAt?: string // ISO-8601 timestamp
+    autoAccepted: boolean
+  }
+
+  export interface Required extends Interface {
+    type: "required"
+    deadline?: string // ISO-8601 timestamp
+  }
 }
 
 export type ConnStatus = 
@@ -2152,6 +2366,15 @@ export namespace ConnectionPlan {
   }
 }
 
+export interface ConnectionStats {
+  connAgentVersion: number // int
+  rcvQueuesInfo: RcvQueueInfo[]
+  sndQueuesInfo: SndQueueInfo[]
+  ratchetSyncState: RatchetSyncState
+  ratchetSyncSupported: boolean
+  subStatus?: SubscriptionStatus
+}
+
 export interface Contact {
   contactId: number // int64
   localDisplayName: string
@@ -2174,6 +2397,7 @@ export interface Contact {
   chatTags: number[] // int64
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
+  chatLayout?: ChatLayout
   chatDeleted: boolean
   customData?: object
 }
@@ -2233,6 +2457,7 @@ export interface ContactShortLinkData {
   profile: Profile
   message?: MsgContent
   business: boolean
+  chatLayout?: ChatLayout
   localBadge?: LocalBadge
 }
 
@@ -2568,6 +2793,7 @@ export enum FileType {
   Normal = "normal",
   Roster = "roster",
 }
+// The format markup is a token of block Markdown syntax; its text is the syntax. The format escape is the backslash of a backslash escape. Bold singleStar: written with single stars.
 
 export type Format = 
   | Format.Bold
@@ -2585,6 +2811,8 @@ export type Format =
   | Format.Mention
   | Format.Email
   | Format.Phone
+  | Format.Escape
+  | Format.Markup
 
 export namespace Format {
   export type Tag = 
@@ -2603,6 +2831,8 @@ export namespace Format {
     | "mention"
     | "email"
     | "phone"
+    | "escape"
+    | "markup"
 
   interface Interface {
     type: Tag
@@ -2610,6 +2840,7 @@ export namespace Format {
 
   export interface Bold extends Interface {
     type: "bold"
+    singleStar: boolean
   }
 
   export interface Italic extends Interface {
@@ -2676,6 +2907,15 @@ export namespace Format {
 
   export interface Phone extends Interface {
     type: "phone"
+  }
+
+  export interface Escape extends Interface {
+    type: "escape"
+  }
+
+  export interface Markup extends Interface {
+    type: "markup"
+    token: BlockToken
   }
 }
 
@@ -2959,6 +3199,17 @@ export enum GroupMemberStatus {
   Creator = "creator",
 }
 
+export interface GroupOwnerContact {
+  contactId: number // int64
+  memberId: string
+}
+
+export namespace GroupOwnerContact {
+  export function cmdString(self: GroupOwnerContact): string {
+    return 'contact=' + self.contactId + ' owner=' + self.memberId
+  }
+}
+
 export interface GroupPreference {
   enable: GroupFeatureEnabled
 }
@@ -2989,6 +3240,7 @@ export interface GroupProfile {
   publicGroup?: PublicGroupProfile
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
+  chatLayout?: ChatLayout
 }
 
 export interface GroupRelay {
@@ -3009,6 +3261,68 @@ export interface GroupShortLinkInfo {
   direct: boolean
   groupRelays: string[]
   publicGroupId?: string
+}
+
+export type GroupSndStatus = 
+  | GroupSndStatus.New
+  | GroupSndStatus.Forwarded
+  | GroupSndStatus.Inactive
+  | GroupSndStatus.Sent
+  | GroupSndStatus.Rcvd
+  | GroupSndStatus.Error
+  | GroupSndStatus.Warning
+  | GroupSndStatus.Invalid
+
+export namespace GroupSndStatus {
+  export type Tag = 
+    | "new"
+    | "forwarded"
+    | "inactive"
+    | "sent"
+    | "rcvd"
+    | "error"
+    | "warning"
+    | "invalid"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface New extends Interface {
+    type: "new"
+  }
+
+  export interface Forwarded extends Interface {
+    type: "forwarded"
+  }
+
+  export interface Inactive extends Interface {
+    type: "inactive"
+  }
+
+  export interface Sent extends Interface {
+    type: "sent"
+  }
+
+  export interface Rcvd extends Interface {
+    type: "rcvd"
+    msgRcptStatus: MsgReceiptStatus
+  }
+
+  export interface Error extends Interface {
+    type: "error"
+    agentError: SndError
+  }
+
+  export interface Warning extends Interface {
+    type: "warning"
+    agentError: SndError
+  }
+
+  export interface Invalid extends Interface {
+    type: "invalid"
+    text: string
+  }
 }
 
 export interface GroupSummary {
@@ -3034,6 +3348,12 @@ export enum HandshakeError {
   IDENTITY = "IDENTITY",
   BAD_AUTH = "BAD_AUTH",
   BAD_SERVICE = "BAD_SERVICE",
+}
+
+export enum HostMode {
+  OnionViaSocks = "onionViaSocks",
+  Onion = "onion",
+  Public = "public",
 }
 
 export enum InlineFileMode {
@@ -3098,6 +3418,12 @@ export namespace InvitedBy {
   }
 }
 
+export interface KeepAliveOpts {
+  keepIdle: number // int
+  keepIntvl: number // int
+  keepCnt: number // int
+}
+
 export type LinkContent = LinkContent.Page | LinkContent.Image | LinkContent.Video | LinkContent.Unknown
 
 export namespace LinkContent {
@@ -3141,6 +3467,12 @@ export interface LinkPreview {
   content?: LinkContent
 }
 
+export interface ListEntry {
+  number?: string
+  content: SegmentRange
+  items: ListEntry[]
+}
+
 export interface LocalBadge {
   badge: BadgeInfo
   status: BadgeStatus
@@ -3162,8 +3494,70 @@ export interface LocalProfile {
   contactDomainVerified?: DomainVerification
 }
 
+export type MarkdownBlock = 
+  | MarkdownBlock.Paragraph
+  | MarkdownBlock.Heading
+  | MarkdownBlock.CodeBlock
+  | MarkdownBlock.Quote
+  | MarkdownBlock.List
+  | MarkdownBlock.Table
+  | MarkdownBlock.Rule
+
+export namespace MarkdownBlock {
+  export type Tag = "paragraph" | "heading" | "codeBlock" | "quote" | "list" | "table" | "rule"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Paragraph extends Interface {
+    type: "paragraph"
+    content: SegmentRange
+  }
+
+  export interface Heading extends Interface {
+    type: "heading"
+    level: number // int
+    content: SegmentRange
+  }
+
+  export interface CodeBlock extends Interface {
+    type: "codeBlock"
+    language?: string
+    content: SegmentRange
+  }
+
+  export interface Quote extends Interface {
+    type: "quote"
+    content: SegmentRange
+  }
+
+  export interface List extends Interface {
+    type: "list"
+    items: ListEntry[] // non-empty
+  }
+
+  export interface Table extends Interface {
+    type: "table"
+    columns: TableAlign[] // non-empty
+    header: SegmentRange[]
+    rows: SegmentRange[][]
+  }
+
+  export interface Rule extends Interface {
+    type: "rule"
+    mark: SegmentRange
+  }
+}
+
 export enum MemberCriteria {
   All = "all",
+}
+
+export interface MemberDeliveryStatus {
+  groupMemberId: number // int64
+  memberDeliveryStatus: GroupSndStatus
+  sentViaProxy?: boolean
 }
 // Connection link sent in a message - only short links are allowed.
 
@@ -3268,6 +3662,17 @@ export namespace MsgContent {
     text: string
     json: object
   }
+}
+
+export enum MsgContentTag {
+  Text = "text",
+  Link = "link",
+  Image = "image",
+  Video = "video",
+  Voice = "voice",
+  File = "file",
+  Report = "report",
+  Chat = "chat",
 }
 
 export enum MsgDecryptError {
@@ -3453,6 +3858,30 @@ export namespace NameWarning {
   }
 }
 
+export interface NavigationInfo {
+  afterUnread: number // int
+  afterTotal: number // int
+}
+
+export interface NetworkConfig {
+  socksProxy?: string
+  socksMode: SocksMode
+  hostMode: HostMode
+  requiredHostMode: boolean
+  sessionMode: TransportSessionMode
+  smpProxyMode: SMPProxyMode
+  smpProxyFallback: SMPProxyFallback
+  smpWebPortServers: SMPWebPortServers
+  tcpConnectTimeout: NetworkTimeout
+  tcpTimeout: NetworkTimeout
+  tcpTimeoutPerKb: number // int64
+  rcvConcurrency: number // int
+  tcpKeepAlive?: KeepAliveOpts
+  smpPingInterval: number // int64
+  smpPingCount: number // int
+  logTLSErrors: boolean
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3502,6 +3931,11 @@ export namespace NetworkError {
   }
 }
 
+export interface NetworkTimeout {
+  backgroundTimeout: number // int
+  interactiveTimeout: number // int
+}
+
 export interface NewUser {
   profile?: Profile
   pastTimestamp: boolean
@@ -3517,6 +3951,11 @@ export interface NoteFolder {
   chatTs: string // ISO-8601 timestamp
   favorite: boolean
   unread: boolean
+}
+
+export enum OperatorTag {
+  Simplex = "simplex",
+  Flux = "flux",
 }
 
 export type OwnerVerification = OwnerVerification.Verified | OwnerVerification.Failed
@@ -3575,6 +4014,12 @@ export enum PlanResolveMode {
   AllGroups = "allGroups",
   Unknown = "unknown",
   Never = "never",
+}
+
+export namespace PlanResolveMode {
+  export function cmdString(self: PlanResolveMode): string {
+    return self == 'allGroups' ? ' resolve=allGroups' : self == 'never' ? ' resolve=never' : ''
+  }
 }
 
 export interface PrefEnabled {
@@ -3693,6 +4138,14 @@ export interface PublicGroupProfile {
   groupLink: string
   publicGroupId: string
   publicGroupAccess?: PublicGroupAccess
+}
+
+export enum QueueStatus {
+  New = "new",
+  Confirmed = "confirmed",
+  Secured = "secured",
+  Active = "active",
+  Disabled = "disabled",
 }
 
 export type RCErrorType = 
@@ -4083,6 +4536,22 @@ export namespace RcvMsgError {
   }
 }
 
+export interface RcvQueueInfo {
+  rcvServer: string
+  status: QueueStatus
+  rcvSwitchStatus?: RcvSwitchStatus
+  canAbortSwitch: boolean
+  subStatus: SubscriptionStatus
+}
+
+export enum RcvSwitchStatus {
+  Switch_started = "switch_started",
+  Sending_qadd = "sending_qadd",
+  Sending_quse = "sending_quse",
+  Received_message = "received_message",
+  Received_qend = "received_qend",
+}
+
 export interface RelayCapabilities {
   webDomain?: string
 }
@@ -4268,9 +4737,57 @@ export namespace SMPAgentError {
   }
 }
 
+export enum SMPProxyFallback {
+  Allow = "allow",
+  AllowProtected = "allowProtected",
+  Prohibit = "prohibit",
+}
+
+export enum SMPProxyMode {
+  Always = "always",
+  Unknown = "unknown",
+  Unprotected = "unprotected",
+  Never = "never",
+}
+
+export enum SMPWebPortServers {
+  All = "all",
+  Preset = "preset",
+  Off = "off",
+}
+
 export interface SecurityCode {
   securityCode: string
   verifiedAt: string // ISO-8601 timestamp
+}
+
+export interface SegmentRange {
+  from: number // int
+  to: number // int
+}
+
+export interface ServerOperator {
+  operatorId: number // int64
+  operatorTag?: OperatorTag
+  tradeName: string
+  legalName?: string
+  serverDomains: string[]
+  conditionsAcceptance: ConditionsAcceptance
+  enabled: boolean
+  smpRoles: ServerRoles
+  xftpRoles: ServerRoles
+}
+
+export interface ServerRoles {
+  storage: boolean
+  proxy: boolean
+  names: boolean
+}
+
+export interface ServerRolesOverride {
+  storage?: boolean
+  proxy?: boolean
+  names?: boolean
 }
 
 export interface SimplePreference {
@@ -4510,6 +5027,24 @@ export namespace SndGroupEvent {
   export interface UserPendingReview extends Interface {
     type: "userPendingReview"
   }
+}
+
+export interface SndQueueInfo {
+  sndServer: string
+  status: QueueStatus
+  sndSwitchStatus?: SndSwitchStatus
+}
+
+export enum SndSwitchStatus {
+  Sending_qkey = "sending_qkey",
+  Sending_qtest = "sending_qtest",
+  Securing_queue = "securing_queue",
+  Sending_qend = "sending_qend",
+}
+
+export enum SocksMode {
+  Always = "always",
+  Onion = "onion",
 }
 
 export type SrvError = SrvError.Host | SrvError.Version | SrvError.Other
@@ -5196,6 +5731,13 @@ export enum SwitchPhase {
   Completed = "completed",
 }
 
+export enum TableAlign {
+  None = "none",
+  Left = "left",
+  Center = "center",
+  Right = "right",
+}
+
 export interface TimedMessagesGroupPreference {
   enable: GroupFeatureEnabled
   ttl?: number // int
@@ -5247,6 +5789,13 @@ export namespace TransportError {
   }
 }
 
+export enum TransportSessionMode {
+  User = "user",
+  Session = "session",
+  Server = "server",
+  Entity = "entity",
+}
+
 export enum UIColorMode {
   Light = "light",
   Dark = "dark",
@@ -5276,6 +5825,7 @@ export interface UIThemeEntityOverride {
 export interface UIThemeEntityOverrides {
   light?: UIThemeEntityOverride
   dark?: UIThemeEntityOverride
+  chatLayout?: ChatLayout
 }
 
 export interface UpdatedMessage {
@@ -5358,6 +5908,13 @@ export interface UserInfo {
   unreadCount: number // int
 }
 
+export interface UserOperatorServers {
+  operator?: ServerOperator
+  smpServers: UserServer[]
+  xftpServers: UserServer[]
+  chatRelays: UserChatRelay[]
+}
+
 export interface UserProfileUpdateSummary {
   updateSuccesses: number // int
   updateFailures: number // int
@@ -5367,6 +5924,16 @@ export interface UserProfileUpdateSummary {
 export interface UserPwdHash {
   hash: string
   salt: string
+}
+
+export interface UserServer {
+  serverId: number // int64
+  server: string
+  preset: boolean
+  tested?: boolean
+  enabled: boolean
+  roles: ServerRolesOverride
+  deleted: boolean
 }
 
 export interface VersionRange {

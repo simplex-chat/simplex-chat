@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.core.content.ContextCompat
 import chat.simplex.common.helpers.toURI
 import chat.simplex.common.platform.*
@@ -23,9 +22,9 @@ actual fun AttachmentSelection(
 ) {
   val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
     if (uri != null) {
-      val bitmap: ImageBitmap? = getBitmapFromUri(uri.toURI())
-      if (bitmap != null) {
-        val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+      val imagePreview = resizeImageFileToStrSize(uri.toURI(), maxDataSize = 14000)
+        ?: getBitmapFromUri(uri.toURI())?.let { resizeImageToStrSize(it, maxDataSize = 14000) }
+      if (imagePreview != null) {
         composeState.value = composeState.value.copy(preview = ComposePreview.MediaPreview(listOf(imagePreview), listOf(UploadContent.SimpleImage(uri.toURI()))))
       }
     }

@@ -1403,6 +1403,10 @@ Query: SELECT count(1) FROM commands
 Plan:
 SCAN commands USING COVERING INDEX idx_commands_conn_id
 
+Query: SELECT count(1) FROM conn_invitations WHERE accepted = 0
+Plan:
+SCAN conn_invitations
+
 Query: SELECT count(1) FROM connections
 Plan:
 SCAN connections USING COVERING INDEX idx_connections_deleted
@@ -1430,6 +1434,10 @@ SEARCH servers USING PRIMARY KEY (host=? AND port=?)
 Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
+
+Query: SELECT msg_flags FROM messages WHERE conn_id = ? AND internal_snd_id IS NOT NULL AND msg_type = ? ORDER BY internal_id DESC LIMIT ?
+Plan:
+SEARCH messages USING PRIMARY KEY (conn_id=?)
 
 Query: SELECT ratchet_state FROM ratchets WHERE conn_id = ?
 Plan:
@@ -1530,10 +1538,6 @@ SEARCH messages USING PRIMARY KEY (conn_id=? AND internal_id=?)
 Query: UPDATE ratchets SET ratchet_state = ? WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
-
-Query: UPDATE rcv_file_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
-Plan:
-SEARCH rcv_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE rcv_file_chunk_replicas SET received = 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
 Plan:

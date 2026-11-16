@@ -142,9 +142,10 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
   return if (filePath != null) {
     loadedImageCache[filePath] ?: try {
       val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
+      if (!isImageFile(data)) return null
       val bitmap = decodeBoundedImage(data, MAX_THUMBNAIL_DIMENSION)
       (bitmap to data).also { loadedImageCache[filePath] = it }
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
       Log.e(TAG, "Unable to load image: " + e.stackTraceToString())
       null
     }
@@ -176,7 +177,7 @@ actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitma
 actual fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean): ImageBitmap? =
   try {
     decodeBoundedImage(data, MAX_IMAGE_DIMENSION)
-  } catch (e: Exception) {
+  } catch (e: Throwable) {
     Log.e(TAG, "Error while encoding bitmap from byte array: ${e.stackTraceToString()}")
     if (withAlertOnException) showImageDecodingException()
 
@@ -192,10 +193,7 @@ internal fun decodeBoundedBufferedImage(data: ByteArray, maxDimension: Int): Buf
   val stream = ImageIO.createImageInputStream(ByteArrayInputStream(data))
     ?: throw IOException("Unsupported image format")
   stream.use {
-    val readers = ImageIO.getImageReaders(it)
-    if (!readers.hasNext()) throw IOException("Unsupported image format")
-
-    val reader = readers.next()
+    val reader = receivedImageReader(it)
     try {
       reader.input = it
       val width = reader.getWidth(0)
