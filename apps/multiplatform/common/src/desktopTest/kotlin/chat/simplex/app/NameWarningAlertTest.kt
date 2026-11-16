@@ -3,6 +3,9 @@ package chat.simplex.app
 import chat.simplex.common.model.*
 import chat.simplex.common.views.newchat.*
 import kotlinx.datetime.Instant
+import java.util.Locale
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -10,9 +13,20 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class NameWarningAlertTest {
-  private val expiredAt = badgeDateText(Instant.parse("2026-01-01T12:00:00Z"))
-  private val graceUntil = badgeDateText(Instant.parse("2099-01-01T12:00:00Z"))
+  private val locale = Locale.getDefault()
+  private val expiredAt by lazy { badgeDateText(Instant.parse("2026-01-01T12:00:00Z")) }
+  private val graceUntil by lazy { badgeDateText(Instant.parse("2099-01-01T12:00:00Z")) }
   private val price = "\$20 for 2 years"
+
+  @BeforeTest
+  fun setEnglishLocale() {
+    Locale.setDefault(Locale.US)
+  }
+
+  @AfterTest
+  fun restoreLocale() {
+    Locale.setDefault(locale)
+  }
 
   private fun fixture(name: String): API =
     json.decodeFromString(API.serializer(), javaClass.getResource("/names/$name.json")!!.readText())
