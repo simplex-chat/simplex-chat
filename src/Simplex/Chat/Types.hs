@@ -2407,6 +2407,12 @@ instance FromField DomainVerification where
     2 -> Just DVMoved
     _ -> Nothing
 
+instance ToField DomainVerification where
+  toField = toField . \case
+    DVFailed -> 0 :: Int
+    DVVerified -> 1
+    DVMoved -> 2
+
 $(JQ.deriveJSON defaultJSON ''CReqClientData)
 
 $(JQ.deriveJSON defaultJSON ''MemberIdRole)

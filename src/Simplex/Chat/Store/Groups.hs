@@ -1122,7 +1122,7 @@ getGroupToConnect db cxt user@User {userId} = \case
     let businessCond = case nameType ni of
           NTContact -> " AND g.business_chat IS NOT NULL"
           NTPublicGroup -> " AND g.business_chat IS NULL"
-     in liftIO (maybeFirstRow id $ DB.query db (byNameQuery <> businessCond) (userId, nameDomain ni)) >>= \case
+     in liftIO (maybeFirstRow id $ DB.query db (byNameQuery <> businessCond) (userId, nameDomain ni, DVVerified)) >>= \case
           Just (gId :: Int64, Just cReq, Just (sLnk :: ShortLinkContact)) -> Just . (CCLink cReq (Just sLnk),) <$> getGroupInfo db cxt user gId
           _ -> pure Nothing
   where
@@ -1130,7 +1130,7 @@ getGroupToConnect db cxt user@User {userId} = \case
       [sql|
         SELECT g.group_id, g.conn_full_link_to_connect, g.conn_short_link_to_connect FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-        WHERE g.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified = 1
+        WHERE g.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified = ?
       |]
 
 getGroupMember :: DB.Connection -> StoreCxt -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
@@ -2784,27 +2784,29 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         (ldn, currentTs, userId, groupId)
       safeDeleteLDN db user localDisplayName
 
-setGroupDomainVerified :: DB.Connection -> User -> GroupInfo -> Bool -> IO GroupInfo
+setGroupDomainVerified :: DB.Connection -> User -> GroupInfo -> NameVerified -> IO GroupInfo
 setGroupDomainVerified db User {userId} g@GroupInfo {groupId} verified = do
   DB.execute
     db
     "UPDATE groups SET group_domain_verified = ? WHERE user_id = ? AND group_id = ?"
-    (BI verified, userId, groupId)
-  pure g {groupDomainVerified = Just $ if verified then DVVerified else DVFailed}
+    (dv, userId, groupId)
+  pure g {groupDomainVerified = Just dv}
+  where
+    dv = if verified then DVVerified else DVFailed
 
 setNameGroupsMoved :: DB.Connection -> User -> SimplexNameInfo -> Maybe GroupId -> IO [GroupId]
 setNameGroupsMoved db User {userId} SimplexNameInfo {nameType, nameDomain} exceptGroupId_ =
   map fromOnly <$> DB.query
     db
     ( [sql|
-        UPDATE groups SET group_domain_verified = 2
-        WHERE user_id = ? AND group_domain_verified = 1 AND group_id IS DISTINCT FROM ?
+        UPDATE groups SET group_domain_verified = ?
+        WHERE user_id = ? AND group_domain_verified = ? AND group_id IS DISTINCT FROM ?
           AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE user_id = ? AND group_domain = ?)
       |]
         <> businessCond
         <> " RETURNING group_id"
     )
-    (userId, exceptGroupId_, userId, nameDomain)
+    (DVMoved, userId, DVVerified, exceptGroupId_, userId, nameDomain)
   where
     businessCond = case nameType of
       NTContact -> " AND business_chat IS NOT NULL"
@@ -2908,9 +2910,9 @@ getGroupInfoViaUserTarget db cxt user@User {userId} target = fmap eitherToMaybe 
               FROM user_contact_links ucl
               JOIN groups g ON g.group_id = ucl.group_id
               JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-              WHERE ucl.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified IS DISTINCT FROM 2
+              WHERE ucl.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified IS DISTINCT FROM ?
             |]
-            (userId, nameDomain ni)
+            (userId, nameDomain ni, DVMoved)
     toConnReqGroupId = \case
       -- cReq is "not null", group_id is nullable
       (cReq, Just (sLnk :: ShortLinkContact), Just groupId) -> Right (cReq, sLnk, groupId)

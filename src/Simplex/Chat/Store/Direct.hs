@@ -51,6 +51,7 @@ module Simplex.Chat.Store.Direct
     getContactViaShortLinkToConnect,
     getContactIdByName,
     updateContactProfile,
+    NameVerified,
     setContactDomainVerified,
     setNameContactsMoved,
     updateContactUserPreferences,
@@ -591,7 +592,9 @@ updateContactProfile db cxt user@User {userId} c presHeader_ p' = do
             clearVerificationIfClaimChanged
             pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
 
-setContactDomainVerified :: DB.Connection -> User -> Contact -> Bool -> IO Contact
+type NameVerified = Bool
+
+setContactDomainVerified :: DB.Connection -> User -> Contact -> NameVerified -> IO Contact
 setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} verified = do
   DB.execute
     db
@@ -599,8 +602,10 @@ setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} ve
       UPDATE contact_profiles SET contact_domain_verified = ?
       WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
     |]
-    (BI verified, userId, contactId)
-  pure (ct {profile = p {contactDomainVerified = Just $ if verified then DVVerified else DVFailed}} :: Contact)
+    (dv, userId, contactId)
+  pure (ct {profile = p {contactDomainVerified = Just dv}} :: Contact)
+  where
+    dv = if verified then DVVerified else DVFailed
 
 setNameContactsMoved :: DB.Connection -> User -> SimplexDomain -> Maybe ContactId -> IO [ContactId]
 setNameContactsMoved db User {userId} domain exceptContactId_ = do
@@ -610,11 +615,11 @@ setNameContactsMoved db User {userId} domain exceptContactId_ = do
       [sql|
         SELECT ct.contact_id, ct.contact_profile_id FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
-        WHERE ct.user_id = ? AND ct.contact_id IS DISTINCT FROM ? AND cp.contact_domain = ? AND cp.contact_domain_verified = 1
+        WHERE ct.user_id = ? AND ct.contact_id IS DISTINCT FROM ? AND cp.contact_domain = ? AND cp.contact_domain_verified = ?
       |]
-      (userId, exceptContactId_, domain)
+      (userId, exceptContactId_, domain, DVVerified)
   forM_ cts $ \(_ :: ContactId, profileId :: ProfileId) ->
-    DB.execute db "UPDATE contact_profiles SET contact_domain_verified = 2 WHERE contact_profile_id = ?" (Only profileId)
+    DB.execute db "UPDATE contact_profiles SET contact_domain_verified = ? WHERE contact_profile_id = ?" (DVMoved, profileId)
   pure $ map fst cts
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
@@ -820,7 +825,7 @@ getContactToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink ->
 getContactToConnect db cxt user@User {userId} = \case
   CTLink sl -> first (`CCLink` Just sl) <$$> getContactViaShortLinkToConnect db cxt user sl
   CTName ni ->
-    liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, nameDomain ni)) >>= \case
+    liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, nameDomain ni, DVVerified)) >>= \case
       Just (ctId :: Int64, Just (ACR cMode cReq), Just (sLnk :: ShortLinkContact)) | Just Refl <- testEquality cMode SCMContact ->
         Just . (CCLink cReq (Just sLnk),) <$> getContact db cxt user ctId
       _ -> pure Nothing
@@ -829,7 +834,7 @@ getContactToConnect db cxt user@User {userId} = \case
       [sql|
         SELECT ct.contact_id, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
-        WHERE ct.user_id = ? AND cp.contact_domain = ? AND cp.contact_domain_verified = 1 AND ct.deleted = 0
+        WHERE ct.user_id = ? AND cp.contact_domain = ? AND cp.contact_domain_verified = ? AND ct.deleted = 0
       |]
 
 getUserContacts :: DB.Connection -> StoreCxt -> User -> IO [Contact]
