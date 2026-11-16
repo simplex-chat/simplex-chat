@@ -47,7 +47,6 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     setGroupDomainVerified,
-    setNameGroupsMoved,
     setPreparedGroupDomain,
     updateGroupPreferences,
     updateGroupProfileFromMember,
@@ -671,7 +670,7 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
-createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> StoreCxt -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> Maybe SimplexDomain -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
+createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> StoreCxt -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> Maybe SimplexDomain -> ExceptT StoreError IO ((GroupInfo, Maybe GroupMember), MovedChats)
 createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ verifiedDomain = do
   currentTs <- liftIO getCurrentTime
   (memberPubKey, memberPrivKey) <- atomically $ C.generateKeyPair gVar
@@ -692,11 +691,11 @@ createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile b
     when business $ liftIO $ setGroupBusinessChatInfo groupId membership hostMember
   g <- getGroupInfo db cxt user groupId
   -- a business has no domain in its profile, so set it out-of-band; a channel already has it (createGroup_), just verify
-  g' <- liftIO $ case verifiedDomain of
+  (g', moved) <- liftIO $ case verifiedDomain of
     Just d | business -> setPreparedGroupDomain db user g d
     Just _ -> setGroupDomainVerified db user g True
-    Nothing -> pure g
-  pure (g', hostMember_)
+    Nothing -> pure (g, mempty)
+  pure ((g', hostMember_), moved)
   where
     insertHost_ currentTs groupId groupLDN = do
       randHostId <- liftIO $ encodedRandomBytes gVar 12
@@ -735,13 +734,14 @@ updateBusinessChatInfo db groupId businessChatInfo =
     |]
     (businessChatInfoRow businessChatInfo :. (Only groupId))
 
-updatePreparedGroupUser :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe GroupMember -> User -> ExceptT StoreError IO GroupInfo
+updatePreparedGroupUser :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe GroupMember -> User -> ExceptT StoreError IO (GroupInfo, MovedChats)
 updatePreparedGroupUser db cxt user gInfo@GroupInfo {groupId, membership} hostMember_ newUser@User {userId = newUserId} = do
   currentTs <- liftIO getCurrentTime
   updateGroup gInfo currentTs
   liftIO $ updateMembership membership currentTs
   forM_ hostMember_ $ \hostMember -> updateHostMember hostMember currentTs
-  getGroupInfo db cxt newUser groupId
+  gInfo' <- getGroupInfo db cxt newUser groupId
+  (gInfo',) <$> liftIO (setOtherNameChatsMoved db newUser (GroupChat gInfo' Nothing))
   where
     updateGroup GroupInfo {localDisplayName = oldGroupLDN, groupProfile = GroupProfile {displayName = groupDisplayName}} currentTs =
       ExceptT . withLocalDisplayName db newUserId groupDisplayName $ \newGroupLDN -> runExceptT $ do
@@ -2783,37 +2783,20 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         (ldn, currentTs, userId, groupId)
       safeDeleteLDN db user localDisplayName
 
-setGroupDomainVerified :: DB.Connection -> User -> GroupInfo -> NameVerified -> IO GroupInfo
-setGroupDomainVerified db User {userId} g@GroupInfo {groupId} verified = do
+setGroupDomainVerified :: DB.Connection -> User -> GroupInfo -> NameVerified -> IO (GroupInfo, MovedChats)
+setGroupDomainVerified db user@User {userId} g@GroupInfo {groupId} verified = do
   DB.execute
     db
     "UPDATE groups SET group_domain_verified = ? WHERE user_id = ? AND group_id = ?"
     (dv, userId, groupId)
-  pure g {groupDomainVerified = Just dv}
+  let g' = g {groupDomainVerified = Just dv}
+  (g',) <$> setOtherNameChatsMoved db user (GroupChat g' Nothing)
   where
     dv = if verified then DVVerified else DVFailed
 
-setNameGroupsMoved :: DB.Connection -> User -> SimplexNameInfo -> Maybe GroupId -> IO [GroupId]
-setNameGroupsMoved db User {userId} SimplexNameInfo {nameType, nameDomain} exceptGroupId_ =
-  map fromOnly <$> DB.query
-    db
-    ( [sql|
-        UPDATE groups SET group_domain_verified = ?
-        WHERE user_id = ? AND group_domain_verified = ? AND group_id IS DISTINCT FROM ?
-          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE user_id = ? AND group_domain = ?)
-      |]
-        <> businessCond
-        <> " RETURNING group_id"
-    )
-    (DVMoved, userId, DVVerified, exceptGroupId_, userId, nameDomain)
-  where
-    businessCond = case nameType of
-      NTContact -> " AND business_chat IS NOT NULL"
-      NTPublicGroup -> " AND business_chat IS NULL"
-
 -- A business group has no publicGroup claim, so the domain it was connected by (from its address) is written
 -- directly to group_domain and marked verified, so it is found by the local name search (getGroupToConnect).
-setPreparedGroupDomain :: DB.Connection -> User -> GroupInfo -> SimplexDomain -> IO GroupInfo
+setPreparedGroupDomain :: DB.Connection -> User -> GroupInfo -> SimplexDomain -> IO (GroupInfo, MovedChats)
 setPreparedGroupDomain db user@User {userId} g@GroupInfo {groupId, businessChat} domain = do
   DB.execute
     db
