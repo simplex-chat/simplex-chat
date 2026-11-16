@@ -55,7 +55,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "drops an image that is not a data:image URI" testImageJSON
     H.it "gives a deep link that parses back in the core with the link's server" testDeepLinkParses
   describe "bounds and cache" $ do
-    H.it "answers a link again from the cache, and fetches it again once the cache expires" testCacheExpiry
+    H.it "answers a link again from the cache, in either spelling, and fetches it again once the cache expires" testCacheExpiry
     H.it "does not cache a failed fetch" testFailureNotCached
     H.it "evicts the entry that expires soonest when the cache is full" testCacheBound
     H.it "gives up a fetch that takes longer than the timeout, freeing its slot" testFetchTimeout
@@ -253,6 +253,8 @@ testCacheExpiry = do
   let l = addressLink 1
   preview fake l `shouldReturn` ProfileOk (profileFor l)
   search fake l `shouldReturn` ProfileOk (profileFor l)
+  fetchCount fake `shouldReturn` 1
+  preview fake (linkText $ simplexShortLink $ parsed l) `shouldReturn` ProfileOk (profileFor l)
   fetchCount fake `shouldReturn` 1
   atomically $ writeTVar clockAt 599
   preview fake l `shouldReturn` ProfileOk (profileFor l)
