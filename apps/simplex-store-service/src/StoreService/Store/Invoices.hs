@@ -589,8 +589,16 @@ getInvoiceByProviderRef st ref = withConnection st $ \db ->
     [row] -> Just <$> decodeInvoiceRow row
     _ -> E.throwIO (ProviderRefConflict ref)
 
-unpaidRefs :: DBStore -> UTCTime -> IO [(Text, Text)]
-unpaidRefs st since = withConnection st $ \db -> DB.query db qUnpaidRefs (Only since)
+unpaidRefs :: DBStore -> UTCTime -> IO [(PaymentProvider, Text)]
+unpaidRefs st since = do
+  rows <- withConnection st $ \db -> DB.query db qUnpaidRefs (Only since)
+  catMaybes <$> mapM unpaidRef rows
+  where
+    unpaidRef (providerTxt, ref) = case textDecode providerTxt of
+      Just provider -> pure $ Just (provider, ref)
+      Nothing -> do
+        logError ("store: unpaid invoice " <> ref <> " names provider " <> providerTxt <> ", which this build does not know, so it is not read")
+        pure Nothing
 
 codeHashExists :: DBStore -> ByteString -> IO Bool
 codeHashExists st codeHash = withConnection st $ \db ->

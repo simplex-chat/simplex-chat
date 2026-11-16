@@ -2965,7 +2965,7 @@ testPassReadsWhatItAwaits = bounded "reads what it awaits" $ withStubPoller race
   stubCalls ref `shouldReturn` [StubRead "p-1", StubRead "p-2", StubRead "p-3", StubListOpen]
   mapM (invoiceStatus (weStore env)) [a, b, c] `shouldReturn` [ISPaid, ISPaid, ISPaid]
   listed <- readTVarIO (peListedOk poller)
-  Map.keys listed `shouldBe` ["crypto"]
+  Map.keys listed `shouldBe` [PPCrypto]
   all (>= passStarted) listed `shouldBe` True
 
 testIdlePassAsksNothing :: IO ()
@@ -3738,7 +3738,7 @@ testWebhookVerifiesARealSignature = bounded "real signature" $ withFakePoller $ 
   statusOf delivered `shouldBe` 200
   responseBody delivered `shouldBe` ""
   verifiedAt <- readTVarIO (weWebhookAt env)
-  Map.keys verifiedAt `shouldBe` ["crypto"]
+  Map.keys verifiedAt `shouldBe` [PPCrypto]
   tampered <- postWebhook client (webhookSigHeader secret body) (body <> " ")
   statusOf tampered `shouldBe` 400
   responseBody tampered `shouldBe` ""

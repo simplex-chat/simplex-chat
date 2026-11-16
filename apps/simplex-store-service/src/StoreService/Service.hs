@@ -313,7 +313,7 @@ storeService opts serviceCfg baseCfg env = do
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       nameLanes <- maybe (pure []) namesLanes namesEnv
-      let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map (textEncode . pProvider) providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = namesSource <$> namesEnv}
+      let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map pProvider providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = namesSource <$> namesEnv}
           namesSource NamesEnv {neChain, neContracts} = NamesSource {nsChain = neChain, nsContracts = neContracts}
           metricsLane = [runMetrics (listener sc) port metricsEnv | Just port <- [lMetricsPort $ listener sc]]
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes <> metricsLane

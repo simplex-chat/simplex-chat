@@ -40,6 +40,7 @@ import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges.Code (maxNameLength)
 import Simplex.Chat.Badges.Types (BadgePurchaseStatus (..), SubscriptionState (..))
+import Simplex.Chat.PaymentService.Types (PaymentProvider)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (raceAny_, tshow)
@@ -57,9 +58,9 @@ import StoreService.Web.Server (webSettings)
 
 data MetricsEnv = MetricsEnv
   { meStore :: DBStore,
-    meProviders :: [Text],
-    meListedOk :: TVar (Map Text UTCTime),
-    meWebhookAt :: TVar (Map Text UTCTime),
+    meProviders :: [PaymentProvider],
+    meListedOk :: TVar (Map PaymentProvider UTCTime),
+    meWebhookAt :: TVar (Map PaymentProvider UTCTime),
     -- | @Nothing@ when the ini has no @[names]@ section.
     meNames :: Maybe NamesSource
   }
@@ -79,8 +80,7 @@ data ChainRead = ChainRead
 noChainRead :: ChainRead
 noChainRead = ChainRead {crFunds = Nothing, crHead = Nothing, crTerms = [], crReadAt = Nothing, crOk = False}
 
--- | By each provider's text encoding.
-data ProviderTimes = ProviderTimes {ptListedOk :: Map Text UTCTime, ptWebhookAt :: Map Text UTCTime}
+data ProviderTimes = ProviderTimes {ptListedOk :: Map PaymentProvider UTCTime, ptWebhookAt :: Map PaymentProvider UTCTime}
 
 chainReadInterval :: Int
 chainReadInterval = 60 * 1000000
@@ -143,19 +143,19 @@ runCensus ns v = forever $ do
   threadDelay censusInterval
 
 -- | Open invoices come as (provider, open, overdue).
-serviceText :: [Text] -> [(Text, Int, Int)] -> BadgeCounts -> ProviderTimes -> Text
+serviceText :: [PaymentProvider] -> [(Text, Int, Int)] -> BadgeCounts -> ProviderTimes -> Text
 serviceText providers invoices BadgeCounts {bcPurchases, bcSubscriptions, bcOpenCodes} ProviderTimes {ptListedOk, ptWebhookAt} =
   T.concat
     [ gauge "simplex_store_invoices_open" "Open invoices by provider" [labelled "provider" p (value n) | (p, (n, _)) <- invoiceCounts],
       gauge "simplex_store_invoices_overdue" "Open invoices past their expiry and its grace with no money received, which the poller expires once the provider answers" [labelled "provider" p (value n) | (p, (_, n)) <- invoiceCounts],
-      gauge "simplex_store_provider_list_ok_timestamp_seconds" "When the poller last listed the provider's open invoices successfully" [labelled "provider" p (timestamp t) | (p, t) <- M.toList ptListedOk],
-      gauge "simplex_store_provider_webhook_timestamp_seconds" "When the provider last delivered a webhook that verified" [labelled "provider" p (timestamp t) | (p, t) <- M.toList ptWebhookAt],
+      gauge "simplex_store_provider_list_ok_timestamp_seconds" "When the poller last listed the provider's open invoices successfully" [labelled "provider" (textEncode p) (timestamp t) | (p, t) <- M.toList ptListedOk],
+      gauge "simplex_store_provider_webhook_timestamp_seconds" "When the provider last delivered a webhook that verified" [labelled "provider" (textEncode p) (timestamp t) | (p, t) <- M.toList ptWebhookAt],
       gauge "simplex_store_badges_purchases" "Badge purchases by status" [labelled "status" s (value n) | (s, n) <- withZeros purchaseStatuses bcPurchases],
       gauge "simplex_store_badges_subscriptions" "App store subscriptions paying for badges, by state" [labelled "state" s (value n) | (s, n) <- withZeros subscriptionStates bcSubscriptions],
       gauge "simplex_store_badges_codes_open" "Badge codes paid or free, not revoked or expired, with redemptions left" (Just $ value bcOpenCodes)
     ]
   where
-    invoiceCounts = M.toList $ M.union (M.fromList [(p, (n, overdue)) | (p, n, overdue) <- invoices]) (M.fromList [(p, (0, 0)) | p <- providers])
+    invoiceCounts = M.toList $ M.union (M.fromList [(p, (n, overdue)) | (p, n, overdue) <- invoices]) (M.fromList [(textEncode p, (0, 0)) | p <- providers])
 
 withZeros :: [Text] -> [(Text, Int)] -> [(Text, Int)]
 withZeros known counts = M.toList $ M.union (M.fromList counts) (M.fromList [(k, 0) | k <- known])

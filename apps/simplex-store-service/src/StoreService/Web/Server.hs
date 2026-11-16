@@ -78,8 +78,8 @@ data WebEnv = WebEnv
     weNames :: Maybe NamesEnv,
     -- | The name orders' part of weNames, which tests set without a chat controller.
     weOrders :: Maybe OrdersEnv,
-    -- | When each provider last delivered a webhook that verified, by its text encoding.
-    weWebhookAt :: TVar (Map Text UTCTime)
+    -- | When each provider last delivered a webhook that verified.
+    weWebhookAt :: TVar (Map PaymentProvider UTCTime)
   }
 
 newWebEnv :: DBStore -> ServiceConfig -> Waiters -> ReadHints -> [Provider] -> Maybe NamesEnv -> IO WebEnv
@@ -445,7 +445,7 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
               Left (WebhookError e) -> refuse e
               Left (WebhookStale e) -> logRefusal logWarn (route <> " refused: " <> e) >> respond webhookRefused
               Right ref_ -> do
-                atomically $ modifyTVar' (weWebhookAt env) $ M.insert (textEncode provider) now
+                atomically $ modifyTVar' (weWebhookAt env) $ M.insert provider now
                 maybe (ignore body "nothing this service acts on") (resolve body) ref_
     refuse :: Text -> IO ResponseReceived
     refuse why = logRefusal logNote (route <> " refused: " <> why) >> respond webhookRefused

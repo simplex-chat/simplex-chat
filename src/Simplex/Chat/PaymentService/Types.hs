@@ -56,7 +56,7 @@ newtype PaymentId = PaymentId Text
 
 -- confirmed
 data PaymentProvider = PPApple | PPGoogle | PPStripe | PPCrypto | PPCode | PPReceipt
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 instance TextEncoding PaymentProvider where
   textEncode = \case
@@ -87,7 +87,7 @@ data CardProvider = CPStripe
   deriving (Eq, Show)
 
 data CryptoCurrency = CCBtc | CCXmr
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 instance TextEncoding CryptoCurrency where
   textEncode = \case
