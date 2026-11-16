@@ -142,7 +142,7 @@ insertProviderInvoice db provider invId expiresAt status =
     ((invId, provider, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
 
 -- | A paid order whose invoice, named after the registration, expires at the given time.
-placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either RegistrationRefused ())
+placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either BalanceInsertRefused ())
 placePaid st rid owner o expiresAt = withTransaction st $ \db -> insertOrRollBack db $ do
   insertInvoiceRow db ("inv-" <> rid) expiresAt "open"
   createPaidRegistration db (newReg rid owner o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) t0
@@ -162,7 +162,7 @@ issue st n c = withTransaction st $ \db -> do
 usable :: NewPrepaidCode
 usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
 
-placeCode :: DBStore -> Text -> Address -> OrderFields -> PrepaidCode -> IO (Either RegistrationRefused ())
+placeCode :: DBStore -> Text -> Address -> OrderFields -> PrepaidCode -> IO (Either CodeInsertRefused ())
 placeCode st rid owner o code = withTransaction st $ \db -> insertOrRollBack db $ createCodeRegistration db (newReg rid owner o) code t0
 
 reg :: DBStore -> Text -> IO NameRegistration
@@ -293,10 +293,10 @@ testLiveUnique :: IO ()
 testLiveUnique = withServiceStore $ \st -> do
   let o = order "alicebakery" 1
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
-  placePaid st "r2" ownerA o {ofCommitment = digestFixture 2} (at 60) `shouldReturn` Left RRLiveOrder
-  placePaid st "r3" ownerB o (at 60) `shouldReturn` Left RRLiveOrder
+  placePaid st "r2" ownerA o {ofCommitment = digestFixture 2} (at 60) `shouldReturn` Left BIRLiveOrder
+  placePaid st "r3" ownerB o (at 60) `shouldReturn` Left BIRLiveOrder
   code <- issue st 9 usable
-  placeCode st "r4" ownerA (order "alicebakery" 3) code `shouldReturn` Left RRLiveOrder
+  placeCode st "r4" ownerA (order "alicebakery" 3) code `shouldReturn` Left CIRLiveOrder
   placePaid st "r5" ownerB (order "alicebakery" 5) (at 60) `shouldReturn` Right ()
   existing <- withTransaction st $ \db -> mapM (getRegistration db . RegistrationId) ["r2", "r3", "r4"]
   existing `shouldBe` [Nothing, Nothing, Nothing]
@@ -307,7 +307,7 @@ testCodeNotReservable :: IO ()
 testCodeNotReservable = withServiceStore $ \st -> do
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-  placeCode st "r2" ownerB (order "bobsbakery" 2) code `shouldReturn` Left RRCodeNotReservable
+  placeCode st "r2" ownerB (order "bobsbakery" 2) code `shouldReturn` Left CIRCodeNotReservable
   withTransaction st (\db -> getRegistration db (RegistrationId "r2")) `shouldReturn` Nothing
   held <- withTransaction st $ \db -> getPrepaidCodeById db (pcId code)
   (pcReservedBy =<< held) `shouldBe` Just (RegistrationId "r1")

@@ -149,7 +149,7 @@ holdTerms :: Text -> Int -> OrderTerms
 holdTerms src seen = OTBalance (RegistrationId src) holdPrice seen (Just btc)
 
 -- | A difference order holding all of the source's balance seen, its invoice of the difference expiring at the given time.
-holder :: DBStore -> Text -> Text -> Int -> UTCTime -> IO (Either RegistrationRefused ())
+holder :: DBStore -> Text -> Text -> Int -> UTCTime -> IO (Either BalanceInsertRefused ())
 holder st r src seen expiresAt = withTransaction st $ \db -> insertOrRollBack db $ do
   invoiceRow db ("inv-" <> r) False (holdPrice - seen) expiresAt
   createPaidRegistration db (newReg r ownerA (fieldsN r)) (holdTerms src seen) (paidOrder ("inv-" <> r)) {poPrice = holdPrice} t0
@@ -157,7 +157,7 @@ holder st r src seen expiresAt = withTransaction st $ \db -> insertOrRollBack db
 hold :: Text -> UTCTime -> Bool -> BalanceHold
 hold h bhUntil bhOverdue = BalanceHold {bhHolder = RegistrationId h, bhUntil, bhOverdue, bhFunded = False}
 
-coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either RegistrationRefused ())
+coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either BalanceInsertRefused ())
 coveredSpend st r src price seen = withTransaction st $ \db -> insertOrRollBack db $ createBalanceRegistration db (newReg r ownerA (fieldsN r)) (RegistrationId src) price seen t0
 
 -- | The holder queued and its hold spent in one transaction, as settlement does.
@@ -261,13 +261,13 @@ testSpendAtOnce = withServiceStore $ \st -> do
   (nrPhase c1, nrLive c1, nrPrice c1, nrPayment c1, nrBalanceSource c1, nrBalanceUsed c1) `shouldBe` (PQueued, True, 6000, RPBalance, Just (RegistrationId "s"), 6000)
   nrOrderHash c1 `shouldBe` orderHash ownerA (fieldsN "c1") (OTBalance (RegistrationId "s") 6000 10000 Nothing)
   figures st "s" t0 `shouldReturn` Just (4000, 10000, 0, Nothing)
-  coveredSpend st "c2" "s" 3000 10000 `shouldReturn` Left RRBalanceChanged
-  coveredSpend st "c3" "s" 5000 4000 `shouldReturn` Left RRBalanceChanged
-  coveredSpend st "c6" "s" 3000 3000 `shouldReturn` Left RRBalanceChanged
+  coveredSpend st "c2" "s" 3000 10000 `shouldReturn` Left BIRBalanceChanged
+  coveredSpend st "c3" "s" 5000 4000 `shouldReturn` Left BIRBalanceChanged
+  coveredSpend st "c6" "s" 3000 3000 `shouldReturn` Left BIRBalanceChanged
   mapM_ (absent st) ["c2", "c3", "c6"]
   figures st "s" t0 `shouldReturn` Just (4000, 10000, 0, Nothing)
   holder st "h" "s" 4000 (at 60) `shouldReturn` Right ()
-  coveredSpend st "c4" "s" 1000 4000 `shouldReturn` Left RRBalanceChanged
+  coveredSpend st "c4" "s" 1000 4000 `shouldReturn` Left BIRBalanceChanged
   absent st "c4"
   release st "h" `shouldReturn` True
   coveredSpend st "c5" "s" 4000 4000 `shouldReturn` Right ()
@@ -277,13 +277,13 @@ testTwoHolds :: IO ()
 testTwoHolds = withServiceStore $ \st -> do
   source st "s" 10000
   holder st "h1" "s" 10000 (at 60) `shouldReturn` Right ()
-  holder st "h2" "s" 10000 (at 60) `shouldReturn` Left RRBalanceChanged
+  holder st "h2" "s" 10000 (at 60) `shouldReturn` Left BIRBalanceChanged
   absent st "h2"
   h1 <- reg st "h1"
   (nrPhase h1, nrPayment h1, nrPrice h1, nrBalanceSource h1, nrBalanceUsed h1) `shouldBe` (PUnpaid, RPInvoice btc (InvoiceId "inv-h1"), holdPrice, Just (RegistrationId "s"), 10000)
   figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Just $ hold "h1" (at 60) False)
   release st "h1" `shouldReturn` True
-  holder st "h3" "s" 9000 (at 60) `shouldReturn` Left RRBalanceChanged
+  holder st "h3" "s" 9000 (at 60) `shouldReturn` Left BIRBalanceChanged
   absent st "h3"
   figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
@@ -318,14 +318,14 @@ testRelease = withServiceStore $ \st -> do
 testNoNegativeCents :: IO ()
 testNoNegativeCents = withServiceStore $ \st -> do
   source st "s" 10000
-  mapM (\(r, cents) -> coveredSpend st r "s" cents 10000) [("c0", 0), ("c1", -1)] `shouldReturn` replicate 2 (Left RRBalanceChanged)
+  mapM (\(r, cents) -> coveredSpend st r "s" cents 10000) [("c0", 0), ("c1", -1)] `shouldReturn` replicate 2 (Left BIRBalanceChanged)
   mapM_ (absent st) ["c0", "c1"]
   figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
   holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
   mapM (\used -> withTransaction st $ \db -> spendHeldBalance db (RegistrationId "h") used t0) [0, -1] `shouldReturn` [False, False]
   figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" (at 60) False)
   source st "z" 0
-  holder st "hz" "z" 0 (at 60) `shouldReturn` Left RRBalanceChanged
+  holder st "hz" "z" 0 (at 60) `shouldReturn` Left BIRBalanceChanged
   figures st "z" t0 `shouldReturn` Just (0, 0, 0, Nothing)
   placeOrderRow st "x" False 20000 (at 60)
   credit st "x" 5000
@@ -733,7 +733,7 @@ testBalanceTurn = withServiceStore $ \st -> do
   timeout 5000000 (atomically $ balanceTurnCount turns src >>= check . (== 2)) `shouldReturn` Just ()
   putMVar proceed ()
   wait firstHolder `shouldReturn` Right ()
-  wait secondHolder `shouldReturn` Left RRBalanceChanged
+  wait secondHolder `shouldReturn` Left BIRBalanceChanged
   timeout 5000000 (withLabelTurn turns (labelHash "alicebakery") $ withBalanceTurn turns src $ pure ()) `shouldReturn` Just ()
   turnsCount turns `shouldReturn` 0
 

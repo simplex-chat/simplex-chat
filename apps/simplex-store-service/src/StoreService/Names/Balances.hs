@@ -23,7 +23,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import StoreService.Names.Orders (OrderRefusal (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink, BrokenInvariant (..), NameRegistration, NewRegistration, OrderTerms (..), PaidOrder, RegistrationRefused (..), balanceByReference, balanceChain, createBalanceRegistration, createPaidRegistration, getBalance, getRegistration, heldBy, refundBalance)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceInsertRefused (..), BalanceLink, BrokenInvariant (..), NameRegistration, NewRegistration, OrderTerms (..), PaidOrder, balanceByReference, balanceChain, createBalanceRegistration, createPaidRegistration, getBalance, getRegistration, heldBy, refundBalance)
 import StoreService.Names.Turns (Turns, withBalanceTurn)
 
 -- | RefundAmount: the balance's amount now, which is not the cents given. RefundHeld: an order holds it, overdue or not,
@@ -97,10 +97,8 @@ differenceOrderInsert spend@Spend {spSource} new paid db now =
   balanceRefusal db spSource now =<< createPaidRegistration db new (spendTerms spend) paid now
 
 -- | A write refused at the balance answers with the balance as this transaction reads it.
-balanceRefusal :: DB.Connection -> RegistrationId -> UTCTime -> Either RegistrationRefused () -> IO (Either OrderRefusal ())
+balanceRefusal :: DB.Connection -> RegistrationId -> UTCTime -> Either BalanceInsertRefused () -> IO (Either OrderRefusal ())
 balanceRefusal db source now = \case
   Right () -> pure $ Right ()
-  Left RRBalanceChanged -> Left . ORBalanceChanged <$> getBalance db source now
-  Left RRLiveOrder -> pure $ Left OROrderExists
-  -- a spend reserves no code
-  Left RRCodeNotReservable -> pure $ Left OROrderExists
+  Left BIRBalanceChanged -> Left . ORBalanceChanged <$> getBalance db source now
+  Left BIRLiveOrder -> pure $ Left OROrderExists

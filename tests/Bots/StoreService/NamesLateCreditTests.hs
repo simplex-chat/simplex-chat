@@ -637,7 +637,7 @@ testCreditWhileHeld = withLate $ \l@Late {lStore = st} -> do
   figures st "x" (at 10) `shouldReturn` Just (4800, 24000, 0, Nothing)
   invariantHolds st "x"
 
-coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either RegistrationRefused ())
+coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either BalanceInsertRefused ())
 coveredSpend st r src price seen = withTransaction st $ \db -> createBalanceRegistration db (newReg r ownerA (fieldsN r)) (RegistrationId src) price seen t0
 
 testCreditRefundTwice :: IO ()

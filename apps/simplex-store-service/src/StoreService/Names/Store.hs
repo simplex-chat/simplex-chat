@@ -13,7 +13,8 @@ module StoreService.Names.Store
     NameRegistration (..),
     NewRegistration (..),
     PaidOrder (..),
-    RegistrationRefused (..),
+    CodeInsertRefused (..),
+    BalanceInsertRefused (..),
     VersionWrite (..),
     LiveOrder (..),
     OrderTerms (..),
@@ -255,8 +256,11 @@ data PaidOrder = PaidOrder
     poProviderRef :: Text
   }
 
--- | RRBalanceChanged: the source's balance no longer has the amount seen, or another order holds it.
-data RegistrationRefused = RRLiveOrder | RRCodeNotReservable | RRBalanceChanged
+data CodeInsertRefused = CIRLiveOrder | CIRCodeNotReservable
+  deriving (Eq, Show)
+
+-- | BIRBalanceChanged: the source's balance no longer has the amount seen, or another order holds it.
+data BalanceInsertRefused = BIRLiveOrder | BIRBalanceChanged
   deriving (Eq, Show)
 
 -- | NotLive: the write would make a closed order live. LiveOrderExists: another live order holds its commitment, or its owner and label hash.
@@ -557,7 +561,7 @@ textMethod t = lookup t [(methodText m, m) | m <- [SPMCard CPStripe, SPMCrypto C
 
 -- | A difference order (OTBalance) holds all of the balance seen while its invoice is open. The hold is written after the registration,
 -- so the registration's row is locked before the balance's. A refusal leaves its writes for the caller to roll back.
-createPaidRegistration :: DB.Connection -> NewRegistration -> OrderTerms -> PaidOrder -> UTCTime -> IO (Either RegistrationRefused ())
+createPaidRegistration :: DB.Connection -> NewRegistration -> OrderTerms -> PaidOrder -> UTCTime -> IO (Either BalanceInsertRefused ())
 createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid), nrgOwner, nrgOrder} terms PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId, poProviderRef} now' = do
   let now = truncateToSecond now'
       held = case terms of
@@ -566,40 +570,40 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
         OTCode _ -> Nothing
   inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held (orderHash nrgOwner nrgOrder terms) now
   if not inserted
-    then pure $ Left RRLiveOrder
+    then pure $ Left BIRLiveOrder
     else do
       DB.execute
         db
         "INSERT INTO sx_badge_service_name_invoices (invoice_id, registration_id, provider_ref, created_at) VALUES (?,?,?,?)"
         (invId, rid, poProviderRef, now)
       held' <- maybe (pure True) (\(source, seen) -> holdBalance db source seen regId now) held
-      pure $ if held' then Right () else Left RRBalanceChanged
+      pure $ if held' then Right () else Left BIRBalanceChanged
 
 -- | Reserving the code is the conditional update of the transaction that creates the registration. A refusal leaves its writes for
 -- the caller to roll back.
-createCodeRegistration :: DB.Connection -> NewRegistration -> PrepaidCode -> UTCTime -> IO (Either RegistrationRefused ())
+createCodeRegistration :: DB.Connection -> NewRegistration -> PrepaidCode -> UTCTime -> IO (Either CodeInsertRefused ())
 createCodeRegistration db new@NewRegistration {nrgId = regId, nrgOwner, nrgOrder} PrepaidCode {pcId, pcCodeHash} now' = do
   let now = truncateToSecond now'
   inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) Nothing (orderHash nrgOwner nrgOrder (OTCode pcCodeHash)) now
   if not inserted
-    then pure $ Left RRLiveOrder
+    then pure $ Left CIRLiveOrder
     else
       reservePrepaidCode db pcId regId now >>= \case
         True -> pure $ Right ()
-        False -> pure $ Left RRCodeNotReservable
+        False -> pure $ Left CIRCodeNotReservable
 
 -- | A queued order whose price is spent from the source's balance in the same transaction, where its amount is the one seen and nothing holds it.
 -- A refusal leaves its writes for the caller to roll back.
-createBalanceRegistration :: DB.Connection -> NewRegistration -> RegistrationId -> Int -> Int -> UTCTime -> IO (Either RegistrationRefused ())
+createBalanceRegistration :: DB.Connection -> NewRegistration -> RegistrationId -> Int -> Int -> UTCTime -> IO (Either BalanceInsertRefused ())
 createBalanceRegistration db new@NewRegistration {nrgOwner, nrgOrder} source price seen now' = do
   let now = truncateToSecond now'
   inserted <- insertRegistration db new PQueued price Nothing Nothing (Just (source, price)) (orderHash nrgOwner nrgOrder (OTBalance source price seen Nothing)) now
   if not inserted
-    then pure $ Left RRLiveOrder
+    then pure $ Left BIRLiveOrder
     else
       spendBalance db source price seen now >>= \case
         True -> pure $ Right ()
-        False -> pure $ Left RRBalanceChanged
+        False -> pure $ Left BIRBalanceChanged
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
 -- fromBalance: the order whose balance pays, and the cents it pays.

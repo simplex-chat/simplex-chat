@@ -75,7 +75,7 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (abiWordSize, bytes32FromHex, hex)
 import StoreService.Names.Chain (TxHash)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (Balance, LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (Balance, CodeInsertRefused (..), LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
 
@@ -261,10 +261,8 @@ codeOrderInsert :: NewRegistration -> PrepaidCode -> DB.Connection -> UTCTime ->
 codeOrderInsert new@NewRegistration {nrgId, nrgOrder = OrderFields {ofLength}} code@PrepaidCode {pcCodeHash} db now =
   createCodeRegistration db new code now >>= \case
     Right () -> pure $ Right ()
-    Left RRLiveOrder -> pure $ Left OROrderExists
-    Left RRCodeNotReservable -> Left . ORCode <$> reserveRefusal db now pcCodeHash nrgId ofLength
-    -- a code order holds no balance
-    Left RRBalanceChanged -> pure $ Left OROrderExists
+    Left CIRLiveOrder -> pure $ Left OROrderExists
+    Left CIRCodeNotReservable -> Left . ORCode <$> reserveRefusal db now pcCodeHash nrgId ofLength
 
 checkTimestamp :: UTCTime -> Word64 -> Either OrderRefusal ()
 checkTimestamp now timestamp =
