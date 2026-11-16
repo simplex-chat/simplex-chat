@@ -52,7 +52,7 @@ import StoreService.Names.Balances (RefundRecord (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
-import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
+import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
@@ -512,7 +512,7 @@ servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChai
 data Closed = CLRegistered RegistrationId | CLRefunded UTCTime RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)
 
-data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFUnread | CFChanged | CFWriteRefused OrderRefusal | CFHeld BalanceHold | CFBalanceChanged
+data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFUnread | CFChanged | CFHeld BalanceHold | CFBalanceChanged
   deriving (Eq, Show)
 
 newtype CloseRefused = CloseRefused CloseRefusal
@@ -552,13 +552,14 @@ refundTaken st turns now r@NameRegistration {nrId} =
         _ ->
           creditedTaken now r db >>= \case
             Left WRChanged -> pure $ Left CFChanged
-            Left (WRRefused refusal) -> pure $ Left $ CFWriteRefused refusal
+            Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "the taken write of order " <> ridText <> " was refused as " <> tshow refusal <> ", while a write that closes an order is refused only as changed"
             Right _ -> Right <$> refundAll db
     refundAll db = do
       cents <- maybe 0 blAmount <$> getBalance db nrId now
       refundBalance db nrId cents now >>= \case
         True -> RefundRecord nrId cents <$> balanceChain db nrId
         False -> E.throwIO $ CloseRefused CFBalanceChanged
+    RegistrationId ridText = nrId
 
 -- | Each code order failed for failedCodeHold gives its code back, in its name's and its code's turns, unless it was requeued meanwhile.
 sweepFailedCodes :: Worker -> IO ()

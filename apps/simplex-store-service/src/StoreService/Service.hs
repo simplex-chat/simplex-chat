@@ -517,7 +517,6 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
       CFNotFailedPaid -> "the order of " <> ref <> " is not a failed order paid by invoice or balance"
       CFUnread -> "the chain could not be read; " <> again
       CFChanged -> "the order of " <> ref <> " changed meanwhile; " <> again
-      CFWriteRefused _ -> "the order of " <> ref <> " could not be set taken; " <> again
       CFHeld hold -> heldText source hold
       CFBalanceChanged -> "the balance of the order of " <> ref <> " changed meanwhile; " <> again
     again = "run " <> spelledCmd source "close" <> " again"
