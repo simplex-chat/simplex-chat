@@ -166,6 +166,10 @@ android {
   lint.targetSdk = 36
 }
 
+tasks.withType<Test>().configureEach {
+  testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+}
+
 multiplatformResources {
   resourcesPackage.set("chat.simplex.res")
   resourcesSourceSets {
