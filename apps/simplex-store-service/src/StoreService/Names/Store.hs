@@ -1359,15 +1359,15 @@ spendLandedPrepaidCode db codeId (RegistrationId rid) now' =
   where
     now = truncateToSecond now'
 
--- | A reserved code can be revoked, and its order keeps it; a spent one cannot.
-revokePrepaidCode :: DB.Connection -> ByteString -> UTCTime -> IO RevokeResult
+-- | A reserved code can be revoked, and its order keeps it; a spent one cannot. With the code as it reads after.
+revokePrepaidCode :: DB.Connection -> ByteString -> UTCTime -> IO (RevokeResult, Maybe PrepaidCode)
 revokePrepaidCode db codeHash now = do
   revoked <-
     executeChanging
       db
       "UPDATE sx_badge_service_name_prepaid_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL AND spent_at IS NULL"
       (truncateToSecond now, Binary codeHash)
-  maybe NoSuchCode (result revoked) <$> getPrepaidCode db codeHash
+  (\code -> (maybe NoSuchCode (result revoked) code, code)) <$> getPrepaidCode db codeHash
   where
     result revoked PrepaidCode {pcId, pcRevokedAt}
       | revoked > 0 = Revoked pcId

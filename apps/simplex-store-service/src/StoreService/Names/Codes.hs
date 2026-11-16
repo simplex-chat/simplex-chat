@@ -162,7 +162,7 @@ issueNameCode cc issuer len years paymentStatus
 revokeNameCode :: Turns -> ChatController -> NamePrepaidCode -> IO (Either Text Text)
 revokeNameCode turns cc code = withCodeTurn turns codeHash $ do
   now <- getCurrentTime
-  withDB' "revokeNameCode" cc (\db -> (,) <$> revokePrepaidCode db codeHash now <*> getPrepaidCode db codeHash) <&> \case
+  withDB' "revokeNameCode" cc (\db -> revokePrepaidCode db codeHash now) <&> \case
     Right (Revoked _, Just PrepaidCode {pcReservedBy = Just _}) -> Right "Revoked. The order holding it keeps it."
     Right (Revoked _, _) -> Right "Revoked."
     Right (AlreadyRevoked _, _) -> Right "Already revoked."

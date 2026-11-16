@@ -643,7 +643,7 @@ testReserveRefused = withServiceStore $ \st -> do
   expired <- issue st 2 usable {npcExpiresAt = Just (at 10)}
   revoked <- issue st 3 usable
   free <- issue st 4 usable {npcPaymentStatus = CPSFree, npcExpiresAt = Just (at 30)}
-  withTransaction st (\db -> revokePrepaidCode db (pcCodeHash revoked) t0) `shouldReturn` Revoked (pcId revoked)
+  fst <$> withTransaction st (\db -> revokePrepaidCode db (pcCodeHash revoked) t0) `shouldReturn` Revoked (pcId revoked)
   let reserve code = withTransaction st $ \db -> reservePrepaidCode db (pcId code) (RegistrationId "r1") (at 20)
   mapM reserve [unpaid, expired, revoked] `shouldReturn` [False, False, False]
   reserve free `shouldReturn` True
@@ -665,12 +665,12 @@ testRevoke = withServiceStore $ \st -> do
   placeCode st "r1" ownerA (order "alicebakery" 1) reserved `shouldReturn` Right ()
   placeCode st "r2" ownerA (order "bobsbakery" 2) spent `shouldReturn` Right ()
   withTransaction st (\db -> spendLandedPrepaidCode db (pcId spent) (RegistrationId "r2") t0) `shouldReturn` True
-  let revoke code = withTransaction st $ \db -> revokePrepaidCode db (pcCodeHash code) (at 1)
+  let revoke code = fst <$> withTransaction st (\db -> revokePrepaidCode db (pcCodeHash code) (at 1))
   revoke reserved `shouldReturn` Revoked (pcId reserved)
   revoke unused `shouldReturn` Revoked (pcId unused)
   revoke unused `shouldReturn` AlreadyRevoked (pcId unused)
   revoke spent `shouldReturn` AlreadyRedeemed
-  withTransaction st (\db -> revokePrepaidCode db (digestFixture 9) t0) `shouldReturn` NoSuchCode
+  withTransaction st (\db -> revokePrepaidCode db (digestFixture 9) t0) `shouldReturn` (NoSuchCode, Nothing)
   held <- withTransaction st $ \db -> getPrepaidCodeById db (pcId reserved)
   (pcReservedBy =<< held, pcRevokedAt =<< held) `shouldBe` (Just (RegistrationId "r1"), Just (at 1))
 

@@ -683,7 +683,7 @@ testMoveCodeOrder = withOwner $ \ctx@Ctx {cStore} -> do
   toShorter <- moveTo ctx "dynamis" 10
   move ctx keyA r toShorter `shouldReturn` refusedWith 409 "code_not_covering"
   stored ctx r `shouldReturn` r
-  withTransaction cStore (\db -> revokePrepaidCode db pcCodeHash orderTime) `shouldReturn` Revoked (pcId code)
+  fst <$> withTransaction cStore (\db -> revokePrepaidCode db pcCodeHash orderTime) `shouldReturn` Revoked (pcId code)
   withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary pcCodeHash)
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyA r to

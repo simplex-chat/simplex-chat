@@ -207,7 +207,7 @@ testReserveRefusals = withOrders $ \turns st -> do
   withTransaction st (\db -> spendLandedPrepaidCode db (pcId usedRow) (RegistrationId "r3") tNow) `shouldReturn` True
   placeCode st "r6" ownerB (order "franksbakery" 6) ownRow `shouldReturn` Right ()
   withTransaction st (\db -> spendLandedPrepaidCode db (pcId ownRow) (RegistrationId "r6") tNow) `shouldReturn` True
-  withTransaction st (\db -> revokePrepaidCode db (pcCodeHash revokedRow) tNow) `shouldReturn` Revoked (pcId revokedRow)
+  fst <$> withTransaction st (\db -> revokePrepaidCode db (pcCodeHash revokedRow) tNow) `shouldReturn` Revoked (pcId revokedRow)
   wrote <- newIORef False
   let reserveFor rid hash len = reserveCode turns st tNow hash rid len (\_ -> Right () <$ writeIORef wrote True :: IO (Either Text ()))
       reserve = reserveFor r1
@@ -233,7 +233,7 @@ testReserveHeld = withOrders $ \turns st -> do
   row@PrepaidCode {pcCodeHash} <- issueAs st code usable
   placeCode st "r3" ownerB (order "carolsbakery" 3) row `shouldReturn` Right ()
   let r3 = RegistrationId "r3"
-  withTransaction st (\db -> revokePrepaidCode db pcCodeHash tNow) `shouldReturn` Revoked (pcId row)
+  fst <$> withTransaction st (\db -> revokePrepaidCode db pcCodeHash tNow) `shouldReturn` Revoked (pcId row)
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (tNow, DB.Binary pcCodeHash)
   held <- readCode st row
   reserveCode turns st tNow pcCodeHash r3 9 writeOk `shouldReturn` Right (Right ())
