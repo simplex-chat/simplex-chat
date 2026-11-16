@@ -199,7 +199,7 @@ answerReserved Ctx {cNode} label reason = do
 paidIn :: Ctx -> Order -> (NameRegistration -> NameRegistration) -> IO NameRegistration
 paidIn ctx o change = do
   (invId, _) <- placed ctx o
-  settleNow ctx invId settled `shouldReturn` Right ISPaid
+  settleNow ctx invId settled `shouldReturn` ISPaid
   r <- invoiceRegistration ctx invId
   rewrite ctx r change
 
@@ -674,7 +674,7 @@ testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
   withTransaction cStore $ \db -> do
     insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"
     createPaidRegistration db new (Just BalanceUse {buSource = nrId paying, buUsed = 5000}) (paidOrder "inv-diff") {poPrice = 20000} orderTime `shouldReturn` Right ()
-  settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` Right ISPaid
+  settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` ISPaid
   r <- registrationById ctx (RegistrationId "diff") >>= \d -> rewrite ctx d failedPhase
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyA r to

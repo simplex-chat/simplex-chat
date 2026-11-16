@@ -593,7 +593,7 @@ testTakenFromBalance = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   withTransaction cStore $ \db -> do
     insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"
     createPaidRegistration db (aliceRegistration "diff" 2) (Just BalanceUse {buSource = nrId partly, buUsed = 4000}) (paidOrder "inv-diff") {poPrice = price} orderTime `shouldReturn` Right ()
-  settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` Right ISPaid
+  settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` ISPaid
   balanceFigures ctx (nrId partly) `shouldReturn` Just (0, 4000)
   diff <- registrationById ctx (RegistrationId "diff") >>= \r -> rewrite ctx r openPhase >>= revealed ctx keyA "alicebakery"
   endsTaken w diff

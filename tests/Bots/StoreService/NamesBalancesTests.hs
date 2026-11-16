@@ -510,7 +510,7 @@ testClosesRelease = withServiceStore $ \st -> do
   cancelOpenInvoice st waiters Nothing (InvoiceId "inv-h-cancel") (at 2) `shouldReturn` True
   swept <- overdueOf st (InvoiceId "inv-h-sweep")
   expireOverdue st waiters Nothing (at 61) (at 61) [swept] `shouldReturn` [InvoiceId "inv-h-sweep"]
-  settleOrder st waiters Nothing (InvoiceId "inv-h-settled") (SigClosed (rcv 0 Nothing) PaidInPart) (at 2) `shouldReturn` Right ISExpired
+  settleOrder st waiters Nothing (InvoiceId "inv-h-settled") (SigClosed (rcv 0 Nothing) PaidInPart) (at 2) `shouldReturn` ISExpired
   next <- reg st "h-next"
   withTransaction st (\db -> closeOverdue db next (at 61)) `shouldReturn` Just (nrVersion next + 1)
   forM_ closes $ \c -> do

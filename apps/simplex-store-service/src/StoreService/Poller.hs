@@ -284,9 +284,7 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
     Just row@InvoiceRow {irInvoiceId, irStatus, irProvider, irProduct} | irProvider == provider -> do
       when (irStatus == ISPaid) $ moneyAfterPaid env now row signal
       when (isJust (decide irStatus signal)) $
-        settleOrder peStore peWaiters pePhases irInvoiceId signal now >>= \case
-          Left e -> logError ("badge poller: settling order " <> ref <> " failed: " <> e)
-          Right status -> do
+        settleOrder peStore peWaiters pePhases irInvoiceId signal now >>= \status -> do
             reportSettled irProduct irStatus status
             case (irProduct, find ((== provider) . pProvider) peProviders) of
               (IPName _, Just p) ->

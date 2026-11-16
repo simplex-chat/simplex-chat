@@ -477,7 +477,7 @@ invoiceRegistration Ctx {cStore} invId =
     Just InvoiceRow {irProduct = IPName rid} -> withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
     other -> error $ "not a name invoice: " <> show other
 
-settleNow :: Ctx -> InvoiceId -> PaymentSignal -> IO (Either Text InvoiceStatus)
+settleNow :: Ctx -> InvoiceId -> PaymentSignal -> IO InvoiceStatus
 settleNow Ctx {cStore, cWeb, cOrders, cClock} invId signal = readIORef cClock >>= settleOrder cStore (weWaiters cWeb) (Just $ oePhases cOrders) invId signal
 
 settled :: PaymentSignal
@@ -553,7 +553,7 @@ testExactResend = withOrders $ \ctx -> do
 testResendPastUnpaid :: IO ()
 testResendPastUnpaid = withOrders $ \ctx -> do
   (invId, _) <- placed ctx aliceOrder
-  settleNow ctx invId settled `shouldReturn` Right ISPaid
+  settleNow ctx invId settled `shouldReturn` ISPaid
   setFault (cNode ctx) "eth_call" HttpFailure
   (status, v) <- placeOrder ctx aliceOrder {oTimestamp = seconds orderTime + 1}
   status `shouldBe` 200
@@ -571,7 +571,7 @@ testResendReadsTime = do
     fmap irStatus <$> getInvoice (cStore ctx) invId `shouldReturn` Just ISOpen
   withOrders $ \ctx@Ctx {cStore, cClock} -> do
     (invId, _) <- placed ctx aliceOrder
-    settleNow ctx invId settled `shouldReturn` Right ISPaid
+    settleNow ctx invId settled `shouldReturn` ISPaid
     r <- invoiceRegistration ctx invId
     now <- readIORef cClock
     let lapse = seconds now + 600
@@ -1277,12 +1277,12 @@ testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
   closed <- invoiceRegistration ctx oldInv
   nrPhase closed `shouldBe` OUnpaid False
   Just InvoiceRow {irProviderRef} <- getInvoice (cStore ctx) oldInv
-  logs <- capturingStderr $ settleNow ctx oldInv settled `shouldReturn` Right ISPaid
+  logs <- capturingStderr $ settleNow ctx oldInv settled `shouldReturn` ISPaid
   logs `shouldSatisfy` T.isInfixOf ("invoice " <> irProviderRef <> " received money after its order closed; it stays unpaid, and its money is credited to the order's balance")
   invoiceRegistration ctx oldInv `shouldReturn` closed
   new <- invoiceRegistration ctx newInv
   (nrPhase new, nrVersion new) `shouldBe` (OUnpaid True, 1)
-  settleNow ctx newInv settled `shouldReturn` Right ISPaid
+  settleNow ctx newInv settled `shouldReturn` ISPaid
   (nrPhase <$> invoiceRegistration ctx newInv) `shouldReturn` OQueued
 
 -- | Paid in full at minute 44 of 45 and confirming after; a second tab's order at minute 46 must not refund it.
@@ -1290,7 +1290,7 @@ testFundedOverdueKept :: IO ()
 testFundedOverdueKept = withOrders $ \ctx -> do
   (inv, _) <- placed ctx aliceOrder
   advance ctx (44 * 60)
-  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` Right ISOpen
+  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` ISOpen
   advance ctx (2 * 60)
   now <- readIORef (cClock ctx)
   placeOrder ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now} `shouldReturn` refusedWith 409 "order_exists"
@@ -1298,7 +1298,7 @@ testFundedOverdueKept = withOrders $ \ctx -> do
   nrPhase r `shouldBe` OUnpaid True
   withTransaction (cStore ctx) (\db -> closeOverdue db r now) `shouldReturn` Nothing
   (irStatus <$>) <$> getInvoice (cStore ctx) inv `shouldReturn` Just ISOpen
-  settleNow ctx inv settled `shouldReturn` Right ISPaid
+  settleNow ctx inv settled `shouldReturn` ISPaid
   nrPhase <$> invoiceRegistration ctx inv `shouldReturn` OQueued
 
 -- | The real BTCPay adapter against the fake: a payment into an expired invoice reads Expired with PaidLate,
@@ -1357,7 +1357,7 @@ testCancelAnswers :: IO ()
 testCancelAnswers = withOrders $ \ctx -> do
   let cancel = cancelAt ctx
   (funded, _) <- placed ctx aliceOrder
-  settleNow ctx funded (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` Right ISOpen
+  settleNow ctx funded (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` ISOpen
   cancel funded `shouldReturn` refusedWith 409 "funded"
   (other, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
   fst <$> cancel other `shouldReturn` 200
@@ -1387,7 +1387,7 @@ testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx
     (status, v) <- post ctx ("/api/invoice/" <> T.unpack (invoiceText invId) <> "/cancel") ""
     (status, field "status" =<< v, field "cryptoAmountPaid" =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
   length (T.breakOnAll alert logs) `shouldBe` 1
-  capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` Right ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf alert)
+  capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf alert)
   nrPhase <$> invoiceRegistration ctx invId `shouldReturn` OUnpaid False
   where
     paid = rcv 5000 (Just "0.00078")
@@ -1448,7 +1448,7 @@ testSettlementQueues = withOrders $ \ctx -> do
   -- the version read is pinned, so only a publish can wake the waiter
   waiter <- async $ awaitChange (oePhases $ cOrders ctx) nrId (putMVar parked () >> pure 1) 1 10000000
   takeMVar parked
-  settleNow ctx invId settled `shouldReturn` Right ISPaid
+  settleNow ctx invId settled `shouldReturn` ISPaid
   timeout 2000000 (wait waiter) `shouldReturn` Just True
   r <- invoiceRegistration ctx invId
   (nrPhase r, nrVersion r) `shouldBe` (OQueued, 2)
@@ -1458,7 +1458,7 @@ testSettlementLocksInvoice :: IO ()
 testSettlementLocksInvoice = withOrders $ \ctx -> do
   (inv@(InvoiceId t), _) <- placed ctx aliceOrder
   advance ctx 60
-  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` Right ISOpen
+  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` ISOpen
   now <- readIORef (cClock ctx)
   withConnection (cStore ctx) (\db -> DB.query db "SELECT updated_at, status FROM sx_badge_service_invoices WHERE invoice_id = ?" [t])
     `shouldReturn` [(now, "open" :: Text)]
@@ -1512,7 +1512,7 @@ testCleanupIn ctx@Ctx {cStore = st} = do
       place rid n = placePaid st rid ownerA (order (T.pack ("alicebakery" <> show n)) n) expired `shouldReturn` Right ()
   mapM_ (uncurry place) [("gone", 1), ("funded", 2), ("late", 3), ("unread", 4)]
   placePaid st "recent" ownerA (order "alicebakery5" 5) (addUTCTime 3600 due) `shouldReturn` Right ()
-  settleOrder st (weWaiters $ cWeb ctx) Nothing (InvoiceId "inv-funded") (SigFunded (rcv 100 (Just "0.00001")) PaidInPart) t0 `shouldReturn` Right ISOpen
+  settleOrder st (weWaiters $ cWeb ctx) Nothing (InvoiceId "inv-funded") (SigFunded (rcv 100 (Just "0.00001")) PaidInPart) t0 `shouldReturn` ISOpen
   setSignals (cStub ctx) [(ref "late", SigClosed (rcv 5000 (Just "0.00078")) PaidInPart)]
   failing <- newIORef False
   let reading p = p {pReadInvoice = \r -> readIORef failing >>= \f -> if f && r == ref "unread" then pure (Left $ ProviderError "down") else pReadInvoice p r}

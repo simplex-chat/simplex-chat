@@ -590,7 +590,7 @@ testHolderFundedMeanwhile = withSpendHook $ \hook ctx@Ctx {cStore, cClock} -> do
   holderRef <- providerRef ctx holderInv
   advance ctx (46 * 60)
   now <- readIORef cClock
-  onCreate hook $ settleNow ctx holderInv (SigFunded (rcv 4000 (Just "0.0006")) PaidInFull) `shouldReturn` Right ISOpen
+  onCreate hook $ settleNow ctx holderInv (SigFunded (rcv 4000 (Just "0.0006")) PaidInFull) `shouldReturn` ISOpen
   answer <- spend ctx src (timedAt now $ dynamis 6000 (Just "btc"))
   current <- balanceOf ctx src
   answer `shouldBe` balanceChanged current

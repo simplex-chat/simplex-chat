@@ -17,7 +17,7 @@ where
 
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
-import StoreService.Names.Store (BalanceUse (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, namePhase, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
+import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, namePhase, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
 import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Received (..), receivedAmount, receivedConfirmed)
 import StoreService.Safely (safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
@@ -95,9 +95,9 @@ data NameOutcome = NOWritten RegistrationId Int64 | NOLate Text | NOHoldNotSpent
 data SettledMoney = SMNone | SMHeld | SMNewPayment
   deriving (Eq)
 
-settleOrder :: DBStore -> Waiters -> Maybe Phases -> InvoiceId -> PaymentSignal -> UTCTime -> IO (Either Text InvoiceStatus)
-settleOrder st waiters phases invId signal now' = do
-  outcome <- withTransaction st $ \db ->
+settleOrder :: DBStore -> Waiters -> Maybe Phases -> InvoiceId -> PaymentSignal -> UTCTime -> IO InvoiceStatus
+settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
+  (status, toPublish, name) <- withTransaction st $ \db ->
     settlementInvoice db invId >>= \case
       Just InvoiceRow {irStatus, irProduct = IPName _}
         | isJust (decide irStatus signal) -> do
@@ -106,19 +106,16 @@ settleOrder st waiters phases invId signal now' = do
             lockInvoice db invId now
             settlementInvoice db invId >>= settleRow db
       row_ -> settleRow db row_
-  case outcome of
-    Left e -> pure (Left e)
-    Right (status, toPublish, name) -> do
-      let (publications, logs) = unzip $ map announced name
-      -- after the commit, or a woken reader will not see the write
-      atomically $ do
-        case toPublish of
-          PubStatus s -> publish waiters invId s
-          PubPayment -> publishPayment waiters invId
-          PubNothing -> pure ()
-        sequence_ publications
-      sequence_ logs
-      pure (Right status)
+  let (publications, logs) = unzip $ map announced name
+  -- after the commit, or a woken reader will not see the write
+  atomically $ do
+    case toPublish of
+      PubStatus s -> publish waiters invId s
+      PubPayment -> publishPayment waiters invId
+      PubNothing -> pure ()
+    sequence_ publications
+  sequence_ logs
+  pure status
   where
     announced :: NameOutcome -> (STM (), IO ())
     announced = \case
@@ -129,17 +126,19 @@ settleOrder st waiters phases invId signal now' = do
     now = truncateToSecond now'
     at = truncateToSecond (settledInstant signal now)
     settleRow db = \case
-      Nothing -> pure (Left "no such invoice")
+      Nothing -> brokenInvariant "is missing"
       Just row@InvoiceRow {irStatus} -> case decide irStatus signal of
-        Nothing -> pure (Right (irStatus, PubNothing, []))
+        Nothing -> pure (irStatus, PubNothing, [])
         -- read the product first, so an invoice without one is not marked paid with nothing to show for it
-        Just w -> productOf db row w >>= either (pure . Left) (settle db row w)
-    productOf :: DB.Connection -> InvoiceRow -> Write -> IO (Either Text Product)
+        Just w -> productOf db row w >>= settle db row w
+    productOf :: DB.Connection -> InvoiceRow -> Write -> IO Product
     productOf db InvoiceRow {irProduct} Write {wCode} = case irProduct of
       IPBadge {}
-        | not wCode -> pure (Right (PBadge Nothing))
-        | otherwise -> maybe (Left "settled invoice has no code hash") (Right . PBadge . Just) <$> settlementCodeHash db invId
-      IPName rid -> maybe (Left "name invoice has no registration") (Right . PName) <$> getRegistration db rid
+        | not wCode -> pure (PBadge Nothing)
+        | otherwise -> settlementCodeHash db invId >>= maybe (brokenInvariant "has no code hash") (pure . PBadge . Just)
+      IPName rid -> getRegistration db rid >>= maybe (brokenInvariant "has no registration") (pure . PName)
+    brokenInvariant :: Text -> IO a
+    brokenInvariant what = E.throwIO $ BrokenInvariant $ "the settled invoice " <> invText <> " " <> what
     newPayment :: InvoiceRow -> Write -> Bool
     -- A rise of the confirmed money is a new payment with the totals unchanged, so a late payment that confirms is credited.
     newPayment InvoiceRow {irPayment} Write {wPayment}
@@ -164,7 +163,7 @@ settleOrder st waiters phases invId signal now' = do
         crypto = case received of
           RCard {} -> Nothing
           RCrypto CryptoReceived {crPaid} -> crPaid
-    settle :: DB.Connection -> InvoiceRow -> Write -> Product -> IO (Either Text (InvoiceStatus, Published, [NameOutcome]))
+    settle :: DB.Connection -> InvoiceRow -> Write -> Product -> IO (InvoiceStatus, Published, [NameOutcome])
     settle db row@InvoiceRow {irStatus} w@Write {wStatus, wPayment} sold = do
       let money = signalReceived signal
           uncreditable = case money of
@@ -186,11 +185,11 @@ settleOrder st waiters phases invId signal now' = do
           name <- case sold of
             PBadge codeHash -> [] <$ mapM_ (\h -> markCodePaid db h (addUTCTime codeLifetime at)) codeHash
             PName r -> nameSettled db (irProviderRef row) irStatus wStatus settledMoney r now
-          pure (Right (fromMaybe irStatus wStatus, maybe (if wrotePayment then PubPayment else PubNothing) PubStatus wStatus, name))
+          pure (fromMaybe irStatus wStatus, maybe (if wrotePayment then PubPayment else PubNothing) PubStatus wStatus, name)
         else do
           -- another writer moved the row first, so publish what we found
           current <- maybe irStatus (\InvoiceRow {irStatus = s} -> s) <$> settlementInvoice db invId
-          pure (Right (current, PubStatus current, []))
+          pure (current, PubStatus current, [])
 
 -- | A paid open invoice queues its order only while the order is live; a payment of a closed one is late.
 -- An invoice the provider closed closes its order, and is late once if it holds money, read now or before.
