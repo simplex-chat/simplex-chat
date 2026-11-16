@@ -5924,20 +5924,18 @@ testStoreChecksConfigured _ = do
     Right cfg <- readServiceConfig (d </> "store_service.ini")
     let checksFor c = (\ServiceState {storeVerifier} -> storeChecks storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
         creditsFor c = (\ServiceState {storeVerifier} -> creditTestPurchases storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
-        dev accept during credit = Just cfg {devAcceptUnverifiedStoreReceipts = accept, devCheckStoreDuringCoverage = during, devCreditTestPurchases = credit}
+        dev accept checks credit = Just cfg {devAcceptUnverifiedStoreReceipts = accept, devStoreChecks = checks, devCreditTestPurchases = credit}
     checksFor Nothing `shouldReturn` ChecksAfterCoverage
-    checksFor (dev False False False) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev True False False) `shouldReturn` ChecksAfterCoverage
-    -- refused by the parser, and still not armed if set by hand
-    checksFor (dev False True False) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev True True False) `shouldReturn` ChecksAtEveryRequest
-    checksFor (dev False False True) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev False True True) `shouldReturn` ChecksAtEveryRequest
+    checksFor (dev False ChecksAfterCoverage False) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev True ChecksAfterCoverage False) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev True ChecksAtEveryRequest False) `shouldReturn` ChecksAtEveryRequest
+    checksFor (dev False ChecksAfterCoverage True) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev False ChecksAtEveryRequest True) `shouldReturn` ChecksAtEveryRequest
     creditsFor Nothing `shouldReturn` False
-    creditsFor (dev False False False) `shouldReturn` False
-    creditsFor (dev False False True) `shouldReturn` True
+    creditsFor (dev False ChecksAfterCoverage False) `shouldReturn` False
+    creditsFor (dev False ChecksAfterCoverage True) `shouldReturn` True
     -- the mock never reports a test purchase
-    creditsFor (dev True False True) `shouldReturn` False
+    creditsFor (dev True ChecksAfterCoverage True) `shouldReturn` False
 
 testStoreRouting :: HasCallStack => TestParams -> IO ()
 testStoreRouting ps =

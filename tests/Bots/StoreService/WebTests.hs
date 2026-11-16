@@ -50,7 +50,7 @@ import StoreService.Providers
 import StoreService.Providers.BTCPay (btcpayProvider, listPageSize, maxListPages)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store (CreditedPurchase (..), FundingCredit (..), KeyPurchase (..), KeyRedemption (..), ManagedGroup (..), NewCodePurchase (..), NewStorePurchase (..), PaymentRebind (..), PurchaseSubscription (..), RevokeResult (..), appendLedgerPlan, createCodePurchase, createStorePurchase, getCodePurchaseForKey, getLedgerEntries, getLedgerTip, getManagedGroup, getMovedFromExpiry, getPurchaseByKey, getPurchaseSubscription, getStorePaymentCredit, insertBadgeCode, insertManagedGroup, insertSubscriptionCharge, markOwnerBootstrapped, rebindStorePayment, revokeCode)
-import StoreService.StoreReceipts (StoreCharge (..))
+import StoreService.StoreReceipts (StoreChecks (..), StoreCharge (..))
 import StoreService.Store.Invoices
 import StoreService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import StoreService.Web.Http
@@ -1268,7 +1268,7 @@ testServiceConfig staticDir trustForwarded =
       serviceLogLevel = defaultLogLevel,
       names = Nothing,
       devAcceptUnverifiedStoreReceipts = False,
-      devCheckStoreDuringCoverage = False,
+      devStoreChecks = ChecksAfterCoverage,
       devCreditTestPurchases = False
     }
 
