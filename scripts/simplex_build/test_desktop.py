@@ -111,7 +111,7 @@ class HostDesktopTest(unittest.TestCase):
             self.assertFalse(build_script.apple_signing(require=False))
         self.assertIn("unsigned", warn.call_args.args[0])
 
-    def build_macos(self, signed, cli=b"cli"):
+    def build_macos(self, signed, cli=b"cli", core=None, core_out=None):
         """build_desktop_macos with its builds standing in, and cli as the CLI; returns its calls, the sign_dmg mock and
         the work directory."""
         libs = self.root / "libs-app"
@@ -150,7 +150,8 @@ class HostDesktopTest(unittest.TestCase):
             self.app_env = {name: os.environ.get(name) for name in names}
             self.app_umask = os.umask(0o077)
             os.umask(self.app_umask)
-            self.app_cabal_local = (source / "cabal.project.local").read_text()
+            cabal_local = source / "cabal.project.local"
+            self.app_cabal_local = cabal_local.read_text() if cabal_local.exists() else None
             return self.app
 
         def build_dmg(tools, app, java_home, work, target):
@@ -180,7 +181,7 @@ class HostDesktopTest(unittest.TestCase):
             patch_all("check_dmg", lambda dmg, signed, work: calls.append(("check", dmg.name, signed))),
             patch_all("sign_mac_libs") as sign_libs,
         ):
-            build_script.build_desktop_macos(self.source, self.out, require_signing=False)
+            build_script.build_desktop_macos(self.source, self.out, require_signing=False, core=core, core_out=core_out)
         self.assertEqual(sign_libs.called, signed)
         xcode.assert_called_once_with(build_script.XCODE)
         self.assertFalse(self.build_root.exists())
@@ -241,6 +242,26 @@ class HostDesktopTest(unittest.TestCase):
         self.assertEqual(calls[-1], ("check", "simplex-desktop-macos-aarch64.dmg", True))
         self.assertEqual((self.out / "simplex-desktop-macos-aarch64.dmg").read_bytes(), b"dmg")
 
+    def test_macos_build_saves_its_cli_and_libraries_as_its_core(self):
+        self.build_macos(signed=False, core_out=self.root / "saved/core.zip")
+        with zipfile.ZipFile(self.root / "saved/core.zip") as z:
+            self.assertEqual(sorted(z.namelist()), ["libs/libsimplex.dylib", "simplex-chat"])
+            self.assertEqual((z.read("simplex-chat"), z.read("libs/libsimplex.dylib")), (b"cli", b"lib"))
+
+    def test_macos_build_with_a_core_installs_it_in_place_of_building_the_cli_and_libraries(self):
+        core_libs = self.root / "core-libs"
+        core_libs.mkdir()
+        (core_libs / "libsimplex.dylib").write_bytes(b"core lib")
+        (self.root / "core-cli").write_bytes(b"core cli")
+        build_script.zip_desktop_core(self.root / "core-cli", core_libs, self.root / "core.zip")
+        calls, _, _ = self.build_macos(signed=False, core=self.root / "core.zip")
+        self.assertEqual((self.cabal_locals, self.openssl_dirs), ([], []))
+        self.assertEqual(calls[0], ("link", "mac-aarch64", "macos-arm64"))
+        self.assertNotIn(("lib", "aarch64"), calls)
+        self.assertEqual((self.out / "simplex-chat-macos-aarch64").read_bytes(), b"core cli")
+        with zipfile.ZipFile(self.out / "simplex-chat-libs-macos-aarch64.zip") as z:
+            self.assertEqual(z.read("libs/libsimplex.dylib"), b"core lib")
+
     def test_macos_libs_are_built_in_the_copy_and_installed_in_the_checkout(self):
         released = self.root / "libs-app"
         released.mkdir()
@@ -290,7 +311,7 @@ class HostDesktopTest(unittest.TestCase):
         ):
             build_script.build_desktop_macos(self.source, self.out, require_signing=False)
 
-    def windows_build(self, msi_data=b"msi"):
+    def windows_build(self, msi_data=b"msi", core=None, core_out=None):
         libs = self.root / "libs-app"
         libs.mkdir()
         (libs / "libsimplex.dll").write_bytes(b"lib")
@@ -332,7 +353,7 @@ class HostDesktopTest(unittest.TestCase):
             patch_all("link_desktop_libs", lambda *args: calls.append(("link", *args[1:]))),
             patch_all("package_msi", fake_package_msi),
         ):
-            build_script.build_desktop_windows(self.source, self.out)
+            build_script.build_desktop_windows(self.source, self.out, core, core_out)
         return calls, openssl_dirs, seen
 
     def test_windows_build_runs_in_the_fixed_directory(self):
@@ -348,6 +369,19 @@ class HostDesktopTest(unittest.TestCase):
             sorted(p.name for p in self.out.iterdir()),
             ["simplex-chat-libs-windows-x86_64.zip", "simplex-chat-windows-x86-64", "simplex-desktop-windows-x86_64.msi"],
         )
+        self.assertEqual(self.zip_names("simplex-chat-libs-windows-x86_64.zip"), ["libs/libsimplex.dll", "libs/libsimplex.lib"])
+
+    def test_windows_build_saves_its_core_and_builds_with_a_saved_one(self):
+        self.windows_build(core_out=self.root / "saved/core.zip")
+        with zipfile.ZipFile(self.root / "saved/core.zip") as z:
+            self.assertEqual(sorted(z.namelist()), ["libs/libsimplex.dll", "simplex-chat"])
+        shutil.rmtree(self.root / "libs-app")
+        shutil.rmtree(self.root / "dist")
+        for path in self.out.iterdir():
+            path.unlink()
+        calls, openssl_dirs, _ = self.windows_build(core=self.root / "saved/core.zip")
+        self.assertEqual((calls, openssl_dirs), ([("link", "windows-x86_64", "windows-x64"), ("msi", self.build_root / "simplex-chat")], []))
+        self.assertEqual((self.out / "simplex-chat-windows-x86-64").read_bytes(), b"cli")
         self.assertEqual(self.zip_names("simplex-chat-libs-windows-x86_64.zip"), ["libs/libsimplex.dll", "libs/libsimplex.lib"])
 
     def test_windows_build_fails_on_paths_of_the_checkout(self):
@@ -423,6 +457,40 @@ class HostDesktopTest(unittest.TestCase):
         with zipfile.ZipFile(self.out / "first.zip") as z:
             self.assertEqual(z.read("libs/libsimplex.so"), b"simplex" * 100)
             self.assertEqual({info.date_time for info in z.infolist()}, {(2024, 1, 1, 0, 0, 0)})
+
+    def test_core_installs_as_it_was_saved_with_its_modes(self):
+        libs = self.root / "libs"
+        (libs / "vlc").mkdir(parents=True)
+        (libs / "libsimplex.so").write_bytes(b"simplex")
+        (libs / "libsimplex.so").chmod(0o755)
+        (libs / "libHSbase.so").write_bytes(b"base")
+        (libs / "libHSbase.so").chmod(0o644)
+        cli = self.root / "cli"
+        cli.write_bytes(b"cli")
+        cli.chmod(0o755)
+        package = self.root / "core/desktop-core.zip"
+        build_script.zip_desktop_core(cli, libs, package)
+        installed = build_script.desktop_libs(self.source, "linux-x86_64")
+        installed.mkdir(parents=True)
+        (installed / "libold.so").write_bytes(b"old")
+        cmake = self.source / "apps/multiplatform/desktop/build/cmake"
+        cmake.mkdir(parents=True)
+        target = self.root / "work/simplex-chat"
+        target.parent.mkdir()
+        self.assertEqual(build_script.install_desktop_core(package, target, self.source, "linux-x86_64"), installed)
+        self.assertEqual(
+            {p.name: (p.read_bytes(), p.stat().st_mode & 0o777) for p in installed.iterdir()},
+            {"libsimplex.so": (b"simplex", 0o755), "libHSbase.so": (b"base", 0o644)},
+        )
+        self.assertEqual((target.read_bytes(), target.stat().st_mode & 0o777), (b"cli", 0o755))
+        self.assertFalse(cmake.exists())
+
+    def test_core_without_the_cli_fails(self):
+        libs = self.root / "libs"
+        libs.mkdir()
+        build_script.zip_desktop_libs(libs, [], self.root / "core.zip")
+        with self.assertRaisesRegex(build_script.BuildError, "has no simplex-chat"):
+            build_script.install_desktop_core(self.root / "core.zip", self.root / "cli", self.source, "linux-x86_64")
 
     def test_read_only_cabal_checkouts_are_removed(self):
         checkouts = [

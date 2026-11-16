@@ -91,7 +91,7 @@ jobs:
       - name: Artifact names
         id: names
         run: |
-          echo "core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/simplex-chat-build.py', 'scripts/simplex_build/**', '!scripts/simplex_build/test_*.py', '!scripts/simplex_build/testing.py') }}" >> "$GITHUB_OUTPUT"
+          echo "core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/android/build-android.sh', 'scripts/simplex-chat-build.py', 'scripts/simplex_build/__init__.py', 'scripts/simplex_build/cli.py', 'scripts/simplex_build/common.py', 'scripts/simplex_build/nix.py', 'scripts/simplex_build/docker.py', 'scripts/simplex_build/android.py') }}" >> "$GITHUB_OUTPUT"
           echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Find core library

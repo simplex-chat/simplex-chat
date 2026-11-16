@@ -105,6 +105,9 @@ def remove_skiko_runtime(app: Path) -> None:
 CLI_BUILD_STEPS = (Step(("cabal", "clean")), Step(("cabal", "update")), Step(("cabal", "build", "-j")))
 
 
+DESKTOP_CORE_CLI = "simplex-chat"
+
+
 @dataclass(frozen=True, slots=True)
 class HostDesktop:
     """The release files of a macOS or Windows machine, and the OpenSSL target that builds for it."""
@@ -194,3 +197,25 @@ def zip_desktop_libs(libs: Path, extra: Sequence[Path], target: Path) -> None:
             info.external_attr = (path.stat().st_mode & 0o777) << 16
             with path.open("rb") as source, z.open(info, "w") as entry:
                 shutil.copyfileobj(source, entry)
+
+
+def zip_desktop_core(cli: Path, libs: Path, target: Path) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    zip_desktop_libs(libs, [], target)
+    with zipfile.ZipFile(target, "a", zipfile.ZIP_DEFLATED) as z:
+        z.write(cli, DESKTOP_CORE_CLI)
+
+
+def install_desktop_core(package: Path, cli: Path, source: Path, platform_dir: str) -> Path:
+    libs = desktop_libs(source, platform_dir)
+    shutil.rmtree(libs, ignore_errors=True)
+    shutil.rmtree(source / "apps/multiplatform/desktop/build/cmake", ignore_errors=True)
+    libs.mkdir(parents=True)
+    with zipfile.ZipFile(package) as z:
+        if DESKTOP_CORE_CLI not in z.namelist():
+            raise BuildError(f"{package} has no {DESKTOP_CORE_CLI}")
+        for member in z.infolist():
+            target = cli if member.filename == DESKTOP_CORE_CLI else libs / Path(member.filename).name
+            target.write_bytes(z.read(member))
+            target.chmod((member.external_attr >> 16) & 0o777)
+    return libs

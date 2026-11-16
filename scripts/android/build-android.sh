@@ -15,7 +15,8 @@ nix_config="sandbox = true
 max-jobs = auto
 experimental-features = nix-command flakes"
 
-commands="nix git curl gradle unzip"
+commands="git curl gradle unzip"
+[ -n "${LIBS_DIR:-}" ] || commands="nix $commands"
 arches="${ARCHES:-aarch64 armv7a}"
 
 arch_map() {
@@ -109,8 +110,8 @@ build() {
 
     android_simplex_lib_result="${PWD}/result-${arch}-libsimplex"
     android_support_lib_result="${PWD}/result-${arch}-libsupport"
-    android_simplex_lib_output="${android_simplex_lib_result}/pkg-${arch}-android-libsimplex.zip"
-    android_support_lib_output="${android_support_lib_result}/pkg-${arch}-android-libsupport.zip"
+    android_simplex_lib_output="${LIBS_DIR:-$android_simplex_lib_result}/pkg-${arch}-android-libsimplex.zip"
+    android_support_lib_output="${LIBS_DIR:-$android_support_lib_result}/pkg-${arch}-android-libsupport.zip"
 
     arch_map "$arch"
 
@@ -121,10 +122,10 @@ build() {
     # Create missing folders
     mkdir -p "$libs_folder/$android_arch"
 
-    nix build --out-link "$android_simplex_lib_result" "$android_simplex_lib"
+    [ -n "${LIBS_DIR:-}" ] || nix build --out-link "$android_simplex_lib_result" "$android_simplex_lib"
     unzip -o "$android_simplex_lib_output" -d "$libs_folder/$android_arch"
 
-    nix build --out-link "$android_support_lib_result" "$android_support_lib"
+    [ -n "${LIBS_DIR:-}" ] || nix build --out-link "$android_support_lib_result" "$android_support_lib"
     unzip -o "$android_support_lib_output" -d "$libs_folder/$android_arch"
 
     # Build only one arch

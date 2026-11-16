@@ -85,6 +85,39 @@ class ParseArgsTest(unittest.TestCase):
             build_script.BuildIosArchive(pathlib.Path("a"), out, here, True),
         )
 
+    def test_build_commands_with_cores_built_before(self):
+        out, here = pathlib.Path("o"), pathlib.Path(".")
+        self.assertEqual(
+            build_script.parse_args(["build", "apk", "armv7a", "--out", "o", "--libs", "l"]),
+            build_script.BuildApk(Arch.ARMV7A, out, here, False, pathlib.Path("l")),
+        )
+        self.assertEqual(
+            build_script.parse_args(["build", "xcarchive", "--out", "o", "--core", "c.zip"]),
+            build_script.BuildIosArchive(None, out, here, False, pathlib.Path("c.zip")),
+        )
+        image, core = pathlib.Path("image.tar"), pathlib.Path("core.zip")
+        linux = ["build", "desktop", "linux", "24.04", "--version", "7.1.0", "--out", "o", "--docker-image", "image.tar", "--core", "core.zip"]
+        self.assertEqual(
+            build_script.parse_args(linux),
+            build_script.BuildDesktopLinux(build_script.linux_image("24.04", platform.machine()), "7.1.0", out, here, image, core),
+        )
+        self.assertEqual(
+            build_script.parse_args(["build", "desktop", "macos", "--out", "o", "--core-out", "core.zip"]),
+            build_script.BuildDesktopMacos(out, here, False, None, core),
+        )
+        self.assertEqual(
+            build_script.parse_args(["build", "desktop", "windows", "--out", "o", "--core", "core.zip"]),
+            build_script.BuildDesktopWindows(out, here, core),
+        )
+        self.assertEqual(
+            build_script.parse_args(["build", "apk", "aarch64", "--out", "o", "--docker-image", "image.tar"]),
+            build_script.BuildApk(Arch.AARCH64, out, here, False, docker_image=image),
+        )
+        self.assertEqual(
+            build_script.parse_args(["build", "aab", "--libs", "l", "--out", "o", "--docker-image", "image.tar"]),
+            build_script.BuildBundle(pathlib.Path("l"), out, here, image),
+        )
+
     def test_build_commands_reject_missing_or_unknown_arguments(self):
         self.assertIsNone(build_script.parse_args(["build", "xcarchive", "--out", "o"]).art)
         for argv in (
@@ -95,6 +128,8 @@ class ParseArgsTest(unittest.TestCase):
             ["build", "openssl", "linux", "--out", "o"],
             ["build", "libs", "macos", "--host", "--out", "o"],
             ["build", "apk", "x86", "--out", "o"],
+            ["build", "desktop", "windows", "--out", "o", "--core", "a.zip", "--core-out", "b.zip"],
+            ["build", "desktop", "macos", "--out", "o", "--docker-image", "image.tar"],
         ):
             with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
                 build_script.parse_args(argv)
@@ -286,6 +321,19 @@ class MainTest(unittest.TestCase):
                 build_script.build(command)
         self.assertIn("powershell", require.call_args.args[0])
         build.assert_called_once()
+
+    def test_linux_desktop_gets_its_image_and_core_as_absolute_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            image = build_script.linux_image("24.04", "x86_64")
+            command = build_script.BuildDesktopLinux(image, "7.1.0", pathlib.Path(tmp), pathlib.Path("."), None, None, pathlib.Path("c.zip"))
+            with (
+                patch_all("require_tools"),
+                patch_all("host_platform", return_value=build_script.Platform.LINUX),
+                patch_all("build_desktop_linux") as build,
+                patch_all("write_sha256sums"),
+            ):
+                build_script.build(command)
+        self.assertEqual(build.call_args.args[4:], (None, None, pathlib.Path("c.zip").resolve()))
 
     def test_ios_needs_nix_unless_installing_it(self):
         with tempfile.TemporaryDirectory() as tmp:

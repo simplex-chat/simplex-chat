@@ -49,8 +49,10 @@ from .desktop import (
     check_exports,
     client_library_constraints,
     desktop_libs,
+    install_desktop_core,
     link_desktop_libs,
     macos_desktop,
+    zip_desktop_core,
     zip_desktop_libs,
 )
 from .dmg import build_dmg, build_libdmg, copy_dmg_signature, dmg_signature
@@ -469,6 +471,12 @@ def release_macos_libs(
     # bundle_mac_libcrypto copies the libcrypto that the libraries link into the app
     (source / "cabal.project.local").write_text(openssl.cabal_local() + rpathless_cabal_local(work))
     libs = build_mac_lib(source, host.arch, database, work)
+    release_built_macos_libs(source, libs, database, keychain, work, out)
+    return libs
+
+
+def release_built_macos_libs(source: Path, libs: Path, database: Database, keychain: Path | None, work: Path, out: Path) -> None:
+    host = macos_desktop()
     link_desktop_libs(source, host.libs_dir, f"macos-{COMPOSE_ARCHES[host.arch]}")
     released = work / "libs"
     shutil.copytree(libs, released)
@@ -476,7 +484,6 @@ def release_macos_libs(
         sign_mac_libs(released, keychain, work)
     name = host.libs.replace(".zip", "-postgres.zip") if database == Database.POSTGRES else host.libs
     zip_desktop_libs(released, [], out / name)
-    return libs
 
 
 def check_command_line_tools_sdk(sdk: Path) -> None:
@@ -540,20 +547,26 @@ def build_macos_libs(source: Path, database: Database, out: Path, require_signin
     check_machine_paths(found)
 
 
-def build_desktop_macos(source: Path, out: Path, require_signing: bool) -> None:
+def build_desktop_macos(source: Path, out: Path, require_signing: bool, core: Path | None = None, core_out: Path | None = None) -> None:
     host = macos_desktop()
     signed = apple_signing(require_signing)
     paths = machine_paths(source, require_xcode(XCODE))
     with build_root(source, macos_build_env()) as root, contextlib.ExitStack() as stack:
         work = root.work
         keychain = stack.enter_context(apple_keychain(work)) if signed else None
-        openssl_dir = openssl_work(root.source)
-        openssl = host_openssl(openssl_dir)
-        static = OpenSsl(openssl.include, static_libcrypto(openssl.lib, openssl_dir))
-        cli = build_host_cli(root.source, static.cabal_local() + rpathless_cabal_local(work))
-        check_static_openssl(cli, run(["otool", "-L", cli], capture=True).stdout)
-        shutil.copy(cli, out / host.cli)
-        libs = release_macos_libs(root.source, openssl, Database.SQLITE, keychain, work, out)
+        if core is None:
+            openssl_dir = openssl_work(root.source)
+            openssl = host_openssl(openssl_dir)
+            static = OpenSsl(openssl.include, static_libcrypto(openssl.lib, openssl_dir))
+            cli = build_host_cli(root.source, static.cabal_local() + rpathless_cabal_local(work))
+            check_static_openssl(cli, run(["otool", "-L", cli], capture=True).stdout)
+            shutil.copy(cli, out / host.cli)
+            libs = release_macos_libs(root.source, openssl, Database.SQLITE, keychain, work, out)
+        else:
+            libs = install_desktop_core(core, out / host.cli, root.source, host.libs_dir)
+            release_built_macos_libs(root.source, libs, Database.SQLITE, keychain, work, out)
+        if core_out:
+            zip_desktop_core(out / host.cli, libs, core_out)
         found = find_machine_paths([out / host.cli, libs], paths)
         add_vlc_mac(libs, host.arch, work)
         app = build_app(root.source, keychain)

@@ -10,7 +10,7 @@ Results: the job logs, the Claude job's summary (Claude's usage) and the artifac
 
 ## How long it takes, what it costs
 
-- `plan` (ubuntu-24.04, 10 s) reads what the run asks for, names the core library and the backend after their sources, `hashFiles` over the Haskell sources, `cabal.project`, `simplex-chat.cabal` and the build script, and reuses an artifact of the same name that an earlier run of the same branch uploaded (30 days). So every run builds the core library, and the backend when asked, from the branch's own Haskell code, and rebuilds only when those sources change.
+- `plan` (ubuntu-24.04, 10 s) reads what the run asks for, names the core library and the backend after their sources, `hashFiles` over the Haskell sources, `cabal.project`, `simplex-chat.cabal` and the build script, and reuses an artifact of the same name that an earlier run of the same branch or of master uploaded (30 days). So every run builds the core library, and the backend when asked, from the branch's own Haskell code, and rebuilds only when those sources change.
 - `app` (macOS) first builds what no earlier run built, and uploads it for later runs: `scripts/simplex-chat-build.py build libs ios-sim` (30–45 min) builds `lib:simplex-chat` with cabal and the iOS flags, as the Nix iOS build does, into the package of the Nix build; `build-backend.sh` (20–45 min, only when asked) builds `simplex-chat`, `simplex-directory-service` and `smp-server`. `install libs ios` then marks the core library for the simulator (`mac2ios`) and points the Xcode project at it. The Xcode build takes 8–22 min, the smoke test about 10 min, the snapshots about 18 min more, the backend start about 10 min when asked.
 - `claude` (macOS, only when asked, after `app` passed): a new simulator with the app job's build and the smoke test, about 7 min, then the sessions (the smoke plan's took 2.6 min).
 
@@ -68,4 +68,4 @@ It writes what it seeded to `<work dir>/seed.md` (the Claude sessions get it) an
 ## Other files
 
 - `use-macos26-sdk.sh`: runner images from 20261013 add Command Line Tools with a macOS 27 SDK that Xcode 26.6's linker can't read; every macOS job points the default SDK back at macOS 26.5. The pinned `macos-26` label runs such an image.
-- `earlier-run.sh <artifact name>`: finds the newest run of this branch in this repository with that artifact; artifacts from forks and other branches are never used.
+- `earlier-run.sh <artifact name>`: finds the newest run of this branch or of master in this repository with that artifact; artifacts from forks and other branches are never used.

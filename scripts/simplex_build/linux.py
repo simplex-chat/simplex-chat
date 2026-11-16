@@ -39,8 +39,10 @@ from .desktop import (
     check_exports,
     client_library_constraints,
     desktop_libs,
+    install_desktop_core,
     link_desktop_libs,
     remove_skiko_runtime,
+    zip_desktop_core,
     zip_desktop_libs,
 )
 from .docker import OUT, PROJECT, Container, HostRunner, Runner, Step
@@ -383,35 +385,52 @@ def cabal_dir_args(source: Path) -> list[str]:
     return []
 
 
-def linux_container(source: Path, image: UbuntuImage, work: Path) -> Container:
+def linux_container(source: Path, image: UbuntuImage, work: Path, docker_image: Path | None = None) -> Container:
     return Container(
         source,
         {source: PROJECT, work: OUT},
         build_args={"TAG": image.version, "HASH": image.digest, "GHC": GHC},
         run_args=["--device", "/dev/fuse", "--cap-add", "SYS_ADMIN", "--security-opt", "apparmor:unconfined", *cabal_dir_args(source)],
+        image=docker_image,
     )
 
 
-def build_desktop_linux(source: Path, image: UbuntuImage, version: str, out: Path) -> None:
+def build_desktop_linux(
+    source: Path,
+    image: UbuntuImage,
+    version: str,
+    out: Path,
+    docker_image: Path | None = None,
+    core: Path | None = None,
+    core_out: Path | None = None,
+) -> None:
     """The Linux release files of an Ubuntu image, with their released names, and on APPIMAGE_IMAGE the libraries."""
     (source / "cabal.project.local").write_text(DESKTOP_CABAL_LOCAL)
     normalize_permissions(source)
     log(f"building Ubuntu {image.version} {image.arch} CLI and desktop apps")
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp).resolve()
-        with linux_container(source, image, work) as container:
-            for step in CLI_BUILD_STEPS:
-                container.run(Step(step.argv, container.path(source)))
-            cli = container.run(Step(("cabal", "list-bin", "exe:simplex-chat"), container.path(source)), capture=True).strip()
-            container.run(Step(("cp", cli, container.path(work / "simplex-chat")), container.path(source)))
-            container.run(Step(("strip", container.path(work / "simplex-chat")), container.path(source)))
+        with linux_container(source, image, work, docker_image) as container:
+            if core is None:
+                for step in CLI_BUILD_STEPS:
+                    container.run(Step(step.argv, container.path(source)))
+                cli = container.run(Step(("cabal", "list-bin", "exe:simplex-chat"), container.path(source)), capture=True).strip()
+                container.run(Step(("cp", cli, container.path(work / "simplex-chat")), container.path(source)))
+                container.run(Step(("strip", container.path(work / "simplex-chat")), container.path(source)))
+            else:
+                install_desktop_core(core, work / "simplex-chat", source, f"linux-{image.arch}")
             check_origin_runpaths(container, [work / "simplex-chat"])
             shutil.copy(work / "simplex-chat", out / desktop_files(image)[0])
             if not (source / BUILD_SCRIPT).exists():
                 build_desktop_linux_with_tag_scripts(container, source, image, version, work, out)
                 return
             shutil.copy(build_cli_deb(container, work / "simplex-chat", version, image.arch, work), out / desktop_files(image)[1])
-            libs = build_linux_lib(container, source, image.arch, Database.SQLITE)
+            if core is None:
+                libs = build_linux_lib(container, source, image.arch, Database.SQLITE)
+            else:
+                libs = desktop_libs(source, f"linux-{image.arch}")
+            if core_out:
+                zip_desktop_core(work / "simplex-chat", libs, core_out)
             add_vlc_linux(container, libs, image.arch, work)
             check_origin_runpaths(container, [libs])
             link_desktop_libs(source, f"linux-{image.arch}", f"linux-{COMPOSE_ARCHES[image.arch]}")

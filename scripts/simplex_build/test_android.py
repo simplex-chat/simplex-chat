@@ -74,6 +74,20 @@ class AndroidTest(unittest.TestCase):
         self.assertFalse(any(a.startswith("NIX_CONFIG") for a in build))
         self.assertFalse(any(c[:2] == ["docker", "cp"] for c in recorder.commands))
 
+    def test_apk_build_with_libraries_built_before_skips_nix(self):
+        (self.source / "simplex-chat-arm64-v8a.apk").write_bytes(b"apk")
+        libs = self.root / "libs"
+        libs.mkdir()
+        for lib in ("libsimplex", "libsupport"):
+            (libs / f"pkg-aarch64-android-{lib}.zip").write_bytes(lib.encode())
+        recorder = Recorder(answers={"find": "/g/bin/gradle\n"})
+        with patch_all("run", recorder):
+            build_script.build_apk(self.container(), self.source, Arch.AARCH64, self.out, "x.apk", False, True, libs=libs)
+        build = next(c for c in recorder.commands if "./scripts/android/build-android.sh" in c)
+        self.assertIn("LIBS_DIR=/out", build)
+        self.assertEqual((self.out / "pkg-aarch64-android-libsupport.zip").read_bytes(), b"libsupport")
+        self.assertFalse(any(c[:2] == ["docker", "cp"] for c in recorder.commands))
+
     def test_missing_gradle_distribution(self):
         with patch_all("run", Recorder()), self.assertRaises(build_script.BuildError):
             build_script.build_apk(self.container(), self.source, Arch.AARCH64, self.out, "x.apk", False, False)

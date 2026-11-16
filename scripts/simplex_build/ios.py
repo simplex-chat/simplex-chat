@@ -330,7 +330,7 @@ def pin_build_machine(products: Path) -> None:
             info.write_bytes(plistlib.dumps(data, fmt=fmt))
 
 
-def build_ios_archive(source: Path, art: Path | None, out: Path, install: bool) -> None:
+def build_ios_archive(source: Path, art: Path | None, out: Path, install: bool, core: Path | None = None) -> None:
     """The archive and the Nix core package it links, with the brand assets of art, the simplex-chat-art checkout, or
     else with the default icons."""
     if art is None:
@@ -346,12 +346,14 @@ def build_ios_archive(source: Path, art: Path | None, out: Path, install: bool) 
     paths = machine_paths(source, developer)
     with build_root(source, {}) as root:
         work = root.work
-        if install:
-            install_nix(work)
-        run(["nix", "build", "-L", "--out-link", work / "core", IOS_CORE_JOB], cwd=root.source, env=nix_env())
-        install_ios_libs(root.source, work / "core" / IOS_CORE_ZIP, work)
+        if core is None:
+            if install:
+                install_nix(work)
+            run(["nix", "build", "-L", "--out-link", work / "core", IOS_CORE_JOB], cwd=root.source, env=nix_env())
+            core = work / "core" / IOS_CORE_ZIP
+        install_ios_libs(root.source, core, work)
         # the simulator test builds the app with this core, relabelled for the simulator by install libs ios
-        shutil.copy(work / "core" / IOS_CORE_ZIP, out / IOS_CORE_ZIP)
+        shutil.copy(core, out / IOS_CORE_ZIP)
 
         if art is not None:
             # The brand assets, as release-mobile.py adds them: Release.xcconfig includes Local.xcconfig, which turns on

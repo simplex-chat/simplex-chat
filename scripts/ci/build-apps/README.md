@@ -33,6 +33,31 @@ It needs the repository secret `SIMPLEX_ART_SSH_KEY`, the private half of a read
 
 `gh run download <run id> -n <artifact>` downloads one. The version and build numbers are the commit's: bump them before the run.
 
+## Core libraries built before
+
+Each run reuses the core libraries and Docker images of an earlier run of the same branch or of master when their sources are unchanged. Each is an artifact named after a hash of the files it is built from, which `earlier-run.sh` finds: `plan` finds the Nix core packages, each desktop job its core, and each job that builds in Docker its image, with the action `.github/actions/earlier-artifact`. A job that builds one uploads it.
+
+| Artifact | Made by | Used by |
+|---|---|---|
+| `android-core-<hash>`: `pkg-aarch64-android-libsimplex.zip`, `pkg-aarch64-android-libsupport.zip` | the aarch64 APK job when it builds them, or android-emu's job `core` | `build apk aarch64 --libs <dir>` |
+| `android-core-armv7a-<hash>`: the armv7a packages | the armv7a APK job when it builds them | `build apk armv7a --libs <dir>` |
+| `ios-core-<hash>`: `pkg-ios-aarch64-swift-json.zip` | the iOS archive job when it builds it | `build xcarchive --core <zip>` |
+| `desktop-core-ubuntu-<version>-<arch>-<hash>`, `desktop-core-macos-<arch>-ghc<version>-cabal<version>-<hash>`, `desktop-core-windows-x86_64-ghc<version>-cabal<version>-gcc<version>-<hash>`: `desktop-core.zip` | each desktop job, `build desktop <platform> --core-out <zip>`, when it builds them | `build desktop <platform> --core <zip>` |
+| `docker-image-android-<arch>-<uid>-<gid>-<hash>`, `docker-image-ubuntu-<version>-<arch>-<uid>-<gid>-<hash>`: `image.tar` | the aarch64 APK job and each Linux desktop job, `--docker-image <tar>`, when it builds the image | `build apk`, `build aab` and `build desktop linux` with `--docker-image <tar>` |
+
+The hashes are of these files:
+
+| Artifact | Files |
+|---|---|
+| Android core | `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md`, `flake.nix`, `flake.lock`, `scripts/nix/**`, `scripts/android/build-android.sh`, `scripts/simplex-chat-build.py`, and `__init__.py`, `cli.py`, `common.py`, `nix.py`, `docker.py` and `android.py` in `scripts/simplex_build`, as android-emu names it |
+| iOS core | the same without `build-android.sh`, `docker.py` and `android.py`, with `apple.py`, `buildroot.py` and `ios.py` |
+| Desktop core | `src/**`, `apps/simplex-chat/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md`, `flake.nix` and `libsimplex.dll.def`, which the build checks, `scripts/simplex-chat-build.py`, `__init__.py`, `cli.py`, `common.py` and `desktop.py`, with `Dockerfile.build`, `docker.py` and `linux.py` on Linux; `apple.py`, `buildroot.py`, `openssl.py`, `link_without_rpaths.py` and `macos.py` on macOS; `buildroot.py`, `openssl.py` and `windows.py` on Windows. The macOS and Windows names also have the versions of GHC, cabal and, on Windows, MSYS2's gcc, which the runner installs |
+| Docker image | `Dockerfile.build` and `docker.py`, with `linux.py` and `common.py` for the desktop images, which set its arguments; the name also has the runner's user and group ids, which the image's user takes |
+
+With `--libs`, `build-android.sh` unpacks the packages of `LIBS_DIR` in place of building them with Nix; with `--core`, the archive links that package in place of the Nix build's. Either way the packages are the outputs of the same `flake.nix` jobs. A desktop core is the CLI and the app's libraries directory without VLC, with their modes: `build desktop --core` installs them in place of the CLI and library builds, and makes the rest as the build does, the libraries zip of the release among it. `--docker-image` loads the image from the file that `docker save` wrote, or builds it and saves it there.
+
+One set of the three Nix cores takes about 170 MB (42, 49 and 78 MB), kept 30 days. They are artifacts, not Actions caches, which this repository evicts within hours and shares with `build.yml`.
+
 ## Android: signing reproducibly
 
 The APKs are the foss flavor, as `scripts/android/build-android.sh` builds them: AGP's unsigned output, which is deterministic. Two runs on different runners built byte-identical APKs, core libraries and bundles.

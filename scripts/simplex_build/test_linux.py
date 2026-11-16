@@ -288,7 +288,7 @@ class DesktopTest(unittest.TestCase):
         self.assertEqual(tool_step.env, {"SOURCE_DATE_EPOCH": "1704067200"})
         self.assertEqual(image, self.multiplatform / "release/main/SimpleX_Chat-x86_64.AppImage")
 
-    def test_a_checkout_with_this_script_and_old_scripts_builds_with_it_in_order_with_released_names(self):
+    def build_with_this_script(self, core=None, core_out=None):
         out = self.root / "out"
         out.mkdir()
         for script in (build_script.BUILD_SCRIPT, build_script.TAG_DESKTOP_DEB_SCRIPT):
@@ -327,14 +327,38 @@ class DesktopTest(unittest.TestCase):
             patch_all("link_desktop_libs", record("link")),
             patch_all("package_desktop_deb", record("desktop deb", made("desktop.deb"))),
             patch_all("zip_desktop_libs", record("libs zip")),
+            patch_all("zip_desktop_core", record("core zip", lambda *a: calls.append(a))),
             patch_all("system_libcrypto", record("libcrypto", lambda *a: self.root / "libcrypto.so.3")),
             patch_all("package_appimage", record("appimage", made("app.AppImage"))),
             patch_all("log"),
         ):
-            build_script.build_desktop_linux(self.source, JAMMY, "7.1.0", out)
+            build_script.build_desktop_linux(self.source, JAMMY, "7.1.0", out, core=core, core_out=core_out)
+        return out, container, calls
+
+    def test_a_checkout_with_this_script_and_old_scripts_builds_with_it_in_order_with_released_names(self):
+        out, _, calls = self.build_with_this_script()
         self.assertEqual(calls, ["cli deb", "lib", "vlc", "link", "desktop deb", "libs zip", "libcrypto", "appimage"])
         self.assertEqual(sorted(p.name for p in out.iterdir()), sorted(build_script.desktop_files(JAMMY)))
         self.assertIn("flags: +openssl", (self.source / "cabal.project.local").read_text())
+
+    def test_the_cli_and_libraries_are_saved_before_vlc_joins_the_libraries(self):
+        _, _, calls = self.build_with_this_script(core_out=self.root / "core.zip")
+        cli, libs, target = calls[3]
+        self.assertEqual(calls[:3] + calls[4:5], ["cli deb", "lib", "core zip", "vlc"])
+        self.assertEqual((cli.name, libs, target), ("simplex-chat", self.root, self.root / "core.zip"))
+
+    def test_a_saved_core_replaces_the_cli_and_library_builds(self):
+        core_libs = self.root / "core-libs"
+        core_libs.mkdir()
+        (core_libs / "libsimplex.so").write_bytes(b"core lib")
+        (self.root / "core-cli").write_bytes(b"core cli")
+        build_script.zip_desktop_core(self.root / "core-cli", core_libs, self.root / "core.zip")
+        out, container, calls = self.build_with_this_script(core=self.root / "core.zip")
+        self.assertEqual(calls, ["cli deb", "vlc", "link", "desktop deb", "libs zip", "libcrypto", "appimage"])
+        self.assertFalse(any(step.argv[0] in ("cabal", "cp", "strip") for step in container.steps))
+        self.assertEqual((out / "simplex-chat-ubuntu-22_04-x86_64").read_bytes(), b"core cli")
+        libs = build_script.desktop_libs(self.source, "linux-x86_64")
+        self.assertEqual([(p.name, p.read_bytes()) for p in libs.iterdir()], [("libsimplex.so", b"core lib")])
 
     def test_the_appimage_bundles_the_system_libcrypto_that_libsimplex_loads(self):
         libs, work = self.root / "libs", self.root / "work"

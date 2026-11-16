@@ -41,9 +41,11 @@ from .desktop import (
     check_exports,
     client_library_constraints,
     desktop_libs,
+    install_desktop_core,
     link_desktop_libs,
     remove_skiko_runtime,
     run_cabal,
+    zip_desktop_core,
     zip_desktop_libs,
 )
 from .openssl import OpenSsl, check_static_openssl, host_openssl, openssl_work, static_libcrypto
@@ -165,9 +167,13 @@ def add_vlc_windows(libs: Path, work: Path) -> None:
 def release_windows_libs(source: Path, openssl: OpenSsl, out: Path) -> Path:
     """The library release, with the import library of libsimplex.dll; returns the libraries directory of the app."""
     libs = build_windows_lib(source, openssl)
+    release_built_windows_libs(source, libs, out)
+    return libs
+
+
+def release_built_windows_libs(source: Path, libs: Path, out: Path) -> None:
     run(["dlltool", "-d", "libsimplex.dll.def", "-l", "libsimplex.lib", "-D", "libsimplex.dll"], cwd=source)
     zip_desktop_libs(libs, [source / "libsimplex.lib"], out / WINDOWS_DESKTOP.libs)
-    return libs
 
 
 # The release builds run in a copy of the checkout here, with cabal's directory and the temporary directory in it:
@@ -304,19 +310,25 @@ def package_msi(source: Path, work: Path) -> Path:
     return msi
 
 
-def build_desktop_windows(source: Path, out: Path) -> None:
+def build_desktop_windows(source: Path, out: Path, core: Path | None = None, core_out: Path | None = None) -> None:
     host = WINDOWS_DESKTOP
     check_line_endings(source)
     paths = windows_machine_paths(source)
     with windows_build_root(source) as root:
         work = root.work
-        openssl_dir = openssl_work(root.source)
-        openssl = host_openssl(openssl_dir)
-        static = OpenSsl(openssl.include, static_libcrypto(openssl.lib, openssl_dir))
-        cli = build_host_cli(root.source, static.cabal_local(f"{OPENSSL_WINDOWS_STATIC_LINK} {WINDOWS_NO_TIMESTAMP}"))
-        check_static_openssl(cli, run(["objdump", "-p", cli], capture=True).stdout)
-        shutil.copy(cli, out / host.cli)
-        libs = release_windows_libs(root.source, openssl, out)
+        if core is None:
+            openssl_dir = openssl_work(root.source)
+            openssl = host_openssl(openssl_dir)
+            static = OpenSsl(openssl.include, static_libcrypto(openssl.lib, openssl_dir))
+            cli = build_host_cli(root.source, static.cabal_local(f"{OPENSSL_WINDOWS_STATIC_LINK} {WINDOWS_NO_TIMESTAMP}"))
+            check_static_openssl(cli, run(["objdump", "-p", cli], capture=True).stdout)
+            shutil.copy(cli, out / host.cli)
+            libs = release_windows_libs(root.source, openssl, out)
+        else:
+            libs = install_desktop_core(core, out / host.cli, root.source, host.libs_dir)
+            release_built_windows_libs(root.source, libs, out)
+        if core_out:
+            zip_desktop_core(out / host.cli, libs, core_out)
         add_vlc_windows(libs, work)
         link_desktop_libs(root.source, host.libs_dir, "windows-x64")
         msi = package_msi(root.source, work)

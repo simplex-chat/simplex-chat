@@ -15,6 +15,9 @@ PROJECT = "/project"
 OUT = "/out"
 
 
+ARCHIVED_IMAGE = "simplex-build-image"
+
+
 @dataclass(frozen=True, slots=True)
 class Step:
     """A command run in a container, without a shell."""
@@ -35,6 +38,7 @@ class Container:
         mounts: Mapping[Path, str],
         build_args: Mapping[str, str] | None = None,
         run_args: Sequence[str] = (),
+        image: Path | None = None,
     ) -> None:
         self.name = f"simplex-reproduce-{os.getpid()}-{id(self)}"
         self.owned = True
@@ -42,6 +46,8 @@ class Container:
         self.mounts = dict(mounts)
         self.build_args = {"USER_UID": str(os.getuid()), "USER_GID": str(os.getgid()), **(build_args or {})}
         self.run_args = list(run_args)
+        self.image = image
+        self.tag = ARCHIVED_IMAGE if image else self.name
 
     @classmethod
     def running(cls, name: str, source: Path) -> "Container":
@@ -54,15 +60,21 @@ class Container:
     def __enter__(self) -> "Container":
         if not self.owned:
             return self
-        build: list[str | Path] = ["docker", "build", "--no-cache", "-f", self.source / "Dockerfile.build", "-t", self.name]
-        for key, value in self.build_args.items():
-            build += ["--build-arg", f"{key}={value}"]
-        run([*build, self.source])
+        if self.image and self.image.is_file():
+            run(["docker", "load", "-i", self.image])
+        else:
+            build: list[str | Path] = ["docker", "build", "--no-cache", "-f", self.source / "Dockerfile.build", "-t", self.tag]
+            for key, value in self.build_args.items():
+                build += ["--build-arg", f"{key}={value}"]
+            run([*build, self.source])
+            if self.image:
+                self.image.parent.mkdir(parents=True, exist_ok=True)
+                run(["docker", "save", "-o", self.image, self.tag])
         start: list[str | Path] = ["docker", "run", "-t", "-d", "--name", self.name, *self.run_args]
         for host, container in self.mounts.items():
             start += ["-v", f"{host}:{container}"]
         try:
-            run([*start, self.name], capture=True)
+            run([*start, self.tag], capture=True)
         except BaseException:
             self.remove()
             raise
@@ -76,7 +88,7 @@ class Container:
 
     def remove(self) -> None:
         run(["docker", "rm", "--force", self.name], check=False, capture=True)
-        run(["docker", "image", "rm", self.name], check=False, capture=True)
+        run(["docker", "image", "rm", self.tag], check=False, capture=True)
 
     def run(self, step: Step, capture: bool = False, secrets: Mapping[str, str] | None = None) -> str:
         """Secrets are environment variables passed to docker by name, so that their values are in no command line."""

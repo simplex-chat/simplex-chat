@@ -1,4 +1,5 @@
 import pathlib
+import tempfile
 import unittest
 
 from .testing import Recorder, Step, build_script, patch_all
@@ -35,6 +36,32 @@ class ContainerTest(unittest.TestCase):
         ):
             pass
         self.assertEqual(recorder.commands[-1][:3], ["docker", "image", "rm"])
+
+    def test_built_image_is_saved_to_its_archive_and_removed_from_docker(self):
+        recorder = Recorder()
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = pathlib.Path(tmp) / "image/image.tar"
+            with patch_all("run", recorder), build_script.Container(pathlib.Path("/src"), {}, image=archive) as c:
+                pass
+            self.assertTrue(archive.parent.is_dir())
+        build, save, start, rm, rmi = recorder.commands
+        self.assertEqual((build[5:7], build[-1]), (["-t", build_script.ARCHIVED_IMAGE], "/src"))
+        self.assertEqual(save, ["docker", "save", "-o", str(archive), build_script.ARCHIVED_IMAGE])
+        self.assertEqual(start[-1], build_script.ARCHIVED_IMAGE)
+        self.assertEqual(rm, ["docker", "rm", "--force", c.name])
+        self.assertEqual(rmi, ["docker", "image", "rm", build_script.ARCHIVED_IMAGE])
+
+    def test_archived_image_is_loaded_in_place_of_a_build(self):
+        recorder = Recorder()
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = pathlib.Path(tmp) / "image.tar"
+            archive.write_bytes(b"tar")
+            with patch_all("run", recorder), build_script.Container(pathlib.Path("/src"), {}, image=archive):
+                pass
+        load, start, _, rmi = recorder.commands
+        self.assertEqual(load, ["docker", "load", "-i", str(archive)])
+        self.assertEqual(start[-1], build_script.ARCHIVED_IMAGE)
+        self.assertEqual(rmi[-1], build_script.ARCHIVED_IMAGE)
 
     def test_copy_out_follows_symlinks(self):
         recorder = Recorder()

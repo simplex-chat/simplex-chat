@@ -119,7 +119,9 @@ def android_signing() -> AndroidSigning | None:
 
 
 @contextlib.contextmanager
-def android_container(source: Path, out: Path, set_pid_max: bool, signing: AndroidSigning | None = None) -> Iterator[Container]:
+def android_container(
+    source: Path, out: Path, set_pid_max: bool, signing: AndroidSigning | None = None, image: Path | None = None
+) -> Iterator[Container]:
     mounts = {source.resolve(): PROJECT, out.resolve(): OUT}
     if signing:
         mounts[signing.keystore] = f"{ANDROID_KEYSTORE_MOUNT}:ro"
@@ -134,12 +136,21 @@ def android_container(source: Path, out: Path, set_pid_max: bool, signing: Andro
             "--security-opt", "seccomp:unconfined",
             "--security-opt", "systempaths=unconfined",
         ],
+        image=image,
     ) as container:
         if set_pid_max:
             # 32-bit bionic aborts above pid 65535, which the armv7a GHC runs under qemu. Since Linux 6.14 pid_max
             # belongs to each pid namespace, copied when it is created, so it is set in the container's.
             container.run(Step(("tee", "/proc/sys/kernel/pid_max"), user="root", input="65535\n"))
         yield container
+
+
+def android_lib_package(libs: Path, arch: Arch, lib: str) -> Path:
+    name = f"pkg-{arch}-android-{lib}.zip"
+    found = sorted(libs.rglob(name))
+    if not found:
+        raise BuildError(f"{name} not found in {libs}")
+    return found[0]
 
 
 def gradle_path(container: Container) -> str:
@@ -164,11 +175,16 @@ def build_apk(
     nix_cache: bool,
     keep_libs: bool,
     signing: AndroidSigning | None = None,
+    libs: Path | None = None,
 ) -> None:
     """The deterministic APK of scripts/android/build-android.sh, signed by Gradle with signing, as <out>/<out_name>."""
     env = {"ARCHES": arch.value, "PATH": gradle_path(container)}
     if nix_cache:
         env["NIX_CONFIG"] = NIX_CACHE_CONFIG
+    if libs:
+        for lib in ANDROID_LIBS:
+            shutil.copy(android_lib_package(libs, arch, lib), out)
+        env["LIBS_DIR"] = OUT
     secrets = None
     if signing:
         env |= signing.env
@@ -176,7 +192,7 @@ def build_apk(
     build = Step(("./scripts/android/build-android.sh", "-gs", android_vercode(source)), env=env)
     retry_once(lambda: container.run(build, secrets=secrets))
     shutil.copy(source / f"simplex-chat-{arch.abi}.apk", out / out_name)
-    if keep_libs:
+    if keep_libs and libs is None:
         for lib in ANDROID_LIBS:
             container.copy_out(f"{PROJECT}/result-{arch}-{lib}/pkg-{arch}-android-{lib}.zip", out)
 
@@ -190,11 +206,7 @@ def build_bundle(container: Container, source: Path, libs: Path, out: Path, sign
         target = source / ANDROID_LIBS_DIR / arch.abi
         target.mkdir(parents=True, exist_ok=True)
         for lib in ANDROID_LIBS:
-            name = f"pkg-{arch}-android-{lib}.zip"
-            found = sorted(libs.rglob(name))
-            if not found:
-                raise BuildError(f"{name} not found in {libs}")
-            with zipfile.ZipFile(found[0]) as z:
+            with zipfile.ZipFile(android_lib_package(libs, arch, lib)) as z:
                 z.extractall(target)
     build = Step(
         ("./gradlew", "--no-daemon", ":android:bundleGoogleRelease"),

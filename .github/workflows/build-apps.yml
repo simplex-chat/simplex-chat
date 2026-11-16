@@ -26,6 +26,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: build-apps-${{ github.ref }}
@@ -38,6 +39,51 @@ env:
   DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
 jobs:
+  plan:
+    name: Core libraries built before
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      android-core: ${{ steps.names.outputs.android-core }}
+      android-core-run: ${{ steps.android-core.outputs.run-id }}
+      android-core-armv7a: ${{ steps.names.outputs.android-core-armv7a }}
+      android-core-armv7a-run: ${{ steps.android-core-armv7a.outputs.run-id }}
+      ios-core: ${{ steps.names.outputs.ios-core }}
+      ios-core-run: ${{ steps.ios-core.outputs.run-id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Core library names
+        id: names
+        run: |
+          android=${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/android/build-android.sh', 'scripts/simplex-chat-build.py', 'scripts/simplex_build/__init__.py', 'scripts/simplex_build/cli.py', 'scripts/simplex_build/common.py', 'scripts/simplex_build/nix.py', 'scripts/simplex_build/docker.py', 'scripts/simplex_build/android.py') }}
+          ios=${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/simplex-chat-build.py', 'scripts/simplex_build/__init__.py', 'scripts/simplex_build/cli.py', 'scripts/simplex_build/common.py', 'scripts/simplex_build/nix.py', 'scripts/simplex_build/apple.py', 'scripts/simplex_build/buildroot.py', 'scripts/simplex_build/ios.py') }}
+          echo "android-core=android-core-$android" >> "$GITHUB_OUTPUT"
+          echo "android-core-armv7a=android-core-armv7a-$android" >> "$GITHUB_OUTPUT"
+          echo "ios-core=ios-core-$ios" >> "$GITHUB_OUTPUT"
+
+      - name: Find Android core library
+        id: android-core
+        if: inputs.android
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.android-core }}"
+
+      - name: Find Android core library for armv7a
+        id: android-core-armv7a
+        if: inputs.android
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.android-core-armv7a }}"
+
+      - name: Find iOS core library
+        id: ios-core
+        if: inputs.ios
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.ios-core }}"
+
   # every build must open this encrypted database, made by the previous release with its own OpenSSL
   old-database:
     name: Previous release's database
@@ -60,13 +106,20 @@ jobs:
 
   android:
     name: Android ${{ matrix.arch }} APK
+    needs: plan
     if: inputs.android
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
-        arch: [aarch64, armv7a]
+        include:
+          - arch: aarch64
+            core: ${{ needs.plan.outputs.android-core }}
+            core-run: ${{ needs.plan.outputs.android-core-run }}
+          - arch: armv7a
+            core: ${{ needs.plan.outputs.android-core-armv7a }}
+            core-run: ${{ needs.plan.outputs.android-core-armv7a-run }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -85,17 +138,61 @@ jobs:
         run: scripts/ci/linux_util_free_space.sh
 
       - name: Setup swap
-        if: matrix.arch == 'armv7a'
+        if: matrix.arch == 'armv7a' && matrix.core-run == ''
         uses: ./.github/actions/swap
         with:
           swap-size-gb: 30
 
       # the Nix sandbox needs user namespaces, which Ubuntu 24.04 restricts
       - name: Allow user namespaces
+        if: matrix.core-run == ''
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
+      - name: Download core library
+        if: matrix.core-run != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.core }}
+          path: ${{ runner.temp }}/core
+          run-id: ${{ matrix.core-run }}
+          github-token: ${{ github.token }}
+
+      - name: Docker image name
+        id: docker-image
+        run: echo "name=docker-image-android-$(uname -m)-$(id -u)-$(id -g)-${{ hashFiles('Dockerfile.build', 'scripts/simplex_build/docker.py') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Docker image built before
+        id: earlier-image
+        uses: ./.github/actions/earlier-artifact
+        with:
+          name: ${{ steps.docker-image.outputs.name }}
+          path: ${{ runner.temp }}/docker-image
+
       - name: Build APK
-        run: scripts/simplex-chat-build.py build apk ${{ matrix.arch }} --out "$RUNNER_TEMP/out" --nix-cache
+        run: |
+          scripts/simplex-chat-build.py build apk ${{ matrix.arch }} --out "$RUNNER_TEMP/out" --nix-cache \
+            --docker-image "$RUNNER_TEMP/docker-image/image.tar" \
+            ${{ matrix.core-run != '' && '--libs "$RUNNER_TEMP/core"' || '' }}
+
+      - name: Upload Docker image
+        if: matrix.arch == 'aarch64' && steps.earlier-image.outputs.found != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.docker-image.outputs.name }}
+          path: ${{ runner.temp }}/docker-image/image.tar
+          compression-level: 1
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload core library
+        if: matrix.core-run == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.core }}
+          path: ${{ runner.temp }}/out/pkg-${{ matrix.arch }}-android-*.zip
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
@@ -124,8 +221,20 @@ jobs:
           pattern: android-*-unsigned
           path: ${{ runner.temp }}/libs
 
+      - name: Docker image name
+        id: docker-image
+        run: echo "name=docker-image-android-$(uname -m)-$(id -u)-$(id -g)-${{ hashFiles('Dockerfile.build', 'scripts/simplex_build/docker.py') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Docker image built before
+        uses: ./.github/actions/earlier-artifact
+        with:
+          name: ${{ steps.docker-image.outputs.name }}
+          path: ${{ runner.temp }}/docker-image
+
       - name: Build bundle
-        run: scripts/simplex-chat-build.py build aab --libs "$RUNNER_TEMP/libs" --out "$RUNNER_TEMP/out"
+        run: |
+          scripts/simplex-chat-build.py build aab --libs "$RUNNER_TEMP/libs" --out "$RUNNER_TEMP/out" \
+            --docker-image "$RUNNER_TEMP/docker-image/image.tar"
 
       - name: Upload bundle
         uses: actions/upload-artifact@v7
@@ -203,6 +312,7 @@ jobs:
 
   ios:
     name: iOS archive
+    needs: plan
     if: inputs.ios
     runs-on: macos-26
     timeout-minutes: 360
@@ -237,8 +347,29 @@ jobs:
           ssh-key: ${{ secrets.SIMPLEX_ART_SSH_KEY }}
           path: simplex-chat-art
 
+      - name: Download core library
+        if: needs.plan.outputs.ios-core-run != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.ios-core }}
+          path: ${{ runner.temp }}/core
+          run-id: ${{ needs.plan.outputs.ios-core-run }}
+          github-token: ${{ github.token }}
+
       - name: Build archive
-        run: scripts/simplex-chat-build.py build xcarchive ${{ env.HAS_ART_KEY == 'true' && '--art simplex-chat-art' || '' }} --out "$RUNNER_TEMP/out" --install-nix
+        run: |
+          scripts/simplex-chat-build.py build xcarchive ${{ env.HAS_ART_KEY == 'true' && '--art simplex-chat-art' || '' }} --out "$RUNNER_TEMP/out" --install-nix \
+            ${{ needs.plan.outputs.ios-core-run != '' && '--core "$RUNNER_TEMP/core/pkg-ios-aarch64-swift-json.zip"' || '' }}
+
+      - name: Upload core library
+        if: needs.plan.outputs.ios-core-run == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.ios-core }}
+          path: ${{ runner.temp }}/out/pkg-ios-aarch64-swift-json.zip
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Upload archive
         uses: actions/upload-artifact@v7
@@ -353,10 +484,52 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Docker image and core library names
+        id: names
+        run: |
+          echo "docker-image=docker-image-ubuntu-${{ matrix.ubuntu }}-${{ matrix.arch }}-$(id -u)-$(id -g)-${{ hashFiles('Dockerfile.build', 'scripts/simplex_build/docker.py', 'scripts/simplex_build/linux.py', 'scripts/simplex_build/common.py') }}" >> "$GITHUB_OUTPUT"
+          echo "core=desktop-core-ubuntu-${{ matrix.ubuntu }}-${{ matrix.arch }}-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'libsimplex.dll.def', 'Dockerfile.build', 'scripts/simplex-chat-build.py', 'scripts/simplex_build/__init__.py', 'scripts/simplex_build/cli.py', 'scripts/simplex_build/common.py', 'scripts/simplex_build/desktop.py', 'scripts/simplex_build/docker.py', 'scripts/simplex_build/linux.py') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Docker image built before
+        id: earlier-image
+        uses: ./.github/actions/earlier-artifact
+        with:
+          name: ${{ steps.names.outputs.docker-image }}
+          path: ${{ runner.temp }}/docker-image
+
+      - name: Core library built before
+        id: core
+        uses: ./.github/actions/earlier-artifact
+        with:
+          name: ${{ steps.names.outputs.core }}
+          path: ${{ runner.temp }}/core
+
       - name: Build CLI and desktop apps
         run: |
           version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
-          python3 scripts/simplex-chat-build.py build desktop linux ${{ matrix.ubuntu }} --version "$version" --out "$RUNNER_TEMP/out"
+          python3 scripts/simplex-chat-build.py build desktop linux ${{ matrix.ubuntu }} --version "$version" --out "$RUNNER_TEMP/out" \
+            --docker-image "$RUNNER_TEMP/docker-image/image.tar" \
+            ${{ steps.core.outputs.found == 'true' && '--core "$RUNNER_TEMP/core/desktop-core.zip"' || '--core-out "$RUNNER_TEMP/core/desktop-core.zip"' }}
+
+      - name: Upload Docker image
+        if: steps.earlier-image.outputs.found != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.names.outputs.docker-image }}
+          path: ${{ runner.temp }}/docker-image/image.tar
+          compression-level: 1
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload core library
+        if: steps.core.outputs.found != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.names.outputs.core }}
+          path: ${{ runner.temp }}/core/desktop-core.zip
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Upload apps
         uses: actions/upload-artifact@v7
@@ -447,8 +620,31 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Core library name
+        id: names
+        run: echo "core=desktop-core-macos-${{ matrix.arch }}-ghc$(ghc --numeric-version)-cabal$(cabal --numeric-version)-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'libsimplex.dll.def', 'scripts/simplex-chat-build.py', 'scripts/simplex_build/__init__.py', 'scripts/simplex_build/cli.py', 'scripts/simplex_build/common.py', 'scripts/simplex_build/desktop.py', 'scripts/simplex_build/apple.py', 'scripts/simplex_build/buildroot.py', 'scripts/simplex_build/openssl.py', 'scripts/simplex_build/link_without_rpaths.py', 'scripts/simplex_build/macos.py') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Core library built before
+        id: core
+        uses: ./.github/actions/earlier-artifact
+        with:
+          name: ${{ steps.names.outputs.core }}
+          path: ${{ runner.temp }}/core
+
       - name: Build CLI, desktop app and libraries
-        run: python3 scripts/simplex-chat-build.py build desktop macos --out "$RUNNER_TEMP/out"
+        run: |
+          python3 scripts/simplex-chat-build.py build desktop macos --out "$RUNNER_TEMP/out" \
+            ${{ steps.core.outputs.found == 'true' && '--core "$RUNNER_TEMP/core/desktop-core.zip"' || '--core-out "$RUNNER_TEMP/core/desktop-core.zip"' }}
+
+      - name: Upload core library
+        if: steps.core.outputs.found != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.names.outputs.core }}
+          path: ${{ runner.temp }}/core/desktop-core.zip
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Upload apps
         uses: actions/upload-artifact@v7
@@ -536,10 +732,36 @@ jobs:
             cmake:p
             python:p
 
+      - name: Core library name
+        id: names
+        run: |
+          export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
+          tools=ghc$(ghc --numeric-version | tr -d '\r')-cabal$(cabal --numeric-version | tr -d '\r')-gcc$(gcc -dumpfullversion | tr -d '\r')
+          echo "core=desktop-core-windows-x86_64-$tools-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'libsimplex.dll.def', 'scripts/simplex-chat-build.py', 'scripts/simplex_build/__init__.py', 'scripts/simplex_build/cli.py', 'scripts/simplex_build/common.py', 'scripts/simplex_build/desktop.py', 'scripts/simplex_build/buildroot.py', 'scripts/simplex_build/openssl.py', 'scripts/simplex_build/windows.py') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Core library built before
+        id: core
+        uses: ./.github/actions/earlier-artifact
+        with:
+          name: ${{ steps.names.outputs.core }}
+          path: ${{ runner.temp }}/core
+
       - name: Build CLI, desktop app and libraries
         run: |
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
-          python scripts/simplex-chat-build.py build desktop windows --out "$(cygpath -w "$RUNNER_TEMP")/out"
+          core="$(cygpath -w "$RUNNER_TEMP")/core/desktop-core.zip"
+          python scripts/simplex-chat-build.py build desktop windows --out "$(cygpath -w "$RUNNER_TEMP")/out" \
+            ${{ steps.core.outputs.found == 'true' && '--core "$core"' || '--core-out "$core"' }}
+
+      - name: Upload core library
+        if: steps.core.outputs.found != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.names.outputs.core }}
+          path: ${{ runner.temp }}/core/desktop-core.zip
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Upload apps
         uses: actions/upload-artifact@v7
