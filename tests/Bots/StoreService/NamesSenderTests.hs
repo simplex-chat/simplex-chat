@@ -16,6 +16,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.Either (isLeft)
 import Data.List (sort)
 import Data.String (fromString)
 import qualified Data.Text as T
@@ -98,8 +99,8 @@ testDecodeSignedTx g = withFakeEthNode $ \node -> do
   Right SignedTx {stRaw} <- signTransaction g c request
   decoded stRaw `shouldBe` Right (txFields request)
   decoded (B.cons 0x01 $ B.drop 1 stRaw) `shouldBe` Left "transaction: not an EIP-1559 transaction"
-  decoded (B.take 100 stRaw) `shouldBe` Left "RLP: truncated"
-  signer (B.take 100 stRaw) `shouldReturn` Left "RLP: truncated"
+  decoded (B.take 100 stRaw) `shouldSatisfy` isLeft
+  signer (B.take 100 stRaw) >>= (`shouldSatisfy` isLeft)
   forM_ [0 .. 15] $ \nonce -> do
     Right SignedTx {stRaw = raw} <- signTransaction g c request {txNonce = nonce}
     (\s -> (nonce, s)) <$> signer raw `shouldReturn` (nonce, Right (fakeChainId, ccRegistrar c))

@@ -40,7 +40,6 @@ import Control.Concurrent.STM (TVar)
 import Control.Exception (evaluate, try)
 import Control.Logger.Simple (logWarn)
 import Control.Monad ((>=>))
-import Crypto.Number.Serialize (os2ip)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
@@ -60,7 +59,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
-import Data.Word (Word64, Word8)
+import Data.Word (Word64)
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -68,13 +67,11 @@ import Network.HTTP.Types (hContentType, methodPost, statusCode, statusIsSuccess
 import Numeric (showHex)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), FromField (..), ToField (..), blobFieldDecoder)
 import Simplex.Messaging.Crypto (keccak256)
-import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress)
-import Simplex.Messaging.Eth.RLP (RLPItem (..), rlpEncode)
-import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), decodeEip1559Tx, eip1559SigningHash, signEip1559Tx)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (addressFromBytes, hex, parseText)
+import StoreService.Names.Abi (hex, parseText)
 import StoreService.Names.Revert (RevertReason (..), decodeRevert, maxNodeMessageLength)
 import StoreService.Store.Invoices (unixSeconds)
 import System.Timeout (timeout)
@@ -228,64 +225,14 @@ signTransaction g ChainClient {ccConfig = ChainConfig {cServiceKey}} tx = fmap s
   where
     signed raw = SignedTx {stRaw = raw, stHash = TxHash $ keccak256 raw}
 
-eip1559TxType :: Word8
-eip1559TxType = 2
-
-signatureScalarBytes :: Int
-signatureScalarBytes = 32
-
 -- | A raw transaction from 'signTransaction', as it was signed.
 decodeSignedTx :: ByteString -> Either String Eip1559Tx
-decodeSignedTx raw = (\(tx, _, _) -> tx) <$> signedTx raw
+decodeSignedTx = fmap fst . decodeEip1559Tx
 
 transactionSigner :: ByteString -> IO (Either String (Eip1559Tx, Address))
-transactionSigner raw = case signedTx raw of
-  Right (tx, signature, digest) -> fmap (tx,) <$> recoverAddress signature digest
+transactionSigner raw = case decodeEip1559Tx raw of
+  Right (tx, signature) -> fmap (tx,) <$> recoverAddress signature (eip1559SigningHash tx)
   Left e -> pure $ Left e
-
-signedTx :: ByteString -> Either String (Eip1559Tx, RecoverableSignature, ByteString)
-signedTx raw = case B.uncons raw of
-  Just (txType, encoded) | txType == eip1559TxType -> case rlpItem encoded of
-    Right (RLPList items, "")
-      | (fields@[chainId, nonce, tip, maxFee, gas, RLPBytes to, value, RLPBytes txData, RLPList []], [RLPBytes yParity, RLPBytes r, RLPBytes s]) <- splitAt 9 items,
-        B.length yParity <= 1 -> do
-          txTo <- maybe (Left "transaction: not an address") Right $ addressFromBytes to
-          tx <- Eip1559Tx <$> scalar chainId <*> scalar nonce <*> scalar tip <*> scalar maxFee <*> scalar gas <*> pure txTo <*> scalar value <*> pure txData
-          let signature = RecoverableSignature {rsR = scalarBytes r, rsS = scalarBytes s, rsRecId = fromInteger $ os2ip yParity}
-          pure (tx, signature, keccak256 $ B.cons eip1559TxType $ rlpEncode $ RLPList fields)
-    Right _ -> Left "transaction: not a signed EIP-1559 transaction"
-    Left e -> Left e
-  _ -> Left "transaction: not an EIP-1559 transaction"
-  where
-    scalarBytes b = B.replicate (signatureScalarBytes - B.length b) 0 <> b
-
-scalar :: forall a. (Integral a, Bounded a) => RLPItem -> Either String a
-scalar = \case
-  RLPBytes b | os2ip b <= toInteger (maxBound :: a) -> Right $ fromInteger $ os2ip b
-  _ -> Left "transaction: not a scalar of its width"
-
-rlpItem :: ByteString -> Either String (RLPItem, ByteString)
-rlpItem s = case B.uncons s of
-  Nothing -> Left "RLP: no item"
-  Just (prefix, rest)
-    | prefix < 0x80 -> Right (RLPBytes $ B.singleton prefix, rest)
-    | prefix <= 0xb7 -> bytesItem (fromIntegral $ prefix - 0x80) rest
-    | prefix < 0xc0 -> longLength (fromIntegral $ prefix - 0xb7) rest >>= uncurry bytesItem
-    | prefix <= 0xf7 -> listItem (fromIntegral $ prefix - 0xc0) rest
-    | otherwise -> longLength (fromIntegral $ prefix - 0xf7) rest >>= uncurry listItem
-  where
-    bytesItem n r = (\(payload, r') -> (RLPBytes payload, r')) <$> split n r
-    listItem n r = split n r >>= \(payload, r') -> (\items -> (RLPList items, r')) <$> rlpItems payload
-    rlpItems payload
-      | B.null payload = Right []
-      | otherwise = rlpItem payload >>= \(item, r) -> (item :) <$> rlpItems r
-    longLength n r = split n r >>= \(len, r') -> (,r') <$> fits (os2ip len) r'
-    fits len r
-      | len <= toInteger (B.length r) = Right $ fromInteger len
-      | otherwise = Left "RLP: truncated"
-    split n r
-      | n <= B.length r = Right $ B.splitAt n r
-      | otherwise = Left "RLP: truncated"
 
 sendRawTransaction :: ChainClient -> ByteString -> IO (Either ChainError TxHash)
 sendRawTransaction c raw = rpc c "eth_sendRawTransaction" [J.String $ hex raw] (fmap TxHash . bytes)
