@@ -64,7 +64,7 @@ import Simplex.Chat.Library.Internal (decodeLinkUserData, getShortLinkConnReq')
 import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
 import Simplex.Chat.Types (GroupProfile (..), ImageData (..), Profile (..), PublicGroupProfile (..), User)
 import Simplex.Messaging.Agent.Client (temporaryOrHostError)
-import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..), simplexShortLink)
+import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), simplexShortLink)
 import Simplex.Messaging.Client (pattern NRMInteractive)
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
@@ -104,7 +104,7 @@ defaultProfileLimits =
     }
 
 -- | Nothing when the link data does not decode.
-type ProfileFetcher = ConnShortLink 'CMContact -> IO (Either ChatError (Maybe LinkData))
+type ProfileFetcher = LinkKind -> ConnShortLink 'CMContact -> IO (Either ChatError (Maybe LinkData))
 
 -- | The addresses a name resolves to; none or an exception when it does not resolve.
 type HostResolver = HostName -> IO [TransportHost]
@@ -234,16 +234,16 @@ linkKindText = \case
 -- The deep link is the link's @simplex:/@ form, with its server.
 linkEntity :: Profiles -> LinkKind -> ConnShortLink 'CMContact -> IO Entity
 linkEntity ps@Profiles {searchSlots} t link = do
-  r <- boundedProfile ps searchSlots [] link
+  r <- boundedProfile ps searchSlots [] t link
   pure Entity {entityPreview = Preview t r, link}
 
 -- | A link preview, within the preview bound.
 linkPreview :: Profiles -> LinkKind -> ConnShortLink 'CMContact -> IO Preview
-linkPreview ps@Profiles {previewSlots, previewLookups} t sl = Preview t <$> boundedProfile ps previewSlots [previewLookups] sl
+linkPreview ps@Profiles {previewSlots, previewLookups} t sl = Preview t <$> boundedProfile ps previewSlots [previewLookups] t sl
 
 -- | Each host lookup also takes a slot of every pool given, beside the shared one.
-boundedProfile :: Profiles -> TVar Int -> [TVar Int] -> ConnShortLink 'CMContact -> IO ProfileRead
-boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, cache} slots lookupPools sl =
+boundedProfile :: Profiles -> TVar Int -> [TVar Int] -> LinkKind -> ConnShortLink 'CMContact -> IO ProfileRead
+boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, cache} slots lookupPools t sl =
   cached >>= \case
     Just p -> pure $ ProfileOk p
     Nothing -> do
@@ -251,7 +251,7 @@ boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, 
       checkHostsIn ps lookupPools deadline (shortLinkHosts sl) >>= \case
         HostRefused -> pure ProfileUnavailable
         HostUnanswered -> pure ProfileUnread
-        HostPublic -> fromMaybe ProfileUnread <$> withSlot deadline slots (fetchLink sl >>= profileRead)
+        HostPublic -> fromMaybe ProfileUnread <$> withSlot deadline slots (fetchLink t sl >>= profileRead)
   where
     key = strEncode $ simplexShortLink sl
     cached = clock >>= \now -> freshEntry now key <$> readTVarIO cache
@@ -271,12 +271,11 @@ shortLinkHosts (CSLContact _ _ ProtocolServer {host} _) = host
 
 -- | Reads the link data without connecting.
 chatProfile :: ChatController -> User -> ProfileFetcher
-chatProfile cc user sl@(CSLContact _ ct _ _) = runReaderT (tryAllErrors' $ getShortLinkConnReq' NRMInteractive user sl >>= liftIO . linkData) cc
+chatProfile cc user t sl = runReaderT (tryAllErrors' $ getShortLinkConnReq' NRMInteractive user sl >>= liftIO . linkData) cc
   where
-    linkData (_, cData, _) = case ct of
-      CCTContact -> fmap LDContact <$> decodeLinkUserData cData
-      CCTChannel -> fmap LDChannel <$> decodeLinkUserData cData
-      _ -> pure Nothing
+    linkData (_, cData, _) = case t of
+      LKContact -> fmap LDContact <$> decodeLinkUserData cData
+      LKChannel -> fmap LDChannel <$> decodeLinkUserData cData
 
 -- | A profile image the page can show as it is.
 imageURI :: ImageData -> Maybe Text

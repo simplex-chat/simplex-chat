@@ -212,7 +212,7 @@ newFake :: ProfileLimits -> (Text -> IO (Either ChatError (Maybe LinkData))) -> 
 newFake limits answer resolver = do
   clockAt <- newTVarIO 0
   fetched <- newTVarIO []
-  let fetcher sl = do
+  let fetcher _ sl = do
         let l = linkText sl
         atomically $ modifyTVar' fetched (l :)
         answer l
@@ -521,16 +521,16 @@ testChatProfiles ps = testChat2 aliceProfile bobProfile test ps
       bob ##> "/ad"
       (address, _) <- getContactLinks bob True
       (channel, _) <- prepareChannel1Relay "news" bob relay
-      let fetch TestCC {chatController = cc@ChatController {currentUser}} l = do
+      let fetch TestCC {chatController = cc@ChatController {currentUser}} kind l = do
             Just user <- readTVarIO currentUser
             sl <- either fail pure $ strDecode $ B.pack l
-            chatProfile cc user sl >>= either (fail . show) pure
+            chatProfile cc user kind sl >>= either (fail . show) pure
           Profile {image = bobImage} = bobProfile
           bobData (Just (LDContact ContactShortLinkData {profile = Profile {displayName, image}, business})) = (displayName, image, business) == ("bob", bobImage, False)
           bobData _ = False
           newsData (Just (LDChannel GroupShortLinkData {groupProfile = GroupProfile {displayName}, publicGroupData})) = (displayName, publicGroupData) == ("news", Just $ PublicGroupData 1)
           newsData _ = False
-      fetch alice' address >>= (`shouldSatisfy` bobData)
-      fetch alice' channel >>= (`shouldSatisfy` newsData)
-      fetch bob address >>= (`shouldSatisfy` bobData)
-      fetch bob channel >>= (`shouldSatisfy` newsData)
+      fetch alice' LKContact address >>= (`shouldSatisfy` bobData)
+      fetch alice' LKChannel channel >>= (`shouldSatisfy` newsData)
+      fetch bob LKContact address >>= (`shouldSatisfy` bobData)
+      fetch bob LKChannel channel >>= (`shouldSatisfy` newsData)

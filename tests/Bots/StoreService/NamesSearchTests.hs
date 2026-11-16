@@ -104,7 +104,7 @@ withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContr
   fetched <- newTVarIO []
   searchesAtFetch <- newTVarIO []
   http@HttpEnv {heSearches} <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesPort = Nothing, lMetricsPort = Nothing}
-  let fetch sl = atomically (readTVar heSearches >>= modifyTVar' searchesAtFetch . (:)) >> fakeFetch fetched sl
+  let fetch kind sl = atomically (readTVar heSearches >>= modifyTVar' searchesAtFetch . (:)) >> fakeFetch fetched kind sl
   ps <- newProfiles defaultProfileLimits {fetchTimeout = fetchMicros} monotonicSeconds fetch stubResolver
   let cfg = adjustConfig $ testNamesConfig node
       routes = \case
@@ -146,7 +146,7 @@ fetchMicros = 500000
 
 -- | Answers by the tag at the start of the link's key; a link tagged Gone is not read.
 fakeFetch :: TVar [Text] -> ProfileFetcher
-fakeFetch fetched sl = do
+fakeFetch fetched _ sl = do
   let l = decodeUtf8 $ strEncode sl
   atomically $ modifyTVar' fetched (l :)
   pure $ Right $ case T.drop 1 $ snd $ T.breakOn "#" l of
