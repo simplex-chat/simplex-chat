@@ -721,7 +721,7 @@ each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. 
   on its first start. Its state is kept in `./data/chain`, so restarts keep the contracts, balances
   and registered names. Its keys are anvil's public test keys, so never use it beside a real chain.
 - `postgres`: PostgreSQL 17 on `127.0.0.1:5433`, user `simplex`, database `store_service`, without a
-  password, kept in `./data/postgres`. The service uses it in place of `BADGE_DB_CONN`.
+  password, kept in `./data/postgres`. `BADGE_DB_CONN` in `.env` points the service at it.
 
 From a fresh clone:
 
@@ -729,7 +729,7 @@ From a fresh clone:
 git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
 git submodule update --init apps/simplex-domains
 cd scripts/store-service
-echo "COMPOSE_FILE=compose.yml:compose.dev.yml" > .env
+printf '%s\n' COMPOSE_FILE=compose.yml:compose.dev.yml BADGE_DB_CONN=postgresql://simplex@127.0.0.1:5433/store_service > .env
 install -d webapps
 docker compose up -d --build
 ```
