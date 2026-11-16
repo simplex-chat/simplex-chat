@@ -17,6 +17,7 @@ import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.onboarding.ReadMoreButton
 import chat.simplex.res.*
 import kotlinx.coroutines.*
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -105,7 +106,7 @@ data class GitHubRelease(
   private val preRelease: Boolean,
   val body: String,
   @SerialName("published_at")
-  val publishedAt: String,
+  val publishedAt: Instant,
   val assets: List<GitHubAsset>
 ) {
   @Transient
@@ -176,15 +177,16 @@ private fun createUpdateJob() {
 }
 
 
+private const val RELEASES_REPO = "simplex-chat/simplex-chat"
 private const val INTERNAL_BUILDS_REPO = "simplex-chat/internal-builds"
 
 fun checkForUpdate() {
   Log.d(TAG, "Checking for update")
   try {
     val release = when (appPrefs.appUpdateChannel.get()) {
-      AppUpdatesChannel.STABLE -> getNewerReleases().firstOrNull { r -> !r.isConsideredBeta }
-      AppUpdatesChannel.BETA -> getNewerReleases().firstOrNull()
-      AppUpdatesChannel.INTERNAL -> getGitHubReleases(INTERNAL_BUILDS_REPO).firstOrNull()?.takeIf { r -> r.tagName != BuildConfigCommon.DESKTOP_VERSION_NAME }
+      AppUpdatesChannel.STABLE -> chooseStableRelease(installedSemVer() ?: return, getGitHubReleases(RELEASES_REPO))
+      AppUpdatesChannel.BETA -> chooseBetaRelease(installedSemVer() ?: return, getGitHubReleases(RELEASES_REPO))
+      AppUpdatesChannel.INTERNAL -> chooseInternalRelease(BuildConfigCommon.DESKTOP_VERSION_NAME, getGitHubReleases(INTERNAL_BUILDS_REPO))
       AppUpdatesChannel.DISABLED -> return
     }
 
@@ -254,14 +256,22 @@ fun checkForUpdate() {
   }
 }
 
-private fun getNewerReleases(): List<GitHubRelease> {
+private fun installedSemVer(): SemVer? {
   val currentSemVer = SemVer.fromCurrentVersionName()
   if (currentSemVer == null) {
     Log.e(TAG, "Current SemVer cannot be parsed")
-    return emptyList()
   }
-  return getGitHubReleases("simplex-chat/simplex-chat").filter { r -> currentSemVer < r.semVer }
+  return currentSemVer
 }
+
+fun chooseStableRelease(installed: SemVer, releases: List<GitHubRelease>): GitHubRelease? =
+  releases.firstOrNull { r -> !r.isConsideredBeta && installed < r.semVer }
+
+fun chooseBetaRelease(installed: SemVer, releases: List<GitHubRelease>): GitHubRelease? =
+  releases.firstOrNull { r -> installed < r.semVer }
+
+fun chooseInternalRelease(installed: String, releases: List<GitHubRelease>): GitHubRelease? =
+  releases.maxByOrNull { r -> r.publishedAt }?.takeIf { r -> r.tagName != installed }
 
 private fun getGitHubReleases(repo: String): List<GitHubRelease> {
   val request = Request.Builder().url("https://api.github.com/repos/$repo/releases").addHeader("User-agent", "curl").build()

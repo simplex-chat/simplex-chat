@@ -52,8 +52,8 @@ flowchart TD
   V -->|yes| M[non-draft releases of simplex-chat/simplex-chat newer than the installed version]
   M -->|Stable| S[first not beta]
   M -->|Beta| B[first]
-  C -->|Internal| I[releases of simplex-chat/internal-builds]
-  I --> F[first non-draft]
+  C -->|Internal| I[non-draft releases of simplex-chat/internal-builds]
+  I --> F[latest published_at]
   F --> T{tag = installed version name}
   T -->|yes| N[nothing offered]
   T -->|no| O[offered]
@@ -75,9 +75,10 @@ flowchart TD
 |---|---|
 | AppCommon.kt | INTERNAL |
 | SimpleXAPI.kt | allowInternalBuilds |
-| AppUpdater.kt | releases read per channel |
+| AppUpdater.kt | releases read per channel; chooseStableRelease, chooseBetaRelease, chooseInternalRelease |
+| AppUpdaterTest.kt | the three choices |
 | SettingsView.desktop.kt | channel list without INTERNAL while the toggle is off |
 | DeveloperView.kt | toggle in the desktop developer options |
 | base strings.xml | "Internal", "Allow internal builds" |
-| smoke-test.sh | screenshots of developer options and update channels in both toggle states |
+| smoke-test.sh | developer options and update channels in both toggle states; Internal selected, then reset to Disabled by the toggle |
 | spec/state.md, product/views/settings.md | channel and toggle |
