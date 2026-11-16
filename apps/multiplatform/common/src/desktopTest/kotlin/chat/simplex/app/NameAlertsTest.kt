@@ -1,25 +1,38 @@
 package chat.simplex.app
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.TextFieldValue
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatParseMarkdown
 import chat.simplex.common.platform.chatParseUri
 import chat.simplex.common.platform.chatSendCmdRetry
+import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.SimplexNameView
 import chat.simplex.common.views.chatlist.ChatListView
+import chat.simplex.common.views.chatlist.ConnectByNameRow
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.AnimatedViewState
+import chat.simplex.common.views.helpers.LocalAppBarHandler
+import chat.simplex.common.views.helpers.rememberAppBarHandler
 import chat.simplex.common.views.newchat.planAndConnect
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import java.io.File
@@ -32,7 +45,6 @@ class NameAlertsTest {
   private val sendCmd = chatSendCmdRetry
   private val parseMarkdown = chatParseMarkdown
   private val parseUri = chatParseUri
-  private val verifyNames = ChatController.appPrefs.privacyVerifySimplexNames.get()
   private val locale = Locale.getDefault()
   private val timeZone = TimeZone.getDefault()
   private val unrecorded = mutableListOf<String>()
@@ -42,7 +54,6 @@ class NameAlertsTest {
   fun setUp() {
     Locale.setDefault(Locale.US)
     TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
-    ChatController.appPrefs.privacyVerifySimplexNames.set(false)
     ChatModel.currentUser.value = User.sampleData
   }
 
@@ -52,14 +63,16 @@ class NameAlertsTest {
     AlertManager.privacySensitive.hideAllAlerts()
     ChatModel.chatsContext.chats.value.clear()
     ChatModel.chatId.value = null
+    ChatModel.chatRunning.value = null
+    ChatModel.appOpenUrlConnecting.value = false
     ChatModel.currentUser.value = null
-    ChatController.appPrefs.privacyVerifySimplexNames.set(verifyNames)
+    simplexWindowState.toasts.clear()
     chatSendCmdRetry = sendCmd
     chatParseMarkdown = parseMarkdown
     chatParseUri = parseUri
     TimeZone.setDefault(timeZone)
     Locale.setDefault(locale)
-    assertEquals(listOf(), unrecorded, "requests without recorded responses")
+    assertEquals(listOf(), unrecorded.toList(), "requests without recorded responses")
   }
 
   @Test
@@ -67,21 +80,17 @@ class NameAlertsTest {
     connect("@alice.simplex")
     assertTexts("Name expired", "alice.simplex expired on January 1, 2026. Its owner can renew it until January 1, 2099.", "Open chat", "OK")
     assertLocalChats("@2")
-  }
-
-  @Test
-  fun knownNameExpiredOpensChat() = recordedAlerts("names/plan-known-expired") {
-    connect("@alice.simplex")
     press("Open chat")
-    waitUntil(timeoutMillis = 5_000) { ChatModel.chatId.value == "@2" }
+    assertRequested("/_get chat @2 initial=100")
   }
 
   @Test
   fun ownNameExpired() = recordedAlerts("names/plan-own-expired") {
     connect("@alice.simplex")
     assertTexts("Your name has expired", "Your name alice.simplex expired on January 1, 2026. Renew it before January 1, 2099.", "Renew", "OK")
+    assertLocalChats()
     press("Renew")
-    assertTexts("Open web link?", "https://simplex.domains/#testing", "Open", "Cancel")
+    assertTexts("Open web link?", "https://simplex.domains/#testing", "Cancel", "Open")
   }
 
   @Test
@@ -90,7 +99,7 @@ class NameAlertsTest {
     assertTexts("Name no longer registered", "alice.simplex is available for registration for \$20 for 2 years.", "Register", "Open chat", "OK")
     assertLocalChats("@2")
     press("Register")
-    assertTexts("Open web link?", "https://simplex.domains/#testing", "Open", "Cancel")
+    assertTexts("Open web link?", "https://simplex.domains/#testing", "Cancel", "Open")
   }
 
   @Test
@@ -98,7 +107,7 @@ class NameAlertsTest {
     connect("@alice.simplex")
     assertTexts("Your name has expired", "Your name alice.simplex is no longer registered. It is available for registration for \$20 for 2 years.", "Re-register", "OK")
     press("Re-register")
-    assertTexts("Open web link?", "https://simplex.domains/#testing", "Open", "Cancel")
+    assertTexts("Open web link?", "https://simplex.domains/#testing", "Cancel", "Open")
   }
 
   @Test
@@ -107,9 +116,7 @@ class NameAlertsTest {
     assertTexts("Name not registered", "alice.simplex is reserved for community. Please contact SimpleX Chat if you are interested in using it.", "Connect to SimpleX team", "Open chat", "OK")
     assertLocalChats("@2")
     press("Connect to SimpleX team")
-    waitUntil(timeoutMillis = 5_000) { unrecorded.isNotEmpty() }
-    assertEquals(listOf("/_connect plan 1 simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"), unrecorded.toList())
-    unrecorded.clear()
+    assertRequested("/_connect plan 1 simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im")
   }
 
   @Test
@@ -142,28 +149,31 @@ class NameAlertsTest {
   fun nameMovedToKnownContact() = recordedAlerts("names/plan-moved-known") {
     connect("@alice.simplex")
     assertTexts("cath", "@alice.simplex", "Open chat", "Cancel")
-    assertLocalChats("@3", "@2")
+    assertLocalChats("@3")
   }
 
   @Test
   fun nameMovedToKnownBusiness() = recordedAlerts("names/plan-moved-business") {
     connect("@alice.simplex")
     assertTexts("cath", "@alice.simplex", "Open chat", "Cancel")
-    assertLocalChats("#1", "@2")
+    assertLocalChats("#1")
   }
 
   @Test
   fun nameOfOtherKindOffered() = recordedAlerts("names/plan-other-kind") {
     connect("team.simplex")
-    assertTexts("team", "#team", "You are a subscriber", "Open channel", "Connect to @team.simplex", "Cancel")
+    assertTexts("team", "#team", "1 subscriber", "You are a subscriber", "Open channel", "Connect to @team.simplex", "Cancel")
+    assertLocalChats("#1")
     press("Connect to @team.simplex")
     assertTexts("alisa", "@team.simplex", "Open new chat", "Cancel")
+    assertTrue(chatIds().contains("@2"))
   }
 
   @Test
   fun channelWithoutRelays() = recordedAlerts("names/plan-channel-no-relays") {
     connect("team.simplex")
-    assertTexts("team", "#team", "Channel has no active relays. Please try to join later.", "Connect to @team.simplex", "OK")
+    assertTexts("team", "Channel has no active relays. Please try to join later.", "Connect to @team.simplex", "OK")
+    assertLocalChats()
     press("Connect to @team.simplex")
     assertTexts("Unconfirmed name", "The SimpleX name team.simplex is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.", "OK")
   }
@@ -171,57 +181,80 @@ class NameAlertsTest {
   @Test
   fun ownChannel() = recordedAlerts("names/plan-own-channel") {
     connect("#team.simplex")
-    assertTexts("team", "#team", "Open channel", "Cancel")
+    assertTexts("Your channel", "This is your link for channel team (#team)!", "Open channel", "Cancel")
     assertLocalChats("#1")
   }
 
   @Test
   fun contactViaAddress() = recordedAlerts("connect/contact-via-address") {
     connect("CONTACT_LINK")
-    assertTexts("alice", "Alice", "Open chat", "Cancel")
+    assertTexts("alice", "Open chat", "Cancel")
+    assertLocalChats("@3")
+  }
+
+  @Test
+  fun connectByNameRowShowsLocalChats() = recorded("names/plan-known") {
+    setContent {
+      ConnectByNameRow("@alice.simplex", mutableStateOf(TextFieldValue("alice")), mutableStateOf("@alice.simplex"), close = null, showLocalChats = { chats -> shownLocalChats += chats.map { it.id } })
+      AlertManager.shared.showInView()
+      AlertManager.privacySensitive.showInView()
+    }
+    press("Connect to @alice.simplex")
+    assertTexts("Connect to @alice.simplex", "alice", "@alice.simplex", "Open chat", "Cancel")
     assertLocalChats("@2")
   }
 
   @Test
-  fun nameMovedEvent() = recordedAlerts("names/plan-moved-business") {
-    connect("@alice.simplex")
-    val event = json.decodeFromString<API>(fixtureText("names/event-name-moved"))
-    val moved = event.result as CR.NameMoved
-    runBlocking { ChatController.processReceivedMsg(event) }
-    moved.contactIds.forEach { id -> assertEquals(DomainVerification.Moved, (chatInfo("@$id") as ChatInfo.Direct).contact.profile.contactDomainVerified) }
-    moved.groupIds.forEach { id -> assertEquals(DomainVerification.Moved, (chatInfo("#$id") as ChatInfo.Group).groupInfo.groupDomainVerified) }
+  fun nameMovedEvent() = recorded("names/event-name-moved") {
+    runBlocking {
+      withContext(Dispatchers.Main) {
+        ChatModel.chatsContext.updateChat(null, ChatInfo.Direct(Contact.sampleData.copy(contactId = 2)))
+        ChatModel.chatsContext.updateChat(null, ChatInfo.Group(GroupInfo.sampleData, groupChatScope = null))
+      }
+      ChatController.processReceivedMsg(json.decodeFromString<API>(fixtureText("names/event-name-moved")))
+    }
+    assertEquals(DomainVerification.Moved, (chatInfo("@2") as ChatInfo.Direct).contact.profile.contactDomainVerified)
+    assertEquals(DomainVerification.Moved, (chatInfo("#1") as ChatInfo.Group).groupInfo.groupDomainVerified)
   }
 
   @Test
-  fun chatListSearchFindsChatsByName() = recorded("names/search-team") {
-    setContent { ChatListView(ChatModel, MutableStateFlow(AnimatedViewState.GONE), {}, false) }
-    onNode(hasSetTextAction()).performTextInput("team")
-    waitUntil(timeoutMillis = 5_000) { ChatModel.chatsContext.chats.value.map { it.id }.containsAll(listOf("@2", "#1")) }
-    onNodeWithText("alice").assertExists()
-    onNodeWithText("team").assertExists()
+  fun chatListSearchShowsChatsOfName() = recorded("names/search-team") {
+    ChatModel.chatRunning.value = true
+    setContent {
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        ChatListView(ChatModel, MutableStateFlow(AnimatedViewState.GONE), {}, false)
+      }
+    }
+    val names = listOf("alice", "team")
+    val shownBefore = names.associateWith { onAllNodesWithText(it).fetchSemanticsNodes().size }
+    onNode(hasSetTextAction()).performTextInput("team.simplex")
+    waitUntil(timeoutMillis = 5_000) { names.all { onAllNodesWithText(it).fetchSemanticsNodes().size > shownBefore.getValue(it) } }
+    assertEquals(setOf("@2", "#1"), chatIds().toSet())
   }
 
   @Test
-  fun verifiedNameIsCopied() = simplexName(DomainVerification.Verified) { verifications ->
+  fun verifiedNameIsCopied() = simplexName(DomainVerification.Verified) { verifications, copied ->
     onNodeWithText(SIMPLEX_NAME).performClick()
     waitForIdle()
+    assertEquals(listOf(SIMPLEX_NAME), copied)
+    assertEquals(listOf("Copied to clipboard"), simplexWindowState.toasts.map { it.first })
     assertEquals(0, verifications())
   }
 
   @Test
-  fun failedNameIsVerifiedAgain() = simplexName(DomainVerification.Failed) { verifications ->
+  fun failedNameIsVerifiedAgain() = simplexName(DomainVerification.Failed) { verifications, _ ->
     onNodeWithText(SIMPLEX_NAME).performClick()
     waitUntil(timeoutMillis = 5_000) { verifications() == 1 }
   }
 
   @Test
-  fun movedNameIsVerifiedAgain() = simplexName(DomainVerification.Moved) { verifications ->
+  fun movedNameIsVerifiedAgain() = simplexName(DomainVerification.Moved) { verifications, _ ->
     onNodeWithText(SIMPLEX_NAME).performClick()
     waitUntil(timeoutMillis = 5_000) { verifications() == 1 }
   }
 
   @Test
-  fun uncheckedNameOffersVerification() = simplexName(null) { verifications ->
+  fun uncheckedNameOffersVerification() = simplexName(null) { verifications, _ ->
     onNodeWithText("Verify name").performClick()
     waitUntil(timeoutMillis = 5_000) { verifications() == 1 }
   }
@@ -236,24 +269,33 @@ class NameAlertsTest {
 
   private fun recorded(fixture: String, test: ComposeUiTest.() -> Unit) = runComposeUiTest {
     val responses = Json.parseToJsonElement(fixtureText(fixture)).jsonObject
-    val commands = responses.getValue("commands").jsonObject
-    val markdown = responses.getValue("markdown").jsonObject
-    val uris = responses.getValue("uris").jsonObject
-    chatSendCmdRetry = { _, cmd, _ -> commands[cmd]?.toString() ?: unrecordedRequest(cmd) }
-    chatParseMarkdown = { str -> markdown[str]?.toString() ?: unrecordedRequest("markdown $str") }
-    chatParseUri = { str, safe -> uris[str]?.takeIf { safe == 0 }?.toString() ?: unrecordedRequest("uri $str") }
+    val commands = responses["commands"]?.jsonObject
+    val markdown = responses["markdown"]?.jsonObject
+    val uris = responses["uris"]?.jsonObject
+    chatSendCmdRetry = { _, cmd, _ -> commands?.get(cmd)?.toString() ?: unrecordedRequest(cmd) }
+    chatParseMarkdown = { str -> markdown?.get(str)?.toString() ?: unrecordedRequest("markdown $str") }
+    chatParseUri = { str, safe -> uris?.get(str)?.takeIf { safe == 0 }?.toString() ?: unrecordedRequest("uri $str") }
     test()
   }
 
-  private fun simplexName(verified: DomainVerification?, test: ComposeUiTest.(verifications: () -> Int) -> Unit) = runComposeUiTest {
+  private fun simplexName(verified: DomainVerification?, test: ComposeUiTest.(verifications: () -> Int, copied: List<String>) -> Unit) = runComposeUiTest {
     var verifications = 0
-    setContent { SimplexNameView(SIMPLEX_NAME, verified) { verifications++; null } }
-    test { verifications }
+    val copied = mutableListOf<String>()
+    val clipboard = object : ClipboardManager {
+      override fun setText(annotatedString: AnnotatedString) { copied += annotatedString.text }
+      override fun getText(): AnnotatedString? = null
+    }
+    setContent {
+      CompositionLocalProvider(LocalClipboardManager provides clipboard) {
+        SimplexNameView(SIMPLEX_NAME, verified) { verifications++; null }
+      }
+    }
+    test({ verifications }, copied)
   }
 
-  private fun unrecordedRequest(request: String): Nothing {
+  private fun unrecordedRequest(request: String): String {
     synchronized(unrecorded) { unrecorded += request }
-    throw IllegalStateException("request without a recorded response: $request")
+    return "{}"
   }
 
   private fun ComposeUiTest.connect(name: String) {
@@ -271,6 +313,15 @@ class NameAlertsTest {
     assertEquals(texts.toList(), shownTexts())
   }
 
+  private fun ComposeUiTest.assertRequested(request: String) {
+    runCatching { waitUntil(timeoutMillis = 5_000) { synchronized(unrecorded) { unrecorded.isNotEmpty() } } }
+    synchronized(unrecorded) {
+      assertEquals(listOf(request), unrecorded.toList())
+      unrecorded.clear()
+    }
+    waitUntil(timeoutMillis = 5_000) { AlertManager.shared.hasAlertsShown() }
+  }
+
   private fun ComposeUiTest.shownTexts(): List<String> =
     onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true)
       .fetchSemanticsNodes()
@@ -278,8 +329,10 @@ class NameAlertsTest {
 
   private fun assertLocalChats(vararg ids: String) {
     assertEquals(ids.toList(), shownLocalChats.toList())
-    assertTrue(ChatModel.chatsContext.chats.value.map { it.id }.containsAll(ids.toList()))
+    assertTrue(chatIds().containsAll(ids.toList()))
   }
+
+  private fun chatIds(): List<String> = ChatModel.chatsContext.chats.value.map { it.id }
 
   private fun chatInfo(id: String): ChatInfo = ChatModel.chatsContext.chats.value.first { it.id == id }.chatInfo
 
