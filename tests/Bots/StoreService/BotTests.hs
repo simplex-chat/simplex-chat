@@ -84,6 +84,7 @@ import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Data.X509 (encodeSignedObject)
 import System.Directory (createDirectoryIfMissing)
@@ -511,6 +512,15 @@ testSetStoreService ps =
       alice ##> "/_badge request 1"
       alice <##. "1: supporter"
       issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
+    withNewTestChatCfg ps clientCfg {storeServiceAddress = Nothing, storeServiceDev = True} "cath" cathProfile $ \cath -> do
+      cath ##> ("/_store service " <> bsLink)
+      cath <## "ok"
+      code <- issueCode cc BTSupporter 1
+      cath ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      cath <## "badge redeemed"
+      cath <## "supporter badge - active"
+      cath <##. "expires "
+      TM.memberIO 1 (badgeWorkers $ chatController cath) `shouldReturn` True
     withNewTestChatCfg ps clientCfg {storeServiceAddress = Nothing} "bob" bobProfile $ \bob -> do
       bob ##> ("/_store service " <> bsLink)
       bob <## "bad chat command: /_store service is only available in builds for a dev store service"
