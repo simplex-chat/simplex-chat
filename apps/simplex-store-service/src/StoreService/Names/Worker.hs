@@ -480,7 +480,7 @@ retryCode OrdersEnv {oeStore} now NameRegistration {nrId, nrLength, nrPayment} =
 
 -- | The register's transactions, which confirmLanded has read, are cleared with the failure; the reveal unless its intent still serves.
 requeue :: OrdersEnv -> UTCTime -> NameRegistration -> Maybe PrepaidCode -> IO Retried
-requeue oe@OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrLength} code =
+requeue oe@OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrLength} code =
   servingReveal oe now r >>= \case
     Left e -> RTRefused RFUnread <$ logWarn ("names: a retry's chain read failed: " <> tshow e)
     Right reveal -> do
@@ -488,12 +488,13 @@ requeue oe@OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrLength} 
           write db = versionWritten <$> updateRegistration db requeued now
       outcome <- case code of
         Nothing -> Right <$> withTransaction oeStore write
-        Just PrepaidCode {pcCodeHash} -> reserveCode oeTurns oeStore now pcCodeHash nrId nrLength write
-      pure $ case outcome of
-        Left refusal -> RTRefused $ RFCode refusal
-        Right (Right v) -> RTWritten v
-        -- a failed order is already live, so only a changed version refuses the write
-        Right (Left _) -> RTChanged
+        Just PrepaidCode {pcCodeHash} -> reserveCode oeTurns oeStore now pcCodeHash regId nrLength write
+      case outcome of
+        Left refusal -> pure $ RTRefused $ RFCode refusal
+        Right (Right v) -> pure $ RTWritten v
+        Right (Left WRChanged) -> pure RTChanged
+        Right (Left (WRRefused refusal)) ->
+          E.throwIO $ BrokenInvariant $ "registration " <> rid <> " is live while failed, yet its requeue was refused: " <> tshow refusal
 
 -- | The stored reveal while its intent can still register: accepted by the worker's check before sending, revealMargin left
 -- before its deadline, and the sponsor nonce unmoved.

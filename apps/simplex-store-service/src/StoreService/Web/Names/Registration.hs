@@ -16,6 +16,7 @@ module StoreService.Web.Names.Registration
 where
 
 import Control.Concurrent.STM (atomically)
+import qualified Control.Exception as E
 import Control.Logger.Simple (logNote)
 import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
@@ -31,11 +32,11 @@ import Network.HTTP.Types (status200, status409)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Util (tshow)
-import StoreService.Names.Orders (OrdersEnv (..))
+import StoreService.Names.Orders (OrdersEnv (..), WriteRefusal (..), versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (RegisterIntent (..))
 import StoreService.Names.Reveal (RevealFields (..), RevealRefusal (..), SignedLabel (..), checkAcceptance, checkIntent, committedRegistration, isRepeat, linksValid, parseRevealFields, parseSignedLabel, revealOf)
-import StoreService.Names.Store (NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, updateRegistration)
+import StoreService.Names.Store (BrokenInvariant (..), NameRegistration (..), OrderPhase (..), getRegistration, updateRegistration)
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
@@ -97,9 +98,10 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
           | isJust (nrLinksRefusedAt r) -> pure $ RDRefused RVInvalidLink Nothing
           | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrLinksRefusedAt = Just now}
     write now decided r =
-      withTransaction oeStore (\db -> updateRegistration db r now) >>= \case
-        Written v -> pure $ decided v
-        _ -> pure RDChanged
+      withTransaction oeStore (\db -> versionWritten <$> updateRegistration db r now) >>= \case
+        Right v -> pure $ decided v
+        Left WRChanged -> pure RDChanged
+        Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "registration " <> ridText <> " is live while committed, yet its reveal was refused: " <> tshow refusal
     answer = \case
       RDAccepted v -> published v >> respond (jsonResponse status200 $ J.object [])
       RDRefused refusal v -> do
