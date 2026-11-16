@@ -49,10 +49,7 @@ chatEventsDocs = map toCategory chatEventsDocsData
 deriving instance Generic ChatEvent
 
 chatEventsTypeInfo :: [RecordTypeInfo]
-chatEventsTypeInfo = map jsonFieldNames $ recordTypesInfo @ChatEvent
-  where
-    jsonFieldNames r@RecordTypeInfo {fieldInfos} = r {fieldInfos = map jsonFieldName fieldInfos}
-    jsonFieldName f@(FieldInfo n t) = if n == "chatItemUpdate" then FieldInfo "chatItem" t else f
+chatEventsTypeInfo = recordTypesInfo @ChatEvent
 
 chatEventsDocsData :: [(String, String, [(ConsName, String)], [(ConsName, String)])]
 chatEventsDocsData =
@@ -79,7 +76,7 @@ chatEventsDocsData =
       ],
       [ ("CEvtChatItemReaction", "Received message reaction."),
         ("CEvtChatItemsDeleted", "Message was deleted by another user."),
-        ("CEvtChatItemUpdated", "Message was updated by another user.\n\n`chatItem` has `prevChatItem`, the message before the update. When the bot deleted the message locally, the update creates it again, and it is sent in [NewChatItems](#newchatitems) event."),
+        ("CEvtChatItemUpdated", "Message was updated by another user.\n\n`chatItemUpdate` has `prevChatItem`, the message before the update. When the bot deleted the message locally, the update creates it again, and it is sent in [NewChatItems](#newchatitems) event."),
         ("CEvtGroupChatItemsDeleted", "Group messages are deleted or moderated."),
         ("CEvtChatItemsStatusesUpdated", "Message delivery status updates.")
       ]

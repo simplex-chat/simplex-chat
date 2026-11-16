@@ -40,7 +40,7 @@ describeIfSmpServerAvailable("Live message tests (use local SMP server)", () => 
     const received = (check: (meta: T.CIMeta) => boolean) =>
       bob.wait("newChatItems", ({chatItems}) => chatItems.some(({chatItem: {meta}}) => check(meta)), timeout)
     const updated = (check: (meta: T.CIMeta) => boolean) =>
-      bob.wait("chatItemUpdated", ({chatItem: {chatItem: {meta}}}) => check(meta), timeout)
+      bob.wait("chatItemUpdated", ({chatItemUpdate: {chatItem: {meta}}}) => check(meta), timeout)
     const live = new api.LiveMessage(alice, CT.Direct, bobContact.contactId, 500)
 
     const started = received(meta => meta.itemLive === true && meta.itemText === "")
@@ -52,7 +52,7 @@ describeIfSmpServerAvailable("Live message tests (use local SMP server)", () => 
     expect(await updatedLive).toBeDefined()
     const finalized = updated(meta => meta.itemId === itemId && meta.itemLive === false && meta.itemText === "Hello world")
     await live.end("Hello world")
-    expect((await finalized)?.chatItem.chatItem.meta.itemEdited).toBe(false)
+    expect((await finalized)?.chatItemUpdate.chatItem.meta.itemEdited).toBe(false)
 
     const emptyStarted = received(meta => meta.itemLive === true && meta.itemText === "")
     live.update("")

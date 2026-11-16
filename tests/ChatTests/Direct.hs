@@ -31,7 +31,7 @@ import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
-import Simplex.Chat.Messages (AChatItem (..), AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
+import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
@@ -816,13 +816,9 @@ testDirectMessageUpdatePrevItem ps = do
       alice #$> ("/_get chat @2 count=1", chat, [(0, "hello again")])
       readTVarIO updates `shouldReturn` [("hello there", Just "hello")]
       [J.Object evt] <- readTVarIO encoded
-      KM.member "chatItemUpdate" evt `shouldBe` False
-      Just item@(J.Object itemObj) <- pure $ KM.lookup "chatItem" evt
-      KM.member "prevChatItem" itemObj `shouldBe` True
-      J.Success (AChatItem c d cInfo ci) <- pure $ J.fromJSON item
-      itemText' ci `shouldBe` "hello there"
-      J.Success (AChatItemUpdate _ _ _ _ prevCi_) <- pure $ J.fromJSON $ J.toJSON $ AChatItem c d cInfo ci
-      isNothing prevCi_ `shouldBe` True
+      KM.member "chatItem" evt `shouldBe` False
+      Just (J.Object upd) <- pure $ KM.lookup "chatItemUpdate" evt
+      KM.member "prevChatItem" upd `shouldBe` True
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
 testDirectMessageDelete =
