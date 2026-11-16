@@ -11,7 +11,6 @@ module StoreService.Service
     welcomeGetOpts,
     trustDevKeys,
     checkNodeChain,
-    redactPassword,
     checkUnverifiedReceipts,
     logNamePolicy,
     requireDevKeys,
@@ -93,7 +92,6 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, isRight)
 import Data.Functor (($>), (<&>))
 import Data.Int (Int64)
-import Data.List (findIndex, isPrefixOf, tails)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, maybeToList)
 import qualified Data.Text as T
@@ -149,7 +147,7 @@ welcomeGetOpts = do
   opts@StoreServiceOpts {coreOptions, testing, serviceName} <- getStoreServiceOpts appDir "simplex_badge_service"
   unless testing $ do
     putStrLn $ "SimpleX Store Service v" ++ versionNumber
-    putStrLn $ "db: " <> redactPassword (dbString $ dbOptions coreOptions)
+    putStrLn $ "db: " <> dbString (dbOptions coreOptions)
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
 
@@ -180,19 +178,6 @@ checkNodeChain = \case
         | null devIssuerKeys -> Right () <$ logWarn ("names: the node's chain id could not be read, so it is not checked: " <> tshow e)
         | otherwise -> pure $ Left "issuer.dev_keys is refused: the node's chain id could not be read"
   _ -> pure $ Right ()
-
--- | The connection string with its password masked, as the start line reaches the logs: in a URI's user info or as a
--- password= keyword.
-redactPassword :: String -> String
-redactPassword s = case (\i -> (take i s, drop (i + 3) s)) <$> findIndex ("://" `isPrefixOf`) (tails s) of
-  Just (scheme, rest) -> let (authority, path) = break (== '/') rest in scheme <> "://" <> maskUserInfo authority <> path
-  Nothing -> unwords $ map maskKeyword $ words s
-  where
-    maskUserInfo authority = case break (== '@') (reverse authority) of
-      (hostRev, _ : infoRev)
-        | (user, _ : _) <- break (== ':') (reverse infoRev) -> user <> ":***@" <> reverse hostRev
-      _ -> authority
-    maskKeyword w = if "password=" `isPrefixOf` w then "password=***" else w
 
 checkIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO (Either String BadgeIssuerKey)
 checkIssuerKey StoreServiceOpts {issuerKey} serviceCfg cfg = case issuerKey of

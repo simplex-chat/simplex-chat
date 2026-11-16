@@ -22,7 +22,7 @@ import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
-import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
+import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, requireDevKeys, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
@@ -92,6 +92,7 @@ import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
 import System.Timeout (timeout)
 #if defined(dbPostgres)
+import Simplex.Chat.Options.DB (ChatDbOpts (..), dbString)
 import qualified Database.PostgreSQL.Simple as PSQL
 import Database.PostgreSQL.Simple (FromRow, Only (..), ToRow)
 #else
@@ -163,7 +164,9 @@ namesBootTests :: SpecWith TestParams
 namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
   it "refuses a node serving another chain than chain_id, and dev_keys unless the node answers, only warning without them" testNodeChain
-  it "masks the database password in the start line, in a URI or as a keyword" testRedactPassword
+#if defined(dbPostgres)
+  it "masks the database password in the start line, in a URI's user info or parameters, or as a keyword" testRedactPassword
+#endif
   it "refuses unverified store receipts with an issuer key clients trust, and takes them with a dev key" testUnverifiedReceiptsKey
   it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
   it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
@@ -239,12 +242,17 @@ testUnverifiedReceiptsKey _ = do
   checkUnverifiedReceipts unverified cfg BadgeIssuerKey {keyIdx = 9, secretKey = sk} `shouldBe` Right ()
   checkUnverifiedReceipts (Just withDev) cfg BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk} `shouldBe` Right ()
 
+#if defined(dbPostgres)
 testRedactPassword :: HasCallStack => TestParams -> IO ()
 testRedactPassword _ = do
-  redactPassword "postgresql://simplex:s3cr@t:x@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex:***@127.0.0.1:5432/badge_service"
-  redactPassword "postgresql://simplex@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex@127.0.0.1:5432/badge_service"
-  redactPassword "host=127.0.0.1 user=simplex password=s3cret dbname=badge_service" `shouldBe` "host=127.0.0.1 user=simplex password=*** dbname=badge_service"
-  redactPassword "/var/opt/simplex_badge_service" `shouldBe` "/var/opt/simplex_badge_service"
+  let shown s = dbString ChatDbOpts {dbConnstr = s, dbSchemaPrefix = "", dbPoolSize = 1, dbCreateSchema = False}
+  shown "postgresql://simplex:s3cr@t:x@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex:***@127.0.0.1:5432/badge_service"
+  shown "postgresql://simplex@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex@127.0.0.1:5432/badge_service"
+  shown "postgres://simplex@127.0.0.1/badge_service?sslmode=require&password=s3cret" `shouldBe` "postgres://simplex@127.0.0.1/badge_service?sslmode=require&password=***"
+  shown "host=127.0.0.1 user=simplex password=s3cret dbname=badge_service" `shouldBe` "host=127.0.0.1 user=simplex password=*** dbname=badge_service"
+  shown " host=127.0.0.1  password = 's3 \\'cret' dbname = badge_service" `shouldBe` "host=127.0.0.1 password=*** dbname = badge_service"
+  shown "host=127.0.0.1 password" `shouldBe` "(unreadable connection string)"
+#endif
 
 testNodeChain :: HasCallStack => TestParams -> IO ()
 testNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do

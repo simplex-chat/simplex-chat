@@ -1,10 +1,15 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Options.Postgres where
 
+import Control.Monad (void)
+import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Char (isAlphaNum, isSpace)
 import Foreign.C.String
 import Options.Applicative
 import Numeric.Natural (Natural)
@@ -56,7 +61,29 @@ migrationBackupPathP :: Parser (Maybe FilePath)
 migrationBackupPathP = pure Nothing
 
 dbString :: ChatDbOpts -> String
-dbString ChatDbOpts {dbConnstr} = dbConnstr
+dbString ChatDbOpts {dbConnstr} = either (const "(unreadable connection string)") B.unpack $ A.parseOnly (redactedConnstrP <* A.endOfInput) (B.pack dbConnstr)
+
+redactedConnstrP :: A.Parser ByteString
+redactedConnstrP = uriP <|> keywordsP
+  where
+    uriP = do
+      scheme <- "postgresql://" <|> "postgres://"
+      authority <- A.takeWhile (\c -> c /= '/' && c /= '?')
+      path <- A.takeWhile (/= '?')
+      query_ <- optional (A.char '?' *> A.takeByteString)
+      pure $ scheme <> maskedUserInfo authority <> path <> maybe "" (("?" <>) . B.intercalate "&" . map maskedParam . B.split '&') query_
+    maskedUserInfo authority =
+      let (userInfo, hosts) = B.breakEnd (== '@') authority
+          (user, password) = B.break (== ':') userInfo
+       in if B.null password then authority else user <> ":***@" <> hosts
+    maskedParam param
+      | B.takeWhile (/= '=') param == "password" = "password=***"
+      | otherwise = param
+    keywordsP = B.unwords <$> (A.skipSpace *> A.many' (keywordP <* A.skipSpace))
+    keywordP = do
+      (setting, keyword) <- A.match (A.takeWhile1 (\c -> isAlphaNum c || c == '_') <* A.skipSpace <* A.char '=' <* A.skipSpace <* valueP)
+      pure $ if keyword == "password" then "password=***" else setting
+    valueP = void (A.char '\'' *> A.skipMany (A.char '\\' *> A.anyChar <|> A.notChar '\'') *> A.char '\'') <|> void (A.takeWhile1 (not . isSpace))
 
 toDBOpts :: ChatDbOpts -> String -> Bool -> [()] -> DBOpts
 toDBOpts ChatDbOpts {dbConnstr, dbSchemaPrefix, dbPoolSize, dbCreateSchema} dbSuffix _keepKey _dbFunctions =
