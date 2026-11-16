@@ -20,6 +20,7 @@ module StoreService.Names.Store
     OrderTerms (..),
     Balance (..),
     BalanceHold (..),
+    HoldState (..),
     BalanceLink (..),
     LateCredit (..),
     LateCreditState (..),
@@ -290,10 +291,11 @@ data Balance = Balance
 -- Funded once money reached it: it then holds until its payment settles or the provider closes it, whatever the time.
 data BalanceHold = BalanceHold
   { bhHolder :: RegistrationId,
-    bhUntil :: UTCTime,
-    bhOverdue :: Bool,
-    bhFunded :: Bool
+    bhState :: HoldState
   }
+  deriving (Eq, Show)
+
+data HoldState = HSOpen UTCTime | HSFunded | HSOverdue UTCTime
   deriving (Eq, Show)
 
 -- | An order the money of a balance came through. lkPaid and lkFromBalance count only an order that went past unpaid,
@@ -950,8 +952,8 @@ failedCodeOrdersBefore db cutoff =
 -- | The hold, unless it is overdue, which reads as none.
 heldBy :: Balance -> Maybe BalanceHold
 heldBy Balance {blHold} = case blHold of
-  Just BalanceHold {bhOverdue = False} -> blHold
-  _ -> Nothing
+  Just BalanceHold {bhState = HSOverdue _} -> Nothing
+  _ -> blHold
 
 -- | The order of the alias with invoice i is overdue: unpaid, its invoice past its expiry, not paid, and holding no money.
 -- Takes the unpaid phase, the paid status and the time.
@@ -978,12 +980,17 @@ getBalance db (RegistrationId rid) now =
       (PUnpaid, invoiceStatusText ISPaid, truncateToSecond now, rid)
 
 toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
-toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI bhOverdue, BI bhFunded, blRefundedAt) = do
+toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI overdue, BI funded, blRefundedAt) = do
   blHold <- case (holder_, until_) of
     (Nothing, _) -> Right Nothing
-    (Just holder, Just bhUntil) -> Right $ Just BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue, bhFunded}
+    (Just holder, Just t) -> Right $ Just BalanceHold {bhHolder = RegistrationId holder, bhState = holdState t}
     (Just _, Nothing) -> Left $ "name_balances holder without an invoice: " <> rid
   pure Balance {blRegistration = RegistrationId rid, blAmount, blCredited, blRefunded, blHold, blRefundedAt}
+  where
+    holdState t
+      | overdue = HSOverdue t
+      | funded = HSFunded
+      | otherwise = HSOpen t
 
 -- | The order a support reference names, by its registration id or its name invoice's id, with its balance.
 balanceByReference :: DB.Connection -> Text -> UTCTime -> IO (Maybe (RegistrationId, Maybe Balance))

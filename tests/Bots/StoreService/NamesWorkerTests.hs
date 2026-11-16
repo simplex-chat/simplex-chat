@@ -1446,7 +1446,7 @@ testCloseHeld = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
   answerUnowned ctx "dynamis"
   let diffPrice = oPrice aliceOrder
       expiresAt = addUTCTime 3600 orderTime
-      hold = BalanceHold {bhHolder = RegistrationId "diff", bhUntil = expiresAt, bhOverdue = False, bhFunded = False}
+      hold = BalanceHold {bhHolder = RegistrationId "diff", bhState = HSOpen expiresAt}
       whole = 4000 + oPrice dynamisOrder
   withTransaction cStore $ \db -> do
     creditBalance db (nrId r) 4000 orderTime

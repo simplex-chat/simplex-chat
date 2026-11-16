@@ -41,7 +41,7 @@ import StoreService.Names.Community (AcceptanceAsked (..), agreedTermsHash, comm
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), getBalance, getRegistration, heldBy, lateWait, paymentInvoice)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), HoldState (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), getBalance, getRegistration, heldBy, lateWait, paymentInvoice)
 
 -- | The view's chain reads; a field whose read failed is null and named in unread.
 data ViewReads = ViewReads
@@ -134,10 +134,13 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
 -- | The holder is not named, so an order's link discloses no other order. A funded hold has no end time.
 balanceJSON :: Balance -> J.Value
 balanceJSON b@Balance {blAmount, blRefunded} =
-  J.object ["amount" .= blAmount, "held" .= isJust hold, "heldUntil" .= (bhUntil <$> (hold >>= unfunded)), "refunded" .= blRefunded]
+  J.object ["amount" .= blAmount, "held" .= isJust hold, "heldUntil" .= (heldUntil . bhState =<< hold), "refunded" .= blRefunded]
   where
     hold = heldBy b
-    unfunded h@BalanceHold {bhFunded} = if bhFunded then Nothing else Just h
+    heldUntil = \case
+      HSOpen t -> Just t
+      HSFunded -> Nothing
+      HSOverdue _ -> Nothing
 
 -- | EIP-55, as the page compares owners.
 addressText :: Address -> Text

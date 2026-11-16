@@ -155,7 +155,7 @@ holder st r src seen expiresAt = withTransaction st $ \db -> insertOrRollBack db
   createPaidRegistration db (newReg r ownerA (fieldsN r)) (holdTerms src seen) (paidOrder ("inv-" <> r)) {poPrice = holdPrice} t0
 
 hold :: Text -> UTCTime -> Bool -> BalanceHold
-hold h bhUntil bhOverdue = BalanceHold {bhHolder = RegistrationId h, bhUntil, bhOverdue, bhFunded = False}
+hold h t overdue = BalanceHold {bhHolder = RegistrationId h, bhState = if overdue then HSOverdue t else HSOpen t}
 
 coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either BalanceInsertRefused ())
 coveredSpend st r src price seen = withTransaction st $ \db -> insertOrRollBack db $ createBalanceRegistration db (newReg r ownerA (fieldsN r)) (RegistrationId src) price seen t0
@@ -530,7 +530,7 @@ testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
   figures st "s1" now `shouldReturn` Just (4000, 10000, 0, Nothing)
   forM_ [("2", at 60, True), ("3", addUTCTime 600 now, False)] $ \(n, expiry, funded) -> do
     let (s, h, c) = ("s" <> n, "h" <> n, "c" <> n)
-        held = (hold h expiry False) {bhFunded = funded}
+        held = BalanceHold {bhHolder = RegistrationId h, bhState = if funded then HSFunded else HSOpen expiry}
     source st s 10000
     holder st h s 10000 expiry `shouldReturn` Right ()
     hr <- reg st h
@@ -581,12 +581,13 @@ testRecordRefund = withServiceStore $ \st -> do
 
 testHeldText :: IO ()
 testHeldText = do
-  let heldFrom cmdSource overdue funded = heldText cmdSource BalanceHold {bhHolder = RegistrationId "h", bhUntil = UTCTime (fromGregorian 2027 1 2) 3600, bhOverdue = overdue, bhFunded = funded}
+  let heldFrom cmdSource state = heldText cmdSource BalanceHold {bhHolder = RegistrationId "h", bhState = state}
       held = heldFrom FromConsole
-  held False False `shouldBe` "held by order h, its invoice open until 2027-01-02 01:00 UTC; run the command again then"
-  held True False `shouldBe` "held by order h, its invoice expired at 2027-01-02 01:00 UTC; start the service so the poller closes that order, 10 minutes after the expiry at the earliest, then stop it and run the command again"
-  heldFrom FromGroup True False `shouldBe` "held by order h, its invoice expired at 2027-01-02 01:00 UTC; the poller closes that order 10 minutes after the expiry at the earliest; run the command again then"
-  held False True `shouldBe` "held by order h, whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
+      expiry = UTCTime (fromGregorian 2027 1 2) 3600
+  held (HSOpen expiry) `shouldBe` "held by order h, its invoice open until 2027-01-02 01:00 UTC; run the command again then"
+  held (HSOverdue expiry) `shouldBe` "held by order h, its invoice expired at 2027-01-02 01:00 UTC; start the service so the poller closes that order, 10 minutes after the expiry at the earliest, then stop it and run the command again"
+  heldFrom FromGroup (HSOverdue expiry) `shouldBe` "held by order h, its invoice expired at 2027-01-02 01:00 UTC; the poller closes that order 10 minutes after the expiry at the earliest; run the command again then"
+  held HSFunded `shouldBe` "held by order h, whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
 
 testChainText :: IO ()
 testChainText = do

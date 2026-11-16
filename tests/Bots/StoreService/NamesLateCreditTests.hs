@@ -632,7 +632,7 @@ testCreditWhileHeld = withLate $ \l@Late {lStore = st} -> do
   void $ readSignal l "x" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart)
   holder st "h" "x" 19200 (at 60) `shouldReturn` Right ()
   void $ readSignal l "x" (SigClosed (btcPaid 400000 400000) PaidInPart)
-  figures st "x" (at 10) `shouldReturn` Just (24000, 24000, 0, Just BalanceHold {bhHolder = RegistrationId "h", bhUntil = at 60, bhOverdue = False, bhFunded = False})
+  figures st "x" (at 10) `shouldReturn` Just (24000, 24000, 0, Just BalanceHold {bhHolder = RegistrationId "h", bhState = HSOpen (at 60)})
   settleAt l "h" (SigSettled (btcPaidOf 332800 330000 330000) (at 10)) (at 10) `shouldReturn` Right ISPaid
   figures st "x" (at 10) `shouldReturn` Just (4800, 24000, 0, Nothing)
   invariantHolds st "x"

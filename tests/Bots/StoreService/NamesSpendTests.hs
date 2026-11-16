@@ -360,7 +360,7 @@ testBalanceChanged = withSpend $ \ctx -> do
   held <- sourceOf ctx "held" 6000
   fst <$> spend ctx held (dynamis 6000 (Just "btc")) `shouldReturn` 200
   holding <- balanceOf ctx held
-  (fmap bhUntil . blHold =<< holding, fmap bhOverdue . blHold =<< holding) `shouldBe` (Just (addUTCTime (45 * 60) orderTime), Just False)
+  bhState <$> (blHold =<< holding) `shouldBe` Just (HSOpen (addUTCTime (45 * 60) orderTime))
   spend ctx held (difference 6000) `shouldReturn` balanceChanged holding
   placePaid (cStore ctx) "none" ownerA (order "source-none" 3) (at 60) `shouldReturn` Right ()
   spend ctx (RegistrationId "none") (covered 10000) `shouldReturn` balanceChanged Nothing

@@ -61,7 +61,7 @@ import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (checkPendingSignatures, runSender)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), CodeIssuer (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), CodeIssuer (..), HoldState (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runWorkers)
@@ -538,10 +538,10 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
     again = "run " <> spelledCmd source "close" <> " again"
 
 heldText :: CmdSource -> BalanceHold -> T.Text
-heldText source BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue, bhFunded}
-  | bhOverdue = heldBy <> "its invoice expired at " <> fmtTime bhUntil <> "; " <> closedByPoller
-  | bhFunded = heldBy <> "whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
-  | otherwise = heldBy <> "its invoice open until " <> fmtTime bhUntil <> "; run the command again then"
+heldText source BalanceHold {bhHolder = RegistrationId holder, bhState} = case bhState of
+  HSOverdue t -> heldBy <> "its invoice expired at " <> fmtTime t <> "; " <> closedByPoller
+  HSFunded -> heldBy <> "whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
+  HSOpen t -> heldBy <> "its invoice open until " <> fmtTime t <> "; run the command again then"
   where
     heldBy = "held by order " <> holder <> ", "
     closedByPoller = case source of
