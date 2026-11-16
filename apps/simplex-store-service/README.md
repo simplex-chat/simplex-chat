@@ -1507,8 +1507,8 @@ touches the service's database.
 The command is sent to the running service in `--run-cli` mode, not a way to start it:
 
 ```
-//issue <badge_type> [months] [paid|unpaid|free]
-//issue supporter 12
+//issue <badge_type> [months <M>] [paid|unpaid|free]
+//issue supporter months 12
 //issue name <length> [years <Y>] [paid|free]
 //issue name 7 years 5
 ```
@@ -1527,7 +1527,12 @@ code row when the invoice is created, and settlement is what marks it paid.
 
 `//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
 `<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2), or 2 for a community name. Its status is
-`paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused.
+`paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused. Without `[names]`,
+`//issue name` is answered that names are not enabled, and issues nothing.
+
+The console reads the commands by the group's grammar (see [From the group](#from-the-group)), with
+a payment status in place of `uses` and without `/bulk`. A malformed command is answered with its
+usage, each kind's bounds and an example; an unknown one with the usage of every command.
 
 The code is printed once and only its `SHA-256` is stored, so a code that is not copied when it is
 shown cannot be recovered.
@@ -1538,6 +1543,7 @@ A code that leaked, or that was refunded, is withdrawn the same way, badge and n
 //revoke <code>
 ```
 
+The answer names the code, as `/revoke`'s does: `<code>: Revoked.`
 A revoked code answers redemption with `code_invalid`, as if it had never existed, so its holder
 learns nothing from trying. A client that redeemed it before the revoke still gets its own badge
 back when it asks again. Revoking it again answers "already revoked" and fixes its group
