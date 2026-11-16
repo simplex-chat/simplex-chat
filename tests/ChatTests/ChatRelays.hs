@@ -246,7 +246,7 @@ testRelayRequestsNonRelayUser ps = do
     bob <## "group #team is created"
     bob <## "to add members use /a team <name> or /create link #team"
     withCCTransaction bob $ \db -> DB.execute_ db "UPDATE groups SET relay_own_status = 'invited'"
-  withTestChat ps "bob" $ \bob -> (bob </)
+  withTestChat ps "bob" $ \bob -> bob <// 500000
 
 testRelayProfileUpdateInAddress :: HasCallStack => TestParams -> IO ()
 testRelayProfileUpdateInAddress ps =
