@@ -78,7 +78,8 @@ final class NameAlertsTests: XCTestCase {
             return try? jsonDecoder.decode(ParsedMarkdown.self, from: JSONSerialization.data(withJSONObject: singleFieldJSON(parsed)))
         }
         planAndConnect(try XCTUnwrap(markdown.keys.first), theme: CurrentColors.toAppTheme(), dismiss: false)
-        XCTAssertEqual(shownTexts(try await presentedController()), texts, file: file, line: line)
+        let shown = shownTexts(try await presentedController())
+        XCTAssertEqual(shown, texts, file: file, line: line)
     }
 
     @MainActor
@@ -107,17 +108,17 @@ final class NameAlertsTests: XCTestCase {
             view.subviews.flatMap(viewTexts)
         }
     }
+}
 
-    private func singleFieldJSON(_ value: Any) -> Any {
-        if let object = value as? [String: Any] {
-            var fields = object.mapValues(singleFieldJSON)
-            guard let tag = object["type"] as? String else { return fields }
-            fields["type"] = nil
-            return ["_owsf": true, tag: fields]
-        } else if let array = value as? [Any] {
-            return array.map(singleFieldJSON)
-        } else {
-            return value
-        }
+private func singleFieldJSON(_ value: Any) -> Any {
+    if let object = value as? [String: Any] {
+        var fields = object.mapValues(singleFieldJSON)
+        guard let tag = object["type"] as? String else { return fields }
+        fields["type"] = nil
+        return ["_owsf": true, tag: fields]
+    } else if let array = value as? [Any] {
+        return array.map(singleFieldJSON)
+    } else {
+        return value
     }
 }
