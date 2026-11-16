@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-38.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-39.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -65,6 +65,7 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 36. [The list of sessions](#36-the-list-of-sessions)
 37. [The texts of a turn](#37-the-texts-of-a-turn)
 38. [The status line command](#38-the-status-line-command)
+39. [An edit and a live message in the session group](#39-an-edit-and-a-live-message-in-the-session-group)
 
 ---
 
@@ -1817,3 +1818,59 @@ Notes:
 - Claude Code runs `status-line.js` also when no service could start in the data folder, so that folder must be writable only by the user.
 
 Source: [`statusLine`, `limitParts`, `runStatusLine`](../src/status-line.ts), [`writeStatusLine`](../src/files.ts), [`Session.turn`, `endLine`](../src/hub.ts).
+
+---
+
+## 39. An edit and a live message in the session group
+
+```mermaid
+sequenceDiagram
+  participant O as Member
+  participant C as Core _hub
+  participant N as Session N
+  participant D as Service
+  participant S as Session process
+  participant CC as Claude Code
+  O->>C: a message typed in live mode, first fragment
+  C->>N: newChatItems, itemLive: Session.onMessage
+  N->>N: liveItems[item] = the message, nothing passed
+  O->>C: more fragments
+  C->>N: chatItemUpdated, itemLive: Session.onUpdate
+  N->>N: liveItems[item] = the message with its current text, nothing passed
+  alt the message sent
+    O->>C: the message sent
+    C->>N: chatItemUpdated, live off: Session.onUpdate
+    N->>N: liveItems -= item, pass: a new message
+  else no final version, and the member's next message
+    O->>C: the next message
+    C->>N: newChatItems: Session.onMessage
+    N->>N: passLive: liveItems -= item, pass at its current text, then the next message
+  end
+  N->>D: onLine {prompt: {text, from, item}}
+  D->>S: the line on /attach
+  S->>CC: notifications/claude/channel {content, meta: {from, item}}
+  N->>N: prompted[item] = text, the newest 100
+  O->>C: edits the message, or its final version arrives late
+  C->>N: chatItemUpdated: Session.onUpdate
+  alt a / command, the item not in prompted, or the same text
+    N->>N: nothing
+  else another text
+    N->>N: delivery = delivery then prompt: after the earlier messages of the session
+    N->>D: onLine {prompt: {text, from, item, replyTo?, edited: true}}
+    D->>S: the line on /attach
+    S->>CC: notifications/claude/channel {content, meta: {from, item, edited: "true"}}
+    N->>N: prompted[item] = new text
+  end
+  CC->>D: UserPromptSubmit hook: POST /turn {prompt}, the channel tag matched
+  N->>O: Claude: the opening message, quoting the edited message
+```
+
+Notes:
+
+- Claude gets an edit as a new prompt with the same item, `edited="true"` in the channel tag, and the new text, after the quote line of a reply. The earlier version is in Claude's context ([`Session.onUpdate`, `deliver`](../src/hub.ts), [`channelNotification`, `channelInstructions`](../src/session.ts)).
+- Only the edit of a message passed to Claude since the service started, among the newest 100, is passed, so an edit of `User`'s message or of a command passes nothing. An edit to a `/` command passes nothing, and gets no reply ([`maxPrompted`, `Session.prompted`, `onUpdate`, `bounded`](../src/hub.ts)).
+- An update with the same text, such as a file's status, passes nothing. The core marks no update of a live message as an edit, and the hub tells its final version by `liveItems` ([`Session.liveItems`, `onMessage`, `onUpdate`](../src/hub.ts)).
+- A live message that never gets its final version, as when the sender's app closes while they type, reaches Claude at its last text before that member's next message, and not before another member's. Its final version, when it arrives later, reaches Claude as an edit. The hub uses no timer ([`Session.passLive`, `keepLive`, `pass`](../src/hub.ts)).
+- A live message deleted before it is sent passes nothing, unless the member sends another message first.
+
+Source: [`Session.onMessage`, `onUpdate`, `pass`, `keepLive`, `passLive`, `replyTo`, `prompt`, `deliver`, `bounded`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).

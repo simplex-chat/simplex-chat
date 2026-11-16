@@ -22,7 +22,7 @@ const callAttempts = 2
 const firstRetry = 1_000
 const lastRetry = 30_000
 // spec: spec/architecture.md#session-unattendedrun
-const channelInstructions = "Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the message replied to, and reply_to_from, its sender, and its text starts with a line \"> \" with the type of that message when it is not a text (link, image, video, voice, file, report or chat), and the first line of its text, up to 200 characters, with … when it is cut. With the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji after the quote line of the reacted message, with item equal to reply_to. Your text of each turn reaches them in that group as you write it; reply sends them a file."
+const channelInstructions = "Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the message replied to, and reply_to_from, its sender, and its text starts with a line \"> \" with the type of that message when it is not a text (link, image, video, voice, file, report or chat), and the first line of its text, up to 200 characters, with … when it is cut. With the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji after the quote line of the reacted message, with item equal to reply_to. A message with edited is the new text of the message with the same item, which the member edited; it replaces the earlier text. Your text of each turn reaches them in that group as you write it; reply sends them a file."
 // spec: spec/api.md#channel
 const permissionFields = ["request_id", "tool_name", "description", "input_preview"] as const
 // spec: spec/architecture.md#session-unattendedrun
@@ -233,7 +233,7 @@ function hookOutput(approvedBy: string | undefined): string {
 
 // spec: spec/architecture.md#session-channelnotification
 function channelNotification({prompt, permission}: AttachLine): {method: string; params: {[key: string]: unknown}} | undefined {
-  if (prompt !== undefined) return {method: "notifications/claude/channel", params: {content: prompt.text, meta: {from: prompt.from, item: String(prompt.item), ...(prompt.file === undefined ? {} : {file: prompt.file}), ...(prompt.replyTo?.item === undefined ? {} : {reply_to: String(prompt.replyTo.item)}), ...(prompt.replyTo?.from === undefined ? {} : {reply_to_from: prompt.replyTo.from})}}}
+  if (prompt !== undefined) return {method: "notifications/claude/channel", params: {content: prompt.text, meta: {from: prompt.from, item: String(prompt.item), ...(prompt.file === undefined ? {} : {file: prompt.file}), ...(prompt.replyTo?.item === undefined ? {} : {reply_to: String(prompt.replyTo.item)}), ...(prompt.replyTo?.from === undefined ? {} : {reply_to_from: prompt.replyTo.from}), ...(prompt.edited === true ? {edited: "true"} : {})}}}
   if (permission !== undefined) return {method: "notifications/claude/channel/permission", params: {request_id: permission.requestId, behavior: permission.behavior}}
   return undefined
 }

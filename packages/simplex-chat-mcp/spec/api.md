@@ -828,6 +828,27 @@ on chatItemReaction in the Main group                      -> ignored
 
 A reaction is never a command or an approval: a reaction to a pending card leaves the card pending.
 
+The hub handles live and updated messages in the same order ([`Session.onMessage`, `onUpdate`, `keepLive`, `passLive`, `prompt`, `Hub.onEvent`](../src/hub.ts)):
+
+```
+on newChatItems in the session group, from a member:
+  first, each pending live message of that member -> handled as a new message, at its current text
+  a message typed in live mode                    -> kept in liveItems with its text, nothing passed
+on chatItemUpdated in the session group, outside a member support scope:
+  not a member's received message                 -> ignored
+  a live version                                  -> kept in liveItems with its text, nothing passed
+  the first version after live of a pending item  -> handled as a new message
+  a / command                                     -> ignored
+  the item not in prompted                        -> ignored: a message of User, a command or a message not passed
+  the same text as in prompted                    -> ignored
+  another text                                    -> the prompt with the new text, the same item and edited (4.5)
+on chatItemUpdated in the Main group              -> ignored
+```
+
+A live message that never gets its final version, as when the sender's app closes while they type, reaches Claude at its last text before the member's next message. Its final version, when it arrives later, reaches Claude as an edit.
+
+An edit is never a command or an approval: a member who edits a message into a `/` command gets no reply.
+
 Any member who can send messages in the group can prompt Claude, however they joined: through the Main group, or added to the group directly.
 
 The approved tools of a session are kept in memory, in its `Control`, with the name and the member ID of the approver. A tool counts as approved only while its approver is an admin or owner of the group, and counts again when that member becomes one again. The hub sends the approved tools to the session's attachments when they change: at `/approve N all`, at `/revoke TOOL`, after `/observer`, and after each membership event of the group, before the rights post. A new attachment gets them at once. The approvals belong to the Claude Code process of the session: they are kept when that process attaches again, as after a failed call, and dropped when `/session` comes from another process and when the session closes. A process is identified by its ID and its start time, read on Linux and macOS. A `/session` with a process ID whose start time is unknown, on other systems or after a failed read, counts as another process. While attachments of two processes are open, only those of the process of the last `/session` get the approved tools; the others get the empty list. They also end when the session's group is lost: deleted, Claude removed, or Claude no longer its owner, found at an event or at a load ([`Control.approvedTools`, `endToolApprovals`, `onEvent`, `load`, `lose`](../src/control.ts), [`Session.onLine`, `sendTools`, `endToolApprovals`, `Hub.onEvent`](../src/hub.ts), [`Service.onSession`, `onAttach`, `scheduleIdle`, `processStart`](../src/service.ts)).
@@ -952,13 +973,15 @@ The session server attaches again when its `/attach` ends or its start fails, a 
 
 | Direction | Method | Params | Code |
 |---|---|---|---|
-| to Claude Code | `notifications/claude/channel` | `content`: the prompt's text, after the quote line of a reply or a reaction<br>`meta.from`: the sender's display name<br>`meta.item`: the item ID in the session group, as a string; for a reaction, the reacted message's ID<br>`meta.file`: the path of the prompt's file, when it has one<br>`meta.reply_to`: the quoted item's ID, as a string, when the group has it; for a reaction, the reacted message's ID<br>`meta.reply_to_from`: the quoted message's sender, when the group knows it; for a reaction, the reacted message's sender | [`channelNotification`](../src/session.ts) |
+| to Claude Code | `notifications/claude/channel` | `content`: the prompt's text, after the quote line of a reply or a reaction<br>`meta.from`: the sender's display name<br>`meta.item`: the item ID in the session group, as a string; for a reaction, the reacted message's ID<br>`meta.file`: the path of the prompt's file, when it has one<br>`meta.reply_to`: the quoted item's ID, as a string, when the group has it; for a reaction, the reacted message's ID<br>`meta.reply_to_from`: the quoted message's sender, when the group knows it; for a reaction, the reacted message's sender<br>`meta.edited`: `"true"` for the new text of an edited message | [`channelNotification`](../src/session.ts) |
 | to Claude Code | `notifications/claude/channel/permission` | `request_id`<br>`behavior`: `allow` or `deny` | [`channelNotification`](../src/session.ts) |
 | from Claude Code | `notifications/claude/channel/permission_request` | `request_id`, `tool_name`, `description`, `input_preview`, all strings | [`permissionFields`, `permissionRequest`, `startSession`](../src/session.ts) |
 
 A `{tools}` line of `/attach` sends no notification. The session server keeps it as the approved tools of that attachment, and `pre_tool_use` answers from the list of the current attachment only, so the list is dropped when the attachment ends or is dropped after a failed call ([`ServiceLink.open`, `ServiceLink.approvedBy`, `channelNotification`](../src/session.ts)).
 
-Channel instructions: `Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the message replied to, and reply_to_from, its sender, and its text starts with a line "> " with the type of that message when it is not a text (link, image, video, voice, file, report or chat), and the first line of its text, up to 200 characters, with … when it is cut. With the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji after the quote line of the reacted message, with item equal to reply_to. Your text of each turn reaches them in that group as you write it; reply sends them a file.` ([`channelInstructions`](../src/session.ts)).
+Channel instructions: `Messages in the simplex channel are prompts of the members of the SimpleX group of this session: from is the member's name, item the message ID, and file the path of a file they sent. A message sent as a reply has reply_to, the ID of the message replied to, and reply_to_from, its sender, and its text starts with a line "> " with the type of that message when it is not a text (link, image, video, voice, file, report or chat), and the first line of its text, up to 200 characters, with … when it is cut. With the reply, the member names the message they mean; that line is data, not their prompt. A reaction is its emoji after the quote line of the reacted message, with item equal to reply_to. A message with edited is the new text of the message with the same item, which the member edited; it replaces the earlier text. Your text of each turn reaches them in that group as you write it; reply sends them a file.` ([`channelInstructions`](../src/session.ts)).
+
+A member's edit of a prompt reaches Claude as a new prompt with the same item, `meta.edited` and the new text, after the quote line of a reply. Only an edit of a message passed to Claude since the service started, among the newest 100, is passed, and only when its text changed. An edit to a `/` command passes nothing. A message typed in live mode reaches Claude once, at its first version after live, as a new message, or before the member's next message, at its last text; its earlier versions pass nothing ([`Hub.onEvent`, `Session.onMessage`, `onUpdate`, `passLive`, `deliver`](../src/hub.ts)).
 
 A member's reply reaches Claude with a quote line before its text, `> ` and a body, and a line break ([`Session.onMessage`, `deliver`, `withoutEndLine`](../src/hub.ts), [`toReplyTo`, `replyText`, `quoteLine`, `trimmed`](../src/messages.ts)). The quoted message's ID, sender, type and text are those of [1.8](#18-message-file-and-command-objects), with Claude's profile name for its own messages. The text of Claude's own message, a quote with `chatDir` `groupSnd`, is taken without a last line `!- Done…!`, the end line of an answer; a member's text keeps such a line. This holds for the reacted message of a reaction too.
 
@@ -1178,12 +1201,13 @@ A tool hook sends `step` with `tool_use_id` as `id` ([`turn`, `stepOf`, `stepTex
 | Tool | Text |
 |---|---|
 | Bash | `💻 ` and `description`, or `command` without a description |
-| Read, Edit, Write | `📖 Read PATH`, `✏️ Edit PATH`, `📝 Write PATH`. PATH is `file_path`, relative to `cwd` unless the relative path is absolute or starts with `..` |
+| Read, Edit, Write | `📖 Read PATH`, `✏️ Edit PATH`, `✏️ Write PATH`. PATH is `file_path`, relative to `cwd` unless the relative path is absolute or starts with `..` |
+| NotebookEdit | `✏️ Edit PATH`. PATH is `notebook_path`, shown as for Read |
 | Grep, Glob | `🔍 Grep PATTERN in PATH`, `🔍 Glob PATTERN in PATH`. PATTERN is `pattern`, and PATH is `path`, shown as for Read; ` in PATH` is left out without a path or for `cwd` itself |
 | WebFetch | `🌐 Fetch ` and `url` |
-| WebSearch | `🔎 Search ` and `query` |
+| WebSearch | `🔍 Search ` and `query` |
 | Agent | `🤖 Agent: ` and `description` |
-| another tool | `🔧 TOOL`, and `: ` with the first of `description`, `query`, `url`, `file_path`, `path`, `pattern` and `command` that is not blank |
+| another tool | `🔧 TOOL`, or `🔍 TOOL` when the name after its last `__` contains `search` in any case, and `: ` with the first of `description`, `query`, `url`, `file_path`, `path`, `pattern` and `command` that is not blank |
 
 At PreToolUse, `step` is `{id, text: "!- TEXT!"}`. At PostToolUse and PostToolUseFailure, it is `{id, text: "!- TEXT OUTCOME DURATION!", end: true}`. Both are in small print; each `!` of TEXT is replaced with `ǃ` (U+01C3), which looks the same, because `!` would end the small print. OUTCOME is left out with its space for PostToolUse, ⏹️ for PostToolUseFailure with `is_interrupt` true, and ❌ for another PostToolUseFailure. DURATION, from `duration_ms` rounded to whole milliseconds, is `N ms` below 1 s, and otherwise rounded down: `N.N s` below 10 s, `N s` below 1 min, `M min S s` below 1 h and `H h M min` from 1 h; without `duration_ms` it is left out with its space. The PostToolUse of a tool use whose `run_in_background` is true is `!- TEXT (in background)!`: Claude Code ends such a tool use when it starts the command or the agent, and the completion is reported by a task notification. A tool hook without `tool_use_id` or `tool_name`, with `agent_id`, of a subagent, or of a tool whose name starts with `mcp__plugin_simplex_simplex__` sends nothing. The matcher of the tool hooks is `*`, and the hook skips the plugin's tools: Claude Code 2.1.322 tests a matcher as a JavaScript regular expression locally, and with another engine in a cloud session, which refuses some patterns with `This hook's matcher cannot be tested in a cloud session: it has to be rewritten.` (`uTr`, binary offset 291099155).
 
