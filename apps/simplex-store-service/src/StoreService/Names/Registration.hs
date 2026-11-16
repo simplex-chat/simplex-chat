@@ -90,7 +90,6 @@ data LabelError = LELength | LEChars
 validLabel :: SimplexTLD -> Text -> Either LabelError Text
 validLabel tld label
   | isNothing (nameLength $ T.length label) = Left LELength
-  | T.toLower label /= label = Left LEChars
   | otherwise = case strDecode (encodeUtf8 $ label <> decodeLatin1 (strEncode tld)) of
       Right SimplexDomain {domain, subDomain = []} | domain == label -> Right label
       _ -> Left LEChars
