@@ -1454,7 +1454,8 @@ processChatCommand cxt nm = \case
       withFastStore' $ \db -> deleteGroupChatItemsMessages db user gInfo
       membersToDelete <- withFastStore' $ \db -> getGroupMembersForExpiration db cxt user gInfo
       forM_ membersToDelete $ \m -> withFastStore' $ \db -> deleteGroupMember db user m
-      pure $ CRChatCleared user (AChatInfo SCTGroup $ GroupChat gInfo Nothing)
+      gInfo' <- withFastStore $ \db -> getGroupInfo db cxt user chatId
+      pure $ CRChatCleared user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
     CTLocal -> do
       nf <- withFastStore $ \db -> getNoteFolder db user chatId
       filesInfo <- withFastStore' $ \db -> getNoteFolderFileInfo db user nf
