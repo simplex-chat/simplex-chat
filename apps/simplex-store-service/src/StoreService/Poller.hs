@@ -38,7 +38,7 @@ where
 import StoreService.Config (PollConfig (..))
 import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), creditLateInvoice, lateMoneyOf)
 import StoreService.Names.Phases (Phases, RegistrationId (..))
-import StoreService.Names.Store (CleanupKept (..), LateAlert (..), LateCredit (..), LateCreditState (..), LatePending (..), LateSupport (..), claimLateAlert, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
+import StoreService.Names.Store (CleanupKept (..), CreditAmount (..), LateAlert (..), LateCredit (..), LateCreditState (..), LateFigures (..), LatePending (..), LateSupport (..), claimLateAlert, creditCents, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
 import StoreService.Orders (decide, expireOverdue, settleOrder, signalReceived)
 import StoreService.Providers (CryptoReceived (..), ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
 import StoreService.Safely (safely, safelyWith)
@@ -468,10 +468,13 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) ref = do
   outcome <- creditLateInvoice peStore (cachedRate env p) invId now
   case outcome of
     CONothingDue -> pure ()
-    COCredited money LateCredit {lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents} ->
+    COCredited money LateCredit {lcAmount} ->
       logNote $
-        "names: invoice " <> ref <> credited money <> tshow lcCents <> " cents" <> extra money <> " to its order's balance"
-          <> maybe "" (\units -> " for " <> tshow units <> " units at " <> rate lcRateUsed <> " (invoice " <> rate lcInvoiceRate <> ", current " <> rate lcCurrentRate <> ")") lcUnits
+        "names: invoice " <> ref <> credited money <> tshow (creditCents lcAmount) <> " cents" <> extra money <> " to its order's balance"
+          <> case lcAmount of
+            CACard _ -> ""
+            CACrypto {caUnits, caInvoiceRate, caCurrentRate, caRateUsed} ->
+              " for " <> tshow caUnits <> " units at " <> rateText caRateUsed <> " (invoice " <> rateText caInvoiceRate <> ", current " <> rateText caCurrentRate <> ")"
     CONoInvoiceFigures -> do
       due <- dueToWarn env now ("no invoice figures: " <> invText)
       when due $ logError ("names: invoice " <> ref <> " has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at; check it at the provider")
@@ -489,7 +492,6 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) ref = do
     extra = \case
       LMLate -> ""
       LMOverpaid -> " of the extra"
-    rate = maybe "?" rateText
 
 -- | Money not yet confirmed waits for the settlement that confirms it.
 pendingLate :: PollerEnv -> InvoiceId -> Text -> IO ()
@@ -511,15 +513,15 @@ alertLatePayments env@PollerEnv {peStore} now = do
 
 -- | Confirmed money waiting comes before a stored reason, as in pendingCase, so its alert never asks for a refund by hand.
 lateReason :: PollerEnv -> LateAlert -> IO (Text, Maybe LateSupport)
-lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = LateCreditState {lsInvoice, lsCoin, lsSupport, lsInvoiceRate}} = case laPending of
+lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = LateCreditState {lsInvoice, lsFigures, lsSupport}} = case laPending of
   LPUncounted -> pure (uncounted, Nothing)
-  LPUncredited -> case lsCoin of
-    Nothing -> pure (cardWaits, Nothing)
-    Just coin
+  LPUncredited -> case lsFigures of
+    LFCard {} -> pure (cardWaits, Nothing)
+    LFCrypto {lfCoin, lfInvoiceRate}
       | lsSupport == Just LSRateFloor ->
           getInvoice peStore lsInvoice >>= \case
-            Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> (\r -> (rateFloor (either (const "unread") rateText r), Nothing)) <$> cachedRate env p coin
-            _ -> pure (rateFloor "unread", Nothing)
+            Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> (\r -> (rateFloor lfInvoiceRate (either (const "unread") rateText r), Nothing)) <$> cachedRate env p lfCoin
+            _ -> pure (rateFloor lfInvoiceRate "unread", Nothing)
       | otherwise -> pure (rateRead, Nothing)
   _ | lsSupport == Just (LSUncreditable UCHighSpeed) -> pure (highSpeed, Nothing)
   _ | lsSupport == Just (LSUncreditable UCNoConfirmationShown) -> pure (noConfirmation, Nothing)
@@ -530,20 +532,24 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
     noConfirmation = "the Monero plugin shows no confirmation of this money, so it is never credited by itself; refund by hand only a transaction confirmed on chain"
     rateRead = "confirmed, the credit waits on the rate read; do not refund; fix the rate read"
     cardWaits = "confirmed, the credit waits on the poller's credit pass; do not refund; check the service log"
-    rateFloor current = "confirmed; the coin's price fell by more than half since the invoice (" <> maybe "?" rateText lsInvoiceRate <> ", " <> current <> "); it is never credited by itself; refund by hand only a transaction confirmed on chain"
+    rateFloor invoiceRate current = "confirmed; the coin's price fell by more than half since the invoice (" <> maybe "?" rateText invoiceRate <> ", " <> current <> "); it is never credited by itself; refund by hand only a transaction confirmed on chain"
     uncounted = "an amount BTCPay reported with more decimals than its unit; check it at the provider"
 
 lateAlertText :: LateAlert -> Text -> Text
-lateAlertText LateAlert {laProviderRef, laState = s@LateCreditState {lsCoin, lsReceivedCents, lsConfirmedCents, lsCreditedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoicedUnits, lsCreditedUnits}} reason =
+lateAlertText LateAlert {laProviderRef, laState = s@LateCreditState {lsReceivedCents, lsCreditedCents, lsFigures}} reason =
   "names: invoice " <> laProviderRef <> overpaid <> ": " <> figures <> "; " <> reason
   where
-    (overpaid, invoiced) = case (lateMoneyOf s, lsCoin, lsInvoicedUnits) of
-      (LMOverpaid, Just coin, Just units) -> (", overpaid", tshow units <> " " <> unitName coin <> " invoiced, ")
-      _ -> ("", "")
-    figures = case (lsCoin, lsReceivedUnits) of
-      (Nothing, _) -> amounts "cents" (toInteger lsReceivedCents) (toInteger lsConfirmedCents) (toInteger lsCreditedCents)
-      (Just coin, Just received) -> invoiced <> amounts (unitName coin) (toInteger received) (maybe 0 toInteger lsConfirmedUnits) (toInteger lsCreditedUnits)
-      (Just _, Nothing) -> tshow lsReceivedCents <> " cents received at the invoice's rate, not counted in units"
+    (overpaid, figures) = case lsFigures of
+      LFCard {lfConfirmedCents} -> ("", amounts "cents" (toInteger lsReceivedCents) (toInteger lfConfirmedCents) (toInteger lsCreditedCents))
+      LFCrypto {lfCoin, lfReceivedUnits, lfConfirmedUnits, lfInvoicedUnits, lfCreditedUnits} ->
+        let (label, invoiced) = case (lateMoneyOf s, lfInvoicedUnits) of
+              (LMOverpaid, Just units) -> (", overpaid", tshow units <> " " <> unitName lfCoin <> " invoiced, ")
+              _ -> ("", "")
+         in ( label,
+              case lfReceivedUnits of
+                Just received -> invoiced <> amounts (unitName lfCoin) (toInteger received) (maybe 0 toInteger lfConfirmedUnits) (toInteger lfCreditedUnits)
+                Nothing -> tshow lsReceivedCents <> " cents received at the invoice's rate, not counted in units"
+            )
     amounts unit received confirmed credited =
       tshow received <> " " <> unit <> " received, " <> tshow confirmed <> " " <> unit <> " confirmed, " <> tshow credited <> " " <> unit <> " credited"
 

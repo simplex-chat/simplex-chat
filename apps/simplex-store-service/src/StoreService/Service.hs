@@ -61,7 +61,7 @@ import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (checkPendingSignatures, runSender)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), CodeIssuer (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, methodText)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), CodeIssuer (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, creditCents, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runWorkers)
@@ -567,7 +567,7 @@ chainText chain = T.intercalate "; " $ zipWith linkText chain (map (Just . lkReg
       where
         byInvoice method (InvoiceId invId) =
           let by = " by " <> methodText method <> " on invoice " <> invId <> maybe "" (\ref -> " (provider reference " <> ref <> ")") providerRef_
-              late = sum $ map lcCents lateCredits
+              late = sum $ map (creditCents . lcAmount) lateCredits
               -- an order its invoice paid is credited only the extra of an overpayment
               kind = if cents > 0 then " overpaid" else " late"
            in [dollars cents <> by | cents > 0] <> [dollars late <> kind <> by | late > 0]

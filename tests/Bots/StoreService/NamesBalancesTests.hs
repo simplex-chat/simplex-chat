@@ -233,12 +233,22 @@ lateCredit r n units cents =
     { lcInvoice = InvoiceId ("inv-" <> r),
       lcCreditNo = n,
       lcRegistration = RegistrationId r,
-      lcUnits = units,
-      lcInvoiceRate = Just Rate {rateText = "62500", rateValue = 62500},
-      lcCurrentRate = Just Rate {rateText = "60000.5", rateValue = 60000.5},
-      lcRateUsed = Just Rate {rateText = "61000", rateValue = 61000},
-      lcCents = cents
+      lcAmount = maybe (CACard cents) crypto units
     }
+  where
+    crypto caUnits =
+      CACrypto
+        { caUnits,
+          caInvoiceRate = Rate {rateText = "62500", rateValue = 62500},
+          caCurrentRate = Rate {rateText = "60000.5", rateValue = 60000.5},
+          caRateUsed = Rate {rateText = "61000", rateValue = 61000},
+          caCents = cents
+        }
+
+creditedUnits :: LateCreditState -> Int64
+creditedUnits LateCreditState {lsFigures} = case lsFigures of
+  LFCrypto {lfCreditedUnits} -> lfCreditedUnits
+  LFCard {} -> 0
 
 creditLate :: DBStore -> LateCredit -> IO Bool
 creditLate st c = withTransaction st $ \db -> creditLatePayment db c (at 3)
@@ -618,7 +628,7 @@ testCreditLatePayment :: IO ()
 testCreditLatePayment = withServiceStore $ \st -> do
   closedWith st "x" False (cryptoPaid 400000 400000) t0
   let state :: IO (Maybe (Int64, Int, Int))
-      state = withTransaction st $ \db -> fmap (\LateCreditState {lsCreditedUnits, lsCreditedCents, lsCredits} -> (lsCreditedUnits, lsCreditedCents, lsCredits)) <$> lateCreditState db (InvoiceId "inv-x")
+      state = withTransaction st $ \db -> fmap (\s@LateCreditState {lsCreditedCents, lsCredits} -> (creditedUnits s, lsCreditedCents, lsCredits)) <$> lateCreditState db (InvoiceId "inv-x")
   creditLate st (lateCredit "x" 1 (Just 300000) 3000) `shouldReturn` True
   creditLate st (lateCredit "x" 1 (Just 100000) 1000) `shouldReturn` False
   figures st "x" t0 `shouldReturn` Just (3000, 3000, 0, Nothing)
@@ -660,16 +670,18 @@ testLateScans = withServiceStore $ \st -> do
           lsRegistration = RegistrationId "part",
           lsPhase = PUnpaid,
           lsLive = False,
-          lsCoin = Just CCBtc,
           lsSupport = Nothing,
           lsReceivedCents = 20000,
-          lsConfirmedCents = 0,
-          lsReceivedUnits = Just 300000,
-          lsConfirmedUnits = Just 100000,
-          lsInvoiceRate = Just Rate {rateText = "62500", rateValue = 62500},
+          lsFigures =
+            LFCrypto
+              { lfCoin = CCBtc,
+                lfReceivedUnits = Just 300000,
+                lfConfirmedUnits = Just 100000,
+                lfInvoicedUnits = Nothing,
+                lfInvoiceRate = Just Rate {rateText = "62500", rateValue = 62500},
+                lfCreditedUnits = 100000
+              },
           lsInvoiceAmount = 20000,
-          lsInvoicedUnits = Nothing,
-          lsCreditedUnits = 100000,
           lsCreditedCents = 1500,
           lsCredits = 1,
           lsPaymentCreatedAt = at 4
@@ -683,7 +695,7 @@ testExactUnits = withServiceStore $ \st -> do
   creditLate st (lateCredit "x" 2 (Just 20000000) 12000) `shouldReturn` True
   withTransaction st (\db -> latePending db (InvoiceId "inv-x")) `shouldReturn` Nothing
   withTransaction st uncreditedLateInvoices `shouldReturn` []
-  fmap lsCreditedUnits <$> withTransaction st (\db -> lateCreditState db (InvoiceId "inv-x")) `shouldReturn` Just 30000000
+  fmap creditedUnits <$> withTransaction st (\db -> lateCreditState db (InvoiceId "inv-x")) `shouldReturn` Just 30000000
 
 testLateAlerts :: IO ()
 testLateAlerts = withServiceStore $ \st -> do

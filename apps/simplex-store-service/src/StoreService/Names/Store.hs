@@ -31,7 +31,10 @@ module StoreService.Names.Store
     HoldState (..),
     BalanceLink (..),
     LateCredit (..),
+    CreditAmount (..),
+    creditCents,
     LateCreditState (..),
+    LateFigures (..),
     LatePending (..),
     LateAlert (..),
     LateSupport (..),
@@ -146,7 +149,7 @@ import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Commitment, TermsAcceptance (..), TermsHash)
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
-import StoreService.Providers (Rate, Uncreditable (..))
+import StoreService.Providers (Rate, Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, mkQuery, newInvoiceId, note, textToCryptoCurrency, truncateToSecond, unfundedQuery)
 import qualified Text.RawString.QQ as Raw
@@ -351,40 +354,54 @@ data BalanceLink = BalanceLink
   }
   deriving (Eq, Show)
 
--- | Money paid on a name invoice after its order closed, credited to that order's balance. Card money has no units or rates.
+-- | Money paid on a name invoice after its order closed, credited to that order's balance.
 data LateCredit = LateCredit
   { lcInvoice :: InvoiceId,
     lcCreditNo :: Int,
     lcRegistration :: RegistrationId,
-    lcUnits :: Maybe Int64,
-    lcInvoiceRate :: Maybe Rate,
-    lcCurrentRate :: Maybe Rate,
-    lcRateUsed :: Maybe Rate,
-    lcCents :: Int
+    lcAmount :: CreditAmount
   }
   deriving (Eq, Show)
 
--- | A name invoice's payment figures, what was credited from it, and its order's phase and live flag. Card money (no coin) is counted in cents,
--- crypto in units. lsSupport: why its money will not be credited by itself, once known.
+-- | Card cents, or crypto units credited in cents at the rate used, the lower of the invoice's and the current one.
+data CreditAmount
+  = CACard Int
+  | CACrypto {caUnits :: Units, caInvoiceRate :: Rate, caCurrentRate :: Rate, caRateUsed :: Rate, caCents :: Int}
+  deriving (Eq, Show)
+
+creditCents :: CreditAmount -> Int
+creditCents = \case
+  CACard cents -> cents
+  CACrypto {caCents} -> caCents
+
+-- | A name invoice's payment figures, what was credited from it, and its order's phase and live flag.
+-- lsSupport: why its money will not be credited by itself, once known.
 data LateCreditState = LateCreditState
   { lsInvoice :: InvoiceId,
     lsRegistration :: RegistrationId,
     lsPhase :: NamePhase,
     lsLive :: Bool,
-    lsCoin :: Maybe CryptoCurrency,
     lsSupport :: Maybe LateSupport,
     lsReceivedCents :: Int,
-    lsConfirmedCents :: Int,
-    lsReceivedUnits :: Maybe Int64,
-    lsConfirmedUnits :: Maybe Int64,
-    lsInvoiceRate :: Maybe Rate,
+    lsFigures :: LateFigures,
     lsInvoiceAmount :: Int,
-    lsInvoicedUnits :: Maybe Int64,
-    lsCreditedUnits :: Int64,
     lsCreditedCents :: Int,
     lsCredits :: Int,
     lsPaymentCreatedAt :: UTCTime
   }
+  deriving (Eq, Show)
+
+-- | Card money counted in cents; crypto in units, with the invoice's rate and invoiced units it is credited at.
+data LateFigures
+  = LFCard {lfConfirmedCents :: Int}
+  | LFCrypto
+      { lfCoin :: CryptoCurrency,
+        lfReceivedUnits :: Maybe Units,
+        lfConfirmedUnits :: Maybe Units,
+        lfInvoicedUnits :: Maybe Units,
+        lfInvoiceRate :: Maybe Rate,
+        lfCreditedUnits :: Units
+      }
   deriving (Eq, Show)
 
 -- | Why a closed order's money is not all credited: Monero confirming with a zero figure, confirmed money not credited yet,
@@ -1078,14 +1095,17 @@ providerRef db (InvoiceId invId) =
 
 lateCredits :: DB.Connection -> InvoiceId -> IO [LateCredit]
 lateCredits db (InvoiceId invId) =
-  map toLateCredit
-    <$> DB.query
-      db
-      (mkQuery "SELECT invoice_id, credit_no, registration_id, units, invoice_rate, current_rate, rate_used, cents FROM @name_late_credits WHERE invoice_id = ? ORDER BY credit_no")
-      (Only invId)
+  DB.query
+    db
+    (mkQuery "SELECT invoice_id, credit_no, registration_id, units, invoice_rate, current_rate, rate_used, cents FROM @name_late_credits WHERE invoice_id = ? ORDER BY credit_no")
+    (Only invId)
+    >>= decodeAll toLateCredit
   where
-    toLateCredit (inv, lcCreditNo, reg, lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents) =
-      LateCredit {lcInvoice = InvoiceId inv, lcCreditNo, lcRegistration = RegistrationId reg, lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents}
+    toLateCredit (inv, lcCreditNo, reg, units_, invoiceRate_, currentRate_, rateUsed_, cents) =
+      (\lcAmount -> LateCredit {lcInvoice = InvoiceId inv, lcCreditNo, lcRegistration = RegistrationId reg, lcAmount}) <$> case (units_, invoiceRate_, currentRate_, rateUsed_) of
+        (Nothing, Nothing, Nothing, Nothing) -> Right $ CACard cents
+        (Just caUnits, Just caInvoiceRate, Just caCurrentRate, Just caRateUsed) -> Right CACrypto {caUnits, caInvoiceRate, caCurrentRate, caRateUsed, caCents = cents}
+        _ -> Left $ "name_late_credits figures: " <> inv
 
 -- | Adds to the order's balance, making it on its first credit.
 creditBalance :: DB.Connection -> RegistrationId -> Int -> UTCTime -> IO ()
@@ -1250,11 +1270,13 @@ type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, I
 
 toLateState :: LateRow -> Either Text LateCreditState
 toLateState
-  ( (inv, reg, lsPhase, BI lsLive, coin_, lsSupport, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits)
-      :. (lsInvoiceRate, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt, lsInvoiceAmount, lsInvoicedUnits)
+  ( (inv, reg, lsPhase, BI lsLive, coin_, lsSupport, lsReceivedCents, confirmedCents, lfReceivedUnits, lfConfirmedUnits)
+      :. (lfInvoiceRate, lfCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt, lsInvoiceAmount, lfInvoicedUnits)
     ) = do
-    lsCoin <- traverse (\c -> note ("invoices.payment_crypto_currency: " <> c) (textToCryptoCurrency c)) coin_
-    pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsLive, lsCoin, lsSupport, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoiceRate, lsInvoiceAmount, lsInvoicedUnits, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
+    lsFigures <- case coin_ of
+      Nothing -> Right LFCard {lfConfirmedCents = confirmedCents}
+      Just c -> (\lfCoin -> LFCrypto {lfCoin, lfReceivedUnits, lfConfirmedUnits, lfInvoicedUnits, lfInvoiceRate, lfCreditedUnits}) <$> note ("invoices.payment_crypto_currency: " <> c) (textToCryptoCurrency c)
+    pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsLive, lsSupport, lsReceivedCents, lsFigures, lsInvoiceAmount, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
 
 -- | Nothing without a payment row.
 lateCreditState :: DB.Connection -> InvoiceId -> IO (Maybe LateCreditState)
@@ -1262,7 +1284,7 @@ lateCreditState db (InvoiceId invId) = firstDecoded toLateState $ DB.query db (l
 
 -- | Run after the invoice's lock. The order's balance is credited only when the credit's row is new, so a taken credit number changes neither.
 creditLatePayment :: DB.Connection -> LateCredit -> UTCTime -> IO Bool
-creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegistration = regId@(RegistrationId rid), lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents} now' = do
+creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegistration = regId@(RegistrationId rid), lcAmount} now' = do
   inserted <-
     executeChanging
       db
@@ -1273,11 +1295,14 @@ creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegi
         ON CONFLICT DO NOTHING
       |]
       )
-      (invId, lcCreditNo, rid, lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents, now)
-  when (inserted > 0) $ creditBalance db regId lcCents now
+      (invId, lcCreditNo, rid, units, invoiceRate, currentRate, rateUsed, creditCents lcAmount, now)
+  when (inserted > 0) $ creditBalance db regId (creditCents lcAmount) now
   pure $ inserted > 0
   where
     now = truncateToSecond now'
+    (units, invoiceRate, currentRate, rateUsed) = case lcAmount of
+      CACard _ -> (Nothing, Nothing, Nothing, Nothing)
+      CACrypto {caUnits, caInvoiceRate, caCurrentRate, caRateUsed} -> (Just caUnits, Just caInvoiceRate, Just caCurrentRate, Just caRateUsed)
 
 -- | Why the closed order's money on the invoice is not all credited; the one rule of the pending log and the alert.
 latePending :: DB.Connection -> InvoiceId -> IO (Maybe LatePending)
