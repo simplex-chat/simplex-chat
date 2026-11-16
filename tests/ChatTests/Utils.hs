@@ -678,6 +678,10 @@ withCCAgentTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCAgentTransaction TestCC {chatController = ChatController {smpAgent}} action =
   withTransaction (agentClientStore smpAgent) $ \db -> action db
 
+checkPendingInvitations :: HasCallStack => TestCC -> Int -> IO ()
+checkPendingInvitations cc n =
+  withCCAgentTransaction cc (\db -> DB.query_ db "SELECT count(1) FROM conn_invitations WHERE accepted = 0") `shouldReturn` [[n]]
+
 createCCNoteFolder :: TestCC -> IO ()
 createCCNoteFolder cc =
   withCCTransaction cc $ \db ->

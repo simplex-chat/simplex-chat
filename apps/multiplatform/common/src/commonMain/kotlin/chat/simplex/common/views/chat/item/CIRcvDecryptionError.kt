@@ -2,7 +2,6 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -210,7 +209,7 @@ private fun DecryptionErrorCard(onClick: () -> Unit, inlineMeta: (@Composable ()
       }
     }
   } else {
-    Surface(Modifier.clickable(onClick = onClick).messageCard(), shape = RoundedCornerShape(18.dp), color = receivedColor, contentColor = LocalContentColor.current) {
+    Surface(Modifier.padding(start = terminalPillStart()).clickable(onClick = onClick).messageCard(), shape = terminalCardShape(), color = receivedColor, contentColor = LocalContentColor.current) {
       Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp), contentAlignment = Alignment.BottomEnd) {
         content()
       }

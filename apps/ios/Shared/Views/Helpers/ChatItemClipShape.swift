@@ -31,7 +31,7 @@ struct ChatItemClipped: ViewModifier {
     }
     
     private func shapeStyle() -> ChatItemShape.Style {
-        if let ci = chatItem {
+        if let ci = chatItem, !terminal {
             switch ci.content {
             case
                     .sndMsgContent,
@@ -45,16 +45,14 @@ struct ChatItemClipped: ViewModifier {
                 } else {
                     tailVisible
                 }
-                return tailEnabled && !terminal
+                return tailEnabled
                 ? .bubble(
                     padding: ci.chatDir.sent ? .trailing : .leading,
                     tailVisible: tail
                 )
                 : .roundRect(radius: msgRectMaxRadius)
             case .sndDeleted, .rcvDeleted, .sndModerated, .rcvModerated, .rcvBlocked:
-                return terminal
-                ? .roundRect(radius: 8)
-                : tailEnabled
+                return tailEnabled
                 ? .bubble(padding: ci.chatDir.sent ? .trailing : .leading, tailVisible: false)
                 : .roundRect(radius: msgRectMaxRadius)
             case .rcvGroupInvitation, .sndGroupInvitation:

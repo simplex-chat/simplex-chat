@@ -219,7 +219,7 @@ struct AddGroupMembersViewCommon: View {
             }
         } label: {
             HStack{
-                ProfileImage(imageStr: contact.image, size: 30)
+                ProfileImage(imageStr: contact.image, icon: contact.chatIcon, size: 30)
                     .padding(.trailing, 2)
                 NameWithBadge(
                     Text(ChatInfo.direct(contact: contact).chatViewName)
