@@ -257,7 +257,7 @@ badgeWebTests = do
     it "holds ?wait=open, and is woken by publish rather than polled" testHoldIsWokenNotPolled
     it "refuses over sixty reads a minute from one IP" testReadRateLimit
     it "takes the client from X-Forwarded-For only when it is trusted" testForwardedForOnlyWhenTrusted
-    it "uses a forwarded client only when it parses as an IP address" testForwardedForMustBeAnAddress
+    it "uses a forwarded client only when it parses as an IP address, an IPv4 one in its canonical form" testForwardedForMustBeAnAddress
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
     it "caps checkouts of every client together, counting only those that reach the provider" testInvoicesLimitForAll
     it "caps checkouts per IPv4 /24 and IPv6 /48 before the shared cap, so the refused ones take none of it" testCheckoutLimitPerNetwork
@@ -1848,13 +1848,13 @@ testForwardedForMustBeAnAddress = bounded "forwarded-for is an address" $ withWe
         r <- webRequest client "GET" target [("X-Forwarded-For", v)]
         (v, statusOf r) `shouldBe` (v, 429)
     )
-    ["", "not-an-address", "010.0.0.1", "1.2.3.4.5", "256.1.1.1", "1.2.3", "::1%eth0", "1:2:3:4:5:6:7", "[2001:db8::1]", "1.2.3.4:5678", "gggg::1", "12345::1"]
+    ["", "not-an-address", "010.0.0.1", "1.2.3.4.5", "256.1.1.1", "1.2.3.300", "1.2.3", "::1%eth0", "1:2:3:4:5:6:7", "1.2.3.4:5678", "gggg::1", "12345::1"]
   mapM_
     ( \v -> do
         r <- webRequest client "GET" target [("X-Forwarded-For", v)]
         (v, statusOf r) `shouldBe` (v, 404)
     )
-    ["192.0.2.7", "2001:db8::1", "::1", "::", "::ffff:192.0.2.1", "1:2:3:4:5:6:7:8"]
+    ["192.0.2.7", "2001:db8::1", "[2001:db8::2]", "::1", "::", "::ffff:192.0.2.1", "1:2:3:4:5:6:7:8"]
 
 testIPv6ClientKey :: IO ()
 testIPv6ClientKey = bounded "IPv6 client key" $ withWebAppForwarded True $ \_ client -> do

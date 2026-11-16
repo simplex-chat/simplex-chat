@@ -58,7 +58,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word (Word32, Word64, Word8)
 import GHC.Clock (getMonotonicTimeNSec)
-import Network.Socket (AddrInfo (..), HostName, SockAddr (..), SocketType (..), defaultHints, getAddrInfo, hostAddressToTuple)
+import Network.Socket (AddrInfo (..), HostName, SocketType (..), defaultHints, getAddrInfo)
 import Simplex.Chat.Controller (ChatController, ChatError (..))
 import Simplex.Chat.Library.Internal (decodeLinkUserData, getShortLinkConnReq')
 import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
@@ -71,6 +71,7 @@ import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tryAllErrors', tshow)
 import StoreService.Names.Registration (LinkKind (..))
+import StoreService.Web.Http (sockHost)
 import System.Timeout (timeout)
 
 data ProfileLimits = ProfileLimits
@@ -390,8 +391,3 @@ ipv4Word (a, b, c, d) = fromIntegral a `shiftL` 24 .|. fromIntegral b `shiftL` 1
 
 systemResolver :: HostResolver
 systemResolver name = mapMaybe (sockHost . addrAddress) <$> getAddrInfo (Just defaultHints {addrSocketType = Stream}) (Just name) Nothing
-  where
-    sockHost = \case
-      SockAddrInet _ a -> Just $ THIPv4 $ hostAddressToTuple a
-      SockAddrInet6 _ _ a _ -> Just $ THIPv6 a
-      SockAddrUnix _ -> Nothing

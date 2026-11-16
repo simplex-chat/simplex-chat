@@ -14,6 +14,7 @@ module StoreService.Web.Http
     only,
     CheckoutClient,
     checkoutClient,
+    sockHost,
     maxBuckets,
     readLimit,
     createLimit,
@@ -65,6 +66,7 @@ import Control.Monad (foldM, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import Data.Aeson.Types (Pair)
+import Data.Bits (shiftR, (.&.))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.URL as B64U
@@ -73,23 +75,22 @@ import qualified Data.ByteString.Lazy as LB
 import Data.List (find, sortOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime)
-import Data.Word (Word16)
+import Data.Word (Word8)
 import Network.HTTP.Types (Header, Method, Status, hCacheControl, hContentType, status400, status404, status405, status409, status429, status500, status503)
-import Network.Socket (SockAddr (..), hostAddress6ToTuple, hostAddressToTuple)
+import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Network.Wai
-import Numeric (readHex, showHex)
+import Numeric (showHex)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
-import Simplex.Messaging.Encoding.String (textEncode)
+import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
+import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, stateTVar', tshow)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
 import StoreService.Providers (Provider (..))
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), paymentHolds)
-import Text.Read (readMaybe)
 
 data HttpEnv = HttpEnv
   { heBuckets :: TVar (Map Text Bucket),
@@ -252,96 +253,41 @@ checkoutClient env = CheckoutClient . clientKey networkPrefix env
 
 -- | Every line is joined first, so a second header line a caller adds cannot leave its own line the one we read.
 clientKey :: KeyPrefix -> HttpEnv -> Request -> Text
-clientKey prefix HttpEnv {heTrustForwardedFor} req = fromMaybe (peerText prefix (remoteHost req)) forwarded
+clientKey prefix HttpEnv {heTrustForwardedFor} req = maybe peerKey (hostKey prefix) forwarded
   where
     forwarded
       | not heTrustForwardedFor = Nothing
       | otherwise = case reverse (concatMap entries (requestHeaders req)) of
-          (ip : _)
-            | isIPv4 ip -> Just (v4Key prefix (T.splitOn "." ip))
-            | isIPv6 ip -> v6Key prefix <$> v6Groups ip
+          (ip : _) -> forwardedHost ip
           _ -> Nothing
     entries (name, raw)
       | name /= "x-forwarded-for" = []
       | otherwise = either (const []) (filter (not . T.null) . map T.strip . T.splitOn ",") (decodeUtf8' raw)
+    forwardedHost ip = case strDecode s of
+      Right h@(THIPv4 _) | strEncode h == s -> Just h
+      Right h@(THIPv6 _) -> Just h
+      _ -> Nothing
+      where
+        s = encodeUtf8 ip
+    peerKey = maybe (tshow $ remoteHost req) (hostKey prefix) $ sockHost $ remoteHost req
 
-asciiDigit :: Char -> Bool
-asciiDigit c = c >= '0' && c <= '9'
-
--- Data.Char.isDigit and isHexDigit accept Unicode digits, which are not addresses.
-asciiHexDigit :: Char -> Bool
-asciiHexDigit c = asciiDigit c || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
-
--- | A leading zero is refused, so "010.0.0.1" cannot be a second key for "10.0.0.1".
-isIPv4 :: Text -> Bool
-isIPv4 t = case T.splitOn "." t of
-  [a, b, c, d] -> all octet [a, b, c, d]
-  _ -> False
-  where
-    octet s =
-      not (T.null s)
-        && T.length s <= 3
-        && T.all asciiDigit s
-        && (T.length s == 1 || T.head s /= '0')
-        && maybe False (<= 255) (readMaybe (T.unpack s) :: Maybe Int)
-
-isIPv6 :: Text -> Bool
-isIPv6 t
-  | T.any (== '%') t = False
-  | otherwise = case T.splitOn "::" t of
-      [full] -> groupCount True (segments full) == Just 8
-      [before, after] -> case (groupCount False (segments before), groupCount True (segments after)) of
-        (Just b, Just a) -> b + a <= 7 -- "::" stands for at least one omitted group
-        _ -> False
-      _ -> False
-  where
-    segments s = if T.null s then [] else T.splitOn ":" s
-
-groupCount :: Bool -> [Text] -> Maybe Int
-groupCount endsAddress gs
-  | null gs = Just 0
-  | endsAddress && isIPv4 (last gs) = (+ 2) <$> plainGroups (init gs)
-  | otherwise = plainGroups gs
-  where
-    plainGroups ps = if all hexGroup ps then Just (length ps) else Nothing
-    hexGroup g = not (T.null g) && T.length g <= 4 && T.all asciiHexDigit g
-
-peerText :: KeyPrefix -> SockAddr -> Text
-peerText prefix = \case
-  SockAddrInet _ addr ->
-    let (a, b, c, d) = hostAddressToTuple addr
-     in v4Key prefix (map tshow [a, b, c, d])
-  SockAddrInet6 _ _ addr _ ->
-    let (a, b, c, d, e, f, g, h) = hostAddress6ToTuple addr
-     in v6Key prefix [a, b, c, d, e, f, g, h]
-  SockAddrUnix p -> "unix:" <> T.pack p
-
--- | The eight groups of an address isIPv6 accepts.
-v6Groups :: Text -> Maybe [Word16]
-v6Groups t = case T.splitOn "::" t of
-  [full] -> exactly 8 (parts full)
-  [before, after] -> do
-    b <- parts before
-    a <- parts after
-    pure $ b <> replicate (8 - length b - length a) 0 <> a
-  _ -> Nothing
-  where
-    parts s = concat <$> mapM part (if T.null s then [] else T.splitOn ":" s)
-    part g
-      | isIPv4 g = case mapM (readMaybe . T.unpack) (T.splitOn "." g) :: Maybe [Word16] of
-          Just [a, b, c, d] -> Just [a * 256 + b, c * 256 + d]
-          _ -> Nothing
-      | otherwise = (: []) . fst <$> listToMaybe (readHex $ T.unpack g)
-    exactly n gs = gs >>= \xs -> if length xs == n then Just xs else Nothing
+sockHost :: SockAddr -> Maybe TransportHost
+sockHost = \case
+  SockAddrInet _ a -> Just $ THIPv4 $ hostAddressToTuple a
+  SockAddrInet6 _ _ a _ -> Just $ THIPv6 a
+  SockAddrUnix _ -> Nothing
 
 -- | The prefix of an address, or of the IPv4 address in an IPv4-mapped one.
-v6Key :: KeyPrefix -> [Word16] -> Text
-v6Key prefix@KeyPrefix {kpGroups} gs = case splitAt 6 gs of
-  ([0, 0, 0, 0, 0, 0xffff], [ab, cd]) -> v4Key prefix (map tshow [ab `div` 256, ab `mod` 256, cd `div` 256, cd `mod` 256])
-  _ -> T.intercalate ":" (map (T.pack . (`showHex` "")) (take kpGroups gs)) <> "::"
-
-v4Key :: KeyPrefix -> [Text] -> Text
-v4Key KeyPrefix {kpOctets} = T.intercalate "." . take kpOctets
+hostKey :: KeyPrefix -> TransportHost -> Text
+hostKey KeyPrefix {kpOctets, kpGroups} = \case
+  THIPv4 (a, b, c, d) -> v4Key [a, b, c, d]
+  THIPv6 (0, 0, 0xffff, w) -> v4Key [fromIntegral $ w `shiftR` n | n <- [24, 16, 8, 0]]
+  THIPv6 (w0, w1, w2, w3) -> T.intercalate ":" (map (T.pack . (`showHex` "")) $ take kpGroups $ concatMap halves [w0, w1, w2, w3]) <> "::"
+  host -> safeDecodeUtf8 $ strEncode host
+  where
+    v4Key :: [Word8] -> Text
+    v4Key = T.intercalate "." . map tshow . take kpOctets
+    halves w = [w `shiftR` 16, w .&. 0xffff]
 
 apiHeaders :: [Header]
 apiHeaders = [(hContentType, "application/json"), (hCacheControl, "no-store")]
