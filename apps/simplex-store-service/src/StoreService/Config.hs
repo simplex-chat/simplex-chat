@@ -53,10 +53,11 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8', encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format.ISO8601 (iso8601ParseM)
 import Data.Word (Word64)
+import qualified Network.HTTP.Client as HTTP
 import Simplex.Chat.Badges.Code (maxNameLength, minNameLength, minNameYears)
 import Simplex.Chat.Library.Commands (mkValidName)
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
@@ -269,20 +270,16 @@ maxSessionMinutes = 1440
 isLoopbackHost :: Text -> Bool
 isLoopbackHost h = h `elem` ["127.0.0.1", "::1", "localhost"]
 
--- | The host of an absolute URL, lower-cased, without user info, port or an IPv6 literal's brackets.
-urlHost :: Text -> Text
-urlHost url = T.toLower $ case T.stripPrefix "[" hostPort of
-  Just literal -> T.takeWhile (/= ']') literal
-  Nothing -> T.takeWhile (/= ':') hostPort
-  where
-    authority = T.takeWhile (`notElem` ['/', '?', '#']) (T.drop 2 (snd (T.breakOn "//" url)))
-    hostPort = snd (T.breakOnEnd "@" authority)
+httpUrl :: Text -> Maybe HTTP.Request
+httpUrl = HTTP.parseRequest . T.unpack
 
--- | An http host would carry the API key in the clear on every call.
-requireHttps :: Text -> Either String Text
-requireHttps u
-  | "https://" `T.isPrefixOf` u = Right u
-  | otherwise = Left "btcpay.host must be an absolute https URL"
+onLoopback :: HTTP.Request -> Bool
+onLoopback = isLoopbackHost . T.toLower . T.dropAround (\c -> c == '[' || c == ']') . decodeLatin1 . HTTP.host
+
+httpsUrl :: String -> Text -> Either String Text
+httpsUrl k v
+  | maybe False HTTP.secure (httpUrl v) = Right v
+  | otherwise = Left (k <> " must be an absolute https URL")
 
 publishableKey :: Text -> Bool
 publishableKey k = case T.stripPrefix "pk_live_" k <|> T.stripPrefix "pk_test_" k of
@@ -477,7 +474,7 @@ parseConfig ini = do
       unless (testPublishableKey sPublishableKey) $
         Left "issuer.dev_keys is refused with a live Stripe key: stripe.publishable_key must be a test key, pk_test_"
     forM_ btc $ \BTCPayConfig {bHost} ->
-      unless (isLoopbackHost (urlHost bHost)) $
+      unless (maybe False onLoopback (httpUrl bHost)) $
         Left "issuer.dev_keys is refused with a remote BTCPay: btcpay.host must be on loopback, 127.0.0.1, ::1 or localhost"
   forM_ str $ \StripeConfig {sSecretKey, sPublishableKey} -> do
     when (testSecretKey sSecretKey /= testPublishableKey sPublishableKey) $
@@ -577,7 +574,7 @@ parseConfig ini = do
     btcpaySection
       | not (hasSection "btcpay") = Right Nothing
       | otherwise = do
-          bHost <- required "btcpay" "host" >>= requireHttps
+          bHost <- required "btcpay" "host" >>= httpsUrl "btcpay.host"
           bApiKey <- required "btcpay" "api_key"
           bStoreId <- required "btcpay" "store_id"
           bWebhookSecret <- required "btcpay" "webhook_secret"
@@ -647,8 +644,7 @@ parseConfig ini = do
     appleServerApi = case (present "apple" "api_key_id", present "apple" "api_issuer_id", present "apple" "api_private_key_file") of
       (Nothing, Nothing, Nothing) -> Right Nothing
       (Just aKeyId, Just aIssuerId, Just keyFile) -> do
-        aApiHost <- T.toLower . T.dropWhileEnd (== '/') <$> optional "apple" "api_host" defaultAppleApiHost
-        unless ("https://" `T.isPrefixOf` aApiHost) $ Left "apple.api_host must be an absolute https URL"
+        aApiHost <- optional "apple" "api_host" defaultAppleApiHost >>= httpsUrl "apple.api_host" . T.toLower . T.dropWhileEnd (== '/')
         pure (Just AppleServerApi {aKeyId, aIssuerId, aPrivateKeyFile = T.unpack keyFile, aApiHost})
       _ -> Left "apple.api_key_id, apple.api_issuer_id and apple.api_private_key_file are required together"
     googleSection
@@ -712,9 +708,9 @@ parseConfig ini = do
     -- http only to a node on the same machine, as the URL can carry a provider's API key
     rpcUrl = do
       v <- required "chain" "rpc_url"
-      unless ("https://" `T.isPrefixOf` v || ("http://" `T.isPrefixOf` v && isLoopbackHost (urlHost v))) $
-        Left "chain.rpc_url must be an https URL, or http to a node on loopback: 127.0.0.1, ::1 or localhost"
-      Right (T.unpack v)
+      case httpUrl v of
+        Just req | HTTP.secure req || onLoopback req -> Right (T.unpack v)
+        _ -> Left "chain.rpc_url must be an https URL, or http to a node on loopback: 127.0.0.1, ::1 or localhost"
     address k = do
       v <- required "chain" k
       either (const (Left ("chain." <> T.unpack k <> " is not an Ethereum address"))) Right (strDecode (encodeUtf8 v) :: Either String Address)
