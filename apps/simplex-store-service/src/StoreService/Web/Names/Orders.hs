@@ -97,7 +97,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} http client cfg provi
           withTransaction oeStore (\db -> existingOrder db req hash now) >>= \case
             EOResent r -> resentOrder env cfg what now r
             EOMeets -> refuse OROrderExists
-            EONew _ -> newOrder order
+            EONew -> newOrder order
   where
     what = "POST /api/invoice (name)"
     refuse = refused what
@@ -212,7 +212,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} 
       withTransaction oeStore (\db -> existingOrder db order (orderHash orOwner orFields (OTCode pcCodeHash)) now) >>= \case
         EOResent NameRegistration {nrId} -> pure $ answerNow $ registrationAnswer nrId
         EOMeets -> refuse OROrderExists
-        EONew _ -> newOrder now order code
+        EONew -> newOrder now order code
     newOrder now order@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofDuration}, orTimestamp} code@PrepaidCode {pcYears} = do
       let checks =
             [ pure $ checkTimestamp now orTimestamp,
@@ -260,7 +260,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} http
       withTransaction oeStore (\db -> existingOrder db order (orderHash orOwner orFields $ spendTerms spend) now) >>= \case
         EOResent r -> resentOrder env cfg what now r
         EOMeets -> refuse OROrderExists
-        EONew _ -> runExceptT (checked now order spend) >>= either refuse (place order spend)
+        EONew -> runExceptT (checked now order spend) >>= either refuse (place order spend)
     checked now OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} spend@Spend {spPrice} = do
       let years = orderYears fields $ nYears oeConfig
       liftEither $ checkTimestamp now orTimestamp

@@ -122,8 +122,9 @@ newtype OrderRefused = OrderRefused OrderRefusal
 
 instance E.Exception OrderRefused
 
--- | An exact resend of a stored order, live or not; or the overdue orders of the same wallet and name the new order closes.
-data ExistingOrder = EOResent NameRegistration | EONew [NameRegistration] | EOMeets
+-- | An exact resend of a stored order, live or not; a new order, which closes the overdue orders of the same wallet and name;
+-- or one meeting another live order.
+data ExistingOrder = EOResent NameRegistration | EONew | EOMeets
 
 -- | An overdue order a new order closed, at its new version; its invoice is now expired.
 data ClosedOrder = ClosedOrder {coRegistration :: NameRegistration, coVersion :: Int64}
@@ -205,7 +206,7 @@ existingOrder :: DB.Connection -> OrderRequest -> ByteString -> UTCTime -> IO Ex
 existingOrder db req hash now =
   getRegistrationByOrderHash db hash >>= \case
     Just r -> pure $ EOResent r
-    Nothing -> maybe EOMeets EONew <$> overdueOrdersMet db req now
+    Nothing -> maybe EOMeets (const EONew) <$> overdueOrdersMet db req now
 
 -- | The live orders of the request's commitment, or of its owner and label hash, when all are overdue orders of the same wallet and name;
 -- Nothing when any other live order holds them.
