@@ -14,7 +14,7 @@ module ChatTests.Direct where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (readMVar, threadDelay)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
 import Control.Monad (forM_, void, (>=>))
 import Data.Aeson (ToJSON)
@@ -79,7 +79,7 @@ chatDirectTests = do
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
     it "initial chat pagination" testChatPaginationInitial
-    it "skip saved message redelivered after chat stop" testRedeliveredMessage
+    it "skip handled message redelivered after failed acknowledgement" testRedeliveredMessage
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -1444,20 +1444,21 @@ testExpireCallInvitation ps =
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
 
 testRedeliveredMessage :: HasCallStack => TestParams -> IO ()
-testRedeliveredMessage ps = do
-  (received, cfg) <- blockFirstEventCfg $ newItemText "hello"
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
-      connectUsers alice bob
-      alice #> "@bob hello"
-      readMVar received
-      bob ##> "/_stop"
-      bob <## "chat stopped"
-      bob ##> "/_start"
-      bob <### ["chat started", "subscribed 1 connections on server localhost"]
-      alice #> "@bob hi"
-      bob <# "alice> hi"
-      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+testRedeliveredMessage =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers bob alice
+    withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands RENAME TO commands_")
+    alice #> "@bob hello"
+    bob <# "alice> hello"
+    bob <##. "internal error: "
+    withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands_ RENAME TO commands")
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 1 connections on server localhost"]
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
 
 testStopStartChat :: HasCallStack => TestParams -> IO ()
 testStopStartChat ps =

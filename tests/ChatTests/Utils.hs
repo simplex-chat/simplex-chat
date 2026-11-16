@@ -10,10 +10,10 @@ module ChatTests.Utils where
 
 import ChatClient
 import ChatTests.DBUtils
-import Control.Concurrent (MVar, newEmptyMVar, threadDelay, tryPutMVar)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, mapConcurrently_)
 import Control.Concurrent.STM
-import Control.Monad (forever, join, unless, when)
+import Control.Monad (join, unless, when)
 import Control.Monad.Except (runExceptT)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
@@ -24,10 +24,9 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtNewChatItems), ChatHooks (..), defaultChatHooks, storeCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
-import Simplex.Chat.Messages (AChatItem (..), CIMeta (CIMeta, itemText), ChatItem (ChatItem, meta))
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct (getContact, getContactIdByName, getContactRequest, getContactRequestIdByName)
@@ -987,18 +986,3 @@ setRelativePaths cc filesFolder tempFolder = do
   cc #$> ("/_temp_folder " <> tempFolder, id, "ok")
   cc ##> "/_start"
   cc <## "chat started"
-
-blockFirstEventCfg :: (ChatEvent -> Bool) -> IO (MVar (), ChatConfig)
-blockFirstEventCfg blocks = do
-  blocked <- newEmptyMVar
-  let hook _ ev = case ev of
-        Right e | blocks e -> do
-          isFirst <- tryPutMVar blocked ()
-          when isFirst $ forever $ threadDelay 1000000
-          pure ev
-        _ -> pure ev
-  pure (blocked, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
-
-newItemText :: T.Text -> ChatEvent -> Bool
-newItemText t (CEvtNewChatItems _ [AChatItem _ _ _ ChatItem {meta = CIMeta {itemText}}]) = itemText == t
-newItemText _ _ = False

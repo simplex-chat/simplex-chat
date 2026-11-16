@@ -1173,6 +1173,12 @@ SEARCH q USING INDEX idx_rcv_queues_to_subscribe (to_subscribe=? AND host=? AND 
 SEARCH c USING PRIMARY KEY (conn_id=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
+Query: ALTER TABLE commands RENAME TO commands_
+Plan:
+
+Query: ALTER TABLE commands_ RENAME TO commands
+Error: SQLite3 returned ErrorError while attempting to perform prepare "explain query plan ALTER TABLE commands_ RENAME TO commands": no such table: commands_
+
 Query: DELETE FROM client_services WHERE user_id = ?
 Plan:
 SEARCH client_services USING COVERING INDEX idx_server_certs_user_id_host_port (user_id=?)
@@ -1538,6 +1544,10 @@ SEARCH connections USING PRIMARY KEY (conn_id=?)
 Query: UPDATE connections SET smp_agent_version = ?, pq_support = ?, enable_ntfs = ? WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
+
+Query: UPDATE deleted_snd_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE deleted_snd_chunk_replica_id = ?
+Plan:
+SEARCH deleted_snd_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE messages SET msg_body = x'' WHERE conn_id = ? AND internal_id = ?
 Plan:

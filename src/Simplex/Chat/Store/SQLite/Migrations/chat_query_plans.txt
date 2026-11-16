@@ -2091,13 +2091,6 @@ Query:
 Plan:
 
 Query: 
-        INSERT INTO msg_deliveries
-          (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, delivery_status)
-        VALUES (?,?,?,?,?,?,?,?)
-      
-Plan:
-
-Query: 
         INSERT INTO operator_usage_conditions
           (server_operator_id, server_operator_tag, conditions_commit, accepted_at, auto_accepted)
         VALUES (?,?,?,?,?)
@@ -5224,6 +5217,18 @@ Query:
         updated_at = excluded.updated_at
     
 Plan:
+
+Query: 
+      INSERT INTO msg_deliveries
+        (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, delivery_status)
+      SELECT m.message_id, c.connection_id, ?, ?, ?, ?, ?, ?
+      FROM messages m
+      JOIN connections c ON c.connection_id = ?
+      WHERE m.message_id = ?
+    
+Plan:
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       INSERT INTO msg_deliveries
