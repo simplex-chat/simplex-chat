@@ -10,23 +10,24 @@ On desktop, a full-screen image can't be zoomed. Android zooms it by a two-finge
 
 Android: the chain of the base, unchanged: the layer, then `detectTransformGestures` with the base rule. `GestureDetector.kt` is unchanged.
 
-Desktop: the handlers precede the layer, so they get view coordinates.
+Desktop: the handlers precede the layer, so they get view coordinates. The layer reads the state in its block, so a wheel or pan step redraws the view without recomposing it.
 
 - A mouse wheel notch zooms 1.2× at the pointer, from 1× to 20×. Every vertical scroll event acts as the wheel, a trackpad's included.
-- A drag pans the zoomed image with the pointer, 1:1, once it passes the touch slop of 18 dp. Then the drag is consumed, so its release closes nothing. A click whose pointer moves less than the slop closes the view, as before.
+- A primary-button drag pans the zoomed image with the pointer, 1:1, once it passes 4 dp. Then the drag is consumed, so its release closes nothing. A click whose pointer moves less than 4 dp closes the view, as before. Other buttons pan nothing.
 - The wheel, the drag and a change of the view's size keep the image within one bound per axis, `boundTranslation`: half the excess of the fitted image's zoomed size over the view. The image covers the view in an axis where it is larger, and stays centred in an axis where it is smaller.
+- The handlers are keyed by the image's size, so a bitmap decoded again for the same image keeps a gesture running.
 - The fitted size of a video is that of its preview from the sender, or of the error bitmap when the preview fails to decode. The drawn frames are not available to the common code without a new path.
 
 ```mermaid
 flowchart TD
   subgraph Desktop
     W[Wheel notch] --> Z["scale × 1.2^-notches, 1..20, at the pointer"]
-    D[Drag past 18 dp] --> P["translation + pan, 1:1, consumed"]
+    D[Primary-button drag past 4 dp] --> P["translation + pan, 1:1, consumed"]
     S[View size change] --> B
     Z --> B[boundTranslation: fitted image, per axis]
     P --> B
     B --> L1[layer: scale, translation]
-    K[Click under 18 dp] --> X[close]
+    K[Click under 4 dp] --> X[close]
   end
   subgraph Android
     A[Pinch and drag] --> R[base layer and detectTransformGestures]
@@ -53,5 +54,10 @@ The Android rule stays as on the base. A later master item fuses it with the des
 - a long vertical drag keeps the zoomed image over the view;
 - a letterboxed tall image stays in the view after two long drags;
 - at 4× a 60 px drag in 6 steps moves the image 60 px and keeps the view open;
+- the same when the gallery decodes a new bitmap at each call;
+- at 10× a 10 px drag moves the image and keeps the view open;
+- a secondary-button drag pans nothing;
 - at 4× a click with 1 px of pointer jitter closes the view;
-- a narrower view keeps the zoomed image over its edge.
+- a zoomed image stays over the edge of a narrower view.
+
+The drag helper renders a frame after each move, and the gallery returns one bitmap unless a test asks for a new one at each call.
