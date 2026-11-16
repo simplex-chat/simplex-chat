@@ -186,7 +186,6 @@ fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig}} now r ages t = case re
     | lapsedFields r /= r -> save w now $ lapsedFields r
     | otherwise -> sendCommit w now r
 
--- | The revealAfter and revealBefore of a commitment committed at this time; Nothing past 2^64 seconds.
 revealWindow :: CommitmentAges -> ChainSeconds -> Maybe (ChainSeconds, ChainSeconds)
 revealWindow CommitmentAges {caMin, caMax} t = (,) <$> after caMin <*> after caMax
   where

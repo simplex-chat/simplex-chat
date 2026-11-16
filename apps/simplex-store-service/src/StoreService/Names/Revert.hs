@@ -63,7 +63,6 @@ data RevertName
   | RNZeroAddress
   deriving (Eq, Show, Enum, Bounded)
 
--- | A revert with empty or no data, as a bare @require@ or @revert()@ gives; one of the contracts' errors; or another, by its message or its selector in hex.
 data RevertReason = RRWithoutData | RRNamed RevertName | RRUnnamed Text
   deriving (Eq, Show)
 

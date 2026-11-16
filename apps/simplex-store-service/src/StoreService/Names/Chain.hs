@@ -238,13 +238,11 @@ signatureScalarBytes = 32
 decodeSignedTx :: ByteString -> Either String Eip1559Tx
 decodeSignedTx raw = (\(tx, _, _) -> tx) <$> signedTx raw
 
--- | The address that signed a raw transaction from 'signTransaction', with the transaction.
 transactionSigner :: ByteString -> IO (Either String (Eip1559Tx, Address))
 transactionSigner raw = case signedTx raw of
   Right (tx, signature, digest) -> fmap (tx,) <$> recoverAddress signature digest
   Left e -> pure $ Left e
 
--- | The transaction with its signature and the digest it signs.
 signedTx :: ByteString -> Either String (Eip1559Tx, RecoverableSignature, ByteString)
 signedTx raw = case B.uncons raw of
   Just (txType, encoded) | txType == eip1559TxType -> case rlpItem encoded of
