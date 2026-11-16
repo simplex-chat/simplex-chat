@@ -26,7 +26,6 @@ module Bots.StoreService.NamesOwnerTests
     rewrite,
     sentRegister,
     stored,
-    woken,
   )
 where
 
@@ -34,11 +33,11 @@ import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rentPriceCall, threeYearsOf11, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
-import Bots.StoreService.NamesPhasesTests (registrationPath)
-import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, webGet, withApp)
+import Bots.StoreService.NamesPhasesTests (held, registrationPath, seenVersion, woken)
+import Bots.StoreService.WebTests (bounded, capturingStderr, digestFixture, jsonObject, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
-import Control.Concurrent.Async (Async, async, cancel, wait)
+import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
 import Control.Monad (forM, forM_, void)
@@ -68,7 +67,7 @@ import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (addressWord, hex, uint256)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..), movable, signedRequestSeconds)
-import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage)
 import StoreService.Names.Store hiding (findLimit)
 import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
@@ -78,7 +77,6 @@ import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (findHandler, retargetHandler)
 import StoreService.Web.Names.Registration (registrationHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
-import System.Timeout (timeout)
 import Test.Hspec
 
 namesOwnerTests :: Spec
@@ -305,21 +303,6 @@ labelHashText label = J.String $ hex lh
 
 codeRow :: Ctx -> PrepaidCode -> IO PrepaidCode
 codeRow Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore (`getPrepaidCodeById` pcId)
-
--- | Bounded, since a deadlock would otherwise hang the suite.
-within :: String -> IO a -> IO a
-within what action = timeout 10000000 action >>= maybe (error $ what <> " did not finish") pure
-
--- | A registration poll at the order's version, once the server holds it.
-held :: Ctx -> NameRegistration -> IO (Async (Int, J.Object))
-held ctx@Ctx {cOrders} NameRegistration {nrId, nrVersion} = do
-  waiting <- atomically $ phasesWaiting (oePhases cOrders)
-  poll <- async $ webGet (cClient ctx) (registrationPath nrId <> "?seenVersion=" <> show nrVersion) >>= \resp -> (statusOf resp,) <$> jsonObject resp
-  within "the hold" $ atomically $ phasesWaiting (oePhases cOrders) >>= check . (> waiting)
-  pure poll
-
-woken :: Async (Int, J.Object) -> IO (Int, J.Object)
-woken poll = timeout 5000000 (wait poll) >>= maybe (cancel poll >> error "the poll was not woken") pure
 
 -- tests
 
@@ -594,12 +577,12 @@ testMoveLanded = withOwner $ \ctx -> do
   void $ sentRegister ctx notLanded 2 TSReverted
   answerOwner ctx "alicebakery" (nrOwner minedOrder)
   forM_ [(minedOrder, Just minedHash), (ownedOrder, Nothing)] $ \(r, hash) -> do
-    poll <- held ctx r
+    poll <- held ctx (0, 1) $ registrationPath (nrId r) <> seenVersion (nrVersion r)
     to <- moveTo ctx "alicebakers" 10
     answer <- move ctx keyA r to
     view <- getView ctx r
     answer `shouldBe` refusedWithView "registration_changed" view
-    woken poll `shouldReturn` (200, view)
+    woken "the registration poll" poll `shouldReturn` (200, view)
     fieldsIn view [("phase", "registered"), ("expiresAt", J.toJSON expiry), ("moves", J.Number 0), ("error", J.Null), ("registerTx", maybe J.Null (J.String . hex) hash)]
     written <- stored ctx r
     (namePhase (nrPhase written), nrVersion written, nrLabelHash written) `shouldBe` (PRegistered, nrVersion r + 1, nrLabelHash r)
@@ -748,7 +731,7 @@ testMoveLostRace = withOwner $ \ctx@Ctx {cNode} -> do
     (moving, gate) <- pausedAt cNode "eth_call" $ move ctx keyA r to
     changed <- rewrite ctx r id
     releaseGate gate
-    answer <- within "the move" $ wait moving
+    answer <- bounded "the move" $ wait moving
     view <- getView ctx changed
     answer `shouldBe` refusedWithView "registration_changed" view
     field "version" view `shouldBe` Just (J.toJSON $ nrVersion r + 1)
@@ -779,11 +762,11 @@ testMovesCross = withOwnerAs (\cfg -> cfg {nMaxOrderMoves = 100}) $ \ctx -> do
     holder <- async $ withLabelTurn (oeTurns $ cOrders ctx) (labelHash high) $ putMVar holding () >> takeMVar release
     takeMVar holding
     let started = if odd n then [lowMove, highMove] else [highMove, lowMove]
-        queuedOnLow k = within "the move's turn" $ atomically $ labelTurnCount (oeTurns $ cOrders ctx) (labelHash low) >>= check . (== k)
+        queuedOnLow k = bounded "the move's turn" $ atomically $ labelTurnCount (oeTurns $ cOrders ctx) (labelHash low) >>= check . (== k)
     moves <- forM (zip [1 ..] started) $ \(k, (r, body)) -> async (postMove ctx (nrId r) body) <* queuedOnLow k
     putMVar release ()
     wait holder
-    outcomes <- within ("round " <> show n) $ mapM wait moves
+    outcomes <- bounded ("round " <> show n) $ mapM wait moves
     map fst outcomes `shouldBe` [200, 200]
     forM_ [a, b] $ \r -> rewrite ctx r failedPhase
   where
@@ -793,8 +776,8 @@ testPollsWoken :: IO ()
 testPollsWoken = withOwner $ \ctx -> do
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
-  poll <- held ctx r
+  poll <- held ctx (0, 1) $ registrationPath (nrId r) <> seenVersion (nrVersion r)
   to <- moveTo ctx "alicebakers" 10
   void $ moved ctx keyA r to
-  (status, v) <- woken poll
+  (status, v) <- woken "the registration poll" poll
   (status, field "version" v, field "phase" v) `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1), Just "queued")

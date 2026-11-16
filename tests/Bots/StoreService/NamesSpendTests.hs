@@ -10,12 +10,13 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates,
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
-import Bots.StoreService.NamesOwnerTests (findBody, postFind, woken)
-import Bots.StoreService.NamesPhasesTests (registrationPath)
+import Bots.StoreService.NamesOwnerTests (findBody, postFind)
+import Bots.StoreService.NamesPhasesTests (registrationPath, seenVersion, woken)
+import qualified Bots.StoreService.NamesPhasesTests as Phases
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
-import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores, withApp)
+import Bots.StoreService.WebTests (StubCall (..), bounded, capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores, withApp)
 import ChatTests.DBUtils (TestParams)
-import Control.Concurrent.Async (Async, async, concurrently, wait)
+import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
 import Control.Monad (forM_, join, replicateM_, void, when)
@@ -50,7 +51,7 @@ import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Balances (RefundRefusal (..), recordRefund)
 import StoreService.Names.Orders (OrdersEnv (..))
-import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), personalDigest, spendMessage)
 import StoreService.Names.Store
 import StoreService.Names.View (addressText, balanceJSON)
@@ -67,7 +68,6 @@ import StoreService.Web.Names.Orders (spendHandler)
 import StoreService.Web.Names.Owner (findHandler)
 import StoreService.Web.Names.Registration (registrationHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
-import System.Timeout (timeout)
 import Test.Hspec
 
 namesSpendTests :: Spec
@@ -230,17 +230,6 @@ invoiceIdOf v = case field "invoiceId" =<< v of
 
 viewOf :: Ctx -> RegistrationId -> IO J.Object
 viewOf Ctx {cClient} rid = webGet cClient (registrationPath rid) >>= jsonObject
-
--- | A registration poll at the order's version, once the server holds it.
-heldPoll :: Ctx -> NameRegistration -> IO (Async (Int, J.Object))
-heldPoll Ctx {cOrders, cClient} NameRegistration {nrId, nrVersion} = do
-  waiting <- atomically $ phasesWaiting (oePhases cOrders)
-  poll <- async $ webGet cClient (registrationPath nrId <> "?seenVersion=" <> show nrVersion) >>= \resp -> (statusOf resp,) <$> jsonObject resp
-  timeout pollSeconds (atomically $ phasesWaiting (oePhases cOrders) >>= check . (> waiting)) >>= maybe (error "the poll was not held") pure
-  pure poll
-
-pollSeconds :: Int
-pollSeconds = 5000000
 
 balanceOf :: Ctx -> RegistrationId -> IO (Maybe Balance)
 balanceOf Ctx {cStore, cClock} rid = readIORef cClock >>= \now -> withTransaction cStore $ \db -> getBalance db rid now
@@ -522,9 +511,9 @@ testOverdueHolderSpent = withSpend $ \ctx@Ctx {cStore, cClock} -> do
   holderRef <- providerRef ctx holderInv
   advance ctx (61 * 60)
   now <- readIORef cClock
-  poll <- heldPoll ctx holder
+  poll <- Phases.held ctx (0, 1) $ registrationPath (nrId holder) <> seenVersion (nrVersion holder)
   rid <- registrationAnswer . snd <$> spend ctx src (timedAt now $ covered 10000)
-  (\(status, v) -> (status, field "version" v)) <$> woken poll `shouldReturn` (200, Just (J.toJSON $ nrVersion holder + 1))
+  (\(status, v) -> (status, field "version" v)) <$> woken "the registration poll" poll `shouldReturn` (200, Just (J.toJSON $ nrVersion holder + 1))
   fmap irStatus <$> getInvoice cStore holderInv `shouldReturn` Just ISExpired
   (\r -> (orderLive r, nrVersion r)) <$> invoiceRegistration ctx holderInv `shouldReturn` (False, nrVersion holder + 1)
   cancels ctx `shouldReturn` [holderRef]
@@ -659,11 +648,10 @@ testSpendTurns = withSpend $ \ctx@Ctx {cOrders} -> do
   takeMVar inside
   spent <- async $ spend ctx src (covered 15000)
   -- the spend waits for the balance's turn while it holds the name's
-  waiting <- timeout pollSeconds $ atomically $ do
+  bounded "the spend's turns" $ atomically $ do
     balanceTurn <- balanceTurnCount turns src
     nameTurn <- labelTurnCount turns (labelHash "alicebakery")
     check (balanceTurn == 2 && nameTurn == 1)
-  waiting `shouldBe` Just ()
   putMVar proceed ()
   wait holding
   fst <$> wait spent `shouldReturn` 200

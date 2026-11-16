@@ -8,7 +8,7 @@ module Bots.StoreService.NamesRecordsTests (namesRecordsTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (minPriceCentsPerYear)
 import Bots.StoreService.NamesStoreTests (t0)
-import Bots.StoreService.WebTests (withServiceStore)
+import Bots.StoreService.WebTests (bounded, withServiceStore)
 import Bots.StoreService.WebUIMock (EphemeralWallet (..), newEphemeralWallet, walletFromCode)
 import Control.Concurrent.Async (Async, async, concurrently, wait)
 import Control.Concurrent.STM
@@ -222,16 +222,13 @@ mineSent s@Setup {node, sender, records} n ok = do
 
 -- | The transactions sent, once the request that sent the n-th has let go of its edit, since until then a round skips the edit.
 sentBy :: Setup -> Int -> IO [ByteString]
-sentBy Setup {node, records} n = within $ do
+sentBy Setup {node, records} n = bounded "the sent transactions" $ do
   raws <- awaitSent node n
   atomically $ readTVar (rsClaimed records) >>= check . S.null
   pure raws
 
 answerOf :: Async EditAnswer -> IO EditAnswer
-answerOf = within . wait
-
-within :: IO a -> IO a
-within action = timeout 5000000 action >>= maybe (fail "timed out") pure
+answerOf = bounded "the edit's answer" . wait
 
 stateOf :: Setup -> EditRequest -> IO (Maybe EditState)
 stateOf Setup {store} req = withTransaction store $ \db -> fmap reState <$> getRecordEditByBody db (bodyHashOf req)
@@ -458,7 +455,7 @@ testConcurrentTwin g = withSetup g $ \s@Setup {node, records} -> do
   _ <- sentBy s 1
   clearFault node "eth_getBlockByNumber"
   h <- mineSent s 1 True
-  within (wait answers) `shouldReturn` (EAApplied (Just h), EAApplied (Just h))
+  bounded "the edits' answers" (wait answers) `shouldReturn` (EAApplied (Just h), EAApplied (Just h))
   length <$> sentTransactions node `shouldReturn` 1
   editRows s `shouldReturn` 1
 
@@ -895,11 +892,11 @@ testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post 
   post (editBody "https://x/a") `shouldReturn` (400, Just $ errorJson "invalid_link", Nothing)
   answer <- async $ post $ editBody viemChannelLink
   TxHash h <- mineSent s 1 True
-  within (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
+  bounded "the edit's answer" (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
   setNonce s 1
   next <- async . post . J.encode . editJson =<< signEdit s (owner s) (channel "https://smp9.simplex.im/c#next") 1 deadline
   _ <- mineSent s 2 False
-  within (wait next) `shouldReturn` (409, Just $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= J.Null], Nothing)
+  bounded "the edit's answer" (wait next) `shouldReturn` (409, Just $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= J.Null], Nothing)
 
 testEditResponses :: IO ()
 testEditResponses =
@@ -925,7 +922,7 @@ testHttpTwoLongLinks g = withSetup g $ \s@Setup {records} -> withRecordsApp reco
   body <- J.encode . editJson <$> ownerTwo s 0 (longLink "https://smp8.simplex.im/a#") (longLink "https://smp8.simplex.im/c#")
   answer <- async $ post body
   TxHash h <- mineSent s 1 True
-  within (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
+  bounded "the edit's answer" (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
 
 -- | Posts a body to the records handler, answering the status, the JSON body and Retry-After.
 withRecordsApp :: Records -> ((LB.ByteString -> IO (Int, Maybe J.Value, Maybe ByteString)) -> IO a) -> IO a
