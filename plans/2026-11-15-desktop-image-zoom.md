@@ -15,12 +15,12 @@ In the desktop actuals of `ImageFullScreenView.desktop.kt`, `zoomable(content)` 
 
 In `zoomable`, the scale and the translation of the shown media are remembered. The handlers are placed before the layer, so their coordinates are view coordinates. The state is read in the layer's block, so the view is redrawn without recomposition on each wheel or pan step.
 
-- The image is zoomed 1.2× per wheel notch at the pointer, from 1× to 20×. Every vertical scroll event is taken as a wheel event, a trackpad's included.
-- On macOS, every scroll delta is divided by 3 in `wheelNotches`, so a trackpad unit is a third of a notch.
-- The zoomed image is panned 1:1 with the pointer by a primary-button drag once the pointer has moved more than 4 dp. The drag is then consumed, so the gallery stays open on its release. The gallery is closed by a click whose pointer moves less than 4 dp, as before. Drags with other buttons are ignored.
-- After each wheel step, drag step and change of the view's size, the translation is clamped per axis by `boundTranslation` to `max(0, (w·fit·s − W) / 2)`, with `fit = min(W/w, H/h)`, for content `w×h`, view `W×H` and scale `s`. In an axis where the zoomed content is larger than the view, the view is covered by it; in an axis where it is smaller, it is centred.
+- The image is zoomed 1.2× per wheel notch at the pointer on Windows and Linux, from 1× to 20×. Every vertical scroll event is taken as a wheel event, a trackpad's included.
+- On macOS, every scroll delta is divided by 3 in `wheelNotches`, a wheel's included: a trackpad unit is a third of a notch, and the image is zoomed 1.2^(1/3), about 1.06×, per wheel click with a delta of 1.
+- The zoomed image is panned 1:1 with the pointer by a primary-button drag once the pointer has moved more than 4 dp. The drag is then consumed, so the gallery stays open on its release, at 1× too. On the base, the gallery was closed on the release of any drag. The gallery is closed by a click whose pointer moves less than 4 dp, as on the base. Drags with other buttons are ignored.
+- After each wheel step, drag step and change of the view's or the content's size, the translation is clamped per axis by `boundTranslation` to `max(0, (w·fit·s − W) / 2)`, with `fit = min(W/w, H/h)`, for content `w×h`, view `W×H` and scale `s`. In an axis where the zoomed content is larger than the view, the view is covered by it; in an axis where it is smaller, it is centred.
 - The zoomed content is clipped to the view, so a zoomed video is kept out of its controls row.
-- The handlers are keyed by the content's size, so a drag is not restarted by a new bitmap of the same size: an animation frame, a VLC frame, or a decode of data read again.
+- The handlers are started once, and the content's size is read from a state that is updated on each composition, so a drag is kept running when a new bitmap of any size is drawn: an animation frame, a VLC frame, or a decode of data read again.
 
 ```mermaid
 flowchart TD
@@ -28,7 +28,7 @@ flowchart TD
     C["onGloballyPositioned, layer at scale 1, detectTransformGestures, fillMaxSize"]
   end
   subgraph Zoomable["Desktop: zoomable(content)"]
-    S[View size change] --> B
+    S[View or content size change] --> B
     D["Primary-button drag past 4 dp: pan 1:1, consumed"] --> B
     W["Scroll: delta ÷ 3 on macOS, then scale × 1.2^-notches, 1..20, at the pointer"] --> B
     B["boundTranslation: content size, view size, scale"] --> L["Clip to the view, then layer: scale, translation"]
@@ -47,19 +47,12 @@ The Android rule is kept as on the base. In a later master item, it is fused wit
 In `ImageFullScreenZoomTest` (desktopTest), the view is rendered in an 800×600 scene, and its pixels are checked after:
 
 - wheel zoom at the pointer, drag pan and wheel back to fit; the view is kept open by a drag at 1× and closed by a click;
-- a drag beyond the horizontal bound, released and repeated: the image is held at the bound, and the view is kept open;
-- a vertical drag at the horizontal bound: the image is moved within the vertical bound;
-- the same after a zoom out at the horizontal bound;
-- a long vertical drag: the zoomed image is kept over the view;
 - two long drags of a letterboxed tall image: the image is kept in the view;
 - a 60 px drag in 6 steps at 4×: the image is moved 60 px, and the view is kept open;
-- the same with a new copy of the data returned by the gallery before each step, so a new bitmap is drawn at each step; with handlers keyed by the bitmap, the drag is lost and the view is closed on its release;
-- a 10 px drag at 10×: the image is moved, and the view is kept open;
+- the same with a new copy of a 2× larger image returned by the gallery before each step, so the content's size is changed at the first step and a new bitmap is drawn at each step; with handlers keyed by the content's size, the drag is lost and the view is closed on its release;
 - a secondary-button drag: nothing is panned;
 - a click with 1 px of pointer jitter at 4×: the view is closed;
 - a narrower view: the zoomed image is kept over its edge;
 - a zoom to 4.3× in a view padded at the bottom: nothing is drawn in the padding.
 
 In the drag helper, a frame is rendered after each move. One data array is returned by the gallery unless a test replaces it.
-
-`wheelNotches`: a macOS delta is divided by 3, and a Windows delta is kept.
