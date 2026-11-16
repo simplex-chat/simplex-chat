@@ -16,7 +16,7 @@ The user's words:
 
 ```mermaid
 flowchart LR
-  CT["core tests<br>nameFixture"] -->|"responses and parses"| F["tests/fixtures/names"]
+  CT["core tests<br>nameFixture"] -->|"responses and parses"| F["tests/fixtures/api/names"]
   F --> KT["NameAlertsTest<br>desktop"]
   F --> IT["NameAlertsTests<br>iOS, hosted by the app"]
   KT -->|"sets"| KH["chatSendCmdRetry<br>chatParseMarkdown"]
@@ -43,7 +43,7 @@ A function of the app that calls the core is a `var`; tests set it to a responde
 
 ## Fixtures
 
-`tests/fixtures/names/<fixture>.json`, written by `nameFixture fixture user name` in tests/ChatTests/Names.hs:
+`tests/fixtures/api/names/<fixture>.json`, written by `nameFixture fixture user name` in tests/ChatTests/Names.hs:
 
 ```
 {
@@ -89,4 +89,4 @@ Known gaps:
 
 - desktop: `:common:desktopTest` in the Kotlin step of build-linux.
 - iOS: the step "Run iOS unit tests" after "Build iOS app".
-- `tests/fixtures/names/**` starts the kotlin and ios scopes.
+- `tests/fixtures/api/**`, the core responses of all app tests, starts the kotlin and ios scopes.

@@ -65,7 +65,7 @@ final class NameAlertsTests: XCTestCase {
 
     @MainActor
     private func assertAlert(_ fixture: String, _ texts: [String], file: StaticString = #filePath, line: UInt = #line) async throws {
-        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../tests/fixtures/names/\(fixture).json")
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../tests/fixtures/api/names/\(fixture).json")
         let recorded = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: [String: Any]])
         let commands = try XCTUnwrap(recorded["commands"])
         let markdown = try XCTUnwrap(recorded["markdown"])

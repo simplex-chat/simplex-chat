@@ -1115,7 +1115,7 @@ nameFixture :: String -> TestCC -> String -> IO ()
 nameFixture fixture TestCC {chatController = cc} name = do
   response <- stableJSON <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))
   markdown <- decodeJSON $ chatParseMarkdown $ B.pack name
-  testGenerate ("tests/fixtures/names/" <> fixture <> ".json") $
+  testGenerate ("tests/fixtures/api/names/" <> fixture <> ".json") $
     prettyJSON $ J.object ["commands" J..= J.object [JK.fromString cmd J..= response], "markdown" J..= J.object [JK.fromString name J..= markdown]]
   where
     cmd = "/_connect plan 1 " <> name

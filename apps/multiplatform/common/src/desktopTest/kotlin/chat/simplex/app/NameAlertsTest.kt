@@ -90,7 +90,7 @@ class NameAlertsTest {
   )
 
   private fun assertAlert(fixture: String, vararg texts: String) = runComposeUiTest {
-    val recorded = Json.parseToJsonElement(File("../../../tests/fixtures/names/$fixture.json").readText()).jsonObject
+    val recorded = Json.parseToJsonElement(File("../../../tests/fixtures/api/names/$fixture.json").readText()).jsonObject
     val commands = recorded.getValue("commands").jsonObject
     val markdown = recorded.getValue("markdown").jsonObject
     chatSendCmdRetry = { _, cmd, _ -> commands[cmd]?.toString() ?: fail("unrecorded command: $cmd") }
