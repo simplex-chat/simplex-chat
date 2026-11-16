@@ -27,24 +27,23 @@ module StoreService.Config
     localChainId,
     isLoopbackHost,
     readServiceConfig,
+    iniSections,
     unknownKeys,
   )
 where
 
 import qualified Control.Exception as E
-import Control.Applicative (many, (<|>))
+import Control.Applicative ((<|>))
 import Control.Logger.Simple (LogLevel (..), logNote, logWarn)
-import Control.Monad (forM, forM_, mfilter, unless, when)
-import Data.Attoparsec.Combinator (lookAhead)
-import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
+import Control.Monad (foldM, forM, forM_, mfilter, unless, when)
+import Data.Attoparsec.Text (char, endOfInput, option, parseOnly, satisfy, skipSpace, skipWhile, takeText, takeWhile1)
 import Data.Bifunctor (first)
 import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit)
-import Data.Ini (Ini, iniGlobals, iniParser, keyValueParser, keys, lookupValue, sectionParser, sections)
-import Data.List (intercalate, nub, (\\))
+import Data.List (intercalate, nub, partition)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -63,7 +62,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Names.Label (LabelError (..), validLabel)
 import StoreService.StoreReceipts (StoreChecks (..))
 import System.IO.Error (ioeGetErrorString)
@@ -373,50 +372,36 @@ readServiceConfig path =
     Left (e :: E.IOException) -> pure (Left (ioeGetErrorString e))
     Right bytes -> either (const $ pure $ Left "is not UTF-8") readText $ decodeUtf8' bytes
   where
-    -- Data.Ini stops at the first unparseable line and keeps what it has, so a missing `=` silently drops every section below.
-    readText text = case parseOnly ((,) <$> lookAhead (many keyValueParser *> many sectionParser) <*> iniParser <* trailingNoise <* endOfInput) text of
-      Left _ -> pure (Left "could not be read as an ini file: a line is malformed")
-      Right (written, ini) -> case colonSetting text <|> repeatedSetting written of
-        Just e -> pure (Left e)
-        Nothing -> do
-          mapM_ (\k -> logWarn (T.pack path <> ": nothing reads " <> k <> ", so it was ignored")) (filter (not . salesKey) $ unknownKeys ini)
-          let cfg = parseConfig ini
-          forM_ (either (const Nothing) names cfg) $ \NamesConfig {nCommunity} ->
-            logNote ("names: " <> tshow (M.size nCommunity) <> " community names loaded")
-          pure cfg
+    readText text = case iniSections text of
+      Left e -> pure (Left e)
+      Right written -> do
+        let (sales, ignored) = partition salesKey (unknownKeys written)
+            cfg
+              | null sales = parseConfig $ M.fromList $ map (fmap M.fromList) written
+              | otherwise = Left ("nothing reads " <> T.unpack (T.intercalate ", " sales) <> ", and a mistyped [names] or [chain] setting would change what is sold: correct or remove it")
+        mapM_ (\k -> logWarn (T.pack path <> ": nothing reads " <> k <> ", so it was ignored")) ignored
+        forM_ (eitherToMaybe cfg >>= names) $ \NamesConfig {nCommunity} ->
+          logNote ("names: " <> tshow (M.size nCommunity) <> " community names loaded")
+        pure cfg
 
--- | Data.Ini also reads `key: value`, but drops the first character after the colon, so `key:value` loses one.
--- Its key ends at the first `=` or `:`, so a line whose first of them is a colon is such a setting.
-colonSetting :: Text -> Maybe String
-colonSetting = go Nothing . map T.stripStart . T.lines
+iniSections :: Text -> Either String [(Text, [(Text, Text)])]
+iniSections text = written <$> foldM addLine (("", []), []) (zip [1 :: Int ..] (T.lines text))
   where
-    go _ [] = Nothing
-    go section (line : rest) = case T.uncons line of
-      Just ('[', name) -> go (Just $ T.takeWhile (/= ']') name) rest
-      Just (c, _)
-        | c /= ';' && c /= '#',
-          (key, delimited) <- T.break (`elem` [':', '=']) line,
-          ":" `T.isPrefixOf` delimited ->
-            Just (maybe "" ((<> ".") . T.unpack) section <> T.unpack (T.strip key) <> " is written as `key: value`, which the parser misreads; write `key = value`")
-      _ -> go section rest
-
--- | Data.Ini keeps only the last section of a name and the first value of a key in a section,
--- so the sections are read in order to refuse a repeated one.
-repeatedSetting :: [(Text, [(Text, Text)])] -> Maybe String
-repeatedSetting written = case repeated (map fst written) of
-  h : _ -> Just ("[" <> T.unpack h <> "] is written twice, and only the last of them would be read")
-  [] -> case [(s, k) | (s, kvs) <- written, k <- repeated (map fst kvs)] of
-    (s, k) : _ -> Just (T.unpack s <> "." <> T.unpack k <> " is written twice, and only the first of them would be read")
-    [] -> Nothing
-
-repeated :: Eq a => [a] -> [a]
-repeated xs = nub (xs \\ nub xs)
-
--- | iniParser stops before a trailing comment, so endOfInput alone would reject a valid file.
-trailingNoise :: Parser ()
-trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
-  where
-    comment = satisfy (\c -> c == ';' || c == '#') *> skipWhile (not . isEndOfLine)
+    written (current, earlier) = reverse $ map (fmap reverse) (current : earlier)
+    addLine (current@(section, settings), earlier) (n, line)
+      | Right () <- parseOnly lineEndP line = Right (current, earlier)
+      | Right name <- parseOnly headerP line =
+          if name `elem` map fst (current : earlier)
+            then Left ("[" <> T.unpack name <> "] is written twice")
+            else Right ((name, []), current : earlier)
+      | Right (key, value) <- parseOnly settingP line =
+          if key `elem` map fst settings
+            then Left (T.unpack (if T.null section then key else section <> "." <> key) <> " is written twice")
+            else Right ((section, (key, value) : settings), earlier)
+      | otherwise = Left ("line " <> show n <> " is malformed: write a [section] header, a key = value setting or a ; comment")
+    headerP = skipSpace *> char '[' *> mfilter (not . T.null) (T.strip <$> takeWhile1 (\c -> c /= '[' && c /= ']')) <* char ']' <* lineEndP
+    settingP = (,) <$> (skipSpace *> (T.strip <$> takeWhile1 (\c -> c /= '=' && c /= ':'))) <* char '=' <*> (T.strip <$> takeText)
+    lineEndP = skipSpace <* option () (satisfy (\c -> c == ';' || c == '#') *> skipWhile (const True)) <* endOfInput
 
 knownSettings :: [(Text, [Text])]
 knownSettings =
@@ -439,27 +424,25 @@ knownSettings =
 salesKey :: Text -> Bool
 salesKey k = any (`T.isPrefixOf` k) ["names.", "chain."]
 
-unknownKeys :: Ini -> [Text]
-unknownKeys ini = beforeAnySection <> unknownSections <> settings
+unknownKeys :: [(Text, [(Text, Text)])] -> [Text]
+unknownKeys written = beforeAnySection <> unknownSections <> settings
   where
-    beforeAnySection = [k <> ", written above the first section header" | (k, _) <- iniGlobals ini]
+    beforeAnySection = [k <> ", written above the first section header" | ("", kvs) <- written, (k, _) <- kvs]
     -- [community] keys are labels, which parseConfig checks.
-    unknownSections = ["[" <> s <> "]" | s <- sections ini, T.strip s `notElem` ("community" : map fst knownSettings)]
+    unknownSections = ["[" <> s <> "]" | (s, _) <- written, not (T.null s), s `notElem` ("community" : map fst knownSettings)]
     settings =
       [ section <> "." <> key
         | (section, known) <- knownSettings,
-          key <- either (const []) id (keys section ini),
-          T.strip key `notElem` known
+          Just kvs <- [lookup section written],
+          (key, _) <- kvs,
+          key `notElem` known
       ]
 
-parseConfig :: Ini -> Either String ServiceConfig
+parseConfig :: Map Text (Map Text Text) -> Either String ServiceConfig
 parseConfig ini = do
   case [e | (k, e) <- retiredListenerKeys, isJust (look "listener" k)] of
     [] -> pure ()
     es -> Left (intercalate "; " es)
-  case filter salesKey (unknownKeys ini) of
-    [] -> pure ()
-    ks -> Left ("nothing reads " <> T.unpack (T.intercalate ", " ks) <> ", and a mistyped [names] or [chain] setting would change what is sold: correct or remove it")
   lHost <- optional "listener" "host" "127.0.0.1"
   lBadgesPort <- listenerPort "badges_port" defaultBadgesPort
   serveWebapp <- bool "listener" "serve_webapp" True
@@ -526,8 +509,8 @@ parseConfig ini = do
         devCreditTestPurchases
       }
   where
-    hasSection s = s `elem` sections ini
-    look s k = either (const Nothing) Just (lookupValue s k ini)
+    hasSection s = M.member s ini
+    look s k = M.lookup s ini >>= M.lookup k
     present s k = mfilter (not . T.null) (T.strip <$> look s k)
     required s k = maybe (Left (T.unpack s <> "." <> T.unpack k <> " is required")) Right (present s k)
     optional s k d = Right (fromMaybe d (present s k))
@@ -700,7 +683,7 @@ parseConfig ini = do
     termStart =
       maybe (Left ("names.term_start must be an ISO 8601 UTC time such as " <> defaultTermStart)) Right $
         iso8601ParseM (maybe defaultTermStart T.unpack (present "names" "term_start"))
-    communityList tld = M.fromList <$> mapM (communityEntry tld) (either (const []) id (keys "community" ini))
+    communityList tld = M.fromList <$> mapM (communityEntry tld) (maybe [] M.keys (M.lookup "community" ini))
     communityEntry tld label = do
       let k = "community." <> T.unpack label
           text = fromMaybe "" (look "community" label)

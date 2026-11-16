@@ -12,7 +12,6 @@ import Control.Monad (forM_)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft, isRight)
-import Data.Ini (readIniFile)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -57,7 +56,7 @@ badgeConfigTests = describe "store service config" $ do
   it "refuses a file one malformed line would silently truncate" testMalformedLineRefused
   it "reads the file as UTF-8 whatever the locale, and refuses one that is not UTF-8" testUtf8File
   it "accepts a comment or blank line after the last setting" testTrailingCommentIsAccepted
-  it "refuses a setting written as key: value, naming it and quoting no value" testColonSettingRefused
+  it "refuses a setting written as key: value, naming its line and quoting no value" testColonSettingRefused
   it "reports a missing file rather than throwing" testMissingFileIsReported
   it "has no issuer key when the section is absent" testIssuerAbsent
   it "reads the index and the private key it signs with" testIssuerKey
@@ -170,9 +169,7 @@ testRetiredListenerKeys = do
     refused (k <> " = /srv/export") ("listener." <> T.unpack k <> " is removed: the service writes no site, as the pages read their settings from /api/config; serve the build as it is")
   refused "names_hosts = simplex.domains" "listener.names_hosts is replaced by listener.names_port: serve the names site on its own port"
   refusedAll ["port = 8080", "static_dir = /srv/badges"] "listener.port is now listener.badges_port; listener.static_dir is now listener.badges_static_dir"
-  withIni (withListenerKeys ["static_dir = /srv/badges", "webapp_export_dir = /srv/badges-export", "names_hosts = simplex.domains", "port = 8080"]) $ \p -> do
-    Right ini <- readIniFile p
-    unknownKeys ini `shouldBe` []
+  unknownIn (withListenerKeys ["static_dir = /srv/badges", "webapp_export_dir = /srv/badges-export", "names_hosts = simplex.domains", "port = 8080"]) `shouldBe` []
   where
     refused key = refusedAll [key]
     refusedAll keys e = parseIni (withListenerKeys keys) >>= (`shouldBe` e) . either id (const "parsed")
@@ -306,19 +303,15 @@ testExpiryMinutes = do
     withExpiry key act = withIni (fullIni <> key) $ \p -> readServiceConfig p >>= act
 
 testUnknownKeysAreNamed :: IO ()
-testUnknownKeysAreNamed =
-  withIni (fullIni <> "speed_polcy = LowSpeed\ntrust_forwaded_for = on\n[poll]\nwaiting_secnds = 5\n[stripe]\nsecret_ky = rk_test_x\n") $ \p -> do
-    Right ini <- readIniFile p
-    unknownKeys ini `shouldMatchList` ["btcpay.speed_polcy", "btcpay.trust_forwaded_for", "poll.waiting_secnds", "stripe.secret_ky"]
-    withIni (T.replace "[btcpay]" "[btcpai]" fullIni) $ \wrongSection -> do
-      Right sectionIni <- readIniFile wrongSection
-      unknownKeys sectionIni `shouldContain` ["[btcpai]"]
-    withIni ("badges_static_dir = /srv/badges\n" <> fullIni) $ \stray -> do
-      Right strayIni <- readIniFile stray
-      unknownKeys strayIni `shouldContain` ["badges_static_dir, written above the first section header"]
-    withIni fullIni $ \clean -> do
-      Right cleanIni <- readIniFile clean
-      unknownKeys cleanIni `shouldBe` []
+testUnknownKeysAreNamed = do
+  unknownIn (fullIni <> "speed_polcy = LowSpeed\ntrust_forwaded_for = on\n[poll]\nwaiting_secnds = 5\n[stripe]\nsecret_ky = rk_test_x\n")
+    `shouldMatchList` ["btcpay.speed_polcy", "btcpay.trust_forwaded_for", "poll.waiting_secnds", "stripe.secret_ky"]
+  unknownIn (T.replace "[btcpay]" "[btcpai]" fullIni) `shouldContain` ["[btcpai]"]
+  unknownIn ("badges_static_dir = /srv/badges\n" <> fullIni) `shouldContain` ["badges_static_dir, written above the first section header"]
+  unknownIn fullIni `shouldBe` []
+
+unknownIn :: T.Text -> [T.Text]
+unknownIn = either error unknownKeys . iniSections
 
 testUnknownSectionStillBoots :: IO ()
 testUnknownSectionStillBoots =
@@ -326,8 +319,6 @@ testUnknownSectionStillBoots =
     Right cfg -> lBadgesSite (listener cfg) `shouldBe` Just "/srv/badges"
     Left e -> expectationFailure ("a section nothing reads must be ignored, not refused: " <> e)
 
--- | The ini parser stops at the first line it cannot read and keeps what it has, so without this a
--- missing `=` in [listener] would silently drop every section below it, and the provider with it.
 testMalformedLineRefused :: IO ()
 testMalformedLineRefused =
   withIni (withListenerKeys ["trust_forwarded_for on"]) $ \p ->
@@ -337,17 +328,18 @@ testMalformedLineRefused =
 
 testColonSettingRefused :: IO ()
 testColonSettingRefused = do
-  parseIni (fullIni <> "[poll]\nwaiting_seconds:5\n") `shouldReturn` Left "poll.waiting_seconds is written as `key: value`, which the parser misreads; write `key = value`"
+  parseIni (fullIni <> "[poll]\nwaiting_seconds:5\n") `shouldReturn` Left (malformedLine 11)
   Left e <- parseIni (T.replace "api_key = token-value" "api_key: token-value" fullIni)
-  e `shouldBe` "btcpay.api_key is written as `key: value`, which the parser misreads; write `key = value`"
+  e `shouldBe` malformedLine 7
   e `shouldNotContain` "token-value"
   -- a colon in a value, or in a comment, is no such setting
   Right _ <- parseIni (fullIni <> "[poll]\n; waiting_seconds: 5\nidle_seconds = 60 \n")
   Right ServiceConfig {btcpay = Just BTCPayConfig {bHost}} <- parseIni fullIni
   bHost `shouldBe` "https://btcpay.example.org"
 
--- | The strictness that refuses a truncated file must not refuse a trailing comment or blank line,
--- since `iniParser` stops before one and commenting out the last section is enough to produce it.
+malformedLine :: Int -> String
+malformedLine n = "line " <> show n <> " is malformed: write a [section] header, a key = value setting or a ; comment"
+
 testTrailingCommentIsAccepted :: IO ()
 testTrailingCommentIsAccepted = do
   accepts (fullIni <> "; rotated the api key on 2026-09-01\n")
@@ -440,9 +432,7 @@ testIssuerBadSecret =
 testIssuerOldFormat :: IO ()
 testIssuerOldFormat = do
   let old = ["default = key_1", "key_1 = " <> issuerSecret]
-  withIssuer old $ \p -> do
-    Right ini <- readIniFile p
-    unknownKeys ini `shouldMatchList` ["issuer.default", "issuer.key_1"]
+  unknownIn (fullIni <> T.unlines ("[issuer]" : old)) `shouldMatchList` ["issuer.default", "issuer.key_1"]
   issuerRefusal old `shouldReturn` "issuer.index is required"
 
 testDevUnverifiedReceiptsAbsent :: IO ()
@@ -947,10 +937,8 @@ testNamesSecretsHidden = do
 
 testNamesUnknownKeys :: IO ()
 testNamesUnknownKeys = do
-  let t = namesIni (namesSection <> ["yeers = 3", "terms_version = 2026-10-23"]) (chainSection <> ["rpc = x"])
-  withIni t $ \p -> do
-    Right ini <- readIniFile p
-    unknownKeys ini `shouldMatchList` ["names.yeers", "names.terms_version", "chain.rpc"]
+  unknownIn (namesIni (namesSection <> ["yeers = 3", "terms_version = 2026-10-23"]) (chainSection <> ["rpc = x"]))
+    `shouldMatchList` ["names.yeers", "names.terms_version", "chain.rpc"]
   namesRefusal (namesSection <> ["yeers = 3", "terms_version = 2026-10-23"]) (chainSection <> ["rpc = x"])
     `shouldReturn` "nothing reads names.yeers, names.terms_version, chain.rpc, and a mistyped [names] or [chain] setting would change what is sold: correct or remove it"
   namesRefusal (namesSection <> ["code_only = on"]) chainSection
@@ -962,9 +950,7 @@ testNamesCodesOnly = do
   absent `shouldBe` False
   forM_ [("on", True), ("off", False)] $ \(value, expected) -> do
     let ns = namesSection <> ["codes_only = " <> value]
-    withIni (namesIni ns chainSection) $ \p -> do
-      Right ini <- readIniFile p
-      unknownKeys ini `shouldBe` []
+    unknownIn (namesIni ns chainSection) `shouldBe` []
     NamesConfig {nCodesOnly} <- parsedNames ns chainSection
     (value, nCodesOnly) `shouldBe` (value, expected)
   namesRefusal (namesSection <> ["codes_only = yes"]) chainSection `shouldReturn` "codes_only must be on or off, not yes"
@@ -975,9 +961,7 @@ testNamesRecordEdits = do
   absent `shouldBe` 3
   forM_ [1, 100] $ \n -> do
     let ns = namesSection <> ["record_edits_per_year = " <> T.pack (show n)]
-    withIni (namesIni ns chainSection) $ \p -> do
-      Right ini <- readIniFile p
-      unknownKeys ini `shouldBe` []
+    unknownIn (namesIni ns chainSection) `shouldBe` []
     NamesConfig {nRecordEditsPerYear} <- parsedNames ns chainSection
     (n, nRecordEditsPerYear) `shouldBe` (n, n)
   forM_ ["0", "101", "-3"] $ \v ->
@@ -990,9 +974,7 @@ testNamesPriceFloor = do
   absent `shouldBe` 5000
   forM_ [1, 7500] $ \n -> do
     let ns = namesSection <> ["min_price_cents_per_year = " <> T.pack (show n)]
-    withIni (namesIni ns chainSection) $ \p -> do
-      Right ini <- readIniFile p
-      unknownKeys ini `shouldBe` []
+    unknownIn (namesIni ns chainSection) `shouldBe` []
     NamesConfig {nMinPriceCentsPerYear} <- parsedNames ns chainSection
     (n, nMinPriceCentsPerYear) `shouldBe` (n, n)
   forM_ ["0", "-5000"] $ \v ->

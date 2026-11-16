@@ -153,9 +153,9 @@ answer. `[chain] confirmations` (default 3) is how deep a
 transaction's receipt must be before the service settles it and reads the chain's state, counting
 the receipt's own block, so it must be at least 1. An optional `[community]` section gives what each
 community name is for (see [Terms and community names](#terms-and-community-names)). Write every setting as
-`key = value`. A `key: value` line, which the parser would read with the first character of its
-value dropped, a key written twice in one section, a section header written twice, or a `[names]` or
-`[chain]` setting nothing reads, stops the service at startup.
+`key = value`. A line other than a `[section]` header, a setting, a `;` or `#` comment or a blank
+line, `key: value` among them, a key written twice in one section, a section header written twice,
+or a `[names]` or `[chain]` setting nothing reads, stops the service at startup.
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 
@@ -1055,8 +1055,8 @@ without a text, and the service warns at startup, when it reads the policy, for 
 name the policy does not list, which is sold as a plain name. Each label must be a valid name in lower case and listed once; each text is
 1 to 200 characters with no control, format or line separator characters, and should not end with a
 full stop, since the page adds one. The service refuses to start, naming the setting, on any other
-entry, on `[community]` without `[names]`, on a key written twice in a section (only the first would
-be read) and on a section header written twice in the file (only the last would be read). It logs
+entry, on `[community]` without `[names]`, on a key written twice in a section and on a section
+header written twice in the file. It logs
 how many community names it loaded.
 
 The `[community]` texts are read only at startup, so an edit applies after a restart; the policy's
