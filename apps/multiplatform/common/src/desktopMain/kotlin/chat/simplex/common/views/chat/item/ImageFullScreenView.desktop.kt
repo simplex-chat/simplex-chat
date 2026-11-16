@@ -95,28 +95,33 @@ private fun BoxScope.Controls(player: VideoPlayer) {
 private fun Modifier.zoomable(content: ImageBitmap): Modifier {
   var scale by remember { mutableStateOf(1f) }
   var translation by remember { mutableStateOf(Offset.Zero) }
-  val contentSize = IntSize(content.width, content.height)
-  fun panBy(delta: Offset, view: IntSize) {
-    translation = boundTranslation(translation + delta, view, contentSize, scale)
+  var viewSize by remember { mutableStateOf(IntSize.Zero) }
+  val contentSize by rememberUpdatedState(IntSize(content.width, content.height))
+  fun panBy(delta: Offset) {
+    translation = boundTranslation(translation + delta, viewSize, contentSize, scale)
   }
+  LaunchedEffect(contentSize) { panBy(Offset.Zero) }
   return this
-    .onSizeChanged { panBy(Offset.Zero, it) }
-    .pointerInput(contentSize) {
-      detectDragPastThreshold { pan -> panBy(pan, size) }
+    .onSizeChanged {
+      viewSize = it
+      panBy(Offset.Zero)
     }
-    .pointerInput(contentSize) {
+    .pointerInput(Unit) {
+      detectDragPastThreshold { pan -> panBy(pan) }
+    }
+    .pointerInput(Unit) {
       awaitPointerEventScope {
         while (true) {
           val event = awaitPointerEvent()
           if (event.type != PointerEventType.Scroll) continue
           val change = event.changes.first()
           if (change.scrollDelta.y == 0f) continue
-          val notches = wheelNotches(change.scrollDelta.y, desktopPlatform)
+          val notches = wheelNotches(change.scrollDelta.y)
           val zoomed = (scale * WHEEL_ZOOM_STEP.pow(-notches)).coerceIn(1f, 20f)
           val pointer = change.position - Offset(size.width / 2f, size.height / 2f) - translation
           val shift = pointer * (1 - zoomed / scale)
           scale = zoomed
-          panBy(shift, size)
+          panBy(shift)
           change.consume()
         }
       }
@@ -153,5 +158,5 @@ private suspend fun PointerInputScope.detectDragPastThreshold(onDrag: (Offset) -
   } while (change.pressed)
 }
 
-internal fun wheelNotches(scrollDelta: Float, platform: DesktopPlatform): Float =
-  if (platform.isMac()) scrollDelta / MAC_SCROLL_UNITS_PER_NOTCH else scrollDelta
+private fun wheelNotches(scrollDelta: Float): Float =
+  if (desktopPlatform.isMac()) scrollDelta / MAC_SCROLL_UNITS_PER_NOTCH else scrollDelta

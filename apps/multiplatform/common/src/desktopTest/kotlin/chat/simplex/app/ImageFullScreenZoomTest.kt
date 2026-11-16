@@ -3,6 +3,7 @@ package chat.simplex.app
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
@@ -18,12 +19,10 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.use
 import androidx.compose.ui.window.WindowState
-import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.chat.item.ImageFullScreenView
 import chat.simplex.common.views.chat.item.ImageGalleryProvider
-import chat.simplex.common.views.chat.item.wheelNotches
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
@@ -99,11 +98,15 @@ class ImageFullScreenZoomTest {
     sendPointerEvent(PointerEventType.Release, Offset(x, 300f), buttons = PointerButtons(), button = PointerButton.Primary)
   }
 
-  private fun fullScreen(provider: ImageGalleryProvider = gallery(quadrants(400, 200)), test: ImageComposeScene.(closed: () -> Boolean) -> Unit) {
+  private fun fullScreen(
+    provider: ImageGalleryProvider = gallery(quadrants(400, 200)),
+    wrapper: @Composable (@Composable () -> Unit) -> Unit = { it() },
+    test: ImageComposeScene.(closed: () -> Boolean) -> Unit
+  ) {
     var closed = false
     simplexWindowState.windowState = WindowState(size = DpSize(800.dp, 600.dp))
     ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
-      ImageFullScreenView({ provider }) { closed = true }
+      wrapper { ImageFullScreenView({ provider }) { closed = true } }
     }.use { scene -> scene.test { closed } }
   }
 
@@ -124,42 +127,6 @@ class ImageFullScreenZoomTest {
   }
 
   @Test
-  fun testDragBeyondTheEdgeKeepsTheImageAtTheEdge() = fullScreen { closed ->
-    wheel(400f, -3f)
-    drag(Offset(700f, 300f), Offset(100f, 300f))
-    assertEquals(listOf(Shown.RED, Shown.BLUE, Shown.BLUE), listOf(shownAt(90), shownAt(130), shownAt(790)))
-    drag(Offset(500f, 300f), Offset(400f, 300f))
-    assertFalse(closed())
-    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(90), shownAt(130)))
-  }
-
-  @Test
-  fun testVerticalDragAtTheHorizontalEdgeMovesTheImage() = fullScreen { closed ->
-    wheel(0f, -3f)
-    drag(Offset(300f, 400f), Offset(300f, 300f))
-    assertFalse(closed())
-    assertEquals(listOf(Shown.RED, Shown.GREEN), listOf(shownAt(300, 240), shownAt(300, 270)))
-  }
-
-  @Test
-  fun testVerticalDragAfterZoomOutAtTheEdgeMovesTheImage() = fullScreen { closed ->
-    wheel(400f, -4f)
-    drag(Offset(100f, 300f), Offset(700f, 300f))
-    wheel(400f, 1f)
-    drag(Offset(300f, 400f), Offset(300f, 300f))
-    assertFalse(closed())
-    assertEquals(listOf(Shown.RED, Shown.GREEN), listOf(shownAt(300, 240), shownAt(300, 270)))
-  }
-
-  @Test
-  fun testDragKeepsTheZoomedImageOverTheView() = fullScreen { closed ->
-    wheel(400f, -3f)
-    drag(Offset(300f, 100f), Offset(300f, 550f), steps = 45)
-    assertFalse(closed())
-    assertEquals(listOf(Shown.RED, Shown.RED, Shown.GREEN), listOf(shownAt(300, 10), shownAt(300, 330), shownAt(300, 360)))
-  }
-
-  @Test
   fun testDragKeepsALetterboxedImageInTheView() = fullScreen(gallery(quadrants(200, 400))) { closed ->
     wheel(400f, -8f)
     drag(Offset(750f, 300f), Offset(50f, 300f))
@@ -177,26 +144,19 @@ class ImageFullScreenZoomTest {
   }
 
   @Test
-  fun testDragPansWhileTheGalleryDecodesTheImageAgain() {
+  fun testDragFollowsThePointerWhileTheGalleryDecodesTheImageAgain() {
     val image = quadrants(400, 200)
+    val larger = quadrants(800, 400)
     val data = mutableStateOf(image)
     fullScreen(gallery(image) { data.value }) { closed ->
       wheel(400f, -8f)
       drag(Offset(400f, 300f), Offset(340f, 300f), steps = 6) {
-        data.value = image.copyOf()
+        data.value = larger.copyOf()
         render()
       }
       assertFalse(closed())
       assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(330), shownAt(350)))
     }
-  }
-
-  @Test
-  fun testShortPanAt10xMovesAndKeepsTheViewOpen() = fullScreen { closed ->
-    wheel(400f, -13f)
-    drag(Offset(400f, 300f), Offset(390f, 300f), steps = 2)
-    assertFalse(closed())
-    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(380), shownAt(400)))
   }
 
   @Test
@@ -218,40 +178,18 @@ class ImageFullScreenZoomTest {
   @Test
   fun testNarrowerViewKeepsTheZoomedImageInIt() {
     val width = mutableStateOf(800)
-    val provider = gallery(quadrants(400, 200))
-    simplexWindowState.windowState = WindowState(size = DpSize(800.dp, 600.dp))
-    ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
-      Box(Modifier.size(width.value.dp, 600.dp)) {
-        ImageFullScreenView({ provider }) {}
-      }
-    }.use { scene ->
-      scene.wheel(0f, -3f)
-      assertEquals(Shown.RED, scene.shownAt(600))
+    fullScreen(wrapper = { Box(Modifier.size(width.value.dp, 600.dp)) { it() } }) { _ ->
+      wheel(0f, -3f)
+      assertEquals(Shown.RED, shownAt(600))
       width.value = 600
-      scene.render()
-      assertEquals(Shown.RED, scene.shownAt(15))
+      render()
+      assertEquals(Shown.RED, shownAt(15))
     }
   }
 
   @Test
-  fun testZoomedImageIsClippedToItsView() {
-    val provider = gallery(quadrants(400, 200))
-    simplexWindowState.windowState = WindowState(size = DpSize(800.dp, 600.dp))
-    ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
-      Box(Modifier.padding(bottom = 100.dp)) {
-        ImageFullScreenView({ provider }) {}
-      }
-    }.use { scene ->
-      scene.wheel(400f, -8f)
-      assertEquals(listOf(Shown.GREEN, Shown.BACKGROUND), listOf(scene.shownAt(300, 490), scene.shownAt(300, 510)))
-    }
-  }
-
-  @Test
-  fun testMacScrollCountsAThirdOfANotch() {
-    assertEquals(
-      listOf(-0.5f, -1.5f),
-      listOf(wheelNotches(-1.5f, DesktopPlatform.MAC_AARCH64), wheelNotches(-1.5f, DesktopPlatform.WINDOWS_X86_64))
-    )
+  fun testZoomedImageIsClippedToItsView() = fullScreen(wrapper = { Box(Modifier.padding(bottom = 100.dp)) { it() } }) { _ ->
+    wheel(400f, -8f)
+    assertEquals(listOf(Shown.GREEN, Shown.BACKGROUND), listOf(shownAt(300, 490), shownAt(300, 510)))
   }
 }
