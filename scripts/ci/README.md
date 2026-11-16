@@ -54,7 +54,7 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   - PostgreSQL 15 in Docker, with trust authentication and `max_connections=3000`, and postgresql-client-15 for pg_dump;
   - the selected tests with `PGHOST=localhost`, each attempt limited to 60 minutes; `ALLOW_EMPTY=true` omits `--fail-on=empty`, so a selection of SQLite-only tests runs nothing here;
   - step "Check generated files", artifact `generated-files-postgres`.
-- Query plans: the test "verify and overwrite query plans" runs on Linux only. It explains the queries recorded in the run and the queries of the saved files (src/Simplex/Chat/Store/SQLite/Migrations/*_query_plans.txt), and fails when a recorded query is missing from a file or a plan changed. Saved queries that the run did not record are kept, except those whose plan became an error. Queries that run only on retries or other timing-dependent paths are added by the first run that records them.
+- Query plans: the test "verify and overwrite query plans" runs on Linux only. It explains the queries recorded in the run and the queries of the saved files (src/Simplex/Chat/Store/SQLite/Migrations/*_query_plans.txt), and fails when a recorded query is missing from a file or a plan changed. Saved queries that the run did not record are kept, except those whose plan became an error. Queries that run only on retries or other timing-dependent paths are added by the first run that records them. A file is rewritten only when an entry is added, removed or changed; repeated entries of one query, which a merge can leave, are not a change.
 - Local:
   ```sh
   cp scripts/cabal.project.local.linux cabal.project.local

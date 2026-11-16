@@ -164,7 +164,7 @@ getLintFKeyIndexes dbPath lintPath = do
 
 saveQueryPlans :: SpecWith TestParams
 saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryStats, agentQueryStats} -> do
-  (chatSavedPlans, chatSavedPlans') <-
+  chatPlansUnchanged <-
     updatePlans
       appChatQueryPlans
       chatQueryStats
@@ -173,32 +173,29 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
         DB.execute_ db "CREATE TABLE IF NOT EXISTS temp_conn_ids (conn_id BLOB)"
         DB.execute_ db "CREATE TABLE IF NOT EXISTS temp_delete_members (contact_profile_id INTEGER, member_profile_id INTEGER, local_display_name TEXT)"
       )
-  (agentSavedPlans, agentSavedPlans') <-
+  agentPlansUnchanged <-
     updatePlans
       appAgentQueryPlans
       agentQueryStats
       (createAgentStore (DBOpts testAgentDB [] "" False True TQOff) (MigrationConfig MCError Nothing))
       (const $ pure ())
-  chatSavedPlans' == chatSavedPlans `shouldBe` True
-  agentSavedPlans' == agentSavedPlans `shouldBe` True
+  chatPlansUnchanged `shouldBe` True
+  agentPlansUnchanged `shouldBe` True
   removeFile testDB
   removeFile testAgentDB
   where
     updatePlans plansFile statsSel createStore prepareStore = do
-      savedPlans <- ifM (doesFileExist plansFile) (T.readFile plansFile) (pure "")
-      savedPlans `deepseq` pure ()
+      savedPlans <- savedEntries <$> ifM (doesFileExist plansFile) (T.readFile plansFile) (pure "")
       recorded <- readTVarIO statsSel
       Right st <- createStore
       plans' <- withConnection st $ \db -> do
         void $ prepareStore db
-        M.traverseMaybeWithKey (getQueryPlan db) $ M.union (True <$ recorded) (savedQueries savedPlans)
-      let savedPlans' = T.unlines $ M.elems plans'
-      T.writeFile plansFile savedPlans'
-      pure (savedPlans, savedPlans')
-    savedQueries = M.fromList . map savedQuery . drop 1 . T.splitOn "\nQuery: " . ("\n" <>)
-    savedQuery entry = case T.breakOn "\nError: " entry of
-      (_, "") -> (Query $ fst $ T.breakOn "\nPlan:\n" entry, False)
-      (q, _) -> (Query q, True)
+        M.traverseMaybeWithKey (getQueryPlan db) $ M.union (True <$ recorded) (("\nError: " `T.isInfixOf`) <$> savedPlans)
+      let unchanged = plans' == savedPlans
+      unless unchanged $ T.writeFile plansFile $ T.unlines $ M.elems plans'
+      pure unchanged
+    savedEntries = M.fromList . map savedEntry . drop 1 . T.splitOn "\nQuery: " . ("\n" <>) . T.dropEnd 1
+    savedEntry entry = (Query $ fst $ T.breakOn "\nPlan:\n" $ fst $ T.breakOn "\nError: " entry, "Query: " <> entry)
     getQueryPlan :: DB.Connection -> Query -> Bool -> IO (Maybe Text)
     getQueryPlan db q keepError =
       fmap (("Query: " <> fromQuery q) <>) . result keepError <$> E.try (DB.query_ db $ "explain query plan " <> q)
