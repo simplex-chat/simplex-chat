@@ -84,25 +84,20 @@ sendAnswer respond Answer {aResponse, aAfter} = aAfter >> respond aResponse
 
 -- | POST /api/invoice for a name, its body already read and its kind checked.
 nameInvoiceHandler :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
-nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} http client cfg providers waiters body respond
+nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns} http client cfg providers waiters body respond
   | nCodesOnly (oeConfig env) = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = sendAnswer respond =<< case parseInvoiceOrder body of
     Left refusal -> refuse refusal
     Right order@InvoiceOrder {ioRequest = req@OrderRequest {orOwner, orFields}, ioMethod, ioPrice} ->
       checkOrderSigner req >>= \case
         Left refusal -> refuse refusal
-        Right () -> withLabelTurn oeTurns (ofLabelHash orFields) $ do
-          now <- oeNow
-          let hash = orderHash orOwner orFields (OTInvoice ioMethod $ fromIntegral ioPrice)
-          withTransaction oeStore (\db -> existingOrder db req hash now) >>= \case
-            EOResent r -> resentOrder env cfg what now r
-            EOMeets -> refuse OROrderExists
-            EONew -> newOrder order
+        Right () ->
+          withLabelTurn oeTurns (ofLabelHash orFields) $
+            answerOrder env what req (orderHash orOwner orFields (OTInvoice ioMethod $ fromIntegral ioPrice)) (resentOrder env cfg what) (newOrder order)
   where
     what = "POST /api/invoice (name)"
     refuse = refused what
-    newOrder InvoiceOrder {ioRequest = req@OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
-      now <- oeNow
+    newOrder InvoiceOrder {ioRequest = req@OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} now = do
       let years = orderYears fields $ nYears $ oeConfig env
           price = fromIntegral ioPrice
           checks =
@@ -189,17 +184,24 @@ registrationAnswer (RegistrationId rid) = jsonResponse status200 $ J.object ["re
 refused :: Text -> OrderRefusal -> IO Answer
 refused what refusal = answerNow (orderRefusalResponse refusal) <$ logNote (what <> " refused: " <> tshow refusal)
 
+answerOrder :: OrdersEnv -> Text -> OrderRequest -> ByteString -> (UTCTime -> NameRegistration -> IO Answer) -> (UTCTime -> IO Answer) -> IO Answer
+answerOrder OrdersEnv {oeStore, oeNow} what order hash resent new = do
+  now <- oeNow
+  withTransaction oeStore (\db -> existingOrder db order hash now) >>= \case
+    EOResent r -> resent now r
+    EOMeets -> refused what OROrderExists
+    EONew -> new now
+
 -- | POST /api/name/register, an order paid with a prepaid code, in the contract's order of checks.
 codeOrderHandler :: OrdersEnv -> [Provider] -> Waiters -> Request -> Respond -> IO ResponseReceived
-codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} providers waiters req respond =
+codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} providers waiters req respond =
   readBoundedBody nameBodyBytes req >>= ordered >>= sendAnswer respond
   where
+    what = "POST /api/name/register"
     ordered = \case
       Just body | Just (J.Object o) <- J.decode body -> either refuse withCode (parseCodeOrder o)
       _ -> refuse ORBadRequest
-    refuse refusal = do
-      logNote ("POST /api/name/register refused: " <> tshow refusal)
-      pure $ answerNow $ orderRefusalResponse refusal
+    refuse = refused what
     withCode (order, codeText) =
       issuedCode codeText >>= \case
         Nothing -> refuse $ ORCode CRInvalid
@@ -207,12 +209,9 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} 
     issuedCode t = case parseNameCode t of
       Just (NCPrepaid code) -> readPrepaidCode oeStore code
       _ -> pure Nothing
-    signed order@OrderRequest {orOwner, orFields} code@PrepaidCode {pcCodeHash} = withLabelTurn oeTurns (ofLabelHash orFields) $ do
-      now <- oeNow
-      withTransaction oeStore (\db -> existingOrder db order (orderHash orOwner orFields (OTCode pcCodeHash)) now) >>= \case
-        EOResent NameRegistration {nrId} -> pure $ answerNow $ registrationAnswer nrId
-        EOMeets -> refuse OROrderExists
-        EONew -> newOrder now order code
+    signed order@OrderRequest {orOwner, orFields} code@PrepaidCode {pcCodeHash} =
+      withLabelTurn oeTurns (ofLabelHash orFields) $
+        answerOrder env what order (orderHash orOwner orFields (OTCode pcCodeHash)) (\_ NameRegistration {nrId} -> pure $ answerNow $ registrationAnswer nrId) (\now -> newOrder now order code)
     newOrder now order@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofDuration}, orTimestamp} code@PrepaidCode {pcYears} = do
       let checks =
             [ pure $ checkTimestamp now orTimestamp,
@@ -236,7 +235,7 @@ parseCodeOrder o = do
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
 -- under the new name's turn and then the balance's.
 spendHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> Request -> Respond -> IO ResponseReceived
-spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} http cfg providers waiters ridText req respond
+spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg providers waiters ridText req respond
   | nCodesOnly oeConfig = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
@@ -255,12 +254,9 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} http
             Right () -> do
               let order = OrderRequest {orOwner = nrOwner, orFields = fields, orTimestamp = timestamp, orSignature = signature}
               withLabelTurn oeTurns (ofLabelHash fields) $ withBalanceTurn oeTurns source $ inTurns order spend
-    inTurns order@OrderRequest {orOwner, orFields} spend = do
-      now <- oeNow
-      withTransaction oeStore (\db -> existingOrder db order (orderHash orOwner orFields $ spendTerms spend) now) >>= \case
-        EOResent r -> resentOrder env cfg what now r
-        EOMeets -> refuse OROrderExists
-        EONew -> runExceptT (checked now order spend) >>= either refuse (place order spend)
+    inTurns order@OrderRequest {orOwner, orFields} spend =
+      answerOrder env what order (orderHash orOwner orFields $ spendTerms spend) (resentOrder env cfg what) $ \now ->
+        runExceptT (checked now order spend) >>= either refuse (place order spend)
     checked now OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} spend@Spend {spPrice} = do
       let years = orderYears fields $ nYears oeConfig
       liftEither $ checkTimestamp now orTimestamp
