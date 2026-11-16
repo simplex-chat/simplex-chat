@@ -112,7 +112,7 @@ import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
-import StoreService.Names.View (ViewReads (..), readViewChain, registrationView, viewJSON)
+import StoreService.Names.View (ViewRead (..), ViewReads (..), readViewChain, registrationView, viewJSON)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
@@ -1609,17 +1609,17 @@ testViewFields :: IO ()
 testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  let v = objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
+  let v = objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}
   sort (KM.keys v)
     `shouldBe` sort
       [ "id", "version", "moves", "linksRefused", "phase", "labelHash", "label", "owner", "commitment", "sealed", "resolver", "sponsor", "chainId", "tld",
         "years", "duration", "price", "fromBalance", "balance", "latePayment", "commitTx", "registerTx", "revealAfter", "revealBefore", "intentNonce", "acceptance", "unread", "expiresAt", "error", "community", "terms"
       ]
   field "latePayment" v `shouldBe` Just J.Null
-  let waiting w = field "latePayment" $ objectOf $ viewJSON (testNamesConfig node) r Nothing (Just w) ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
+  let waiting w = field "latePayment" $ objectOf $ viewJSON (testNamesConfig node) r Nothing (Just w) ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}
   map waiting [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]
   let acceptance community h = AcceptanceAsked {acCommunity = community, acPolicy = fakeNamePolicy, acTermsHash = h, acNonce = 2}
-      acceptanceOf a = field "acceptance" (objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Just a})
+      acceptanceOf a = field "acceptance" (objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRRead a})
       acceptanceJSON :: Text -> ByteString -> Maybe J.Value
       acceptanceJSON kind h = Just (J.object ["kind" .= kind, "policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex h, "nonce" .= (2 :: Int)])
   acceptanceOf (acceptance False fakeGeneralTerms) `shouldBe` acceptanceJSON "general" fakeGeneralTerms
@@ -1647,7 +1647,7 @@ testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = "2026-10-23/community"} (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
   let terms :: NameRegistration -> Maybe J.Value
-      terms r' = field "terms" $ objectOf $ viewJSON (testNamesConfig node) r' Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
+      terms r' = field "terms" $ objectOf $ viewJSON (testNamesConfig node) r' Nothing Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}
   terms r `shouldBe` Just "2026-10-23/community"
   terms r {nrAgreedTerms = ""} `shouldBe` Just J.Null
 
@@ -1663,21 +1663,21 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   committed <- inPhase PCommitted
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
-  readViewChain ct committed `shouldReturn` ViewReads (Just 4) [] (Just AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = fakeGeneralTerms, acNonce = 2})
+  readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) (VRRead AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = fakeGeneralTerms, acNonce = 2})
   -- the policy lists the name: the page signs the community terms' acceptance with the policy's nonce, until a reveal is stored
   listCommunityName node $ labelHash "alicebakery"
-  readViewChain ct committed `shouldReturn` ViewReads (Just 4) [] (Just AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
+  readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) (VRRead AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
   -- before the policy has terms of the name's kind there are none to sign, so the page waits
   setCommunityTerms node ""
-  readViewChain ct committed `shouldReturn` ViewReads (Just 4) ["acceptance"] Nothing
+  readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) VRUnread
   setCommunityTerms node fakeCommunityTermsText
-  readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (Just 4) [] Nothing
+  readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (VRRead 4) VRNotAsked
   taken <- inPhase PTaken
-  readViewChain ct taken `shouldReturn` ViewReads Nothing [] Nothing
+  readViewChain ct taken `shouldReturn` ViewReads VRNotAsked VRNotAsked
   setFault node "eth_call" HttpFailure
-  readViewChain ct committed `shouldReturn` ViewReads Nothing ["intentNonce", "acceptance"] Nothing
-  readViewChain ct taken `shouldReturn` ViewReads Nothing [] Nothing
-  let v = objectOf $ viewJSON (testNamesConfig node) committed Nothing Nothing (ViewReads Nothing ["intentNonce", "acceptance"] Nothing)
+  readViewChain ct committed `shouldReturn` ViewReads VRUnread VRUnread
+  readViewChain ct taken `shouldReturn` ViewReads VRNotAsked VRNotAsked
+  let v = objectOf $ viewJSON (testNamesConfig node) committed Nothing Nothing (ViewReads VRUnread VRUnread)
   (field "intentNonce" v, field "acceptance" v, field "unread" v) `shouldBe` (Just J.Null, Just J.Null, Just (J.toJSON ["intentNonce", "acceptance" :: Text]))
 
 testViewReadsBounded :: IO ()
@@ -1690,12 +1690,12 @@ testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   paid <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   Written _ <- withTransaction st $ \db -> updateRegistration db paid {nrPhase = PCommitted} t0
   committed <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
-  let unread = ViewReads Nothing ["intentNonce", "acceptance"] Nothing
+  let unread = ViewReads VRUnread VRUnread
   atomically $ writeTVar (ctViewSlots ct) 0
   readViewChain ct committed `shouldReturn` unread
-  readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads Nothing ["intentNonce"] Nothing
+  readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads VRUnread VRNotAsked
   atomically $ writeTVar (ctViewSlots ct) 1
-  vrIntentNonce <$> readViewChain ct committed `shouldReturn` Just 4
+  vrIntentNonce <$> readViewChain ct committed `shouldReturn` VRRead 4
   setFault node "eth_call" Hang
   started <- getCurrentTime
   readViewChain ct committed `shouldReturn` unread
