@@ -1154,7 +1154,7 @@ verifyRecording ref hdrs body = unsafePerformIO $ do
   atomicModifyIORef' ref $ \s -> (s {ssWebhooks = ssWebhooks s ++ [(hdrs, body)]}, ())
   stub <- readIORef ref
   if ssVerifyThrows stub
-    then E.throwIO (userError "the adapter threw while verifying")
+    then E.throwIO E.StackOverflow
     else pure (ssVerifyResult stub)
 {-# NOINLINE verifyRecording #-}
 
