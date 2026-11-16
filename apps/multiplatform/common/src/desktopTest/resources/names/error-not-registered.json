@@ -1,0 +1,19 @@
+{
+  "error": {
+    "errorType": {
+      "simplexDomain": {
+        "domain": "acme",
+        "nameTLD": "simplex",
+        "subDomain": []
+      },
+      "simplexDomainError": {
+        "nameWarning": {
+          "type": "notRegistered"
+        },
+        "type": "nameWarning"
+      },
+      "type": "simplexDomainNotReady"
+    },
+    "type": "error"
+  }
+}

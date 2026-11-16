@@ -1,0 +1,31 @@
+{
+  "error": {
+    "_owsf": true,
+    "error": {
+      "errorType": {
+        "_owsf": true,
+        "simplexDomainNotReady": {
+          "simplexDomain": {
+            "domain": "nobody",
+            "nameTLD": "simplex",
+            "subDomain": []
+          },
+          "simplexDomainError": {
+            "_owsf": true,
+            "nameWarning": {
+              "nameWarning": {
+                "_owsf": true,
+                "available": {
+                  "price": {
+                    "amount": 2000,
+                    "years": 2
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
