@@ -6107,6 +6107,8 @@ testGroupMsgDirectDuplicateEvent ps = do
 testGroupRedeliveredMessage :: HasCallStack => TestParams -> IO ()
 testGroupRedeliveredMessage =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/set receipts all off"
+    alice <## "ok"
     createGroup2 "team" bob alice
     withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands RENAME TO commands_")
     alice #> "#team hello"
