@@ -108,9 +108,7 @@ where
 
 import qualified Control.Exception as E
 import Control.Monad (when)
-import Crypto.Number.Serialize (i2ospOf_)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -128,6 +126,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), FromField (.
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
+import Simplex.Messaging.Encoding (Encoding (..), Large (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
@@ -530,21 +529,17 @@ findLimit = 50
 initialVersion :: Int64
 initialVersion = 1
 
-orderHashFieldBytes :: Int
-orderHashFieldBytes = 4
-
--- | Each field is length-prefixed, so no two different orders encode the same.
+-- | No two different orders encode the same.
 orderHash :: Address -> OrderFields -> OrderTerms -> ByteString
 orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} terms =
-  sha256Hash . B.concat . map field $ [tag, lh, num ofLength, num ofDuration, unAddress owner, ofCommitment, encodeUtf8 ofSealed, encodeUtf8 ofAgreedTerms] <> payment
+  sha256Hash $ smpEncode (tag, lh, num ofLength, int64 ofDuration, unAddress owner, ofCommitment, Large $ encodeUtf8 ofSealed, ofAgreedTerms) <> payment
   where
     (tag, payment) = case terms of
-      OTInvoice method price -> ("name-invoice", [encodeUtf8 $ methodText method, num price])
-      OTCode codeHash -> ("name-code", [codeHash])
-      OTBalance (RegistrationId source) price seen method -> ("name-balance", [encodeUtf8 source, num price, num seen, maybe "" (encodeUtf8 . methodText) method])
-    field bs = i2ospOf_ orderHashFieldBytes (toInteger $ B.length bs) <> bs
-    num :: Show a => a -> ByteString
-    num = encodeUtf8 . tshow
+      OTInvoice method price -> ("name-invoice" :: ByteString, smpEncode (methodText method, num price))
+      OTCode codeHash -> ("name-code", smpEncode codeHash)
+      OTBalance (RegistrationId source) price seen method -> ("name-balance", smpEncode (source, num price, num seen, methodText <$> method))
+    num :: Int -> Int64
+    num = fromIntegral
 
 newRegistrationId :: IO RegistrationId
 newRegistrationId = (\(InvoiceId t) -> RegistrationId t) <$> newInvoiceId
