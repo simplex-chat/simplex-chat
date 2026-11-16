@@ -118,7 +118,7 @@ import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SConnectionMode (..), SimplexNameInfo (..), UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -622,17 +622,21 @@ setOtherNameChatsMoved db User {userId} = \case
     | Just d <- groupClaim groupProfile -> ([],) <$> groupsMoved d (Just groupId) " AND business_chat IS NULL"
   _ -> pure mempty
   where
+    contactNameMoved :: SimplexDomain -> Maybe ContactId -> Maybe GroupId -> IO MovedChats
     contactNameMoved d ctId_ gId_ = (,) <$> contactsMoved d ctId_ <*> groupsMoved d gId_ " AND business_chat IS NOT NULL"
+    contactsMoved :: SimplexDomain -> Maybe ContactId -> IO [ContactId]
     contactsMoved d ctId_ = do
       ctIds <- map fromOnly <$> DB.query db ("SELECT ct.contact_id" <> verifiedContacts) (userId, ctId_, d, DVVerified)
       DB.execute db ("UPDATE contact_profiles SET contact_domain_verified = ? WHERE contact_profile_id IN (SELECT ct.contact_profile_id" <> verifiedContacts <> ")") (DVMoved, userId, ctId_, d, DVVerified)
       pure ctIds
+    verifiedContacts :: Query
     verifiedContacts =
       [sql|
         FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
         WHERE ct.user_id = ? AND ct.contact_id IS DISTINCT FROM ? AND cp.contact_domain = ? AND cp.contact_domain_verified = ?
       |]
+    groupsMoved :: SimplexDomain -> Maybe GroupId -> Query -> IO [GroupId]
     groupsMoved d gId_ businessCond =
       map fromOnly
         <$> DB.query
