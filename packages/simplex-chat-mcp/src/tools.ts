@@ -1519,7 +1519,7 @@ export function classifyPlan(r: ConnectionPlan, {target, message}: ConnectInput)
   const [plan, connLink, planSimplexName] = r
   const named = target.startsWith("@") || target.startsWith("#") || target.startsWith("simplex:/name")
   const nameChange = plan.type === "contactAddress" || plan.type === "groupLink" ? plan.nameChange : undefined
-  if (nameChange?.type === "lapsed") throw new ToolError(nameWarningText(fullDomainName(nameChange.nameDomain), nameChange.nameWarning))
+  if (nameChange?.type === "lapsed") throw new ToolError(nameWarningText(fullDomainName(nameChange.nameDomain), nameChange.nameWarning, true))
   const names = defined({simplexName: named ? target : undefined, movedFrom: nameChange?.type === "moved" ? chatRef(nameChange.knownChat) : undefined})
   const domain = planSimplexName === undefined ? undefined : fullDomainName(planSimplexName.nameDomain)
   const connect: JoinMethod = {type: "connect", connLink}

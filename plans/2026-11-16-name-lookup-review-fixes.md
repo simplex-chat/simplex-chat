@@ -191,7 +191,7 @@ packages/simplex-chat-mcp, built and tested with the repository's types (scope `
 |---|---|
 | `simplexNameOf` | a name for `DomainVerification.Verified` only |
 | `chatErrorTypeText` | `nameWarning`: `nameWarningText` |
-| `nameWarningText` | the apps' words of the alerts for a chat not known |
+| `nameWarningText` | the apps' words of the alerts to another user; an available name of a known chat: "Name no longer registered" |
 | `classifyPlan` | `lapsed`: a tool error with `nameWarningText` |
 | `classifyPlan` | `moved`: `movedFrom`, the reference of the known chat |
 | `planFields` | `moved_from` in the result of `connect` |

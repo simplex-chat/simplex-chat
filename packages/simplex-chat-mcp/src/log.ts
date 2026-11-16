@@ -81,7 +81,7 @@ function chatErrorTypeText(error: T.ChatErrorType): string | undefined {
       return "Unsupported connection link: This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link."
     case "simplexDomainNotReady": {
       const name = fullDomainName(error.simplexDomain)
-      if (error.simplexDomainError.type === "nameWarning") return nameWarningText(name, error.simplexDomainError.nameWarning)
+      if (error.simplexDomainError.type === "nameWarning") return nameWarningText(name, error.simplexDomainError.nameWarning, false)
       return error.simplexDomainError.type === "noValidLink"
         ? `No valid link: The SimpleX name ${name} is registered, but it has no valid link.`
         : `Unconfirmed name: The SimpleX name ${name} is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.`
@@ -93,14 +93,15 @@ function chatErrorTypeText(error: T.ChatErrorType): string | undefined {
   }
 }
 
-export function nameWarningText(name: string, warning: T.NameWarning): string {
+// spec: spec/architecture.md#log-namewarningtext
+export function nameWarningText(name: string, warning: T.NameWarning, knownChat: boolean): string {
   switch (warning.type) {
     case "expired":
       return `Name expired: ${name} expired on ${warning.expiredAt.slice(0, 10)}.${warning.graceUntil === undefined ? "" : ` Its owner can renew it until ${warning.graceUntil.slice(0, 10)}.`}`
     case "available": {
       const {amount, years} = warning.price
       const cents = amount % 100
-      return `Name not registered: ${name} is available for registration for $${Math.floor(amount / 100)}${cents === 0 ? "" : `.${String(cents).padStart(2, "0")}`} for ${years} years.`
+      return `${knownChat ? "Name no longer registered" : "Name not registered"}: ${name} is available for registration for $${Math.floor(amount / 100)}${cents === 0 ? "" : `.${String(cents).padStart(2, "0")}`} for ${years} years.`
     }
     case "reservedForCommunity":
       return `Name not registered: ${name} is reserved for community. Please contact SimpleX Chat if you are interested in using it.`
