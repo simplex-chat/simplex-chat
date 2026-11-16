@@ -60,7 +60,7 @@ import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (checkPendingSignatures, runSender)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), CodeIssuer (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, creditCents)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), BrokenInvariant (..), CodeIssuer (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, creditCents)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runWorkers)
@@ -81,6 +81,7 @@ import StoreService.Web.Http (Bucket, takeFrom)
 import StoreService.Web.Server (WebEnv (weWebhookAt), checkSiteDirs, newWebEnv, runWebListeners)
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM
+import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
@@ -686,14 +687,14 @@ handleServiceRequest key verifier checks cc trackerQ_ User {userId} reqId sigKey
     storeServiceResponse key verifier checks cc trackerQ_ sigKey reqData `catchOwn'` \_ ->
       logError ("store service request " <> reqIdT <> " failed") $> errorResponse STEInternal
   logNote $ "badge answer: " <> responseName resp
-  sendChatCmd cc (APISendServiceResponse userId reqId (responseObject resp)) >>= \case
+  responseObject resp >>= sendChatCmd cc . APISendServiceResponse userId reqId >>= \case
     Right _ -> pure ()
     Left e -> logError $ "store service response failed for " <> reqIdT <> ": " <> tshow e
 
-responseObject :: StoreServiceResponse -> J.Object
+responseObject :: StoreServiceResponse -> IO J.Object
 responseObject r = case J.toJSON r of
-  J.Object o -> o
-  _ -> KM.fromList [("type", J.String "error"), ("code", J.toJSON STEInternal)]
+  J.Object o -> pure o
+  _ -> E.throwIO $ BrokenInvariant "a store service response is encoded as JSON other than an object"
 
 errorResponse :: StoreServiceErrorCode -> StoreServiceResponse
 errorResponse code = STPError {code, message = Nothing, retryAfter = badgeErrorRetryAfter code}
