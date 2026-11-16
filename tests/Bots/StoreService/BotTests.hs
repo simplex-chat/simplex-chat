@@ -41,6 +41,7 @@ import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Bifunctor (bimap)
 import Data.Char (toLower)
 import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
@@ -48,7 +49,7 @@ import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (isInfixOf, isPrefixOf, stripPrefix)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.String (fromString)
 import System.Timeout (timeout)
 import Data.Text (Text)
@@ -429,7 +430,12 @@ issueCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
 issueCode cc badgeType months = issueCodeAs cc badgeType months "free"
 
 revokeCodeAs :: HasCallStack => ChatController -> BadgeCode -> IO (Either T.Text T.Text)
-revokeCodeAs cc code = revokeRaw cc (formatBadgeCode code)
+revokeCodeAs cc = revokeNamed cc . formatBadgeCode
+
+revokeNamed :: HasCallStack => ChatController -> T.Text -> IO (Either T.Text T.Text)
+revokeNamed cc shown = bimap outcome outcome <$> revokeRaw cc shown
+  where
+    outcome t = fromMaybe (error $ "the answer does not name the code: " <> T.unpack t) $ T.stripPrefix (shown <> ": ") t
 
 revokeRaw :: HasCallStack => ChatController -> T.Text -> IO (Either T.Text T.Text)
 revokeRaw cc args = operatorCmd cc ("//revoke " <> args)

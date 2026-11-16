@@ -6,6 +6,8 @@
 module StoreService.Group.Command
   ( GroupCmd (..),
     MoneyCmd (..),
+    CmdSource (..),
+    spelledCmd,
     CmdAction (..),
     groupCmdAction,
     groupCommands,
@@ -57,6 +59,13 @@ data GroupCmd
 
 data MoneyCmd = MCBalance Text | MCRecordRefund Text Int | MCClose Text
   deriving (Eq, Show)
+
+data CmdSource = FromConsole | FromGroup
+
+spelledCmd :: CmdSource -> Text -> Text
+spelledCmd = \case
+  FromConsole -> ("//" <>)
+  FromGroup -> ("/" <>)
 
 data CmdAction
   = RunCmd GroupCmd

@@ -26,7 +26,7 @@ import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedR
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
-import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
+import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeNamed, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
@@ -473,7 +473,7 @@ testOperatorNameCodes ps = do
     let check code = checkPrepaid port (formatNameCode code)
         coverage :: Int -> Int -> Text -> (Int, Maybe J.Value)
         coverage minLength years state = (200, Just $ J.object ["minLength" J..= minLength, "years" J..= years, "state" J..= state])
-        revoke = revokeRaw cc . formatNameCode
+        revoke = revokeNamed cc . formatNameCode
     check paid `shouldReturn` coverage 7 3 "unused"
     revokeRaw cc (formatNameCode paid <> " junk") `shouldReturn` Left badgeCmdUsage
     revoke paid `shouldReturn` Right "Revoked."
@@ -526,7 +526,7 @@ namesRefundChatTests = describe "StoreService names: operator refund" $ do
   it "refuses a balance held by an open order, naming it and its expiry, and records it once that order's invoice is cancelled" testRefundOpenHolder
   it "answers an owner's /balance, /record_refund and /close in the group, worded for the group, refusing as the console does" testGroupMoneyCmds
   it "closes a failed paid order by its invoice id, recording the refund of its price, and refuses an unknown reference and an order no longer failed" testCloseRecorded
-  it "refuses //close without [names], and answers the usage to a malformed one" testCloseNamesOff
+  it "refuses //close and //issue name without [names], and answers the usage to a malformed //close" testCloseNamesOff
 
 balanceRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
 balanceRaw cc args = operatorCmd cc ("//balance " <> args)
@@ -597,6 +597,7 @@ testCloseNamesOff :: HasCallStack => TestParams -> IO ()
 testCloseNamesOff ps = withStoreService ps $ \_ _ cc -> do
   Balances.source (chatStore cc) "s" 10000
   closeRaw cc "s" `shouldReturn` Left "Names are not enabled on this service."
+  issueRaw cc "name 6" `shouldReturn` Left "Names are not enabled on this service, so name codes cannot be issued."
   forM_ ["", "s junk"] $ \args -> (args,) <$> closeRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
   Balances.figures (chatStore cc) "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
@@ -1688,13 +1689,13 @@ testServiceRevokeRetiresTracker ps =
     (trackerItemId, _, code) <- issueTracked cc alice "supporter" 2
     redeemOk gsKey cc env code
     void $ waitItemText cc trackerItemId "1 of 2 uses remaining"
-    revokeRaw cc code `shouldReturn` Right "Revoked."
+    revokeRaw cc code `shouldReturn` Right (revokeReply code "Revoked.")
     readItemText cc trackerItemId `shouldReturn` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
-    revokeRaw cc code `shouldReturn` Right "Already revoked."
+    revokeRaw cc code `shouldReturn` Right (revokeReply code "Already revoked.")
     revokedTrackerCount cc `shouldReturn` 1
     single <- extractCode <$> replyTo cc alice "/issue legend"
-    revokeRaw cc single `shouldReturn` Right "Revoked."
+    revokeRaw cc single `shouldReturn` Right (revokeReply single "Revoked.")
     revokedTrackerCount cc `shouldReturn` 1
 
 testServiceRevokeRepairsTracker :: HasCallStack => TestParams -> IO ()
@@ -1704,7 +1705,7 @@ testServiceRevokeRepairsTracker ps =
     (trackerItemId, tracker0, code) <- issueTracked cc alice "supporter" 2
     revokeInStore cc 2
     readItemText cc trackerItemId `shouldReturn` tracker0
-    revokeRaw cc code `shouldReturn` Right "Already revoked."
+    revokeRaw cc code `shouldReturn` Right (revokeReply code "Already revoked.")
     readItemText cc trackerItemId `shouldReturn` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
     awaitTrackerOnConsole alice (retiredText code)

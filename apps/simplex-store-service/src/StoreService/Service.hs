@@ -37,8 +37,6 @@ module StoreService.Service
     NotGranted (..),
     shownServiceRequest,
     survive,
-    IssueCodeOpts (..),
-    issueBadgeCode,
     CmdSource (..),
     heldText,
     chainText,
@@ -46,22 +44,21 @@ module StoreService.Service
 where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
-import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
+import StoreService.Codes (singleUse)
 import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), GroupConfig (..), ListenerConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
-import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, revokeWithTracker, runGroupLane)
-import StoreService.Group.Command (MoneyCmd (..), badgeTypeP, balanceArgsP, closeArgsP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, recordRefundArgsP, textTokenP)
+import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, runCmd, runGroupLane)
+import StoreService.Group.Command (CmdSource (..), GroupCmd (..), MoneyCmd (..), badgeTypeP, balanceArgsP, closeArgsP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, recordRefundArgsP, spelledCmd, textTokenP)
 import StoreService.Metrics (MetricsEnv (..), NamesSource (..), runMetrics)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (ChainClient, newChainClient, nodeChainId)
-import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, newContracts, runTermsFetch, termsLinkAllowed, termsLinks, termsOf)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (checkPendingSignatures, runSender)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), BrokenInvariant (..), CodeIssuer (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, creditCents)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), BrokenInvariant (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, creditCents)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runWorkers)
@@ -412,24 +409,15 @@ badgeCmdHook turns chain_ cc = \case
   cmd -> pure $ Right cmd
 
 runBadgeCmd :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
-runBadgeCmd turns chain_ cc cmd
-  | Right issueOpts <- A.parseOnly issueCmdP cmd =
-      issuedReply formatBadgeCode <$> issueBadgeCode cc issueOpts
-  | Right (len, years, paymentStatus) <- A.parseOnly issueNameCmdP cmd =
-      issuedReply formatNameCode <$> issueNameCode cc IssuedInConsole len years paymentStatus
-  | Right code <- A.parseOnly revokeCmdP cmd = textReply <$> revokeWithTracker cc code
-  | Right code <- A.parseOnly revokeNameCmdP cmd = textReply <$> revokeNameCode turns cc code
-  | Right moneyCmd <- A.parseOnly moneyCmdP cmd = textReply <$> runMoneyCmd FromConsole turns chain_ cc moneyCmd
-  | otherwise =
-      pure $ chatCmdError $
-        "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], //issue name <length "
-          <> show minNameLength <> "-" <> show maxNameLength <> "> [years " <> show minNameYears <> "-" <> show maxNameYears
-          <> "] [paid|free], //revoke <code>, //balance <reference>, //record_refund <reference> <cents>, or //close <reference>"
+runBadgeCmd turns chain_ cc cmd = case A.parseOnly consoleCmdP cmd of
+  Right c -> textReply <$> runCmd FromConsole cc turns (isJust chain_) (runMoneyCmd FromConsole turns chain_ cc) c
+  Left _ ->
+    pure $ chatCmdError $
+      "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], //issue name <length "
+        <> show minNameLength <> "-" <> show maxNameLength <> "> [years " <> show minNameYears <> "-" <> show maxNameYears
+        <> "] [paid|free], //revoke <code>, //balance <reference>, //record_refund <reference> <cents>, or //close <reference>"
   where
-    issuedReply :: (c -> T.Text) -> Either String c -> Either ChatError ChatResponse
-    issuedReply format = \case
-      Right code -> Right CRCustomChatResponse {user_ = Nothing, response = "Code: " <> format code}
-      Left _ -> chatCmdError (T.unpack issueFailedText)
+    consoleCmdP = issueCmdP <|> issueNameCmdP <|> GCRevoke <$> revokeCmdP <|> GCRevokeName <$> revokeNameCmdP <|> GCMoney <$> moneyCmdP
     textReply = \case
       Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
       Left e -> chatCmdError (T.unpack e)
@@ -443,18 +431,11 @@ revokeNameCmdP = "revoke " *> prepaidCodeP <* (A.skipSpace *> A.endOfInput)
 moneyCmdP :: A.Parser MoneyCmd
 moneyCmdP = ("balance " *> balanceArgsP <|> "record_refund " *> recordRefundArgsP <|> "close " *> closeArgsP) <* (A.skipSpace *> A.endOfInput)
 
-data CmdSource = FromConsole | FromGroup
-
 runMoneyCmd :: CmdSource -> Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> MoneyCmd -> IO (Either T.Text T.Text)
 runMoneyCmd source turns chain_ cc = \case
   MCBalance ref -> showRefund source cc ref
   MCRecordRefund ref cents -> refundBalanceCmd source turns cc ref cents
   MCClose ref -> maybe (pure $ Left "Names are not enabled on this service.") (\chain -> closeOrderCmd source turns chain cc ref) chain_
-
-spelledCmd :: CmdSource -> T.Text -> T.Text
-spelledCmd = \case
-  FromConsole -> ("//" <>)
-  FromGroup -> ("/" <>)
 
 -- | Left is a refusal or a failure; both sides are the text to show the operator.
 showRefund :: CmdSource -> ChatController -> T.Text -> IO (Either T.Text T.Text)
@@ -568,16 +549,16 @@ dollars cents = "$" <> tshow whole <> "." <> T.justifyRight 2 '0' (tshow part)
     centsPerDollar = 100
 
 -- | Nothing marks a name code paid later, so an unpaid one would be refused for good.
-issueNameCmdP :: A.Parser (NameLength, Int, BadgeCodePaymentStatus)
+issueNameCmdP :: A.Parser GroupCmd
 issueNameCmdP = do
   (len, years) <- "issue " *> nameCodeP
   paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
   when (paymentStatus == CPSUnpaid) $ fail "unpaid name code"
   A.skipSpace
   A.endOfInput
-  pure (len, years, paymentStatus)
+  pure $ GCIssueName len years paymentStatus
 
-issueCmdP :: A.Parser IssueCodeOpts
+issueCmdP :: A.Parser GroupCmd
 issueCmdP =
   "issue " *> do
     badgeType <- badgeTypeP
@@ -587,22 +568,12 @@ issueCmdP =
     paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
     A.skipSpace
     A.endOfInput
-    pure IssueCodeOpts {badgeType, months, paymentStatus}
+    pure $ GCIssue badgeType months singleUse paymentStatus
   where
     -- Integer, because attoparsec's decimal wraps silently at Int, so the guard would check a truncated count.
     checkMonths n
       | n >= 1 && n <= fromIntegral maxMonths = pure (fromInteger n)
       | otherwise = fail $ "months must be between 1 and " <> show maxMonths
-
-data IssueCodeOpts = IssueCodeOpts
-  { badgeType :: BadgeType,
-    months :: Int,
-    paymentStatus :: BadgeCodePaymentStatus
-  }
-
-issueBadgeCode :: ChatController -> IssueCodeOpts -> IO (Either String BadgeCode)
-issueBadgeCode cc IssueCodeOpts {badgeType, months, paymentStatus} =
-  fmap fst <$> issueOneCode cc badgeType months paymentStatus singleUse
 
 processQueuedRequests :: BadgeIssuerKey -> Maybe (TQueue GroupEvent) -> ServiceState -> IO ()
 processQueuedRequests key trackerQ_ env = do
