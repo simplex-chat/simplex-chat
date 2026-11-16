@@ -25,12 +25,10 @@ typealias ChatCtrl = Long
 external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatCloseStore(ctrl: ChatCtrl): String
 @JvmName("chatSendCmdRetry") external fun nativeChatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
-var chatSendCmdRetry: (ChatCtrl, String, Int) -> String = ::nativeChatSendCmdRetry
 external fun chatSendRemoteCmdRetry(ctrl: ChatCtrl, rhId: Int, msg: String, retryNum: Int): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 @JvmName("chatParseMarkdown") external fun nativeChatParseMarkdown(str: String): String
-var chatParseMarkdown: (String) -> String = ::nativeChatParseMarkdown
 external fun chatParseServer(str: String): String
 external fun chatParseUri(str: String, safe: Int): String
 external fun chatPasswordHash(pwd: String, salt: String): String
@@ -47,6 +45,8 @@ external fun chatResizeImageFileUri(path: String, maxSize: Int): String
 external fun chatResizeImageFile(path: String, maxSize: Int, png: Int): String
 external fun chatResizeImageFdUri(fd: Int, maxSize: Int): String
 external fun chatResizeImageFd(fd: Int, maxSize: Int, png: Int): String
+var chatSendCmdRetry: (ChatCtrl, String, Int) -> String = ::nativeChatSendCmdRetry
+var chatParseMarkdown: (String) -> String = ::nativeChatParseMarkdown
 
 // the code in core's canonical form (prefix and 20 characters, no separators), or null when core rejects it.
 // The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.
