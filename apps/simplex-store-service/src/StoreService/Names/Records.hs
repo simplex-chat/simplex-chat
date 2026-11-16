@@ -129,11 +129,14 @@ newRecords rsStore rsTurns rsContracts rsChain rsSender rsTLD rsEditsPerYear rsN
 
 -- | Every relayed edit counts, a reverted one too, since its gas is paid. One refused or never sent does not.
 nameEditsLeft :: DB.Connection -> Int -> LabelHash -> UTCTime -> IO EditsLeft
-nameEditsLeft db perYear lh now = do
-  times <- relayedEditTimes db lh $ addUTCTime (negate editLimitWindow) now
-  let counted = length times
+nameEditsLeft db perYear lh now = editsLeft perYear <$> relayedEditTimes db lh (addUTCTime (negate editLimitWindow) now)
+
+editsLeft :: Int -> [UTCTime] -> EditsLeft
+editsLeft perYear times =
   -- the oldest edit returns one, unless a lowered limit is overrun and later ones must go too
-  pure EditsLeft {elLeft = max 0 $ perYear - counted, elNextAt = addUTCTime editLimitWindow <$> listToMaybe (drop (counted - perYear) times)}
+  EditsLeft {elLeft = max 0 $ perYear - counted, elNextAt = addUTCTime editLimitWindow <$> listToMaybe (drop (counted - perYear) times)}
+  where
+    counted = length times
 
 -- | When the name's yearly limit is used up, the time the next edit fits.
 usedUpUntil :: EditsLeft -> Maybe UTCTime
@@ -193,13 +196,12 @@ insertEdit Records {rsStore, rsTurns, rsEditsPerYear, rsNow} EditRequest {erLabe
   withLabelTurn rsTurns erLabelHash $ do
     now <- rsNow
     withTransaction rsStore $ \db -> do
-      limited <- usedUpUntil <$> nameEditsLeft db rsEditsPerYear erLabelHash now
-      times <- relayedEditTimes db erLabelHash (addUTCTime (negate editCapWindow) now)
-      let relayed = length times
-      case limited of
+      times <- relayedEditTimes db erLabelHash (addUTCTime (negate editLimitWindow) now)
+      let hour = dropWhile (<= addUTCTime (negate editCapWindow) now) times
+      case usedUpUntil (editsLeft rsEditsPerYear times) of
         Just nextAt -> pure $ Left $ EALimited nextAt
         Nothing
-          | relayed >= editCap -> pure $ Left $ EACapped $ max 1 $ ceiling $ diffUTCTime (addUTCTime editCapWindow $ times !! (relayed - editCap)) now
+          | Just oldest <- listToMaybe $ drop (editCap - 1) $ reverse hour -> pure $ Left $ EACapped $ max 1 $ ceiling $ diffUTCTime (addUTCTime editCapWindow oldest) now
           | otherwise -> Right <$> insertRecordEdit db edit now
   where
     edit = NewRecordEdit {nreLabelHash = erLabelHash, nreOwner = signer, nreChanges = erChanges, nreBodyHash = bodyHash}
