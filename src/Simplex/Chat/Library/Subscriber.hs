@@ -561,20 +561,20 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           toView $ CEvtContactRequestRejected user ct' (either (const Nothing) Just $ strDecode reason)
         MSG msgMeta _msgFlags msgBody -> do
           tags <- newTVarIO []
-          withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> ifM (rcvMsgRepeated conn msgMeta) ((,False) <$> checkSendRcpt ct (rights aChatMsgs)) $ do
-            let MsgMeta {pqEncryption} = msgMeta
-            (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
-            checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchAllErrors` \_ -> pure ()
-            forM_ aChatMsgs $ \case
-              Right (APMsg _ (ParsedMsg _ _ chatMsg)) ->
-                processEvent ct' conn' tags eInfo chatMsg `catchAllErrors` \e -> eToView e
-              Left e -> do
-                atomically $ modifyTVar' tags ("error" :)
-                logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
-                createInternalChatItem user (CDDirectRcv ct') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
-                  `catchAllErrors` \_ -> pure ()
-            withRcpt <- checkSendRcpt ct' $ rights aChatMsgs -- not crucial to use ct'' from processEvent
-            pure (withRcpt, False)
+          withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
+            unlessM (rcvMsgRepeated conn msgMeta) $ do
+              let MsgMeta {pqEncryption} = msgMeta
+              (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
+              checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchAllErrors` \_ -> pure ()
+              forM_ aChatMsgs $ \case
+                Right (APMsg _ (ParsedMsg _ _ chatMsg)) ->
+                  processEvent ct' conn' tags eInfo chatMsg `catchAllErrors` \e -> eToView e
+                Left e -> do
+                  atomically $ modifyTVar' tags ("error" :)
+                  logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
+                  createInternalChatItem user (CDDirectRcv ct') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
+                    `catchAllErrors` \_ -> pure ()
+            (,False) <$> checkSendRcpt ct (rights aChatMsgs) -- not crucial to use ct'' from processEvent
           where
             aChatMsgs = parseChatMessages msgBody
             processEvent :: Contact -> Connection -> TVar [Text] -> Text -> MsgEncodingI e => ChatMessage e -> CM ()
@@ -1016,12 +1016,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               || not (relayServesGroup gInfo)
       MSG msgMeta _msgFlags msgBody -> do
         tags <- newTVarIO []
-        withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> ifM (rcvMsgRepeated conn msgMeta) ((,False) <$> checkSendRcpt (rights aChatMsgs)) $ do
-          -- possible improvement is to choose scope based on event (some events specify scope)
-          (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-          checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
-          newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] aChatMsgs
-          shouldDelConns <-
+        withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
+          shouldDelConns <- ifM (rcvMsgRepeated conn msgMeta) (pure False) $ do
+            -- possible improvement is to choose scope based on event (some events specify scope)
+            (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
+            checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
+            newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] aChatMsgs
             if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
               then
                 let tasks
@@ -1029,8 +1029,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       | otherwise = newDeliveryTasks
                  in createDeliveryTasks gInfo' m' tasks
               else pure False
-          withRcpt <- checkSendRcpt $ rights aChatMsgs
-          pure (withRcpt, shouldDelConns)
+          (,shouldDelConns) <$> checkSendRcpt (rights aChatMsgs)
         where
           aChatMsgs = parseChatMessages msgBody
           brokerTs = metaBrokerTs msgMeta
