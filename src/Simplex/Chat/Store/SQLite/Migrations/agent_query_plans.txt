@@ -1403,6 +1403,10 @@ Query: SELECT count(1) FROM commands
 Plan:
 SCAN commands USING COVERING INDEX idx_commands_conn_id
 
+Query: SELECT count(1) FROM conn_invitations WHERE accepted = 0
+Plan:
+SCAN conn_invitations
+
 Query: SELECT count(1) FROM connections
 Plan:
 SCAN connections USING COVERING INDEX idx_connections_deleted

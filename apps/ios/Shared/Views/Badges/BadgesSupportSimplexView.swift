@@ -16,6 +16,7 @@ struct BadgesSupportSimplexView: View {
     // set true when presented as a sheet root (from the chat-list banner) — that path doesn't
     // reserve nav-bar space like a NavigationLink push does, so the title lands too close to the top
     var showsAsSheet: Bool = false
+    var servedByAppStore: Bool? = nil
     @State private var whyBuiltActive = false
     @State private var howItWorksActive = false
     @State private var chooseLevelActive = false
@@ -46,7 +47,7 @@ struct BadgesSupportSimplexView: View {
                 Spacer(minLength: 0)
 
                 VStack(spacing: 10) {
-                    if store.servedByAppStore {
+                    if servedByAppStore ?? store.servedByAppStore {
                         chooseLevelButton()
                             .padding(.vertical, 10)
                         Group {
@@ -231,7 +232,7 @@ struct PhoneSupporterHero: View {
 struct BadgesSupportSimplexView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesSupportSimplexView()
+            BadgesSupportSimplexView(servedByAppStore: true)
         }
     }
 }
