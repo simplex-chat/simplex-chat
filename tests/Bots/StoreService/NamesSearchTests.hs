@@ -27,7 +27,7 @@ import Bots.StoreService.NamesContractsTests
     year,
   )
 import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, testNamesConfig, threeYears)
-import Bots.StoreService.NamesProfilesTests (bakeryLink, jpeg, newsLink)
+import Bots.StoreService.NamesProfilesTests (bakeryLink, channelData, contactData, jpeg, linkDataProfile, newsLink)
 import Bots.StoreService.NamesStoreTests (atNonce, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
 import Bots.StoreService.WebTests (withServiceStore, withApp)
 import Control.Concurrent (threadDelay)
@@ -51,6 +51,7 @@ import Network.HTTP.Client (Manager, Request, RequestBody (..), httpLbs, method,
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types (status404, status429)
 import Network.HTTP.Types.Status (statusCode)
+import Simplex.Chat.Types (ChatPeerType (..), ImageData (..), Profile (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
@@ -60,7 +61,7 @@ import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (LinkKind (..), linkMaxBytes)
-import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
+import StoreService.Names.Profiles (HostResolver, ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
 import StoreService.Names.Store (EditState (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (HttpEnv (..), maxSearches, newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -148,17 +149,16 @@ fakeFetch :: TVar [Text] -> ProfileFetcher
 fakeFetch fetched sl = do
   let l = decodeUtf8 $ strEncode sl
   atomically $ modifyTVar' fetched (l :)
-  pure $ case T.drop 1 $ snd $ T.breakOn "#" l of
+  pure $ Right $ case T.drop 1 $ snd $ T.breakOn "#" l of
     key
-      | "Y8m3" `T.isPrefixOf` key -> Just bakery
-      | "Rk27" `T.isPrefixOf` key -> Just news
-      | "Bot" `T.isPrefixOf` key -> Just helper {kind = CKBot}
-      | "Biz" `T.isPrefixOf` key -> Just helper {kind = CKBusiness}
+      | "Y8m3" `T.isPrefixOf` key -> Just $ contactData False bakery
+      | "Rk27" `T.isPrefixOf` key -> Just $ channelData Nothing (Just 1204)
+      | "Bot" `T.isPrefixOf` key -> Just $ contactData False helper {peerType = Just CPTBot}
+      | "Biz" `T.isPrefixOf` key -> Just $ contactData True helper
       | otherwise -> Nothing
   where
-    bakery = LinkProfile {kind = CKContact, displayName = "Alice's Bakery", fullName = "Sourdough and pastries, Lisbon", image = Just jpeg, subscribers = Nothing}
-    news = LinkProfile {kind = CKChannel, displayName = "Bakery news", fullName = "Daily bakes and opening hours", image = Nothing, subscribers = Just 1204}
-    helper = LinkProfile {kind = CKContact, displayName = "helper", fullName = "", image = Nothing, subscribers = Nothing}
+    bakery = linkDataProfile "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just $ ImageData jpeg)
+    helper = linkDataProfile "helper" "" Nothing
 
 -- | private.test resolves to a private address, any other name to a public one.
 stubResolver :: HostResolver
@@ -288,13 +288,13 @@ recordsOf :: Text -> Text -> J.Value
 recordsOf contact channel = J.object ["contact" .= contact, "channel" .= channel]
 
 -- | A preview's fields, and with the link and its deep link a search answer's entity.
-chat :: Text -> Text -> Text -> Text -> Maybe Text -> Maybe Int -> Text -> [(J.Key, J.Value)]
-chat t kind displayName fullName image subscribers profile =
-  ["type" .= t, "kind" .= kind, "displayName" .= displayName, "fullName" .= fullName, "image" .= image, "subscribers" .= subscribers, "profile" .= profile]
+chat :: Text -> Text -> Text -> Maybe Text -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
+chat t displayName fullName image kind =
+  ["type" .= t, "profile" .= str "ok", "displayName" .= displayName, "fullName" .= fullName, "image" .= image] <> kind
 
 bakeryChat, newsChat :: [(J.Key, J.Value)]
-bakeryChat = chat "address" "contact" "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just jpeg) Nothing "ok"
-newsChat = chat "channel" "channel" "Bakery news" "Daily bakes and opening hours" Nothing (Just 1204) "ok"
+bakeryChat = chat "address" "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just jpeg) ["peerType" .= J.Null, "business" .= False]
+newsChat = chat "channel" "Bakery news" "Daily bakes and opening hours" Nothing ["groupType" .= J.Null, "publicMemberCount" .= (1204 :: Int)]
 
 entity :: [(J.Key, J.Value)] -> Text -> Text -> J.Value
 entity fields l deepLink = J.object $ fields <> ["link" .= l, "deepLink" .= deepLink]
@@ -557,8 +557,8 @@ testPreviewKinds g = withSearch g id id $ \s -> do
   previewOf s bakeryLink `shouldReturn` ok bakeryChat
   previewOf s newsLink `shouldReturn` ok newsChat
   previewOf s "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im" `shouldReturn` ok newsChat
-  previewOf s (taggedLink "smp8.simplex.im" 'a' "Bot") `shouldReturn` ok (chat "address" "bot" "helper" "" Nothing Nothing "ok")
-  previewOf s (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (chat "address" "business" "helper" "" Nothing Nothing "ok")
+  previewOf s (taggedLink "smp8.simplex.im" 'a' "Bot") `shouldReturn` ok (chat "address" "helper" "" Nothing ["peerType" .= str "bot", "business" .= False])
+  previewOf s (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (chat "address" "helper" "" Nothing ["peerType" .= J.Null, "business" .= True])
 
 testPreviewInvalid :: TVar ChaChaDRG -> IO ()
 testPreviewInvalid g = withSearch g id id $ \s -> do

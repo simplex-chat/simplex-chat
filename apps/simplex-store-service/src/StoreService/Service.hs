@@ -337,9 +337,9 @@ startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig ->
 startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nCodesOnly, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
-    Just User {userId} -> do
+    Just user -> do
       logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> ", price floor " <> tshow nMinPriceCentsPerYear <> " cents a year" <> codesOnlyNote
-      ne@NamesEnv {neContracts} <- newNamesEnv cc userId nc chatStore turns waiters providers
+      ne@NamesEnv {neContracts} <- newNamesEnv cc user nc chatStore turns waiters providers
       logNamePolicy nc neContracts
       pure ne
   where

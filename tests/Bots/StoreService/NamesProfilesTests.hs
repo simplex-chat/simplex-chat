@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.NamesProfilesTests (namesProfilesTests, namesProfilesChatTests, bakeryLink, newsLink, jpeg) where
+module Bots.StoreService.NamesProfilesTests (namesProfilesTests, namesProfilesChatTests, bakeryLink, newsLink, jpeg, contactData, channelData, linkDataProfile) where
 
 import ChatClient (TestCC (..), testChat2)
 import ChatTests.DBUtils (TestParams)
@@ -32,12 +32,12 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Word (Word32, Word64)
-import Simplex.Chat.Controller (ChatErrorType (..), ChatError (..), ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..))
+import Simplex.Chat.Controller (ChatController (..), ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
-import Simplex.Chat.Types (ChatPeerType (..), GroupProfile (..), ImageData (..), Profile (..))
-import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), simplexShortLink)
+import Simplex.Chat.Types (AgentConnId (..), B64UrlByteString (..), ChatPeerType (..), GroupProfile (..), GroupType (..), ImageData (..), Profile (..), PublicGroupProfile (..))
+import Simplex.Messaging.Agent.Protocol (AgentErrorType (BROKER, SMP), ConnShortLink (..), ConnectionMode (..), simplexShortLink)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
-import Simplex.Messaging.Protocol (SMPServer)
+import Simplex.Messaging.Protocol (BrokerErrorType (TIMEOUT), ErrorType (AUTH), SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Names.Profiles
 import StoreService.Names.Registration (LinkKind (..))
@@ -46,18 +46,13 @@ import qualified Test.Hspec as H
 
 namesProfilesTests :: Spec
 namesProfilesTests = describe "StoreService names: profiles" $ do
-  describe "plan to profile" $ do
-    H.it "reads a contact address's link data as a contact" testPlanContact
-    H.it "reads a business address by its flag or by its profile's peer type" testPlanBusiness
-    H.it "reads a bot address by its profile's peer type" testPlanBot
-    H.it "reads a channel with its subscriber count, also when it has no relays or needs an update" testPlanChannel
-    H.it "reads the user's own address from the user's profile" testPlanOwnLink
-    H.it "reads nothing from an error, missing link data or a connection being made" testPlanNothing
-    H.it "drops an image that is not a data:image URI" testPlanImage
+  describe "link data" $
+    H.it "answers the link data read, unavailable for data that does not decode or a link its server refuses, and unread for a failure that may pass" testReadOutcome
   describe "JSON" $ do
-    H.it "encodes a contact entity as the contract's example" testEntityContactJSON
-    H.it "encodes a channel entity with subscribers and a simplex:/ deep link" testEntityChannelJSON
-    H.it "encodes previews without a profile as empty, kind from the link" testPreviewEmptyJSON
+    H.it "encodes a contact entity with its profile, peer type and business flag" testEntityContactJSON
+    H.it "encodes a channel entity with its group type, subscribers and a simplex:/ deep link" testEntityChannelJSON
+    H.it "encodes previews without a profile as their type and read state alone" testPreviewEmptyJSON
+    H.it "drops an image that is not a data:image URI" testImageJSON
     H.it "gives a deep link that parses back in the core with the link's server" testDeepLinkParses
   describe "bounds and cache" $ do
     H.it "answers a link again from the cache, and fetches it again once the cache expires" testCacheExpiry
@@ -81,23 +76,20 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
 namesProfilesChatTests :: SpecWith TestParams
 namesProfilesChatTests =
   describe "StoreService names: profiles" $
-    CU.it "reads an address and a channel through the chat core, and the owner's own from its store" testChatProfiles
+    CU.it "reads the link data of an address and a channel through the chat core, for another user and for their owner" testChatProfiles
 
--- Plans
+-- Link data
 
-ownProfile :: Profile
-ownProfile = linkDataProfile "store" "SimpleX store" Nothing
+contactData :: Bool -> Profile -> LinkData
+contactData business profile = LDContact ContactShortLinkData {profile, message = Nothing, business, localBadge = Nothing, chatLayout = Nothing}
 
-contactData :: Bool -> Profile -> ConnectionPlan
-contactData business profile =
-  CPContactAddress CAPOk {contactSLinkData_ = Just ContactShortLinkData {profile, message = Nothing, business, localBadge = Nothing, chatLayout = Nothing}, ownerVerification = Nothing} Nothing
-
-channelData :: Maybe Int64 -> GroupShortLinkData
-channelData count =
-  GroupShortLinkData
-    { groupProfile = GroupProfile {displayName = "news", fullName = "Bakery news", shortDescr = Nothing, description = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = Nothing, memberAdmission = Nothing, chatLayout = Nothing},
-      publicGroupData = PublicGroupData <$> count
-    }
+channelData :: Maybe PublicGroupProfile -> Maybe Int64 -> LinkData
+channelData publicGroup count =
+  LDChannel
+    GroupShortLinkData
+      { groupProfile = GroupProfile {displayName = "Bakery news", fullName = "Daily bakes and opening hours", shortDescr = Nothing, description = Nothing, image = Nothing, publicGroup, groupPreferences = Nothing, memberAdmission = Nothing, chatLayout = Nothing},
+        publicGroupData = PublicGroupData <$> count
+      }
 
 alice :: Profile
 alice = bakeryWith (Just (ImageData jpeg))
@@ -112,53 +104,23 @@ linkDataProfile displayName fullName image =
 jpeg :: Text
 jpeg = "data:image/jpeg;base64,/9j/4AAQSkZJRg=="
 
-testPlanContact :: IO ()
-testPlanContact =
-  planProfile ownProfile (contactData False alice)
-    `shouldBe` Just LinkProfile {kind = CKContact, displayName = "Alice's Bakery", fullName = "Sourdough and pastries, Lisbon", image = Just jpeg, subscribers = Nothing}
+testReadOutcome :: IO ()
+testReadOutcome =
+  forM_
+    [ ("decoded", Right $ Just bakery, ProfileOk bakery),
+      ("not decoded", Right Nothing, ProfileUnavailable),
+      ("refused by its server", Left $ agentFailure $ SMP "smp8.simplex.im" AUTH, ProfileUnavailable),
+      ("its server timed out", Left $ agentFailure $ BROKER "smp8.simplex.im" TIMEOUT, ProfileUnread),
+      ("this service failed", Left $ ChatError $ CEException "failed", ProfileUnread)
+    ]
+    $ \(what, fetched, answer) -> do
+      ps <- quietProfiles (const $ pure fetched) publicResolver
+      (\(Preview _ r) -> (what :: String, r)) <$> linkPreview ps LKContact (parsed bakeryLink) `shouldReturn` (what, answer)
+  where
+    bakery = contactData False alice
 
-testPlanBusiness :: IO ()
-testPlanBusiness = do
-  kindOf (contactData True alice) `shouldBe` Just CKBusiness
-  kindOf (contactData False alice {peerType = Just CPTBusiness}) `shouldBe` Just CKBusiness
-  kindOf (contactData False alice {peerType = Just CPTHuman}) `shouldBe` Just CKContact
-
-testPlanBot :: IO ()
-testPlanBot = do
-  kindOf (contactData False alice {peerType = Just CPTBot}) `shouldBe` Just CKBot
-  kindOf (contactData True alice {peerType = Just CPTBot}) `shouldBe` Just CKBusiness
-
-testPlanChannel :: IO ()
-testPlanChannel = do
-  let news count = Just LinkProfile {kind = CKChannel, displayName = "news", fullName = "Bakery news", image = Nothing, subscribers = count}
-  planProfile ownProfile (CPGroupLink GLPOk {groupSLinkInfo_ = Nothing, groupSLinkData_ = Just (channelData (Just 1204)), ownerVerification = Nothing} Nothing) `shouldBe` news (Just 1204)
-  planProfile ownProfile (CPGroupLink GLPOk {groupSLinkInfo_ = Nothing, groupSLinkData_ = Just (channelData Nothing), ownerVerification = Nothing} Nothing) `shouldBe` news Nothing
-  planProfile ownProfile (CPGroupLink (GLPNoRelays (Just (channelData (Just 3)))) Nothing) `shouldBe` news (Just 3)
-  planProfile ownProfile (CPGroupLink (GLPUpdateRequired (Just (channelData (Just 4)))) Nothing) `shouldBe` news (Just 4)
-
-testPlanOwnLink :: IO ()
-testPlanOwnLink =
-  planProfile ownProfile (CPContactAddress CAPOwnLink Nothing)
-    `shouldBe` Just LinkProfile {kind = CKContact, displayName = "store", fullName = "SimpleX store", image = Nothing, subscribers = Nothing}
-
-testPlanNothing :: IO ()
-testPlanNothing = do
-  planProfile ownProfile (CPError (ChatError CEInvalidConnReq)) `shouldBe` Nothing
-  planProfile ownProfile (CPContactAddress CAPOk {contactSLinkData_ = Nothing, ownerVerification = Nothing} Nothing) `shouldBe` Nothing
-  planProfile ownProfile (CPGroupLink GLPOk {groupSLinkInfo_ = Nothing, groupSLinkData_ = Nothing, ownerVerification = Nothing} Nothing) `shouldBe` Nothing
-  planProfile ownProfile (CPContactAddress CAPConnectingConfirmReconnect Nothing) `shouldBe` Nothing
-  planProfile ownProfile (CPGroupLink GLPConnectingConfirmReconnect Nothing) `shouldBe` Nothing
-  planProfile ownProfile (CPGroupLink (GLPConnectingProhibit Nothing) Nothing) `shouldBe` Nothing
-
-testPlanImage :: IO ()
-testPlanImage = do
-  let imageOf p = planProfile ownProfile (contactData False p) >>= \LinkProfile {image} -> image
-  imageOf (bakeryWith (Just (ImageData "javascript:alert(1)"))) `shouldBe` Nothing
-  imageOf (bakeryWith (Just (ImageData "https://example.com/a.png"))) `shouldBe` Nothing
-  imageOf alice `shouldBe` Just jpeg
-
-kindOf :: ConnectionPlan -> Maybe ChatKind
-kindOf plan = (\LinkProfile {kind} -> kind) <$> planProfile ownProfile plan
+agentFailure :: AgentErrorType -> ChatError
+agentFailure e = ChatErrorAgent e (AgentConnId "") Nothing
 
 -- JSON
 
@@ -177,27 +139,31 @@ linksOf = JT.parseMaybe (J.withObject "entity" $ \o -> (,) <$> o J..: "link" <*>
 
 testEntityContactJSON :: IO ()
 testEntityContactJSON = do
-  ps <- quietProfiles (pure . Just . const bakery) publicResolver
+  ps <- quietProfiles (const $ pure $ Right $ Just $ contactData False alice) publicResolver
   e <- linkEntity ps LKContact (parsed bakeryLink)
   e
-    `shouldEncodeAs` "{\"type\": \"address\", \"kind\": \"contact\", \"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\",\
-                     \ \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg==\", \"subscribers\": null, \"profile\": \"ok\",\
+    `shouldEncodeAs` "{\"type\": \"address\", \"profile\": \"ok\", \"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\",\
+                     \ \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg==\", \"peerType\": null, \"business\": false,\
                      \ \"link\": \"https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA\", \"deepLink\": \"simplex:/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA?h=smp8.simplex.im\"}"
-  where
-    bakery = LinkProfile {kind = CKContact, displayName = "Alice's Bakery", fullName = "Sourdough and pastries, Lisbon", image = Just jpeg, subscribers = Nothing}
+  Preview LKContact (ProfileOk $ contactData True alice {peerType = Just CPTBot})
+    `shouldEncodeAs` "{\"type\": \"address\", \"profile\": \"ok\", \"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\",\
+                     \ \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg==\", \"peerType\": \"bot\", \"business\": true}"
 
 testEntityChannelJSON :: IO ()
 testEntityChannelJSON = do
-  ps <- quietProfiles (pure . Just . const news) publicResolver
+  ps <- quietProfiles (const $ pure $ Right $ Just $ channelData (Just channel) (Just 1204)) publicResolver
   e <- linkEntity ps LKChannel (parsed newsLink)
   e
-    `shouldEncodeAs` "{\"type\": \"channel\", \"kind\": \"channel\", \"displayName\": \"Bakery news\", \"fullName\": \"Daily bakes and opening hours\",\
-                     \ \"image\": null, \"subscribers\": 1204, \"profile\": \"ok\",\
+    `shouldEncodeAs` "{\"type\": \"channel\", \"profile\": \"ok\", \"displayName\": \"Bakery news\", \"fullName\": \"Daily bakes and opening hours\",\
+                     \ \"image\": null, \"groupType\": \"channel\", \"publicMemberCount\": 1204,\
                      \ \"link\": \"https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA\", \"deepLink\": \"simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im\"}"
+  Preview LKChannel (ProfileOk $ channelData Nothing Nothing)
+    `shouldEncodeAs` "{\"type\": \"channel\", \"profile\": \"ok\", \"displayName\": \"Bakery news\", \"fullName\": \"Daily bakes and opening hours\",\
+                     \ \"image\": null, \"groupType\": null, \"publicMemberCount\": null}"
   let simplexLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im"
   linksOf <$> linkEntity ps LKChannel (parsed simplexLink) `shouldReturn` Just (simplexLink, simplexLink)
   where
-    news = LinkProfile {kind = CKChannel, displayName = "Bakery news", fullName = "Daily bakes and opening hours", image = Nothing, subscribers = Just 1204}
+    channel = PublicGroupProfile {groupType = GTChannel, groupLink = parsed newsLink, publicGroupId = B64UrlByteString "news", publicGroupAccess = Nothing}
 
 testDeepLinkParses :: IO ()
 testDeepLinkParses = do
@@ -219,12 +185,16 @@ testDeepLinkParses = do
 
 testPreviewEmptyJSON :: IO ()
 testPreviewEmptyJSON = do
-  Preview LKChannel ProfileUnread
-    `shouldEncodeAs` "{\"type\": \"channel\", \"kind\": \"channel\", \"displayName\": \"\", \"fullName\": \"\", \"image\": null, \"subscribers\": null, \"profile\": \"unread\"}"
-  Preview LKContact ProfileUnavailable
-    `shouldEncodeAs` "{\"type\": \"address\", \"kind\": \"contact\", \"displayName\": \"\", \"fullName\": \"\", \"image\": null, \"subscribers\": null, \"profile\": \"unavailable\"}"
-  Preview LKContact (ProfileOk LinkProfile {kind = CKBot, displayName = "helper", fullName = "", image = Nothing, subscribers = Nothing})
-    `shouldEncodeAs` "{\"type\": \"address\", \"kind\": \"bot\", \"displayName\": \"helper\", \"fullName\": \"\", \"image\": null, \"subscribers\": null, \"profile\": \"ok\"}"
+  Preview LKChannel ProfileUnread `shouldEncodeAs` "{\"type\": \"channel\", \"profile\": \"unread\"}"
+  Preview LKContact ProfileUnavailable `shouldEncodeAs` "{\"type\": \"address\", \"profile\": \"unavailable\"}"
+
+testImageJSON :: IO ()
+testImageJSON = do
+  let imageOf :: Profile -> Maybe (Maybe Text)
+      imageOf p = JT.parseMaybe (J.withObject "preview" (J..: "image")) $ J.toJSON $ Preview LKContact $ ProfileOk $ contactData False p
+  imageOf (bakeryWith (Just (ImageData "javascript:alert(1)"))) `shouldBe` Just Nothing
+  imageOf (bakeryWith (Just (ImageData "https://example.com/a.png"))) `shouldBe` Just Nothing
+  imageOf alice `shouldBe` Just (Just jpeg)
 
 -- Bounds and cache
 
@@ -238,7 +208,7 @@ testLimits = defaultProfileLimits {fetchTimeout = testTimeout}
 data Fake = Fake {profiles :: Profiles, clockAt :: TVar Word64, fetched :: TVar [Text]}
 
 -- | A fetcher that records each link it is asked for, then answers with @answer@.
-newFake :: ProfileLimits -> (Text -> IO (Maybe LinkProfile)) -> HostResolver -> IO Fake
+newFake :: ProfileLimits -> (Text -> IO (Either ChatError (Maybe LinkData))) -> HostResolver -> IO Fake
 newFake limits answer resolver = do
   clockAt <- newTVarIO 0
   fetched <- newTVarIO []
@@ -249,7 +219,7 @@ newFake limits answer resolver = do
   profiles <- newProfiles limits (readTVarIO clockAt) fetcher resolver
   pure Fake {profiles, clockAt, fetched}
 
-quietProfiles :: (Text -> IO (Maybe LinkProfile)) -> HostResolver -> IO Profiles
+quietProfiles :: (Text -> IO (Either ChatError (Maybe LinkData))) -> HostResolver -> IO Profiles
 quietProfiles answer resolver = (\Fake {profiles} -> profiles) <$> newFake testLimits answer resolver
 
 linkText :: ConnShortLink 'CMContact -> Text
@@ -262,11 +232,11 @@ addressLink = addressLinkAt "smp8.simplex.im"
 addressLinkAt :: Text -> Int -> Text
 addressLinkAt host n = "https://" <> host <> "/a#" <> decodeUtf8 (B64URL.encodeUnpadded (B.pack (take 32 (show n <> repeat '.'))))
 
-profileFor :: Text -> LinkProfile
-profileFor l = LinkProfile {kind = CKContact, displayName = T.takeEnd 8 l, fullName = "", image = Nothing, subscribers = Nothing}
+profileFor :: Text -> LinkData
+profileFor l = contactData False $ linkDataProfile (T.takeEnd 8 l) "" Nothing
 
-answerAll :: Text -> IO (Maybe LinkProfile)
-answerAll = pure . Just . profileFor
+answerAll :: Text -> IO (Either ChatError (Maybe LinkData))
+answerAll = pure . Right . Just . profileFor
 
 fetchCount :: Fake -> IO Int
 fetchCount Fake {fetched} = length <$> readTVarIO fetched
@@ -294,7 +264,7 @@ testCacheExpiry = do
 testFailureNotCached :: IO ()
 testFailureNotCached = do
   failing <- newTVarIO True
-  fake <- newFake testLimits (\l -> readTVarIO failing >>= \f -> pure $ if f then Nothing else Just (profileFor l)) publicResolver
+  fake <- newFake testLimits (\l -> readTVarIO failing >>= \f -> pure $ if f then Left (agentFailure $ BROKER "smp8.simplex.im" TIMEOUT) else Right (Just $ profileFor l)) publicResolver
   let l = addressLink 1
   preview fake l `shouldReturn` ProfileUnread
   atomically $ writeTVar failing False
@@ -551,11 +521,16 @@ testChatProfiles ps = testChat2 aliceProfile bobProfile test ps
       bob ##> "/ad"
       (address, _) <- getContactLinks bob True
       (channel, _) <- prepareChannel1Relay "news" bob relay
-      let fetch TestCC {chatController} l = either error (chatProfile chatController 1) (strDecode (B.pack l))
+      let fetch TestCC {chatController = cc@ChatController {currentUser}} l = do
+            Just user <- readTVarIO currentUser
+            sl <- either fail pure $ strDecode $ B.pack l
+            chatProfile cc user sl >>= either (fail . show) pure
           Profile {image = bobImage} = bobProfile
-          bobLinkProfile = Just LinkProfile {kind = CKContact, displayName = "bob", fullName = "", image = (\(ImageData i) -> i) <$> bobImage, subscribers = Nothing}
-          news = Just LinkProfile {kind = CKChannel, displayName = "news", fullName = "", image = Nothing, subscribers = Just 1}
-      fetch alice' address `shouldReturn` bobLinkProfile
-      fetch alice' channel `shouldReturn` news
-      fetch bob address `shouldReturn` bobLinkProfile
-      fetch bob channel `shouldReturn` news
+          bobData (Just (LDContact ContactShortLinkData {profile = Profile {displayName, image}, business})) = (displayName, image, business) == ("bob", bobImage, False)
+          bobData _ = False
+          newsData (Just (LDChannel GroupShortLinkData {groupProfile = GroupProfile {displayName}, publicGroupData})) = (displayName, publicGroupData) == ("news", Just $ PublicGroupData 1)
+          newsData _ = False
+      fetch alice' address >>= (`shouldSatisfy` bobData)
+      fetch alice' channel >>= (`shouldSatisfy` newsData)
+      fetch bob address >>= (`shouldSatisfy` bobData)
+      fetch bob channel >>= (`shouldSatisfy` newsData)

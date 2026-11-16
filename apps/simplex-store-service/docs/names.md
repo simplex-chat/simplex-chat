@@ -82,7 +82,7 @@ How a request flows:
 6. The names worker scans the database every 5 s and follows each order in `queued`, `committing`, `committed` or `registering` in a thread of its own ([`Names/Worker.hs:82-84`](../src/StoreService/Names/Worker.hs#L82-L84), [`Names/Worker.hs:115-126`](../src/StoreService/Names/Worker.hs#L115-L126)).
 7. Every transaction is sent through the sender: dry run, nonce, fees, EIP-1559 signature with the registrar key, a saved row, then broadcast. Receipts are followed every 4 s to the confirmation depth ([`Names/Sender.hs:107-131`](../src/StoreService/Names/Sender.hs#L107-L131), [`Names/Sender.hs:151-226`](../src/StoreService/Names/Sender.hs#L151-L226)).
 8. A link edit is submitted to the sender on its request's thread, and pending edits are settled by the record edits lane every 4 s ([`Names/Records.hs:156-263`](../src/StoreService/Names/Records.hs#L156-L263), [`Names/Records.hs:265-302`](../src/StoreService/Names/Records.hs#L265-L302)).
-9. Link profiles are read through the chat core's connect plan, and the link data through SMP servers ([`Names/Profiles.hs:269-274`](../src/StoreService/Names/Profiles.hs#L269-L274), [`Chat/Library/Internal.hs:1723-1726`](../../../src/Simplex/Chat/Library/Internal.hs#L1723-L1726)).
+9. Link profiles are read from the link data, through the chat core and SMP servers ([`Names/Profiles.hs:271-278`](../src/StoreService/Names/Profiles.hs#L271-L278), [`Chat/Library/Internal.hs:1724-1727`](../../../src/Simplex/Chat/Library/Internal.hs#L1724-L1727)).
 10. Operators issue and revoke codes in the managed group while the service runs. In the console, a separate run of the same binary while the service is stopped, they issue and revoke codes, record refunds and close failed paid orders ([`Group.hs:278-313`](../src/StoreService/Group.hs#L278-L313), [`Main.hs:25-28`](../Main.hs#L25-L28), [`Service.hs:415-434`](../src/StoreService/Service.hs#L415-L434)).
 11. One process runs per database: a PostgreSQL advisory lock is held on a connection of its own for the whole run ([`Store/Migrate.hs:46-58`](../src/StoreService/Store/Migrate.hs#L46-L58)).
 
@@ -103,7 +103,7 @@ How a request flows:
 | Record edits relay and lane | Owner-signed link edits, each relayed as one resolver transaction through the sender, within `record_edits_per_year` and 10 an hour per name. Pending edits are settled by the lane every 4 s. | [`Names/Records.hs:112-366`](../src/StoreService/Names/Records.hs#L112-L366), [`Web/Names/Records.hs:34-86`](../src/StoreService/Web/Names/Records.hs#L34-L86) |
 | Contracts reader and chain client | One JSON-RPC client to `[chain] rpc_url`, 10 s per call, redirects refused. Typed `eth_call` reads; the name policy address, the registrar constants and the commitment ages kept once read; terms texts fetched once per hash and stored. | [`Names/Contracts.hs:147-411`](../src/StoreService/Names/Contracts.hs#L147-L411), [`Names/Chain.hs:112-305`](../src/StoreService/Names/Chain.hs#L112-L305) |
 | In-memory coordination | Waiters: invoice status and payments. Phases: registration versions. Locks: one writer at a time per label hash, prepaid code and balance. Read hints: up to 256 webhook reads queued for the poller. | [`Waiters.hs:14-91`](../src/StoreService/Waiters.hs#L14-L91), [`Names/Phases.hs:15-65`](../src/StoreService/Names/Phases.hs#L15-L65), [`Names/Turns.hs:3-69`](../src/StoreService/Names/Turns.hs#L3-L69), [`Poller.hs:88-108`](../src/StoreService/Poller.hs#L88-L108) |
-| Chat core | The SimpleX chat controller with the bot user: the bot address for badge requests, the managed group's messages, and connect plans for link profiles. Every chat event is read from `outputQ` by one reader. | [`Service.hs:293-313`](../src/StoreService/Service.hs#L293-L313), [`Service.hs:636-645`](../src/StoreService/Service.hs#L636-L645), [`Names/Profiles.hs:269-274`](../src/StoreService/Names/Profiles.hs#L269-L274) |
+| Chat core | The SimpleX chat controller with the bot user: the bot address for badge requests, the managed group's messages, and the link data of link profiles. Every chat event is read from `outputQ` by one reader. | [`Service.hs:293-313`](../src/StoreService/Service.hs#L293-L313), [`Service.hs:636-645`](../src/StoreService/Service.hs#L636-L645), [`Names/Profiles.hs:271-278`](../src/StoreService/Names/Profiles.hs#L271-L278) |
 | Badge request lanes | Badge requests on the bot address, present before this PR: three lanes, each answer sent as `APISendServiceResponse`. | [`Service.hs:572-657`](../src/StoreService/Service.hs#L572-L657) |
 | Group lane | With `[group]`: one managed group. `/issue`, `/issue name` included, and `/bulk` are taken from moderators, `/revoke` from admins, `/balance`, `/record_refund` and `/close` from owners; `/bulk` issues badge codes only. A name code command is refused once the name codes the group issued in the last 24 hours would pass 10. `/balance`, `/record_refund` and `/close` run the console's handlers in the service's locks, with the console's chain client. Once the first promotion was attempted, every joiner waits for a moderator's review, decided when the join request arrives. | [`Group.hs:89-341`](../src/StoreService/Group.hs#L89-L341), [`Group/Command.hs:66-79`](../src/StoreService/Group/Command.hs#L66-L79), [`Group/Command.hs:243-250`](../src/StoreService/Group/Command.hs#L243-L250), [`Service.hs:453-467`](../src/StoreService/Service.hs#L453-L467) |
 | Console | The same binary under `--run-cli`, while the service is stopped: the terminal chat and the badge request lanes only, with `//issue`, `//issue name`, `//revoke`, `//balance`, `//record_refund` and `//close`. `//close` reads the chain through a client of its own, made at start with `[names]`. | [`Main.hs:25-28`](../Main.hs#L25-L28), [`Service.hs:385-576`](../src/StoreService/Service.hs#L385-L576) |
@@ -309,14 +309,14 @@ sequenceDiagram
     W-->>P: available: price, years, termStart, terms, community
   else registered
     W->>E: records simplex.contact and simplex.channel, resolver nonce
-    W->>C: APIConnectPlan per link, 3 s each, after the chain reads
-    C->>M: short link data, unless the link is in the chat database
+    W->>C: the link data per link, 3 s each, after the chain reads
+    C->>M: short link data
     W->>D: record edits of the last 365 days
     W-->>P: registered: entities, records, owner, recordEdits, expiresAt
   end
   P->>W: POST /api/link/preview: link
   W->>C: the same profile read, under the preview limits
-  W-->>P: type, kind, displayName, image, profile
+  W-->>P: type, profile; with a read profile, its names, image, and peer type or group type
 ```
 
 Notes:
