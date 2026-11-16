@@ -11,25 +11,25 @@ import Data.ByteString (ByteString)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Simplex.Messaging.Agent.Lock (Lock, createLock, withLock')
-import Simplex.Messaging.SimplexName (LabelHash (..))
+import Simplex.Messaging.SimplexName (LabelHash)
 import StoreService.Names.Phases (RegistrationId (..))
 
 -- | Each lock counts the requests holding or waiting for it, and its entry goes when none are left.
 type TurnLocks k = TVar (Map k (Lock, Int))
 
-data Turns = Turns {labelTurns :: TurnLocks ByteString, codeTurns :: TurnLocks ByteString, balanceTurns :: TurnLocks RegistrationId}
+data Turns = Turns {labelTurns :: TurnLocks LabelHash, codeTurns :: TurnLocks ByteString, balanceTurns :: TurnLocks RegistrationId}
 
 newTurns :: IO Turns
 newTurns = Turns <$> newTVarIO Map.empty <*> newTVarIO Map.empty <*> newTVarIO Map.empty
 
 withLabelTurn :: Turns -> LabelHash -> IO a -> IO a
-withLabelTurn Turns {labelTurns} (LabelHash h) = withTurn labelTurns h
+withLabelTurn Turns {labelTurns} = withTurn labelTurns
 
 -- | Taken in hash order, so two requests moving between the same names cannot each hold one and wait for the other.
 withLabelTurns :: Turns -> LabelHash -> LabelHash -> IO a -> IO a
-withLabelTurns turns a@(LabelHash ha) b@(LabelHash hb) action
-  | ha == hb = withLabelTurn turns a action
-  | ha < hb = withLabelTurn turns a $ withLabelTurn turns b action
+withLabelTurns turns a b action
+  | a == b = withLabelTurn turns a action
+  | a < b = withLabelTurn turns a $ withLabelTurn turns b action
   | otherwise = withLabelTurn turns b $ withLabelTurn turns a action
 
 -- | The label hashes, code hashes and balances with a holder or a waiter.
@@ -40,7 +40,7 @@ turnsCount Turns {labelTurns, codeTurns, balanceTurns} = atomically $ (\l c b ->
 
 -- | The requests holding or waiting for the label hash's turn.
 labelTurnCount :: Turns -> LabelHash -> STM Int
-labelTurnCount Turns {labelTurns} (LabelHash h) = maybe 0 snd . Map.lookup h <$> readTVar labelTurns
+labelTurnCount Turns {labelTurns} lh = maybe 0 snd . Map.lookup lh <$> readTVar labelTurns
 
 -- | Keyed by the code's SHA-256 hash.
 withCodeTurn :: Turns -> ByteString -> IO a -> IO a
