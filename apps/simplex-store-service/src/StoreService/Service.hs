@@ -44,10 +44,9 @@ module StoreService.Service
 where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
-import StoreService.Codes (singleUse)
 import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), GroupConfig (..), ListenerConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, runCmd, runGroupLane)
-import StoreService.Group.Command (CmdSource (..), GroupCmd (..), MoneyCmd (..), badgeTypeP, balanceArgsP, closeArgsP, codeP, maxMonths, maxNameYears, nameCodeP, prepaidCodeP, recordRefundArgsP, spelledCmd, textTokenP)
+import StoreService.Group.Command (CmdSource (..), MoneyCmd (..), consoleCmd, spelledCmd)
 import StoreService.Metrics (MetricsEnv (..), NamesSource (..), runMetrics)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
@@ -77,7 +76,6 @@ import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
 import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Bucket, takeFrom)
 import StoreService.Web.Server (WebEnv (weWebhookAt), checkSiteDirs, newWebEnv, runWebListeners)
-import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
@@ -85,7 +83,6 @@ import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
-import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, isRight)
@@ -409,27 +406,13 @@ badgeCmdHook turns chain_ cc = \case
   cmd -> pure $ Right cmd
 
 runBadgeCmd :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
-runBadgeCmd turns chain_ cc cmd = case A.parseOnly consoleCmdP cmd of
+runBadgeCmd turns chain_ cc cmd = case consoleCmd (safeDecodeUtf8 cmd) of
   Right c -> textReply <$> runCmd FromConsole cc turns (isJust chain_) (runMoneyCmd FromConsole turns chain_ cc) c
-  Left _ ->
-    pure $ chatCmdError $
-      "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], //issue name <length "
-        <> show minNameLength <> "-" <> show maxNameLength <> "> [years " <> show minNameYears <> "-" <> show maxNameYears
-        <> "] [paid|free], //revoke <code>, //balance <reference>, //record_refund <reference> <cents>, or //close <reference>"
+  Left usage -> pure $ chatCmdError $ T.unpack usage
   where
-    consoleCmdP = issueCmdP <|> issueNameCmdP <|> GCRevoke <$> revokeCmdP <|> GCRevokeName <$> revokeNameCmdP <|> GCMoney <$> moneyCmdP
     textReply = \case
       Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
       Left e -> chatCmdError (T.unpack e)
-
-revokeCmdP :: A.Parser BadgeCode
-revokeCmdP = "revoke " *> codeP <* (A.skipSpace *> A.endOfInput)
-
-revokeNameCmdP :: A.Parser NamePrepaidCode
-revokeNameCmdP = "revoke " *> prepaidCodeP <* (A.skipSpace *> A.endOfInput)
-
-moneyCmdP :: A.Parser MoneyCmd
-moneyCmdP = ("balance " *> balanceArgsP <|> "record_refund " *> recordRefundArgsP <|> "close " *> closeArgsP) <* (A.skipSpace *> A.endOfInput)
 
 runMoneyCmd :: CmdSource -> Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> MoneyCmd -> IO (Either T.Text T.Text)
 runMoneyCmd source turns chain_ cc = \case
@@ -547,33 +530,6 @@ dollars cents = "$" <> tshow whole <> "." <> T.justifyRight 2 '0' (tshow part)
   where
     (whole, part) = cents `quotRem` centsPerDollar
     centsPerDollar = 100
-
--- | Nothing marks a name code paid later, so an unpaid one would be refused for good.
-issueNameCmdP :: A.Parser GroupCmd
-issueNameCmdP = do
-  (len, years) <- "issue " *> nameCodeP
-  paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
-  when (paymentStatus == CPSUnpaid) $ fail "unpaid name code"
-  A.skipSpace
-  A.endOfInput
-  pure $ GCIssueName len years paymentStatus
-
-issueCmdP :: A.Parser GroupCmd
-issueCmdP =
-  "issue " *> do
-    badgeType <- badgeTypeP
-    months_ <- optional (A.space *> (A.decimal :: A.Parser Integer))
-    -- Kept outside optional, which would otherwise backtrack past a bad count.
-    months <- maybe (pure 1) checkMonths months_
-    paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
-    A.skipSpace
-    A.endOfInput
-    pure $ GCIssue badgeType months singleUse paymentStatus
-  where
-    -- Integer, because attoparsec's decimal wraps silently at Int, so the guard would check a truncated count.
-    checkMonths n
-      | n >= 1 && n <= fromIntegral maxMonths = pure (fromInteger n)
-      | otherwise = fail $ "months must be between 1 and " <> show maxMonths
 
 processQueuedRequests :: BadgeIssuerKey -> Maybe (TQueue GroupEvent) -> ServiceState -> IO ()
 processQueuedRequests key trackerQ_ env = do

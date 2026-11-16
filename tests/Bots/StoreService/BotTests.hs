@@ -450,7 +450,7 @@ operatorCmd cc cmd =
 
 issueCodeAs :: HasCallStack => ChatController -> BadgeType -> Int -> String -> IO BadgeCode
 issueCodeAs cc badgeType months status =
-  sendChatCmdStr cc ("//issue " <> T.unpack (textEncode badgeType) <> " " <> show months <> " " <> status) >>= \case
+  sendChatCmdStr cc ("//issue " <> T.unpack (textEncode badgeType) <> " months " <> show months <> " " <> status) >>= \case
     Right (CRCustomChatResponse _ response) -> case T.stripPrefix "Code: " response of
       Just c | Just code <- parseBadgeCode c -> pure code
       _ -> error $ "unexpected issue response: " <> T.unpack response
@@ -555,14 +555,17 @@ testMasterKeyB64 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 testIssueRejectsBadArguments :: HasCallStack => TestParams -> IO ()
 testIssueRejectsBadArguments ps =
   withStoreService ps $ \_ _ cc -> do
-    let refuses arg = issueRaw cc arg >>= (`shouldSatisfy` isLeft)
+    let refuses arg = (arg,) <$> issueRaw cc arg `shouldReturn` (arg, Left consoleIssueUsage)
     refuses "suporter"
-    refuses "supporter 0"
-    refuses "supporter 13"
-    refuses "supporter 18446744073709551617"
-    refuses "supporter 1 gratis"
+    refuses "supporter months 0"
+    refuses "supporter months 13"
+    refuses "supporter months 18446744073709551617"
+    refuses "supporter months 1 gratis"
+    refuses "supporter 12"
+    refuses "supporter uses 2"
     refuses ""
-    issueRaw cc "supporter 12 paid" >>= (`shouldSatisfy` isRight)
+    issueRaw cc "supporter months 12 paid" >>= (`shouldSatisfy` isRight)
+    operatorCmd cc "//issued supporter" `shouldReturn` Left badgeCmdUsage
 
 -- | Left is a refusal or a failure the service answers as a command error.
 issueRaw :: HasCallStack => ChatController -> String -> IO (Either T.Text ())
@@ -1904,11 +1907,14 @@ testRevokeRejectsTrailingInput ps =
     refused <- revokeRaw cc (formatBadgeCode code <> " junk")
     -- If the refused call revoked the code anyway, this fails with "Already revoked.".
     revokeCodeAs cc code `shouldReturn` Right "Revoked."
-    refused `shouldBe` Left badgeCmdUsage
+    refused `shouldBe` Left "Usage: //revoke <code>"
 
 -- The text is spelled out rather than taken from the service, so a change there fails here.
 badgeCmdUsage :: Text
-badgeCmdUsage = "Usage: //issue supporter|legend|investor [months 1-12] [paid|unpaid|free], //issue name <length 6-63> [years 2-10] [paid|free], //revoke <code>, //balance <reference>, //record_refund <reference> <cents>, or //close <reference>"
+badgeCmdUsage = "Usage:\n//issue <name <length>|supporter|legend|investor> [years|months <N>] [paid|unpaid|free]\n//revoke <code>\n//balance <reference>\n//record_refund <reference> <cents>\n//close <reference>"
+
+consoleIssueUsage :: Text
+consoleIssueUsage = "Usage: //issue <kind> [<length>] [years <Y> | months <M>] [paid|unpaid|free]\nname <length>: length 6–63, years 2–10, paid|free\nsupporter, legend, investor: months 1–12, paid|unpaid|free\ne.g. //issue name 6 years 5 · //issue supporter months 12"
 
 purchaseCmd :: BadgeMasterKey -> ServicePayment -> StoreServiceCommand
 purchaseCmd masterKey payment = STCPurchaseBadge {masterKey, payment, upgrade = Nothing}

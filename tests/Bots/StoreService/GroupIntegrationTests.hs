@@ -26,7 +26,7 @@ import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedR
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
-import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeNamed, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
+import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, consoleIssueUsage, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeNamed, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
@@ -466,7 +466,7 @@ testOperatorNameCodes ps = do
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis", "name 6 unpaid"] $ \args ->
-      (args,) <$> issueRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+      (args,) <$> issueRaw cc args `shouldReturn` (args, Left consoleIssueUsage)
     countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)
@@ -475,7 +475,7 @@ testOperatorNameCodes ps = do
         coverage minLength years state = (200, Just $ J.object ["minLength" J..= minLength, "years" J..= years, "state" J..= state])
         revoke = revokeNamed cc . formatNameCode
     check paid `shouldReturn` coverage 7 3 "unused"
-    revokeRaw cc (formatNameCode paid <> " junk") `shouldReturn` Left badgeCmdUsage
+    revokeRaw cc (formatNameCode paid <> " junk") `shouldReturn` Left "Usage: //revoke <code>"
     revoke paid `shouldReturn` Right "Revoked."
     revoke paid `shouldReturn` Right "Already revoked."
     check paid `shouldReturn` coverage 7 3 "revoked"
@@ -598,7 +598,7 @@ testCloseNamesOff ps = withStoreService ps $ \_ _ cc -> do
   Balances.source (chatStore cc) "s" 10000
   closeRaw cc "s" `shouldReturn` Left "Names are not enabled on this service."
   issueRaw cc "name 6" `shouldReturn` Left "Names are not enabled on this service, so name codes cannot be issued."
-  forM_ ["", "s junk"] $ \args -> (args,) <$> closeRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  forM_ ["", "s junk"] $ \args -> (args,) <$> closeRaw cc args `shouldReturn` (args, Left "Usage: //close <reference>")
   Balances.figures (chatStore cc) "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
 minuteText :: UTCTime -> Text
@@ -630,8 +630,8 @@ testRefundRefusals ps = withStoreService ps $ \_ _ cc -> do
   recordRefundRaw cc "s 9000" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $90.00."
   recordRefundRaw cc "s 10001" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $100.01."
   forM_ ["", "s", "s 0", "s -5", "s 100.00", "s 10000 junk", "s 99999999999999999999"] $ \args ->
-    (args,) <$> recordRefundRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
-  forM_ ["", "s 10000"] $ \args -> (args,) <$> balanceRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+    (args,) <$> recordRefundRaw cc args `shouldReturn` (args, Left "Usage: //record_refund <reference> <cents>")
+  forM_ ["", "s 10000"] $ \args -> (args,) <$> balanceRaw cc args `shouldReturn` (args, Left "Usage: //balance <reference>")
   operatorCmd cc "//refund s 10000" `shouldReturn` Left badgeCmdUsage
   Balances.figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
