@@ -17,13 +17,18 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.use
 import androidx.compose.ui.window.WindowState
+import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.chat.item.ImageFullScreenView
 import chat.simplex.common.views.chat.item.ImageGalleryProvider
+import chat.simplex.common.views.chat.item.wheelNotches
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
+import java.awt.Component
+import java.awt.event.MouseEvent
+import java.awt.event.MouseWheelEvent
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
@@ -50,15 +55,11 @@ class ImageFullScreenZoomTest {
     return ByteArrayOutputStream().also { ImageIO.write(image, "png", it) }.toByteArray()
   }
 
-  private fun gallery(image: ByteArray, decodedOnEachCall: Boolean = false) = object : ImageGalleryProvider {
-    private val decoded = ProviderMedia.Image(image, Image.makeFromEncoded(image).toComposeImageBitmap())
+  private fun gallery(image: ByteArray, data: () -> ByteArray = { image }) = object : ImageGalleryProvider {
+    private val bitmap = Image.makeFromEncoded(image).toComposeImageBitmap()
     override val initialIndex = 0
     override val totalMediaSize = mutableStateOf(1)
-    override fun getMedia(index: Int) = when {
-      index != 0 -> null
-      decodedOnEachCall -> ProviderMedia.Image(image, Image.makeFromEncoded(image).toComposeImageBitmap())
-      else -> decoded
-    }
+    override fun getMedia(index: Int) = if (index == 0) ProviderMedia.Image(data(), bitmap) else null
     override fun currentPageChanged(index: Int) {}
     override fun scrollToStart() {}
     override fun onDismiss(index: Int) {}
@@ -85,9 +86,10 @@ class ImageFullScreenZoomTest {
     render()
   }
 
-  private fun ImageComposeScene.drag(from: Offset, to: Offset, steps: Int = 1) {
+  private fun ImageComposeScene.drag(from: Offset, to: Offset, steps: Int = 1, beforeEachMove: () -> Unit = {}) {
     sendPointerEvent(PointerEventType.Press, from, buttons = PointerButtons(isPrimaryPressed = true), button = PointerButton.Primary)
     for (step in 1..steps) {
+      beforeEachMove()
       sendPointerEvent(PointerEventType.Move, from + (to - from) * (step.toFloat() / steps), buttons = PointerButtons(isPrimaryPressed = true))
       render()
     }
@@ -177,11 +179,18 @@ class ImageFullScreenZoomTest {
   }
 
   @Test
-  fun testDragPansWhenTheGalleryDecodesTheImageAgain() = fullScreen(gallery(quadrants(400, 200), decodedOnEachCall = true)) { closed ->
-    wheel(400f, -8f)
-    drag(Offset(400f, 300f), Offset(340f, 300f), steps = 6)
-    assertFalse(closed())
-    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(330), shownAt(350)))
+  fun testDragPansWhileTheGalleryDecodesTheImageAgain() {
+    val image = quadrants(400, 200)
+    val data = mutableStateOf(image)
+    fullScreen(gallery(image) { data.value }) { closed ->
+      wheel(400f, -8f)
+      drag(Offset(400f, 300f), Offset(340f, 300f), steps = 6) {
+        data.value = image.copyOf()
+        render()
+      }
+      assertFalse(closed())
+      assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(330), shownAt(350)))
+    }
   }
 
   @Test
@@ -224,5 +233,19 @@ class ImageFullScreenZoomTest {
       scene.render()
       assertEquals(Shown.RED, scene.shownAt(15))
     }
+  }
+
+  @Test
+  fun testMacPreciseScrollCountsAThirdOfANotch() {
+    fun wheel(rotation: Int, preciseRotation: Double) =
+      MouseWheelEvent(object : Component() {}, MouseEvent.MOUSE_WHEEL, 0, 0, 0, 0, 0, 0, 0, false, MouseWheelEvent.WHEEL_UNIT_SCROLL, 1, rotation, preciseRotation)
+    assertEquals(
+      listOf(-0.5f, -1f, -1.5f),
+      listOf(
+        wheelNotches(-1.5f, wheel(-1, -1.5), DesktopPlatform.MAC_AARCH64),
+        wheelNotches(-1f, wheel(-1, -1.0), DesktopPlatform.MAC_AARCH64),
+        wheelNotches(-1.5f, wheel(-1, -1.5), DesktopPlatform.WINDOWS_X86_64),
+      )
+    )
   }
 }

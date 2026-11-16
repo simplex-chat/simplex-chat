@@ -1,13 +1,20 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.awtEventOrNull
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.getBitmapFromByteArray
@@ -15,17 +22,26 @@ import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface
+import java.awt.event.MouseWheelEvent
+import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.pow
+
+private const val WHEEL_ZOOM_STEP = 1.2f
+private const val MAC_PRECISE_UNITS_PER_NOTCH = 3f
+private val DRAG_THRESHOLD = 4.dp
 
 @Composable
 actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap) {
   // Decoded once, as an animation recomposes this on every frame
   val still = remember(data) { getBitmapFromByteArray(data, false) ?: MR.images.decentralized.image.toComposeImageBitmap() }
+  val image = rememberAnimatedImage(data, still)
   Image(
-    rememberAnimatedImage(data, still),
+    image,
     contentDescription = stringResource(MR.strings.image_descr),
     contentScale = ContentScale.Fit,
-    modifier = modifier,
+    modifier = modifier.zoomable(image),
   )
 }
 
@@ -33,7 +49,7 @@ actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap:
 actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: () -> Unit) {
   Box {
     Box(Modifier.fillMaxSize().padding(bottom = 50.dp)) {
-      SurfaceFromPlayer(player, modifier)
+      SurfaceFromPlayer(player, modifier, frameModifier = { Modifier.zoomable(it) })
       IconButton(onClick = close, Modifier.padding(top = 5.dp)) {
         Icon(painterResource(MR.images.ic_arrow_back_ios_new), null, Modifier.size(30.dp), tint = MaterialTheme.colors.primary)
       }
@@ -43,7 +59,7 @@ actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: (
 }
 
 @Composable
-fun BoxScope.SurfaceFromPlayer(player: VideoPlayer, modifier: Modifier, contentScale: ContentScale = ContentScale.Fit) {
+fun BoxScope.SurfaceFromPlayer(player: VideoPlayer, modifier: Modifier, contentScale: ContentScale = ContentScale.Fit, frameModifier: @Composable (ImageBitmap) -> Modifier = { Modifier }) {
   val surface = remember {
     SkiaBitmapVideoSurface().also {
       player.player.videoSurface().set(it)
@@ -52,7 +68,7 @@ fun BoxScope.SurfaceFromPlayer(player: VideoPlayer, modifier: Modifier, contentS
   surface.bitmap.value?.let { bitmap ->
     Image(
       bitmap,
-      modifier = modifier.align(Alignment.Center),
+      modifier = modifier.then(frameModifier(bitmap)).align(Alignment.Center),
       contentDescription = null,
       contentScale = contentScale,
       alignment = Alignment.Center,
@@ -76,3 +92,68 @@ private fun BoxScope.Controls(player: VideoPlayer) {
     )
   }
 }
+
+@Composable
+private fun Modifier.zoomable(content: ImageBitmap): Modifier {
+  var scale by remember { mutableStateOf(1f) }
+  var translation by remember { mutableStateOf(Offset.Zero) }
+  val contentSize = IntSize(content.width, content.height)
+  fun panBy(delta: Offset, view: IntSize) {
+    translation = boundTranslation(translation + delta, view, contentSize, scale)
+  }
+  return this
+    .onSizeChanged { panBy(Offset.Zero, it) }
+    .pointerInput(contentSize) {
+      detectDragPastThreshold { pan -> panBy(pan, size) }
+    }
+    .pointerInput(contentSize) {
+      awaitPointerEventScope {
+        while (true) {
+          val event = awaitPointerEvent()
+          if (event.type != PointerEventType.Scroll) continue
+          val change = event.changes.first()
+          if (change.scrollDelta.y == 0f) continue
+          val notches = wheelNotches(change.scrollDelta.y, event.awtEventOrNull as? MouseWheelEvent, desktopPlatform)
+          val zoomed = (scale * WHEEL_ZOOM_STEP.pow(-notches)).coerceIn(1f, 20f)
+          val pointer = change.position - Offset(size.width / 2f, size.height / 2f) - translation
+          val shift = pointer * (1 - zoomed / scale)
+          scale = zoomed
+          panBy(shift, size)
+          change.consume()
+        }
+      }
+    }
+    .graphicsLayer {
+      scaleX = scale
+      scaleY = scale
+      translationX = translation.x
+      translationY = translation.y
+    }
+}
+
+private fun boundTranslation(translation: Offset, view: IntSize, content: IntSize, scale: Float): Offset {
+  val fit = min(view.width.toFloat() / content.width, view.height.toFloat() / content.height)
+  val maxX = max(0f, (content.width * fit * scale - view.width) / 2)
+  val maxY = max(0f, (content.height * fit * scale - view.height) / 2)
+  return Offset(translation.x.coerceIn(-maxX, maxX), translation.y.coerceIn(-maxY, maxY))
+}
+
+private suspend fun PointerInputScope.detectDragPastThreshold(onDrag: (Offset) -> Unit) = awaitEachGesture {
+  val down = awaitFirstDown(requireUnconsumed = false)
+  var pan = Offset.Zero
+  var dragging = false
+  do {
+    val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+    pan += change.positionChange()
+    if (!dragging) dragging = pan.getDistance() > DRAG_THRESHOLD.toPx()
+    if (dragging) {
+      onDrag(pan)
+      pan = Offset.Zero
+      change.consume()
+    }
+  } while (change.pressed)
+}
+
+internal fun wheelNotches(scrollDelta: Float, wheel: MouseWheelEvent?, platform: DesktopPlatform): Float =
+  if (platform.isMac() && wheel != null && abs(wheel.preciseWheelRotation - wheel.wheelRotation) > 0.001) scrollDelta / MAC_PRECISE_UNITS_PER_NOTCH
+  else scrollDelta

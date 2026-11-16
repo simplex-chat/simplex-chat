@@ -1,8 +1,6 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -11,13 +9,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
@@ -27,36 +21,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.net.URI
 import kotlin.math.absoluteValue
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.pow
-
-private const val WHEEL_ZOOM_STEP = 1.2f
-
-private fun boundTranslation(translation: Offset, view: IntSize, image: IntSize, scale: Float): Offset {
-  val fit = min(view.width.toFloat() / image.width, view.height.toFloat() / image.height)
-  val maxX = max(0f, (image.width * fit * scale - view.width) / 2)
-  val maxY = max(0f, (image.height * fit * scale - view.height) / 2)
-  return Offset(translation.x.coerceIn(-maxX, maxX), translation.y.coerceIn(-maxY, maxY))
-}
-
-private val DRAG_THRESHOLD = 4.dp
-
-private suspend fun PointerInputScope.detectDragPastThreshold(onDrag: (Offset) -> Unit) = awaitEachGesture {
-  val down = awaitFirstDown(requireUnconsumed = false)
-  var pan = Offset.Zero
-  var dragging = false
-  do {
-    val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
-    pan += change.positionChange()
-    if (!dragging) dragging = pan.getDistance() > DRAG_THRESHOLD.toPx()
-    if (dragging) {
-      onDrag(pan)
-      pan = Offset.Zero
-      change.consume()
-    }
-  } while (change.pressed)
-}
 
 interface ImageGalleryProvider {
   val initialIndex: Int
@@ -157,23 +121,17 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           translationX = 0f
           translationY = 0f
         }
-        fun modifier(image: ImageBitmap): Modifier {
-          val imageSize = IntSize(image.width, image.height)
-          fun panBy(delta: Offset, view: IntSize) {
-            val panned = boundTranslation(Offset(translationX, translationY) + delta, view, imageSize, scale)
-            translationX = panned.x
-            translationY = panned.y
-          }
-          return Modifier
+        val modifier = Modifier
           .onGloballyPositioned {
             viewWidth = it.size.width
           }
-          .then(if (appPlatform.isAndroid) Modifier.graphicsLayer(
+          .graphicsLayer(
             scaleX = scale,
             scaleY = scale,
             translationX = translationX,
             translationY = translationY,
-          ).pointerInput(Unit) {
+          )
+          .pointerInput(Unit) {
             detectTransformGestures(
               { allowTranslate },
               onGesture = { _, pan, gestureZoom, _ ->
@@ -188,39 +146,11 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
                 }
               }
             )
-          } else Modifier
-            .onSizeChanged { panBy(Offset.Zero, it) }
-            .pointerInput(imageSize) {
-              detectDragPastThreshold { pan -> panBy(pan, size) }
-            }
-            .pointerInput(imageSize) {
-              awaitPointerEventScope {
-                while (true) {
-                  val event = awaitPointerEvent()
-                  if (event.type != PointerEventType.Scroll) continue
-                  val change = event.changes.first()
-                  if (change.scrollDelta.y == 0f) continue
-                  val zoomed = (scale * WHEEL_ZOOM_STEP.pow(-change.scrollDelta.y)).coerceIn(1f, 20f)
-                  val pointer = change.position - Offset(size.width / 2f, size.height / 2f) - Offset(translationX, translationY)
-                  val shift = pointer * (1 - zoomed / scale)
-                  scale = zoomed
-                  panBy(shift, size)
-                  change.consume()
-                }
-              }
-            }
-            .graphicsLayer {
-              scaleX = scale
-              scaleY = scale
-              this.translationX = translationX
-              this.translationY = translationY
-            }
-          )
+          }
           .fillMaxSize()
-        }
         if (media is ProviderMedia.Image) {
           val (data: ByteArray, imageBitmap: ImageBitmap) = media
-          FullScreenImageView(modifier(imageBitmap), data, imageBitmap)
+          FullScreenImageView(modifier, data, imageBitmap)
         } else if (media is ProviderMedia.Video) {
           val preview = remember(media.uri.path) { base64ToBitmap(media.preview) }
           val uriDecrypted = remember(media.uri.path) { mutableStateOf(if (media.fileSource?.cryptoArgs == null) media.uri else media.fileSource.decryptedGet()) }
@@ -229,7 +159,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
             // settledCurrentPage finishes **only** when fully swiped
             // So we use pagerState.currentPage that changes right away as the screen is being dragged
             val isCurrentPage = index == pagerState.currentPage && kotlin.math.abs(pagerState.currentPageOffsetFraction) < 0.3f
-            VideoView(modifier(preview), decrypted, preview, isCurrentPage, close)
+            VideoView(modifier, decrypted, preview, isCurrentPage, close)
             DisposableEffect(Unit) {
               onDispose { playersToRelease.add(decrypted) }
             }
