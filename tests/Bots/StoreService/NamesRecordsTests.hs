@@ -52,7 +52,7 @@ import StoreService.Names.Records
 import StoreService.Names.Registration (LinkKind (..), Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, linkMaxBytes, multicallCalldata, nodeBytes, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Sender (Sender, followTransactions, newSender)
 import StoreService.Names.Signatures (parseSignature)
-import StoreService.Names.Store (EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
+import StoreService.Names.Store (EditOutcome (..), EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
 import StoreService.Names.Turns (newTurns)
 import StoreService.Web.Names.Records (EditInvalid (..), editRequest, editResponse, recordsHandler)
 import System.Timeout (timeout)
@@ -348,8 +348,8 @@ testRelayMined g = withSetup g $ \s -> do
   [raw] <- sentBy s 1
   fmap (\TxRequest {trTo, trData} -> (trTo, trData)) (decodeSignedTx raw) `shouldBe` Right (fakeResolver, viemSetCall)
   h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
-  stateOf s req `shouldReturn` Just (ESMined $ Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
+  stateOf s req `shouldReturn` Just (ESSettled $ EOApplied $ Just h)
 
 testDeadlineMargin :: TVar ChaChaDRG -> IO ()
 testDeadlineMargin g = withSetup g $ \s@Setup {node, records} -> do
@@ -361,7 +361,7 @@ testDeadlineMargin g = withSetup g $ \s@Setup {node, records} -> do
   setBlock node 2 $ deadline - 601
   r <- relay s req
   h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
 
 testRefusedNameState :: TVar ChaChaDRG -> IO ()
 testRefusedNameState g = withSetup g $ \s@Setup {node, records} -> do
@@ -384,7 +384,7 @@ testNonOwnerCap g = withSetup g $ \s@Setup {records} -> do
   r <- relay s =<< ownerEdit s viemChannelLink
   _ <- sentBy s 1
   h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
 
 testRefusedRepeat :: TVar ChaChaDRG -> IO ()
 testRefusedRepeat g = withSetup g $ \s@Setup {owner} -> do
@@ -394,7 +394,7 @@ testRefusedRepeat g = withSetup g $ \s@Setup {owner} -> do
   setNonce s 1
   r <- relay s req
   h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
 
 testCap :: TVar ChaChaDRG -> IO ()
 testCap g = withSetup g $ \s0@Setup {owner} -> do
@@ -425,18 +425,18 @@ testUnavailableBeforeSend g = withSetup g $ \s@Setup {node, records} -> do
   clearFault node "eth_feeHistory"
   r <- relay s req
   h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
 
 testDryRunRepeat :: TVar ChaChaDRG -> IO ()
 testDryRunRepeat g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerEdit s viemChannelLink
   revertDryRun node viemSetCall $ Just $ selector "InvalidSignature()"
-  relayEdit records req `shouldReturn` EAReverted (Just "InvalidSignature")
+  relayEdit records req `shouldReturn` EASettled (EOReverted $ Just "InvalidSignature")
   stateOf s req `shouldReturn` Nothing
   revertDryRun node viemSetCall Nothing
   r <- relay s req
   h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
 
 testDryRunReReadFails :: TVar ChaChaDRG -> IO ()
 testDryRunReReadFails g = withSetup g $ \s@Setup {node, records} -> do
@@ -458,7 +458,7 @@ testConcurrentTwin g = withSetup g $ \s@Setup {node, records} -> do
   _ <- sentBy s 1
   clearFault node "eth_getBlockByNumber"
   h <- mineSent s 1 True
-  within (wait answers) `shouldReturn` (EAApplied (Just h), EAApplied (Just h))
+  within (wait answers) `shouldReturn` (EASettled (EOApplied $ Just h), EASettled (EOApplied $ Just h))
   length <$> sentTransactions node `shouldReturn` 1
   editRows s `shouldReturn` 1
 
@@ -489,7 +489,7 @@ testChainStopsAfterSend g = withSetup g $ \s@Setup {node, records} -> do
   relayEdit records req `shouldReturn` EAPending
   clearFault node "eth_getBlockByNumber"
   h <- mineSent s 1 True
-  relayEdit records req `shouldReturn` EAApplied (Just h)
+  relayEdit records req `shouldReturn` EASettled (EOApplied $ Just h)
 
 -- two edits
 
@@ -500,8 +500,8 @@ testTwoMined g = withSetup g $ \s@Setup {node} -> do
   [raw] <- sentBy s 1
   fmap (\TxRequest {trTo, trData} -> (trTo, trData)) (decodeSignedTx raw) `shouldBe` Right (fakeResolver, viemMulticall)
   h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
-  stateOf s req `shouldReturn` Just (ESMined $ Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
+  stateOf s req `shouldReturn` Just (ESSettled $ EOApplied $ Just h)
   editRows s `shouldReturn` 1
   length <$> sentTransactions node `shouldReturn` 1
 
@@ -523,8 +523,8 @@ testTwoResend g = withSetup g $ \s@Setup {node, records} -> do
   req@EditRequest {erChanges = first :| rest} <- ownerTwo s 0 viemContactLink viemChannelLink
   r <- relay s req
   h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
-  relayEdit records req `shouldReturn` EAApplied (Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
+  relayEdit records req `shouldReturn` EASettled (EOApplied $ Just h)
   editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
   -- either edit alone is another body, checked anew against the nonce both moved
   setNonce s 2
@@ -537,13 +537,13 @@ testTwoDryRunReverted :: TVar ChaChaDRG -> IO ()
 testTwoDryRunReverted g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerTwo s 0 viemContactLink viemChannelLink
   revertDryRun node viemMulticall $ Just ""
-  relayEdit records req `shouldReturn` EAReverted Nothing
+  relayEdit records req `shouldReturn` EASettled (EOReverted Nothing)
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
   revertDryRun node viemMulticall Nothing
   r <- relay s req
   h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
 
 testTwoExpired :: TVar ChaChaDRG -> IO ()
 testTwoExpired g = withSetup g $ \s@Setup {node, records, owner} -> do
@@ -559,12 +559,12 @@ testTwoExpired g = withSetup g $ \s@Setup {node, records, owner} -> do
   stateOf s req `shouldReturn` Just ESPending
   setBlock node 302 $ deadline + 2
   recordsRound records
-  stateOf s req `shouldReturn` Just (ESReverted $ Just "SignatureExpired")
+  stateOf s req `shouldReturn` Just (ESSettled $ EOReverted $ Just "SignatureExpired")
   editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
 
 testTwoAppliedByAnother :: TVar ChaChaDRG -> IO ()
 testTwoAppliedByAnother g =
-  forM_ [(viemChannelLink, EAApplied Nothing), ("https://smp9.simplex.im/c#other", EAReverted $ Just "InvalidNonce")] $ \(held, answer) -> withSetup g $ \s -> do
+  forM_ [(viemChannelLink, EASettled (EOApplied Nothing)), ("https://smp9.simplex.im/c#other", EASettled (EOReverted $ Just "InvalidNonce"))] $ \(held, answer) -> withSetup g $ \s -> do
     req <- ownerTwo s 0 viemContactLink viemChannelLink
     r <- relay s req
     _ <- sentBy s 1
@@ -585,8 +585,8 @@ testTwoFirstNonceTaken g = withSetup g $ \s -> do
   setRecord s contactKey viemContactLink
   setRecord s channelKey viemChannelLink
   _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EAReverted (Just "InvalidNonce")
-  stateOf s req `shouldReturn` Just (ESReverted $ Just "InvalidNonce")
+  answerOf r `shouldReturn` EASettled (EOReverted $ Just "InvalidNonce")
+  stateOf s req `shouldReturn` Just (ESSettled $ EOReverted $ Just "InvalidNonce")
 
 -- | The name's yearly edits left now, by the relay's clock.
 editsLeftNow :: Setup -> IO EditsLeft
@@ -597,9 +597,9 @@ editsLeftNow Setup {store, clock} = readTVarIO clock >>= \now -> withTransaction
 testAppliedByAnother :: TVar ChaChaDRG -> IO ()
 testAppliedByAnother g =
   forM_
-    [ (False, viemChannelLink, EAApplied Nothing, ESMined Nothing, Just (EAApplied Nothing)),
-      (True, viemChannelLink, EAApplied Nothing, ESMined Nothing, Nothing),
-      (False, "https://smp9.simplex.im/c#other", EAReverted (Just "InvalidNonce"), ESReverted (Just "InvalidNonce"), Nothing)
+    [ (False, viemChannelLink, EASettled (EOApplied Nothing), ESSettled (EOApplied Nothing), Just (EASettled (EOApplied Nothing))),
+      (True, viemChannelLink, EASettled (EOApplied Nothing), ESSettled (EOApplied Nothing), Nothing),
+      (False, "https://smp9.simplex.im/c#other", EASettled (EOReverted $ Just "InvalidNonce"), ESSettled (EOReverted $ Just "InvalidNonce"), Nothing)
     ]
     $ \(pastDeadline, value, answer, state, repeated) -> withSetup g $ \s@Setup {node, records} -> do
       req <- ownerEdit s viemChannelLink
@@ -623,7 +623,7 @@ testDryRunAppliedByAnother g = withSetup g $ \s@Setup {node, records} -> do
   setNonce s 1
   setRecord s channelKey viemChannelLink
   revertDryRun node viemSetCall $ Just $ selector "InvalidNonce()"
-  relayEdit records req `shouldReturn` EAApplied Nothing
+  relayEdit records req `shouldReturn` EASettled (EOApplied Nothing)
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
 
@@ -635,14 +635,14 @@ testClearApplied g = withSetup g $ \s -> do
   setRecord s contactKey ""
   setRecord s channelKey ""
   _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EAApplied Nothing
+  answerOf r `shouldReturn` EASettled (EOApplied Nothing)
 
 testClearNonceTaken :: TVar ChaChaDRG -> IO ()
 testClearNonceTaken g = forM_ [contactKey, channelKey] $ \held -> withSetup g $ \s -> do
   r <- relayClear s
   setRecord s held "https://smp9.simplex.im/c#held"
   _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EAReverted (Just "InvalidNonce")
+  answerOf r `shouldReturn` EASettled (EOReverted $ Just "InvalidNonce")
 
 -- | viem's clear edit, with nonce 1, sent; then the owner's nonce moves past it.
 relayClear :: Setup -> IO (Async EditAnswer)
@@ -661,14 +661,14 @@ testRevertFreesNonce g = withSetup g $ \s@Setup {records} -> do
   r <- relay s first
   -- reverted before the deadline with the nonce unused, so the revert has no name
   _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EAReverted Nothing
+  answerOf r `shouldReturn` EASettled (EOReverted Nothing)
   second <- ownerEdit s "https://smp9.simplex.im/c#second"
   r' <- relay s second
   _ <- sentBy s 2
-  relayEdit records first `shouldReturn` EAReverted Nothing
+  relayEdit records first `shouldReturn` EASettled (EOReverted Nothing)
   stateOf s second `shouldReturn` Just ESPending
   h <- mineSent s 2 True
-  answerOf r' `shouldReturn` EAApplied (Just h)
+  answerOf r' `shouldReturn` EASettled (EOApplied $ Just h)
 
 testFailedReRead :: TVar ChaChaDRG -> IO ()
 testFailedReRead g = withSetup g $ \s@Setup {node, records} -> do
@@ -682,8 +682,8 @@ testFailedReRead g = withSetup g $ \s@Setup {node, records} -> do
   relayEdit records req `shouldReturn` EAPending
   clearFault node "eth_call"
   recordsRound records
-  stateOf s req `shouldReturn` Just (ESReverted Nothing)
-  relayEdit records req `shouldReturn` EAReverted Nothing
+  stateOf s req `shouldReturn` Just (ESSettled (EOReverted Nothing))
+  relayEdit records req `shouldReturn` EASettled (EOReverted Nothing)
 
 testResume :: TVar ChaChaDRG -> IO ()
 testResume g = withSetup g $ \s@Setup {node, owner} -> do
@@ -692,7 +692,7 @@ testResume g = withSetup g $ \s@Setup {node, owner} -> do
   s' <- restart s
   recordsRound (records s')
   h <- mineSent s' 1 True
-  stateOf s unsent `shouldReturn` Just (ESMined $ Just h)
+  stateOf s unsent `shouldReturn` Just (ESSettled $ EOApplied $ Just h)
   -- a sent edit whose transaction the node forgot while the service was down
   setNonce s 1
   sent <- signEdit s owner (channel "https://smp9.simplex.im/c#next") 1 deadline
@@ -703,7 +703,7 @@ testResume g = withSetup g $ \s@Setup {node, owner} -> do
   followTransactions (sender s'')
   (!! 2) <$> sentTransactions node `shouldReturn` raw
   h' <- mineSent s'' 3 True
-  stateOf s sent `shouldReturn` Just (ESMined $ Just h')
+  stateOf s sent `shouldReturn` Just (ESSettled $ EOApplied $ Just h')
   TxHash (C.keccak256 raw) `shouldBe` h'
 
 testBadRowSkipped :: TVar ChaChaDRG -> IO ()
@@ -724,7 +724,7 @@ testBadRowSkipped g = withSetup g $ \s@Setup {store, clock} -> do
   s' <- restart s
   recordsRound (records s')
   h <- mineSent s' 1 True
-  stateOf s req `shouldReturn` Just (ESMined $ Just h)
+  stateOf s req `shouldReturn` Just (ESSettled $ EOApplied $ Just h)
 
 testUnsentForgotten :: TVar ChaChaDRG -> IO ()
 testUnsentForgotten g = withSetup g $ \s@Setup {node, owner} -> do
@@ -747,11 +747,11 @@ testRepeatAfterRestart g = withSetup g $ \s@Setup {node} -> do
   req <- ownerEdit s viemChannelLink
   r <- relay s req
   h <- mineSent s 1 True
-  answerOf r `shouldReturn` EAApplied (Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
   s' <- restart s
   setFault node "eth_call" HttpFailure
   setFault node "eth_getBlockByNumber" HttpFailure
-  relayEdit (records s') req `shouldReturn` EAApplied (Just h)
+  relayEdit (records s') req `shouldReturn` EASettled (EOApplied $ Just h)
   length <$> sentTransactions node `shouldReturn` 1
 
 testRestartExpiredApplied :: TVar ChaChaDRG -> IO ()
@@ -766,8 +766,8 @@ testRestartExpiredApplied g = withSetup g $ \s@Setup {node} -> do
   setRecord s channelKey viemChannelLink
   s' <- restart s
   recordsRound (records s')
-  stateOf s req `shouldReturn` Just (ESMined Nothing)
-  relayEdit (records s') req `shouldReturn` EAApplied Nothing
+  stateOf s req `shouldReturn` Just (ESSettled (EOApplied Nothing))
+  relayEdit (records s') req `shouldReturn` EASettled (EOApplied Nothing)
 
 testExpiryFreesNonce :: TVar ChaChaDRG -> IO ()
 testExpiryFreesNonce g = withSetup g $ \s@Setup {node, records, sender} -> do
@@ -781,8 +781,8 @@ testExpiryFreesNonce g = withSetup g $ \s@Setup {node, records, sender} -> do
   stateOf s req `shouldReturn` Just ESPending
   setBlock node 302 $ deadline + 2
   recordsRound records
-  stateOf s req `shouldReturn` Just (ESReverted $ Just "SignatureExpired")
-  relayEdit records req `shouldReturn` EAReverted (Just "SignatureExpired")
+  stateOf s req `shouldReturn` Just (ESSettled $ EOReverted $ Just "SignatureExpired")
+  relayEdit records req `shouldReturn` EASettled (EOReverted $ Just "SignatureExpired")
   dropTransaction node $ C.keccak256 raw
   followTransactions sender
   sentTransactions node `shouldReturn` [raw, raw]
@@ -812,7 +812,7 @@ testYearWindow g = withSetup g $ \s@Setup {records, owner} -> do
   passTime s 1
   r <- relay s fourth
   h <- mineSent s 4 True
-  answerOf r `shouldReturn` EAApplied (Just h)
+  answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
   setNonce s 4
   fifth <- signEdit s owner (channel "https://smp9.simplex.im/c#fifth") 4 deadline
   relayEdit records fifth `shouldReturn` EALimited (addUTCTime (year + day) t0)
@@ -821,7 +821,7 @@ testYearWindow g = withSetup g $ \s@Setup {records, owner} -> do
 testYearResend :: TVar ChaChaDRG -> IO ()
 testYearResend g = withSetup g $ \s@Setup {node, records} -> do
   sent <- appliedEdits s 3
-  forM_ sent $ \(req, h) -> relayEdit records req `shouldReturn` EAApplied (Just h)
+  forM_ sent $ \(req, h) -> relayEdit records req `shouldReturn` EASettled (EOApplied $ Just h)
   editRows s `shouldReturn` 3
   length <$> sentTransactions node `shouldReturn` 3
 
@@ -830,7 +830,7 @@ testYearFailedRelays g = withSetup g $ \s@Setup {node, records, owner} -> do
   -- reverted on chain, its nonce unused, and its gas paid
   r <- relay s =<< ownerEdit s viemChannelLink
   _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EAReverted Nothing
+  answerOf r `shouldReturn` EASettled (EOReverted Nothing)
   editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
   -- refused: another signer, then a passed deadline
   other <- newEphemeralWallet g
@@ -838,7 +838,7 @@ testYearFailedRelays g = withSetup g $ \s@Setup {node, records, owner} -> do
   (relayEdit records =<< signEdit s owner (channel viemChannelLink) 0 (genesis - 1)) `shouldReturn` EARefused
   -- never sent: the dry run reverted, then the fee read failed
   setFault node "eth_estimateGas" $ revertFault $ selector "InvalidSignature()"
-  (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#dry") 0 deadline) `shouldReturn` EAReverted (Just "InvalidSignature")
+  (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#dry") 0 deadline) `shouldReturn` EASettled (EOReverted $ Just "InvalidSignature")
   clearFault node "eth_estimateGas"
   setFault node "eth_feeHistory" HttpFailure
   (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#fee") 0 deadline) `shouldReturn` EAUnavailable
@@ -853,7 +853,7 @@ testYearFailedRelays g = withSetup g $ \s@Setup {node, records, owner} -> do
   relayEdit records fourth `shouldReturn` EALimited (addUTCTime year t0)
   -- the owner spent the pending edit's nonce on another body, so it reverts InvalidNonce, and still counts
   _ <- mineSent s 3 False
-  stateOf s unsettled `shouldReturn` Just (ESReverted $ Just "InvalidNonce")
+  stateOf s unsettled `shouldReturn` Just (ESSettled $ EOReverted $ Just "InvalidNonce")
   relayEdit records fourth `shouldReturn` EALimited (addUTCTime year t0)
   editRows s `shouldReturn` 3
 
@@ -871,7 +871,7 @@ appliedEditsFrom s@Setup {owner} from sentBefore n =
     req <- signEdit s owner (channel $ "https://smp9.simplex.im/c#e" <> T.pack (show nonce)) nonce deadline
     r <- relay s req
     h <- mineSent s (sentBefore + i + 1) True
-    answerOf r `shouldReturn` EAApplied (Just h)
+    answerOf r `shouldReturn` EASettled (EOApplied $ Just h)
     pure (req, h)
 
 -- | Room in the yearly limit for the tests of the hourly cap.

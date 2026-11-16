@@ -23,7 +23,7 @@ import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), EditsLeft (..), Records, relayEdit)
 import StoreService.Names.Registration (LinkKind, nameLink)
 import StoreService.Names.Signatures (parseSignature)
-import StoreService.Names.Store (RecordChange (..), SignedChange (..))
+import StoreService.Names.Store (EditOutcome (..), RecordChange (..), SignedChange (..))
 import StoreService.Store.Invoices (unixSeconds)
 import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonError, jsonResponse, nameBodyBytes, providerUnavailable, rateLimited, readBoundedBody)
 
@@ -72,8 +72,8 @@ editRequest o = do
 
 editResponse :: EditAnswer -> Response
 editResponse = \case
-  EAApplied tx -> jsonResponse status200 $ J.object ["tx" .= ((\(TxHash h) -> hex h) <$> tx)]
-  EAReverted revert -> jsonResponse status409 $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= revert]
+  EASettled (EOApplied tx) -> jsonResponse status200 $ J.object ["tx" .= ((\(TxHash h) -> hex h) <$> tx)]
+  EASettled (EOReverted revert) -> jsonResponse status409 $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= revert]
   EAPending -> jsonError status504 "edit_pending"
   EARefused -> badRequest
   EAUnavailable -> providerUnavailable

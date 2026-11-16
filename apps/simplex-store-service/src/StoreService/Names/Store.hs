@@ -56,6 +56,7 @@ module StoreService.Names.Store
     NewTransaction (..),
     RecordChange (..),
     SignedChange (..),
+    EditOutcome (..),
     EditState (..),
     RecordEdit (..),
     NewRecordEdit (..),
@@ -582,7 +583,14 @@ data NewTransaction = NewTransaction
 data RecordChange = RCSetText LinkKind Text | RCClear
   deriving (Eq, Show)
 
-data EditState = ESPending | ESMined (Maybe TxHash) | ESReverted (Maybe Text)
+data EditOutcome
+  = -- | mined, Nothing when found applied with the applying transaction unknown
+    EOApplied (Maybe TxHash)
+  | -- | the revert's name when known; the nonce is free again
+    EOReverted (Maybe Text)
+  deriving (Eq, Show)
+
+data EditState = ESPending | ESSettled EditOutcome
   deriving (Eq, Show)
 
 -- | A change the owner signed for the resolver's nonce it names.
@@ -1684,8 +1692,8 @@ toRecordEdit (reId, Binary lh, Binary owner, Binary reBodyHash, state, revert, m
   reChanges <- note ("name_record_edits changes: " <> tshow reId) . L.nonEmpty =<< mapM toChange changeRows
   let reState = case state of
         ETPending -> ESPending
-        ETMined -> ESMined minedTx
-        ETReverted -> ESReverted revert
+        ETMined -> ESSettled $ EOApplied minedTx
+        ETReverted -> ESSettled $ EOReverted revert
   pure RecordEdit {reId, reLabelHash = LabelHash lh, reOwner, reChanges, reBodyHash, reState, reCreatedAt}
   where
     toChange (nonce, key_, value_, deadline, Binary sig) = do
@@ -1720,8 +1728,8 @@ settleRecordEdit db editId state =
   where
     (tag, revert, minedTx) = case state of
       ESPending -> (ETPending, Nothing, Nothing)
-      ESMined tx -> (ETMined, Nothing, tx)
-      ESReverted name -> (ETReverted, name, Nothing)
+      ESSettled (EOApplied tx) -> (ETMined, Nothing, tx)
+      ESSettled (EOReverted name) -> (ETReverted, name, Nothing)
 
 pendingEditIds :: DB.Connection -> IO [RecordEditId]
 pendingEditIds db = map fromOnly <$> DB.query db (mkQuery "SELECT name_record_edit_id FROM @name_record_edits WHERE state = ? ORDER BY name_record_edit_id") (Only ETPending)
