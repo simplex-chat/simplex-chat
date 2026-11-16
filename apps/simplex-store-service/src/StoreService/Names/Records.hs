@@ -160,7 +160,7 @@ relayEdit rs@Records {rsPendingAfter, rsEditsPerYear, rsNow} req@EditRequest {er
 newEdit :: Records -> TVar Bool -> EditRequest -> Address -> BodyHash -> IO EditAnswer
 newEdit rs timer req signer bodyHash =
   chainAccepts rs req signer >>= \case
-    Left _ -> pure EAUnavailable
+    Left e -> EAUnavailable <$ logWarn ("names records: an edit's chain checks failed: " <> tshow e)
     Right False -> pure EARefused
     Right True ->
       insertEdit rs req signer bodyHash >>= \case
@@ -210,7 +210,10 @@ sendNew rs timer editId =
         Left e -> do
           answer <- case e of
             -- anyone can relay a signed edit, so a revert may mean another relayer applied it
-            SEChain (ChainReverted name) -> either (const EAUnavailable) (EASettled . fromMaybe (EOReverted $ revertText =<< name)) <$> judge rs edit
+            SEChain (ChainReverted name) ->
+              judge rs edit >>= \case
+                Left e' -> EAUnavailable <$ logWarn ("names records: edit " <> tshow editId <> " reverted in its dry run and was not judged: " <> tshow e')
+                Right outcome -> pure $ EASettled $ fromMaybe (EOReverted $ revertText =<< name) outcome
             _ -> EAUnavailable <$ logWarn ("names records: edit " <> tshow editId <> " not sent: " <> tshow e)
           Just answer <$ forget rs editId
 
