@@ -1002,10 +1002,10 @@ nameFixture fixture cc name = apiFixture ("names/" <> fixture) cc [] FixtureRequ
 
 apiFixture :: String -> TestCC -> [(String, String)] -> FixtureRequests -> IO ()
 apiFixture fixture TestCC {chatController = cc} placeholders FixtureRequests {frMarkdown, frUris, frCommands} = do
-  responses <- mapM (\cmd -> (JK.fromString cmd J..=) . stableJSON <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))) frCommands
+  responses <- mapM (\cmd -> (JK.fromString cmd J..=) <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))) frCommands
   parses <- mapM (\text -> (JK.fromString text J..=) <$> decodeJSON (chatParseMarkdown $ B.pack text)) frMarkdown
   uris <- mapM (\uri -> (JK.fromString uri J..=) <$> decodeJSON (chatParseUri False $ B.pack uri)) frUris
-  writeFixture fixture . withPlaceholders $ J.object ["commands" J..= J.object responses, "markdown" J..= J.object parses, "uris" J..= J.object uris]
+  writeFixture fixture . withPlaceholders . stableJSON $ J.object ["commands" J..= J.object responses, "markdown" J..= J.object parses, "uris" J..= J.object uris]
   where
     decodeJSON :: LB.ByteString -> IO J.Value
     decodeJSON = either fail pure . J.eitherDecode
@@ -1041,6 +1041,6 @@ stableJSON = \case
   v -> v
   where
     stableField k v
-      | k `elem` ["createdAt", "updatedAt", "chatTs"] = J.String "1970-01-01T00:00:00Z"
+      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt"] = J.String "1970-01-01T00:00:00Z"
       | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId"] = J.String $ JK.toText k
       | otherwise = stableJSON v
