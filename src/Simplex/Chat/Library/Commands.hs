@@ -4599,17 +4599,15 @@ processChatCommand cxt nm = \case
                 contactSLinkData_ <- mapM (linkDataBadge presHeader) =<< liftIO (decodeLinkUserData cData)
                 let linkProfile_ = (\ContactShortLinkData {profile} -> profile) <$> contactSLinkData_
                     linkDomain_ = linkProfile_ >>= \Profile {contactDomain} -> claimDomain <$> contactDomain
-                    planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
                     refreshContact ct' = case (planDomain, linkProfile_) of
                       (Just _, Just p) -> updateContactFromLinkData user ct' presHeader p
                       _ -> pure (ct', mempty)
-                    knownMoved moved = NCMoved . movedChat moved <$> knownChat_
                 forM_ planDomain $ \nameDomain ->
                   unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> do
                     (ct'', moved) <- refreshContact ct'
-                    pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') (knownMoved moved))
+                    pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') (knownMoved moved knownChat_))
                   _ -> do
                     let ContactLinkData _ UserContactData {owners} = cData
                         ov = verifyLinkOwner rootKey owners l' sig_
@@ -4617,13 +4615,13 @@ processChatCommand cxt nm = \case
                     case plan of
                       CPContactAddress (CAPKnown ct') _ -> do
                         (ct'', moved) <- refreshContact ct'
-                        pure (con l' cReq, CPContactAddress (CAPKnown ct'') (knownMoved moved))
+                        pure (con l' cReq, CPContactAddress (CAPKnown ct'') (knownMoved moved knownChat_))
                       CPContactAddress (CAPContactViaAddress ct') _ -> do
                         (ct'', moved) <- refreshContact ct'
-                        pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') (knownMoved moved))
+                        pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') (knownMoved moved knownChat_))
                       CPGroupLink (GLPKnown g@GroupInfo {businessChat = Just _} u o os) _ | Just d <- planDomain -> do
                         (g', moved) <- withNameLock user (Just d) $ withFastStore' $ \db -> setPreparedGroupDomain db user g d
-                        pure (con l' cReq, CPGroupLink (GLPKnown g' u o os) (knownMoved moved))
+                        pure (con l' cReq, CPGroupLink (GLPKnown g' u o os) (knownMoved moved knownChat_))
                       _ -> pure (con l' cReq, plan)
               knownLinkPlans :: CM (Maybe (ACreatedConnLink, ConnectionPlan))
               knownLinkPlans = withFastStore $ \db ->
@@ -4640,6 +4638,7 @@ processChatCommand cxt nm = \case
           (nl', simplexName_) = case nl of
             CTLink sl -> (CTLink (serverShortLink sl), Nothing)
             CTName ni -> (nl, Just ni)
+          planDomain = nameDomain <$> simplexName_
           ctType = case nl of
             CTLink (CSLContact _ t _ _) -> t
             CTName SimplexNameInfo {nameType = NTContact} -> CCTContact
@@ -4662,9 +4661,7 @@ processChatCommand cxt nm = \case
               groupLinkPlan knownChat_ l' = do
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays}), cReq) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                let planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
-                    nc_ = NCMoved <$> knownChat_
-                    knownMoved moved = NCMoved . movedChat moved <$> knownChat_
+                let nc_ = NCMoved <$> knownChat_
                 plan <- if
                   | not direct && unsupportedGroupType groupSLinkData_ -> pure $ CPGroupLink (GLPUpdateRequired groupSLinkData_) nc_
                   | not direct && null relays -> pure $ CPGroupLink (GLPNoRelays groupSLinkData_) nc_
@@ -4685,7 +4682,7 @@ processChatCommand cxt nm = \case
                       -- data and mark it verified, so the check below passes and future by-name lookups match
                       case (planDomain, plan0, groupSLinkData_) of
                         (Just nameDomain, CPGroupLink (GLPKnown g u o os) _, Just sLinkData) ->
-                          (\(g', _, moved) -> CPGroupLink (GLPKnown g' u o os) (knownMoved moved)) <$> updateGroupFromLinkData user g sLinkData (Just nameDomain)
+                          (\(g', _, moved) -> CPGroupLink (GLPKnown g' u o os) (knownMoved moved knownChat_)) <$> updateGroupFromLinkData user g sLinkData (Just nameDomain)
                         _ -> pure plan0
                 forM_ planDomain $ \nameDomain ->
                   let domain_ = groupClaim =<< case plan of
@@ -4719,6 +4716,8 @@ processChatCommand cxt nm = \case
             DirectChat ct'@Contact {contactId, profile = p} | contactId `elem` ctIds -> DirectChat ct' {profile = p {contactDomainVerified = Just DVMoved}}
             GroupChat g@GroupInfo {groupId} s | groupId `elem` gIds -> GroupChat g {groupDomainVerified = Just DVMoved} s
             _ -> c
+          knownMoved :: MovedChats -> Maybe AChatInfo -> Maybe NameChange
+          knownMoved moved = fmap $ NCMoved . movedChat moved
           knownNamePlan :: (ACreatedConnLink, ConnectionPlan) -> (Maybe AChatInfo -> ShortLinkContact -> CM (ACreatedConnLink, ConnectionPlan)) -> CM (ACreatedConnLink, ConnectionPlan)
           knownNamePlan r@(l, plan) linkPlan
             | resolveMode == PRMNever || isNothing simplexName_ = pure r
