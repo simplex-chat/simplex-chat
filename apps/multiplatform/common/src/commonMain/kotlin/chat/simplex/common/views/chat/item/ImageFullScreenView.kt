@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
@@ -21,13 +22,20 @@ import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.net.URI
+import kotlin.math.absoluteValue
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 
 private const val WHEEL_ZOOM_STEP = 1.2f
 
-private fun withinView(translation: Offset, size: IntSize, scale: Float): Offset {
-  val maxX = size.width * (scale - 1f) / 2
-  val maxY = size.height * (scale - 1f) / 2
+internal fun panFitsWidth(viewWidth: Int, scale: Float, translationX: Float, panX: Float): Boolean =
+  viewWidth * (scale - 1f) - ((translationX + panX * scale).absoluteValue * 2) > 0
+
+private fun withinFittedImage(translation: Offset, view: IntSize, image: ImageBitmap, scale: Float): Offset {
+  val fit = min(view.width.toFloat() / image.width, view.height.toFloat() / image.height)
+  val maxX = max(0f, (image.width * fit * scale - view.width) / 2)
+  val maxY = max(0f, (image.height * fit * scale - view.height) / 2)
   return Offset(translation.x.coerceIn(-maxX, maxX), translation.y.coerceIn(-maxY, maxY))
 }
 
@@ -121,27 +129,51 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
         }
       } else {
         var scale by remember { mutableStateOf(1f) }
-        var translation by remember { mutableStateOf(Offset.Zero) }
+        var translationX by remember { mutableStateOf(0f) }
+        var translationY by remember { mutableStateOf(0f) }
+        var viewWidth by remember { mutableStateOf(0) }
         var allowTranslate by remember { mutableStateOf(true) }
         LaunchedEffect(settledCurrentPage) {
           scale = 1f
-          translation = Offset.Zero
+          translationX = 0f
+          translationY = 0f
         }
+        val shown = remember(media) {
+          when (media) {
+            is ProviderMedia.Image -> media.image
+            is ProviderMedia.Video -> base64ToBitmap(media.preview)
+          }
+        }
+        val currentShown by rememberUpdatedState(shown)
         val modifier = Modifier
+          .onGloballyPositioned {
+            viewWidth = it.size.width
+          }
           .graphicsLayer(
             scaleX = scale,
             scaleY = scale,
-            translationX = translation.x,
-            translationY = translation.y,
+            translationX = translationX,
+            translationY = translationY,
           )
           .pointerInput(Unit) {
             detectTransformGestures(
-              { allowTranslate || !appPlatform.isAndroid },
+              { zoom -> !appPlatform.isAndroid || (zoom != 1f && allowTranslate) },
               onGesture = { _, pan, gestureZoom, _ ->
                 scale = (scale * gestureZoom).coerceIn(1f, 20f)
-                val panned = withinView(translation + pan * scale, size, scale)
-                allowTranslate = gestureZoom != 1f || panned != translation
-                translation = panned
+                if (appPlatform.isAndroid) {
+                  allowTranslate = panFitsWidth(viewWidth, scale, translationX, pan.x)
+                  if (scale > 1 && allowTranslate) {
+                    translationX += pan.x * scale
+                    translationY += pan.y * scale
+                  } else if (allowTranslate) {
+                    translationX = 0f
+                    translationY = 0f
+                  }
+                } else {
+                  val panned = withinFittedImage(Offset(translationX, translationY) + pan * scale, size, currentShown, scale)
+                  translationX = panned.x
+                  translationY = panned.y
+                }
               }
             )
           }
@@ -153,7 +185,9 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
                 if (event.type != PointerEventType.Scroll || change.scrollDelta.y == 0f) continue
                 val zoomed = (scale * WHEEL_ZOOM_STEP.pow(-change.scrollDelta.y)).coerceIn(1f, 20f)
                 val shift = (change.position - Offset(size.width / 2f, size.height / 2f)) * (scale - zoomed)
-                translation = withinView(translation + shift, size, zoomed)
+                val panned = withinFittedImage(Offset(translationX, translationY) + shift, size, currentShown, zoomed)
+                translationX = panned.x
+                translationY = panned.y
                 scale = zoomed
                 change.consume()
               }
@@ -164,7 +198,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           val (data: ByteArray, imageBitmap: ImageBitmap) = media
           FullScreenImageView(modifier, data, imageBitmap)
         } else if (media is ProviderMedia.Video) {
-          val preview = remember(media.uri.path) { base64ToBitmap(media.preview) }
+          val preview = shown
           val uriDecrypted = remember(media.uri.path) { mutableStateOf(if (media.fileSource?.cryptoArgs == null) media.uri else media.fileSource.decryptedGet()) }
           val decrypted = uriDecrypted.value
           if (decrypted != null) {

@@ -273,7 +273,7 @@ fun interactionSourceWithTapDetection(onPress: () -> Unit, onClick: () -> Unit, 
 }
 
 suspend fun PointerInputScope.detectTransformGestures(
-  allowIntercept: () -> Boolean,
+  allowIntercept: (zoom: Float) -> Boolean,
   panZoomLock: Boolean = false,
   onGesture: (centroid: Offset, pan: Offset, zoom: Float, rotation: Float) -> Unit
 ) {
@@ -324,7 +324,7 @@ suspend fun PointerInputScope.detectTransformGestures(
               onGesture(centroid, panChange, zoomChange, effectiveRotation)
             }
             event.changes.forEach {
-              if (it.positionChanged() && allowIntercept()) {
+              if (it.positionChanged() && allowIntercept(zoom)) {
                 it.consume()
               }
             }

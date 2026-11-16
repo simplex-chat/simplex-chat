@@ -18,6 +18,7 @@ import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.chat.item.ImageFullScreenView
 import chat.simplex.common.views.chat.item.ImageGalleryProvider
+import chat.simplex.common.views.chat.item.panFitsWidth
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
@@ -31,34 +32,42 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalComposeUiApi::class)
 class ImageFullScreenZoomTest {
-  private val redAndBlue: ByteArray = run {
-    val image = BufferedImage(400, 200, BufferedImage.TYPE_INT_RGB)
+  private fun quadrants(width: Int, height: Int): ByteArray {
+    val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
     image.createGraphics().apply {
       color = java.awt.Color.RED
-      fillRect(0, 0, 200, 200)
+      fillRect(0, 0, width / 2, height / 2)
       color = java.awt.Color.BLUE
-      fillRect(200, 0, 200, 200)
+      fillRect(width / 2, 0, width / 2, height / 2)
+      color = java.awt.Color.GREEN
+      fillRect(0, height / 2, width / 2, height / 2)
+      color = java.awt.Color.YELLOW
+      fillRect(width / 2, height / 2, width / 2, height / 2)
       dispose()
     }
-    ByteArrayOutputStream().also { ImageIO.write(image, "png", it) }.toByteArray()
+    return ByteArrayOutputStream().also { ImageIO.write(image, "png", it) }.toByteArray()
   }
 
-  private val gallery = object : ImageGalleryProvider {
+  private fun gallery(image: ByteArray) = object : ImageGalleryProvider {
     override val initialIndex = 0
     override val totalMediaSize = mutableStateOf(1)
-    override fun getMedia(index: Int) = if (index == 0) ProviderMedia.Image(redAndBlue, Image.makeFromEncoded(redAndBlue).toComposeImageBitmap()) else null
+    override fun getMedia(index: Int) = if (index == 0) ProviderMedia.Image(image, Image.makeFromEncoded(image).toComposeImageBitmap()) else null
     override fun currentPageChanged(index: Int) {}
     override fun scrollToStart() {}
     override fun onDismiss(index: Int) {}
   }
 
-  private enum class Shown { RED, BLUE, BACKGROUND }
+  private enum class Shown { RED, BLUE, GREEN, YELLOW, BACKGROUND }
 
-  private fun ImageComposeScene.shownAt(x: Int, y: Int = 300): Shown? {
+  private fun ImageComposeScene.shownAt(x: Int, y: Int = 200): Shown? {
     val color = Color(Bitmap.makeFromImage(render()).getColor(x, y))
+    fun high(c: Float) = c > 0.8f
+    fun low(c: Float) = c < 0.2f
     return when {
-      color.red > 0.8f && color.blue < 0.2f -> Shown.RED
-      color.blue > 0.8f && color.red < 0.2f -> Shown.BLUE
+      high(color.red) && low(color.green) && low(color.blue) -> Shown.RED
+      low(color.red) && low(color.green) && high(color.blue) -> Shown.BLUE
+      low(color.red) && high(color.green) && low(color.blue) -> Shown.GREEN
+      high(color.red) && high(color.green) && low(color.blue) -> Shown.YELLOW
       color.red < 0.1f && color.green < 0.1f && color.blue < 0.1f -> Shown.BACKGROUND
       else -> null
     }
@@ -82,11 +91,11 @@ class ImageFullScreenZoomTest {
     sendPointerEvent(PointerEventType.Release, Offset(x, 300f), buttons = PointerButtons(), button = PointerButton.Primary)
   }
 
-  private fun fullScreen(test: ImageComposeScene.(closed: () -> Boolean) -> Unit) {
+  private fun fullScreen(image: ByteArray = quadrants(400, 200), test: ImageComposeScene.(closed: () -> Boolean) -> Unit) {
     var closed = false
     simplexWindowState.windowState = WindowState(size = DpSize(800.dp, 600.dp))
     ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
-      ImageFullScreenView({ gallery }) { closed = true }
+      ImageFullScreenView({ gallery(image) }) { closed = true }
     }.use { scene -> scene.test { closed } }
   }
 
@@ -121,7 +130,7 @@ class ImageFullScreenZoomTest {
     wheel(0f, -3f)
     drag(Offset(300f, 400f), Offset(300f, 300f))
     assertFalse(closed())
-    assertEquals(listOf(Shown.RED, Shown.BACKGROUND), listOf(shownAt(300, 500), shownAt(300, 570)))
+    assertEquals(listOf(Shown.RED, Shown.GREEN), listOf(shownAt(300, 240), shownAt(300, 270)))
   }
 
   @Test
@@ -131,14 +140,31 @@ class ImageFullScreenZoomTest {
     wheel(400f, 1f)
     drag(Offset(300f, 400f), Offset(300f, 300f))
     assertFalse(closed())
-    assertEquals(listOf(Shown.RED, Shown.BACKGROUND), listOf(shownAt(300, 500), shownAt(300, 570)))
+    assertEquals(listOf(Shown.RED, Shown.GREEN), listOf(shownAt(300, 240), shownAt(300, 270)))
   }
 
   @Test
-  fun testVerticalDragStopsAtTheImageEdge() = fullScreen { closed ->
+  fun testDragKeepsTheZoomedImageOverTheView() = fullScreen { closed ->
     wheel(400f, -3f)
     drag(Offset(300f, 100f), Offset(300f, 550f), steps = 45)
     assertFalse(closed())
-    assertEquals(listOf(Shown.BACKGROUND, Shown.RED), listOf(shownAt(300, 150), shownAt(300, 200)))
+    assertEquals(listOf(Shown.RED, Shown.RED, Shown.GREEN), listOf(shownAt(300, 10), shownAt(300, 330), shownAt(300, 360)))
+  }
+
+  @Test
+  fun testDragKeepsALetterboxedImageInTheView() = fullScreen(quadrants(200, 400)) { closed ->
+    wheel(400f, -8f)
+    drag(Offset(750f, 300f), Offset(50f, 300f))
+    drag(Offset(750f, 300f), Offset(50f, 300f))
+    assertFalse(closed())
+    assertEquals(Shown.BLUE, shownAt(790, 200))
+  }
+
+  @Test
+  fun testAndroidPansOnlyWithinTheWidth() {
+    assertEquals(listOf(false, false, false), listOf(-1f, 0f, 1f).map { panFitsWidth(800, 1f, 0f, it) })
+    assertFalse(panFitsWidth(800, 2f, 400f, 5f))
+    assertTrue(panFitsWidth(800, 2f, 400f, -5f))
+    assertTrue(panFitsWidth(800, 2f, 0f, 5f))
   }
 }
