@@ -11,6 +11,7 @@ final class NameAlertsTests: XCTestCase {
     private let lock = NSLock()
     private var unrecorded: [String] = []
     private var shownLocalChats: [String] = []
+    private var opened = 0
 
     @MainActor
     override func setUp() async throws {
@@ -41,6 +42,7 @@ final class NameAlertsTests: XCTestCase {
         try await press("Open chat")
         try await waitFor { ChatModel.shared.chatId == "@2" }
         try await assertRequested { $0.hasPrefix("/_get chat @2 ") }
+        XCTAssertEqual(opened, 1)
     }
 
     @MainActor
@@ -88,6 +90,8 @@ final class NameAlertsTests: XCTestCase {
         connect("@alice.simplex")
         try await assertTexts(["cath", "@alice.simplex", "Open new chat", "Cancel"])
         XCTAssertEqual(shownLocalChats, ["@2"])
+        try await press("Open new chat")
+        try await assertRequested { $0.hasPrefix("/_prepare contact 1 ") && $0.contains(" domain=alice.simplex ") }
     }
 
     @MainActor
@@ -173,6 +177,8 @@ final class NameAlertsTests: XCTestCase {
         ChatModel.shared.addChat(Chat(chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: nil), chatItems: []))
         let event: APIResult<ChatEvent> = decodeAPIResult(try JSONSerialization.data(withJSONObject: singleFieldJSON(try fixtureJSON("names/event-name-moved"))))
         guard case let .result(ev) = event else { return XCTFail("event not decoded: \(event.responseType)") }
+        XCTAssertEqual(ev.responseType, "nameMoved")
+        XCTAssertEqual(ev.details, "userId: 1\ncontactIds: [2]\ngroupIds: [1]")
         await processReceivedMsg(ev)
         guard case let .direct(movedContact)? = ChatModel.shared.getContactChat(2)?.chatInfo,
               case let .group(movedGroup, _)? = ChatModel.shared.getGroupChat(1)?.chatInfo else { return XCTFail("chats removed") }
@@ -234,7 +240,7 @@ final class NameAlertsTests: XCTestCase {
 
     @MainActor
     private func connect(_ name: String) {
-        planAndConnect(name, theme: CurrentColors.toAppTheme(), dismiss: false, showLocalChats: { [unowned self] chats in self.shownLocalChats += chats.map(\.id) })
+        planAndConnect(name, theme: CurrentColors.toAppTheme(), dismiss: false, showLocalChats: { [unowned self] chats in self.shownLocalChats += chats.map(\.id) }, onOpen: { [unowned self] in self.opened += 1 })
     }
 
     @MainActor
