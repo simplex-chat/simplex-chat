@@ -24,6 +24,8 @@ import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.chat.item.ImageFullScreenView
 import chat.simplex.common.views.chat.item.ImageGalleryProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.swing.Swing
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
 import java.awt.image.BufferedImage
@@ -105,9 +107,11 @@ class ImageFullScreenZoomTest {
   ) {
     var closed = false
     simplexWindowState.windowState = WindowState(size = DpSize(800.dp, 600.dp))
-    ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
-      wrapper { ImageFullScreenView({ provider }) { closed = true } }
-    }.use { scene -> scene.test { closed } }
+    runBlocking(Dispatchers.Swing) {
+      ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
+        wrapper { ImageFullScreenView({ provider }) { closed = true } }
+      }.use { scene -> scene.test { closed } }
+    }
   }
 
   @Test
