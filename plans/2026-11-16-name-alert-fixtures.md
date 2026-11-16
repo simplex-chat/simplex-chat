@@ -102,7 +102,9 @@ Buttons
 | error-available | not registered, Register, from `simplexDomainNotReady` |
 | error-not-registered | not registered, no action, from `simplexDomainNotReady` |
 
-Error fixtures: `nameWarningAlert` is called in the tests with the arguments of the connect error alert, `own` false and no chat.
+Known gaps
+- connect error alert: `nameWarningAlert` is called in the tests with its arguments, `own` false and no chat; a change of them in `SimpleXAPI` is undetected.
+- expired without `graceUntil`: untested; `registerExpiredName` sets `graceUntil` in 2099.
 
 Kotlin
 - `NameWarningAlertTest`, in `apps/multiplatform/common/src/desktopTest`
