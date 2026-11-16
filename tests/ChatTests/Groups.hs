@@ -236,6 +236,7 @@ chatGroupTests = do
     it "member contact is active" testMembershipProfileUpdateContactActive
     it "member contact is deleted" testMembershipProfileUpdateContactDeleted
     it "member contact is deleted, peer type is updated" testMembershipProfileUpdateContactDeletedPeerType
+    it "change of peer type alone is sent on next message" testMembershipProfileUpdatePeerTypeOnly
     it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
     it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
     it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
@@ -3746,6 +3747,7 @@ testGroupLinkIgnoreRelayJoinRequest ps =
       (gShortLink, _gLink) <- getGroupLinks alice "team" GRMember True
       sendMemberJoinRequest bob gShortLink
       alice <## "warning: memberJoinRequestViaRelay (group team): ignored relay join request from bob (group does not use relays)"
+      checkPendingInvitations alice 0
       alice ##> "/ms team"
       alice <## "alice (Alice): owner, you, created group"
 
@@ -7580,6 +7582,30 @@ testMembershipProfileUpdateContactDeletedPeerType =
       bob <# "#team alisa> hello"
 
       memberAddressPeerType bob "alisa" `shouldReturn` [(Nothing, Just CPTBot)]
+
+testMembershipProfileUpdatePeerTypeOnly :: HasCallStack => TestParams -> IO ()
+testMembershipProfileUpdatePeerTypeOnly =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"shortDescr\": \"Alice\", \"peerType\": \"agent\"}"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      memberAddressPeerType bob "alice" `shouldReturn` [(Nothing, Just CPTAgent)]
+
+      alice #> "#team hello again"
+      bob <# "#team alice> hello again"
+
+      bob ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine bob
+      filter (== (0, "updated profile (signed)")) r `shouldBe` [(0, "updated profile (signed)")]
 
 testMembershipProfileUpdateContactDisabled :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactDisabled =
@@ -12168,6 +12194,7 @@ testChannelRelayInvUnsigned ps =
       (cathSLink, _cLink) <- getContactLinks cath True
       sendUnsignedRelayInv alice cathSLink
       cath <##. "error: x.grp.relay.inv: invitation is not signed by the owner"
+      checkPendingInvitations cath 0
 
 sendUnsignedRelayInv :: TestCC -> String -> IO ()
 sendUnsignedRelayInv cc relayAddress =

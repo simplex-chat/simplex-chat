@@ -2,7 +2,6 @@ package chat.simplex.common.views.chat.item
 
 import android.graphics.Rect
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -16,7 +15,7 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED
 import com.google.android.exoplayer2.ui.StyledPlayerView
 
 @Composable
-actual fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLongClick: () -> Unit, stop: () -> Unit) {
+actual fun PlayerView(player: VideoPlayer, modifier: Modifier, onClick: () -> Unit, onLongClick: () -> Unit, stop: () -> Unit) {
   AndroidView(
     factory = { ctx ->
       StyledPlayerView(ctx).apply {
@@ -25,8 +24,7 @@ actual fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLon
         this.player = player.player
       }
     },
-    Modifier
-      .width(width)
+    modifier
       .combinedClickable(
         onLongClick = onLongClick,
         onClick = { if (player.player.playWhenReady) stop() else onClick() }
