@@ -61,6 +61,7 @@ import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (hContentType, methodPost, statusCode, statusIsSuccessful)
 import Numeric (readHex, showHex)
+import Simplex.Messaging.Agent.Store.DB (Binary (..), FromField (..), ToField (..), blobFieldDecoder)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress)
@@ -90,6 +91,10 @@ data ChainError
 
 newtype TxHash = TxHash ByteString
   deriving (Eq, Show)
+
+instance FromField TxHash where fromField = blobFieldDecoder (Right . TxHash)
+
+instance ToField TxHash where toField (TxHash h) = toField (Binary h)
 
 data SignedTx = SignedTx {stRaw :: ByteString, stHash :: TxHash}
   deriving (Eq, Show)

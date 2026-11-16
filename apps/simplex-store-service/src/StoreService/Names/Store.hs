@@ -700,7 +700,7 @@ selectRegistrations = registrationColumns <> registrationFrom
 type RegistrationRow =
   (Text, Int64, Binary ByteString, Int, Int64, Binary ByteString, Binary ByteString, Text, NamePhase, Int)
     :. (Int, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
-    :. (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString), Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
+    :. (Maybe (Binary ByteString), Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
     :. (Maybe UTCTime, Maybe Text, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, Int)
     :. (AgreedTerms, Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString))
 
@@ -708,7 +708,7 @@ toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
   ( (rid, nrVersion, Binary lh, nrLength, duration, Binary owner, Binary nrCommitment, nrSealed, nrPhase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
-      :. (signature_, commitTx, commitBlock, registerTx, registerBlock, revealAfter, revealBefore, expiresAt, nrRegisteredAt)
+      :. (signature_, nrCommitTx, commitBlock, nrRegisterTx, registerBlock, revealAfter, revealBefore, expiresAt, nrRegisteredAt)
       :. (nrFailedAt, nrError, BI nrLive, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
       :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
     ) = do
@@ -747,9 +747,9 @@ toRegistration
           nrPrice,
           nrPayment,
           nrReveal,
-          nrCommitTx = txHash <$> commitTx,
+          nrCommitTx,
           nrCommitBlock = word64 <$> commitBlock,
-          nrRegisterTx = txHash <$> registerTx,
+          nrRegisterTx,
           nrRegisterBlock = word64 <$> registerBlock,
           nrRevealAfter = word64 <$> revealAfter,
           nrRevealBefore = word64 <$> revealBefore,
@@ -865,7 +865,7 @@ updateRegistration db r now = do
       ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
           :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, Binary . serializeSignature . taSignature <$> acceptance)
-          :. (txHashField <$> nrCommitTx, int64 <$> nrCommitBlock, txHashField <$> nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
+          :. (nrCommitTx, int64 <$> nrCommitBlock, nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
           :. (truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
           :. (rid, nrVersion, BI live, rid, Binary nrCommitment, Binary $ unAddress nrOwner, Binary lh)
       )
@@ -1511,7 +1511,7 @@ insertTransaction db for NewTransaction {ntxRaw, ntxHash, ntxNonce} now = do
       VALUES (?,?,?,?,?,?,?,?)
     |]
     )
-    (rid, editId, kind, Binary ntxRaw, txHashField ntxHash, int64 ntxNonce, truncateToSecond now, TSPending)
+    (rid, editId, kind, Binary ntxRaw, ntxHash, int64 ntxNonce, truncateToSecond now, TSPending)
   insertedRowId db
 
 -- | Moves a transaction on from the status the caller read, so an outcome is never overwritten unseen; False when it is not in that status.
@@ -1521,7 +1521,7 @@ recordTransactionOutcome db hash from status block =
     <$> executeChanging
       db
       (mkQuery "UPDATE @name_transactions SET status = ?, mined_block = ? WHERE tx_hash = ? AND status = ?")
-      (status, int64 <$> block, txHashField hash, from)
+      (status, int64 <$> block, hash, from)
 
 transactionColumns :: Query
 transactionColumns =
@@ -1531,17 +1531,17 @@ transactionColumns =
     FROM @name_transactions
   |]
 
-type TransactionRow = (Int64, Text, Maybe Text, Maybe Int64, Binary ByteString, Binary ByteString, Int64, UTCTime, Maybe Int64, TxStatus)
+type TransactionRow = (Int64, Text, Maybe Text, Maybe Int64, Binary ByteString, TxHash, Int64, UTCTime, Maybe Int64, TxStatus)
 
 toTransaction :: TransactionRow -> Either Text NameTransaction
-toTransaction (ntId, kind, rid_, editId_, Binary ntRaw, hash, nonce, ntSentAt, block, ntStatus) = do
+toTransaction (ntId, kind, rid_, editId_, Binary ntRaw, ntHash, nonce, ntSentAt, block, ntStatus) = do
   ntFor <- case (kind, rid_, editId_) of
     ("commit", Just rid, Nothing) -> Right $ TxCommit $ RegistrationId rid
     ("accept", Just rid, Nothing) -> Right $ TxAccept $ RegistrationId rid
     ("register", Just rid, Nothing) -> Right $ TxRegister $ RegistrationId rid
     ("edit", Nothing, Just editId) -> Right $ TxEdit editId
     _ -> Left $ "name_transactions.kind: " <> kind
-  pure NameTransaction {ntId, ntFor, ntRaw, ntHash = txHash hash, ntNonce = word64 nonce, ntSentAt, ntMinedBlock = word64 <$> block, ntStatus}
+  pure NameTransaction {ntId, ntFor, ntRaw, ntHash, ntNonce = word64 nonce, ntSentAt, ntMinedBlock = word64 <$> block, ntStatus}
 
 -- | Those without a receipt, in nonce order, for the sender to resume.
 pendingTransactions :: DB.Connection -> IO [NameTransaction]
@@ -1607,7 +1607,7 @@ recordEditColumns =
     FROM @name_record_edits
   |]
 
-type RecordEditRow = (Int64, Binary ByteString, Binary ByteString, Binary ByteString, Text, Maybe Text, Maybe (Binary ByteString), UTCTime)
+type RecordEditRow = (Int64, Binary ByteString, Binary ByteString, Binary ByteString, Text, Maybe Text, Maybe TxHash, UTCTime)
 
 type ChangeRow = (Int64, Maybe Text, Maybe Text, Int64, Binary ByteString)
 
@@ -1633,7 +1633,7 @@ toRecordEdit (reId, Binary lh, Binary owner, Binary reBodyHash, state, revert, m
       pure SignedChange {scChange, scNonce = word64 nonce, scDeadline = word64 deadline, scSignature}
     decodeState
       | state == pendingEdit = Right ESPending
-      | state == minedEdit = Right $ ESMined $ txHash <$> minedTx
+      | state == minedEdit = Right $ ESMined minedTx
       | state == revertedEdit = Right $ ESReverted revert
       | otherwise = Left $ "name_record_edits.state: " <> state
 
@@ -1657,7 +1657,7 @@ settleRecordEdit db editId state =
     <$> executeChanging
       db
       (mkQuery "UPDATE @name_record_edits SET state = ?, revert = ?, mined_tx = ? WHERE name_record_edit_id = ? AND state = ?")
-      (stateText, revert, txHashField <$> minedTx, editId, pendingEdit)
+      (stateText, revert, minedTx, editId, pendingEdit)
   where
     (stateText, revert, minedTx) = case state of
       ESPending -> (pendingEdit, Nothing, Nothing)
@@ -1726,12 +1726,6 @@ namesCounts db = do
 
 int64 :: Word64 -> Int64
 int64 = fromIntegral
-
-txHash :: Binary ByteString -> TxHash
-txHash (Binary h) = TxHash h
-
-txHashField :: TxHash -> Binary ByteString
-txHashField (TxHash h) = Binary h
 
 word64 :: Int64 -> Word64
 word64 = fromIntegral
