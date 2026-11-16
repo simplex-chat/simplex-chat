@@ -94,6 +94,5 @@ multiHostChannel = "simplex:/c#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=smp
 onionHost :: ByteString
 onionHost = "jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion"
 
--- | The hosts as the chat core reads them, empty for a link it cannot read.
 linkHosts :: Text -> [TransportHost]
 linkHosts = maybe [] (L.toList . shortLinkHosts . snd) . nameLink
