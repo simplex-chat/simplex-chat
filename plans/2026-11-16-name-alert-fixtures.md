@@ -1,7 +1,7 @@
 # Name alerts tested against core fixtures
 
 Repository: simplex-chat/simplex-chat.
-Branch: `ep/name-alert-fixtures`.
+Branch: `ep/name-alert-fixtures-2`.
 Base: master `88767bbc3` (#8220).
 
 The user's words:
@@ -45,21 +45,20 @@ Files
 1. `chatSendCmd` of `Simplex.Chat.Mobile`: the response as the apps receive it.
 2. `stableJSON`: values of volatile keys replaced.
 3. `prettyJSON`: one object field or array element per line.
-4. Swift form: `tagged2owsf`, checked by `owsf2tagged (tagged2owsf v) == v`.
+4. Swift form: `tagged2owsf`, checked by the decoding in the iOS tests.
 5. `testGenerate` of tests/APIDocs.hs, for the Kotlin file, then, also after its failure (`finally`), the Swift file: the file written, the test failed when it differs.
 
-`tagged2owsf`, in tests/ChatTests/Names.hs
+`tagged2owsf`, in `nameFixture`, for record and nullary constructors
 
 | Tagged object | Swift form |
 |---|---|
 | `type` only | `_owsf`, `<type>: {}` |
-| `type`, `data` of a value other than an untagged object | `_owsf`, `<type>: <data>` |
 | `type`, other fields | `_owsf`, `<type>: {<other fields>}` |
 | without `type` | unchanged |
 
 `stableJSON` replacements
-- `createdAt`, `updatedAt`, `chatTs`, `userMemberProfileUpdatedAt`: `1970-01-01T00:00:00Z`
-- `agentConnId`, `xContactId`, `connFullLink`, `connShortLink`, `contactLink`, `linkOwnerId`, `presHeader`, `signature`, `welcomeSharedMsgId`, `requestSharedMsgId`: the key
+- `createdAt`, `updatedAt`, `chatTs`: `1970-01-01T00:00:00Z`
+- `agentConnId`, `xContactId`, `connFullLink`, `connShortLink`, `contactLink`: the key
 
 `registerExpiredName`, in tests/NameResolver.hs
 - `expires`: 2026-01-01 12:00 UTC
@@ -103,9 +102,12 @@ Buttons
 | error-available | not registered, Register, from `simplexDomainNotReady` |
 | error-not-registered | not registered, no action, from `simplexDomainNotReady` |
 
+Error fixtures: `nameWarningAlert` is called in the tests with the arguments of the connect error alert, `own` false and no chat.
+
 Kotlin
 - `NameWarningAlertTest`, in `apps/multiplatform/common/src/desktopTest`
 - fixtures decoded by `json` with `API.serializer()`
+- default locale: `Locale.US` during each test
 
 iOS
 - target `SimpleX Unit Tests`: unit tests without a host application, linked with SimpleXChat
@@ -115,13 +117,15 @@ iOS
 - fixtures read from `names` beside the test file (`#filePath`), decoded by `decodeAPIResult`
 
 iOS alert
-- `NameWarningAlert.swift`: `NameWarningAction` (title), `NameWarningAlert`, `namePrice`, `nameWarningAlert`, `planNameWarningAlert`
-- `NewChatView.swift`, `showNameWarningAlert`: the alert, and the effect of each action
+- `NameWarningAlert.swift`: `NameWarningAction`, `NameWarningAlert`, `namePrice`, `nameWarningAlert`, `planNameWarningAlert`
+- `NewChatView.swift`, `showNameWarningAlert`: the alert, and the title and effect of each action
 
-| Action | Effect |
-|---|---|
-| renew, register, re-register | `openBrowserAlert` of simplex.domains |
-| connect to team | `appOpenUrl` of `simplexTeamURL` |
+| Action | Title | Effect |
+|---|---|---|
+| renew | Renew | `openBrowserAlert` of simplex.domains |
+| register | Register | `openBrowserAlert` of simplex.domains |
+| re-register | Re-register | `openBrowserAlert` of simplex.domains |
+| connect to team | Connect to SimpleX team | `appOpenUrl` of `simplexTeamURL` |
 
 ## CI
 
