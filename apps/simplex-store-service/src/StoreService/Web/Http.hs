@@ -84,10 +84,11 @@ import Network.Socket (SockAddr (..), hostAddress6ToTuple, hostAddressToTuple)
 import Network.Wai
 import Numeric (readHex, showHex)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
+import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, stateTVar', tshow)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
 import StoreService.Providers (Provider (..))
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), cryptoCurrencyText, invoiceStatusText, paymentHolds)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), paymentHolds)
 import Text.Read (readMaybe)
 
 data HttpEnv = HttpEnv
@@ -427,7 +428,7 @@ expiryMoment InvoiceRow {irStatus, irExpiresAt, irPayment}
 -- | The fields every invoice view has, a badge's and a name's.
 invoicePairs :: Maybe Int -> InvoiceRow -> [Pair]
 invoicePairs confirmations InvoiceRow {irAmount, irCurrency, irDestination, irExpiresAt, irStatus, irPayment} =
-  [ "status" .= invoiceStatusText irStatus,
+  [ "status" .= (textEncode irStatus :: Text),
     "amount" .= amountJSON irAmount,
     "currency" .= irCurrency,
     "expiresAt" .= irExpiresAt
@@ -450,7 +451,7 @@ destinationPairs confirmations = \case
   SPDCrypto currency address cryptoAmount ->
     [ "address" .= address,
       "cryptoAmount" .= cryptoAmount,
-      "cryptoCurrency" .= cryptoCurrencyText currency
+      "cryptoCurrency" .= (textEncode currency :: Text)
     ]
       <> maybe [] (\n -> ["requiredConfirmations" .= n]) confirmations
 

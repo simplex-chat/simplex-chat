@@ -6,7 +6,6 @@
 module StoreService.Names.Codes
   ( CodeState (..),
     codeState,
-    codeStateText,
     CodeRefusal (..),
     codeRefusal,
     codeRefusalTag,
@@ -33,8 +32,9 @@ import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import StoreService.Names.Phases (RegistrationId)
-import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, CodeIssuer, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, CodeIssuer, NewPrepaidCode (..), PrepaidCode (..), enumTextDecode, getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))
 
@@ -51,14 +51,15 @@ codeState now PrepaidCode {pcReservedBy, pcSpentAt, pcRevokedAt, pcPaymentStatus
   | maybe False (<= now) pcExpiresAt = CSExpired
   | otherwise = CSUnused
 
-codeStateText :: CodeState -> Text
-codeStateText = \case
-  CSUnused -> "unused"
-  CSReserved -> "reserved"
-  CSUsed -> "used"
-  CSRevoked -> "revoked"
-  CSExpired -> "expired"
-  CSUnpaid -> "unpaid"
+instance TextEncoding CodeState where
+  textEncode = \case
+    CSUnused -> "unused"
+    CSReserved -> "reserved"
+    CSUsed -> "used"
+    CSRevoked -> "revoked"
+    CSExpired -> "expired"
+    CSUnpaid -> "unpaid"
+  textDecode = enumTextDecode
 
 data CodeRefusal = CRInvalid | CRUsed | CRReserved | CRExpired | CRPaymentPending | CRNotCovering
   deriving (Eq, Show)

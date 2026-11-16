@@ -21,12 +21,12 @@ import StoreService.Config (ListenerConfig (..), NamesConfig (..), ServiceConfig
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), ordersEnv)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, textMethod)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), providerErrorText)
-import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), codeHashExists, createInvoiceRows, getInvoice, getInvoiceByProviderRef, newInvoiceId, paymentHolds, readCatalogRows, textToInvoiceStatus, truncateToSecond)
+import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), codeHashExists, createInvoiceRows, getInvoice, getInvoiceByProviderRef, newInvoiceId, paymentHolds, readCatalogRows, truncateToSecond)
 import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
 import StoreService.Web.Names (namesApp, namesRoutes)
@@ -61,7 +61,7 @@ import Simplex.Chat.Badges (BadgeType)
 import Simplex.Chat.Badges.Types (BadgeOfferId (..), BadgePriceId (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
-import Simplex.Messaging.Encoding.String (textEncode)
+import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (raceAny_, tshow)
 import System.Directory (canonicalizePath, doesDirectoryExist, doesFileExist)
 import System.FilePath (pathSeparator, takeExtension, (</>))
@@ -316,7 +316,7 @@ paidParam req = case lookup "seenPaid" (queryString req) of
 
 waitParam :: Request -> Maybe InvoiceStatus
 waitParam req = case lookup "wait" (queryString req) of
-  Just (Just raw) -> either (const Nothing) textToInvoiceStatus (decodeUtf8' raw)
+  Just (Just raw) -> either (const Nothing) textDecode (decodeUtf8' raw)
   _ -> Nothing
 
 badgeInvoiceView :: Maybe Int -> BadgeType -> Word8 -> InvoiceRow -> J.Value
@@ -412,7 +412,7 @@ parseCreateRequest :: J.Object -> Maybe CreateRequest
 parseCreateRequest o = do
   crPriceId <- BadgePriceId <$> textField "priceId"
   crOfferId <- offerField
-  crMethod <- textMethod =<< textField "method"
+  crMethod <- textDecode =<< textField "method"
   crCodeHash <- parseCodeHash =<< textField "codeHash"
   pure CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash}
   where

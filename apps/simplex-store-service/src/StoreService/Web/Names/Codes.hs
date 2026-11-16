@@ -14,7 +14,8 @@ import Network.HTTP.Types (status200, status400, status409)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Chat.Badges.Code (parseNameCode)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
-import StoreService.Names.Codes (CodeRefusal (..), codeRefusalTag, codeState, codeStateText, readPrepaidCode)
+import Simplex.Messaging.Encoding.String (textEncode)
+import StoreService.Names.Codes (CodeRefusal (..), codeRefusalTag, codeState, readPrepaidCode)
 import StoreService.Names.Store (PrepaidCode (..))
 import StoreService.Web.Http (Respond, badRequest, jsonError, jsonResponse, maxBodyBytes, readBoundedBody)
 
@@ -36,7 +37,7 @@ codeField body = case J.decode body of
 
 codeAnswer :: UTCTime -> PrepaidCode -> Response
 codeAnswer now code@PrepaidCode {pcMinLength, pcYears} =
-  jsonResponse status200 $ J.object ["minLength" .= pcMinLength, "years" .= pcYears, "state" .= codeStateText (codeState now code)]
+  jsonResponse status200 $ J.object ["minLength" .= pcMinLength, "years" .= pcYears, "state" .= (textEncode (codeState now code) :: Text)]
 
 -- | Not 404 for an unknown code, which the page reads as not_found whatever the body.
 codeRefusalResponse :: CodeRefusal -> Response

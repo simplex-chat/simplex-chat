@@ -42,7 +42,7 @@ import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponso
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Signatures (AgreedTerms (..))
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), HoldState (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), getBalance, getRegistration, heldBy, lateWait, paymentBalance, paymentInvoice)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), HoldState (..), LateWait, NamePhase (..), NameRegistration (..), NameReveal (..), getBalance, getRegistration, heldBy, lateWait, paymentBalance, paymentInvoice)
 
 -- | The view's chain reads; a field whose read failed is null and named in unread.
 data ViewReads = ViewReads
@@ -101,7 +101,7 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "price" .= nrPrice,
       "fromBalance" .= maybe 0 buUsed (paymentBalance nrPayment),
       "balance" .= (balanceJSON <$> balance),
-      "latePayment" .= ((\w -> J.object ["waiting" .= waitingText w]) <$> late),
+      "latePayment" .= ((\w -> J.object ["waiting" .= (textEncode w :: Text)]) <$> late),
       "commitTx" .= (txText <$> nrCommitTx),
       "registerTx" .= (txText <$> nrRegisterTx),
       "revealAfter" .= nrRevealAfter,
@@ -126,11 +126,6 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       _ -> False
     acceptanceJSON AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce} =
       J.object ["kind" .= (if acCommunity then "community" else "general" :: Text), "policy" .= acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce]
-    waitingText :: LateWait -> Text
-    waitingText = \case
-      LWConfirming -> "confirming"
-      LWCrediting -> "crediting"
-      LWSupport -> "support"
 
 -- | The holder is not named, so an order's link discloses no other order. A funded hold has no end time.
 balanceJSON :: Balance -> J.Value

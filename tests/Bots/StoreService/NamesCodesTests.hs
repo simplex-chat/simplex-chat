@@ -27,6 +27,7 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import StoreService.Config (ListenerConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction)
 import StoreService.Names.Codes
@@ -88,7 +89,8 @@ testCodeStates = do
   let stateOf = codeState tNow
       held = baseCode {pcReservedBy = Just r1, pcReservedAt = Just tNow}
       revoked = Just tNow
-  map codeStateText [minBound .. maxBound] `shouldBe` ["unused", "reserved", "used", "revoked", "expired", "unpaid"]
+  map textEncode [minBound .. maxBound :: CodeState] `shouldBe` (["unused", "reserved", "used", "revoked", "expired", "unpaid"] :: [Text])
+  map textDecode ["unused", "unpaid", "spent"] `shouldBe` [Just CSUnused, Just CSUnpaid, Nothing]
   stateOf baseCode `shouldBe` CSUnused
   stateOf baseCode {pcPaymentStatus = CPSFree, pcExpiresAt = Just (addUTCTime 1 tNow)} `shouldBe` CSUnused
   stateOf held `shouldBe` CSReserved

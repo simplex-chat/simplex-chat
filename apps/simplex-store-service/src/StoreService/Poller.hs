@@ -42,7 +42,7 @@ import StoreService.Names.Store (CleanupKept (..), CreditAmount (..), LateAlert 
 import StoreService.Orders (decide, expireOverdue, settleOrder, signalReceived)
 import StoreService.Providers (CryptoReceived (..), ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
 import StoreService.Safely (safely, safelyWith)
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, paymentHolds, unpaidRefs)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, paymentHolds, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
@@ -457,7 +457,7 @@ cachedRate PollerEnv {peRates} Provider {pProvider, pCurrentRate} coin =
       rate <- maybe (pure $ Left $ ProviderError $ textEncode pProvider <> " offers no rates") ($ coin) pCurrentRate
       rate <$ atomically (modifyTVar' peRates (M.insert key rate))
   where
-    key = (textEncode pProvider, cryptoCurrencyText coin)
+    key = (textEncode pProvider, textEncode coin)
 
 -- | Each pass and hinted read reads the rates again.
 forgetRates :: PollerEnv -> IO ()

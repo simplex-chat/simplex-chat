@@ -89,10 +89,36 @@ data CardProvider = CPStripe
 data CryptoCurrency = CCBtc | CCXmr
   deriving (Eq, Show)
 
+instance TextEncoding CryptoCurrency where
+  textEncode = \case
+    CCBtc -> "btc"
+    CCXmr -> "xmr"
+  textDecode = \case
+    "btc" -> Just CCBtc
+    "xmr" -> Just CCXmr
+    _ -> Nothing
+
+instance FromField CryptoCurrency where fromField = fromTextField_ textDecode
+
+instance ToField CryptoCurrency where toField = toField . textEncode
+
 data ServicePaymentMethod
   = SPMCard {provider :: CardProvider}
   | SPMCrypto {currency :: CryptoCurrency}
   deriving (Eq, Show)
+
+-- | A name order's method, as its request and its row write it.
+instance TextEncoding ServicePaymentMethod where
+  textEncode = \case
+    SPMCard CPStripe -> "card"
+    SPMCrypto c -> textEncode c
+  textDecode = \case
+    "card" -> Just $ SPMCard CPStripe
+    t -> SPMCrypto <$> textDecode t
+
+instance FromField ServicePaymentMethod where fromField = fromTextField_ textDecode
+
+instance ToField ServicePaymentMethod where toField = toField . textEncode
 
 data ServicePaymentDestination
   = SPDCard
@@ -109,6 +135,21 @@ data ServicePaymentDestination
 -- confirmed
 data InvoiceStatus = ISOpen | ISPaid | ISExpired
   deriving (Eq, Show)
+
+instance TextEncoding InvoiceStatus where
+  textEncode = \case
+    ISOpen -> "open"
+    ISPaid -> "paid"
+    ISExpired -> "expired"
+  textDecode = \case
+    "open" -> Just ISOpen
+    "paid" -> Just ISPaid
+    "expired" -> Just ISExpired
+    _ -> Nothing
+
+instance FromField InvoiceStatus where fromField = fromTextField_ textDecode
+
+instance ToField InvoiceStatus where toField = toField . textEncode
 
 -- confirmed
 data StoredInvoice = StoredInvoice

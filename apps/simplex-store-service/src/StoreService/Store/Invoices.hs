@@ -40,10 +40,6 @@ module StoreService.Store.Invoices
     settlementCodeHash,
     upsertPayment,
     paymentStatusText,
-    cryptoCurrencyText,
-    textToCryptoCurrency,
-    textToInvoiceStatus,
-    invoiceStatusText,
     updateInvoiceStatus,
     markCodePaid,
   )
@@ -68,7 +64,7 @@ import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.StoreService (BadgePrice (..), BadgeOffer (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
-import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..))
+import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
@@ -388,26 +384,6 @@ qSeedBadgeOffer =
     "INSERT INTO @badge_offers (offer_id, price_id, months, free_months, discount, status, created_at) "
       <> "VALUES (?,?,?,?,?,?,?) ON CONFLICT (offer_id) DO NOTHING"
 
-cryptoCurrencyText :: CryptoCurrency -> Text
-cryptoCurrencyText CCBtc = "btc"
-cryptoCurrencyText CCXmr = "xmr"
-
-textToCryptoCurrency :: Text -> Maybe CryptoCurrency
-textToCryptoCurrency "btc" = Just CCBtc
-textToCryptoCurrency "xmr" = Just CCXmr
-textToCryptoCurrency _ = Nothing
-
-invoiceStatusText :: InvoiceStatus -> Text
-invoiceStatusText ISOpen = "open"
-invoiceStatusText ISPaid = "paid"
-invoiceStatusText ISExpired = "expired"
-
-textToInvoiceStatus :: Text -> Maybe InvoiceStatus
-textToInvoiceStatus "open" = Just ISOpen
-textToInvoiceStatus "paid" = Just ISPaid
-textToInvoiceStatus "expired" = Just ISExpired
-textToInvoiceStatus _ = Nothing
-
 itemStatusText :: BadgeItemStatus -> Text
 itemStatusText BISActive = "active"
 itemStatusText BISDeprecated = "deprecated"
@@ -436,12 +412,12 @@ discountCols (ODDiscount d) = (Nothing, Just (fromIntegral d))
 
 mkDestination :: Maybe Text -> Maybe Text -> Maybe Text -> Maybe Text -> Maybe ServicePaymentDestination
 mkDestination (Just url) _ _ _ = Just (SPDCard CPStripe url)
-mkDestination Nothing (Just addr) (Just curTxt) (Just amt) = (\cur -> SPDCrypto cur addr amt) <$> textToCryptoCurrency curTxt
+mkDestination Nothing (Just addr) (Just curTxt) (Just amt) = (\cur -> SPDCrypto cur addr amt) <$> textDecode curTxt
 mkDestination _ _ _ _ = Nothing
 
 destinationCols :: ServicePaymentDestination -> (Maybe Text, Maybe Text, Maybe Text, Maybe Text)
 destinationCols (SPDCard _ url) = (Just url, Nothing, Nothing, Nothing)
-destinationCols (SPDCrypto cur addr amt) = (Nothing, Just addr, Just (cryptoCurrencyText cur), Just amt)
+destinationCols (SPDCrypto cur addr amt) = (Nothing, Just addr, Just (textEncode cur), Just amt)
 
 note :: Text -> Maybe a -> Either Text a
 note ctx = maybe (Left ctx) Right
@@ -466,7 +442,7 @@ mkInvoiceRow
       (Just bt, Just m, Nothing) -> Right (IPBadge bt (fromIntegral m))
       (Nothing, Nothing, Just rid) -> Right (IPName (RegistrationId rid))
       _ -> Left ("invoice product: " <> providerRef)
-    status <- note "invoices.status" (textToInvoiceStatus statusTxt)
+    status <- note "invoices.status" (textDecode statusTxt)
     destination <- note "invoice payment destination" (mkDestination url addr cryptoCur cryptoAmt)
     pure
       InvoiceRow
@@ -571,7 +547,7 @@ insertInvoiceRow db (InvoiceId invId) provider price amount currency destination
     db
     qInsertInvoice
     ( (invId, textEncode provider, price, price - amount, Nothing :: Maybe Word32, amount, currency)
-        :. (url, addr, cryptoCur, cryptoAmt, truncateToSecond expiresAt', invoiceStatusText ISOpen, createdAt, createdAt)
+        :. (url, addr, cryptoCur, cryptoAmt, truncateToSecond expiresAt', ISOpen, createdAt, createdAt)
     )
   where
     (url, addr, cryptoCur, cryptoAmt) = destinationCols destination
@@ -720,7 +696,7 @@ lockInvoice db (InvoiceId invId) at = DB.execute db qLockInvoice (truncateToSeco
 
 updateInvoiceStatus :: DB.Connection -> InvoiceId -> InvoiceStatus -> InvoiceStatus -> UTCTime -> IO Bool
 updateInvoiceStatus db (InvoiceId invId) observed new at =
-  (> 0) <$> executeChanging db qUpdateInvoiceStatus (invoiceStatusText new, truncateToSecond at, invId, invoiceStatusText observed)
+  (> 0) <$> executeChanging db qUpdateInvoiceStatus (new, truncateToSecond at, invId, observed)
 
 markCodePaid :: DB.Connection -> ByteString -> UTCTime -> IO ()
 markCodePaid db codeHash expiresAt =
