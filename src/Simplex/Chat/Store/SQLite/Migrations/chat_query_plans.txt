@@ -3951,15 +3951,6 @@ SEARCH f USING INDEX idx_files_group_id_shared_msg_id (group_id=? AND shared_msg
 SEARCH r USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=? AND rowid=?)
 
 Query: 
-        SELECT f.file_id FROM files f
-        JOIN rcv_files r ON r.file_id = f.file_id
-        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ? AND r.group_member_id = ?
-      
-Plan:
-SEARCH f USING INDEX idx_files_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
-SEARCH r USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=? AND rowid=?)
-
-Query: 
         SELECT file_id, contact_id, group_id, note_folder_id
         FROM files
         WHERE agent_snd_file_id = ?
@@ -8066,10 +8057,6 @@ SCAN group_members
 Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_members WHERE user_id = ? AND group_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = ?
-Plan:
-SCAN messages
 
 Query: SELECT message_id FROM messages WHERE msg_sent = 0 AND hex(shared_msg_id) = ?
 Plan:
