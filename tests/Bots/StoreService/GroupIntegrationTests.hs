@@ -263,7 +263,7 @@ testNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   setFault node "eth_chainId" HttpFailure
   checkNodeChain (Just withDev) `shouldReturn` Left "issuer.dev_keys is refused: the node's chain id could not be read"
   warned <- capturingStderr $ checkNodeChain (Just noDev) `shouldReturn` Right ()
-  warned `shouldSatisfy` T.isInfixOf "the node's chain id could not be read, so it is not checked: ChainUnavailable \"HTTP 502\""
+  warned `shouldSatisfy` T.isInfixOf "the node's chain id could not be read, so it is not checked: ChainUnavailable \"eth_chainId: HTTP 502\""
   checkNodeChain Nothing `shouldReturn` Right ()
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
