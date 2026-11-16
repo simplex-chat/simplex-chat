@@ -258,7 +258,7 @@ testNamesCounts = withServiceStore $ \st -> do
     recordTransactionOutcome db (TxHash $ digestFixture 40) TSPending TSMined (Just 120) `shouldReturn` True
     Just mined <- insertRecordEdit db (newEdit ownerA 1 setChannel) (at 8)
     insertRecordEdit db (newEdit ownerB 3 setChannel) (at 9) >>= (`shouldSatisfy` isJust)
-    settleRecordEdit db mined (ESSettled $ EOApplied Nothing) `shouldReturn` True
+    settleRecordEdit db mined (EOApplied Nothing) `shouldReturn` True
   counts <- withTransaction st namesCounts
   typedSamples (namesText counts noChainRead)
     `shouldBe` [ "simplex_store_names_orders{phase=\"unpaid\"} 2",

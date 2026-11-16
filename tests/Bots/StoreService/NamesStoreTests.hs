@@ -745,17 +745,17 @@ testEditNonceUnique = withServiceStore $ \st -> do
   run (\db -> insertRecordEdit db (newEdit ownerA 2 RCClear) t0) `shouldReturn` Nothing
   Just other <- run $ \db -> insertRecordEdit db (newEdit ownerB 3 setChannel) t0
   other `shouldNotBe` first
-  run (\db -> settleRecordEdit db first (ESSettled (EOReverted $ Just "SignatureExpired"))) `shouldReturn` True
+  run (\db -> settleRecordEdit db first (EOReverted $ Just "SignatureExpired")) `shouldReturn` True
   Just second <- run $ \db -> insertRecordEdit db (newEdit ownerA 2 RCClear) (at 1)
   fmap reState <$> run (\db -> getRecordEditByBody db (digestFixture 1)) `shouldReturn` Just (ESSettled (EOReverted $ Just "SignatureExpired"))
-  run (\db -> settleRecordEdit db second (ESSettled (EOApplied Nothing))) `shouldReturn` True
+  run (\db -> settleRecordEdit db second (EOApplied Nothing)) `shouldReturn` True
   run (\db -> insertRecordEdit db (newEdit ownerA 5 setChannel) (at 2)) `shouldReturn` Nothing
 
 testSettleEdit :: IO ()
 testSettleEdit = withServiceStore $ \st -> do
   Just editId <- withTransaction st $ \db -> insertRecordEdit db (newEdit ownerA 1 setChannel) t0
-  withTransaction st (\db -> settleRecordEdit db editId (ESSettled (EOApplied $ Just $ TxHash $ digestFixture 9))) `shouldReturn` True
-  withTransaction st (\db -> settleRecordEdit db editId (ESSettled (EOReverted Nothing))) `shouldReturn` False
+  withTransaction st (\db -> settleRecordEdit db editId (EOApplied $ Just $ TxHash $ digestFixture 9)) `shouldReturn` True
+  withTransaction st (\db -> settleRecordEdit db editId (EOReverted Nothing)) `shouldReturn` False
   edit <- withTransaction st $ \db -> getRecordEdit db editId
   edit
     `shouldBe` Just
@@ -798,7 +798,7 @@ testRelayedEditTimes = withServiceStore $ \st -> do
   [_, Just minedId, Just revertedId, _] <- forM (zip [1 ..] [0, 10, 20, 30]) $ \(n, m) ->
     withTransaction st $ \db -> insertRecordEdit db (atNonce (fromIntegral n) $ newEdit ownerA n setChannel) (at m)
   withTransaction st $ \db -> do
-    settleRecordEdit db minedId (ESSettled (EOApplied Nothing)) `shouldReturn` True
-    settleRecordEdit db revertedId (ESSettled (EOReverted Nothing)) `shouldReturn` True
+    settleRecordEdit db minedId (EOApplied Nothing) `shouldReturn` True
+    settleRecordEdit db revertedId (EOReverted Nothing) `shouldReturn` True
   withTransaction st (\db -> void $ insertRecordEdit db (atNonce 9 $ newEdit ownerA 9 setChannel) {nreLabelHash = labelHash "bobsbakery"} (at 15))
   withTransaction st (\db -> relayedEditTimes db (labelHash "alicebakery") (at 5)) `shouldReturn` [at 10, at 20, at 30]

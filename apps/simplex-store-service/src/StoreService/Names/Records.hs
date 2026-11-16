@@ -97,6 +97,14 @@ data EditAnswer
 data EditsLeft = EditsLeft {elLeft :: Int, elNextAt :: Maybe UTCTime}
   deriving (Eq, Show)
 
+-- | What the chain shows of an edit none of whose transactions mined.
+data Judgment
+  = -- | one of its own hashes, or Nothing when the nonce passed with the record holding its value
+    Applied (Maybe TxHash)
+  | -- | the nonce passed with the record holding another value
+    NonceTaken
+  | NonceFree
+
 -- | Below a proxy's idle timeout; the edit goes on after it.
 editPendingAfter :: Int
 editPendingAfter = 90000000
@@ -221,7 +229,7 @@ sendNew rs editId = withStore rs (`getRecordEdit` editId) >>= maybe (pure Nothin
           answer <- case e of
             -- anyone can relay a signed edit, so a revert may mean another relayer applied it
             SEChain (ChainReverted name) ->
-              judge rs edit >>= \case
+              fmap judgmentOutcome <$> judge rs edit >>= \case
                 Left e' -> EAUnavailable <$ logWarn ("names records: edit " <> tshow editId <> " reverted in its dry run and was not judged: " <> tshow e')
                 Right outcome -> pure $ EASettled $ fromMaybe (EOReverted $ revertText =<< name) outcome
             _ -> EAUnavailable <$ logWarn ("names records: edit " <> tshow editId <> " not sent: " <> tshow e)
@@ -288,19 +296,19 @@ follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepT
   case txs of
     [] -> if ahead then sendUnsent else forget rs reId
     _
-      | mined : _ <- [ntHash | NameTransaction {ntHash, ntStatus = TSMined} <- txs] -> settle rs reId $ ESSettled $ EOApplied $ Just mined
+      | mined : _ <- [ntHash | NameTransaction {ntHash, ntStatus = TSMined} <- txs] -> settle rs reId $ EOApplied $ Just mined
       | any ((== TSPending) . ntStatus) txs -> if deepTime > reDeadline then expire else unstall rs reId
       -- a mined revert carries no data: past the deadline it is SignatureExpired, else unnamed
       | block : _ <- [b | NameTransaction {ntStatus = TSReverted, ntMinedBlock = Just b} <- txs] ->
           blockAt rsChain block >>= \case
             Left e -> stall rs reId e
-            Right Block {blockTimestamp = minedTime} -> judged rs edit $ settle rs reId $ ESSettled $ EOReverted $ if minedTime > reDeadline then signatureExpired else Nothing
+            Right Block {blockTimestamp = minedTime} -> judged rs edit $ settle rs reId $ EOReverted $ if minedTime > reDeadline then signatureExpired else Nothing
       -- every transaction dropped: its registrar nonce went to another one
       | otherwise -> judged rs edit $ if ahead then resend else expire
   where
     reDeadline = earliestDeadline reChanges
     ahead = reDeadline > blockTimestamp
-    expire = judged rs edit $ settle rs reId $ ESSettled $ EOReverted signatureExpired
+    expire = judged rs edit $ settle rs reId $ EOReverted signatureExpired
     sendUnsent =
       sendEdit rs edit >>= \case
         Left (SEChain (ChainReverted _)) -> forget rs reId
@@ -308,43 +316,48 @@ follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepT
     -- the edit was sent before, so its dry run's revert is its outcome
     resend =
       sendEdit rs edit >>= \case
-        Left (SEChain (ChainReverted name)) -> settle rs reId $ ESSettled $ EOReverted $ revertText =<< name
+        Left (SEChain (ChainReverted name)) -> settle rs reId $ EOReverted $ revertText =<< name
         r -> either (stall rs reId) pure r
 
 -- | Settles the edit as the chain shows it, or runs the action when its nonce is still free.
 judged :: Records -> RecordEdit -> IO () -> IO ()
 judged rs edit@RecordEdit {reId} whenFree =
-  judge rs edit >>= \case
+  fmap judgmentOutcome <$> judge rs edit >>= \case
     Left e -> stall rs reId e
-    Right outcome -> maybe whenFree (settle rs reId . ESSettled) outcome
+    Right outcome -> maybe whenFree (settle rs reId) outcome
 
 -- | Its own transactions first: a status-1 receipt answers its hash. Without one, the owner's nonce and the records.
--- A nonce past the first change but not the last means another body took one of its nonces. Nothing while the nonce is free.
-judge :: Records -> RecordEdit -> IO (Either ChainError (Maybe EditOutcome))
+-- A nonce past the first change but not the last means another body took one of its nonces.
+judge :: Records -> RecordEdit -> IO (Either ChainError Judgment)
 judge rs@Records {rsChain, rsContracts} RecordEdit {reId, reLabelHash, reOwner, reChanges} = runExceptT $ do
   txs <- liftIO $ withStore rs (`editTransactions` reId)
   receipts <- forM txs $ \NameTransaction {ntHash} -> (ntHash,) <$> ExceptT (transactionReceipt rsChain ntHash)
   case [h | (h, Just Receipt {receiptSuccess = True}) <- receipts] of
-    h : _ -> pure $ Just $ EOApplied $ Just h
+    h : _ -> pure $ Applied $ Just h
     [] -> do
       nonce <- ExceptT $ resolverNonce rsContracts reOwner
       if
-        | nonce <= firstNonce reChanges -> pure Nothing
-        | nonce <= lastNonce reChanges -> pure $ Just nonceTaken
+        | nonce <= firstNonce reChanges -> pure NonceFree
+        | nonce <= lastNonce reChanges -> pure NonceTaken
         | otherwise -> do
             holds <- and <$> mapM (holdsChange . scChange) reChanges
-            pure $ Just $ if holds then EOApplied Nothing else nonceTaken
+            pure $ if holds then Applied Nothing else NonceTaken
   where
-    nonceTaken = EOReverted $ revertText RNInvalidNonce
     holdsChange = \case
       RCSetText key value -> (== value) <$> record (recordKey key)
       RCClear -> (&&) <$> (unset <$> record (recordKey LKContact)) <*> (unset <$> record (recordKey LKChannel))
     record = ExceptT . textRecord rsContracts reLabelHash
     unset = (== "")
 
-settle :: Records -> RecordEditId -> EditState -> IO ()
-settle rs editId state = do
-  void $ withStore rs $ \db -> settleRecordEdit db editId state
+judgmentOutcome :: Judgment -> Maybe EditOutcome
+judgmentOutcome = \case
+  Applied tx -> Just $ EOApplied tx
+  NonceTaken -> Just $ EOReverted $ revertText RNInvalidNonce
+  NonceFree -> Nothing
+
+settle :: Records -> RecordEditId -> EditOutcome -> IO ()
+settle rs editId outcome = do
+  void $ withStore rs $ \db -> settleRecordEdit db editId outcome
   settled rs editId
 
 -- | Wakes the requests waiting for the edit, which read it again.

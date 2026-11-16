@@ -1718,18 +1718,17 @@ getRecordEditByBody db bodyHash =
     DB.query db (recordEditColumns <> " WHERE body_hash = ? ORDER BY name_record_edit_id DESC LIMIT 1") (Only $ Binary bodyHash)
 
 -- | Settles a pending edit; False when it was settled already.
-settleRecordEdit :: DB.Connection -> RecordEditId -> EditState -> IO Bool
-settleRecordEdit db editId state =
+settleRecordEdit :: DB.Connection -> RecordEditId -> EditOutcome -> IO Bool
+settleRecordEdit db editId outcome =
   (> 0)
     <$> executeChanging
       db
       (mkQuery "UPDATE @name_record_edits SET state = ?, revert = ?, mined_tx = ? WHERE name_record_edit_id = ? AND state = ?")
       (tag, revert, minedTx, editId, ETPending)
   where
-    (tag, revert, minedTx) = case state of
-      ESPending -> (ETPending, Nothing, Nothing)
-      ESSettled (EOApplied tx) -> (ETMined, Nothing, tx)
-      ESSettled (EOReverted name) -> (ETReverted, name, Nothing)
+    (tag, revert, minedTx) = case outcome of
+      EOApplied tx -> (ETMined, Nothing, tx)
+      EOReverted name -> (ETReverted, name, Nothing)
 
 pendingEditIds :: DB.Connection -> IO [RecordEditId]
 pendingEditIds db = map fromOnly <$> DB.query db (mkQuery "SELECT name_record_edit_id FROM @name_record_edits WHERE state = ? ORDER BY name_record_edit_id") (Only ETPending)

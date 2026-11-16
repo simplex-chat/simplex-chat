@@ -62,7 +62,7 @@ import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (LinkKind (..), linkMaxBytes)
 import StoreService.Names.Profiles (HostResolver, ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
-import StoreService.Names.Store (EditOutcome (..), EditState (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
+import StoreService.Names.Store (EditOutcome (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (HttpEnv (..), maxSearches, newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Search (previewHandler, recordLinks, searchHandler, termsHandler)
@@ -471,8 +471,8 @@ testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom
   Just revertedId <- inserted 3 5
   Just _ <- inserted 4 1
   withTransaction store $ \db -> do
-    settleRecordEdit db minedId (ESSettled $ EOApplied Nothing) `shouldReturn` True
-    settleRecordEdit db revertedId (ESSettled $ EOReverted Nothing) `shouldReturn` True
+    settleRecordEdit db minedId (EOApplied Nothing) `shouldReturn` True
+    settleRecordEdit db revertedId (EOReverted Nothing) `shouldReturn` True
   answer <- searchAlice s 12
   (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "recordEdits")))
     `shouldBe` Just (editsLeft left $ J.toJSON (floor (utcTimeToPOSIXSeconds $ daysAgo returnsFrom) + 365 * 86400 :: Int))
