@@ -121,7 +121,7 @@ func displayedUri(_ uri: String) -> String {
 }
 
 func sanitizeUri(_ s: String) -> (url: (uri: URL, sanitizedUri: URL?)?, error: String?) {
-    let parsed = parseSanitizeUri(s, safe: false)
+    let parsed = parseSanitizeUri(s, false)
     return if let uri = URL(string: s), let uriInfo = parsed?.uriInfo {
         (url: (uri: uri, sanitizedUri: uriInfo.sanitized.flatMap { URL(string: $0) }), error: nil)
     } else {
