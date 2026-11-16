@@ -19,18 +19,25 @@ data RevertReason = RRWithoutData | RRNamed RevertName | RRUnnamed Text
 
 A2-33: requeue and the reveal's write fail on a refused write as a BrokenInvariant; only a changed version answers registration_changed.
 
-A2-37: `StepFailure` in Retry and Stalled, compared by Eq, rendered only in the log line.
+A2-37: `StepFailure` in Retry and Stalled, compared by Eq, rendered by `stepFailureText` only in the log line.
 
 ```haskell
-data StepFailure = SFChain ChainError | SFSend SendError | SFWrite OrderRefusal | SFUnread | SFAllowanceUsedUp | SFTakenAboveDepth | SFGoneButAvailable
+data StepFailure
+  = SFChain ChainError
+  | SFSend SendError
+  | SFWrite OrderRefusal
+  | SFUnread
+  | SFAllowanceUsedUp
+  | SFTakenAboveDepth
+  | SFGoneButAvailable
 ```
 
 ## Chain client
 
 - A2-31: blockByNumber takes BlockTag; every tag is rendered by blockTagParam.
 - A2-32: the sender counts depth by confirmedNumber.
-- A2-34: Contracts exports `ctChain`; Worker, the census and Metrics take the client from it.
-- A2-20: nameStatus reads the latest block first and every call at it; RegisteredName gains `rnBlock`, at which nameRecords reads.
+- A2-34: Contracts exports `ctChain`; Worker, the census, Metrics and Records take the client from it.
+- A2-20: nameStatus reads the latest block first and every call at it.
 - A2-21: a cached chain read is `(generation, Maybe a)`; forgetNamePolicy increments the generation, and a read completed after it is not kept.
 - A2-22: commitment ages are Word64; `revealWindow` adds them to the commitment's time, Nothing past 2^64 seconds.
 - A2-19: `type ChainSeconds = Word64`, `chainTime` and `chainSeconds` in Chain, at every chain time; RegistrarFunds built by record syntax.
@@ -39,13 +46,13 @@ data StepFailure = SFChain ChainError | SFSend SendError | SFWrite OrderRefusal 
 
 - A2-4: Eip1559Tx is the request type; TxRequest goes. The sender's fees are Integer, narrowed once into Word128 under the fee cap.
 - A2-5: one decoder, `signedTx`, under decodeSignedTx (newSender) and transactionSigner (the start check), one acceptance for both.
-- A2-25: `data TxSettlement = TSMinedAt Word64 | TSRevertedAt Word64 | TSDroppedTx`, produced once in settle and written by recordTransactionOutcome; a hash not pending is logged.
-- A2-26: `data TxFor = TxRegistration RegistrationTx RegistrationId | TxEdit RecordEditId`, `data RegistrationTx = RTCommit | RTAccept | RTRegister`, stored as the kind column's text.
-- A2-3: pending the simplexmq decision (canonical RLP parser and decodeEip1559Tx beside the encoder).
+- A2-25: `data TxSettlement = TSMinedAt Word64 | TSRevertedAt Word64 | TSDroppedTx` in Sender, produced once per hash in settle; recordTransactionOutcome keeps its arguments, and a hash whose row was not pending is logged.
+- A2-26: `data TxFor = TxRegistration RegistrationTx RegistrationId | TxEdit RecordEditId`, `data RegistrationTx = RTCommit | RTAccept | RTRegister` with TextEncoding, stored as the kind column's text; TxKind and the predicates go. withinSends and sendsUsedUp keep their rules on mined commits.
+- A2-3: simplexmq 5cb1893c on evgeny-simplex/simplexmq ep/usdcents-instances: `rlpP` (canonical RLP), `decodeEip1559Tx` and `eip1559SigningHash` beside signEip1559Tx; decodeSignedTx and transactionSigner call them.
 
 ## Worker's judgment
 
-A2-23, A2-24: judge has one arm per revert name, and the availability step returns one state.
+A2-23, A2-24: judge has one arm per revert name, and the availability read returns one state.
 
 ```haskell
 data Availability = AvailableAtLatest | TakenAtDepth | TakenOnlyAboveDepth
@@ -71,14 +78,14 @@ flowchart TD
 
 ## Terms
 
-A2-6: `type CommunityName = Bool` at every site of the terms kind, as AgreedTerms names it; `acceptType` and `relayFunction` take it in place of the record TermsKind; `termsKindText` gives "general" or "community".
+A2-6: `type CommunityName = Bool` at every site of the terms kind, as AgreedTerms names it; `termsKindText` gives "general" or "community". The record TermsKind and termsKind stay, termsKind taking CommunityName.
 
 A2-7, A2-8, A2-35: the terms link is parsed once, where termsLinks reads it.
 
 - termsLinkParts is an attoparsec grammar.
-- `Terms {tmLink, tmHash, tmFetch :: Maybe (String, Maybe ByteString)}`; `termsOf :: Contracts -> Text -> IO (Maybe Terms)` parses, with the loopback chain check.
+- `Terms {tmLink, tmHash, tmFetch :: Maybe (String, Maybe ByteString)}`; `termsOf :: Contracts -> Text -> IO (Either ChainError (Maybe Terms))` parses, with the loopback chain check; a failed chain id read fails the terms read.
 - termsLinks returns `(Maybe Terms, Maybe Terms)`, parses a link only when it differs from the one read before, and logs a link the service does not take then.
-- termsLinkAllowed goes; fetchTerms reads tmFetch; kindTerms moves beside termsLinks.
+- termsLinkAllowed goes; fetchTerms reads tmFetch; kindTerms moves beside termsLinks; logNamePolicy logs set terms only.
 
 ```mermaid
 sequenceDiagram
@@ -96,7 +103,7 @@ sequenceDiagram
   end
 ```
 
-A2-38: fetchText moves to the terms code in Contracts, its only caller's module; the digest and UTF-8 checks return their reason alone.
+A2-38: dropped, as decisions-data.json `refined` proposes.
 
 A2-36: namehash uses simplexmq's labelHash; `tldLabel` serves labelNode and the view's TLD.
 
@@ -106,8 +113,8 @@ A2-36: namehash uses simplexmq's labelHash; `tldLabel` serves labelNode and the 
 - A2-13: intentOf is the one builder of a Registration; committedRegistration builds the NameReveal.
 - A2-14: `checkReveal` returns the NameReveal its checks passed; the acceptance is required in the request and in NameReveal.
 - A2-15: toRegistration checks the 32-byte columns; verifyRegisterIntent's length check goes.
-- A2-16: `hexP` and `lowerHexP` in Abi read every 0x hash, the secret, the signature, the terms digest and AgreedTerms. The node's JSON-RPC data and quantities, the owner's address and the service key keep their any-case rules.
-- A2-17: pending the simplexmq decision.
+- A2-16: `hexP` and `lowerHexP` in Abi read every 0x hash, the secret, the signature, the terms digest and AgreedTerms; Orders' `hexHash` and `hexSignature` serve the order and the reveal. The node's JSON-RPC data and quantities, the owner's address and the service key keep their any-case rules.
+- A2-17: simplexmq 5cb1893c exports `addressFromBytes` and `lowS`; parseSignature reads with deserializeSignature and lowS. SignatureError and AddressError stay.
 - A2-11: `withRegistrationTurn` and `withRegistrationTurns` in Turns read the order again in its name's turn; `type Moved = ()`. The reveal, Try again, the close and the move use them.
 
 ```mermaid
