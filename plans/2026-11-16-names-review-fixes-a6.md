@@ -9,7 +9,7 @@ simplexmq: cabal.project pins evgeny-simplex/simplexmq e684f063a, which adds:
 - FromField and ToField for Address, LabelHash and RecoverableSignature;
 - Ord LabelHash.
 
-cabal.project then pins A2's commit on top of e684f063a, for A2-3 and A2-17, in lines identical to A2's.
+cabal.project then pins A2's 5cb1893c1, a fast-forward of e684f063a for A2-3 and A2-17, in lines identical to A2's.
 
 scripts/nix/sha256map.nix changes once the commit is in simplex-chat/simplexmq; the reduced build reads no Nix map.
 
