@@ -110,7 +110,7 @@ send g c@ChainClient {ccRegistrar} to calldata = do
   tip <- right' =<< recentTip c
   Block {blockBaseFee} <- right' =<< latestBlock c
   tx@SignedTx {stRaw, stHash} <-
-    right <$> signTransaction g c TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gas, trMaxFeePerGas = 2 * blockBaseFee + tip, trMaxPriorityFeePerGas = tip}
+    right <$> signTransaction g c Eip1559Tx {txChainId = fakeChainId, txNonce = nonce, txMaxPriorityFeePerGas = fromIntegral tip, txMaxFeePerGas = fromIntegral $ 2 * blockBaseFee + tip, txGasLimit = gas, txTo = to, txValue = 0, txData = calldata}
   sendRawTransaction c stRaw `shouldReturn` Right stHash
   pure tx
   where

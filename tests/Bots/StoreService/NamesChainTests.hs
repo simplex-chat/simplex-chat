@@ -18,6 +18,7 @@ import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import qualified Network.HTTP.Client as HTTP
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (uint256)
 import StoreService.Names.Chain
@@ -247,7 +248,7 @@ secretPath = "/v2/provider-api-key"
 signed :: TVar ChaChaDRG -> ChainClient -> Word64 -> IO SignedTx
 signed g c nonce =
   either error id
-    <$> signTransaction g c TxRequest {trTo = fakeController, trData = availableCall, trNonce = nonce, trGasLimit = fakeGas, trMaxFeePerGas = 2 * fakeBaseFee + fakeTip, trMaxPriorityFeePerGas = fakeTip}
+    <$> signTransaction g c Eip1559Tx {txChainId = fakeChainId, txNonce = nonce, txMaxPriorityFeePerGas = fakeTip, txMaxFeePerGas = 2 * fakeBaseFee + fakeTip, txGasLimit = fakeGas, txTo = fakeController, txValue = 0, txData = availableCall}
 
 -- | controller.available("bakery1"), viem's encodeFunctionData
 availableCall :: ByteString

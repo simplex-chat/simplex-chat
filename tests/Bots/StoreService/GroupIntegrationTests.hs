@@ -10,13 +10,13 @@
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
 module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesRefundChatTests, namesWorkerBootTests) where
 
-import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
+import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cChainId, cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, joinerAcceptance)
 import StoreService.Group.Command (maxUses)
 import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
+import StoreService.Names.Chain (SignedTx (..), newChainClient, signTransaction)
 import StoreService.Names.Store (CodeIssuer (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
@@ -86,6 +86,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Util (tshow)
 import System.Directory (createDirectoryIfMissing)
 import System.Exit (ExitCode (..))
@@ -205,7 +206,7 @@ testOtherKeyPendingStops ps = do
   g <- C.newRandom
   otherKey <- newChainClient g chainCfg {cServiceKey = either error id $ mkPrivateKey $ BA.replicate 32 0x47}
   Right SignedTx {stRaw, stHash} <-
-    signTransaction g otherKey TxRequest {trTo = cController chainCfg, trData = "", trNonce = 0, trGasLimit = 100000, trMaxFeePerGas = 1, trMaxPriorityFeePerGas = 1}
+    signTransaction g otherKey Eip1559Tx {txChainId = cChainId chainCfg, txNonce = 0, txMaxPriorityFeePerGas = 1, txMaxFeePerGas = 1, txGasLimit = 100000, txTo = cController chainCfg, txValue = 0, txData = ""}
   (t, cc, _, _) <- startGroupService svc Nothing
   flip finally (stopGroupService t cc) $ do
     code <- issue (chatStore cc) 1 usable

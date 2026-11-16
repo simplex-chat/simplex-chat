@@ -48,6 +48,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
@@ -71,7 +72,7 @@ data Sender = Sender
 -- | The signatures for one registrar nonce: the first, then each fee-bumped replacement.
 data InFlight = InFlight
   { ifFor :: TxFor,
-    ifRequest :: TxRequest,
+    ifRequest :: Eip1559Tx,
     ifRaw :: ByteString,
     -- | newest first
     ifHashes :: NonEmpty TxHash,
@@ -162,8 +163,8 @@ checkPendingSignatures g ChainConfig {cChainId, cServiceKey} st = do
   registrar <- addressFromPrivateKey g cServiceKey
   saved <- withTransaction st pendingTransactions
   runExceptT $ forM_ saved $ \NameTransaction {ntNonce, ntRaw} -> do
-    (chainId, signer) <- withExceptT ("name_transactions.raw: " <>) $ ExceptT $ transactionSigner ntRaw
-    when (chainId /= cChainId) $ throwError $ refusal ntNonce ("for chain " <> show chainId) ("for chain.chain_id " <> show cChainId)
+    (Eip1559Tx {txChainId}, signer) <- withExceptT ("name_transactions.raw: " <>) $ ExceptT $ transactionSigner ntRaw
+    when (txChainId /= cChainId) $ throwError $ refusal ntNonce ("for chain " <> show txChainId) ("for chain.chain_id " <> show cChainId)
     when (signer /= registrar) $ throwError $ refusal ntNonce ("by " <> shownAddress signer) ("by " <> shownAddress registrar <> " of chain.service_key")
   where
     shownAddress = T.unpack . addressText
@@ -173,7 +174,7 @@ checkPendingSignatures g ChainConfig {cChainId, cServiceKey} st = do
 
 -- | Dry run, the next nonce, the market's fees, the signature, saved, then sent. A failed send is retried by 'followTransactions'.
 submitTransaction :: Sender -> TxFor -> Address -> ByteString -> IO (Either SendError PendingTx)
-submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight} for to calldata =
+submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar, ccConfig = ChainConfig {cChainId}}, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight} for to calldata =
   withMVar snQueue $ \_ -> runExceptT $ do
     busy <- any ((== for) . ifFor) <$> liftIO (readTVarIO snInFlight)
     when busy $ throwError SEInFlight
@@ -190,7 +191,17 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snS
     when (bounded && headroomFee market > cap) $
       logNote $ "names sender: nonce " <> tshow nonce <> " at max fee " <> tshow cap <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most " <> maxTxFeeText
     -- both fit Word64: the tip is at most the needed fee, and the max fee at most the cap
-    let request = TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gasLimit, trMaxFeePerGas = fromInteger $ min cap $ headroomFee market, trMaxPriorityFeePerGas = fromInteger tip}
+    let request =
+          Eip1559Tx
+            { txChainId = cChainId,
+              txNonce = nonce,
+              txMaxPriorityFeePerGas = fromInteger tip,
+              txMaxFeePerGas = fromInteger $ min cap $ headroomFee market,
+              txGasLimit = gasLimit,
+              txTo = to,
+              txValue = 0,
+              txData = calldata
+            }
     SignedTx {stRaw, stHash} <- withExceptT SESigning $ ExceptT $ signTransaction snRandom c request
     liftIO $ do
       now <- snNow
@@ -265,7 +276,7 @@ resend s@Sender {snChain = c, snNow} nonce tx@InFlight {ifRaw, ifHashes = newest
       Left e -> warnNonce s nonce logWarn $ tshow e
 
 replace :: Sender -> Word64 -> InFlight -> UTCTime -> IO Bool
-replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifRequest = old@TxRequest {trGasLimit, trMaxFeePerGas, trMaxPriorityFeePerGas}} now =
+replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifRequest = old@Eip1559Tx {txGasLimit, txMaxFeePerGas, txMaxPriorityFeePerGas}} now =
   marketFees c >>= \case
     Left e -> False <$ warnNonce s nonce logWarn (tshow e)
     Right market@(tip, _)
@@ -278,7 +289,7 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
           let wanted = max (headroomFee market) (bumped oldMax)
               maxFee' = min cap wanted
               tip' = min maxFee' $ max tip (bumped oldTip)
-              request = old {trMaxPriorityFeePerGas = fromInteger tip', trMaxFeePerGas = fromInteger maxFee'}
+              request = old {txMaxPriorityFeePerGas = fromInteger tip', txMaxFeePerGas = fromInteger maxFee'}
           signTransaction snRandom c request >>= \case
             Left e -> False <$ logError ("names sender: replacement for nonce " <> tshow nonce <> " not signed: " <> T.pack e)
             Right SignedTx {stRaw, stHash} -> do
@@ -286,13 +297,13 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
               update s nonce $ \t -> t {ifRequest = request, ifRaw = stRaw, ifHashes = stHash <| ifHashes t, ifReplaceAt = later}
               logNote $
                 "names sender: replacing nonce " <> tshow nonce <> " at max fee " <> tshow maxFee'
-                  <> (if bounded && wanted > cap then ", capped so that its gas limit " <> tshow trGasLimit <> " costs at most " <> maxTxFeeText else "")
+                  <> (if bounded && wanted > cap then ", capped so that its gas limit " <> tshow txGasLimit <> " costs at most " <> maxTxFeeText else "")
               True <$ broadcast s nonce stRaw
   where
     later = addUTCTime replaceAfter now
-    oldTip = toInteger trMaxPriorityFeePerGas
-    oldMax = toInteger trMaxFeePerGas
-    (cap, bounded) = feeCap c trGasLimit
+    oldTip = toInteger txMaxPriorityFeePerGas
+    oldMax = toInteger txMaxFeePerGas
+    (cap, bounded) = feeCap c txGasLimit
 
 -- | The confirmed hash gets its receipt's status; every other hash of the nonce can no longer be mined.
 settle :: Sender -> Word64 -> InFlight -> TxOutcome -> IO ()

@@ -97,11 +97,12 @@ import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strDecode, textDecode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
-import StoreService.Names.Chain (ChainClient (..), TxRequest (..), decodeSignedTx, newChainClient)
+import StoreService.Names.Chain (ChainClient (..), decodeSignedTx, newChainClient)
 import StoreService.Names.Signatures (AgreedTerms)
 import System.Timeout (timeout)
 
@@ -496,15 +497,15 @@ answer st method params = do
         | otherwise -> J.Null
     ("eth_sendRawTransaction", [J.String raw])
       | Just tx <- fromHex raw,
-        Right TxRequest {trNonce, trMaxFeePerGas, trMaxPriorityFeePerGas} <- decodeSignedTx tx -> do
-          let accept = (result $ hex $ keccak256 tx) <$ writeTVar st s {fsSent = tx : fsSent, fsPool = M.insert trNonce tx fsPool}
-          case M.lookup trNonce fsPool of
-            _ | trNonce < fsUsed -> pure $ rpcError (-32000) "nonce too low" Nothing
+        Right Eip1559Tx {txNonce, txMaxFeePerGas, txMaxPriorityFeePerGas} <- decodeSignedTx tx -> do
+          let accept = (result $ hex $ keccak256 tx) <$ writeTVar st s {fsSent = tx : fsSent, fsPool = M.insert txNonce tx fsPool}
+          case M.lookup txNonce fsPool of
+            _ | txNonce < fsUsed -> pure $ rpcError (-32000) "nonce too low" Nothing
             Just known
               | known == tx -> pure $ rpcError (-32000) "already known" Nothing
               -- geth and reth replace a pending transaction only when both its fees are at least 10% higher
-              | Right TxRequest {trMaxFeePerGas = knownMax, trMaxPriorityFeePerGas = knownTip} <- decodeSignedTx known,
-                trMaxFeePerGas * 10 < knownMax * 11 || trMaxPriorityFeePerGas * 10 < knownTip * 11 ->
+              | Right Eip1559Tx {txMaxFeePerGas = knownMax, txMaxPriorityFeePerGas = knownTip} <- decodeSignedTx known,
+                txMaxFeePerGas * 10 < knownMax * 11 || txMaxPriorityFeePerGas * 10 < knownTip * 11 ->
                   pure $ rpcError (-32000) "replacement transaction underpriced" Nothing
             _ -> accept
     _ -> pure $ rpcError (-32601) "method not found" Nothing

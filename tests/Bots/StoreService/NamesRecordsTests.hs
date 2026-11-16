@@ -42,6 +42,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), signRecoverable)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
@@ -346,7 +347,7 @@ testRelayMined g = withSetup g $ \s -> do
   req <- ownerEdit s viemChannelLink
   r <- relay s req
   [raw] <- sentBy s 1
-  fmap (\TxRequest {trTo, trData} -> (trTo, trData)) (decodeSignedTx raw) `shouldBe` Right (fakeResolver, viemSetCall)
+  fmap (\Eip1559Tx {txTo, txData} -> (txTo, txData)) (decodeSignedTx raw) `shouldBe` Right (fakeResolver, viemSetCall)
   h <- mineSent s 1 True
   answerOf r `shouldReturn` EAApplied (Just h)
   stateOf s req `shouldReturn` Just (ESMined $ Just h)
@@ -498,7 +499,7 @@ testTwoMined g = withSetup g $ \s@Setup {node} -> do
   req <- ownerTwo s 0 viemContactLink viemChannelLink
   r <- relay s req
   [raw] <- sentBy s 1
-  fmap (\TxRequest {trTo, trData} -> (trTo, trData)) (decodeSignedTx raw) `shouldBe` Right (fakeResolver, viemMulticall)
+  fmap (\Eip1559Tx {txTo, txData} -> (txTo, txData)) (decodeSignedTx raw) `shouldBe` Right (fakeResolver, viemMulticall)
   h <- mineSent s 1 True
   answerOf r `shouldReturn` EAApplied (Just h)
   stateOf s req `shouldReturn` Just (ESMined $ Just h)
@@ -651,7 +652,7 @@ relayClear s@Setup {owner} = do
   req <- signEdit s owner RCClear 1 deadline
   r <- relay s req
   [raw] <- sentBy s 1
-  fmap trData (decodeSignedTx raw) `shouldBe` Right viemClearCall
+  fmap txData (decodeSignedTx raw) `shouldBe` Right viemClearCall
   setNonce s 2
   pure r
 

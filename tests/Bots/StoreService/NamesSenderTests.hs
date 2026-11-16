@@ -25,6 +25,8 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
+import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
@@ -88,17 +90,19 @@ testDecodeSignedTx :: TVar ChaChaDRG -> IO ()
 testDecodeSignedTx g = withFakeEthNode $ \node -> do
   c <- newChainClient g $ fakeChainConfig node
   -- calldata over 55 bytes takes a long RLP length
-  let request = TxRequest {trTo = fakeSponsor, trData = B.replicate 300 0xab, trNonce = 70000, trGasLimit = 450000, trMaxFeePerGas = 31000000000, trMaxPriorityFeePerGas = 0}
+  let request = Eip1559Tx {txChainId = fakeChainId, txNonce = 70000, txMaxPriorityFeePerGas = 0, txMaxFeePerGas = 31000000000, txGasLimit = 450000, txTo = fakeSponsor, txValue = 0, txData = B.replicate 300 0xab}
+      decoded = fmap txFields . decodeSignedTx
+      signer = fmap (fmap $ \(tx, a) -> (txChainId tx, a)) . transactionSigner
   Right SignedTx {stRaw} <- signTransaction g c request
-  decodeSignedTx stRaw `shouldBe` Right request
-  decodeSignedTx (B.cons 0x01 $ B.drop 1 stRaw) `shouldBe` Left "transaction: not an EIP-1559 transaction"
-  decodeSignedTx (B.take 100 stRaw) `shouldBe` Left "RLP: truncated"
-  transactionSigner (B.take 100 stRaw) `shouldReturn` Left "RLP: truncated"
+  decoded stRaw `shouldBe` Right (txFields request)
+  decoded (B.cons 0x01 $ B.drop 1 stRaw) `shouldBe` Left "transaction: not an EIP-1559 transaction"
+  decoded (B.take 100 stRaw) `shouldBe` Left "RLP: truncated"
+  signer (B.take 100 stRaw) `shouldReturn` Left "RLP: truncated"
   forM_ [0 .. 15] $ \nonce -> do
-    Right SignedTx {stRaw = raw} <- signTransaction g c request {trNonce = nonce}
-    (\signer -> (nonce, signer)) <$> transactionSigner raw `shouldReturn` (nonce, Right (fakeChainId, ccRegistrar c))
+    Right SignedTx {stRaw = raw} <- signTransaction g c request {txNonce = nonce}
+    (\s -> (nonce, s)) <$> signer raw `shouldReturn` (nonce, Right (fakeChainId, ccRegistrar c))
   ccRegistrar c `shouldBe` address "0x9d8A62f656a8d1615C1294fd71e9CFb3E4855A4F"
-  transactionSigner viemTxYParity1ShortS `shouldReturn` Right (fakeChainId, ccRegistrar c)
+  signer viemTxYParity1ShortS `shouldReturn` Right (fakeChainId, ccRegistrar c)
 
 testConcurrentNonces :: TVar ChaChaDRG -> IO ()
 testConcurrentNonces g = withSetup g $ \s@Setup {node, store} -> do
@@ -125,8 +129,7 @@ testTipFloor g = withSetup g $ \s@Setup {node} -> do
   setFees node 0 fakeBaseFee
   Right _ <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
   [raw] <- sentTransactions node
-  ((\TxRequest {trMaxPriorityFeePerGas, trMaxFeePerGas} -> (trMaxPriorityFeePerGas, trMaxFeePerGas)) <$> decodeSignedTx raw)
-    `shouldBe` Right (minTip, 2 * fakeBaseFee + minTip)
+  (fees <$> decodeSignedTx raw) `shouldBe` Right (toInteger minTip, 2 * fakeBaseFee + toInteger minTip)
 
 testNothingSaved :: TVar ChaChaDRG -> IO ()
 testNothingSaved g = withSetup g $ \s@Setup {node, store} -> do
@@ -186,8 +189,8 @@ testFeeBump g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
   Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
   [firstRaw] <- sentTransactions node
-  Right first@TxRequest {trMaxFeePerGas = firstMax, trMaxPriorityFeePerGas = firstTip} <- pure $ decodeSignedTx firstRaw
-  (firstTip, firstMax) `shouldBe` (fakeTip, 2 * fakeBaseFee + fakeTip)
+  Right first <- pure $ decodeSignedTx firstRaw
+  fees first `shouldBe` (fakeTip, 2 * fakeBaseFee + fakeTip)
   passTime s $ replaceAfter - 1
   followTransactions sender
   passTime s 1
@@ -200,7 +203,7 @@ testFeeBump g = withSetup g $ \s@Setup {node, store} -> do
   followTransactions sender
   [_, bumpedRaw] <- sentTransactions node
   let bumpedHash = TxHash $ C.keccak256 bumpedRaw
-  decodeSignedTx bumpedRaw `shouldBe` Right first {trMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, trMaxFeePerGas = 4 * fakeBaseFee + fakeTip}
+  txFields <$> decodeSignedTx bumpedRaw `shouldBe` Right (txFields first {txMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, txMaxFeePerGas = 4 * fakeBaseFee + fakeTip})
   known s (ptHash p) `shouldReturn` False
   known s bumpedHash `shouldReturn` True
   map (\(h, status, _) -> (h, status)) <$> statuses store r1 `shouldReturn` [(ptHash p, TSPending), (bumpedHash, TSPending)]
@@ -333,7 +336,7 @@ testFeeCapSubmit g = withCapSetup cap g $ \s@Setup {node, store} -> do
   Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
   ptNonce p `shouldBe` 0
   [raw] <- sentTransactions node
-  (\TxRequest {trMaxPriorityFeePerGas, trMaxFeePerGas} -> (trMaxPriorityFeePerGas, trMaxFeePerGas)) <$> decodeSignedTx raw `shouldBe` Right (fakeTip, cap)
+  fees <$> decodeSignedTx raw `shouldBe` Right (fakeTip, toInteger cap)
   where
     cap = 20_000_000_000 :: Word64
 
@@ -343,12 +346,12 @@ testFeeCapReplace g = withCapSetup cap g $ \s@Setup {node} -> do
   Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
   [firstRaw] <- sentTransactions node
   Right first <- pure $ decodeSignedTx firstRaw
-  trMaxFeePerGas first `shouldBe` 2 * fakeBaseFee + fakeTip
+  txMaxFeePerGas first `shouldBe` 2 * fakeBaseFee + fakeTip
   setFees node fakeTip (2 * fakeBaseFee)
   passTime s replaceAfter
   followTransactions sender
   [_, bumpedRaw] <- sentTransactions node
-  decodeSignedTx bumpedRaw `shouldBe` Right first {trMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, trMaxFeePerGas = cap}
+  txFields <$> decodeSignedTx bumpedRaw `shouldBe` Right (txFields first {txMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, txMaxFeePerGas = fromIntegral cap})
   passTime s replaceAfter
   followTransactions sender
   length <$> sentTransactions node `shouldReturn` 2
@@ -375,19 +378,19 @@ testTxFeeBound g = withSetup g $ \s@Setup {node} -> do
   Right _ <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
   [firstRaw] <- sentTransactions node
   Right first <- pure $ decodeSignedTx firstRaw
-  (trGasLimit first, trMaxFeePerGas first) `shouldBe` (gasLimit, 2 * firstBaseFee + fakeTip)
+  (txGasLimit first, txMaxFeePerGas first) `shouldBe` (gasLimit, fromIntegral $ 2 * firstBaseFee + fakeTip)
   setFees node fakeTip (3 * firstBaseFee)
   passTime s replaceAfter
   logged <- capturingStderr $ followTransactions sender
   logged `shouldSatisfy` T.isInfixOf ("names sender: replacing nonce 0 at max fee " <> tshow bound <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most 0.01 ETH")
   [_, bumpedRaw] <- sentTransactions node
-  decodeSignedTx bumpedRaw `shouldBe` Right first {trMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, trMaxFeePerGas = bound}
+  txFields <$> decodeSignedTx bumpedRaw `shouldBe` Right (txFields first {txMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, txMaxFeePerGas = fromIntegral bound})
   passTime s replaceAfter
   followTransactions sender
   length <$> sentTransactions node `shouldReturn` 2
   Right _ <- submitTransaction sender (TxCommit r2) fakeController (commit 2)
   [_, _, cappedRaw] <- sentTransactions node
-  (\TxRequest {trGasLimit, trMaxFeePerGas} -> (trGasLimit, trMaxFeePerGas)) <$> decodeSignedTx cappedRaw `shouldBe` Right (gasLimit, bound)
+  (\Eip1559Tx {txGasLimit, txMaxFeePerGas} -> (txGasLimit, toInteger txMaxFeePerGas)) <$> decodeSignedTx cappedRaw `shouldBe` Right (gasLimit, toInteger bound)
   toInteger gasLimit * toInteger bound `shouldSatisfy` (<= maxTxFeeWei)
 
 -- fixtures
@@ -405,6 +408,13 @@ insufficientAllowance = unhex "2a1b2dd800000000000000000000000000000000000000000
 
 mineHash :: FakeEthNode -> TxHash -> IO ()
 mineHash node (TxHash h) = () <$ mine node [(h, True)]
+
+txFields :: Eip1559Tx -> (Word64, Word64, Integer, Integer, Word64, Address, Integer, ByteString)
+txFields Eip1559Tx {txChainId, txNonce, txMaxPriorityFeePerGas, txMaxFeePerGas, txGasLimit, txTo, txValue, txData} =
+  (txChainId, txNonce, toInteger txMaxPriorityFeePerGas, toInteger txMaxFeePerGas, txGasLimit, txTo, toInteger txValue, txData)
+
+fees :: Eip1559Tx -> (Integer, Integer)
+fees Eip1559Tx {txMaxPriorityFeePerGas, txMaxFeePerGas} = (toInteger txMaxPriorityFeePerGas, toInteger txMaxFeePerGas)
 
 confirmedAs :: TxHash -> TxOutcome -> Bool
 confirmedAs hash = \case

@@ -39,12 +39,13 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig)
 import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), hex, selector, uint256)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
-import StoreService.Names.Chain (Block (..), ChainClient, TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
+import StoreService.Names.Chain (Block (..), ChainClient, TxHash (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
@@ -437,7 +438,7 @@ testCommitOutOfGas = withWorker $ \w@W {wCtx = ctx} -> do
   second <- ptHash <$> (steps w r >>= awaiting)
   second `shouldNotBe` first
   [_, raw] <- sent w
-  trNonce <$> either error pure (decodeSignedTx raw) `shouldReturn` 1
+  txNonce <$> either error pure (decodeSignedTx raw) `shouldReturn` 1
   x <- stored ctx r
   (nrPhase x, nrCommitTx x) `shouldBe` (OCommitting, Just second)
 
@@ -796,7 +797,7 @@ testAcceptanceRelayed = forM_ [(False, fakeGeneralTerms, plainTerms), (True, fak
   r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder {oTerms = signed} openPhase >>= acceptedRevealFor fakeNamePolicy community terms ctx
   relay <- steps w r >>= awaiting
   [acceptRaw] <- sent w
-  ((trTo &&& trData) <$> decodeSignedTx acceptRaw) `shouldBe` Right (fakeNamePolicy, acceptCalldata (termsKind community) (nrCommitment r) (nrOwner r) rvDeadline acceptance)
+  ((txTo &&& txData) <$> decodeSignedTx acceptRaw) `shouldBe` Right (fakeNamePolicy, acceptCalldata (termsKind community) (nrCommitment r) (nrOwner r) rvDeadline acceptance)
   -- in flight, it is waited for, and nothing else is sent
   steps w r >>= awaiting >>= (`shouldBe` ptHash relay) . ptHash
   stored ctx r `shouldReturn` r
@@ -804,7 +805,7 @@ testAcceptanceRelayed = forM_ [(False, fakeGeneralTerms, plainTerms), (True, fak
   answerAccepted w r $ Returns terms
   void $ published w r $ steps w r >>= awaiting
   [_, registerRaw] <- sent w
-  (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
+  (txTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
   nrPhase <$> stored ctx r `shouldReturn` ORegistering
 
 testAcceptanceBeforeWait :: IO ()
@@ -812,7 +813,7 @@ testAcceptanceBeforeWait = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealAfter = Just (orderSeconds + 60)}) >>= acceptedReveal ctx
   void $ steps w r >>= awaiting
   [acceptRaw] <- sent w
-  (trTo <$> decodeSignedTx acceptRaw) `shouldBe` Right fakeNamePolicy
+  (txTo <$> decodeSignedTx acceptRaw) `shouldBe` Right fakeNamePolicy
   void $ mineNewest w True
   answerAccepted w r $ Returns fakeGeneralTerms
   steps w r >>= waitingUntil >>= (`shouldBe` at (orderSeconds + 60))
@@ -835,7 +836,7 @@ testAcceptanceSentFirst = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   revertDryRun cNode (acceptCalldata (termsKind False) (nrCommitment r) (nrOwner r) rvDeadline acceptance) $ Just $ selector "InvalidNonce()"
   void $ steps w r >>= awaiting
   [registerRaw] <- sent w
-  (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
+  (txTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
   x <- stored ctx r
   (nrPhase x, nrReveal x) `shouldBe` (ORegistering, nrReveal r)
 
@@ -847,7 +848,7 @@ testAcceptanceMinedFailed = withWorker $ \w@W {wCtx = ctx} -> do
   answerAccepted w r $ Returns fakeGeneralTerms
   void $ published w r $ steps w r >>= awaiting
   [_, registerRaw] <- sent w
-  (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
+  (txTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
   x <- stored ctx r
   (nrPhase x, nrReveal x) `shouldBe` (ORegistering, nrReveal r)
 
@@ -883,7 +884,7 @@ testAcceptanceLapsed = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just (orderSeconds - minAge)}) >>= acceptedReveal ctx
   void $ steps w r
   txs <- sent w
-  (trTo <$>) . decodeSignedTx <$> txs `shouldNotContain` [Right fakeNamePolicy]
+  (txTo <$>) . decodeSignedTx <$> txs `shouldNotContain` [Right fakeNamePolicy]
 
 testCheckUnread :: IO ()
 testCheckUnread = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
