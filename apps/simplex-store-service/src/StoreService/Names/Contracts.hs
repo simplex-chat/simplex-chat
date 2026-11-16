@@ -80,7 +80,6 @@ import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), Ch
 import StoreService.Names.Registration (LinkKind (..), TermsHash, labelNode, nodeBytes, recordKey)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
-import StoreService.Safely (safely)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
@@ -282,7 +281,7 @@ fetchCurrentTerms ct =
     Left e -> logWarn $ "names: the terms links could not be read to fetch their texts: " <> tshow e
 
 runTermsFetch :: Contracts -> IO ()
-runTermsFetch ct = forever $ safely "names terms fetch" (fetchCurrentTerms ct) >> threadDelay termsFetchInterval
+runTermsFetch ct = forever $ (fetchCurrentTerms ct `catchOwn'` \e -> logError ("names terms fetch failed; the next pass will run: " <> tshow e)) >> threadDelay termsFetchInterval
 
 fetchTerms :: Contracts -> Terms -> IO (Either TermsRefusal Text)
 fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =

@@ -485,7 +485,6 @@ executable simplex-store-service
       StoreService.Providers
       StoreService.Providers.BTCPay
       StoreService.Providers.Stripe
-      StoreService.Safely
       StoreService.Service
       StoreService.Store
       StoreService.Store.Invoices
@@ -869,7 +868,6 @@ test-suite simplex-chat-test
       StoreService.Providers
       StoreService.Providers.BTCPay
       StoreService.Providers.Stripe
-      StoreService.Safely
       StoreService.Service
       StoreService.Store
       StoreService.Store.Invoices

@@ -62,7 +62,7 @@ import Simplex.Chat.Badges.Types (BadgeOfferId (..), BadgePriceId (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
-import Simplex.Messaging.Util (raceAny_, tshow)
+import Simplex.Messaging.Util (catchOwn', raceAny_, tshow)
 import System.Directory (canonicalizePath, doesDirectoryExist, doesFileExist)
 import System.FilePath (pathSeparator, takeExtension, (</>))
 
@@ -428,13 +428,9 @@ parseCreateRequest o = do
 -- | A provider retries a delivery it sees fail, so anything thrown below is caught and answered 200 anyway.
 webhookHandler :: WebEnv -> PaymentProvider -> Text -> Request -> Respond -> IO ResponseReceived
 webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
-  E.try deliver >>= \case
-    Right received -> pure received
-    Left e -> case E.fromException e of
-      Just async' -> E.throwIO (async' :: E.SomeAsyncException)
-      Nothing -> do
-        logError (route <> ": the delivery could not be handled, so no read was queued: " <> tshow (e :: E.SomeException))
-        respond webhookOk
+  deliver `catchOwn'` \e -> do
+    logError (route <> ": the delivery could not be handled, so no read was queued: " <> tshow e)
+    respond webhookOk
   where
     deliver :: IO ResponseReceived
     deliver = case providerNamed (weProviders env) provider of

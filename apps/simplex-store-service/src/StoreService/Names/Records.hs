@@ -21,7 +21,7 @@ where
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Exception (bracket, onException)
-import Control.Logger.Simple (logWarn)
+import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM, forM_, forever, unless, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
@@ -42,7 +42,7 @@ import Simplex.Messaging.Crypto (sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (Contracts, NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
@@ -51,7 +51,6 @@ import StoreService.Names.Revert (RevertName (..), revertText)
 import StoreService.Names.Sender (SendError (..), Sender, submitTransaction)
 import StoreService.Names.Store
 import StoreService.Names.Turns (Turns, withLabelTurn)
-import StoreService.Safely (safely)
 
 data Records = Records
   { rsStore :: DBStore,
@@ -263,14 +262,16 @@ runRecordEdits rs = forever $ recordsRound rs >> threadDelay recordsInterval
 
 -- | One pass over the pending edits that no request is sending. A pass or an edit that fails is logged, and the lane goes on.
 recordsRound :: Records -> IO ()
-recordsRound rs@Records {rsChain} = void $ safely "names records: the round" $ do
-  editIds <- withStore rs pendingEditIds
-  unless (null editIds) $
-    runExceptT (ExceptT (latestBlock rsChain) >>= \tip -> (tip,) <$> ExceptT (deepBlock rsChain tip)) >>= \case
-      Left e -> mapM_ (\editId -> stall rs editId e) editIds
-      -- each edit on its own, so a row that fails stops no other edit
-      Right (tip, deep) -> forM_ editIds $ \editId ->
-        safely ("names records: edit " <> tshow editId) $ withClaim rs editId () $ withStore rs (`getRecordEdit` editId) >>= mapM_ (follow rs tip deep)
+recordsRound rs@Records {rsChain} =
+  (`catchOwn'` \e -> logError ("names records: the round failed; the next pass will run: " <> tshow e)) $ do
+    editIds <- withStore rs pendingEditIds
+    unless (null editIds) $
+      runExceptT (ExceptT (latestBlock rsChain) >>= \tip -> (tip,) <$> ExceptT (deepBlock rsChain tip)) >>= \case
+        Left e -> mapM_ (\editId -> stall rs editId e) editIds
+        -- each edit on its own, so a row that fails stops no other edit
+        Right (tip, deep) -> forM_ editIds $ \editId ->
+          withClaim rs editId () (withStore rs (`getRecordEdit` editId) >>= mapM_ (follow rs tip deep))
+            `catchOwn'` \e -> logError ("names records: edit " <> tshow editId <> " failed; the next pass follows it: " <> tshow e)
 
 -- | The newest block at the configured confirmation depth, as the sender counts it.
 deepBlock :: ChainClient -> Block -> IO (Either ChainError Block)

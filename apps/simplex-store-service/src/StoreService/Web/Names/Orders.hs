@@ -24,7 +24,7 @@ import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
-import Data.Maybe (isJust, maybeToList)
+import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
@@ -35,7 +35,7 @@ import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), I
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (textDecode)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (isAsyncCancellation, tshow)
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
 import StoreService.Names.Abi (hex)
@@ -165,11 +165,10 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg provid
     -- An invoice created at the provider for an order that was not written would stay payable with nothing watching it.
     strandedBy :: Provider -> Text -> E.SomeException -> IO a
     strandedBy provider ref e = do
-      unless (isAsync e) $ do
+      unless (isAsyncCancellation e) $ do
         logError (what <> ": the order was not written, so invoice " <> ref <> " is cancelled at the provider: " <> tshow e)
         cancelAtProvider provider ref
       E.throwIO e
-    isAsync e = isJust (E.fromException e :: Maybe E.SomeAsyncException)
 
 -- | An exact resend, answered with its order as it reads now: the invoice view, or the id of an order without an invoice.
 resentOrder :: OrdersEnv -> ServiceConfig -> UTCTime -> NameRegistration -> IO Answer

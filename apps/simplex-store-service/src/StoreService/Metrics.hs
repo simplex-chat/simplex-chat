@@ -22,7 +22,7 @@ where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
-import Control.Logger.Simple (logWarn)
+import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forever, unless)
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isRight)
@@ -42,14 +42,13 @@ import Simplex.Chat.Badges.Code (maxNameLength)
 import Simplex.Chat.Badges.Types (BadgePurchaseStatus (..), SubscriptionState (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Util (raceAny_, tshow)
+import Simplex.Messaging.Util (catchOwn', raceAny_, tshow)
 import StoreService.Config (ListenerConfig)
 import StoreService.Names.Census (Census (..), CensusName (..), nameCensus, recordsLabel)
 import StoreService.Names.Chain (Block (..), ChainClient, latestBlock)
 import StoreService.Names.Contracts (Contracts, RegistrarFunds (..), registrarFunds, termsHeld)
 import StoreService.Names.Store (NamesCounts (..), namesCounts)
 import StoreService.Poller (expiryGrace)
-import StoreService.Safely (safely)
 import StoreService.Store (BadgeCounts (..), badgeCounts)
 import StoreService.Store.Invoices (openInvoiceCounts, unixSeconds)
 import StoreService.Web.Http (notFound, only)
@@ -112,7 +111,7 @@ readChain NamesSource {nsChain, nsContracts} v = do
 
 runChainReads :: NamesSource -> TVar ChainRead -> IO ()
 runChainReads ns v = forever $ do
-  done <- safely "store metrics: the chain read" (readChain ns v)
+  done <- (True <$ readChain ns v) `catchOwn'` \e -> False <$ logError ("store metrics: the chain read failed; the next pass will run: " <> tshow e)
   unless done $ atomically $ modifyTVar' v $ \cr -> cr {crOk = False}
   threadDelay chainReadInterval
 
@@ -138,7 +137,7 @@ readCensus NamesSource {nsChain, nsContracts} v = do
 
 runCensus :: NamesSource -> TVar CensusRead -> IO ()
 runCensus ns v = forever $ do
-  done <- safely "store metrics: the names census" (readCensus ns v)
+  done <- (True <$ readCensus ns v) `catchOwn'` \e -> False <$ logError ("store metrics: the names census failed; the next pass will run: " <> tshow e)
   unless done $ atomically $ modifyTVar' v $ \cr -> cr {crFailures = crFailures cr + 1}
   threadDelay censusInterval
 

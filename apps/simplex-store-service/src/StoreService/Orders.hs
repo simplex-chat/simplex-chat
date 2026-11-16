@@ -19,7 +19,6 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Store (BalanceUse (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, namePhase, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
 import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Received (..), receivedAmount, receivedConfirmed)
-import StoreService.Safely (safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
 import Control.Concurrent.STM (STM, atomically)
@@ -35,6 +34,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentStatus (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Util (catchOwn', tshow)
 
 -- | Written onto the row at settlement and read back, so changing it moves only codes sold afterwards.
 codeLifetime :: NominalDiffTime
@@ -276,7 +276,7 @@ cancelOpenInvoice st waiters phases invId now = do
 expireOverdue :: DBStore -> Waiters -> Maybe Phases -> UTCTime -> UTCTime -> [OverdueInvoice] -> IO [InvoiceId]
 expireOverdue st waiters phases now cutoff = fmap catMaybes . mapM expire
   where
-    expire OverdueInvoice {oiInvoiceId = invId, oiProviderRef} = safelyWith ("expiring invoice " <> oiProviderRef) Nothing $ do
+    expire OverdueInvoice {oiInvoiceId = invId, oiProviderRef} = (`catchOwn'` \e -> Nothing <$ logError ("expiring invoice " <> oiProviderRef <> " failed; the next pass tries it again: " <> tshow e)) $ do
       expired <- withTransaction st $ \db -> do
         moved <- expireOverdueInvoice db cutoff invId
         if moved then Just <$> closeInvoiceOrder db invId now else pure Nothing
