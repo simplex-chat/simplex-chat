@@ -1,11 +1,11 @@
 # Selling SimpleX names in the apps
 
-Base: `names` · Repos: simplex-chat, simplexmq, simplex.domains (the site).
+Base: `app-names`, cut from `names` at 9757c5e8b · Repos: simplex-chat, simplexmq, simplex.domains (the site).
 
 Builds on:
 
 - the store service, https://github.com/simplex-chat/simplex-chat/pull/7979, merged into `names` as ad75fe706, under the name terms of https://github.com/simplex-chat/simplex-chat/pull/7889;
-- the device wallet, https://github.com/simplex-chat/simplex-chat/pull/7684, in `names` (https://github.com/simplex-chat/simplex-chat/pull/7703);
+- the device wallet, https://github.com/simplex-chat/simplex-chat/pull/7684, merged into `names` (https://github.com/simplex-chat/simplex-chat/pull/7703) and reverted from it at c194aefb9, before `app-names` was cut; it is merged again before the wallet's pull requests (P8, P9, P11);
 - the terms in the resolver's answer, https://github.com/simplex-chat/simplexmq/pull/2003.
 
 ## Summary
@@ -160,7 +160,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 
 ### 3.4 The core and the apps
 
-- The device wallet: one 24-word master per device; one hardened account per name at `m/44'/60'/n'/0/0`, each bound to a profile; `APIGetWallet`, `APICreateWallet`, `APICreateWalletAccount`, `APIExportWalletMnemonic`, `APIDeleteWallet` (`src/Simplex/Chat/Controller.hs:451-455`). Signing and import are unbuilt (`docs/rfcs/2026-09-10-wallet-keys.md`, known limits 2 and 5).
+- The device wallet, as at `names` before its revert, and absent from `app-names` until it is merged again: one 24-word master per device; one hardened account per name at `m/44'/60'/n'/0/0`, each bound to a profile; `APIGetWallet`, `APICreateWallet`, `APICreateWalletAccount`, `APIExportWalletMnemonic`, `APIDeleteWallet` (`src/Simplex/Chat/Controller.hs:451-455`). Signing and import are unbuilt (`docs/rfcs/2026-09-10-wallet-keys.md`, known limits 2 and 5).
 - The registration encoder and the order signatures are in the store-service app (https://github.com/simplex-chat/simplex-chat/pull/7693).
 - Name codes in the core: `NameCode = NCOwner NameOwnerCode | NCPrepaid NamePrepaidCode`; `parseNameCode` tells the kinds apart; `randomNamePrepaidCode`; `namePrepaidCodeHash` (`src/Simplex/Chat/Badges/Code.hs:165, 224, 249`).
 - An address claims a name with `/_set domain` (`APISetUserDomain`, `Commands.hs:1642`); a channel claims it in its own profile.
@@ -1151,7 +1151,7 @@ stateDiagram-v2
 
 ### 6.9 iOS and Apple's test environment
 
-- The store purchase shows only in App Store builds, decided on the phone as the badges decide on master (`servedByAppStore`); `names` gains the check with its next merge of master.
+- The store purchase shows only in App Store builds, decided on the phone as the badges decide on master (`servedByAppStore`), in `names`, and so in `app-names`, since the merge of master at e4fdc6603.
 - The check: the app's receipt named `receipt` from the first frame, then, on iOS 16 and later, the verified app transaction's environment `production` (`BadgeStore.swift:44, 148, 223-230` at master 225b3eef6).
 - A failed or unverified read of the app transaction keeps the receipt's answer, as for the badges.
 - App Store builds: 1·5's Pay and the store sheet; "Buy in browser" in the US storefront only (D18).
@@ -1370,7 +1370,7 @@ Library and types:
 - P13 `names: the store service's name commands`: request and response types, the two-part purchase answer; types only · medium · high
   - Tested: each command and answer encoded and parsed back.
 
-The wallet:
+The wallet, once the device wallet is merged again into `app-names`:
 
 - P8 `wallet: sign a message with an account`: a library function, EIP-191, 65 bytes, low `s` · small · high · P6
   - Tested: its vector against viem.
