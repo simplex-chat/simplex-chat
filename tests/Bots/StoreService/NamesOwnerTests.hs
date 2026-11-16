@@ -34,7 +34,7 @@ import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rent
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.NamesPhasesTests (held, registrationPath, seenVersion, woken)
-import Bots.StoreService.WebTests (bounded, capturingStderr, digestFixture, jsonObject, webGet, withApp)
+import Bots.StoreService.WebTests (bounded, capturingStderr, digestFixture, fieldOf, jsonObject, refusedWith, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent.Async (async, wait)
@@ -287,7 +287,7 @@ currentFields NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment,
   OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed, ofAgreedTerms = nrAgreedTerms}
 
 fieldsIn :: J.Object -> [(Text, J.Value)] -> Expectation
-fieldsIn v = mapM_ (\(k, value) -> (k, field k v) `shouldBe` (k, Just value))
+fieldsIn v = mapM_ (\(k, value) -> (k, fieldOf v k) `shouldBe` (k, Just value))
 
 refusedWithView :: Text -> J.Object -> (Int, Maybe J.Object)
 refusedWithView tag view = (409, Just $ KM.fromList [("error", J.String tag), ("registration", J.Object view)])
@@ -321,10 +321,10 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
   findBody ctx keyA (T.toLower ownerAText) (seconds orderTime) >>= postFind ctx >>= \case
     (200, Just v) | Just (J.Array found) <- KM.lookup "registrations" v -> do
       let entries = map objectEntry $ toList found
-      map (field "registrationId") entries `shouldBe` map (Just . idText) (nrId lapsed : nrId paid : [oldOrder i | i <- [50, 49 .. 3]])
+      map (`fieldOf` "registrationId") entries `shouldBe` map (Just . idText) (nrId lapsed : nrId paid : [oldOrder i | i <- [50, 49 .. 3]])
       case entries of
         lapsedEntry : unpaidEntry : moveEntry : _ -> do
-          (field "phase" lapsedEntry, nrPhase lapsed) `shouldBe` (Just "failed", OCommitted)
+          (fieldOf lapsedEntry "phase", nrPhase lapsed) `shouldBe` (Just "failed", OCommitted)
           sort (KM.keys unpaidEntry) `shouldBe` sort ["registrationId", "invoiceId", "phase", "createdAt", "labelHash", "sealed", "balanceSource", "heldBy"]
           unpaidEntry
             `shouldBe` KM.fromList
@@ -425,7 +425,7 @@ testMoveRepeat = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder failedPhase
   -- the current fields from failed: nothing moves
   (status, v) <- move ctx keyA r (currentFields r)
-  (status, field "phase" =<< v, field "moves" =<< v) `shouldBe` (200, Just "failed", Just (J.Number 0))
+  (status, (`fieldOf` "phase") =<< v, (`fieldOf` "moves") =<< v) `shouldBe` (200, Just "failed", Just (J.Number 0))
   stored ctx r `shouldReturn` r
   to <- moveTo ctx "alicebakers" 10
   body <- moveBody ctx keyA (nrId r) to
@@ -445,7 +445,7 @@ testMoveTermsOnly :: IO ()
 testMoveTermsOnly = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder $ \p -> (failedPhase p) {nrAgreedTerms = agreed olderTerms}
   (status, v) <- move ctx keyA r (currentFields r) {ofAgreedTerms = agreed plainTerms}
-  (status, field "phase" =<< v, field "moves" =<< v) `shouldBe` (200, Just "queued", Just (J.Number 1))
+  (status, (`fieldOf` "phase") =<< v, (`fieldOf` "moves") =<< v) `shouldBe` (200, Just "queued", Just (J.Number 1))
   (nrAgreedTerms &&& nrMoves) <$> stored ctx r `shouldReturn` (agreed plainTerms, 1)
 
 testMoveTermsChanged :: IO ()
@@ -514,7 +514,7 @@ testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   answer <- move ctx keyA r to
   view <- getView ctx r
   answer `shouldBe` refusedWithView "registration_changed" view
-  field "phase" view `shouldBe` Just "registered"
+  fieldOf view "phase" `shouldBe` Just "registered"
 
 testMoveLimit :: IO ()
 testMoveLimit = withOwner $ \ctx -> do
@@ -523,13 +523,13 @@ testMoveLimit = withOwner $ \ctx -> do
   forM_ (zip [1 :: Int ..] ["alicebakers", "alicebakery", "alicebakers"]) $ \(n, label) -> do
     to <- moveTo ctx label (10 + n)
     v <- moved ctx keyA r to
-    field "moves" v `shouldBe` Just (J.toJSON n)
+    fieldOf v "moves" `shouldBe` Just (J.toJSON n)
     rewrite ctx r failedPhase
   limited <- stored ctx r
   to <- moveTo ctx "alicebakery" 20
   view <- getView ctx limited
   move ctx keyA limited to {ofAgreedTerms = agreed olderTerms} `shouldReturn` refusedWithView "move_limit" view
-  (field "moves" view, field "phase" view) `shouldBe` (Just (J.Number 3), Just "failed")
+  (fieldOf view "moves", fieldOf view "phase") `shouldBe` (Just (J.Number 3), Just "failed")
   stored ctx r `shouldReturn` limited
 
 testMoveMeetsOrder :: IO ()
@@ -632,8 +632,8 @@ testMovePrice = withOwner $ \ctx -> do
   stored ctx dear `shouldReturn` dear
   balanceOf ctx dear `shouldReturn` Nothing
   v <- moved ctx keyB dear toCheaper
-  (field "price" v, field "phase" v, field "fromBalance" v) `shouldBe` (Just (J.Number 10000), Just "queued", Just (J.Number 0))
-  field "balance" v `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int)])
+  (fieldOf v "price", fieldOf v "phase", fieldOf v "fromBalance") `shouldBe` (Just (J.Number 10000), Just "queued", Just (J.Number 0))
+  fieldOf v "balance" `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int)])
   nrPrice <$> stored ctx dear `shouldReturn` 10000
   balanceOf ctx dear `shouldReturn` Just (10000, 10000)
 
@@ -653,7 +653,7 @@ testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
   r <- registrationById ctx (RegistrationId "diff") >>= \d -> rewrite ctx d failedPhase
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyA r to
-  (field "price" v, field "fromBalance" v) `shouldBe` (Just (J.Number 10000), Just (J.Number 5000))
+  (fieldOf v "price", fieldOf v "fromBalance") `shouldBe` (Just (J.Number 10000), Just (J.Number 5000))
   balanceOf ctx r `shouldReturn` Just (10000, 10000)
   balanceOf ctx paying `shouldReturn` Just (0, 5000)
 
@@ -668,7 +668,7 @@ testMoveCodeOrder = withOwner $ \ctx@Ctx {cStore} -> do
   withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary pcCodeHash)
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyA r to
-  (field "phase" v, field "price" v) `shouldBe` (Just "queued", Just (J.Number 0))
+  (fieldOf v "phase", fieldOf v "price") `shouldBe` (Just "queued", Just (J.Number 0))
   (pcReservedBy &&& pcSpentAt) <$> codeRow ctx code `shouldReturn` (Just (nrId r), Nothing)
 
 testMoveReleasedCode :: IO ()
@@ -704,7 +704,7 @@ testMoveSizes = withOwner $ \ctx -> do
   stored ctx r `shouldReturn` r
   -- an owner in the body is ignored
   (status, v) <- postMove ctx (nrId r) (KM.insert "owner" (J.String ownerBText) body)
-  (status, field "sealed" =<< v, field "owner" =<< v) `shouldBe` (200, Just (J.String $ ofSealed longest), Just (J.String ownerAText))
+  (status, (`fieldOf` "sealed") =<< v, (`fieldOf` "owner") =<< v) `shouldBe` (200, Just (J.String $ ofSealed longest), Just (J.String ownerAText))
 
 testMoveRefusedSigner :: IO ()
 testMoveRefusedSigner = withOwner $ \ctx -> do
@@ -730,7 +730,7 @@ testMoveLostRace = withOwner $ \ctx@Ctx {cNode} -> do
     answer <- bounded "the move" $ wait moving
     view <- getView ctx changed
     answer `shouldBe` refusedWithView "registration_changed" view
-    field "version" view `shouldBe` Just (J.toJSON $ nrVersion r + 1)
+    fieldOf view "version" `shouldBe` Just (J.toJSON $ nrVersion r + 1)
     stored ctx r `shouldReturn` changed
     balanceOf ctx r `shouldReturn` Nothing
 
@@ -776,4 +776,4 @@ testPollsWoken = withOwner $ \ctx -> do
   to <- moveTo ctx "alicebakers" 10
   void $ moved ctx keyA r to
   (status, v) <- woken "the registration poll" poll
-  (status, field "version" v, field "phase" v) `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1), Just "queued")
+  (status, fieldOf v "version", fieldOf v "phase") `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1), Just "queued")

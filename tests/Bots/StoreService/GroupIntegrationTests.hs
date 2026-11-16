@@ -30,7 +30,7 @@ import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, ba
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.WebTests (capturingStderr, digestFixture)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, reg, t0, usable, write)
@@ -688,8 +688,7 @@ checkPrepaid :: Int -> Text -> IO (Int, Maybe J.Value)
 checkPrepaid port code = do
   mgr <- newManager defaultManagerSettings
   req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/code/check"
-  r <- httpLbs req {method = "POST", requestBody = RequestBodyLBS (J.encode (J.object ["code" J..= code]))} mgr
-  pure (statusCode (responseStatus r), J.decode (responseBody r))
+  answerOf <$> httpLbs req {method = "POST", requestBody = RequestBodyLBS (J.encode (J.object ["code" J..= code]))} mgr
 
 groupName :: String
 groupName = "testbadges"

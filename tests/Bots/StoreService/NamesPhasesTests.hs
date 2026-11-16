@@ -7,14 +7,13 @@ module Bots.StoreService.NamesPhasesTests (namesPhasesTests, change, held, woken
 
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (reveal)
-import Bots.StoreService.WebTests (bounded, jsonObject, rcv, statusOf, webGet)
+import Bots.StoreService.WebTests (bounded, fieldOf, jsonObject, rcv, statusOf, webGet)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel, wait, waitCatchSTM)
 import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.STM (STM, atomically, check, orElse)
 import Control.Monad (forM_)
 import qualified Data.Aeson as J
-import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
 import Data.IORef (readIORef, writeIORef)
 import Data.Int (Int64)
@@ -150,9 +149,6 @@ change Ctx {cStore, cOrders, cClock} rid f = do
     Written v -> v <$ atomically (publish (oePhases cOrders) rid v)
     other -> fail $ "registration not written: " <> show other
 
-key :: Text -> J.Object -> Maybe J.Value
-key k = KM.lookup (K.fromText k)
-
 -- | The settled payment's marks: its crypto amount and paid in full.
 settledPaid :: Text
 settledPaid = "0.00156"
@@ -174,9 +170,9 @@ testEachChangeWakes = bounded "each change wakes" $ withPolls holdMicros $ \Poll
     registrationPoll <- held ctx (0, 1) $ registrationPath nrId <> seenVersion v
     v' <- change ctx nrId f
     (status, o) <- woken (what <> ": invoice poll") invoicePoll
-    (status, key "status" o, key "version" (registrationOf o), key k (registrationOf o)) `shouldBe` (200, Just "paid", Just (J.toJSON v'), Just expected)
+    (status, fieldOf o "status", fieldOf (registrationOf o) "version", fieldOf (registrationOf o) k) `shouldBe` (200, Just "paid", Just (J.toJSON v'), Just expected)
     (status', r) <- woken (what <> ": registration poll") registrationPoll
-    (status', key "version" r, key k r) `shouldBe` (200, Just (J.toJSON v'), Just expected)
+    (status', fieldOf r "version", fieldOf r k) `shouldBe` (200, Just (J.toJSON v'), Just expected)
 
 testPaidHoldsOnVersion :: IO ()
 testPaidHoldsOnVersion = bounded "paid holds on version" $ withPolls holdMicros $ \Polls {pCtx = ctx@Ctx {cWeb}} -> do
@@ -192,7 +188,7 @@ testPaidHoldsOnVersion = bounded "paid holds on version" $ withPolls holdMicros 
   Async.poll poll >>= (`shouldSatisfy` isNothing)
   v' <- change ctx nrId $ \r -> r {nrPhase = OCommitting}
   (_, o) <- woken "paid invoice poll" poll
-  (key "version" (registrationOf o), key "phase" (registrationOf o)) `shouldBe` (Just (J.toJSON v'), Just "committing")
+  (fieldOf (registrationOf o) "version", fieldOf (registrationOf o) "phase") `shouldBe` (Just (J.toJSON v'), Just "committing")
   -- marks other than the page saw answer at once
   (fst <$> answeredAtOnce ctx (invoicePath inv <> following ISPaid v' "0.001" True)) `shouldReturn` 200
 
@@ -203,7 +199,7 @@ testLatePaidAnswersAtOnce = bounded "late paid" $ withPolls holdMicros $ \Polls 
   settleNow ctx inv settled `shouldReturn` Right ISPaid
   NameRegistration {nrVersion} <- invoiceRegistration ctx inv
   (status, o) <- answeredAtOnce ctx $ invoicePath inv <> following ISPaid nrVersion settledPaid True
-  (status, key "status" o, key "phase" (registrationOf o)) `shouldBe` (200, Just "paid", Just "unpaid")
+  (status, fieldOf o "status", fieldOf (registrationOf o) "phase") `shouldBe` (200, Just "paid", Just "unpaid")
 
 testOpenWakesOnVersion :: IO ()
 testOpenWakesOnVersion = bounded "open wakes on version" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
@@ -214,12 +210,12 @@ testOpenWakesOnVersion = bounded "open wakes on version" $ withPolls holdMicros 
   poll <- held ctx (1, 1) $ invoicePath inv <> following ISOpen nrVersion "" False
   v' <- change ctx nrId $ \r -> r {nrMoves = nrMoves r + 1}
   (_, o) <- woken "open invoice poll" poll
-  (key "status" o, key "version" (registrationOf o)) `shouldBe` (Just "open", Just (J.toJSON v'))
+  (fieldOf o "status", fieldOf (registrationOf o) "version") `shouldBe` (Just "open", Just (J.toJSON v'))
   -- a seenVersion that is no version leaves the hold on the status and payment alone
   byStatus <- held ctx (1, 0) $ invoicePath inv <> followingAs ISOpen (Just "two") "" False
   settleNow ctx inv (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` Right ISOpen
   (_, paidInPart) <- woken "open invoice poll without a version" byStatus
-  (key "status" paidInPart, key "cryptoAmountPaid" paidInPart) `shouldBe` (Just "open", Just "0.00078")
+  (fieldOf paidInPart "status", fieldOf paidInPart "cryptoAmountPaid") `shouldBe` (Just "open", Just "0.00078")
 
 -- | The stub's crypto invoice expires 45 minutes after the order; the clock is set just short of it.
 testExpiryWakes :: IO ()
@@ -230,7 +226,7 @@ testExpiryWakes = bounded "expiry wakes" $ withPolls holdMicros $ \Polls {pCtx =
   pSetNow $ addUTCTime (negate shortOfMoment) irExpiresAt
   poll <- held ctx (1, 0) $ invoicePath inv <> followingAs ISOpen Nothing "" False
   (status, o) <- woken "unpaid invoice poll" poll
-  (status, key "status" o, key "version" (registrationOf o)) `shouldBe` (200, Just "expired", Just (J.toJSON nrVersion))
+  (status, fieldOf o "status", fieldOf (registrationOf o) "version") `shouldBe` (200, Just "expired", Just (J.toJSON nrVersion))
   -- read so, not written: the sweep or the next order closes it
   (irStatus <$>) <$> getInvoice (cStore ctx) inv `shouldReturn` Just ISOpen
   (fst <$> answeredAtOnce ctx (invoicePath inv <> following ISOpen nrVersion "" False)) `shouldReturn` 200
@@ -243,7 +239,7 @@ testFundedStaysOpen = bounded "funded stays open" $ withPolls holdMicros $ \Poll
   NameRegistration {nrVersion} <- invoiceRegistration ctx inv
   pSetNow $ addUTCTime 60 irExpiresAt
   (status, o) <- get ctx (invoicePath inv)
-  (status, key "status" o) `shouldBe` (200, Just "open")
+  (status, fieldOf o "status") `shouldBe` (200, Just "open")
   poll <- held ctx (1, 1) $ invoicePath inv <> following ISOpen nrVersion "0.00078" False
   cancel poll
 
@@ -258,19 +254,19 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   pSetNow $ addUTCTime (negate shortOfMoment) lapsedAt
   v <- change ctx nrId $ \r -> r {nrPhase = OCommitted, nrRevealAfter = Just (revealBefore - 3600), nrRevealBefore = Just revealBefore}
   (_, r) <- get ctx (registrationPath nrId)
-  key "phase" r `shouldBe` Just "committed"
+  fieldOf r "phase" `shouldBe` Just "committed"
   invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
   poll <- held ctx (0, 1) $ registrationPath nrId <> seenVersion v
   (status, lapsed) <- woken "registration poll at the lapse" poll
-  (status, key "phase" lapsed, key "error" lapsed, key "version" lapsed) `shouldBe` (200, Just "failed", Just "The name was not signed in time", Just (J.toJSON v))
+  (status, fieldOf lapsed "phase", fieldOf lapsed "error", fieldOf lapsed "version") `shouldBe` (200, Just "failed", Just "The name was not signed in time", Just (J.toJSON v))
   (_, o) <- woken "invoice poll at the lapse" invoicePoll
-  (key "status" o, key "phase" (registrationOf o), key "error" (registrationOf o)) `shouldBe` (Just "paid", Just "failed", Just "The name was not signed in time")
+  (fieldOf o "status", fieldOf (registrationOf o) "phase", fieldOf (registrationOf o) "error") `shouldBe` (Just "paid", Just "failed", Just "The name was not signed in time")
   (nrPhase <$> invoiceRegistration ctx inv) `shouldReturn` OCommitted
   -- one with a reveal set stays committed past revealBefore
   revealed <- change ctx nrId $ \r' -> r' {nrReveal = Just reveal}
   pSetNow $ addUTCTime 3600 lapsedAt
   (_, r') <- get ctx (registrationPath nrId)
-  (key "phase" r', key "label" r', key "version" r') `shouldBe` (Just "committed", Just "alicebakery", Just (J.toJSON revealed))
+  (fieldOf r' "phase", fieldOf r' "label", fieldOf r' "version") `shouldBe` (Just "committed", Just "alicebakery", Just (J.toJSON revealed))
 
 testAnswersAtOnce :: IO ()
 testAnswersAtOnce = bounded "at once" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
@@ -278,7 +274,7 @@ testAnswersAtOnce = bounded "at once" $ withPolls holdMicros $ \Polls {pCtx = ct
   NameRegistration {nrId = rid@(RegistrationId ridText), nrVersion} <- invoiceRegistration ctx inv
   forM_ ["", seenVersion (nrVersion + 1), seenVersion (nrVersion - 1), "?seenVersion=one", "?seenVersion=-1", "?seenVersion=99999999999999999999"] $ \q -> do
     (status, r) <- answeredAtOnce ctx (registrationPath rid <> q)
-    (q, status, key "id" r, key "version" r, key "phase" r) `shouldBe` (q, 200, Just (J.String ridText), Just (J.toJSON nrVersion), Just "unpaid")
+    (q, status, fieldOf r "id", fieldOf r "version", fieldOf r "phase") `shouldBe` (q, 200, Just (J.String ridText), Just (J.toJSON nrVersion), Just "unpaid")
 
 testHoldTimesOut :: IO ()
 testHoldTimesOut = bounded "hold times out" $ withPolls shortHold $ \Polls {pCtx = ctx} -> do
@@ -287,7 +283,7 @@ testHoldTimesOut = bounded "hold times out" $ withPolls shortHold $ \Polls {pCtx
   started <- getCurrentTime
   (status, r) <- get ctx $ registrationPath nrId <> seenVersion nrVersion
   waited <- (`diffUTCTime` started) <$> getCurrentTime
-  (status, key "version" r) `shouldBe` (200, Just (J.toJSON nrVersion))
+  (status, fieldOf r "version") `shouldBe` (200, Just (J.toJSON nrVersion))
   waited `shouldSatisfy` (>= (fromIntegral shortHold / 1000000 :: NominalDiffTime))
 
 testUnknownRegistration :: IO ()
