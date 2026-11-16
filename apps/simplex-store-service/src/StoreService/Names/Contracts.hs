@@ -76,7 +76,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
 import StoreService.Names.Registration (TermsHash, channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
@@ -111,7 +111,7 @@ data NameStatus = NSAvailable | NSReserved | NSRegistered RegisteredName
 data RegisteredName = RegisteredName
   { rnOwner :: Address,
     rnResolver :: Address,
-    rnExpiresAt :: Word64,
+    rnExpiresAt :: ChainSeconds,
     rnGracePeriod :: Integer
   }
   deriving (Eq, Show)
@@ -120,7 +120,7 @@ data RegisteredName = RegisteredName
 data NameRecords = NameRecords {rdContact :: Text, rdChannel :: Text, rdNonce :: Word64}
   deriving (Eq, Show)
 
-data CommitmentAges = CommitmentAges {caMin :: Word64, caMax :: Word64}
+data CommitmentAges = CommitmentAges {caMin :: ChainSeconds, caMax :: ChainSeconds}
   deriving (Eq, Show)
 
 data Terms = Terms {tmLink :: Text, tmHash :: TermsHash}
@@ -221,7 +221,7 @@ sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", 
 
 registrarFunds :: Contracts -> IO (Either ChainError RegistrarFunds)
 registrarFunds ct@Contracts {ctChain = c@ChainClient {ccRegistrar}} =
-  together $ RegistrarFunds <$> concurrent (registrarBalance c) <*> concurrent allowance
+  together $ (\rfBalanceWei rfAllowanceCents -> RegistrarFunds {rfBalanceWei, rfAllowanceCents}) <$> concurrent (registrarBalance c) <*> concurrent allowance
   where
     allowance = call ct (cSponsor $ chainConfig ct) ("registrarAllowance(address)", addressWord ccRegistrar) $ fmap (`div` attoUsdPerCent) . decodeUint256
 
@@ -380,11 +380,11 @@ ownerOfToken ct tag lh =
     Left (ChainReverted RRWithoutData) -> pure $ Right Nothing
     r -> pure $ Just <$> r
 
-nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError Word64)
+nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError ChainSeconds)
 nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeWord64
 
 -- | The block time of the commitment, Nothing when the controller holds none.
-commitmentTime :: Contracts -> ByteString -> IO (Either ChainError (Maybe Word64))
+commitmentTime :: Contracts -> ByteString -> IO (Either ChainError (Maybe ChainSeconds))
 commitmentTime ct commitment = fmap nonZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeWord64
   where
     nonZero t = if t == 0 then Nothing else Just t

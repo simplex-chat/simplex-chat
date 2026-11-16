@@ -26,7 +26,6 @@ import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
@@ -35,7 +34,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (hex)
-import StoreService.Names.Chain (ChainError, TxHash (..))
+import StoreService.Names.Chain (ChainError, TxHash (..), chainTime)
 import StoreService.Names.Community (AcceptanceAsked (..), communityJSON, currentAcceptance)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -161,5 +160,5 @@ registrationAt now r = case lapseMoment r of
 
 lapseMoment :: NameRegistration -> Maybe UTCTime
 lapseMoment = \case
-  NameRegistration {nrPhase = OCommitted, nrReveal = Nothing, nrRevealBefore = Just before} -> Just $ posixSecondsToUTCTime $ fromIntegral before
+  NameRegistration {nrPhase = OCommitted, nrReveal = Nothing, nrRevealBefore = Just before} -> Just $ chainTime before
   _ -> Nothing

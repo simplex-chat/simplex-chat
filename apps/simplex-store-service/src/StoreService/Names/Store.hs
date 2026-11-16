@@ -148,7 +148,7 @@ import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Names.Abi (addressFromBytes, hex)
-import StoreService.Names.Chain (TxHash (..))
+import StoreService.Names.Chain (ChainSeconds, TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Commitment, TermsAcceptance (..), TermsHash)
 import StoreService.Names.Signatures (AgreedTerms, OrderFields (..), parseSignature)
@@ -212,7 +212,7 @@ data OrderPhase
   | OCommitting
   | OCommitted
   | ORegistering
-  | ORegistered Word64 UTCTime
+  | ORegistered ChainSeconds UTCTime
   | OTaken
   | OFailed UTCTime FailReason
   deriving (Eq, Show)
@@ -274,7 +274,7 @@ data NameReveal = NameReveal
     rvContactLink :: Maybe Text,
     rvChannelLink :: Maybe Text,
     rvNonce :: Word64,
-    rvDeadline :: Word64,
+    rvDeadline :: ChainSeconds,
     rvSignature :: RecoverableSignature,
     -- | the owner's acceptance of the terms of the name's kind
     rvAcceptance :: Maybe TermsAcceptance
@@ -300,8 +300,8 @@ data NameRegistration = NameRegistration
     nrCommitBlock :: Maybe Word64,
     nrRegisterTx :: Maybe TxHash,
     nrRegisterBlock :: Maybe Word64,
-    nrRevealAfter :: Maybe Word64,
-    nrRevealBefore :: Maybe Word64,
+    nrRevealAfter :: Maybe ChainSeconds,
+    nrRevealBefore :: Maybe ChainSeconds,
     nrOrderHash :: OrderHash,
     nrMoves :: Int,
     nrLinksRefusedAt :: Maybe UTCTime,
@@ -589,7 +589,7 @@ data EditState = ESPending | ESMined (Maybe TxHash) | ESReverted (Maybe Text)
 data SignedChange = SignedChange
   { scChange :: RecordChange,
     scNonce :: Word64,
-    scDeadline :: Word64,
+    scDeadline :: ChainSeconds,
     scSignature :: RecoverableSignature
   }
   deriving (Eq, Show)

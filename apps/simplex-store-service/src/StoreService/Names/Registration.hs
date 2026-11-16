@@ -50,6 +50,7 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
+import StoreService.Names.Chain (ChainSeconds)
 
 data Registration = Registration
   { rLabel :: Text,
@@ -79,7 +80,7 @@ channelRecordKey = "simplex.channel"
 data RegisterIntent = RegisterIntent
   { riRegistration :: Registration,
     riNonce :: Word64,
-    riDeadline :: Word64,
+    riDeadline :: ChainSeconds,
     riSignature :: RecoverableSignature
   }
 
@@ -146,7 +147,7 @@ registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver
       VUint $ fromIntegral deadline
     ]
 
-verifyRegisterIntent :: Eip712Domain -> Word64 -> RegisterIntent -> IO (Either String ())
+verifyRegisterIntent :: Eip712Domain -> ChainSeconds -> RegisterIntent -> IO (Either String ())
 verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration {rOwner, rSecret}, riNonce, riDeadline, riSignature} = runExceptT $ do
   unless (B.length rSecret == 32) $ throwError "secret: expected 32 bytes"
   when (now > riDeadline) $ throwError "intent expired"

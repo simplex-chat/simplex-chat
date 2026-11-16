@@ -36,6 +36,7 @@ import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (bytes32FromHex)
+import StoreService.Names.Chain (ChainSeconds, chainSeconds)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Label (validLabel)
@@ -44,7 +45,6 @@ import StoreService.Names.Orders (integerField, textField)
 import StoreService.Names.Registration (RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
-import StoreService.Store.Invoices (unixSeconds)
 
 data RevealRefusal = RVBadRequest | RVInvalidLink | RVChainUnavailable
   deriving (Eq, Show)
@@ -57,7 +57,7 @@ data RevealFields = RevealFields
     rfContactLinks :: [Text],
     rfChannelLinks :: [Text],
     rfNonce :: Word64,
-    rfDeadline :: Word64,
+    rfDeadline :: ChainSeconds,
     rfAcceptance :: Maybe TermsAcceptance
   }
 
@@ -117,11 +117,11 @@ committedRegistration NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameR
 
 -- | The deadline and the owner's signature first, so a request nobody signed reads nothing from the chain.
 -- A deadline before revealBefore would expire while the commitment can still register.
-checkIntent :: NamesConfig -> Contracts -> UTCTime -> Maybe Word64 -> RegisterIntent -> IO (Either RevealRefusal ())
+checkIntent :: NamesConfig -> Contracts -> UTCTime -> Maybe ChainSeconds -> RegisterIntent -> IO (Either RevealRefusal ())
 checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revealBefore intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
   | maybe True (riDeadline <) revealBefore = pure $ Left RVBadRequest
   | otherwise =
-      verifyRegisterIntent (sponsorDomain cChainId cSponsor) (fromInteger $ unixSeconds now) intent >>= \case
+      verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
         Left _ -> pure $ Left RVBadRequest
         Right () ->
           sponsorNonce ct rOwner >>= \case
@@ -130,7 +130,7 @@ checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revea
 
 -- | After the intent, so only a signed request reads the policy. Every name needs its owner's signature of the acceptance
 -- its view returns, with the intent's deadline.
-checkAcceptance :: NamesConfig -> Contracts -> NameRegistration -> Word64 -> Maybe TermsAcceptance -> IO (Either RevealRefusal ())
+checkAcceptance :: NamesConfig -> Contracts -> NameRegistration -> ChainSeconds -> Maybe TermsAcceptance -> IO (Either RevealRefusal ())
 checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance =
   currentAcceptance ct nrLabelHash nrOwner >>= \case
     Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's terms acceptance could not be read: " <> tshow e)

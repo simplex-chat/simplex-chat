@@ -11,6 +11,9 @@ module StoreService.Names.Chain
     SignedTx (..),
     TxRequest (..),
     Block (..),
+    ChainSeconds,
+    chainTime,
+    chainSeconds,
     Receipt (..),
     BlockTag (..),
     newChainClient,
@@ -55,6 +58,8 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word64, Word8)
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
@@ -71,6 +76,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Revert (RevertReason (..), decodeRevert, maxNodeMessageLength)
+import StoreService.Store.Invoices (unixSeconds)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
@@ -110,7 +116,9 @@ data TxRequest = TxRequest
   }
   deriving (Eq, Show)
 
-data Block = Block {blockNumber :: Word64, blockTimestamp :: Word64, blockBaseFee :: Word64}
+type ChainSeconds = Word64
+
+data Block = Block {blockNumber :: Word64, blockTimestamp :: ChainSeconds, blockBaseFee :: Word64}
   deriving (Eq, Show)
 
 data Receipt = Receipt {receiptSuccess :: Bool, receiptBlock :: Word64}
@@ -138,6 +146,12 @@ underfundedMessage = "insufficient funds"
 -- | The hex digits of a 256-bit quantity.
 maxQuantityDigits :: Int
 maxQuantityDigits = 64
+
+chainTime :: ChainSeconds -> UTCTime
+chainTime = posixSecondsToUTCTime . fromIntegral
+
+chainSeconds :: UTCTime -> ChainSeconds
+chainSeconds = fromInteger . unixSeconds
 
 newChainClient :: TVar ChaChaDRG -> ChainConfig -> IO ChainClient
 newChainClient g ccConfig@ChainConfig {cServiceKey} = do
