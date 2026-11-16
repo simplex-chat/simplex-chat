@@ -97,21 +97,21 @@ A1-3, refusals per creator: `CodeInsertRefused = CIRLiveOrder | CIRCodeNotReserv
 
 A1-4: `data HoldState = HSOpen UTCTime | HSFunded | HSOverdue UTCTime` in BalanceHold, decoded in toBalance.
 
-A1-5: `LateFigures` (card or crypto) in LateCreditState, `CreditAmount` (card or crypto) in LateCredit, `type Units = Int64`; one dispatch in lateCreditOf.
+A1-5: `LateFigures` (card or crypto) in LateCreditState, `CreditAmount` (card or crypto) in LateCredit, `type Units = Int64`; one dispatch in lateCreditOf. LFCrypto's invoice rate stays Maybe, as its invoiced units are, for CONoInvoiceFigures.
 
-A1-6: `data Received = RCard ... | RCrypto CryptoReceived`, `data Confirmation = Confirmed Units Cents | Uncreditable Uncreditable`.
+A1-6: `data Received = RCard ... | RCrypto CryptoReceived`, `data Confirmation = CryptoConfirmed Units Cents | Uncreditable Uncreditable`; `receivedConfirmed` writes the stored Confirmed. CryptoReceived's rate is a Rate: BTCPay's read refuses an invoice rate at or below 0.
 
 A1-7: `Rate` with FromField and ToField over the stored text, in place of Maybe Text rates; a corrupt rate fails the row's decode.
 
-A1-8: `data ProviderError = PETimeout Text | PEFailed Text`; isTimeout matches the constructor.
+A1-8: `data ProviderError = ProviderError Text | ProviderTimeout Text`; isTimeout matches the constructor.
 
-A1-9: aeson parsers (withObject, `.:`) run by `JT.parseEither` for the order, invoice order, code order, spend and find bodies; the log names the failing field; `type SignedOrderFields = (OrderFields, Word64, RecoverableSignature)`.
+A1-9: aeson parsers (`jsonField` over `explicitParseField`) run by `parseBody`, `JT.parseEither` with the refusal naming the failing field, for the order, invoice order, code order, spend, move and find bodies; `type SignedOrderFields = (OrderFields, Word64, RecoverableSignature)`.
 
-A1-10, A1-11 (core): `newtype NameLength` with `nameLength :: Int -> Maybe NameLength` in Badges/Code.hs; StrEncoding for NamePrepaidCode with an attoparsec grammar; prepaidCodeP is strP; the range checks at the six sites go.
+A1-10, A1-11 (core): `newtype NameLength` with `nameLength :: Int -> Maybe NameLength` in Badges/Code.hs, in NamePrepaidCode, randomNamePrepaidCode, the console parser and issueNameCode; StrEncoding for NamePrepaidCode with an attoparsec grammar that reads the canonical and the shown form; prepaidCodeP is strP; parseNameCode removes separators and case before it; the range checks go to `nameLength`. OrderFields.ofLength and chainPriceCents stay Int: an order's length outside the range answers invalid_name after the formats.
 
 A1-12: synonyms CodeId, RecordEditId, Commitment, OrderHash, CodeHash, BodyHash, TermsHash; setTermsText takes the text as Text.
 
-A1-13: `AgreedTerms` parsed in parseOrderFields, encoded as today's text; the kind Bool is named `communityName`.
+A1-13: `AgreedTerms {atCommunityName :: Bool, atTermsHash :: TermsHash}` in Signatures.hs, parsed in parseOrderFields, encoded as today's text, stored by its field instances; terms of another format answer bad_request.
 
 A1-14: cents as simplexmq's `USDCents` (escalated: its numeric and database instances belong in simplexmq).
 
@@ -119,12 +119,12 @@ A1-15: BTCPay invoice, payment and additional statuses as sums with an unknown c
 
 ### Duplication and control flow
 
-- A1-17: Turns on Agent.Lock where its counting allows (escalated if simplexmq needs a change).
+- A1-17: Turns hold the agent's `Lock` by `withLock'`, counted per key here; balances keyed by RegistrationId; label turns stay keyed by the hash's bytes, as LabelHash has no Ord in simplexmq.
 - A1-18: ExceptT at every site; firstRefusal goes.
 - A1-19: maybeFirstRow' at the four sites.
 - A1-20: orderHash over `smpEncode` of the fields; no order is stored before launch.
-- A1-21: ToField and FromField for Address, LabelHash, RecoverableSignature and TxHash (simplexmq part escalated).
-- A1-22: `enumTextDecode`; TextEncoding with field instances for ServicePaymentMethod, CryptoCurrency, InvoiceStatus, the edit state, the transaction kind, CodeState and LateWait.
+- A1-21: ToField and FromField for TxHash; those of Address, LabelHash and RecoverableSignature belong beside the types in simplexmq (escalated).
+- A1-22: `enumTextDecode`; TextEncoding with field instances for ServicePaymentMethod, CryptoCurrency and InvoiceStatus in the core, `EditTag` and `TxKind` for the edit state and the transaction kind; TextEncoding for CodeState and LateWait.
 - A1-23: `EONew` without the list.
 - A1-24: one function for the signer, turn and existingOrder pipeline of the three order handlers; codeOrderHandler uses refused.
 - A1-25: `paymentInvoice` at the five sites.
@@ -143,7 +143,7 @@ A1-15: BTCPay invoice, payment and additional statuses as sums with an unknown c
 - A1-38: the creators return the refusal without the delete; placeOrder rolls back.
 - A1-39: `''` agreed terms leave the comment and the view; one names migration.
 - A1-40 (core): the owner code moves to the tests; NameCode collapses to NamePrepaidCode.
-- A1-41: issueNameCode takes the parsed length and years, retries a taken hash up to 3 times, logging each.
+- A1-41: issueNameCode takes the parsed NameLength and years without checking them again, retries a taken hash up to 3 times, logging each.
 - A1-42: a code order's code read throws an error naming the invariant when the row is missing.
 - A1-43: `Landed` sum in checkLanded.
 - A1-44: CORefused goes; an insert that changes nothing under the lock throws.
@@ -153,6 +153,6 @@ A1-15: BTCPay invoice, payment and additional statuses as sums with an unknown c
 - A1-48: Stripe charges and intent statuses parsed by FromJSON; the cancel returns the closed signal directly.
 - A1-49: one unixSeconds in an existing shared module.
 - A1-50: qOverdueInvoices only reads, with productJoins and providerRefColumn; the invoice is checked again before the Stripe cancel.
-- A1-51: names queries with the `@` prefix through mkQuery.
+- A1-51: names queries with the `@` prefix through mkQuery, and `prefixQuery` over the multi-line `sql` quotes.
 - A1-52: the order hash computed once and passed to existingOrder and the creator.
 - A1-53: one overdue fragment by alias.
