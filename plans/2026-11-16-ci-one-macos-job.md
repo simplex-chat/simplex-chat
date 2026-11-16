@@ -109,7 +109,7 @@ scripts/ci/ios-sim/README.md
 
 ## Checks
 
-- dispatch on `ep/ci-one-macos-job`, base master: build-linux runs; build-macos and build-macos-intel are skipped
-- dispatch on a branch with one file added under `apps/ios` on top of `ep/ci-one-macos-job`, base `ep/ci-one-macos-job`: build-macos runs the iOS steps only; build-linux and build-macos-intel are skipped
-- CLI steps, then iOS steps on one runner: dispatch on a branch with one file added under `apps/ios` and `should_run: true` in the build-macos matrix entry, on top of `ep/ci-one-macos-job`, base `ep/ci-one-macos-job`
+- dispatch on `ep/ci-one-macos-job`, base master: build-linux runs; build-macos and build-macos-intel are skipped (fork run 43891835232)
+- dispatch on a branch with one file added under `apps/ios` on top of `ep/ci-one-macos-job`, base `ep/ci-one-macos-job`: build-macos runs the iOS steps only; build-linux and build-macos-intel are skipped (fork run 43855049662)
+- CLI steps, then iOS steps on one runner: dispatch on a branch with one file added under `apps/ios` and `should_run: true` in the build-macos matrix entry, on top of `ep/ci-one-macos-job`, base `ep/ci-one-macos-job` (fork run 43904674811: Build CLI 30 min, Run tests 24 min, Build iOS app 14 min, all passed)
 - full matrix: from the expressions of the job conditions and matrix fields
