@@ -44,9 +44,8 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (raceAny_, tshow)
 import StoreService.Config (ListenerConfig)
-import StoreService.Names.Census (Census (..), CensusName (..), nameCensus, recordsLabel)
 import StoreService.Names.Chain (Block (..), latestBlock)
-import StoreService.Names.Contracts (Contracts (..), RegistrarFunds (..), registrarFunds, termsHeld)
+import StoreService.Names.Contracts (Contracts (..), NameEntry (..), RegisteredNames (..), RegistrarFunds (..), recordsLabel, registeredNames, registrarFunds, termsHeld)
 import StoreService.Names.Store (NamesCounts (..), namesCounts)
 import StoreService.Poller (expiryGrace)
 import StoreService.Safely (safely)
@@ -117,7 +116,7 @@ runChainReads ns v = forever $ do
   threadDelay chainReadInterval
 
 -- | A failed census keeps the last one and is counted.
-data CensusRead = CensusRead {crCensus :: Maybe (Census, UTCTime), crFailures :: Int}
+data CensusRead = CensusRead {crCensus :: Maybe (RegisteredNames, UTCTime), crFailures :: Int}
 
 noCensusRead :: CensusRead
 noCensusRead = CensusRead {crCensus = Nothing, crFailures = 0}
@@ -127,7 +126,7 @@ censusInterval = 300 * 1000000
 
 readCensus :: NamesSource -> TVar CensusRead -> IO ()
 readCensus NamesSource {nsContracts} v = do
-  counted <- nameCensus nsContracts
+  counted <- registeredNames nsContracts
   case counted of
     Right census -> do
       now <- getCurrentTime
@@ -222,22 +221,22 @@ censusText CensusRead {crCensus, crFailures} =
   family "counter" "simplex_names_refresh_failures_total" "Refreshes that failed" (Just $ value crFailures)
     <> foldMap counted crCensus
   where
-    counted (Census {cBlock, cNames}, refreshedAt) =
+    counted (RegisteredNames {rgBlock, rgNames}, refreshedAt) =
       T.concat
         [ gauge "simplex_names" "Registered names by level, and by simplex.contact and simplex.channel set" [withLabels [("level", tshow l), ("records", recordsLabel r)] (value $ count l r) | l <- levelsSeen, r <- [minBound .. maxBound]],
           lengthHistogram,
-          gauge "simplex_names_block" "Block the names were read at" (Just $ value cBlock),
+          gauge "simplex_names_block" "Block the names were read at" (Just $ value rgBlock),
           gauge "simplex_names_refresh_timestamp_seconds" "Time of the last refresh" (Just $ timestamp refreshedAt)
         ]
       where
-        levelsSeen = sort $ nub $ 2 : map cnLevel cNames
-        count l r = length [() | CensusName {cnLevel, cnRecords} <- cNames, cnLevel == l, cnRecords == r]
+        levelsSeen = sort $ nub $ 2 : map enLevel rgNames
+        count l r = length [() | NameEntry {enLevel, enRecords} <- rgNames, enLevel == l, enRecords == r]
         lengthHistogram =
           "# HELP simplex_name_length Label lengths in characters, by level\n# TYPE simplex_name_length histogram\n"
             <> foldMap lengthsAt levelsSeen
             <> "\n"
         lengthsAt l =
-          let lengths = [cnLength | CensusName {cnLevel, cnLength} <- cNames, cnLevel == l]
+          let lengths = [enLength | NameEntry {enLevel, enLength} <- rgNames, enLevel == l]
               level = [("level", tshow l)]
               line suffix ls n = "simplex_name_length" <> suffix <> labelSet ls <> " " <> tshow n <> "\n"
            in foldMap (\b -> line "_bucket" (level <> [("le", tshow b <> ".0")]) (length $ filter (<= b) lengths)) [1 .. maxNameLength]

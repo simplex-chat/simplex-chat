@@ -13,6 +13,7 @@ module StoreService.Names.Registration
     nodeBytes,
     namehash,
     labelNode,
+    childNode,
     tldLabel,
     contactRecordKey,
     channelRecordKey,
@@ -245,9 +246,10 @@ namehash :: SimplexTLD -> Text -> Node
 namehash tld = labelNode tld . labelHash
 
 labelNode :: SimplexTLD -> LabelHash -> Node
-labelNode tld (LabelHash h) = Node $ keccak256 $ tldNode <> h
-  where
-    tldNode = keccak256 $ B.replicate 32 0 <> keccak256 (encodeUtf8 $ tldLabel tld)
+labelNode tld = Node . childNode (childNode (B.replicate 32 0) (labelHash $ tldLabel tld))
+
+childNode :: ByteString -> LabelHash -> ByteString
+childNode parent (LabelHash h) = keccak256 $ parent <> h
 
 tldLabel :: SimplexTLD -> Text
 tldLabel TLDSimplex = "simplex"

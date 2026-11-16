@@ -12,6 +12,9 @@ module StoreService.Names.Contracts
     Terms (..),
     TermsRefusal (..),
     RegistrarFunds (..),
+    RecordsSet (..),
+    NameEntry (..),
+    RegisteredNames (..),
     newContracts,
     secondsPerYear,
     nameStatus,
@@ -42,12 +45,14 @@ module StoreService.Names.Contracts
     together,
     concurrent,
     callAt,
+    recordsLabel,
+    registeredNames,
   )
 where
 
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (Concurrently (..))
+import Control.Concurrent.Async (Concurrently (..), mapConcurrently)
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (TVar, newTVarIO)
 import Control.Logger.Simple (logError, logWarn)
@@ -61,6 +66,7 @@ import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Functor ((<&>))
 import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicModifyIORef', atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
+import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
@@ -73,11 +79,11 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
-import Simplex.Messaging.Util (catchOwn', tshow)
+import Simplex.Messaging.Util (catchOwn', toChunks, tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
-import StoreService.Names.Registration (TermsHash, channelRecordKey, contactRecordKey, labelNode, nodeBytes)
+import StoreService.Names.Registration (TermsHash, channelRecordKey, childNode, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import StoreService.Safely (safely)
@@ -131,6 +137,25 @@ data TermsRefusal = TRLink | TRWait Int
 
 data RegistrarFunds = RegistrarFunds {rfBalanceWei :: Integer, rfAllowanceCents :: Integer}
   deriving (Eq, Show)
+
+data RecordsSet = RNone | RContact | RChannel | RBoth | ROtherResolver
+  deriving (Eq, Ord, Show, Enum, Bounded)
+
+-- | Level 2 is a name such as alice.simplex, 3 its subname; the length is in characters.
+data NameEntry = NameEntry {enLevel :: Int, enLength :: Int, enRecords :: RecordsSet}
+  deriving (Eq, Show)
+
+data RegisteredNames = RegisteredNames {rgBlock :: Word64, rgNames :: [NameEntry]}
+  deriving (Eq, Show)
+
+data ReadsAt = ReadsAt
+  { raContracts :: Contracts,
+    raAt :: BlockTag,
+    raRegistry :: Address,
+    raSubnames :: Address
+  }
+
+type Node = (ByteString, Text)
 
 secondsPerYear :: Integer
 secondsPerYear = 31536000
@@ -200,7 +225,10 @@ nameRecords ct lh RegisteredName {rnOwner, rnResolver}
 
 -- | The default resolver's record, "" when unset.
 textRecord :: Contracts -> LabelHash -> ByteString -> IO (Either ChainError Text)
-textRecord ct lh key = call ct (resolver ct) ("text(bytes32,string)", abiTuple [Static $ nodeArg ct lh, Dynamic $ abiBytes key]) decodeString
+textRecord ct lh = textRecordAt ct Latest (nodeArg ct lh)
+
+textRecordAt :: Contracts -> BlockTag -> ByteString -> ByteString -> IO (Either ChainError Text)
+textRecordAt ct tag node key = callAt ct tag (resolver ct) ("text(bytes32,string)", abiTuple [Static node, Dynamic $ abiBytes key]) decodeString
 
 -- | Cents for a label of this length and these years. The oracle prices by length only,
 -- so a placeholder label of that length keeps the label from the RPC node. A price under the floor for these years is refused: a node
@@ -233,7 +261,7 @@ resolverNonce ct owner = call ct (resolver ct) ("nonces(address)", addressWord o
 namePolicy :: Contracts -> IO (Either ChainError Address)
 namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ (>>= nonZero) <$> call ct (controller ct) ("namePolicy()", "") decodeAddress
   where
-    nonZero policy = if B.all (== '\NUL') (unAddress policy) then Left (ChainUnavailable "the controller has no name policy yet") else Right policy
+    nonZero policy = if isZeroAddress policy then Left (ChainUnavailable "the controller has no name policy yet") else Right policy
 
 forgetNamePolicy :: Contracts -> IO ()
 forgetNamePolicy Contracts {ctNamePolicy} = atomicModifyIORef' ctNamePolicy $ \(g, _) -> ((g + 1, Nothing), ())
@@ -438,6 +466,9 @@ labelHashArg (LabelHash h) = h
 nodeArg :: Contracts -> LabelHash -> ByteString
 nodeArg Contracts {ctTLD} = nodeBytes . labelNode ctTLD
 
+isZeroAddress :: Address -> Bool
+isZeroAddress = B.all (== '\NUL') . unAddress
+
 chainConfig :: Contracts -> ChainConfig
 chainConfig = ccConfig . ctChain
 
@@ -445,3 +476,77 @@ controller, resolver, baseRegistrar :: Contracts -> Address
 controller = cController . chainConfig
 resolver = cResolver . chainConfig
 baseRegistrar = cBaseRegistrar . chainConfig
+
+recordsLabel :: RecordsSet -> Text
+recordsLabel r = case r of
+  RNone -> "none"
+  RContact -> "contact"
+  RChannel -> "channel"
+  RBoth -> "both"
+  ROtherResolver -> "other_resolver"
+
+readsAtOnce :: Int
+readsAtOnce = 16
+
+childrenPage :: Integer
+childrenPage = 100
+
+-- | Every live name and subname at the latest block: names while nameExpires is after the block's time, subnames while
+-- the subname registrar names an owner. A name whose resolver is not the configured one is counted without its records.
+registeredNames :: Contracts -> IO (Either ChainError RegisteredNames)
+registeredNames ct@Contracts {ctChain} = runExceptT $ do
+  Block {blockNumber, blockTimestamp} <- ExceptT $ latestBlock ctChain
+  let at = AtBlock blockNumber
+  registry <- ExceptT $ callAt ct at (baseRegistrar ct) ("ens()", "") decodeAddress
+  subnames <- ExceptT $ callAt ct at (baseRegistrar ct) ("subnameHook()", "") decodeAddress
+  base <- ExceptT $ callAt ct at (baseRegistrar ct) ("baseNode()", "") decodeBytes32
+  total <- ExceptT $ callAt ct at (baseRegistrar ct) ("totalSupply()", "") decodeUint256
+  let env = ReadsAt {raContracts = ct, raAt = at, raRegistry = registry, raSubnames = subnames}
+      registrar :: ByteString -> Integer -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
+      registrar signature i = readAt env (baseRegistrar ct) signature (uint256 i)
+  ids <- readAll [registrar "tokenByIndex(uint256)" i decodeUint256 | i <- [0 .. total - 1]]
+  expiries <- readAll [registrar "nameExpires(uint256)" i decodeUint256 | i <- ids]
+  let live = [i | (i, expiry) <- zip ids expiries, expiry > toInteger blockTimestamp]
+  labels <- readAll [registrar "labelOf(uint256)" i decodeString | i <- live]
+  RegisteredNames blockNumber <$> levels env 2 [(childNode base (LabelHash $ uint256 i), label) | (i, label) <- zip live labels]
+
+levels :: ReadsAt -> Int -> [Node] -> ExceptT ChainError IO [NameEntry]
+levels env level nodes
+  | null nodes = pure []
+  | otherwise = do
+      records <- recordsOf env nodes
+      children <- childrenOf env nodes
+      (zipWith (\(_, label) r -> NameEntry level (T.length label) r) nodes records <>) <$> levels env (level + 1) children
+
+recordsOf :: ReadsAt -> [Node] -> ExceptT ChainError IO [RecordsSet]
+recordsOf env@ReadsAt {raContracts = ct, raAt, raRegistry} nodes = do
+  resolvers <- readAll [readAt env raRegistry "resolver(bytes32)" node decodeAddress | (node, _) <- nodes]
+  readAll [if r == resolver ct then textsOf node else pure (Right ROtherResolver) | ((node, _), r) <- zip nodes resolvers]
+  where
+    textsOf node = do
+      contact <- textRecordAt ct raAt node contactRecordKey
+      channel <- textRecordAt ct raAt node channelRecordKey
+      pure $ recordsOfTexts <$> contact <*> channel
+
+recordsOfTexts :: Text -> Text -> RecordsSet
+recordsOfTexts contact channel = case (T.null contact, T.null channel) of
+  (True, True) -> RNone
+  (False, True) -> RContact
+  (True, False) -> RChannel
+  (False, False) -> RBoth
+
+-- | A subname the subname registrar no longer names an owner of, as of a lapsed name or a previous owner, is left out.
+childrenOf :: ReadsAt -> [Node] -> ExceptT ChainError IO [Node]
+childrenOf env@ReadsAt {raSubnames} parents = do
+  counts <- readAll [readAt env raSubnames "childrenLength(bytes32)" node decodeUint256 | (node, _) <- parents]
+  let pages = [(node, start) | ((node, _), count) <- zip parents counts, start <- [0, childrenPage .. count - 1]]
+  listed <- readAll [readAt env raSubnames "getChildren(bytes32,uint256,uint256)" (node <> uint256 start <> uint256 childrenPage) decodeLabels | (node, start) <- pages]
+  let found = [(childNode node (LabelHash labelHash), label) | ((node, _), children) <- zip pages listed, (labelHash, label) <- children]
+  owners <- readAll [readAt env raSubnames "ownerOf(uint256)" node decodeAddress | (node, _) <- found]
+  pure [child | (child, owner) <- zip found owners, not (isZeroAddress owner)]
+
+readAt :: ReadsAt -> Address -> ByteString -> ByteString -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
+readAt ReadsAt {raContracts, raAt} to signature args = callAt raContracts raAt to (signature, args)
+
+readAll :: [IO (Either ChainError a)] -> ExceptT ChainError IO [a]
+readAll calls = concatMap L.toList <$> mapM (ExceptT . fmap sequence . mapConcurrently id) (toChunks readsAtOnce calls)

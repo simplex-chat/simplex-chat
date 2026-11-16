@@ -38,9 +38,8 @@ import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Metrics
 import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressFromBytes, addressWord, selector, uint256)
-import StoreService.Names.Census (Census (..))
 import StoreService.Names.Chain (TxHash (..))
-import StoreService.Names.Contracts (newContracts, termsOf, termsText)
+import StoreService.Names.Contracts (RegisteredNames (..), newContracts, termsOf, termsText)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store
 import StoreService.Store (badgeCounts)
@@ -99,7 +98,7 @@ testCensus g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   answer censusSubnames "childrenLength(bytes32)" shopNode $ uint256 (0 :: Int)
   v <- newTVarIO noCensusRead
   readCensus ns v
-  fmap (cBlock . fst) . crCensus <$> readTVarIO v `shouldReturn` Just 1
+  fmap (rgBlock . fst) . crCensus <$> readTVarIO v `shouldReturn` Just 1
   let counted =
         [ "simplex_names{level=\"2\",records=\"none\"} 1",
           "simplex_names{level=\"2\",records=\"contact\"} 1",
