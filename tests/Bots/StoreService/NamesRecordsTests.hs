@@ -116,7 +116,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "counts a pending edit and one reverted on chain, and no edit refused or never sent" $ testYearFailedRelays g
   describe "http" $ do
     it "answers the contract's statuses and bodies" $ testHttp g
-    it "answers 504 edit_pending, 503, 429 with the real wait in Retry-After, and 429 edit_limit with nextAt in unix seconds and no Retry-After" testEditResponses
+    it "answers 504 edit_pending, 503, 429 with the real wait in Retry-After, 429 edit_limit with nextAt in unix seconds and no Retry-After, 400 to a refusal and 409 stale_nonce" testEditResponses
     it "relays a body of two edits with links of the largest size" $ testHttpTwoLongLinks g
 
 data Setup = Setup
@@ -355,7 +355,7 @@ testDeadlineMargin :: TVar ChaChaDRG -> IO ()
 testDeadlineMargin g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerEdit s viemChannelLink
   setBlock node 2 $ deadline - 600
-  relayEdit records req `shouldReturn` EARefused
+  relayEdit records req `shouldReturn` EARefused "the deadline is too close to the latest block"
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
   setBlock node 2 $ deadline - 601
@@ -367,19 +367,19 @@ testRefusedNameState :: TVar ChaChaDRG -> IO ()
 testRefusedNameState g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerEdit s viemChannelLink
   answerCall node registry (selector "resolver(bytes32)" <> nodeBytes aliceNode) $ Returns $ addressWord otherResolver
-  relayEdit records req `shouldReturn` EARefused
+  relayEdit records req `shouldReturn` EARefused "the name is on another resolver"
   answerCall node registry (selector "resolver(bytes32)" <> nodeBytes aliceNode) $ Returns $ addressWord fakeResolver
   -- the registry still names the owner, but the name lapsed: expiry and grace are before the latest block
   answerCall node fakeBaseRegistrar (selector "nameExpires(uint256)" <> unLabel alice) $ Returns $ uint256 (genesis - gracePeriod - 1)
   answerCall node fakeNamePolicy (selector "reservedNames(bytes32)" <> unLabel alice) $ Returns $ uint256 (0 :: Int)
-  relayEdit records req `shouldReturn` EARefused
+  relayEdit records req `shouldReturn` EARefused "the name is not registered"
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
 
 testNonOwnerCap :: TVar ChaChaDRG -> IO ()
 testNonOwnerCap g = withSetup g $ \s@Setup {records} -> do
   other <- newEphemeralWallet g
-  forM_ [0 .. 9] $ \n -> (relayEdit records =<< signEdit s other (channel viemChannelLink) n deadline) `shouldReturn` EARefused
+  forM_ [0 .. 9] $ \n -> (relayEdit records =<< signEdit s other (channel viemChannelLink) n deadline) `shouldReturn` EARefused "the signer does not own the name"
   editRows s `shouldReturn` 0
   r <- relay s =<< ownerEdit s viemChannelLink
   _ <- sentBy s 1
@@ -389,7 +389,7 @@ testNonOwnerCap g = withSetup g $ \s@Setup {records} -> do
 testRefusedRepeat :: TVar ChaChaDRG -> IO ()
 testRefusedRepeat g = withSetup g $ \s@Setup {owner} -> do
   req <- signEdit s owner (channel viemChannelLink) 1 deadline
-  relayEdit (records s) req `shouldReturn` EARefused
+  relayEdit (records s) req `shouldReturn` EAStaleNonce
   stateOf s req `shouldReturn` Nothing
   setNonce s 1
   r <- relay s req
@@ -510,11 +510,11 @@ testTwoRefused g = withSetup g $ \s@Setup {node, records, owner} -> do
   other <- newEphemeralWallet g
   first <- signChange s owner (contact viemContactLink) 0 deadline
   stranger <- signChange s other (channel viemChannelLink) 1 deadline
-  relayEdit records (editOf $ first :| [stranger]) `shouldReturn` EARefused
+  relayEdit records (editOf $ first :| [stranger]) `shouldReturn` EARefused "the changes are not signed by one key"
   passed <- signChange s owner (channel viemChannelLink) 1 (genesis - 1)
-  relayEdit records (editOf $ first :| [passed]) `shouldReturn` EARefused
+  relayEdit records (editOf $ first :| [passed]) `shouldReturn` EARefused "the deadline is too close to the latest block"
   setNonce s 1
-  (relayEdit records =<< ownerTwo s 0 viemContactLink viemChannelLink) `shouldReturn` EARefused
+  (relayEdit records =<< ownerTwo s 0 viemContactLink viemChannelLink) `shouldReturn` EAStaleNonce
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
 
@@ -528,8 +528,8 @@ testTwoResend g = withSetup g $ \s@Setup {node, records} -> do
   editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
   -- either edit alone is another body, checked anew against the nonce both moved
   setNonce s 2
-  relayEdit records (editOf $ first :| []) `shouldReturn` EARefused
-  relayEdit records (editOf $ L.fromList rest) `shouldReturn` EARefused
+  relayEdit records (editOf $ first :| []) `shouldReturn` EAStaleNonce
+  relayEdit records (editOf $ L.fromList rest) `shouldReturn` EAStaleNonce
   editRows s `shouldReturn` 1
   length <$> sentTransactions node `shouldReturn` 1
 
@@ -834,8 +834,8 @@ testYearFailedRelays g = withSetup g $ \s@Setup {node, records, owner} -> do
   editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
   -- refused: another signer, then a passed deadline
   other <- newEphemeralWallet g
-  (relayEdit records =<< signEdit s other (channel viemChannelLink) 0 deadline) `shouldReturn` EARefused
-  (relayEdit records =<< signEdit s owner (channel viemChannelLink) 0 (genesis - 1)) `shouldReturn` EARefused
+  (relayEdit records =<< signEdit s other (channel viemChannelLink) 0 deadline) `shouldReturn` EARefused "the signer does not own the name"
+  (relayEdit records =<< signEdit s owner (channel viemChannelLink) 0 (genesis - 1)) `shouldReturn` EARefused "the deadline is too close to the latest block"
   -- never sent: the dry run reverted, then the fee read failed
   setFault node "eth_estimateGas" $ revertFault $ selector "InvalidSignature()"
   (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#dry") 0 deadline) `shouldReturn` EASettled (EOReverted $ Just "InvalidSignature")
@@ -903,11 +903,13 @@ testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post 
 
 testEditResponses :: IO ()
 testEditResponses =
-  mapM (responseParts . editResponse) [EAPending, EAUnavailable, EACapped 3600, EALimited (addUTCTime (fromIntegral yearSeconds) t0)]
+  mapM (responseParts . editResponse) [EAPending, EAUnavailable, EACapped 3600, EALimited (addUTCTime (fromIntegral yearSeconds) t0), EARefused "the name is not registered", EAStaleNonce]
     `shouldReturn` [ (504, Just $ errorJson "edit_pending", Nothing),
                      (503, Just $ errorJson "provider_unavailable", Nothing),
                      (429, Just $ errorJson "rate_limited", Just "3600"),
-                     (429, Just $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= (t0Seconds + yearSeconds)], Nothing)
+                     (429, Just $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= (t0Seconds + yearSeconds)], Nothing),
+                     (400, Just $ errorJson "bad_request", Nothing),
+                     (409, Just $ errorJson "stale_nonce", Nothing)
                    ]
 
 -- | A response's status, JSON body and Retry-After, as withRecordsApp reads them over HTTP.

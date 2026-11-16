@@ -82,8 +82,9 @@ data EditAnswer
   = EASettled EditOutcome
   | -- | not settled within the wait, or the chain stopped answering after the send; the edit goes on
     EAPending
-  | -- | the signers, the deadline, the owner or the nonce
-    EARefused
+  | -- | the signers, the deadline, the name's state, owner or resolver, or another edit holding the nonce
+    EARefused Text
+  | EAStaleNonce
   | -- | the chain failed before anything was sent, and nothing is stored
     EAUnavailable
   | -- | the per-name cap, with the seconds until another edit fits
@@ -151,7 +152,7 @@ relayEdit rs@Records {rsPendingAfter, rsEditsPerYear, rsNow} req@EditRequest {er
           now <- rsNow
           withStore rs (\db -> usedUpUntil <$> nameEditsLeft db rsEditsPerYear erLabelHash now)
             >>= maybe (newEdit rs timer req signer bodyHash) (pure . EALimited)
-    _ -> pure EARefused
+    _ -> pure $ EARefused "the changes are not signed by one key"
   where
     signed = L.map (\change -> (changeDigest rs erLabelHash change, change)) erChanges
     -- one change hashes as edits stored before requests took two, so their repeats still match
@@ -161,25 +162,29 @@ newEdit :: Records -> TVar Bool -> EditRequest -> Address -> BodyHash -> IO Edit
 newEdit rs timer req signer bodyHash =
   chainAccepts rs req signer >>= \case
     Left e -> EAUnavailable <$ logWarn ("names records: an edit's chain checks failed: " <> tshow e)
-    Right False -> pure EARefused
-    Right True ->
+    Right (Just refusal) -> pure refusal
+    Right Nothing ->
       insertEdit rs req signer bodyHash >>= \case
         Left answer -> pure answer
         Right (Just editId) -> sendNew rs timer editId
         -- a pending or mined edit holds the nonce: the identical twin is waited for, any other body refused
-        Right Nothing -> withStore rs (`getRecordEditByBody` bodyHash) >>= maybe (pure EARefused) (awaitEdit rs timer . reId)
+        Right Nothing -> withStore rs (`getRecordEditByBody` bodyHash) >>= maybe (pure $ EARefused "another edit holds the nonce") (awaitEdit rs timer . reId)
 
--- | The earliest deadline more than 'editDeadlineMargin' past the latest block's time, the signer the registry's owner on the default resolver, the first nonce the owner's next.
-chainAccepts :: Records -> EditRequest -> Address -> IO (Either ChainError Bool)
+-- | Nothing for the earliest deadline more than 'editDeadlineMargin' past the latest block's time, the signer the registry's owner on the default resolver, the first nonce the owner's next.
+chainAccepts :: Records -> EditRequest -> Address -> IO (Either ChainError (Maybe EditAnswer))
 chainAccepts Records {rsChain, rsContracts} EditRequest {erLabelHash, erChanges} signer = runExceptT $ do
   Block {blockTimestamp} <- ExceptT $ latestBlock rsChain
   if earliestDeadline erChanges <= blockTimestamp + editDeadlineMargin
-    then pure False
+    then refused "the deadline is too close to the latest block"
     else
       ExceptT (nameStatus rsContracts erLabelHash) >>= \case
         NSRegistered RegisteredName {rnOwner, rnResolver}
-          | rnOwner == signer && rnResolver == cResolver (ccConfig rsChain) -> (== firstNonce erChanges) <$> ExceptT (resolverNonce rsContracts signer)
-        _ -> pure False
+          | rnOwner /= signer -> refused "the signer does not own the name"
+          | rnResolver /= cResolver (ccConfig rsChain) -> refused "the name is on another resolver"
+          | otherwise -> (\nonce -> if nonce == firstNonce erChanges then Nothing else Just EAStaleNonce) <$> ExceptT (resolverNonce rsContracts signer)
+        _ -> refused "the name is not registered"
+  where
+    refused = pure . Just . EARefused
 
 -- | Left when the name's yearly limit or hourly cap is used up, checked again under the name's turn against a concurrent edit.
 -- Right Nothing when a pending or mined edit holds the first nonce.

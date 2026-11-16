@@ -5,6 +5,7 @@
 
 module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editRequest, editResponse, editsLeftJSON) where
 
+import Control.Logger.Simple (logNote)
 import Control.Monad (forM_, unless)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
@@ -34,10 +35,14 @@ recordsHandler :: Records -> Request -> Respond -> IO ResponseReceived
 recordsHandler rs req respond =
   readBoundedBody nameBodyBytes req >>= \case
     Just body | Just o <- J.decode body -> case editRequest o of
-      Right edit -> relayEdit rs edit >>= respond . editResponse
+      Right edit -> relayEdit rs edit >>= \answer -> logged answer >> respond (editResponse answer)
       Left EIInvalidLink -> respond invalidLink
       Left EIBadRequest -> respond badRequest
     _ -> respond badRequest
+  where
+    logged = \case
+      EARefused reason -> logNote $ "POST /api/name/records refused: " <> reason
+      _ -> pure ()
 
 -- | An edit as sent, before its link and signature are checked.
 data SentEdit = SentEdit {seChange :: Maybe (LinkKind, Text), seNonce :: Word64, seDeadline :: Word64, seSignature :: Text}
@@ -75,7 +80,8 @@ editResponse = \case
   EASettled (EOApplied tx) -> jsonResponse status200 $ J.object ["tx" .= ((\(TxHash h) -> hex h) <$> tx)]
   EASettled (EOReverted revert) -> jsonResponse status409 $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= revert]
   EAPending -> jsonError status504 "edit_pending"
-  EARefused -> badRequest
+  EARefused _ -> badRequest
+  EAStaleNonce -> jsonError status409 "stale_nonce"
   EAUnavailable -> providerUnavailable
   EACapped seconds -> rateLimited seconds
   EALimited nextAt -> jsonResponse status429 $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= unixSeconds nextAt]
