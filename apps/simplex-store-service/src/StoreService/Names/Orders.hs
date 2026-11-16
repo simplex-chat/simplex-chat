@@ -15,8 +15,13 @@ module StoreService.Names.Orders
     Landing (..),
     maxSealedChars,
     signedRequestSeconds,
+    SignedOrderFields,
     parseOrderRequest,
     parseOrderFields,
+    parseBody,
+    jsonField,
+    textWith,
+    boundedInteger,
     textField,
     integerField,
     checkLength,
@@ -48,6 +53,7 @@ import Control.Monad (forM, unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
@@ -65,7 +71,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (communityJSON, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
@@ -146,37 +152,51 @@ maxSealedChars = 11095
 signedRequestSeconds :: Integer
 signedRequestSeconds = 600
 
+-- | The signed fields of an order, or of another name for one, with their timestamp and signature.
+type SignedOrderFields = (OrderFields, Word64, RecoverableSignature)
+
 -- | Every format check; the length's range is checkLength's, after the formats a kind of order adds.
-parseOrderRequest :: J.Object -> Maybe OrderRequest
+parseOrderRequest :: J.Object -> JT.Parser OrderRequest
 parseOrderRequest o = do
-  orOwner <- eitherToMaybe . parseChecksumAddress =<< textField o "owner"
+  orOwner <- jsonField o "owner" $ textWith $ first show . parseChecksumAddress
   (orFields, orTimestamp, orSignature) <- parseOrderFields o
   pure OrderRequest {orOwner, orFields, orTimestamp, orSignature}
 
--- | The signed fields of an order, or of another name for one, with their timestamp and signature.
-parseOrderFields :: J.Object -> Maybe (OrderFields, Word64, RecoverableSignature)
+parseOrderFields :: J.Object -> JT.Parser SignedOrderFields
 parseOrderFields o = do
-  ofLabelHash <- LabelHash <$> (bytes32FromHex =<< textField o "labelHash")
-  ofLength <- integerField =<< KM.lookup "length" o
-  ofDuration <- integerField =<< KM.lookup "duration" o
-  ofCommitment <- bytes32FromHex =<< textField o "commitment"
-  ofSealed <- textField o "sealed"
-  unless (T.length ofSealed <= maxSealedChars) Nothing
-  ofAgreedTerms <- textDecode =<< textField o "terms"
-  timestamp <- integerField =<< KM.lookup "timestamp" o
-  signature <- eitherToMaybe . parseSignature =<< textField o "signature"
+  ofLabelHash <- LabelHash <$> jsonField o "labelHash" (textWith hash32)
+  ofLength <- jsonField o "length" boundedInteger
+  ofDuration <- jsonField o "duration" boundedInteger
+  ofCommitment <- jsonField o "commitment" (textWith hash32)
+  ofSealed <- jsonField o "sealed" $ textWith $ \t -> if T.length t <= maxSealedChars then Right t else Left "longer than its limit"
+  ofAgreedTerms <- jsonField o "terms" $ textWith $ maybe (Left "not agreed terms") Right . textDecode
+  timestamp <- jsonField o "timestamp" boundedInteger
+  signature <- jsonField o "signature" $ textWith $ first show . parseSignature
   pure (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
+  where
+    hash32 = maybe (Left "not a 32-byte hash in lowercase hex") Right . bytes32FromHex
+
+-- | A request body's parser run; its failure, naming the field, a bad request.
+parseBody :: Text -> JT.Parser a -> Either OrderRefusal a
+parseBody what = first (\e -> ORBadRequest $ "a malformed " <> what <> ": " <> T.pack e) . JT.parseEither id
+
+jsonField :: J.Object -> J.Key -> (J.Value -> JT.Parser a) -> JT.Parser a
+jsonField o k p = JT.explicitParseField p o k
+
+textWith :: (Text -> Either String a) -> J.Value -> JT.Parser a
+textWith f = J.withText "string" $ either fail pure . f
+
+-- | A JSON integer within the type's range; a fraction, an exponent past it, or any other value fails.
+boundedInteger :: (Integral a, Bounded a) => J.Value -> JT.Parser a
+boundedInteger = J.withScientific "integer" $ maybe (fail "not an integer in its range") pure . toBoundedInteger
 
 textField :: J.Object -> J.Key -> Maybe Text
 textField o k = case KM.lookup k o of
   Just (J.String t) -> Just t
   _ -> Nothing
 
--- | A JSON integer within the type's range; a fraction, an exponent past it, or any other value is Nothing.
 integerField :: (Integral a, Bounded a) => J.Value -> Maybe a
-integerField = \case
-  J.Number n -> toBoundedInteger n
-  _ -> Nothing
+integerField = JT.parseMaybe boundedInteger
 
 checkLength :: OrderFields -> Either OrderRefusal ()
 checkLength OrderFields {ofLength} =

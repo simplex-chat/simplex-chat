@@ -20,20 +20,20 @@ import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM_, unless)
 import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
-import Data.Aeson ((.=))
+import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
 import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
-import Data.Word (Word32, Word64)
+import Data.Word (Word32)
 import Network.HTTP.Types (status200, status403, status409, status503)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Chat.Badges.Code (NameCode (..), parseNameCode)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
@@ -61,14 +61,15 @@ data InvoiceOrder = InvoiceOrder
 
 parseInvoiceOrder :: J.Object -> Either OrderRefusal InvoiceOrder
 parseInvoiceOrder o = do
-  order@InvoiceOrder {ioRequest} <- maybe (Left $ ORBadRequest "a malformed order") Right $ do
+  order@InvoiceOrder {ioRequest} <- parseBody "order" $ do
     ioRequest <- parseOrderRequest o
-    ioMethod <- case KM.lookup "method" o of
-      Just (J.String t) -> textMethod t
-      _ -> Nothing
-    ioPrice <- integerField =<< KM.lookup "price" o
+    ioMethod <- jsonField o "method" paymentMethod
+    ioPrice <- jsonField o "price" boundedInteger
     pure InvoiceOrder {ioRequest, ioMethod, ioPrice}
   order <$ checkLength (orFields ioRequest)
+
+paymentMethod :: J.Value -> JT.Parser ServicePaymentMethod
+paymentMethod = textWith $ maybe (Left "not a payment method") Right . textMethod
 
 -- | An order's answer and the work its commit leaves, both done after the name's turn, so a slow client holds no turn.
 data Answer = Answer {aResponse :: Response, aAfter :: IO ()}
@@ -238,7 +239,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} provide
 
 parseCodeOrder :: J.Object -> Either OrderRefusal (OrderRequest, Text)
 parseCodeOrder o = do
-  order@(req, _) <- maybe (Left $ ORBadRequest "a malformed code order") Right $ (,) <$> parseOrderRequest o <*> textField o "code"
+  order@(req, _) <- parseBody "code order" $ (,) <$> parseOrderRequest o <*> o .: "code"
   order <$ checkLength (orFields req)
 
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
@@ -294,22 +295,22 @@ minCardChargeCents :: Int
 minCardChargeCents = 50
 
 -- | Every format check, the method present exactly for a difference, then the length's range.
-parseSpend :: RegistrationId -> J.Object -> Either OrderRefusal ((OrderFields, Word64, RecoverableSignature), Spend)
+parseSpend :: RegistrationId -> J.Object -> Either OrderRefusal (SignedOrderFields, Spend)
 parseSpend spSource o = do
-  parsed@((fields, _, _), _) <- maybe (Left $ ORBadRequest "a malformed spend") Right $ do
+  parsed@((fields, _, _), _) <- parseBody "spend" $ do
     signed <- parseOrderFields o
     spPrice <- cents "price"
     spBalance <- cents "balance"
-    spMethod <- case (KM.lookup "method" o, spPrice > spBalance) of
-      (Nothing, False) -> Just Nothing
-      (Just (J.String t), True) -> Just <$> textMethod t
-      _ -> Nothing
+    spMethod <- case (KM.member "method" o, spPrice > spBalance) of
+      (False, False) -> pure Nothing
+      (True, True) -> Just <$> jsonField o "method" paymentMethod
+      _ -> fail "the method is present exactly when the price is above the balance"
     pure (signed, Spend {spSource, spPrice, spBalance, spMethod})
   parsed <$ checkLength fields
   where
     -- positive, and within an invoice amount's range
-    cents :: J.Key -> Maybe Int
-    cents k = KM.lookup k o >>= integerField >>= \n -> if n > (0 :: Word32) then Just (fromIntegral n) else Nothing
+    cents :: J.Key -> JT.Parser Int
+    cents k = jsonField o k $ \v -> boundedInteger v >>= \n -> if n > (0 :: Word32) then pure (fromIntegral n) else fail "not above 0"
 
 -- | After the commit, the closed orders' invoices and versions are published, and their invoices cancelled at the provider,
 -- best effort, as the poller's sweep would cancel them.

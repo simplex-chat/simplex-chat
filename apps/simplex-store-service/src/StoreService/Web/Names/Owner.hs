@@ -10,7 +10,8 @@ import Control.Logger.Simple (logError, logNote)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
+import Data.Bifunctor (first)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Word (Word64)
@@ -21,7 +22,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders
@@ -47,7 +48,7 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
   readBoundedBody maxBodyBytes req >>= requested >>= sendAnswer respond
   where
     requested = \case
-      Just body | Just (J.Object o) <- J.decode body, Just request <- parseFind o -> found request
+      Just body | Just (J.Object o) <- J.decode body -> either refuse found $ parseBody "find request" $ parseFind o
       _ -> refuse $ ORBadRequest "a malformed find request"
     found FindRequest {frOwner, frTimestamp, frSignature} = do
       now <- oeNow
@@ -59,11 +60,11 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
             rs -> pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (\(r, holder) -> foundJSON (registrationAt now r) holder) rs]
     refuse = refused "POST /api/registration/find"
 
-parseFind :: J.Object -> Maybe FindRequest
+parseFind :: J.Object -> JT.Parser FindRequest
 parseFind o = do
-  frOwner <- eitherToMaybe . parseAnyCaseAddress =<< textField o "owner"
-  frTimestamp <- integerField =<< KM.lookup "timestamp" o
-  frSignature <- eitherToMaybe . parseSignature =<< textField o "signature"
+  frOwner <- jsonField o "owner" $ textWith $ first show . parseAnyCaseAddress
+  frTimestamp <- jsonField o "timestamp" boundedInteger
+  frSignature <- jsonField o "signature" $ textWith $ first show . parseSignature
   pure FindRequest {frOwner, frTimestamp, frSignature}
 
 -- | balanceSource: the order whose balance paid this one; heldBy: the order whose invoice holds this one's balance.
@@ -89,7 +90,9 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
   where
     rid = RegistrationId ridText
     requested = \case
-      Just body | Just (J.Object o) <- J.decode body, Just request@(fields, _, _) <- parseOrderFields o -> either refuse (const $ signed request) (checkLength fields)
+      Just body | Just (J.Object o) <- J.decode body -> either refuse signed $ do
+        request@(fields, _, _) <- parseBody "move" $ parseOrderFields o
+        request <$ checkLength fields
       _ -> refuse $ ORBadRequest "a malformed move"
     signed (fields, timestamp, signature) =
       withTransaction oeStore (`getRegistration` rid) >>= \case

@@ -70,12 +70,14 @@ import Control.Monad (forM_, replicateM_, void)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Either (isRight)
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (sort)
 import qualified Data.Map.Strict as M
@@ -732,9 +734,12 @@ testOrderFormats = do
   g <- C.newRandom
   good <- signedBody g aliceOrder
   longest <- signedBody g aliceOrder {oSealed = T.replicate 11095 "a"}
-  let parses = isJust . Orders.parseOrderRequest
+  let parses = isRight . JT.parseEither Orders.parseOrderRequest
       with k v = KM.insert k v good
   map parses [good, longest] `shouldBe` [True, True]
+  Orders.parseBody "order" (Orders.parseOrderRequest $ with "terms" (J.String "2026-10-01")) `shouldSatisfy` \case
+    Left (Orders.ORBadRequest reason) -> "$.terms" `T.isInfixOf` reason
+    _ -> False
   forM_
     ( [ with "labelHash" (J.String $ T.toUpper $ hex $ (\(LabelHash h) -> h) alice),
         with "commitment" (J.String "0x1234"),
@@ -1197,7 +1202,7 @@ testCodeNotReservable = withOrders $ \ctx@Ctx {cStore} -> do
   placeCode cStore "outsider" ownerB (order "holderone" 1) reservedLate `shouldReturn` Right ()
   (_, revokedLate) <- issueCode ctx 8 2 id
   withTransaction cStore $ \db -> void $ revokePrepaidCode db (pcCodeHash revokedLate) orderTime
-  req <- fromJust . Orders.parseOrderRequest <$> signedBody (cRandom ctx) aliceOrder
+  req <- either error id . JT.parseEither Orders.parseOrderRequest <$> signedBody (cRandom ctx) aliceOrder
   forM_ [(reservedLate, CRReserved), (revokedLate, CRInvalid)] $ \(stale, refusal) -> do
     let new = codeReg "late" ownerA (fieldsOf aliceOrder) stale
     placedOrder <- Orders.placeOrder (cOrders ctx) req [] (Orders.codeOrderInsert new stale)
