@@ -8,6 +8,7 @@
 module StoreService.Names.Store
   ( NamePhase (..),
     RegistrationPayment (..),
+    paymentInvoice,
     NameReveal (..),
     NameRegistration (..),
     NewRegistration (..),
@@ -181,6 +182,12 @@ data RegistrationPayment
   | RPCode Int64
   | RPBalance
   deriving (Eq, Show)
+
+paymentInvoice :: RegistrationPayment -> Maybe InvoiceId
+paymentInvoice = \case
+  RPInvoice _ invId -> Just invId
+  RPCode _ -> Nothing
+  RPBalance -> Nothing
 
 -- | The name, links and owner's intent, all set by an accepted reveal and cleared together.
 data NameReveal = NameReveal
@@ -743,10 +750,7 @@ unfunded = unfundedQuery "i.invoice_id"
 closeOverdue :: DB.Connection -> NameRegistration -> UTCTime -> IO (Maybe Int64)
 closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion, nrPayment} now = do
   -- locked first, so the funding check below, a later statement, sees a payment a concurrent settlement committed
-  mapM_ (\invId -> lockInvoice db invId now) $ case nrPayment of
-    RPInvoice _ invId -> Just invId
-    RPCode _ -> Nothing
-    RPBalance -> Nothing
+  mapM_ (\invId -> lockInvoice db invId now) $ paymentInvoice nrPayment
   expired <-
     executeChanging
       db
@@ -1003,14 +1007,15 @@ balanceChain db rid =
     Nothing -> pure []
     Just NameRegistration {nrPhase, nrOwner, nrPayment, nrBalanceSource, nrBalanceUsed} -> do
       let pastUnpaid = nrPhase /= PUnpaid
-      lkPaid <- case nrPayment of
-        RPInvoice _ (InvoiceId invId) | pastUnpaid -> maybeFirstRow' 0 fromOnly (DB.query db "SELECT amount FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId) :: IO [Only Int])
-        _ -> pure 0
-      (lkProviderRef, lkLateCredits) <- case nrPayment of
-        RPInvoice _ invId -> (,) <$> providerRef db invId <*> lateCredits db invId
-        _ -> pure (Nothing, [])
+      (lkPaid, lkProviderRef, lkLateCredits) <- case paymentInvoice nrPayment of
+        Just invId -> (,,) <$> (if pastUnpaid then invoiceAmount db invId else pure 0) <*> providerRef db invId <*> lateCredits db invId
+        Nothing -> pure (0, Nothing, [])
       let link = BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkFromBalance = if pastUnpaid then nrBalanceUsed else 0, lkLateCredits}
       (link :) <$> maybe (pure []) (balanceChain db) (if pastUnpaid then nrBalanceSource else Nothing)
+
+invoiceAmount :: DB.Connection -> InvoiceId -> IO Int
+invoiceAmount db (InvoiceId invId) =
+  maybeFirstRow' 0 fromOnly $ DB.query db "SELECT amount FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId)
 
 providerRef :: DB.Connection -> InvoiceId -> IO (Maybe Text)
 providerRef db (InvoiceId invId) =

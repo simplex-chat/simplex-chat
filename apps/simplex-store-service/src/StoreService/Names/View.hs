@@ -41,7 +41,7 @@ import StoreService.Names.Community (AcceptanceAsked (..), agreedTermsHash, comm
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), getBalance, getRegistration, heldBy, lateWait)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), getBalance, getRegistration, heldBy, lateWait, paymentInvoice)
 
 -- | The view's chain reads; a field whose read failed is null and named in unread.
 data ViewReads = ViewReads
@@ -58,9 +58,7 @@ registrationView :: DBStore -> NamesConfig -> Contracts -> UTCTime -> NameRegist
 registrationView st cfg ct now r = do
   (balance, late) <- withTransaction st $ \db -> do
     balance <- getBalance db (nrId r) now
-    late <- case nrPayment r of
-      RPInvoice _ invId -> lateWait db invId
-      _ -> pure Nothing
+    late <- maybe (pure Nothing) (lateWait db) (paymentInvoice $ nrPayment r)
     pure (balance, late)
   viewJSON cfg r balance late <$> readViewChain ct r
 

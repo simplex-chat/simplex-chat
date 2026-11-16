@@ -15,7 +15,6 @@ import Data.Text (Text)
 import Data.Word (Word64)
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
-import Simplex.Chat.PaymentService.Types (InvoiceId (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (textEncode)
@@ -27,7 +26,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), RegistrationPayment (..), findRegistrations, getRegistration)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), RegistrationPayment (..), findRegistrations, getRegistration, paymentInvoice)
 import StoreService.Names.Turns (withLabelTurns)
 import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
@@ -71,7 +70,7 @@ foundJSON :: NameRegistration -> Maybe RegistrationId -> J.Value
 foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed, nrBalanceSource} holder =
   J.object
     [ "registrationId" .= rid,
-      "invoiceId" .= invoiceId,
+      "invoiceId" .= paymentInvoice nrPayment,
       "phase" .= (textEncode nrPhase :: Text),
       "createdAt" .= nrCreatedAt,
       "labelHash" .= hex lh,
@@ -81,10 +80,6 @@ foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCre
     ]
   where
     idText (RegistrationId t) = t
-    invoiceId = case nrPayment of
-      RPInvoice _ (InvoiceId t) -> Just t
-      RPCode _ -> Nothing
-      RPBalance -> Nothing
 
 -- | POST /api/registration/:id/name, another name or other links, under the turns of both names.
 retargetHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived

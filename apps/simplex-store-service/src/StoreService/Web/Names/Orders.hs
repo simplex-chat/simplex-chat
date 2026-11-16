@@ -46,7 +46,7 @@ import StoreService.Names.Codes (CodeRefusal (..), readPrepaidCode)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), spendMessage)
-import StoreService.Names.Store (NameRegistration (..), NewRegistration (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), RegistrationPayment (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, textMethod)
+import StoreService.Names.Store (NameRegistration (..), NewRegistration (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), RegistrationPayment (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice, textMethod)
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (balanceJSON, registrationAt, registrationView)
 import StoreService.Orders (publishRegistration)
@@ -310,16 +310,11 @@ parseSpend spSource o = do
 announceClosed :: OrdersEnv -> [Provider] -> Waiters -> [ClosedOrder] -> IO ()
 announceClosed OrdersEnv {oeStore, oePhases} providers waiters closed = do
   atomically $ forM_ closed $ \ClosedOrder {coRegistration = NameRegistration {nrId, nrPayment}, coVersion} -> do
-    forM_ (paidInvoice nrPayment) $ \invId -> publish waiters invId ISExpired
+    forM_ (paymentInvoice nrPayment) $ \invId -> publish waiters invId ISExpired
     publishRegistration (Just oePhases) (nrId, coVersion)
   forM_ closed $ \ClosedOrder {coRegistration = NameRegistration {nrPayment}} ->
-    forM_ (paidInvoice nrPayment) $ \invId ->
+    forM_ (paymentInvoice nrPayment) $ \invId ->
       getInvoice oeStore invId >>= mapM_ (\InvoiceRow {irProvider, irProviderRef} -> forM_ (providerNamed providers irProvider) $ \p -> unless (expiresItself irProvider) $ cancelAtProvider p irProviderRef)
-  where
-    paidInvoice = \case
-      RPInvoice _ invId -> Just invId
-      RPCode _ -> Nothing
-      RPBalance -> Nothing
 
 cancelAtProvider :: Provider -> Text -> IO ()
 cancelAtProvider Provider {pCancelInvoice} ref =
