@@ -467,20 +467,15 @@ parseConfig ini = do
   devKeys <- devKeysSetting
   unless (null devKeys || maybe False onLocalChain nms) $
     Left ("issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = " <> show localChainId)
+  let stripeTestKeys = testSecretKey . sSecretKey <$> str
   unless (null devKeys) $ do
-    forM_ str $ \StripeConfig {sSecretKey, sPublishableKey} -> do
-      unless (testSecretKey sSecretKey) $
-        Left "issuer.dev_keys is refused with a live Stripe key: stripe.secret_key must be a test key, sk_test_ or rk_test_"
-      unless (testPublishableKey sPublishableKey) $
-        Left "issuer.dev_keys is refused with a live Stripe key: stripe.publishable_key must be a test key, pk_test_"
+    when (stripeTestKeys == Just False) $
+      Left "issuer.dev_keys is refused with live Stripe keys: stripe.secret_key and stripe.publishable_key must be test keys"
     forM_ btc $ \BTCPayConfig {bHost} ->
       unless (maybe False onLoopback (httpUrl bHost)) $
         Left "issuer.dev_keys is refused with a remote BTCPay: btcpay.host must be on loopback, 127.0.0.1, ::1 or localhost"
-  forM_ str $ \StripeConfig {sSecretKey, sPublishableKey} -> do
-    when (testSecretKey sSecretKey /= testPublishableKey sPublishableKey) $
-      Left "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys"
-    when (testSecretKey sSecretKey && maybe False (not . onTestChain) nms) $
-      Left ("Stripe test keys are accepted with [names] only on a test chain, [chain] chain_id = " <> show localChainId <> " or " <> show sepoliaChainId)
+  when (stripeTestKeys == Just True && maybe False (not . onTestChain) nms) $
+    Left ("Stripe test keys are accepted with [names] only on a test chain, [chain] chain_id = " <> show localChainId <> " or " <> show sepoliaChainId)
   pWaitingSeconds <- num "poll" "waiting_seconds" 1 maxBound 3
   pIdleSeconds <- num "poll" "idle_seconds" 1 maxBound 60
   apple <- appleSection
@@ -625,6 +620,8 @@ parseConfig ini = do
           sPublishableKey <- required "stripe" "publishable_key"
           -- it is written into the sites' HTML as it is
           unless (publishableKey sPublishableKey) $ Left "stripe.publishable_key must be pk_live_ or pk_test_ followed by letters and digits"
+          when (testSecretKey sSecretKey /= testPublishableKey sPublishableKey) $
+            Left "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys"
           sWebhookSecret <- required "stripe" "webhook_secret"
           sSessionMinutes <- num "stripe" "session_minutes" minSessionMinutes maxSessionMinutes defaultSessionMinutes
           let sHost = defaultStripeHost

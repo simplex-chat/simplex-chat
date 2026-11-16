@@ -1040,16 +1040,17 @@ testDevKeysTestPayments = do
 
 testDevKeysLivePayments :: IO ()
 testDevKeysLivePayments = do
-  let liveSecret = "issuer.dev_keys is refused with a live Stripe key: stripe.secret_key must be a test key, sk_test_ or rk_test_" :: String
-      livePublishable = "issuer.dev_keys is refused with a live Stripe key: stripe.publishable_key must be a test key, pk_test_" :: String
+  let live = "issuer.dev_keys is refused with live Stripe keys: stripe.secret_key and stripe.publishable_key must be test keys" :: String
+      mixed = "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys" :: String
       remote = "issuer.dev_keys is refused with a remote BTCPay: btcpay.host must be on loopback, 127.0.0.1, ::1 or localhost" :: String
-  forM_ ["sk_live_secretvalue", "rk_live_secretvalue", "sk_test", "pk_test_x"] $ \secret ->
-    devKeysWith (devKeysStripe secret "pk_test_x") `shouldReturn` Left liveSecret
-  devKeysWith (devKeysStripe "rk_test_x" "pk_live_x") `shouldReturn` Left livePublishable
+  forM_ ["sk_live_secretvalue", "rk_live_secretvalue"] $ \secret ->
+    devKeysWith (devKeysStripe secret "pk_live_x") `shouldReturn` Left live
+  forM_ [("sk_live_secretvalue", "pk_test_x"), ("sk_test", "pk_test_x"), ("pk_test_x", "pk_test_x"), ("rk_test_x", "pk_live_x")] $ \(secret, publishable) ->
+    devKeysWith (devKeysStripe secret publishable) `shouldReturn` Left mixed
   forM_ ["https://btcpay.example.org", "https://127.0.0.2", "https://localhost.example.org", "https://user@btcpay.example.org", "https://[::2]:8443"] $ \host ->
     devKeysWith (devKeysBTCPay host) `shouldReturn` Left remote
-  devKeysWith (devKeysBTCPay "https://127.0.0.1" <> devKeysStripe "sk_live_secretvalue" "pk_test_x") `shouldReturn` Left liveSecret
-  devKeysWith (devKeysStripe "sk_live_secretvalue" "pk_test_x") >>= either (`shouldNotContain` "secretvalue") (const (expectationFailure "a live key must not boot"))
+  devKeysWith (devKeysBTCPay "https://127.0.0.1" <> devKeysStripe "sk_live_secretvalue" "pk_live_x") `shouldReturn` Left live
+  devKeysWith (devKeysStripe "sk_live_secretvalue" "pk_live_x") >>= either (`shouldNotContain` "secretvalue") (const (expectationFailure "a live key must not boot"))
   parseIni (localNamesIni (chainSection <> devKeysBTCPay "https://btcpay.example.org" <> devKeysStripe "sk_live_x" "pk_live_x")) >>= (`shouldSatisfy` either (const False) (const True))
 
 testStripeTestKeysChain :: IO ()
