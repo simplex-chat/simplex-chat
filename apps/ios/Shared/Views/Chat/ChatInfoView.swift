@@ -95,7 +95,7 @@ struct ChatInfoView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    var contact: Contact
+    var initialContact: Contact
     @State var localAlias: String
     var onSearch: () -> Void
     @State private var connectionStats: ConnectionStats? = nil
@@ -619,6 +619,10 @@ struct ChatInfoView: View {
                 }
             }
         }
+    }
+
+    private var contact: Contact {
+        chat.chatInfo.contact ?? initialContact
     }
 
     private var currentFeaturesAllowed: ContactFeaturesAllowed {
@@ -1536,7 +1540,7 @@ struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         ChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
-            contact: Contact.sampleData,
+            initialContact: Contact.sampleData,
             localAlias: "",
              onSearch: {}
         )
