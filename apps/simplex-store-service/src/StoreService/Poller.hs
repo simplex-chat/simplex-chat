@@ -40,7 +40,7 @@ import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), credi
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), LateAlert (..), LateCredit (..), LateCreditState (..), LatePending (..), LateSupport (..), claimLateAlert, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
 import StoreService.Orders (decide, expireOverdue, settleOrder, signalReceived)
-import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), expiresItself, isTimeout, settleWindow, unitName)
+import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, settleWindow, unitName)
 import StoreService.Safely (safely, safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
@@ -519,8 +519,8 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
             Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> (\r -> (rateFloor (either (const "unread") rateText r), Nothing)) <$> cachedRate env p coin
             _ -> pure (rateFloor "unread", Nothing)
       | otherwise -> pure (rateRead, Nothing)
-  _ | lsSupport == Just LSHighSpeed -> pure (highSpeed, Nothing)
-  _ | lsSupport == Just LSNoConfirmation -> pure (noConfirmation, Nothing)
+  _ | lsSupport == Just (LSUncreditable UCHighSpeed) -> pure (highSpeed, Nothing)
+  _ | lsSupport == Just (LSUncreditable UCNoConfirmationShown) -> pure (noConfirmation, Nothing)
   _ -> pure (unconfirmed, Just LSUnconfirmed)
   where
     unconfirmed = "refund by hand only a transaction confirmed on chain that BTCPay no longer monitors; one still Processing there waits"

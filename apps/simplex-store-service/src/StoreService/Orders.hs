@@ -18,7 +18,7 @@ where
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Store (LateSupport (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
-import StoreService.Providers (Confirmed (..), Funded (..), PaymentSignal (..), Received (..), Uncreditable (..))
+import StoreService.Providers (Confirmed (..), Funded (..), PaymentSignal (..), Received (..))
 import StoreService.Safely (safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
@@ -163,7 +163,7 @@ settleOrder st waiters phases invId signal now' = do
       when wrotePayment $ do
         upsertPayment db row wPayment money (paidInFull signal) at
         case sold of
-          PName _ -> mapM_ (setLateSupport db invId . lateSupportOf) rcvUncreditable
+          PName _ -> mapM_ (setLateSupport db invId . LSUncreditable) rcvUncreditable
           PBadge _ -> pure ()
       moved <- maybe (pure True) (\new -> updateInvoiceStatus db invId irStatus new at) wStatus
       if moved
@@ -218,12 +218,6 @@ closeInvoiceOrder db invId now =
   settlementInvoice db invId >>= \case
     Just InvoiceRow {irProduct = IPName rid} -> getRegistration db rid >>= maybe (pure Nothing) (\r -> closeOrder db r now)
     _ -> pure Nothing
-
-lateSupportOf :: Uncreditable -> LateSupport
-lateSupportOf = \case
-  UCHighSpeed -> LSHighSpeed
-  UCUncounted -> LSUnits
-  UCNoConfirmationShown -> LSNoConfirmation
 
 latePayment :: Text -> IO ()
 latePayment ref =

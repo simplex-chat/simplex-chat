@@ -414,7 +414,7 @@ testRateFloor = withLate $ \l@Late {lStore = st} -> do
 testWaitingOutranksStoredReason :: IO ()
 testWaitingOutranksStoredReason = withLate $ \l@Late {lStore = st} -> do
   closedOrder l "outranked" False
-  withTransaction st $ \db -> setLateSupport db (invOf "outranked") LSHighSpeed
+  withTransaction st $ \db -> setLateSupport db (invOf "outranked") (LSUncreditable UCHighSpeed)
   settleAt l "outranked" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart) (at 70) `shouldReturn` Right ISExpired
   alertsAt l (Left $ ProviderError "rates down for outranked") (pastWindow (at 70) 60)
     >>= (`shouldSatisfy` logged "ERROR" "invoice ref-inv-outranked: 320000 satoshi received, 320000 satoshi confirmed, 0 satoshi credited; confirmed, the credit waits on the rate read; do not refund; fix the rate read")

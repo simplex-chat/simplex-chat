@@ -136,6 +136,7 @@ import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (TermsAcceptance (..))
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
+import StoreService.Providers (Uncreditable (..))
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, note, textToCryptoCurrency, truncateToSecond, unfundedQuery)
 
@@ -354,19 +355,25 @@ instance FromField LatePending where fromField = fromTextField_ textDecode
 data LateWait = LWConfirming | LWCrediting | LWSupport
   deriving (Eq, Show)
 
--- | Why a closed order's money will not be credited by itself: an invoice made under HighSpeed, an amount that could not be counted in units,
--- a current rate below the floor, unconfirmed money alerted past the read window, or money the provider shows no confirmation of.
-data LateSupport = LSHighSpeed | LSUnits | LSRateFloor | LSUnconfirmed | LSNoConfirmation
-  deriving (Eq, Show, Enum, Bounded)
+-- | Why a closed order's money will not be credited by itself: the provider's reason it is uncreditable, a current rate below the floor,
+-- or unconfirmed money alerted past the read window.
+data LateSupport = LSUncreditable Uncreditable | LSRateFloor | LSUnconfirmed
+  deriving (Eq, Show)
 
 instance TextEncoding LateSupport where
   textEncode = \case
-    LSHighSpeed -> "high_speed"
-    LSUnits -> "units"
+    LSUncreditable UCHighSpeed -> "high_speed"
+    LSUncreditable UCUncounted -> "units"
+    LSUncreditable UCNoConfirmationShown -> "no_confirmation"
     LSRateFloor -> "rate_floor"
     LSUnconfirmed -> "unconfirmed"
-    LSNoConfirmation -> "no_confirmation"
-  textDecode t = lookup t [(textEncode s, s) | s <- [minBound .. maxBound]]
+  textDecode = \case
+    "high_speed" -> Just $ LSUncreditable UCHighSpeed
+    "units" -> Just $ LSUncreditable UCUncounted
+    "no_confirmation" -> Just $ LSUncreditable UCNoConfirmationShown
+    "rate_floor" -> Just LSRateFloor
+    "unconfirmed" -> Just LSUnconfirmed
+    _ -> Nothing
 
 instance FromField LateSupport where fromField = fromTextField_ textDecode
 
