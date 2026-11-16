@@ -379,10 +379,6 @@ send_images() {
   send_image logo-large-rgba.png png
 }
 
-not_shown() {
-  ! "$ui" find "$1" > /dev/null 2>&1
-}
-
 open_update_channels() {
   local x y
   read -r x y < <(left_pane_position Disabled exact) || fail "no update channel in Settings > app version"
@@ -400,7 +396,7 @@ check_internal_builds() {
   "$ui" wait "Check for updates" 10
   open_update_channels
   "$ui" shot update-channels
-  check "the update channels lack Internal while internal builds are not allowed" not_shown Internal
+  check "the update channels lack Internal while internal builds are not allowed" not_on_screen Internal
   "$ui" click-text "App version" 10
   "$ui" click-text "Developer tools" 10
   "$ui" wait "Show developer options" 10
@@ -414,7 +410,7 @@ check_internal_builds() {
   "$ui" wait "Check for updates" 10
   open_update_channels
   "$ui" shot update-channels-internal
-  check "the update channels list Internal while internal builds are allowed" "$ui" find Internal
+  check "the update channels list Internal while internal builds are allowed" on_screen Internal
   "$ui" click-text "App version" 10
   back_to_chat_list || fail "no chat list after the update channels"
 }

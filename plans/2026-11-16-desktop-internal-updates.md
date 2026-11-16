@@ -66,6 +66,7 @@ flowchart TD
 | tag | the build's desktop.version_name |
 | name | set |
 | body | set |
+| commit | one release per commit |
 | asset names | as in simplex-chat/simplex-chat releases |
 
 ## Changes
@@ -75,10 +76,8 @@ flowchart TD
 | AppCommon.kt | INTERNAL |
 | SimpleXAPI.kt | allowInternalBuilds |
 | AppUpdater.kt | releases read per channel |
-| SettingsView.kt | expect AllowInternalBuildsItem |
-| SettingsView.desktop.kt | toggle; channel list without INTERNAL while the toggle is off |
-| SettingsView.android.kt | empty AllowInternalBuildsItem |
-| DeveloperView.kt | AllowInternalBuildsItem in developer options |
+| SettingsView.desktop.kt | channel list without INTERNAL while the toggle is off |
+| DeveloperView.kt | toggle in the desktop developer options |
 | base strings.xml | "Internal", "Allow internal builds" |
 | smoke-test.sh | screenshots of developer options and update channels in both toggle states |
 | spec/state.md, product/views/settings.md | channel and toggle |

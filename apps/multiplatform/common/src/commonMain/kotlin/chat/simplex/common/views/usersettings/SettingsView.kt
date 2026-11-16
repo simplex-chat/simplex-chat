@@ -203,9 +203,6 @@ expect fun AdvancedSettingsAppSection(
 @Composable
 expect fun AppShutdownItem()
 
-@Composable
-expect fun AllowInternalBuildsItem()
-
 @Composable private fun DatabaseItem(encrypted: Boolean, saved: Boolean, openDatabaseView: () -> Unit, stopped: Boolean) {
   SectionItemView(openDatabaseView) {
     Row(

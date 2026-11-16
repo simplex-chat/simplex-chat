@@ -57,11 +57,13 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
               m.controller.appPrefs.terminalAlwaysVisible.set(false)
             }
           }
+          SettingsPreferenceItem(painterResource(MR.images.ic_download), stringResource(MR.strings.allow_internal_builds), appPrefs.allowInternalBuilds) { allowed ->
+            if (!allowed && appPrefs.appUpdateChannel.get() == AppUpdatesChannel.INTERNAL) appPrefs.appUpdateChannel.set(AppUpdatesChannel.DISABLED)
+          }
         }
         SettingsPreferenceItem(painterResource(MR.images.ic_report), stringResource(MR.strings.show_internal_errors), appPreferences.showInternalErrors)
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)
         SettingsActionItem(painterResource(MR.images.ic_folder_open), stringResource(MR.strings.storage), { ModalManager.start.showModal(cardScreen = true) { StorageView() } })
-        AllowInternalBuildsItem()
       }
     }
     SectionDividerSpaced()

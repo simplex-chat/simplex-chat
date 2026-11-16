@@ -33,9 +33,6 @@ actual fun AppShutdownItem() {
   SettingsActionItem(painterResource(MR.images.ic_power_settings_new), stringResource(MR.strings.settings_shutdown), ::shutdownAppAlert)
 }
 
-@Composable
-actual fun AllowInternalBuildsItem() {}
-
 fun restartApp() {
   ProcessPhoenix.triggerRebirth(androidAppContext)
   shutdownApp()

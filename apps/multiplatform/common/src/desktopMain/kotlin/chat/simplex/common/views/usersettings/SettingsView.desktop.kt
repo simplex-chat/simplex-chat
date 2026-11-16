@@ -29,13 +29,3 @@ actual fun AdvancedSettingsAppSection(
 
 @Composable
 actual fun AppShutdownItem() {}
-
-@Composable
-actual fun AllowInternalBuildsItem() {
-  SettingsPreferenceItem(painterResource(MR.images.ic_download), stringResource(MR.strings.allow_internal_builds), appPrefs.allowInternalBuilds) { allowed ->
-    if (!allowed && appPrefs.appUpdateChannel.get() == AppUpdatesChannel.INTERNAL) {
-      appPrefs.appUpdateChannel.set(AppUpdatesChannel.DISABLED)
-      setupUpdateChecker()
-    }
-  }
-}

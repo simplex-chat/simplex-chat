@@ -184,7 +184,7 @@ fun checkForUpdate() {
     val release = when (appPrefs.appUpdateChannel.get()) {
       AppUpdatesChannel.STABLE -> getNewerReleases().firstOrNull { r -> !r.isConsideredBeta }
       AppUpdatesChannel.BETA -> getNewerReleases().firstOrNull()
-      AppUpdatesChannel.INTERNAL -> getGitHubReleases(INTERNAL_BUILDS_REPO).firstOrNull { r -> !r.draft }?.takeIf { r -> r.tagName != BuildConfigCommon.DESKTOP_VERSION_NAME }
+      AppUpdatesChannel.INTERNAL -> getGitHubReleases(INTERNAL_BUILDS_REPO).firstOrNull()?.takeIf { r -> r.tagName != BuildConfigCommon.DESKTOP_VERSION_NAME }
       AppUpdatesChannel.DISABLED -> return
     }
 
@@ -260,12 +260,13 @@ private fun getNewerReleases(): List<GitHubRelease> {
     Log.e(TAG, "Current SemVer cannot be parsed")
     return emptyList()
   }
-  return getGitHubReleases("simplex-chat/simplex-chat").filter { r -> !r.draft && currentSemVer < r.semVer }
+  return getGitHubReleases("simplex-chat/simplex-chat").filter { r -> currentSemVer < r.semVer }
 }
 
 private fun getGitHubReleases(repo: String): List<GitHubRelease> {
   val request = Request.Builder().url("https://api.github.com/repos/$repo/releases").addHeader("User-agent", "curl").build()
-  return setupHttpClient().newCall(request).execute().use { response -> json.decodeFromString<List<GitHubRelease>>(response.body!!.string()) }
+  val releases = setupHttpClient().newCall(request).execute().use { response -> json.decodeFromString<List<GitHubRelease>>(response.body!!.string()) }
+  return releases.filter { r -> !r.draft }
 }
 
 private fun setupHttpClient(): OkHttpClient {

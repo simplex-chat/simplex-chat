@@ -481,7 +481,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `migrationToStage` | `String?` | null | Migration-to-device progress |
 | `migrationFromStage` | `String?` | null | Migration-from-device progress |
 
-#### Updates and Versioning (lines 184-186, 235-237)
+#### Updates and Versioning (lines 209-212, 262-264)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
