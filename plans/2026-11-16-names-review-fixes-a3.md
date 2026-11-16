@@ -15,7 +15,7 @@ A3-1, A3-2, A3-31 (links):
 
 A3-13: `RCSetText LinkKind Text`.
 - `TextEncoding LinkKind` spells `simplex.contact` and `simplex.channel`; `recordKey` gives the key's bytes.
-- `contactRecordKey`, `channelRecordKey` and `recordKinds` go; `setTextDigest` and `setTextWithSigCalldata` take the kind.
+- `contactRecordKey`, `channelRecordKey` and `recordKinds` go, replaced by `recordKey LKContact` and `recordKey LKChannel`; `setTextDigest` and `setTextWithSigCalldata` take the kind.
 - The edit body's key is parsed into the kind with the other formats; the stored key text is unchanged.
 
 A3-31 (label): `LabelError` and `validLabel` move into Names/Registration.hs; Label.hs is removed.
@@ -52,7 +52,7 @@ sequenceDiagram
 A3-9, A3-12: one outcome type.
 - `data EditOutcome = EOApplied (Maybe TxHash) | EOReverted (Maybe Text)`; `EditState = ESPending | ESSettled EditOutcome`; `EditAnswer`'s `EASettled EditOutcome` replaces `EAApplied` and `EAReverted`.
 - `judge` returns `Maybe EditOutcome`, Nothing for a free nonce; `Judgment` and its two mappings go. The request answers `fromMaybe (EOReverted name)`, the lane `maybe whenFree (settle … . ESSettled)`.
-- The revert's text is as A2-2's `RevertReason` renders it; A3-12 is resolved there.
+- A3-12 is superseded by A2-2: the revert is rendered to `Maybe Text` once at the settle sites, by `revertText` until A2-2's `revertReasonText` replaces it; the column keeps text.
 
 ```mermaid
 stateDiagram-v2
@@ -88,7 +88,7 @@ A3-28: `chainAccepts` returns `Maybe EditAnswer`, Nothing when accepted.
 
 ## Service
 
-A3-7: StoreService.Safely is removed; each site catches by `catchOwn'` with its own log line; `webhookHandler`'s inline catch and `isAsync` use `catchOwn'` and `isAsyncCancellation`.
+A3-7: StoreService.Safely is removed; each site catches by `catchOwn'` with its own log line, naming what runs next where a next pass or scan retries it; `webhookHandler`'s inline catch and `isAsync` use `catchOwn'` and `isAsyncCancellation`. `survive` and `logUncaught` stay, as they already catch by `catchOwn'`. No helper and no simplexmq change.
 
 A3-8: `runMetrics` races the listener itself, so a failed bind ends the lanes as a web listener's does.
 
