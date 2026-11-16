@@ -162,6 +162,57 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testKnownNameExpiredWithoutGrace() async throws {
+        try recorded("names/plan-known-expired-no-grace")
+        connect("@alice.simplex")
+        try await assertTexts(["Name expired", "alice.simplex expired on January 1, 2026.", "Open chat", "Ok"])
+        XCTAssertEqual(shownLocalChats, ["@2"])
+    }
+
+    @MainActor
+    func testOwnNameExpiredWithoutGrace() async throws {
+        try recorded("names/plan-own-expired-no-grace")
+        connect("@alice.simplex")
+        try await assertTexts(["Your name has expired", "Your name alice.simplex expired on January 1, 2026.", "Renew", "Ok"])
+    }
+
+    @MainActor
+    func testOwnChannelNameExpired() async throws {
+        try recorded("names/plan-own-channel-expired")
+        connect("#team.simplex")
+        try await assertTexts(["Your name has expired", "Your name team.simplex expired on January 1, 2026. Renew it before January 1, 2099.", "Renew", "Open chat", "Ok"])
+        XCTAssertEqual(shownLocalChats, ["#1"])
+    }
+
+    @MainActor
+    func testChannelNameMoved() async throws {
+        try recorded("names/plan-channel-moved")
+        connect("#team.simplex")
+        try await assertTexts(["teamv2", "#team", "1 subscribers", "Open channel", "Cancel"])
+        XCTAssertEqual(shownLocalChats, ["#1"])
+    }
+
+    @MainActor
+    func testMovedChannel() async throws {
+        try recorded("names/plan-old-channel")
+        connect("TEAM_LINK")
+        try await assertTexts(["team", "1 subscribers", "You are a subscriber", "Open channel", "Cancel"])
+        XCTAssertEqual(shownLocalChats, ["#1"])
+        guard case let .group(groupInfo, _)? = ChatModel.shared.getGroupChat(1)?.chatInfo else { return XCTFail("channel not listed") }
+        XCTAssertEqual(groupInfo.groupDomainVerified, .moved)
+    }
+
+    @MainActor
+    func testChannelNameNotVerified() async throws {
+        try recorded("names/plan-known-failed")
+        connect("TEAM_LINK")
+        try await assertTexts(["team", "2 subscribers", "You are a subscriber", "Open channel", "Cancel"])
+        XCTAssertEqual(shownLocalChats, ["#1"])
+        guard case let .group(groupInfo, _)? = ChatModel.shared.getGroupChat(1)?.chatInfo else { return XCTFail("channel not listed") }
+        XCTAssertEqual(groupInfo.groupDomainVerified, .failed)
+    }
+
+    @MainActor
     func testContactViaAddress() async throws {
         try recorded("connect/contact-via-address")
         connect("CONTACT_LINK")

@@ -197,6 +197,49 @@ class NameAlertsTest {
   }
 
   @Test
+  fun knownNameExpiredWithoutGrace() = recordedAlerts("names/plan-known-expired-no-grace") {
+    connect("@alice.simplex")
+    assertTexts("Name expired", "alice.simplex expired on January 1, 2026.", "Open chat", "OK")
+    assertLocalChats("@2")
+  }
+
+  @Test
+  fun ownNameExpiredWithoutGrace() = recordedAlerts("names/plan-own-expired-no-grace") {
+    connect("@alice.simplex")
+    assertTexts("Your name has expired", "Your name alice.simplex expired on January 1, 2026.", "Renew", "OK")
+  }
+
+  @Test
+  fun ownChannelNameExpired() = recordedAlerts("names/plan-own-channel-expired") {
+    connect("#team.simplex")
+    assertTexts("Your name has expired", "Your name team.simplex expired on January 1, 2026. Renew it before January 1, 2099.", "Renew", "Open chat", "OK")
+    assertLocalChats("#1")
+  }
+
+  @Test
+  fun channelNameMoved() = recordedAlerts("names/plan-channel-moved") {
+    connect("#team.simplex")
+    assertTexts("teamv2", "#team", "1 subscriber", "Open channel", "Cancel")
+    assertLocalChats("#1")
+  }
+
+  @Test
+  fun movedChannel() = recordedAlerts("names/plan-old-channel") {
+    connect("TEAM_LINK")
+    assertTexts("team", "1 subscriber", "You are a subscriber", "Open channel", "Cancel")
+    assertLocalChats("#1")
+    assertEquals(DomainVerification.Moved, (chatInfo("#1") as ChatInfo.Group).groupInfo.groupDomainVerified)
+  }
+
+  @Test
+  fun channelNameNotVerified() = recordedAlerts("names/plan-known-failed") {
+    connect("TEAM_LINK")
+    assertTexts("team", "2 subscribers", "You are a subscriber", "Open channel", "Cancel")
+    assertLocalChats("#1")
+    assertEquals(DomainVerification.Failed, (chatInfo("#1") as ChatInfo.Group).groupInfo.groupDomainVerified)
+  }
+
+  @Test
   fun contactViaAddress() = recordedAlerts("connect/contact-via-address") {
     connect("CONTACT_LINK")
     assertTexts("alice", "Open chat", "Cancel")
