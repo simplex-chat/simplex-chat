@@ -13,6 +13,7 @@ module StoreService.Names.Registration
     nodeBytes,
     namehash,
     labelNode,
+    tldLabel,
     contactRecordKey,
     channelRecordKey,
     sponsorDomain,
@@ -45,10 +46,9 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
-import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
 import StoreService.Names.Chain (ChainSeconds)
 
@@ -242,9 +242,14 @@ recordCalls Registration {rLabel, rTLD, rContactLink, rChannelLink} =
     Node node = namehash rTLD rLabel
 
 namehash :: SimplexTLD -> Text -> Node
-namehash tld = labelNode tld . LabelHash . keccak256 . encodeUtf8
+namehash tld = labelNode tld . labelHash
 
 labelNode :: SimplexTLD -> LabelHash -> Node
 labelNode tld (LabelHash h) = Node $ keccak256 $ tldNode <> h
   where
-    tldNode = keccak256 $ B.replicate 32 0 <> keccak256 (B.drop 1 $ strEncode tld)
+    tldNode = keccak256 $ B.replicate 32 0 <> keccak256 (encodeUtf8 $ tldLabel tld)
+
+tldLabel :: SimplexTLD -> Text
+tldLabel TLDSimplex = "simplex"
+tldLabel TLDTesting = "testing"
+tldLabel TLDWeb = ""

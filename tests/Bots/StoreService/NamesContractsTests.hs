@@ -60,7 +60,7 @@ import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Contracts
-import StoreService.Names.Registration (labelNode, namehash, nodeBytes)
+import StoreService.Names.Registration (labelNode, namehash, nodeBytes, tldLabel)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import Test.Hspec
@@ -70,7 +70,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
   -- the calldata and answers marked viem are viem 2.33.3's encodeFunctionData and encodeFunctionResult
   -- with the ABIs of ens-contracts PR #36, so a read the fake node answers sends viem's calldata
   g <- runIO C.newRandom
-  it "builds a name's node from its label hash as viem's namehash" testNode
+  it "builds a name's node from its label hash as viem's namehash, the label in any case" testNode
   describe "status" $ do
     it "reads a reserved name" $ testReserved g
     it "keeps a name registered to the last second of its grace period" $ testGracePeriod g
@@ -113,6 +113,8 @@ testNode :: IO ()
 testNode = do
   nodeBytes (labelNode TLDSimplex $ labelHash "alicebakery") `shouldBe` aliceNode
   nodeBytes (namehash TLDSimplex "alicebakery") `shouldBe` aliceNode
+  nodeBytes (namehash TLDSimplex "AliceBakery") `shouldBe` aliceNode
+  map tldLabel [TLDSimplex, TLDTesting, TLDWeb] `shouldBe` ["simplex", "testing", ""]
 
 testReserved :: TVar ChaChaDRG -> IO ()
 testReserved g = withContracts g $ \node ct -> do

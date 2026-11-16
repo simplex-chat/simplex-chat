@@ -10,7 +10,6 @@ module StoreService.Names.View
     viewJSON,
     balanceJSON,
     addressText,
-    tldText,
     registrationAt,
     lapseMoment,
     registrationVersion,
@@ -24,13 +23,12 @@ import qualified Data.Aeson as J
 import Data.Int (Int64)
 import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
+import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (hex)
@@ -39,6 +37,7 @@ import StoreService.Names.Community (AcceptanceAsked (..), communityJSON, curren
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
+import StoreService.Names.Registration (tldLabel)
 import StoreService.Names.Signatures (AgreedTerms (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), FailReason (..), HoldState (..), LateWait, NameRegistration (..), NameReveal (..), OrderPhase (..), getBalance, getRegistration, heldBy, lateWait, namePhase, paymentBalance, paymentInvoice)
 
@@ -93,7 +92,7 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "resolver" .= cResolver,
       "sponsor" .= cSponsor,
       "chainId" .= cChainId,
-      "tld" .= tldText nTLD,
+      "tld" .= tldLabel nTLD,
       "years" .= nrYears,
       "duration" .= nrDuration,
       "price" .= nrPrice,
@@ -143,10 +142,6 @@ balanceJSON b@Balance {blAmount, blRefunded} =
 -- | EIP-55, as the page compares owners.
 addressText :: Address -> Text
 addressText = safeDecodeUtf8 . strEncode
-
--- | The TLD as the page shows it after the name's dot.
-tldText :: SimplexTLD -> Text
-tldText = T.dropWhile (== '.') . safeDecodeUtf8 . strEncode
 
 -- | Versions start at 1, so a registration deleted during a hold reads as changed.
 registrationVersion :: DBStore -> RegistrationId -> IO Int64
