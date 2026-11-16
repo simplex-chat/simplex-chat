@@ -1,4 +1,4 @@
-# Name alerts tested against core fixtures
+# App views tested on core responses
 
 Repository: simplex-chat/simplex-chat.
 Branch: `ep/name-alert-fixtures-2`.
@@ -6,139 +6,87 @@ Base: master `88767bbc3` (#8220).
 
 The user's words:
 
-> Even these tests - can we maybe test views against data, and have a minimal e2e test?
+> you must be testing on the view level, as much as possible, with mocked API. So the question that must have been answered is how to make existing views to use mocked api responses
 
-> this is good. This way we decouple core testing from app testing, and don't have to run nix build for ios - right?
+> we need to cover as much of the app as possible, with as few app changes as possible, and without compiling the actual core library for the apps, because it's slow and complex. Instead we did fixtures that are tested against real haskell code. … I'd simply keep them in /tests fixtures, and have apps use them from there.
 
-> excellent, no e2e tests, we produce fixtures in core tests, and then use it in UI tests if UI code changed or if UI fixtures changed. Works?
+> you just replace func with var
 
 ## Composition
 
 ```mermaid
 flowchart LR
-  N["tests/ChatTests/Names.hs<br>nameFixture"] -->|"JSON of the app API"| K["Kotlin fixtures<br>desktopTest/resources/names"]
-  N -->|"tagged2owsf"| S["Swift fixtures<br>SimpleX Unit Tests/names"]
-  K --> KT["NameWarningAlertTest<br>:common:desktopTest"]
-  S --> ST["NameWarningAlertTests<br>xcodebuild test"]
-  KT --> KA["planNameWarningAlert<br>nameWarningAlert"]
-  ST --> SA["planNameWarningAlert<br>nameWarningAlert"]
+  CT["core tests<br>nameFixture"] -->|"responses and parses"| F["tests/fixtures/names"]
+  F --> KT["NameAlertsTest<br>desktop"]
+  F --> IT["NameAlertsTests<br>iOS, hosted by the app"]
+  KT -->|"sets"| KH["chatSendCmdRetry<br>chatParseMarkdown"]
+  IT -->|"sets"| IH["sendSimpleXCmdStr<br>parseSimpleXMarkdownText"]
+  KH --> KF["planAndConnect<br>unchanged"]
+  IH --> IF["planAndConnect<br>unchanged"]
+  KF --> KA["AlertManager<br>semantics texts"]
+  IF --> IA["presented UIAlertController"]
 ```
+
+## Hooks
+
+A function of the app that calls the core is a `var`; tests set it to a responder of recorded responses.
+
+| App | Hook | Replaces |
+|---|---|---|
+| iOS | `sendSimpleXCmdStr` | `func sendSimpleXCmdStr` |
+| iOS | `parseSimpleXMarkdownText` | `func parseSimpleXMarkdownText` |
+| Kotlin | `chatSendCmdRetry` | `external fun chatSendCmdRetry`, now `nativeChatSendCmdRetry` with `@JvmName("chatSendCmdRetry")` |
+| Kotlin | `chatParseMarkdown` | `external fun chatParseMarkdown`, now `nativeChatParseMarkdown` with `@JvmName("chatParseMarkdown")` |
+
+- The JNI symbols are unchanged.
+- The call sites are unchanged, except the two calls of `sendSimpleXCmdStr`, which lose the label and default argument.
 
 ## Fixtures
 
-| Fixture | Test | User | Command |
-|---|---|---|---|
-| plan-known-expired | testPlanKnownNameStale | bob | `/_connect plan 1 @alice.simplex` |
-| plan-own-expired | testPlanOwnNameExpired | alice | `/_connect plan 1 @alice.simplex` |
-| plan-known-available | testPlanKnownNameAvailable | bob | `/_connect plan 1 @alice.simplex` |
-| plan-own-available | testPlanOwnNameAvailable | alice | `/_connect plan 1 @alice.simplex` |
-| plan-known-reserved | testPlanKnownNameReserved | bob | `/_connect plan 1 @alice.simplex` |
-| plan-known-moved | testPlanKnownNameAddressChanged | bob | `/_connect plan 1 @alice.simplex` |
-| error-available | testConnectByNameNotFound | bob | `/_connect plan 1 @nobody.simplex` |
-| error-not-registered | testPlanNameReservedOther | bob | `/_connect plan 1 acme.simplex` |
+`tests/fixtures/names/<fixture>.json`, written by `nameFixture fixture user name` in tests/ChatTests/Names.hs:
 
-Files
-- Kotlin: `apps/multiplatform/common/src/desktopTest/resources/names/<fixture>.json`
-- Swift: `apps/ios/SimpleX Unit Tests/names/<fixture>.json`
+```
+{
+  "commands": {"/_connect plan 1 <name>": <response>},
+  "markdown": {"<name>": <parse>}
+}
+```
 
-`nameFixture name cc cmd`, in tests/ChatTests/Names.hs
-1. `chatSendCmd` of `Simplex.Chat.Mobile`: the response as the apps receive it.
-2. `stableJSON`: values of volatile keys replaced.
-3. `prettyJSON`: one object field or array element per line.
-4. Swift form: `tagged2owsf`, checked by the decoding in the iOS tests.
-5. `testGenerate` of tests/APIDocs.hs, for the Kotlin file, then, also after its failure (`finally`), the Swift file: the file written, the test failed when it differs.
-
-`tagged2owsf`, in `nameFixture`, for record and nullary constructors
-
-| Tagged object | Swift form |
-|---|---|
-| `type` only | `_owsf`, `<type>: {}` |
-| `type`, other fields | `_owsf`, `<type>: {<other fields>}` |
-| without `type` | unchanged |
-
-`stableJSON` replacements
-- `createdAt`, `updatedAt`, `chatTs`: `1970-01-01T00:00:00Z`
-- `agentConnId`, `xContactId`, `connFullLink`, `connShortLink`, `contactLink`: the key
-
-`registerExpiredName`, in tests/NameResolver.hs
-- `expires`: 2026-01-01 12:00 UTC
-- `graceUntil`: 2099-01-01 12:00 UTC
-
-## Alerts
-
-`nameWarningAlert domain warning own chat`
-
-| Warning | Own | Chat | Title | Action |
-|---|---|---|---|---|
-| expired | no | any | Name expired | none |
-| expired | yes | any | Your name has expired | Renew |
-| available | no | none | Name not registered | Register |
-| available | no | a chat | Name no longer registered | Register |
-| available | yes | any | Your name has expired | Re-register |
-| reserved for community | any | any | Name not registered | Connect to SimpleX team |
-| not registered | any | any | Name not registered | none |
-
-Buttons
-1. the action
-2. Open chat, when the alert has a chat
-3. OK
-
-`planNameWarningAlert planSimplexName plan`
-- `nameChange` lapsed, and `planSimplexName` present: `nameWarningAlert` with `isOwnLink` and `planChat` of the plan
-- otherwise: none
-
-`showNameWarningAlert` renders the alert; `planAndConnect` and the connect error alert compute it.
+- response: `chatSendCmd` of `Simplex.Chat.Mobile`, the JSON of the Kotlin app.
+- parse: `chatParseMarkdown` of `Simplex.Chat.Mobile`.
+- volatile values replaced: `createdAt`, `updatedAt`, `chatTs`, `agentConnId`, `xContactId`, `connFullLink`, `connShortLink`, `contactLink`.
+- `registerExpiredName`: expiry 2026-01-01 12:00 UTC, grace until 2099-01-01 12:00 UTC.
+- written with `testGenerate`: the test fails when its file differs.
+- iOS: tagged objects converted to the single-field form when the test reads them.
 
 ## Tests
 
-| Fixture | Checked |
-|---|---|
-| plan-known-expired | expired, not own, Open chat, both dates |
-| plan-own-expired | expired, own, Renew |
-| plan-known-available | no longer registered, Register, Open chat |
-| plan-own-available | own, Re-register |
-| plan-known-reserved | reserved, Connect to SimpleX team, Open chat |
-| plan-known-moved | no name alert; `localChats` include `knownChat` |
-| error-available | not registered, Register, from `simplexDomainNotReady` |
-| error-not-registered | not registered, no action, from `simplexDomainNotReady` |
+Each test sets the hooks to the fixture, sets the current user, runs `planAndConnect` with the name, and compares the texts of the shown alert.
 
-Known gaps
-- connect error alert: `nameWarningAlert` is called in the tests with its arguments, `own` false and no chat; a change of them in `SimpleXAPI` is undetected.
-- expired without `graceUntil`: untested; `registerExpiredName` sets `graceUntil` in 2099.
-
-Kotlin
-- `NameWarningAlertTest`, in `apps/multiplatform/common/src/desktopTest`
-- fixtures decoded by `json` with `API.serializer()`
-- default locale: `Locale.US` during each test
-
-iOS
-- target `SimpleX Unit Tests`: unit tests without a host application, linked with SimpleXChat
-- scheme `SimpleX Unit Tests`: the test action of the target
-- sources: the tests, `Shared/Model/AppAPITypes.swift`, `Shared/Views/NewChat/NameWarningAlert.swift`
-- `SimplexAddress.shareAddress`: in `Shared/Views/Helpers/ShareSheet.swift`, beside `showShareSheet`, in place of AppAPITypes.swift
-- fixtures read from `names` beside the test file (`#filePath`), decoded by `decodeAPIResult`
-
-iOS alert
-- `NameWarningAlert.swift`: `NameWarningAction`, `NameWarningAlert`, `namePrice`, `nameWarningAlert`, `planNameWarningAlert`
-- `NewChatView.swift`, `showNameWarningAlert`: the alert, and the title and effect of each action
-
-| Action | Title | Effect |
+| Fixture | Title | Buttons |
 |---|---|---|
-| renew | Renew | `openBrowserAlert` of simplex.domains |
-| register | Register | `openBrowserAlert` of simplex.domains |
-| re-register | Re-register | `openBrowserAlert` of simplex.domains |
-| connect to team | Connect to SimpleX team | `appOpenUrl` of `simplexTeamURL` |
+| plan-known-expired | Name expired | Open chat, OK |
+| plan-own-expired | Your name has expired | Renew, OK |
+| plan-known-available | Name no longer registered | Register, Open chat, OK |
+| plan-own-available | Your name has expired | Re-register, OK |
+| plan-known-reserved | Name not registered | Connect to SimpleX team, Open chat, OK |
+| plan-known-moved | the alert to open a new chat | |
+| error-available | Name not registered | Register, OK |
+| error-not-registered | Name not registered | OK |
+
+A request without a recorded response fails the test.
+
+Known gaps:
+- an expired name without a grace date.
+
+## iOS
+
+- target `SimpleX Unit Tests`, hosted by the app, as `SimpleX Snapshots`.
+- the CI stubs of `chat_migrate_init` and `chat_migrate_init_key` return an empty string, so the app opens its database error screen and calls the core no more.
+- the alert is read from `getTopViewController()`.
 
 ## CI
 
-Kotlin
-- `:common:desktopTest` of build-linux, scope kotlin; `apps/multiplatform/**` includes the fixtures
-
-iOS
-- step "Run iOS unit tests" of build-ios, after "Build iOS app"; `apps/ios/**` includes the fixtures
-- a new simulator: the runtime of the iphonesimulator SDK, its first iPhone device type
-- `xcodebuild test` of the scheme `SimpleX Unit Tests`, with the settings of "Build iOS app"
-- with `ep/ci-one-macos-job`: a step of build-macos, with the condition of its iOS steps
-
-Core
-- `/names tests/` writes and compares the fixtures
+- desktop: `:common:desktopTest` in the Kotlin step of build-linux.
+- iOS: the step "Run iOS unit tests" after "Build iOS app".
+- `tests/fixtures/names/**` starts the kotlin and ios scopes.
