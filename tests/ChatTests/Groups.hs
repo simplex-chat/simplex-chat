@@ -8493,8 +8493,8 @@ testMemberMentionRemovedByEdit ps = do
   updates <- newTVarIO []
   let hook _ evt = do
         case evt of
-          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ChatItem {mentions} prevCi_)) ->
-            atomically $ modifyTVar' updates (<> [(M.keys mentions, (\ChatItem {mentions = prevMentions} -> M.keys prevMentions) <$> prevCi_)])
+          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ChatItem {mentions} ChatItem {mentions = prevMentions})) ->
+            atomically $ modifyTVar' updates (<> [(M.keys mentions, M.keys prevMentions)])
           _ -> pure ()
         pure evt
   withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "alice" aliceProfile $ \alice ->
@@ -8505,7 +8505,7 @@ testMemberMentionRemovedByEdit ps = do
       bob ##> "! #team hello"
       bob <# "#team [edited] hello"
       alice <# "#team bob> [edited] hello"
-      readTVarIO updates `shouldReturn` [([], Just ["alice"])]
+      readTVarIO updates `shouldReturn` [([], ["alice"])]
 
 testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
 testForwardQuoteMention =

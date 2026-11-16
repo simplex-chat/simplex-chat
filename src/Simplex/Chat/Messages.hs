@@ -20,7 +20,7 @@ module Simplex.Chat.Messages where
 
 import Control.Applicative ((<|>))
 import Control.Monad ((>=>))
-import Data.Aeson (FromJSON, ToJSON, (.:), (.:?))
+import Data.Aeson (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
@@ -481,11 +481,11 @@ deriving instance Show AChatItem
 
 data JSONAnyChatItem c d = JSONAnyChatItem {chatInfo :: ChatInfo c, chatItem :: ChatItem c d}
 
-data AChatItemUpdate = forall c d. (ChatTypeI c, MsgDirectionI d) => AChatItemUpdate (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d) (Maybe (ChatItem c d))
+data AChatItemUpdate = forall c d. (ChatTypeI c, MsgDirectionI d) => AChatItemUpdate (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d) (ChatItem c d)
 
 deriving instance Show AChatItemUpdate
 
-data JSONAnyChatItemUpdate c d = JSONAnyChatItemUpdate {chatInfo :: ChatInfo c, chatItem :: ChatItem c d, prevChatItem :: Maybe (ChatItem c d)}
+data JSONAnyChatItemUpdate c d = JSONAnyChatItemUpdate {chatInfo :: ChatInfo c, chatItem :: ChatItem c d, prevChatItem :: ChatItem c d}
 
 updatedAChatItem :: AChatItemUpdate -> AChatItem
 updatedAChatItem (AChatItemUpdate c d chatInfo ci _) = AChatItem c d chatInfo ci
@@ -1579,7 +1579,7 @@ instance FromJSON AChatItemUpdate where
   parseJSON = J.withObject "AChatItemUpdate" $ \o -> do
     AChatInfo c chatInfo <- o .: "chatInfo"
     CChatItem d chatItem <- o .: "chatItem"
-    prev <- o .:? "prevChatItem"
+    prev <- o .: "prevChatItem"
     pure $ AChatItemUpdate c d chatInfo chatItem prev
 
 instance ToJSON AChatItemUpdate where

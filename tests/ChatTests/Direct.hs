@@ -796,7 +796,7 @@ testDirectMessageUpdatePrevItem ps = do
           Right e@CEvtChatItemUpdated {} -> atomically $ modifyTVar' encoded (<> [J.toJSON e])
           _ -> pure ()
         case J.decode . J.encode <$> evt of
-          Right (Just (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi_))) -> atomically $ modifyTVar' updates (<> [(itemText' ci, itemText' <$> prevCi_)])
+          Right (Just (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi))) -> atomically $ modifyTVar' updates (<> [(itemText' ci, itemText' prevCi)])
           _ -> pure ()
         pure evt
       itemText' :: ChatItem c d -> T.Text
@@ -814,11 +814,9 @@ testDirectMessageUpdatePrevItem ps = do
       bob <# "@alice [edited] hello again"
       alice <# "bob> hello again"
       alice #$> ("/_get chat @2 count=1", chat, [(0, "hello again")])
-      readTVarIO updates `shouldReturn` [("hello there", Just "hello")]
+      readTVarIO updates `shouldReturn` [("hello there", "hello")]
       [J.Object evt] <- readTVarIO encoded
-      KM.member "chatItem" evt `shouldBe` False
-      Just (J.Object upd) <- pure $ KM.lookup "chatItemUpdate" evt
-      KM.member "prevChatItem" upd `shouldBe` True
+      KM.member "chatItemUpdate" evt `shouldBe` True
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
 testDirectMessageDelete =

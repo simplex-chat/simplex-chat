@@ -230,12 +230,12 @@ Message was deleted by another user.
 
 Message was updated by another user.
 
-`chatItem` has `prevChatItem`, the message before the update. When the bot deleted the message locally, the update creates it again, and it is sent in [NewChatItems](#newchatitems) event.
+`chatItemUpdate` has `prevChatItem`, the message before the update. When the bot deleted the message locally, the update creates it again, and it is sent in [NewChatItems](#newchatitems) event.
 
 **Record type**:
 - type: "chatItemUpdated"
 - user: [User](./TYPES.md#user)
-- chatItem: [AChatItemUpdate](./TYPES.md#achatitemupdate)
+- chatItemUpdate: [AChatItemUpdate](./TYPES.md#achatitemupdate)
 
 ---
 

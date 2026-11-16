@@ -726,7 +726,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     . mapM (\(ci, content') -> (ci,) <$> updateDirectChatItem' db user contactId ci content' False False Nothing Nothing)
                     . mdeUpdatedCI e
               case ci_ of
-                Just (ci, ci') -> toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect SMDRcv (DirectChat ct) ci' (Just ci))
+                Just (ci, ci') -> toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect SMDRcv (DirectChat ct) ci' ci)
                 _ -> do
                   toView $ CEvtContactRatchetSync user ct (RatchetSyncProgress rss cStats)
                   createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError mde n) Nothing
@@ -1229,7 +1229,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   . mapM (\(ci, content') -> (ci,) <$> updateGroupChatItem db user groupId ci content' False False Nothing)
                   . mdeUpdatedCI e
             case ci_ of
-              Just (ci, ci') -> toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo' scopeInfo) ci' (Just ci))
+              Just (ci, ci') -> toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo' scopeInfo) ci' ci)
               _ -> do
                 toView $ CEvtGroupMemberRatchetSync user gInfo' m' (RatchetSyncProgress rss cStats)
                 createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvDecryptionError mde n) Nothing
@@ -1578,7 +1578,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                               ci' <- withStore' $ \db -> do
                                 addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (currentTs, mc)
                                 updateDirectChatItem' db user contactId ci (CIRcvMsgContent mc) True False Nothing Nothing
-                              toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect SMDRcv (DirectChat ct) ci' (Just ci))
+                              toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect SMDRcv (DirectChat ct) ci' ci)
                               pure $ Just $ aChatItem ci'
                           | otherwise -> pure $ Just $ aChatItem ci
                         _ -> pure Nothing
@@ -1607,7 +1607,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                                   ci' <- withStore' $ \db -> do
                                     addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (currentTs, mc)
                                     updateGroupChatItem db user groupId ci (CIRcvMsgContent mc) True False Nothing
-                                  toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo Nothing) ci' (Just ci))
+                                  toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo Nothing) ci' ci)
                                   pure $ Just $ aChatItem ci'
                                 else pure $ Just $ aChatItem ci
                         _ -> pure Nothing
@@ -2129,7 +2129,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         let ciR = (ci :: ChatItem 'CTDirect 'MDRcv) {reactions}
                             edited = itemLive /= Just True
                         (ciR,) <$> updateDirectChatItem' db user contactId ciR content edited live Nothing (Just msgId)
-                      toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect SMDRcv (DirectChat ct) ci' (Just ciR))
+                      toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect SMDRcv (DirectChat ct) ci' ciR)
                       startUpdatedTimedItemThread user (ChatRef CTDirect contactId Nothing) ci ci'
                     else toView $ CEvtChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
             _ -> messageError "x.msg.update: contact attempted invalid message update"
@@ -2407,7 +2407,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
                 updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
                 updateGroupCIMentions db gInfo ci' ciMentions
-              toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci' (Just ci))
+              toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci' ci)
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
               pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
             else do

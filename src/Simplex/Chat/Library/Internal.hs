@@ -708,7 +708,7 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
 updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
 updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
   (ci, ci') <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
-  toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect msgDir (DirectChat ct) ci' (Just ci))
+  toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect msgDir (DirectChat ct) ci' ci)
 
 callStatusItemContent :: User -> Contact -> ChatItemId -> WebRTCCallStatus -> CM (Maybe ACIContent)
 callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do

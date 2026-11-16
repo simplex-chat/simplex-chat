@@ -297,12 +297,12 @@ This file is generated automatically.
 
 ## AChatItemUpdate
 
-Updated message, with the message before the update; `prevChatItem` is absent in events from earlier versions.
+Updated message, with the message before the update.
 
 **Record type**:
 - chatInfo: [ChatInfo](#chatinfo)
 - chatItem: [ChatItem](#chatitem)
-- prevChatItem: [ChatItem](#chatitem)?
+- prevChatItem: [ChatItem](#chatitem)
 
 
 ---

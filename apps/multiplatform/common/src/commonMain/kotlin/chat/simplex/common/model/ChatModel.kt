@@ -699,7 +699,7 @@ object ChatModel {
       return  itemAdded
     }
 
-    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem?): Boolean {
+    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem): Boolean {
       var itemAdded = false
       if (cInfo.groupChatScope() == null) {
         val i = getChatIndex(rhId, cInfo.id)
@@ -730,9 +730,8 @@ object ChatModel {
         }
       }
       withContext(Dispatchers.Main) {
-        if (chatItemBelongsToScope(cInfo, cItem) && !replaceLoadedChatItem(cItem) && prevItem == null) {
-          addToChatItems(cItem)
-          itemAdded = true
+        if (chatItemBelongsToScope(cInfo, cItem)) {
+          replaceLoadedChatItem(cItem)
         }
       }
       return itemAdded
@@ -3554,7 +3553,7 @@ class AChatItem (
 class AChatItemUpdate (
   val chatInfo: ChatInfo,
   val chatItem: ChatItem,
-  val prevChatItem: ChatItem? = null
+  val prevChatItem: ChatItem
 )
 
 @Serializable
@@ -4293,8 +4292,8 @@ sealed class CIStatus {
   }
 }
 
-fun unreadCountChange(prevItem: ChatItem?, cItem: ChatItem, counted: (ChatItem) -> Boolean): Int =
-  if (prevItem == null) 0 else (if (counted(cItem)) 1 else 0) - (if (counted(prevItem)) 1 else 0)
+fun unreadCountChange(prevItem: ChatItem, cItem: ChatItem, counted: (ChatItem) -> Boolean): Int =
+  (if (counted(cItem)) 1 else 0) - (if (counted(prevItem)) 1 else 0)
 
 fun chatItemUpdateNotifies(cItem: ChatItem, itemAdded: Boolean): Boolean =
   itemAdded || (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed)

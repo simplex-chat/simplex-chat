@@ -1289,7 +1289,7 @@ testXFTPRcvRelaysNotApproved ps = do
   let hook _ evt = do
         case evt of
           Right CEvtRcvFileDescrReady {} -> atomically $ writeTVar descrReady True
-          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi_)) -> atomically $ modifyTVar' updates (<> [(fileStatus' ci, fileStatus' <$> prevCi_)])
+          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi)) -> atomically $ modifyTVar' updates (<> [(fileStatus' ci, fileStatus' prevCi)])
           _ -> pure ()
         pure evt
       fileStatus' :: MsgDirectionI d => ChatItem c d -> Maybe B.ByteString
@@ -1310,7 +1310,7 @@ testXFTPRcvRelaysNotApproved ps = do
                StartsWith "ProtocolServer {scheme = SPXFTP, host = THDomainName \"localhost\" :| []",
                WithTime "alice>"
              ]
-      readTVarIO updates `shouldReturn` [(Just "rcv_invitation", Just (Just "rcv_accepted"))]
+      readTVarIO updates `shouldReturn` [(Just "rcv_invitation", Just "rcv_accepted")]
 
 testAutoAcceptFile :: HasCallStack => TestParams -> IO ()
 testAutoAcceptFile =

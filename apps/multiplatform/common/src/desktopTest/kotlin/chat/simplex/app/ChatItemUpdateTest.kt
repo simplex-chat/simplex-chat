@@ -61,16 +61,6 @@ class ChatItemUpdateTest {
   }
 
   @Test
-  fun updateWithoutPreviousItemInsertsAndKeepsCounters() = withOpenChat { chatsCtx, cInfo ->
-    chatsCtx.addChatItem(null, cInfo, rcvItem(1, "hello"))
-    assertTrue(chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(2, "without previous item"), null))
-    assertEquals(listOf(1L, 2L), chatsCtx.chatItems.value.map { it.id })
-    assertFalse(chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(2, "without previous item, read", status = CIStatus.RcvRead()), null))
-    assertEquals("without previous item, read", chatsCtx.chatItems.value.last().text)
-    assertEquals(Triple(1, 0, 1), counts(chatsCtx))
-  }
-
-  @Test
   fun countersFollowPreviousAndNewItem() = withOpenChat { chatsCtx, cInfo ->
     chatsCtx.addChatItem(null, cInfo, rcvItem(1, "hello"))
     chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(1, "hello @alice", mention = true), rcvItem(1, "hello"))

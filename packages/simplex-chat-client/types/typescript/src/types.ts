@@ -16,12 +16,12 @@ export interface AChatItem {
   chatInfo: ChatInfo
   chatItem: ChatItem
 }
-// Updated message, with the message before the update; `prevChatItem` is absent in events from earlier versions.
+// Updated message, with the message before the update.
 
 export interface AChatItemUpdate {
   chatInfo: ChatInfo
   chatItem: ChatItem
-  prevChatItem?: ChatItem
+  prevChatItem: ChatItem
 }
 
 export interface AddRelayResult {

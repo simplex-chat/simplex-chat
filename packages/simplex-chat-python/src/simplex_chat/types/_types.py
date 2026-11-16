@@ -16,12 +16,12 @@ class AChatItem(TypedDict):
     chatInfo: "ChatInfo"
     chatItem: "ChatItem"
 
-# Updated message, with the message before the update; `prevChatItem` is absent in events from earlier versions.
+# Updated message, with the message before the update.
 
 class AChatItemUpdate(TypedDict):
     chatInfo: "ChatInfo"
     chatItem: "ChatItem"
-    prevChatItem: NotRequired["ChatItem"]
+    prevChatItem: "ChatItem"
 
 class AddRelayResult(TypedDict):
     relay: "UserChatRelay"

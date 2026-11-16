@@ -3329,7 +3329,7 @@ updateFileChatItem db cxt user fileId update = do
   case (prevAci_, aci_) of
     (Nothing, Nothing) -> pure Nothing
     (Just (AChatItem c' d' _ prevCi), Just (AChatItem c d chatInfo ci))
-      | Just Refl <- testEquality c c', Just Refl <- testEquality d d' -> pure $ Just $ AChatItemUpdate c d chatInfo ci (Just prevCi)
+      | Just Refl <- testEquality c c', Just Refl <- testEquality d d' -> pure $ Just $ AChatItemUpdate c d chatInfo ci prevCi
     _ -> throwError $ SEInternalError $ "file update changed chat item presence, chat type or direction, file " <> show fileId
 
 getChatItemByGroupId :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO AChatItem
