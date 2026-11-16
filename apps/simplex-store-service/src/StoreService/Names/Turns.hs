@@ -1,22 +1,23 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | A thread that takes a turn it already holds waits forever. Label turns are taken before a code turn or a balance turn,
 -- and a balance turn is never taken with a code turn.
 module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withLabelTurns, withCodeTurn, withBalanceTurn, turnsCount, labelTurnCount, balanceTurnCount) where
 
 import Control.Concurrent.STM
-import Control.Exception (bracket, bracket_)
+import Control.Exception (bracket)
 import Data.ByteString (ByteString)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Text.Encoding (encodeUtf8)
+import Simplex.Messaging.Agent.Lock (Lock, createLock, withLock')
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 
 -- | Each lock counts the requests holding or waiting for it, and its entry goes when none are left.
-type TurnLocks = TVar (Map ByteString (TMVar (), Int))
+type TurnLocks k = TVar (Map k (Lock, Int))
 
-data Turns = Turns {labelTurns :: TurnLocks, codeTurns :: TurnLocks, balanceTurns :: TurnLocks}
+data Turns = Turns {labelTurns :: TurnLocks ByteString, codeTurns :: TurnLocks ByteString, balanceTurns :: TurnLocks RegistrationId}
 
 newTurns :: IO Turns
 newTurns = Turns <$> newTVarIO Map.empty <*> newTVarIO Map.empty <*> newTVarIO Map.empty
@@ -45,25 +46,21 @@ withCodeTurn Turns {codeTurns} = withTurn codeTurns
 
 -- | Keyed by the order the balance belongs to.
 withBalanceTurn :: Turns -> RegistrationId -> IO a -> IO a
-withBalanceTurn Turns {balanceTurns} = withTurn balanceTurns . balanceKey
+withBalanceTurn Turns {balanceTurns} = withTurn balanceTurns
 
 -- | The requests holding or waiting for the balance's turn.
 balanceTurnCount :: Turns -> RegistrationId -> STM Int
-balanceTurnCount Turns {balanceTurns} rid = maybe 0 snd . Map.lookup (balanceKey rid) <$> readTVar balanceTurns
+balanceTurnCount Turns {balanceTurns} rid = maybe 0 snd . Map.lookup rid <$> readTVar balanceTurns
 
-balanceKey :: RegistrationId -> ByteString
-balanceKey (RegistrationId rid) = encodeUtf8 rid
-
-withTurn :: TurnLocks -> ByteString -> IO a -> IO a
+withTurn :: Ord k => TurnLocks k -> k -> IO a -> IO a
 withTurn locks key action =
-  bracket (atomically enter) (const $ atomically leave) $ \lock ->
-    bracket_ (atomically $ takeTMVar lock) (atomically $ putTMVar lock ()) action
+  bracket (atomically enter) (const $ atomically leave) $ \lock -> withLock' lock "turn" action
   where
     enter = do
       held <- readTVar locks
       case Map.lookup key held of
         Just (lock, n) -> lock <$ writeTVar locks (Map.insert key (lock, n + 1) held)
         Nothing -> do
-          lock <- newTMVar ()
+          lock <- createLock
           lock <$ writeTVar locks (Map.insert key (lock, 1) held)
     leave = modifyTVar' locks (Map.update (\(lock, n) -> if n <= 1 then Nothing else Just (lock, n - 1)) key)
