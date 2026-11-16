@@ -34,7 +34,9 @@ withLabelTurns turns a@(LabelHash ha) b@(LabelHash hb) action
 
 -- | The label hashes, code hashes and balances with a holder or a waiter.
 turnsCount :: Turns -> IO Int
-turnsCount Turns {labelTurns, codeTurns, balanceTurns} = atomically $ sum <$> mapM (fmap Map.size . readTVar) [labelTurns, codeTurns, balanceTurns]
+turnsCount Turns {labelTurns, codeTurns, balanceTurns} = atomically $ (\l c b -> l + c + b) <$> size labelTurns <*> size codeTurns <*> size balanceTurns
+  where
+    size locks = Map.size <$> readTVar locks
 
 -- | The requests holding or waiting for the label hash's turn.
 labelTurnCount :: Turns -> LabelHash -> STM Int
