@@ -12,6 +12,7 @@ import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay, waitQueuedLinkUpdates)
 import ChatTests.Utils
 import Control.Concurrent.Async (concurrently_)
+import Control.Exception (finally)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as JK
 import qualified Data.Aeson.KeyMap as JM
@@ -1120,7 +1121,7 @@ nameFixture fixture TestCC {chatController = cc} cmd = do
   let owsf = tagged2owsf json
   owsf2tagged owsf `shouldBe` json
   testGenerate ("apps/multiplatform/common/src/desktopTest/resources/names/" <> fixture <> ".json") (prettyJSON json)
-  testGenerate ("apps/ios/SimpleX Unit Tests/names/" <> fixture <> ".json") (prettyJSON owsf)
+    `finally` testGenerate ("apps/ios/SimpleX Unit Tests/names/" <> fixture <> ".json") (prettyJSON owsf)
 
 tagged2owsf :: J.Value -> J.Value
 tagged2owsf = \case

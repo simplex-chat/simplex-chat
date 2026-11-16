@@ -46,7 +46,7 @@ Files
 2. `stableJSON`: values of volatile keys replaced.
 3. `prettyJSON`: one object field or array element per line.
 4. Swift form: `tagged2owsf`, checked by `owsf2tagged (tagged2owsf v) == v`.
-5. `testGenerate` of tests/APIDocs.hs, for the Kotlin file, then the Swift file: the file written, the test failed when it differs.
+5. `testGenerate` of tests/APIDocs.hs, for the Kotlin file, then, also after its failure (`finally`), the Swift file: the file written, the test failed when it differs.
 
 `tagged2owsf`, in tests/ChatTests/Names.hs
 
