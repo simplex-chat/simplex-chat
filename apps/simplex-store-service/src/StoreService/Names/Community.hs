@@ -32,7 +32,7 @@ import StoreService.Names.Registration (TermsHash)
 import StoreService.Names.Signatures (AgreedTerms (..))
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
-communityFor NamesConfig {nCommunity} (LabelHash h) = M.lookup h nCommunity
+communityFor NamesConfig {nCommunity} lh = M.lookup lh nCommunity
 
 termsFor :: Bool -> Terms -> AgreedTerms
 termsFor listed Terms {tmHash} = AgreedTerms {atCommunityName = listed, atTermsHash = tmHash}

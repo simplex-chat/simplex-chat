@@ -122,7 +122,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.Names.Record (USDCents)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
+import Simplex.Messaging.SimplexName (SimplexTLD)
 import Simplex.Messaging.Util (catchOwn, catchOwn', raceAny_, safeDecodeUtf8, stateTVar', tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
@@ -353,7 +353,7 @@ logNamePolicy NamesConfig {nCommunity} ct =
     Right policy -> do
       logNote $ "names: name policy " <> addressText policy
       forM_ (M.toList nCommunity) $ \(h, text) ->
-        communityName ct (LabelHash h) >>= \case
+        communityName ct h >>= \case
           Right False -> logWarn $ "names: [community] lists a name the name policy does not list, so it is sold as a plain name: " <> text
           Right True -> pure ()
           Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> text <> ": " <> tshow e

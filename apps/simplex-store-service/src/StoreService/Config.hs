@@ -41,7 +41,6 @@ import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy
 import Data.Bifunctor (first)
 import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
-import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit)
 import Data.Ini (Ini, iniGlobals, iniParser, keyValueParser, keys, lookupValue, sectionParser, sections)
@@ -185,8 +184,8 @@ data NamesConfig = NamesConfig
     -- | The owner record edits relayed for one name in any 365 days, each a transaction whose gas the service pays.
     nRecordEditsPerYear :: Int,
     nMinPriceCentsPerYear :: Int,
-    -- | What each community name is for, keyed by the label hash's bytes, as search receives a name.
-    nCommunity :: Map ByteString Text,
+    -- | What each community name is for, keyed by the label hash, as search receives a name.
+    nCommunity :: Map LabelHash Text,
     nChain :: ChainConfig
   }
   deriving (Eq, Show)
@@ -714,8 +713,7 @@ parseConfig ini = do
       valid <- first (labelRefusal k) (validLabel tld label)
       when (T.null text || T.length text > maxCommunityTextLength) $ Left (k <> " must be 1 to " <> show maxCommunityTextLength <> " characters")
       when (T.any invisible text) $ Left (k <> " has a control, format or line separator character")
-      let LabelHash h = labelHash valid
-      pure (h, text)
+      pure (labelHash valid, text)
     invisible c = isControl c || generalCategory c `elem` [Format, LineSeparator, ParagraphSeparator]
     labelRefusal k = \case
       LELength -> k <> " must be " <> show minNameLength <> " to " <> show maxNameLength <> " characters"

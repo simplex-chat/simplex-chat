@@ -771,9 +771,7 @@ testFormats = withOrders $ \ctx -> do
 
 -- | The name on the operator's community list.
 listName :: Text -> NamesConfig -> NamesConfig
-listName label cfg = cfg {nCommunity = M.insert lh bakers (nCommunity cfg)}
-  where
-    LabelHash lh = labelHash label
+listName label cfg = cfg {nCommunity = M.insert (labelHash label) bakers (nCommunity cfg)}
 
 threeYears :: NamesConfig -> NamesConfig
 threeYears cfg = cfg {nYears = 3}

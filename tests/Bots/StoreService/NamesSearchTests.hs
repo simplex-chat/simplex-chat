@@ -55,7 +55,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Links (LinkKind (..), linkMaxBytes)
@@ -117,7 +117,7 @@ aliceCommunity :: Text
 aliceCommunity = "bakers and bakeries in Lisbon"
 
 listAlice :: NamesConfig -> NamesConfig
-listAlice cfg = cfg {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) aliceCommunity}
+listAlice cfg = cfg {nCommunity = M.singleton alice aliceCommunity}
 
 -- | The answer as it reads for a name the policy lists, with its text from the ini and, when available, the policy's community terms.
 listed :: Answer -> Answer
