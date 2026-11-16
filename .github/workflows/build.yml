@@ -996,7 +996,7 @@ jobs:
 # =========================
 
   build-macos:
-    name: "${{ matrix.should_run && format('{0} (CLI,Desktop{1}), GHC: {2}', matrix.os, matrix.ios && ',iOS' || '', matrix.ghc) || format('{0} (iOS)', matrix.os) }}"
+    name: "${{ matrix.os }} (CLI,Desktop,iOS), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
     if: (needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true') || needs.maybe-release.outputs.ios == 'true'
     runs-on: ${{ matrix.os }}
@@ -1017,13 +1017,11 @@ jobs:
             ios: ${{ needs.maybe-release.outputs.ios == 'true' }}
     steps: &macos-steps
       - name: Checkout Code
-        if: matrix.should_run == true || matrix.ios == true
         uses: actions/checkout@v3
         with:
           submodules: recursive
 
       - name: Point Command Line Tools SDK to Xcode SDK
-        if: matrix.should_run == true || matrix.ios == true
         shell: bash
         run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 

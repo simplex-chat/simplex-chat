@@ -31,10 +31,7 @@ build-macos
   - ios
 - matrix field `should_run`: full matrix and haskell
 - matrix field `ios`: ios
-- name:
-  - `macos-latest (CLI,Desktop), GHC: <ghc>`
-  - `macos-latest (CLI,Desktop,iOS), GHC: <ghc>`
-  - `macos-latest (iOS)`
+- name: `macos-latest (CLI,Desktop,iOS), GHC: <ghc>`
 - steps: anchor `macos-steps`
 - concurrency: anchor `macos-concurrency`
 
@@ -54,11 +51,8 @@ releases, publish
 
 ## Steps of build-macos and build-macos-intel
 
-"Checkout Code"
-- when `should_run` or `ios`
-
-"Point Command Line Tools SDK to Xcode SDK"
-- when `should_run` or `ios`
+"Checkout Code", "Point Command Line Tools SDK to Xcode SDK"
+- always: each job runs only when its steps need the code
 
 steps from "Compute toolchain cache key" to "Save -O0 build directory to cache"
 - unchanged
@@ -117,4 +111,5 @@ scripts/ci/ios-sim/README.md
 
 - dispatch on `ep/ci-one-macos-job`, base master: build-linux runs; build-macos and build-macos-intel are skipped
 - dispatch on a branch with one file added under `apps/ios` on top of `ep/ci-one-macos-job`, base `ep/ci-one-macos-job`: build-macos runs the iOS steps only; build-linux and build-macos-intel are skipped
+- CLI steps, then iOS steps on one runner: dispatch on a branch with one file added under `apps/ios` and `should_run: true` in the build-macos matrix entry, on top of `ep/ci-one-macos-job`, base `ep/ci-one-macos-job`
 - full matrix: from the expressions of the job conditions and matrix fields
