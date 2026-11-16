@@ -297,8 +297,8 @@ noOwnerHint gName =
 
 runGroupCmd :: ChatController -> Turns -> Bool -> Int -> (MoneyCmd -> IO (Either Text Text)) -> GroupId -> GroupCmd -> IO ()
 runGroupCmd cc turns namesOn nameCodesPerDay runMoney groupId = \case
-  GCIssue bt months uses ->
-    issueOneCode cc bt months CPSFree uses >>= \case
+  GCIssue bt months uses status ->
+    issueOneCode cc bt months status uses >>= \case
       Left _ -> reply issueFailedText
       Right (code, badgeCodeId)
         | not (hasTracker uses) -> reply ("Code: " <> formatBadgeCode code)
@@ -308,8 +308,8 @@ runGroupCmd cc turns namesOn nameCodesPerDay runMoney groupId = \case
               >>= mapM_ (\iid -> withDB' "setCodeGroupItem" cc $ \db -> setCodeGroupItem db badgeCodeId iid now)
   GCBulk bt months count -> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
   GCIssueName {} | not namesOn -> reply namesOffText
-  GCIssueName len years ->
-    withinNameCodes $ issueNameCode cc IssuedInGroup len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode)
+  GCIssueName len years status ->
+    withinNameCodes $ issueNameCode cc IssuedInGroup len years status >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode)
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> do
     outcome <- either id id <$> revokeWithTracker cc code

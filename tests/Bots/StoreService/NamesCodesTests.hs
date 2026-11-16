@@ -300,10 +300,10 @@ testReleaseSpend = withOrders $ \turns st -> do
 testGroupNameCommands :: IO ()
 testGroupNameCommands = do
   let p = groupCmdAction GRAdmin
-  p "/issue name 8" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2)
-  p "/issue name 63" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 2)
-  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 2)
-  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 10)
+  p "/issue name 8" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2 CPSFree)
+  p "/issue name 63" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 2 CPSFree)
+  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 2 CPSFree)
+  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 10 CPSFree)
   map p ["/bulk name 7 count 3", "/bulk name 12 years 2 count 100", "/bulk name 6 count 1"] `shouldBe` replicate 3 bulkUsage
   groupCmdAction GRMember "/issue name 8" `shouldBe` IgnoreMsg
 

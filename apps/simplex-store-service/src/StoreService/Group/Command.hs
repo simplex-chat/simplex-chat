@@ -33,6 +33,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (BadgeCode, NameLength, NamePrepaidCode, maxNameLength, minNameLength, minNameYears, nameLength, parseBadgeCode)
+import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
@@ -46,9 +47,9 @@ maxMonths = 12
 maxNameYears = 10
 
 data GroupCmd
-  = GCIssue BadgeType Int Int
+  = GCIssue BadgeType Int Int BadgeCodePaymentStatus
   | GCBulk BadgeType Int Int
-  | GCIssueName NameLength Int
+  | GCIssueName NameLength Int BadgeCodePaymentStatus
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
   | GCMoney MoneyCmd
@@ -81,7 +82,7 @@ cmdActionP = A.choice (map cmdP [minBound .. maxBound])
 
 cmdArgsP :: CmdTag -> A.Parser GroupCmd
 cmdArgsP = \case
-  CTIssue -> uncurry GCIssueName <$> nameCodeP <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt
+  CTIssue -> uncurry GCIssueName <$> nameCodeP <*> pure CPSFree <|> GCIssue <$> badgeTypeP <*> optP monthsOpt <*> optP usesOpt <*> pure CPSFree
   CTBulk -> GCBulk <$> badgeTypeP <*> optP monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP <|> GCRevokeName <$> prepaidCodeP
   CTBalance -> GCMoney <$> balanceArgsP
