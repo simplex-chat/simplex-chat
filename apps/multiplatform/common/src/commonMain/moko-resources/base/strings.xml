@@ -3371,4 +3371,6 @@
   <string name="v7_1_channels_descr">Add moderators and sign every message.</string>
   <string name="v7_1_flat_layout">Flat layout and markdown</string>
   <string name="v7_1_flat_layout_descr">Enable in Appearance settings.</string>
+  <string name="v7_1_4_security_audit">New security audit by Trail of Bits</string>
+  <string name="v7_1_4_security_audit_descr">Please ask your contacts to upgrade.\nReport will be public soon.</string>
 </resources>
