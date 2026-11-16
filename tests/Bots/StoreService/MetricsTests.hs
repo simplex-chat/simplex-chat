@@ -59,9 +59,8 @@ storeMetricsTests = describe "StoreService: metrics" $ do
 
 testCensus :: TVar ChaChaDRG -> IO ()
 testCensus g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
-  c <- fakeChainClient g node
-  ct <- newContracts st TLDSimplex minPriceCentsPerYear c
-  let ns = NamesSource {nsChain = c, nsContracts = ct}
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  let ns = NamesSource {nsContracts = ct}
       answer to signature args = answerCall node to (selector signature <> args) . Returns
       str t = abiTuple [Dynamic (abiBytes $ encodeUtf8 t)]
       texts n (contact, channel) =
@@ -269,9 +268,8 @@ testNamesCounts = withServiceStore $ \st -> do
 
 testChainRead :: TVar ChaChaDRG -> IO ()
 testChainRead g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
-  c <- fakeChainClient g node
-  ct <- newContracts st TLDSimplex minPriceCentsPerYear c
-  let ns = NamesSource {nsChain = c, nsContracts = ct}
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  let ns = NamesSource {nsContracts = ct}
   registrar <- addressFromPrivateKey g fakeRegistrarKey
   answerCall node fakeSponsor (selector "registrarAllowance(address)" <> addressWord registrar) $ Returns $ uint256 (123456 * 10 ^ (16 :: Int) + 5 :: Integer)
   setFault node "eth_getBalance" $ Answers $ J.String "0x15af1d78b58c40000"
@@ -302,14 +300,13 @@ testChainRead g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 
 testScrape :: TVar ChaChaDRG -> IO ()
 testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
-  c <- fakeChainClient g node
-  ct <- newContracts st TLDSimplex minPriceCentsPerYear c
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   listedOk <- newTVarIO M.empty
   webhookAt <- newTVarIO M.empty
   v <- newTVarIO noChainRead
   census <- newTVarIO noCensusRead
   let badgesOnly = MetricsEnv {meStore = st, meProviders = ["crypto"], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}
-      ns = NamesSource {nsChain = c, nsContracts = ct}
+      ns = NamesSource {nsContracts = ct}
   withApp (metricsApp badgesOnly v census) $ \client -> do
     r <- webGet client "/metrics"
     (statusOf r, lookup hContentType (responseHeaders r)) `shouldBe` (200, Just "text/plain; version=0.0.4; charset=utf-8")

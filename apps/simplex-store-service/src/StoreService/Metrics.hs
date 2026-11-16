@@ -45,8 +45,8 @@ import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (raceAny_, tshow)
 import StoreService.Config (ListenerConfig)
 import StoreService.Names.Census (Census (..), CensusName (..), nameCensus, recordsLabel)
-import StoreService.Names.Chain (Block (..), ChainClient, latestBlock)
-import StoreService.Names.Contracts (Contracts, RegistrarFunds (..), registrarFunds, termsHeld)
+import StoreService.Names.Chain (Block (..), latestBlock)
+import StoreService.Names.Contracts (Contracts (..), RegistrarFunds (..), registrarFunds, termsHeld)
 import StoreService.Names.Store (NamesCounts (..), namesCounts)
 import StoreService.Poller (expiryGrace)
 import StoreService.Safely (safely)
@@ -64,7 +64,7 @@ data MetricsEnv = MetricsEnv
     meNames :: Maybe NamesSource
   }
 
-data NamesSource = NamesSource {nsChain :: ChainClient, nsContracts :: Contracts}
+data NamesSource = NamesSource {nsContracts :: Contracts}
 
 -- | Each part keeps its last value while its read fails.
 data ChainRead = ChainRead
@@ -89,9 +89,9 @@ metricsHost :: String
 metricsHost = "127.0.0.1"
 
 readChain :: NamesSource -> TVar ChainRead -> IO ()
-readChain NamesSource {nsChain, nsContracts} v = do
+readChain NamesSource {nsContracts} v = do
   funds <- registrarFunds nsContracts
-  head' <- latestBlock nsChain
+  head' <- latestBlock $ ctChain nsContracts
   terms <- termsHeld nsContracts
   now <- getCurrentTime
   let ok = isRight funds && isRight head' && isRight terms
@@ -126,8 +126,8 @@ censusInterval :: Int
 censusInterval = 300 * 1000000
 
 readCensus :: NamesSource -> TVar CensusRead -> IO ()
-readCensus NamesSource {nsChain, nsContracts} v = do
-  counted <- nameCensus nsChain nsContracts
+readCensus NamesSource {nsContracts} v = do
+  counted <- nameCensus nsContracts
   case counted of
     Right census -> do
       now <- getCurrentTime

@@ -185,7 +185,7 @@ started :: Ctx -> IO W
 started wCtx@Ctx {cNode, cStore, cRandom, cClock, cOrders} = do
   wChain <- newChainClient cRandom $ fakeChainConfig cNode
   wSender <- newSender cRandom wChain cStore (readIORef cClock)
-  wWorker <- newWorker cOrders wChain wSender
+  wWorker <- newWorker cOrders wSender
   pure W {wCtx, wChain, wSender, wWorker}
 
 minAge, maxAge :: Word64

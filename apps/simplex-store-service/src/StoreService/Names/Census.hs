@@ -23,7 +23,7 @@ import Simplex.Messaging.Eth.Address (Address, unAddress)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError, latestBlock)
-import StoreService.Names.Contracts (Contracts, callAt)
+import StoreService.Names.Contracts (Contracts (..), callAt)
 
 data Records = RNone | RContact | RChannel | RBoth | ROtherResolver
   deriving (Eq, Ord, Show, Enum, Bounded)
@@ -65,8 +65,8 @@ channelKey = "simplex.channel"
 
 -- | Every live name and subname at the latest block: names while nameExpires is after the block's time, subnames while
 -- the subname registrar names an owner. A name whose resolver is not the configured one is counted without its records.
-nameCensus :: ChainClient -> Contracts -> IO (Either ChainError Census)
-nameCensus c@ChainClient {ccConfig = ChainConfig {cBaseRegistrar, cResolver}} ct = runExceptT $ do
+nameCensus :: Contracts -> IO (Either ChainError Census)
+nameCensus ct@Contracts {ctChain = c@ChainClient {ccConfig = ChainConfig {cBaseRegistrar, cResolver}}} = runExceptT $ do
   Block {blockNumber, blockTimestamp} <- ExceptT $ latestBlock c
   let at = AtBlock blockNumber
   registry <- ExceptT $ callAt ct at cBaseRegistrar ("ens()", "") decodeAddress

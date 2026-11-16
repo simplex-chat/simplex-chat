@@ -4,7 +4,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Contracts
-  ( Contracts (ctDeadline, ctTermsBackoff, ctViewSlots),
+  ( Contracts (ctChain, ctDeadline, ctTermsBackoff, ctViewSlots),
     NameStatus (..),
     RegisteredName (..),
     NameRecords (..),

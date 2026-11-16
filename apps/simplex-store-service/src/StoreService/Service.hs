@@ -329,7 +329,7 @@ storeService opts serviceCfg baseCfg env = do
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       nameLanes <- maybe (pure []) namesLanes namesEnv
       let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map (textEncode . pProvider) providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = namesSource <$> namesEnv}
-          namesSource NamesEnv {neChain, neContracts} = NamesSource {nsChain = neChain, nsContracts = neContracts}
+          namesSource NamesEnv {neContracts} = NamesSource {nsContracts = neContracts}
           metricsLane = [runMetrics (listener sc) port metricsEnv | Just port <- [lMetricsPort $ listener sc]]
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes <> metricsLane
 
@@ -372,8 +372,8 @@ logNamePolicy NamesConfig {nCommunity} ct =
 -- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
 -- terms fetch at the start and then hourly.
 namesLanes :: NamesEnv -> IO [IO ()]
-namesLanes ne@NamesEnv {neChain, neContracts, neSender, neRecords} = do
-  worker <- newWorker (ordersEnv ne) neChain neSender
+namesLanes ne@NamesEnv {neContracts, neSender, neRecords} = do
+  worker <- newWorker (ordersEnv ne) neSender
   pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runTermsFetch neContracts]
 
 seedServiceCatalog :: DBStore -> IO ()
