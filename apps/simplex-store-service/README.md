@@ -896,8 +896,8 @@ record edits in the database. With `[names]`, the registrar key's ETH balance, i
 allowance, the node's latest block and the terms links are read from the node at start and then
 every minute, and a scrape answers the last read, so a slow or failing node never delays a scrape.
 A part that fails keeps its last value, sets `simplex_store_names_chain_read_ok` to 0 and logs a
-warning. A port that cannot be listened on is logged as an error and leaves the rest of the
-service running.
+warning. When the metrics port cannot be listened on, the service stops, as it does for a web
+listener's port.
 
 | Metric | Value |
 |---|---|
