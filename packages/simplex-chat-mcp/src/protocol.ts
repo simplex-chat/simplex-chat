@@ -66,6 +66,23 @@ export interface TurnRequest {
   model?: string
   effort?: string
   step?: Step
+  text?: TextBatch
+  usage?: string
+  switched?: boolean
+  limits?: Limits
+  statusLine?: boolean
+}
+
+// spec: spec/architecture.md#protocol-limits
+export interface Limits {
+  fiveHour?: LimitWindow
+  week?: LimitWindow
+}
+
+// spec: spec/architecture.md#protocol-limits
+export interface LimitWindow {
+  percent: number
+  resetsAt: number
 }
 
 // spec: spec/architecture.md#protocol-step
@@ -75,9 +92,17 @@ export interface Step {
   end?: boolean
 }
 
+// spec: spec/architecture.md#protocol-textbatch
+export interface TextBatch {
+  message: string
+  index: number
+  final: boolean
+  delta: string
+}
+
 // spec: spec/architecture.md#protocol-attachline
 export interface AttachLine {
-  prompt?: {text: string; from: string; item: number; file?: string; replyTo?: {item?: number; from?: string}}
+  prompt?: {text: string; from: string; item: number; file?: string; replyTo?: {item?: number; from?: string}; edited?: boolean}
   permission?: {requestId: string; behavior: "allow" | "deny"}
   tools?: ApprovedTool[]
 }

@@ -13,6 +13,7 @@ import SimpleXChat
 // Spec: spec/client/chat-view.md#DeletedItemView
 struct DeletedItemView: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalMessageColumn) private var column
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
 
@@ -29,12 +30,14 @@ struct DeletedItemView: View {
                         .padding(.horizontal, 12)
                 }
             }
+            .fixedSize(horizontal: true, vertical: false)
             .padding(.leading, 12)
             .padding(.trailing, inlineMeta == nil ? 12 : 0)
             .padding(.vertical, 6)
             .background(chatItemFrameColor(chatItem, theme))
             .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
             .textSelection(.disabled)
+            .padding(.leading, inlineMeta == nil ? terminalPillStart(column) : 0)
         }
     }
 }
