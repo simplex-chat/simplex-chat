@@ -42,7 +42,7 @@ import StoreService.Names.Store (CleanupKept (..), LateAlert (..), LateCredit (.
 import StoreService.Orders (decide, expireOverdue, settleOrder, signalReceived)
 import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
 import StoreService.Safely (safely, safelyWith)
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, paymentHolds, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
@@ -549,19 +549,23 @@ lateAlertText LateAlert {laProviderRef, laState = s@LateCreditState {lsCoin, lsR
 
 -- | Cancel the order at the provider first, so the buyer can no longer pay it.
 closedAtProvider :: PollerEnv -> UTCTime -> OverdueInvoice -> IO Bool
-closedAtProvider env@PollerEnv {peProviders} now oi@OverdueInvoice {oiProvider, oiProviderRef = ref} =
+closedAtProvider env@PollerEnv {peStore, peProviders} now oi@OverdueInvoice {oiInvoiceId, oiProvider, oiProviderRef = ref} =
   safelyWith ("badge poller: cancelling " <> tshow oiProvider <> " invoice " <> ref) False $
     case find ((== oiProvider) . pProvider) peProviders of
       Nothing -> uncancelled env now oi "no provider is configured for it"
       Just p ->
-        pCancelInvoice p ref >>= \case
-          Right () -> pure True
-          -- The provider won't cancel an order that is already paid or closed. Reading it shows which.
-          Left cancelError ->
-            pReadInvoice p ref >>= \case
-              Right (Just signal) -> False <$ settleMoved env oiProvider now (ref, signal)
-              Right Nothing -> uncancelled env now oi (providerErrorText cancelError)
-              Left readError -> uncancelled env now oi (providerErrorText cancelError <> "; reading it failed too: " <> providerErrorText readError)
+        getInvoice peStore oiInvoiceId >>= \case
+          Just InvoiceRow {irStatus = ISOpen, irPayment}
+            | not (any paymentHolds irPayment) ->
+                pCancelInvoice p ref >>= \case
+                  Right () -> pure True
+                  -- The provider won't cancel an order that is already paid or closed. Reading it shows which.
+                  Left cancelError ->
+                    pReadInvoice p ref >>= \case
+                      Right (Just signal) -> False <$ settleMoved env oiProvider now (ref, signal)
+                      Right Nothing -> uncancelled env now oi (providerErrorText cancelError)
+                      Left readError -> uncancelled env now oi (providerErrorText cancelError <> "; reading it failed too: " <> providerErrorText readError)
+          _ -> pure False
 
 -- | After 72 hours the poller only reads an order when a webhook asks. If an older order still
 -- can't be cancelled after an hour of trying, mark it expired here and log an error.

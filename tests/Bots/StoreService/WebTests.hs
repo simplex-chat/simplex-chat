@@ -79,7 +79,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (toLower)
 import Data.Either (isLeft)
 import Data.Functor ((<&>))
-import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef)
+import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Int (Int64)
 import Data.List (isInfixOf, sort, sortOn)
 import qualified Data.Map.Strict as Map
@@ -324,6 +324,7 @@ badgeWebTests = do
     it "cancels at a provider that keeps its invoice payable, then expires it" testSweepCancelsBeforeExpiring
     it "keeps an invoice open while its provider refuses the cancel" testSweepKeepsOpenWhenCancelFails
     it "settles an invoice past the settle window whose cancel is refused" testSweepSettlesWhatItCannotCancel
+    it "leaves uncancelled an invoice paid after the sweep listed it" testSweepSkipsAnInvoicePaidMeanwhile
     it "expires an invoice whose cancel answer was lost, from the read that follows" testSweepExpiresWhatAReadShowsCancelled
     it "expires an invoice past the settle window once its cancel has failed for an hour, and reports it" testSweepGivesUpPastTheWindow
     it "cancels overdue invoices oldest first, keeping the failures of those left for later" testSweepKeepsFailuresBeyondTheCap
@@ -3348,6 +3349,23 @@ testSweepSettlesWhatItCannotCancel = bounded "sweep settles uncancelled" $ withP
   runOnePass poller
   invoiceStatus (weStore env) iid `shouldReturn` ISPaid
   stubCalls ref `shouldReturn` [StubCancel "p-old", StubRead "p-old"]
+
+testSweepSkipsAnInvoicePaidMeanwhile :: IO ()
+testSweepSkipsAnInvoicePaidMeanwhile = do
+  onCancel <- newIORef (pure ())
+  let stripeCancelling ref =
+        let p = (stubProvider ref) {pProvider = PPStripe}
+         in p {pCancelInvoice = \r -> join (readIORef onCancel) >> pCancelInvoice p r}
+  bounded "sweep skips an invoice paid meanwhile" $ withStubPollerOf stripeCancelling raceHold $ \ref poller env _ -> do
+    passListing ref poller
+    seedBadgePrice (weStore env) "price1"
+    older <- seedPastWindow (weStore env) 1 "p-cancelled" PPStripe
+    paidMeanwhile <- seedPastWindow (weStore env) 2 "p-paid-meanwhile" PPStripe
+    writeIORef onCancel $ void $ settleOrder (weStore env) (weWaiters env) Nothing paidMeanwhile settledSignal settleAt
+    runOnePass poller
+    invoiceStatus (weStore env) older `shouldReturn` ISExpired
+    invoiceStatus (weStore env) paidMeanwhile `shouldReturn` ISPaid
+    (\calls -> [r | StubCancel r <- calls]) <$> stubCalls ref `shouldReturn` ["p-cancelled"]
 
 testSweepExpiresWhatAReadShowsCancelled :: IO ()
 testSweepExpiresWhatAReadShowsCancelled = bounded "sweep reads a cancel" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
