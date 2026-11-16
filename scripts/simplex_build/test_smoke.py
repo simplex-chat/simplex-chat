@@ -327,7 +327,7 @@ class SmokeTest(unittest.TestCase):
             commands = self.apk_run(verify_returncode=0, pidof="1234\n", database=self.root / "old")
         self.assertEqual(opened, [("push", self.root / "old"), ("open",)])
         install = next(c for c in commands if c[:2] == ["adb", "install"])
-        self.assertEqual(install[2], "-g")
+        self.assertEqual(install[2:4], ["--no-incremental", "-g"])
 
     def test_signed_apk_is_installed_as_it_is(self):
         commands = self.apk_run(verify_returncode=0, pidof="1234\n")
@@ -1100,11 +1100,11 @@ class AndroidUiTest(unittest.TestCase):
         self.assertEqual(
             steps,
             [
-                f"adb install -g {self.work}/signed-v7.0.3-simplex-aarch64.apk",
+                f"adb install --no-incremental -g {self.work}/signed-v7.0.3-simplex-aarch64.apk",
                 "adb shell am start -W -n chat.simplex.app/.MainActivity",
                 "onboarding",
                 "screenshot simplex-aarch64.apk.v7.0.3.png",
-                f"adb install -r -g {self.work}/signed-simplex-aarch64.apk",
+                f"adb install --no-incremental -r -g {self.work}/signed-simplex-aarch64.apk",
             ],
         )
         self.assertEqual(

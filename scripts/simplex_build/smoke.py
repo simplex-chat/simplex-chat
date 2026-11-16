@@ -680,13 +680,13 @@ def old_release_apk(apk: Path, work: Path) -> Path:
 def install_over_old_release(apk: Path, out: Path, work: Path) -> None:
     """The previous release installs and makes a profile in its encrypted database, then apk installs over it, signed
     with the same test key, and keeps the old app's data and the database key that it stored in the Android keystore."""
-    run(["adb", "install", "-g", signed_for_test(old_release_apk(apk, work), work)])
+    run(["adb", "install", "--no-incremental", "-g", signed_for_test(old_release_apk(apk, work), work)])
     old_version = android_app_version()
     run(["adb", "shell", "am", "start", "-W", "-n", ANDROID_ACTIVITY])
     android_onboarding()
     time.sleep(SETTLE_SECONDS)
     emulator_screenshot(out / f"{apk.name}.{OLD_RELEASE}.png", work)
-    run(["adb", "install", "-r", "-g", signed_for_test(apk, work)])
+    run(["adb", "install", "--no-incremental", "-r", "-g", signed_for_test(apk, work)])
     new_version = android_app_version()
     record(out, f"{apk.name}.upgrade", f"{OLD_RELEASE} installed as {old_version}, then {apk.name} as {new_version}\n")
     if new_version == old_version:
@@ -834,7 +834,7 @@ def test_apk(apk: Path, out: Path, database: Path | None = None, upgrade: bool =
                 install_over_old_release(apk, out, work)
             else:
                 unsigned = run([find_apksigner(), "verify", apk], check=False, capture=True).returncode != 0
-                run(["adb", "install", "-g", signed_for_test(apk, work) if unsigned else apk])
+                run(["adb", "install", "--no-incremental", "-g", signed_for_test(apk, work) if unsigned else apk])
             if database:
                 push_android_old_database(database)
             run(["adb", "shell", "am", "start", "-W", "-n", ANDROID_ACTIVITY])
