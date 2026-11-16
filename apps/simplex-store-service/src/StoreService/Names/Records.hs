@@ -20,13 +20,14 @@ where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
-import Control.Exception (bracket)
+import Control.Exception (bracket, onException)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (forM, forM_, forever, unless, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, listToMaybe)
@@ -166,12 +167,13 @@ newEdit rs timer req signer bodyHash =
   chainAccepts rs req signer >>= \case
     Left e -> EAUnavailable <$ logWarn ("names records: an edit's chain checks failed: " <> tshow e)
     Right (Just refusal) -> pure refusal
-    Right Nothing ->
-      insertEdit rs req signer bodyHash >>= \case
-        Left answer -> pure answer
-        Right (Just editId) -> sendNew rs timer editId
-        -- a pending or mined edit holds the nonce: the identical twin is waited for, any other body refused
-        Right Nothing -> withStore rs (`getRecordEditByBody` bodyHash) >>= maybe (pure $ EARefused "another edit holds the nonce") (awaitEdit rs timer . reId)
+    Right Nothing -> bracket (insertEdit rs req signer bodyHash) (mapM_ (release rs) . either (const Nothing) id) inserted >>= either pure (awaitEdit rs timer)
+  where
+    inserted = \case
+      Left answer -> pure $ Left answer
+      Right (Just editId) -> maybe (Right editId) Left <$> sendNew rs editId
+      -- a pending or mined edit holds the nonce: the identical twin is waited for, any other body refused
+      Right Nothing -> maybe (Left $ EARefused "another edit holds the nonce") (Right . reId) <$> withStore rs (`getRecordEditByBody` bodyHash)
 
 -- | Nothing for the earliest deadline more than 'editDeadlineMargin' past the latest block's time, the signer the registry's owner on the default resolver, the first nonce the owner's next.
 chainAccepts :: Records -> EditRequest -> Address -> IO (Either ChainError (Maybe EditAnswer))
@@ -190,26 +192,28 @@ chainAccepts Records {rsChain, rsContracts} EditRequest {erLabelHash, erChanges}
     refused = pure . Just . EARefused
 
 -- | Left when the name's yearly limit or hourly cap is used up, checked again under the name's turn against a concurrent edit.
--- Right Nothing when a pending or mined edit holds the first nonce.
+-- Right Nothing when a pending or mined edit holds the first nonce. A new edit is claimed before its row commits, so the lane skips it.
 insertEdit :: Records -> EditRequest -> Address -> BodyHash -> IO (Either EditAnswer (Maybe RecordEditId))
-insertEdit Records {rsStore, rsTurns, rsEditsPerYear, rsNow} EditRequest {erLabelHash, erChanges} signer bodyHash =
+insertEdit rs@Records {rsStore, rsTurns, rsEditsPerYear, rsNow, rsClaimed} EditRequest {erLabelHash, erChanges} signer bodyHash =
   withLabelTurn rsTurns erLabelHash $ do
     now <- rsNow
-    withTransaction rsStore $ \db -> do
-      times <- relayedEditTimes db erLabelHash (addUTCTime (negate editLimitWindow) now)
-      let hour = dropWhile (<= addUTCTime (negate editCapWindow) now) times
-      case usedUpUntil (editsLeft rsEditsPerYear times) of
-        Just nextAt -> pure $ Left $ EALimited nextAt
-        Nothing
-          | Just oldest <- listToMaybe $ drop (editCap - 1) $ reverse hour -> pure $ Left $ EACapped $ max 1 $ ceiling $ diffUTCTime (addUTCTime editCapWindow oldest) now
-          | otherwise -> Right <$> insertRecordEdit db edit now
+    claimed <- newIORef Nothing
+    let claim editId = editId <$ (atomically (modifyTVar' rsClaimed $ S.insert editId) >> writeIORef claimed (Just editId))
+    (`onException` (readIORef claimed >>= mapM_ (release rs))) $
+      withTransaction rsStore $ \db -> do
+        times <- relayedEditTimes db erLabelHash (addUTCTime (negate editLimitWindow) now)
+        let hour = dropWhile (<= addUTCTime (negate editCapWindow) now) times
+        case usedUpUntil (editsLeft rsEditsPerYear times) of
+          Just nextAt -> pure $ Left $ EALimited nextAt
+          Nothing
+            | Just oldest <- listToMaybe $ drop (editCap - 1) $ reverse hour -> pure $ Left $ EACapped $ max 1 $ ceiling $ diffUTCTime (addUTCTime editCapWindow oldest) now
+            | otherwise -> Right <$> (insertRecordEdit db edit now >>= mapM claim)
   where
     edit = NewRecordEdit {nreLabelHash = erLabelHash, nreOwner = signer, nreChanges = erChanges, nreBodyHash = bodyHash}
 
--- | An edit that was not sent is answered and deleted while still claimed, so the lane cannot send it after.
-sendNew :: Records -> TVar Bool -> RecordEditId -> IO EditAnswer
-sendNew rs timer editId =
-  withClaim rs editId Nothing (withStore rs (`getRecordEdit` editId) >>= maybe (pure Nothing) send) >>= maybe (awaitEdit rs timer editId) pure
+-- | Nothing once sent. An edit that was not sent is answered and deleted while still claimed, so the lane cannot send it after.
+sendNew :: Records -> RecordEditId -> IO (Maybe EditAnswer)
+sendNew rs editId = withStore rs (`getRecordEdit` editId) >>= maybe (pure Nothing) send
   where
     send edit =
       sendEdit rs edit >>= \case
@@ -361,13 +365,15 @@ unstall Records {rsStalled} editId = atomically $ modifyTVar' rsStalled $ S.dele
 
 -- | Runs the action only when nobody else holds the edit, else answers the fallback.
 withClaim :: Records -> RecordEditId -> a -> IO a -> IO a
-withClaim Records {rsClaimed} editId fallback action =
-  bracket claim (\claimed -> when claimed release) $ \claimed -> if claimed then action else pure fallback
+withClaim rs@Records {rsClaimed} editId fallback action =
+  bracket claim (\claimed -> when claimed $ release rs editId) $ \claimed -> if claimed then action else pure fallback
   where
     claim = atomically $ do
       held <- readTVar rsClaimed
       if S.member editId held then pure False else True <$ writeTVar rsClaimed (S.insert editId held)
-    release = atomically $ modifyTVar' rsClaimed $ S.delete editId
+
+release :: Records -> RecordEditId -> IO ()
+release Records {rsClaimed} editId = atomically $ modifyTVar' rsClaimed $ S.delete editId
 
 changeDigest :: Records -> LabelHash -> SignedChange -> ByteString
 changeDigest rs lh SignedChange {scChange, scNonce, scDeadline} = case scChange of
