@@ -19,6 +19,7 @@ import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Names.Record (USDCents)
 import StoreService.Config (PollConfig (..))
 import StoreService.Names.Balances (recordRefund)
 import StoreService.Names.LateCredits (CreditOutcome (..), creditLateInvoice, lateCreditOf)
@@ -198,7 +199,7 @@ alertsAt :: Late -> Either ProviderError Rate -> UTCTime -> IO Text
 alertsAt Late {lStore} r now = withLateOn lStore $ \l@Late {lPoller} -> setRate l r >> capturingStderr (cleanupUnpaid lPoller now)
 
 -- | Amount, credited and refunded of the order's balance.
-balanceOf :: DBStore -> Text -> IO (Maybe (Int, Int, Int))
+balanceOf :: DBStore -> Text -> IO (Maybe (USDCents, USDCents, USDCents))
 balanceOf st r = fmap (\(amount, credited, refunded, _) -> (amount, credited, refunded)) <$> figures st r t0
 
 -- | Units, the invoice's, current and used rates, and cents of each credit of the order's invoice.
@@ -639,7 +640,7 @@ testCreditWhileHeld = withLate $ \l@Late {lStore = st} -> do
   figures st "x" (at 10) `shouldReturn` Just (4800, 24000, 0, Nothing)
   invariantHolds st "x"
 
-coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either BalanceInsertRefused ())
+coveredSpend :: DBStore -> Text -> Text -> USDCents -> USDCents -> IO (Either BalanceInsertRefused ())
 coveredSpend st r src price seen = withTransaction st $ \db -> createBalanceRegistration db (newReg r ownerA (fieldsN r)) BalanceUse {buSource = RegistrationId src, buUsed = price} seen t0
 
 testCreditRefundTwice :: IO ()

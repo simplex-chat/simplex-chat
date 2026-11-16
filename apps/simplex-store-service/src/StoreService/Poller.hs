@@ -470,7 +470,7 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) ref = do
     CONothingDue -> pure ()
     COCredited money LateCredit {lcAmount} ->
       logNote $
-        "names: invoice " <> ref <> credited money <> tshow (creditCents lcAmount) <> " cents" <> extra money <> " to its order's balance"
+        "names: invoice " <> ref <> credited money <> tshow (toInteger (creditCents lcAmount)) <> " cents" <> extra money <> " to its order's balance"
           <> case lcAmount of
             CACard _ -> ""
             CACrypto {caUnits, caInvoiceRate, caCurrentRate, caRateUsed} ->
@@ -548,7 +548,7 @@ lateAlertText LateAlert {laProviderRef, laState = s@LateCreditState {lsReceivedC
          in ( label,
               case lfReceivedUnits of
                 Just received -> invoiced <> amounts (unitName lfCoin) (toInteger received) (maybe 0 toInteger lfConfirmedUnits) (toInteger lfCreditedUnits)
-                Nothing -> tshow lsReceivedCents <> " cents received at the invoice's rate, not counted in units"
+                Nothing -> tshow (toInteger lsReceivedCents) <> " cents received at the invoice's rate, not counted in units"
             )
     amounts unit received confirmed credited =
       tshow received <> " " <> unit <> " received, " <> tshow confirmed <> " " <> unit <> " confirmed, " <> tshow credited <> " " <> unit <> " credited"

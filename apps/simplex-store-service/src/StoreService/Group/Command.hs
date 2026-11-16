@@ -36,6 +36,7 @@ import Simplex.Chat.Badges.Code (BadgeCode, NameLength, NamePrepaidCode, maxName
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (minNameYears)
 
@@ -54,7 +55,7 @@ data GroupCmd
   | GCMoney MoneyCmd
   deriving (Eq, Show)
 
-data MoneyCmd = MCBalance Text | MCRecordRefund Text Int | MCClose Text
+data MoneyCmd = MCBalance Text | MCRecordRefund Text USDCents | MCClose Text
   deriving (Eq, Show)
 
 data CmdAction
@@ -131,7 +132,7 @@ prepaidCodeP = strP
 
 balanceArgsP, recordRefundArgsP, closeArgsP :: A.Parser MoneyCmd
 balanceArgsP = MCBalance <$> referenceP
-recordRefundArgsP = MCRecordRefund <$> referenceP <* A.space <*> boundedInt centsOpt
+recordRefundArgsP = MCRecordRefund <$> referenceP <* A.space <*> (fromIntegral <$> boundedInt centsOpt)
 closeArgsP = MCClose <$> referenceP
 
 referenceP :: A.Parser Text

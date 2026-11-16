@@ -21,6 +21,7 @@ module StoreService.Providers
     Rate (..),
     unitDecimals,
     unitName,
+    minorDecimal,
     PaymentSignal (..),
     ProviderInvoice (..),
     Funded (..),
@@ -181,6 +182,11 @@ unitName :: CryptoCurrency -> Text
 unitName = \case
   CCBtc -> "satoshi"
   CCXmr -> "piconero"
+
+minorDecimal :: Integral a => a -> Text
+minorDecimal minor = tshow whole <> "." <> T.justifyRight 2 '0' (tshow part)
+  where
+    (whole, part) = toInteger minor `divMod` 100
 
 -- The provider applies its own tolerance, so this cannot be recomputed from the amounts.
 data Funded = PaidInFull | PaidInPart

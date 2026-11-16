@@ -62,6 +62,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
@@ -221,7 +222,7 @@ rewrite Ctx {cStore, cClock} NameRegistration {nrId} change = do
       refused -> error $ "not written: " <> show refused
 
 -- | The amount and credited of the order's balance.
-balanceOf :: Ctx -> NameRegistration -> IO (Maybe (Int, Int))
+balanceOf :: Ctx -> NameRegistration -> IO (Maybe (USDCents, USDCents))
 balanceOf Ctx {cStore} NameRegistration {nrId} = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (\db -> getBalance db nrId orderTime)
 
 stored :: Ctx -> NameRegistration -> IO NameRegistration

@@ -39,6 +39,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig)
@@ -568,7 +569,7 @@ aliceRegistration :: Text -> Int -> NewRegistration
 aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgYears = 2, nrgOrderHash = orderHash ownerA (aliceFields n) (OTInvoice btc $ oPrice aliceOrder)}
 
 -- | The amount and credited of the order's balance.
-balanceFigures :: Ctx -> RegistrationId -> IO (Maybe (Int, Int))
+balanceFigures :: Ctx -> RegistrationId -> IO (Maybe (USDCents, USDCents))
 balanceFigures Ctx {cStore} rid = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (\db -> getBalance db rid orderTime)
 
 -- | The register's dry run reverts on a name someone else holds, so the registration ends taken.
@@ -1331,10 +1332,10 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
 closeOf :: Ctx -> NameRegistration -> IO Closed
 closeOf Ctx {cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}} NameRegistration {nrId = RegistrationId rid} = closeRegistration oeStore oeContracts oeTurns oeNow rid
 
-figuresOf :: Ctx -> NameRegistration -> IO (Maybe (Int, Int, Int, Maybe BalanceHold))
+figuresOf :: Ctx -> NameRegistration -> IO (Maybe (USDCents, USDCents, USDCents, Maybe BalanceHold))
 figuresOf Ctx {cStore} NameRegistration {nrId = RegistrationId rid} = figures cStore rid orderTime
 
-refundedWhole :: Ctx -> NameRegistration -> Int -> IO RefundRecord
+refundedWhole :: Ctx -> NameRegistration -> USDCents -> IO RefundRecord
 refundedWhole ctx r price = (\ref -> RefundRecord {rdRegistration = nrId r, rdCents = price, rdChain = [BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPayment = nrPayment r, lkProviderRef = Just ref, lkPaid = price, lkFromBalance = 0, lkLateCredits = []}]}) <$> paidRef ctx r
 
 paidRef :: Ctx -> NameRegistration -> IO Text

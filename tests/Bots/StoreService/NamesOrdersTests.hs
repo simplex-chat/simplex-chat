@@ -101,6 +101,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey, si
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
@@ -256,7 +257,7 @@ data Order = Order
     oSealed :: Text,
     oDuration :: Word64,
     oMethod :: Text,
-    oPrice :: Int,
+    oPrice :: USDCents,
     oTerms :: Text,
     oTimestamp :: Word64
   }
@@ -277,7 +278,7 @@ aliceOrder =
     }
 
 -- the launch price of 11 letters for 2 years
-alicePrice :: Int
+alicePrice :: USDCents
 alicePrice = 10000
 
 commitmentOf :: Int -> ByteString

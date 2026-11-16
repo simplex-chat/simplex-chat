@@ -25,6 +25,7 @@ import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Chat.Badges.Code (nameLength, nameLengthInt)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
@@ -43,7 +44,7 @@ import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
 data Found
-  = FAvailable Int (Maybe Terms)
+  = FAvailable USDCents (Maybe Terms)
   | -- | the chain says available while a registration here has its register sent, not mined
     FRegistering
   | FReserved

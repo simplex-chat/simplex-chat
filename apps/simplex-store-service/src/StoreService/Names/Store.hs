@@ -144,6 +144,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding (Encoding (..), Large (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Names.Chain (TxHash (..))
@@ -248,7 +249,7 @@ data OrderPayment
   deriving (Eq, Show)
 
 -- | The order whose balance pays, and the cents it pays.
-data BalanceUse = BalanceUse {buSource :: RegistrationId, buUsed :: Int}
+data BalanceUse = BalanceUse {buSource :: RegistrationId, buUsed :: USDCents}
   deriving (Eq, Show)
 
 paymentInvoice :: OrderPayment -> Maybe InvoiceId
@@ -291,7 +292,7 @@ data NameRegistration = NameRegistration
     nrAgreedTerms :: AgreedTerms,
     nrPhase :: OrderPhase,
     nrYears :: Int,
-    nrPrice :: Int,
+    nrPrice :: USDCents,
     nrPayment :: OrderPayment,
     nrReveal :: Maybe NameReveal,
     nrCommitTx :: Maybe TxHash,
@@ -319,7 +320,7 @@ data NewRegistration = NewRegistration
 -- | The invoice row is inserted by the caller, in the same transaction and before the registration.
 data PaidOrder = PaidOrder
   { poMethod :: ServicePaymentMethod,
-    poPrice :: Int,
+    poPrice :: USDCents,
     poInvoiceId :: InvoiceId,
     poProviderRef :: Text
   }
@@ -343,23 +344,23 @@ data LiveOrder = LiveOrder
   deriving (Eq, Show)
 
 -- | What an order pays with, as its hash covers it.
-data OrderTerms = OTInvoice ServicePaymentMethod Int | OTCode CodeHash | OTBalance Spend
+data OrderTerms = OTInvoice ServicePaymentMethod USDCents | OTCode CodeHash | OTBalance Spend
 
 -- | A new order paid from a balance. Its hash covers the paying order, the price, the balance the page read,
 -- and the method, present exactly when the price is more than that balance.
 data Spend = Spend
   { spSource :: RegistrationId,
-    spPrice :: Int,
-    spBalance :: Int,
+    spPrice :: USDCents,
+    spBalance :: USDCents,
     spMethod :: Maybe ServicePaymentMethod
   }
 
 -- | Cents left to spend, and over the balance's life the cents credited and refunded.
 data Balance = Balance
   { blRegistration :: RegistrationId,
-    blAmount :: Int,
-    blCredited :: Int,
-    blRefunded :: Int,
+    blAmount :: USDCents,
+    blCredited :: USDCents,
+    blRefunded :: USDCents,
     blHold :: Maybe BalanceHold,
     blRefundedAt :: Maybe UTCTime
   }
@@ -383,8 +384,8 @@ data BalanceLink = BalanceLink
     lkOwner :: Address,
     lkPayment :: OrderPayment,
     lkProviderRef :: Maybe Text,
-    lkPaid :: Int,
-    lkFromBalance :: Int,
+    lkPaid :: USDCents,
+    lkFromBalance :: USDCents,
     lkLateCredits :: [LateCredit]
   }
   deriving (Eq, Show)
@@ -400,11 +401,11 @@ data LateCredit = LateCredit
 
 -- | Card cents, or crypto units credited in cents at the rate used, the lower of the invoice's and the current one.
 data CreditAmount
-  = CACard Int
-  | CACrypto {caUnits :: Units, caInvoiceRate :: Rate, caCurrentRate :: Rate, caRateUsed :: Rate, caCents :: Int}
+  = CACard USDCents
+  | CACrypto {caUnits :: Units, caInvoiceRate :: Rate, caCurrentRate :: Rate, caRateUsed :: Rate, caCents :: USDCents}
   deriving (Eq, Show)
 
-creditCents :: CreditAmount -> Int
+creditCents :: CreditAmount -> USDCents
 creditCents = \case
   CACard cents -> cents
   CACrypto {caCents} -> caCents
@@ -417,10 +418,10 @@ data LateCreditState = LateCreditState
     lsPhase :: NamePhase,
     lsLive :: Bool,
     lsSupport :: Maybe LateSupport,
-    lsReceivedCents :: Int,
+    lsReceivedCents :: USDCents,
     lsFigures :: LateFigures,
-    lsInvoiceAmount :: Int,
-    lsCreditedCents :: Int,
+    lsInvoiceAmount :: USDCents,
+    lsCreditedCents :: USDCents,
     lsCredits :: Int,
     lsPaymentCreatedAt :: UTCTime
   }
@@ -428,7 +429,7 @@ data LateCreditState = LateCreditState
 
 -- | Card money counted in cents; crypto in units, with the invoice's rate and invoiced units it is credited at.
 data LateFigures
-  = LFCard {lfConfirmedCents :: Int}
+  = LFCard {lfConfirmedCents :: USDCents}
   | LFCrypto
       { lfCoin :: CryptoCurrency,
         lfReceivedUnits :: Maybe Units,
@@ -639,7 +640,7 @@ orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, o
       OTInvoice method price -> ("name-invoice" :: ByteString, smpEncode (textEncode method, num price))
       OTCode codeHash -> ("name-code", smpEncode codeHash)
       OTBalance Spend {spSource = RegistrationId source, spPrice, spBalance, spMethod} -> ("name-balance", smpEncode (source, num spPrice, num spBalance, textEncode <$> spMethod))
-    num :: Int -> Int64
+    num :: Integral a => a -> Int64
     num = fromIntegral
 
 newRegistrationId :: IO RegistrationId
@@ -676,7 +677,7 @@ createCodeRegistration db new@NewRegistration {nrgId = regId} PrepaidCode {pcId}
 
 -- | A queued order whose price is spent from the source's balance in the same transaction, where its amount is the one seen and nothing holds it.
 -- A refusal leaves its writes for the caller to roll back.
-createBalanceRegistration :: DB.Connection -> NewRegistration -> BalanceUse -> Int -> UTCTime -> IO (Either BalanceInsertRefused ())
+createBalanceRegistration :: DB.Connection -> NewRegistration -> BalanceUse -> USDCents -> UTCTime -> IO (Either BalanceInsertRefused ())
 createBalanceRegistration db new use@BalanceUse {buSource, buUsed} seen now' = do
   let now = truncateToSecond now'
   inserted <- insertRegistration db new PQueued buUsed Nothing Nothing (Just use) now
@@ -688,7 +689,7 @@ createBalanceRegistration db new use@BalanceUse {buSource, buUsed} seen now' = d
         False -> pure $ Left BIRBalanceChanged
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
-insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> Int -> Maybe ServicePaymentMethod -> Maybe CodeId -> Maybe BalanceUse -> UTCTime -> IO Bool
+insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> USDCents -> Maybe ServicePaymentMethod -> Maybe CodeId -> Maybe BalanceUse -> UTCTime -> IO Bool
 insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears, nrgOrderHash} phase price method codeId fromBalance now =
   (> 0)
     <$> executeChanging
@@ -733,9 +734,9 @@ selectRegistrations = registrationColumns <> registrationFrom
 
 type RegistrationRow =
   (Text, Int64, LabelHash, Int, Int64, Address, Binary ByteString, Text, NamePhase, Int)
-    :. (Int, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
+    :. (USDCents, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
-    :. (Maybe UTCTime, Maybe FailReason, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, Int)
+    :. (Maybe UTCTime, Maybe FailReason, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, USDCents)
     :. (AgreedTerms, Maybe (Binary ByteString), Maybe Int64, Maybe RecoverableSignature)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
@@ -922,7 +923,7 @@ updateRegistration db r now = do
 
 -- | Another name, or other links, with the terms agreed for it: queued again with the reveal, transactions, reveal times and link refusal cleared.
 -- The order hash stays the original order's, so a resend of that order still finds it.
-retargetRegistration :: DB.Connection -> NameRegistration -> OrderFields -> Int -> UTCTime -> IO VersionWrite
+retargetRegistration :: DB.Connection -> NameRegistration -> OrderFields -> USDCents -> UTCTime -> IO VersionWrite
 retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} price =
   updateRegistration
     db
@@ -1084,7 +1085,7 @@ getBalance db (RegistrationId rid) now =
       )
       (PUnpaid, ISPaid, truncateToSecond now, rid)
 
-toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
+toBalance :: (Text, USDCents, USDCents, USDCents, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
 toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI overdue, BI funded, blRefundedAt) = do
   blHold <- case (holder_, until_) of
     (Nothing, _) -> Right Nothing
@@ -1122,7 +1123,7 @@ balanceChain db rid =
       let link = BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkFromBalance = maybe 0 buUsed used, lkLateCredits}
       (link :) <$> maybe (pure []) (balanceChain db . buSource) used
 
-invoiceAmount :: DB.Connection -> InvoiceId -> IO Int
+invoiceAmount :: DB.Connection -> InvoiceId -> IO USDCents
 invoiceAmount db (InvoiceId invId) =
   maybeFirstRow' 0 fromOnly $ DB.query db (mkQuery "SELECT amount FROM @invoices WHERE invoice_id = ?") (Only invId)
 
@@ -1145,7 +1146,7 @@ lateCredits db (InvoiceId invId) =
         _ -> Left $ "name_late_credits figures: " <> inv
 
 -- | Adds to the order's balance, making it on its first credit.
-creditBalance :: DB.Connection -> RegistrationId -> Int -> UTCTime -> IO ()
+creditBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO ()
 creditBalance db (RegistrationId rid) cents now' =
   DB.execute
     db
@@ -1164,7 +1165,7 @@ creditBalance db (RegistrationId rid) cents now' =
     now = truncateToSecond now'
 
 -- | The price, above 0, spent at once, where the amount is the one seen and nothing holds it.
-spendBalance :: DB.Connection -> RegistrationId -> Int -> Int -> UTCTime -> IO Bool
+spendBalance :: DB.Connection -> RegistrationId -> USDCents -> USDCents -> UTCTime -> IO Bool
 spendBalance db (RegistrationId rid) price seen now =
   (> 0)
     <$> executeChanging
@@ -1173,7 +1174,7 @@ spendBalance db (RegistrationId rid) price seen now =
       (price, now, rid, seen, price, price)
 
 -- | Held by a difference order, where the amount is the one seen, above 0, and nothing holds it.
-holdBalance :: DB.Connection -> RegistrationId -> Int -> RegistrationId -> UTCTime -> IO Bool
+holdBalance :: DB.Connection -> RegistrationId -> USDCents -> RegistrationId -> UTCTime -> IO Bool
 holdBalance db (RegistrationId rid) seen (RegistrationId holder) now =
   (> 0)
     <$> executeChanging
@@ -1182,7 +1183,7 @@ holdBalance db (RegistrationId rid) seen (RegistrationId holder) now =
       (holder, now, rid, seen, seen)
 
 -- | The holder's hold spent and cleared, where this holder holds the balance and it still has the cents, above 0.
-spendHeldBalance :: DB.Connection -> RegistrationId -> Int -> UTCTime -> IO Bool
+spendHeldBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
 spendHeldBalance db (RegistrationId holder) used now =
   (> 0)
     <$> executeChanging
@@ -1199,7 +1200,7 @@ releaseHeldBalance db (RegistrationId holder) now =
       (truncateToSecond now, holder)
 
 -- | All of the balance, where it is the cents given, above 0, and nothing holds it; refunded counts every refund.
-refundBalance :: DB.Connection -> RegistrationId -> Int -> UTCTime -> IO Bool
+refundBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
 refundBalance db (RegistrationId rid) cents now' =
   (> 0)
     <$> executeChanging
@@ -1303,7 +1304,7 @@ lateColumns =
     <> creditedTotal "cents"
     <> mkQuery ", (SELECT COUNT(*) FROM @name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at, i.amount, p.invoiced_units"
 
-type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, Int, Int, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, Int, Int, UTCTime, Int, Maybe Int64)
+type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, USDCents, USDCents, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, USDCents, Int, UTCTime, USDCents, Maybe Int64)
 
 toLateState :: LateRow -> Either Text LateCreditState
 toLateState

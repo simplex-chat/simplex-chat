@@ -34,6 +34,7 @@ import StoreService.Providers
     Received (..),
     Uncreditable (..),
     decodeAnswer,
+    minorDecimal,
     objectId,
     providerCall,
     providerErrorText,
@@ -128,8 +129,7 @@ pageCapReason =
     <> " was not read — and will not be read by a later pass either"
 
 minorToDecimal :: CurrencyAmount -> Text
-minorToDecimal (CurrencyAmount a) =
-  T.pack (show (a `div` 100)) <> "." <> T.justifyRight 2 '0' (T.pack (show (a `mod` 100)))
+minorToDecimal (CurrencyAmount a) = minorDecimal a
 
 cryptoTarget :: ServicePaymentMethod -> Either ProviderError (Text, CryptoCurrency)
 cryptoTarget = \case

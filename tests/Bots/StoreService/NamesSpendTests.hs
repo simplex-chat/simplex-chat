@@ -44,6 +44,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (hex, uint256)
@@ -152,7 +153,7 @@ onCreate :: IORef (IO ()) -> IO () -> IO ()
 onCreate hook act = writeIORef hook (writeIORef hook (pure ()) >> act)
 
 -- | A taken paid order of owner A with a balance of the cents.
-sourceOf :: Ctx -> Text -> Int -> IO RegistrationId
+sourceOf :: Ctx -> Text -> USDCents -> IO RegistrationId
 sourceOf Ctx {cStore} rid cents = do
   placePaid cStore rid ownerA (order ("source-" <> rid) 1) {ofCommitment = C.sha256Hash $ encodeUtf8 rid} (at 60) `shouldReturn` Right ()
   taken <- reg cStore rid
@@ -160,7 +161,7 @@ sourceOf Ctx {cStore} rid cents = do
   credit cStore rid cents
   pure $ RegistrationId rid
 
-credit :: DBStore -> Text -> Int -> IO ()
+credit :: DBStore -> Text -> USDCents -> IO ()
 credit st rid cents = withTransaction st $ \db -> creditBalance db (RegistrationId rid) cents t0
 
 -- | What the page sends: the new order's fields and price, the balance it read, and a method only for a difference.
@@ -244,7 +245,7 @@ pollSeconds = 5000000
 balanceOf :: Ctx -> RegistrationId -> IO (Maybe Balance)
 balanceOf Ctx {cStore, cClock} rid = readIORef cClock >>= \now -> withTransaction cStore $ \db -> getBalance db rid now
 
-amountOf :: Ctx -> RegistrationId -> IO (Maybe Int)
+amountOf :: Ctx -> RegistrationId -> IO (Maybe USDCents)
 amountOf ctx rid = fmap blAmount <$> balanceOf ctx rid
 
 balanceChanged :: Maybe Balance -> (Int, Maybe J.Object)

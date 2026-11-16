@@ -70,6 +70,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
@@ -112,9 +113,9 @@ data OrderRefusal
   | OROrderExists
   | ORNameTaken
   | ORNameCheckUnavailable
-  | ORCatalogChanged Int
+  | ORCatalogChanged USDCents
   | ORCode CodeRefusal
-  | ORPriceTooHigh Int
+  | ORPriceTooHigh USDCents
   | ORBalanceChanged (Maybe Balance)
   | -- | the current terms and the name's community entry, as the answer carries them
     ORTermsChanged J.Value J.Value
@@ -313,7 +314,7 @@ checkNameFree ct st lh =
     Right _ -> pure $ Left ORNameTaken
 
 -- | The chain price for the length and years, which must be the price the order saw.
-checkPrice :: Contracts -> Int -> Int -> Int -> IO (Either OrderRefusal ())
+checkPrice :: Contracts -> Int -> Int -> USDCents -> IO (Either OrderRefusal ())
 checkPrice ct len years price =
   chainPriceCents ct len years >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's price read failed: " <> tshow e)
@@ -339,7 +340,7 @@ checkMoveMeets st NameRegistration {nrId = rid, nrOwner} OrderFields {ofLabelHas
   pure $ if any ((/= rid) . nrId . loRegistration) orders then Left OROrderExists else Right ()
 
 -- | The new name's chain price for its years, at most what the order is worth, becomes its price.
-checkMovePrice :: Contracts -> NameRegistration -> Int -> Int -> IO (Either OrderRefusal Int)
+checkMovePrice :: Contracts -> NameRegistration -> Int -> Int -> IO (Either OrderRefusal USDCents)
 checkMovePrice ct NameRegistration {nrPrice} len years =
   chainPriceCents ct len years >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a move's price read failed: " <> tshow e)

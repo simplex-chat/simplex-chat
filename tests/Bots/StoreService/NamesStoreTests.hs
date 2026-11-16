@@ -24,6 +24,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationsToRun (..), toDownMigration)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
@@ -125,7 +126,7 @@ newReg rid nrgOwner nrgOrder = NewRegistration {nrgId = RegistrationId rid, nrgO
 btc :: ServicePaymentMethod
 btc = SPMCrypto CCBtc
 
-price :: Int
+price :: USDCents
 price = 20000
 
 paidOrder :: Text -> PaidOrder

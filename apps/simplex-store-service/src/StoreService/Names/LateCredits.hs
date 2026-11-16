@@ -21,6 +21,7 @@ import Data.Ratio ((%))
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Names.Record (USDCents)
 import StoreService.Names.Store (BrokenInvariant (..), CreditAmount (..), LateCredit (..), LateCreditState (..), LateFigures (..), LateSupport (..), NamePhase (..), creditLatePayment, lateCreditState, setLateSupport)
 import StoreService.Providers (ProviderError (..), Rate (..))
 import StoreService.Store.Invoices (lockInvoice)
@@ -86,7 +87,7 @@ moneyDue s@LateCreditState {lsFigures} = case lsFigures of
   LFCrypto {} -> unitsDue s > 0
 
 -- | Card money is never paid above its invoice, so only a closed order's counts.
-centsDue :: LateCreditState -> Int
+centsDue :: LateCreditState -> USDCents
 centsDue s@LateCreditState {lsFigures, lsCreditedCents} = case (lateMoneyOf s, lsFigures) of
   (LMLate, LFCard {lfConfirmedCents}) -> lfConfirmedCents - lsCreditedCents
   _ -> 0
