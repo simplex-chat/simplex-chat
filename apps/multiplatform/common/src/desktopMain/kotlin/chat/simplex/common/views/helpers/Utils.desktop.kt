@@ -33,7 +33,7 @@ private const val MAX_THUMBNAIL_DIMENSION = 1000
 // Source images larger than this on either side are rejected (bounds the decoder's per-scanline buffer)
 private const val MAX_SOURCE_IMAGE_DIMENSION = 16384
 private const val MAX_SOURCE_IMAGE_PIXELS = 8192 * 8192
-private const val MAX_MULTI_SCAN_SOURCE_PIXELS = 4096 * 4096
+private const val MAX_MULTI_SCAN_SOURCE_PIXELS = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
 private const val MAX_GIF_METADATA_SUB_BLOCKS = 1024
 // Hard ceiling on the decoded raster in pixels, independent of aspect ratio, so an extreme-aspect image within the
 // source cap can't blow up memory. Sized to the full-screen target's area (~18.7 MP -> ~75 MB at 4 bytes/px).
@@ -220,7 +220,7 @@ internal fun decodeBoundedBufferedImage(data: ByteArray, maxDimension: Int): Buf
       if (!sourceDimensionsWithinLimits(width, height) || (jpegHasMultipleScans(data) && width * height > MAX_MULTI_SCAN_SOURCE_PIXELS)) {
         throw IOException("Image dimensions exceed limit")
       }
-      val param = receivedImageReadParam(reader, imageSampleSize(width, height, maxDimension), MAX_PROGRESSIVE_PASSES)
+      val param = receivedImageReadParam(reader, imageSampleSize(width, height, maxDimension))
       return reader.read(0, param) ?: throw IOException("Unable to decode image")
     } finally {
       reader.dispose()

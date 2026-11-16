@@ -104,8 +104,8 @@ class ImageDecodeBoundsTest {
   fun testBase64ImageRendersLimitedNumberOfProgressiveJpegScans() {
     fun pixel(data: ByteArray) = base64ToBitmap(Base64.getEncoder().encodeToString(data)).toAwtImage().getRGB(0, 0)
     val unchanged = pixel(progressiveJpegChangedByLastScan(0, changed = false))
-    assertNotEquals(unchanged, pixel(progressiveJpegChangedByLastScan(1)))
-    assertEquals(unchanged, pixel(progressiveJpegChangedByLastScan(2)))
+    assertNotEquals(unchanged, pixel(progressiveJpegChangedByLastScan(15)))
+    assertEquals(unchanged, pixel(progressiveJpegChangedByLastScan(16)))
   }
 
   @Test
@@ -121,15 +121,15 @@ class ImageDecodeBoundsTest {
 
   @Test
   fun testDecodeRejectsMultiScanJpegOverLowerPixelLimit() {
-    assertFailsWith<IOException> { decodeBoundedBufferedImage(progressiveJpegHeaders(4097, 4096), 1000) }
-    assertFailsWith<IOException> { decodeBoundedBufferedImage(sequentialJpegHeaders(4097, 4096, scanComponents = 1), 1000) }
-    assertEquals(1024, decodeBoundedBufferedImage(progressiveJpegHeaders(4096, 4096), 1000).width)
-    assertEquals(1024, decodeBoundedBufferedImage(sequentialJpegHeaders(4096, 4097, scanComponents = 3), 1000).width)
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(progressiveJpegHeaders(4321, 4320), 1000) }
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(sequentialJpegHeaders(4321, 4320, scanComponents = 1), 1000) }
+    assertEquals(1080, decodeBoundedBufferedImage(progressiveJpegHeaders(4320, 4320), 1000).width)
+    assertEquals(1080, decodeBoundedBufferedImage(sequentialJpegHeaders(4320, 4321, scanComponents = 3), 1000).width)
   }
 
   @Test
   fun testDecodeRejectsProgressiveJpegAfterTablesOnlyImage() {
-    assertFailsWith<IOException> { decodeBoundedBufferedImage(jpeg(0xFF, 0xD8, 0xFF, 0xD9) + progressiveJpegHeaders(4097, 4096), 1000) }
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(jpeg(0xFF, 0xD8, 0xFF, 0xD9) + progressiveJpegHeaders(4321, 4320), 1000) }
   }
 
   @Test
