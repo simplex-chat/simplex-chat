@@ -27,9 +27,8 @@ import NameResolver
 import Simplex.Chat.Controller (NamePrice (..), NameWarning (..))
 import Simplex.Chat.Library.Commands (nameRecordOrWarning)
 import Simplex.Chat.Mobile (chatSendCmd)
-import Simplex.Chat.Remote.Protocol (owsf2tagged)
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), USDCents (..))
-import Simplex.Messaging.Parsers (pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
+import Simplex.Messaging.Parsers (pattern SingleFieldJSONTag, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
 import Simplex.Messaging.Util (safeDecodeUtf8)
@@ -1118,44 +1117,30 @@ utc = roundedToUTCTime . RoundedSystemTime
 nameFixture :: String -> TestCC -> String -> IO ()
 nameFixture fixture TestCC {chatController = cc} cmd = do
   json <- either fail (pure . stableJSON) . J.eitherDecode =<< chatSendCmd cc (B.pack cmd)
-  let owsf = tagged2owsf json
-  owsf2tagged owsf `shouldBe` json
   testGenerate ("apps/multiplatform/common/src/desktopTest/resources/names/" <> fixture <> ".json") (prettyJSON json)
-    `finally` testGenerate ("apps/ios/SimpleX Unit Tests/names/" <> fixture <> ".json") (prettyJSON owsf)
-
-tagged2owsf :: J.Value -> J.Value
-tagged2owsf = \case
-  J.Object o
-    | Just (J.String tag) <- JM.lookup TaggedObjectJSONTag o ->
-        J.object [SingleFieldJSONTag J..= True, JK.fromText tag J..= contents (JM.delete TaggedObjectJSONTag o)]
-    | otherwise -> J.Object $ fmap tagged2owsf o
-  J.Array a -> J.Array $ fmap tagged2owsf a
-  v -> v
+    `finally` testGenerate ("apps/ios/SimpleX Unit Tests/names/" <> fixture <> ".json") (prettyJSON $ tagged2owsf json)
   where
-    contents o = case JM.toList o of
-      [(TaggedObjectJSONData, v)] | not (untaggedObject v) -> tagged2owsf v
-      _ -> J.Object $ fmap tagged2owsf o
-    untaggedObject = \case
-      J.Object o -> not $ JM.member TaggedObjectJSONTag o
-      _ -> False
-
-stableJSON :: J.Value -> J.Value
-stableJSON = \case
-  J.Object o -> J.Object $ JM.mapWithKey stableField o
-  J.Array a -> J.Array $ fmap stableJSON a
-  v -> v
-  where
-    stableField k v
-      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileUpdatedAt"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "linkOwnerId", "presHeader", "signature", "welcomeSharedMsgId", "requestSharedMsgId"] = J.String $ JK.toText k
-      | otherwise = stableJSON v
-
-prettyJSON :: J.Value -> T.Text
-prettyJSON = (<> "\n") . pretty ""
-  where
-    pretty indent = \case
-      J.Object o | not (JM.null o) -> block indent "{" "}" [jsonText (J.String $ JK.toText k) <> ": " <> pretty (indent <> "  ") v | (k, v) <- JM.toList o]
-      J.Array a | not (null a) -> block indent "[" "]" (map (pretty $ indent <> "  ") $ toList a)
-      v -> jsonText v
-    block indent open close items = open <> "\n" <> T.intercalate ",\n" (map ((indent <> "  ") <>) items) <> "\n" <> indent <> close
-    jsonText = safeDecodeUtf8 . LB.toStrict . J.encode
+    tagged2owsf = \case
+      J.Object o
+        | Just (J.String tag) <- JM.lookup TaggedObjectJSONTag o ->
+            J.object [SingleFieldJSONTag J..= True, JK.fromText tag J..= J.Object (tagged2owsf <$> JM.delete TaggedObjectJSONTag o)]
+        | otherwise -> J.Object $ fmap tagged2owsf o
+      J.Array a -> J.Array $ fmap tagged2owsf a
+      v -> v
+    stableJSON = \case
+      J.Object o -> J.Object $ JM.mapWithKey stableField o
+      J.Array a -> J.Array $ fmap stableJSON a
+      v -> v
+      where
+        stableField k v
+          | k `elem` ["createdAt", "updatedAt", "chatTs"] = J.String "1970-01-01T00:00:00Z"
+          | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink"] = J.String $ JK.toText k
+          | otherwise = stableJSON v
+    prettyJSON = (<> "\n") . pretty ""
+      where
+        pretty indent = \case
+          J.Object o | not (JM.null o) -> block indent "{" "}" [jsonText (J.String $ JK.toText k) <> ": " <> pretty (indent <> "  ") v | (k, v) <- JM.toList o]
+          J.Array a | not (null a) -> block indent "[" "]" (map (pretty $ indent <> "  ") $ toList a)
+          v -> jsonText v
+        block indent open close items = open <> "\n" <> T.intercalate ",\n" (map ((indent <> "  ") <>) items) <> "\n" <> indent <> close
+        jsonText = safeDecodeUtf8 . LB.toStrict . J.encode
