@@ -1353,12 +1353,13 @@ jobs:
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
 
       - name: Check the previews listed in the snapshot tests
+        id: previews
         if: ${{ !cancelled() && matrix.ios == true }}
         shell: bash
         run: python3 "apps/ios/SimpleX Snapshots/check-previews.py"
 
       - name: Build iOS app
-        if: ${{ !cancelled() && matrix.ios == true }}
+        if: ${{ !cancelled() && matrix.ios == true && steps.previews.outcome == 'success' }}
         timeout-minutes: 60
         shell: bash
         run: |
