@@ -265,12 +265,13 @@ unfundedOnly = unfundedBy "@invoices.invoice_id"
 qOverdueInvoices :: Query
 qOverdueInvoices =
   mkQuery $
-    "SELECT @invoices.invoice_id, @invoices.provider, COALESCE(ci.provider_ref, ni.provider_ref), @invoices.created_at FROM @invoices "
-      <> "LEFT JOIN @badge_code_invoices ci ON ci.invoice_id = @invoices.invoice_id "
-      <> "LEFT JOIN @name_invoices ni ON ni.invoice_id = @invoices.invoice_id "
-      <> "WHERE status = 'open' AND expires_at < ? "
-      <> unfundedOnly
-      <> "ORDER BY @invoices.created_at"
+    "SELECT i.invoice_id, i.provider, "
+      <> providerRefColumn
+      <> ", i.created_at FROM @invoices i "
+      <> productJoins
+      <> "WHERE i.status = 'open' AND i.expires_at < ? "
+      <> unfundedBy "i.invoice_id"
+      <> "ORDER BY i.created_at"
 
 qOpenInvoiceCounts :: Query
 qOpenInvoiceCounts =
