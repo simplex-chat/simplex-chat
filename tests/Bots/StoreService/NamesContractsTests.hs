@@ -37,14 +37,14 @@ import Bots.StoreService.WebTests (capturingStderr, withServiceStore, withServic
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (wait)
 import Control.Concurrent.STM (TVar)
-import Control.Monad (forM_)
+import Control.Monad (forM_, (<=<))
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
-import Data.Maybe (fromJust)
+import Data.Maybe (isJust)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, diffUTCTime, getCurrentTime)
@@ -93,6 +93,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "keeps no policy read that was in flight when the policy was forgotten" $ testPolicyForgottenInRead g
   describe "terms" $ do
     it "reads both terms links at one block, once per block, \"\" for one not set, and hashes a set link with keccak256 as viem does" $ testTermsLinks g
+    it "logs a terms link the service does not take once, when it is read" $ testRefusedLinkLogged g
     it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
     it "answers a stored terms text after a restart while its host answers 404 and while fetches wait, fetching again one stored with another SHA-256 and logging it" $ testTermsTextStored g
     it "fetches both current terms texts, storing them, and logs links it cannot read" $ testCurrentTermsFetched g
@@ -143,7 +144,7 @@ testNamePolicy g = withContracts g $ \node ct -> do
   communityName ct alice `shouldReturn` Right False
   listCommunityName node alice
   communityName ct alice `shouldReturn` Right True
-  termsLinks ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
+  termsLinkTexts ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (5 :: Int)
   policyNonce ct owner `shouldReturn` Right 5
   answerCall node fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> commitment <> addressWord owner) $ Returns fakeCommunityTerms
@@ -167,40 +168,59 @@ testTermsLinks g = withContracts g $ \node ct -> do
   setBlock node 100 now
   answerCallFrom node 101 fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes ""]
   answerCallFrom node 101 fakeNamePolicy (selector "communityTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 $ fakeTermsLink fakeNewCommunityTermsText]
-  termsLinks ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
+  termsLinkTexts ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
   -- read once per block: a changed answer at the same block is not read again
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes "changed"]
-  termsLinks ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
+  termsLinkTexts ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
   setBlock node 101 now
-  termsLinks ct `shouldReturn` Right ("", fakeTermsLink fakeNewCommunityTermsText)
-  termsOf "" `shouldBe` Nothing
-  termsOf viemLink `shouldBe` Just Terms {tmLink = viemLink, tmHash = unhex "c2ff2149afa84a77e3a041b2925ebd08a22c1e91a74abd8b82fd17e45c15cb7f"}
+  termsLinkTexts ct `shouldReturn` Right ("", fakeTermsLink fakeNewCommunityTermsText)
+  termsOf ct "" `shouldReturn` Right Nothing
+  termsOf ct viemLink
+    `shouldReturn` Right (Just Terms {tmLink = viemLink, tmHash = unhex "c2ff2149afa84a77e3a041b2925ebd08a22c1e91a74abd8b82fd17e45c15cb7f", tmFetch = Just (T.unpack viemUrl, Just $ unhex $ encodeUtf8 viemDigest)})
   where
-    viemLink = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/general-terms.md#sha256=0b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff001"
+    viemUrl = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/general-terms.md"
+    viemDigest = "0b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff001"
+    viemLink = viemUrl <> "#sha256=" <> viemDigest
+
+testRefusedLinkLogged :: TVar ChaChaDRG -> IO ()
+testRefusedLinkLogged g = withContracts g $ \node ct -> do
+  let otherLink = "https://example.org/simplex-chat/terms.md"
+      warning = "names: the name policy's community terms are not a link the service takes, so names under them cannot be ordered: " <> otherLink
+  answerCall node fakeNamePolicy (selector "communityTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 otherLink]
+  nextBlock node
+  capturingStderr (fetchCurrentTerms ct) >>= (`shouldSatisfy` T.isInfixOf warning)
+  nextBlock node
+  capturingStderr (fetchCurrentTerms ct) >>= (`shouldNotSatisfy` T.isInfixOf warning)
+
+termsLinkTexts :: Contracts -> IO (Either ChainError (T.Text, T.Text))
+termsLinkTexts ct = fmap (\(general, community) -> (linkText general, linkText community)) <$> termsLinks ct
+  where
+    linkText = maybe "" tmLink
 
 testTermsTextKept :: TVar ChaChaDRG -> IO ()
 testTermsTextKept g = withContracts g $ \node ct -> do
-  termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Right "SimpleX general terms v1"
+  general <- termsAt ct fakeGeneralTermsText
+  termsText ct general `shouldReturn` Right "SimpleX general terms v1"
   answerText node (fakeTermsPath fakeGeneralTermsText) $ TextAnswer status404 [] ""
-  termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Right "SimpleX general terms v1"
+  termsText ct general `shouldReturn` Right "SimpleX general terms v1"
   fetchedTexts node `shouldReturn` [fakeTermsPath fakeGeneralTermsText]
 
 testTermsTextStored :: TVar ChaChaDRG -> IO ()
 testTermsTextStored g = withServiceStores $ \open -> withFakeEthNode $ \node -> do
   let contracts = open >>= \st -> newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
       restarted = (\x -> x {ctTermsBackoff = 0}) <$> contracts
-      general = termsAt fakeGeneralTermsText
       generalPath = fakeTermsPath fakeGeneralTermsText
       communityPath = fakeTermsPath fakeCommunityTermsText
       hostDown path = answerText node path $ TextAnswer status404 [] ""
   ct <- restarted
+  general <- termsAt ct fakeGeneralTermsText
   termsText ct general `shouldReturn` Right "SimpleX general terms v1"
   hostDown generalPath
   afterRestart <- restarted
   termsText afterRestart general `shouldReturn` Right "SimpleX general terms v1"
   hostDown communityPath
   waiting <- contracts
-  termsText waiting (termsAt fakeCommunityTermsText) `shouldReturn` Left (TRWait 30)
+  (termsText waiting =<< termsAt waiting fakeCommunityTermsText) `shouldReturn` Left (TRWait 30)
   termsText waiting general `shouldReturn` Right "SimpleX general terms v1"
   st <- open
   withTransaction st $ \db -> setTermsText db (tmHash general) (decodeUtf8 fakeNewGeneralTermsText)
@@ -223,7 +243,7 @@ testCurrentTermsFetched g = withServiceStores $ \open -> withFakeEthNode $ \node
   forM_ paths $ \path -> answerText node path $ TextAnswer status404 [] ""
   ct <- restarted
   fetchCurrentTerms ct
-  mapM (termsText ct . termsAt) [fakeGeneralTermsText, fakeCommunityTermsText] `shouldReturn` [Right "SimpleX general terms v1", Right "SimpleX community terms v1"]
+  mapM (termsText ct <=< termsAt ct) [fakeGeneralTermsText, fakeCommunityTermsText] `shouldReturn` [Right "SimpleX general terms v1", Right "SimpleX community terms v1"]
   answerCall node fakeController (selector "namePolicy()") $ Reverts ""
   unread <- restarted
   capturingStderr (fetchCurrentTerms unread) >>= (`shouldSatisfy` T.isInfixOf "names: the terms links could not be read to fetch their texts: ChainReverted")
@@ -231,10 +251,10 @@ testCurrentTermsFetched g = withServiceStores $ \open -> withFakeEthNode $ \node
 
 testTermsTextNotStored :: TVar ChaChaDRG -> IO ()
 testTermsTextNotStored g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
-  let general = termsAt fakeGeneralTermsText
-      generalPath = fakeTermsPath fakeGeneralTermsText
+  let generalPath = fakeTermsPath fakeGeneralTermsText
   withTransaction st $ \db -> DB.execute_ db "ALTER TABLE sx_badge_service_name_terms ADD COLUMN refused INTEGER CHECK (refused IS NOT NULL)"
   ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  general <- termsAt ct fakeGeneralTermsText
   logged <- capturingStderr $ termsText ct general `shouldReturn` Right "SimpleX general terms v1"
   logged `shouldSatisfy` T.isInfixOf ("names: the terms text of " <> tmLink general <> " could not be stored")
   answerText node generalPath $ TextAnswer status404 [] ""
@@ -246,11 +266,10 @@ testTermsTextByCommit :: TVar ChaChaDRG -> IO ()
 testTermsTextByCommit g = withServiceStores $ \open -> withFakeEthNode $ \node -> do
   let contracts = open >>= \st -> newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
       mainnetPath file = "/simplex-chat/simplex-chat/72fcd35893ec8ea20531757a455699f41fbaf84e/docs/" <> file
-      mainnetTerms file = fromJust $ termsOf $ "https://raw.githubusercontent.com" <> mainnetPath file
       generalPath = mainnetPath "NAMES-TERMS-GENERAL.md"
-      general = mainnetTerms "NAMES-TERMS-GENERAL.md"
   ct <- contracts
-  mapM (termsLinkAllowed ct . mainnetTerms) ["NAMES-TERMS-GENERAL.md", "NAMES-TERMS-COMMUNITY.md"] `shouldReturn` [True, True]
+  [general, community] <- mapM (linkTerms ct . ("https://raw.githubusercontent.com" <>) . mainnetPath) ["NAMES-TERMS-GENERAL.md", "NAMES-TERMS-COMMUNITY.md"]
+  map (isJust . tmFetch) [general, community] `shouldBe` [True, True]
   answerText node generalPath $ servedText fakeGeneralTermsText
   termsText ct general `shouldReturn` Right "SimpleX general terms v1"
   answerText node generalPath $ TextAnswer status404 [] ""
@@ -270,9 +289,9 @@ testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       pinnedByCommit = ["https://git.simplex.chat" <> commitPath "/docs/terms.md", "https://raw.githubusercontent.com" <> githubPath "/docs/NAMES-TERMS-GENERAL.md"]
       taken = pinnedByCommit <> ["https://git.simplex.chat" <> commitPath "/a/b_c-d.e/terms.v1.md", "http://127.0.0.1:8098/terms/terms.md"]
   forM_ [commitPath "/docs/terms.md", commitPath "/a/b_c-d.e/terms.v1.md", githubPath "/docs/NAMES-TERMS-GENERAL.md", "/terms/terms.md"] $ \path -> answerText node path $ servedText fakeGeneralTermsText
-  forM_ taken $ \url -> termsText ct (fromJust $ termsOf $ url <> "#sha256=" <> digest) `shouldReturn` Right "SimpleX general terms v1"
-  forM_ pinnedByCommit $ \url -> termsText ct (fromJust $ termsOf url) `shouldReturn` Right "SimpleX general terms v1"
-  let refused link = (link,) <$> termsText ct (fromJust $ termsOf link) `shouldReturn` (link, Left TRLink)
+  forM_ taken $ \url -> (termsText ct =<< linkTerms ct (url <> "#sha256=" <> digest)) `shouldReturn` Right "SimpleX general terms v1"
+  forM_ pinnedByCommit $ \url -> (termsText ct =<< linkTerms ct url) `shouldReturn` Right "SimpleX general terms v1"
+  let refused link = (link,) <$> (termsText ct =<< linkTerms ct link) `shouldReturn` (link, Left TRLink)
   forM_
     [ "http://git.simplex.chat" <> commitPath "/docs/terms.md#sha256=" <> digest,
       "http://raw.githubusercontent.com" <> githubPath "/docs/terms.md",
@@ -301,9 +320,9 @@ testTermsLinkForms g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       "http://127.0.0.1:65536/terms/terms.md#sha256=" <> digest
     ]
     refused
-  termsText otherChain (fromJust $ termsOf $ "http://127.0.0.1:8098/terms/terms.md#sha256=" <> digest) `shouldReturn` Left TRLink
+  (termsText otherChain =<< linkTerms otherChain ("http://127.0.0.1:8098/terms/terms.md#sha256=" <> digest)) `shouldReturn` Left TRLink
   setFault node "eth_chainId" (Answers (J.String "0x1"))
-  termsText ct (fromJust $ termsOf $ "http://127.0.0.1:8099/terms/terms.md#sha256=" <> digest) `shouldReturn` Left TRLink
+  (termsText ct =<< linkTerms ct ("http://127.0.0.1:8099/terms/terms.md#sha256=" <> digest)) `shouldReturn` Left TRLink
   length <$> fetchedTexts node `shouldReturn` 6
 
 testTermsTextRefused :: TVar ChaChaDRG -> IO ()
@@ -312,7 +331,7 @@ testTermsTextRefused g = withContracts g $ \node ct0 -> do
       served n headers status body bytes = do
         let path = "/simplex-chat/simplex-chat/raw/commit/" <> T.justifyRight 40 '0' (tshow (n :: Int)) <> "/terms.md"
         answerText node path $ TextAnswer status headers body
-        termsText ct $ fromJust $ termsOf $ "https://git.simplex.chat" <> path <> "#sha256=" <> T.drop 2 (hex $ C.sha256Hash bytes)
+        termsText ct =<< linkTerms ct ("https://git.simplex.chat" <> path <> "#sha256=" <> T.drop 2 (hex $ C.sha256Hash bytes))
       markdown = [(hContentType, "text/markdown; charset=utf-8")]
       long = B.replicate (256 * 1024) 0x61
   served 1 [(hLocation, "/elsewhere.md")] status302 "" "" `shouldReturn` Left (TRWait 0)
@@ -329,38 +348,44 @@ testTermsBackoff g = withContracts g $ \node ct -> withServiceStore $ \shortStor
       waitsUpTo seconds = \case
         Left (TRWait n) -> n >= 1 && n <= seconds
         _ -> False
+  general <- termsAt ct fakeGeneralTermsText
+  community <- termsAt ct fakeCommunityTermsText
   answerText node generalPath $ TextAnswer status429 [("Retry-After", "2")] ""
-  termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 30)
-  termsText ct (termsAt fakeGeneralTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
-  termsText ct (termsAt fakeCommunityTermsText) >>= (`shouldSatisfy` waitsUpTo 30)
+  termsText ct general `shouldReturn` Left (TRWait 30)
+  termsText ct general >>= (`shouldSatisfy` waitsUpTo 30)
+  termsText ct community >>= (`shouldSatisfy` waitsUpTo 30)
   fetchedTexts node `shouldReturn` [generalPath]
   short <- (\x -> x {ctTermsBackoff = 1}) <$> (newContracts shortStore TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node)
   answerText node generalPath $ TextAnswer status503 [] ""
-  termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 1)
-  termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 1)
+  termsText short general `shouldReturn` Left (TRWait 1)
+  termsText short general `shouldReturn` Left (TRWait 1)
   threadDelay 1100000
   answerText node generalPath $ TextAnswer status503 [("Retry-After", "2")] ""
-  termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 2)
+  termsText short general `shouldReturn` Left (TRWait 2)
   answerText node generalPath $ servedText fakeGeneralTermsText
   threadDelay 1100000
-  termsText short (termsAt fakeCommunityTermsText) >>= (`shouldSatisfy` waitsUpTo 1)
+  termsText short community >>= (`shouldSatisfy` waitsUpTo 1)
   threadDelay 1000000
-  termsText short (termsAt fakeGeneralTermsText) `shouldReturn` Right "SimpleX general terms v1"
+  termsText short general `shouldReturn` Right "SimpleX general terms v1"
   length <$> fetchedTexts node `shouldReturn` 4
   capped <- newContracts cappedStore TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   answerText node generalPath $ TextAnswer status429 [("Retry-After", "999999999")] ""
-  termsText capped (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 3600)
+  termsText capped general `shouldReturn` Left (TRWait 3600)
 
 testTermsTimeout :: TVar ChaChaDRG -> IO ()
 testTermsTimeout g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   c <- fakeChainClient g node
   ct <- newContracts st TLDSimplex minPriceCentsPerYear c {ccTimeout = testDeadline}
+  general <- termsAt ct fakeGeneralTermsText
   setFault node "GET" $ Slow 2000000
-  elapsed <- timed $ termsText ct (termsAt fakeGeneralTermsText) `shouldReturn` Left (TRWait 30)
+  elapsed <- timed $ termsText ct general `shouldReturn` Left (TRWait 30)
   elapsed `shouldSatisfy` (< 1)
 
-termsAt :: ByteString -> Terms
-termsAt = fromJust . termsOf . fakeTermsLink
+termsAt :: Contracts -> ByteString -> IO Terms
+termsAt ct = linkTerms ct . fakeTermsLink
+
+linkTerms :: Contracts -> T.Text -> IO Terms
+linkTerms ct link = termsOf ct link >>= either (fail . show) (maybe (fail "no terms") pure)
 
 testGracePeriod :: TVar ChaChaDRG -> IO ()
 testGracePeriod g = withContracts g $ \node ct -> do

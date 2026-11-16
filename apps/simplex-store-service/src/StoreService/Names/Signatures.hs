@@ -41,7 +41,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Names.Abi (abiWordSize, hex, hexP, lowerHexP, parseText)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (Commitment, TermsHash)
+import StoreService.Names.Registration (Commitment, CommunityName, TermsHash)
 
 data SignatureError
   = SEFormat
@@ -66,7 +66,7 @@ data OrderFields = OrderFields
   deriving (Eq)
 
 -- | The hash of the terms an order agreed to, the community terms for a name the policy lists.
-data AgreedTerms = AgreedTerms {atCommunityName :: Bool, atTermsHash :: TermsHash}
+data AgreedTerms = AgreedTerms {atCommunityName :: CommunityName, atTermsHash :: TermsHash}
   deriving (Eq, Show)
 
 -- | As the order signs it: the hash in 64 lowercase hex digits, after communityTermsPrefix for the community terms.

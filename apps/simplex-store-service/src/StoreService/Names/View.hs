@@ -37,7 +37,7 @@ import StoreService.Names.Community (AcceptanceAsked (..), communityJSON, curren
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
-import StoreService.Names.Registration (tldLabel)
+import StoreService.Names.Registration (termsKindText, tldLabel)
 import StoreService.Names.Signatures (AgreedTerms (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), FailReason (..), HoldState (..), LateWait, NameRegistration (..), NameReveal (..), OrderPhase (..), getBalance, getRegistration, heldBy, lateWait, namePhase, paymentBalance, paymentInvoice)
 
@@ -126,7 +126,7 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       VRUnread -> True
       _ -> False
     acceptanceJSON AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce} =
-      J.object ["kind" .= (if acCommunity then "community" else "general" :: Text), "policy" .= acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce]
+      J.object ["kind" .= termsKindText acCommunity, "policy" .= acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce]
 
 -- | The holder is not named, so an order's link discloses no other order. A funded hold has no end time.
 balanceJSON :: Balance -> J.Value

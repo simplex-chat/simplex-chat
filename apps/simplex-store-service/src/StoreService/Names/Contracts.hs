@@ -28,8 +28,8 @@ module StoreService.Names.Contracts
     forgetNamePolicy,
     communityName,
     termsLinks,
+    kindTerms,
     termsOf,
-    termsLinkAllowed,
     termsText,
     fetchCurrentTerms,
     runTermsFetch,
@@ -50,26 +50,26 @@ module StoreService.Names.Contracts
   )
 where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (optional, (<|>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Concurrently (..), mapConcurrently)
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (TVar, newTVarIO)
 import Control.Logger.Simple (logError, logWarn)
-import Control.Monad (forever, guard)
+import Control.Monad (forever, unless)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
-import Data.Functor ((<&>))
 import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicModifyIORef', atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
@@ -79,11 +79,11 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
-import Simplex.Messaging.Util (catchOwn', toChunks, tshow)
+import Simplex.Messaging.Util (catchOwn', eitherToMaybe, toChunks, tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
-import StoreService.Names.Registration (TermsHash, channelRecordKey, childNode, contactRecordKey, labelNode, nodeBytes)
+import StoreService.Names.Registration (CommunityName, TermsHash, channelRecordKey, childNode, contactRecordKey, labelNode, nodeBytes, termsKindText)
 import StoreService.Names.Revert (RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import StoreService.Safely (safely)
@@ -99,8 +99,8 @@ data Contracts = Contracts
     ctCommitmentAges :: IORef (Int, Maybe CommitmentAges),
     ctNamePolicy :: IORef (Int, Maybe Address),
     ctTermsTexts :: IORef (Map ByteString Text),
-    -- | the terms links as read at a block, which each search for an available name would read again
-    ctTermsLinks :: IORef (Maybe (Word64, (Text, Text))),
+    -- | the terms as read at a block, which each search for an available name would read again
+    ctTermsLinks :: IORef (Maybe (Word64, (Maybe Terms, Maybe Terms))),
     ctFetchAfter :: IORef UTCTime,
     ctFetching :: MVar (),
     -- | microseconds for all the reads of one name status, of one name's records, or of one registration view
@@ -129,7 +129,7 @@ data NameRecords = NameRecords {rdContact :: Text, rdChannel :: Text, rdNonce ::
 data CommitmentAges = CommitmentAges {caMin :: ChainSeconds, caMax :: ChainSeconds}
   deriving (Eq, Show)
 
-data Terms = Terms {tmLink :: Text, tmHash :: TermsHash}
+data Terms = Terms {tmLink :: Text, tmHash :: TermsHash, tmFetch :: Maybe (String, Maybe ByteString)}
   deriving (Eq, Show)
 
 data TermsRefusal = TRLink | TRWait Int
@@ -266,28 +266,47 @@ namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ (>>= nonZero) <
 forgetNamePolicy :: Contracts -> IO ()
 forgetNamePolicy Contracts {ctNamePolicy} = atomicModifyIORef' ctNamePolicy $ \(g, _) -> ((g + 1, Nothing), ())
 
-communityName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
+communityName :: Contracts -> LabelHash -> IO (Either ChainError CommunityName)
 communityName ct lh = policyCall ct Latest ("communityNames(bytes32)", labelHashArg lh) decodeBool
 
-termsLinks :: Contracts -> IO (Either ChainError (Text, Text))
+termsLinks :: Contracts -> IO (Either ChainError (Maybe Terms, Maybe Terms))
 termsLinks ct@Contracts {ctChain, ctTermsLinks} = runExceptT $ do
   policy <- ExceptT $ namePolicy ct
   Block {blockNumber} <- ExceptT $ latestBlock ctChain
   liftIO (readIORef ctTermsLinks) >>= \case
-    Just (at, links) | at == blockNumber -> pure links
-    _ -> do
+    Just (at, terms) | at == blockNumber -> pure terms
+    cached -> do
       let link signature = concurrent $ callAt ct (AtBlock blockNumber) policy (signature, "") decodeString
-      links <- ExceptT $ together $ (,) <$> link "generalTermsLink()" <*> link "communityTermsLink()"
-      liftIO $ atomicWriteIORef ctTermsLinks $ Just (blockNumber, links)
-      pure links
+          (generalBefore, communityBefore) = maybe (Nothing, Nothing) snd cached
+      (generalLink, communityLink) <- ExceptT $ together $ (,) <$> link "generalTermsLink()" <*> link "communityTermsLink()"
+      terms <- (,) <$> ExceptT (linkTerms False generalBefore generalLink) <*> ExceptT (linkTerms True communityBefore communityLink)
+      liftIO $ atomicWriteIORef ctTermsLinks $ Just (blockNumber, terms)
+      pure terms
+  where
+    linkTerms community before link = case before of
+      Just t@Terms {tmLink} | tmLink == link -> pure $ Right $ Just t
+      _ -> do
+        r <- termsOf ct link
+        case r of
+          Right (Just Terms {tmFetch = Nothing}) ->
+            logWarn $ "names: the name policy's " <> termsKindText community <> " terms are not a link the service takes, so names under them cannot be ordered: " <> link
+          _ -> pure ()
+        pure r
 
-termsOf :: Text -> Maybe Terms
-termsOf link
-  | T.null link = Nothing
-  | otherwise = Just Terms {tmLink = link, tmHash = keccak256 $ encodeUtf8 link}
+kindTerms :: CommunityName -> (Maybe Terms, Maybe Terms) -> Maybe Terms
+kindTerms community (general, communityTerms) = if community then communityTerms else general
 
-termsLinkAllowed :: Contracts -> Terms -> IO Bool
-termsLinkAllowed Contracts {ctChain} Terms {tmLink} = isJust <$> allowedLink ctChain tmLink
+termsOf :: Contracts -> Text -> IO (Either ChainError (Maybe Terms))
+termsOf Contracts {ctChain = c@ChainClient {ccConfig = ChainConfig {cChainId}}} link
+  | T.null link = pure $ Right Nothing
+  | otherwise =
+      fmap (Just . terms) <$> case termsLinkParts link of
+        Just (False, fetch) -> pure $ Right $ Just fetch
+        Just (True, fetch)
+          | cChainId == localChainId -> fmap (\chainId -> if chainId == localChainId then Just fetch else Nothing) <$> nodeChainId c
+        _ -> pure $ Right Nothing
+  where
+    terms tmFetch = Terms {tmLink = link, tmHash = keccak256 $ encodeUtf8 link, tmFetch}
 
 termsText :: Contracts -> Terms -> IO (Either TermsRefusal Text)
 termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
@@ -301,22 +320,22 @@ termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
 termsHeld :: Contracts -> IO (Either ChainError [(Text, Bool)])
 termsHeld ct@Contracts {ctTermsTexts} = termsLinks ct >>= mapM held
   where
-    held (generalLink, communityLink) = do
+    held (general, community) = do
       texts <- readIORef ctTermsTexts
-      pure [(kind, M.member tmHash texts) | (kind, Just Terms {tmHash}) <- [("general", termsOf generalLink), ("community", termsOf communityLink)]]
+      pure [(termsKindText kind, M.member tmHash texts) | (kind, Just Terms {tmHash}) <- [(False, general), (True, community)]]
 
 fetchCurrentTerms :: Contracts -> IO ()
 fetchCurrentTerms ct =
   termsLinks ct >>= \case
-    Right (generalLink, communityLink) -> mapM_ (termsText ct) $ mapMaybe termsOf [generalLink, communityLink]
+    Right (general, community) -> mapM_ (termsText ct) $ catMaybes [general, community]
     Left e -> logWarn $ "names: the terms links could not be read to fetch their texts: " <> tshow e
 
 runTermsFetch :: Contracts -> IO ()
 runTermsFetch ct = forever $ safely "names terms fetch" (fetchCurrentTerms ct) >> threadDelay termsFetchInterval
 
 fetchTerms :: Contracts -> Terms -> IO (Either TermsRefusal Text)
-fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash} =
-  allowedLink ctChain tmLink >>= \case
+fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash, tmFetch} =
+  case tmFetch of
     Nothing -> pure $ Left TRLink
     Just (url, digest) ->
       withTransaction ctStore (`getTermsText` tmHash) >>= \case
@@ -350,35 +369,21 @@ fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBacko
       | any (sha256Hash body /=) digest = Left ("its SHA-256 is not the link's", Nothing)
       | otherwise = first (const ("not UTF-8", Nothing)) $ decodeUtf8' body
 
-allowedLink :: ChainClient -> Text -> IO (Maybe (String, Maybe ByteString))
-allowedLink c@ChainClient {ccConfig = ChainConfig {cChainId}} link = case termsLinkParts link of
-  Just (False, parts) -> pure $ Just parts
-  Just (True, parts)
-    | cChainId == localChainId ->
-        nodeChainId c <&> \case
-          Right chainId | chainId == localChainId -> Just parts
-          _ -> Nothing
-  _ -> pure Nothing
-
 termsLinkParts :: Text -> Maybe (Bool, (String, Maybe ByteString))
-termsLinkParts link = do
-  digest <- if T.null fragment then pure Nothing else Just <$> (bytes32FromHex . ("0x" <>) =<< T.stripPrefix "#sha256=" fragment)
-  (loopback, path) <- (False,) <$> (commitPath forgejoPrefix <|> commitPath githubPrefix) <|> (True,) <$> loopbackPath
-  guard $ (isJust digest || not loopback) && maybe False (not . T.null) (T.stripSuffix ".md" path) && all segment (T.splitOn "/" path)
-  pure (loopback, (T.unpack url, digest))
+termsLinkParts = eitherToMaybe . parseText linkP
   where
-    (url, fragment) = T.breakOn "#" link
+    linkP = do
+      (url, loopback) <- A.match $ False <$ (commitP forgejoPrefix <|> commitP githubPrefix) <|> True <$ loopbackP
+      digest <- optional $ A.string "#sha256=" *> lowerHexP abiWordSize
+      if loopback && isNothing digest then fail "a loopback link without its SHA-256" else pure (loopback, (B.unpack url, digest))
     forgejoPrefix = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/"
     githubPrefix = "https://raw.githubusercontent.com/simplex-chat/simplex-chat/"
-    commitPath prefix = do
-      (commit, path) <- T.splitAt commitChars <$> T.stripPrefix prefix url
-      guard $ T.length commit == commitChars && T.all lowerHex commit
-      T.stripPrefix "/" path
-    loopbackPath = do
-      (port, path) <- T.breakOn "/" <$> T.stripPrefix "http://127.0.0.1:" url
-      guard $ maybe False (\n -> n >= 1 && n <= maxPort && tshow n == port) (readMaybe $ T.unpack port)
-      T.stripPrefix "/" path
-    segment s = not (T.null s) && s `notElem` [".", ".."] && T.all pathChar s
+    commitP prefix = A.string prefix *> A.count commitChars (A.satisfy lowerHex) *> pathP
+    loopbackP = A.string "http://127.0.0.1:" *> portP *> pathP
+    portP = A.takeWhile1 isDigit >>= \port -> unless (B.take 1 port /= "0" && B.length port <= 5 && maybe False (<= maxPort) (readMaybe $ B.unpack port)) $ fail "not a port"
+    pathP = do
+      (path, segments) <- A.match $ A.char '/' *> A.takeWhile1 pathChar `A.sepBy1` A.char '/'
+      unless (all (`notElem` [".", ".."]) segments && ".md" `B.isSuffixOf` path && B.length path > B.length "/.md") $ fail "not one .md file"
     pathChar c = isAsciiUpper c || isAsciiLower c || isDigit c || c `elem` ("_.-" :: String)
     lowerHex c = isDigit c || (c >= 'a' && c <= 'f')
     commitChars = 40

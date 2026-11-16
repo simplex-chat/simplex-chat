@@ -7,6 +7,8 @@ module StoreService.Names.Registration
     Commitment,
     TermsHash,
     TermsAcceptance (..),
+    CommunityName,
+    termsKindText,
     TermsKind (..),
     termsKind,
     Node,
@@ -103,9 +105,14 @@ data TermsAcceptance = TermsAcceptance
   }
   deriving (Eq, Show)
 
+type CommunityName = Bool
+
+termsKindText :: CommunityName -> Text
+termsKindText community = if community then "community" else "general"
+
 data TermsKind = TermsKind {tkAcceptType :: ByteString, tkRelayFunction :: ByteString}
 
-termsKind :: Bool -> TermsKind
+termsKind :: CommunityName -> TermsKind
 termsKind community
   | community =
       TermsKind

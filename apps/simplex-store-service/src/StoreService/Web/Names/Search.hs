@@ -17,7 +17,7 @@ import Data.Bits (toIntegralSized)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.List (find)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import qualified Data.Text as T
@@ -29,12 +29,12 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (communityJSON, kindTerms, readableTerms, termsJSON, yearsFor)
+import StoreService.Names.Community (communityJSON, readableTerms, termsJSON, yearsFor)
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (nameEditsLeft)
-import StoreService.Names.Registration (tldLabel)
+import StoreService.Names.Registration (CommunityName, tldLabel)
 import StoreService.Names.Store (isLabelRegistering)
 import StoreService.Store.Invoices (unixSeconds)
 import StoreService.Web.Http (HttpEnv, Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, rateLimited, readBoundedBody, searchSlot, termsUnavailable)
@@ -85,7 +85,7 @@ queryLength req = case join $ lookup "length" $ queryString req of
     inBounds :: Integer -> Maybe Int
     inBounds n = nameLengthInt <$> (nameLength =<< toIntegralSized n)
 
-searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> Bool -> Found -> IO Response
+searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> CommunityName -> Found -> IO Response
 searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh listed = \case
   FAvailable price readable ->
     ok $
@@ -144,7 +144,7 @@ termsHandler ct hashText _ respond = case bytes32FromHex hashText of
   Just h ->
     termsLinks ct >>= \case
       Left e -> logWarn ("GET /api/terms: a chain read failed: " <> tshow e) >> respond providerUnavailable
-      Right (generalLink, communityLink) -> case find ((h ==) . tmHash) $ mapMaybe termsOf [generalLink, communityLink] of
+      Right (general, community) -> case find ((h ==) . tmHash) $ catMaybes [general, community] of
         Nothing -> respond notFound
         Just t@Terms {tmLink} ->
           termsText ct t >>= \case

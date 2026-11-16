@@ -125,7 +125,7 @@ testTermsFor :: IO ()
 testTermsFor = do
   let hexDigits = "e2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"
       h = fromJust $ bytes32FromHex $ "0x" <> hexDigits
-      terms = Terms {tmLink = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/terms.md#sha256=" <> hexDigits, tmHash = h}
+      terms = Terms {tmLink = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/terms.md#sha256=" <> hexDigits, tmHash = h, tmFetch = Nothing}
       listed = "community/" <> hexDigits
   textEncode (termsFor False terms) `shouldBe` hexDigits
   textEncode (termsFor True terms) `shouldBe` listed
@@ -166,7 +166,7 @@ testStartupWarnings g = withContracts g $ \node ct -> do
   warns "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 otherLink]
   nextBlock node
-  warns $ "names: the name policy's general terms are not a link the service takes, so plain names cannot be ordered: " <> otherLink
+  warns $ "names: the name policy's general terms are not a link the service takes, so names under them cannot be ordered: " <> otherLink
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
   nextBlock node
   warns "names: the name policy's terms could not be read: "

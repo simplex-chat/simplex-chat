@@ -55,7 +55,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (ChainClient, newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, newContracts, runTermsFetch, termsLinkAllowed, termsLinks, termsOf)
+import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, newContracts, runTermsFetch, termsLinks)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -357,17 +357,14 @@ logNamePolicy NamesConfig {nCommunity} ct =
           Right True -> pure ()
           Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> text <> ": " <> tshow e
       termsLinks ct >>= \case
-        Right (generalLink, communityLink) -> do
-          logTerms "general terms" "plain names" generalLink
-          logTerms "community terms" "community names" communityLink
+        Right (general, community) -> do
+          logTerms "general terms" "plain names" general
+          logTerms "community terms" "community names" community
         Left e -> logWarn $ "names: the name policy's terms could not be read: " <> tshow e
   where
-    logTerms what sold link = case termsOf link of
+    logTerms what sold = \case
       Nothing -> logWarn $ "names: the name policy has no " <> what <> " yet, so " <> sold <> " cannot be ordered until the owner sets them"
-      Just t@Terms {tmHash} ->
-        termsLinkAllowed ct t >>= \case
-          True -> logNote $ "names: " <> what <> " " <> link <> ", hash " <> hex tmHash
-          False -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
+      Just Terms {tmLink, tmHash, tmFetch} -> when (isJust tmFetch) $ logNote $ "names: " <> what <> " " <> tmLink <> ", hash " <> hex tmHash
 
 -- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
 -- terms fetch at the start and then hourly.
