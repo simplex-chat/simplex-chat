@@ -480,6 +480,9 @@ class ChangesTest(GitRepoTest):
     def test_core_change_builds_only_the_core(self):
         self.assertEqual(self.builds("src/Simplex/Chat.hs"), {"haskell"})
 
+    def test_name_fixture_change_builds_the_core_and_both_apps(self):
+        self.assertEqual(self.builds("tests/fixtures/names/plan-known-expired.json"), {"haskell", "kotlin", "ios"})
+
     def test_ios_stub_script_builds_only_ios(self):
         self.assertEqual(self.builds("scripts/ci/ios-stub-libs.sh"), {"ios"})
 

@@ -20,6 +20,7 @@ on:
       - "apps/simplex-directory-service/**"
       - "apps/multiplatform/**"
       - "apps/ios/**"
+      - "tests/fixtures/names/**"
       - "tests/**"
       - "bots/src/**"
       - "simplex-chat.cabal"
