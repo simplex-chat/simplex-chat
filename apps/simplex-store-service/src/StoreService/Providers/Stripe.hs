@@ -12,7 +12,6 @@ where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-import StoreService.Store.Invoices (unixSeconds)
   ( Confirmed (..),
     Funded (..),
     ListPass (..),
@@ -26,6 +25,7 @@ import StoreService.Store.Invoices (unixSeconds)
     timeoutError,
     WebhookError (..),
   )
+import StoreService.Store.Invoices (unixSeconds)
 import Control.Exception (try)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (unless)

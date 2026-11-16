@@ -19,7 +19,6 @@ where
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), speedPolicyName)
 import StoreService.Providers
-import StoreService.Store.Invoices (unixSeconds)
   ( Confirmed (..),
     ListPass (..),
     OrderDraft (..),
@@ -36,6 +35,7 @@ import StoreService.Store.Invoices (unixSeconds)
     unitDecimals,
     WebhookError (..),
   )
+import StoreService.Store.Invoices (unixSeconds)
 import Control.Exception (try)
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (unless, (<=<))
