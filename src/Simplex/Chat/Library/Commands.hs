@@ -2406,8 +2406,9 @@ processChatCommand cxt nm = \case
               deleteAgentConnectionAsync $ aConnId conn
               withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
             subMode <- chatReadVar subscriptionMode
-            newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
-            withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
+            (cmdId, acId) <- prepareAgentCreation user CFGetRelayDataJoin False SCMInvitation
+            withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink (cmdId, acId) subMode
+            getAgentConnShortLinkAsync user cmdId acId relayLink
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
         hostMember <- withFastStore $ \db -> getHostMember db cxt user groupId
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
