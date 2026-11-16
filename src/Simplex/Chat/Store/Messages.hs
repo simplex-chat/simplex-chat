@@ -810,7 +810,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -912,7 +912,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
-            ORDER BY ci.item_ts DESC
+            ORDER BY ci.item_ts DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -1023,7 +1023,7 @@ findLocalChatPreviews_ db User {userId} pagination clq =
             SELECT chat_item_id
             FROM chat_items ci
             WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
+            ORDER BY ci.created_at DESC, ci.chat_item_id DESC
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
@@ -1121,7 +1121,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
     cItem d chatDir ciStatus content file =
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = Nothing, reactions = [], file}
       where
-        ParsedMarkdown formattedText markdownBlocks = parsedMarkdown itemText
+        ParsedMarkdown formattedText markdownBlocks = parsedCIContent content itemText
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTLocal d
     ciMeta content status =
@@ -2338,7 +2338,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
     cItem d chatDir ciStatus content file =
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = toDirectQuote quoteRow, reactions = [], file}
       where
-        ParsedMarkdown formattedText markdownBlocks = parsedMarkdown itemText
+        ParsedMarkdown formattedText markdownBlocks = parsedCIContent content itemText
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTDirect d
     ciMeta content status =
@@ -2432,7 +2432,7 @@ toGroupChatItem
       cItem d chatDir ciStatus content file =
         CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText, markdownBlocks, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
         where
-          ParsedMarkdown formattedText markdownBlocks = parsedMarkdown itemText
+          ParsedMarkdown formattedText markdownBlocks = parsedCIContent content itemText
       badItem = Left $ SEBadChatItem itemId (Just itemTs)
       ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTGroup d
       ciMeta content status =
@@ -2578,7 +2578,7 @@ updateDirectChatItem' db User {userId} contactId ci newContent edited live timed
 updatedChatItem :: ChatItem c d -> CIContent d -> Bool -> Bool -> Maybe CITimed -> UTCTime -> ChatItem c d
 updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemStatus, itemEdited, itemTimed, itemLive}} newContent edited live timed_ currentTs =
   let newText = ciContentToText newContent
-      ParsedMarkdown formattedText markdownBlocks = parsedMarkdown newText
+      ParsedMarkdown formattedText markdownBlocks = parsedCIContent newContent newText
       edited' = itemEdited || edited
       live' = (live &&) <$> itemLive
       timed' = case timed_ of
@@ -3380,7 +3380,7 @@ getChatItemVersions db itemId = do
   where
     toChatItemVersion :: (Int64, MsgContent, UTCTime, UTCTime) -> ChatItemVersion
     toChatItemVersion (chatItemVersionId, msgContent, itemVersionTs, createdAt) =
-      let ParsedMarkdown formattedText markdownBlocks = parsedMarkdown $ msgContentText msgContent
+      let ParsedMarkdown formattedText markdownBlocks = parsedMsgContent msgContent
        in ChatItemVersion {chatItemVersionId, msgContent, formattedText, markdownBlocks, itemVersionTs, createdAt}
 
 directCIWithReactions :: DB.Connection -> Contact -> CChatItem 'CTDirect -> IO (CChatItem 'CTDirect)

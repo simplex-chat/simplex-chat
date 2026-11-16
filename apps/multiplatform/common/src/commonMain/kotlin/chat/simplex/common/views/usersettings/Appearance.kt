@@ -43,7 +43,6 @@ import chat.simplex.common.views.chat.item.ChatItemSender
 import chat.simplex.common.views.chat.item.LocalBubbleLayout
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.PreviewChatItemView
-import chat.simplex.common.views.chat.item.TERMINAL_SENDER_TOP_GAP
 import chat.simplex.common.views.chat.item.TerminalChatItemRow
 import chat.simplex.common.views.chat.item.terminalRowGap
 import chat.simplex.common.views.chat.item.msgTailWidthDp
@@ -70,15 +69,15 @@ object AppearanceScope {
     SectionView(stringResource(MR.strings.settings_section_title_profile_images), contentPadding = PaddingValues(horizontal = CARD_PADDING)) {
       val image = remember { chatModel.currentUser }.value?.image
       Row(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-        val size = 60
-        Box(Modifier.offset(x = -(size / 12).dp)) {
+        val size = 50.dp
+        Box(Modifier.padding(vertical = 5.dp)) {
           if (!image.isNullOrEmpty()) {
-            ProfileImage(size.dp, image, MR.images.ic_simplex_light, color = Color.Unspecified)
+            ProfileImage(size, image, MR.images.ic_simplex_light, color = Color.Unspecified)
           } else {
-            ProfileImage(size.dp, if (isInDarkTheme()) MR.images.ic_simplex_light else MR.images.ic_simplex_dark)
+            ProfileImage(size, if (isInDarkTheme()) MR.images.ic_simplex_light else MR.images.ic_simplex_dark)
           }
         }
-        Spacer(Modifier.width(DEFAULT_PADDING_HALF - (size / 12).dp))
+        Spacer(Modifier.width(15.dp))
         Slider(
           remember { appPreferences.profileImageCornerRadius.state }.value,
           valueRange = 0f..50f,
@@ -308,7 +307,7 @@ object AppearanceScope {
 
         @Composable
         fun TerminalPreviewRow(item: ChatItem, older: ChatItem?, sender: ChatItemSender) {
-          TerminalChatItemRow(sender, gutter = 0.dp, topGap = terminalRowGap(item, older, separated = false, largeGap = true, hasSenderRow = true).toDp(), senderTopGap = if (older == null) 0.dp else TERMINAL_SENDER_TOP_GAP.toDp()) {
+          TerminalChatItemRow(sender, gutter = 0.dp, topGap = terminalRowGap(item, older, separated = false, largeGap = true, hasSenderRow = true).toDp()) {
             PreviewChatItemView(item)
           }
         }

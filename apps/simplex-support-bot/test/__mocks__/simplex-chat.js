@@ -31,6 +31,6 @@ class ChatAPIError extends Error {
 module.exports = {
   api: {ChatApi: {}},
   bot: {},
-  core: {ChatAPIError},
+  core: {ChatAPIError, MigrationConfirmation: {YesUp: "yesUp", YesUpDown: "yesUpDown", Console: "console", Error: "error"}},
   util: {ciContentText, ciBotCommand, contactAddressStr},
 }

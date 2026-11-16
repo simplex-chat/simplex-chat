@@ -5,21 +5,31 @@ title: Channel webpage
 
 A channel webpage shows a preview of your channel on the web: its name, description, recent messages and subscriber count. Visitors can see what the channel is about before they subscribe, and the page gives them a "Join" button along with links to download the app.
 
-You don't have to build the preview yourself. The chat relays that host your channel publish its content as a small file, and a ready-made script renders it on your page. All it takes is to copy the code the app generates and paste it into a web page you host.
+The chat relays of your channel publish its content as a small file, and a
+ready-made script renders it on your page. To set it up, copy the code the app
+generates and paste it into a web page you host.
 
 ## What you need
 
-A channel webpage can be set up by the **owner** of the channel, as long as the channel is hosted on chat relays that support webpages. If they don't, the app shows "Used chat relays do not support webpages." and no code is generated.
+A channel webpage can be set up by the **owner** of the channel, as long as the
+channel's chat relays support webpages. If they don't, the app shows "Used chat
+relays do not support webpages." and no code is generated.
 
-You'll also need somewhere to publish an HTML page. Your own site works, but any static hosting will do.
+You'll also need somewhere to publish an HTML page: your own site or any static
+hosting.
 
 ## Step 1. Open the channel webpage settings
 
-Open the channel and tap its name at the top to open the channel information. Scroll down to **Advanced options** and tap **Channel webpage**. This button is only shown to channel owners.
+Open the channel and tap its name in the chat toolbar to open the channel
+information. The chat toolbar is at the top on iOS, and at the bottom on Android
+and desktop by default. Scroll down to **Advanced options** and tap **Channel
+webpage**. This button is only shown to channel owners.
 
 ## Step 2. Allow embedding while you build the page
 
-Turn on **Allow anyone to embed** and tap **Save**.
+Turn on **Allow anyone to embed** and tap **Save and notify subscribers** (iOS)
+or **Save** (Android and desktop). On Android and desktop, the app closes the
+screen after **Save**: tap **Channel webpage** again for the next step.
 
 With this on, the relay serves your channel preview to any page, so you can build and test from wherever the page lives without it being tied to one domain yet. Leave the webpage URL empty for now; nothing is shown to your subscribers until you set it.
 
@@ -77,7 +87,7 @@ Once the page works, go back to **Channel webpage** in the app:
 
 - Under **Enter webpage URL**, type the address where the page is published, for example `https://example.com/my-channel`.
 - Turn **Allow anyone to embed** off if you don't want other sites to be able to show your channel preview. Leave it on if you're happy for anyone to embed it.
-- Tap **Save**.
+- Tap **Save and notify subscribers** (iOS) or **Save** (Android and desktop).
 
 The URL now appears as a link in your channel info that every subscriber can see. If you turned embedding off, the relay also restricts the preview to your own domain.
 
@@ -95,6 +105,7 @@ You can add optional `data-*` attributes to the `<div>` to change how it looks. 
 | `data-light-background` | CSS color | `#ffffff` | Background color in light mode. |
 | `data-dark-background` | CSS color | `#000832` | Background color in dark mode. |
 | `data-relay-scheme` | `https`, `http` | `https` | Protocol used to load the preview from the relays. Leave it as `https`. |
+| `data-top-offset` | number of pixels | `0` | Space kept above the preview, for example for a fixed header of your page. |
 
 For example, here's a dark theme with a custom background and the download buttons hidden:
 
@@ -116,12 +127,19 @@ The preview updates on its own. The relays republish channel content periodicall
 
 Only what the channel already shows publicly is included: recent messages, member display names and avatars, reactions, and the subscriber count. Deleted and disappearing messages are never published.
 
-If your channel is served by more than one relay, all of them are listed in `data-relay-domains`. The script tries them in order, so the preview still loads when one relay is unavailable.
+If more than one relay of your channel supports webpages, all of them are listed
+in `data-relay-domains`. The script tries them in order, so the preview still
+loads when one relay is unavailable.
 
 ## If something doesn't work
 
-If the preview area stays empty, check that the page is hosted on the same domain as the URL you set in Step 5, or turn **Allow anyone to embed** back on while you sort it out. The relay only lets that domain load the preview.
+If the preview area shows "Failed to load channel preview.", check that the page
+is hosted on the same domain as the URL you set in Step 5, or turn **Allow anyone
+to embed** back on while you sort it out. The relay only lets that domain load
+the preview.
 
-If the app says "Used chat relays do not support webpages.", the relays hosting your channel don't support this feature yet, so no code can be generated.
+If the app says "Used chat relays do not support webpages.", the relays of your
+channel don't support this feature yet, so no code can be generated.
 
-If there's no **Channel webpage** button, remember that it only appears for channel owners on channels hosted on relays.
+If there's no **Channel webpage** button, remember that it only appears for
+channel owners.

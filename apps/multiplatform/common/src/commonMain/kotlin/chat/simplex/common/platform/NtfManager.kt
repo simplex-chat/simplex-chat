@@ -143,7 +143,7 @@ abstract class NtfManager {
           else -> ft.text
         }
       }
-      res
+      if (cItem.content.msgContent is MsgContent.MCReport) generalGetString(MR.strings.notification_group_report).format(res) else res
     } else {
       val mc = cItem.content.msgContent
       if (mc is MsgContent.MCReport) {

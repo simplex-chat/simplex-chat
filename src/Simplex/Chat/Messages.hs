@@ -617,10 +617,19 @@ data CIQuote (c :: ChatType) = CIQuote
   }
   deriving (Show)
 
+parsedMsgContent :: MsgContent -> ParsedMarkdown
+parsedMsgContent mc = parsedMarkdown $ case mc of
+  MCVoice {text} -> text
+  MCReport {text} -> text
+  _ -> msgContentText mc
+
+parsedCIContent :: CIContent d -> Text -> ParsedMarkdown
+parsedCIContent content t = maybe (parsedMarkdown t) parsedMsgContent $ ciMsgContent content
+
 mkCIQuote :: CIQDirection c -> Maybe ChatItemId -> Maybe SharedMsgId -> UTCTime -> MsgContent -> CIQuote c
 mkCIQuote chatDir itemId sharedMsgId sentAt content = CIQuote {chatDir, itemId, sharedMsgId, sentAt, content, formattedText, markdownBlocks}
   where
-    ParsedMarkdown formattedText markdownBlocks = parsedMarkdown $ msgContentText content
+    ParsedMarkdown formattedText markdownBlocks = parsedMsgContent content
 
 quoteItemId :: CIQuote c -> Maybe ChatItemId
 quoteItemId CIQuote {itemId} = itemId

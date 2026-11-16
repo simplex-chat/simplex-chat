@@ -64,16 +64,11 @@ val TERMINAL_BLOCK_TOP_GAP = 5.75.sp
 val TERMINAL_BLOCK_BOTTOM_GAP = 5.sp
 val TERMINAL_LEVEL_STEP = 4.75.sp
 val TERMINAL_HEADING_BOTTOM_GAP = TERMINAL_LEVEL_STEP / 2
-val TERMINAL_SENDER_TOP_GAP = 6.5.sp
-private val TERMINAL_SENDER_BOTTOM_GAP = 5.5.sp
+val TERMINAL_PARAGRAPH_GAP = 16.sp * CHAT_LINE_HEIGHT_RATIO / 3
 val TERMINAL_HEADER_TOP_GAP = 2.5.sp
 val TERMINAL_HEADER_BOTTOM_GAP = 1.5.sp
-val TERMINAL_EVENT_TOP_GAP = 8.25.sp
-val TERMINAL_EVENT_BOTTOM_GAP = 1.5.sp
-val TERMINAL_FILE_TOP_GAP = 2.sp
-val TERMINAL_EMOJI_TOP_GAP = 4.25.sp
-val TERMINAL_EMOJI_BOTTOM_GAP = 1.5.sp
 val TERMINAL_META_GAP = 6.sp
+const val TERMINAL_NAME_REPEAT_SECONDS = 450
 const val TERMINAL_HEADING_RATIO = 1.25f
 private const val CHAT_LINE_HEIGHT_RATIO = 22f / 16f
 private const val CHAT_LINE_HEIGHT_CONTRAST_SLOPE = 0.1515f
@@ -122,7 +117,7 @@ private fun lightness(color: Color): Float {
 }
 
 fun terminalItemShowsSender(item: ChatItem, older: ChatItem?): Boolean =
-  item.content.hasTerminalSender && (older == null || !older.content.hasTerminalSender || !sameSender(item, older))
+  item.content.hasTerminalSender && (older == null || !older.content.hasTerminalSender || !sameSender(item, older) || afterPause(item, older))
 
 private fun sameSender(item: ChatItem, older: ChatItem): Boolean {
   val d = item.chatDir
@@ -134,20 +129,60 @@ private fun sameSender(item: ChatItem, older: ChatItem): Boolean {
   }
 }
 
+private fun afterPause(item: ChatItem, older: ChatItem): Boolean =
+  item.meta.itemTs.epochSeconds - older.meta.itemTs.epochSeconds >= TERMINAL_NAME_REPEAT_SECONDS
+
 private val ChatItem.channelIsSender: Boolean get() =
   chatDir is CIDirection.ChannelRcv || (chatDir is CIDirection.GroupSnd && meta.showGroupAsSender)
 
 fun terminalRowGap(item: ChatItem, older: ChatItem?, separated: Boolean, largeGap: Boolean, hasSenderRow: Boolean): TextUnit =
-  if (older != null && !separated && (largeGap || hasSenderRow || !item.content.hasTerminalSender || !older.content.hasTerminalSender || item.textAtItemTop && item.startsWithHeading)) TERMINAL_LEVEL_STEP else 0.sp
+  if (older != null && !separated && (largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine)) TERMINAL_PARAGRAPH_GAP else 0.sp
 
-fun terminalHeadingGap(item: ChatItem): TextUnit =
-  if (!item.textAtItemTop && item.startsWithHeading) TERMINAL_LEVEL_STEP else 0.sp
+fun terminalTextTop(item: ChatItem): TextUnit = when {
+  item.cardAboveText || item.hasQuoteOrHeader && item.startsWithCard -> if (item.startsWithEmptyLines) 0.sp else TERMINAL_PARAGRAPH_GAP
+  item.hasQuoteOrHeader && item.startsWithHeading -> TERMINAL_LEVEL_STEP
+  else -> 0.sp
+}
+
+fun terminalCardTop(item: ChatItem): TextUnit =
+  if (item.hasQuoteOrHeader) TERMINAL_PARAGRAPH_GAP else 0.sp
+
+fun terminalQuoteTop(item: ChatItem): TextUnit =
+  if (item.isReport || item.meta.itemDeleted != null || item.meta.isLive) TERMINAL_PARAGRAPH_GAP else 0.sp
+
+fun terminalReactionsGap(item: ChatItem): TextUnit =
+  if (item.reactions.isNotEmpty()) TERMINAL_PARAGRAPH_GAP else 0.sp
+
+fun terminalShowsStatus(status: CIStatus, showTimestamp: Boolean): Boolean = when {
+  status is CIStatus.SndNew || status is CIStatus.RcvNew || status is CIStatus.RcvRead -> showTimestamp
+  status is CIStatus.SndSent && status.sndProgress == SndCIStatusProgress.Complete -> showTimestamp
+  status is CIStatus.SndRcvd && status.msgRcptStatus == MsgReceiptStatus.Ok && status.sndProgress == SndCIStatusProgress.Complete -> showTimestamp
+  else -> true
+}
+
+val ChatItem.isOneLine: Boolean get() =
+  textAtItemTop && markdownBlocks == null && '\n' !in content.text
 
 private val ChatItem.textAtItemTop: Boolean get() =
-  (content.msgContent is MsgContent.MCText || content.msgContent is MsgContent.MCUnknown && file == null) && !hasQuoteOrHeader
+  textOnly && !hasQuoteOrHeader
+
+private val ChatItem.cardAboveText: Boolean get() =
+  quotedItem != null || !textOnly
+
+private val ChatItem.textOnly: Boolean get() =
+  content.msgContent is MsgContent.MCText || content.msgContent is MsgContent.MCReport || content.msgContent is MsgContent.MCUnknown && file == null
 
 private val ChatItem.startsWithHeading: Boolean get() =
   markdownBlocks?.firstOrNull() is MarkdownBlock.Heading
+
+private val ChatItem.startsWithCard: Boolean get() =
+  markdownBlocks?.firstOrNull()?.isCard == true
+
+private val ChatItem.startsWithEmptyLines: Boolean get() {
+  val fts = formattedText
+  val blocks = markdownBlocks
+  return if (fts != null && blocks != null) leadingEmptyLines(fts, blocks) > 0 else !isReport && (content.text.startsWith('\n') || content.text.startsWith("\r\n"))
+}
 
 val CIContent.hasTerminalSender: Boolean get() = when (this) {
   is CIContent.SndMsgContent,
@@ -196,16 +231,17 @@ fun Modifier.terminalStartOffset(offset: () -> Dp): Modifier =
 
 private val LastLineLeft = VerticalAlignmentLine(::min)
 private val LastLineRight = VerticalAlignmentLine(::max)
-private val LastBlockBottom = HorizontalAlignmentLine(::max)
+private val CardTop = HorizontalAlignmentLine(::min)
+private val CardBottom = HorizontalAlignmentLine(::max)
 
-fun Modifier.messageLastLine(): Modifier = lastLine { emptyMap() }
+fun Modifier.messageLastLine(): Modifier = marked { mapOf(LastLineLeft to 0, LastLineRight to it.width) }
 
-fun Modifier.messageLastBlock(): Modifier = lastLine { mapOf(LastBlockBottom to it.height) }
+fun Modifier.messageCard(): Modifier = marked { mapOf(CardTop to 0, CardBottom to it.height) }
 
-private fun Modifier.lastLine(extraAlignmentLines: (Placeable) -> Map<AlignmentLine, Int>): Modifier =
+private fun Modifier.marked(alignmentLines: (Placeable) -> Map<AlignmentLine, Int>): Modifier =
   layout { measurable, constraints ->
     val placeable = measurable.measure(constraints)
-    layout(placeable.width, placeable.height, mapOf(LastLineLeft to 0, LastLineRight to placeable.width) + extraAlignmentLines(placeable)) { placeable.placeRelative(0, 0) }
+    layout(placeable.width, placeable.height, alignmentLines(placeable)) { placeable.placeRelative(0, 0) }
   }
 
 @Composable
@@ -220,9 +256,9 @@ fun Modifier.inlineIcon(): Modifier =
   }
 
 @Composable
-fun ItemWithMeta(meta: @Composable () -> Unit, overlayMeta: (@Composable () -> Unit)? = null, metaReserved: Boolean = false, endButton: (@Composable () -> Unit)? = null, content: @Composable (inlineMeta: (@Composable () -> Unit)?) -> Unit) {
+fun ItemWithMeta(meta: @Composable () -> Unit, overlayMeta: (@Composable () -> Unit)? = null, metaReserved: Boolean = false, endButton: (@Composable () -> Unit)? = null, gapBelowCard: Dp = 0.dp, content: @Composable (inlineMeta: (@Composable () -> Unit)?) -> Unit) {
   if (LocalTerminalLayout.current) {
-    TerminalMetaLayout(metaReserved, hasOverlay = overlayMeta != null) {
+    TerminalMetaLayout(metaReserved, hasOverlay = overlayMeta != null, gapBelowCard) {
       content(null)
       listOfNotNull(meta, overlayMeta, endButton).forEach { m ->
         Box(Modifier.padding(end = 12.dp)) {
@@ -236,7 +272,7 @@ fun ItemWithMeta(meta: @Composable () -> Unit, overlayMeta: (@Composable () -> U
 }
 
 @Composable
-private fun TerminalMetaLayout(metaReserved: Boolean, hasOverlay: Boolean, contentWithMeta: @Composable () -> Unit) {
+private fun TerminalMetaLayout(metaReserved: Boolean, hasOverlay: Boolean, gapBelowCard: Dp, contentWithMeta: @Composable () -> Unit) {
   Layout(contentWithMeta) { measurables, constraints ->
     val metaConstraints = constraints.copy(minWidth = 0, minHeight = 0)
     val meta = measurables[1].measure(metaConstraints)
@@ -261,11 +297,11 @@ private fun TerminalMetaLayout(metaReserved: Boolean, hasOverlay: Boolean, conte
       overlay == null && textBaseline != AlignmentLine.Unspecified -> textBaseline - metaBaseline
       else -> content.height - gap - meta.height
     }.coerceAtLeast(0)
-    val blockGap = if (content[LastBlockBottom] == content.height) TERMINAL_BLOCK_BOTTOM_GAP.toPx().roundToInt() else 0
+    val cardGap = if (content[CardBottom] == content.height) gapBelowCard.roundToPx() else 0
     val placedOverlay = overlay?.takeIf { content.width + meta.width > width }
     val endButtonHeight = endButton?.height ?: 0
     val endButtonTop = (((if (placedOverlay != null) content.height else metaTop) - endButtonHeight) / 2).coerceAtLeast(0)
-    layout(width, maxOf(content.height + blockGap, metaTop + meta.height, placedOverlay?.height ?: 0, endButtonTop + endButtonHeight)) {
+    layout(width, maxOf(content.height + cardGap, metaTop + meta.height, placedOverlay?.height ?: 0, endButtonTop + endButtonHeight)) {
       content.placeRelative(0, 0)
       if (placedOverlay != null) {
         placedOverlay.placeRelative(content.width - placedOverlay.width, (content.height - gap - placedOverlay.height).coerceAtLeast(0))
@@ -292,11 +328,12 @@ fun chatItemSender(
   showChatInfo: () -> Unit
 ): ChatItemSender {
   val dir = cItem.chatDir
+  val imageSize = TERMINAL_MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier
   return when {
     cItem.channelIsSender && chatInfo is ChatInfo.Group ->
       ChatItemSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent) {
         Box(Modifier.clickable { showChatInfo() }) {
-          ProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background)
+          ProfileImage(imageSize, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background)
         }
       }
     dir is CIDirection.DirectRcv ->
@@ -312,14 +349,14 @@ fun chatItemSender(
         false
       ) {
         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-          MemberImage(member)
+          MemberImage(member, imageSize)
         }
       }
     }
     dir is CIDirection.GroupSnd && chatInfo is ChatInfo.Group -> {
       val membership = chatInfo.groupInfo.membership
       ChatItemSender(membership.displayName, membership.nameBadge, memberRole(membership, chatInfo.isChannel), true) {
-        MemberImage(membership)
+        MemberImage(membership, imageSize)
       }
     }
     chatInfo.incognito ->
@@ -341,7 +378,8 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
       sender.name,
       sender.badge,
       Modifier.weight(1f, false),
-      fontSize = 13.5.sp,
+      fontSize = MaterialTheme.typography.body1.fontSize,
+      fontWeight = FontWeight.SemiBold,
       color = if (sender.own) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       overflow = TextOverflow.Ellipsis,
       maxLines = 1
@@ -350,7 +388,7 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
       Text(
         sender.role,
         Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f),
-        fontSize = 13.5.sp,
+        fontSize = MaterialTheme.typography.body1.fontSize,
         fontWeight = FontWeight.Medium,
         color = MaterialTheme.colors.secondary,
         maxLines = 1
@@ -359,9 +397,13 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
   }
 }
 
+val TERMINAL_MEMBER_IMAGE_SIZE: Dp = 27.dp
+val TERMINAL_AVATAR_OVERSHOOT: Dp = 2.dp
+val TERMINAL_AVATAR_GAP: Dp = 10.dp
+
 @Composable
 fun terminalGutter(chatInfo: ChatInfo): Dp =
-  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + CHAT_ITEM_TEXT_PADDING else 0.dp
+  if (chatInfo is ChatInfo.Group) TERMINAL_MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + TERMINAL_AVATAR_GAP - TERMINAL_AVATAR_OVERSHOOT else 0.dp
 
 @Composable
 fun TerminalChatItemRow(
@@ -369,9 +411,9 @@ fun TerminalChatItemRow(
   gutter: Dp,
   topGap: Dp,
   modifier: Modifier = Modifier,
-  senderTopGap: Dp = TERMINAL_SENDER_TOP_GAP.toDp(),
   content: @Composable () -> Unit
 ) {
+  val cardGap = TERMINAL_PARAGRAPH_GAP.toDp()
   Layout(
     content = {
       Box {
@@ -379,30 +421,35 @@ fun TerminalChatItemRow(
       }
       Box {
         if (sender != null) {
-          ProvideTextStyle(LocalTextStyle.current.merge(chatTextStyle(13.5.sp))) {
-            SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_SENDER_BOTTOM_GAP.toDp()))
+          ProvideTextStyle(LocalTextStyle.current.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize))) {
+            SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING))
           }
         }
       }
       Box {
-        content()
+        CompositionLocalProvider(LocalTerminalGutter provides gutter, content = content)
       }
     },
-    modifier
-      .padding(top = topGap + if (sender != null) senderTopGap else 0.dp)
-      .fillMaxWidth()
+    modifier.fillMaxWidth()
   ) { measurables, constraints ->
-    val messageStart = gutter.roundToPx()
     val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
-    val messageConstraints = looseConstraints.copy(maxWidth = (constraints.maxWidth - messageStart).coerceAtLeast(0))
+    val column = gutter.roundToPx()
+    val columnConstraints = looseConstraints.copy(maxWidth = (constraints.maxWidth - column).coerceAtLeast(0))
     val avatar = measurables[0].measure(looseConstraints)
-    val name = measurables[1].measure(messageConstraints)
-    val message = measurables[2].measure(messageConstraints)
-    val messageTop = name.height
-    layout(constraints.maxWidth, max(messageTop + message.height, avatar.height)) {
-      avatar.placeRelative(CHAT_ITEM_TEXT_PADDING.roundToPx(), 0)
-      name.placeRelative(messageStart, 0)
-      message.placeRelative(messageStart, messageTop)
+    val name = measurables[1].measure(columnConstraints)
+    val message = measurables[2].measure(columnConstraints)
+    val nameTop = topGap.roundToPx()
+    val avatarTop = nameTop + (name.height - avatar.height) / 2
+    val messageTop = nameTop + name.height + if (sender != null && message[CardTop] == 0) cardGap.roundToPx() else 0
+    layout(constraints.maxWidth, max(messageTop + message.height, avatarTop + avatar.height)) {
+      avatar.placeRelative((CHAT_ITEM_TEXT_PADDING - TERMINAL_AVATAR_OVERSHOOT).roundToPx(), avatarTop)
+      name.placeRelative(column, nameTop)
+      message.placeRelative(column, messageTop)
     }
   }
 }
+
+val LocalTerminalGutter = staticCompositionLocalOf { 0.dp }
+
+@Composable
+fun terminalPillStart(): Dp = (CHAT_ITEM_TEXT_PADDING - LocalTerminalGutter.current).coerceAtLeast(0.dp)

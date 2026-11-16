@@ -64,6 +64,7 @@ Some files that use CPP language extension cannot be formatted as a whole, so in
 - **Never move existing code or sections around** - add new content at appropriate locations without reorganizing existing structure.
 - When adding new sections to documents, continue the existing numbering scheme.
 - Minimize diff size - prefer small, targeted changes over reorganization.
+- When you change what users see or do in the apps, update the user guide (docs/guide) in the same pull request.
 
 **Code analysis and review:**
 - Trace data flows end-to-end: from origin, through storage/parameters, to consumption. Flag values that are discarded and reconstructed from partial data (e.g. extracted from a URI missing original fields) — this is usually a bug.

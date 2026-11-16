@@ -2955,6 +2955,11 @@ This is your own one-time link!</target>
         <target>Crowdfunding on Wefunder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
+        <source>Crowdfunding on Wefunder.</source>
+        <target>Crowdfunding on Wefunder.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
         <source>Current Passcode</source>
         <target>Current Passcode</target>
@@ -5920,11 +5925,6 @@ This is your link for group %@!</target>
       <trans-unit id="Learn more on Wefunder" xml:space="preserve">
         <source>Learn more on Wefunder</source>
         <target>Learn more on Wefunder</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Learn more on Wefunder." xml:space="preserve">
-        <source>Learn more on Wefunder.</source>
-        <target>Learn more on Wefunder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Learn more." xml:space="preserve">

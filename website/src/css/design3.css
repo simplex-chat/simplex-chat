@@ -262,7 +262,7 @@ p {
 .gradient-text {
     background: linear-gradient(100deg,
             #ffb55d 0%,
-            #fff494 50%,
+            #fff494 85%,
             #fbffdd 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -514,7 +514,7 @@ html:not(.dark) section.cover div.content p.invest a {
 html:not(.dark) section.cover div.content .gradient-text {
     background: linear-gradient(90deg,
             #ffb55d 0%,
-            #fff494 50%,
+            #fff494 85%,
             #fbffdd 100%);
     -webkit-background-clip: text;
     background-clip: text;
@@ -1037,6 +1037,14 @@ main .section-bg {
         --cover-fade-dyn: max(0px, calc(110lvh - 100dvh));
         --cover-fade-base: calc(var(--cover-fade-dyn) + var(--cover-cta-bottom) + 114px);
         --cover-fade-ramp: 48px;
+    }
+
+    section.cover:has(p.webinar) {
+        --cover-phone-top: calc(var(--cover-text-b) + 16px + var(--cover-area-off) + var(--sec-vwu) * 9.15);
+    }
+
+    p.webinar .webinar-q {
+        display: none;
     }
 
     section.cover,

@@ -13,25 +13,18 @@ extension EnvironmentValues {
 }
 
 let chatItemTextPadding: CGFloat = 12
-var terminalBlockTopGap: CGFloat { terminalGap(5.75) }
-var terminalBlockBottomGap: CGFloat { terminalGap(5) }
+var terminalParagraphGap: CGFloat { terminalGap(terminalGapBodySize * terminalLineHeightRatio / 3) }
 var terminalLevelStep: CGFloat { terminalGap(4.75) }
 var terminalHeadingBottomGap: CGFloat { terminalLevelStep / 2 }
-var terminalSenderTopGap: CGFloat { terminalGap(6.5) }
-private var terminalSenderBottomGap: CGFloat { terminalGap(5.5) }
 var terminalHeaderTopGap: CGFloat { terminalGap(2.5) }
 var terminalHeaderBottomGap: CGFloat { terminalGap(1.5) }
-var terminalEventTopGap: CGFloat { terminalGap(8.25) }
-var terminalEventBottomGap: CGFloat { terminalGap(1.5) }
-var terminalFileTopGap: CGFloat { terminalGap(2) }
-var terminalEmojiTopGap: CGFloat { terminalGap(4.25) }
-var terminalEmojiBottomGap: CGFloat { terminalGap(1.5) }
 var terminalMetaGap: CGFloat { terminalGap(6) }
 var terminalNameSize: CGFloat { bodyScaled(13.5 * 17 / 16) }
 let terminalHeadingRatio: CGFloat = 1.25
 private let terminalLineHeightRatio: CGFloat = 22 / 16
 private let terminalLineHeightContrastSlope: CGFloat = 0.1515
 private let terminalGapBodySize: CGFloat = 16
+private let terminalNameRepeatInterval: TimeInterval = 7.5 * 60
 
 func terminalGap(_ size: CGFloat) -> CGFloat {
     size * UIFont.preferredFont(forTextStyle: .body).pointSize / terminalGapBodySize
@@ -125,7 +118,7 @@ private func composited(_ color: UIColor, over background: UIColor) -> UIColor {
 func terminalItemShowsSender(_ item: ChatItem, _ older: ChatItem?) -> Bool {
     guard item.content.hasTerminalSender else { return false }
     guard let older else { return true }
-    return !older.content.hasTerminalSender || !sameSender(item, older)
+    return !older.content.hasTerminalSender || !sameSender(item, older) || item.meta.itemTs.timeIntervalSince(older.meta.itemTs) >= terminalNameRepeatInterval
 }
 
 private func sameSender(_ item: ChatItem, _ older: ChatItem) -> Bool {
@@ -136,13 +129,58 @@ private func sameSender(_ item: ChatItem, _ older: ChatItem) -> Bool {
 
 func terminalRowGap(_ item: ChatItem, _ older: ChatItem?, separated: Bool, largeGap: Bool, hasSenderRow: Bool) -> CGFloat {
     guard let older, !separated else { return 0 }
-    return largeGap || hasSenderRow || !item.content.hasTerminalSender || !older.content.hasTerminalSender || (item.textAtItemTop && item.startsWithHeading)
-    ? terminalLevelStep
+    return largeGap || hasSenderRow || !item.isOneLine || !older.isOneLine
+    ? terminalParagraphGap
     : 0
 }
 
-func terminalHeadingGap(_ item: ChatItem) -> CGFloat {
-    !item.textAtItemTop && item.startsWithHeading ? terminalLevelStep : 0
+func terminalItemStartsWithCard(_ item: ChatItem, revealed: Bool) -> Bool {
+    if item.meta.itemDeleted != nil && (!revealed || item.isDeletedContent) { return true }
+    if item.quotedItem != nil { return !item.hasHeaderAboveQuote }
+    if item.hasQuoteOrHeader { return false }
+    guard let mc = item.content.msgContent else {
+        switch item.content {
+        case .sndCall, .rcvCall: return false
+        default: return true
+        }
+    }
+    return terminalMediaCard(item) || item.markdownBlocks?.first?.isCard == true || mc.isText && isShortEmoji(mc.text) || FramedItemView.showsEmoji(item)
+}
+
+func terminalCardTopGap(_ item: ChatItem) -> CGFloat {
+    item.hasQuoteOrHeader ? terminalParagraphGap : 0
+}
+
+func terminalCardBottomGap(_ item: ChatItem) -> CGFloat {
+    item.reactions.isEmpty ? 0 : terminalParagraphGap
+}
+
+func terminalTextTopGap(_ item: ChatItem) -> CGFloat {
+    if item.textAtItemTop {
+        0
+    } else if item.quotedItem != nil || terminalMediaCard(item) || item.markdownBlocks?.first?.isCard == true {
+        startsWithEmptyLine(item) ? 0 : terminalParagraphGap
+    } else if item.startsWithHeading {
+        terminalLevelStep
+    } else {
+        0
+    }
+}
+
+private func startsWithEmptyLine(_ item: ChatItem) -> Bool {
+    if let fts = item.formattedText, let blocks = item.markdownBlocks {
+        leadingEmptyLines(fts, blocks) > 0
+    } else {
+        item.content.text.first?.isNewline == true && !item.isReport
+    }
+}
+
+private func terminalMediaCard(_ item: ChatItem) -> Bool {
+    switch item.content.msgContent {
+    case .link, .image, .video, .voice, .file, .chat: true
+    case .unknown: item.file != nil
+    case .text, .report, nil: false
+    }
 }
 
 private enum MessageLastLineRight: AlignmentID {
@@ -175,6 +213,13 @@ func metaCopyJoiner(_ rightToLeft: Bool) -> Text {
     Text(verbatim: rightToLeft ? "\u{2060}\u{200F}" : "\u{2060}\u{200E}")
 }
 
+func terminalShowsStatus(_ status: CIStatus, showTimestamp: Bool) -> Bool {
+    switch status {
+    case .sndNew, .sndSent(sndProgress: .complete), .sndRcvd(msgRcptStatus: .ok, sndProgress: .complete), .rcvNew, .rcvRead: showTimestamp
+    default: true
+    }
+}
+
 struct ItemWithMeta<Meta: View, Content: View>: View {
     @EnvironmentObject private var theme: AppTheme
     @Environment(\.terminalLayout) private var terminal
@@ -182,6 +227,7 @@ struct ItemWithMeta<Meta: View, Content: View>: View {
     var metaReserved = false
     var overlayMeta: AnyView? = nil
     var endButton: AnyView? = nil
+    var lastBlockGap: CGFloat = 0
     @ViewBuilder var meta: () -> Meta
     @ViewBuilder var content: (_ inlineMeta: Meta?) -> Content
 
@@ -195,7 +241,7 @@ struct ItemWithMeta<Meta: View, Content: View>: View {
 
     @ViewBuilder private var terminalBody: some View {
         if #available(iOS 16, *) {
-            TerminalMetaLayout(metaReserved: metaReserved, hasOverlay: overlayMeta != nil, hasEndButton: endButton != nil) {
+            TerminalMetaLayout(metaReserved: metaReserved, hasOverlay: overlayMeta != nil, hasEndButton: endButton != nil, lastBlockGap: lastBlockGap) {
                 ZStack(alignment: .topLeading) {
                     content(nil)
                 }
@@ -235,6 +281,7 @@ private struct TerminalMetaLayout: Layout {
     var metaReserved: Bool
     var hasOverlay: Bool
     var hasEndButton: Bool
+    var lastBlockGap: CGFloat
 
     private struct Placement {
         var size: CGSize
@@ -286,7 +333,7 @@ private struct TerminalMetaLayout: Layout {
             ? content.height + gap
             : textBaseline.map { $0 - metaBaseline } ?? content.height - gap - meta.height
         )
-        let blockGap = content[explicit: MessageLastBlock.bottom].map { abs($0 - content.height) < 0.5 } == true ? terminalBlockBottomGap : 0
+        let blockGap = content[explicit: MessageLastBlock.bottom].map { abs($0 - content.height) < 0.5 } == true ? lastBlockGap : 0
         let overlayFrame: CGRect? = if let overlay, content.width + meta.width > rowWidth {
             CGRect(x: content.width - overlay.width, y: max(0, content.height - gap - overlay.height), width: overlay.width, height: overlay.height)
         } else {
@@ -331,8 +378,20 @@ struct ChatEventWithMeta<Content: View>: View {
     }
 }
 
-var terminalEventPadding: EdgeInsets {
-    EdgeInsets(top: terminalEventTopGap, leading: chatItemTextPadding, bottom: terminalEventBottomGap, trailing: chatItemTextPadding)
+let terminalEventPadding = EdgeInsets(top: 0, leading: chatItemTextPadding, bottom: 0, trailing: chatItemTextPadding)
+
+let terminalMaxMediaWidth: CGFloat = 500
+
+func terminalMediaWidth(_ row: CGFloat) -> CGFloat {
+    min(terminalMaxMediaWidth, row - 2 * chatItemTextPadding)
+}
+
+let terminalMemberImageBaseSize: CGFloat = 30
+let terminalAvatarOvershoot: CGFloat = 2
+let terminalAvatarGap: CGFloat = 10
+
+func terminalColumn(_ avatarSize: CGFloat) -> CGFloat {
+    avatarSize > 0 ? avatarSize + terminalAvatarGap - terminalAvatarOvershoot : 0
 }
 
 struct ChatItemSender {
@@ -346,45 +405,58 @@ struct ChatItemSender {
 struct TerminalChatItemRow<Content: View>: View {
     @EnvironmentObject private var theme: AppTheme
     var sender: ChatItemSender?
-    var gutter: CGFloat
+    var avatarSize: CGFloat
     var topGap: CGFloat
-    var senderTopGap: CGFloat = terminalSenderTopGap
+    var contentStartsWithCard: Bool
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            if gutter > 0 {
-                ZStack(alignment: .topLeading) {
-                    Color.clear.frame(width: gutter, height: 0)
-                    sender?.image?.padding(.leading, chatItemTextPadding)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            if let sender {
+                senderNameAndRole(sender)
+                    .padding(.leading, terminalColumn(avatarSize) + chatItemTextPadding)
+                    .overlay(alignment: .leading) {
+                        if avatarSize > 0, let image = sender.image {
+                            image.padding(.leading, chatItemTextPadding - terminalAvatarOvershoot)
+                        }
+                    }
+                    .padding(.bottom, contentStartsWithCard ? terminalParagraphGap : 0)
             }
-            VStack(alignment: .leading, spacing: 0) {
-                if let sender {
-                    senderNameAndRole(sender)
-                        .padding(.leading, chatItemTextPadding)
-                        .padding(.bottom, terminalSenderBottomGap)
-                }
-                content()
-            }
+            content()
+                .environment(\.terminalMessageColumn, terminalColumn(avatarSize))
+                .padding(.leading, terminalColumn(avatarSize))
         }
-        .padding(.top, topGap + (sender == nil ? 0 : senderTopGap))
+        .padding(.top, topGap)
     }
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {
-        let size = terminalNameSize
-        return HStack(alignment: .firstTextBaseline, spacing: 0) {
-            NameWithBadge(sender.name.font(.system(size: size)).foregroundColor(sender.own ? theme.colors.primary : theme.colors.secondary), sender.badge, .footnote)
+        HStack(alignment: .firstTextBaseline, spacing: 0) {
+            NameWithBadge(sender.name.font(.body.weight(.semibold)).foregroundColor(sender.own ? theme.colors.primary : theme.colors.secondary), sender.badge)
                 .lineLimit(1)
             if let role = sender.role {
                 Text(role)
-                    .font(.system(size: size, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundColor(theme.colors.secondary)
                     .lineLimit(1)
                     .padding(.leading, 15)
                     .layoutPriority(1)
             }
         }
-        .modifier(terminalLineBox(UIFont.systemFont(ofSize: size), nil, theme))
+        .modifier(terminalLineBox(UIFont.preferredFont(forTextStyle: .body), nil, theme))
     }
+}
+
+extension EnvironmentValues {
+    struct TerminalMessageColumn: EnvironmentKey {
+        static let defaultValue: CGFloat = 0
+    }
+
+    var terminalMessageColumn: CGFloat {
+        get { self[TerminalMessageColumn.self] }
+        set { self[TerminalMessageColumn.self] = newValue }
+    }
+}
+
+func terminalPillStart(_ column: CGFloat) -> CGFloat {
+    max(0, chatItemTextPadding - column)
 }

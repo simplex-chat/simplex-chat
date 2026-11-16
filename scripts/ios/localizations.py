@@ -5,7 +5,10 @@
                 then lint and check the result (macOS with Xcode)
   check         lint and check the iOS XLIFF and .strings files (any platform)
   check-kotlin  check the Android and desktop strings.xml files with the rules of
-                adjustFormatting in apps/multiplatform/common/build.gradle.kts (any platform)
+                adjustFormatting in apps/multiplatform/common/build.gradle.kts, and warn about
+                translations older than their English text (any platform)
+  --since REV   with check or check-kotlin: also warn where a translation changed since REV
+                differs from the other platform's translation of the same English text
   update-kotlin rewrite the strings.xml files as adjustFormatting does, then check them (any platform)
 
 Run from the repository root. Exits with 1 when problems are found, 2 on errors.
@@ -98,6 +101,11 @@ KOTLIN_END_STRING = re.compile(r"</string>[ ]*")
 # Kotlin's useLines splits lines like BufferedReader.readLine.
 KOTLIN_LINE_BREAK = re.compile(r"\r\n|\r|\n")
 KOTLIN_UNADJUSTED_LOCALES = {"lv"}
+# iOS and Android name these locales differently; others map "pt-BR" to "pt-rBR".
+IOS_ANDROID_LOCALES = {"zh-Hans": "zh-rCN", "zh-Hant": "zh-rTW", "he": "iw", "id": "in"}
+UNCOMMITTED = "0" * 40
+BLAME_HEADER = re.compile(r"^[0-9a-f]{40} \d+ \d+")
+BLAME_STRING = re.compile(r'<string\s+name="([^"]*)"')
 KOTLIN_STRING_TAG_BRACKETS = 4
 KOTLIN_HTML_ERROR = "HTML other than balanced <b>, <i>, <u> or <font> tags, adjustFormatting fails the build"
 
@@ -112,8 +120,10 @@ CHANGED = "changed"
 SYNTAX = "syntax"
 DUPLICATE = "duplicate"
 STALE = "stale"
-PROBLEM_KINDS = [PLACEHOLDER, LINK, HTML, BLANK, LOST, IN_CODE, UNKNOWN, CHANGED, SYNTAX, DUPLICATE, STALE]
-WARNING_KINDS = {DUPLICATE, STALE, IN_CODE}
+OUTDATED = "outdated"
+MISMATCH = "mismatch"
+PROBLEM_KINDS = [PLACEHOLDER, LINK, HTML, BLANK, LOST, IN_CODE, UNKNOWN, CHANGED, SYNTAX, DUPLICATE, STALE, OUTDATED, MISMATCH]
+WARNING_KINDS = {DUPLICATE, STALE, IN_CODE, OUTDATED, MISMATCH}
 KOTLIN_BUILD_FAILURES = {PLACEHOLDER, HTML, UNKNOWN}
 GROUPED_KINDS = {BLANK, STALE}
 
@@ -135,6 +145,8 @@ KIND_COLORS = {
     SYNTAX: RED,
     DUPLICATE: YELLOW,
     STALE: YELLOW,
+    OUTDATED: YELLOW,
+    MISMATCH: YELLOW,
 }
 # https://no-color.org
 USE_COLOR = sys.stdout.isatty() and "NO_COLOR" not in os.environ and os.environ.get("TERM") != "dumb"
@@ -858,6 +870,8 @@ def check_kotlin_files(stats: dict[str, LanguageStats], write: bool = False) -> 
         if string.html_error:
             problems.append(Problem(HTML, base_path, string.name, string.html_error, kotlin_text(string.raw_value)))
     base_fails = bool(problems)
+    base_texts = {name: kotlin_text(string.raw_value) for name, string in base.items()}
+    history = in_git_work_tree()
     rewritten = []
     for path in files:
         xml_problem = invalid_xml(path, texts[path])
@@ -870,12 +884,165 @@ def check_kotlin_files(stats: dict[str, LanguageStats], write: bool = False) -> 
         if path != base_path:
             stats.setdefault(path.parent.name, LanguageStats()).translated = len(adjusted[path].strings)
         problems += file_problems
+        if path != base_path and history:
+            # Blamed before the rewrite below, which would make its lines uncommitted.
+            problems += outdated_translations(path, base_path, base_texts, texts[path])
         builds = not base_fails and not adjusted[path].unclosed and not any(p.kind in KOTLIN_BUILD_FAILURES for p in file_problems)
         if write and builds and adjusted[path].changed and path.parent.name not in KOTLIN_UNADJUSTED_LOCALES:
             # adjustFormatting writes the lines back without a final line break.
             write_file(path, "\n".join(adjusted[path].lines))
             rewritten.append(path)
     return problems, rewritten
+
+
+def git(*arguments: str) -> str | None:
+    """Output of a git command, or None when git is missing or the command fails."""
+    try:
+        result = subprocess.run(["git", *arguments], capture_output=True, text=True, encoding="utf-8")
+    except FileNotFoundError:
+        return None
+    return result.stdout if result.returncode == 0 else None
+
+
+def in_git_work_tree() -> bool:
+    return git("rev-parse", "--is-inside-work-tree") is not None
+
+
+def commit_of(revision: str) -> str:
+    """The commit hash, so cached files read at a revision stay valid when a branch name moves."""
+    commit = git("rev-parse", "--verify", "--quiet", f"{revision}^{{commit}}")
+    if commit is None:
+        raise UpdateError(f"{revision!r} is not a git commit, --since needs one")
+    return commit.strip()
+
+
+def git_file(revision: str, path: Path) -> str:
+    """The file at a revision, empty when it did not exist there."""
+    return git("show", f"{revision}:{path.as_posix()}") or ""
+
+
+def kotlin_values(text: str) -> dict[str, str]:
+    return {string.name: kotlin_text(string.raw_value) for string in adjust_kotlin(text).strings}
+
+
+@functools.cache
+def kotlin_values_at(revision: str, path: Path) -> dict[str, str]:
+    return kotlin_values(git_file(revision, path))
+
+
+def blamed_commits(porcelain: str) -> dict[str, str]:
+    """The commit that last changed the line where each string starts, from git blame --porcelain."""
+    commits: dict[str, str] = {}
+    commit = ""
+    for line in porcelain.splitlines():
+        if line.startswith("\t"):
+            match = BLAME_STRING.search(line)
+            if match:
+                commits.setdefault(match.group(1), commit)
+        elif BLAME_HEADER.match(line):
+            commit = line.split(" ", 1)[0]
+    return commits
+
+
+def outdated_translations(path: Path, base_path: Path, base_now: dict[str, str], text: str) -> list[Problem]:
+    """Translations last changed in a commit whose English text differs from the current one."""
+    porcelain = git("blame", "--porcelain", "--", path.as_posix())
+    if porcelain is None:
+        return []
+    translations = kotlin_values(text)
+    problems = []
+    for key, commit in blamed_commits(porcelain).items():
+        if commit == UNCOMMITTED or key not in base_now or key not in translations:
+            continue
+        then = kotlin_values_at(commit, base_path).get(key)
+        if then is not None and then != base_now[key]:
+            detail = f"English changed after this translation, from {preview(then)!r} to {preview(base_now[key])!r}"
+            problems.append(Problem(OUTDATED, path, key, detail, translations[key]))
+    return problems
+
+
+def normalized_placeholders(text: str) -> str:
+    """Placeholders as {position}, so Android %1$s and iOS %@ of the same argument compare equal."""
+    sequence = 0
+
+    def replace(match: re.Match[str]) -> str:
+        nonlocal sequence
+        if match["spec"] == ESCAPED_PERCENT:
+            return match.group(0)
+        sequence += 1
+        return "{" + (match["position"] or str(sequence)) + "}"
+
+    return SPECIFIER.sub(replace, text)
+
+
+def android_locale(ios_language: str) -> str:
+    if ios_language in IOS_ANDROID_LOCALES:
+        return IOS_ANDROID_LOCALES[ios_language]
+    language, _, region = ios_language.partition("-")
+    return f"{language}-r{region}" if region else language
+
+
+@dataclass
+class Mismatch:
+    android_key: str
+    android_text: str
+    ios_key: UnitKey
+    ios_text: str
+
+
+def mismatched_translations(
+    english: dict[str, str],
+    android_now: dict[str, str],
+    android_then: dict[str, str],
+    ios_now: dict[UnitKey, Unit],
+    ios_then: dict[UnitKey, Unit],
+) -> list[Mismatch]:
+    """English texts translated differently on Android and iOS, where either side changed since the base revision.
+
+    Texts with several different translations on one platform are skipped: each is right in its own context.
+    """
+    ios_by_english: dict[str, list[tuple[UnitKey, Unit]]] = {}
+    for key, unit in ios_now.items():
+        if unit.translated:
+            ios_by_english.setdefault(normalized_placeholders(unit.source), []).append((key, unit))
+    android_by_english: dict[str, list[str]] = {}
+    for key, text in english.items():
+        if android_now.get(key, "").strip():
+            android_by_english.setdefault(normalized_placeholders(text), []).append(key)
+    mismatches = []
+    for text, android_keys in android_by_english.items():
+        ios_units = ios_by_english.get(text)
+        if not ios_units:
+            continue
+        android_texts = {normalized_placeholders(android_now[key]) for key in android_keys}
+        ios_texts = {normalized_placeholders(unit.target or "") for _, unit in ios_units}
+        if len(android_texts) != 1 or len(ios_texts) != 1 or android_texts == ios_texts:
+            continue
+        android_changed = any(android_then.get(key) != android_now[key] for key in android_keys)
+        ios_changed = any(key not in ios_then or ios_then[key].target != unit.target for key, unit in ios_units)
+        if android_changed or ios_changed:
+            ios_key, ios_unit = ios_units[0]
+            mismatches.append(Mismatch(android_keys[0], android_now[android_keys[0]], ios_key, ios_unit.target or ""))
+    return mismatches
+
+
+def cross_platform_mismatches(revision: str) -> list[tuple[Path, Path, Mismatch]]:
+    """(Android strings.xml, iOS XLIFF, mismatch) for each iOS language that has an Android translation."""
+    base_path = KOTLIN_RESOURCES / KOTLIN_BASE / "strings.xml"
+    english = kotlin_values(read_file(base_path))
+    result = []
+    for xliff in translation_xliffs():
+        android_path = KOTLIN_RESOURCES / android_locale(language_of(xliff)) / "strings.xml"
+        if not android_path.exists():
+            continue
+        ios_now = dict(parse_units(read_file(xliff)))
+        then_text = git_file(revision, xliff)
+        ios_then = dict(parse_units(then_text)) if then_text else {}
+        android_now = kotlin_values(read_file(android_path))
+        android_then = kotlin_values_at(revision, android_path)
+        for mismatch in mismatched_translations(english, android_now, android_then, ios_now, ios_then):
+            result.append((android_path, xliff, mismatch))
+    return result
 
 
 class Steps:
@@ -1087,19 +1254,29 @@ def update() -> int:
     return report(stats, problems, set(languages))
 
 
-def check() -> int:
+def check(since: str | None = None) -> int:
     stats: dict[str, LanguageStats] = {}
-    steps = Steps(1)
+    steps = Steps(2 if since else 1)
     with steps.step("Linting .strings files and checking translations"):
         problems = check_files(stats, swift_string_literals())
+    if since:
+        with steps.step(f"Comparing translations changed since {since} with Android"):
+            for _, xliff, mismatch in cross_platform_mismatches(commit_of(since)):
+                detail = f"Android {mismatch.android_key} has {mismatch.android_text!r}"
+                problems.append(Problem(MISMATCH, xliff, mismatch.ios_key[1], detail, mismatch.ios_text))
     return report(stats, problems, set(app_languages()))
 
 
-def check_kotlin() -> int:
+def check_kotlin(since: str | None = None) -> int:
     stats: dict[str, LanguageStats] = {}
-    steps = Steps(1)
+    steps = Steps(2 if since else 1)
     with steps.step("Checking Android and desktop strings.xml files"):
         problems, _ = check_kotlin_files(stats)
+    if since:
+        with steps.step(f"Comparing translations changed since {since} with iOS"):
+            for android_path, _, mismatch in cross_platform_mismatches(commit_of(since)):
+                detail = f"iOS has {mismatch.ios_text!r}"
+                problems.append(Problem(MISMATCH, android_path, mismatch.android_key, detail, mismatch.android_text))
     return report(stats, problems, set(stats))
 
 
@@ -1117,13 +1294,23 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("update", help="import, export, lint and check (macOS with Xcode)")
-    commands.add_parser("check", help="lint and check the iOS files only (any platform)")
-    commands.add_parser("check-kotlin", help="check the Android and desktop strings.xml files (any platform)")
+    since_help = "also compare translations changed since this git revision with the other platform"
+    commands.add_parser("check", help="lint and check the iOS files only (any platform)").add_argument(
+        "--since", metavar="REVISION", help=since_help
+    )
+    commands.add_parser("check-kotlin", help="check the Android and desktop strings.xml files (any platform)").add_argument(
+        "--since", metavar="REVISION", help=since_help
+    )
     commands.add_parser(
         "update-kotlin", help="rewrite the strings.xml files as adjustFormatting does, then check them (any platform)"
     )
     arguments = parser.parse_args(argv)
-    run = {"update": update, "check": check, "check-kotlin": check_kotlin, "update-kotlin": update_kotlin}[arguments.command]
+    run = {
+        "update": update,
+        "check": lambda: check(arguments.since),
+        "check-kotlin": lambda: check_kotlin(arguments.since),
+        "update-kotlin": update_kotlin,
+    }[arguments.command]
     try:
         return run()
     except UpdateError as error:

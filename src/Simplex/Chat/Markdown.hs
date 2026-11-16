@@ -201,7 +201,7 @@ parsedMarkdown s = case T.lines s of
         Just (c, rest) -> (c == '/', rest)
         Nothing -> (False, "")
   _
-    | any isBlockSyntax tokens && length [f | FormattedText f _ <- tokens, isMarkup f] <= maxMarkupTokens -> ParsedMarkdown (Just tokens) (L.nonEmpty $ markdownBlocksOf tokens)
+    | any isBlockSyntax tokens && length [f | FormattedText f _ <- tokens, isMarkup f] <= maxMarkupTokens, blocks@(Just _) <- L.nonEmpty (markdownBlocksOf tokens) -> ParsedMarkdown (Just tokens) blocks
     | all (isNothing . format) inline -> ParsedMarkdown Nothing Nothing
     | otherwise -> ParsedMarkdown (Just inline) Nothing
   where
@@ -213,10 +213,8 @@ parsedMarkdown s = case T.lines s of
 isBlockSyntax :: FormattedText -> Bool
 isBlockSyntax = \case
   FormattedText (Just (Markup t)) _ -> case t of
-    LineBreak -> False
     SoftBreak -> False
     HardBreak -> False
-    ParagraphBreak _ -> False
     _ -> True
   _ -> False
 

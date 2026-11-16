@@ -2842,7 +2842,7 @@
     <string name="badges_ends">Scade il</string>
     <string name="badges_billing_footer_one_month">Scade il %1$s.</string>
     <string name="badges_banner_subtitle">Distintivo + file migliori</string>
-    <string name="v7_1_supporter_badge_body">Aiuta a mantenere la rete in attività — invia file fino a 2 GB.</string>
+    <string name="v7_1_supporter_badge_body">Invia file più grandi\ndisponibili più a lungo.</string>
     <string name="badges_how_it_works_button">Come i distintivi proteggono la tua privacy</string>
     <string name="badges_how_it_works_title">Come i distintivi proteggono la tua privacy</string>
     <string name="badges_type_investor">Investitore</string>
@@ -2868,7 +2868,7 @@
     <string name="badges_support_simplex_body">Ottieni un distintivo per inviare file più grandi (2-5 GB) che restano disponibili più a lungo (7-21 giorni) e per mostrarlo sul tuo profilo.</string>
     <string name="badges_support_ended">Il tuo distintivo è scaduto</string>
     <string name="badges_level_supporter">Sostenitore</string>
-    <string name="v7_1_supporter_badge_title">Distintivo sostenitore ❤️</string>
+    <string name="v7_1_supporter_badge_title">Distintivi dei sostenitori</string>
     <string name="badges_support_simplex_title">Sostieni SimpleX</string>
     <string name="badges_banner_title">Sostieni SimpleX</string>
     <string name="badges_error_bad_service_response">Il servizio dei distintivi ha inviato una risposta imprevista: %1$s</string>
@@ -2944,7 +2944,7 @@
     <string name="emoji_category_people">Persone e corpo</string>
     <string name="badges_link_held_title">Il profilo ha già un distintivo</string>
     <string name="badges_credential_purchase_id">ID acquisto</string>
-    <string name="badges_how_it_works_read_more_with_link"><![CDATA[Maggiori info nel <font color="#0088ff">nostro blog</font>.]]></string>
+    <string name="badges_how_it_works_read_more_with_link"><![CDATA[Maggiori informazioni nel <font color="#0088ff">nostro blog</font>.]]></string>
     <string name="callstate_reconnecting">riconnessione…</string>
     <string name="call_not_encrypted_desc">%s ha accettato la chiamata senza crittografia end-to-end.</string>
     <string name="keystore_key_storage_strongbox">Elemento sicuro</string>
@@ -2954,8 +2954,8 @@
     <string name="keystore_key_storage_software">Software</string>
     <string name="badges_credential_status">Stato</string>
     <string name="storage">Archiviazione</string>
-    <string name="badges_level_legend_file_storage">Conservato per 21 giorni</string>
-    <string name="badges_level_supporter_file_storage">Conservato per 7 giorni</string>
+    <string name="badges_level_legend_file_storage">Conservati per 21 giorni</string>
+    <string name="badges_level_supporter_file_storage">Conservati per 7 giorni</string>
     <string name="badges_level_supporter_summary">Sostenitore: file fino a 2 GB disponibili per 7 giorni.</string>
     <string name="badges_larger_files_longer">Supporta SimpleX per inviare file più grandi che restano disponibili più a lungo</string>
     <string name="emoji_category_symbols">Simboli</string>
@@ -3035,12 +3035,31 @@
     <string name="badges_subscription_renewing_footer">Si rinnova quando Google Play addebita l\'abbonamento.</string>
     <string name="badges_subscription_renewing_footer_store">Si rinnova quando lo store addebita l\'abbonamento.</string>
     <string name="badges_renews_soon">Il tuo distintivo si rinnoverà presto</string>
-    <string name="badges_stays_until">Il tuo distintivo rimane fino al %1$s.</string>
+    <string name="badges_stays_until">Il tuo distintivo resta fino al %1$s.</string>
     <string name="badges_subscription_ended_on">L\'abbonamento al tuo distintivo è scaduto il %1$s.</string>
     <string name="badges_subscription_ended_title">Il tuo abbonamento è scaduto</string>
     <string name="badges_subscription_ended_footer">Abbonamento scaduto. Il distintivo verrà rimosso.</string>
-    <string name="badges_subscription_cancelled_footer">Il tuo abbonamento è stato annullato. Il distintivo rimane fino al %1$s.</string>
+    <string name="badges_subscription_cancelled_footer">Il tuo abbonamento è stato annullato. Il distintivo resta fino al %1$s.</string>
     <string name="badges_subscription_renews_footer">Si rinnova automaticamente finché non lo annulli in Google Play.</string>
     <string name="badges_subscription_renews_footer_store">Si rinnova automaticamente finché non lo annulli nello store.</string>
     <string name="badges_ledger_to_purchase_key">Alla chiave di acquisto</string>
+    <string name="v7_1_channels_descr">Aggiungi moderatori e firma ogni messaggio.</string>
+    <string name="badges_benefits">Vantaggi</string>
+    <string name="v7_1_flat_layout_descr">Attivala nelle impostazioni dell\'Aspetto.</string>
+    <string name="badges_supporter_benefits">File fino a 2 GB, conservati per 7 giorni.</string>
+    <string name="badges_legend_benefits">File fino a 5 GB, conservati per 21 giorni.</string>
+    <string name="chat_layout_flat">Piatta</string>
+    <string name="v7_1_flat_layout">Disposizione chat piatta e markdown</string>
+    <string name="badges_investor_offer_legend">Investi $1000+ e ricevi gratis un distintivo leggenda.</string>
+    <string name="badges_investor_offer_supporter">Investi $100+ e ricevi gratis un distintivo.</string>
+    <string name="v7_1_supporter_badge_descr">File più grandi, disponibili più a lungo.</string>
+    <string name="whats_new_learn_more">Maggiori info.</string>
+    <string name="badges_investor_offer_learn_more">Maggiori informazioni su Wefunder</string>
+    <string name="v7_1_invest">Possiedi una parte di SimpleX Chat! 🚀</string>
+    <string name="v7_1_channels">Canali più sicuri</string>
+    <string name="v7_1_simplex_names_descr">In vendita dal 12 dicembre.</string>
+    <string name="v7_1_simplex_names">Nomi pubblici di SimpleX</string>
+    <string name="v7_1_supporter_badge_get">Sostieni SimpleX e ricevi un distintivo.</string>
+    <string name="v7_1_supporter_badge_have">Hai già un distintivo!</string>
+    <string name="badges_your_legend_badge">Il tuo distintivo leggenda</string>
 </resources>

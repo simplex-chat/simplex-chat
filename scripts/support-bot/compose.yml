@@ -1,0 +1,25 @@
+# network_mode: host makes 127.0.0.1 reach PostgreSQL on the host.
+#
+#   cp config/config.toml.example config/config.toml
+#   docker compose up --build
+#   LIBS=source docker compose build
+
+services:
+  support-bot:
+    image: simplex-support-bot:latest
+    build:
+      context: ../..
+      dockerfile: scripts/support-bot/Dockerfile
+      args:
+        LIBS: ${LIBS:-release}
+    network_mode: host
+    restart: on-failure:5
+    environment:
+      GROK_API_KEY: ${GROK_API_KEY:-}
+    volumes:
+      - support-bot-data:/data
+      - ./config:/etc/support-bot:ro
+    stop_grace_period: 30s
+
+volumes:
+  support-bot-data:

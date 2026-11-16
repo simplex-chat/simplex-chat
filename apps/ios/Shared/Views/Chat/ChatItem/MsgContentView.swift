@@ -107,10 +107,11 @@ struct MsgContentView: View {
     @ViewBuilder
     private func contentView() -> some View {
         let fts = if let stripLink { stripFormattedTextLink(formattedText, stripLink) } else { formattedText }
-        if blockLayout, let fts, !fts.isEmpty, let blocks = markdownBlocks {
+        if blockLayout, let fts, !fts.isEmpty, let blocks = markdownBlocks, prefix == nil || !blockTextRanges(blocks).isEmpty {
             MarkdownBlocksView(
                 formattedText: fts,
                 blocks: blocks,
+                text: text,
                 textStyle: textStyle,
                 cardColor: cardColor ?? theme.appColors.receivedQuote,
                 rightToLeft: rightToLeft,
@@ -171,7 +172,7 @@ struct MsgContentView: View {
         let r = messageText(
             text,
             formattedText,
-            markdownBlocks: markdownBlocks,
+            markdownBlocks: blockLayout ? nil : markdownBlocks,
             textStyle: textStyle,
             sender: sender,
             mentions: mentions,
@@ -220,8 +221,8 @@ struct MsgContentView: View {
     @inline(__always)
     private func reserveSpaceForMeta(_ mt: CIMeta, newLine: Bool = true) -> Text {
         if terminal {
-            let separator = rightToLeft && newLine ? textNewLine : metaCopyJoiner(rightToLeft) + Text(verbatim: "\u{00A0}\u{00A0}\u{00A0}")
-            return separator + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: encrypted, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, signedFileVerified: signedFileVerified, showSignature: showSignature, showFileEncryption: showFileEncryption, unbreakable: true)
+            let separator = rightToLeft && newLine ? textNewLine : Text(verbatim: (rightToLeft ? "\u{200F}" : "\u{200E}") + "   ")
+            return separator + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: encrypted, colorMode: .transparent, showStatus: terminalShowsStatus(mt.itemStatus, showTimestamp: showTimestamp), showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, signedFileVerified: signedFileVerified, showSignature: showSignature, showFileEncryption: showFileEncryption, unbreakable: true)
         }
         return (rightToLeft && newLine ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, showSignature: showSignature)
     }
@@ -593,7 +594,7 @@ func messageText(
             var attrs = plain
             switch (ft.format) {
             case let .bold(singleStar):
-                if singleStar && markdownBlocks != nil {
+                if singleStar {
                     italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
                     attrs[.font] = italic
                 } else {
@@ -762,6 +763,7 @@ struct MarkdownView: View {
             MarkdownBlocksView(
                 formattedText: fts,
                 blocks: blocks,
+                text: text,
                 textStyle: .body,
                 cardColor: cardColor,
                 rightToLeft: isRightToLeft(text),
@@ -786,14 +788,16 @@ private struct BlocksLayout {
     let font: UIFont
     let starts: [Int]
     let secrets: [Int]
+    let trailingEmptyLines: Int
     let lastIsText: Bool
 
-    init(_ fts: [FormattedText], _ blocks: [MarkdownBlock], _ textStyle: UIFont.TextStyle) {
+    init(_ fts: [FormattedText], _ blocks: [MarkdownBlock], _ textStyle: UIFont.TextStyle, text: String, terminal: Bool) {
         font = UIFont.preferredFont(forTextStyle: textStyle)
         starts = blocks.reduce(into: [0]) { $0.append($0[$0.count - 1] + $1.textRanges.count) }
         secrets = fts.reduce(into: [0]) { $0.append($0[$0.count - 1] + ($1.isSecret ? 1 : 0)) }
+        trailingEmptyLines = terminal ? 0 : emptyLines(fts, blocks.last?.endIndex ?? 0, fts.count, between: text.unicodeScalars.last != "\n")
         lastIsText = switch blocks.last {
-        case .paragraph, .heading, .quote, .list: true
+        case .paragraph, .heading, .quote, .list: trailingEmptyLines == 0
         default: false
         }
     }
@@ -804,6 +808,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     @Environment(\.terminalLayout) private var terminal
     var formattedText: [FormattedText]
     var blocks: [MarkdownBlock]
+    var text: String
     var textStyle: UIFont.TextStyle
     var cardColor: Color
     var rightToLeft: Bool
@@ -815,16 +820,23 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     var chatHeadings = false
 
     var body: some View {
-        let l = BlocksLayout(formattedText, blocks, textStyle)
+        let l = BlocksLayout(formattedText, blocks, textStyle, text: text, terminal: terminal)
         VStack(alignment: .leading, spacing: 0) {
+            emptyLinesGap(leadingEmptyLines(formattedText, blocks), l, between: false)
             ForEach(Array(blocks.enumerated()), id: \.offset) { k, block in
-                if k > 0 && terminal && blocks[k - 1].isHeading && !block.isHeading {
-                    Color.clear.frame(height: terminalHeadingBottomGap)
-                } else if k > 0 && (paragraphBreak(blocks[k - 1].endIndex, block.startIndex) || terminal && block.isHeading) {
-                    Color.clear.frame(height: terminal ? terminalLevelStep : l.font.lineHeight / 2)
+                let emptyHeight = k > 0 ? emptyLinesHeight(emptyLines(formattedText, blocks[k - 1].endIndex, block.startIndex, between: true), l) : 0
+                if k > 0 && terminal && (blocks[k - 1].isCard || block.isCard) {
+                    Color.clear.frame(width: 0, height: max(terminalParagraphGap, emptyHeight))
+                } else if k > 0 && terminal && blocks[k - 1].isHeading && !block.isHeading {
+                    Color.clear.frame(width: 0, height: terminalHeadingBottomGap + emptyHeight)
+                } else if k > 0 && terminal && block.isHeading {
+                    Color.clear.frame(width: 0, height: terminalLevelStep + emptyHeight)
+                } else if emptyHeight > 0 {
+                    Color.clear.frame(width: 0, height: emptyHeight)
                 }
-                blockView(block, l.starts[k], l, last: k == blocks.count - 1)
+                blockView(block, l.starts[k], l, last: k == blocks.count - 1 && l.trailingEmptyLines == 0)
             }
+            emptyLinesGap(l.trailingEmptyLines, l)
             if !l.lastIsText {
                 metaLine()
             }
@@ -850,7 +862,11 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
             }
             .fixedSize(horizontal: false, vertical: true)
         case let .list(items):
-            ForEach(Array(listEntries(items, 0).enumerated()), id: \.offset) { j, e in
+            let entries = listEntries(items, 0)
+            ForEach(Array(entries.enumerated()), id: \.offset) { j, e in
+                if j > 0 {
+                    emptyLinesGap(emptyLines(formattedText, entries[j - 1].entry.content.to, e.entry.content.from, between: true), l)
+                }
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(e.entry.number ?? "•").font(.system(size: l.font.pointSize))
                     text(start + j, e.entry.content, l.font, l)
@@ -861,7 +877,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
             CodeBlockCard(color: cardColor, radius: 12 * roundness, copyText: codeText(content)) {
                 text(start, content, monospacedFont(l.font), l).fixedSize(horizontal: true, vertical: false)
             }
-            .if(terminal) { cardMargins($0, last) }
+            .if(terminal) { cardMargins($0.alignmentGuide(.lastTextBaseline) { d in d[explicit: .lastTextBaseline] ?? d[.bottom] - 8 + monospacedFont(l.font).descender }, last) }
         case let .table(columns, header, rows):
             tableView(columns, [header] + rows, start, l)
                 .if(terminal) { cardMargins($0.alignmentGuide(.lastTextBaseline) { d in d[explicit: .lastTextBaseline] ?? d[.bottom] - 4 + l.font.descender }, last) }
@@ -877,8 +893,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     private func cardMargins(_ block: some View, _ last: Bool) -> some View {
         block
             .if(last && marksLastBlock) { $0.modifier(MessageLastBlock()) }
-            .padding(.top, terminalBlockTopGap)
-            .padding(.bottom, last && marksLastBlock ? 0 : terminalBlockBottomGap)
+            .padding(.bottom, last && !marksLastBlock ? terminalParagraphGap : 0)
     }
 
     @ViewBuilder private func terminalRule() -> some View {
@@ -937,11 +952,16 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
         }
     }
 
-    private func paragraphBreak(_ from: Int, _ to: Int) -> Bool {
-        let start = min(max(from, 0), formattedText.count)
-        return formattedText[start..<max(start, min(to, formattedText.count))].contains {
-            if case .markup(.paragraphBreak) = $0.format { true } else { false }
+    @ViewBuilder private func emptyLinesGap(_ lines: Int, _ l: BlocksLayout, between: Bool = true) -> some View {
+        if lines > 0 {
+            Color.clear.frame(width: 0, height: emptyLinesHeight(lines, l, between: between))
         }
+    }
+
+    private func emptyLinesHeight(_ lines: Int, _ l: BlocksLayout, between: Bool = true) -> CGFloat {
+        if terminal { return CGFloat(lines) * terminalParagraphGap }
+        let height = CGFloat(lines) * (l.font.lineHeight + l.font.leading)
+        return between && lines > 0 ? height + l.font.leading : height
     }
 
     private func codeText(_ r: SegmentRange) -> String {
@@ -970,6 +990,24 @@ private extension MarkdownBlock {
     var endIndex: Int {
         if case let .rule(mark) = self { mark.to } else { textRanges.last?.range.to ?? 0 }
     }
+}
+
+private let maxEmptyLines = 100
+
+private func emptyLines(_ fts: [FormattedText], _ from: Int, _ to: Int, between: Bool) -> Int {
+    let start = min(max(from, 0), fts.count)
+    let lineBreaks = fts[start..<max(start, min(to, fts.count))].reduce(0) { n, ft in
+        switch ft.format {
+        case .markup(.lineBreak): n + 1
+        case let .markup(.paragraphBreak(breaks)): n + breaks
+        default: n
+        }
+    }
+    return min(max(0, lineBreaks - (between ? 1 : 0)), maxEmptyLines)
+}
+
+func leadingEmptyLines(_ fts: [FormattedText], _ blocks: [MarkdownBlock]) -> Int {
+    emptyLines(fts, 0, blocks.first?.startIndex ?? 0, between: false)
 }
 
 let quoteBarWidth: CGFloat = 4
@@ -1010,6 +1048,7 @@ private func cellAlignment(_ align: TableAlign) -> Alignment {
 
 private struct CodeBlockCard<Content: View>: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var color: Color
     var radius: CGFloat
     var copyText: String
@@ -1022,7 +1061,7 @@ private struct CodeBlockCard<Content: View>: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .if(!terminal) { $0.frame(maxWidth: .infinity, alignment: .leading) }
         .overlay(alignment: .topTrailing) {
             if showCopy {
                 Button {

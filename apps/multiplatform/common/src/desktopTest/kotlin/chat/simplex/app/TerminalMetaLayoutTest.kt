@@ -27,7 +27,7 @@ class TerminalMetaLayoutTest {
   private val metaBaseline = 12
   private val metaBoxWidth = metaWidth + 12
   private val gap = with(density) { TERMINAL_META_GAP.roundToPx() }
-  private val blockGap = with(density) { TERMINAL_BLOCK_BOTTOM_GAP.roundToPx() }
+  private val cardGap = with(density) { TERMINAL_PARAGRAPH_GAP.roundToPx() }
   private val placed = mutableMapOf<String, Placed>()
 
   private class Result(val row: Placed, val content: Placed, val meta: Placed?, val overlay: Placed?, val endButton: Placed?, val drawn: Set<String>)
@@ -37,6 +37,7 @@ class TerminalMetaLayoutTest {
     metaReserved: Boolean = true,
     overlay: Boolean = false,
     endButton: Boolean = false,
+    reactions: Boolean = false,
     content: @Composable (Modifier) -> Unit
   ): Result {
     val drawn = mutableSetOf<String>()
@@ -47,7 +48,8 @@ class TerminalMetaLayoutTest {
             meta = { Box(Modifier.record(placed, "meta").drawBehind { drawn += "meta" }.fixed(metaWidth, metaHeight, metaBaseline)) },
             overlayMeta = if (overlay) { { Box(Modifier.record(placed, "overlay").drawBehind { drawn += "overlay" }.fixed(metaWidth, metaHeight, metaBaseline)) } } else null,
             metaReserved = metaReserved,
-            endButton = if (endButton) { { Box(Modifier.record(placed, "endButton").fixed(22, 22, null)) } } else null
+            endButton = if (endButton) { { Box(Modifier.record(placed, "endButton").fixed(22, 22, null)) } } else null,
+            gapBelowCard = if (reactions) cardGap.dp else 0.dp
           ) { content(Modifier.record(placed, "content")) }
         }
       }
@@ -85,10 +87,23 @@ class TerminalMetaLayoutTest {
   }
 
   @Test
-  fun blockGapBelowLastBlockWithMetaBeside() {
-    val r = layOut { Box(it.messageLastBlock().fixed(100, 40, 30)) }
-    assertEquals(Placed(rowWidth - metaBoxWidth, 30 - metaBaseline, metaWidth, metaHeight), r.meta)
-    assertEquals(40 + blockGap, r.row.height)
+  fun gapBelowLastCardAboveReactions() {
+    val card = layOut { Box(it.messageCard().messageLastLine().fixed(100, 40, 30)) }
+    assertEquals(40, card.row.height)
+    val withReactions = layOut(reactions = true) { Box(it.messageCard().messageLastLine().fixed(100, 40, 30)) }
+    assertEquals(Placed(rowWidth - metaBoxWidth, 30 - metaBaseline, metaWidth, metaHeight), withReactions.meta)
+    assertEquals(40 + cardGap, withReactions.row.height)
+  }
+
+  @Test
+  fun noGapBelowTextAfterCard() {
+    val r = layOut(reactions = true) {
+      Column(it) {
+        Box(Modifier.messageCard().fixed(100, 40, null))
+        Box(Modifier.fixed(100, 22, 17))
+      }
+    }
+    assertEquals(62, r.row.height)
   }
 
   @Test
