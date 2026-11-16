@@ -203,6 +203,11 @@
         "type": "known"
       },
       "nameChange": {
+        "nameDomain": {
+          "domain": "alice",
+          "nameTLD": "simplex",
+          "subDomain": []
+        },
         "nameWarning": {
           "type": "reservedForCommunity"
         },

@@ -226,6 +226,11 @@
           "nameChange": {
             "_owsf": true,
             "lapsed": {
+              "nameDomain": {
+                "domain": "alice",
+                "nameTLD": "simplex",
+                "subDomain": []
+              },
               "nameWarning": {
                 "_owsf": true,
                 "available": {
