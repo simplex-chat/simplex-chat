@@ -76,6 +76,7 @@ import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (abiWordSize, bytes32FromHex, hex)
+import StoreService.Names.Chain (TxHash)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
 import StoreService.Names.Store (Balance, LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
@@ -136,6 +137,8 @@ data WriteRefusal = WRChanged | WRRefused OrderRefusal
 -- the order changed since it was read, or a failed chain read.
 data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
   deriving (Eq, Show)
+
+data Landed = LandedByReceipt TxHash (Maybe Word64) | LandedByOwner
 
 maxSealedChars :: Int
 maxSealedChars = 11095
@@ -376,22 +379,25 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
   runExceptT (landed mined) >>= \case
     Left e -> LUnread <$ logWarn ("names: a register check's chain read failed: " <> tshow e)
     Right Nothing -> pure LNotLanded
-    Right (Just (tx, expiry)) -> either (const LChanged) LRegistered <$> markRegistered tx expiry
+    Right (Just (how, expiry)) -> either (const LChanged) LRegistered <$> markRegistered how expiry
   where
     landed mined = do
       confirmed <- ExceptT $ confirmedTag ct
-      registerTx <- case mined of
-        tx : _ -> pure $ Just $ Just tx
-        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken ct confirmed nrLabelHash)
-      forM registerTx $ \tx -> (tx,) <$> ExceptT (nameExpires ct confirmed nrLabelHash)
-    markRegistered tx expiry = do
+      how <- case mined of
+        (tx, block) : _ -> pure $ Just $ LandedByReceipt tx block
+        [] -> (\holder -> if holder == Just nrOwner then Just LandedByOwner else Nothing) <$> ExceptT (ownerOfToken ct confirmed nrLabelHash)
+      forM how $ \l -> (l,) <$> ExceptT (nameExpires ct confirmed nrLabelHash)
+    markRegistered how expiry = do
       now <- clock
-      let registered =
+      let (registerTx, registerBlock) = case how of
+            LandedByReceipt tx block -> (Just tx, block)
+            -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
+            LandedByOwner -> (Nothing, Nothing)
+          registered =
             r
               { nrPhase = PRegistered,
-                -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
-                nrRegisterTx = fst <$> tx,
-                nrRegisterBlock = snd =<< tx,
+                nrRegisterTx = registerTx,
+                nrRegisterBlock = registerBlock,
                 nrExpiresAt = Just expiry,
                 nrRegisteredAt = Just now,
                 nrFailedAt = Nothing,
