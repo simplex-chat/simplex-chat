@@ -1166,8 +1166,7 @@ simplexChatContact' = \case
   l@(CLShort _) -> l
 
 groupSimplexDomain :: GroupInfo -> Maybe SimplexDomain
-groupSimplexDomain GroupInfo {groupProfile = GroupProfile {publicGroup}} =
-  claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
+groupSimplexDomain GroupInfo {groupProfile} = groupClaim groupProfile
 
 viewDomainVerified :: SimplexNameType -> Maybe SimplexDomain -> Maybe Text -> [StyledString]
 viewDomainVerified nameType domain_ result =

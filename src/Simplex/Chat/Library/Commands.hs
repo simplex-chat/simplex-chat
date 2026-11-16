@@ -4708,7 +4708,7 @@ processChatCommand cxt nm = \case
                           (\(g', _, moved) -> CPGroupLink (GLPKnown g' u o os) (knownMoved moved)) <$> updateGroupFromLinkData user g sLinkData (Just nameDomain)
                         _ -> pure plan0
                 forM_ planDomain $ \nameDomain ->
-                  let domain_ = (\GroupProfile {publicGroup} -> claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)) =<< case plan of
+                  let domain_ = groupClaim =<< case plan of
                         CPGroupLink (GLPOk _ (Just GroupShortLinkData {groupProfile}) _) _ -> Just groupProfile
                         CPGroupLink (GLPKnown GroupInfo {groupProfile} _ _ _) _ -> Just groupProfile
                         CPGroupLink (GLPOwnLink GroupInfo {groupProfile}) _ -> Just groupProfile

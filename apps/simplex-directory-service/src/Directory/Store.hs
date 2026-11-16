@@ -70,7 +70,6 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Directory.Search
 import Simplex.Chat.Bot.Store
 import Simplex.Chat.Controller
-import Simplex.Chat.Names (claimDomain)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Groups
@@ -205,8 +204,8 @@ grDirectoryStatus = \case
   _ -> DSRegistered
 
 verifiedGroupDomain :: GroupInfo -> Maybe SimplexDomain
-verifiedGroupDomain GroupInfo {groupProfile = GroupProfile {publicGroup}, groupDomainVerified}
-  | groupDomainVerified == Just DVVerified = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
+verifiedGroupDomain GroupInfo {groupProfile, groupDomainVerified}
+  | groupDomainVerified == Just DVVerified = groupClaim groupProfile
   | otherwise = Nothing
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "PC") ''ProfileCondition)

@@ -2729,7 +2729,7 @@ createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange
   createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff
 
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
-updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, publicGroup = oldPublicGroup}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission, chatLayout}
+updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = p@GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission, chatLayout}
   | displayName == newName = liftIO $ do
       currentTs <- getCurrentTime
       updateGroupProfile_ currentTs
@@ -2744,8 +2744,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         pure $ Right $ (g' :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}
   where
     fullGroupPreferences = mergeGroupPreferences groupPreferences
-    groupClaim pg = domain <$> (pg >>= publicGroupAccess >>= groupDomainClaim)
-    claimChanged = groupClaim oldPublicGroup /= groupClaim publicGroup
+    claimChanged = groupClaim p /= groupClaim p'
     g' = if claimChanged then (g :: GroupInfo) {groupDomainVerified = Nothing} else g
     clearVerificationIfClaimChanged =
       when claimChanged $
