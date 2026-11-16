@@ -6300,7 +6300,7 @@ badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
 -- nothing else records one.
 requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (StatementEntry, Maybe SubscriptionState))
 requestBadgeIssue userId p now = do
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
+  sendTarget <- requireBadgeService
   withEntityLock "badgeIssue" (CLBadgeUser userId) $ sendBadgeIssue sendTarget userId p BSCIssueBadge (recordBadgeIssueFailure p) now
 
 recordBadgeIssueFailure :: UserBadgePurchase -> BadgeIssueFailure -> CM ()
