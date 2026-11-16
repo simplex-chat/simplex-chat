@@ -23,6 +23,11 @@ describe("SimpleX errors", () => {
       {type: "error", errorType: {type: "simplexDomainNotReady", simplexDomain: domain, simplexDomainError: {type: "unknownDomain"}}},
       "Unconfirmed name: The SimpleX name ridgeline.simplex is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.",
     ],
+    [
+      "file servers not approved",
+      {type: "error", errorType: {type: "fileNotApproved", fileId: 7, unknownServers: ["xftp://k@xftp2.example.com", "xftp://k@xftp1.example.com:443", "xftp://j@xftp2.example.com"]}},
+      "Unknown servers! Without Tor or VPN, your IP address will be visible to these XFTP relays: xftp1.example.com, xftp2.example.com.",
+    ],
     ["no name servers", agentError({type: "NO_NAME_SERVERS"}), "SimpleX name error: None of your servers are set to resolve SimpleX names. Use a connection link."],
     ["name not found", agentError({type: "SMP", serverAddress: server, smpErr: {type: "NAME", nameErr: {type: "NOT_FOUND"}}}), "Name not found: This SimpleX name is not registered. Please check the name."],
     [

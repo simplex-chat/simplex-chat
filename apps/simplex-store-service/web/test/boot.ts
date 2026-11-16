@@ -22,6 +22,8 @@ export interface Page {
   storage: MemStorage;
   clipboard: Clipboard;
   fetches: Array<{ url: string; init?: RequestInit }>;
+  // What GET /api/config answers, outside the replies and the recorded fetches, as the page reads it at boot.
+  siteConfig: { stripePublishableKey: string | null };
   confirms: string[];
   workers: ServiceWorkers;
   connectivity: Connectivity;
@@ -31,7 +33,7 @@ export interface Page {
   confirmAnswer(answer: boolean): void;
   setOffline(on: boolean): void;
   reducedMotion(on: boolean): void;
-  fire(type: string): void;
+  fire(type: string, event?: unknown): void;
   press(key: string, init?: { shiftKey?: boolean }): void;
 }
 
@@ -44,8 +46,9 @@ export function installPage(opts: BootOptions = {}): Page {
   const { app, chrome, documentElement, clipboard, document, workers, connectivity } = installDocument();
   const storage = opts.storage ?? new MemStorage();
   const fetches: Array<{ url: string; init?: RequestInit }> = [];
+  const siteConfig: Page["siteConfig"] = { stripePublishableKey: null };
   const confirms: string[] = [];
-  const windowListeners = new Map<string, Array<() => void>>();
+  const windowListeners = new Map<string, Array<(event?: unknown) => void>>();
   const location = { pathname: "/", search: "", hash: "" };
 
   let offline = false;
@@ -55,9 +58,9 @@ export function installPage(opts: BootOptions = {}): Page {
   let reduced = false;
 
   const syncLocation = (): void => { Object.assign(location, locationOf(history.url)); };
-  const fire = (type: string): void => {
+  const fire = (type: string, event?: unknown): void => {
     syncLocation();
-    for (const fn of [...(windowListeners.get(type) ?? [])]) fn();
+    for (const fn of [...(windowListeners.get(type) ?? [])]) fn(event);
   };
   const press = (key: string, init: { shiftKey?: boolean } = {}): void => {
     const event = { key, shiftKey: false, ...init, preventDefault: () => {} };
@@ -80,12 +83,16 @@ export function installPage(opts: BootOptions = {}): Page {
         media: query,
         matches: query === "(prefers-reduced-motion: reduce)" && reduced,
       }),
-      addEventListener(type: string, fn: () => void) {
+      addEventListener(type: string, fn: (event?: unknown) => void) {
         const list = windowListeners.get(type) ?? [];
         list.push(fn);
         windowListeners.set(type, list);
       },
       fetch: async (input: unknown, init?: RequestInit): Promise<Response> => {
+        if (String(input) === "/api/config") {
+          if (offline) throw new TypeError("Failed to fetch");
+          return responseOf({ status: 200, body: { mode: "open", ...siteConfig } });
+        }
         fetches.push(init ? { url: String(input), init } : { url: String(input) });
         // A browser with no network throws this TypeError.
         if (offline) throw new TypeError("Failed to fetch");
@@ -129,7 +136,7 @@ export function installPage(opts: BootOptions = {}): Page {
   }
 
   return {
-    app, chrome, documentElement, document, history, location, storage, clipboard, fetches, confirms, workers, connectivity,
+    app, chrome, documentElement, document, history, location, storage, clipboard, fetches, siteConfig, confirms, workers, connectivity,
     respondWith: (reply) => { nextResponse = reply; },
     answerHeld: (reply, match) => {
       const at = match === undefined ? 0 : held.findIndex((h) => h.url.includes(match));

@@ -15,12 +15,16 @@ enum VoiceMessagePlaybackState {
     case paused
 }
 
+func wholeSeconds(_ time: TimeInterval) -> Int {
+    Int(exactly: time.rounded(.towardZero)) ?? 0
+}
+
 func voiceMessageTime(_ time: TimeInterval) -> String {
-    durationText(Int(time))
+    durationText(wholeSeconds(time))
 }
 
 func voiceMessageTime_(_ time: TimeInterval?) -> String {
-    durationText(Int(time ?? 0))
+    durationText(wholeSeconds(time ?? 0))
 }
 
 struct ComposeVoiceView: View {
@@ -157,7 +161,7 @@ struct ComposeVoiceView: View {
         var seek: (TimeInterval) -> Void
 
         var body: some View {
-            Slider(value: Binding(get: { progress ?? TimeInterval(0) }, set: { seek($0) }), in: 0 ... length)
+            Slider(value: Binding(get: { progress ?? TimeInterval(0) }, set: { seek($0) }), in: 0 ... max(length, 0))
                 .frame(maxWidth: .infinity)
                 .frame(height: 4)
                 .tint(theme.colors.primary)

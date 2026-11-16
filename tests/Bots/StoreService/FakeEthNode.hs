@@ -62,6 +62,7 @@ module Bots.StoreService.FakeEthNode
     fakeTip,
     fakeBaseFee,
     fakeMaxFeePerGas,
+    genesisTime,
   )
 where
 

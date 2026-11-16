@@ -60,7 +60,7 @@ import Numeric.Natural (Natural)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (stateTVar', tshow)
 
 -- | Allows for our clock running ahead of the provider's; an expired invoice can still be marked paid.
 expiryGrace :: NominalDiffTime
@@ -126,6 +126,8 @@ data PollerEnv = PollerEnv
     pePoll :: PollConfig,
     peSkipped :: TVar (Map Text UTCTime),
     peListedAt :: TVar (Maybe UTCTime),
+    -- | When each provider's list last succeeded, by its text encoding.
+    peListedOk :: TVar (Map Text UTCTime),
     peStrayEvery :: NominalDiffTime,
     -- When the cancel first failed, for orders older than 72 hours.
     peCancelFailed :: TVar (Map Text UTCTime),
@@ -142,13 +144,14 @@ newPollerEnv :: DBStore -> Waiters -> Maybe Phases -> ReadHints -> [Provider] ->
 newPollerEnv peStore peWaiters pePhases peHints peProviders pePoll = do
   peSkipped <- newTVarIO M.empty
   peListedAt <- newTVarIO Nothing
+  peListedOk <- newTVarIO M.empty
   peCancelFailed <- newTVarIO M.empty
   peReadFailed <- newTVarIO M.empty
   peCleanedAt <- newTVarIO Nothing
   peCleanupLeft <- newTVarIO []
   peCreditedAt <- newTVarIO Nothing
   peRates <- newTVarIO M.empty
-  pure PollerEnv {peStore, peWaiters, pePhases, peHints, peProviders, pePoll, peSkipped, peListedAt, peStrayEvery = strayListInterval, peCancelFailed, peReadFailed, peCleanedAt, peCleanupLeft, peCreditedAt, peRates}
+  pure PollerEnv {peStore, peWaiters, pePhases, peHints, peProviders, pePoll, peSkipped, peListedAt, peListedOk, peStrayEvery = strayListInterval, peCancelFailed, peReadFailed, peCleanedAt, peCleanupLeft, peCreditedAt, peRates}
 
 -- | Read providers before the sweep, and leave out of the sweep every invoice whose read or settlement failed,
 -- so an invoice with money in it is never expired. After a list that cannot account for every invoice, only overdue
@@ -241,13 +244,14 @@ readRows env now rows =
 -- | The refs of ours the list did not account for, so the sweep does not expire one over money it missed;
 -- Nothing when it cannot name them all.
 listPass :: PollerEnv -> UTCTime -> Provider -> IO (Maybe (Set Text))
-listPass env now p =
+listPass env@PollerEnv {peListedOk} now p =
   pListOpen p >>= \case
     Left (ProviderError e) -> do
       due <- dueToWarn env now ("list failed: " <> tshow (pProvider p))
       when due $ logWarn ("badge poller: " <> tshow (pProvider p) <> " list failed; every invoice waits for the next pass: " <> e)
       pure Nothing
     Right ListPass {lpMoved, lpSkipped} -> do
+      atomically $ modifyTVar' peListedOk $ M.insert (textEncode $ pProvider p) now
       owners <- mapM (\s -> safelyWith (skipWhat s) SkipUnaccounted (reportSkip env (pProvider p) now s)) lpSkipped
       reportStrangers env (pProvider p) now [reason | (SkipStranger, (_, reason)) <- zip owners lpSkipped]
       unsettled <- filterM (\m -> not <$> safely (settleWhat m) (settleMoved env (pProvider p) now m)) lpMoved
@@ -400,7 +404,7 @@ cleanupUnpaid env@PollerEnv {peStore, peCleanedAt, peCleanupLeft} now = do
     when listed $ do
       atomically $ writeTVar peCleanedAt (Just now)
       void $ safely "names: the late payment alerts" (alertLatePayments env now)
-  candidates <- atomically $ stateTVar peCleanupLeft (splitAt cleanupReadsPerPass)
+  candidates <- atomically $ stateTVar' peCleanupLeft (splitAt cleanupReadsPerPass)
   deleted <- filterM (\c@(_, _, ref) -> safelyWith ("names cleanup: invoice " <> ref) False (cleanOne c)) candidates
   unless (null deleted) $ logNote ("names cleanup: deleted " <> tshow (length deleted) <> " unpaid order(s)")
   where
@@ -564,7 +568,7 @@ uncancelled :: PollerEnv -> UTCTime -> OverdueInvoice -> Text -> IO Bool
 uncancelled env@PollerEnv {peCancelFailed} now OverdueInvoice {oiProvider, oiProviderRef = ref, oiCreatedAt} e
   | diffUTCTime now oiCreatedAt <= settleWindow = keepOpen "it stays open until a cancel succeeds or it settles"
   | otherwise = do
-      firstFailed <- atomically $ stateTVar peCancelFailed $ \failed -> (M.lookup ref failed, M.insertWith (\_ first -> first) ref now failed)
+      firstFailed <- atomically $ stateTVar' peCancelFailed $ \failed -> (M.lookup ref failed, M.insertWith (\_ first -> first) ref now failed)
       case firstFailed of
         Just at | diffUTCTime now at >= cancelGiveUpDelay -> do
           logError ("badge poller: overdue " <> tshow oiProvider <> " invoice " <> ref <> " could not be cancelled at the provider, so it was expired here only; check it in the provider's dashboard: " <> e)

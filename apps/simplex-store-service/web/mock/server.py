@@ -6,8 +6,8 @@ Standard library only. Threaded, because the wait endpoint holds a connection.
 
 Environment:
   MOCK_HOLD_SECONDS         how long GET /api/invoice/:id?wait= holds (default 30)
-  STRIPE_PUBLISHABLE_KEY    substituted into the
-                            served index.html. Public by design, but still not
+  STRIPE_PUBLISHABLE_KEY    answered by GET /api/config, as the service answers
+                            it from its ini. Public by design, but still not
                             committed: unset, the page has NO card form and
                             choosing Card reaches "The card form did not load",
                             so drive a purchase with btc or xmr and settle it
@@ -15,7 +15,7 @@ Environment:
                             Set it to a `pk_test_...` key to drive the real
                             Stripe path; a secret key here is refused at start.
 """
-import json, os, re, secrets, sys, threading
+import json, os, secrets, sys, threading
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -24,7 +24,6 @@ from urllib.parse import urlparse, parse_qs
 ROOT = Path(__file__).resolve().parent.parent
 HOLD_SECONDS = float(os.environ.get("MOCK_HOLD_SECONDS", "30"))
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "").strip()
-KEY_META = re.compile(r'(<meta id="stripe-publishable-key"[^>]*content=")[^"]*(")')
 
 CATALOG = {
     "price_supporter": {"badgeType": "supporter", "monthPrice": 700},
@@ -106,19 +105,6 @@ def public_view(inv):
         view["cryptoCurrency"] = inv["method"]
         view["requiredConfirmations"] = REQUIRED_CONFIRMATIONS
     return view
-
-
-def with_publishable_key(html):
-    """The publishable key is compiled into the page. Here it comes
-    from the environment, so nothing that could be a real key is ever written
-    back into public/index.html. Unset leaves the committed empty value, with
-    which the page offers no card form at all."""
-    if not STRIPE_PUBLISHABLE_KEY:
-        return html
-    text, found = KEY_META.subn(lambda m: m.group(1) + STRIPE_PUBLISHABLE_KEY + m.group(2), html.decode())
-    if found != 1:
-        raise RuntimeError("mock: the shell has no stripe-publishable-key meta element to fill")
-    return text.encode()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -249,6 +235,9 @@ class Handler(BaseHTTPRequestHandler):
         # being absent, so blank values are kept.
         path, query = parsed.path, parse_qs(parsed.query, keep_blank_values=True)
 
+        if path == "/api/config":
+            return self._send(200, {"mode": "open", "stripePublishableKey": STRIPE_PUBLISHABLE_KEY or None})
+
         if path.startswith("/api/invoice/"):
             invoice_id = path[len("/api/invoice/"):]
             with LOCK:
@@ -284,10 +273,7 @@ class Handler(BaseHTTPRequestHandler):
                 continue
             if candidate.is_file():
                 ctype = MIME.get(candidate.suffix, "application/octet-stream")
-                body = candidate.read_bytes()
-                if candidate.name == "index.html":
-                    body = with_publishable_key(body)
-                return self._send(200, body, ctype)
+                return self._send(200, candidate.read_bytes(), ctype)
         return self._send(404, {"error": "not_found"})
 
 

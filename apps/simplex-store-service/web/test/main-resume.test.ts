@@ -1,7 +1,7 @@
 import { after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { forgetControl, headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
-import { MemStorage, StubElement } from "./stub-dom.js";
+import { MemStorage } from "./stub-dom.js";
 
 const resumeTest = timedTest(3000);
 
@@ -32,10 +32,7 @@ const crypto = {
 };
 
 // The publishable key makes a non-submitted card order render the real Payment Element form, not the "card unavailable" screen.
-const keyMeta = new StubElement("meta");
-keyMeta.setAttribute("id", "stripe-publishable-key");
-keyMeta.setAttribute("content", "pk_test_resume");
-page.document.byId.set("stripe-publishable-key", keyMeta);
+page.siteConfig.stripePublishableKey = "pk_test_resume";
 (globalThis as unknown as { window: Record<string, unknown> }).window.Stripe = () => ({
   elements: () => ({ create: () => ({ mount: () => {}, destroy: () => {} }) }),
   confirmPayment: async () => ({ paymentIntent: { status: "succeeded" } }),

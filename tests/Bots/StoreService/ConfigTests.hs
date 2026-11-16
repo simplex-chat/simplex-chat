@@ -35,7 +35,7 @@ badgeConfigTests = describe "store service config" $ do
   it "reads the badges_port and badges_static_dir written out, as a local run sets them" testBadgesListenerKeys
   it "refuses the listener keys of earlier releases, naming the key that replaced each, all at once" testRetiredListenerKeys
   it "refuses a badges_port outside 1-65535" testBadgesPortRange
-  it "reads serve_webapp off and a badges_export_dir" testWebappSplitDeployment
+  it "reads serve_webapp off" testWebappOff
   it "applies every documented stripe default" testStripeDefaults
   it "disables stripe when the section is absent" testStripeAbsent
   it "refuses an incomplete stripe section, naming the key" testStripeIncomplete
@@ -113,14 +113,13 @@ withIni t f = do
 testDefaults :: IO ()
 testDefaults = withIni fullIni $ \p -> do
   Right cfg <- readServiceConfig p
-  let ListenerConfig {lHost, lBadgesPort, lBadgesStaticDir, lServeWebapp, lBadgesExportDir, lTrustForwardedFor, lNamesStaticDir, lNamesExportDir, lNamesPort} = listener cfg
+  let ListenerConfig {lHost, lBadgesPort, lBadgesStaticDir, lServeWebapp, lTrustForwardedFor, lNamesStaticDir, lNamesPort} = listener cfg
   lHost `shouldBe` "127.0.0.1"
   lBadgesPort `shouldBe` 8080
   lBadgesStaticDir `shouldBe` "/srv/badges"
   lServeWebapp `shouldBe` True
-  lBadgesExportDir `shouldBe` Nothing
   lTrustForwardedFor `shouldBe` False
-  (lNamesStaticDir, lNamesExportDir, lNamesPort) `shouldBe` (Nothing, Nothing, Nothing)
+  (lNamesStaticDir, lNamesPort) `shouldBe` (Nothing, Nothing)
   let PollConfig {pWaitingSeconds, pIdleSeconds} = poll cfg
   pWaitingSeconds `shouldBe` 3
   pIdleSeconds `shouldBe` 60
@@ -166,7 +165,8 @@ testRetiredListenerKeys = do
   refused "port = 8080" "listener.port is now listener.badges_port"
   refused "static_dir = /srv/badges" "listener.static_dir is now listener.badges_static_dir"
   refused "static_dir =" "listener.static_dir is now listener.badges_static_dir"
-  refused "webapp_export_dir = /srv/badges-export" "listener.webapp_export_dir is now listener.badges_export_dir"
+  forM_ ["webapp_export_dir", "badges_export_dir", "names_export_dir"] $ \k ->
+    refused (k <> " = /srv/export") ("listener." <> T.unpack k <> " is removed: the service writes no site, as the pages read their settings from /api/config; serve the build as it is")
   refused "names_hosts = simplex.domains" "listener.names_hosts is replaced by listener.names_port: serve the names site on its own port"
   refusedAll ["port = 8080", "static_dir = /srv/badges"] "listener.port is now listener.badges_port; listener.static_dir is now listener.badges_static_dir"
   withIni (withListenerKeys ["static_dir = /srv/badges", "webapp_export_dir = /srv/badges-export", "names_hosts = simplex.domains", "port = 8080"]) $ \p -> do
@@ -183,13 +183,11 @@ testBadgesPortRange = do
   Right cfg <- parseIni (withListenerKeys ["badges_port = 65535"])
   lBadgesPort (listener cfg) `shouldBe` 65535
 
-testWebappSplitDeployment :: IO ()
-testWebappSplitDeployment =
-  withIni (withListenerKeys ["serve_webapp = off", "badges_export_dir = /srv/web"]) $ \p -> do
+testWebappOff :: IO ()
+testWebappOff =
+  withIni (withListenerKeys ["serve_webapp = off"]) $ \p -> do
     Right cfg <- readServiceConfig p
-    let ListenerConfig {lServeWebapp, lBadgesExportDir} = listener cfg
-    lServeWebapp `shouldBe` False
-    lBadgesExportDir `shouldBe` Just "/srv/web"
+    lServeWebapp (listener cfg) `shouldBe` False
 
 fullStripeIni :: T.Text
 fullStripeIni =
@@ -712,6 +710,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "reads the names keys of [listener], defaulting to the image's build and port 8081" testNamesListenerKeys
   it "refuses the names keys of [listener] without [names]" testNamesSiteOnlyWithNames
   it "refuses a names_port outside 1-65535, on the badges_port, or with serve_webapp off" testNamesPortRules
+  it "reads metrics_port, off when absent, also without [names], and refuses one outside 1-65535 or on the badges_port or names_port" testMetricsPort
   it "leaves the names side off when [names] is absent" testNamesAbsent
   it "refuses [names] without [chain], and [chain] without [names]" testNamesNeedsChain
   it "refuses years below 2" testNamesYearsBelowTwo
@@ -817,18 +816,18 @@ testNamesWrittenOut = do
 testNamesListenerKeys :: IO ()
 testNamesListenerKeys = do
   Right cfg <- parseIni (namesIni namesSection chainSection)
-  let ListenerConfig {lNamesStaticDir, lNamesExportDir, lNamesPort} = listener cfg
-  (lNamesStaticDir, lNamesExportDir, lNamesPort) `shouldBe` (Just "/srv/names", Nothing, Just 8081)
-  Right written <- parseIni (namesIniWith ["names_static_dir = ./names/dist", "names_export_dir = /srv/names-out", "names_port = 9081"])
-  let ListenerConfig {lNamesStaticDir = dir, lNamesExportDir = out, lNamesPort = port} = listener written
-  (dir, out, port) `shouldBe` (Just "./names/dist", Just "/srv/names-out", Just 9081)
-  Right split <- parseIni (namesIniWith ["serve_webapp = off", "names_export_dir = /srv/names-out"])
-  let ListenerConfig {lNamesStaticDir = splitDir, lNamesExportDir = splitOut, lNamesPort = splitPort} = listener split
-  (splitDir, splitOut, splitPort) `shouldBe` (Just "/srv/names", Just "/srv/names-out", Nothing)
+  let ListenerConfig {lNamesStaticDir, lNamesPort} = listener cfg
+  (lNamesStaticDir, lNamesPort) `shouldBe` (Just "/srv/names", Just 8081)
+  Right written <- parseIni (namesIniWith ["names_static_dir = ./names/dist", "names_port = 9081"])
+  let ListenerConfig {lNamesStaticDir = dir, lNamesPort = port} = listener written
+  (dir, port) `shouldBe` (Just "./names/dist", Just 9081)
+  Right apiOnly <- parseIni (namesIniWith ["serve_webapp = off"])
+  let ListenerConfig {lNamesStaticDir = apiOnlyDir, lNamesPort = apiOnlyPort} = listener apiOnly
+  (apiOnlyDir, apiOnlyPort) `shouldBe` (Just "/srv/names", Nothing)
 
 testNamesSiteOnlyWithNames :: IO ()
 testNamesSiteOnlyWithNames =
-  forM_ ["names_static_dir = /srv/names", "names_export_dir = /srv/names-out", "names_port = 8081"] $ \key -> do
+  forM_ ["names_static_dir = /srv/names", "names_port = 8081"] $ \key -> do
     r <- parseIni (withListenerKeys [key])
     either id (const "parsed") r `shouldBe` ("listener." <> T.unpack (T.takeWhile (/= ' ') key) <> " is set but [names] is absent, so nothing would use it")
 
@@ -841,6 +840,19 @@ testNamesPortRules = do
   Right moved <- parseIni (namesIniWith ["badges_port = 8081", "names_port = 8080"])
   let ListenerConfig {lBadgesPort, lNamesPort} = listener moved
   (lBadgesPort, lNamesPort) `shouldBe` (8081, Just 8080)
+  where
+    refused ks e = parseIni (namesIniWith ks) >>= (`shouldBe` e) . either id (const "parsed")
+
+testMetricsPort :: IO ()
+testMetricsPort = do
+  Right off <- parseIni (namesIni namesSection chainSection)
+  lMetricsPort (listener off) `shouldBe` Nothing
+  Right on <- parseIni (namesIniWith ["metrics_port = 9300"])
+  lMetricsPort (listener on) `shouldBe` Just 9300
+  Right badgesOnly <- parseIni (withListenerKeys ["metrics_port = 9300"])
+  lMetricsPort (listener badgesOnly) `shouldBe` Just 9300
+  forM_ ["0", "65536"] $ \v -> refused ["metrics_port = " <> v] "listener.metrics_port must be between 1 and 65535"
+  forM_ ["8080", "8081"] $ \v -> refused ["metrics_port = " <> v] "listener.metrics_port must differ from listener.badges_port and listener.names_port"
   where
     refused ks e = parseIni (namesIniWith ks) >>= (`shouldBe` e) . either id (const "parsed")
 

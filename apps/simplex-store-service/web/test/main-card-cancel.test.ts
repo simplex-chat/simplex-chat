@@ -15,11 +15,7 @@ const storage = new MemStorage();
 const page = installPage({ storage });
 const { app } = page;
 
-const keyMeta = new StubElement("meta");
-keyMeta.setAttribute("id", "stripe-publishable-key");
-keyMeta.setAttribute("name", "stripe-publishable-key");
-keyMeta.setAttribute("content", PUBLISHABLE_KEY);
-page.document.byId.set("stripe-publishable-key", keyMeta);
+page.siteConfig.stripePublishableKey = PUBLISHABLE_KEY;
 
 // The confirm is released by hand so the in-flight window stays open long enough to press Cancel inside it.
 let releaseConfirm: (() => void) | null = null;
