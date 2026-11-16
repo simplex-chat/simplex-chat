@@ -45,7 +45,7 @@ import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
-import StoreService.Names.Contracts (Contracts, NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
+import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
 import StoreService.Names.Registration (Node, channelRecordKey, clearRecordsDigest, clearRecordsWithSigCalldata, contactRecordKey, labelNode, multicallCalldata, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Revert (RevertName (..), revertReasonText, revertText)
 import StoreService.Names.Sender (SendError (..), Sender, submitTransaction)
@@ -57,7 +57,6 @@ data Records = Records
   { rsStore :: DBStore,
     rsTurns :: Turns,
     rsContracts :: Contracts,
-    rsChain :: ChainClient,
     rsSender :: Sender,
     rsTLD :: SimplexTLD,
     rsEditsPerYear :: Int,
@@ -131,12 +130,15 @@ recordsInterval = 4000000
 editDeadlineMargin :: Word64
 editDeadlineMargin = 600
 
-newRecords :: DBStore -> Turns -> Contracts -> ChainClient -> Sender -> SimplexTLD -> Int -> IO UTCTime -> IO Records
-newRecords rsStore rsTurns rsContracts rsChain rsSender rsTLD rsEditsPerYear rsNow = do
+newRecords :: DBStore -> Turns -> Contracts -> Sender -> SimplexTLD -> Int -> IO UTCTime -> IO Records
+newRecords rsStore rsTurns rsContracts rsSender rsTLD rsEditsPerYear rsNow = do
   rsClaimed <- newTVarIO S.empty
   rsStalled <- newTVarIO S.empty
   rsChanges <- newTVarIO 0
-  pure Records {rsStore, rsTurns, rsContracts, rsChain, rsSender, rsTLD, rsEditsPerYear, rsNow, rsPendingAfter = editPendingAfter, rsClaimed, rsStalled, rsChanges}
+  pure Records {rsStore, rsTurns, rsContracts, rsSender, rsTLD, rsEditsPerYear, rsNow, rsPendingAfter = editPendingAfter, rsClaimed, rsStalled, rsChanges}
+
+rsChain :: Records -> ChainClient
+rsChain = ctChain . rsContracts
 
 -- | Every relayed edit counts, a reverted one too, since its gas is paid. One refused or never sent does not.
 nameEditsLeft :: DB.Connection -> Int -> LabelHash -> UTCTime -> IO EditsLeft
@@ -183,14 +185,14 @@ newEdit rs timer req signer bodyHash =
 
 -- | The earliest deadline more than 'editDeadlineMargin' past the latest block's time, the signer the registry's owner on the default resolver, the first nonce the owner's next.
 chainAccepts :: Records -> EditRequest -> Address -> IO (Either ChainError Bool)
-chainAccepts Records {rsChain, rsContracts} EditRequest {erLabelHash, erChanges} signer = runExceptT $ do
-  Block {blockTimestamp} <- ExceptT $ latestBlock rsChain
+chainAccepts rs@Records {rsContracts} EditRequest {erLabelHash, erChanges} signer = runExceptT $ do
+  Block {blockTimestamp} <- ExceptT $ latestBlock $ rsChain rs
   if earliestDeadline erChanges <= blockTimestamp + editDeadlineMargin
     then pure False
     else
       ExceptT (nameStatus rsContracts erLabelHash) >>= \case
         NSRegistered RegisteredName {rnOwner, rnResolver}
-          | rnOwner == signer && rnResolver == cResolver (ccConfig rsChain) -> (== firstNonce erChanges) <$> ExceptT (resolverNonce rsContracts signer)
+          | rnOwner == signer && rnResolver == resolver rs -> (== firstNonce erChanges) <$> ExceptT (resolverNonce rsContracts signer)
         _ -> pure False
 
 -- | Left when the name's yearly limit or hourly cap is used up, checked again under the name's turn against a concurrent edit.
@@ -266,10 +268,10 @@ runRecordEdits rs = forever $ recordsRound rs >> threadDelay recordsInterval
 
 -- | One pass over the pending edits that no request is sending. A pass or an edit that fails is logged, and the lane goes on.
 recordsRound :: Records -> IO ()
-recordsRound rs@Records {rsChain} = void $ safely "names records: the round" $ do
+recordsRound rs = void $ safely "names records: the round" $ do
   editIds <- withStore rs pendingEditIds
   unless (null editIds) $
-    runExceptT (ExceptT (latestBlock rsChain) >>= \tip -> (tip,) <$> ExceptT (deepBlock rsChain tip)) >>= \case
+    runExceptT (ExceptT (latestBlock $ rsChain rs) >>= \tip -> (tip,) <$> ExceptT (deepBlock (rsChain rs) tip)) >>= \case
       Left e -> mapM_ (\editId -> stall rs editId e) editIds
       -- each edit on its own, so a row that fails stops no other edit
       Right (tip, deep) -> forM_ editIds $ \editId ->
@@ -285,7 +287,7 @@ deepBlock c tip@Block {blockNumber}
 
 -- | One step for a pending edit, from its transactions' statuses as the sender settled them.
 follow :: Records -> Block -> Block -> RecordEdit -> IO ()
-follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepTime} edit@RecordEdit {reId, reChanges} = do
+follow rs Block {blockTimestamp} Block {blockTimestamp = deepTime} edit@RecordEdit {reId, reChanges} = do
   txs <- withStore rs (`editTransactions` reId)
   case txs of
     [] -> if ahead then sendUnsent else forget rs reId
@@ -294,7 +296,7 @@ follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepT
       | any ((== TSPending) . ntStatus) txs -> if deepTime > reDeadline then expire else unstall rs reId
       -- a mined revert carries no data: past the deadline it is SignatureExpired, else unnamed
       | block : _ <- [b | NameTransaction {ntStatus = TSReverted, ntMinedBlock = Just b} <- txs] ->
-          blockAt rsChain block >>= \case
+          blockAt (rsChain rs) block >>= \case
             Left e -> stall rs reId e
             Right Block {blockTimestamp = minedTime} -> judged rs edit $ settle rs reId $ ESReverted $ if minedTime > reDeadline then signatureExpired else Nothing
       -- every transaction dropped: its registrar nonce went to another one
@@ -325,9 +327,9 @@ judged rs edit@RecordEdit {reId} whenFree =
 -- | Its own transactions first: a status-1 receipt answers its hash. Without one, the owner's nonce and the records.
 -- A nonce past the first change but not the last means another body took one of its nonces.
 judge :: Records -> RecordEdit -> IO (Either ChainError Judgment)
-judge rs@Records {rsChain, rsContracts} RecordEdit {reId, reLabelHash, reOwner, reChanges} = runExceptT $ do
+judge rs@Records {rsContracts} RecordEdit {reId, reLabelHash, reOwner, reChanges} = runExceptT $ do
   txs <- liftIO $ withStore rs (`editTransactions` reId)
-  receipts <- forM txs $ \NameTransaction {ntHash} -> (ntHash,) <$> ExceptT (transactionReceipt rsChain ntHash)
+  receipts <- forM txs $ \NameTransaction {ntHash} -> (ntHash,) <$> ExceptT (transactionReceipt (rsChain rs) ntHash)
   case [h | (h, Just Receipt {receiptSuccess = True}) <- receipts] of
     h : _ -> pure $ Applied $ Just h
     [] -> do
@@ -407,7 +409,7 @@ nodeOf :: Records -> LabelHash -> Node
 nodeOf Records {rsTLD} = labelNode rsTLD
 
 domain :: Records -> Eip712Domain
-domain rs@Records {rsChain} = resolverDomain (cChainId $ ccConfig rsChain) (resolver rs)
+domain rs = resolverDomain (cChainId $ ccConfig $ rsChain rs) (resolver rs)
 
 resolver :: Records -> Address
 resolver = cResolver . ccConfig . rsChain

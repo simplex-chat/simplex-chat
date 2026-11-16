@@ -40,5 +40,5 @@ newNamesEnv neChat@ChatController {random} neUserId neConfig@NamesConfig {nTLD, 
   neContracts <- newContracts neStore nTLD nMinPriceCentsPerYear neChain
   neProfiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile neChat neUserId) systemResolver
   neSender <- newSender random neChain neStore getCurrentTime
-  neRecords <- newRecords neStore neTurns neContracts neChain neSender nTLD nRecordEditsPerYear getCurrentTime
+  neRecords <- newRecords neStore neTurns neContracts neSender nTLD nRecordEditsPerYear getCurrentTime
   pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, neTurns, neChain, neContracts, neProfiles, neSender, neRecords, neWaiters, neProviders}

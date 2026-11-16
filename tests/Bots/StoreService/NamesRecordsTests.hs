@@ -147,7 +147,7 @@ start store clock chain random = do
   sender <- newSender random chain store (readTVarIO clock)
   contracts <- newContracts store TLDSimplex minPriceCentsPerYear chain
   turns <- newTurns
-  rs <- newRecords store turns contracts chain sender TLDSimplex editsPerYear (readTVarIO clock)
+  rs <- newRecords store turns contracts sender TLDSimplex editsPerYear (readTVarIO clock)
   pure (sender, rs {rsPendingAfter = longWait})
 
 -- | A new sender and lane over the same store and node, as after the service restarts.
