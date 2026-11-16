@@ -54,6 +54,7 @@ import StoreService.Names.Sender (Sender, followTransactions, newSender)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (EditOutcome (..), EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
 import StoreService.Names.Turns (newTurns)
+import StoreService.Web.Http (maxBodyBytes)
 import StoreService.Web.Names.Records (EditInvalid (..), editRequest, editResponse, recordsHandler)
 import System.Timeout (timeout)
 import Test.Hspec
@@ -115,7 +116,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "answers an accepted edit's resend as before once the limit is used up, counting it once" $ testYearResend g
     it "counts a pending edit and one reverted on chain, and no edit refused or never sent" $ testYearFailedRelays g
   describe "http" $ do
-    it "answers the contract's statuses and bodies" $ testHttp g
+    it "answers the contract's statuses and bodies, and bad_request to a body over the cap" $ testHttp g
     it "answers 504 edit_pending, 503, 429 with the real wait in Retry-After, 429 edit_limit with nextAt in unix seconds and no Retry-After, 400 to a refusal and 409 stale_nonce" testEditResponses
     it "relays a body of two edits with links of the largest size" $ testHttpTwoLongLinks g
 
@@ -893,6 +894,9 @@ testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post 
   let editBody value = J.encode $ requestOf [editFields [("key", J.String channelKey), ("value", J.String value)]]
   post "[]" `shouldReturn` (400, Just $ errorJson "bad_request", Nothing)
   post (editBody "https://x/a") `shouldReturn` (400, Just $ errorJson "invalid_link", Nothing)
+  let overCap = KM.insert "pad" (J.String $ T.replicate maxBodyBytes "a") $ requestOf [editFields [("key", J.String channelKey), ("value", J.String viemChannelLink)]]
+  post (J.encode overCap) `shouldReturn` (400, Just $ errorJson "bad_request", Nothing)
+  editRows s `shouldReturn` 0
   answer <- async $ post $ editBody viemChannelLink
   TxHash h <- mineSent s 1 True
   within (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)

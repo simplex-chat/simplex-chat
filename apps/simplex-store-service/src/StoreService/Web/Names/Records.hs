@@ -26,14 +26,14 @@ import StoreService.Names.Registration (LinkKind, nameLink)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (EditOutcome (..), RecordChange (..), SignedChange (..))
 import StoreService.Store.Invoices (unixSeconds)
-import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonError, jsonResponse, nameBodyBytes, providerUnavailable, rateLimited, readBoundedBody)
+import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonError, jsonResponse, maxBodyBytes, providerUnavailable, rateLimited, readBoundedBody)
 
 data EditInvalid = EIBadRequest | EIInvalidLink
   deriving (Eq, Show)
 
 recordsHandler :: Records -> Request -> Respond -> IO ResponseReceived
 recordsHandler rs req respond =
-  readBoundedBody nameBodyBytes req >>= \case
+  readBoundedBody maxBodyBytes req >>= \case
     Just body | Just o <- J.decode body -> case editRequest o of
       Right edit -> relayEdit rs edit >>= \answer -> logged answer >> respond (editResponse answer)
       Left EIInvalidLink -> respond invalidLink

@@ -49,7 +49,7 @@ import StoreService.Names.Registration (Registration (..), TermsAcceptance (..),
 import StoreService.Names.Reveal (RevealFields (..), parseRevealFields)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..), OrderPhase (..), getRegistration)
 import StoreService.Names.Turns (labelTurnCount)
-import StoreService.Web.Http (createLimit, holdMicros, nameBodyBytes, readLimit)
+import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (retargetHandler)
 import StoreService.Web.Names.Registration (registrationHandler, revealHandler)
@@ -63,7 +63,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "accepts a reveal with links, setting the label at a new version and waking a held poll" testWithLinks
     it "accepts a reveal without links" testWithoutLinks
     it "checks the reveal the page signs, as viem signs it, through to its link, which the chat core cannot read" testViemReveal
-    it "accepts a reveal with two records at the link bound, within the names body cap" testRecordsAtBound
+    it "accepts a reveal with two records at the link bound, within the body cap" testRecordsAtBound
     it "answers an identical repeat in a later phase, and refuses a different one" testRepeats
     it "answers after the name's turn, so a slow reader of one answer holds no other reveal" testAnswersAfterTurn
   describe "refused" $ do
@@ -382,7 +382,7 @@ testRecordsAtBound = withReveals $ \Fx {fCtx = ctx} -> do
   let longest = alice {rContactLink = Just $ padded "a" linkMaxBytes, rChannelLink = Just $ padded "c" linkMaxBytes}
   rid <- committed ctx (orderOf longest)
   body <- J.encode <$> ownerBody ctx longest
-  LB.length body `shouldSatisfy` (<= fromIntegral nameBodyBytes)
+  LB.length body `shouldSatisfy` (<= fromIntegral maxBodyBytes)
   post ctx (revealPath rid) body `shouldReturn` accepted
 
 testRepeats :: IO ()
@@ -490,7 +490,7 @@ testStateAndFormat = withReveals $ \Fx {fCtx = ctx@Ctx {cClock}} -> do
       ("a link that is not text", KM.insert "records" (J.object ["contact" .= [J.Number 1], "channel" .= [channelLink]]) body)
     ]
     $ \(what, b) -> (what,) <$> reveal ctx rid b `shouldReturn` (what :: String, badRequest)
-  forM_ [("not an object", "[]"), ("not JSON", "label=alicebakery"), ("over the cap", J.encode $ KM.insert "pad" (J.String $ T.replicate nameBodyBytes "a") body)] $
+  forM_ [("not an object", "[]"), ("not JSON", "label=alicebakery"), ("over the cap", J.encode $ KM.insert "pad" (J.String $ T.replicate maxBodyBytes "a") body)] $
     \(what, b) -> (what,) <$> post ctx (revealPath rid) b `shouldReturn` (what :: String, badRequest)
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   -- signed past revealBefore, so only the lapse refuses it

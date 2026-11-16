@@ -39,7 +39,7 @@ import StoreService.Names.Store (NameRegistration (..), OrderPhase (..), Version
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
-import StoreService.Web.Http (HttpEnv, Respond, badRequest, holdsFull, invalidLink, jsonResponse, nameBodyBytes, notFound, providerUnavailable, readBoundedBody, withHoldSlot)
+import StoreService.Web.Http (HttpEnv, Respond, badRequest, holdsFull, invalidLink, jsonResponse, maxBodyBytes, notFound, providerUnavailable, readBoundedBody, withHoldSlot)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
 import Text.Read (readMaybe)
 
@@ -71,7 +71,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
   withTransaction oeStore (`getRegistration` rid) >>= \case
     Nothing -> respond notFound
     Just NameRegistration {nrLabelHash} ->
-      readBoundedBody nameBodyBytes req >>= \case
+      readBoundedBody maxBodyBytes req >>= \case
         Just body | Just (J.Object o) <- J.decode body, Just signed <- parseSignedLabel o -> withLabelTurn oeTurns nrLabelHash (decide nrLabelHash o signed) >>= answer
         _ -> answer $ RDRefused RVBadRequest Nothing
   where
