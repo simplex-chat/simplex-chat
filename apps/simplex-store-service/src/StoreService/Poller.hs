@@ -40,7 +40,7 @@ import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), credi
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), LateAlert (..), LateCredit (..), LateCreditState (..), LatePending (..), LateSupport (..), claimLateAlert, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
 import StoreService.Orders (decide, expireOverdue, settleOrder, signalReceived)
-import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
+import StoreService.Providers (CryptoReceived (..), ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
 import StoreService.Safely (safely, safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, paymentHolds, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
@@ -269,9 +269,9 @@ moneyAfterPaid :: PollerEnv -> UTCTime -> InvoiceRow -> PaymentSignal -> IO ()
 moneyAfterPaid env now InvoiceRow {irProviderRef, irProduct, irPayment} signal
   | IPName _ <- irProduct,
     Just stored <- ipUnits =<< irPayment,
-    Received {rcvUnits = Just units, rcvCrypto} <- signalReceived signal,
+    RCrypto CryptoReceived {crUnits = Just units, crPaid} <- signalReceived signal,
     units > stored = do
-      let alert = "names: invoice " <> irProviderRef <> " was paid, and its provider now reads " <> fromMaybe "" rcvCrypto <> " received, more than recorded; the extra is credited nowhere; refund by hand only a transaction confirmed on chain"
+      let alert = "names: invoice " <> irProviderRef <> " was paid, and its provider now reads " <> fromMaybe "" crPaid <> " received, more than recorded; the extra is credited nowhere; refund by hand only a transaction confirmed on chain"
       due <- dueToWarn env now alert
       when due $ logError alert
   | otherwise = pure ()
@@ -299,7 +299,7 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
     reportSettled sold before after
       -- checked before the no-change case, so a refund still alerts when money lands after expiry;
       -- a name order's late payment is credited to its balance instead
-      | IPBadge {} <- sold, after == ISExpired, SigClosed Received {rcvCrypto = Just paid} _ <- signal = do
+      | IPBadge {} <- sold, after == ISExpired, SigClosed (RCrypto CryptoReceived {crPaid = Just paid}) _ <- signal = do
           let alert = "badge poller: order " <> ref <> " expired holding " <> paid <> ", which needs a refund"
           due <- dueToWarn env now alert
           when due $ logError alert

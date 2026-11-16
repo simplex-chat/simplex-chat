@@ -6,8 +6,7 @@ module Bots.StoreService.StripeTests (badgeStripeTests) where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-  ( Confirmed (..),
-    Funded (..),
+  ( Funded (..),
     ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
@@ -95,19 +94,8 @@ fiftyFourDollarsReceived = cardReceived 5400 5400
 nothingReceived :: Received
 nothingReceived = cardReceived 0 0
 
--- | Cents received and confirmed, with no units or rate.
 cardReceived :: Word32 -> Word32 -> Received
-cardReceived cents confirmed =
-  Received
-    { rcvAmount = CurrencyAmount cents,
-      rcvCrypto = Nothing,
-      rcvDue = Nothing,
-      rcvUnits = Nothing,
-      rcvInvoicedUnits = Nothing,
-      rcvRate = Nothing,
-      rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmed, cfUnits = Nothing},
-      rcvUncreditable = Nothing
-    }
+cardReceived cents confirmed = RCard {rcAmount = CurrencyAmount cents, rcConfirmed = CurrencyAmount confirmed}
 
 fixtureChargeAt :: UTCTime
 fixtureChargeAt = posixSecondsToUTCTime 1700000000

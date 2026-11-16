@@ -16,10 +16,12 @@ import StoreService.Providers
     ProviderInvoice (..),
     Rate (..),
     Received (..),
-    Confirmed (..),
+    CryptoReceived (..),
+    Confirmation (..),
     Uncreditable (..),
     WebhookError (..),
     providerErrorText,
+    receivedAmount,
     settleWindow,
   )
 import StoreService.Providers.BTCPay (AdditionalStatus (..), BTCPayStatus (..), btcMethodId, btcpayProvider, listSignals, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
@@ -89,6 +91,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "confirms nothing under HighSpeed, or with no or an unknown speed policy, an invoice-level Settled included" testHighSpeedConfirmsNothing
     it "accepts trailing zeros past the unit" testTrailingZeros
     it "drops only the units of an amount with a non-zero digit past its unit, the signal and its cents as before" testDigitPastUnit
+    it "refuses an invoice whose rate is not above 0" testInvoiceRateAboveZero
   describe "the list pass" $ do
     it "skips an invoice whose status it does not know, and settles the rest" testListSkipsUnknownStatus
     it "skips an invoice it cannot parse, and settles the rest" testListSkipsUnparseable
@@ -190,7 +193,7 @@ testConfirmedSettledSum = do
     `shouldBe` Right (Just (SigFunded halfMilliBtc PaidInFull))
 
 xmrConfirmed :: Received
-xmrConfirmed = xmrReceived {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just 320950000000}, rcvUncreditable = Nothing}
+xmrConfirmed = withCrypto (\c -> c {crConfirmation = CryptoConfirmed 320950000000 (CurrencyAmount 5400)}) xmrReceived
 
 -- | A Monero payment's own confirmations are not in Greenfield's payment model, so only the invoice's threshold shows one.
 testXmrConfirmations :: IO ()
@@ -205,7 +208,7 @@ testHighSpeedConfirmsNothing :: IO ()
 testHighSpeedConfirmsNothing = do
   let methods = [btcPaid "0.00050000" [paymentOf "Settled" "0.00050000"]]
       settledUnder policy = signalUnder policy BSSettled methods
-      unconfirmed = halfMilliBtcUnconfirmed {rcvUncreditable = Just UCHighSpeed}
+      unconfirmed = uncreditable UCHighSpeed halfMilliBtc
   mapM_ (\policy -> (policy, settledUnder policy) `shouldBe` (policy, Right (Just (SigSettled unconfirmed (posixSecondsToUTCTime 1700000000))))) [Just HighSpeed, Nothing]
   mapM_ (\policy -> (policy, settledUnder policy) `shouldBe` (policy, Right (Just (SigSettled halfMilliBtc (posixSecondsToUTCTime 1700000000))))) [Just MediumSpeed, Just LowMediumSpeed, Just LowSpeed]
   let turbo = J.object ["id" .= ref, "status" .= ("Settled" :: Text), "checkout" .= J.object ["speedPolicy" .= ("Turbo" :: Text)], "paymentMethods" .= methods]
@@ -214,12 +217,22 @@ testHighSpeedConfirmsNothing = do
 testTrailingZeros :: IO ()
 testTrailingZeros =
   signalOf BSSettled [btcPaid "0.000500000000" [paymentOf "Settled" "0.0005000000000"]]
-    `shouldBe` Right (Just (SigSettled halfMilliBtc {rcvCrypto = Just "0.000500000000", rcvDue = Just "0.00050000"} (posixSecondsToUTCTime 1700000000)))
+    `shouldBe` Right (Just (SigSettled (withCrypto (\c -> c {crPaid = Just "0.000500000000", crDue = Just "0.00050000"}) halfMilliBtc) (posixSecondsToUTCTime 1700000000)))
 
 -- | A badge invoice reads and settles on this signal as before; only a late credit needs the units.
+testInvoiceRateAboveZero :: IO ()
+testInvoiceRateAboveZero =
+  forM_ ["0", "-1"] $ \rate ->
+    signalOf BSSettled [withRate rate $ btcPaid "0.00050000" [paymentOf "Settled" "0.00050000"]]
+      `shouldBe` Left (ProviderError ("btcpay invoice " <> ref <> ": its rate " <> rate <> " is not above 0"))
+  where
+    withRate rate = \case
+      J.Object o -> J.Object (KM.insert "rate" (J.String rate) o)
+      v -> v
+
 testDigitPastUnit :: IO ()
 testDigitPastUnit = do
-  let uncounted crypto due = halfMilliBtcUnconfirmed {rcvCrypto = Just crypto, rcvDue = Just due, rcvUnits = Nothing, rcvUncreditable = Just UCUncounted}
+  let uncounted crypto due = withCrypto (\c -> c {crPaid = Just crypto, crDue = Just due, crUnits = Nothing, crConfirmation = Uncreditable UCUncounted}) halfMilliBtc
   signalOf BSSettled [btcPaid "0.000500001" [paymentOf "Settled" "0.000500001"]]
     `shouldBe` Right (Just (SigSettled (uncounted "0.000500001" "0.00050000") (posixSecondsToUTCTime 1700000000)))
   signalOf BSProcessing [btcPaid "0.00050000" [paymentOf "Settled" "0.000250001", paymentOf "Processing" "0.00025000"]]
@@ -287,22 +300,35 @@ signalWith additional status methods = paymentMethodsSignal readTime ref status 
 -- | BTC at the rate the bodies carry: the cents, crypto and due received, and the satoshi received and confirmed, with the confirmed cents.
 btcReceived :: Word32 -> Maybe Text -> Text -> Int64 -> Int64 -> Word32 -> Received
 btcReceived cents crypto due units confirmedUnits confirmedCents =
-  Received
-    { rcvAmount = CurrencyAmount cents,
-      rcvCrypto = crypto,
-      rcvDue = Just due,
-      rcvUnits = Just units,
-      rcvInvoicedUnits = Just 50000,
-      rcvRate = Just Rate {rateText = "108000.12", rateValue = 108000.12},
-      rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits = Just confirmedUnits},
-      rcvUncreditable = Nothing
-    }
+  RCrypto
+    CryptoReceived
+      { crAmount = CurrencyAmount cents,
+        crPaid = crypto,
+        crDue = Just due,
+        crUnits = Just units,
+        crInvoicedUnits = Just 50000,
+        crRate = Rate {rateText = "108000.12", rateValue = 108000.12},
+        crConfirmation = CryptoConfirmed confirmedUnits (CurrencyAmount confirmedCents)
+      }
+
+withCrypto :: (CryptoReceived -> CryptoReceived) -> Received -> Received
+withCrypto f = \case
+  RCrypto c -> RCrypto (f c)
+  card -> card
+
+uncreditable :: Uncreditable -> Received -> Received
+uncreditable reason = withCrypto (\c -> c {crConfirmation = Uncreditable reason})
+
+cryptoPaid :: Received -> Maybe Text
+cryptoPaid = \case
+  RCrypto CryptoReceived {crPaid} -> crPaid
+  RCard {} -> Nothing
 
 halfMilliBtc :: Received
 halfMilliBtc = btcReceived 5400 (Just "0.00050000") "0.00000000" 50000 50000 5400
 
 halfMilliBtcUnconfirmed :: Received
-halfMilliBtcUnconfirmed = halfMilliBtc {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}}
+halfMilliBtcUnconfirmed = withCrypto (\c -> c {crConfirmation = CryptoConfirmed 0 (CurrencyAmount 0)}) halfMilliBtc
 
 nothingReceived :: Text -> Received
 nothingReceived due = btcReceived 0 Nothing due 0 0 0
@@ -346,7 +372,7 @@ testOverpaidDueIsZero :: IO ()
 testOverpaidDueIsZero = do
   let overpaid = btcReceived 8640 (Just "0.00080000") "0" 80000 80000 8640
   signalOf BSSettled [btcPaid "0.00080000" []] `shouldBe` Right (Just (SigSettled overpaid readTime))
-  signalWith ASPaidOver BSExpired [btcPaid "0.00080000" []] `shouldBe` Right (Just (SigClosed overpaid {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}} PaidInFull))
+  signalWith ASPaidOver BSExpired [btcPaid "0.00080000" []] `shouldBe` Right (Just (SigClosed (withCrypto (\c -> c {crConfirmation = CryptoConfirmed 0 (CurrencyAmount 0)}) overpaid) PaidInFull))
 
 testNewWithPayment :: IO ()
 testNewWithPayment =
@@ -542,7 +568,7 @@ testReadsPaymentMethodPaid = do
 testCryptoAmountVerbatim :: IO ()
 testCryptoAmountVerbatim =
   case signalOf BSProcessing [btcPaid "0.00050000" []] of
-    Right (Just (SigFunded r _)) -> rcvCrypto r `shouldBe` Just "0.00050000"
+    Right (Just (SigFunded r _)) -> cryptoPaid r `shouldBe` Just "0.00050000"
     other -> expectationFailure ("expected SigFunded, got " <> show other)
 
 testExactDecimalMultiplication :: IO ()
@@ -555,7 +581,7 @@ testExactDecimalMultiplication = do
             "payments" .= ([] :: [J.Value])
           ]
   case signalOf BSProcessing [atRateOne "0.545"] of
-    Right (Just (SigFunded r _)) -> rcvAmount r `shouldBe` CurrencyAmount 54
+    Right (Just (SigFunded r _)) -> receivedAmount r `shouldBe` CurrencyAmount 54
     other -> expectationFailure ("expected SigFunded, got " <> show other)
 
 -- The exponent gate bounds how long a figure may be, not how large, so a negative or eleven-digit
@@ -567,7 +593,7 @@ testAbsurdAmountIsClamped = do
   chargeFor "99999999999" `shouldBe` Just (CurrencyAmount 4294967295)
   where
     chargeFor paid = case signalOf BSProcessing [atRateOne paid] of
-      Right (Just (SigFunded r _)) -> Just (rcvAmount r)
+      Right (Just (SigFunded r _)) -> Just (receivedAmount r)
       _ -> Nothing
     atRateOne paid =
       J.object
@@ -584,8 +610,8 @@ testNumberAsWellAsString = do
         \\"payments\":[{\"status\":\"Settled\",\"receivedDate\":1700000000}]}]"
   case paymentMethodsSignal readTime ref BSSettled Nothing (Just MediumSpeed) asNumbers of
     Right (Just (SigSettled r t)) -> do
-      rcvAmount r `shouldBe` CurrencyAmount 5400
-      rcvCrypto r `shouldBe` Just "0.00050000"
+      receivedAmount r `shouldBe` CurrencyAmount 5400
+      cryptoPaid r `shouldBe` Just "0.00050000"
       t `shouldBe` posixSecondsToUTCTime 1700000000
     other -> expectationFailure ("expected SigSettled, got " <> show other)
 
@@ -661,16 +687,16 @@ listProcessingRef = "ProcessingInvoiceRefB"
 
 xmrReceived :: Received
 xmrReceived =
-  Received
-    { rcvAmount = CurrencyAmount 5400,
-      rcvCrypto = Just "0.32095000",
-      rcvDue = Just "0.00000000",
-      rcvUnits = Just 320950000000,
-      rcvInvoicedUnits = Just 320950000000,
-      rcvRate = Just Rate {rateText = "168.25", rateValue = 168.25},
-      rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0},
-      rcvUncreditable = Just UCNoConfirmationShown
-    }
+  RCrypto
+    CryptoReceived
+      { crAmount = CurrencyAmount 5400,
+        crPaid = Just "0.32095000",
+        crDue = Just "0.00000000",
+        crUnits = Just 320950000000,
+        crInvoicedUnits = Just 320950000000,
+        crRate = Rate {rateText = "168.25", rateValue = 168.25},
+        crConfirmation = Uncreditable UCNoConfirmationShown
+      }
 
 fiftyFourDollars :: OrderDraft
 fiftyFourDollars =
@@ -977,7 +1003,7 @@ testFakeInvoicePolicy = withFakeBTCPay $ \fake -> do
   ProviderInvoice {piProviderRef = madeHigh} <- createdInvoice highSpeed (SPMCrypto CCBtc)
   ProviderInvoice {piProviderRef = madeMedium} <- createdInvoice mediumSpeed (SPMCrypto CCBtc)
   forM_ [madeHigh, madeMedium] $ \r -> setInvoiceState fake r ["status" .= ("Settled" :: Text), "paymentMethodPaid" .= ("0.00050000" :: Text)]
-  pReadInvoice mediumSpeed madeHigh `shouldReturn` Right (Just (SigSettled halfMilliBtcUnconfirmed {rcvUncreditable = Just UCHighSpeed} fixtureSettledAt))
+  pReadInvoice mediumSpeed madeHigh `shouldReturn` Right (Just (SigSettled (uncreditable UCHighSpeed halfMilliBtc) fixtureSettledAt))
   pReadInvoice highSpeed madeMedium `shouldReturn` Right (Just (SigSettled halfMilliBtc fixtureSettledAt))
 
 testFakeListMoved :: IO ()

@@ -2490,19 +2490,21 @@ replayAt = addUTCTime 3600 settleAt
 detectedAt :: UTCTime
 detectedAt = addUTCTime 300 settleAt
 
--- | Nothing confirmed and no units, as the badge paths read it.
+-- | Nothing confirmed and no units, as the badge paths read it: card money, or crypto when its amount is given.
 rcv :: Word32 -> Maybe Text -> Received
-rcv amount crypto =
-  Received
-    { rcvAmount = CurrencyAmount amount,
-      rcvCrypto = crypto,
-      rcvDue = Nothing,
-      rcvUnits = Nothing,
-      rcvInvoicedUnits = Nothing,
-      rcvRate = Nothing,
-      rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Nothing},
-      rcvUncreditable = Nothing
-    }
+rcv amount = \case
+  Nothing -> RCard {rcAmount = CurrencyAmount amount, rcConfirmed = CurrencyAmount 0}
+  Just crypto ->
+    RCrypto
+      CryptoReceived
+        { crAmount = CurrencyAmount amount,
+          crPaid = Just crypto,
+          crDue = Nothing,
+          crUnits = Nothing,
+          crInvoicedUnits = Nothing,
+          crRate = Rate {rateText = "62500", rateValue = 62500},
+          crConfirmation = CryptoConfirmed 0 (CurrencyAmount 0)
+        }
 
 settle :: DBStore -> InvoiceId -> PaymentSignal -> UTCTime -> IO (Either Text InvoiceStatus)
 settle st iid signal at = newWaiters >>= \waiters -> settleOrder st waiters Nothing iid signal at

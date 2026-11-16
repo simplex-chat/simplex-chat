@@ -18,7 +18,7 @@ where
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Store (BalanceUse (..), LateSupport (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
-import StoreService.Providers (Confirmed (..), Funded (..), PaymentSignal (..), Received (..))
+import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Received (..), receivedAmount, receivedConfirmed)
 import StoreService.Safely (safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
@@ -144,7 +144,7 @@ settleOrder st waiters phases invId signal now' = do
     -- A rise of the confirmed money is a new payment with the totals unchanged, so a late payment that confirms is credited.
     newPayment InvoiceRow {irPayment} Write {wPayment}
       -- Monero reports an invoice as confirming while its figures are still zero, so a funded verdict earns a row
-      | not (paidInFull signal) && rcvCrypto == Nothing && rcvAmount == CurrencyAmount 0 = False
+      | not (paidInFull signal) && crypto == Nothing && minor == 0 = False
       | otherwise = case irPayment of
           Nothing -> True
           -- the write is monotonic, so a lower figure or withdrawn verdict is not a new payment
@@ -152,17 +152,24 @@ settleOrder st waiters phases invId signal now' = do
             | ipStatus == paymentStatusText PSSettled -> False
             | otherwise ->
                 maybe True (\(CurrencyAmount held) -> held < minor) ipAmount
-                  || (ipCryptoPaid == Nothing && rcvCrypto /= Nothing)
+                  || (ipCryptoPaid == Nothing && crypto /= Nothing)
                   || (paidInFull signal && not ipPaidInFull)
                   || ipStatus /= paymentStatusText wPayment
                   || confirmedCents > heldCents
                   || maybe False (> fromMaybe 0 heldUnits) confirmedUnits
       where
-        Received {rcvAmount, rcvCrypto, rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits = confirmedUnits}} = signalReceived signal
-        CurrencyAmount minor = rcvAmount
+        received = signalReceived signal
+        CurrencyAmount minor = receivedAmount received
+        Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits = confirmedUnits} = receivedConfirmed received
+        crypto = case received of
+          RCard {} -> Nothing
+          RCrypto CryptoReceived {crPaid} -> crPaid
     settle :: DB.Connection -> InvoiceRow -> Write -> Product -> IO (Either Text (InvoiceStatus, Published, [NameOutcome]))
     settle db row@InvoiceRow {irStatus} w@Write {wStatus, wPayment} sold = do
-      let money@Received {rcvUncreditable} = signalReceived signal
+      let money = signalReceived signal
+          uncreditable = case money of
+            RCrypto CryptoReceived {crConfirmation = Uncreditable reason} -> Just reason
+            _ -> Nothing
           wrotePayment = newPayment row w
           settledMoney
             | wrotePayment = SMNewPayment
@@ -171,7 +178,7 @@ settleOrder st waiters phases invId signal now' = do
       when wrotePayment $ do
         upsertPayment db row wPayment money (paidInFull signal) at
         case sold of
-          PName _ -> mapM_ (setLateSupport db invId . LSUncreditable) rcvUncreditable
+          PName _ -> mapM_ (setLateSupport db invId . LSUncreditable) uncreditable
           PBadge _ -> pure ()
       moved <- maybe (pure True) (\new -> updateInvoiceStatus db invId irStatus new at) wStatus
       if moved

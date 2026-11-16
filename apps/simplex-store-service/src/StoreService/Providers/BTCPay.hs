@@ -21,7 +21,8 @@ where
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), speedPolicyName)
 import StoreService.Providers
-  ( Confirmed (..),
+  ( Confirmation (..),
+    CryptoReceived (..),
     ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
@@ -56,7 +57,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
 import Data.Int (Int64)
 import Data.List (find)
-import Data.Maybe (fromMaybe, isNothing, mapMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Scientific (FPFormat (Fixed), Scientific, base10Exponent, formatScientific, scientific, toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -469,12 +470,13 @@ paymentMethodsSignal now ref status additional policy body =
 invoiceSignal :: UTCTime -> Text -> BTCPayStatus -> Maybe AdditionalStatus -> Maybe SpeedPolicy -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
 invoiceSignal now ref status additional policy ms = do
   (m@GPaymentMethod {gpmAmount, gpmRate, gpmPaid, gpmDue, gpmPayments, gpmSettledThreshold}, cc) <- chooseMethod ref ms
-  rate <- priced "rate" gpmRate
+  rate <- positive =<< priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
   let decimals = unitDecimals cc
       confirming = maybe False (`elem` confirmingPolicies) policy
       shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
-      received = receivedOf decimals confirming shown (status == BSSettled) rate paid gpmAmount gpmDue gpmPayments
+      crypto = receivedOf decimals confirming shown (status == BSSettled) rate paid gpmAmount gpmDue gpmPayments
+      received = RCrypto crypto
       -- BTCPay never settles an invoice it has closed, so only its additional status tells that the whole amount reached it.
       -- Its paid amount counts unconfirmed payments too, so a due at 0 or less does not.
       closedFunded = if maybe False (`elem` closedInFullStatuses) additional then PaidInFull else PaidInPart
@@ -483,11 +485,14 @@ invoiceSignal now ref status additional policy ms = do
     BSProcessing -> Right (Just (SigFunded received PaidInFull))
     BSExpired -> Right (Just (SigClosed received closedFunded))
     BSInvalid -> Right (Just (SigClosed received closedFunded))
-    BSNew -> Right (SigFunded received PaidInPart <$ rcvCrypto received)
+    BSNew -> Right (SigFunded received PaidInPart <$ crPaid crypto)
     BSUnknown other -> Left (ProviderError ("btcpay invoice " <> ref <> ": unknown status " <> other))
   where
     priced field =
       maybe (Left (ProviderError ("btcpay invoice " <> ref <> ": its payment method carries no " <> field))) Right
+    positive WireNum {wnText, wnValue}
+      | wnValue > 0 = Right Rate {rateText = wnText, rateValue = wnValue}
+      | otherwise = Left (ProviderError ("btcpay invoice " <> ref <> ": its rate " <> wnText <> " is not above 0"))
 
 chooseMethod :: Text -> [GPaymentMethod] -> Either ProviderError (GPaymentMethod, CryptoCurrency)
 chooseMethod ref ms = case [(m, cc) | m <- ms, Just cc <- [lookup (gpmId m) methodCurrencies]] of
@@ -521,19 +526,21 @@ findMethod what ref methodId body = do
 -- invoice is with none Processing, else the Settled payments' value capped at it. A Settled invoice can still hold a Processing extra.
 -- An amount with a non-zero digit past its unit leaves every figure in units out.
 -- The invoiced units are the method's amount, with the network fee BTCPay adds to it.
-receivedOf :: Int -> Bool -> Bool -> Bool -> WireNum -> WireNum -> Maybe WireNum -> Maybe WireNum -> [GPayment] -> Received
+receivedOf :: Int -> Bool -> Bool -> Bool -> Rate -> WireNum -> Maybe WireNum -> Maybe WireNum -> [GPayment] -> CryptoReceived
 receivedOf decimals confirming shown invoiceSettled rate paid invoiced due payments =
-  Received
-    { rcvAmount = toMinorUnits (wnValue paid * wnValue rate),
-      rcvCrypto = if wnValue paid > 0 then Just (wnText paid) else Nothing,
-      rcvDue = nonNegative <$> due,
-      rcvUnits = fst <$> counted,
-      rcvInvoicedUnits = toUnits . wnValue =<< invoiced,
-      rcvRate = if wnValue rate > 0 then Just Rate {rateText = wnText rate, rateValue = wnValue rate} else Nothing,
-      rcvConfirmed = case uncreditable of
-        Nothing -> Confirmed {cfCents = toMinorUnits (scientific (maybe 0 (toInteger . snd) counted) (negate decimals) * wnValue rate), cfUnits = snd <$> counted}
-        Just _ -> Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0},
-      rcvUncreditable = uncreditable
+  CryptoReceived
+    { crAmount = toMinorUnits (wnValue paid * rateValue rate),
+      crPaid = if wnValue paid > 0 then Just (wnText paid) else Nothing,
+      crDue = nonNegative <$> due,
+      crUnits = fst <$> counted,
+      crInvoicedUnits = toUnits . wnValue =<< invoiced,
+      crRate = rate,
+      crConfirmation = case counted of
+        Nothing -> Uncreditable UCUncounted
+        Just (_, confirmed)
+          | not confirming -> Uncreditable UCHighSpeed
+          | not shown -> Uncreditable UCNoConfirmationShown
+          | otherwise -> CryptoConfirmed confirmed (toMinorUnits (scientific (toInteger confirmed) (negate decimals) * rateValue rate))
     }
   where
     -- an overpaid invoice's due is below 0, and nothing is owed on it
@@ -544,11 +551,6 @@ receivedOf decimals confirming shown invoiceSettled rate paid invoiced due payme
       paidUnits <- toUnits (wnValue paid)
       settledUnits <- mapM (toUnits . wnValue <=< gpValue) settled
       pure (paidUnits, if allSettled then paidUnits else fromInteger (min (toInteger paidUnits) (sum (map toInteger settledUnits))))
-    uncreditable
-      | isNothing counted = Just UCUncounted
-      | not confirming = Just UCHighSpeed
-      | not shown = Just UCNoConfirmationShown
-      | otherwise = Nothing
     toUnits v
       | v < 0 = Nothing
       | otherwise = toBoundedInteger (v * scientific 1 decimals) :: Maybe Int64

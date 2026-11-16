@@ -13,8 +13,7 @@ where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-  ( Confirmed (..),
-    Funded (..),
+  ( Funded (..),
     ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
@@ -310,17 +309,7 @@ canceledSignal = SigClosed (intentReceived 0 0) PaidInPart
 
 -- | Only a succeeded intent's money is confirmed.
 intentReceived :: Int64 -> Int64 -> Received
-intentReceived amt confirmed =
-  Received
-    { rcvAmount = amountFrom amt,
-      rcvCrypto = Nothing,
-      rcvDue = Nothing,
-      rcvUnits = Nothing,
-      rcvInvoicedUnits = Nothing,
-      rcvRate = Nothing,
-      rcvConfirmed = Confirmed {cfCents = amountFrom confirmed, cfUnits = Nothing},
-      rcvUncreditable = Nothing
-    }
+intentReceived amt confirmed = RCard {rcAmount = amountFrom amt, rcConfirmed = amountFrom confirmed}
 
 -- Clamp stops a wildly wrong figure wrapping Word32 and coming out small.
 amountFrom :: Int64 -> CurrencyAmount

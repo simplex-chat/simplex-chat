@@ -28,7 +28,7 @@ import StoreService.Names.Turns (newTurns)
 import StoreService.Names.View (balanceJSON)
 import StoreService.Orders (cancelOpenInvoice, settleOrder)
 import StoreService.Poller (PollerEnv, ReadHints, cleanupUnpaid, creditPass, drainHints, forgetRates, newPollerEnv, newReadHints, queueReadHint)
-import StoreService.Providers (Confirmed (..), Funded (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), settleWindow)
+import StoreService.Providers (Confirmation (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), settleWindow)
 import StoreService.Store.Invoices (unpaidRefs)
 import StoreService.Waiters (Waiters, newWaiters)
 import Test.Hspec
@@ -124,36 +124,34 @@ satCents units = fromIntegral (units * 625 `div` 10000)
 -- | Bitcoin received and confirmed, in satoshi, at the invoices' rate.
 btcPaid :: Int64 -> Int64 -> Received
 btcPaid units confirmed =
-  Received
-    { rcvAmount = CurrencyAmount (fromIntegral $ satCents units),
-      rcvCrypto = Just (T.pack $ show units),
-      rcvDue = Nothing,
-      rcvUnits = Just units,
-      rcvInvoicedUnits = Just lateUnits,
-      rcvRate = Just (rateOf "62500" 62500),
-      rcvConfirmed = Confirmed {cfCents = CurrencyAmount (fromIntegral $ satCents confirmed), cfUnits = Just confirmed},
-      rcvUncreditable = Nothing
-    }
+  RCrypto
+    CryptoReceived
+      { crAmount = CurrencyAmount (fromIntegral $ satCents units),
+        crPaid = Just (T.pack $ show units),
+        crDue = Nothing,
+        crUnits = Just units,
+        crInvoicedUnits = Just lateUnits,
+        crRate = rateOf "62500" 62500,
+        crConfirmation = CryptoConfirmed confirmed (CurrencyAmount (fromIntegral $ satCents confirmed))
+      }
 
 cardPaid :: Int -> Int -> Received
-cardPaid cents confirmed =
-  Received
-    { rcvAmount = CurrencyAmount (fromIntegral cents),
-      rcvCrypto = Nothing,
-      rcvDue = Nothing,
-      rcvUnits = Nothing,
-      rcvInvoicedUnits = Nothing,
-      rcvRate = Nothing,
-      rcvConfirmed = Confirmed {cfCents = CurrencyAmount (fromIntegral confirmed), cfUnits = Nothing},
-      rcvUncreditable = Nothing
-    }
+cardPaid cents confirmed = RCard {rcAmount = CurrencyAmount (fromIntegral cents), rcConfirmed = CurrencyAmount (fromIntegral confirmed)}
 
 nothingPaid :: Received
 nothingPaid = cardPaid 0 0
 
 -- | Bitcoin received and confirmed on an invoice that asked the given satoshi.
 btcPaidOf :: Int64 -> Int64 -> Int64 -> Received
-btcPaidOf invoiced units confirmed = (btcPaid units confirmed) {rcvInvoicedUnits = Just invoiced}
+btcPaidOf invoiced units confirmed = withCrypto (\c -> c {crInvoicedUnits = Just invoiced}) (btcPaid units confirmed)
+
+withCrypto :: (CryptoReceived -> CryptoReceived) -> Received -> Received
+withCrypto f = \case
+  RCrypto c -> RCrypto (f c)
+  card -> card
+
+markUncreditable :: Uncreditable -> Received -> Received
+markUncreditable reason = withCrypto (\c -> c {crConfirmation = Uncreditable reason})
 
 -- | 320000 satoshi: 20000 cents at the invoice's rate, 19200 at the stub's current rate of 60000.5.
 lateUnits :: Int64
@@ -367,7 +365,7 @@ testPartCreditAlerted = withLate $ \l@Late {lStore = st} -> do
 testMoneroZero :: IO ()
 testMoneroZero = withLate $ \l@Late {lStore = st} -> do
   closedOrder l "monero" False
-  logs <- readSignal l "monero" (SigFunded (btcPaid 0 0) {rcvCrypto = Nothing} PaidInFull)
+  logs <- readSignal l "monero" (SigFunded (withCrypto (\c -> c {crPaid = Nothing}) (btcPaid 0 0)) PaidInFull)
   logs `shouldSatisfy` logged "NOTE" "invoice ref-inv-monero holds money of its closed order not yet confirmed"
   withTransaction st (\db -> latePending db (invOf "monero")) `shouldReturn` Just LPConfirming
   now <- getCurrentTime
@@ -425,7 +423,8 @@ testRateProblemsNamed = withLate $ \l@Late {lStore = st} -> do
   settleAt l "noprovider" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart) (at 70) `shouldReturn` Right ISExpired
   withTransaction st $ \db -> DB.execute_ db "UPDATE sx_badge_service_invoices SET provider = 'apple' WHERE invoice_id = 'inv-noprovider'"
   closedOrder l "norate" False
-  settleAt l "norate" (SigClosed (btcPaid lateUnits lateUnits) {rcvRate = Nothing} PaidInPart) (at 70) `shouldReturn` Right ISExpired
+  settleAt l "norate" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart) (at 70) `shouldReturn` Right ISExpired
+  withTransaction st $ \db -> DB.execute_ db "UPDATE sx_badge_service_payments SET invoice_rate = NULL WHERE invoice_id = 'inv-norate'"
   logs <- (<>) <$> passAt l (at 71) <*> passAt l (at 72)
   count "invoice ref-inv-noprovider has late money to credit, but no provider" logs `shouldBe` 1
   logs `shouldSatisfy` logged "ERROR" "invoice ref-inv-norate has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at"
@@ -447,7 +446,7 @@ testOneRateReadPerPass = withLate $ \l@Late {lStore = st} -> do
 testHighSpeed :: IO ()
 testHighSpeed = withLate $ \l@Late {lStore = st} -> do
   closedOrder l "hs" False
-  let highSpeed = (btcPaid lateUnits 0) {rcvUncreditable = Just UCHighSpeed}
+  let highSpeed = markUncreditable UCHighSpeed (btcPaid lateUnits 0)
   settleAt l "hs" (SigSettled highSpeed (at 70)) (at 70) `shouldReturn` Right ISPaid
   void $ passAt l (at 71)
   balanceOf st "hs" `shouldReturn` Nothing
@@ -508,16 +507,16 @@ testStripeCredited = withLate $ \l@Late {lStore = st} -> do
 -- | 0.32095 XMR at the invoice's rate of 168.25, all of it Settled; uncreditable unless the plugin shows a confirmation.
 xmrPaid :: Maybe Uncreditable -> Received
 xmrPaid uncreditable =
-  Received
-    { rcvAmount = CurrencyAmount 5400,
-      rcvCrypto = Just "0.32095000",
-      rcvDue = Nothing,
-      rcvUnits = Just xmrUnits,
-      rcvInvoicedUnits = Just xmrUnits,
-      rcvRate = Just (rateOf "168.25" 168.25),
-      rcvConfirmed = maybe (Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just xmrUnits}) (const Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}) uncreditable,
-      rcvUncreditable = uncreditable
-    }
+  RCrypto
+    CryptoReceived
+      { crAmount = CurrencyAmount 5400,
+        crPaid = Just "0.32095000",
+        crDue = Nothing,
+        crUnits = Just xmrUnits,
+        crInvoicedUnits = Just xmrUnits,
+        crRate = rateOf "168.25" 168.25,
+        crConfirmation = maybe (CryptoConfirmed xmrUnits (CurrencyAmount 5400)) Uncreditable uncreditable
+      }
   where
     xmrUnits = 320950000000
 
@@ -615,7 +614,7 @@ testMoneyAfterPaid = withLate $ \l@Late {lStore = st} -> do
 testOverpaidHighSpeed :: IO ()
 testOverpaidHighSpeed = withLate $ \l@Late {lStore = st} -> do
   mapM_ (\r -> placeOrderRow st r False 20000 (at 60)) ["hsover", "hsexact"]
-  let highSpeed units = (btcPaidOf lateUnits units 0) {rcvUncreditable = Just UCHighSpeed}
+  let highSpeed units = markUncreditable UCHighSpeed (btcPaidOf lateUnits units 0)
   settleAt l "hsover" (SigSettled (highSpeed 480000) (at 70)) (at 70) `shouldReturn` Right ISPaid
   settleAt l "hsexact" (SigSettled (highSpeed lateUnits) (at 70)) (at 70) `shouldReturn` Right ISPaid
   void $ passAt l (at 71)
@@ -688,8 +687,8 @@ testLateWaits :: IO ()
 testLateWaits = withLate $ \l@Late {lStore = st} -> do
   mapM_ (\r -> closedOrder l r False) ["confirming", "crediting", "highspeed", "units", "floor", "alerted"]
   settleAt l "crediting" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart) (at 70) `shouldReturn` Right ISExpired
-  settleAt l "highspeed" (SigClosed (btcPaid lateUnits 0) {rcvUncreditable = Just UCHighSpeed} PaidInPart) (at 70) `shouldReturn` Right ISExpired
-  settleAt l "units" (SigClosed (btcPaid 0 0) {rcvAmount = CurrencyAmount 20000, rcvCrypto = Just "0.003200001", rcvUnits = Nothing, rcvUncreditable = Just UCUncounted} PaidInPart) (at 70) `shouldReturn` Right ISExpired
+  settleAt l "highspeed" (SigClosed (markUncreditable UCHighSpeed (btcPaid lateUnits 0)) PaidInPart) (at 70) `shouldReturn` Right ISExpired
+  settleAt l "units" (SigClosed (withCrypto (\c -> c {crAmount = CurrencyAmount 20000, crPaid = Just "0.003200001", crUnits = Nothing, crConfirmation = Uncreditable UCUncounted}) (btcPaid 0 0)) PaidInPart) (at 70) `shouldReturn` Right ISExpired
   settleAt l "alerted" (SigClosed (btcPaid lateUnits 0) PaidInPart) (at 70) `shouldReturn` Right ISExpired
   void $ alertsAt l (Right stubRate) (pastWindow (at 70) 60)
   settleAt l "confirming" (SigClosed (btcPaid lateUnits 0) PaidInPart) (pastWindow (at 70) 60) `shouldReturn` Right ISExpired

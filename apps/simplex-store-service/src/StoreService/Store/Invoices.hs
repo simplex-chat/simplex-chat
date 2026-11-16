@@ -73,7 +73,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Providers (Confirmed (..), Received (..))
+import StoreService.Providers (Confirmed (..), CryptoReceived (..), Received (..), receivedAmount, receivedConfirmed)
 
 #if defined(dbPostgres)
 import StoreService.Store.Postgres.Migrations (servicePrefix, withPrefix)
@@ -694,12 +694,16 @@ upsertPayment db InvoiceRow {irInvoiceId, irProvider, irProviderRef, irCurrency}
     db
     qUpsertPayment
     ( (invId, invId, textEncode irProvider, irProviderRef, amount)
-        :. (irCurrency, rcvCrypto, rcvDue, if paidInFull then 1 :: Int else 0, paymentStatusText status)
-        :. (rcvUnits, rcvInvoicedUnits, confirmedCents, cfUnits, rcvRate, at, at)
+        :. (irCurrency, crypto, due, if paidInFull then 1 :: Int else 0, paymentStatusText status)
+        :. (units, invoicedUnits, confirmedCents, cfUnits, rate, at, at)
     )
   where
     InvoiceId invId = irInvoiceId
-    Received {rcvAmount = CurrencyAmount amount, rcvCrypto, rcvDue, rcvUnits, rcvInvoicedUnits, rcvRate, rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits}} = received
+    CurrencyAmount amount = receivedAmount received
+    Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits} = receivedConfirmed received
+    (crypto, due, units, invoicedUnits, rate) = case received of
+      RCard {} -> (Nothing, Nothing, Nothing, Nothing, Nothing)
+      RCrypto CryptoReceived {crPaid, crDue, crUnits, crInvoicedUnits, crRate} -> (crPaid, crDue, crUnits, crInvoicedUnits, Just crRate)
     at = truncateToSecond at'
 
 -- | Takes the invoice row's lock for the rest of the transaction; SQLite's transactions hold the whole database already.

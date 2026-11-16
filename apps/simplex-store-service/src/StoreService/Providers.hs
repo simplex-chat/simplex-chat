@@ -11,6 +11,11 @@ module StoreService.Providers
     objectId,
     WebhookError (..),
     Received (..),
+    CryptoReceived (..),
+    Confirmation (..),
+    Units,
+    receivedAmount,
+    receivedConfirmed,
     Confirmed (..),
     Uncreditable (..),
     Rate (..),
@@ -40,7 +45,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime)
 import Network.HTTP.Client (HttpException, Manager, Request, Response (..), brReadSome, parseRequest, withResponse)
 import Network.HTTP.Types (Status (..))
 import Network.HTTP.Types.Header (Header)
-import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount, PaymentProvider (..), ServicePaymentDestination, ServicePaymentMethod)
+import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), PaymentProvider (..), ServicePaymentDestination, ServicePaymentMethod)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Timeout (timeout)
@@ -103,25 +108,49 @@ objectId v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
 -- | WebhookStale is a valid signature with a timestamp too far from our clock.
 data WebhookError = WebhookError Text | WebhookStale Text deriving (Eq, Show)
 
--- rcvAmount is the total received on the invoice so far, not the amount of one payment.
--- rcvDue is the provider's figure for what is still owed.
--- rcvUnits is the crypto received in integer atomic units, Nothing for card money or crypto that could not be counted in them.
--- rcvInvoicedUnits is the crypto the invoice asks in the same units, with any network fee the provider added to it.
--- rcvRate is the invoice's rate for crypto, as the provider wrote it.
-data Received = Received
-  { rcvAmount :: CurrencyAmount,
-    rcvCrypto :: Maybe Text,
-    rcvDue :: Maybe Text,
-    rcvUnits :: Maybe Int64,
-    rcvInvoicedUnits :: Maybe Int64,
-    rcvRate :: Maybe Rate,
-    rcvConfirmed :: Confirmed,
-    rcvUncreditable :: Maybe Uncreditable
+-- | The amounts are the total received on the invoice so far, not the amount of one payment.
+data Received
+  = RCard {rcAmount :: CurrencyAmount, rcConfirmed :: CurrencyAmount}
+  | RCrypto CryptoReceived
+  deriving (Eq, Show)
+
+-- crAmount is the crypto received in cents at the invoice's rate, crPaid as the provider wrote it, Nothing while nothing is.
+-- crDue is the provider's figure for what is still owed.
+-- crUnits is the crypto received in integer atomic units, Nothing when it could not be counted in them.
+-- crInvoicedUnits is the crypto the invoice asks in the same units, with any network fee the provider added to it.
+-- crRate is the invoice's rate, as the provider wrote it.
+data CryptoReceived = CryptoReceived
+  { crAmount :: CurrencyAmount,
+    crPaid :: Maybe Text,
+    crDue :: Maybe Text,
+    crUnits :: Maybe Units,
+    crInvoicedUnits :: Maybe Units,
+    crRate :: Rate,
+    crConfirmation :: Confirmation
   }
   deriving (Eq, Show)
 
+-- | The crypto confirmed so far, in atomic units and in cents at the invoice's rate, or why none of it is credited by itself.
+data Confirmation = CryptoConfirmed Units CurrencyAmount | Uncreditable Uncreditable
+  deriving (Eq, Show)
+
+type Units = Int64
+
+receivedAmount :: Received -> CurrencyAmount
+receivedAmount = \case
+  RCard {rcAmount} -> rcAmount
+  RCrypto CryptoReceived {crAmount} -> crAmount
+
+-- | As a payment row stores it, where uncreditable crypto confirms nothing.
+receivedConfirmed :: Received -> Confirmed
+receivedConfirmed = \case
+  RCard {rcConfirmed} -> Confirmed {cfCents = rcConfirmed, cfUnits = Nothing}
+  RCrypto CryptoReceived {crConfirmation} -> case crConfirmation of
+    CryptoConfirmed units cents -> Confirmed {cfCents = cents, cfUnits = Just units}
+    Uncreditable _ -> Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}
+
 -- | The money confirmed so far: its cents at the invoice's rate, and for crypto its atomic units.
-data Confirmed = Confirmed {cfCents :: CurrencyAmount, cfUnits :: Maybe Int64}
+data Confirmed = Confirmed {cfCents :: CurrencyAmount, cfUnits :: Maybe Units}
   deriving (Eq, Show)
 
 -- | Why money on an invoice is never credited by itself: it was made under a policy that settles at zero confirmations,
