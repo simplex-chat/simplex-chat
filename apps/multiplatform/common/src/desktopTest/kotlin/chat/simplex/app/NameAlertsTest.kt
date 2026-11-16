@@ -75,7 +75,7 @@ class NameAlertsTest {
   )
 
   @Test
-  fun knownNameMoved() = assertAlert("plan-known-moved")
+  fun knownNameMoved() = assertAlert("plan-known-moved", "cath", "@alice.simplex", "Open new chat", "Cancel")
 
   @Test
   fun nameAvailable() = assertAlert(

@@ -70,7 +70,7 @@ Each test sets the hooks to the fixture, sets the current user, runs `planAndCon
 | plan-known-available | Name no longer registered | Register, Open chat, OK |
 | plan-own-available | Your name has expired | Re-register, OK |
 | plan-known-reserved | Name not registered | Connect to SimpleX team, Open chat, OK |
-| plan-known-moved | the alert to open a new chat | |
+| plan-known-moved | the alert to open a new chat with cath, @alice.simplex | Open new chat, Cancel |
 | error-available | Name not registered | Register, OK |
 | error-not-registered | Name not registered | OK |
 

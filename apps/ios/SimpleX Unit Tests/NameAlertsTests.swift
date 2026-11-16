@@ -50,7 +50,7 @@ final class NameAlertsTests: XCTestCase {
 
     @MainActor
     func testKnownNameMoved() async throws {
-        try await assertAlert("plan-known-moved", [])
+        try await assertAlert("plan-known-moved", ["cath", "@alice.simplex", "Cancel", "Open new chat"])
     }
 
     @MainActor
