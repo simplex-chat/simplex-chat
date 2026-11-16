@@ -737,7 +737,7 @@ testOrderFormats = do
   let parses = isRight . JT.parseEither Orders.parseOrderRequest
       with k v = KM.insert k v good
   map parses [good, longest] `shouldBe` [True, True]
-  Orders.parseBody "order" (Orders.parseOrderRequest $ with "terms" (J.String "2026-10-01")) `shouldSatisfy` \case
+  void (Orders.parseBody "order" $ Orders.parseOrderRequest $ with "terms" (J.String "2026-10-01")) `shouldSatisfy` \case
     Left (Orders.ORBadRequest reason) -> "$.terms" `T.isInfixOf` reason
     _ -> False
   forM_

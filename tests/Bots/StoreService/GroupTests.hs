@@ -10,7 +10,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, randomBadgeCode)
+import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, nameLength, randomBadgeCode)
 import Simplex.Chat.Controller (ChatCommand (AcceptMember, DeleteGroup, MemberRole))
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import Simplex.Chat.Types (GroupProfile (..))
@@ -114,8 +114,9 @@ badgeGroupTests = describe "badge group" $ do
       map (`groupCmdAction` "/revoke not-a-badge-code") [GRMember, GRModerator, GRAdmin]
         `shouldBe` [IgnoreMsg, IgnoreMsg, revokeUsage]
     it "runs a name code command for a moderator and above, saying nothing to a member" $ do
+      Just six <- pure $ nameLength 6
       map (`groupCmdAction` "/issue name 6") [GRMember, GRModerator, GRAdmin, GROwner]
-        `shouldBe` [IgnoreMsg, RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2), RunCmd (GCIssueName 6 2)]
+        `shouldBe` [IgnoreMsg, RunCmd (GCIssueName six 2), RunCmd (GCIssueName six 2), RunCmd (GCIssueName six 2)]
     it "runs /balance, /record_refund and /close only for an owner, saying nothing to others" $ do
       let roles = [GRMember, GRModerator, GRAdmin, GROwner]
           ownerOnly cmd = replicate 3 IgnoreMsg <> [RunCmd (GCMoney cmd)]
