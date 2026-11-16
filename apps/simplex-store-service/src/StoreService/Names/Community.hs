@@ -21,7 +21,6 @@ import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import Data.Bifunctor (bimap)
-import Data.ByteString (ByteString)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -32,6 +31,7 @@ import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (ChainError (..))
 import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, concurrent, namePolicy, policyNonce, termsLinks, termsOf, termsText, together)
+import StoreService.Names.Registration (TermsHash)
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} (LabelHash h) = M.lookup h nCommunity
@@ -41,7 +41,7 @@ termsFor :: Bool -> Terms -> Text
 termsFor listed Terms {tmHash} = (if listed then communityTermsPrefix else "") <> T.drop 2 (hex tmHash)
 
 -- | The community terms hash an order signed, Nothing for plain terms.
-agreedTermsHash :: Text -> Maybe ByteString
+agreedTermsHash :: Text -> Maybe TermsHash
 agreedTermsHash terms = bytes32FromHex . ("0x" <>) =<< T.stripPrefix communityTermsPrefix terms
 
 communityTermsPrefix :: Text
@@ -76,7 +76,7 @@ readableTerms ct = maybe (pure $ Left Nothing) $ \t -> bimap waitOf (const t) <$
     waitOf TRLink = Nothing
 
 -- | What the page signs to accept the terms of the name's kind.
-data AcceptanceAsked = AcceptanceAsked {acCommunity :: Bool, acPolicy :: Address, acTermsHash :: ByteString, acNonce :: Word64}
+data AcceptanceAsked = AcceptanceAsked {acCommunity :: Bool, acPolicy :: Address, acTermsHash :: TermsHash, acNonce :: Word64}
   deriving (Eq, Show)
 
 -- | Fails while the terms of the name's kind are not set.

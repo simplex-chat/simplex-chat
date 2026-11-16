@@ -27,7 +27,6 @@ import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (listToMaybe)
@@ -66,9 +65,9 @@ data Records = Records
     -- | microseconds a request waits for its edit's outcome
     rsPendingAfter :: Int,
     -- | the edits a request or the lane is sending or judging, so no edit is sent twice
-    rsClaimed :: TVar (Set Int64),
+    rsClaimed :: TVar (Set RecordEditId),
     -- | the pending edits whose last chain read failed
-    rsStalled :: TVar (Set Int64),
+    rsStalled :: TVar (Set RecordEditId),
     -- | grows on every settlement and stall, waking the requests that wait for an edit
     rsChanges :: TVar Int
   }
@@ -170,7 +169,7 @@ relayEdit rs@Records {rsPendingAfter, rsEditsPerYear, rsNow} req@EditRequest {er
     -- one change hashes as edits stored before requests took two, so their repeats still match
     bodyHash = sha256Hash $ B.concat [digest <> serializeSignature scSignature | (digest, SignedChange {scSignature}) <- L.toList signed]
 
-newEdit :: Records -> TVar Bool -> EditRequest -> Address -> ByteString -> IO EditAnswer
+newEdit :: Records -> TVar Bool -> EditRequest -> Address -> BodyHash -> IO EditAnswer
 newEdit rs timer req signer bodyHash =
   chainAccepts rs req signer >>= \case
     Left _ -> pure EAUnavailable
@@ -196,7 +195,7 @@ chainAccepts Records {rsChain, rsContracts} EditRequest {erLabelHash, erChanges}
 
 -- | Left when the name's yearly limit or hourly cap is used up, checked again under the name's turn against a concurrent edit.
 -- Right Nothing when a pending or mined edit holds the first nonce.
-insertEdit :: Records -> EditRequest -> Address -> ByteString -> IO (Either EditAnswer (Maybe Int64))
+insertEdit :: Records -> EditRequest -> Address -> BodyHash -> IO (Either EditAnswer (Maybe RecordEditId))
 insertEdit Records {rsStore, rsTurns, rsEditsPerYear, rsNow} EditRequest {erLabelHash, erChanges} signer bodyHash =
   withLabelTurn rsTurns erLabelHash $ do
     now <- rsNow
@@ -213,7 +212,7 @@ insertEdit Records {rsStore, rsTurns, rsEditsPerYear, rsNow} EditRequest {erLabe
     edit = NewRecordEdit {nreLabelHash = erLabelHash, nreOwner = signer, nreChanges = erChanges, nreBodyHash = bodyHash}
 
 -- | An edit that was not sent is answered and deleted while still claimed, so the lane cannot send it after.
-sendNew :: Records -> TVar Bool -> Int64 -> IO EditAnswer
+sendNew :: Records -> TVar Bool -> RecordEditId -> IO EditAnswer
 sendNew rs timer editId =
   withClaim rs editId Nothing (withStore rs (`getRecordEdit` editId) >>= maybe (pure Nothing) send) >>= maybe (awaitEdit rs timer editId) pure
   where
@@ -240,11 +239,11 @@ sendEdit rs@Records {rsSender} edit@RecordEdit {reId} =
     Left e -> pure $ Left e
 
 -- | Only sent edits are stored, so one never sent leaves no row and its repeat is checked anew.
-forget :: Records -> Int64 -> IO ()
+forget :: Records -> RecordEditId -> IO ()
 forget rs editId = withStore rs (`deleteUnsentEdit` editId) >> settled rs editId
 
 -- | Waits until the edit settles, the chain stops answering for it, or the timer fires.
-awaitEdit :: Records -> TVar Bool -> Int64 -> IO EditAnswer
+awaitEdit :: Records -> TVar Bool -> RecordEditId -> IO EditAnswer
 awaitEdit rs@Records {rsChanges, rsStalled} timer editId = loop
   where
     loop = do
@@ -346,17 +345,17 @@ judge rs@Records {rsChain, rsContracts} RecordEdit {reId, reLabelHash, reOwner, 
     record = ExceptT . textRecord rsContracts reLabelHash
     unset = (== "")
 
-settle :: Records -> Int64 -> EditState -> IO ()
+settle :: Records -> RecordEditId -> EditState -> IO ()
 settle rs editId state = do
   void $ withStore rs $ \db -> settleRecordEdit db editId state
   settled rs editId
 
 -- | Wakes the requests waiting for the edit, which read it again.
-settled :: Records -> Int64 -> IO ()
+settled :: Records -> RecordEditId -> IO ()
 settled Records {rsStalled, rsChanges} editId = atomically $ modifyTVar' rsStalled (S.delete editId) >> modifyTVar' rsChanges (+ 1)
 
 -- | Logged once until the edit's next successful step.
-stall :: Show e => Records -> Int64 -> e -> IO ()
+stall :: Show e => Records -> RecordEditId -> e -> IO ()
 stall Records {rsStalled, rsChanges} editId e = do
   new <- atomically $ do
     stalled <- readTVar rsStalled
@@ -365,11 +364,11 @@ stall Records {rsStalled, rsChanges} editId e = do
     pure new
   when new $ logWarn $ "names records: edit " <> tshow editId <> " waits for the chain: " <> tshow e
 
-unstall :: Records -> Int64 -> IO ()
+unstall :: Records -> RecordEditId -> IO ()
 unstall Records {rsStalled} editId = atomically $ modifyTVar' rsStalled $ S.delete editId
 
 -- | Runs the action only when nobody else holds the edit, else answers the fallback.
-withClaim :: Records -> Int64 -> a -> IO a -> IO a
+withClaim :: Records -> RecordEditId -> a -> IO a -> IO a
 withClaim Records {rsClaimed} editId fallback action =
   bracket claim (\claimed -> when claimed release) $ \claimed -> if claimed then action else pure fallback
   where

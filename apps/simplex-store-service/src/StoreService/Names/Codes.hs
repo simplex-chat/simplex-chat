@@ -22,9 +22,7 @@ where
 
 import Control.Applicative ((<|>))
 import qualified Control.Exception as E
-import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
-import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -37,7 +35,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import StoreService.Config (minNameYears)
 import StoreService.Group.Command (maxNameYears)
 import StoreService.Names.Phases (RegistrationId)
-import StoreService.Names.Store (CodeHashTaken (..), CodeIssuer, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, CodeIssuer, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))
 
@@ -97,7 +95,7 @@ stateRefusal = \case
   CSUnpaid -> Just CRPaymentPending
 
 -- | Why a conditional reservation of the code refused it, as the code reads now.
-reserveRefusal :: DB.Connection -> UTCTime -> ByteString -> RegistrationId -> Int -> IO CodeRefusal
+reserveRefusal :: DB.Connection -> UTCTime -> CodeHash -> RegistrationId -> Int -> IO CodeRefusal
 reserveRefusal db now codeHash rid len = maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid len) <$> getPrepaidCode db codeHash
 
 readPrepaidCode :: DBStore -> NamePrepaidCode -> IO (Maybe PrepaidCode)
@@ -110,7 +108,7 @@ instance E.Exception ReservationRefused
 
 -- | In the code's turn and one transaction, the code is checked, the write runs, then the code is reserved for the
 -- registration, so the registration's row is locked before the code's. A refused reservation rolls the write back.
-reserveCode :: Turns -> DBStore -> UTCTime -> ByteString -> RegistrationId -> Int -> (DB.Connection -> IO (Either e a)) -> IO (Either CodeRefusal (Either e a))
+reserveCode :: Turns -> DBStore -> UTCTime -> CodeHash -> RegistrationId -> Int -> (DB.Connection -> IO (Either e a)) -> IO (Either CodeRefusal (Either e a))
 reserveCode turns st now codeHash rid len write =
   withCodeTurn turns codeHash $ either (\(ReservationRefused refusal) -> Left refusal) id <$> E.try (withTransaction st reserve)
   where
@@ -130,15 +128,15 @@ reserveCode turns st now codeHash rid len write =
                 written -> pure $ Right written
 
 -- | The write runs first, and the code is released only if it succeeds. False when the registration did not hold the code.
-releaseCode :: Turns -> DBStore -> Int64 -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
+releaseCode :: Turns -> DBStore -> CodeId -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 releaseCode turns st codeId rid = afterWrite turns st codeId (\db -> releasePrepaidCode db codeId rid)
 
 -- | The write runs first, and the code is spent only if it succeeds: the code the registration holds, or one it no longer holds
 -- while still usable, as its register went through. False when the code was released and then spent, revoked or expired meanwhile.
-spendLandedCode :: Turns -> DBStore -> UTCTime -> Int64 -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
+spendLandedCode :: Turns -> DBStore -> UTCTime -> CodeId -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 spendLandedCode turns st now codeId rid = afterWrite turns st codeId (\db -> spendLandedPrepaidCode db codeId rid now)
 
-afterWrite :: Turns -> DBStore -> Int64 -> (DB.Connection -> IO Bool) -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
+afterWrite :: Turns -> DBStore -> CodeId -> (DB.Connection -> IO Bool) -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 afterWrite turns st codeId change write = do
   PrepaidCode {pcCodeHash} <- withTransaction st (`getPrepaidCodeById` codeId)
   withCodeTurn turns pcCodeHash $ withTransaction st $ \db -> write db >>= traverse (\a -> (a,) <$> change db)

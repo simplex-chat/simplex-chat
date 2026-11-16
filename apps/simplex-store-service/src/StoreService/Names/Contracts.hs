@@ -77,7 +77,7 @@ import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
-import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
+import StoreService.Names.Registration (TermsHash, channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import StoreService.Safely (safely)
@@ -123,7 +123,7 @@ data NameRecords = NameRecords {rdContact :: Text, rdChannel :: Text, rdNonce ::
 data CommitmentAges = CommitmentAges {caMin :: Integer, caMax :: Integer}
   deriving (Eq, Show)
 
-data Terms = Terms {tmLink :: Text, tmHash :: ByteString}
+data Terms = Terms {tmLink :: Text, tmHash :: TermsHash}
   deriving (Eq, Show)
 
 data TermsRefusal = TRLink | TRWait Int
@@ -313,7 +313,7 @@ fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBacko
               pure $ Left $ TRWait wait
     keep text = Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
     store text =
-      withTransaction ctStore (\db -> setTermsText db tmHash $ encodeUtf8 text)
+      withTransaction ctStore (\db -> setTermsText db tmHash text)
         `catchOwn'` \e -> logError ("names: the terms text of " <> tmLink <> " could not be stored: " <> tshow e)
     checked :: Maybe ByteString -> ByteString -> Either (Text, Maybe Int) Text
     checked digest body

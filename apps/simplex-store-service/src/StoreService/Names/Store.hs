@@ -6,7 +6,12 @@
 {-# LANGUAGE TypeOperators #-}
 
 module StoreService.Names.Store
-  ( NamePhase (..),
+  ( CodeId,
+    RecordEditId,
+    OrderHash,
+    CodeHash,
+    BodyHash,
+    NamePhase (..),
     RegistrationPayment (..),
     paymentInvoice,
     NameReveal (..),
@@ -136,7 +141,7 @@ import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (TermsAcceptance (..))
+import StoreService.Names.Registration (Commitment, TermsAcceptance (..), TermsHash)
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Providers (Rate, Uncreditable (..))
 import StoreService.Store (RevokeResult (..))
@@ -149,6 +154,16 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
+
+type CodeId = Int64
+
+type RecordEditId = Int64
+
+type OrderHash = ByteString
+
+type CodeHash = ByteString
+
+type BodyHash = ByteString
 
 data NamePhase
   = PUnpaid
@@ -180,7 +195,7 @@ instance ToField NamePhase where toField = toField . textEncode
 -- | RPBalance: an order paid wholly from another order's balance, with neither invoice nor code.
 data RegistrationPayment
   = RPInvoice ServicePaymentMethod InvoiceId
-  | RPCode Int64
+  | RPCode CodeId
   | RPBalance
   deriving (Eq, Show)
 
@@ -211,7 +226,7 @@ data NameRegistration = NameRegistration
     nrLength :: Int,
     nrDuration :: Word64,
     nrOwner :: Address,
-    nrCommitment :: ByteString,
+    nrCommitment :: Commitment,
     nrSealed :: Text,
     nrAgreedTerms :: Text,
     nrPhase :: NamePhase,
@@ -232,7 +247,7 @@ data NameRegistration = NameRegistration
     nrFailedAt :: Maybe UTCTime,
     nrError :: Maybe Text,
     nrLive :: Bool,
-    nrOrderHash :: ByteString,
+    nrOrderHash :: OrderHash,
     nrMoves :: Int,
     nrLinksRefusedAt :: Maybe UTCTime,
     nrCreatedAt :: UTCTime,
@@ -274,7 +289,7 @@ data LiveOrder = LiveOrder
   deriving (Eq, Show)
 
 -- | What an order pays with, as its hash covers it. OTBalance: the paying order, the price, the balance seen, and the method of a difference.
-data OrderTerms = OTInvoice ServicePaymentMethod Int | OTCode ByteString | OTBalance RegistrationId Int Int (Maybe ServicePaymentMethod)
+data OrderTerms = OTInvoice ServicePaymentMethod Int | OTCode CodeHash | OTBalance RegistrationId Int Int (Maybe ServicePaymentMethod)
 
 -- | Cents left to spend, and over the balance's life the cents credited and refunded.
 data Balance = Balance
@@ -411,8 +426,8 @@ newtype BrokenInvariant = BrokenInvariant Text
 instance E.Exception BrokenInvariant
 
 data PrepaidCode = PrepaidCode
-  { pcId :: Int64,
-    pcCodeHash :: ByteString,
+  { pcId :: CodeId,
+    pcCodeHash :: CodeHash,
     pcMinLength :: Int,
     pcYears :: Int,
     pcPaymentStatus :: BadgeCodePaymentStatus,
@@ -426,7 +441,7 @@ data PrepaidCode = PrepaidCode
   deriving (Eq, Show)
 
 data NewPrepaidCode = NewPrepaidCode
-  { npcCodeHash :: ByteString,
+  { npcCodeHash :: CodeHash,
     npcMinLength :: Int,
     npcYears :: Int,
     npcPaymentStatus :: BadgeCodePaymentStatus,
@@ -440,7 +455,7 @@ data CodeIssuer = IssuedInGroup | IssuedInConsole
 data CodeHashTaken = CodeHashTaken
   deriving (Eq, Show)
 
-data TxFor = TxCommit RegistrationId | TxAccept RegistrationId | TxRegister RegistrationId | TxEdit Int64
+data TxFor = TxCommit RegistrationId | TxAccept RegistrationId | TxRegister RegistrationId | TxEdit RecordEditId
   deriving (Eq, Show)
 
 -- | A dropped transaction has no receipt and its registrar nonce is used.
@@ -495,11 +510,11 @@ data SignedChange = SignedChange
 
 -- | One request's changes, relayed in one transaction, their nonces consecutive in this order.
 data RecordEdit = RecordEdit
-  { reId :: Int64,
+  { reId :: RecordEditId,
     reLabelHash :: LabelHash,
     reOwner :: Address,
     reChanges :: NonEmpty SignedChange,
-    reBodyHash :: ByteString,
+    reBodyHash :: BodyHash,
     reState :: EditState,
     reCreatedAt :: UTCTime
   }
@@ -509,7 +524,7 @@ data NewRecordEdit = NewRecordEdit
   { nreLabelHash :: LabelHash,
     nreOwner :: Address,
     nreChanges :: NonEmpty SignedChange,
-    nreBodyHash :: ByteString
+    nreBodyHash :: BodyHash
   }
 
 data NamesCounts = NamesCounts
@@ -532,7 +547,7 @@ initialVersion :: Int64
 initialVersion = 1
 
 -- | No two different orders encode the same.
-orderHash :: Address -> OrderFields -> OrderTerms -> ByteString
+orderHash :: Address -> OrderFields -> OrderTerms -> OrderHash
 orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} terms =
   sha256Hash $ smpEncode (tag, lh, num ofLength, int64 ofDuration, unAddress owner, ofCommitment, Large $ encodeUtf8 ofSealed, ofAgreedTerms) <> payment
   where
@@ -603,7 +618,7 @@ createBalanceRegistration db new@NewRegistration {nrgOwner, nrgOrder} source pri
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
 -- fromBalance: the order whose balance pays, and the cents it pays.
-insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> Int -> Maybe ServicePaymentMethod -> Maybe Int64 -> Maybe (RegistrationId, Int) -> ByteString -> UTCTime -> IO Bool
+insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> Int -> Maybe ServicePaymentMethod -> Maybe CodeId -> Maybe (RegistrationId, Int) -> OrderHash -> UTCTime -> IO Bool
 insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears} phase price method codeId fromBalance hash now =
   (> 0)
     <$> executeChanging
@@ -715,13 +730,13 @@ getRegistration db (RegistrationId rid) =
   firstDecoded toRegistration $ DB.query db (selectRegistrations <> " WHERE r.registration_id = ?") (Only rid)
 
 -- | The newest stored order, live or not, with exactly these fields.
-getRegistrationByOrderHash :: DB.Connection -> ByteString -> IO (Maybe NameRegistration)
+getRegistrationByOrderHash :: DB.Connection -> OrderHash -> IO (Maybe NameRegistration)
 getRegistrationByOrderHash db hash =
   firstDecoded toRegistration $
     DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, r.registration_id DESC LIMIT 1") (Only $ Binary hash)
 
 -- | Overdue whatever status the poller has marked, as long as the invoice is not paid and holds no money, as the sweep decides.
-getLiveOrders :: DB.Connection -> ByteString -> Address -> LabelHash -> UTCTime -> IO [LiveOrder]
+getLiveOrders :: DB.Connection -> Commitment -> Address -> LabelHash -> UTCTime -> IO [LiveOrder]
 getLiveOrders db commitment owner (LabelHash lh) now =
   DB.query
     db
@@ -935,7 +950,7 @@ deleteUnpaidRegistration db (RegistrationId rid) =
             else pure $ Left CKPaid
 
 -- | Code orders failed before the cutoff that still hold their unspent code.
-failedCodeOrdersBefore :: DB.Connection -> UTCTime -> IO [(RegistrationId, Int64)]
+failedCodeOrdersBefore :: DB.Connection -> UTCTime -> IO [(RegistrationId, CodeId)]
 failedCodeOrdersBefore db cutoff =
   map (\(rid, codeId) -> (RegistrationId rid, codeId))
     <$> DB.query
@@ -1304,7 +1319,7 @@ setLateSupport :: DB.Connection -> InvoiceId -> LateSupport -> IO ()
 setLateSupport db (InvoiceId invId) support =
   DB.execute db "UPDATE sx_badge_service_name_invoices SET late_support = COALESCE(late_support, ?) WHERE invoice_id = ?" (support, invId)
 
-insertPrepaidCode :: DB.Connection -> NewPrepaidCode -> UTCTime -> IO (Either CodeHashTaken Int64)
+insertPrepaidCode :: DB.Connection -> NewPrepaidCode -> UTCTime -> IO (Either CodeHashTaken CodeId)
 insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, npcExpiresAt, npcIssuer} now = do
   inserted <-
     executeChanging
@@ -1333,17 +1348,17 @@ toPrepaidCode ((pcId, Binary pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, 
 groupNameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
 groupNameCodesIssuedSince db since = maybeFirstRow' 0 fromOnly (DB.query db "SELECT COUNT(*) FROM sx_badge_service_name_prepaid_codes WHERE created_at >= ? AND issued_in_group = 1" (Only since))
 
-getPrepaidCode :: DB.Connection -> ByteString -> IO (Maybe PrepaidCode)
+getPrepaidCode :: DB.Connection -> CodeHash -> IO (Maybe PrepaidCode)
 getPrepaidCode db codeHash =
   maybeFirstRow toPrepaidCode $ DB.query db (prepaidCodeColumns <> " WHERE code_hash = ?") (Only $ Binary codeHash)
 
-getPrepaidCodeById :: DB.Connection -> Int64 -> IO PrepaidCode
+getPrepaidCodeById :: DB.Connection -> CodeId -> IO PrepaidCode
 getPrepaidCodeById db codeId =
   maybeFirstRow toPrepaidCode (DB.query db (prepaidCodeColumns <> " WHERE name_prepaid_code_id = ?") (Only codeId))
     >>= maybe (E.throwIO $ BrokenInvariant $ "the prepaid code " <> tshow codeId <> " of an order is missing") pure
 
 -- | Only an unused code: not reserved, spent or revoked, paid or free, and not expired.
-reservePrepaidCode :: DB.Connection -> Int64 -> RegistrationId -> UTCTime -> IO Bool
+reservePrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> UTCTime -> IO Bool
 reservePrepaidCode db codeId (RegistrationId rid) now' =
   (> 0)
     <$> executeChanging
@@ -1357,7 +1372,7 @@ reservePrepaidCode db codeId (RegistrationId rid) now' =
   where
     now = truncateToSecond now'
 
-releasePrepaidCode :: DB.Connection -> Int64 -> RegistrationId -> IO Bool
+releasePrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> IO Bool
 releasePrepaidCode db codeId (RegistrationId rid) =
   (> 0)
     <$> executeChanging
@@ -1369,7 +1384,7 @@ releasePrepaidCode db codeId (RegistrationId rid) =
       (codeId, rid)
 
 -- | For a registration whose register went through: spends the code it holds, or one released and still usable; False otherwise.
-spendLandedPrepaidCode :: DB.Connection -> Int64 -> RegistrationId -> UTCTime -> IO Bool
+spendLandedPrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> UTCTime -> IO Bool
 spendLandedPrepaidCode db codeId (RegistrationId rid) now' =
   (> 0)
     <$> executeChanging
@@ -1384,7 +1399,7 @@ spendLandedPrepaidCode db codeId (RegistrationId rid) now' =
     now = truncateToSecond now'
 
 -- | A reserved code can be revoked, and its order keeps it; a spent one cannot. With the code as it reads after.
-revokePrepaidCode :: DB.Connection -> ByteString -> UTCTime -> IO (RevokeResult, Maybe PrepaidCode)
+revokePrepaidCode :: DB.Connection -> CodeHash -> UTCTime -> IO (RevokeResult, Maybe PrepaidCode)
 revokePrepaidCode db codeHash now = do
   revoked <-
     executeChanging
@@ -1398,7 +1413,7 @@ revokePrepaidCode db codeHash now = do
       | isJust pcRevokedAt = AlreadyRevoked pcId
       | otherwise = AlreadyRedeemed
 
-txKind :: TxFor -> (Text, Maybe Text, Maybe Int64)
+txKind :: TxFor -> (Text, Maybe Text, Maybe RecordEditId)
 txKind = \case
   TxCommit (RegistrationId rid) -> ("commit", Just rid, Nothing)
   TxAccept (RegistrationId rid) -> ("accept", Just rid, Nothing)
@@ -1458,7 +1473,7 @@ registrationTransactions db (RegistrationId rid) =
   DB.query db (transactionColumns <> " WHERE registration_id = ? ORDER BY name_transaction_id") (Only rid)
     >>= decodeAll toTransaction
 
-editTransactions :: DB.Connection -> Int64 -> IO [NameTransaction]
+editTransactions :: DB.Connection -> RecordEditId -> IO [NameTransaction]
 editTransactions db editId =
   DB.query db (transactionColumns <> " WHERE name_record_edit_id = ? ORDER BY name_transaction_id") (Only editId)
     >>= decodeAll toTransaction
@@ -1473,7 +1488,7 @@ revertedEdit :: Text
 revertedEdit = "reverted"
 
 -- | Nothing when a pending or mined edit already starts at the owner's first nonce.
-insertRecordEdit :: DB.Connection -> NewRecordEdit -> UTCTime -> IO (Maybe Int64)
+insertRecordEdit :: DB.Connection -> NewRecordEdit -> UTCTime -> IO (Maybe RecordEditId)
 insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreChanges, nreBodyHash} now = do
   inserted <-
     executeChanging
@@ -1541,18 +1556,18 @@ toRecordEdit (reId, Binary lh, Binary owner, Binary reBodyHash, state, revert, m
 firstRecordEdit :: DB.Connection -> IO [RecordEditRow] -> IO (Maybe RecordEdit)
 firstRecordEdit db rows = rows >>= mapM (readRecordEdit db) . listToMaybe
 
-getRecordEdit :: DB.Connection -> Int64 -> IO (Maybe RecordEdit)
+getRecordEdit :: DB.Connection -> RecordEditId -> IO (Maybe RecordEdit)
 getRecordEdit db editId =
   firstRecordEdit db $ DB.query db (recordEditColumns <> " WHERE name_record_edit_id = ?") (Only editId)
 
 -- | The newest edit sent with this signed body.
-getRecordEditByBody :: DB.Connection -> ByteString -> IO (Maybe RecordEdit)
+getRecordEditByBody :: DB.Connection -> BodyHash -> IO (Maybe RecordEdit)
 getRecordEditByBody db bodyHash =
   firstRecordEdit db $
     DB.query db (recordEditColumns <> " WHERE body_hash = ? ORDER BY name_record_edit_id DESC LIMIT 1") (Only $ Binary bodyHash)
 
 -- | Settles a pending edit; False when it was settled already.
-settleRecordEdit :: DB.Connection -> Int64 -> EditState -> IO Bool
+settleRecordEdit :: DB.Connection -> RecordEditId -> EditState -> IO Bool
 settleRecordEdit db editId state =
   (> 0)
     <$> executeChanging
@@ -1565,10 +1580,10 @@ settleRecordEdit db editId state =
       ESMined tx -> (minedEdit, Nothing, tx)
       ESReverted name -> (revertedEdit, name, Nothing)
 
-pendingEditIds :: DB.Connection -> IO [Int64]
+pendingEditIds :: DB.Connection -> IO [RecordEditId]
 pendingEditIds db = map fromOnly <$> DB.query db "SELECT name_record_edit_id FROM sx_badge_service_name_record_edits WHERE state = ? ORDER BY name_record_edit_id" (Only pendingEdit)
 
-deleteUnsentEdit :: DB.Connection -> Int64 -> IO ()
+deleteUnsentEdit :: DB.Connection -> RecordEditId -> IO ()
 deleteUnsentEdit db editId =
   DB.execute
     db
@@ -1584,12 +1599,12 @@ relayedEditTimes db (LabelHash lh) since =
       "SELECT created_at FROM sx_badge_service_name_record_edits WHERE label_hash = ? AND created_at > ? ORDER BY created_at"
       (Binary lh, truncateToSecond since)
 
-getTermsText :: DB.Connection -> ByteString -> IO (Maybe ByteString)
+getTermsText :: DB.Connection -> TermsHash -> IO (Maybe ByteString)
 getTermsText db termsHash =
   maybeFirstRow (\(Only (Binary text)) -> text) $
     DB.query db "SELECT terms_text FROM sx_badge_service_name_terms WHERE terms_hash = ?" (Only $ Binary termsHash)
 
-setTermsText :: DB.Connection -> ByteString -> ByteString -> IO ()
+setTermsText :: DB.Connection -> TermsHash -> Text -> IO ()
 setTermsText db termsHash text =
   DB.execute
     db
@@ -1597,7 +1612,7 @@ setTermsText db termsHash text =
       INSERT INTO sx_badge_service_name_terms (terms_hash, terms_text) VALUES (?,?)
       ON CONFLICT (terms_hash) DO UPDATE SET terms_text = excluded.terms_text
     |]
-    (Binary termsHash, Binary text)
+    (Binary termsHash, Binary $ encodeUtf8 text)
 
 namesCounts :: DB.Connection -> IO NamesCounts
 namesCounts db = do

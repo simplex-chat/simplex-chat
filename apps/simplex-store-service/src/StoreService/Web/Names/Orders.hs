@@ -23,7 +23,6 @@ import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
-import Data.ByteString (ByteString)
 import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
@@ -44,7 +43,7 @@ import StoreService.Names.Codes (CodeRefusal (..), readPrepaidCode)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), spendMessage)
-import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NewRegistration (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), RegistrationPayment (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice, textMethod)
+import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderTerms (..), PaidOrder (..), PrepaidCode (..), RegistrationPayment (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice, textMethod)
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (balanceJSON, registrationAt, registrationView)
 import StoreService.Orders (publishRegistration)
@@ -118,7 +117,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns} http client cfg providers wa
 -- (less than the price when a balance paid the rest), and its insert after the invoice row's.
 data InvoicedOrder = InvoicedOrder
   { ivRequest :: OrderRequest,
-    ivOrderHash :: ByteString,
+    ivOrderHash :: OrderHash,
     ivHolders :: [NameRegistration],
     ivMethod :: ServicePaymentMethod,
     ivPrice :: Int,
@@ -189,7 +188,7 @@ refused what refusal = answerNow (orderRefusalResponse refusal) <$ logNote (what
 notObject :: Text
 notObject = "a body that is not a JSON object within its size limit"
 
-answerOrder :: OrdersEnv -> Text -> OrderRequest -> ByteString -> (UTCTime -> NameRegistration -> IO Answer) -> (UTCTime -> IO Answer) -> IO Answer
+answerOrder :: OrdersEnv -> Text -> OrderRequest -> OrderHash -> (UTCTime -> NameRegistration -> IO Answer) -> (UTCTime -> IO Answer) -> IO Answer
 answerOrder OrdersEnv {oeStore, oeNow} what order hash resent new = do
   now <- oeNow
   withTransaction oeStore (\db -> existingOrder db order hash now) >>= \case

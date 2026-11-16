@@ -4,6 +4,8 @@
 module StoreService.Names.Registration
   ( Registration (..),
     RegisterIntent (..),
+    Commitment,
+    TermsHash,
     TermsAcceptance (..),
     TermsKind (..),
     termsKind,
@@ -60,6 +62,10 @@ data Registration = Registration
     rChannelLink :: Maybe Text
   }
 
+type Commitment = ByteString
+
+type TermsHash = ByteString
+
 -- | Only built by 'labelNode', so it always holds 32 bytes.
 newtype Node = Node ByteString
 
@@ -89,7 +95,7 @@ policyDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexName
 -- | The owner's acceptance of the terms of the name's kind for a commitment, relayed to the name policy before the register.
 -- Its deadline is the reveal's.
 data TermsAcceptance = TermsAcceptance
-  { taTermsHash :: ByteString,
+  { taTermsHash :: TermsHash,
     taNonce :: Word64,
     taSignature :: RecoverableSignature
   }

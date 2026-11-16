@@ -189,7 +189,7 @@ testTermsTextStored g = withServiceStores $ \open -> withFakeEthNode $ \node -> 
   termsText waiting (termsAt fakeCommunityTermsText) `shouldReturn` Left (TRWait 30)
   termsText waiting general `shouldReturn` Right "SimpleX general terms v1"
   st <- open
-  withTransaction st $ \db -> setTermsText db (tmHash general) fakeNewGeneralTermsText
+  withTransaction st $ \db -> setTermsText db (tmHash general) (decodeUtf8 fakeNewGeneralTermsText)
   tampered <- restarted
   refused <- capturingStderr $ termsText tampered general `shouldReturn` Left (TRWait 0)
   refused `shouldSatisfy` T.isInfixOf ("names: the stored terms text of " <> tmLink general <> " is refused, its SHA-256 is not the link's")

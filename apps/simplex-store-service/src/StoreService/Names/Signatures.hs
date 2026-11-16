@@ -37,6 +37,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Registration (Commitment)
 
 data SignatureError
   = SEFormat
@@ -54,7 +55,7 @@ data OrderFields = OrderFields
   { ofLabelHash :: LabelHash,
     ofLength :: Int,
     ofDuration :: Word64,
-    ofCommitment :: ByteString,
+    ofCommitment :: Commitment,
     ofSealed :: Text,
     ofAgreedTerms :: Text
   }

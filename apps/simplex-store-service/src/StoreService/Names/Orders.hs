@@ -75,7 +75,7 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (abiWordSize, bytes32FromHex, hex)
 import StoreService.Names.Chain (TxHash)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (Balance, CodeInsertRefused (..), LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (Balance, CodeInsertRefused (..), LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), OrderHash, PrepaidCode (..), RegistrationPayment (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
 
@@ -201,7 +201,7 @@ checkSigner owner msg signature =
 checkOrderSigner :: OrderRequest -> IO (Either OrderRefusal ())
 checkOrderSigner OrderRequest {orOwner, orFields, orTimestamp, orSignature} = checkSigner orOwner (orderMessage orFields orTimestamp) orSignature
 
-existingOrder :: DB.Connection -> OrderRequest -> ByteString -> UTCTime -> IO ExistingOrder
+existingOrder :: DB.Connection -> OrderRequest -> OrderHash -> UTCTime -> IO ExistingOrder
 existingOrder db req hash now =
   getRegistrationByOrderHash db hash >>= \case
     Just r -> pure $ EOResent r
