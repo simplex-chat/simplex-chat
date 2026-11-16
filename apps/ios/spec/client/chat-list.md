@@ -176,7 +176,7 @@ Filter matching is handled by [`presetTagMatchesChat()`](../../Shared/Views/Chat
 
 ### ChatTagsModel State
 
-Filtering state is managed by [`ChatTagsModel`](../../Shared/Model/ChatModel.swift#L189) (`ChatModel.swift` L183):
+Filtering state is managed by [`ChatTagsModel`](../../Shared/Model/ChatModel.swift#L204) (`ChatModel.swift` L204):
 
 ```swift
 class ChatTagsModel: ObservableObject {
@@ -187,7 +187,7 @@ class ChatTagsModel: ObservableObject {
 }
 ```
 
-- `presetTags` counts are updated whenever `chats` changes via [`updateChatTags()`](../../Shared/Model/ChatModel.swift#L197) (L197)
+- `presetTags` counts are updated whenever `chats` changes via [`updateChatTags()`](../../Shared/Model/ChatModel.swift#L212) (L212)
 - Tags with zero matching chats are auto-hidden
 - Active filter is auto-cleared when its tag has no matching chats
 
