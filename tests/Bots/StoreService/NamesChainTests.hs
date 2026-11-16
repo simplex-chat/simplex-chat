@@ -10,7 +10,6 @@ import Control.Exception (toException, try)
 import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.Text as T
@@ -251,6 +250,3 @@ availableCall = unhex "aeb8ce9b0000000000000000000000000000000000000000000000000
 -- | viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
 insufficientAllowance :: ByteString
 insufficientAllowance = unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
-
-unhex :: ByteString -> ByteString
-unhex = either error id . convertFromBase Base16

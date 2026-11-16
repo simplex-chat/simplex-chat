@@ -5,6 +5,7 @@
 module Bots.StoreService.FakeEthNode
   ( FakeEthNode (..),
     address,
+    unhex,
     CallAnswer (..),
     TextAnswer (..),
     Fault (..),
@@ -531,3 +532,6 @@ fromHex t = T.stripPrefix "0x" t >>= eitherToMaybe . convertFromBase Base16 . en
 
 address :: ByteString -> Address
 address = either error id . strDecode
+
+unhex :: ByteString -> ByteString
+unhex = either error id . convertFromBase Base16

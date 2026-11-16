@@ -22,7 +22,7 @@ import Data.Maybe (fromJust, fromMaybe, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
@@ -153,9 +153,6 @@ change Ctx {cStore, cOrders, cClock} rid f = do
 key :: Text -> J.Object -> Maybe J.Value
 key k = KM.lookup (K.fromText k)
 
-seconds :: UTCTime -> Integer
-seconds = floor . utcTimeToPOSIXSeconds
-
 -- | The settled payment's marks: its crypto amount and paid in full.
 settledPaid :: Text
 settledPaid = "0.00156"
@@ -257,9 +254,9 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   NameRegistration {nrId} <- invoiceRegistration ctx inv
   now <- oeNow cOrders
   let revealBefore = seconds now + 600
-      lapsedAt = posixSecondsToUTCTime (fromInteger revealBefore)
+      lapsedAt = posixSecondsToUTCTime (fromIntegral revealBefore)
   pSetNow $ addUTCTime (negate shortOfMoment) lapsedAt
-  v <- change ctx nrId $ \r -> r {nrPhase = OCommitted, nrRevealAfter = Just (fromInteger $ revealBefore - 3600), nrRevealBefore = Just (fromInteger revealBefore)}
+  v <- change ctx nrId $ \r -> r {nrPhase = OCommitted, nrRevealAfter = Just (revealBefore - 3600), nrRevealBefore = Just revealBefore}
   (_, r) <- get ctx (registrationPath nrId)
   key "phase" r `shouldBe` Just "committed"
   invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True

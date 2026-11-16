@@ -5,6 +5,7 @@
 
 module Bots.StoreService.ConfigTests where
 
+import Bots.StoreService.FakeEthNode (address)
 import StoreService.Config
 import Control.Logger.Simple (LogLevel (..))
 import Control.Monad (forM_)
@@ -19,7 +20,6 @@ import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..))
 import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import Simplex.Messaging.Encoding.String (strDecode)
-import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
@@ -773,9 +773,6 @@ parsedNames ns cs =
     Right cfg -> maybe (fail "[names] was present but not read") pure (names cfg)
     Left e -> fail ("must boot, but: " <> e)
 
-address :: HasCallStack => T.Text -> Address
-address t = either error id (strDecode (B.pack (T.unpack t)))
-
 testNamesDefaults :: IO ()
 testNamesDefaults = do
   NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain} <- parsedNames namesSection chainSection
@@ -788,7 +785,7 @@ testNamesDefaults = do
   let ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas} = nChain
   cRpcUrl `shouldBe` T.unpack rpcUrl
   cChainId `shouldBe` 31337
-  (cController, cSponsor, cBaseRegistrar, cResolver) `shouldBe` (address controllerAddr, address sponsorAddr, address registrarAddr, address resolverAddr)
+  [cController, cSponsor, cBaseRegistrar, cResolver] `shouldBe` map (address . encodeUtf8) [controllerAddr, sponsorAddr, registrarAddr, resolverAddr]
   Right expectedKey <- pure (mkPrivateKey (BA.pack [0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3, 0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x94, 0x4b, 0xac, 0xb4, 0x78, 0xcb, 0xed, 0x5e, 0xfc, 0xae, 0x78, 0x4d, 0x7b, 0xf4, 0xf2, 0xff, 0x80]))
   (cServiceKey == expectedKey) `shouldBe` True
   cConfirmations `shouldBe` 3
@@ -897,7 +894,7 @@ testNamesBadAddress = do
   refused "0x0B306BF915C4d645ff596e518fAf3F9669b97016ff"
   refused "not-an-address"
   NamesConfig {nChain = ChainConfig {cSponsor}} <- parsedNames namesSection (withSponsor (T.toLower sponsorAddr))
-  cSponsor `shouldBe` address sponsorAddr
+  cSponsor `shouldBe` address (encodeUtf8 sponsorAddr)
 
 testNamesBadServiceKey :: IO ()
 testNamesBadServiceKey = do

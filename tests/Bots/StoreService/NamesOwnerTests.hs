@@ -30,7 +30,7 @@ module Bots.StoreService.NamesOwnerTests
 where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rentPriceCall, threeYearsOf11, unhex)
+import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rentPriceCall, threeYearsOf11)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.NamesPhasesTests (held, registrationPath, seenVersion, woken)
@@ -50,8 +50,7 @@ import Data.List (find, sort, sortOn)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, addUTCTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import Data.Time.Clock (addUTCTime)
 import Data.Word (Word64, Word8)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -140,9 +139,6 @@ signWith Ctx {cRandom} key msg = hex . serializeSignature . either (error . show
 
 clockSeconds :: Ctx -> IO Word64
 clockSeconds Ctx {cClock} = seconds <$> readIORef cClock
-
-seconds :: UTCTime -> Word64
-seconds = floor . utcTimeToPOSIXSeconds
 
 signedWindow :: Word64
 signedWindow = fromInteger signedRequestSeconds

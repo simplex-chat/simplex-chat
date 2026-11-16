@@ -18,6 +18,8 @@ module Bots.StoreService.NamesOrdersTests
     commitmentOf,
     fieldsOf,
     orderTime,
+    orderSeconds,
+    seconds,
     placeOrder,
     placed,
     post,
@@ -57,7 +59,7 @@ where
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.FakeHttp (nextFakeId)
-import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
+import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.NamesStoreTests (btc, codeReg, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
 import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
@@ -219,6 +221,9 @@ namesOrdersTests = describe "StoreService names: orders" $ do
 -- 21 October 2026 09:15 UTC, the webapp's signed order vector's timestamp
 orderTime :: UTCTime
 orderTime = posixSecondsToUTCTime 1792574100
+
+orderSeconds :: Word64
+orderSeconds = seconds orderTime
 
 termStart :: UTCTime
 termStart = posixSecondsToUTCTime 1798761600

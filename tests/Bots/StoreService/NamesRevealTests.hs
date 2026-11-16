@@ -8,7 +8,7 @@ module Bots.StoreService.NamesRevealTests (namesRevealTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (noncesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, communityTerms, invoiceRegistration, orderTime, placed, post, registrationOf, settleNow, settled, withOrders)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, communityTerms, invoiceRegistration, keyA, orderSeconds, orderTime, placed, post, registrationOf, settleNow, settled, withOrders)
 import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (ownerA)
@@ -30,7 +30,7 @@ import Data.Int (Int64)
 import Data.Maybe (fromJust, fromMaybe, isJust, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Network.HTTP.Types (hContentType)
@@ -110,16 +110,10 @@ withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
 pausedAtChainRead :: Ctx -> IO a -> IO (Async a, Gate)
 pausedAtChainRead Ctx {cNode} = pausedAt cNode "eth_call"
 
-orderSeconds :: Word64
-orderSeconds = floor $ utcTimeToPOSIXSeconds orderTime
-
 -- | The commit's window: opened a minute before the order's time, closing a day after it.
 revealAfter, revealBefore :: Word64
 revealAfter = orderSeconds - 60
 revealBefore = orderSeconds + 86400
-
-keyA :: Secp256k1PrivateKey
-keyA = oKey aliceOrder
 
 contactLink, channelLink :: Text
 contactLink = "https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rS"

@@ -6,11 +6,11 @@ module Bots.StoreService.NameRegistrationTests (badgeNameRegistrationTests) wher
 import StoreService.Names.Chain
 import StoreService.Names.Registration
 import StoreService.Names.Revert (RevertName (..))
-import Bots.StoreService.FakeEthNode hiding (address)
+import Bots.StoreService.FakeEthNode
 import Bots.StoreService.WebUIMock
 import Control.Concurrent.STM (TVar)
 import Crypto.Random (ChaChaDRG)
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
+import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Text (Text)
@@ -18,7 +18,6 @@ import qualified Data.Text as T
 import Data.Word (Word64)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
-import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
@@ -81,7 +80,7 @@ testVerifyShortSecret g = do
 testRevertedDryRun :: TVar ChaChaDRG -> IO ()
 testRevertedDryRun g = withFakeEthNode $ \node -> do
   -- viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
-  setFault node "eth_estimateGas" $ revertFault $ fromHex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
+  setFault node "eth_estimateGas" $ revertFault $ unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
   intent <- knownIntent g knownRegistration
   c <- newChainClient g $ fakeChainConfig node
   estimateGas c fakeSponsor (registerWithCreditCalldata intent) `shouldReturn` Left (ChainReverted $ Just RNInsufficientAllowance)
@@ -167,8 +166,8 @@ acceptanceDomain = policyDomain fakeChainId fakeNamePolicy
 
 -- viem: keccak256(toHex("SimpleX community terms v1")) and keccak256(toHex("alicebakery commitment"))
 acceptedHash, acceptedCommitment :: ByteString
-acceptedHash = fromHex "eed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac"
-acceptedCommitment = fromHex "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d"
+acceptedHash = unhex "eed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac"
+acceptedCommitment = unhex "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d"
 
 acceptanceDeadline :: Word64
 acceptanceDeadline = 1767315600
@@ -204,14 +203,8 @@ testVerifyAcceptance g = do
   verify True owner (acceptanceDeadline + 1) acceptance `shouldReturn` Left "acceptance is not signed by the owner"
   verify False owner acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
 
-address :: ByteString -> Address
-address = right . strDecode
-
 toHex :: ByteString -> ByteString
 toHex = convertToBase Base16
-
-fromHex :: ByteString -> ByteString
-fromHex = right . convertFromBase Base16
 
 right :: Either String a -> a
 right = either (error . ("unexpected Left: " <>)) id

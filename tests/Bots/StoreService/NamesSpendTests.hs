@@ -9,7 +9,7 @@ import Bots.StoreService.BotTests (operatorCmd, withStoreService)
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates, webhookEvent, webhookSigHeader, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, seconds, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesPhasesTests (registrationPath, seenVersion, woken)
 import qualified Bots.StoreService.NamesPhasesTests as Phases
@@ -32,8 +32,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
-import Data.Word (Word64)
 import Network.HTTP.Client (responseBody)
 import Network.HTTP.Types (hContentType)
 import Network.Wai (Application)
@@ -249,9 +247,6 @@ cancels Ctx {cStub} = (\calls -> [r | StubCancel r <- calls]) <$> stubCalls cStu
 
 providerRef :: Ctx -> InvoiceId -> IO Text
 providerRef Ctx {cStore} invId = maybe (error "no invoice row") irProviderRef <$> getInvoice cStore invId
-
-seconds :: UTCTime -> Word64
-seconds = floor . utcTimeToPOSIXSeconds
 
 btc :: ServicePaymentMethod
 btc = SPMCrypto CCBtc

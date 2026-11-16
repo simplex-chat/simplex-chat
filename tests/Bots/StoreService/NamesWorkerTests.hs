@@ -7,7 +7,7 @@ module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (figures)
-import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, noncesCall, registrarOf, unhex)
+import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, noncesCall, registrarOf)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
@@ -30,7 +30,7 @@ import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word8, Word64)
 import Network.HTTP.Client (responseBody)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
@@ -192,9 +192,6 @@ started wCtx@Ctx {cNode, cStore, cRandom, cClock, cOrders} = do
 minAge, maxAge :: Word64
 minAge = 60
 maxAge = 86400
-
-orderSeconds :: Word64
-orderSeconds = floor $ utcTimeToPOSIXSeconds orderTime
 
 expiry :: Word64
 expiry = orderSeconds + 2 * 31536000

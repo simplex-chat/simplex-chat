@@ -6,7 +6,7 @@
 module Bots.StoreService.NamesRecordsTests (namesRecordsTests) where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (minPriceCentsPerYear)
+import Bots.StoreService.NamesContractsTests (alice, gracePeriod, minPriceCentsPerYear, otherResolver, registry)
 import Bots.StoreService.NamesStoreTests (t0)
 import Bots.StoreService.WebTests (bounded, withServiceStore)
 import Bots.StoreService.WebUIMock (EphemeralWallet (..), newEphemeralWallet, walletFromCode)
@@ -17,7 +17,6 @@ import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.ByteString.Builder (toLazyByteString)
@@ -42,7 +41,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), signRecoverable)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
 import StoreService.Names.Chain
@@ -979,9 +978,6 @@ digestOf change nonce dl = case change of
 resolverDomain' :: Eip712Domain
 resolverDomain' = resolverDomain fakeChainId fakeResolver
 
-alice :: LabelHash
-alice = labelHash "alicebakery"
-
 aliceNode :: Node
 aliceNode = labelNode TLDSimplex alice
 
@@ -999,13 +995,8 @@ channelKey = "simplex.channel"
 deadline :: Word64
 deadline = 1767229200
 
-nameExpiry, gracePeriod :: Word64
+nameExpiry :: Word64
 nameExpiry = 1861833600
-gracePeriod = 7776000
-
-registry, otherResolver :: Address
-registry = address "0x5fbdb2315678afecb367f032d93f642f64180aa3"
-otherResolver = address "0x4826533b4897376654bb4d4ad88b7fafd0c98528"
 
 -- | The fake node's first block time.
 genesis :: Word64
@@ -1047,6 +1038,3 @@ viemMulticall = unhex "ac9650d80000000000000000000000000000000000000000000000000
 viemSetCall, viemClearCall :: ByteString
 viemSetCall = unhex "71a218a70f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006955c7100000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e6368616e6e656c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e68747470733a2f2f736d70382e73696d706c65782e696d2f632359386d3300000000000000000000000000000000000000000000000000000000000000000041fce4c6865591609c07ef3d94f376187d8a20cd9d94b4affcb60b55e999038fbd4e45c42b5fafe66a8d4f756e99398602eacef777b4dce4afd0a767cddadf3ca91c00000000000000000000000000000000000000000000000000000000000000"
 viemClearCall = unhex "6463e6140f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000006955c710000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000410565f7e5a591c200fcc358c1d9e9293721d0b99f0285b589211203e311e8e6167ee822d664048870bdd8552263d25bbf45e7f4985fd3b8c3a19cfced44ef9d561c00000000000000000000000000000000000000000000000000000000000000"
-
-unhex :: ByteString -> ByteString
-unhex = either error id . convertFromBase Base16

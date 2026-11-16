@@ -18,6 +18,7 @@ module Bots.StoreService.NamesContractsTests
     year,
     gracePeriod,
     otherResolver,
+    registry,
     nameExpiresCall,
     reservedNamesCall,
     contactTextCall,
@@ -28,7 +29,6 @@ module Bots.StoreService.NamesContractsTests
     minCommitmentAgeCall,
     maxCommitmentAgeCall,
     newPolicy,
-    unhex,
   )
 where
 
@@ -39,7 +39,6 @@ import Control.Concurrent.STM (TVar)
 import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
@@ -622,6 +621,3 @@ commitmentsCall = unhex "839df945f8096c3f3cfbadc9f3a108d2c586ccc816c0510711c8d62
 availableCall = unhex "aeb8ce9b0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000b616c69636562616b657279000000000000000000000000000000000000000000"
 minCommitmentAgeCall = unhex "8d839ffe"
 maxCommitmentAgeCall = unhex "ce1e09c0"
-
-unhex :: ByteString -> ByteString
-unhex = either error id . convertFromBase Base16

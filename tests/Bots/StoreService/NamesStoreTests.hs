@@ -5,7 +5,7 @@
 
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
-import Bots.StoreService.FakeEthNode (agreed, plainTerms)
+import Bots.StoreService.FakeEthNode (address, agreed, plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM, forM_, void)
@@ -29,7 +29,7 @@ import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (TermsAcceptance (..))
-import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), communityTermsPrefix, parseAnyCaseAddress, parseSignature)
+import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), communityTermsPrefix, parseSignature)
 import StoreService.Names.Store
 import StoreService.Store (RevokeResult (..))
 import Test.Hspec
@@ -98,9 +98,6 @@ ownerA = address "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73"
 
 ownerB :: Address
 ownerB = address "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
-
-address :: Text -> Address
-address = either (error . show) id . parseAnyCaseAddress
 
 -- r all 0x11, s all 0x22 (a low s), v 27
 signature :: RecoverableSignature
