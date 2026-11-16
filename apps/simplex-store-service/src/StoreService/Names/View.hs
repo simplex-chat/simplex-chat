@@ -37,10 +37,11 @@ import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (ChainError, TxHash (..))
-import StoreService.Names.Community (AcceptanceAsked (..), agreedTermsHash, communityJSON, currentAcceptance)
+import StoreService.Names.Community (AcceptanceAsked (..), communityJSON, currentAcceptance)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
+import StoreService.Names.Signatures (AgreedTerms (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), HoldState (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), getBalance, getRegistration, heldBy, lateWait, paymentBalance, paymentInvoice)
 
 -- | The view's chain reads; a field whose read failed is null and named in unread.
@@ -110,8 +111,8 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "unread" .= (["intentNonce" | isUnread vrIntentNonce] <> ["acceptance" | isUnread vrAcceptance] :: [Text]),
       "expiresAt" .= nrExpiresAt,
       "error" .= nrError,
-      "community" .= communityJSON cfg (nrLabelHash r) (isJust $ agreedTermsHash nrAgreedTerms),
-      "terms" .= nrAgreedTerms
+      "community" .= communityJSON cfg (nrLabelHash r) (atCommunityName nrAgreedTerms),
+      "terms" .= (textEncode nrAgreedTerms :: Text)
     ]
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r

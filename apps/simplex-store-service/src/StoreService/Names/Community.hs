@@ -4,8 +4,6 @@
 module StoreService.Names.Community
   ( communityFor,
     termsFor,
-    agreedTermsHash,
-    communityTermsPrefix,
     communityJSON,
     yearsFor,
     termsJSON,
@@ -23,29 +21,21 @@ import qualified Data.Aeson as J
 import Data.Bifunctor (bimap)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Word (Word64)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Abi (bytes32FromHex, hex)
+import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (ChainError (..))
 import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, concurrent, namePolicy, policyNonce, termsLinks, termsOf, termsText, together)
 import StoreService.Names.Registration (TermsHash)
+import StoreService.Names.Signatures (AgreedTerms (..))
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} (LabelHash h) = M.lookup h nCommunity
 
--- | The prefix records that the buyer agreed to the community terms, whose hash follows it.
-termsFor :: Bool -> Terms -> Text
-termsFor listed Terms {tmHash} = (if listed then communityTermsPrefix else "") <> T.drop 2 (hex tmHash)
-
--- | The community terms hash an order signed, Nothing for plain terms.
-agreedTermsHash :: Text -> Maybe TermsHash
-agreedTermsHash terms = bytes32FromHex . ("0x" <>) =<< T.stripPrefix communityTermsPrefix terms
-
-communityTermsPrefix :: Text
-communityTermsPrefix = "community/"
+termsFor :: Bool -> Terms -> AgreedTerms
+termsFor listed Terms {tmHash} = AgreedTerms {atCommunityName = listed, atTermsHash = tmHash}
 
 -- | Null for plain terms.
 communityJSON :: NamesConfig -> LabelHash -> Bool -> J.Value

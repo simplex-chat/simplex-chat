@@ -5,7 +5,7 @@
 
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
-import Bots.StoreService.FakeEthNode (plainTerms)
+import Bots.StoreService.FakeEthNode (agreed, plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM, forM_, void)
@@ -28,7 +28,7 @@ import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (TermsAcceptance (..))
-import StoreService.Names.Signatures (OrderFields (..), parseAnyCaseAddress, parseSignature)
+import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), communityTermsPrefix, parseAnyCaseAddress, parseSignature)
 import StoreService.Names.Store
 import StoreService.Store (RevokeResult (..))
 import Test.Hspec
@@ -116,7 +116,7 @@ order label n =
       ofDuration = 69292800,
       ofCommitment = digestFixture n,
       ofSealed = "sealed-" <> label <> "-" <> T.pack (show n),
-      ofAgreedTerms = plainTerms
+      ofAgreedTerms = agreed plainTerms
     }
 
 newReg :: Text -> Address -> OrderFields -> NewRegistration
@@ -224,7 +224,7 @@ testOrderHashFields = do
           ("owner", orderHash ownerB o paid),
           ("commitment", orderHash ownerA o {ofCommitment = digestFixture 2} paid),
           ("sealed", orderHash ownerA o {ofSealed = ofSealed o <> "x"} paid),
-          ("terms", orderHash ownerA o {ofAgreedTerms = ofAgreedTerms o <> "/community"} paid),
+          ("terms", orderHash ownerA o {ofAgreedTerms = (ofAgreedTerms o) {atCommunityName = True}} paid),
           ("method", orderHash ownerA o (OTInvoice (SPMCard CPStripe) price)),
           ("price", orderHash ownerA o (OTInvoice btc (price + 1))),
           ("code instead of invoice", orderHash ownerA o (OTCode $ digestFixture 3)),
@@ -238,7 +238,7 @@ testOrderHashBoundaries :: IO ()
 testOrderHashBoundaries = do
   let o = order "alicebakery" 1
   orderHash ownerA o {ofSealed = "ab"} (OTCode "c") `shouldNotBe` orderHash ownerA o {ofSealed = "a"} (OTCode "bc")
-  orderHash ownerA o {ofSealed = "ab", ofAgreedTerms = "c"} (OTCode "d") `shouldNotBe` orderHash ownerA o {ofSealed = "a", ofAgreedTerms = "bc"} (OTCode "d")
+  orderHash ownerA o {ofSealed = "a" <> communityTermsPrefix, ofAgreedTerms = agreed plainTerms} (OTCode "d") `shouldNotBe` orderHash ownerA o {ofSealed = "a", ofAgreedTerms = agreed (communityTermsPrefix <> plainTerms)} (OTCode "d")
 
 testCreatePaid :: IO ()
 testCreatePaid = withServiceStore $ \st -> do
@@ -255,7 +255,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrOwner = ownerA,
         nrCommitment = ofCommitment o,
         nrSealed = ofSealed o,
-        nrAgreedTerms = plainTerms,
+        nrAgreedTerms = agreed plainTerms,
         nrPhase = PUnpaid,
         nrYears = twoYears,
         nrPrice = price,
@@ -420,7 +420,7 @@ testRoundTrip = withServiceStore $ \st -> do
             nrError = Just "The name was not signed in time",
             nrLinksRefusedAt = Just (at 4),
             nrMoves = 2,
-            nrAgreedTerms = "community/" <> plainTerms
+            nrAgreedTerms = agreed (communityTermsPrefix <> plainTerms)
           }
   write st changed `shouldReturn` Written 2
   reg st "r1" `shouldReturn` changed {nrVersion = 2, nrLive = False, nrUpdatedAt = at 1}
@@ -495,7 +495,7 @@ testWriteMeetsLiveOrder = withServiceStore $ \st -> do
 testRetarget :: IO ()
 testRetarget = withServiceStore $ \st -> do
   let o = order "alicebakery" 1
-      o' = (order "alicebakers" 2) {ofAgreedTerms = "community/" <> plainTerms}
+      o' = (order "alicebakers" 2) {ofAgreedTerms = agreed (communityTermsPrefix <> plainTerms)}
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
   r <- reg st "r1"
   let failed =

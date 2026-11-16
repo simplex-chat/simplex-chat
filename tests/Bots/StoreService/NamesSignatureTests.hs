@@ -167,11 +167,11 @@ termsOrder =
       ofDuration = 69292800,
       ofCommitment = hx "0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5",
       ofSealed = "AAAAAAAAAAAAAAAACWgxqMk-UKfpra_Zh6vc4KNBR6SX1WYpGb4COoWCCbM0bisYCH14WLzghp8hqi_-KyXSi4qf_DAdP_M4bFetD0s",
-      ofAgreedTerms = "67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"
+      ofAgreedTerms = AgreedTerms {atCommunityName = False, atTermsHash = hx "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"}
     }
 
 communityOrder :: OrderFields
-communityOrder = termsOrder {ofAgreedTerms = "community/bbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d"}
+communityOrder = termsOrder {ofAgreedTerms = AgreedTerms {atCommunityName = True, atTermsHash = hx "0xbbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d"}}
 
 commitment :: ByteString
 commitment = hx "0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1"

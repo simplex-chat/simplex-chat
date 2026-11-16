@@ -562,7 +562,7 @@ testTwoWallets = withWorker $ \w@W {wCtx = ctx} -> do
 
 -- | The order of alicebakery, by owner A, with this commitment.
 aliceFields :: Int -> OrderFields
-aliceFields n = OrderFields {ofLabelHash = labelHash "alicebakery", ofLength = 11, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf n, ofSealed = "sealed-alicebakery-" <> tshow n, ofAgreedTerms = plainTerms}
+aliceFields n = OrderFields {ofLabelHash = labelHash "alicebakery", ofLength = 11, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf n, ofSealed = "sealed-alicebakery-" <> tshow n, ofAgreedTerms = agreed plainTerms}
 
 aliceRegistration :: Text -> Int -> NewRegistration
 aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgYears = 2, nrgOrderHash = orderHash ownerA (aliceFields n) (OTInvoice btc $ oPrice aliceOrder)}

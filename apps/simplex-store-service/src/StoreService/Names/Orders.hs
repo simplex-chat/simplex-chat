@@ -50,7 +50,6 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
-import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, isJust)
@@ -63,18 +62,19 @@ import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
-import StoreService.Names.Community (agreedTermsHash, communityJSON, communityTermsPrefix, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
+import StoreService.Names.Community (communityJSON, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
-import StoreService.Names.Abi (abiWordSize, bytes32FromHex, hex)
+import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (TxHash)
-import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
+import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
 import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), PrepaidCode (..), paymentBalance, NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
@@ -142,9 +142,6 @@ data Landed = LandedByReceipt TxHash (Maybe Word64) | LandedByOwner
 maxSealedChars :: Int
 maxSealedChars = 11095
 
-maxAgreedTermsChars :: Int
-maxAgreedTermsChars = T.length communityTermsPrefix + 2 * abiWordSize
-
 -- | How far a signed request's timestamp may be from the service's clock.
 signedRequestSeconds :: Integer
 signedRequestSeconds = 600
@@ -165,16 +162,10 @@ parseOrderFields o = do
   ofCommitment <- bytes32FromHex =<< textField o "commitment"
   ofSealed <- textField o "sealed"
   unless (T.length ofSealed <= maxSealedChars) Nothing
-  ofAgreedTerms <- textField o "terms"
-  unless (agreedTermsFormat ofAgreedTerms) Nothing
+  ofAgreedTerms <- textDecode =<< textField o "terms"
   timestamp <- integerField =<< KM.lookup "timestamp" o
   signature <- eitherToMaybe . parseSignature =<< textField o "signature"
   pure (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
-
-agreedTermsFormat :: Text -> Bool
-agreedTermsFormat t = not (T.null t) && T.length t <= maxAgreedTermsChars && T.all termsChar t
-  where
-    termsChar c = isAsciiUpper c || isAsciiLower c || isDigit c || c `elem` ("._/-" :: String)
 
 textField :: J.Object -> J.Key -> Maybe Text
 textField o k = case KM.lookup k o of
@@ -278,7 +269,7 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
 -- | The years the payment covers, or communityYears for an order signing community terms; 'checkTerms' refuses those terms
 -- for any other name.
 orderYears :: OrderFields -> Int -> Int
-orderYears OrderFields {ofAgreedTerms} = yearsFor (isJust $ agreedTermsHash ofAgreedTerms)
+orderYears OrderFields {ofAgreedTerms = AgreedTerms {atCommunityName}} = yearsFor atCommunityName
 
 -- | The terms the order signed must be the current ones for its name, the community terms for a name the policy lists,
 -- which cannot be ordered while a buyer cannot read them.

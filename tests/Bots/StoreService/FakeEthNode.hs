@@ -46,6 +46,7 @@ module Bots.StoreService.FakeEthNode
     fakeTermsPath,
     fakeTermsHash,
     plainTerms,
+    agreed,
     fakeGeneralTerms,
     fakeGeneralTermsText,
     fakeNewGeneralTermsText,
@@ -82,6 +83,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
@@ -93,13 +95,14 @@ import qualified Network.Wai.Handler.Warp as Warp
 import Numeric (readHex, showHex)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
-import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Encoding.String (strDecode, textDecode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
 import StoreService.Names.Chain (ChainClient (..), TxRequest (..), decodeSignedTx, newChainClient)
+import StoreService.Names.Signatures (AgreedTerms)
 import System.Timeout (timeout)
 
 data FakeEthNode = FakeEthNode
@@ -198,6 +201,10 @@ fakeTermsHash = keccak256 . encodeUtf8 . fakeTermsLink
 
 plainTerms :: Text
 plainTerms = T.drop 2 $ hex fakeGeneralTerms
+
+-- | Agreed terms as an order sends them.
+agreed :: Text -> AgreedTerms
+agreed t = fromMaybe (error $ "agreed terms: " <> T.unpack t) $ textDecode t
 
 -- | The policy lists the name as a community name.
 listCommunityName :: FakeEthNode -> LabelHash -> IO ()

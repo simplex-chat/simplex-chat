@@ -42,6 +42,7 @@ import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (.
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
+import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
@@ -202,7 +203,7 @@ spendBody Ctx {cRandom} source SpendBody {sbOrder = o@Order {oKey, oPrice, oTime
         ("sealed", J.String ofSealed),
         ("price", J.toJSON oPrice),
         ("balance", J.toJSON sbBalance),
-        ("terms", J.String ofAgreedTerms),
+        ("terms", J.String $ textEncode ofAgreedTerms),
         ("timestamp", J.toJSON oTimestamp),
         ("signature", J.String $ hex $ serializeSignature sig)
       ]
@@ -274,7 +275,7 @@ testCoveredSpend = withSpend $ \ctx -> do
   r <- registrationById ctx rid
   (nrPhase r, nrLive r, nrPrice r, nrPayment r) `shouldBe` (PQueued, True, 10000, OPBalance BalanceUse {buSource = src, buUsed = 10000})
   nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance Spend {spSource = src, spPrice = 10000, spBalance = 15000, spMethod = Nothing})
-  nrAgreedTerms r `shouldBe` oTerms aliceOrder
+  nrAgreedTerms r `shouldBe` agreed (oTerms aliceOrder)
   view <- viewOf ctx rid
   (field "phase" view, field "price" view, field "fromBalance" view, field "balance" view) `shouldBe` (Just "queued", Just (J.Number 10000), Just (J.Number 10000), Just J.Null)
   amountOf ctx src `shouldReturn` Just 5000
@@ -298,7 +299,7 @@ testDifferenceSpend = withSpend $ \ctx -> do
   stubCalls (cStub ctx) `shouldReturn` [StubCreate btc OrderDraft {odAmount = CurrencyAmount 4000, odCurrency = "usd", odReference = "name:" <> hex (nrOrderHash holder)}]
   (nrPhase holder, nrLive holder, nrPrice holder, nrPayment holder) `shouldBe` (PUnpaid, True, 10000, OPDifference BalanceUse {buSource = src, buUsed = 6000} btc invId)
   nrOrderHash holder `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance Spend {spSource = src, spPrice = 10000, spBalance = 6000, spMethod = Just btc})
-  nrAgreedTerms holder `shouldBe` oTerms aliceOrder
+  nrAgreedTerms holder `shouldBe` agreed (oTerms aliceOrder)
   fmap irAmount <$> getInvoice (cStore ctx) invId `shouldReturn` Just (CurrencyAmount 4000)
   field "balance" <$> viewOf ctx src `shouldReturn` Just (J.object ["amount" J..= (6000 :: Int), "held" J..= True, "heldUntil" J..= expiry, "refunded" J..= (0 :: Int)])
 
@@ -438,13 +439,13 @@ testSpendTermsChanged = withSpend $ \ctx0 -> serveSpend (configured (listName "d
   spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = plainTerms}} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   amountOf ctx src `shouldReturn` Just 30000
   rid <- registrationAnswer . snd <$> spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = communityTerms}}
-  nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms
+  nrAgreedTerms <$> registrationById ctx rid `shouldReturn` agreed communityTerms
   serveSpend (configured (listName "alicebakery") ctx) $ \listing -> do
     listOnChain listing "alicebakery"
     low <- sourceOf listing "low" 4000
     (status, v) <- spend listing low (difference 4000) {sbOrder = aliceOrder {oTerms = communityTerms}}
     status `shouldBe` 200
-    nrAgreedTerms <$> invoiceRegistration listing (invoiceIdOf v) `shouldReturn` communityTerms
+    nrAgreedTerms <$> invoiceRegistration listing (invoiceIdOf v) `shouldReturn` agreed communityTerms
 
 testSpendCommunityYears :: IO ()
 testSpendCommunityYears = withSpend $ \ctx0 -> serveSpend (configured (threeYears . listName "dynamis") ctx0) $ \ctx -> do

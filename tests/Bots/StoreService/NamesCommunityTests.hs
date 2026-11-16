@@ -18,11 +18,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (NamesConfig (..), unknownKeys)
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector)
-import StoreService.Names.Community (agreedTermsHash, communityFor, termsFor)
+import StoreService.Names.Community (communityFor, termsFor)
 import StoreService.Names.Contracts (Terms (..))
+import StoreService.Names.Signatures (AgreedTerms (..))
 import StoreService.Names.View (addressText)
 import StoreService.Service (logNamePolicy)
 import Test.Hspec
@@ -125,13 +127,11 @@ testTermsFor = do
       h = fromJust $ bytes32FromHex $ "0x" <> hexDigits
       terms = Terms {tmLink = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/terms.md#sha256=" <> hexDigits, tmHash = h}
       listed = "community/" <> hexDigits
-  termsFor False terms `shouldBe` hexDigits
-  termsFor True terms `shouldBe` listed
-  agreedTermsHash listed `shouldBe` Just h
-  agreedTermsHash hexDigits `shouldBe` Nothing
-  agreedTermsHash "community" `shouldBe` Nothing
-  agreedTermsHash "2026-10-23" `shouldBe` Nothing
-  agreedTermsHash ("community/" <> T.toUpper hexDigits) `shouldBe` Nothing
+  textEncode (termsFor False terms) `shouldBe` hexDigits
+  textEncode (termsFor True terms) `shouldBe` listed
+  textDecode listed `shouldBe` Just AgreedTerms {atCommunityName = True, atTermsHash = h}
+  textDecode hexDigits `shouldBe` Just AgreedTerms {atCommunityName = False, atTermsHash = h}
+  mapM_ (\t -> (t, textDecode t :: Maybe AgreedTerms) `shouldBe` (t, Nothing)) ["community", "2026-10-23", "community/" <> T.toUpper hexDigits, T.toUpper hexDigits, "community/community/" <> hexDigits]
 
 testStartupCheck :: TVar ChaChaDRG -> IO ()
 testStartupCheck g = withContracts g $ \node ct -> do

@@ -148,7 +148,7 @@ import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Commitment, TermsAcceptance (..), TermsHash)
-import StoreService.Names.Signatures (OrderFields (..), parseSignature)
+import StoreService.Names.Signatures (AgreedTerms, OrderFields (..), parseSignature)
 import StoreService.Providers (Rate, Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, mkQuery, newInvoiceId, note, prefixQuery, textToCryptoCurrency, truncateToSecond, unfundedQuery)
@@ -247,7 +247,7 @@ data NameRegistration = NameRegistration
     nrOwner :: Address,
     nrCommitment :: Commitment,
     nrSealed :: Text,
-    nrAgreedTerms :: Text,
+    nrAgreedTerms :: AgreedTerms,
     nrPhase :: NamePhase,
     nrYears :: Int,
     nrPrice :: Int,
@@ -590,7 +590,7 @@ initialVersion = 1
 -- | No two different orders encode the same.
 orderHash :: Address -> OrderFields -> OrderTerms -> OrderHash
 orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} terms =
-  sha256Hash $ smpEncode (tag, lh, num ofLength, int64 ofDuration, unAddress owner, ofCommitment, Large $ encodeUtf8 ofSealed, ofAgreedTerms) <> payment
+  sha256Hash $ smpEncode (tag, lh, num ofLength, int64 ofDuration, unAddress owner, ofCommitment, Large $ encodeUtf8 ofSealed, textEncode ofAgreedTerms) <> payment
   where
     (tag, payment) = case terms of
       OTInvoice method price -> ("name-invoice" :: ByteString, smpEncode (methodText method, num price))
@@ -702,7 +702,7 @@ type RegistrationRow =
     :. (Int, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString), Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
     :. (Maybe UTCTime, Maybe Text, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, Int)
-    :. (Text, Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString))
+    :. (AgreedTerms, Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString))
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration

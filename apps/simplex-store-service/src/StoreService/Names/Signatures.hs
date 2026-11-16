@@ -1,10 +1,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Signatures
   ( SignatureError (..),
     AddressError (..),
     OrderFields (..),
+    AgreedTerms (..),
+    communityTermsPrefix,
     parseSignature,
     personalDigest,
     orderMessage,
@@ -29,15 +32,16 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
+import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
-import Simplex.Messaging.Encoding.String (strDecode, strEncode)
+import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode, strEncode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
-import StoreService.Names.Abi (hex)
+import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (Commitment)
+import StoreService.Names.Registration (Commitment, TermsHash)
 
 data SignatureError
   = SEFormat
@@ -57,9 +61,27 @@ data OrderFields = OrderFields
     ofDuration :: Word64,
     ofCommitment :: Commitment,
     ofSealed :: Text,
-    ofAgreedTerms :: Text
+    ofAgreedTerms :: AgreedTerms
   }
   deriving (Eq)
+
+-- | The hash of the terms an order agreed to, the community terms for a name the policy lists.
+data AgreedTerms = AgreedTerms {atCommunityName :: Bool, atTermsHash :: TermsHash}
+  deriving (Eq, Show)
+
+-- | As the order signs it: the hash in 64 lowercase hex digits, after communityTermsPrefix for the community terms.
+instance TextEncoding AgreedTerms where
+  textEncode AgreedTerms {atCommunityName, atTermsHash} = (if atCommunityName then communityTermsPrefix else "") <> T.drop 2 (hex atTermsHash)
+  textDecode t = AgreedTerms community <$> bytes32FromHex ("0x" <> digits)
+    where
+      (community, digits) = maybe (False, t) (True,) $ T.stripPrefix communityTermsPrefix t
+
+instance FromField AgreedTerms where fromField = fromTextField_ textDecode
+
+instance ToField AgreedTerms where toField = toField . textEncode
+
+communityTermsPrefix :: Text
+communityTermsPrefix = "community/"
 
 signatureHexLength :: Int
 signatureHexLength = 130
@@ -111,7 +133,7 @@ message = encodeUtf8 . T.unwords . ("simplex.domains" :)
 
 orderWords :: OrderFields -> [Text]
 orderWords OrderFields {ofLabelHash = LabelHash labelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} =
-  [hex labelHash, tshow ofLength, tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed, ofAgreedTerms]
+  [hex labelHash, tshow ofLength, tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed, textEncode ofAgreedTerms]
 
 -- the address parser checks EIP-55 only on mixed-case hex, so one-case text is refused here by comparing the encoding
 parseChecksumAddress :: Text -> Either AddressError Address

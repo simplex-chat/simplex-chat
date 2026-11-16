@@ -59,6 +59,7 @@ import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
+import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
@@ -243,7 +244,7 @@ linksRefusedPhase r = (committedPhase r) {nrLinksRefusedAt = Just orderTime}
 moveTo :: Ctx -> Text -> Int -> IO OrderFields
 moveTo Ctx {cClock} label n = do
   t <- readIORef cClock
-  pure OrderFields {ofLabelHash = labelHash label, ofLength = T.length label, ofDuration = yearsDuration 2 t, ofCommitment = commitmentOf n, ofSealed = "sealed-" <> label <> "-" <> tshow n, ofAgreedTerms = plainTerms}
+  pure OrderFields {ofLabelHash = labelHash label, ofLength = T.length label, ofDuration = yearsDuration 2 t, ofCommitment = commitmentOf n, ofSealed = "sealed-" <> label <> "-" <> tshow n, ofAgreedTerms = agreed plainTerms}
 
 moveBody :: Ctx -> Secp256k1PrivateKey -> RegistrationId -> OrderFields -> IO J.Object
 moveBody ctx key rid fields = clockSeconds ctx >>= moveBodyAt ctx key rid fields
@@ -258,7 +259,7 @@ moveBodyAt ctx key rid fields@OrderFields {ofLabelHash = LabelHash lh, ofLength,
         ("duration", J.toJSON ofDuration),
         ("commitment", J.String $ hex ofCommitment),
         ("sealed", J.String ofSealed),
-        ("terms", J.String ofAgreedTerms),
+        ("terms", J.String $ textEncode ofAgreedTerms),
         ("timestamp", J.toJSON timestamp),
         ("signature", J.String sig)
       ]
@@ -462,28 +463,28 @@ testMoveRepeat = withOwner $ \ctx -> do
   setGeneralTerms (cNode ctx) fakeNewGeneralTermsText
   postMove ctx (nrId r) body `shouldReturn` first'
   stored ctx r `shouldReturn` movedOnce
-  (nrMoves &&& nrAgreedTerms) movedOnce `shouldBe` (1, plainTerms)
+  (nrMoves &&& nrAgreedTerms) movedOnce `shouldBe` (1, agreed plainTerms)
 
 testMoveTermsOnly :: IO ()
 testMoveTermsOnly = withOwner $ \ctx -> do
-  r <- paidIn ctx aliceOrder $ \p -> (failedPhase p) {nrAgreedTerms = "2026-10-01"}
-  (status, v) <- move ctx keyA r (currentFields r) {ofAgreedTerms = plainTerms}
+  r <- paidIn ctx aliceOrder $ \p -> (failedPhase p) {nrAgreedTerms = agreed olderTerms}
+  (status, v) <- move ctx keyA r (currentFields r) {ofAgreedTerms = agreed plainTerms}
   (status, field "phase" =<< v, field "moves" =<< v) `shouldBe` (200, Just "queued", Just (J.Number 1))
-  (nrAgreedTerms &&& nrMoves) <$> stored ctx r `shouldReturn` (plainTerms, 1)
+  (nrAgreedTerms &&& nrMoves) <$> stored ctx r `shouldReturn` (agreed plainTerms, 1)
 
 testMoveTermsChanged :: IO ()
 testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
   listOnChain ctx "alicebakers"
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
-  move ctx keyA r (currentFields r) {ofCommitment = commitmentOf 11, ofAgreedTerms = communityTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
-  move ctx keyA r (currentFields r) {ofAgreedTerms = olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  move ctx keyA r (currentFields r) {ofCommitment = commitmentOf 11, ofAgreedTerms = agreed communityTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  move ctx keyA r (currentFields r) {ofAgreedTerms = agreed olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   to <- moveTo ctx "alicebakers" 10
-  move ctx keyA r to {ofAgreedTerms = plainTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
+  move ctx keyA r to {ofAgreedTerms = agreed plainTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   stored ctx r `shouldReturn` r
-  v <- moved ctx keyA r to {ofAgreedTerms = communityTerms}
+  v <- moved ctx keyA r to {ofAgreedTerms = agreed communityTerms}
   fieldsIn v [("terms", J.String communityTerms), ("community", communityEntry bakers)]
-  nrAgreedTerms <$> stored ctx r `shouldReturn` communityTerms
+  nrAgreedTerms <$> stored ctx r `shouldReturn` agreed communityTerms
 
 testMoveCommunityYears :: IO ()
 testMoveCommunityYears = withOwnerAs (listName "alicebakers") $ \ctx -> do
@@ -492,7 +493,7 @@ testMoveCommunityYears = withOwnerAs (listName "alicebakers") $ \ctx -> do
   (code, _) <- issueCode ctx 8 5 id
   r <- registrationById ctx =<< registered ctx code aliceOrder {oDuration = yearsDuration 5 orderTime}
   failed <- rewrite ctx r failedPhase
-  to <- (\f -> f {ofAgreedTerms = communityTerms}) <$> moveTo ctx "alicebakers" 10
+  to <- (\f -> f {ofAgreedTerms = agreed communityTerms}) <$> moveTo ctx "alicebakers" 10
   move ctx keyA failed to {ofDuration = yearsDuration 5 orderTime} `shouldReturn` refusedWith 400 "bad_request"
   void $ moved ctx keyA failed to
   answerFree ctx "alicecakes"
@@ -507,7 +508,7 @@ testMoveCommunityPaidYears = withOwnerAs (threeYears . listName "alicebakers") $
   answerFree ctx "alicebakers"
   answerCall (cNode ctx) fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 15000
   r <- paidIn ctx aliceOrder {oDuration = yearsDuration 3 orderTime, oPrice = 15000} failedPhase
-  to <- (\f -> f {ofAgreedTerms = communityTerms}) <$> moveTo ctx "alicebakers" 10
+  to <- (\f -> f {ofAgreedTerms = agreed communityTerms}) <$> moveTo ctx "alicebakers" 10
   void $ moved ctx keyA r to
   (nrYears &&& nrPrice) <$> stored ctx r `shouldReturn` (3, 10000)
   balanceOf ctx r `shouldReturn` Just (5000, 5000)
@@ -516,7 +517,7 @@ testMoveTermsCheckOrder :: IO ()
 testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
-  to <- (\f -> f {ofAgreedTerms = olderTerms}) <$> moveTo ctx "alicebakers" 10
+  to <- (\f -> f {ofAgreedTerms = agreed olderTerms}) <$> moveTo ctx "alicebakers" 10
   ts <- clockSeconds ctx
   (moveBodyAt ctx keyA (nrId r) to (ts - signedWindow - 1) >>= postMove ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
   setFault cNode "eth_call" HttpFailure
@@ -524,7 +525,7 @@ testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   clearFault cNode "eth_call"
   void $ placed ctx dynamisOrder
   toDynamis <- moveTo ctx "dynamis" 10
-  move ctx keyA r toDynamis {ofAgreedTerms = olderTerms} `shouldReturn` refusedWith 409 "order_exists"
+  move ctx keyA r toDynamis {ofAgreedTerms = agreed olderTerms} `shouldReturn` refusedWith 409 "order_exists"
   move ctx keyA r to {ofDuration = ofDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
   setGeneralTerms cNode ""
   move ctx keyA r to `shouldReturn` refusedWith 503 "terms_unavailable"
@@ -551,7 +552,7 @@ testMoveLimit = withOwner $ \ctx -> do
   limited <- stored ctx r
   to <- moveTo ctx "alicebakery" 20
   view <- getView ctx limited
-  move ctx keyA limited to {ofAgreedTerms = olderTerms} `shouldReturn` refusedWithView "move_limit" view
+  move ctx keyA limited to {ofAgreedTerms = agreed olderTerms} `shouldReturn` refusedWithView "move_limit" view
   (field "moves" view, field "phase" view) `shouldBe` (Just (J.Number 3), Just "failed")
   stored ctx r `shouldReturn` limited
 
@@ -666,7 +667,7 @@ testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
   answerFree ctx "alicebakers"
   paying <- paidIn ctx (byB aliceOrder) failedPhase
   withTransaction cStore $ \db -> creditBalance db (nrId paying) 5000 orderTime
-  let fields = OrderFields {ofLabelHash = labelHash "dynamis", ofLength = 7, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf 3, ofSealed = "sealed-dynamis-3", ofAgreedTerms = plainTerms}
+  let fields = OrderFields {ofLabelHash = labelHash "dynamis", ofLength = 7, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf 3, ofSealed = "sealed-dynamis-3", ofAgreedTerms = agreed plainTerms}
       spend = Spend {spSource = nrId paying, spPrice = 20000, spBalance = 5000, spMethod = Just btc}
       new = NewRegistration {nrgId = RegistrationId "diff", nrgOwner = ownerA, nrgOrder = fields, nrgYears = 2, nrgOrderHash = orderHash ownerA fields (OTBalance spend)}
   withTransaction cStore $ \db -> do
