@@ -149,6 +149,7 @@ kotlin {
     val desktopTest by getting {
       dependencies {
         implementation(compose.desktop.currentOs)
+        implementation("org.jetbrains.compose.ui:ui-test:${rootProject.extra["compose.version"] as String}")
       }
     }
   }

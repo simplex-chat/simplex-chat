@@ -24,11 +24,13 @@ typealias ChatCtrl = Long
 // Spec: spec/architecture.md#chatMigrateInit
 external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatCloseStore(ctrl: ChatCtrl): String
-external fun chatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
+@JvmName("chatSendCmdRetry") external fun nativeChatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
+var chatSendCmdRetry: (ChatCtrl, String, Int) -> String = ::nativeChatSendCmdRetry
 external fun chatSendRemoteCmdRetry(ctrl: ChatCtrl, rhId: Int, msg: String, retryNum: Int): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
-external fun chatParseMarkdown(str: String): String
+@JvmName("chatParseMarkdown") external fun nativeChatParseMarkdown(str: String): String
+var chatParseMarkdown: (String) -> String = ::nativeChatParseMarkdown
 external fun chatParseServer(str: String): String
 external fun chatParseUri(str: String, safe: Int): String
 external fun chatPasswordHash(pwd: String, salt: String): String
