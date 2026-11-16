@@ -480,7 +480,6 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) ref = do
     CORateFloor invoiceRate Rate {rateText} -> do
       due <- dueToWarn env now ("rate floor: " <> invText)
       when due $ logError ("names: invoice " <> ref <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; it is never credited by itself, and support refunds it by hand")
-    CORefused -> logError ("names: the credit of invoice " <> ref <> " was refused, its credit number taken meanwhile; the next pass tries again")
   pure outcome
   where
     credited = \case

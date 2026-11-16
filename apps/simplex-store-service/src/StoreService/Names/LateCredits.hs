@@ -16,14 +16,15 @@ module StoreService.Names.LateCredits
   )
 where
 
+import qualified Control.Exception as E
 import Data.Ratio ((%))
 import Data.Scientific (Scientific)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
-import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId)
+import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
-import StoreService.Names.Store (LateCredit (..), LateCreditState (..), LateSupport (..), NamePhase (..), creditLatePayment, lateCreditState, setLateSupport)
+import StoreService.Names.Store (BrokenInvariant (..), LateCredit (..), LateCreditState (..), LateSupport (..), NamePhase (..), creditLatePayment, lateCreditState, setLateSupport)
 import StoreService.Providers (ProviderError (..), Rate (..))
 import StoreService.Store.Invoices (lockInvoice)
 import Text.Read (readMaybe)
@@ -36,19 +37,17 @@ minCurrentRateFraction = 1 % 2
 data LateMoney = LMLate | LMOverpaid
   deriving (Eq, Show)
 
--- | CONoInvoiceFigures: crypto due with no invoice rate or invoiced units recorded to credit it at. CORefused: the credit's number was
--- taken meanwhile, which the invoice's lock rules out.
+-- | CONoInvoiceFigures: crypto due with no invoice rate or invoiced units recorded to credit it at.
 data CreditOutcome
   = CONothingDue
   | COCredited LateMoney LateCredit
   | CONoInvoiceFigures
   | CORateFailed ProviderError
   | CORateFloor Text Rate
-  | CORefused
   deriving (Eq, Show)
 
 creditLateInvoice :: DBStore -> (CryptoCurrency -> IO (Either ProviderError Rate)) -> InvoiceId -> UTCTime -> IO CreditOutcome
-creditLateInvoice st readRate invId now =
+creditLateInvoice st readRate invId@(InvoiceId invText) now =
   withTransaction st (`lateCreditState` invId) >>= \case
     Just s | creditable s && moneyDue s -> case lsCoin s of
       Nothing -> credit Nothing
@@ -68,7 +67,7 @@ creditLateInvoice st readRate invId now =
       lateCreditState db invId >>= \case
         Just s | creditable s, Just c <- lateCreditOf s rate -> do
           applied <- creditLatePayment db c now
-          pure $ if applied then COCredited (lateMoneyOf s) c else CORefused
+          if applied then pure $ COCredited (lateMoneyOf s) c else E.throwIO $ BrokenInvariant $ "the credit of invoice " <> invText <> " found its number taken under the invoice's lock"
         _ -> pure CONothingDue
 
 -- | An order its invoice paid gets credits only for the crypto paid above what the invoice asked.
