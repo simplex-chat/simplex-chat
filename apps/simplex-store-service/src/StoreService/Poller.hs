@@ -422,6 +422,7 @@ cleanupUnpaid env@PollerEnv {peStore, peCleanedAt, peCleanupLeft} now = do
                   Right () -> pure True
                   Left CKPaid -> False <$ logNote ("names cleanup: the unpaid order of invoice " <> ref <> " is kept with its balance, because the invoice received a payment")
                   Left (CKHolder (RegistrationId source)) -> False <$ logError ("names cleanup: the unpaid order of invoice " <> ref <> " is kept because it still holds the balance of registration " <> source)
+                  Left CKGone -> False <$ logNote ("names cleanup: the unpaid order of invoice " <> ref <> " was deleted meanwhile")
       where
         keep why = False <$ logWarn ("names cleanup: the unpaid order of invoice " <> ref <> " is kept until the next run, " <> why)
 

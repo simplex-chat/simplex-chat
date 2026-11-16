@@ -390,8 +390,8 @@ data LateAlert = LateAlert
   }
   deriving (Eq, Show)
 
--- | Why the cleanup keeps an unpaid order: a payment was recorded for it, or it holds the balance of the given order.
-data CleanupKept = CKPaid | CKHolder RegistrationId
+-- | Why the cleanup deletes no unpaid order: a payment was recorded for it, it holds the balance of the given order, or it is gone.
+data CleanupKept = CKPaid | CKHolder RegistrationId | CKGone
   deriving (Eq, Show)
 
 newtype BrokenInvariant = BrokenInvariant Text
@@ -911,24 +911,26 @@ deleteUnpaidRegistration :: DB.Connection -> RegistrationId -> IO (Either Cleanu
 deleteUnpaidRegistration db (RegistrationId rid) =
   DB.query db "SELECT registration_id FROM sx_badge_service_name_balances WHERE reserved_by = ?" (Only rid) >>= \case
     Only source : _ -> pure $ Left $ CKHolder $ RegistrationId source
-    [] -> do
-      invoiceIds <- DB.query db "SELECT invoice_id FROM sx_badge_service_name_invoices WHERE registration_id = ?" (Only rid)
-      deleted <-
-        executeChanging
-          db
-          [sql|
-            DELETE FROM sx_badge_service_name_registrations
-            WHERE registration_id = ? AND phase = ?
-              AND NOT EXISTS (
-                SELECT 1 FROM sx_badge_service_name_invoices ni
-                JOIN sx_badge_service_payments p ON p.invoice_id = ni.invoice_id
-                WHERE ni.registration_id = ?
-              )
-          |]
-          (rid, PUnpaid, rid)
-      if deleted > 0
-        then Right () <$ mapM_ (DB.execute db "DELETE FROM sx_badge_service_invoices WHERE invoice_id = ?" . Only . fromOnly) (invoiceIds :: [Only Text])
-        else pure $ Left CKPaid
+    [] ->
+      DB.query db "SELECT ni.invoice_id FROM sx_badge_service_name_registrations r LEFT JOIN sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id WHERE r.registration_id = ?" (Only rid) >>= \case
+        [] -> pure $ Left CKGone
+        invoiceIds -> do
+          deleted <-
+            executeChanging
+              db
+              [sql|
+                DELETE FROM sx_badge_service_name_registrations
+                WHERE registration_id = ? AND phase = ?
+                  AND NOT EXISTS (
+                    SELECT 1 FROM sx_badge_service_name_invoices ni
+                    JOIN sx_badge_service_payments p ON p.invoice_id = ni.invoice_id
+                    WHERE ni.registration_id = ?
+                  )
+              |]
+              (rid, PUnpaid, rid)
+          if deleted > 0
+            then Right () <$ mapM_ (DB.execute db "DELETE FROM sx_badge_service_invoices WHERE invoice_id = ?" . Only) [invId | Only (Just invId) <- invoiceIds :: [Only (Maybe Text)]]
+            else pure $ Left CKPaid
 
 -- | Code orders failed before the cutoff that still hold their unspent code.
 failedCodeOrdersBefore :: DB.Connection -> UTCTime -> IO [(RegistrationId, Int64)]

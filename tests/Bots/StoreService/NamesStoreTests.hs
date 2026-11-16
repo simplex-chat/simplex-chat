@@ -68,7 +68,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "orders registrations made in the same second by their id" testSameSecondOrder
     it "tells a label being registered here" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
-    it "lists unpaid orders whose invoice expired before the cutoff without a payment, and deletes one with its invoice" testUnpaidCleanup
+    it "lists unpaid orders whose invoice expired before the cutoff without a payment, and deletes one with its invoice, once" testUnpaidCleanup
     it "lists code orders failed before the cutoff that still hold their code" testFailedCodeOrders
   describe "prepaid codes" $ do
     it "issues one code per hash" testIssueCode
@@ -575,7 +575,7 @@ testUnpaidCleanup = withServiceStore $ \st -> do
   void $ write st r {nrPhase = PQueued}
   candidates <- withTransaction st $ \db -> unpaidCleanupCandidates db (at 61)
   map (\(RegistrationId rid, InvoiceId invId, ref) -> (rid, invId, ref)) candidates `shouldBe` [("old", "inv-old", "ref-inv-old")]
-  withTransaction st (\db -> mapM (deleteUnpaidRegistration db . RegistrationId) ["old", "funded", "queued"]) `shouldReturn` [Right (), Left CKPaid, Left CKPaid]
+  withTransaction st (\db -> mapM (deleteUnpaidRegistration db . RegistrationId) ["old", "funded", "queued", "old"]) `shouldReturn` [Right (), Left CKPaid, Left CKPaid, Left CKGone]
   withTransaction st (\db -> getRegistration db (RegistrationId "old")) `shouldReturn` Nothing
   invoiceCount st "inv-old" `shouldReturn` 0
   invoiceCount st "inv-funded" `shouldReturn` 1
