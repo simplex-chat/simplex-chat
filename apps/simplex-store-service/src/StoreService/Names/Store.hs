@@ -26,6 +26,7 @@ module StoreService.Names.Store
     LateSupport (..),
     LateWait (..),
     CleanupKept (..),
+    BrokenInvariant (..),
     PrepaidCode (..),
     NewPrepaidCode (..),
     CodeIssuer (..),
@@ -385,6 +386,11 @@ data LateAlert = LateAlert
 -- | Why the cleanup keeps an unpaid order: a payment was recorded for it, or it holds the balance of the given order.
 data CleanupKept = CKPaid | CKHolder RegistrationId
   deriving (Eq, Show)
+
+newtype BrokenInvariant = BrokenInvariant Text
+  deriving (Show)
+
+instance E.Exception BrokenInvariant
 
 data PrepaidCode = PrepaidCode
   { pcId :: Int64,

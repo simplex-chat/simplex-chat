@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module StoreService.Names.Balances
   ( RefundRefusal (..),
@@ -13,6 +14,7 @@ module StoreService.Names.Balances
   )
 where
 
+import qualified Control.Exception as E
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
@@ -20,8 +22,8 @@ import Simplex.Chat.PaymentService.Types (ServicePaymentMethod)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import StoreService.Names.Orders (OrderRefusal (..))
-import StoreService.Names.Phases (RegistrationId)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink, NameRegistration, NewRegistration, OrderTerms (..), PaidOrder, RegistrationRefused (..), balanceByReference, balanceChain, createBalanceRegistration, createPaidRegistration, getBalance, getRegistration, heldBy, refundBalance)
+import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink, BrokenInvariant (..), NameRegistration, NewRegistration, OrderTerms (..), PaidOrder, RegistrationRefused (..), balanceByReference, balanceChain, createBalanceRegistration, createPaidRegistration, getBalance, getRegistration, heldBy, refundBalance)
 import StoreService.Names.Turns (Turns, withBalanceTurn)
 
 -- | RefundAmount: the balance's amount now, which is not the cents given. RefundHeld: an order holds it, overdue or not,
@@ -42,20 +44,18 @@ recordRefund :: Turns -> DBStore -> Text -> Int -> UTCTime -> IO (Either RefundR
 recordRefund turns st ref cents now =
   withTransaction st (\db -> balanceByReference db ref now) >>= \case
     Nothing -> pure $ Left RefundNoOrder
-    Just (rid, _) -> withBalanceTurn turns rid $ withTransaction st (refund True)
+    Just (rid, _) -> withBalanceTurn turns rid $ withTransaction st refund
   where
-    refund retry db =
+    refund db =
+      refundable db $ \rid@(RegistrationId r) ->
+        refundBalance db rid cents now >>= \case
+          True -> Right . RefundRecord rid cents <$> balanceChain db rid
+          -- only a writer outside the turn, as a late credit, changes the balance between the read and the write, so it is read again once
+          False -> refundable db $ \_ -> E.throwIO $ BrokenInvariant $ "the refund of order " <> r <> " was refused, though its balance reads refundable"
+    refundable db refundWith =
       balanceByReference db ref now >>= \case
         Nothing -> pure $ Left RefundNoOrder
-        Just (rid, balance) -> case refusal balance of
-          Just r -> pure $ Left r
-          Nothing ->
-            refundBalance db rid cents now >>= \case
-              True -> Right . RefundRecord rid cents <$> balanceChain db rid
-              -- only a writer outside the turn, as a late credit, changes the balance between the read and the write, so it is read again once
-              False
-                | retry -> refund False db
-                | otherwise -> pure $ Left $ RefundAmount $ maybe 0 blAmount balance
+        Just (rid, balance) -> maybe (refundWith rid) (pure . Left) (refusal balance)
     refusal :: Maybe Balance -> Maybe RefundRefusal
     refusal = \case
       Nothing -> Just RefundNoBalance
