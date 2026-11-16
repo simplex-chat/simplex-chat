@@ -173,16 +173,18 @@ newContracts ctStore ctTLD ctMinPriceCentsPerYear ctChain = do
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
 nameStatus ct@Contracts {ctChain} lh = withinDeadline ct "name status" $ runExceptT $ do
-  (RegistrarConstants {rcRegistry, rcGracePeriod}, expires, Block {blockTimestamp}) <-
-    ExceptT $ together $ (,,) <$> concurrent (registrarConstants ct) <*> concurrent (nameExpires ct Latest lh) <*> concurrent (latestBlock ctChain)
+  (RegistrarConstants {rcRegistry, rcGracePeriod}, Block {blockNumber, blockTimestamp}) <-
+    ExceptT $ together $ (,) <$> concurrent (registrarConstants ct) <*> concurrent (latestBlock ctChain)
+  let at = AtBlock blockNumber
+  expires <- ExceptT $ nameExpires ct at lh
   if toInteger expires + rcGracePeriod >= toInteger blockTimestamp
     then do
       let node = nodeArg ct lh
-          registryRead signature = concurrent $ call ct rcRegistry (signature, node) decodeAddress
+          registryRead signature = concurrent $ callAt ct at rcRegistry (signature, node) decodeAddress
       (rnOwner, rnResolver) <- ExceptT $ together $ (,) <$> registryRead "owner(bytes32)" <*> registryRead "resolver(bytes32)"
       pure $ NSRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt = expires, rnGracePeriod = rcGracePeriod}
     else do
-      reason <- ExceptT $ policyCall ct ("reservedNames(bytes32)", labelHashArg lh) decodeUint256
+      reason <- ExceptT $ policyCall ct at ("reservedNames(bytes32)", labelHashArg lh) decodeUint256
       pure $ if reason /= 0 then NSReserved else NSAvailable
 
 -- | Nothing for a name on another resolver contract, or none: the service reads no records from a contract it does not know.
@@ -237,7 +239,7 @@ forgetNamePolicy :: Contracts -> IO ()
 forgetNamePolicy Contracts {ctNamePolicy} = atomicWriteIORef ctNamePolicy Nothing
 
 communityName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
-communityName ct lh = policyCall ct ("communityNames(bytes32)", labelHashArg lh) decodeBool
+communityName ct lh = policyCall ct Latest ("communityNames(bytes32)", labelHashArg lh) decodeBool
 
 termsLinks :: Contracts -> IO (Either ChainError (Text, Text))
 termsLinks ct@Contracts {ctChain, ctTermsLinks} = runExceptT $ do
@@ -355,16 +357,16 @@ termsLinkParts link = do
     maxPort = 65535 :: Int
 
 policyNonce :: Contracts -> Address -> IO (Either ChainError Word64)
-policyNonce ct owner = policyCall ct ("nonces(address)", addressWord owner) decodeWord64
+policyNonce ct owner = policyCall ct Latest ("nonces(address)", addressWord owner) decodeWord64
 
 -- | The terms hash the owner accepted for the commitment, all zeros when none.
 acceptedTerms :: Contracts -> ByteString -> Address -> IO (Either ChainError ByteString)
-acceptedTerms ct commitment owner = policyCall ct ("acceptedTerms(bytes32,address)", commitment <> addressWord owner) decodeBytes32
+acceptedTerms ct commitment owner = policyCall ct Latest ("acceptedTerms(bytes32,address)", commitment <> addressWord owner) decodeBytes32
 
-policyCall :: Contracts -> (ByteString, ByteString) -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
-policyCall ct args decode = runExceptT $ do
+policyCall :: Contracts -> BlockTag -> (ByteString, ByteString) -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
+policyCall ct tag args decode = runExceptT $ do
   policy <- ExceptT $ namePolicy ct
-  ExceptT $ call ct policy args decode
+  ExceptT $ callAt ct tag policy args decode
 
 -- | The newest block at the configured confirmation depth, so a read there sees only what a reorg cannot undo.
 confirmedTag :: Contracts -> IO (Either ChainError BlockTag)

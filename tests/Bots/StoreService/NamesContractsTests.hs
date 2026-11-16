@@ -35,6 +35,7 @@ where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.WebTests (capturingStderr, withServiceStore, withServiceStores)
 import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (wait)
 import Control.Concurrent.STM (TVar)
 import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
@@ -74,6 +75,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads a reserved name" $ testReserved g
     it "keeps a name registered to the last second of its grace period" $ testGracePeriod g
     it "reads the registry and the grace period once, and again after a failed read" $ testRegistrarOnce g
+    it "reads the expiry and the owner at the block whose time it compares" $ testStatusAtOneBlock g
   describe "records" $ do
     it "reads the default resolver's records and the owner's nonce" $ testRecords g
     it "reads no records from another resolver" $ testOtherResolver g
@@ -372,6 +374,22 @@ testRegistrarOnce g = withContracts g $ \node ct -> do
   answerCall node (registrarOf node) gracePeriodCall $ Reverts ""
   nameStatus ct alice `shouldReturn` Right NSAvailable
 
+testStatusAtOneBlock :: TVar ChaChaDRG -> IO ()
+testStatusAtOneBlock g = withContracts g $ \node ct -> do
+  let resolver = resolverOf node
+      registered = Right $ NSRegistered $ registeredAlice resolver $ now + year
+  answerRegistrar node
+  answerRegistered node resolver
+  setBlock node 100 now
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (now + year)
+  -- the registrar's constants are read once, so the next status's first call is the expiry
+  nameStatus ct alice `shouldReturn` registered
+  answerCallFrom node 101 registry registryOwnerCall $ Returns $ addressWord newPolicy
+  (status, gate) <- pausedAt node "eth_call" $ nameStatus ct alice
+  setBlock node 101 now
+  releaseGate gate
+  wait status `shouldReturn` registered
+
 testRecords :: TVar ChaChaDRG -> IO ()
 testRecords g = withContracts g $ \node ct -> do
   let resolver = resolverOf node
@@ -496,8 +514,8 @@ testRecordsDeadline g = withContracts g $ \node ct -> do
   elapsed <- timed $ nameRecords ct {ctDeadline = testDeadline} alice (registeredAlice (resolverOf node) $ now + year) `shouldReturn` Left (ChainUnavailable "name records: timed out")
   elapsed `shouldSatisfy` (< 2)
 
--- | Each slow read takes a third of the deadline or more, so the status's reads in sequence (four) or the records' (three)
--- pass it, while their concurrent rounds (two and one) meet it.
+-- | The status's reads in sequence (four) and the records' (three) pass the deadline, while their concurrent rounds
+-- (three: the block, the expiry, the owner with the resolver; and one) meet it.
 testConcurrentReads :: TVar ChaChaDRG -> IO ()
 testConcurrentReads g = withContracts g $ \node ct -> do
   let resolver = resolverOf node
@@ -512,7 +530,7 @@ testConcurrentReads g = withContracts g $ \node ct -> do
   answerCall node resolver noncesCall $ Returns $ uint256 (3 :: Int)
   -- the registrar's constants are read once, so this read takes them out of the timed ones
   nameStatus ct alice `shouldReturn` Right (NSRegistered registered)
-  forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ concurrentDeadline * 2 `div` 5
+  forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ concurrentDeadline * 3 `div` 10
   nameStatus ct' alice `shouldReturn` Right (NSRegistered registered)
   forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ concurrentDeadline * 3 `div` 5
   nameRecords ct' alice registered `shouldReturn` Right (Just NameRecords {rdContact = "https://smp8.simplex.im/a#Y8m3", rdChannel = "", rdNonce = 3})
@@ -520,7 +538,7 @@ testConcurrentReads g = withContracts g $ \node ct -> do
 -- fixtures
 
 concurrentDeadline :: Int
-concurrentDeadline = 1500000
+concurrentDeadline = 2000000
 
 -- | Far below a call's 10-second timeout, so only the deadline can end a hung read in time.
 testDeadline :: Int
