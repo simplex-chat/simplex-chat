@@ -334,13 +334,13 @@ testClosed = do
 testClosedPaidInFull :: IO ()
 testClosedPaidInFull = do
   let verdict additional status paid = (\case Right (Just (SigClosed _ f)) -> Just f; _ -> Nothing) (signalWith additional status [btcPaid paid [payment "Settled" 1700000000]])
-  verdict "PaidLate" "Expired" "0.00025000" `shouldBe` Just PaidInFull
-  verdict "PaidOver" "Invalid" "0.00025000" `shouldBe` Just PaidInFull
-  verdict "None" "Expired" "0.00050000" `shouldBe` Just PaidInPart
-  verdict "Marked" "Invalid" "0.00080000" `shouldBe` Just PaidInPart
-  verdict "PaidPartial" "Expired" "0.00025000" `shouldBe` Just PaidInPart
-  verdict "None" "Invalid" "0.00025000" `shouldBe` Just PaidInPart
-  verdict "None" "Expired" "0.00000000" `shouldBe` Just PaidInPart
+  verdict ASPaidLate BSExpired "0.00025000" `shouldBe` Just PaidInFull
+  verdict ASPaidOver BSInvalid "0.00025000" `shouldBe` Just PaidInFull
+  verdict ASNone BSExpired "0.00050000" `shouldBe` Just PaidInPart
+  verdict ASMarked BSInvalid "0.00080000" `shouldBe` Just PaidInPart
+  verdict ASPaidPartial BSExpired "0.00025000" `shouldBe` Just PaidInPart
+  verdict ASNone BSInvalid "0.00025000" `shouldBe` Just PaidInPart
+  verdict ASNone BSExpired "0.00000000" `shouldBe` Just PaidInPart
 
 testOverpaidDueIsZero :: IO ()
 testOverpaidDueIsZero = do
