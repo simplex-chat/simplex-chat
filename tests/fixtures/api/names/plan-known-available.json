@@ -318,5 +318,13 @@
         }
       ]
     }
+  },
+  "uris": {
+    "https://simplex.domains/#testing": {
+      "parseError": "",
+      "uriInfo": {
+        "scheme": "https"
+      }
+    }
   }
 }

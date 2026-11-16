@@ -313,6 +313,22 @@
           "text": "@alice.simplex"
         }
       ]
+    },
+    "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im": {
+      "formattedText": [
+        {
+          "format": {
+            "linkType": "contact",
+            "simplexUri": "simplexUri",
+            "smpHosts": [
+              "smp6.simplex.im"
+            ],
+            "type": "simplexLink"
+          },
+          "text": "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"
+        }
+      ]
     }
-  }
+  },
+  "uris": {}
 }
