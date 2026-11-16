@@ -919,11 +919,14 @@ testUserBadgeGroupLinkJoiner ps = do
       alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
+      alice ##> "/_stop"
+      alice <## "chat stopped"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       bob ##> "/_stop"
       bob <## "chat stopped"
-      alice <## "bob (Bob): accepting request to join group #team..."
+      alice ##> "/_start"
+      alice <### ["chat started", "subscribed 1 connections on server localhost", "bob (Bob): accepting request to join group #team..."]
       memberBadgeHeader alice "team" "bob" `shouldReturn` Just ("R", BSActive)
       bob ##> "/_start"
       concurrentlyN_
