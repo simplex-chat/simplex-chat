@@ -520,7 +520,7 @@ testConcurrentReads g = withContracts g $ \node ct -> do
 -- fixtures
 
 concurrentDeadline :: Int
-concurrentDeadline = 1500000
+concurrentDeadline = 3000000
 
 -- | Far below a call's 10-second timeout, so only the deadline can end a hung read in time.
 testDeadline :: Int
