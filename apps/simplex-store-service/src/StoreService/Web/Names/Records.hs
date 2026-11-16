@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editRequest, editResponse, editsLeftJSON) where
 
