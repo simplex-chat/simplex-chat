@@ -50,7 +50,7 @@ import Simplex.Chat.Badges (BadgeProof (..), BadgeProofKind (..), BadgeStatus (.
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
-import Simplex.Chat.Files (getChatTempDirectory, safeFileNameStr)
+import Simplex.Chat.Files (getChatTempDirectory, moveFile, safeFileNameStr)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Markdown (ParsedMarkdown (..))
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
@@ -441,9 +441,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
             Nothing -> throwChatError $ CEInternalError "no target path for received XFTP file"
             Just targetPath -> do
               fsTargetPath <- lift $ toFSFilePath targetPath
-              renameFile xftpPath fsTargetPath `catchAllErrors` \_ -> do
-                copyFile xftpPath fsTargetPath
-                removeFile xftpPath `catchAllErrors` \_ -> pure ()
+              moveFile xftpPath fsTargetPath
               badDigest <- case ft of
                 RcvFileTransfer {fileInvitation = FileInvitation {fileDigest = Just d}, cryptoArgs} ->
                   (/= d) <$> cryptoFileDigest (CryptoFile fsTargetPath cryptoArgs)
