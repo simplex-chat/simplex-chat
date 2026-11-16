@@ -1617,11 +1617,15 @@ connectToRelayAsync user gInfo relayLink = do
   relayMember@GroupMember {activeConn} <- withFastStore $ \db -> getCreateRelayForMember db cxt gVar user gInfo relayLink
   case activeConn of
     Just _ -> pure ()
-    Nothing -> do
-      subMode <- chatReadVar subscriptionMode
-      (cmdId, acId) <- prepareAgentCreation user CFGetRelayDataJoin False SCMInvitation
-      withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink (cmdId, acId) subMode
-      getAgentConnShortLinkAsync user cmdId acId relayLink
+    Nothing -> createRelayConnectionAsync user gInfo relayMember relayLink
+
+createRelayConnectionAsync :: User -> GroupInfo -> GroupMember -> ShortLinkContact -> CM ()
+createRelayConnectionAsync user gInfo relayMember relayLink = do
+  subMode <- chatReadVar subscriptionMode
+  newConnIds@(cmdId, connId) <- prepareAgentCreation user CFGetRelayDataJoin False SCMInvitation
+  withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
+  relayLink' <- restoreShortLink' relayLink
+  void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just connId) relayLink'
 
 updatePublicGroupData :: User -> GroupInfo -> GroupKeys -> CM GroupInfo
 updatePublicGroupData user gInfo gks
@@ -3225,10 +3229,11 @@ setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientDa
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetShortLink
   withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
 
-getAgentConnShortLinkAsync :: User -> CommandId -> ConnId -> ShortLinkContact -> CM ()
-getAgentConnShortLinkAsync user cmdId connId shortLink = do
+getAgentConnShortLinkAsync :: User -> CommandFunction -> Connection -> ShortLinkContact -> CM ()
+getAgentConnShortLinkAsync user cmdFunc conn@Connection {connId} shortLink = do
   shortLink' <- restoreShortLink' shortLink
-  void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just connId) shortLink'
+  cmdId <- withStore' $ \db -> createCommand db user (Just connId) cmdFunc
+  void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just $ aConnId conn) shortLink'
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do

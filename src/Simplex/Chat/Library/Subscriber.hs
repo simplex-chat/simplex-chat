@@ -809,11 +809,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               XGrpRelayAcpt relayLink relayCap
                 | memberRole' membership == GROwner && isRelay m -> do
-                    cmdId <- withStore' $ \db -> do
+                    withStore' $ \db -> do
                       setRelayLinkConfId db m confId relayLink
                       updateRelayCapabilities db m relayCap
-                      createCommand db user (Just connId) CFGetRelayDataAccept
-                    getAgentConnShortLinkAsync user cmdId (aConnId conn') relayLink
+                    getAgentConnShortLinkAsync user CFGetRelayDataAccept conn' relayLink
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               XGrpRelayReject reason
                 | memberRole' membership == GROwner && isRelay m -> do
