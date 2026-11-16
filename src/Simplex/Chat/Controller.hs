@@ -150,6 +150,7 @@ data ChatConfig = ChatConfig
     badgePublicKeys :: Map Int BBSPublicKey,
     -- Nothing until the store service is deployed
     storeServiceAddress :: Maybe (ConnectTarget 'CMContact),
+    -- set only by builds for a dev store service: allows /_store service
     storeServiceDev :: Bool,
     -- the only clock badge code reads, so tests can shift it; production arithmetic is unchanged
     badgeCurrentTime :: IO UTCTime,
