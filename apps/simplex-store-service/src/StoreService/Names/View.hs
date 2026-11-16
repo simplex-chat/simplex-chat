@@ -90,11 +90,11 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "phase" .= (textEncode nrPhase :: Text),
       "labelHash" .= hex lh,
       "label" .= (rvLabel <$> nrReveal),
-      "owner" .= addressText nrOwner,
+      "owner" .= nrOwner,
       "commitment" .= hex nrCommitment,
       "sealed" .= nrSealed,
-      "resolver" .= addressText cResolver,
-      "sponsor" .= addressText cSponsor,
+      "resolver" .= cResolver,
+      "sponsor" .= cSponsor,
       "chainId" .= cChainId,
       "tld" .= tldText nTLD,
       "years" .= nrYears,
@@ -126,7 +126,7 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       VRUnread -> True
       _ -> False
     acceptanceJSON AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce} =
-      J.object ["kind" .= (if acCommunity then "community" else "general" :: Text), "policy" .= addressText acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce]
+      J.object ["kind" .= (if acCommunity then "community" else "general" :: Text), "policy" .= acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce]
     waitingText :: LateWait -> Text
     waitingText = \case
       LWConfirming -> "confirming"

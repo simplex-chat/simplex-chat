@@ -35,7 +35,7 @@ import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (nameEditsLeft)
 import StoreService.Names.Store (isLabelRegistering)
-import StoreService.Names.View (addressText, tldText)
+import StoreService.Names.View (tldText)
 import StoreService.Web.Http (HttpEnv, Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, rateLimited, readBoundedBody, searchSlot, termsUnavailable)
 import StoreService.Web.Names.Records (editsLeftJSON)
 import System.Timeout (timeout)
@@ -91,7 +91,7 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nCh
   FAvailable price readable ->
     ok $
       ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
-        <> ["resolver" .= addressText cResolver, "sponsor" .= addressText cSponsor]
+        <> ["resolver" .= cResolver, "sponsor" .= cSponsor]
         <> chain
         <> ["terms" .= termsJSON readable]
   FRegistering -> ok ["status" .= ("registered" :: Text), "entities" .= ([] :: [Entity]), "tld" .= tldText nTLD]
@@ -102,7 +102,7 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nCh
     edits <- mapM (const editsLeft) records_
     ok $
       ["status" .= ("registered" :: Text), "entities" .= entities, "records" .= (recordsJSON <$> records_)]
-        <> ["owner" .= addressText rnOwner, "resolver" .= addressText rnResolver, "recordsNonce" .= (rdNonce <$> records_), "recordEdits" .= (editsLeftJSON <$> edits)]
+        <> ["owner" .= rnOwner, "resolver" .= rnResolver, "recordsNonce" .= (rdNonce <$> records_), "recordEdits" .= (editsLeftJSON <$> edits)]
         <> ["expiresAt" .= rnExpiresAt, "gracePeriod" .= rnGracePeriod]
         <> chain
   where
