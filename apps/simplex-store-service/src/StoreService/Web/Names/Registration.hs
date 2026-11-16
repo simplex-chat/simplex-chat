@@ -9,6 +9,7 @@ module StoreService.Web.Names.Registration
     retryHandler,
     registrationChangedResponse,
     registrationRefusalResponse,
+    retryRefusalResponse,
     heldFor,
     versionParam,
   )
@@ -132,12 +133,15 @@ retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} ridText _ respond =
       RTChanged -> respond =<< registrationChangedResponse env rid
       RTRefused refusal -> do
         logNote ("POST /api/registration/:id/retry refused: " <> tshow refusal)
-        respond $ case refusal of
-          RFNotFailed -> badRequest
-          RFLinksRefused -> badRequest
-          RFSendsUsedUp -> badRequest
-          RFCode code -> codeRefusalResponse code
-          RFUnread -> providerUnavailable
+        respond $ retryRefusalResponse refusal
+
+retryRefusalResponse :: RetryRefusal -> Response
+retryRefusalResponse = \case
+  RFNotFailed -> badRequest
+  RFLinksRefused -> badRequest
+  RFSendsUsedUp -> badRequest
+  RFCode code -> codeRefusalResponse code
+  RFUnread -> providerUnavailable
 
 -- | The registration's current view, for a request that lost the race to change it.
 registrationChangedResponse :: OrdersEnv -> RegistrationId -> IO Response

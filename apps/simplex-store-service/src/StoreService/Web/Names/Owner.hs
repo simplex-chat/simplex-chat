@@ -6,7 +6,7 @@
 module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
 
 import Control.Concurrent.STM (atomically)
-import Control.Logger.Simple (logError)
+import Control.Logger.Simple (logError, logNote)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
@@ -21,7 +21,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (eitherToMaybe)
+import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders
@@ -31,9 +31,9 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), findRegi
 import StoreService.Names.Turns (withLabelTurns)
 import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
-import StoreService.Names.Worker (sendsUsedUp)
+import StoreService.Names.Worker (Retried (..), checkFailedOrder)
 import StoreService.Web.Names.Orders (Answer (..), answerNow, refused, sendAnswer)
-import StoreService.Web.Names.Registration (registrationChangedResponse, registrationRefusalResponse)
+import StoreService.Web.Names.Registration (registrationChangedResponse, registrationRefusalResponse, retryRefusalResponse)
 
 data FindRequest = FindRequest
   { frOwner :: Address,
@@ -111,14 +111,11 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
       | not (movable r) = refuse ORBadRequest
       | nrPhase == PFailed =
-          confirmLanded env r >>= \case
-            LNotLanded ->
-              sendsUsedUp env r >>= \case
-                True -> refuse ORBadRequest
-                False -> moveChecked now r fields
-            LRegistered v -> written env rid v <$> registrationChangedResponse env rid
-            LChanged -> changed
-            LUnread -> refuse ORNameCheckUnavailable
+          checkFailedOrder env r >>= \case
+            Right () -> moveChecked now r fields
+            Left (RTWritten v) -> written env rid v <$> registrationChangedResponse env rid
+            Left RTChanged -> changed
+            Left (RTRefused refusal) -> answerNow (retryRefusalResponse refusal) <$ logNote (what <> " refused: " <> tshow refusal)
       | otherwise = moveChecked now r fields
     moveChecked now r@NameRegistration {nrMoves, nrYears} fields@OrderFields {ofLabelHash, ofDuration}
       | nrMoves >= nMaxOrderMoves oeConfig = answerNow <$> registrationRefusalResponse env "move_limit" rid
@@ -138,7 +135,8 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
         Just r -> written env rid v . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now (registrationAt now r)
         Nothing -> answerNow internalError <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
     changed = answerNow <$> registrationChangedResponse env rid
-    refuse = refused "POST /api/registration/:id/name"
+    what = "POST /api/registration/:id/name"
+    refuse = refused what
 
 -- | Published after the turn, as the answer is sent.
 written :: OrdersEnv -> RegistrationId -> Int64 -> Response -> Answer

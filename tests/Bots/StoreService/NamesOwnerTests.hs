@@ -96,7 +96,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "checks the terms after the timestamp, /retry's first check, the existing orders and the duration, before the chain, answering terms_unavailable while they are not set" testMoveTermsCheckOrder
     it "answers the fourth move move_limit with the current view, changing nothing" testMoveLimit
     it "refuses a move meeting another live order of the wallet's or the commitment with a bare order_exists, before the price" testMoveMeetsOrder
-    it "runs the order checks on the new fields: invalid_name, the duration, name_taken, name_check_unavailable" testMoveOrderChecks
+    it "runs the order checks on the new fields: invalid_name, the duration, name_taken, name_check_unavailable, after /retry's first check, answered provider_unavailable as /retry answers it" testMoveOrderChecks
     it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code" testMoveLanded
     it "spends a released code still unused when its failed order turns out registered, and alerts once when it was spent elsewhere meanwhile" testMoveLandedReleasedCode
     it "answers a dearer name price_too_high with its price, one priced under the floor name_check_unavailable crediting nothing, and moves to a cheaper one at its price, crediting the difference to its balance" testMovePrice
@@ -519,7 +519,7 @@ testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   ts <- clockSeconds ctx
   (moveBodyAt ctx keyA (nrId r) to (ts - signedWindow - 1) >>= postMove ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
   setFault cNode "eth_call" HttpFailure
-  move ctx keyA r to `shouldReturn` refusedWith 503 "name_check_unavailable"
+  move ctx keyA r to `shouldReturn` refusedWith 503 "provider_unavailable"
   clearFault cNode "eth_call"
   void $ placed ctx dynamisOrder
   toDynamis <- moveTo ctx "dynamis" 10
@@ -576,8 +576,10 @@ testMoveOrderChecks = withOwner $ \ctx@Ctx {cNode} -> do
   move ctx keyA r to {ofDuration = ofDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
   answerReserved ctx "alicebakers" 1
   move ctx keyA r to `shouldReturn` refusedWith 409 "name_taken"
-  setFault cNode "eth_call" HttpFailure
+  answerCall cNode fakeNamePolicy (reservedNamesSelector <> labelBytes "alicebakers") $ Reverts ""
   move ctx keyA r to `shouldReturn` refusedWith 503 "name_check_unavailable"
+  setFault cNode "eth_call" HttpFailure
+  move ctx keyA r to `shouldReturn` refusedWith 503 "provider_unavailable"
   stored ctx r `shouldReturn` r
 
 testMoveLanded :: IO ()

@@ -17,6 +17,7 @@ module StoreService.Names.Worker
     Retried (..),
     RetryRefusal (..),
     retryRegistration,
+    checkFailedOrder,
     Closed (..),
     CloseRefusal (..),
     closeRegistration,
@@ -431,15 +432,18 @@ retryRegistration oe@OrdersEnv {oeNow} current = do
     -- its commitment fixes the refused links, so only another name can register
     NameRegistration {nrPhase = PFailed, nrLinksRefusedAt = Just _} -> pure $ RTRefused RFLinksRefused
     r@NameRegistration {nrPhase = PFailed} ->
-      confirmLanded oe r >>= \case
-        LRegistered v -> pure $ RTWritten v
-        LChanged -> pure RTChanged
-        LUnread -> pure $ RTRefused RFUnread
-        LNotLanded ->
-          sendsUsedUp oe r >>= \case
-            True -> pure $ RTRefused RFSendsUsedUp
-            False -> retryCode oe now r >>= either (pure . RTRefused . RFCode) (requeue oe now r)
+      checkFailedOrder oe r >>= \case
+        Left retried -> pure retried
+        Right () -> retryCode oe now r >>= either (pure . RTRefused . RFCode) (requeue oe now r)
     _ -> pure $ RTRefused RFNotFailed
+
+checkFailedOrder :: OrdersEnv -> NameRegistration -> IO (Either Retried ())
+checkFailedOrder oe r =
+  confirmLanded oe r >>= \case
+    LRegistered v -> pure $ Left $ RTWritten v
+    LChanged -> pure $ Left RTChanged
+    LUnread -> pure $ Left $ RTRefused RFUnread
+    LNotLanded -> (\usedUp -> if usedUp then Left (RTRefused RFSendsUsedUp) else Right ()) <$> sendsUsedUp oe r
 
 -- | An owner who changes their terms acceptance on chain makes every relay and register revert at the service's gas, so each
 -- kind of transaction is sent at most this many times for one order, its moves included.
