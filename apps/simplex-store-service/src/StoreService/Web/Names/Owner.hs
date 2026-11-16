@@ -29,7 +29,7 @@ import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage)
 import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
-import StoreService.Names.Turns (withLabelTurns)
+import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
 import StoreService.Names.Worker (Retried (..), checkFailedOrder)
@@ -97,18 +97,15 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
     signed (fields, timestamp, signature) =
       withTransaction oeStore (`getRegistration` rid) >>= \case
         Nothing -> pure $ answerNow notFound
-        Just NameRegistration {nrOwner, nrLabelHash} ->
+        Just r@NameRegistration {nrOwner} ->
           checkSigner nrOwner (retargetMessage rid fields timestamp) signature >>= \case
             Left refusal -> refuse refusal
-            Right () -> withLabelTurns oeTurns nrLabelHash (ofLabelHash fields) $ inTurns [nrLabelHash, ofLabelHash fields] fields timestamp
-    -- another move can take the order to a name whose turn this request does not hold
-    inTurns held fields timestamp = do
+            Right () ->
+              withRegistrationTurns oeStore oeTurns r (ofLabelHash fields) (inTurns fields timestamp)
+                >>= maybe (pure $ answerNow notFound) (either (const changed) pure)
+    inTurns fields timestamp stored = do
       now <- oeNow
-      withTransaction oeStore (`getRegistration` rid) >>= \case
-        Nothing -> pure $ answerNow notFound
-        Just stored
-          | nrLabelHash stored `notElem` held -> changed
-          | otherwise -> moveTo now (registrationAt now stored) fields timestamp
+      moveTo now (registrationAt now stored) fields timestamp
     moveTo now r@NameRegistration {nrPhase} fields timestamp
       | orderFieldsOf r == fields = answerNow . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal

@@ -3,7 +3,7 @@
 
 -- | A thread that takes a turn it already holds waits forever. Label turns are taken before a code turn or a balance turn,
 -- and a balance turn is never taken with a code turn.
-module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withLabelTurns, withCodeTurn, withBalanceTurn, turnsCount, labelTurnCount, balanceTurnCount) where
+module StoreService.Names.Turns (Turns, Moved, newTurns, withLabelTurn, withLabelTurns, withRegistrationTurn, withRegistrationTurns, withCodeTurn, withBalanceTurn, turnsCount, labelTurnCount, balanceTurnCount) where
 
 import Control.Concurrent.STM
 import Control.Exception (bracket)
@@ -11,8 +11,10 @@ import Data.ByteString (ByteString)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Simplex.Messaging.Agent.Lock (Lock, createLock, withLock')
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Store (NameRegistration (..), getRegistration)
 
 -- | Each lock counts the requests holding or waiting for it, and its entry goes when none are left.
 type TurnLocks k = TVar (Map k (Lock, Int))
@@ -31,6 +33,20 @@ withLabelTurns turns a@(LabelHash ha) b@(LabelHash hb) action
   | ha == hb = withLabelTurn turns a action
   | ha < hb = withLabelTurn turns a $ withLabelTurn turns b action
   | otherwise = withLabelTurn turns b $ withLabelTurn turns a action
+
+type Moved = ()
+
+withRegistrationTurn :: DBStore -> Turns -> NameRegistration -> (NameRegistration -> IO a) -> IO (Maybe (Either Moved a))
+withRegistrationTurn st turns r = withRegistrationTurns st turns r $ nrLabelHash r
+
+withRegistrationTurns :: DBStore -> Turns -> NameRegistration -> LabelHash -> (NameRegistration -> IO a) -> IO (Maybe (Either Moved a))
+withRegistrationTurns st turns NameRegistration {nrId, nrLabelHash = held} other action =
+  withLabelTurns turns held other $
+    withTransaction st (`getRegistration` nrId) >>= traverse inTurns
+  where
+    inTurns current
+      | nrLabelHash current `elem` [held, other] = Right <$> action current
+      | otherwise = pure $ Left ()
 
 -- | The label hashes, code hashes and balances with a holder or a waiter.
 turnsCount :: Turns -> IO Int

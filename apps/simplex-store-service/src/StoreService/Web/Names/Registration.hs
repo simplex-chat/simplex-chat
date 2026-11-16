@@ -37,7 +37,7 @@ import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (RegisterIntent (..))
 import StoreService.Names.Reveal (RevealFields (..), RevealRefusal (..), SignedLabel (..), checkAcceptance, checkIntent, committedRegistration, isRepeat, linksValid, parseRevealFields, parseSignedLabel, revealOf)
 import StoreService.Names.Store (BrokenInvariant (..), NameRegistration (..), OrderPhase (..), getRegistration, updateRegistration)
-import StoreService.Names.Turns (withLabelTurn)
+import StoreService.Names.Turns (withRegistrationTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
 import StoreService.Web.Http (HttpEnv, Respond, badRequest, holdsFull, invalidLink, jsonResponse, nameBodyBytes, notFound, providerUnavailable, readBoundedBody, withHoldSlot)
@@ -71,20 +71,18 @@ revealHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
 revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, oeNow} ridText req respond =
   withTransaction oeStore (`getRegistration` rid) >>= \case
     Nothing -> respond notFound
-    Just NameRegistration {nrLabelHash} ->
+    Just r ->
       readBoundedBody nameBodyBytes req >>= \case
-        Just body | Just (J.Object o) <- J.decode body, Just signed <- parseSignedLabel o -> withLabelTurn oeTurns nrLabelHash (decide nrLabelHash o signed) >>= answer
+        Just body | Just (J.Object o) <- J.decode body, Just signed <- parseSignedLabel o ->
+          withRegistrationTurn oeStore oeTurns r (decide o signed) >>= answer . maybe RDGone (either (const RDChanged) id)
         _ -> answer $ RDRefused RVBadRequest Nothing
   where
     rid = RegistrationId ridText
-    decide turnHash o signed = do
+    decide o signed r@NameRegistration {nrReveal} = do
       now <- oeNow
-      withTransaction oeStore (`getRegistration` rid) >>= \case
-        Nothing -> pure RDGone
-        Just r@NameRegistration {nrLabelHash, nrReveal}
-          -- moved to another name while this request waited for the turn
-          | nrLabelHash /= turnHash -> pure RDChanged
-          | Just stored <- nrReveal -> pure $ if isRepeat signed stored then RDAccepted Nothing else RDRefused RVBadRequest Nothing
+      case nrReveal of
+        Just stored -> pure $ if isRepeat signed stored then RDAccepted Nothing else RDRefused RVBadRequest Nothing
+        Nothing
           | nrPhase (registrationAt now r) /= OCommitted -> pure $ RDRefused RVBadRequest Nothing
           | otherwise -> case parseRevealFields o of
               Nothing -> pure $ RDRefused RVBadRequest Nothing
@@ -120,14 +118,9 @@ retryHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
 retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} ridText _ respond =
   withTransaction oeStore (`getRegistration` rid) >>= \case
     Nothing -> respond notFound
-    Just NameRegistration {nrLabelHash} -> withLabelTurn oeTurns nrLabelHash (decide nrLabelHash) >>= maybe (respond notFound) answer
+    Just r -> withRegistrationTurn oeStore oeTurns r (retryRegistration env) >>= maybe (respond notFound) (answer . either (const RTChanged) id)
   where
     rid = RegistrationId ridText
-    decide turnHash = withTransaction oeStore (`getRegistration` rid) >>= traverse (inTurn turnHash)
-    inTurn turnHash r
-      -- moved to another name while this request waited for the turn
-      | nrLabelHash r /= turnHash = pure RTChanged
-      | otherwise = retryRegistration env r
     answer = \case
       RTWritten v -> do
         atomically $ publish oePhases rid v

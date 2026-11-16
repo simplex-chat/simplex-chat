@@ -58,7 +58,7 @@ import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
 import StoreService.Names.Store
-import StoreService.Names.Turns (Turns, withBalanceTurn, withLabelTurn)
+import StoreService.Names.Turns (Turns, withBalanceTurn, withLabelTurn, withRegistrationTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion)
 import StoreService.Safely (safely, safelyWith)
 import StoreService.Store.Invoices (unixSeconds)
@@ -522,11 +522,10 @@ closeRegistration st ct turns clock ref = do
   now <- clock
   withTransaction st (\db -> balanceByReference db ref now $>>= getRegistration db . fst) >>= \case
     Nothing -> refused CFNoOrder
-    Just NameRegistration {nrId, nrLabelHash} ->
-      withLabelTurn turns nrLabelHash $
-        withTransaction st (`getRegistration` nrId) >>= \case
-          Just current@NameRegistration {nrLabelHash = currentHash} | currentHash == nrLabelHash -> closeFailed now current
-          _ -> refused CFChanged
+    Just r ->
+      withRegistrationTurn st turns r (closeFailed now) <&> \case
+        Just (Right closed) -> closed
+        _ -> CLRefused CFChanged
   where
     refused = pure . CLRefused
     closeFailed now current = case registrationAt now current of
