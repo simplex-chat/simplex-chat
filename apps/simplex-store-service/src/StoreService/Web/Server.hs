@@ -25,7 +25,7 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegis
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
-import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), WebhookError (..))
+import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), providerErrorText)
 import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), codeHashExists, createInvoiceRows, getInvoice, getInvoiceByProviderRef, newInvoiceId, paymentHolds, readCatalogRows, textToInvoiceStatus, truncateToSecond)
 import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
@@ -295,8 +295,8 @@ cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId respond =
       Nothing -> respond providerUnavailable
       Just Provider {pCancelInvoice} ->
         pCancelInvoice irProviderRef >>= \case
-          Left (ProviderError e) -> do
-            logError $ "cancel order " <> irProviderRef <> ": " <> e
+          Left e -> do
+            logError $ "cancel order " <> irProviderRef <> ": " <> providerErrorText e
             respond providerUnavailable
           Right () -> finish
   where
@@ -368,7 +368,7 @@ createAtProvider WebEnv {weStore, weConfig, weHttp} client provider CreateReques
       let expiresAt = addUTCTime (invoiceWindow weConfig crMethod) now
           draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced, odReference = orderId}
       pCreateInvoice provider crMethod draft >>= \case
-        Left (ProviderError e) -> failed ("at the provider: " <> e) providerUnavailable
+        Left e -> failed ("at the provider: " <> providerErrorText e) providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           let atProvider = "providerRef " <> piProviderRef
               ni =

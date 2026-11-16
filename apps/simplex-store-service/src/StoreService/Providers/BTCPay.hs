@@ -30,8 +30,8 @@ import StoreService.Providers
     Rate (..),
     Received (..),
     Uncreditable (..),
+    providerErrorText,
     settleWindow,
-    timeoutError,
     unitDecimals,
     WebhookError (..),
   )
@@ -288,8 +288,8 @@ logStoreMethods :: BTCPayEnv -> IO ()
 logStoreMethods env@BTCPayEnv {beCfg} = do
   r <- greenfield env what methodGet ["payment-methods"] [("enabledOnly", Just "true")] Nothing
   case r >>= decodeGreenfield what of
-    Left (ProviderError e) -> do
-      logWarn ("btcpay: could not read the payment methods of store " <> bStoreId beCfg <> ": " <> e)
+    Left e -> do
+      logWarn ("btcpay: could not read the payment methods of store " <> bStoreId beCfg <> ": " <> providerErrorText e)
       logNote ("btcpay: this build offers " <> T.intercalate ", " knownMethodIds)
     Right ms -> do
       let enabled = map gsmId ms
@@ -310,8 +310,8 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
     Right (methodId, cc) -> do
       created <- greenfield checkout what methodPost ["invoices"] [] (Just (body methodId))
       case created >>= decodeGreenfield what of
-        Left e@(ProviderError m) -> do
-          logWarn ("btcpay: the failed request was " <> safeDecodeUtf8 (LB.toStrict (J.encode (body methodId))) <> " -- " <> m)
+        Left e -> do
+          logWarn ("btcpay: the failed request was " <> safeDecodeUtf8 (LB.toStrict (J.encode (body methodId))) <> " -- " <> providerErrorText e)
           pure (Left e)
         Right GCreated {gcId} -> do
           ms <- greenfield checkout what methodGet ["invoices", gcId, "payment-methods"] [] Nothing
@@ -319,9 +319,9 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
   where
     what = "create invoice"
     checkout = env {beCfg = beCfg {bTimeoutMicros = bCheckoutTimeoutMicros beCfg}}
-    cancelCreated ref (ProviderError e) = do
+    cancelCreated ref e = do
       cancelled <- cancelInvoice env ref
-      pure $ Left $ ProviderError $ e <> "; invoice " <> ref <> either (\(ProviderError c) -> " is left open, as its cancel failed: " <> c) (const " is cancelled") cancelled
+      pure $ Left $ ProviderError $ providerErrorText e <> "; invoice " <> ref <> either (\c -> " is left open, as its cancel failed: " <> providerErrorText c) (const " is cancelled") cancelled
     body methodId =
       J.object
         [ "amount" J..= minorToDecimal odAmount,
@@ -417,7 +417,7 @@ invoicesPass now invs = foldr add (Right ListPass {lpMoved = [], lpSkipped = []}
         Left . ProviderError $
           listWhat <> ": invoice " <> giId <> " carries no paymentMethods, so includePaymentMethods was not honoured"
       Just ms -> case invoiceSignal now giId giStatus giAdditionalStatus giSpeedPolicy ms of
-        Left (ProviderError e) -> Right pass {lpSkipped = (Just giId, e) : lpSkipped pass}
+        Left e -> Right pass {lpSkipped = (Just giId, providerErrorText e) : lpSkipped pass}
         Right Nothing -> Right pass
         Right (Just sig) -> Right pass {lpMoved = (giId, sig) : lpMoved pass}
 
@@ -601,7 +601,7 @@ greenfield BTCPayEnv {beCfg, beManager} what verb segments query body = do
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
       pure (statusCode (responseStatus resp), taken)
   pure $ case r of
-    Nothing -> Left (timeoutError what)
+    Nothing -> Left (ProviderTimeout what)
     -- http-client hides the Authorization header when showing a Request
     Just (Left (e :: HttpException)) -> Left (ProviderError (what <> " failed: " <> tshow e))
     Just (Right (code, taken))

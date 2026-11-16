@@ -15,6 +15,7 @@ import StoreService.Providers
     ProviderError (..),
     ProviderInvoice (..),
     Received (..),
+    providerErrorText,
     settleWindow,
     WebhookError (..),
   )
@@ -295,9 +296,9 @@ testFakeStalledAnswer = withProviderConfigured (\cfg -> cfg {sTimeoutMicros = 30
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   answerStalled fake True
   start <- getCurrentTime
-  pReadInvoice p pid >>= (`shouldSatisfy` namesInError ("read intent " <> pid <> " failed: timed out"))
+  pReadInvoice p pid `shouldReturn` Left (ProviderTimeout ("read intent " <> pid))
   readEnd <- getCurrentTime
-  pCreateInvoice p (SPMCard CPStripe) fiftyFourDollars >>= (`shouldSatisfy` namesInError "create intent failed: timed out")
+  pCreateInvoice p (SPMCard CPStripe) fiftyFourDollars `shouldReturn` Left (ProviderTimeout "create intent")
   createEnd <- getCurrentTime
   diffUTCTime readEnd start `shouldSatisfy` (< 0.9)
   diffUTCTime createEnd readEnd `shouldSatisfy` (>= 0.9)
@@ -458,7 +459,7 @@ signedAt = posixSecondsToUTCTime 1700000000
 
 namesInError :: Text -> Either ProviderError a -> Bool
 namesInError what = \case
-  Left (ProviderError e) -> what `T.isInfixOf` e
+  Left e -> what `T.isInfixOf` providerErrorText e
   Right _ -> False
 
 isRefused :: Either WebhookError (Maybe Text) -> Bool

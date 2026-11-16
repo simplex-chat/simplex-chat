@@ -4,7 +4,7 @@
 
 module StoreService.Providers
   ( ProviderError (..),
-    timeoutError,
+    providerErrorText,
     isTimeout,
     WebhookError (..),
     Received (..),
@@ -28,21 +28,22 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Scientific (Scientific)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime)
 import Network.HTTP.Types.Header (Header)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount, PaymentProvider (..), ServicePaymentDestination, ServicePaymentMethod)
 
-newtype ProviderError = ProviderError Text deriving (Eq, Show)
+data ProviderError = ProviderError Text | ProviderTimeout Text
+  deriving (Eq, Show)
 
-timeoutError :: Text -> ProviderError
-timeoutError what = ProviderError (what <> timeoutReason)
+providerErrorText :: ProviderError -> Text
+providerErrorText = \case
+  ProviderError e -> e
+  ProviderTimeout what -> what <> " failed: timed out"
 
 isTimeout :: ProviderError -> Bool
-isTimeout (ProviderError e) = timeoutReason `T.isSuffixOf` e
-
-timeoutReason :: Text
-timeoutReason = " failed: timed out"
+isTimeout = \case
+  ProviderTimeout _ -> True
+  ProviderError _ -> False
 
 -- | WebhookStale is a valid signature with a timestamp too far from our clock.
 data WebhookError = WebhookError Text | WebhookStale Text deriving (Eq, Show)

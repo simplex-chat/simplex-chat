@@ -40,7 +40,7 @@ import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), credi
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), LateAlert (..), LateCredit (..), LateCreditState (..), LatePending (..), LateSupport (..), claimLateAlert, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
 import StoreService.Orders (decide, expireOverdue, settleOrder, signalReceived)
-import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, settleWindow, unitName)
+import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
 import StoreService.Safely (safely, safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
@@ -234,9 +234,9 @@ readRows env now rows =
     readRow row@(_, ref) = coveringProvider env now row >>= maybe (pure False) (`readOne` ref)
     readOne p ref =
       pReadInvoice p ref >>= \case
-        Left (ProviderError e) -> do
+        Left e -> do
           due <- dueToWarn env now ("read failed: " <> tshow (pProvider p) <> " invoice " <> ref)
-          when due $ logWarn ("badge poller: reading " <> tshow (pProvider p) <> " invoice " <> ref <> " failed; it waits for the next pass: " <> e)
+          when due $ logWarn ("badge poller: reading " <> tshow (pProvider p) <> " invoice " <> ref <> " failed; it waits for the next pass: " <> providerErrorText e)
           pure False
         Right Nothing -> pure True
         Right (Just signal) -> True <$ settleMoved env (pProvider p) now (ref, signal)
@@ -246,9 +246,9 @@ readRows env now rows =
 listPass :: PollerEnv -> UTCTime -> Provider -> IO (Maybe (Set Text))
 listPass env@PollerEnv {peListedOk} now p =
   pListOpen p >>= \case
-    Left (ProviderError e) -> do
+    Left e -> do
       due <- dueToWarn env now ("list failed: " <> tshow (pProvider p))
-      when due $ logWarn ("badge poller: " <> tshow (pProvider p) <> " list failed; every invoice waits for the next pass: " <> e)
+      when due $ logWarn ("badge poller: " <> tshow (pProvider p) <> " list failed; every invoice waits for the next pass: " <> providerErrorText e)
       pure Nothing
     Right ListPass {lpMoved, lpSkipped} -> do
       atomically $ modifyTVar' peListedOk $ M.insert (textEncode $ pProvider p) now
@@ -320,8 +320,8 @@ readHint env@PollerEnv {peStore, peProviders} now ref =
       Nothing -> pure ()
       Just p ->
         pReadInvoice p ref >>= \case
-          Left (ProviderError e) ->
-            logWarn ("badge poller: the hinted read of " <> ref <> " failed; the next pass will run: " <> e)
+          Left e ->
+            logWarn ("badge poller: the hinted read of " <> ref <> " failed; the next pass will run: " <> providerErrorText e)
           Right Nothing -> pure ()
           Right (Just signal) -> settleMoved env irProvider now (ref, signal)
 
@@ -415,7 +415,7 @@ cleanupUnpaid env@PollerEnv {peStore, peCleanedAt, peCleanupLeft} now = do
           Nothing -> keep ("no " <> tshow irProvider <> " provider is configured to read its invoice")
           Just p ->
             pReadInvoice p irProviderRef >>= \case
-              Left (ProviderError e) -> keep ("reading its invoice failed: " <> e)
+              Left e -> keep ("reading its invoice failed: " <> providerErrorText e)
               Right signal_ -> do
                 mapM_ (\signal -> settleMoved env irProvider now (irProviderRef, signal)) signal_
                 withTransaction peStore (`deleteUnpaidRegistration` rid) >>= \case
@@ -475,9 +475,9 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) ref = do
     CONoInvoiceFigures -> do
       due <- dueToWarn env now ("no invoice figures: " <> invText)
       when due $ logError ("names: invoice " <> ref <> " has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at; check it at the provider")
-    CORateFailed (ProviderError e) -> do
+    CORateFailed e -> do
       due <- dueToWarn env now ("rate read failed: " <> tshow (pProvider p))
-      when due $ logWarn ("names: late credits wait, as the current rate cannot be read; each pass tries again: " <> e)
+      when due $ logWarn ("names: late credits wait, as the current rate cannot be read; each pass tries again: " <> providerErrorText e)
     CORateFloor invoiceRate Rate {rateText} -> do
       due <- dueToWarn env now ("rate floor: " <> invText)
       when due $ logError ("names: invoice " <> ref <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; it is never credited by itself, and support refunds it by hand")
@@ -556,11 +556,11 @@ closedAtProvider env@PollerEnv {peProviders} now oi@OverdueInvoice {oiProvider, 
         pCancelInvoice p ref >>= \case
           Right () -> pure True
           -- The provider won't cancel an order that is already paid or closed. Reading it shows which.
-          Left (ProviderError cancelError) ->
+          Left cancelError ->
             pReadInvoice p ref >>= \case
               Right (Just signal) -> False <$ settleMoved env oiProvider now (ref, signal)
-              Right Nothing -> uncancelled env now oi cancelError
-              Left (ProviderError readError) -> uncancelled env now oi (cancelError <> "; reading it failed too: " <> readError)
+              Right Nothing -> uncancelled env now oi (providerErrorText cancelError)
+              Left readError -> uncancelled env now oi (providerErrorText cancelError <> "; reading it failed too: " <> providerErrorText readError)
 
 -- | After 72 hours the poller only reads an order when a webhook asks. If an older order still
 -- can't be cancelled after an hour of trying, mark it expired here and log an error.

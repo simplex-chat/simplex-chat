@@ -21,8 +21,8 @@ import StoreService.Providers
     ProviderError (..),
     ProviderInvoice (..),
     Received (..),
+    providerErrorText,
     settleWindow,
-    timeoutError,
     WebhookError (..),
   )
 import StoreService.Store.Invoices (unixSeconds)
@@ -162,7 +162,7 @@ intentsPass now = foldr add (ListPass [] [])
     add v pass = case J.fromJSON v :: J.Result IntentRead of
       J.Error e -> pass {lpSkipped = (intentIdOf v, T.pack e) : lpSkipped pass}
       J.Success ir -> case signalOf now ir of
-        Left (ProviderError e) -> pass {lpSkipped = (Just (irId ir), e) : lpSkipped pass}
+        Left e -> pass {lpSkipped = (Just (irId ir), providerErrorText e) : lpSkipped pass}
         Right Nothing -> pass
         Right (Just sig) -> pass {lpMoved = (irId ir, sig) : lpMoved pass}
 
@@ -403,7 +403,7 @@ stripeSend StripeEnv {seCfg, seManager} what verb segments query headers form = 
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
       pure (lookup "Idempotent-Replayed" (responseHeaders resp) == Just "true", statusCode (responseStatus resp), taken)
   pure $ case r of
-    Nothing -> (False, Left (timeoutError what))
+    Nothing -> (False, Left (ProviderTimeout what))
     -- http-client hides the Authorization header when showing a Request
     Just (Left (e :: HttpException)) -> (False, Left (ProviderError (what <> " failed: " <> tshow e)))
     Just (Right (replayed, code, taken)) -> (replayed, answer code taken)

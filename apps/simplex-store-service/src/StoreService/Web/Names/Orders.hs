@@ -48,7 +48,7 @@ import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..)
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (balanceJSON, registrationAt, registrationView)
 import StoreService.Orders (publishRegistration)
-import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), expiresItself)
+import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
 import StoreService.Waiters (Waiters, publish)
 import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, badRequest, checkoutClient, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, limitedCheckout, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody, termsUnavailable)
@@ -138,8 +138,8 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg provid
       now <- truncateToSecond <$> oeNow
       let amount = CurrencyAmount ivAmount
       pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> hex ivOrderHash} >>= \case
-        Left (ProviderError e) -> do
-          logError (what <> " failed at the provider: " <> e)
+        Left e -> do
+          logError (what <> " failed at the provider: " <> providerErrorText e)
           pure $ answerNow providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
@@ -320,7 +320,7 @@ announceClosed OrdersEnv {oeStore, oePhases} providers waiters closed = do
 cancelAtProvider :: Provider -> Text -> IO ()
 cancelAtProvider Provider {pCancelInvoice} ref =
   pCancelInvoice ref >>= \case
-    Left (ProviderError e) -> logWarn ("names: cancelling invoice " <> ref <> " at the provider failed: " <> e)
+    Left e -> logWarn ("names: cancelling invoice " <> ref <> " at the provider failed: " <> providerErrorText e)
     Right () -> pure ()
 
 nameInvoiceView :: OrdersEnv -> Maybe Int -> InvoiceRow -> NameRegistration -> IO J.Value

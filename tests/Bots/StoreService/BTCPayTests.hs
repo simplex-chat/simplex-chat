@@ -19,6 +19,7 @@ import StoreService.Providers
     Confirmed (..),
     Uncreditable (..),
     WebhookError (..),
+    providerErrorText,
     settleWindow,
   )
 import StoreService.Providers.BTCPay (btcMethodId, btcpayProvider, listSignals, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
@@ -426,7 +427,7 @@ testUnreadableResponse =
 
 namesInError :: Text -> Either ProviderError a -> Bool
 namesInError what = \case
-  Left (ProviderError e) -> what `T.isInfixOf` e
+  Left e -> what `T.isInfixOf` providerErrorText e
   Right _ -> False
 
 listEntry :: Text -> Text -> Maybe [J.Value] -> J.Value
@@ -866,7 +867,7 @@ testFakeStalledAnswer = withProviderConfigured (\cfg -> cfg {bTimeoutMicros = 30
   ProviderInvoice {piProviderRef = invRef} <- createdInvoice p (SPMCrypto CCBtc)
   answerStalled fake True
   start <- getCurrentTime
-  pReadInvoice p invRef >>= (`shouldSatisfy` namesInError "read invoice failed: timed out")
+  pReadInvoice p invRef `shouldReturn` Left (ProviderTimeout "read invoice")
   readEnd <- getCurrentTime
   pCreateInvoice p (SPMCrypto CCBtc) fiftyFourDollars >>= (`shouldSatisfy` namesInError "create invoice failed: timed out")
   createEnd <- getCurrentTime

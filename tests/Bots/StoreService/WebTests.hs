@@ -3103,7 +3103,7 @@ testListTimeoutKeepsTheReads = bounded "list timeout" $ withStubPoller raceHold 
   seedBadgePrice (weStore env) "price1"
   overdue <- seedOpenRef (weStore env) 1 "p-overdue" (addUTCTime (-3600) now)
   mapM_ (\i -> seedOpenRef (weStore env) i ("p-bulk-" <> tshow i) someExpiry) [2 .. readsPerPass + 2]
-  failList ref (Just (timeoutError "list invoices"))
+  failList ref (Just (ProviderTimeout "list invoices"))
   runOnePass poller
   stubCalls ref `shouldReturn` [StubListOpen, StubRead "p-overdue"]
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
