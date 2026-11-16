@@ -9,7 +9,7 @@ import Bots.StoreService.NamesStoreTests (at, insertInvoiceRow, insertProviderIn
 import Bots.StoreService.WebTests (digestFixture, statusOf, webGet, webRequestBody, withApp, withServiceStore)
 import Control.Concurrent.Async (cancel)
 import Control.Concurrent.STM (TVar, newTVarIO, readTVarIO)
-import Control.Exception (finally)
+import Control.Exception (SomeException, finally, try)
 import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
@@ -25,7 +25,9 @@ import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64, Word8)
 import Network.HTTP.Client (Response, responseBody, responseHeaders)
-import Network.HTTP.Types (hContentType)
+import Network.HTTP.Types (hContentType, status404)
+import Network.Wai (responseLBS)
+import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges.Types (BadgePurchaseStatus (..), SubscriptionState (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
@@ -36,6 +38,7 @@ import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Util (tshow)
+import StoreService.Config (ListenerConfig (..))
 import StoreService.Metrics
 import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressFromBytes, addressWord, selector, uint256)
 import StoreService.Names.Census (Census (..))
@@ -56,6 +59,16 @@ storeMetricsTests = describe "StoreService: metrics" $ do
   it "reads the registrar's funds, the latest block and which terms texts are held, and keeps each part while a read fails" $ testChainRead g
   it "answers GET /metrics with the service metrics alone without names, and with the names metrics while the node holds the chain read" $ testScrape g
   it "counts live names and owned subnames by level and records, with their label lengths, and keeps the last census while one fails" $ testCensus g
+  it "ends when its port is taken, as a web listener does" testPortTaken
+
+testPortTaken :: IO ()
+testPortTaken = withServiceStore $ \st -> Warp.testWithApplication (pure $ \_ respond -> respond $ responseLBS status404 [] "") $ \port -> do
+  listedOk <- newTVarIO M.empty
+  webhookAt <- newTVarIO M.empty
+  let env = MetricsEnv {meStore = st, meProviders = [], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}
+      lc = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesPort = Nothing, lMetricsPort = Just port}
+  ended <- timeout 5000000 (try (runMetrics lc port env) :: IO (Either SomeException ()))
+  either (const True) (const False) <$> ended `shouldBe` Just True
 
 testCensus :: TVar ChaChaDRG -> IO ()
 testCensus g = withServiceStore $ \st -> withFakeEthNode $ \node -> do

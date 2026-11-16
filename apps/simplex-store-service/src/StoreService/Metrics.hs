@@ -23,7 +23,7 @@ where
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Logger.Simple (logWarn)
-import Control.Monad (forever, unless, void)
+import Control.Monad (forever, unless)
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isRight)
 import Data.List (nub, sort)
@@ -262,5 +262,5 @@ runMetrics :: ListenerConfig -> Int -> MetricsEnv -> IO ()
 runMetrics lc port env@MetricsEnv {meNames} = do
   v <- newTVarIO noChainRead
   census <- newTVarIO noCensusRead
-  let serve = safely ("store metrics: the endpoint on port " <> tshow port) $ Warp.runSettings (Warp.setPort port . Warp.setHost (fromString metricsHost) $ webSettings lc) (metricsApp env v census)
-  raceAny_ $ (void serve >> forever (threadDelay maxBound)) : concat [[runChainReads ns v, runCensus ns census] | Just ns <- [meNames]]
+  let serve = Warp.runSettings (Warp.setPort port . Warp.setHost (fromString metricsHost) $ webSettings lc) (metricsApp env v census)
+  raceAny_ $ serve : concat [[runChainReads ns v, runCensus ns census] | Just ns <- [meNames]]
