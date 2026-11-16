@@ -92,6 +92,9 @@ data Product = PBadge (Maybe ByteString) | PName NameRegistration
 -- holds its commitment, or its owner and name. The text is the provider's reference of the order's invoice.
 data NameOutcome = NOWritten RegistrationId Int64 | NOLate Text | NOHoldNotSpent Text RegistrationId | NOLiveOrderExists Text
 
+data SettledMoney = SMNone | SMHeld | SMNewPayment
+  deriving (Eq)
+
 settleOrder :: DBStore -> Waiters -> Maybe Phases -> InvoiceId -> PaymentSignal -> UTCTime -> IO (Either Text InvoiceStatus)
 settleOrder st waiters phases invId signal now' = do
   outcome <- withTransaction st $ \db ->
@@ -160,6 +163,10 @@ settleOrder st waiters phases invId signal now' = do
     settle db row@InvoiceRow {irStatus} w@Write {wStatus, wPayment} sold = do
       let money@Received {rcvUncreditable} = signalReceived signal
           wrotePayment = newPayment row w
+          settledMoney
+            | wrotePayment = SMNewPayment
+            | maybe False paymentHolds (irPayment row) = SMHeld
+            | otherwise = SMNone
       when wrotePayment $ do
         upsertPayment db row wPayment money (paidInFull signal) at
         case sold of
@@ -170,7 +177,7 @@ settleOrder st waiters phases invId signal now' = do
         then do
           name <- case sold of
             PBadge codeHash -> [] <$ mapM_ (\h -> markCodePaid db h (addUTCTime codeLifetime at)) codeHash
-            PName r -> nameSettled db (irProviderRef row) irStatus wStatus wrotePayment (wrotePayment || maybe False paymentHolds (irPayment row)) r now
+            PName r -> nameSettled db (irProviderRef row) irStatus wStatus settledMoney r now
           pure (Right (fromMaybe irStatus wStatus, maybe (if wrotePayment then PubPayment else PubNothing) PubStatus wStatus, name))
         else do
           -- another writer moved the row first, so publish what we found
@@ -181,8 +188,8 @@ settleOrder st waiters phases invId signal now' = do
 -- An invoice the provider closed closes its order, and is late once if it holds money, read now or before.
 -- BTCPay reports money paid into a closed invoice as Expired or Invalid, not Settled, so a new payment figure
 -- on a closed invoice is late too; the monotonic payment write reports each figure once.
-nameSettled :: DB.Connection -> Text -> InvoiceStatus -> Maybe InvoiceStatus -> Bool -> Bool -> NameRegistration -> UTCTime -> IO [NameOutcome]
-nameSettled db ref before after wrotePayment holdsMoney r@NameRegistration {nrId, nrPhase, nrBalanceSource, nrBalanceUsed} now
+nameSettled :: DB.Connection -> Text -> InvoiceStatus -> Maybe InvoiceStatus -> SettledMoney -> NameRegistration -> UTCTime -> IO [NameOutcome]
+nameSettled db ref before after money r@NameRegistration {nrId, nrPhase, nrBalanceSource, nrBalanceUsed} now
   | nrPhase /= PUnpaid = pure []
   | otherwise = case after of
       Just ISPaid
@@ -194,8 +201,8 @@ nameSettled db ref before after wrotePayment holdsMoney r@NameRegistration {nrId
               -- an invariant broke; left live, the order would keep its hold for ever, as no sweep closes a paid invoice
               LiveOrderExists -> (<> [NOLate ref, NOLiveOrderExists ref]) <$> closed
               _ -> E.throwIO (RegistrationChanged nrId)
-      Just ISExpired -> (<> [NOLate ref | holdsMoney]) <$> closed
-      _ -> pure [NOLate ref | before /= ISOpen, wrotePayment]
+      Just ISExpired -> (<> [NOLate ref | money /= SMNone]) <$> closed
+      _ -> pure [NOLate ref | before /= ISOpen, money == SMNewPayment]
   where
     closed = maybe [] (\(rid, v) -> [NOWritten rid v]) <$> closeOrder db r now
     -- the buyer paid the difference, so the order stays queued even when its hold cannot be spent
