@@ -561,28 +561,31 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           toView $ CEvtContactRequestRejected user ct' (either (const Nothing) Just $ strDecode reason)
         MSG msgMeta _msgFlags msgBody -> do
           tags <- newTVarIO []
+          savedMsgIds <- newTVarIO []
           withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> ifM (rcvMsgRepeated conn msgMeta) ((,False) <$> checkSendRcpt ct (rights aChatMsgs)) $ do
             let MsgMeta {pqEncryption} = msgMeta
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchAllErrors` \_ -> pure ()
             forM_ aChatMsgs $ \case
               Right (APMsg _ (ParsedMsg _ _ chatMsg)) ->
-                processEvent ct' conn' tags eInfo chatMsg `catchAllErrors` \e -> eToView e
+                processEvent ct' conn' tags savedMsgIds eInfo chatMsg `catchAllErrors` \e -> eToView e
               Left e -> do
                 atomically $ modifyTVar' tags ("error" :)
                 logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
                 createInternalChatItem user (CDDirectRcv ct') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
                   `catchAllErrors` \_ -> pure ()
+            createRcvMsgDeliveries conn' msgMeta savedMsgIds
             withRcpt <- checkSendRcpt ct' $ rights aChatMsgs -- not crucial to use ct'' from processEvent
             pure (withRcpt, False)
           where
             aChatMsgs = parseChatMessages msgBody
-            processEvent :: Contact -> Connection -> TVar [Text] -> Text -> MsgEncodingI e => ChatMessage e -> CM ()
-            processEvent ct' conn' tags eInfo chatMsg@ChatMessage {chatMsgEvent} = do
+            processEvent :: Contact -> Connection -> TVar [Text] -> TVar [MessageId] -> Text -> MsgEncodingI e => ChatMessage e -> CM ()
+            processEvent ct' conn' tags savedMsgIds eInfo chatMsg@ChatMessage {chatMsgEvent} = do
               let tag = toCMEventTag chatMsgEvent
               atomically $ modifyTVar' tags (tshow tag :)
               logInfo $ "contact msg=" <> tshow tag <> " " <> eInfo
-              (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta chatMsg
+              (conn'', msg@RcvMessage {msgId, chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta chatMsg
+              atomically $ modifyTVar' savedMsgIds (msgId :)
               let ct'' = ct' {activeConn = Just conn''} :: Contact
               case event of
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
@@ -1016,11 +1019,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               || not (relayServesGroup gInfo)
       MSG msgMeta _msgFlags msgBody -> do
         tags <- newTVarIO []
+        savedMsgIds <- newTVarIO []
         withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> ifM (rcvMsgRepeated conn msgMeta) ((,False) <$> checkSendRcpt (rights aChatMsgs)) $ do
           -- possible improvement is to choose scope based on event (some events specify scope)
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
-          newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] aChatMsgs
+          newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags savedMsgIds eInfo) [] aChatMsgs
           shouldDelConns <-
             if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
               then
@@ -1029,6 +1033,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       | otherwise = newDeliveryTasks
                  in createDeliveryTasks gInfo' m' tasks
               else pure False
+          createRcvMsgDeliveries conn msgMeta savedMsgIds
           withRcpt <- checkSendRcpt $ rights aChatMsgs
           pure (withRcpt, shouldDelConns)
         where
@@ -1039,11 +1044,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             Maybe GroupChatScopeInfo ->
             GroupMember ->
             TVar [Text] ->
+            TVar [MessageId] ->
             Text ->
             [NewMessageDeliveryTask] ->
             Either String AParsedMsg ->
             CM [NewMessageDeliveryTask]
-          processAChatMsg gInfo' scopeInfo m' tags eInfo newDeliveryTasks = \case
+          processAChatMsg gInfo' scopeInfo m' tags savedMsgIds eInfo newDeliveryTasks = \case
             Right (APMsg enc (parsedMsg@(ParsedMsg fwd_ _ ChatMessage {chatMsgEvent}))) -> do
               let tag = toCMEventTag chatMsgEvent
               atomically $ modifyTVar' tags (tshow tag :)
@@ -1057,7 +1063,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 _ -> do
                   logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
                   newTask_ <- join <$> withVerifiedMsg gInfo' scopeInfo m' parsedMsg brokerTs
-                    (\verifiedMsg -> processEvent gInfo' m' verifiedMsg `catchAllErrors` \e -> eToView e $> Nothing)
+                    (\verifiedMsg -> processEvent gInfo' m' savedMsgIds verifiedMsg `catchAllErrors` \e -> eToView e $> Nothing)
                   pure $ maybe id (:) newTask_ newDeliveryTasks
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
@@ -1069,10 +1075,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
                     `catchAllErrors` \_ -> pure ()
               pure newDeliveryTasks
-          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> VerifiedMsg e -> CM (Maybe NewMessageDeliveryTask)
-          processEvent gInfo' m' verifiedMsg = do
+          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> TVar [MessageId] -> VerifiedMsg e -> CM (Maybe NewMessageDeliveryTask)
+          processEvent gInfo' m' savedMsgIds verifiedMsg = do
             cc <- ask
             (m'', conn', msg@RcvMessage {msgId, sharedMsgId_, chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta verifiedMsg
+            atomically $ modifyTVar' savedMsgIds (msgId :)
             let ctx js = DeliveryTaskContext js False
                 checkSendAsGroup :: Maybe Bool -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
                 checkSendAsGroup asGroup_ a
@@ -2772,6 +2779,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     rcvMsgRepeated Connection {connId} MsgMeta {recipient = (agentMsgId, _), redelivered}
       | redelivered = withStore' $ \db -> checkMsgDeliveryExists db connId agentMsgId
       | otherwise = pure False
+
+    createRcvMsgDeliveries :: Connection -> MsgMeta -> TVar [MessageId] -> CM ()
+    createRcvMsgDeliveries Connection {connId} agentMsgMeta@MsgMeta {recipient = (agentMsgId, _)} savedMsgIds = do
+      msgIds <- readTVarIO savedMsgIds
+      unless (null msgIds) . withStore' $ \db -> forM_ (reverse msgIds) $ createRcvMsgDelivery db RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
 
     xInfo :: Contact -> Profile -> CM ()
     xInfo c p' = void $ processContactProfileUpdate c p' True

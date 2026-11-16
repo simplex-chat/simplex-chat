@@ -27,7 +27,7 @@ module Simplex.Chat.Store.Messages
     deleteGroupChatItemsMessages,
     createNewSndMessage,
     createSndMsgDelivery,
-    createNewMessageAndRcvMsgDelivery,
+    createRcvMsgDelivery,
     getLastRcvMsgInfo,
     checkMsgDeliveryExists,
     createNewRcvMessage,
@@ -274,20 +274,20 @@ createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId} messageId = do
     (messageId, connId, agentMsgId, currentTs, currentTs, currentTs, MDSSndAgent)
   insertedRowId db
 
-createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} authorGroupMemberId_ = do
-  msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ authorGroupMemberId_ Nothing
-  liftIO $ do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      [sql|
-        INSERT INTO msg_deliveries
-          (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, delivery_status)
-        VALUES (?,?,?,?,?,?,?,?)
-      |]
-      (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs, MDSRcvAgent)
-  pure msg
+createRcvMsgDelivery :: DB.Connection -> RcvMsgDelivery -> MessageId -> IO ()
+createRcvMsgDelivery db RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} msgId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO msg_deliveries
+        (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, delivery_status)
+      SELECT m.message_id, c.connection_id, ?, ?, ?, ?, ?, ?
+      FROM messages m
+      JOIN connections c ON c.connection_id = ?
+      WHERE m.message_id = ?
+    |]
+    (agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs, MDSRcvAgent, connId, msgId)
 
 getLastRcvMsgInfo :: DB.Connection -> Int64 -> IO (Maybe RcvMsgInfo)
 getLastRcvMsgInfo db connId =
