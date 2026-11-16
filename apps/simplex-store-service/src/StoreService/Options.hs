@@ -26,7 +26,7 @@ data StoreServiceOpts = StoreServiceOpts
     noAddress :: Bool,
     runCLI :: Bool,
     serviceConfigFile :: Maybe FilePath,
-    issuerKey :: Either String (Maybe BadgeIssuerKey),
+    issuerKey :: Maybe BadgeIssuerKey,
     testing :: Bool
   }
 
@@ -63,22 +63,21 @@ storeServiceOpts appDir defaultDbName = do
               <> help "Path to store_service.ini: parsed in full in every mode, but --run-cli starts no web listener"
           )
       )
-  issuerKeyIdx <-
+  issuerKey <-
     optional $
-      option
-        auto
-        ( long "issuer-key-idx"
-            <> metavar "KEY_IDX"
-            <> help "Index of the issuer key in the app config (required with --issuer-secret)"
-        )
-  issuerSecret <-
-    optional $
-      option
-        (eitherReader $ strDecode . B.pack)
-        ( long "issuer-secret"
-            <> metavar "ISSUER_SECRET"
-            <> help "Issuer secret from `simplex-chat badge keygen` (base64url)"
-        )
+      BadgeIssuerKey
+        <$> option
+          auto
+          ( long "issuer-key-idx"
+              <> metavar "KEY_IDX"
+              <> help "Index of the issuer key in the app config (required with --issuer-secret)"
+          )
+        <*> option
+          (eitherReader $ strDecode . B.pack)
+          ( long "issuer-secret"
+              <> metavar "ISSUER_SECRET"
+              <> help "Issuer secret from `simplex-chat badge keygen` (base64url)"
+          )
   pure
     StoreServiceOpts
       { coreOptions,
@@ -87,10 +86,7 @@ storeServiceOpts appDir defaultDbName = do
         noAddress,
         runCLI,
         serviceConfigFile,
-        issuerKey = case (issuerKeyIdx, issuerSecret) of
-          (Just idx, Just secret) -> Right (Just (BadgeIssuerKey idx secret))
-          (Nothing, Nothing) -> Right Nothing
-          _ -> Left "--issuer-key-idx and --issuer-secret are given together or not at all",
+        issuerKey,
         testing = False
       }
 

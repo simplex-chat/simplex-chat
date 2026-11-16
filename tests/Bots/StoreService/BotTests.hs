@@ -86,6 +86,7 @@ import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Data.X509 (encodeSignedObject)
+import qualified Options.Applicative as O
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (takeDirectory, (</>))
 import UnliftIO.Temporary (withTempDirectory)
@@ -347,7 +348,7 @@ mkStoreServiceOpts ps secretKey =
       noAddress = False,
       runCLI = False,
       serviceConfigFile = Nothing,
-      issuerKey = Right (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey}),
+      issuerKey = Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey},
       testing = True
     }
   where
@@ -1737,8 +1738,12 @@ testIssuerKeyMustMatchConfig ps = do
   checkIssuerKey (optsFor sk) Nothing cfg >>= (`shouldSatisfy` isRight)
   checkIssuerKey (optsFor otherSk) Nothing cfg >>= (`shouldSatisfy` isLeft)
   checkIssuerKey (optsFor sk) Nothing testCfg {badgePublicKeys = M.empty} >>= (`shouldSatisfy` isLeft)
-  let halfGiven = (optsFor sk) {issuerKey = Left "--issuer-key-idx and --issuer-secret are given together or not at all"}
-  checkIssuerKey halfGiven Nothing cfg >>= (`shouldSatisfy` isLeft)
+  let parsed args = issuerKey <$> O.getParseResult (O.execParserPure O.defaultPrefs (O.info (storeServiceOpts "." "test") mempty) args)
+      secret = B.unpack (strEncode sk)
+  parsed ["--issuer-key-idx", show testIssuerKeyIdx, "--issuer-secret", secret] `shouldBe` Just (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk})
+  parsed [] `shouldBe` Just Nothing
+  parsed ["--issuer-key-idx", show testIssuerKeyIdx] `shouldBe` Nothing
+  parsed ["--issuer-secret", secret] `shouldBe` Nothing
 
 testIssuerIniKeyMustBeTrusted :: HasCallStack => TestParams -> IO ()
 testIssuerIniKeyMustBeTrusted ps = do
@@ -1746,7 +1751,7 @@ testIssuerIniKeyMustBeTrusted ps = do
   Right (_, untrusted) <- bbsKeyGen
   let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
       fromCli = mkStoreServiceOpts ps sk
-      fromIni = fromCli {issuerKey = Right Nothing}
+      fromIni = fromCli {issuerKey = Nothing}
       iniWith idx k = withIssuer ["index = " <> tshow idx, "private_key = " <> safeDecodeUtf8 (strEncode k)] readServiceConfig
   Right trusted <- iniWith testIssuerKeyIdx sk
   checkIssuerKey fromIni (Just trusted) cfg `shouldReturn` Right (BadgeIssuerKey testIssuerKeyIdx sk)
@@ -1765,7 +1770,7 @@ testDevKeysTrusted ps = do
   Right (_, devSk) <- bbsKeyGen
   let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
       devIdx = testIssuerKeyIdx + 8
-      fromIni = (mkStoreServiceOpts ps sk) {issuerKey = Right Nothing}
+      fromIni = (mkStoreServiceOpts ps sk) {issuerKey = Nothing}
   Right withDev <- devKeysIni chainSection devIdx devSk [(devIdx, devSk)]
   checkIssuerKey fromIni (Just withDev) cfg >>= (`shouldSatisfy` isLeft)
   Right trusted <- trustDevKeys (Just withDev) cfg
