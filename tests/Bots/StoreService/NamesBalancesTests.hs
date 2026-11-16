@@ -9,8 +9,8 @@ module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, cover
 
 import Bots.StoreService.FakeEthNode (agreed, plainTerms)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders)
-import Bots.StoreService.NamesStoreTests (at, btc, insertOrRollBack, invoiceStatus, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
-import Bots.StoreService.WebTests (capturingStderr, overdueOf, rcv, withServiceStore, withServiceStores)
+import Bots.StoreService.NamesStoreTests (at, btc, insertOrRollBack, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
+import Bots.StoreService.WebTests (capturingStderr, invoiceStatus, overdueOf, rcv, withServiceStore, withServiceStores)
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
@@ -517,7 +517,7 @@ testClosesRelease = withServiceStore $ \st -> do
   forM_ closes $ \c -> do
     (c,) <$> figures st ("s-" <> c) t0 `shouldReturn` (c, Just (10000, 10000, 0, Nothing))
     (c,) . orderLive <$> reg st ("h-" <> c) `shouldReturn` (c, False)
-    (c,) <$> invoiceStatus st ("inv-h-" <> c) `shouldReturn` (c, "expired")
+    (c,) <$> invoiceStatus st (InvoiceId $ "inv-h-" <> c) `shouldReturn` (c, ISExpired)
 
 testOverdueHolderClosed :: IO ()
 testOverdueHolderClosed = withOrders $ \Ctx {cStore = st, cOrders} -> do
@@ -529,11 +529,11 @@ testOverdueHolderClosed = withOrders $ \Ctx {cStore = st, cOrders} -> do
   Right (Just h) <- checkSpendBalance st Spend {spSource = RegistrationId "s", spPrice = 6000, spBalance = 10000, spMethod = Nothing} now
   nrId h `shouldBe` RegistrationId "h"
   closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (\_ _ -> pure $ Left $ ORBadRequest "refused") `shouldReturn` Left (ORBadRequest "refused")
-  invoiceStatus st "inv-h" `shouldReturn` "open"
+  invoiceStatus st (InvoiceId "inv-h") `shouldReturn` ISOpen
   orderLive <$> reg st "h" `shouldReturn` True
   figures st "s" now `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" (at 60) True)
   closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (spendInsert "c" "s" 6000 10000) `shouldReturn` Right [(RegistrationId "h", nrVersion h + 1)]
-  invoiceStatus st "inv-h" `shouldReturn` "expired"
+  invoiceStatus st (InvoiceId "inv-h") `shouldReturn` ISExpired
   orderLive <$> reg st "h" `shouldReturn` False
   figures st "s" now `shouldReturn` Just (4000, 10000, 0, Nothing)
   nrPhase <$> reg st "c" `shouldReturn` OQueued
@@ -559,7 +559,7 @@ testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
     closedIds <$> Orders.placeOrder cOrders (orderRequest c) [hr] (spendInsert c s 6000 10000) `shouldReturn` Left (ORBalanceChanged $ Just balance)
     absent st c
     orderLive <$> reg st h `shouldReturn` True
-    invoiceStatus st ("inv-" <> h) `shouldReturn` "open"
+    invoiceStatus st (InvoiceId $ "inv-" <> h) `shouldReturn` ISOpen
     figures st s now `shouldReturn` Just (10000, 10000, 0, Just held)
 
 testCleanupKeepsHolder :: IO ()

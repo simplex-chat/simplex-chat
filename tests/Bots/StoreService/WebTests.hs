@@ -22,6 +22,8 @@ module Bots.StoreService.WebTests
     stubCalls,
     setSignals,
     sampleProviderInvoice,
+    stubRate,
+    invoiceStatus,
     prepareStaticDir,
     testServiceConfig,
     testBTCPayConfig,

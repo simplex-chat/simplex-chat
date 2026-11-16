@@ -8,12 +8,13 @@ module Bots.StoreService.NamesSpendTests (namesSpendChatTests, namesSpendTests) 
 import Bots.StoreService.BotTests (operatorCmd, withStoreService)
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates, webhookEvent, webhookSigHeader, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
+import Bots.StoreService.NamesBalancesTests (credit)
 import Bots.StoreService.NamesContractsTests (rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, seconds, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesPhasesTests (registrationPath, seenVersion, woken)
 import qualified Bots.StoreService.NamesPhasesTests as Phases
-import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
+import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, write)
 import Bots.StoreService.WebTests (StubCall (..), bounded, capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores, withApp)
 import ChatTests.DBUtils (TestParams)
 import Control.Concurrent.Async (async, concurrently, wait)
@@ -158,9 +159,6 @@ sourceOf Ctx {cStore} rid cents = do
   write cStore taken {nrPhase = OTaken} `shouldReturn` Written 2
   credit cStore rid cents
   pure $ RegistrationId rid
-
-credit :: DBStore -> Text -> USDCents -> IO ()
-credit st rid cents = withTransaction st $ \db -> creditBalance db (RegistrationId rid) cents t0
 
 -- | What the page sends: the new order's fields and price, the balance it read, and a method only for a difference.
 data SpendBody = SpendBody

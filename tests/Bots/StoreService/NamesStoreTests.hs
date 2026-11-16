@@ -3,10 +3,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
+module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.FakeEthNode (address, agreed, plainTerms)
-import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
+import Bots.StoreService.WebTests (columnsOf, digestFixture, invoiceStatus, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM, forM_, void)
 import Data.List (sort)
@@ -18,7 +18,7 @@ import Data.Time.Clock (UTCTime (..), addUTCTime)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Word (Word64, Word8)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
-import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), InvoiceId (..), ServicePaymentMethod (..))
+import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationsToRun (..), toDownMigration)
@@ -346,8 +346,8 @@ testCloseOverdue = withServiceStore $ \st -> do
   placed `shouldBe` Right ()
   old <- reg st "r1"
   (nrPhase old, nrVersion old) `shouldBe` (OUnpaid False, 2)
-  invoiceStatus st "inv-r1" `shouldReturn` "expired"
-  invoiceStatus st "inv-r2" `shouldReturn` "open"
+  invoiceStatus st (InvoiceId "inv-r1") `shouldReturn` ISExpired
+  invoiceStatus st (InvoiceId "inv-r2") `shouldReturn` ISOpen
 
 testCloseOverdueStale :: IO ()
 testCloseOverdueStale = withServiceStore $ \st -> do
@@ -355,14 +355,8 @@ testCloseOverdueStale = withServiceStore $ \st -> do
   r <- reg st "r1"
   write st r {nrPhase = OQueued} `shouldReturn` Written 2
   withTransaction st (\db -> closeOverdue db r (at 61)) `shouldReturn` Nothing
-  invoiceStatus st "inv-r1" `shouldReturn` "open"
+  invoiceStatus st (InvoiceId "inv-r1") `shouldReturn` ISOpen
   (orderLive &&& nrPhase) <$> reg st "r1" `shouldReturn` (True, OQueued)
-
-invoiceStatus :: DBStore -> Text -> IO Text
-invoiceStatus st invId = withTransaction st $ \db ->
-  DB.query db "SELECT status FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId) >>= \case
-    [Only status] -> pure status
-    rows -> fail $ "invoice " <> show invId <> ": " <> show (length rows) <> " rows"
 
 reveal :: NameReveal
 reveal =
