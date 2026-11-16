@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.*
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
@@ -21,10 +21,15 @@ import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.net.URI
-import kotlin.math.absoluteValue
 import kotlin.math.pow
 
 private const val WHEEL_ZOOM_STEP = 1.2f
+
+private fun withinView(translation: Offset, size: IntSize, scale: Float): Offset {
+  val maxX = size.width * (scale - 1f) / 2
+  val maxY = size.height * (scale - 1f) / 2
+  return Offset(translation.x.coerceIn(-maxX, maxX), translation.y.coerceIn(-maxY, maxY))
+}
 
 interface ImageGalleryProvider {
   val initialIndex: Int
@@ -116,58 +121,44 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
         }
       } else {
         var scale by remember { mutableStateOf(1f) }
-        var translationX by remember { mutableStateOf(0f) }
-        var translationY by remember { mutableStateOf(0f) }
-        var viewWidth by remember { mutableStateOf(0) }
+        var translation by remember { mutableStateOf(Offset.Zero) }
         var allowTranslate by remember { mutableStateOf(true) }
         LaunchedEffect(settledCurrentPage) {
           scale = 1f
-          translationX = 0f
-          translationY = 0f
+          translation = Offset.Zero
         }
         val modifier = Modifier
-          .onGloballyPositioned {
-            viewWidth = it.size.width
-          }
           .graphicsLayer(
             scaleX = scale,
             scaleY = scale,
-            translationX = translationX,
-            translationY = translationY,
+            translationX = translation.x,
+            translationY = translation.y,
           )
           .pointerInput(Unit) {
             detectTransformGestures(
-              { allowTranslate },
+              { allowTranslate || !appPlatform.isAndroid },
               onGesture = { _, pan, gestureZoom, _ ->
                 scale = (scale * gestureZoom).coerceIn(1f, 20f)
-                allowTranslate = viewWidth * (scale - 1f) - ((translationX + pan.x * scale).absoluteValue * 2) > 0
-                if (scale > 1 && allowTranslate) {
-                  translationX += pan.x * scale
-                  translationY += pan.y * scale
-                } else if (allowTranslate) {
-                  translationX = 0f
-                  translationY = 0f
-                }
+                val panned = withinView(translation + pan * scale, size, scale)
+                allowTranslate = gestureZoom != 1f || panned != translation
+                translation = panned
               }
             )
           }
-          .pointerInput(Unit) {
+          .then(if (appPlatform.isAndroid) Modifier else Modifier.pointerInput(Unit) {
             awaitPointerEventScope {
               while (true) {
                 val event = awaitPointerEvent()
-                if (event.type != PointerEventType.Scroll) continue
                 val change = event.changes.first()
+                if (event.type != PointerEventType.Scroll || change.scrollDelta.y == 0f) continue
                 val zoomed = (scale * WHEEL_ZOOM_STEP.pow(-change.scrollDelta.y)).coerceIn(1f, 20f)
                 val shift = (change.position - Offset(size.width / 2f, size.height / 2f)) * (scale - zoomed)
-                val maxX = size.width * (zoomed - 1f) / 2
-                val maxY = size.height * (zoomed - 1f) / 2
-                translationX = (translationX + shift.x).coerceIn(-maxX, maxX)
-                translationY = (translationY + shift.y).coerceIn(-maxY, maxY)
+                translation = withinView(translation + shift, size, zoomed)
                 scale = zoomed
                 change.consume()
               }
             }
-          }
+          })
           .fillMaxSize()
         if (media is ProviderMedia.Image) {
           val (data: ByteArray, imageBitmap: ImageBitmap) = media

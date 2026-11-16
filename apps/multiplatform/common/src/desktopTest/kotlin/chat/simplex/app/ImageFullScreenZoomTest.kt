@@ -52,44 +52,93 @@ class ImageFullScreenZoomTest {
     override fun onDismiss(index: Int) {}
   }
 
-  private enum class Half { RED, BLUE }
+  private enum class Shown { RED, BLUE, BACKGROUND }
 
-  private fun ImageComposeScene.halfAt(x: Int): Half? {
-    val color = Color(Bitmap.makeFromImage(render()).getColor(x, 300))
+  private fun ImageComposeScene.shownAt(x: Int, y: Int = 300): Shown? {
+    val color = Color(Bitmap.makeFromImage(render()).getColor(x, y))
     return when {
-      color.red > 0.8f && color.blue < 0.2f -> Half.RED
-      color.blue > 0.8f && color.red < 0.2f -> Half.BLUE
+      color.red > 0.8f && color.blue < 0.2f -> Shown.RED
+      color.blue > 0.8f && color.red < 0.2f -> Shown.BLUE
+      color.red < 0.1f && color.green < 0.1f && color.blue < 0.1f -> Shown.BACKGROUND
       else -> null
     }
   }
 
-  private fun ImageComposeScene.wheel(x: Float, notches: Float) =
+  private fun ImageComposeScene.wheel(x: Float, notches: Float) {
     sendPointerEvent(PointerEventType.Scroll, Offset(x, 300f), scrollDelta = Offset(0f, notches))
-
-  private fun ImageComposeScene.drag(fromX: Float, toX: Float) {
-    sendPointerEvent(PointerEventType.Press, Offset(fromX, 300f), buttons = PointerButtons(isPrimaryPressed = true), button = PointerButton.Primary)
-    sendPointerEvent(PointerEventType.Move, Offset(toX, 300f), buttons = PointerButtons(isPrimaryPressed = true))
-    sendPointerEvent(PointerEventType.Release, Offset(toX, 300f), buttons = PointerButtons(), button = PointerButton.Primary)
+    render()
   }
 
-  @Test
-  fun testWheelZoomsAtThePointerDragPansAndWheelBackFits() {
+  private fun ImageComposeScene.drag(from: Offset, to: Offset, steps: Int = 1) {
+    sendPointerEvent(PointerEventType.Press, from, buttons = PointerButtons(isPrimaryPressed = true), button = PointerButton.Primary)
+    for (step in 1..steps) {
+      sendPointerEvent(PointerEventType.Move, from + (to - from) * (step.toFloat() / steps), buttons = PointerButtons(isPrimaryPressed = true))
+    }
+    sendPointerEvent(PointerEventType.Release, to, buttons = PointerButtons(), button = PointerButton.Primary)
+  }
+
+  private fun ImageComposeScene.click(x: Float) {
+    sendPointerEvent(PointerEventType.Press, Offset(x, 300f), buttons = PointerButtons(isPrimaryPressed = true), button = PointerButton.Primary)
+    sendPointerEvent(PointerEventType.Release, Offset(x, 300f), buttons = PointerButtons(), button = PointerButton.Primary)
+  }
+
+  private fun fullScreen(test: ImageComposeScene.(closed: () -> Boolean) -> Unit) {
     var closed = false
     simplexWindowState.windowState = WindowState(size = DpSize(800.dp, 600.dp))
     ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
       ImageFullScreenView({ gallery }) { closed = true }
-    }.use { scene ->
-      assertEquals(listOf(Half.RED, Half.BLUE), listOf(scene.halfAt(390), scene.halfAt(410)))
-      scene.wheel(200f, -3f)
-      assertEquals(listOf(Half.RED, Half.BLUE), listOf(scene.halfAt(530), scene.halfAt(560)))
-      scene.drag(300f, 200f)
-      assertFalse(closed)
-      assertEquals(listOf(Half.RED, Half.BLUE), listOf(scene.halfAt(430), scene.halfAt(460)))
-      scene.wheel(200f, 10f)
-      assertEquals(listOf(Half.RED, Half.BLUE), listOf(scene.halfAt(390), scene.halfAt(410)))
-      assertFalse(closed)
-      scene.drag(300f, 300f)
-      assertTrue(closed)
-    }
+    }.use { scene -> scene.test { closed } }
+  }
+
+  @Test
+  fun testWheelZoomsAtThePointerDragPansAndWheelBackFits() = fullScreen { closed ->
+    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(390), shownAt(410)))
+    wheel(200f, -3f)
+    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(530), shownAt(560)))
+    drag(Offset(300f, 300f), Offset(200f, 300f))
+    assertFalse(closed())
+    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(430), shownAt(460)))
+    wheel(200f, 10f)
+    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(390), shownAt(410)))
+    drag(Offset(300f, 300f), Offset(500f, 300f))
+    assertFalse(closed())
+    click(300f)
+    assertTrue(closed())
+  }
+
+  @Test
+  fun testDragBeyondTheEdgeKeepsTheImageAtTheEdge() = fullScreen { closed ->
+    wheel(400f, -3f)
+    drag(Offset(700f, 300f), Offset(100f, 300f))
+    assertEquals(listOf(Shown.RED, Shown.BLUE, Shown.BLUE), listOf(shownAt(90), shownAt(130), shownAt(790)))
+    drag(Offset(500f, 300f), Offset(400f, 300f))
+    assertFalse(closed())
+    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(90), shownAt(130)))
+  }
+
+  @Test
+  fun testVerticalDragAtTheHorizontalEdgeMovesTheImage() = fullScreen { closed ->
+    wheel(0f, -3f)
+    drag(Offset(300f, 400f), Offset(300f, 300f))
+    assertFalse(closed())
+    assertEquals(listOf(Shown.RED, Shown.BACKGROUND), listOf(shownAt(300, 500), shownAt(300, 570)))
+  }
+
+  @Test
+  fun testVerticalDragAfterZoomOutAtTheEdgeMovesTheImage() = fullScreen { closed ->
+    wheel(400f, -4f)
+    drag(Offset(100f, 300f), Offset(700f, 300f))
+    wheel(400f, 1f)
+    drag(Offset(300f, 400f), Offset(300f, 300f))
+    assertFalse(closed())
+    assertEquals(listOf(Shown.RED, Shown.BACKGROUND), listOf(shownAt(300, 500), shownAt(300, 570)))
+  }
+
+  @Test
+  fun testVerticalDragStopsAtTheImageEdge() = fullScreen { closed ->
+    wheel(400f, -3f)
+    drag(Offset(300f, 100f), Offset(300f, 550f), steps = 45)
+    assertFalse(closed())
+    assertEquals(listOf(Shown.BACKGROUND, Shown.RED), listOf(shownAt(300, 150), shownAt(300, 200)))
   }
 }
