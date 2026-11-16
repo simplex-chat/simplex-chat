@@ -29,12 +29,13 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
+import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (commitCalldata)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Sender
-import StoreService.Names.Store (NameTransaction (..), TxFor (..), TxStatus (..), pendingTransactions, registrationTransactions)
+import StoreService.Names.Store (NameTransaction (..), TxFor (..), TxStatus (..), pendingTransactions, recordTransactionOutcome, registrationTransactions)
 import StoreService.Names.View (addressText)
 import System.Timeout (timeout)
 import Test.Hspec
@@ -48,6 +49,7 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "tips at least minTip when the recent blocks' median tip is lower" $ testTipFloor g
   it "refuses a second transaction for work with one in flight" $ testOneInFlight g
   it "settles a receipt only once it is confirmations deep, with its status" $ testConfirmationDepth g
+  it "logs a settled transaction whose row was not pending" $ testSettledNotPending g
   it "keeps a transaction whose send failed, and sends it in the next round" $ testFailedSend g
   it "replaces a stuck transaction once the market's fees pass its own, and settles it under the new hash" $ testFeeBump g
   it "rebroadcasts a saved raw transaction after a restart while the node does not know it" $ testRestartRebroadcast g
@@ -170,6 +172,18 @@ testConfirmationDepth g = withSetup g $ \s@Setup {node, store} -> do
   outcomeOf p `shouldReturn` TOConfirmed (ptHash p) Receipt {receiptSuccess = False, receiptBlock = block}
   settled sender (TxCommit r1) `shouldReturn` True
   statuses store r1 `shouldReturn` [(ptHash p, TSReverted, Just block)]
+
+testSettledNotPending :: TVar ChaChaDRG -> IO ()
+testSettledNotPending g = withSetup g $ \s@Setup {node, store} -> do
+  sender <- start s
+  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  let TxHash h = ptHash p
+  _ <- mine node [(h, True)]
+  _ <- mine node []
+  withTransaction store (\db -> recordTransactionOutcome db (ptHash p) TSPending TSDropped Nothing) `shouldReturn` True
+  logged <- capturingStderr $ followTransactions sender
+  logged `shouldSatisfy` T.isInfixOf ("transaction " <> hex h <> " was not pending when it settled")
+  statuses store r1 `shouldReturn` [(ptHash p, TSDropped, Nothing)]
 
 testFailedSend :: TVar ChaChaDRG -> IO ()
 testFailedSend g = withSetup g $ \s@Setup {node, store} -> do

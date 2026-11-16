@@ -31,7 +31,7 @@ import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Concurrent.STM
 import Control.Exception (throwIO)
 import Control.Logger.Simple (logError, logNote, logWarn)
-import Control.Monad (forM, forM_, forever, unless, void, when)
+import Control.Monad (filterM, forM, forM_, forever, unless, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError, withExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Crypto.Random (ChaChaDRG)
@@ -51,6 +51,7 @@ import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
+import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain
 import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
 import StoreService.Names.View (addressText)
@@ -305,22 +306,27 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
     oldMax = toInteger txMaxFeePerGas
     (cap, bounded) = feeCap c txGasLimit
 
+data TxSettlement = TSMinedAt Word64 | TSRevertedAt Word64 | TSDroppedTx
+
 -- | The confirmed hash gets its receipt's status; every other hash of the nonce can no longer be mined.
 settle :: Sender -> Word64 -> InFlight -> TxOutcome -> IO ()
 settle Sender {snStore, snInFlight} nonce InFlight {ifHashes, ifOutcome} outcome = do
-  withTransaction snStore $ \db -> forM_ ifHashes $ \h -> recordTransactionOutcome db h TSPending (status h) (block h)
+  unrecorded <- withTransaction snStore $ \db -> filterM (fmap not . record db) $ L.toList ifHashes
+  forM_ unrecorded $ \(TxHash h) -> logError $ "names sender: nonce " <> tshow nonce <> ": transaction " <> hex h <> " was not pending when it settled"
   when (outcome == TONonceUsed) $
     logWarn $ "names sender: nonce " <> tshow nonce <> " used with no receipt for its transactions; its owner judges it from chain state"
   atomically $ do
     modifyTVar' snInFlight $ M.delete nonce
     putTMVar ifOutcome outcome
   where
-    status h = case outcome of
-      TOConfirmed mined Receipt {receiptSuccess} | mined == h -> if receiptSuccess then TSMined else TSReverted
-      _ -> TSDropped
-    block h = case outcome of
-      TOConfirmed mined Receipt {receiptBlock} | mined == h -> Just receiptBlock
-      _ -> Nothing
+    record db h = uncurry (recordTransactionOutcome db h TSPending) $ case settlement h of
+      TSMinedAt block -> (TSMined, Just block)
+      TSRevertedAt block -> (TSReverted, Just block)
+      TSDroppedTx -> (TSDropped, Nothing)
+    settlement h = case outcome of
+      TOConfirmed mined Receipt {receiptSuccess, receiptBlock}
+        | mined == h -> if receiptSuccess then TSMinedAt receiptBlock else TSRevertedAt receiptBlock
+      _ -> TSDroppedTx
 
 update :: Sender -> Word64 -> (InFlight -> InFlight) -> IO ()
 update Sender {snInFlight} nonce f = atomically $ modifyTVar' snInFlight $ M.adjust f nonce
