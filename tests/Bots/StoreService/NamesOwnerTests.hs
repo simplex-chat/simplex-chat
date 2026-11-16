@@ -38,7 +38,6 @@ import Bots.StoreService.NamesPhasesTests (registrationPath)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
@@ -72,7 +71,7 @@ import StoreService.Names.Orders (OrdersEnv (..), movable, signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage)
 import StoreService.Names.Store hiding (findLimit)
-import StoreService.Names.Turns (withLabelTurn)
+import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (HttpEnv, createLimit, findLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -321,10 +320,6 @@ held ctx@Ctx {cOrders} NameRegistration {nrId, nrVersion} = do
 
 woken :: Async (Int, J.Object) -> IO (Int, J.Object)
 woken poll = timeout 5000000 (wait poll) >>= maybe (cancel poll >> error "the poll was not woken") pure
-
--- | Long enough for a request just sent to reach its turns.
-parkDelay :: Int
-parkDelay = 200000
 
 -- tests
 
@@ -784,7 +779,8 @@ testMovesCross = withOwnerAs (\cfg -> cfg {nMaxOrderMoves = 100}) $ \ctx -> do
     holder <- async $ withLabelTurn (oeTurns $ cOrders ctx) (labelHash high) $ putMVar holding () >> takeMVar release
     takeMVar holding
     let started = if odd n then [lowMove, highMove] else [highMove, lowMove]
-    moves <- forM started $ \(r, body) -> async (postMove ctx (nrId r) body) <* threadDelay parkDelay
+        queuedOnLow k = within "the move's turn" $ atomically $ labelTurnCount (oeTurns $ cOrders ctx) (labelHash low) >>= check . (== k)
+    moves <- forM (zip [1 ..] started) $ \(k, (r, body)) -> async (postMove ctx (nrId r) body) <* queuedOnLow k
     putMVar release ()
     wait holder
     outcomes <- within ("round " <> show n) $ mapM wait moves

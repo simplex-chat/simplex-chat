@@ -3,7 +3,7 @@
 
 -- | A thread that takes a turn it already holds waits forever. Label turns are taken before a code turn or a balance turn,
 -- and a balance turn is never taken with a code turn.
-module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withLabelTurns, withCodeTurn, withBalanceTurn, turnsCount, labelTurnCount, balanceTurnCount) where
+module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withLabelTurns, withCodeTurn, withBalanceTurn, turnsCount, labelTurnCount, codeTurnCount, balanceTurnCount) where
 
 import Control.Concurrent.STM
 import Control.Exception (bracket)
@@ -40,11 +40,14 @@ turnsCount Turns {labelTurns, codeTurns, balanceTurns} = atomically $ (\l c b ->
 
 -- | The requests holding or waiting for the label hash's turn.
 labelTurnCount :: Turns -> LabelHash -> STM Int
-labelTurnCount Turns {labelTurns} lh = maybe 0 snd . Map.lookup lh <$> readTVar labelTurns
+labelTurnCount Turns {labelTurns} = turnRequests labelTurns
 
 -- | Keyed by the code's SHA-256 hash.
 withCodeTurn :: Turns -> ByteString -> IO a -> IO a
 withCodeTurn Turns {codeTurns} = withTurn codeTurns
+
+codeTurnCount :: Turns -> ByteString -> STM Int
+codeTurnCount Turns {codeTurns} = turnRequests codeTurns
 
 -- | Keyed by the order the balance belongs to.
 withBalanceTurn :: Turns -> RegistrationId -> IO a -> IO a
@@ -52,7 +55,10 @@ withBalanceTurn Turns {balanceTurns} = withTurn balanceTurns
 
 -- | The requests holding or waiting for the balance's turn.
 balanceTurnCount :: Turns -> RegistrationId -> STM Int
-balanceTurnCount Turns {balanceTurns} rid = maybe 0 snd . Map.lookup rid <$> readTVar balanceTurns
+balanceTurnCount Turns {balanceTurns} = turnRequests balanceTurns
+
+turnRequests :: Ord k => TurnLocks k -> k -> STM Int
+turnRequests locks key = maybe 0 snd . Map.lookup key <$> readTVar locks
 
 withTurn :: Ord k => TurnLocks k -> k -> IO a -> IO a
 withTurn locks key action =

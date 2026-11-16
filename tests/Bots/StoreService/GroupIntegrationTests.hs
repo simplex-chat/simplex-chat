@@ -18,7 +18,7 @@ import StoreService.Names.Codes (reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
 import StoreService.Names.Store (CodeIssuer (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
-import StoreService.Names.Turns (newTurns, withCodeTurn)
+import StoreService.Names.Turns (codeTurnCount, newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
@@ -496,7 +496,7 @@ testRevokeTakesCodeTurn ps = do
     let st = chatStore cc
         revokeAfter code release = do
           revoking <- async $ revokeNameCode turns cc code
-          threadDelay 200000
+          timeout 5000000 (atomically $ codeTurnCount turns (namePrepaidCodeHash code) >>= guard . (== 2)) `shouldReturn` Just ()
           poll revoking >>= (`shouldSatisfy` isNothing)
           release
           finished revoking
