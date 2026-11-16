@@ -507,7 +507,7 @@ testOneDeadline g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Sea
   registeredWith node bakeryLink newsLink
   -- reads the registrar's constants, which a running service has read once
   fst <$> searchAlice s 12 `shouldReturn` 200
-  forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ deadline * 2 `div` 5
+  forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ deadline * 2 `div` 7
   (answer, elapsed) <- timed $ searchAlice s 12
   answer `shouldBe` refused 503 "provider_unavailable"
   elapsed `shouldSatisfy` (< 3)
