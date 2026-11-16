@@ -35,7 +35,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Network.HTTP.Types (hContentType, status200)
 import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
@@ -52,7 +51,7 @@ import StoreService.Names.Store (NamesCounts (..), namesCounts)
 import StoreService.Poller (expiryGrace)
 import StoreService.Safely (safely)
 import StoreService.Store (BadgeCounts (..), badgeCounts)
-import StoreService.Store.Invoices (openInvoiceCounts)
+import StoreService.Store.Invoices (openInvoiceCounts, unixSeconds)
 import StoreService.Web.Http (notFound, only)
 import StoreService.Web.Server (webSettings)
 
@@ -193,7 +192,7 @@ value :: Show a => a -> (Text, Text)
 value n = ("", tshow n)
 
 timestamp :: UTCTime -> (Text, Text)
-timestamp t = value (floor $ utcTimeToPOSIXSeconds t :: Integer)
+timestamp t = value (unixSeconds t)
 
 labelled :: Text -> Text -> (Text, Text) -> (Text, Text)
 labelled name v = withLabels [(name, v)]

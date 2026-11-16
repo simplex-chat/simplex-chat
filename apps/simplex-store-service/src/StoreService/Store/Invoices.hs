@@ -33,6 +33,7 @@ module StoreService.Store.Invoices
     readCatalogRows,
     seedCatalog,
     truncateToSecond,
+    unixSeconds,
     settlementInvoice,
     settlementCodeHash,
     upsertPayment,
@@ -166,6 +167,9 @@ instance Exception ProviderRefConflict
 -- | SQLite stores timestamps as text, so `expires_at < ?` compares as strings and only sorts chronologically when every value has the same width.
 truncateToSecond :: UTCTime -> UTCTime
 truncateToSecond = posixSecondsToUTCTime . fromInteger . truncate . utcTimeToPOSIXSeconds
+
+unixSeconds :: UTCTime -> Integer
+unixSeconds = floor . utcTimeToPOSIXSeconds
 
 #if defined(dbPostgres)
 mkQuery :: Text -> Query

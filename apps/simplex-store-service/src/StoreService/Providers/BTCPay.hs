@@ -19,6 +19,7 @@ where
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), speedPolicyName)
 import StoreService.Providers
+import StoreService.Store.Invoices (unixSeconds)
   ( Confirmed (..),
     ListPass (..),
     OrderDraft (..),
@@ -57,7 +58,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word32)
 import Network.HTTP.Client
   ( HttpException,
@@ -376,8 +377,6 @@ listOpen env@BTCPayEnv {beCfg} = do
   let oldest = addUTCTime (negate (settleWindow + fromIntegral (60 * bExpiryMinutes beCfg))) now
   fetch now (B8.pack (show (unixSeconds oldest))) 0 maxListPages (ListPass {lpMoved = [], lpSkipped = []})
   where
-    unixSeconds :: UTCTime -> Integer
-    unixSeconds = floor . utcTimeToPOSIXSeconds
     query startDate skip =
       [ ("includePaymentMethods", Just "true"),
         ("startDate", Just startDate),

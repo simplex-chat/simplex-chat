@@ -20,7 +20,6 @@ import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import qualified Data.Text as T
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
@@ -36,6 +35,7 @@ import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (nameEditsLeft)
 import StoreService.Names.Store (isLabelRegistering)
 import StoreService.Names.View (tldText)
+import StoreService.Store.Invoices (unixSeconds)
 import StoreService.Web.Http (HttpEnv, Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, rateLimited, readBoundedBody, searchSlot, termsUnavailable)
 import StoreService.Web.Names.Records (editsLeftJSON)
 import System.Timeout (timeout)
@@ -109,7 +109,7 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nCh
     ok :: [JT.Pair] -> IO Response
     ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh listed]
     chain = ["chainId" .= cChainId, "tld" .= tldText nTLD]
-    termStart = floor (utcTimeToPOSIXSeconds nTermStart) :: Integer
+    termStart = unixSeconds nTermStart
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]
     editsLeft = clock >>= \now -> withTransaction st $ \db -> nameEditsLeft db nRecordEditsPerYear lh now
 

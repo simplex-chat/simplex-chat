@@ -15,7 +15,6 @@ module StoreService.Names.Orders
     Landing (..),
     maxSealedChars,
     signedRequestSeconds,
-    unixSeconds,
     parseOrderRequest,
     parseOrderFields,
     textField,
@@ -60,7 +59,6 @@ import Data.Scientific (toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -80,6 +78,7 @@ import StoreService.Names.Chain (TxHash)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
 import StoreService.Names.Store (Balance, LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
+import StoreService.Store.Invoices (unixSeconds)
 
 data OrdersEnv = OrdersEnv
   { oeStore :: DBStore,
@@ -312,9 +311,6 @@ checkPrice ct len years price =
     Right chainPrice
       | chainPrice /= price -> pure $ Left $ ORCatalogChanged chainPrice
       | otherwise -> pure $ Right ()
-
-unixSeconds :: UTCTime -> Integer
-unixSeconds = floor . utcTimeToPOSIXSeconds
 
 -- | A failed order, and one whose reveal was refused for its links, can move to another name.
 movable :: NameRegistration -> Bool

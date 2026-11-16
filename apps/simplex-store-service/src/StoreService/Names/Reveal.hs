@@ -30,7 +30,6 @@ import Data.Foldable (toList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.SimplexName (labelHash)
@@ -45,6 +44,7 @@ import StoreService.Names.Orders (integerField, textField)
 import StoreService.Names.Registration (RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
+import StoreService.Store.Invoices (unixSeconds)
 
 data RevealRefusal = RVBadRequest | RVInvalidLink | RVChainUnavailable
   deriving (Eq, Show)
@@ -121,7 +121,7 @@ checkIntent :: NamesConfig -> Contracts -> UTCTime -> Maybe Word64 -> RegisterIn
 checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revealBefore intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
   | maybe True (riDeadline <) revealBefore = pure $ Left RVBadRequest
   | otherwise =
-      verifyRegisterIntent (sponsorDomain cChainId cSponsor) (floor $ utcTimeToPOSIXSeconds now) intent >>= \case
+      verifyRegisterIntent (sponsorDomain cChainId cSponsor) (fromInteger $ unixSeconds now) intent >>= \case
         Left _ -> pure $ Left RVBadRequest
         Right () ->
           sponsorNonce ct rOwner >>= \case

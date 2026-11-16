@@ -12,6 +12,7 @@ where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
+import StoreService.Store.Invoices (unixSeconds)
   ( Confirmed (..),
     Funded (..),
     ListPass (..),
@@ -46,7 +47,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (POSIXTime, posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
+import Data.Time.Clock.POSIX (POSIXTime, posixSecondsToUTCTime)
 import Data.Word (Word32)
 import Network.HTTP.Client
   ( HttpException,
@@ -137,8 +138,6 @@ listOpen env@StripeEnv {seCfg} = do
       createdGte = B8.pack (show (unixSeconds oldest))
   go now createdGte Nothing maxListPages (ListPass [] [])
   where
-    unixSeconds :: UTCTime -> Integer
-    unixSeconds = floor . utcTimeToPOSIXSeconds
     go now createdGte after pagesLeft acc
       | pagesLeft <= 0 = pure (Right acc {lpSkipped = lpSkipped acc <> [(Nothing, pageCapReason)]})
       | otherwise = do

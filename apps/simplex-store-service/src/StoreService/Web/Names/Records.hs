@@ -21,11 +21,11 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
-import StoreService.Names.Orders (unixSeconds)
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), EditsLeft (..), Records, relayEdit)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (RecordChange (..), SignedChange (..))
+import StoreService.Store.Invoices (unixSeconds)
 import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonError, jsonResponse, nameBodyBytes, providerUnavailable, rateLimited, readBoundedBody)
 
 data EditInvalid = EIBadRequest | EIInvalidLink
