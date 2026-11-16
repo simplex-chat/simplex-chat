@@ -14,10 +14,10 @@
 "Cannot forward message" = "Nachricht kann nicht weitergeleitet werden";
 
 /* No comment provided by engineer. */
-"Comment" = "Kommentieren";
+"Cannot generate random database passphrase" = "Es konnte kein zufälliges Datenbank-Passwort generiert werden";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Die maximal erlaubte Dateigröße beträgt aktuell %@.";
+"Comment" = "Kommentieren";
 
 /* No comment provided by engineer. */
 "Database downgrade required" = "Datenbank-Herunterstufung ist erforderlich";

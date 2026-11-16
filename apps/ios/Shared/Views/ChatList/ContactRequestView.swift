@@ -55,7 +55,9 @@ struct ContactRequestView: View {
 
 struct ContactRequestView_Previews: PreviewProvider {
     static var previews: some View {
-        ContactRequestView(contactRequest: UserContactRequest.sampleData, chat: Chat(chatInfo: ChatInfo.sampleData.contactRequest , chatItems: []))
+        var contactRequest = UserContactRequest.sampleData
+        contactRequest.updatedAt = previewDate
+        return ContactRequestView(contactRequest: contactRequest, chat: Chat(chatInfo: ChatInfo.sampleData.contactRequest , chatItems: []))
             .previewLayout(.fixed(width: 360, height: 80))
     }
 }

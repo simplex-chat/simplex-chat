@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import LocalCardScreen
@@ -90,7 +91,14 @@ class ModalData(val keyboardCoversBar: Boolean = true) {
 
 enum class ModalViewId {
   SECONDARY_CHAT,
-  CONTEXT_USER_PICKER_INCOGNITO
+  CONTEXT_USER_PICKER_INCOGNITO,
+  BADGE_LINK,
+  BADGE_REDEEM_CODE,
+  BADGES,
+  CREATE_PROFILE,
+  PROFILE_DESCRIPTION,
+  MARKDOWN_FILE,
+  CHAT_ITEM_INFO
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
@@ -114,6 +122,10 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   fun hasModalOpen(id: ModalViewId): Boolean = modalViews.any { it.id == id }
 
   fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
+
+  fun isTopModalOpen(id: ModalViewId): Boolean = modalViews.getOrNull(modalViews.size - toRemove.size - 1)?.id == id
+
+  fun isLastModal(data: ModalData): Boolean = modalViews.getOrNull(modalViews.size - toRemove.size - 1)?.data === data
 
   fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     showCustomModal(id = id, forceAnimated = forceAnimated) { close ->
@@ -218,6 +230,10 @@ class ModalManager(private val placement: ModalPlacement? = null) {
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
       if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
         runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
+      }
+      // Until the opening modal covers the page that opened it, or the view under the first modal, a second click there would open it again
+      if (transition.targetState == EnterExitState.PostExit && it < modalCount.value) {
+        Box(Modifier.fillMaxSize().pointerInput(Unit) {})
       }
     }
   }

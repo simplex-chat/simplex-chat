@@ -17,9 +17,6 @@
 "Comment" = "评论";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "当前支持的最大文件大小为 %@。";
-
-/* No comment provided by engineer. */
 "Database downgrade required" = "需要数据库降级";
 
 /* No comment provided by engineer. */

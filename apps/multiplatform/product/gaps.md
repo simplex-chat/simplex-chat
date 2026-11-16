@@ -13,6 +13,9 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
+8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
+9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
+10. [Badges: Limits on Moving a Badge to a New Device or Profile](#gap-10-badges-limits-on-moving-a-badge-to-a-new-device-or-profile)
 
 ---
 
@@ -289,3 +292,88 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 - GAP-03 (Database Passphrase Not Enforced) is compounded by this gap on Desktop.
 - The `testCrypto()` function referenced in `AppCommon.desktop.kt:39` is commented out with a `// LALAL` marker, suggesting crypto testing was planned but never completed.
+
+---
+
+## GAP-08: Desktop: App Link Registration
+
+**Severity:** Low
+**Category:** Platform
+**Platform:** Desktop only
+
+### Description
+
+Desktop registers the `simplexchat:` scheme so the badge page can return to the app, and the `simplex:` scheme so connection links open in it. The registration has known limits:
+
+- Uninstalling or deleting the app leaves the per-user registration behind: the HKCU keys on Windows (the scheme keys, the ProgIds, `Capabilities` and the `RegisteredApplications` entry) and the hidden AppImage desktop entry on Linux. A later link then points at a missing program. On Windows, if the app was installed into a folder other users can write to (for example a custom folder at the root of `C:\`), another user could put a program at that path and have it run on the next link; the default Program Files install is not affected. This risk is accepted.
+- A Flatpak counts as registered without a check, as it cannot query the host's default handler. It works only once the Flathub release pins a commit with the desktop file's MimeType line and its wrapper passes `"$@"` to the app.
+- On macOS a second copy of the app does not forward a link to the running one; macOS delivers the link to the running bundle itself.
+- With two installations (a deb and an AppImage, or two installed copies of the Windows app), the scheme stays with whichever registered first while it is installed; the other gets `app=desktop`. On Windows, when several apps registered through `Capabilities` handle a scheme and none was picked, Windows chooses or asks; the app cannot set `UserChoice` itself.
+- The link arrives as a command-line argument, which other local users can read through `/proc` on Linux. This risk is accepted.
+
+### Affected Locations
+
+- `common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt` -- registration and its result for the badge page
+- `common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt` -- forwarding to a running instance
+
+### Impact
+
+A stale registration or an unregistered Flatpak sends the user back to a link that opens nothing; the badge page's *Show code* and the Redeem code screen remain.
+
+### Recommendation
+
+1. Remove the registration in an uninstaller where one exists (MSI), and on AppImage when the entry's file is gone.
+2. Removing the command-line exposure needs the page to encrypt the code to a key the app passes in the URL fragment.
+
+---
+
+## GAP-09: Desktop: Emoji Picker Without Skin Tones and Localized Search
+
+**Severity:** Low
+**Category:** Feature / Platform
+**Platform:** Desktop only
+
+### Description
+
+The desktop compose emoji picker lists emoji without skin tone variants, and its search matches English Unicode emoji names only.
+
+### Affected Locations
+
+- `common/src/desktopMain/kotlin/chat/simplex/common/views/chat/ComposeEmojiPicker.desktop.kt`
+- `scripts/desktop/generate-emoji-data.py` (`../../scripts/desktop/` relative to `apps/multiplatform/`) -- drops skin tone variants
+
+### Impact
+
+Desktop users cannot pick a skin tone in the picker, and search in other languages finds nothing.
+
+### Recommendation
+
+1. Keep the skin tone variants in the generated data, grouped by base emoji, and add a skin tone choice to the picker.
+2. Add localized names (CLDR annotations) to the generated data for search.
+
+---
+
+## GAP-10: Badges: Limits on Moving a Badge to a New Device or Profile
+
+**Severity:** Low
+**Category:** Feature / Payments
+**Platforms:** Android
+
+### Description
+
+Play gives a resubscription a new purchase token, so subscribing again on the same install is credited as a new purchase. On a new device or under another profile, Restore hands over the subscriptions in Play's list as restored, and the service moves the subscription to the restoring profile's purchase key. Restore is refused while the restoring profile shows a badge. A payment moves again only once the credential issued to the key it last moved from has expired; until then the move is refused `transfer_limited`. The first Restore's own answer doesn't say so: the app hears of the refusal only from core's purchase-refused event, which core sends only for a record holding an invoice id, and the next Restore is answered `transfer_limited` itself. A badge bought with Stripe or crypto cannot be moved at all. The app starts no plan change, and when tested Play's own pages offered none for these products; a plan change made there, should one become possible, would get a new token, which the app's sweep finds but core does not record, so only Restore claims it, and not under a profile that shows a badge, so the profile showing the old badge claims it only once that badge ends; until then it stays unacknowledged, which Play refunds after three days.
+
+### Affected Locations
+
+- `common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgeStore.kt` -- `restorePurchases()`
+- `../../apps/simplex-badge-service/src/BadgeService/Service.hs` -- the move limit
+
+### Impact
+
+A subscriber who moves the badge again before the previous key's credential expires waits until it does, and the first such Restore may give no reason. A badge bought with Stripe or crypto stays with the profile it was credited to. Should Play offer a plan change for these products, a subscriber who makes one keeps the old badge until its paid months end, or until the service reads the old subscription ended at a month's check, and can lose the new plan to Play's refund before it is credited.
+
+### Recommendation
+
+1. Restore by a receipt code for Stripe and crypto purchases, shared with iOS.
+2. Announce a limited move on the first Restore.
+3. Before a Play plan change becomes possible, credit its new token without waiting for Restore.

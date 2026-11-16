@@ -12,14 +12,16 @@ import SimpleXChat
 
 // Spec: spec/client/chat-view.md#CIEventView
 struct CIEventView: View {
+    @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var eventText: Text
 
     var body: some View {
         eventText
-        .padding(.horizontal, 6)
-        .padding(.vertical, 4)
+        .if(terminal) { $0.modifier(terminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
+        .padding(terminal ? terminalEventPadding : EdgeInsets(top: 4, leading: 6, bottom: 4, trailing: 6))
         .textSelection(.disabled)
-        .lineLimit(4)
+        .lineLimit(terminal ? nil : 4)
     }
 }
 

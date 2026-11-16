@@ -263,6 +263,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     -- The key is a name used in the message text, used to look up CIMention.
     mentions :: Map MemberName CIMention,
     formattedText :: Maybe MarkdownList,
+    markdownBlocks :: Maybe (NonEmpty MarkdownBlock),
     quotedItem :: Maybe (CIQuote c),
     reactions :: [CIReactionCount],
     file :: Maybe (CIFile d)
@@ -611,9 +612,24 @@ data CIQuote (c :: ChatType) = CIQuote
     sharedMsgId :: Maybe SharedMsgId, -- Nothing for the messages from the old clients
     sentAt :: UTCTime,
     content :: MsgContent,
-    formattedText :: Maybe MarkdownList
+    formattedText :: Maybe MarkdownList,
+    markdownBlocks :: Maybe (NonEmpty MarkdownBlock)
   }
   deriving (Show)
+
+parsedMsgContent :: MsgContent -> ParsedMarkdown
+parsedMsgContent mc = parsedMarkdown $ case mc of
+  MCVoice {text} -> text
+  MCReport {text} -> text
+  _ -> msgContentText mc
+
+parsedCIContent :: CIContent d -> Text -> ParsedMarkdown
+parsedCIContent content t = maybe (parsedMarkdown t) parsedMsgContent $ ciMsgContent content
+
+mkCIQuote :: CIQDirection c -> Maybe ChatItemId -> Maybe SharedMsgId -> UTCTime -> MsgContent -> CIQuote c
+mkCIQuote chatDir itemId sharedMsgId sentAt content = CIQuote {chatDir, itemId, sharedMsgId, sentAt, content, formattedText, markdownBlocks}
+  where
+    ParsedMarkdown formattedText markdownBlocks = parsedMsgContent content
 
 quoteItemId :: CIQuote c -> Maybe ChatItemId
 quoteItemId CIQuote {itemId} = itemId
@@ -1360,13 +1376,14 @@ data ChatItemVersion = ChatItemVersion
   { chatItemVersionId :: Int64,
     msgContent :: MsgContent,
     formattedText :: Maybe MarkdownList,
+    markdownBlocks :: Maybe (NonEmpty MarkdownBlock),
     itemVersionTs :: UTCTime,
     createdAt :: UTCTime
   }
   deriving (Eq, Show)
 
 mkItemVersion :: ChatItem c d -> Maybe ChatItemVersion
-mkItemVersion ChatItem {content, formattedText, meta} = version <$> ciMsgContent content
+mkItemVersion ChatItem {content, formattedText, markdownBlocks, meta} = version <$> ciMsgContent content
   where
     CIMeta {itemId, itemTs, createdAt} = meta
     version mc =
@@ -1374,6 +1391,7 @@ mkItemVersion ChatItem {content, formattedText, meta} = version <$> ciMsgContent
         { chatItemVersionId = itemId,
           msgContent = mc,
           formattedText,
+          markdownBlocks,
           itemVersionTs = itemTs,
           createdAt = createdAt
         }

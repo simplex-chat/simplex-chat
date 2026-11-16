@@ -178,10 +178,14 @@ private fun GroupPreferencesLayout(
       }
     }
   }
-  @Composable fun SignMessagesPreference() {
+  @Composable fun SignMessagesPreference(onEnable: ((() -> Unit) -> Unit)? = null) {
     val enableSignMessages = remember(preferences) { mutableStateOf(preferences.signMessages.enable) }
     FeatureSection(GroupFeature.SignMessages, enableSignMessages, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       applyPrefs(preferences.copy(signMessages = GroupPreference(enable = enable)))
+      if (enable == GroupFeatureEnabled.ON && currentPreferences.signMessages.enable != GroupFeatureEnabled.ON) onEnable?.invoke {
+        enableSignMessages.value = GroupFeatureEnabled.OFF
+        applyPrefs(preferences.copy(signMessages = GroupPreference(enable = GroupFeatureEnabled.OFF)))
+      }
     }
   }
   ColumnWithScrollBar {
@@ -216,9 +220,16 @@ private fun GroupPreferencesLayout(
       SectionDividerSpaced()
       SupportPreference(disabled = true)
     } else {
-      // hidden until message signing is user-facing (recipient-only stage)
-//      SignMessagesPreference()
-//      SectionDividerSpaced()
+      SignMessagesPreference(onEnable = { revert ->
+        AlertManager.shared.showAlertDialog(
+          title = generalGetString(MR.strings.sign_messages_question),
+          text = generalGetString(MR.strings.sign_messages_alert_desc),
+          confirmText = generalGetString(MR.strings.sign_messages_enable),
+          onDismiss = revert,
+          onDismissRequest = revert,
+        )
+      })
+      SectionDividerSpaced()
       TimedMessagesPreference()
       SectionDividerSpaced()
       FullDeletePreference()

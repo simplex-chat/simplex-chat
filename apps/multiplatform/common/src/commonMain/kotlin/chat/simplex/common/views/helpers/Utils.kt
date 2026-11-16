@@ -172,20 +172,14 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
 }
 
 fun saveImage(uri: URI): CryptoFile? {
-  val bitmap = getBitmapFromUri(uri) ?: return null
-  return saveImage(bitmap)
-}
-
-fun saveImage(image: ImageBitmap): CryptoFile? {
   return try {
     val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
-    val ext = if (image.hasAlpha()) "png" else "jpg"
-    val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
+    val (dataResized, ext) = resizeImageFromUri(uri) ?: return null
     val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
     val destFile = File(getAppFilePath(destFileName))
     if (encrypted) {
       try {
-        val args = writeCryptoFile(destFile.absolutePath, dataResized.toByteArray())
+        val args = writeCryptoFile(destFile.absolutePath, dataResized)
         CryptoFile(destFileName, args)
       } catch (e: Exception) {
         Log.e(TAG, "Unable to write crypto file: " + e.stackTraceToString())
@@ -194,7 +188,7 @@ fun saveImage(image: ImageBitmap): CryptoFile? {
       }
     } else {
       val output = FileOutputStream(destFile)
-      dataResized.writeTo(output)
+      output.write(dataResized)
       output.flush()
       output.close()
       CryptoFile.plain(destFileName)
@@ -206,14 +200,12 @@ fun saveImage(image: ImageBitmap): CryptoFile? {
 }
 
 fun desktopSaveImageInTmp(uri: URI): CryptoFile? {
-  val image = getBitmapFromUri(uri) ?: return null
   return try {
-    val ext = if (image.hasAlpha()) "png" else "jpg"
-    val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
+    val (dataResized, ext) = resizeImageFromUri(uri) ?: return null
     val destFileName = generateNewFileName("IMG", ext, tmpDir)
     val destFile = File(tmpDir, destFileName)
     val output = FileOutputStream(destFile)
-    dataResized.writeTo(output)
+    output.write(dataResized)
     output.flush()
     output.close()
     CryptoFile.plain(destFile.absolutePath)
@@ -221,6 +213,17 @@ fun desktopSaveImageInTmp(uri: URI): CryptoFile? {
     Log.e(TAG, "Util.kt desktopSaveImageInTmp error: ${e.stackTraceToString()}")
     null
   }
+}
+
+private fun resizeImageFromUri(uri: URI): Pair<ByteArray, String>? {
+  val data = resizeImageFileToDataSize(uri, MAX_IMAGE_SIZE)
+  if (data != null) {
+    val ext = if (data.firstOrNull() == 0x89.toByte()) "png" else "jpg"
+    return data to ext
+  }
+  val image = getBitmapFromUri(uri) ?: return null
+  val ext = if (image.hasAlpha()) "png" else "jpg"
+  return resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE).toByteArray() to ext
 }
 
 fun saveAnimImage(uri: URI): CryptoFile? {

@@ -36,7 +36,7 @@
     <string name="allow_direct_messages">Να επιτρέπεται η αποστολή άμεσων μηνυμάτων στα μέλη.</string>
     <string name="allow_to_send_disappearing">Επιτρέπεται η αποστολή μηνυμάτων που εξαφανίζονται.</string>
     <string name="allow_to_send_voice">Επιτρέπεται η αποστολή φωνητικών μηνυμάτων.</string>
-    <string name="app_name">SimpleX</string>
+    <string name="app_name" translatable="false">SimpleX</string>
     <string name="accept">Αποδοχή</string>
     <string name="accept_connection_request__question">Αποδοχή αιτήματος σύνδεσης;</string>
     <string name="callstatus_accepted">αποδεκτή κλήση</string>

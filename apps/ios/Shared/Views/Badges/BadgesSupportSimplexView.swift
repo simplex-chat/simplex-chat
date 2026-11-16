@@ -11,13 +11,15 @@ import SimpleXChat
 
 struct BadgesSupportSimplexView: View {
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatModel: ChatModel
+    @ObservedObject private var store = BadgeStore.shared
     // set true when presented as a sheet root (from the chat-list banner) — that path doesn't
     // reserve nav-bar space like a NavigationLink push does, so the title lands too close to the top
     var showsAsSheet: Bool = false
+    var servedByAppStore: Bool? = nil
     @State private var whyBuiltActive = false
     @State private var howItWorksActive = false
     @State private var chooseLevelActive = false
-    @State private var redeemCodeActive = false
 
     var body: some View {
         GeometryReader { g in
@@ -34,8 +36,6 @@ struct BadgesSupportSimplexView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
-                // TODO [badges] restore whyBuiltButton() when in-app purchase lands: the level screen
-                // returns to the flow and howItWorksButton() moves there, leaving this one alone here.
                 howItWorksButton()
 
                 Spacer(minLength: 0)
@@ -47,10 +47,34 @@ struct BadgesSupportSimplexView: View {
                 Spacer(minLength: 0)
 
                 VStack(spacing: 10) {
-                    redeemCodeButton()
-                        .padding(.vertical, 10)
-                    getCodeButton()
+                    if servedByAppStore ?? store.servedByAppStore {
+                        chooseLevelButton()
+                            .padding(.vertical, 10)
+                        Group {
+                            if badgeBrowserAllowed {
+                                buyInBrowserButton()
+                            } else {
+                                RedeemCodeButton()
+                            }
+                        }
                         .frame(height: 22)
+                        RestorePurchasesButton()
+                            .frame(height: 22)
+                            .padding(.top, 10)
+                        Text("If you were charged but have no badge, this adds it. A subscription bought with this App Store account moves to this profile, and the device or profile that had it loses its badge at its next renewal.")
+                            .font(.footnote)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        chooseBadgeOnSiteButton()
+                            .padding(.vertical, 10)
+                        Group {
+                            RedeemCodeButton()
+                        }
+                        .frame(height: 22)
+                        BadgeInvestorOffer(level: .supporter).hidden()
+                    }
                 }
                 .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
@@ -63,20 +87,22 @@ struct BadgesSupportSimplexView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
+        .task { await store.readEnvironment() }
     }
 
-    // the in-app purchase path, kept compiling and uncalled until payments return after the MVP
     private func chooseLevelButton() -> some View {
-        ZStack {
+        let disabled = !store.canBuy(chatModel.currentUser?.userId)
+        return ZStack {
             Button {
                 chooseLevelActive = true
             } label: {
-                Text("Choose your level")
+                Text("Choose your badge")
             }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+            .buttonStyle(OnboardingButtonStyle(isDisabled: disabled))
+            .disabled(disabled)
 
             NavigationLink(isActive: $chooseLevelActive) {
-                BadgesYourLevelView()
+                BadgesChooseBadgeView()
                     .modifier(ThemedBackground())
             } label: {
                 EmptyView()
@@ -125,14 +151,41 @@ struct BadgesSupportSimplexView: View {
         }
     }
 
-    private func redeemCodeButton() -> some View {
+    private func chooseBadgeOnSiteButton() -> some View {
+        Button {
+            UIApplication.shared.open(URL(string: badgePageUrl)!)
+        } label: {
+            Text("Choose your badge")
+        }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+    }
+
+    private func buyInBrowserButton() -> some View {
+        Button {
+            UIApplication.shared.open(URL(string: badgePageUrl)!)
+        } label: {
+            Text("Buy in browser")
+                .font(.body)
+                .fontWeight(.medium)
+                .foregroundColor(theme.colors.primary)
+        }
+    }
+}
+
+struct RedeemCodeButton: View {
+    @EnvironmentObject var theme: AppTheme
+    @State private var redeemCodeActive = false
+
+    var body: some View {
         ZStack {
             Button {
                 redeemCodeActive = true
             } label: {
                 Text("Redeem badge code")
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(theme.colors.primary)
             }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
             NavigationLink(isActive: $redeemCodeActive) {
                 BadgesRedeemCodeView()
@@ -142,17 +195,6 @@ struct BadgesSupportSimplexView: View {
             }
             .frame(width: 1, height: 1)
             .hidden()
-        }
-    }
-
-    private func getCodeButton() -> some View {
-        Button {
-            openExternalLink(URL(string: "https://simplex.chat/badges/")!)
-        } label: {
-            Text("Get your code")
-                .font(.body)
-                .fontWeight(.medium)
-                .foregroundColor(theme.colors.primary)
         }
     }
 }
@@ -190,7 +232,7 @@ struct PhoneSupporterHero: View {
 struct BadgesSupportSimplexView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesSupportSimplexView()
+            BadgesSupportSimplexView(servedByAppStore: true)
         }
     }
 }

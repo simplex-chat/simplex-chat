@@ -60,9 +60,9 @@ import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
 import System.Timeout (timeout)
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (FromRow, Only (..))
+import Database.PostgreSQL.Simple (FromRow, Only (..), ToRow)
 #else
-import Database.SQLite.Simple (FromRow, Only (..))
+import Database.SQLite.Simple (FromRow, Only (..), ToRow)
 #endif
 import Test.Hspec hiding (it)
 
@@ -171,10 +171,13 @@ runGroupServiceAs svc groupCfg action = do
   -- The web listener starts after group start-up, so the stop cannot land inside start-up's database calls.
   let started = pollUntilTrue (listening port) >> pollUntil (getStoredGroup cc)
       -- A stop inside a lane's database call leaves a statement open, and closing the store then fails.
-      settle gid = when (isJust groupCfg) $ do
-        status <- memberStatus cc gid badgeBotName
-        forM_ status $ \s -> unless (s `elem` ["removed", "left", "deleted"]) $ settleLane cc env gid
+      settle gid = when (isJust groupCfg) $ settleServingLane cc env gid
   (started >>= \ManagedGroup {mgGroupId} -> action cc env mgGroupId <* settle mgGroupId) `finally` stopGroupService t cc
+
+settleServingLane :: HasCallStack => ChatController -> ServiceState -> Int64 -> IO ()
+settleServingLane cc env gid = do
+  status <- memberStatus cc gid badgeBotName
+  forM_ status $ \s -> unless (s `elem` ["removed", "left", "deleted"]) $ settleLane cc env gid
 
 -- It returns once chat has started, while group start-up may still run; the Int is its web listener's port.
 startGroupService :: HasCallStack => GroupSvc -> Maybe GroupConfig -> IO (Async (), ChatController, ServiceState, Int)
@@ -228,25 +231,31 @@ withGroupOwner ps action = do
   runWithOwner svc $ \cc env _ -> action gsKey cc env
 
 runWithOwner :: HasCallStack => GroupSvc -> (ChatController -> ServiceState -> Int64 -> TestCC -> IO a) -> IO a
-runWithOwner svc@GroupSvc {gsPs} action = runGroupService svc $ \cc env gid -> withOwnerJoined gsPs cc gid $ action cc env gid
+runWithOwner svc@GroupSvc {gsPs} action = runGroupService svc $ \cc env gid -> withOwnerJoined gsPs cc env gid $ action cc env gid
 
-withOwnerJoined :: HasCallStack => TestParams -> ChatController -> Int64 -> (TestCC -> IO a) -> IO a
-withOwnerJoined ps cc gid action =
+withOwnerJoined :: HasCallStack => TestParams -> ChatController -> ServiceState -> Int64 -> (TestCC -> IO a) -> IO a
+withOwnerJoined ps cc env gid action =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     joinGroup cc alice
     waitMemberRole cc gid "alice" "owner"
     drainUntil alice ["#" <> groupName <> ": " <> botName <> " changed your role from member to owner"]
+    joined <- lastMessageId cc
     r <- action alice
+    settleServingLane cc env gid
+    awaitBroadcasts cc joined "alice" alice
     drainConsole alice
     pure r
 
 -- Bob joins after the first member and is connected to her.
-withMemberJoined :: HasCallStack => TestParams -> ChatController -> TestCC -> (TestCC -> IO a) -> IO a
-withMemberJoined ps cc alice action =
+withMemberJoined :: HasCallStack => TestParams -> ChatController -> ServiceState -> Int64 -> TestCC -> (TestCC -> IO a) -> IO a
+withMemberJoined ps cc env gid alice action =
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     joinGroup cc bob
     drainUntil alice ["#" <> groupName <> ": new member bob is connected"]
+    joined <- lastMessageId cc
     r <- action bob
+    settleServingLane cc env gid
+    awaitBroadcasts cc joined "bob" bob
     drainConsole bob
     pure r
 
@@ -315,7 +324,7 @@ testEarliestPromotedOnLaterJoin ps = do
   runWithOwner svc $ \cc env gid alice -> do
     setMemberRole cc gid "alice" "member"
     executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 0"
-    withMemberJoined ps cc alice $ \_ -> do
+    withMemberJoined ps cc env gid alice $ \_ -> do
       waitMemberRole cc gid "alice" "owner"
       awaitLane cc env
       memberRoles cc gid `shouldReturn` [("alice", "owner"), ("bob", "member")]
@@ -371,7 +380,7 @@ testReplacedGroupDropsTrackers ps = do
     void $ issueTracked cc alice "supporter" 3
     executeSql cc "DELETE FROM sx_badge_service_group"
   runGroupService svc $ \cc _ _ ->
-    countRows cc "sx_badge_service_badge_codes WHERE group_item_id IS NOT NULL OR group_item_sent_at IS NOT NULL" `shouldReturn` 0
+    countRows cc "sx_badge_service_badge_codes WHERE group_item_id IS NOT NULL OR group_item_sent_at IS NOT NULL" () `shouldReturn` 0
 
 testGroupLookupFailureStops :: HasCallStack => TestParams -> IO ()
 testGroupLookupFailureStops ps = do
@@ -418,17 +427,12 @@ testSetUpOwnerNotReplacedOnStart ps = do
 
 memberStatus :: ChatController -> Int64 -> Text -> IO (Maybe Text)
 memberStatus cc gid name =
-  queryFirst cc $
-    "SELECT member_status FROM group_members WHERE group_id = "
-      <> show gid
-      <> " AND local_display_name = '"
-      <> T.unpack name
-      <> "'"
+  queryFirst cc "SELECT member_status FROM group_members WHERE group_id = ? AND local_display_name = ?" (gid, name)
 
 withTwoMembersOwnerUnset :: HasCallStack => GroupSvc -> (ChatController -> Int64 -> TestCC -> IO ()) -> IO ()
 withTwoMembersOwnerUnset svc@GroupSvc {gsPs = ps} action =
   runWithOwner svc $ \cc env gid alice ->
-    withMemberJoined ps cc alice $ \bob -> do
+    withMemberJoined ps cc env gid alice $ \bob -> do
       -- The lane must handle bob's join before the flag is cleared, or it would act on the cleared flag in this run.
       awaitLane cc env
       action cc gid bob
@@ -437,8 +441,8 @@ withTwoMembersOwnerUnset svc@GroupSvc {gsPs = ps} action =
 testFirstJoinerPromoted :: HasCallStack => TestParams -> IO ()
 testFirstJoinerPromoted ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc $ \cc _ gid alice ->
-    withMemberJoined ps cc alice $ \bob -> do
+  runWithOwner svc $ \cc env gid alice ->
+    withMemberJoined ps cc env gid alice $ \bob -> do
       waitMemberRole cc gid "bob" "member"
       -- The bot queues bob's join before it introduces him, so alice's code proves the join was handled.
       sendGroupCmd alice "/issue supporter"
@@ -459,7 +463,7 @@ testFailedPromotionNotRetried ps = do
       pollUntilTrue $ mgOwnerBootstrapped <$> storedGroup cc
       awaitLane cc env
       setBotRole cc "owner"
-      withMemberJoined ps cc alice $ \_ -> awaitLane cc env
+      withMemberJoined ps cc env gid alice $ \_ -> awaitLane cc env
       memberRoles cc gid `shouldReturn` [("alice", "member"), ("bob", "member")]
       drainConsole alice
 
@@ -504,8 +508,8 @@ testRoleGatedIssue ps = do
 testBlockedMemberCommandIgnored :: HasCallStack => TestParams -> IO ()
 testBlockedMemberCommandIgnored ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc $ \cc _ gid alice ->
-    withMemberJoined ps cc alice $ \bob -> do
+  runWithOwner svc $ \cc env gid alice ->
+    withMemberJoined ps cc env gid alice $ \bob -> do
       waitMemberRole cc gid "bob" "member"
       -- bob is made moderator so that only the block can refuse his command.
       send alice ("/mr #" <> groupName <> " bob moderator")
@@ -550,7 +554,7 @@ testOtherGroupEventIgnored ps = do
   runGroupService svc $ \cc env gid -> do
     atomically $ writeTQueue (groupEventQ env) (GEInGroup (gid + 1) (GACommand GROwner "/issue legend"))
     awaitLane cc env
-    queryColumn cc "SELECT badge_type FROM sx_badge_service_badge_codes" `shouldReturn` ["supporter" :: Text]
+    queryColumn cc "SELECT badge_type FROM sx_badge_service_badge_codes" () `shouldReturn` ["supporter" :: Text]
 
 testBulkIssue :: HasCallStack => TestParams -> IO ()
 testBulkIssue ps =
@@ -565,7 +569,7 @@ testBulkIssue ps =
       badgeTypeOf r `shouldBe` Just BTLegend
       map (\e -> let (c, m, _) = entryOf e in (c, m)) (fst $ statementOf r) `shouldBe` [(2, 2), (-1, 1)]
     forM_ codes $ \code -> redeemViaService gsKey cc env code >>= (`shouldAnswerError` BSECodeUsed)
-    countRows cc "sx_badge_service_badge_codes WHERE group_item_id IS NOT NULL" `shouldReturn` 0
+    countRows cc "sx_badge_service_badge_codes WHERE group_item_id IS NOT NULL" () `shouldReturn` 0
 
 testIssueMonths :: HasCallStack => TestParams -> IO ()
 testIssueMonths ps =
@@ -1037,7 +1041,7 @@ storedGroup :: HasCallStack => ChatController -> IO ManagedGroup
 storedGroup cc = getStoredGroup cc >>= maybe (error "no managed group recorded") pure
 
 groupCount :: ChatController -> IO Int
-groupCount cc = countRows cc "groups"
+groupCount cc = countRows cc "groups" ()
 
 -- The lane runs events in order, so once this command's code exists every event queued before it is done.
 awaitLane :: HasCallStack => ChatController -> ServiceState -> IO ()
@@ -1054,47 +1058,46 @@ settleLane cc env gid = do
   atomically $ writeTQueue (groupEventQ env) (GEInGroup gid (GACommand GROwner ("/issue supporter uses " <> tshow settleUses)))
   pollUntilTrue $ (> anchoredBefore) <$> anchored
   where
-    anchored = countRows cc ("sx_badge_service_badge_codes WHERE redeem_limit = " <> show settleUses <> " AND group_item_id IS NOT NULL")
+    anchored = countRows cc "sx_badge_service_badge_codes WHERE redeem_limit = ? AND group_item_id IS NOT NULL" (Only settleUses)
 
 -- No test tracks a code with this many uses, so the settling codes never match a test's lookup.
 settleUses :: Int
 settleUses = maxUses
 
 codeCount :: ChatController -> IO Int
-codeCount cc = countRows cc "sx_badge_service_badge_codes"
+codeCount cc = countRows cc "sx_badge_service_badge_codes" ()
 
 freeCodeCount :: ChatController -> IO Int
-freeCodeCount cc = countRows cc "sx_badge_service_badge_codes WHERE code_payment_status = 'free'"
+freeCodeCount cc = countRows cc "sx_badge_service_badge_codes WHERE code_payment_status = 'free'" ()
 
 singleUseCodeCount :: ChatController -> IO Int
-singleUseCodeCount cc = countRows cc "sx_badge_service_badge_codes WHERE redeem_limit = 1"
+singleUseCodeCount cc = countRows cc "sx_badge_service_badge_codes WHERE redeem_limit = 1" ()
 
-countRows :: ChatController -> String -> IO Int
-countRows cc fromWhere = fromMaybe 0 <$> queryFirst cc ("SELECT COUNT(*) FROM " <> fromWhere)
+countRows :: ToRow q => ChatController -> String -> q -> IO Int
+countRows cc fromWhere params = fromMaybe 0 <$> queryFirst cc ("SELECT COUNT(*) FROM " <> fromWhere) params
 
 -- A test finds each tracked code by its number of uses, so no two of its codes may share one.
 trackedCodeColumn :: (HasCallStack, DB.FromField a) => ChatController -> Int -> String -> IO a
 trackedCodeColumn cc uses column =
-  queryOne cc ("no code issued with " <> show uses <> " uses") $
-    "SELECT " <> column <> " FROM sx_badge_service_badge_codes WHERE redeem_limit = " <> show uses
+  queryOne cc ("no code issued with " <> show uses <> " uses") ("SELECT " <> column <> " FROM sx_badge_service_badge_codes WHERE redeem_limit = ?") (Only uses)
 
 trackedCodeId :: HasCallStack => ChatController -> Int -> IO Int64
 trackedCodeId cc uses = trackedCodeColumn cc uses "badge_code_id"
 
-queryRows :: FromRow r => ChatController -> String -> IO [r]
-queryRows cc sql = withTransaction (chatStore cc) (\db -> DB.query_ db (fromString sql))
+queryRows :: (ToRow q, FromRow r) => ChatController -> String -> q -> IO [r]
+queryRows cc sql params = withTransaction (chatStore cc) (\db -> DB.query db (fromString sql) params)
 
 executeSql :: ChatController -> String -> IO ()
 executeSql cc sql = withTransaction (chatStore cc) (\db -> DB.execute_ db (fromString sql))
 
-queryColumn :: DB.FromField a => ChatController -> String -> IO [a]
-queryColumn cc sql = map fromOnly <$> queryRows cc sql
+queryColumn :: (ToRow q, DB.FromField a) => ChatController -> String -> q -> IO [a]
+queryColumn cc sql params = map fromOnly <$> queryRows cc sql params
 
-queryFirst :: DB.FromField a => ChatController -> String -> IO (Maybe a)
-queryFirst cc sql = listToMaybe <$> queryColumn cc sql
+queryFirst :: (ToRow q, DB.FromField a) => ChatController -> String -> q -> IO (Maybe a)
+queryFirst cc sql params = listToMaybe <$> queryColumn cc sql params
 
-queryOne :: (HasCallStack, DB.FromField a) => ChatController -> String -> String -> IO a
-queryOne cc err sql = queryColumn cc sql >>= maybe (error err) pure . singleRow sql
+queryOne :: (HasCallStack, ToRow q, DB.FromField a) => ChatController -> String -> String -> q -> IO a
+queryOne cc err sql params = queryColumn cc sql params >>= maybe (error err) pure . singleRow sql
 
 singleRow :: HasCallStack => String -> [a] -> Maybe a
 singleRow sql = \case
@@ -1113,36 +1116,35 @@ expectedCommands =
 advertisedCommands :: HasCallStack => ChatController -> Int64 -> IO (Maybe [ChatBotCommand])
 advertisedCommands cc gid =
   (>>= commands_)
-    <$> (queryOne cc "no group profile to read commands from" (groupProfileSql "p.preferences" gid) :: IO (Maybe GroupPreferences))
+    <$> (queryOne cc "no group profile to read commands from" (groupProfileSql "p.preferences") (Only gid) :: IO (Maybe GroupPreferences))
 
 profileDisplayName :: HasCallStack => ChatController -> Int64 -> IO Text
 profileDisplayName cc gid =
-  queryOne cc "no group profile to read a display name from" (groupProfileSql "p.display_name" gid)
+  queryOne cc "no group profile to read a display name from" (groupProfileSql "p.display_name") (Only gid)
 
 profileFullNameShortDescr :: HasCallStack => ChatController -> Int64 -> IO (Text, Maybe Text)
 profileFullNameShortDescr cc gid =
-  queryRows cc sql >>= maybe (error "no group profile to read a full name from") pure . singleRow sql
+  queryRows cc sql (Only gid) >>= maybe (error "no group profile to read a full name from") pure . singleRow sql
   where
-    sql = groupProfileSql "p.full_name, p.short_descr" gid
+    sql = groupProfileSql "p.full_name, p.short_descr"
 
 profileDescription :: HasCallStack => ChatController -> Int64 -> IO (Maybe Text)
-profileDescription cc gid = queryOne cc "no group profile to read a description from" (groupProfileSql "p.description" gid)
+profileDescription cc gid = queryOne cc "no group profile to read a description from" (groupProfileSql "p.description") (Only gid)
 
 profileUpdatedAt :: HasCallStack => ChatController -> Int64 -> IO UTCTime
 profileUpdatedAt cc gid =
-  queryOne cc "no group profile to read an update time from" (groupProfileSql "p.updated_at" gid)
+  queryOne cc "no group profile to read an update time from" (groupProfileSql "p.updated_at") (Only gid)
 
 groupFeaturePreference :: HasCallStack => ChatController -> Int64 -> SGroupFeature f -> IO (GroupFeaturePreference f)
 groupFeaturePreference cc gid feature =
   getGroupPreference feature
-    <$> (queryOne cc "no group profile to read preferences from" (groupProfileSql "p.preferences" gid) :: IO (Maybe GroupPreferences))
+    <$> (queryOne cc "no group profile to read preferences from" (groupProfileSql "p.preferences") (Only gid) :: IO (Maybe GroupPreferences))
 
-groupProfileSql :: String -> Int64 -> String
-groupProfileSql columns gid =
+groupProfileSql :: String -> String
+groupProfileSql columns =
   "SELECT "
     <> columns
-    <> " FROM group_profiles p JOIN groups g ON g.group_profile_id = p.group_profile_id WHERE g.group_id = "
-    <> show gid
+    <> " FROM group_profiles p JOIN groups g ON g.group_profile_id = p.group_profile_id WHERE g.group_id = ?"
 
 clearCommandsSettingFullDelete :: ChatController -> Int64 -> IO ()
 clearCommandsSettingFullDelete cc gid =
@@ -1193,10 +1195,7 @@ setTrackedCodeTime cc uses column ts = do
 -- Member messages are excluded because a /revoke names the code too.
 sentItemsWithCode :: ChatController -> Text -> IO [Text]
 sentItemsWithCode cc code =
-  queryColumn cc $
-    "SELECT item_text FROM chat_items WHERE item_sent = 1 AND item_text LIKE '%"
-      <> T.unpack code
-      <> "%' ORDER BY chat_item_id"
+  queryColumn cc "SELECT item_text FROM chat_items WHERE item_sent = 1 AND item_text LIKE '%' || ? || '%' ORDER BY chat_item_id" (Only code)
 
 -- It reads the code row, not a join, so it still answers after the message is deleted.
 trackerAnchor :: HasCallStack => ChatController -> Int -> IO (Maybe Int64)
@@ -1227,15 +1226,15 @@ waitModeratedItem :: HasCallStack => ChatController -> Int64 -> IO (Int, Maybe I
 waitModeratedItem cc citemId =
   pollUntil $
     mfilter (\(deleted, _, _) -> deleted /= 0) . listToMaybe
-      <$> queryRows cc ("SELECT item_deleted, item_deleted_by_group_member_id, item_content FROM chat_items WHERE chat_item_id = " <> show citemId)
+      <$> queryRows cc "SELECT item_deleted, item_deleted_by_group_member_id, item_content FROM chat_items WHERE chat_item_id = ?" (Only citemId)
 
 memberRoles :: ChatController -> Int64 -> IO [(Text, Text)]
 memberRoles cc gid =
   filter ((/= badgeBotName) . fst)
-    <$> queryRows cc ("SELECT local_display_name, member_role FROM group_members WHERE group_id = " <> show gid <> " ORDER BY group_member_id")
+    <$> queryRows cc "SELECT local_display_name, member_role FROM group_members WHERE group_id = ? ORDER BY group_member_id" (Only gid)
 
 readItemText :: ChatController -> Int64 -> IO Text
-readItemText cc citemId = fromMaybe "" <$> firstText cc ("chat_item_id = " <> show citemId)
+readItemText cc citemId = fromMaybe "" <$> firstText cc "chat_item_id = ?" (Only citemId)
 
 -- A line left unread when the test ends fails the per-core teardown check.
 drainUntil :: HasCallStack => TestCC -> [String] -> IO ()
@@ -1254,6 +1253,29 @@ drainConsole cc =
   timeout quietPeriod (atomically (readTQueue (termQ cc))) >>= \case
     Just _ -> drainConsole cc
     Nothing -> pure ()
+
+lastMessageId :: ChatController -> IO Int64
+lastMessageId cc = fromMaybe 0 <$> queryFirst cc "SELECT COALESCE(MAX(message_id), 0) FROM messages" ()
+
+awaitBroadcasts :: HasCallStack => ChatController -> Int64 -> Text -> TestCC -> IO ()
+awaitBroadcasts cc joined name TestCC {chatController = memberCC} = do
+  lastBroadcast <- listToMaybe <$> queryRows cc lastBroadcastSql (Only joined)
+  forM_ lastBroadcast $ \(gid, sharedMsgId :: Text) -> do
+    status <- memberStatus cc gid name
+    when (maybe False (`notElem` ["removed", "left", "deleted"]) status) $
+      pollUntilTrue $ isJust <$> (queryFirst memberCC receivedSql (Only sharedMsgId) :: IO (Maybe Int64))
+  where
+    lastBroadcastSql =
+      "SELECT group_id, " <> hexSharedMsgId <> " FROM messages WHERE msg_sent = 1 AND message_id > ?"
+        <> " AND chat_msg_event IN ('x.msg.new', 'x.msg.update', 'x.msg.del') ORDER BY message_id DESC LIMIT 1"
+    receivedSql = "SELECT message_id FROM messages WHERE msg_sent = 0 AND " <> hexSharedMsgId <> " = ?"
+
+hexSharedMsgId :: String
+#if defined(dbPostgres)
+hexSharedMsgId = "encode(shared_msg_id, 'hex')"
+#else
+hexSharedMsgId = "hex(shared_msg_id)"
+#endif
 
 -- A console silent this long is taken as drained.
 quietPeriod :: Int
@@ -1291,26 +1313,21 @@ setMemberRole cc gid name role = do
 
 waitMemberBlocked :: HasCallStack => ChatController -> Int64 -> Text -> IO ()
 waitMemberBlocked cc gid name =
-  pollUntilTrue $ (== Just (Just ("blocked" :: Text))) <$> queryFirst cc restrictionSql
+  pollUntilTrue $ (== Just (Just ("blocked" :: Text))) <$> queryFirst cc restrictionSql (gid, name)
   where
-    restrictionSql =
-      "SELECT member_restriction FROM group_members WHERE group_id = "
-        <> show gid
-        <> " AND local_display_name = '"
-        <> T.unpack name
-        <> "'"
+    restrictionSql = "SELECT member_restriction FROM group_members WHERE group_id = ? AND local_display_name = ?"
 
 waitBlockedItem :: HasCallStack => ChatController -> Text -> IO (Int, Text)
 waitBlockedItem cc txt =
   pollUntil $
     mfilter ((/= 0) . fst) . listToMaybe
-      <$> queryRows cc ("SELECT item_deleted, item_content FROM chat_items WHERE item_sent = 0 AND item_text = '" <> T.unpack txt <> "'")
+      <$> queryRows cc "SELECT item_deleted, item_content FROM chat_items WHERE item_sent = 0 AND item_text = ?" (Only txt)
 
 waitAdvertisedCommands :: HasCallStack => ChatController -> Int64 -> IO ()
 waitAdvertisedCommands cc gid = pollUntilTrue $ (== Just expectedCommands) <$> advertisedCommands cc gid
 
 waitStoredItem :: HasCallStack => ChatController -> Text -> IO ()
-waitStoredItem cc txt = void . pollUntil $ firstText cc ("item_text = '" <> T.unpack txt <> "'")
+waitStoredItem cc txt = void . pollUntil $ firstText cc "item_text = ?" (Only txt)
 
 -- The reply is the first item the service sends after the command arrives.
 replyTo :: HasCallStack => ChatController -> TestCC -> String -> IO Text
@@ -1320,16 +1337,16 @@ replyTo cc member cmd = do
   waitReceivedItemId cc lastId (T.pack cmd) >>= waitReplyAfter cc
 
 maxChatItemId :: ChatController -> IO Int64
-maxChatItemId cc = fromMaybe 0 <$> queryFirst cc "SELECT COALESCE(MAX(chat_item_id), 0) FROM chat_items"
+maxChatItemId cc = fromMaybe 0 <$> queryFirst cc "SELECT COALESCE(MAX(chat_item_id), 0) FROM chat_items" ()
 
 waitReceivedItemId :: HasCallStack => ChatController -> Int64 -> Text -> IO Int64
 waitReceivedItemId cc afterId txt =
-  pollUntil . queryFirst cc $
-    "SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND chat_item_id > " <> show afterId <> " AND item_text = '" <> T.unpack txt <> "'"
+  pollUntil $
+    queryFirst cc "SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND chat_item_id > ? AND item_text = ?" (afterId, txt)
 
 waitReplyAfter :: HasCallStack => ChatController -> Int64 -> IO Text
 waitReplyAfter cc afterId =
-  pollUntil . firstText cc $ "item_sent = 1 AND chat_item_id > " <> show afterId <> " ORDER BY chat_item_id LIMIT 1"
+  pollUntil $ firstText cc "item_sent = 1 AND chat_item_id > ? ORDER BY chat_item_id LIMIT 1" (Only afterId)
 
 waitItemText :: HasCallStack => ChatController -> Int64 -> Text -> IO Text
 waitItemText cc citemId marker =
@@ -1337,28 +1354,27 @@ waitItemText cc citemId marker =
 
 waitCodeOfType :: HasCallStack => ChatController -> Text -> IO ()
 waitCodeOfType cc badgeType =
-  pollUntilTrue $ (> 0) <$> countRows cc ("sx_badge_service_badge_codes WHERE badge_type = '" <> T.unpack badgeType <> "'")
+  pollUntilTrue $ (> 0) <$> countRows cc "sx_badge_service_badge_codes WHERE badge_type = ?" (Only badgeType)
 
 waitCodeMonths :: HasCallStack => ChatController -> Text -> IO Int
 waitCodeMonths cc badgeType =
   pollUntil $ do
-    months <- queryColumn cc $ "SELECT months FROM sx_badge_service_badge_codes WHERE badge_type = '" <> T.unpack badgeType <> "'"
+    months <- queryColumn cc "SELECT months FROM sx_badge_service_badge_codes WHERE badge_type = ?" (Only badgeType)
     pure $ case months of
       [m] -> Just m
       _ -> Nothing
 
-firstText :: ChatController -> String -> IO (Maybe Text)
+firstText :: ToRow q => ChatController -> String -> q -> IO (Maybe Text)
 firstText cc cond = queryFirst cc ("SELECT item_text FROM chat_items WHERE " <> cond)
 
 trackerItem :: HasCallStack => ChatController -> Int -> IO (Maybe (Int64, Text))
-trackerItem cc uses = singleRow sql <$> queryRows cc sql
+trackerItem cc uses = singleRow sql <$> queryRows cc sql (Only uses)
   where
     sql =
       "SELECT c.group_item_id, ci.item_text "
         <> "FROM sx_badge_service_badge_codes c "
         <> "JOIN chat_items ci ON ci.chat_item_id = c.group_item_id "
-        <> "WHERE c.redeem_limit = "
-        <> show uses
+        <> "WHERE c.redeem_limit = ?"
 
 waitTrackerItemOf :: HasCallStack => ChatController -> Int -> IO (Int64, Text)
 waitTrackerItemOf cc = pollUntil . trackerItem cc
@@ -1367,10 +1383,10 @@ waitTrackerRepost :: HasCallStack => ChatController -> Int -> Int64 -> IO (Int64
 waitTrackerRepost cc uses itemId0 = pollUntil $ mfilter ((/= itemId0) . fst) <$> trackerItem cc uses
 
 redeemedTrackerCount :: ChatController -> IO Int
-redeemedTrackerCount cc = countRows cc "chat_items WHERE item_text LIKE '%last used%'"
+redeemedTrackerCount cc = countRows cc "chat_items WHERE item_text LIKE '%last used%'" ()
 
 revokedTrackerCount :: ChatController -> IO Int
-revokedTrackerCount cc = countRows cc ("chat_items WHERE item_text LIKE '" <> T.unpack (retiredText "SB-%") <> "'")
+revokedTrackerCount cc = countRows cc "chat_items WHERE item_text LIKE ?" (Only $ retiredText "SB-%")
 
 retiredText :: Text -> Text
 retiredText code = code <> "\nRevoked, can no longer be redeemed"

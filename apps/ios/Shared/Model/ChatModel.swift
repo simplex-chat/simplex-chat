@@ -384,8 +384,7 @@ class BadgeModel: ObservableObject {
 }
 
 enum ChatListBanner {
-    case badgeExpired
-    case badgeIssueFailed
+    case badgeAlert
     case badgePitch
     case getStake
 }
@@ -613,6 +612,7 @@ final class ChatModel: ObservableObject {
         } else {
             addChat_(chat, at: 0)
         }
+        ChatTagsModel.shared.addPresetChatTags(chat.chatInfo, chat.chatStats)
         popChatCollector.throttlePopChat(chat.chatInfo.id, currentPosition: 0)
     }
 
@@ -657,7 +657,6 @@ final class ChatModel: ObservableObject {
             updateChatInfo(cInfo)
         } else if addMissing {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
-            ChatTagsModel.shared.addPresetChatTags(cInfo, ChatStats())
         }
     }
 
@@ -1466,6 +1465,10 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     }
 
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
+}
+
+func profileChatLayout(_ user: User?, _ appLayout: ChatLayout = chatLayoutDefault.get()) -> ChatLayout {
+    user?.uiThemes?.chatLayout?.known ?? appLayout.known ?? .classic
 }
 
 final class GMember: ObservableObject, Identifiable {

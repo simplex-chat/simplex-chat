@@ -10,7 +10,7 @@ body.change-nav-color {
     --nav-color: #001796;
 }
 
-@media screen and (min-width: 960px) {
+@media screen and (min-width: 1016px) {
     .logo {
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
@@ -182,7 +182,7 @@ header#navbar ul a {
     white-space: nowrap;
 }
 
-@media screen and (min-width: 960px) {
+@media screen and (min-width: 1016px) {
     header#navbar ul .nav-link a,
     header#navbar ul .nav-link-text {
         font-size: 18px;
@@ -258,7 +258,7 @@ header#navbar ul a span svg {
     fill: #fff;
 }
 
-@media screen and (min-width: 960px) {
+@media screen and (min-width: 1016px) {
     header#navbar nav#menu>ul>li>a {
         color: var(--nav-color);
     }
@@ -366,7 +366,7 @@ header#navbar .nav-link:focus-within .sub-menu {
     fill: white;
 }
 
-@media screen and (min-width: 960px) {
+@media screen and (min-width: 1016px) {
     .flag-container>a {
         color: var(--nav-color) !important;
     }
@@ -427,7 +427,7 @@ header#navbar button.theme-switch-btn svg path {
     fill: white;
 }
 
-@media screen and (min-width: 960px) {
+@media screen and (min-width: 1016px) {
     header#navbar button.theme-switch-btn svg path {
         fill: var(--nav-color) !important;
         transition: all 0.3s ease;
@@ -497,7 +497,7 @@ button#cross-btn {
     height: auto;
 }
 
-@media (min-width: 960px) {
+@media (min-width: 1016px) {
     @media (max-width: 1050px) {
         header#navbar nav#menu .nav-link.send-file {
             display: none;
@@ -505,7 +505,7 @@ button#cross-btn {
     }
 }
 
-@media (max-width: 959px) {
+@media (max-width: 1015px) {
     #mobile-header {
         position: fixed;
         top: 0;

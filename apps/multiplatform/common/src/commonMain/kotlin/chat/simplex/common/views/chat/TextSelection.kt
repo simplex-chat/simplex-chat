@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.item.itemPrefixText
-import chat.simplex.common.views.chat.item.itemSegmentDisplayText
+import chat.simplex.common.views.chat.item.itemDisplay
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -267,23 +267,22 @@ private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: Simple
     if (sel.first < prefix.length) {
         sb.append(prefix, sel.first, minOf(prefix.length, sel.last + 1))
     }
-    val formattedText = ci.formattedText ?: run {
+    val parts = itemDisplay(ci, linkMode)?.parts ?: run {
         val start = (sel.first - prefix.length).coerceAtLeast(0).coerceAtMost(ci.text.length)
         val end = (sel.last + 1 - prefix.length).coerceAtMost(ci.text.length)
         if (start < end) sb.append(ci.text, start, end)
         return sb.toString()
     }
     var displayOffset = prefix.length
-    for (ft in formattedText) {
-        val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
+    for ((segDisplay, source) in parts) {
         val displayEnd = displayOffset + segDisplay.length
         val overlapStart = maxOf(displayOffset, sel.first)
         val overlapEnd = minOf(displayEnd, sel.last + 1)
         if (overlapStart < overlapEnd) {
-            if (ft.text.length == segDisplay.length) {
-                sb.append(ft.text, overlapStart - displayOffset, overlapEnd - displayOffset)
+            if (source.length == segDisplay.length) {
+                sb.append(source, overlapStart - displayOffset, overlapEnd - displayOffset)
             } else {
-                sb.append(ft.text)
+                sb.append(source)
             }
         }
         displayOffset = displayEnd
@@ -293,12 +292,11 @@ private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: Simple
 
 // Snaps a boundary offset to include full transformed segments.
 private fun snapOffset(ci: ChatItem, offset: Int, linkMode: SimplexLinkMode, expandRight: Boolean): Int {
-    val formattedText = ci.formattedText ?: return offset
+    val parts = itemDisplay(ci, linkMode)?.parts ?: return offset
     var displayOffset = itemPrefixText(ci).length
-    for (ft in formattedText) {
-        val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
+    for ((segDisplay, source) in parts) {
         val displayEnd = displayOffset + segDisplay.length
-        if (offset > displayOffset && offset < displayEnd && ft.text.length != segDisplay.length) {
+        if (offset > displayOffset && offset < displayEnd && source.length != segDisplay.length) {
             return if (expandRight) displayEnd else displayOffset
         }
         displayOffset = displayEnd
@@ -425,18 +423,55 @@ private fun resolveIndexAtY(listState: LazyListState, localY: Float): Int? {
     return idx
 }
 
-class ItemSelection(
+class TextSelection(
     val highlightRange: IntRange?,
     val positionModifier: Modifier,
-    val onTextLayoutResult: ((TextLayoutResult) -> Unit)?
+    val onTextLayoutResult: (TextLayoutResult) -> Unit
 )
+
+class SelectionText(var base: Int) {
+    var bounds: Rect? = null
+    var layout: TextLayoutResult? = null
+}
+
+class ItemSelection(
+    private val highlightRange: IntRange?,
+    private val texts: MutableMap<Int, SelectionText>?,
+    private val bases: List<Int>
+) {
+    fun text(index: Int): TextSelection? {
+        val texts = texts ?: return null
+        val base = bases.getOrNull(index) ?: return null
+        val t = texts.getOrPut(index) { SelectionText(base) }
+        t.base = base
+        val highlight = highlightRange?.let { (it.first - base).coerceAtLeast(0) .. (it.last - base) }?.takeUnless { it.isEmpty() }
+        return TextSelection(
+            highlight,
+            Modifier.onGloballyPositioned {
+                val pos = it.positionInWindow()
+                t.bounds = Rect(pos.x, pos.y, pos.x + it.size.width, pos.y + it.size.height)
+            },
+            { t.layout = it }
+        )
+    }
+}
+
+private class TextHit(val text: SelectionText, val bounds: Rect, val layout: TextLayoutResult, val offset: Int)
+
+private fun textAt(texts: Collection<SelectionText>, x: Float, y: Float): TextHit? =
+    texts.mapNotNull { t ->
+        val b = t.bounds ?: return@mapNotNull null
+        val l = t.layout?.takeIf { it.layoutInput.text.isNotEmpty() } ?: return@mapNotNull null
+        Triple(t, b, l)
+    }.minByOrNull { (_, b, _) -> maxOf(b.top - y, 0f, y - b.bottom) * 4 + maxOf(b.left - x, 0f, x - b.right) }
+        ?.let { (t, b, l) -> TextHit(t, b, l, l.getOffsetForPosition(Offset(x - b.left, y - b.top))) }
 
 // Sets up selection tracking for a text item: anchor/focus offset resolution,
 // highlight range computation, and position/layout result capture.
 @Composable
-fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int, isLive: Boolean): ItemSelection {
-    val boundsState = remember { mutableStateOf<Rect?>(null) }
-    val layoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
+fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int, isLive: Boolean, bases: List<Int>): ItemSelection {
+    val texts = remember { HashMap<Int, SelectionText>() }
+    texts.keys.retainAll { it < bases.size }
 
     if (selectionManager != null && selectionIndex >= 0 && !isLive) {
         val isAnchor = remember(selectionIndex) {
@@ -444,12 +479,8 @@ fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int,
         }
         LaunchedEffect(isAnchor.value) {
             if (!isAnchor.value) return@LaunchedEffect
-            val bounds = boundsState.value ?: return@LaunchedEffect
-            val layout = layoutResultState.value ?: return@LaunchedEffect
-            val offset = layout.getOffsetForPosition(
-                Offset(selectionManager.anchorWindowX - bounds.left, selectionManager.anchorWindowY - bounds.top)
-            )
-            selectionManager.setAnchorOffset(offset)
+            val hit = textAt(texts.values, selectionManager.anchorWindowX, selectionManager.anchorWindowY) ?: return@LaunchedEffect
+            selectionManager.setAnchorOffset(hit.text.base + hit.offset)
         }
 
         val isFocus = remember(selectionIndex) {
@@ -459,10 +490,9 @@ fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int,
             LaunchedEffect(Unit) {
                 snapshotFlow { selectionManager.focusWindowY to selectionManager.focusWindowX }
                     .collect { (py, px) ->
-                        val bounds = boundsState.value ?: return@collect
-                        val layout = layoutResultState.value ?: return@collect
-                        val offset = layout.getOffsetForPosition(Offset(px - bounds.left, py - bounds.top))
-                        val charBox = layout.getBoundingBox(offset.coerceIn(0, layout.layoutInput.text.length - 1))
+                        val hit = textAt(texts.values, px, py) ?: return@collect
+                        val bounds = hit.bounds
+                        val charBox = hit.layout.getBoundingBox(hit.offset.coerceIn(0, hit.layout.layoutInput.text.length - 1))
                         val ls = selectionManager.listState?.value
                         val itemInfo = ls?.layoutInfo?.visibleItemsInfo?.find { it.index == selectionIndex }
                         val charRect = if (ls != null && itemInfo != null) {
@@ -474,7 +504,7 @@ fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int,
                                 bottom = bounds.top + charBox.bottom - itemWindowY
                             )
                         } else Rect.Zero
-                        selectionManager.updateFocusOffset(offset, charRect)
+                        selectionManager.updateFocusOffset(hit.text.base + hit.offset, charRect)
                     }
             }
         }
@@ -484,18 +514,7 @@ fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int,
         remember(selectionIndex) { derivedStateOf { selectedRange(selectionManager.range, selectionIndex) } }.value
     } else null
 
-    val positionModifier = if (selectionManager != null) {
-        Modifier.onGloballyPositioned {
-            val pos = it.positionInWindow()
-            boundsState.value = Rect(pos.x, pos.y, pos.x + it.size.width, pos.y + it.size.height)
-        }
-    } else Modifier
-
-    val onTextLayoutResult: ((TextLayoutResult) -> Unit)? = if (selectionManager != null) {
-        { layoutResultState.value = it }
-    } else null
-
-    return ItemSelection(highlightRange, positionModifier, onTextLayoutResult)
+    return ItemSelection(highlightRange, if (selectionManager != null) texts else null, bases)
 }
 
 // Sets up full-item selection for emoji items (no character-level tracking).

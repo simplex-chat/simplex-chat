@@ -32,13 +32,18 @@ struct SecondaryChatView: View {
     }
 }
 
-#Preview {
-    SecondaryChatView(
-        chat: Chat(
-            chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: .memberSupport(groupMember_: GroupMember.sampleData)),
-            chatItems: [],
-            chatStats: ChatStats()
-        ),
-        scrollToItemId: Binding.constant(nil)
-    )
+struct SecondaryChatView_Previews: PreviewProvider {
+    static var previews: some View {
+        let chatModel = ChatModel()
+        chatModel.secondaryIM = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: .memberSupport(groupMember_: GroupMember.sampleData)))
+        return SecondaryChatView(
+            chat: Chat(
+                chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: .memberSupport(groupMember_: GroupMember.sampleData)),
+                chatItems: [],
+                chatStats: ChatStats()
+            ),
+            scrollToItemId: Binding.constant(nil)
+        )
+        .environmentObject(chatModel)
+    }
 }

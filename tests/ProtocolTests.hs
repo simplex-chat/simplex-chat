@@ -21,6 +21,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme (ChatLayout (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Compression (compress1)
 import qualified Simplex.Messaging.Crypto as C
@@ -194,7 +195,7 @@ testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
 
 testGroupProfile :: GroupProfile
-testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, shortDescr = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = testGroupPreferences, memberAdmission = Nothing}
+testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, shortDescr = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = testGroupPreferences, memberAdmission = Nothing, chatLayout = Nothing}
 
 shortLinkDataTests :: Spec
 shortLinkDataTests = describe "Short link data encoding/decoding" $ do
@@ -332,6 +333,9 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.info with empty full name" $
     "{\"v\":\"9\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
       #==# XInfo Profile {displayName = "alice", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing} Nothing
+  it "x.info with agent peer type" $
+    "{\"v\":\"9\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\",\"peerType\":\"agent\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      #==# XInfo Profile {displayName = "alice", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTAgent, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing} Nothing
   it "x.contact with xContactId" $
     "{\"v\":\"9\",\"event\":\"x.contact\",\"params\":{\"contactReqId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
       #==# XContact testProfile Nothing (Just $ XContactId "\1\2\3\4") Nothing Nothing
@@ -350,6 +354,12 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.grp.inv with group link id" $
     "{\"v\":\"9\",\"event\":\"x.grp.inv\",\"params\":{\"groupInvitation\":{\"connRequest\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"invitedMember\":{\"memberRole\":\"member\",\"memberId\":\"BQYHCA==\"},\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}},\"fromMember\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\"}, \"groupLinkId\":\"AQIDBA==\"}}}"
       #==# XGrpInv GroupInvitation {fromMember = MemberIdRole (MemberId "\1\2\3\4") GRAdmin, fromMemberKey = Nothing, invitedMember = MemberIdRole (MemberId "\5\6\7\8") GRMember, connRequest = testConnReq, groupProfile = testGroupProfile, business = Nothing, groupLinkId = Just $ GroupLinkId "\1\2\3\4", groupSize = Nothing}
+  it "x.grp.info with chat layout" $
+    "{\"v\":\"9\",\"event\":\"x.grp.info\",\"params\":{\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}},\"chatLayout\":\"terminal\"}}}"
+      #==# XGrpInfo (testGroupProfile {chatLayout = Just CLTerminal} :: GroupProfile)
+  it "x.grp.info with unknown chat layout" $
+    "{\"v\":\"9\",\"event\":\"x.grp.info\",\"params\":{\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}},\"chatLayout\":\"wide\"}}}"
+      #==# XGrpInfo (testGroupProfile {chatLayout = Just $ CLUnknown "wide"} :: GroupProfile)
   it "x.grp.acpt without incognito profile" $
     "{\"v\":\"9\",\"event\":\"x.grp.acpt\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
       #==# XGrpAcpt (MemberId "\1\2\3\4") Nothing Nothing
@@ -430,5 +440,11 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.call.offer with call version" $
     "{\"v\":\"9\",\"event\":\"x.call.offer\",\"params\":{\"callId\":\"AQIDBA==\",\"offer\":{\"callType\":{\"media\":\"video\",\"capabilities\":{\"encryption\":true}},\"rtcSession\":{\"rtcSession\":\"{}\",\"rtcIceCandidates\":\"[]\"},\"callVersion\":2}}}"
       #==# XCallOffer (CallId "\1\2\3\4") CallOffer {callType = defaultCallType, rtcSession = testRTCSession, callDhPubKey = Nothing, callVersion = Just $ VersionCall 2}
+  it "x.call.extra without session" $
+    "{\"v\":\"9\",\"event\":\"x.call.extra\",\"params\":{\"callId\":\"AQIDBA==\",\"extra\":{\"rtcExtraInfo\":{\"rtcIceCandidates\":\"[]\"}}}}"
+      #==# XCallExtra (CallId "\1\2\3\4") CallExtraInfo {rtcExtraInfo = WebRTCExtraInfo {rtcSession = Nothing, rtcIceCandidates = "[]"}}
+  it "x.call.extra with ICE restart session" $
+    "{\"v\":\"9\",\"event\":\"x.call.extra\",\"params\":{\"callId\":\"AQIDBA==\",\"extra\":{\"rtcExtraInfo\":{\"rtcSession\":\"{}\",\"rtcIceCandidates\":\"[]\"}}}}"
+      #==# XCallExtra (CallId "\1\2\3\4") CallExtraInfo {rtcExtraInfo = WebRTCExtraInfo {rtcSession = Just "{}", rtcIceCandidates = "[]"}}
   where
     testRTCSession = WebRTCSession {rtcSession = "{}", rtcIceCandidates = "[]"}

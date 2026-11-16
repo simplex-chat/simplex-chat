@@ -8,6 +8,7 @@ import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import com.sshtools.twoslices.*
+import com.sshtools.twoslices.impl.NotificationCenterToaster
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.awt.*
@@ -18,6 +19,7 @@ import javax.imageio.ImageIO
 object NtfManager {
   private val prevNtfs = arrayListOf<Pair<Pair<Long, ChatId>, Slice>>()
   private val prevNtfsMutex: Mutex = Mutex()
+  private val macToaster by lazy { NotificationCenterToaster(ToasterFactory.getSettings()) }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
     if (simplexWindowState.windowFocused.value) return false
@@ -133,6 +135,9 @@ object NtfManager {
       builder.action(it.first, it.second)
     }
     try {
+      if (desktopPlatform.isMac()) {
+        builder.toaster(macToaster)
+      }
       withBGApi {
         prevNtfsMutex.withLock {
           prevNtfs.add(Pair(userId, chatId) to builder.toast())

@@ -1,0 +1,278 @@
+#!/usr/bin/env node
+import {homedir} from "os"
+import {join, resolve} from "path"
+import {Mode} from "./actions"
+import {sessionStart, turn} from "./hook"
+import {ExitError, log, logError} from "./log"
+import {validName} from "./messages"
+import {resetOwners, showLink} from "./owner"
+import {RegisterOptions, Scope, register} from "./register"
+import type {OwnerEntry, QrCodeSize, ServeOptions} from "./serve"
+
+// spec: spec/architecture.md#cli-helptext
+export const helpText = `Usage:
+  simplex-mcp serve NAME [options]     run agent NAME
+  simplex-mcp register NAME [options]  add agent NAME to Claude Code
+  simplex-mcp session                  MCP server of one Claude Code session (run by the plugin)
+  simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
+  simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
+  simplex-mcp hook turn                Claude Code hooks of prompts, answers, model changes, tool uses and compactions (run by the plugin)
+  simplex-mcp link                     show the Main group link, or its owners
+  simplex-mcp reset-owners             replace the Main group and its owners
+
+Claude Code plugin:
+  /plugin marketplace add https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/.claude-plugin/marketplace.json
+  /plugin install simplex@simplex-chat
+  SIMPLEX_MCP_HOME       the plugin's data folder (default: ~/.simplex-mcp)
+
+serve options:
+  --data DIR             data folder (default: ~/.simplex-mcp/NAME)
+  --display-name TEXT    the agent's name in SimpleX (default at the first start: NAME)
+  --approve MODE         what the owner approves in the agent control chat:
+                           requests  the agent's connections, messages, downloads
+                                     and leaving chats (default)
+                           host      nothing; the MCP host asks
+  --owners [ID:NAME,...] only these owners approve; without a list, the link
+                         adds an observer and its ID is printed at the join.
+                         Without --owners, whoever joins becomes an owner and
+                         every owner approves.
+  --expire HOURS         pending actions expire after HOURS, 1 to 23 (default: 23)
+  --stop-wait SECONDS    at stop, wait SECONDS for cancelled cards to be sent,
+                         0 to 60 (default: 10)
+  --reset-owners         replace the owners: a new agent control chat and link
+  --new-token            replace the access token
+  --port N               HTTP port on 127.0.0.1 (default: 5226)
+  --qr-code SIZE         QR code of the link: small (default) or large
+
+register options:
+  --scope SCOPE          user (default) or local
+  --data DIR             data folder (default: ~/.simplex-mcp/NAME)
+
+--reset-owners takes --owners without a list.
+`
+
+// spec: spec/architecture.md#cli-plugincommands
+const pluginCommands = ["session", "service", "hook session-start", "hook turn", "link", "reset-owners"] as const
+
+// spec: spec/architecture.md#cli-command
+export type Command =
+  | {command: "help"}
+  | {command: "serve"; options: ServeOptions}
+  | {command: "register"; options: RegisterOptions}
+  | {command: (typeof pluginCommands)[number]}
+
+// spec: spec/architecture.md#cli-parsecommand
+export function parseCommand(args: string[], home: string = homedir()): Command {
+  const [command, name, ...rest] = args
+  if (command === "--help") return {command: "help"}
+  const plugin = pluginCommands.find(words => words === args.join(" "))
+  if (plugin !== undefined) return {command: plugin}
+  if (command !== "serve" && command !== "register") throw usageError("Usage: simplex-mcp serve NAME [options] or simplex-mcp register NAME [options]. Run simplex-mcp --help.")
+  if (name === undefined || !validAgentName(name)) throw usageError("NAME: 1 to 32 lowercase letters, digits and single hyphens, starting with a letter or digit.")
+  const options = new OptionReader(rest)
+  return command === "serve" ? {command, options: serveOptions(name, options, home)} : {command, options: registerOptions(name, options, home)}
+}
+
+// spec: spec/architecture.md#cli-serveoptions
+function serveOptions(name: string, options: OptionReader, home: string): ServeOptions {
+  const serve: ServeOptions = {
+    name,
+    data: dataFolder(name, home),
+    approve: "requests",
+    expireHours: 23,
+    resetOwners: false,
+    newToken: false,
+    port: 5226,
+    qrCode: "small",
+    stopWait: 10,
+    dataGiven: false,
+  }
+  for (let option = options.next(); option !== undefined; option = options.next()) {
+    switch (option) {
+      case "--data":
+        serve.data = resolve(options.value(option))
+        serve.dataGiven = true
+        break
+      case "--display-name":
+        serve.displayName = displayName(options.value(option))
+        break
+      case "--approve":
+        serve.approve = approveMode(options.value(option))
+        break
+      case "--owners":
+        serve.owners = options.optionalValue() === undefined ? [] : options.value(option).split(/,(?=[1-9]\d*:)/).map(ownerEntry)
+        break
+      case "--expire":
+        serve.expireHours = integer(option, options.value(option), 1, 23, "hours from 1 to 23")
+        break
+      case "--stop-wait":
+        serve.stopWait = integer(option, options.value(option), 0, 60, "seconds from 0 to 60")
+        break
+      case "--reset-owners":
+        serve.resetOwners = true
+        break
+      case "--new-token":
+        serve.newToken = true
+        break
+      case "--port":
+        serve.port = integer(option, options.value(option), 1, 65535, "a port from 1 to 65535")
+        break
+      case "--qr-code":
+        serve.qrCode = qrCodeSize(options.value(option))
+        break
+      default:
+        throw unknownOption(option)
+    }
+  }
+  if (serve.resetOwners && serve.owners !== undefined && serve.owners.length > 0) {
+    throw usageError("--reset-owners takes --owners without a list: member IDs change in a new agent control chat.")
+  }
+  return serve
+}
+
+// spec: spec/architecture.md#cli-registeroptions
+function registerOptions(name: string, options: OptionReader, home: string): RegisterOptions {
+  const register: RegisterOptions = {name, data: dataFolder(name, home), scope: "user"}
+  for (let option = options.next(); option !== undefined; option = options.next()) {
+    switch (option) {
+      case "--scope":
+        register.scope = scope(options.value(option))
+        break
+      case "--data":
+        register.data = resolve(options.value(option))
+        break
+      default:
+        throw unknownOption(option)
+    }
+  }
+  return register
+}
+
+// spec: spec/architecture.md#cli-optionreader
+class OptionReader {
+  private index = 0
+
+  constructor(private readonly args: string[]) {}
+
+  next(): string | undefined {
+    return this.args[this.index++]
+  }
+
+  // spec: spec/api.md#exit-codes
+  value(option: string): string {
+    const value = this.optionalValue()
+    if (value === undefined) throw usageError(`${option}: a value expected.`)
+    this.index++
+    return value
+  }
+
+  optionalValue(): string | undefined {
+    const value = this.args[this.index]
+    return value === undefined || value.startsWith("--") ? undefined : value
+  }
+}
+
+// spec: spec/architecture.md#cli-validagentname
+export function validAgentName(name: string): boolean {
+  return name.length <= 32 && /^[a-z0-9](-?[a-z0-9])*-?$/.test(name)
+}
+
+// spec: spec/api.md#serve-options
+function displayName(value: string): string {
+  const valid = validName(value)
+  if (valid !== value) throw usageError(`--display-name: not a valid SimpleX name; try ${valid}`)
+  return value
+}
+
+// spec: spec/api.md#exit-codes
+function approveMode(value: string): Mode {
+  if (value !== "requests" && value !== "host") throw usageError(`--approve: requests or host expected, got ${value}`)
+  return value
+}
+
+// spec: spec/api.md#exit-codes
+function qrCodeSize(value: string): QrCodeSize {
+  if (value !== "small" && value !== "large") throw usageError(`--qr-code: small or large expected, got ${value}`)
+  return value
+}
+
+// spec: spec/api.md#exit-codes
+function scope(value: string): Scope {
+  if (value !== "user" && value !== "local") throw usageError(`--scope: user or local expected, got ${value}`)
+  return value
+}
+
+// spec: spec/api.md#serve-options
+function ownerEntry(entry: string): OwnerEntry {
+  const match = /^([1-9]\d*):(.+)$/.exec(entry)
+  if (!match) throw usageError(`--owners: ID:NAME expected, got ${entry}`)
+  return {memberId: Number(match[1]), name: match[2]}
+}
+
+// spec: spec/api.md#exit-codes
+function integer(option: string, value: string, min: number, max: number, expected: string): number {
+  const n = Number(value)
+  if (!/^\d+$/.test(value) || n < min || n > max) throw usageError(`${option}: ${expected} expected, got ${value}`)
+  return n
+}
+
+function dataFolder(name: string, home: string): string {
+  return join(home, ".simplex-mcp", name)
+}
+
+// spec: spec/api.md#exit-codes
+function unknownOption(option: string): ExitError {
+  return usageError(`Unknown option ${option}. Run simplex-mcp --help.`)
+}
+
+// spec: spec/architecture.md#cli-usageerror
+function usageError(message: string): ExitError {
+  return new ExitError(message, 2)
+}
+
+// spec: spec/architecture.md#cli-main
+async function main(args: string[]): Promise<void> {
+  const command = parseCommand(args)
+  switch (command.command) {
+    case "help":
+      process.stdout.write(helpText)
+      return
+    case "serve":
+      return (await import("./serve.js")).serve(command.options)
+    case "register":
+      return log(register(command.options))
+    case "session":
+      return (await import("./session.js")).startSession()
+    case "service":
+      return (await import("./service.js")).runService()
+    case "hook session-start":
+      process.stdout.write(`${JSON.stringify(await sessionStart(await readStdin()))}\n`)
+      return
+    case "hook turn":
+      process.stdout.write(`${JSON.stringify(await turn(await readStdin()))}\n`)
+      return
+    case "link":
+      process.stdout.write(`${await showLink()}\n`)
+      return
+    case "reset-owners":
+      process.stdout.write(`${await resetOwners()}\n`)
+      return
+  }
+}
+
+async function readStdin(): Promise<string> {
+  let text = ""
+  for await (const chunk of process.stdin) text += chunk
+  return text
+}
+
+if (require.main === module) {
+  main(process.argv.slice(2)).catch(error => {
+    if (error instanceof ExitError) {
+      process.stderr.write(`${error.message}\n`)
+      process.exit(error.code)
+    }
+    logError("simplex-mcp", error)
+    process.exit(1)
+  })
+}

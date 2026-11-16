@@ -146,7 +146,11 @@ kotlin {
         implementation("com.squareup.okhttp3:okhttp:4.12.0")
       }
     }
-    val desktopTest by getting
+    val desktopTest by getting {
+      dependencies {
+        implementation(compose.desktop.currentOs)
+      }
+    }
   }
 }
 

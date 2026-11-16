@@ -12,7 +12,13 @@ import SimpleXChat
 import SwiftyGif
 import Combine
 
-private let memberImageSize: CGFloat = 34
+let memberImageBaseSize: CGFloat = 34
+private let goToItemIconSize: CGFloat = 13
+private let goToItemIconGap: CGFloat = 10
+
+func scaledMemberImageSize(_ font: DynamicTypeSize, _ baseSize: CGFloat = memberImageBaseSize) -> CGFloat {
+    baseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
+}
 
 private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
     let oldIsGroupRcv = switch older?.chatDir {
@@ -45,6 +51,7 @@ struct ChatView: View {
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dynamicTypeSize) private var userFont
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
@@ -91,8 +98,13 @@ struct ChatView: View {
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     let userSupportScopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
+
+    private var terminal: Bool {
+        chat.chatInfo.activeChatLayout(profileChatLayout(ChatModel.shared.currentUser)) == .terminal
+    }
 
     // Spec: spec/client/chat-view.md#body
     var body: some View {
@@ -120,11 +132,12 @@ struct ChatView: View {
             let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
             let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
             Color.clear.ignoresSafeArea(.all)
-                .if(wallpaperImage != nil && im.secondaryIMFilter == nil) { view in
+                .if(!terminal && wallpaperImage != nil && im.secondaryIMFilter == nil) { view in
                     view.modifier(
                         ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
                     )
             }
+                .if(terminal && im.secondaryIMFilter == nil) { $0.background(backgroundColor) }
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     if userMemberKnockingChat {
@@ -367,7 +380,7 @@ struct ChatView: View {
                 theme = buildTheme()
                 closeSearch()
                 mergedItems.boxedValue = MergedItems.create(im, revealedItems)
-                scrollView.updateItems(mergedItems.boxedValue.items)
+                scrollView.updateItems(mergedItems.boxedValue.items, true)
 
                 if let openAround = chatModel.openAroundItemId, let index = mergedItems.boxedValue.indexInParentItems[openAround] {
                     scrollView.scrollToItem(index)
@@ -907,7 +920,7 @@ struct ChatView: View {
                 return Group {
                     if case .chatBanner = ci.content {
                         VStack {
-                            ChatBannerView(chat: $chat)
+                            ChatBannerView(chat: chat)
                                 .padding(.bottom, 90)
                                 .padding(.top, 8)
 
@@ -923,12 +936,13 @@ struct ChatView: View {
                         // left padding (see .leading padding below), so they get the full row width here
                         // too — otherwise the reserved avatar inset would leave a gap on the right
                         let channelReceivedNoAvatar = channelReceived && !shouldShowAvatar(mergedItem.newest().item, mergedItem.oldest().nextItem)
+                        let avatarColumn = scaledMemberImageSize(userFont) + 8
                         let maxWidth = cInfo.chatType == .group
                         ? channelReceivedNoAvatar
                         ? g.size.width - 26
                         : voiceNoFrame || channelReceived
-                        ? (g.size.width - 28) - 42
-                        : (g.size.width - 28) * 0.84 - 42
+                        ? (g.size.width - 28) - avatarColumn
+                        : (g.size.width - 28) * 0.84 - avatarColumn
                         : voiceNoFrame
                         ? (g.size.width - 32)
                         : (g.size.width - 32) * 0.84
@@ -941,6 +955,8 @@ struct ChatView: View {
                             scrollToItem: scrollToItem,
                             scrollToItemId: $scrollToItemId,
                             merged: mergedItem,
+                            olderRow: mergedItems.boxedValue.olderShownRow(of: mergedItem),
+                            listWidth: g.size.width,
                             maxWidth: maxWidth,
                             composeState: $composeState,
                             selectedMember: $selectedMember,
@@ -957,6 +973,7 @@ struct ChatView: View {
                 // crashes on Cell size calculation without this line
                 .environmentObject(ChatModel.shared)
                 .environmentObject(theme) // crashes without this line when scrolling to the first unread in EndlessScrollVIew
+                .environment(\.terminalLayout, terminal)
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             }
             .onAppear {
@@ -985,6 +1002,13 @@ struct ChatView: View {
                 mergedItems.boxedValue = MergedItems.create(im, revealed)
                 scrollView.updateItems(mergedItems.boxedValue.items)
             }
+            .onChange(of: developerTools) { _ in
+                mergedItems.boxedValue = MergedItems.create(im, revealedItems)
+                scrollView.updateItems(mergedItems.boxedValue.items, true)
+            }
+            .onChange(of: terminal) { _ in
+                scrollView.updateItems(mergedItems.boxedValue.items, true)
+            }
             .onChange(of: chat.id) { _ in
                 allowLoadMoreItems = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -1004,7 +1028,7 @@ struct ChatView: View {
     struct ChatBannerView: View {
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
-        @Binding @ObservedObject var chat: Chat
+        @ObservedObject var chat: Chat
 
         var body: some View {
             let v = VStack(spacing: 8) {
@@ -1692,10 +1716,12 @@ struct ChatView: View {
     }
 
     // Spec: spec/client/chat-view.md#ChatItemWithMenu
-    private struct ChatItemWithMenu: View {
+    struct ChatItemWithMenu: View {
         @ObservedObject var im: ItemsModel
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
+        @Environment(\.terminalLayout) private var terminal
+        @Environment(\.dynamicTypeSize) private var userFont
         @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileRadius = defaultProfileImageCorner
         @Binding @ObservedObject var chat: Chat
         @ObservedObject var dummyModel: ChatItemDummyModel = .shared
@@ -1705,6 +1731,8 @@ struct ChatView: View {
         let scrollToItem: (ChatItem.ID) -> Void
         @Binding var scrollToItemId: ChatItem.ID?
         let merged: MergedItem
+        let olderRow: MergedItem?
+        let listWidth: CGFloat
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
@@ -1735,8 +1763,18 @@ struct ChatView: View {
         @State private var markReadTask: Task<Void, Never>? = nil
         @State private var actionSheet: SomeActionSheet? = nil
         @State private var swipeOffset: CGFloat = 0
+        @State private var swipeExclusionFrames: [CGRect] = []
+        @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
         var revealed: Bool { revealedItems.contains(chatItem.id) }
+
+        private var memberImageSize: CGFloat {
+            scaledMemberImageSize(userFont)
+        }
+
+        private var terminalImageSize: CGFloat {
+            scaledMemberImageSize(userFont, terminalMemberImageBaseSize)
+        }
 
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
 
@@ -1757,24 +1795,26 @@ struct ChatView: View {
                 chatItem.chatDir.sent == prevItem.chatDir.sent
             }
             let largeGap = !sameMemberAndDirection || prevItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
+            let prevDeleted = prevItem.meta.itemDeleted != nil || prevItem.isDeletedContent
 
             return ItemSeparation(
-                timestamp: largeGap || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
+                timestamp: largeGap || (terminal && prevDeleted) || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
                 largeGap: largeGap,
                 date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: prevItem.meta.itemTs) ? nil : prevItem.meta.itemTs
             )
         }
 
         var body: some View {
-            let last = isLastItem ? im.reversedChatItems.last : nil
             let listItem = merged.newest()
             let item = listItem.item
+            let hidden = item.isHidden(developerTools: developerTools)
+            let last = isLastItem ? (hidden ? listItem.prevItem : im.reversedChatItems.last) : nil
             let range: ClosedRange<Int>? = if case let .grouped(_, _, _, rangeInReversed, _, _, _, _) = merged {
                 rangeInReversed.boxedValue
             } else {
                 nil
             }
-            let showAvatar = shouldShowAvatar(item, merged.oldest().nextItem)
+            let showAvatar = terminal ? terminalItemShowsSender(item, merged.oldest().nextItem) : shouldShowAvatar(item, merged.oldest().nextItem)
             let single = switch merged {
             case .single: true
             default: false
@@ -1784,19 +1824,21 @@ struct ChatView: View {
                 if let last {
                     DateSeparator(date: last.meta.itemTs).padding(8)
                 }
-                chatItemListView(range, showAvatar, item, itemSeparation)
-                    .overlay {
-                        if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
-                            Color.clear
-                                .contentShape(Rectangle())
-                                .simultaneousGesture(TapGesture().onEnded {
-                                    let checked = selected.contains(chatItem.id)
-                                    selectUnselectChatItem(select: !checked, chatItem)
-                                })
+                if !hidden {
+                    chatItemListView(range, showAvatar, item, itemSeparation)
+                        .overlay {
+                            if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .simultaneousGesture(TapGesture().onEnded {
+                                        let checked = selected.contains(chatItem.id)
+                                        selectUnselectChatItem(select: !checked, chatItem)
+                                    })
+                            }
                         }
+                    if let date = itemSeparation.date {
+                        DateSeparator(date: date).padding(8)
                     }
-                if let date = itemSeparation.date {
-                    DateSeparator(date: date).padding(8)
                 }
             }
             .onAppear {
@@ -1925,7 +1967,9 @@ struct ChatView: View {
             _ itemSeparation: ItemSeparation
         ) -> some View {
             let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
-            if case .channelRcv = ci.chatDir,
+            if terminal {
+                terminalItemRow(range, showAvatar, ci, itemSeparation)
+            } else if case .channelRcv = ci.chatDir,
                case let .group(groupInfo, _) = chat.chatInfo {
                 if showAvatar {
                     VStack(alignment: .leading, spacing: 4) {
@@ -1959,7 +2003,7 @@ struct ChatView: View {
                             }
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
+                            .padding(.leading, memberImageSize + 10 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
                             .padding(.top, 3)
                         }
                         HStack(alignment: .center, spacing: 0) {
@@ -1968,7 +2012,7 @@ struct ChatView: View {
                                     .padding(.trailing, 12)
                             }
                             HStack(alignment: .top, spacing: 10) {
-                                ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: memberImageSize, backgroundColor: theme.colors.background)
+                                ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
                                     .simultaneousGesture(TapGesture().onEnded {
                                         showChatInfoSheet = true
                                     })
@@ -2042,7 +2086,7 @@ struct ChatView: View {
                             }
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
+                                .padding(.leading, memberImageSize + 10 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
                                 .padding(.top, 3) // this is in addition to message sequence gap
                         }
                         HStack(alignment: .center, spacing: 0) {
@@ -2052,7 +2096,7 @@ struct ChatView: View {
                             }
                             HStack(alignment: .top, spacing: 10) {
                                 if ci.meta.showGroupAsSender {
-                                    ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: memberImageSize, backgroundColor: theme.colors.background)
+                                    ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
                                         .simultaneousGesture(TapGesture().onEnded {
                                             showChatInfoSheet = true
                                         })
@@ -2118,8 +2162,107 @@ struct ChatView: View {
             }
         }
 
+        private func terminalItemRow(_ range: ClosedRange<Int>?, _ showSender: Bool, _ ci: ChatItem, _ itemSeparation: ItemSeparation) -> some View {
+            let selecting = selectedChatItems != nil && ci.canBeDeletedForSelf
+            let leading: CGFloat = selecting ? 4 + 24 : 0
+            let goToButton: CGFloat = searchIsNotBlank || ci.meta.itemForwarded?.chatTypeApiIdMsgId != nil ? goToItemIconSize + goToItemIconGap + chatItemTextPadding : 0
+            let avatarSize = chat.chatInfo.chatType == .group ? terminalImageSize : 0
+            let older = merged.oldest().nextItem
+            let topGap = terminalRowGap(
+                ci,
+                older,
+                separated: terminalRowsSeparated(olderRow),
+                largeGap: older.map { getItemSeparation($0, merged.oldest().item).largeGap } ?? false,
+                hasSenderRow: showSender
+            )
+            return ZStack(alignment: .leading) {
+                if selecting {
+                    SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
+                        .padding(.leading, 8)
+                }
+                TerminalChatItemRow(
+                    sender: showSender ? chatItemSender(ci, range) : nil,
+                    avatarSize: avatarSize,
+                    topGap: topGap,
+                    contentStartsWithCard: terminalItemStartsWithCard(ci, revealed: revealed)
+                ) {
+                    chatItemWithMenu(ci, range, terminalMediaWidth(listWidth - leading - goToButton - terminalColumn(avatarSize)), itemSeparation)
+                }
+                .padding(.leading, leading)
+            }
+            .padding(.bottom, index == 0 && itemSeparation.largeGap ? 8 : itemSeparation.date == nil ? 0 : terminalLevelStep)
+            .background(selectedChatItems?.contains(ci.id) == true ? theme.colors.primary.opacity(0.1) : Color.clear)
+        }
+
+        private func terminalRowsSeparated(_ olderRow: MergedItem?) -> Bool {
+            guard let olderRow else { return false }
+            let newest = olderRow.newest()
+            if case .chatBanner = newest.item.content { return true }
+            return getItemSeparation(newest.item, olderRow.revealed ? newest.prevItem : nil).date != nil
+        }
+
+        private func chatItemSender(_ ci: ChatItem, _ range: ClosedRange<Int>?) -> ChatItemSender {
+            let cInfo = chat.chatInfo
+            switch (ci.chatDir, cInfo) {
+            case let (_, .group(groupInfo, _)) where ci.channelIsSender:
+                return ChatItemSender(name: Text(groupInfo.chatViewName), role: NSLocalizedString("channel", comment: "shown as sender role for channel messages"), own: ci.chatDir.sent, image: groupSenderImage(groupInfo))
+            case (.directRcv, _):
+                return ChatItemSender(name: Text(cInfo.displayName), badge: cInfo.nameBadge, own: false)
+            case let (.groupRcv(member), .group(groupInfo, _)):
+                if ci.meta.showGroupAsSender {
+                    return ChatItemSender(name: Text(groupInfo.chatViewName), role: NSLocalizedString("group", comment: "shown on group welcome message"), own: false, image: groupSenderImage(groupInfo))
+                }
+                let (prevMember, memCount): (GroupMember?, Int) = if let range { m.getPrevHiddenMember(member, range) } else { (nil, 1) }
+                return ChatItemSender(
+                    name: Text(memberNames(member, prevMember, memCount)),
+                    badge: prevMember == nil && memCount == 1 ? member.nameBadge : nil,
+                    role: memCount == 1 ? senderRole(member, groupInfo) : nil,
+                    own: false,
+                    image: AnyView(
+                        MemberProfileImage(member, size: terminalImageSize, backgroundColor: theme.colors.background)
+                            .simultaneousGesture(TapGesture().onEnded {
+                                if let mem = m.getGroupMember(member.groupMemberId) {
+                                    selectedMember = mem
+                                } else {
+                                    let mem = GMember.init(member)
+                                    m.groupMembers.append(mem)
+                                    m.groupMembersIndexes[member.groupMemberId] = m.groupMembers.count - 1
+                                    selectedMember = mem
+                                }
+                            })
+                    )
+                )
+            case let (.groupSnd, .group(groupInfo, _)):
+                let membership = groupInfo.membership
+                return ChatItemSender(
+                    name: Text(membership.displayName),
+                    badge: membership.nameBadge,
+                    role: senderRole(membership, groupInfo),
+                    own: true,
+                    image: AnyView(MemberProfileImage(membership, size: terminalImageSize, backgroundColor: theme.colors.background))
+                )
+            default:
+                return cInfo.incognito
+                ? ChatItemSender(name: Text("Incognito"), own: true)
+                : ChatItemSender(name: Text(m.currentUser?.displayName ?? ""), badge: m.currentUser?.profile.localBadge, own: true)
+            }
+        }
+
+        private func groupSenderImage(_ groupInfo: GroupInfo) -> AnyView {
+            AnyView(
+                ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: terminalImageSize, backgroundColor: theme.colors.background)
+                    .simultaneousGesture(TapGesture().onEnded { showChatInfoSheet = true })
+            )
+        }
+
+        private func senderRole(_ member: GroupMember, _ groupInfo: GroupInfo) -> String? {
+            member.memberRole > .member ? member.memberRole.text(isChannel: groupInfo.isChannel) : nil
+        }
+
         func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
-            let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
+            let alignEnd = ci.chatDir.sent && !terminal
+            let alignment: Alignment = alignEnd ? .trailing : .leading
+            let markedDeleted = ci.meta.itemDeleted != nil && (!revealed || ci.isDeletedContent)
             let live = composeState.liveMessage != nil
             let canReply = ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote && selectedChatItems == nil && chat.chatInfo.sendMsgEnabled
             return ZStack(alignment: .trailing) {
@@ -2128,9 +2271,9 @@ struct ChatView: View {
                     .foregroundColor(.secondary)
                     .opacity(min(1, -swipeOffset / 30))
                     .offset(x: swipeOffset + 40)
-                VStack(alignment: alignment.horizontal, spacing: 3) {
+                VStack(alignment: alignment.horizontal, spacing: terminal ? 0 : 3) {
                     HStack {
-                        if ci.chatDir.sent {
+                        if alignEnd {
                             goToItemButton(true)
                         }
                         ChatItemView(
@@ -2140,28 +2283,32 @@ struct ChatView: View {
                             scrollToItem: scrollToItem,
                             scrollToItemId: $scrollToItemId,
                             maxWidth: maxWidth,
-                            allowMenu: $allowMenu
+                            allowMenu: $allowMenu,
+                            endButton: terminal && !searchIsNotBlank && ci.meta.itemForwarded?.chatTypeApiIdMsgId != nil ? AnyView(goToItemButton(false)) : nil
                         )
                         .environment(\.revealed, revealed)
                         .environment(\.showTimestamp, itemSeparation.timestamp)
-                        .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
+                        .if(!terminal) { $0.modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed))) }
                         .contextMenu { menu(ci, range, live: live) }
                         .accessibilityLabel("")
-                        if !ci.chatDir.sent {
+                        if !alignEnd && (!terminal || searchIsNotBlank || markedDeleted) {
                             goToItemButton(false)
                         }
                     }
                     if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                         chatItemReactions(ci)
-                            .padding(.bottom, 4)
+                            .padding(.leading, terminal ? chatItemTextPadding - 6 : 0)
+                            .padding(.bottom, terminal ? 0 : 4)
                     }
                 }
+                .coordinateSpace(name: swipeExclusionSpace)
+                .onPreferenceChange(SwipeExclusionFrames.self) { swipeExclusionFrames = $0 }
                 .offset(x: swipeOffset)
                 .contentShape(Rectangle())
                 .simultaneousGesture(
-                    DragGesture(minimumDistance: 10)
+                    DragGesture(minimumDistance: 10, coordinateSpace: .named(swipeExclusionSpace))
                         .onChanged { value in
-                            guard canReply else { return }
+                            guard canReply, !swipeExclusionFrames.contains(where: { $0.contains(value.startLocation) }) else { return }
                             let x = value.translation.width
                             if x < 0 {
                                 swipeOffset = max(x * 0.63, -56)
@@ -2227,7 +2374,7 @@ struct ChatView: View {
                         }
                     }
                 }
-                .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
+                .frame(maxWidth: terminal ? .infinity : maxWidth, maxHeight: .infinity, alignment: alignment)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
@@ -2851,7 +2998,7 @@ struct ChatView: View {
         @ViewBuilder private func contactReactionMenu(_ contact: Contact, _ r: CIReactionCount) -> some View {
             if !r.userReacted || r.totalReacted > 1 {
                 Button { showChatInfoSheet = true } label: {
-                    profileMenuItem(Text(contact.displayName), contact.image, radius: profileRadius)
+                    profileMenuItem(Text(contact.displayName), contact.image, peerType: contact.profile.peerType, radius: profileRadius)
                 }
             }
             if r.userReacted {
@@ -2865,8 +3012,8 @@ struct ChatView: View {
         func goToItemInnerButton(_ alignStart: Bool, _ image: String, touchInProgress: Bool, _ onClick: @escaping () -> Void) -> some View {
             Image(systemName: image)
                 .resizable()
-                .frame(width: 13, height: 13)
-                .padding([alignStart ? .trailing : .leading], 10)
+                .frame(width: goToItemIconSize, height: goToItemIconSize)
+                .padding([alignStart ? .trailing : .leading], goToItemIconGap)
                 .tint(theme.colors.secondary.opacity(touchInProgress ? 1.0 : 0.4))
                 .simultaneousGesture(TapGesture().onEnded(onClick))
         }
@@ -3145,7 +3292,7 @@ struct ReactionContextMenu: View {
                         selectedMember = member
                     }
                 } label: {
-                    profileMenuItem(Text(mem.displayName), mem.image, radius: profileRadius)
+                    profileMenuItem(Text(mem.displayName), mem.image, peerType: mem.memberProfile.peerType, radius: profileRadius)
                 }
                 .disabled(userMember)
             }
@@ -3168,13 +3315,13 @@ struct ReactionContextMenu: View {
     }
 }
 
-func profileMenuItem(_ nameText: Text, _ image: String?, radius: CGFloat) -> some View {
+func profileMenuItem(_ nameText: Text, _ image: String?, peerType: ChatPeerType? = nil, radius: CGFloat) -> some View {
     HStack {
         nameText
         if let image, let img = imageFromBase64(image) {
             Image(uiImage: maskToCustomShape(img, size: 30, radius: radius))
         } else {
-            Image(systemName: "person.crop.circle")
+            peerTypeIcon(peerType, person: Image(systemName: "person.crop.circle"))
         }
     }
 }
@@ -3326,15 +3473,15 @@ struct ChatView_Previews: PreviewProvider {
         chatModel.chatId = "@1"
         let im = ItemsModel.shared
         im.reversedChatItems = [
-            ChatItem.getSample(1, .directSnd, .now, "hello"),
-            ChatItem.getSample(2, .directRcv, .now, "hi"),
-            ChatItem.getSample(3, .directRcv, .now, "hi there"),
-            ChatItem.getDeletedContentSample(4),
-            ChatItem.getSample(5, .directRcv, .now, "hello again"),
-            ChatItem.getSample(6, .directSnd, .now, "hi there!!!"),
-            ChatItem.getSample(7, .directSnd, .now, "how are you?"),
-            ChatItem.getSample(8, .directSnd, .now, "👍👍👍👍"),
-            ChatItem.getSample(9, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+            ChatItem.getSample(1, .directSnd, previewDate, "hello"),
+            ChatItem.getSample(2, .directRcv, previewDate, "hi"),
+            ChatItem.getSample(3, .directRcv, previewDate, "hi there"),
+            ChatItem.getDeletedContentSample(4, previewDate),
+            ChatItem.getSample(5, .directRcv, previewDate, "hello again"),
+            ChatItem.getSample(6, .directSnd, previewDate, "hi there!!!"),
+            ChatItem.getSample(7, .directSnd, previewDate, "how are you?"),
+            ChatItem.getSample(8, .directSnd, previewDate, "👍👍👍👍"),
+            ChatItem.getSample(9, .directSnd, previewDate, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
         @State var showChatInfo = false
         return ChatView(

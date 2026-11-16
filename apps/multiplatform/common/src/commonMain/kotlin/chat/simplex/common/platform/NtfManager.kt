@@ -136,9 +136,14 @@ abstract class NtfManager {
     return if (md != null) {
       var res = ""
       for (ft in md) {
-        res += if (ft.format is Format.Secret) "..." else ft.text
+        res += when (ft.format) {
+          is Format.Secret -> "..."
+          is Format.Markup -> ft.format.token.previewText
+          is Format.Escape -> ""
+          else -> ft.text
+        }
       }
-      res
+      if (cItem.content.msgContent is MsgContent.MCReport) generalGetString(MR.strings.notification_group_report).format(res) else res
     } else {
       val mc = cItem.content.msgContent
       if (mc is MsgContent.MCReport) {

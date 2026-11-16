@@ -262,7 +262,7 @@ public struct NetCfg: Codable, Equatable {
     var socksMode: SocksMode = .always
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
-    public var sessionMode = TransportSessionMode.user
+    public var sessionMode = TransportSessionMode.session
     public var smpProxyMode: SMPProxyMode = .always
     public var smpProxyFallback: SMPProxyFallback = .allowProtected
     public var smpWebPortServers: SMPWebPortServers = .preset
@@ -827,8 +827,10 @@ public enum ChatErrorType: Decodable, Hashable {
 
 public enum BadgeRedeemError: Decodable, Hashable {
     case invalidCode
+    case invalidReceipt
     case serviceNotConfigured
     case badgeActive
+    case storePurchaseOpen
     case serviceError(serviceError: BadgeServiceErrorCode)
     case invalidResponse(message: String)
     case unknownKeyIndex
@@ -847,12 +849,15 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
     case paymentNotEntitled
     case paymentPending
     case providerUnavailable
+    case providerNotConfigured
     case rateLimited
     case codeInvalid
     case codeUsed
     case codeExpired
     case receiptInvalid
     case receiptUsed
+    case testPurchase
+    case transferLimited
     case internalError
     case unknown(String)
 
@@ -868,12 +873,15 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
         case .paymentNotEntitled: "payment_not_entitled"
         case .paymentPending: "payment_pending"
         case .providerUnavailable: "provider_unavailable"
+        case .providerNotConfigured: "provider_not_configured"
         case .rateLimited: "rate_limited"
         case .codeInvalid: "code_invalid"
         case .codeUsed: "code_used"
         case .codeExpired: "code_expired"
         case .receiptInvalid: "receipt_invalid"
+        case .testPurchase: "test_purchase"
         case .receiptUsed: "receipt_used"
+        case .transferLimited: "transfer_limited"
         case .internalError: "internal"
         case let .unknown(s): s
         }
@@ -891,12 +899,15 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
         case "payment_not_entitled": self = .paymentNotEntitled
         case "payment_pending": self = .paymentPending
         case "provider_unavailable": self = .providerUnavailable
+        case "provider_not_configured": self = .providerNotConfigured
         case "rate_limited": self = .rateLimited
         case "code_invalid": self = .codeInvalid
         case "code_used": self = .codeUsed
         case "code_expired": self = .codeExpired
         case "receipt_invalid": self = .receiptInvalid
+        case "test_purchase": self = .testPurchase
         case "receipt_used": self = .receiptUsed
+        case "transfer_limited": self = .transferLimited
         case "internal": self = .internalError
         case let s: self = .unknown(s)
         }
@@ -909,11 +920,18 @@ public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
     case .codeUsed: NSLocalizedString("This code has already been used.", comment: "alert message")
     case .codeExpired: NSLocalizedString("This code has expired.", comment: "alert message")
     case .rateLimited: NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
-    case .unsupportedVersion: NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
+    case .unsupportedVersion: NSLocalizedString("Update the app to use badges.", comment: "alert message")
     case .unknownPurchaseKey: NSLocalizedString("The badge service does not recognize this badge.", comment: "alert message")
     case .internalError: NSLocalizedString("The badge service reported an internal error.", comment: "alert message")
-    case .badRequest, .unknownOfferId, .offerDisabled, .offerMismatch, .productUnavailable,
-         .paymentNotEntitled, .paymentPending, .providerUnavailable, .receiptInvalid, .receiptUsed, .unknown: nil
+    case .receiptInvalid: NSLocalizedString("The store did not confirm this purchase.", comment: "alert message")
+    case .testPurchase: NSLocalizedString("Buy badges in the App Store version of the app.", comment: "alert message")
+    case .receiptUsed: NSLocalizedString("This purchase is already used on another profile.", comment: "alert message")
+    case .transferLimited: NSLocalizedString("This purchase was moved to another device or profile recently.", comment: "alert message")
+    case .paymentPending: NSLocalizedString("The payment has not been confirmed yet.", comment: "alert message")
+    case .providerUnavailable: NSLocalizedString("The store could not be reached.", comment: "alert message")
+    case .providerNotConfigured: NSLocalizedString("Badges cannot be bought in the app yet.", comment: "alert message")
+    case .productUnavailable: NSLocalizedString("This badge is not on sale.", comment: "alert message")
+    case .badRequest, .unknownOfferId, .offerDisabled, .offerMismatch, .paymentNotEntitled, .unknown: nil
     }
 }
 

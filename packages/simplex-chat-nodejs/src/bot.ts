@@ -82,7 +82,8 @@ function fullOptions(options: BotOptions): Required<BotOptions> {
   opts.addressSettings = {
     autoAccept: opts.addressSettings.autoAccept ?? defaultOpts.addressSettings.autoAccept,
     welcomeMessage: typeof welcomeMessage === "string" ? {type: "text", text: welcomeMessage} : welcomeMessage,
-    businessAddress: opts.addressSettings.businessAddress ?? defaultOpts.addressSettings.businessAddress
+    businessAddress: opts.addressSettings.businessAddress ?? defaultOpts.addressSettings.businessAddress,
+    chatLayout: opts.addressSettings.chatLayout
   }
   return opts
 }

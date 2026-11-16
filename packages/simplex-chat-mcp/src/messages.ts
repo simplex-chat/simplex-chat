@@ -1,0 +1,451 @@
+import {existsSync} from "fs"
+import {extname, join} from "path"
+import {T} from "@simplex-chat/types"
+import {api} from "simplex-chat"
+import {fileError} from "./log"
+
+const progressInterval = 60_000
+const maxTimer = 2_147_483_647
+const pageSize = 100
+const maxCollected = 100
+const prohibitedNameChars = ".,;/\\#@'\"`~"
+export const maxNameLength = 50
+const replyTextLength = 200
+const lineBreak = /\r\n?|[\n\v\f\u0085\p{Zl}\p{Zp}]/u
+const edgeSpace = /^[\s\u0085]+|[\s\u0085]+$/g
+const bidiControls = /[\u{202A}-\u{202E}\u{2066}-\u{2069}]/gu
+const graphemes = new Intl.Segmenter(undefined, {granularity: "grapheme"})
+const receivingStatuses: T.CIFileStatus["type"][] = ["rcvAccepted", "rcvTransfer", "rcvWarning"]
+// spec: spec/api.md#tool-download
+export const missingFile = "The received file is not in the agent's files folder."
+
+// spec: spec/api.md#message-object
+export interface Message {
+  chat: string
+  item: number
+  from: string
+  from_member?: number
+  from_type?: string
+  time: string
+  text: string
+  file?: MessageFile
+  new: boolean
+  reply_to?: {chat: string} & ReplyTo
+  mentions_me: boolean
+}
+
+export interface ReplyTo {
+  item?: number
+  from?: string
+  type?: string
+  text: string
+}
+
+export type FileType = "image" | "video" | "voice" | "file"
+
+export type FilesRoot = "files" | "forwarded"
+
+// spec: spec/architecture.md#messages-message
+export interface MessageFile {
+  name: string
+  size: number
+  type: FileType
+  status: "offered" | "received" | "rejected" | "failed"
+  path?: string
+  error?: string
+}
+
+// spec: spec/architecture.md#messages-message
+export interface FileOffer {
+  fileId: number
+  name: string
+  size: number
+  type: FileType
+  preview?: string
+  duration?: number
+}
+
+export interface Sender {
+  name: string
+  type?: string
+}
+
+// spec: spec/architecture.md#messages-toolcall
+export interface ToolCall {
+  signal: AbortSignal
+  progress: (message: string) => void
+}
+
+// spec: spec/architecture.md#messages-collected
+export class Collected {
+  readonly items: T.AChatItem[] = []
+  readonly changes = new Changes()
+  readonly overflow = new Set<number>()
+  lastAt?: number
+}
+
+// spec: spec/architecture.md#messages-changes
+export class Changes {
+  private readonly wakes = new Set<() => void>()
+
+  subscribe(wake: () => void): () => void {
+    this.wakes.add(wake)
+    return () => this.wakes.delete(wake)
+  }
+
+  notify(): void {
+    for (const wake of [...this.wakes]) wake()
+  }
+}
+
+type ItemChange = "new" | "updated" | "deleted"
+
+type ItemListener = (item: T.AChatItem, change: ItemChange) => void
+
+// spec: spec/architecture.md#messages-chatitemswatch
+export class ChatItemsWatch {
+  private readonly listeners = new Map<string, Set<ItemListener>>()
+
+  listen(chat: string, listener: ItemListener): () => void {
+    const listeners = this.listeners.get(chat) ?? new Set()
+    this.listeners.set(chat, listeners)
+    listeners.add(listener)
+    return () => {
+      listeners.delete(listener)
+      if (listeners.size === 0 && this.listeners.get(chat) === listeners) this.listeners.delete(chat)
+    }
+  }
+
+  // spec: spec/api.md#message-object
+  collect(chat: string, collected: Collected, accepts: (item: T.ChatItem) => boolean = () => true): () => void {
+    return this.listen(chat, (item, change) => {
+      if (item.chatItem.content.type !== "rcvMsgContent" || !accepts(item.chatItem)) return
+      const {itemId} = item.chatItem.meta
+      const i = collected.items.findIndex(({chatItem}) => chatItem.meta.itemId === itemId)
+      const overflowDeleted = change === "deleted" && collected.overflow.has(itemId)
+      if (change !== "new" && i < 0 && !overflowDeleted) return
+      if (overflowDeleted) collected.overflow.delete(itemId)
+      else if (change === "deleted") collected.items.splice(i, 1)
+      else if (i >= 0) collected.items[i] = item
+      else if (collected.items.length < maxCollected) collected.items.push(item)
+      else collected.overflow.add(itemId)
+      collected.lastAt = Date.now()
+      collected.changes.notify()
+    })
+  }
+
+  deliver(items: T.AChatItem[]): void {
+    for (const item of items) this.notify(item, "new")
+  }
+
+  update(item: T.AChatItem): void {
+    this.notify(item, "updated")
+  }
+
+  remove(items: T.AChatItem[]): void {
+    for (const item of items) this.notify(item, "deleted")
+  }
+
+  private notify(item: T.AChatItem, change: ItemChange): void {
+    const chat = chatRef(item.chatInfo)
+    if (chat === undefined) return
+    for (const listener of [...this.listeners.get(chat) ?? []]) listener(item, change)
+  }
+}
+
+// spec: spec/architecture.md#messages-chatref
+export function chatRef(chatInfo: T.ChatInfo): string | undefined {
+  return chatInfo.type === "group" && chatInfo.groupChatScope !== undefined ? undefined : anyScopeChatRef(chatInfo)
+}
+
+// spec: spec/architecture.md#messages-chatref
+export function anyScopeChatRef(chatInfo: T.ChatInfo): string | undefined {
+  switch (chatInfo.type) {
+    case "direct":
+      return `@${chatInfo.contact.contactId}`
+    case "group":
+      return `#${chatInfo.groupInfo.groupId}`
+    default:
+      return undefined
+  }
+}
+
+// spec: spec/architecture.md#messages-chatref
+export function isChatRef(value: string): boolean {
+  return /^[@#][1-9]\d{0,14}$/.test(value)
+}
+
+export function chatNumber(chat: string): number {
+  return Number(chat.slice(1))
+}
+
+export function chatType(chat: string): T.ChatType {
+  return chat.startsWith("@") ? T.ChatType.Direct : T.ChatType.Group
+}
+
+export function isMessageItem({content}: T.ChatItem): boolean {
+  return content.type === "rcvMsgContent" || content.type === "sndMsgContent"
+}
+
+export function isNew({meta}: T.ChatItem): boolean {
+  return meta.itemStatus.type === "rcvNew"
+}
+
+export function isLive({meta}: T.ChatItem): boolean {
+  return meta.itemLive === true
+}
+
+// spec: spec/api.md#message-object
+export function toMessage(chatInfo: T.ChatInfo, item: T.ChatItem, self: Sender, rejectedFiles: ReadonlySet<number>, data: string): Message {
+  const chat = chatRef(chatInfo) ?? ""
+  const {meta, content, quotedItem} = item
+  const text = content.type === "rcvMsgContent" || content.type === "sndMsgContent" ? content.msgContent.text : ""
+  const sender = itemSender(chatInfo, item.chatDir, self)
+  const replyTo = quotedItem === undefined ? undefined : toReplyTo(chatInfo, quotedItem, self)
+  return {
+    chat,
+    item: meta.itemId,
+    from: sender.name,
+    ...(sender.member === undefined ? {} : {from_member: sender.member}),
+    ...(sender.type === undefined ? {} : {from_type: sender.type}),
+    time: meta.itemTs,
+    text,
+    ...(content.type === "rcvMsgContent" && item.file !== undefined ? {file: messageFile(chat, content.msgContent, item.file, rejectedFiles, data)} : {}),
+    new: isNew(item),
+    ...(replyTo === undefined ? {} : {reply_to: {chat, ...replyTo, text: replyText(replyTo.text)}}),
+    mentions_me: meta.userMention,
+  }
+}
+
+// spec: spec/api.md#quote-object
+export function toReplyTo(chatInfo: T.ChatInfo, {itemId, chatDir, content, fileName}: {itemId?: number; chatDir?: T.CIDirection; content: T.MsgContent; fileName?: string}, self: Sender): ReplyTo {
+  const from = chatDir === undefined || chatDir.type === "channelRcv" ? undefined : itemSender(chatInfo, chatDir, self).name
+  const type = content.type === "text" || content.type === "unknown" ? undefined : content.type
+  return {
+    ...(itemId === undefined ? {} : {item: itemId}),
+    ...(from === undefined ? {} : {from}),
+    ...(type === undefined ? {} : {type}),
+    text: content.text === "" ? (fileName ?? "") : content.text,
+  }
+}
+
+// spec: spec/api.md#quote-object
+export function replyText(text: string): string {
+  const [line, ...rest] = trimmed(text).split(lineBreak)
+  const chars = [...graphemes.segment(trimmed(line))].map(({segment}) => segment)
+  return chars.length > replyTextLength || rest.length > 0 ? `${chars.slice(0, replyTextLength).join("").trimEnd()}…` : chars.join("")
+}
+
+// spec: spec/architecture.md#messages-toreplyto
+export function quoteLine({type, text}: ReplyTo): string {
+  const body = replyText(type === undefined ? text : trimmed(text) === "" ? type : `${type}: ${trimmed(text)}`)
+  return body === "" ? ">" : `> ${body}`
+}
+
+// spec: spec/api.md#quote-object
+function trimmed(text: string): string {
+  return text.replace(bidiControls, "").replace(edgeSpace, "")
+}
+
+// spec: spec/api.md#file-object
+function messageFile(chat: string, msgContent: T.MsgContent, ciFile: T.CIFile, rejectedFiles: ReadonlySet<number>, data: string): MessageFile {
+  const {name, size, type} = fileOffer(msgContent, ciFile)
+  const file = {name, size, type}
+  const {fileId, fileSource, fileStatus} = ciFile
+  const error = receivedFileError(data, chat, ciFile)
+  const {path, forwarded} = filePaths(data, chat, fileId, name)
+  if (rejectedFiles.has(fileId)) return {...file, status: "rejected"}
+  if (error !== undefined) return {...file, status: "failed", error}
+  if (fileStatus.type === "rcvComplete" && existsSync(path) && [path, forwarded].includes(fileSource?.filePath ?? "")) return {...file, status: "received", path}
+  return {...file, status: "offered"}
+}
+
+// spec: spec/api.md#file-object
+export function receivedFileError(data: string, chat: string, file: T.CIFile): string | undefined {
+  return fileError(file) ?? (file.fileStatus.type === "rcvComplete" && receivedPath(data, chat, file) === undefined ? missingFile : undefined)
+}
+
+// spec: spec/architecture.md#messages-tomessage
+export function receivedPath(data: string, chat: string, {fileId, fileName}: T.CIFile): string | undefined {
+  const {path, forwarded} = filePaths(data, chat, fileId, fileName)
+  return [path, forwarded].find(file => existsSync(file))
+}
+
+// spec: spec/architecture.md#messages-filepaths
+export function filePaths(data: string, chat: string, fileId: number, name: string): {path: string; forwarded: string} {
+  const file = storedName(fileId, name)
+  return {path: join(chatFolder(data, chat), file), forwarded: join(chatFolder(data, chat, "forwarded"), file)}
+}
+
+// spec: spec/architecture.md#messages-filepaths
+export function storedName(fileId: number, name: string): string {
+  const extension = extname(name)
+  return `${fileId}${/^\.[A-Za-z0-9]{1,16}$/.test(extension) ? extension : ""}`
+}
+
+// spec: spec/architecture.md#messages-filepaths
+export function chatFolder(data: string, chat: string, root: FilesRoot = "files"): string {
+  return join(data, root, `${chatType(chat) === T.ChatType.Direct ? "contact" : "group"}-${chatNumber(chat)}`)
+}
+
+// spec: spec/architecture.md#messages-fileoffer
+export function fileOffer(msgContent: T.MsgContent, {fileId, fileName, fileSize}: T.CIFile): FileOffer {
+  const file = {fileId, name: fileName, size: fileSize}
+  switch (msgContent.type) {
+    case "image":
+      return {...file, type: "image", preview: msgContent.image}
+    case "video":
+      return {...file, type: "video", preview: msgContent.image, duration: msgContent.duration}
+    case "voice":
+      return {...file, type: "voice", duration: msgContent.duration}
+    default:
+      return {...file, type: "file"}
+  }
+}
+
+// spec: spec/architecture.md#messages-fileoffer
+export function fileContent({type, preview = "", duration = 0}: Pick<FileOffer, "type" | "preview" | "duration">, text: string): T.MsgContent {
+  switch (type) {
+    case "image":
+      return {type, text, image: preview}
+    case "video":
+      return {type, text, image: preview, duration}
+    case "voice":
+      return {type, text, duration}
+    case "file":
+      return {type, text}
+  }
+}
+
+function itemSender(chatInfo: T.ChatInfo, chatDir: T.CIDirection, self: Sender): Sender & {member?: number} {
+  switch (chatDir.type) {
+    case "groupRcv": {
+      const {groupMemberId, memberProfile} = chatDir.groupMember
+      return {name: memberProfile.displayName, type: memberProfile.peerType, member: groupMemberId}
+    }
+    case "directRcv":
+      return chatInfo.type === "direct" ? {name: chatInfo.contact.profile.displayName, type: chatInfo.contact.profile.peerType} : self
+    case "channelRcv":
+      return chatInfo.type === "group" ? {name: chatInfo.groupInfo.groupProfile.displayName} : self
+    default:
+      return self
+  }
+}
+
+// spec: spec/architecture.md#messages-getchat
+export async function getChat(chat: api.ChatApi, ref: string, pagination: T.ChatPagination | number): Promise<T.AChat> {
+  return chat.apiGetChat(chatType(ref), chatNumber(ref), pagination)
+}
+
+// spec: spec/architecture.md#messages-getchat
+export async function receivingFiles(chat: api.ChatApi, ref: string): Promise<number[]> {
+  const fileIds: number[] = []
+  for (let pagination: T.ChatPagination = {type: "last", count: pageSize}; ; ) {
+    const items: T.ChatItem[] = (await getChat(chat, ref, pagination)).chatItems
+    fileIds.push(...items.flatMap(({file}) => (file !== undefined && receivingStatuses.includes(file.fileStatus.type) ? [file.fileId] : [])))
+    if (items.length < pageSize) return fileIds
+    pagination = {type: "before", chatItemId: items[0].meta.itemId, count: pageSize}
+  }
+}
+
+// spec: spec/architecture.md#messages-getchat
+export async function markRead(chat: api.ChatApi, ref: string, itemIds: number[]): Promise<void> {
+  if (itemIds.length > 0) await chat.apiChatItemsRead(chatType(ref), chatNumber(ref), itemIds)
+}
+
+// spec: spec/architecture.md#messages-unreaditems
+export async function unreadItems(chat: api.ChatApi, ref: string, {chatInfo, chatStats}: T.AChat, messages: number): Promise<{chatInfo: T.ChatInfo; items: T.ChatItem[]; unreadRest: number}> {
+  if (chatStats.unreadCount === 0) return {chatInfo, items: [], unreadRest: 0}
+  const items = (await getChat(chat, ref, {type: "around", chatItemId: chatStats.minUnreadItemId, count: 0})).chatItems
+  for (let last = items.at(-1); last !== undefined && items.filter(isNewMessage).length < messages;) {
+    const page = (await getChat(chat, ref, {type: "after", chatItemId: last.meta.itemId, count: pageSize})).chatItems
+    items.push(...page)
+    last = page.length === pageSize ? page.at(-1) : undefined
+  }
+  const unread = items.filter(isNew)
+  return {chatInfo, items: unread, unreadRest: Math.max(0, chatStats.unreadCount - unread.length)}
+}
+
+function isNewMessage(item: T.ChatItem): boolean {
+  return item.content.type === "rcvMsgContent" && isNew(item) && !isLive(item)
+}
+
+// spec: spec/architecture.md#messages-reportprogress
+export function reportProgress(call: ToolCall, message: () => string): () => void {
+  call.progress(message())
+  const timer = setInterval(() => call.progress(message()), progressInterval)
+  return () => clearInterval(timer)
+}
+
+// spec: spec/architecture.md#messages-reportprogress
+export function nextChange(changes: Changes, signal: AbortSignal, ms?: number): Promise<boolean> {
+  return new Promise(resolve => {
+    if (signal.aborted) return resolve(false)
+    const finish = (changed: boolean): void => {
+      clearTimeout(timer)
+      unsubscribe()
+      signal.removeEventListener("abort", aborted)
+      resolve(changed)
+    }
+    const aborted = (): void => finish(false)
+    const timer = ms === undefined ? undefined : setTimeout(() => finish(true), Math.max(0, Math.min(ms, maxTimer)))
+    const unsubscribe = changes.subscribe(() => finish(true))
+    signal.addEventListener("abort", aborted, {once: true})
+  })
+}
+
+// spec: spec/architecture.md#messages-reportprogress
+export async function awaitResponses(collected: Collected, deadline: number, idle: number, call: ToolCall): Promise<boolean> {
+  for (;;) {
+    const live = collected.items.some(({chatItem}) => isLive(chatItem))
+    const idleEnd = collected.lastAt === undefined || live ? Infinity : collected.lastAt + idle * 1000
+    const remaining = Math.min(deadline, idleEnd) - Date.now()
+    if (remaining <= 0) return true
+    if (!(await nextChange(collected.changes, call.signal, remaining))) return false
+  }
+}
+
+export function utcMinutes(time: number): string {
+  return `${new Date(time).toISOString().slice(0, 16).replace("T", " ")} UTC`
+}
+
+// spec: spec/architecture.md#messages-duration
+export function duration(exact: number): string {
+  const ms = Math.round(exact)
+  const seconds = Math.floor(ms / 1000)
+  if (ms < 1000) return `${ms} ms`
+  if (ms < 10_000) return `${(Math.floor(ms / 100) / 10).toFixed(1)} s`
+  if (seconds < 60) return `${seconds} s`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${seconds % 60} s`
+  return `${Math.floor(seconds / 3600)} h ${Math.floor(seconds / 60) % 60} min`
+}
+
+// spec: spec/architecture.md#messages-validname
+export function validName(name: string): string {
+  const chars: string[] = []
+  let previous = ""
+  let punctuation = 0
+  for (const original of name) {
+    const c = /^[\t\n\v\f\r\p{Zs}]$/u.test(original) ? " " : original
+    const isPunctuation = /^[\p{Pc}\p{Pd}\p{Po}]$/u.test(c)
+    const firstNameChar = /^[\p{L}\p{Nd}\p{So}]$/u.test(c)
+    const firstChar = firstNameChar || /^[\p{Sc}\p{Sm}]$/u.test(c)
+    const valid = prohibitedNameChars.includes(c) ? false
+      : previous === "" ? c > " " && firstNameChar
+      : previous === " " ? firstChar || (punctuation === 0 && isPunctuation)
+      : punctuation > 0 ? firstChar || c === " "
+      : firstChar || c === " " || /^\p{M}$/u.test(c) || isPunctuation
+    if (valid) {
+      chars.push(c)
+      previous = c
+      punctuation = isPunctuation ? punctuation + 1 : c === " " ? punctuation : 0
+    }
+  }
+  const trimmed = chars.slice(0, maxNameLength).join("").replace(/ +$/, "")
+  return trimmed.replace(/^([\s\S]+)_(\d+)$/, "$1-$2")
+}
+
+// spec: spec/architecture.md#messages-validname
+export function viewName(name: string): string {
+  return /\s/u.test(name) || /\p{P}$/u.test(name) ? `'${name}'` : name
+}

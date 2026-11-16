@@ -248,8 +248,8 @@ deleteDoneDeliveryTasks db createdAtCutoff = do
     |]
     (createdAtCutoff, DTSProcessed, DTSError)
 
-createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> [GroupMemberId] -> ByteString -> IO ()
-createMsgDeliveryJob db gInfo jobScope senderGMIds body = do
+createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> [GroupMemberId] -> Bool -> ByteString -> IO ()
+createMsgDeliveryJob db gInfo jobScope senderGMIds notification body = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -257,10 +257,10 @@ createMsgDeliveryJob db gInfo jobScope senderGMIds body = do
       INSERT INTO delivery_jobs (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-        sender_group_member_ids, body, job_status, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?)
+        sender_group_member_ids, body, notification, job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (senderColumn, Binary body, DJSPending, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (senderColumn, Binary body, BI notification, DJSPending, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
     -- NULL ↔ []; non-empty list ↔ comma-separated decimal Int64s.
@@ -280,7 +280,7 @@ getPendingDeliveryJobScopes db =
     |]
     (Only DJSPending)
 
-type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe Text, Binary ByteString, Maybe GroupMemberId)
+type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe Text, Binary ByteString, BoolInt, Maybe GroupMemberId)
 
 getNextDeliveryJob :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe MessageDeliveryJob))
 getNextDeliveryJob db deliveryKey = do
@@ -310,14 +310,14 @@ getNextDeliveryJob db deliveryKey = do
             SELECT
               delivery_job_id,
               worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-              sender_group_member_ids, body, cursor_group_member_id
+              sender_group_member_ids, body, notification, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           |]
           (Only jobId)
       where
         toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
-        toDeliveryJob ((Only jobId') :. jobScopeRow :. (senderGMIdsText_, Binary body, cursorGMId_)) = do
+        toDeliveryJob ((Only jobId') :. jobScopeRow :. (senderGMIdsText_, Binary body, BI notification, cursorGMId_)) = do
           jobScope <- maybe (Left $ SEInvalidDeliveryJob jobId') Right $ toJobScope_ jobScopeRow
           -- NULL or empty string means []; otherwise the value must parse
           -- as a comma-separated decimal Int64 list. An unparseable
@@ -325,7 +325,7 @@ getNextDeliveryJob db deliveryKey = do
           senderGMIds <- case senderGMIdsText_ of
             Nothing -> Right []
             Just t -> maybe (Left $ SEInvalidDeliveryJob jobId') Right $ parseSenderGMIds t
-          Right $ MessageDeliveryJob {jobId = jobId', jobScope, senderGMIds, body, cursorGMId_}
+          Right $ MessageDeliveryJob {jobId = jobId', jobScope, senderGMIds, body, notification, cursorGMId_}
         parseSenderGMIds :: Text -> Maybe [GroupMemberId]
         parseSenderGMIds t
           | T.null t = Just []

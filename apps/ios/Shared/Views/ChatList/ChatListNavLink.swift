@@ -781,17 +781,19 @@ func showErrorAlert(_ error: Error, _ title: String) {
 struct ChatListNavLink_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatId: String? = "@1"
+        var contactRequest = UserContactRequest.sampleData
+        contactRequest.updatedAt = previewDate
         return Group {
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello")]
             ), parentSheet: .constant(nil))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
+                chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello")]
             ), parentSheet: .constant(nil))
             ChatListNavLink(chat: Chat(
-                chatInfo: ChatInfo.sampleData.contactRequest,
+                chatInfo: .contactRequest(contactRequest: contactRequest),
                 chatItems: []
             ), parentSheet: .constant(nil))
         }

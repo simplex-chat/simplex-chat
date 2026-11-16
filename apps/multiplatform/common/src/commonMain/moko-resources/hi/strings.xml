@@ -31,7 +31,7 @@
     <string name="accept_call_on_lock_screen">स्वीकार करना</string>
     <string name="accept">स्वीकार करना</string>
     <string name="accept_feature">स्वीकार करना</string>
-    <string name="accept_connection_request__question">संबंध अनुरोध स्वीकार करें\?</string>
+    <string name="accept_connection_request__question">संबंध अनुरोध स्वीकार करें?</string>
     <string name="callstatus_accepted">स्वीकृत कॉल</string>
     <string name="accept_contact_incognito_button">गुप्त स्वीकार करें</string>
     <string name="users_add">प्रोफ़ाइल जोड़ें</string>
@@ -93,7 +93,7 @@
     <string name="join_group_button">प्रवेश लेना</string>
     <string name="join_group_incognito_button">गुप्त में शामिल हों</string>
     <string name="joining_group">समूह में शामिल होना</string>
-    <string name="join_group_question">समूह में शामिल हों\?</string>
+    <string name="join_group_question">समूह में शामिल हों?</string>
     <string name="thousand_abbreviation">क</string>
     <string name="keychain_error">चाबी का गुच्छा त्रुटि</string>
     <string name="button_leave_group">समूह छोड़ दें</string>
@@ -125,12 +125,12 @@
     <string name="settings_notification_preview_title">अधिसूचना पूर्वावलोकन</string>
     <string name="notifications">सूचनाएं</string>
     <string name="full_deletion">सभी के लिए हटाएं</string>
-    <string name="delete_chat_profile_question">चैट प्रोफ़ाइल हटाएं\?</string>
-    <string name="users_delete_question">चैट प्रोफ़ाइल हटाएं\?</string>
+    <string name="delete_chat_profile_question">चैट प्रोफ़ाइल हटाएं?</string>
+    <string name="users_delete_question">चैट प्रोफ़ाइल हटाएं?</string>
     <string name="users_delete_profile_for">के लिए चैट प्रोफ़ाइल हटाएं</string>
     <string name="button_delete_contact">संपर्क मिटा दें</string>
     <string name="deleted_description">हटाए गए</string>
-    <string name="delete_contact_question">संपर्क मिटा दें\?</string>
+    <string name="delete_contact_question">संपर्क मिटा दें?</string>
     <string name="rcv_group_event_group_deleted">हटाए गए समूह</string>
     <string name="delete_image">छवि हटाएं</string>
     <string name="button_delete_group">समूह हटाएं</string>
@@ -172,7 +172,7 @@
     <string name="incognito_random_profile">आपका यादृच्छिक प्रोफ़ाइल</string>
     <string name="chat_preferences">चैट वरीयताएँ</string>
     <string name="ttl_days">%d दिनों</string>
-    <string name="allow_voice_messages_question">ध्वनि संदेशों की अनुमति दें\?</string>
+    <string name="allow_voice_messages_question">ध्वनि संदेशों की अनुमति दें?</string>
     <string name="clear_chat_menu_action">साफ़</string>
     <string name="icon_descr_audio_off">ऑडियो बंद</string>
     <string name="icon_descr_audio_on">ऑडियो चालू</string>
@@ -183,7 +183,7 @@
     <string name="ttl_hour">%d घंटा</string>
     <string name="auth_unavailable">प्रमाणीकरण अनुपलब्ध</string>
     <string name="icon_descr_edited">संपादित</string>
-    <string name="delete_group_question">समूह मिटाएं\?</string>
+    <string name="delete_group_question">समूह मिटाएं?</string>
     <string name="contact_already_exists">संपर्क पहले से मौजूद है</string>
     <string name="notification_preview_mode_contact">संपर्क नाम</string>
     <string name="notification_preview_somebody">संपर्क छुपाया गया:</string>

@@ -39,8 +39,11 @@ import java.net.URI
 fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
   val rhId = rh?.remoteHostId
   val view = LocalMultiplatformView()
+  val inProgress = remember { mutableStateOf(false) }
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
+      if (inProgress.value) return@AddGroupLayout
+      inProgress.value = true
       hideKeyboard(view)
       withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
@@ -61,6 +64,8 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
               GroupLinkView(chatModel, rhId, groupInfo, groupLink = null, onGroupLinkUpdated = null, creatingGroup = true, close = close)
             }
           }
+        } else {
+          inProgress.value = false
         }
       }
     },
@@ -116,7 +121,7 @@ fun AddGroupLayout(
             ) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(128.dp, image = profileImage.value, icon = MR.images.ic_supervised_user_circle_filled)
+                  ProfileImage(107.dp, image = profileImage.value, icon = MR.images.ic_supervised_user_circle_filled, modifier = Modifier.centeredIn(128.dp))
                   EditImageButton { scope.launch { bottomSheetModalState.show() } }
                 }
                 if (profileImage.value != null) {

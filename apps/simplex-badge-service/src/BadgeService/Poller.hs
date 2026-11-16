@@ -30,7 +30,7 @@ where
 import BadgeService.Config (PollConfig (..))
 import BadgeService.Orders (decide, settleOrder)
 import BadgeService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Received (..), expiresItself, settleWindow)
-import BadgeService.Store.Invoices (InvoiceRow (..), OverdueInvoice (..), expireOverdue, getInvoiceByProviderRef, overdueInvoices, providerText, unpaidRefs)
+import BadgeService.Store.Invoices (InvoiceRow (..), OverdueInvoice (..), expireOverdue, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import BadgeService.Waiters (Waiters, publish, waitingCount, waitingCountSTM)
 import Control.Concurrent.STM
 import Control.Exception (SomeAsyncException, SomeException, fromException, throwIO, try)
@@ -47,7 +47,8 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCu
 import Numeric.Natural (Natural)
 import Simplex.Chat.PaymentService.Types (InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Encoding.String (textEncode)
+import Simplex.Messaging.Util (stateTVar', tshow)
 
 -- | Allows for our clock running ahead of the provider's; an expired invoice can still be marked paid.
 expiryGrace :: NominalDiffTime
@@ -145,7 +146,7 @@ readsPerPass = 25
 
 coveringProvider :: PollerEnv -> UTCTime -> (Text, Text) -> IO (Maybe Provider)
 coveringProvider env@PollerEnv {peProviders} now (provider, ref) =
-  case find ((== provider) . providerText . pProvider) peProviders of
+  case find ((== provider) . textEncode . pProvider) peProviders of
     Just p -> pure (Just p)
     Nothing -> do
       due <- dueToWarn env now ("no provider for " <> provider)
@@ -261,7 +262,7 @@ uncancelled :: PollerEnv -> UTCTime -> OverdueInvoice -> Text -> IO Bool
 uncancelled env@PollerEnv {peCancelFailed} now OverdueInvoice {oiProvider, oiProviderRef = ref, oiCreatedAt} e
   | diffUTCTime now oiCreatedAt <= settleWindow = keepOpen "it stays open until a cancel succeeds or it settles"
   | otherwise = do
-      firstFailed <- atomically $ stateTVar peCancelFailed $ \failed -> (M.lookup ref failed, M.insertWith (\_ first -> first) ref now failed)
+      firstFailed <- atomically $ stateTVar' peCancelFailed $ \failed -> (M.lookup ref failed, M.insertWith (\_ first -> first) ref now failed)
       case firstFailed of
         Just at | diffUTCTime now at >= cancelGiveUpDelay -> do
           logError ("badge poller: overdue " <> tshow oiProvider <> " invoice " <> ref <> " could not be cancelled at the provider, so it was expired here only; check it in the provider's dashboard: " <> e)
@@ -309,7 +310,7 @@ reportStrangers env provider now = \case
     home = case provider of
       PPCrypto -> "BTCPay store"
       PPStripe -> "Stripe account"
-      other -> providerText other <> " account"
+      other -> textEncode other <> " account"
 
 dueToWarn :: PollerEnv -> UTCTime -> Text -> IO Bool
 dueToWarn PollerEnv {peSkipped} now reason = atomically $ do

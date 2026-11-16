@@ -73,6 +73,7 @@ struct NtfModeSelector: View {
                     .resizable()
                     .scaledToFill()
                     .frame(width: mode.icon == "bolt" ? 14 : 18, height: 18)
+                    .frame(width: 18)
                     .foregroundColor(selection == mode ? theme.colors.primary : theme.colors.secondary)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(mode.label)

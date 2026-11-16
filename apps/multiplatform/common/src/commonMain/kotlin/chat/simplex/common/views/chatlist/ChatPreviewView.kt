@@ -277,6 +277,7 @@ fun ChatPreviewView(
       MarkdownText(
         text,
         formattedText,
+        if (formattedText == null) null else ci.markdownBlocks,
         sender = when {
           cInfo is ChatInfo.Group && !ci.chatDir.sent && !ci.meta.showGroupAsSender -> ci.memberDisplayName
           else -> null
@@ -361,7 +362,7 @@ fun ChatPreviewView(
           if (image != null) {
             Image(base64ToBitmap(image), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
           } else {
-            Icon(painterResource(mc.chatLink.iconRes), null, Modifier.size(44.sp.toDp()), tint = if (isInDarkTheme()) FileDark else FileLight)
+            ProfileImage(36.5.sp.toDp(), icon = mc.chatLink.iconRes, color = if (isInDarkTheme()) FileDark else FileLight, modifier = Modifier.centeredIn(44.sp.toDp()))
           }
         }
       }
@@ -402,7 +403,7 @@ fun ChatPreviewView(
   Box(contentAlignment = Alignment.Center) {
     Row {
       Box(contentAlignment = Alignment.BottomEnd) {
-        ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
+        ChatInfoImage(cInfo, size = 60.dp * fontSizeSqrtMultiplier, modifier = Modifier.centeredIn(72.dp * fontSizeSqrtMultiplier))
         Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
           chatPreviewImageOverlayIcon()
         }
@@ -414,7 +415,7 @@ fun ChatPreviewView(
             chatPreviewTitle()
           }
           Spacer(Modifier.width(8.sp.toDp()))
-          val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs)
+          val ts = getTimestampText(chat.chatItems.lastOrNull()?.takeIf { it.content !is CIContent.ChatBanner }?.meta?.itemTs ?: chat.chatInfo.chatTs)
           ChatListTimestampView(ts)
         }
         Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
@@ -643,6 +644,6 @@ private data class ActiveVoicePreview(
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+    ChatPreviewView(Chat.sampleData.copy(chatItems = Chat.sampleData.chatItems.map(::previewDated)), true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
   }
 }

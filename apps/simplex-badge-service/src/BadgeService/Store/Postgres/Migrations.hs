@@ -18,7 +18,9 @@ badgeServiceSchemaMigrations = sortOn name $ map migration schemaMigrations
 schemaMigrations :: [(String, Text, Maybe Text)]
 schemaMigrations =
   [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
-    ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops)
+    ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
+    ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
+    ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -150,6 +152,124 @@ ALTER TABLE @badge_codes DROP COLUMN group_item_id;
 ALTER TABLE @badge_codes DROP COLUMN redeem_count;
 ALTER TABLE @badge_codes DROP COLUMN redeem_limit;
 DROP TABLE @group;
+|]
+
+m20260925_badge_store_receipts :: Text
+m20260925_badge_store_receipts =
+  withPrefix
+    servicePrefix
+    -- The unique provider_ref is what makes one store transaction fund one purchase: presented twice
+    -- at once, or under two keys, only one insert of its payment succeeds.
+    [r|
+DROP INDEX @idx_payments_provider_ref;
+
+CREATE UNIQUE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
+
+ALTER TABLE @badge_purchases ADD COLUMN payment_id TEXT REFERENCES @payments;
+
+CREATE UNIQUE INDEX @idx_badge_purchases_payment ON @badge_purchases(payment_id);
+
+ALTER TABLE @badge_ledger ADD COLUMN payment_id TEXT REFERENCES @payments;
+
+CREATE INDEX @idx_badge_ledger_payment ON @badge_ledger(payment_id);
+|]
+
+down_m20260925_badge_store_receipts :: Text
+down_m20260925_badge_store_receipts =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_badge_ledger_payment;
+
+ALTER TABLE @badge_ledger DROP COLUMN payment_id;
+
+DROP INDEX @idx_badge_purchases_payment;
+
+ALTER TABLE @badge_purchases DROP COLUMN payment_id;
+
+DROP INDEX @idx_payments_provider_ref;
+
+CREATE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
+|]
+
+m20261012_badge_subscriptions :: Text
+m20261012_badge_subscriptions =
+  withPrefix
+    servicePrefix
+    -- provider_token is a Play purchase token, a bearer secret: it is kept only for a subscription, which Play is asked about again.
+    [r|
+CREATE TABLE @subscription_charges(
+  charge_id TEXT NOT NULL PRIMARY KEY,
+  payment_id TEXT NOT NULL REFERENCES @payments ON DELETE CASCADE,
+  provider_charge_ref TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  period_start TIMESTAMPTZ NOT NULL,
+  period_end TIMESTAMPTZ NOT NULL,
+  amount BIGINT,
+  currency TEXT,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(payment_id, provider_charge_ref)
+);
+
+ALTER TABLE @badge_ledger ADD COLUMN charge_id TEXT REFERENCES @subscription_charges;
+
+CREATE UNIQUE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id, badge_purchase_id);
+
+ALTER TABLE @badge_ledger ADD COLUMN from_purchase_id BIGINT REFERENCES @badge_purchases;
+
+ALTER TABLE @badge_ledger ADD COLUMN to_purchase_id BIGINT REFERENCES @badge_purchases;
+
+CREATE INDEX @idx_badge_ledger_from_purchase ON @badge_ledger(from_purchase_id);
+
+CREATE INDEX @idx_badge_ledger_to_purchase ON @badge_ledger(to_purchase_id);
+
+ALTER TABLE @payments ADD COLUMN subscription_state TEXT;
+
+ALTER TABLE @payments ADD COLUMN subscription_checked_at TIMESTAMPTZ;
+
+ALTER TABLE @payments ADD COLUMN provider_token TEXT;
+
+ALTER TABLE @payments ADD COLUMN rebound_at TIMESTAMPTZ;
+
+ALTER TABLE @payments DROP COLUMN subscription_renews_at;
+
+ALTER TABLE @payments DROP COLUMN grace_until;
+
+ALTER TABLE @payments DROP COLUMN cancelled;
+|]
+
+down_m20261012_badge_subscriptions :: Text
+down_m20261012_badge_subscriptions =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @payments ADD COLUMN subscription_renews_at TIMESTAMPTZ;
+
+ALTER TABLE @payments ADD COLUMN grace_until TIMESTAMPTZ;
+
+ALTER TABLE @payments ADD COLUMN cancelled SMALLINT NOT NULL DEFAULT 0;
+
+ALTER TABLE @payments DROP COLUMN rebound_at;
+
+ALTER TABLE @payments DROP COLUMN provider_token;
+
+ALTER TABLE @payments DROP COLUMN subscription_checked_at;
+
+ALTER TABLE @payments DROP COLUMN subscription_state;
+
+DROP INDEX @idx_badge_ledger_to_purchase;
+
+DROP INDEX @idx_badge_ledger_from_purchase;
+
+ALTER TABLE @badge_ledger DROP COLUMN to_purchase_id;
+
+ALTER TABLE @badge_ledger DROP COLUMN from_purchase_id;
+
+DROP INDEX @idx_badge_ledger_charge;
+
+ALTER TABLE @badge_ledger DROP COLUMN charge_id;
+
+DROP TABLE @subscription_charges;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

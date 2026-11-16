@@ -143,8 +143,7 @@
     <string name="blocked_by_admin_item_description">مسدود شده توسط مدیر</string>
     <string name="blocked_by_admin_items_description">%d پیام توسط مدیر مسدود شده</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>به وسیله تنظیمات می‌تواند غیرفعال شود</b> – اعلان‌ها تا زمانی که برنامه در حال اجراست، همچنان نمایش داده می‌شوند.]]></string>
-    <string name="database_migration_in_progress">جابه‌جایی پایگاه داده در حال جریان است.
-\nممکن است دقایقی زمان ببرد.</string>
+    <string name="database_migration_in_progress">جابه‌جایی پایگاه داده در حال جریان است. \nممکن است دقایقی زمان ببرد.</string>
     <string name="turn_off_battery_optimization"><![CDATA[در دیالوگ بعدی <b>اجازه دهید</b> تا اعلان‌ها را فوری دریافت کنید.]]></string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[برای بهبود حریم خصوصی، <b>SimpleX در پس‌زمینه اجرا می‌شود</b> و به جای استفاده از پوش نوتیفیکیشن، کار می‌کند.]]></string>
     <string name="saved_description">ذخیره شده</string>
@@ -265,8 +264,7 @@
     <string name="add_contact_or_create_group">شروع چت جدید</string>
     <string name="from_gallery_button">از گالری</string>
     <string name="call_service_notification_video_call">تماس تصویری</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">برای محافظت از اطلاعاتتان، قفل SimpleX را روشن کنید.
-\nاز شما خواسته خواهد شد قبل از فعال شدن این ویژگی، تصدیق را تکمیل کنید.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">برای محافظت از اطلاعاتتان، قفل SimpleX را روشن کنید. \nاز شما خواسته خواهد شد قبل از فعال شدن این ویژگی، تصدیق را تکمیل کنید.</string>
     <string name="la_no_app_password">عدم وجود کد عبور</string>
     <string name="la_minutes">%d دقیقه</string>
     <string name="auth_enable_simplex_lock">فعال‌سازی قفل SimpleX</string>
@@ -539,8 +537,7 @@
     <string name="rate_the_app">به برنامه امتیاز بدهید</string>
     <string name="smp_servers_your_server_address">نشانی‌ سرور شما</string>
     <string name="smp_servers_check_address">نشانی‌ سرور را بررسی و دوباره امتحان کنید.</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">لازم است مخاطبتان آنلاین باشد تا اتصال کامل شود.
-\nمی‌توانید این اتصال را لغو و مخاطب را حذف کنید (و بعدا با یک لینک جدید امتحان کنید).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">لازم است مخاطبتان آنلاین باشد تا اتصال کامل شود. \nمی‌توانید این اتصال را لغو و مخاطب را حذف کنید (و بعدا با یک لینک جدید امتحان کنید).</string>
     <string name="icon_descr_address">نشانی‌ SimpleX</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">راهنمای کاربر</font>.]]></string>
     <string name="this_string_is_not_a_connection_link">این رشته متن، یک لینک اتصال نیست!</string>
@@ -555,8 +552,7 @@
     <string name="share_this_1_time_link">این لینک دعوت یک‌بارمصرف را به اشتراک بگذارید</string>
     <string name="tap_to_paste_link">برای الصاق لینک ضربه بزنید</string>
     <string name="your_settings">تنظیمات شما</string>
-    <string name="network_use_onion_hosts_required_desc">میزبان‌های Onion برای اتصال الزامی خواهد بود.
-\nلطفا توجه داشته باشید: شما بدون نشانی‌ onion. قادر نخواهید بود به سرورها متصل شوید.</string>
+    <string name="network_use_onion_hosts_required_desc">میزبان‌های Onion برای اتصال الزامی خواهد بود. \nلطفا توجه داشته باشید: شما بدون نشانی‌ onion. قادر نخواهید بود به سرورها متصل شوید.</string>
     <string name="save_servers_button">ذخیره</string>
     <string name="port_verb">پورت</string>
     <string name="network_enable_socks">از پروکسی SOCKS استفاده شود؟</string>
@@ -616,8 +612,7 @@
     <string name="save_settings_question">تنظیمات ذخیره شوند؟</string>
     <string name="save_auto_accept_settings">ذخیره تنظیمات آدرس SimpleX</string>
     <string name="delete_address">حذف نشانی</string>
-    <string name="email_invite_body">سلام!
-\nبه وسیله SimpleX Chat به من متصل شوید: %s</string>
+    <string name="email_invite_body">سلام! \nبه وسیله SimpleX Chat به من متصل شوید: %s</string>
     <string name="continue_to_next_step">ادامه</string>
     <string name="your_current_profile">پروفایل فعلی شما</string>
     <string name="full_name__field">نام کامل:</string>
@@ -791,8 +786,7 @@
     <string name="receipts_section_groups">گروه‌های کوچک (حداکثر ۲۰)</string>
     <string name="settings_section_title_settings">تنظیمات</string>
     <string name="onboarding_notifications_mode_title">اعلان‌های خصوصی</string>
-    <string name="you_can_change_it_later">عبارت عبور تصادفی در تنظیمات به صورت متن آشکار ذخیره می‌شود.
-\nمی‌توانید بعدا آن را تغییر دهید.</string>
+    <string name="you_can_change_it_later">عبارت عبور تصادفی در تنظیمات به صورت متن آشکار ذخیره می‌شود. \nمی‌توانید بعدا آن را تغییر دهید.</string>
     <string name="incoming_video_call">تماس تصویری رسیده</string>
     <string name="incoming_audio_call">تماس صوتی رسیده</string>
     <string name="encrypted_video_call">تماس تصویری با رمزنگاری انتها به انتها</string>
@@ -841,8 +835,7 @@
     <string name="allow_accepting_calls_from_lock_screen">تماس‌ها از صفحه قفل را از طریق تنظیمات فعال کنید.</string>
     <string name="status_contact_has_no_e2e_encryption">مخاطب رمزنگاری انتها به انتها ندارد</string>
     <string name="webrtc_ice_servers">سرورهای WebRTC ICE</string>
-    <string name="alert_text_msg_bad_id">شناسه پیام بعدی نادرست است (کمتر یا برابر است با قبلی).
-\nبروز این اتفاق می‌تواند به دلیل وجود اشکال نرم‌افزاری یا مورد حمله قرار گرفتن اتصال باشد.</string>
+    <string name="alert_text_msg_bad_id">شناسه پیام بعدی نادرست است (کمتر یا برابر است با قبلی). \nبروز این اتفاق می‌تواند به دلیل وجود اشکال نرم‌افزاری یا مورد حمله قرار گرفتن اتصال باشد.</string>
     <string name="alert_text_fragment_please_report_to_developers">لطفا آن را به توسعه‌دهندگان گزارش دهید.</string>
     <string name="integrity_msg_duplicate">پیام همسان</string>
     <string name="stop_chat_question">چت متوقف شود؟</string>
@@ -875,10 +868,7 @@
     <string name="permissions_camera_and_record_audio">دوربین و میکروفون</string>
     <string name="permissions_grant">اعطای اجازه‌ها برای برقراری تماس‌ها</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>از باتری بیشتر استفاده می‌کند</b>! سرویس پس‌زمینه همیشه در حال اجراست - اعلان‌ها به محض موجود شدن، نمایش داده می‌شوند.]]></string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">وقتی می‌تواند اتفاق بیفتد که:
-\n۱. پیام‌ها در کلاینت فرستنده بعد از ۲ روز یا روی سرور بعد از ۳۰ روز منقضی شده باشند.
-\n۲. رمزگشایی پیام ناموفق بود، چون شما یا مخاطبتان از پشتیبان پایگاه داده قدیمی استفاده استفاده کردید.
-\n۳. اتصال مورد حمله قرار گرفته باشد.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">وقتی می‌تواند اتفاق بیفتد که: \n۱. پیام‌ها در کلاینت فرستنده بعد از ۲ روز یا روی سرور بعد از ۳۰ روز منقضی شده باشند. \n۲. رمزگشایی پیام ناموفق بود، چون شما یا مخاطبتان از پشتیبان پایگاه داده قدیمی استفاده استفاده کردید. \n۳. اتصال مورد حمله قرار گرفته باشد.</string>
     <string name="settings_section_title_profile_images">تصاویر پروفایل</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">چت را متوقف کنید تا بتوانید پایگاه داده چت را اکسپورت، ایمپورت یا حذف کنید. در حالی که چت متوقف است، نمی‌توانید پیام‌ها را ارسال یا دریافت کنید.</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">پایگاه داده چت فعلی شما حذف و توسط پایگاه داده ایمپورت شده جایگزین خواهد شد. \nاین عمل قابل برگشت نیست - پروفایل، مخاطبان، پیام‌ها و فایل‌های شما به صورت غیر قابل بازگشت از بین خواهند رفت.</string>
@@ -1472,9 +1462,7 @@
     <string name="v5_1_self_destruct_passcode_descr">تمام اطلاعات وقتی وارد می‌شوند پاک می‌شوند.</string>
     <string name="v5_1_custom_themes_descr">سفارشی کردن و اشتراک‌گذاری تم‌های رنگ.</string>
     <string name="v5_1_custom_themes">تم‌های سفارشی</string>
-    <string name="v5_3_discover_join_groups_descr">- اتصال به سرویس فهرست راهنما (آزمایشی)!
-\n- رسیدهای تحویل (تا ۲۰ دقیقه).
-\n- سریع‌تر و پایداری بیشتر.</string>
+    <string name="v5_3_discover_join_groups_descr">- اتصال به سرویس فهرست راهنما (آزمایشی)! \n- رسیدهای تحویل (تا ۲۰ دقیقه). \n- سریع‌تر و پایداری بیشتر.</string>
     <string name="v5_4_better_groups">گروه‌های بهتر</string>
     <string name="v5_6_quantum_resistant_encryption_descr">فعال کردن در چت‌های مستقیم (آزمایشی)!</string>
     <string name="unlink_desktop_question">اتصال با کامپیوتر قطع شود؟</string>
@@ -1504,17 +1492,14 @@
     <string name="bad_desktop_address">نشانی کامپیوتر ناصحیح</string>
     <string name="desktop_incompatible_version">نسخه ناسازگار</string>
     <string name="v5_3_new_interface_languages_descr">عربی، بلغاری، فنلاندی، عبری، تایلندی و اوکراینی - با سپاس از کاربران و Weblate</string>
-    <string name="snd_error_proxy_relay">سرور فرستادن: %1$s
-\nخطای سرور مقصد: %2$s</string>
-    <string name="snd_error_proxy">سرور فرستادن: %1$s
-\nخطا: %2$s</string>
+    <string name="snd_error_proxy_relay">سرور فرستادن: %1$s \nخطای سرور مقصد: %2$s</string>
+    <string name="snd_error_proxy">سرور فرستادن: %1$s \nخطا: %2$s</string>
     <string name="message_delivery_warning_title">هشدار تحویل پیام</string>
     <string name="snd_error_expired">مشکلات شبکه - پیام بعد از تلاش‌های زیاد برای ارسالش منقضی شد.</string>
     <string name="srv_error_host">نشانی سرور با تنظیمات شبکه ناسازگار است.</string>
     <string name="srv_error_version">نسخه سرور با تنظیمات شبکه ناسازگار است.</string>
     <string name="snd_error_auth">کلید اشتباه یا اتصال ناشناخته - به احتمال زیاد این اتصال حذف شده است.</string>
-    <string name="agent_internal_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید:
-\n%s</string>
+    <string name="agent_internal_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید: \n%s</string>
     <string name="v5_2_fix_encryption">نگه‌داشتن اتصال‌های خود</string>
     <string name="network_smp_proxy_mode_never">هرگز</string>
     <string name="network_smp_proxy_mode_unknown_description">استفاده از مسیریابی خصوصی با سرورهای ناشناخته.</string>
@@ -1538,9 +1523,7 @@
     <string name="v4_5_reduced_battery_usage">استفاده باتری کاهش یافته</string>
     <string name="v5_0_app_passcode_descr">به جای تصدیق سیستم آن را تعیین کنید.</string>
     <string name="v4_6_audio_video_calls_descr">پشتیبانی از بلوتوث و دیگر بهبودها.</string>
-    <string name="v5_1_better_messages_descr">- پیام‌های صوتی تا ۵ دقیقه.
-\n- زمان سفارشی برای ناپدید کردن.
-\n- ویرایش تاریخچه.</string>
+    <string name="v5_1_better_messages_descr">- پیام‌های صوتی تا ۵ دقیقه. \n- زمان سفارشی برای ناپدید کردن. \n- ویرایش تاریخچه.</string>
     <string name="v5_4_better_groups_descr">پیوستن سریع‌تر و پیام‌های قابل اطمینان تر.</string>
     <string name="v5_7_forward">باز فرستادن و ذخیره پیام‌ها</string>
     <string name="v5_7_shape_profile_images_descr">مربع، دایره، یا هر چیزی در این بین.</string>
@@ -1581,9 +1564,7 @@
     <string name="v5_2_disappear_one_message_descr">حتی وقتی در مکالمه غیرفعال باشند.</string>
     <string name="network_smp_proxy_fallback_prohibit">خیر</string>
     <string name="no_connected_mobile">موبایل متصلی وجود ندارد</string>
-    <string name="v4_6_group_moderation_descr">مدیران حالا می‌توانند:
-\n- پیام‌های اعضا را حذف کنند.
-\n- اعضا را غیرفعال کنند ( نقش «ناظر»)</string>
+    <string name="v4_6_group_moderation_descr">مدیران حالا می‌توانند: \n- پیام‌های اعضا را حذف کنند. \n- اعضا را غیرفعال کنند ( نقش «ناظر»)</string>
     <string name="migrate_to_device_confirm_network_settings_footer">لطفا تایید کنید که تنظیمات شبکه برای این دستگاه درست هستند.</string>
     <string name="v4_5_message_draft_descr">محفوظ نگه داشتن پیش‌نویس پیام آخر، به همراه ضمیمه‌ها.</string>
     <string name="connect_plan_repeat_connection_request">درخواست اتصال تکرار شود؟</string>
@@ -1615,14 +1596,9 @@
     <string name="whats_new_thanks_to_users_contribute_weblate">با سپاس از کاربران - از طریق Weblate همکاری کنید!</string>
     <string name="v5_2_message_delivery_receipts">رسیدهای تحویل پیام!</string>
     <string name="remote_host_error_timeout"><![CDATA[مهلت زمانی هنگام اتصال به موبایل <b>%s</b> به پایان رسید]]></string>
-    <string name="agent_critical_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید:
-\n%s
-\n
-\nپیشنهاد می‌شود که برنامه را شروع مجدد کنید.</string>
+    <string name="agent_critical_error_desc">لطفا آن را به توسعه‌دهندگان گزارش دهید: \n%s \n \nپیشنهاد می‌شود که برنامه را شروع مجدد کنید.</string>
     <string name="v4_5_italian_interface">رابط ایتالیایی</string>
-    <string name="v5_2_more_things_descr">- تحویل پیام پایدارتر
-\n- گروه‌های کمی بهتر
-\n- و بیشتر!</string>
+    <string name="v5_2_more_things_descr">- تحویل پیام پایدارتر \n- گروه‌های کمی بهتر \n- و بیشتر!</string>
     <string name="v5_1_self_destruct_passcode">کد عبور خودتخریبی</string>
     <string name="v4_6_chinese_spanish_interface_descr">با سپاس از کاربران - از طریق Weblate همکاری کنید!</string>
     <string name="v5_0_large_files_support">ویدئوها و فایل‌ها تا ۱ گیگابایت</string>
@@ -1725,8 +1701,7 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">این اپلیکیشن از شما می‌خواهد که دانلودها از سرورهای فایل ناشناخته را تأیید کنید (به جز .onion یا زمانی که پروکسی SOCKS فعال باشد).</string>
     <string name="settings_section_title_files">فایل‌ها</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">بدون Tor یا VPN، نشانی IP شما برای سرورهای فایل قابل رویت خواهد بود.</string>
-    <string name="file_not_approved_descr">بدون تور یا VPN، نشانی IP شما برای این واسطه‌های XFTP قابل رویت خواهد بود:
-\n%1$s.</string>
+    <string name="file_not_approved_descr">بدون تور یا VPN، نشانی IP شما برای این واسطه‌های XFTP قابل رویت خواهد بود: \n%1$s.</string>
     <string name="message_queue_info_none">هیچ</string>
     <string name="v5_8_message_delivery">تحویل پیام بهبود یافته</string>
     <string name="v5_8_persian_ui">رابط کاربری فارسی</string>
@@ -1735,9 +1710,7 @@
     <string name="message_queue_info">اطلاعات صف پیام</string>
     <string name="theme_destination_app_theme">تم برنامه</string>
     <string name="v5_8_safe_files_descr">تایید فایل‌ها از سرورهای ناشناخته.</string>
-    <string name="message_queue_info_server_info">اطلاعات صف سرور: %1$s
-\n
-\nآخرین پیام دریافتی: %2$s</string>
+    <string name="message_queue_info_server_info">اطلاعات صف سرور: %1$s \n \nآخرین پیام دریافتی: %2$s</string>
     <string name="chat_theme_apply_to_dark_mode">حالت تاریک</string>
     <string name="theme_black">سیاه</string>
     <string name="color_mode">حالت رنگ</string>
@@ -1746,8 +1719,7 @@
     <string name="color_mode_light">روشن</string>
     <string name="reset_single_color">بازنشاندن رنگ</string>
     <string name="color_mode_system">سیستم</string>
-    <string name="error_initializing_web_view">خطا در مقداردهی اولیه WebView. سیستم خود را به نسخه جدید به روز کنید. لطفا با توسعه‌دهنگان تماس بگیرید.
-\nخطا: 9%s</string>
+    <string name="error_initializing_web_view">خطا در مقداردهی اولیه WebView. سیستم خود را به نسخه جدید به روز کنید. لطفا با توسعه‌دهنگان تماس بگیرید. \nخطا: 9%s</string>
     <string name="settings_section_title_chat_colors">رنگ‌های چت</string>
     <string name="settings_section_title_chat_theme">تم چت</string>
     <string name="settings_section_title_user_theme">تم پروفایل</string>
@@ -1773,8 +1745,7 @@
     <string name="v5_8_private_routing">مسیریابی پیام خصوصی 🚀</string>
     <string name="v5_8_chat_themes_descr">ظاهر چت‌های خود را متمایز کنید!</string>
     <string name="v5_8_chat_themes">تم‌های جدید چت</string>
-    <string name="v5_8_private_routing_descr">از نشانی IP خود در برابر واسطه‌های پیام‌رسانی انتخاب شده توسط مخاطبانتان محافظت کنید.
-\nدر تنظیمات «شبکه و سرورها» فعال کنید.</string>
+    <string name="v5_8_private_routing_descr">از نشانی IP خود در برابر واسطه‌های پیام‌رسانی انتخاب شده توسط مخاطبانتان محافظت کنید. \nدر تنظیمات «شبکه و سرورها» فعال کنید.</string>
     <string name="v5_8_safe_files">دریافت امن فایل‌ها</string>
     <string name="file_error_no_file">فایل یافت نشد - احتمالا حذف یا لغو شده.</string>
     <string name="file_error_auth">کلید اشتباه یا نشانی پرونده ناشناخته - به احتمال زیاد فایل حذف شده است.</string>
@@ -2256,7 +2227,7 @@
     <string name="error_adding_server">خطا در افزودن سرور</string>
     <string name="error_changing_user">خطا در تغییر پروفایل</string>
     <string name="error_creating_chat_tags">خطا در ایجاد لیست چت</string>
-    <string name="error_initializing_web_view_wrong_arch">خطا در راه‌اندازی WebView. لطفاً اطمینان حاصل کنید که WebView نصب شده و معماری پشتیبانی شده آن arm64 است.  \nخطا: %s</string>
+    <string name="error_initializing_web_view_wrong_arch">خطا در راه‌اندازی WebView. لطفاً اطمینان حاصل کنید که WebView نصب شده و معماری پشتیبانی شده آن arm64 است. \nخطا: %s</string>
     <string name="error_loading_chat_tags">خطا در بارگذاری لیست‌های چت</string>
     <string name="error_preparing_contact">خطا در باز کردن چت</string>
     <string name="error_preparing_group">خطا در باز کردن گروه</string>
@@ -2275,7 +2246,7 @@
     <string name="v6_3_faster_deletion_of_groups">حذف سریع‌تر گروه‌ها.</string>
     <string name="v6_3_faster_sending_messages">ارسال سریع‌تر پیام‌ها.</string>
     <string name="chat_list_favorites">علاقه‌مندی‌ها</string>
-    <string name="file_error_blocked">فایل توسط اپراتور سرور مسدود شده است:  \n%1$s.</string>
+    <string name="file_error_blocked">فایل توسط اپراتور سرور مسدود شده است: \n%1$s.</string>
     <string name="servers_info_files_tab">فایل‌ها</string>
     <string name="sync_connection_confirm">اصلاح کردن</string>
     <string name="sync_connection_question">اتصال اصلاح شود؟</string>
@@ -2415,6 +2386,8 @@
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">شما دیگر پیام‌هایی از این چت دریافت نخواهید کرد. تاریخچه چت حفظ خواهد شد.</string>
     <string name="appearance_zoom">بزرگنمایی</string>
     <string name="connect_use_incognito_profile">استفاده از پروفایل ناشناس</string>
+    <string name="connect_plan_join_name">پیوستن به کانال %s</string>
+    <string name="connect_plan_connect_to_name">اتصال به %s</string>
     <string name="upgrade_group_link">به‌روزرسانی لینک گروه</string>
     <string name="share_group_profile_via_link_alert_text">لینک کوتاه خواهد بود و پروفایل گروه از طریق لینک به اشتراک گذاشته خواهد شد.</string>
     <string name="share_old_address_alert_button">اشتراک آدرس قدیمی</string>
@@ -2448,9 +2421,241 @@
     <string name="only_your_contact_can_send_files">فقط مخاطب شما می‌تواند فایل‌ها و رسانه‌ها را ارسال کند.</string>
     <string name="files_prohibited_in_this_chat">ارسال فایل‌ها و رسانه‌ها در این چت ممنوع است.</string>
     <string name="simplex_link_relay">پل ارتباطی سیمپلکس</string>
+    <string name="no_names_servers_enabled">سروری برای تفکیک نام‌ها وجود ندارد.</string>
     <string name="error_marking_member_support_chat_read">خطا در علامت گذاری به عنوان خوانده شده</string>
     <string name="proxy_destination_error_unknown_ca">اثر انگشت در نشانی سرور مقصد با گواهی مطابقت ندارد: ‎%1$s.</string>
     <string name="smp_proxy_error_unknown_ca">اثر انگشت در نشانی سرور انتقال با گواهی مطابقت ندارد: ‎%1$s.</string>
     <string name="network_error_unknown_ca">اثر انگشت در نشانی سرور با گواهی مطابقت ندارد: ‎%1$s.</string>
+    <string name="simplex_name_error">خطای نام SimpleX</string>
+    <string name="simplex_name_no_servers_desc">هیچ‌یک از سرورهای شما برای تفکیک نام‌های SimpleX تنظیم نشده است. سرورها را پیکربندی کنید یا از لینک اتصال استفاده کنید.</string>
+    <string name="simplex_name_server_no_resolver_desc">سرور %1$s از تفکیک نام پشتیبانی نمی‌کند. سرورها را پیکربندی کنید یا از لینک اتصال استفاده کنید.</string>
+    <string name="simplex_name_not_found">نام پیدا نشد</string>
+    <string name="simplex_name_not_found_desc">این نام SimpleX ثبت نشده است. لطفاً نام را بررسی کنید.</string>
+    <string name="simplex_name_resolver_error_desc">خطای تفکیک نام: %1$s</string>
+    <string name="simplex_name_no_valid_link">لینک معتبری وجود ندارد</string>
+    <string name="simplex_name_no_valid_link_desc">نام SimpleX %1$s ثبت شده است، اما لینک معتبری ندارد.</string>
+    <string name="simplex_name_unconfirmed">نام تاییدنشده</string>
+    <string name="simplex_name_unconfirmed_desc">نام SimpleX %1$s ثبت شده است، اما به پروفایل اضافه نشده است. اگر صاحب آن هستید، لطفاً آن را به پروفایل نشانی یا کانال خود اضافه کنید.</string>
+    <string name="save_simplex_name_question">نام SimpleX ذخیره شود؟</string>
+    <string name="get_simplex_name_beta">دریافت نام SimpleX (بتا)</string>
+    <string name="channel_simplex_name">نام SimpleX کانال</string>
+    <string name="register_test_name">روش ثبت یک نام آزمایشی</string>
+    <string name="simplex_name_sales">زمان باقی‌مانده تا شروع فروش نام SimpleX</string>
+    <string name="until_register_simplex_domain">مانده تا امکان ثبت دامنه SimpleX</string>
+    <string name="update_app_register_simplex_domain">برای ثبت دامنه SimpleX، برنامه را به‌روزرسانی کنید</string>
+    <string name="countdown_hrs_min_sec">%1$02d ساعت %2$02d دقیقه %3$02d ثانیه</string>
+    <string name="simplex_name_sales_footer">سرمایه‌گذاران تأمین مالی جمعی می‌توانند پیش از شروع فروش، نام‌ها را رزرو کنند:</string>
+    <string name="remove_name">حذف نام</string>
+    <string name="supporter_badge">نشان حامی</string>
+    <string name="legend_badge">نشان اسطوره</string>
+    <string name="large_file_requires_badge">برای ارسال فایل‌های بزرگ‌تر از %2$s به %1$s نیاز دارید.</string>
+    <string name="max_file_size_with_badge">بیشترین اندازه پشتیبانی‌شده فایل با %2$s، %1$s است.</string>
+    <string name="badge_expired">نشان مخاطب منقضی شده است.</string>
+    <string name="badge_verification_failed">تایید نشان مخاطب ناموفق بود.</string>
+    <string name="badge_no_key">کلیدی برای تایید نشان مخاطب وجود ندارد.</string>
+    <string name="your_badge_expired">نشان شما منقضی شده است.</string>
+    <string name="verify_simplex_name_action">تایید نام</string>
+    <string name="verify_simplex_names">تایید نام‌های SimpleX</string>
+    <string name="simplex_name_not_verified">نام SimpleX تایید نشده است</string>
+    <string name="your_simplex_name">نام SimpleX شما</string>
+    <string name="set_simplex_name">تنظیم نام SimpleX</string>
+    <string name="error_saving_simplex_name">خطا در ذخیره نام</string>
+    <string name="simplex_name_owner_no_channel_link">نام SimpleX %1$s بدون لینک کانال ثبت شده است. لینک کانال را از طریق صفحه ثبت به نام اضافه کنید.</string>
+    <string name="simplex_name_owner_no_address">نام SimpleX %1$s بدون نشانی SimpleX ثبت شده است. نشانی SimpleX خود را از طریق صفحه ثبت به نام اضافه کنید.</string>
+    <string name="set_user_simplex_name_footer">اجازه دهید دیگران از طریق نامی که با نشانی SimpleX شما ثبت شده است به شما متصل شوند.</string>
+    <string name="set_channel_simplex_name_footer">اجازه دهید دیگران از طریق نامی که با این لینک کانال ثبت شده است به کانال بپیوندند.</string>
     <string name="button_delete_member_messages">پاک کردن پیام کاربر</string>
+    <string name="operator_use_for_names">برای تفکیک نام‌ها</string>
+    <string name="error_prefix">خطا</string>
+    <string name="badge_supports_simplex">%s از SimpleX Chat حمایت می‌کند.</string>
+    <string name="badge_supported_simplex">%1$s از SimpleX Chat حمایت کرده است. نشان در %2$s منقضی شد.</string>
+    <string name="badge_invested">%s در تأمین مالی جمعی SimpleX Chat سرمایه‌گذاری کرده است.</string>
+    <string name="badge_unverified_title">نشان تاییدنشده</string>
+    <string name="badge_unverified_desc">این نشان قابل تایید نیست و ممکن است اصل نباشد.</string>
+    <string name="badge_unknown_key_title">نشان قابل تایید نیست</string>
+    <string name="badge_unknown_key_desc">این نشان با کلیدی امضا شده است که این نسخه از برنامه آن را نمی‌شناسد. برای تایید این نشان، برنامه را به‌روزرسانی کنید.</string>
+    <string name="badges_level_supporter">حامی</string>
+    <string name="badges_level_legend">اسطوره</string>
+    <string name="badges_level_supporter_file_size">فایل‌ها تا ۲ GB</string>
+    <string name="badges_level_supporter_file_storage">نگهداری به مدت ۷ روز</string>
+    <string name="badges_level_legend_file_size">فایل‌ها تا ۵ GB</string>
+    <string name="badges_level_legend_file_storage">نگهداری به مدت ۲۱ روز</string>
+    <string name="badges_price_monthly">%1$s/ماه</string>
+    <string name="badges_price_annual">%1$s/سال</string>
+    <string name="badges_pay_monthly">پرداخت %1$s/ماه</string>
+    <string name="badges_pay_annual">پرداخت %1$s/سال</string>
+    <string name="badges_pay_once">پرداخت %1$s</string>
+    <string name="badges_price_loading">در حال بارگذاری…</string>
+    <string name="badges_price_unavailable">در دسترس نیست</string>
+    <string name="badges_savings">%1$s تخفیف</string>
+    <string name="badges_level_supporter_summary">حامی: فایل‌های ۲ GB، در دسترس به مدت ۷ روز.</string>
+    <string name="badges_level_legend_summary">اسطوره: فایل‌های ۵ GB، در دسترس به مدت ۲۱ روز.</string>
+    <string name="badges_period_one_month">۱ ماه</string>
+    <string name="badges_period_monthly">ماهانه</string>
+    <string name="badges_period_annual">سالانه</string>
+    <string name="badges_billing_footer_subscribe">تمدید در %1$s. هر زمان قابل لغو است.</string>
+    <string name="badges_billing_footer_one_month">پایان در %1$s.</string>
+    <string name="badges_choose_your_badge_title">نشان خود را انتخاب کنید</string>
+    <string name="badges_choose_your_badge_lede">فایل‌های بزرگ‌تر که مدت بیشتری در دسترس می‌مانند.</string>
+    <string name="badges_how_long_title">چه مدت؟</string>
+    <string name="badges_support_simplex_title">حمایت از SimpleX</string>
+    <string name="badges_support_simplex_body">یک نشان دریافت کنید تا فایل‌های بزرگ‌تر (۲ تا ۵ GB) را که مدت بیشتری (۷ تا ۲۱ روز) در دسترس می‌مانند ارسال کنید و آن را در پروفایل خود نمایش دهید.</string>
+    <string name="badges_why_simplex_is_built">چرا SimpleX ساخته شده است.</string>
+    <string name="badges_redeem_code_button">فعال‌سازی کد نشان</string>
+    <string name="badges_continue">ادامه</string>
+    <string name="badges_how_it_works_button">نشان‌ها چگونه از حریم خصوصی شما محافظت می‌کنند</string>
+    <string name="badges_how_it_works_title">نشان‌ها چگونه از حریم خصوصی شما محافظت می‌کنند</string>
+    <string name="badges_how_it_works_p1">نشان یک اعتبارنامه ناشناس است که در پروفایل شما روی دستگاهتان ذخیره می‌شود. این اعتبارنامه هرگز برای کسی ارسال نمی‌شود.</string>
+    <string name="badges_how_it_works_p2">برای اثبات داشتن نشان به یک مخاطب یا سرور، برنامه یک اثبات جدید تولید می‌کند که فقط نوع نشان و تاریخ انقضای آن را، گردشده به یک هفته، آشکار می‌کند.</string>
+    <string name="badges_how_it_works_p3">هیچ‌کس نمی‌تواند دو اثبات متفاوت را به یکدیگر یا به خرید مرتبط کند.</string>
+    <string name="badges_how_it_works_read_more_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">وبلاگ ما</font>.]]></string>
+    <string name="badges_preview_my_nickname">نام مستعار من</string>
+    <string name="badges_banner_title">حمایت از SimpleX</string>
+    <string name="badges_banner_subtitle">دریافت نشان + فایل‌های بهتر</string>
+    <string name="badges_banner_dismiss_message">می‌توانید بعداً از طریق تنظیمات از SimpleX حمایت کنید.</string>
+    <string name="badges_larger_files_longer">از SimpleX حمایت کنید تا فایل‌های بزرگ‌تری ارسال کنید که مدت بیشتری در دسترس می‌مانند</string>
+    <string name="badges_purchase_error">خطای خرید</string>
+    <string name="badges_check_your_order_title">سفارش خود را بررسی کنید</string>
+    <string name="badges_order_duration">مدت</string>
+    <string name="badges_order_total">کل</string>
+    <string name="badges_issuing_title">در حال صدور نشان شما</string>
+    <string name="badges_issuing_body">پرداخت شما انجام شد. نشان به این پروفایل اضافه خواهد شد.</string>
+    <string name="badges_waiting_for_approval_title">در انتظار تایید</string>
+    <string name="badges_waiting_for_approval_body">هیچ مبلغی کسر نشده است.</string>
+    <string name="badges_checking_purchases_title">در حال بررسی خریدهای شما</string>
+    <string name="badges_buy_in_browser">خرید در مرورگر</string>
+    <string name="badges_redeem_code_title">فعال‌سازی کد</string>
+    <string name="badges_link_confirm_title">نشان به پروفایل شما اضافه شود؟</string>
+    <string name="badges_link_confirm_profile">نشان به پروفایل %1$s اضافه خواهد شد.</string>
+    <string name="badges_link_add_badge">افزودن نشان</string>
+    <string name="badges_link_held_title">پروفایل از قبل نشان دارد</string>
+    <string name="badges_link_held_other_profile">نشان را می‌توان به پروفایل دیگری اضافه کرد، یا پس از پایان این نشان، به همین پروفایل.</string>
+    <string name="badges_link_held_page">کد آن در صفحه‌ای که از آن خرید کرده‌اید، زیر «Show code» قرار دارد.</string>
+    <string name="badges_link_view_badge">مشاهده نشان خود</string>
+    <string name="badges_link_issuing_profile">نشان به این پروفایل اضافه خواهد شد.</string>
+    <string name="badges_link_added_title">نشان اضافه شد</string>
+    <string name="badges_link_added_profile">نشان به پروفایل %1$s اضافه شد.</string>
+    <string name="badges_redeem_code_body">کدی را که دریافت کرده‌اید الصاق کنید.</string>
+    <string name="badges_redeem">فعال‌سازی</string>
+    <string name="badges_error_title">فعال‌سازی کد ممکن نیست</string>
+    <string name="badges_error_invalid_code">این کد معتبر نیست.</string>
+    <string name="badges_error_service_not_configured">این نسخه از برنامه نمی‌تواند کدهای نشان را فعال کند.</string>
+    <string name="badges_error_service_not_configured_purchase">این نسخه از برنامه نمی‌تواند نشان خریداری کند.</string>
+    <string name="badges_error_already_active">این پروفایل از قبل نشان دارد.</string>
+    <string name="badges_error_already_active_purchase">این پروفایل از قبل نشان دارد.</string>
+    <string name="badges_error_store_purchase_open">یک خرید در حال افزودن به این پروفایل است. بعداً دوباره تلاش کنید.</string>
+    <string name="badges_error_store_purchase_open_purchase">یک خرید از فروشگاه در حال افزودن به این پروفایل است.</string>
+    <string name="badges_error_code_invalid">این کد شناسایی نشد.</string>
+    <string name="badges_error_code_used">این کد قبلاً استفاده شده است.</string>
+    <string name="badges_error_code_expired">این کد منقضی شده است.</string>
+    <string name="badges_error_rate_limited">تلاش‌های بیش از حد. لطفاً بعداً دوباره تلاش کنید.</string>
+    <string name="badges_error_bad_service_response">سرویس نشان پاسخ غیرمنتظره‌ای فرستاد: %1$s</string>
+    <string name="badges_error_credential_not_verified">این نسخه از برنامه نمی‌تواند این نشان را تایید کند. لطفاً برنامه را به‌روزرسانی کنید.</string>
+    <string name="badges_error_unsupported_version">برای استفاده از نشان‌ها، برنامه را به‌روزرسانی کنید.</string>
+    <string name="badges_error_unknown_purchase">سرویس نشان این نشان را نمی‌شناسد.</string>
+    <string name="badges_error_service_internal">سرویس نشان یک خطای داخلی گزارش کرد.</string>
+    <string name="badges_error_receipt_invalid">فروشگاه این خرید را تایید نکرد.</string>
+    <string name="badges_error_receipt_used">این خرید قبلاً در پروفایل دیگری استفاده شده است.</string>
+    <string name="badges_error_transfer_limited">این خرید اخیراً به دستگاه یا پروفایل دیگری منتقل شده است.</string>
+    <string name="badges_error_test_purchase">خریدهای آزمایشی نشان اضافه نمی‌کنند.</string>
+    <string name="badges_error_payment_pending">پرداخت هنوز تایید نشده است.</string>
+    <string name="badges_error_provider_unavailable">دسترسی به فروشگاه ممکن نشد.</string>
+    <string name="badges_error_provider_not_configured">هنوز نمی‌توان نشان‌ها را در برنامه خریداری کرد.</string>
+    <string name="badges_error_product_unavailable">این نشان برای فروش نیست.</string>
+    <string name="badges_error_badge_ended">کد پذیرفته شد، اما مدت نشانِ مربوط به آن قبلاً به پایان رسیده است.</string>
+    <string name="badges_error_unknown">کد قابل فعال‌سازی نبود.</string>
+    <string name="badges_code_you_scanned_is_not_badge_code">کدی که اسکن کردید کد نشان نیست.</string>
+    <string name="badges_your_badge">نشان شما</string>
+    <string name="badges_support_ended">نشان شما منقضی شد</string>
+    <string name="badges_shown_on_your_profile">نمایش داده‌شده در پروفایل شما</string>
+    <string name="badges_ends">پایان</string>
+    <string name="badges_prepaid_footer">بدون تمدید: نشان با تمام شدن ماه‌های پیش‌پرداخت‌شده به پایان می‌رسد.</string>
+    <string name="badges_type_investor">سرمایه‌گذار</string>
+    <string name="badges_support_ended_on">نشان شما در %1$s منقضی شد.</string>
+    <string name="badges_remind_me_later">بعداً یادآوری کن</string>
+    <string name="badges_dismiss">بستن</string>
+    <string name="badges_credential">اعتبارنامه</string>
+    <string name="badges_credential_status">وضعیت</string>
+    <string name="badges_credential_expires">انقضا</string>
+    <string name="badges_credential_months_left">ماه‌های باقی‌مانده</string>
+    <string name="badges_credential_purchase_id">شناسه خرید</string>
+    <string name="badges_copy_purchase_key">کپی کلید خرید</string>
+    <string name="badges_ledger">دفتر نشان</string>
+    <string name="badges_ledger_no_entries">بدون مورد</string>
+    <string name="badges_ledger_date">تاریخ</string>
+    <string name="badges_ledger_balance">موجودی</string>
+    <string name="badges_ledger_balance_start">شروع موجودی</string>
+    <string name="badges_ledger_anchor">زمان مبنا</string>
+    <string name="badges_ledger_badge_type">نوع نشان</string>
+    <string name="badges_ledger_paused_since">متوقف از</string>
+    <string name="badges_ledger_entry_id">شناسه ردیف</string>
+    <string name="badges_ledger_invoice_id">شناسه فاکتور</string>
+    <string name="badges_ledger_charge_id">شناسه برداشت</string>
+    <string name="badges_ledger_from_purchase_key">از کلید خرید</string>
+    <string name="badges_ledger_to_purchase_key">به کلید خرید</string>
+    <string name="badges_renewal_failed">تمدید نشان ناموفق بود</string>
+    <string name="badges_renewal_failed_unknown">نشان شما تمدید نشد.</string>
+    <string name="badges_error_service_refused">سرویس نشان تمدید را رد کرد: %1$s</string>
+    <string name="badges_error_purchase_refused">سرویس نشان خرید را رد کرد: %1$s</string>
+    <string name="badges_error_no_response">سرویس نشان پاسخ نداد.</string>
+    <string name="badges_error_unreachable">دسترسی به سرویس نشان ممکن نشد.</string>
+    <string name="badges_error_credential_invalid">نشان صادرشده توسط سرویس قابل تایید نیست.</string>
+    <string name="badges_error_unexpected">خطای غیرمنتظره: %1$s</string>
+    <string name="badges_error_since">از زمان</string>
+    <string name="badges_error_last_attempt">آخرین تلاش</string>
+    <string name="badges_contact_team">تماس با تیم SimpleX</string>
+    <string name="badges_credential_next_check">بررسی بعدی</string>
+    <string name="badges_subscription_disclosure_monthly">با مبلغ %1$s در ماه تمدید می‌شود تا زمانی که آن را در Google Play لغو کنید.</string>
+    <string name="badges_subscription_disclosure_annual">با مبلغ %1$s در سال تمدید می‌شود تا زمانی که آن را در Google Play لغو کنید.</string>
+    <string name="badges_restore_purchases">بازیابی خریدها</string>
+    <string name="badges_restore_purchases_footnote">یک نشان پرداخت‌شده را به این پروفایل منتقل می‌کند.</string>
+    <string name="badges_nothing_to_restore">چیزی برای بازیابی وجود ندارد</string>
+    <string name="badges_nothing_to_restore_desc">هیچ خرید Google Play در انتظار افزودن پیدا نشد.</string>
+    <string name="badges_restore_failed">بازیابی ناموفق بود</string>
+    <string name="badges_error_already_owned">در پروفایل دیگری خریداری شده است. برای انتقال آن به اینجا از «بازیابی خریدها» استفاده کنید.</string>
+    <string name="badges_error_store_unreachable">دسترسی به فروشگاه ممکن نشد.</string>
+    <string name="badges_error_not_on_sale">این نشان برای فروش نیست.</string>
+    <string name="badges_subscription">اشتراک</string>
+    <string name="badges_manage_subscription">مدیریت اشتراک</string>
+    <string name="badges_payment_problem">مشکل پرداخت</string>
+    <string name="badges_payment_problem_footer">پرداخت ناموفق بود. روش پرداخت خود را در Google Play به‌روزرسانی کنید.</string>
+    <string name="badges_payment_problem_footer_store">پرداخت ناموفق بود. روش پرداخت خود را در فروشگاه به‌روزرسانی کنید.</string>
+    <string name="badges_subscription_ends">پایان %1$s</string>
+    <string name="badges_subscription_cancelled_footer">اشتراک شما لغو شده است. نشان تا %1$s باقی می‌ماند.</string>
+    <string name="badges_subscription_ended">پایان‌یافته</string>
+    <string name="badges_subscription_ended_footer">اشتراک به پایان رسید. نشان حذف خواهد شد.</string>
+    <string name="badges_subscription_renewing">در حال تمدید</string>
+    <string name="badges_subscription_renewing_footer">پس از کسر هزینه اشتراک شما توسط Google Play تمدید می‌شود.</string>
+    <string name="badges_subscription_renewing_footer_store">پس از کسر هزینه اشتراک شما توسط فروشگاه تمدید می‌شود.</string>
+    <string name="badges_subscription_renews_price">تمدید %1$s · %2$s</string>
+    <string name="badges_subscription_renews">تمدید %1$s</string>
+    <string name="badges_subscription_renews_footer">تا زمانی که آن را در Google Play لغو کنید، به‌طور خودکار تمدید می‌شود.</string>
+    <string name="badges_subscription_renews_footer_store">تا زمانی که آن را در فروشگاه لغو کنید، به‌طور خودکار تمدید می‌شود.</string>
+    <string name="badges_subscription_ended_title">اشتراک شما به پایان رسید</string>
+    <string name="badges_subscription_ended_on">اشتراک نشان شما در %1$s به پایان رسید.</string>
+    <string name="badges_payment_problem_title">مشکل پرداخت نشان</string>
+    <string name="badges_payment_problem_subtitle">فروشگاه نتوانست هزینه را از روش پرداخت شما کسر کند.</string>
+    <string name="badges_subscription_cancelled_title">اشتراک لغو شد</string>
+    <string name="badges_stays_until">نشان شما تا %1$s باقی می‌ماند.</string>
+    <string name="badges_renews_soon">نشان شما به‌زودی تمدید می‌شود</string>
+    <string name="badges_renews_on_for">تمدید در %1$s با مبلغ %2$s.</string>
+    <string name="badges_renews_on">تمدید در %1$s.</string>
+    <string name="badges_your_legend_badge">نشان اسطوره شما</string>
+    <string name="badges_supporter_benefits">فایل‌ها تا ۲ GB، نگهداری به مدت ۷ روز.</string>
+    <string name="badges_legend_benefits">فایل‌ها تا ۵ GB، نگهداری به مدت ۲۱ روز.</string>
+    <string name="badges_benefits">مزایا</string>
+    <string name="badges_investor_offer_supporter">با سرمایه‌گذاری $100+ یک نشان رایگان دریافت کنید.</string>
+    <string name="badges_investor_offer_legend">با سرمایه‌گذاری $1000+ یک نشان اسطوره رایگان دریافت کنید.</string>
+    <string name="badges_investor_offer_learn_more">اطلاعات بیشتر در Wefunder</string>
+    <string name="v7_1_invest">سهمی از SimpleX Chat داشته باشید! 🚀</string>
+    <string name="v7_1_supporter_badge_title">نشان‌های حامی</string>
+    <string name="v7_1_supporter_badge_descr">فایل‌های بزرگ‌تر، در دسترس برای مدت طولانی‌تر.</string>
+    <string name="v7_1_supporter_badge_get">از SimpleX حمایت کنید و یک نشان دریافت کنید.</string>
+    <string name="v7_1_supporter_badge_have">شما از قبل یک نشان دارید!</string>
+    <string name="v7_1_simplex_names">نام‌های عمومی SimpleX</string>
+    <string name="v7_1_simplex_names_descr">فروش از ۱۲ دسامبر آغاز می‌شود.</string>
+    <string name="v7_1_channels">کانال‌های امن‌تر</string>
+    <string name="v7_1_channels_descr">مدیر اضافه کنید و همه پیام‌ها را امضا کنید.</string>
+    <string name="v7_1_flat_layout">چیدمان مسطح و مارکداون</string>
+    <string name="v7_1_flat_layout_descr">در تنظیمات ظاهر فعال کنید.</string>
 </resources>

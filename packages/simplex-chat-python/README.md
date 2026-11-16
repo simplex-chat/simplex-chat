@@ -56,15 +56,6 @@ ruff check && pyright && pytest tests/
 
 Wire types under `src/simplex_chat/types/_*.py` are generated. Regenerate with `cabal test simplex-chat-test --test-options='--match Python'`.
 
-## Release
-
-Manual for now. Bump `_version.py:__version__`, build a wheel, upload to PyPI:
-
-```bash
-uv build --wheel
-uv publish --token "$PYPI_TOKEN"
-```
-
 ## License
 
 [AGPL-3.0](./LICENSE)

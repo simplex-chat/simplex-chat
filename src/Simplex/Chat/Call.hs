@@ -230,7 +230,8 @@ data WebRTCSession = WebRTCSession
   deriving (Eq, Show)
 
 data WebRTCExtraInfo = WebRTCExtraInfo
-  { rtcIceCandidates :: Text -- LZW compressed JSON encoding of array of ICE candidates
+  { rtcSession :: Maybe Text, -- LZW compressed JSON encoding of ICE restart offer or answer
+    rtcIceCandidates :: Text -- LZW compressed JSON encoding of array of ICE candidates
   }
   deriving (Eq, Show)
 

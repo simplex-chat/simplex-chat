@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -333,7 +332,7 @@ fun showLargeFileAlert(fileSize: Long, incognito: Boolean, senderProfile: LocalP
       text = text,
       confirmText = generalGetString(MR.strings.ok),
       dismissText = generalGetString(MR.strings.badges_support_simplex_title),
-      onDismiss = ::openBadgesView
+      onDismiss = { if (!appPlatform.isDesktop || !ModalManager.end.hasModalOpen(ModalViewId.BADGES)) openBadgesView() }
     )
   } else {
     AlertManager.shared.showAlertMsg(title, text)
@@ -362,43 +361,42 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
   val content = ArrayList<UploadContent>()
   val imagesPreview = ArrayList<String>()
   uris.forEach { uri ->
-    var bitmap: ImageBitmap?
+    var preview: String? = null
     val uploadContent: UploadContent? = when {
       isImage(uri) -> {
         // Image
         val drawable = getDrawableFromUri(uri)
         // Do not show alert in case it's already shown from the function above
-        bitmap = getBitmapFromUri(uri, withAlertOnException = !AlertManager.shared.hasAlertsShown())
+        fun bitmapPreview() = getBitmapFromUri(uri, withAlertOnException = !AlertManager.shared.hasAlertsShown())?.let { resizeImageToStrSize(it, maxDataSize = 14000) }
         if (isAnimImage(uri, drawable)) {
           // It's a gif or webp
           val fileSize = getFileSize(uri)
           if (fileSize != null && fileSize <= maxFileSize) {
+            preview = bitmapPreview()
             UploadContent.AnimatedImage(uri)
           } else {
-            bitmap = null
             showLargeFileAlert(fileSize ?: 0, value.sendIncognito, chatModel.currentUser.value?.profile)
             null
           }
-        } else if (bitmap != null) {
-          UploadContent.SimpleImage(uri)
         } else {
-          null
+          preview = resizeImageFileToStrSize(uri, maxDataSize = 14000) ?: bitmapPreview()
+          UploadContent.SimpleImage(uri)
         }
       }
       else -> {
         // Video
         val res = getBitmapFromVideo(uri, withAlertOnException = true)
-        bitmap = res.preview
+        preview = res.preview?.let { resizeImageToStrSize(it, maxDataSize = 14000) }
         val durationMs = res.duration
         UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0)
       }
     }
     // content and imagesPreview must stay index-aligned and equal-length: both consumers
     // (ComposeImageView and sendMessageAsync) cross-index one list by the other's index.
-    // Only pair them when a preview bitmap exists; otherwise skip the media entirely.
-    if (bitmap != null && uploadContent != null) {
+    // Only pair them when a preview exists; otherwise skip the media entirely.
+    if (preview != null && uploadContent != null) {
       content.add(uploadContent)
-      imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
+      imagesPreview.add(preview)
     } else if (uploadContent is UploadContent.Video && !AlertManager.shared.hasAlertsShown()) {
       // A corrupted/undecodable video can yield a null preview frame without throwing, so
       // getBitmapFromVideo shows no alert. Skip it (other picked media still send) and tell
@@ -411,6 +409,45 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
   if (imagesPreview.isNotEmpty()) {
     value = value.copy(message = if (text != null) ComposeMessage(text) else value.message, preview = ComposePreview.MediaPreview(imagesPreview, content))
   }
+}
+
+fun sanitizeMessage(
+  text: String,
+  parsedMsg: List<FormattedText>,
+  sanitize: (String) -> String? = { parseSanitizeUri(it, safe = true)?.uriInfo?.sanitized }
+): Triple<String, List<FormattedText>, Int?> {
+  val updatedMsg = StringBuilder()
+  var copied = 0
+  var searched = 0
+  var sanitizedPos: Int? = null
+  val updatedParsedMsg = parsedMsg.map { ft ->
+    val updated = when (ft.format) {
+      is Format.Uri -> sanitize(ft.text)?.let { FormattedText(text = it, format = Format.Uri()) }
+      is Format.HyperLink -> sanitize(ft.format.linkUri)?.let { sanitized ->
+        val linkPart = "](${ft.format.linkUri})"
+        val updatedText =
+          if (ft.text.contains(linkPart)) ft.text.replace(linkPart, "]($sanitized)")
+          else if (ft.format.showText == null) sanitized
+          else "[${ft.format.showText}]($sanitized)"
+        FormattedText(text = updatedText, format = Format.HyperLink(showText = ft.format.showText, linkUri = sanitized))
+      }
+      else -> null
+    }
+    val i = text.indexOf(ft.text, searched)
+    if (i < 0) ft
+    else {
+      searched = i + ft.text.length
+      if (updated == null) ft
+      else {
+        updatedMsg.append(text, copied, i).append(updated.text)
+        copied = searched
+        sanitizedPos = updatedMsg.length
+        updated
+      }
+    }
+  }
+  updatedMsg.append(text, copied, text.length)
+  return Triple(updatedMsg.toString(), updatedParsedMsg, sanitizedPos)
 }
 
 // Spec: spec/client/compose.md#ComposeView
@@ -454,6 +491,7 @@ fun ComposeView(
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
+  val emojiPickerShown = rememberSaveable { mutableStateOf(false) }
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
   suspend fun fetchAndUpdateLinkPreview(url: String) {
@@ -598,7 +636,7 @@ fun ComposeView(
     if (!chatItems.isNullOrEmpty()) {
       chatItems.forEach { aChatItem ->
         withContext(Dispatchers.Main) {
-          chatsCtx.addChatItem(chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
+          chatModel.addSentChatItem(chatsCtx, chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
         }
       }
       return chatItems.first().chatItem
@@ -740,7 +778,7 @@ fun ComposeView(
 
       withContext(Dispatchers.Main) {
         chatItems?.forEach { chatItem ->
-          chatsCtx.addChatItem(rhId, chat.chatInfo, chatItem)
+          chatModel.addSentChatItem(chatsCtx, rhId, chat.chatInfo, chatItem)
         }
       }
 
@@ -1020,43 +1058,10 @@ fun ComposeView(
     }
   }
 
-  fun sanitizeMessage(parsedMsg: List<FormattedText>): Triple<String, List<FormattedText>, Int?> {
-    var pos = 0
-    var updatedMsg = ""
-    var sanitizedPos: Int? = null
-    val updatedParsedMsg = parsedMsg.map { ft ->
-      var updated = ft
-      when(ft.format) {
-        is Format.Uri -> {
-          val sanitized = parseSanitizeUri(ft.text, safe = true)?.uriInfo?.sanitized
-          if (sanitized != null) {
-            updated = FormattedText(text = sanitized, format = Format.Uri())
-            pos += updated.text.count()
-            sanitizedPos = pos
-          }
-        }
-        is Format.HyperLink -> {
-          val sanitized = parseSanitizeUri(ft.format.linkUri, safe = true)?.uriInfo?.sanitized
-          if (sanitized != null) {
-            val updatedText = if (ft.format.showText == null) sanitized else "[${ft.format.showText}]($sanitized)"
-            updated = FormattedText(text = updatedText, format = Format.HyperLink(showText = ft.format.showText, linkUri = sanitized))
-            pos += updated.text.count()
-            sanitizedPos = pos
-          }
-        }
-        else ->
-          pos += ft.text.count()
-      }
-      updatedMsg += updated.text
-      updated
-    }
-    return Triple(updatedMsg, updatedParsedMsg, sanitizedPos)
-  }
-
   fun onMessageChange(s: ComposeMessage) {
     var parsedMessage = parseToMarkdown(s.text)
     if (chatModel.controller.appPrefs.privacySanitizeLinks.get() && parsedMessage != null) {
-      val (updatedMsg, updatedParsedMsg, sanitizedPos) = sanitizeMessage(parsedMessage)
+      val (updatedMsg, updatedParsedMsg, sanitizedPos) = sanitizeMessage(s.text, parsedMessage)
       if (sanitizedPos == null) {
         composeState.value = composeState.value.copy(message = s, parsedMessage = parsedMessage)
       } else {
@@ -1278,6 +1283,17 @@ fun ComposeView(
   val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason((ownerRelayState?.noActiveRelays ?: subscriberRelayState?.noActiveRelays) == true))
   val sendMsgEnabled = rememberUpdatedState(userCantSendReason.value == null)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
+  val emojiEnabled = sendMsgEnabled.value && composeState.value.preview !is ComposePreview.VoicePreview
+  LaunchedEffect(emojiEnabled) {
+    if (!emojiEnabled) emojiPickerShown.value = false
+  }
+  KeyChangeEffect(emojiPickerShown.value) {
+    if (!emojiPickerShown.value && emojiEnabled) focusRequester?.requestFocus()
+  }
+
+  fun onEmoji(emoji: String) {
+    if (!composeState.value.inProgress) onMessageChange(composeState.value.message.insertingEmoji(emoji))
+  }
 
   @Composable
   fun CommandsButton() {
@@ -1332,7 +1348,7 @@ fun ComposeView(
   }
 
   @Composable
-  fun AttachmentAndCommandsButtons() {
+  fun ComposeActionButtons() {
     val cInfo = chat.chatInfo
     Row(
       Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
@@ -1346,6 +1362,7 @@ fun ComposeView(
       if (showAttachment) {
         AttachmentButton()
       }
+      ComposeEmojiButton(emojiPickerShown, emojiEnabled, ::onEmoji)
     }
   }
 
@@ -1784,7 +1801,7 @@ fun ComposeView(
           ContextSendMessageToConnect(generalGetString(MR.strings.compose_send_direct_message_to_connect))
           Divider()
           Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-            AttachmentAndCommandsButtons()
+            ComposeActionButtons()
             SendMsgView_(
               disableSendButton = disableSendButton,
               sendToConnect = { withApi { sendMemberContactInvitation() } }
@@ -1839,7 +1856,7 @@ fun ComposeView(
         )
       } else {
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-          AttachmentAndCommandsButtons()
+          ComposeActionButtons()
           val broadcastPlaceholder = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { gi ->
             if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner && chat.chatInfo.groupChatScope() == null) generalGetString(MR.strings.compose_view_broadcast)
             else null

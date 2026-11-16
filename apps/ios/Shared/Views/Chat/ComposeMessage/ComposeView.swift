@@ -299,15 +299,38 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
 // Spec: spec/client/compose.md#UploadContent
 enum UploadContent: Equatable {
     case simpleImage(image: UIImage)
+    case imageFile(image: UIImage, url: URL)
     case animatedImage(image: UIImage)
     case video(image: UIImage, url: URL, duration: Int)
 
     var uiImage: UIImage {
         switch self {
         case let .simpleImage(image): return image
+        case let .imageFile(image, _): return image
         case let .animatedImage(image): return image
         case let .video(image, _, _): return image
         }
+    }
+
+    func imagePreview() async -> String? {
+        if case let .imageFile(_, url) = self, let preview = resizeImageFileToStrSize(url, maxDataSize: 14000) {
+            return preview
+        }
+        return await resizeImageToStrSize(uiImage, maxDataSize: 14000)
+    }
+
+    static func loadImageFileFromURL(url: URL) -> UploadContent? {
+        let content = loadFromURL(url: url)
+        guard case let .simpleImage(image)? = content else { return content }
+        let tempUrl = URL(fileURLWithPath: generateNewFileName(getTempFilesDirectory().path + "/" + "image", url.pathExtension, fullPath: true))
+        do {
+            try FileManager.default.copyItem(at: url, to: tempUrl)
+        } catch let err {
+            logger.error("UploadContent copyItem error: \(err.localizedDescription)")
+            return content
+        }
+        _ = ChatModel.shared.filesToDelete.insert(tempUrl)
+        return .imageFile(image: image, url: tempUrl)
     }
 
     static func loadFromURL(url: URL) -> UploadContent? {
@@ -559,7 +582,7 @@ struct ComposeView: View {
             }
             var parsedMsg = parseSimpleXMarkdown(msg)
             if privacySanitizeLinks, let parsed = parsedMsg {
-                let r = sanitizeMessage(parsed)
+                let r = sanitizeMessage(msg, parsed)
                 if let sanitizedPos = r.sanitizedPos {
                     updatingCompose = true
                     composeState = composeState.copy(message: r.message, parsedMessage: r.parsedMsg)
@@ -649,7 +672,7 @@ struct ComposeView: View {
             Task {
                 var media: [(String, UploadContent)] = []
                 for content in selected {
-                    if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+                    if let img = await content.imagePreview() {
                         media.append((img, content))
                         await MainActor.run {
                             composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: media))
@@ -1252,7 +1275,7 @@ struct ComposeView: View {
 
     // Spec: spec/client/compose.md#addMediaContent
     private func addMediaContent(_ content: UploadContent) async {
-        if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+        if let img = await content.imagePreview() {
             var newMedia: [(String, UploadContent?)] = []
             if case var .mediaPreviews(media) = composeState.preview {
                 media.append((img, content))
@@ -1572,6 +1595,8 @@ struct ComposeView: View {
             return switch uploadContent {
             case let .simpleImage(image):
                 (saveImage(image), .image(text: text, image: previewImage))
+            case let .imageFile(image, url):
+                (imageCryptoFile(url, image), .image(text: text, image: previewImage))
             case let .animatedImage(image):
                 (saveAnimImage(image), .image(text: text, image: previewImage))
             case let .video(_, url, duration):
@@ -1579,6 +1604,13 @@ struct ComposeView: View {
             case .none:
                 nil
             }
+        }
+
+        func imageCryptoFile(_ url: URL, _ image: UIImage) -> CryptoFile? {
+            let file = saveImageFile(url) ?? saveImage(image)
+            removeFile(url)
+            ChatModel.shared.filesToDelete.remove(url)
+            return file
         }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
@@ -1981,31 +2013,42 @@ struct ComposeView: View {
     }
 }
 
-func sanitizeMessage(_ parsedMsg: [FormattedText]) -> (message: String, parsedMsg: [FormattedText], sanitizedPos: Int?) {
-    var pos: Int = 0
+func sanitizeMessage(
+    _ text: String,
+    _ parsedMsg: [FormattedText],
+    sanitize: (String) -> String? = { parseSanitizeUri($0, safe: true)?.uriInfo?.sanitized }
+) -> (message: String, parsedMsg: [FormattedText], sanitizedPos: Int?) {
     var updatedMsg = ""
+    var copied = text.startIndex
+    var searched = text.startIndex
     var sanitizedPos: Int? = nil
     let updatedParsedMsg = parsedMsg.map { ft in
-        var updated = ft
+        var updated: FormattedText? = nil
         switch ft.format {
         case .uri:
-            if let sanitized = parseSanitizeUri(ft.text, safe: true)?.uriInfo?.sanitized {
+            if let sanitized = sanitize(ft.text) {
                 updated = FormattedText(text: sanitized, format: .uri)
-                pos += updated.text.count
-                sanitizedPos = pos
             }
-        case let .hyperLink(text, uri):
-            if let sanitized = parseSanitizeUri(uri, safe: true)?.uriInfo?.sanitized {
-                let updatedText = if let text { "[\(text)](\(sanitized))" } else { sanitized }
-                updated = FormattedText(text: updatedText, format: .hyperLink(showText: text, linkUri: sanitized))
-                pos += updated.text.count
-                sanitizedPos = pos
+        case let .hyperLink(showText, uri):
+            if let sanitized = sanitize(uri) {
+                let linkPart = "](\(uri))"
+                let updatedText =
+                    if ft.text.contains(linkPart) { ft.text.replacingOccurrences(of: linkPart, with: "](\(sanitized))") }
+                    else if let showText { "[\(showText)](\(sanitized))" }
+                    else { sanitized }
+                updated = FormattedText(text: updatedText, format: .hyperLink(showText: showText, linkUri: sanitized))
             }
-        default:
-            pos += ft.text.count
+        default: ()
         }
-        updatedMsg += updated.text
-        return updated
+        guard let r = text.range(of: ft.text, range: searched..<text.endIndex) else { return ft }
+        searched = r.upperBound
+        guard let sanitizedFt = updated else { return ft }
+        updatedMsg.append(contentsOf: text[copied..<r.lowerBound])
+        updatedMsg.append(sanitizedFt.text)
+        copied = r.upperBound
+        sanitizedPos = updatedMsg.count
+        return sanitizedFt
     }
+    updatedMsg.append(contentsOf: text[copied...])
     return (message: updatedMsg, parsedMsg: updatedParsedMsg, sanitizedPos: sanitizedPos)
 }

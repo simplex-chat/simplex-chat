@@ -146,13 +146,16 @@ private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boole
   val uriHandler = LocalUriHandler.current
   Column {
     SelectionContainer(Modifier.fillMaxWidth()) {
+      val parsed = if (markdown) remember(text) { parseToMarkdownText(text) } else null
       MarkdownText(
         text,
-        formattedText = if (markdown) remember(text) { parseToMarkdown(text) } else null,
+        formattedText = parsed?.formattedText,
+        markdownBlocks = parsed?.markdownBlocks,
         toggleSecrets = false,
         modifier = Modifier.fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
         linkMode = linkMode, uriHandler = uriHandler,
-        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp)
+        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
+        blockLayout = true
       )
     }
   }

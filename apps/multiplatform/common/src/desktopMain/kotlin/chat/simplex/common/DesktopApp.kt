@@ -1,6 +1,5 @@
 package chat.simplex.common
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -259,11 +258,16 @@ private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Bool
 fun showWindow() {
   simplexWindowState.windowVisible.value = true
   simplexWindowState.window?.apply {
+    // During a crash restart this is the disposed window, and showing it would bring it back.
+    if (!isDisplayable) return
     // Clear ICONIFIED so a minimized window un-minimizes; preserves MAXIMIZED_BOTH
     // when set. toFront() alone does not un-minimize on any AWT platform.
     extendedState = extendedState and Frame.ICONIFIED.inv()
+    // The window is made visible before the activation below; the next recomposition would be too late.
+    isVisible = true
     toFront()
     requestFocus()
+    if (desktopPlatform.isLinux()) requestX11Activation(this)
   }
 }
 
@@ -300,10 +304,4 @@ class DialogState<T> {
   }
 
   fun onResult(result: T) = onResult!!.complete(result)
-}
-
-@Preview
-@Composable
-fun AppPreview() {
-  AppScreen()
 }

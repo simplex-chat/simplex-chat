@@ -14,10 +14,10 @@
 "Cannot forward message" = "Impossible de transférer le message";
 
 /* No comment provided by engineer. */
-"Comment" = "Commenter";
+"Cannot generate random database passphrase" = "Impossible de générer une phrase secrète aléatoire pour la base de données";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Actuellement, la taille maximale des fichiers supportés est de %@.";
+"Comment" = "Commenter";
 
 /* No comment provided by engineer. */
 "Database downgrade required" = "Mise à jour de la base de données nécessaire";

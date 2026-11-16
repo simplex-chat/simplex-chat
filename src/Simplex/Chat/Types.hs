@@ -220,6 +220,7 @@ data Contact = Contact
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
+    chatLayout :: Maybe ChatLayout,
     chatDeleted :: Bool,
     customData :: Maybe CustomData
   }
@@ -749,7 +750,7 @@ data Profile = Profile
   }
   deriving (Eq, Show)
 
-data ChatPeerType = CPTHuman | CPTBot | CPTBusiness | CPTUnknown Text
+data ChatPeerType = CPTHuman | CPTBot | CPTBusiness | CPTAgent | CPTUnknown Text
   deriving (Eq, Show)
 
 instance FromJSON ChatPeerType where
@@ -768,11 +769,13 @@ instance TextEncoding ChatPeerType where
     "human" -> CPTHuman
     "bot" -> CPTBot
     "business" -> CPTBusiness
+    "agent" -> CPTAgent
     tag -> CPTUnknown tag
   textEncode = \case
     CPTHuman -> "human"
     CPTBot -> "bot"
     CPTBusiness -> "business"
+    CPTAgent -> "agent"
     CPTUnknown tag -> tag
 
 profileFromName :: ContactName -> Profile
@@ -920,7 +923,8 @@ data GroupProfile = GroupProfile
     image :: Maybe ImageData,
     publicGroup :: Maybe PublicGroupProfile,
     groupPreferences :: Maybe GroupPreferences,
-    memberAdmission :: Maybe GroupMemberAdmission
+    memberAdmission :: Maybe GroupMemberAdmission,
+    chatLayout :: Maybe ChatLayout
   }
   deriving (Eq, Show)
 
@@ -949,7 +953,10 @@ instance ToJSON ImageData where
 
 safeImageData :: Text -> Text
 safeImageData t
-  | "data:" `T.isPrefixOf` t = t
+  | Just b64 <- T.stripPrefix "data:image/jpg;base64," t <|> T.stripPrefix "data:image/png;base64," t,
+    Right header <- B64.decode $ encodeUtf8 $ T.take 12 b64,
+    any (`B.isPrefixOf` header) ["\xFF\xD8\xFF", "\x89PNG\r\n\x1a\n"] =
+      t
   | otherwise = ""
 
 instance ToField ImageData where toField (ImageData t) = toField t

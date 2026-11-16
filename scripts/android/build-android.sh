@@ -105,14 +105,9 @@ build() {
   sed -i.bak "s/android.version_code=.*/android.version_code=${vercode}/" "$folder/apps/multiplatform/gradle.properties"
 
   for arch in $arches; do
-    if [ "$arch" = "armv7a" ]; then
-      android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
-      android_support_lib="${folder}#hydraJobs.${arch}-android:lib:support.x86_64-linux"
-    else
-      android_simplex_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:simplex-chat"
-      android_support_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:support"
-    fi
-    
+    android_simplex_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:simplex-chat"
+    android_support_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:support"
+
     android_simplex_lib_output="${PWD}/result/pkg-${arch}-android-libsimplex.zip"
     android_support_lib_output="${PWD}/result/pkg-${arch}-android-libsupport.zip"
 

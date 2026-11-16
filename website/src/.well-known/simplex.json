@@ -1,0 +1,33 @@
+{
+  "channels": [
+    {
+      "link": "https://smp18.simplex.im/c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA",
+      "title": "SimpleX Network News",
+      "changeFrequency": "weekly"
+    },
+    {
+      "link": "https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg",
+      "title": "SimpleX Crowdfunding News",
+      "changeFrequency": "weekly"
+    }
+  ],
+  "groups": [
+    {
+      "link": "https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM",
+      "title": "SimpleX users group"
+    }
+  ],
+  "contacts": [
+    {
+      "link": "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw",
+      "title": "Ask SimpleX Team",
+      "audience": ["people", "agents"],
+      "business": true
+    },
+    {
+      "link": "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok",
+      "title": "SimpleX Directory",
+      "audience": ["people", "agents"]
+    }
+  ]
+}

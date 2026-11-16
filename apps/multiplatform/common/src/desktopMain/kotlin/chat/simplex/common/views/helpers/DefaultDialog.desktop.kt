@@ -17,6 +17,7 @@ import java.awt.FileDialog
 import java.awt.event.ActionListener
 import java.io.File
 import javax.swing.JFileChooser
+import javax.swing.JOptionPane
 import javax.swing.filechooser.FileFilter
 import javax.swing.filechooser.FileNameExtensionFilter
 import javax.swing.plaf.basic.BasicFileChooserUI
@@ -75,7 +76,21 @@ fun FrameWindowScope.FileDialogChooserMultiple(
   val scope = rememberCoroutineScope()
   DisposableEffect(Unit) {
     val job = scope.launch(Dispatchers.Main) {
-      val fileChooser = JFileChooser()
+      val fileChooser = object: JFileChooser() {
+        override fun approveSelection() {
+          if (!isLoad && selectedFile?.isFile == true) {
+            val answer = JOptionPane.showConfirmDialog(
+              this,
+              generalGetString(MR.strings.file_already_exists_replace_question),
+              dialogTitle,
+              JOptionPane.YES_NO_OPTION,
+              JOptionPane.WARNING_MESSAGE
+            )
+            if (answer != JOptionPane.YES_OPTION) return
+          }
+          super.approveSelection()
+        }
+      }
       fileChooser.dialogTitle = title
       fileChooser.isMultiSelectionEnabled = allowMultiple && isLoad
       fileChooser.isAcceptAllFileFilterUsed = fileFilter == null

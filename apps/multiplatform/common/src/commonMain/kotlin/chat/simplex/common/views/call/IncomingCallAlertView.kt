@@ -17,10 +17,11 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.previewDate
 import chat.simplex.common.views.helpers.ProfileImage
+import chat.simplex.common.views.helpers.centeredIn
 import chat.simplex.common.views.usersettings.ProfilePreview
 import chat.simplex.res.*
-import kotlinx.datetime.Clock
 
 // Spec: spec/services/calls.md#IncomingCallAlertView
 @Composable
@@ -75,7 +76,7 @@ fun IncomingCallInfo(invitation: RcvCallInvitation, chatModel: ChatModel) {
   @Composable fun CallIcon(icon: Painter, descr: String) = Icon(icon, descr, tint = SimplexGreen)
   Row(verticalAlignment = Alignment.CenterVertically) {
     if (chatModel.users.size > 1) {
-      ProfileImage(size = 32.dp, image = invitation.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
+      ProfileImage(size = 27.dp, image = invitation.user.profile.image, color = MaterialTheme.colors.secondaryVariant, modifier = Modifier.centeredIn(32.dp))
       Spacer(Modifier.width(4.dp))
     }
     if (invitation.callType.media == CallMediaType.Video) CallIcon(painterResource(MR.images.ic_videocam_filled), stringResource(MR.strings.icon_descr_video_call))
@@ -117,7 +118,7 @@ fun PreviewIncomingCallAlertLayout() {
         callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
         sharedKey = null,
         callUUID = "",
-        callTs = Clock.System.now()
+        callTs = previewDate
       ),
       chatModel = ChatModel,
       rejectCall = {},

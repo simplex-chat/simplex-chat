@@ -6,7 +6,7 @@
 
 # Interface: ErrorMigration
 
-Defined in: [src/core.ts:152](../src/core.ts#L152)
+Defined in: [src/core.ts:220](../core.ts#L220)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:152](../src/core.ts#L152)
 
 > **dbFile**: `string`
 
-Defined in: [src/core.ts:154](../src/core.ts#L154)
+Defined in: [src/core.ts:222](../core.ts#L222)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:154](../src/core.ts#L154)
 
 > **migrationError**: [`MigrationError`](core.TypeAlias.MigrationError.md)
 
-Defined in: [src/core.ts:155](../src/core.ts#L155)
+Defined in: [src/core.ts:223](../core.ts#L223)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [src/core.ts:155](../src/core.ts#L155)
 
 > **type**: `"errorMigration"`
 
-Defined in: [src/core.ts:153](../src/core.ts#L153)
+Defined in: [src/core.ts:221](../core.ts#L221)
 
 #### Overrides
 

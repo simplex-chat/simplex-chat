@@ -241,9 +241,9 @@ struct GroupLinkView_Previews: PreviewProvider {
     static var previews: some View {
         @State var groupLink: GroupLink? = GroupLink(
             userContactLinkId: 1,
-            connLinkContact: CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil),
-            shortLinkDataSet: false,
-            shortLinkLargeDataSet: false,
+            connLinkContact: CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: "https://smp6.simplex.im/g#cL3iklYlt_Tws1B_1aGylbT_3HowPMQhuCFoBiCjZ1M"),
+            shortLinkDataSet: true,
+            shortLinkLargeDataSet: true,
             groupLinkId: "abc",
             acceptMemberRole: .member
         )
