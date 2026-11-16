@@ -8228,6 +8228,10 @@ Query: SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE conne
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT xcontact_id FROM contacts WHERE local_display_name = 'bob'
+Plan:
+SCAN contacts
+
 Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
