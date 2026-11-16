@@ -2,7 +2,7 @@
 
 Repository: simplex-chat/simplex-chat.
 Branch: `ep/name-alert-fixtures`.
-Base: `ep/simplify-name-lookup` `739d8f040` (#8220), then master after its merge.
+Base: master `88767bbc3` (#8220).
 
 The user's words:
 
@@ -45,8 +45,17 @@ Files
 1. `chatSendCmd` of `Simplex.Chat.Mobile`: the response as the apps receive it.
 2. `stableJSON`: values of volatile keys replaced.
 3. `prettyJSON`: one object field or array element per line.
-4. `testGenerate` of tests/APIDocs.hs: the file written, the test failed when it differs.
-5. Swift form: `tagged2owsf`, checked by `owsf2tagged (tagged2owsf v) == v`.
+4. Swift form: `tagged2owsf`, checked by `owsf2tagged (tagged2owsf v) == v`.
+5. `testGenerate` of tests/APIDocs.hs, for the Kotlin file, then the Swift file: the file written, the test failed when it differs.
+
+`tagged2owsf`, in tests/ChatTests/Names.hs
+
+| Tagged object | Swift form |
+|---|---|
+| `type` only | `_owsf`, `<type>: {}` |
+| `type`, `data` of a value other than an untagged object | `_owsf`, `<type>: <data>` |
+| `type`, other fields | `_owsf`, `<type>: {<other fields>}` |
+| without `type` | unchanged |
 
 `stableJSON` replacements
 - `createdAt`, `updatedAt`, `chatTs`, `userMemberProfileUpdatedAt`: `1970-01-01T00:00:00Z`
@@ -100,8 +109,19 @@ Kotlin
 
 iOS
 - target `SimpleX Unit Tests`: unit tests without a host application, linked with SimpleXChat
+- scheme `SimpleX Unit Tests`: the test action of the target
 - sources: the tests, `Shared/Model/AppAPITypes.swift`, `Shared/Views/NewChat/NameWarningAlert.swift`
-- fixtures decoded by `decodeAPIResult`
+- `SimplexAddress.shareAddress`: in `Shared/Views/Helpers/ShareSheet.swift`, beside `showShareSheet`, in place of AppAPITypes.swift
+- fixtures read from `names` beside the test file (`#filePath`), decoded by `decodeAPIResult`
+
+iOS alert
+- `NameWarningAlert.swift`: `NameWarningAction` (title), `NameWarningAlert`, `namePrice`, `nameWarningAlert`, `planNameWarningAlert`
+- `NewChatView.swift`, `showNameWarningAlert`: the alert, and the effect of each action
+
+| Action | Effect |
+|---|---|
+| renew, register, re-register | `openBrowserAlert` of simplex.domains |
+| connect to team | `appOpenUrl` of `simplexTeamURL` |
 
 ## CI
 
@@ -109,7 +129,10 @@ Kotlin
 - `:common:desktopTest` of build-linux, scope kotlin; `apps/multiplatform/**` includes the fixtures
 
 iOS
-- step "Test iOS name alerts" of build-macos, after "Build iOS app", when `ios`; `apps/ios/**` includes the fixtures
+- step "Run iOS unit tests" of build-ios, after "Build iOS app"; `apps/ios/**` includes the fixtures
+- a new simulator: the runtime of the iphonesimulator SDK, its first iPhone device type
+- `xcodebuild test` of the scheme `SimpleX Unit Tests`, with the settings of "Build iOS app"
+- with `ep/ci-one-macos-job`: a step of build-macos, with the condition of its iOS steps
 
 Core
 - `/names tests/` writes and compares the fixtures
