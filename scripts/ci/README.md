@@ -161,6 +161,14 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - CI, in build-linux: `scope-tests.sh support-bot-light` (step "Test changed scopes"): the Python library of the branch and the bot installed in a virtual environment, then ruff, pyright and pytest. The tests use a fake API, without libsimplex.
 - Local: `scripts/ci/scope-tests.sh support-bot-light`.
 
+#### build-tool
+
+- Globs:
+  - scripts/simplex-chat-build.py
+  - scripts/simplex_build/**
+- CI, in build-linux: `scope-tests.sh build-tool` (step "Test changed scopes"): the unit tests of the build tool, then mypy 1.18.2 with `--strict` on its modules other than the tests, and ruff 0.14.0 with its default rules.
+- Local: `scripts/ci/scope-tests.sh build-tool`; Python 3.12 or newer is required.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |

@@ -92,6 +92,7 @@ SCOPE_CHANGES = {
     ],
     "support-bot": ["apps/simplex-support-bot/**"],
     "support-bot-light": ["apps/simplex-support-bot-light/**", "packages/simplex-chat-python/**"],
+    "build-tool": ["scripts/simplex-chat-build.py", "scripts/simplex_build/**"],
 }
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)
