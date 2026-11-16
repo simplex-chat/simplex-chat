@@ -237,8 +237,8 @@ shape = \case
   Done -> "Done"
   Again -> "Again"
   WaitUntil v t -> "WaitUntil " <> show v <> " " <> show t
-  Retry v reason -> "Retry " <> show v <> " " <> T.unpack reason
-  Stalled v reason -> "Stalled " <> show v <> " " <> T.unpack reason
+  Retry v reason -> "Retry " <> show v <> " " <> show reason
+  Stalled v reason -> "Stalled " <> show v <> " " <> show reason
   Await p -> "Await " <> show (ptHash p)
 
 awaiting :: Next -> IO PendingTx
@@ -256,7 +256,7 @@ retrying = \case
   Retry {} -> pure ()
   next -> fail $ "not retrying: " <> shape next
 
-stalled :: Next -> IO Text
+stalled :: Next -> IO StepFailure
 stalled = \case
   Stalled _ reason -> pure reason
   next -> fail $ "not stalled: " <> shape next
@@ -709,7 +709,7 @@ testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   answerAvailable w True
   -- viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
   setFault cNode "eth_estimateGas" $ revertFault $ unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
-  steps w r >>= stalled >>= (`shouldSatisfy` T.isInfixOf "setRegistrarAllowance")
+  steps w r >>= stalled >>= (`shouldBe` SFAllowanceUsedUp)
   x <- stored ctx r
   (nrPhase x, nrVersion x) `shouldBe` (OCommitted, nrVersion r)
   sent w `shouldReturn` []
