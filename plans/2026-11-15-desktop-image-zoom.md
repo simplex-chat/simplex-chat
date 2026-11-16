@@ -44,11 +44,12 @@ The Android rule stays as on the base. A later master item fuses it with the des
 ## Questions for the user
 
 1. Trackpad: a vertical two-finger scroll zooms at the pointer and never pans; a horizontal scroll does nothing. Panning takes a click and drag. The zoom follows the scroll direction the system reports, so macOS natural scrolling and momentum act on the zoom too.
-   Speed, unmeasured on a Mac:
-   - 1× to 20× takes 16.4 notches.
-   - Windows: a notch scrolls a 600 px list by 90 px at the default 3 lines, so 16.4 notches equal 1479 px of scroll.
-   - macOS: a trackpad unit scrolls a list by 10 points, and counts a third of a notch, so 1× to 20× takes 49 units, 493 points of scroll.
-   - A classic Mac wheel sending fractional deltas would be taken as precise and zoom 3× slower.
+   Trackpad speed on macOS, unmeasured on a Mac; one constant, `MAC_PRECISE_UNITS_PER_NOTCH`, sets it:
+   - 1× to 20× takes 16.4 notches. A Windows notch scrolls a 600 px list by 90 px at the default 3 lines, so 16.4 notches equal 1479 px of scroll.
+   - A macOS trackpad unit scrolls a list by 10 points.
+   - A, in this change: a unit counts a third of a notch, so 1× to 20× takes 49 units, 493 points; the distance of Windows at 1 line per notch.
+   - B: a unit counts a ninth of a notch, so 1× to 20× takes 148 units, 1479 points; the distance of Windows at its default 3 lines.
+   - A classic Mac wheel sending fractional deltas is taken as precise, and zooms 3× slower with A, 9× slower with B.
 2. A click on a zoomed image closes the gallery, as a tap does on Android.
 
 ## Tests
