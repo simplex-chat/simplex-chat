@@ -33,7 +33,7 @@ import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), Proof
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtNameMoved), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
-import Simplex.Chat.Mobile (chatParseMarkdown, chatSendCmd, eitherToResult)
+import Simplex.Chat.Mobile (chatParseMarkdown, chatParseUri, chatSendCmd, eitherToResult)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct (getContact, getContactIdByName, getContactRequest, getContactRequestIdByName)
@@ -995,14 +995,17 @@ setRelativePaths cc filesFolder tempFolder = do
   cc ##> "/_start"
   cc <## "chat started"
 
-nameFixture :: String -> TestCC -> String -> IO ()
-nameFixture fixture cc name = apiFixture ("names/" <> fixture) cc [] [name] ["/_connect plan 1 " <> name]
+data FixtureRequests = FixtureRequests {frMarkdown :: [String], frUris :: [String], frCommands :: [String]}
 
-apiFixture :: String -> TestCC -> [(String, String)] -> [String] -> [String] -> IO ()
-apiFixture fixture TestCC {chatController = cc} placeholders texts cmds = do
-  responses <- mapM (\cmd -> (JK.fromString cmd J..=) . stableJSON <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))) cmds
-  parses <- mapM (\text -> (JK.fromString text J..=) <$> decodeJSON (chatParseMarkdown $ B.pack text)) texts
-  writeFixture fixture . withPlaceholders $ J.object ["commands" J..= J.object responses, "markdown" J..= J.object parses]
+nameFixture :: String -> TestCC -> String -> IO ()
+nameFixture fixture cc name = apiFixture ("names/" <> fixture) cc [] FixtureRequests {frMarkdown = [name], frUris = [], frCommands = ["/_connect plan 1 " <> name]}
+
+apiFixture :: String -> TestCC -> [(String, String)] -> FixtureRequests -> IO ()
+apiFixture fixture TestCC {chatController = cc} placeholders FixtureRequests {frMarkdown, frUris, frCommands} = do
+  responses <- mapM (\cmd -> (JK.fromString cmd J..=) . stableJSON <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))) frCommands
+  parses <- mapM (\text -> (JK.fromString text J..=) <$> decodeJSON (chatParseMarkdown $ B.pack text)) frMarkdown
+  uris <- mapM (\uri -> (JK.fromString uri J..=) <$> decodeJSON (chatParseUri False $ B.pack uri)) frUris
+  writeFixture fixture . withPlaceholders $ J.object ["commands" J..= J.object responses, "markdown" J..= J.object parses, "uris" J..= J.object uris]
   where
     decodeJSON :: LB.ByteString -> IO J.Value
     decodeJSON = either fail pure . J.eitherDecode
@@ -1039,5 +1042,5 @@ stableJSON = \case
   where
     stableField k v
       | k `elem` ["createdAt", "updatedAt", "chatTs"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink"] = J.String $ JK.toText k
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId"] = J.String $ JK.toText k
       | otherwise = stableJSON v

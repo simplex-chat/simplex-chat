@@ -642,7 +642,7 @@ testPlanKnownNameAvailable = withAliceName $ \reg _r alice bob -> do
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   bob <## "SimpleX name alice.simplex is no longer registered, available: $20 for 2 years"
-  nameFixture "plan-known-available" bob "@alice.simplex"
+  apiFixture "names/plan-known-available" bob [] FixtureRequests {frMarkdown = ["@alice.simplex"], frUris = [nameHowToUri], frCommands = ["/_connect plan 1 @alice.simplex"]}
 
 testPlanKnownNameReserved :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameReserved = withAliceName $ \reg _r alice bob -> do
@@ -665,7 +665,7 @@ testPlanKnownNameReserved = withAliceName $ \reg _r alice bob -> do
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   bob <## "SimpleX name alice.simplex is reserved for community"
-  nameFixture "plan-known-reserved" bob "@alice.simplex"
+  apiFixture "names/plan-known-reserved" bob [] FixtureRequests {frMarkdown = ["@alice.simplex", simplexTeamUri], frUris = [], frCommands = ["/_connect plan 1 @alice.simplex"]}
   alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
   alice <## "SimpleX name alice.simplex is reserved for community"
@@ -712,7 +712,7 @@ testPlanOwnNameExpired = withAliceName $ \reg (shortLink, _) alice _bob -> do
   alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
   alice <##. "your SimpleX name alice.simplex expired on "
-  nameFixture "plan-own-expired" alice "@alice.simplex"
+  apiFixture "names/plan-own-expired" alice [] FixtureRequests {frMarkdown = ["@alice.simplex"], frUris = [nameHowToUri], frCommands = ["/_connect plan 1 @alice.simplex"]}
 
 testPlanOwnNameAvailable :: HasCallStack => TestParams -> IO ()
 testPlanOwnNameAvailable = withAliceName $ \reg _r alice _bob -> do
@@ -720,7 +720,7 @@ testPlanOwnNameAvailable = withAliceName $ \reg _r alice _bob -> do
   alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
   alice <## "your SimpleX name alice.simplex is no longer registered, available: $20 for 2 years"
-  nameFixture "plan-own-available" alice "@alice.simplex"
+  apiFixture "names/plan-own-available" alice [] FixtureRequests {frMarkdown = ["@alice.simplex"], frUris = [nameHowToUri], frCommands = ["/_connect plan 1 @alice.simplex"]}
 
 testPlanNameResolveNever :: HasCallStack => TestParams -> IO ()
 testPlanNameResolveNever = withAliceName $ \reg _r alice bob -> do
@@ -914,7 +914,7 @@ testPlanNameChannelNoRelays = withChannelChats $ \reg alice cath bob -> do
   bob ##> "/_connect plan 1 team.simplex"
   bob <## "group link: channel has no active relays, please try to join later"
   bob <## "You can also connect to @team.simplex in direct chat"
-  apiFixture "names/plan-channel-no-relays" bob [] ["team.simplex", "@team.simplex"] ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]
+  apiFixture "names/plan-channel-no-relays" bob [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
   alice ##> "/_set domain 1 team.simplex"
   alice <## "new contact address set"
   bob ##> "/_connect plan 1 @team.simplex"
@@ -948,8 +948,8 @@ testPlanNameLinkServer ps = flip withTeamChats ps $ \reg contactLink channelLink
 
 testPlanLocalChats :: HasCallStack => TestParams -> IO ()
 testPlanLocalChats = withTeamChats $ \reg contactLink channelLink alice bob -> do
-  apiFixture "names/search-team" bob [] [] ["/_connect plan 1 @team.simplex resolve=never", "/_connect plan 1 #team.simplex resolve=never"]
-  apiFixture "names/plan-own-channel" alice [] ["#team.simplex"] ["/_connect plan 1 #team.simplex"]
+  apiFixture "names/search-team" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_connect plan 1 @team.simplex resolve=never", "/_connect plan 1 #team.simplex resolve=never"]}
+  apiFixture "names/plan-own-channel" alice [] FixtureRequests {frMarkdown = ["#team.simplex"], frUris = [], frCommands = ["/_connect plan 1 #team.simplex"]}
   bob ##> "/_connect plan 1 team.simplex resolve=never"
   knownGroupPlan "team" "team" bob
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
@@ -1017,7 +1017,7 @@ testPlanNameOtherKindMoved = withTeamChats $ \reg _contactLink channelLink alice
   bob ##> "/_connect plan 1 team.simplex"
   knownGroupPlan "team" "team" bob
   bob <## "You can also connect to @team.simplex in direct chat"
-  apiFixture "names/plan-other-kind" bob [] ["team.simplex", "@team.simplex"] ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]
+  apiFixture "names/plan-other-kind" bob [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
   bob ##> "/_connect plan 1 @team.simplex"
   bob <## "contact address: ok to connect"
   _ <- getTermLine bob
@@ -1108,3 +1108,9 @@ testNameRecordOrWarning = do
 
 utc :: Int64 -> UTCTime
 utc = roundedToUTCTime . RoundedSystemTime
+
+nameHowToUri :: String
+nameHowToUri = "https://simplex.domains/#testing"
+
+simplexTeamUri :: String
+simplexTeamUri = "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"
