@@ -106,6 +106,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
+import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
 import StoreService.Names.Codes (CodeRefusal (..))
 import StoreService.Names.Community (AcceptanceAsked (..))
@@ -207,6 +208,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
     it "has the contract's fields" testViewFields
+    it "answers every field of a failed, a requeued and a taken order" testViewStates
     it "has the terms the order signed" testViewTerms
     it "reads the intent nonce in committed, the acceptance of the terms of the name's kind before its reveal, and nothing in taken, leaving a failed read null and named in unread" testViewReads
     it "reads the chain only in a free view slot and within one deadline, else answers every chain field unread" testViewReadsBounded
@@ -1649,6 +1651,69 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         J.Null,
         J.String plainTerms
       ]
+
+testViewStates :: IO ()
+testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  g <- C.newRandom
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  Right () <- placePaid st "r1" ownerA o (addUTCTime 3600 t0)
+  let written change = do
+        Written _ <- withTransaction st $ \db -> getRegistration db rid >>= \r -> updateRegistration db (change $ fromJust r) t0
+        withTransaction st $ \db -> fromJust <$> getRegistration db rid
+      viewOf r = registrationView st (testNamesConfig node) ct t0 r
+  failed <-
+    written $ \r ->
+      r
+        { nrPhase = OFailed t0 FRNotRegistered,
+          nrReveal = Just reveal,
+          nrCommitTx = Just $ TxHash $ digestFixture 8,
+          nrCommitBlock = Just 100,
+          nrRevealAfter = Just 1792574160,
+          nrRevealBefore = Just 1792660500,
+          nrRegisterTx = Just $ TxHash $ digestFixture 9,
+          nrRegisterBlock = Just 120
+        }
+  viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", "failed"), ("registerTx", txText 9), ("error", "The name could not be registered"), ("balance", J.Null)]
+  requeued <- written $ \r -> r {nrPhase = OQueued, nrRegisterTx = Nothing, nrRegisterBlock = Nothing}
+  viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", "queued"), ("registerTx", J.Null), ("error", J.Null), ("balance", J.Null)]
+  taken <- written $ \r -> r {nrPhase = OTaken}
+  withTransaction st $ \db -> creditBalance db rid 20000 t0
+  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", "taken"), ("registerTx", J.Null), ("error", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "held" .= False, "heldUntil" .= J.Null, "refunded" .= (0 :: Int)])]
+  where
+    o = order "alicebakery" 1
+    rid = RegistrationId "r1"
+    txText n = J.String $ hex $ digestFixture n
+    view changed =
+      J.Object $
+        KM.fromList changed
+          <> KM.fromList
+            [ ("id", "r1"),
+              ("moves", J.Number 0),
+              ("linksRefused", J.Bool False),
+              ("labelHash", J.String $ hex $ (\(LabelHash h) -> h) $ ofLabelHash o),
+              ("label", "alicebakery"),
+              ("owner", J.String ownerAText),
+              ("commitment", J.String $ hex $ ofCommitment o),
+              ("sealed", "sealed-alicebakery-1"),
+              ("resolver", J.String $ safeDecodeUtf8 $ strEncode fakeResolver),
+              ("sponsor", J.String $ safeDecodeUtf8 $ strEncode fakeSponsor),
+              ("chainId", J.Number 31337),
+              ("tld", "simplex"),
+              ("years", J.Number 2),
+              ("duration", J.Number 69292800),
+              ("price", J.Number 20000),
+              ("fromBalance", J.Number 0),
+              ("latePayment", J.Null),
+              ("commitTx", txText 8),
+              ("revealAfter", J.Number 1792574160),
+              ("revealBefore", J.Number 1792660500),
+              ("intentNonce", J.Null),
+              ("acceptance", J.Null),
+              ("unread", J.Array mempty),
+              ("expiresAt", J.Null),
+              ("community", J.Null),
+              ("terms", J.String plainTerms)
+            ]
 
 testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
