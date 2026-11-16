@@ -31,7 +31,7 @@ struct CIFileView: View {
         } else {
             // reserve exact space for the overlaid meta (timestamp + all icons), rendered transparently - matches MsgContentView
             let encrypted: Bool? = if let fileSource = file?.fileSource { fileSource.cryptoArgs != nil } else { nil }
-            let metaReserve = Text(verbatim: "   ") + ciMetaText(meta, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: encrypted, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, signedFileVerified: file?.loaded, showSignature: showSignature, showFileEncryption: showFileEncryption)
+            let metaReserve = Text(verbatim: "   ") + ciMetaText(meta, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: encrypted, colorMode: .transparent, showStatus: !terminal || terminalShowsStatus(meta.itemStatus, showTimestamp: showTimestamp), showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, signedFileVerified: file?.loaded, showSignature: showSignature, showFileEncryption: showFileEncryption)
             HStack(alignment: .bottom, spacing: 6) {
                 fileIndicator()
                     .padding(.top, terminal ? 0 : 5)
