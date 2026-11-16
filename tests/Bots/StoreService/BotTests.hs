@@ -116,6 +116,7 @@ storeServiceTests = do
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
+  it "should run the console command given by --execute as the chat command" testExecuteOption
   it "should refuse to start when the [issuer] key is not one clients trust" testIssuerIniKeyMustBeTrusted
   it "should trust [issuer] dev_keys beside the clients' keys, and refuse one at a trusted index" testDevKeysTrusted
   it "should credit a code's months and issue one credential per month" testCodeMonthsRenew
@@ -347,6 +348,7 @@ mkStoreServiceOpts ps secretKey =
       clientService = True,
       noAddress = False,
       runCLI = False,
+      consoleCommand = Nothing,
       serviceConfigFile = Nothing,
       issuerKey = Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey},
       testing = True
@@ -1738,12 +1740,22 @@ testIssuerKeyMustMatchConfig ps = do
   checkIssuerKey (optsFor sk) Nothing cfg >>= (`shouldSatisfy` isRight)
   checkIssuerKey (optsFor otherSk) Nothing cfg >>= (`shouldSatisfy` isLeft)
   checkIssuerKey (optsFor sk) Nothing testCfg {badgePublicKeys = M.empty} >>= (`shouldSatisfy` isLeft)
-  let parsed args = issuerKey <$> O.getParseResult (O.execParserPure O.defaultPrefs (O.info (storeServiceOpts "." "test") mempty) args)
+  let parsed args = issuerKey <$> parsedOpts args
       secret = B.unpack (strEncode sk)
   parsed ["--issuer-key-idx", show testIssuerKeyIdx, "--issuer-secret", secret] `shouldBe` Just (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk})
   parsed [] `shouldBe` Just Nothing
   parsed ["--issuer-key-idx", show testIssuerKeyIdx] `shouldBe` Nothing
   parsed ["--issuer-secret", secret] `shouldBe` Nothing
+
+parsedOpts :: [String] -> Maybe StoreServiceOpts
+parsedOpts = O.getParseResult . O.execParserPure O.defaultPrefs (O.info (storeServiceOpts "." "test") mempty)
+
+testExecuteOption :: HasCallStack => TestParams -> IO ()
+testExecuteOption _ = do
+  let chatCmdOf args = chatCmd . mkChatOpts <$> parsedOpts args
+  chatCmdOf ["-e", "//issue name 6"] `shouldBe` Just "//issue name 6"
+  chatCmdOf ["--execute", "//revoke SN6-X"] `shouldBe` Just "//revoke SN6-X"
+  chatCmdOf [] `shouldBe` Just ""
 
 testIssuerIniKeyMustBeTrusted :: HasCallStack => TestParams -> IO ()
 testIssuerIniKeyMustBeTrusted ps = do

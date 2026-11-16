@@ -54,6 +54,8 @@ simplex-store-service --help
   below: it starts no web listener and no poller, and serves no group commands, whatever
   `--service-config` says. It still updates a code's group message when the code is redeemed or
   revoked. `[apple]`, `[google]`, `[dev]` and `[log]` apply to it.
+- `--execute COMMAND` (`-e`): `--run-cli` without a terminal, for one command: it runs `COMMAND`,
+  such as `//issue name 6`, prints its answer and exits.
 - `--no-address`: skip address creation on start-up (for operators who provision the address themselves).
 The service cannot sign credentials without an issuer key and refuses to start without one:
 
@@ -1511,6 +1513,13 @@ The command is sent to the running service in `--run-cli` mode, not a way to sta
 //issue name 7 years 5
 ```
 
+A script passes one command with `--execute`, with the service stopped, and reads the `Code: ...`
+line it prints:
+
+```
+simplex-store-service -d <database> --service-config store_service.ini --execute "//issue name 7"
+```
+
 `months` defaults to 1 and must be between 1 and 12; the status defaults to `free` and records
 whether the code was sold (`paid`), is awaiting payment (`unpaid`), or was issued by an operator
 (`free`). Redemption refuses an `unpaid` code with `payment_pending`: the web checkout writes the
@@ -1797,8 +1806,8 @@ payment against this service in Chromium, as they run against the webapp's mock.
    `BADGES_PORT`, and signing with the test suite's
    public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
    `[issuer] dev_keys`. That secret is public: never use it outside this script;
-4. starts the service once to make its database, stops it, and issues the prepaid codes the cases
-   need with `//issue name` in `--run-cli`;
+4. issues the prepaid codes the cases need with `//issue name`, one `--execute` run each, the first of
+   which makes the database;
 5. starts the service on 8180 (the names site) and 8181 (the badges site) and a code server on 8199,
    and runs the cases with `BASE_URL` at the names site and `MOCK_URL` at the code server.
 
@@ -1809,7 +1818,7 @@ The code server answers the cases' `POST /control/code` with the issued codes, t
 
 It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_SERVICE_BIN`),
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
-`dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
+`dev/start.sh` does), `jq` and `curl`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
 `ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
 (brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
