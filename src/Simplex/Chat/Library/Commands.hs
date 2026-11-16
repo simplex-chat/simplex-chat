@@ -4619,9 +4619,10 @@ processChatCommand cxt nm = \case
                       CPContactAddress (CAPContactViaAddress ct') _ -> do
                         (ct'', moved) <- refreshContact ct'
                         pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'') (knownMoved moved knownChat_))
-                      CPGroupLink (GLPKnown g@GroupInfo {businessChat = Just _} u o os) _ | Just d <- planDomain -> do
-                        (g', moved) <- withNameLock user (Just d) $ withFastStore' $ \db -> setPreparedGroupDomain db user g d
-                        pure (con l' cReq, CPGroupLink (GLPKnown g' u o os) (knownMoved moved knownChat_))
+                      CPGroupLink (GLPKnown g@GroupInfo {businessChat = Just BusinessChatInfo {businessDomain}, groupDomainVerified} u o os) _
+                        | Just d <- planDomain, (claimDomain <$> businessDomain, groupDomainVerified) /= (Just d, Just DVVerified) -> do
+                            (g', moved) <- withNameLock user (Just d) $ withFastStore' $ \db -> setPreparedGroupDomain db user g d
+                            pure (con l' cReq, CPGroupLink (GLPKnown g' u o os) (knownMoved moved knownChat_))
                       _ -> pure (con l' cReq, plan)
               knownLinkPlans :: CM (Maybe (ACreatedConnLink, ConnectionPlan))
               knownLinkPlans = withFastStore $ \db ->
