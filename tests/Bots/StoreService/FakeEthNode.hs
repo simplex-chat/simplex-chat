@@ -202,7 +202,6 @@ fakeTermsHash = keccak256 . encodeUtf8 . fakeTermsLink
 plainTerms :: Text
 plainTerms = T.drop 2 $ hex fakeGeneralTerms
 
--- | Agreed terms as an order sends them.
 agreed :: Text -> AgreedTerms
 agreed t = fromMaybe (error $ "agreed terms: " <> T.unpack t) $ textDecode t
 

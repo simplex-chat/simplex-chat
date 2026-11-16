@@ -107,7 +107,6 @@ data ServicePaymentMethod
   | SPMCrypto {currency :: CryptoCurrency}
   deriving (Eq, Show)
 
--- | A name order's method, as its request and its row write it.
 instance TextEncoding ServicePaymentMethod where
   textEncode = \case
     SPMCard CPStripe -> "card"

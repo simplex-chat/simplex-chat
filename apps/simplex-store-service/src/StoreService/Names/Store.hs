@@ -193,7 +193,6 @@ instance TextEncoding NamePhase where
     PFailed -> "failed"
   textDecode = enumTextDecode
 
--- | The value whose encoding is the text, of an enumeration.
 enumTextDecode :: (Bounded a, Enum a, TextEncoding a) => Text -> Maybe a
 enumTextDecode t = lookup t [(textEncode v, v) | v <- [minBound .. maxBound]]
 
@@ -1492,7 +1491,6 @@ revokePrepaidCode db codeHash now = do
       | isJust pcRevokedAt = AlreadyRevoked pcId
       | otherwise = AlreadyRedeemed
 
--- | What a transaction is for, as its row stores it.
 data TxKind = TKCommit | TKAccept | TKRegister | TKEdit
   deriving (Eq, Show, Enum, Bounded)
 
@@ -1576,7 +1574,6 @@ editTransactions db editId =
   DB.query db (transactionColumns <> " WHERE name_record_edit_id = ? ORDER BY name_transaction_id") (Only editId)
     >>= decodeAll toTransaction
 
--- | An edit's state, as its row stores it.
 data EditTag = ETPending | ETMined | ETReverted
   deriving (Eq, Show, Enum, Bounded)
 

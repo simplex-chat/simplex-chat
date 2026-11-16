@@ -176,7 +176,6 @@ parseOrderFields o = do
   where
     hash32 = maybe (Left "not a 32-byte hash in lowercase hex") Right . bytes32FromHex
 
--- | A request body's parser run; its failure, naming the field, a bad request.
 parseBody :: Text -> JT.Parser a -> Either OrderRefusal a
 parseBody what = first (\e -> ORBadRequest $ "a malformed " <> what <> ": " <> T.pack e) . JT.parseEither id
 

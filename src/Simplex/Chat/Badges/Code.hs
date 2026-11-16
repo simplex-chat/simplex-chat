@@ -151,7 +151,6 @@ minNameLength = 6
 maxNameLength :: Int
 maxNameLength = 63
 
--- | A name length from minNameLength to maxNameLength.
 newtype NameLength = NameLength Int
   deriving (Eq, Ord, Show)
 
