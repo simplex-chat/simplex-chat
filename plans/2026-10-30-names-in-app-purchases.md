@@ -122,7 +122,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 - Prices come from the chain: `SimplexPriceOracle` holds cents a year per label length, with a base for other lengths; the service quotes `rentPriceUSD` with a placeholder label of the name's length and refuses a price under a cent (`chainPriceCents`, `Names/Contracts.hs:182-188`); since https://github.com/simplex-chat/simplex-chat/pull/8093 (`names` at 6a8ae41d0), it also refuses a price under `[names] min_price_cents_per_year`, 5000 by default, for each year.
 - One price is a chain operation (M13): `setPrices` with base 5000 cents a year and no per-length entry. The site's search, the resolver's `NamePricing` and the allowance spent per registration follow it. It replaces the store spec's $100, $200 and $400 (`2026-10-21-store-api.md:103`).
 - 6 to 63 characters: letters, digits and hyphens (`minNameLength`, `maxNameLength`, in the service and in `src/Simplex/Chat/Badges/Code.hs`).
-- After expiry, a grace period (`GRACE_PERIOD()`, 90 days in the SimpleX Names Conditions): the owner keeps the name and can renew it, and it can't be transferred; then anyone can register it.
+- After expiry, a grace period (`GRACE_PERIOD`, 90 days, `BaseRegistrarImplementation.sol`, as the SimpleX Names Conditions state): the owner keeps the name and can renew it, and it can't be transferred; then anyone can register it.
 
 ### 3.2 Buying on the site today
 
@@ -397,7 +397,7 @@ The answer: `STPNamePurchase {payment, order}`. `payment`: the years and the cod
 | `order_exists` | Finds its own order with `find` and opens it |
 | `name_check_unavailable` | Retried in place |
 | `bad_request` | The core compares its timestamp and duration with the catalog's clock. Past the 600 s or the term slack: rebuilt (a new duration and commitment if the term moved), signed, placed once as a plain code order. Otherwise the order reads failed; its Try again signs again and places a plain code order |
-| `commit_limit` | Failed, with "Contact SimpleX team" |
+| `commit_limit` | 1·7's "The code's commits used up", with "Contact SimpleX team"; Failed once support raises the bound |
 | `code_reserved`, `code_used` | A timed-out request landed late: `find` finds the order |
 | `code_invalid` | The purchase is presented again; its answer says `revoked` or `receipt_used` |
 
@@ -411,7 +411,7 @@ The answer: `STPNamePurchase {payment, order}`. `payment`: the years and the cod
 
 **Sizes:** a request and its answer are each bounded at 11106 bytes (3.3).
 
-- An Apple signed transaction takes several kilobytes; a Play token is short; an order with one short link about a kilobyte. A 63-character name with two links at their bound of 1024 bytes, since https://github.com/simplex-chat/simplex-chat/pull/8161 (`names` at d0fb34b14; `linkMaxBytes`, `Names/Links.hs:32-33`), is sealed as the site seals it (`webapp/src/crypto/seal.ts`) into 2903 characters, in an order of about 3.5 kilobytes; the service takes `sealed` up to 11095 characters (`maxSealedChars`, `Names/Orders.hs:141`).
+- An Apple signed transaction takes several kilobytes; a Play token is short; an order with one short link about a kilobyte. A 63-character name with two links at their bound of 1024 bytes, since https://github.com/simplex-chat/simplex-chat/pull/8161 (`names` at d0fb34b14; `linkMaxBytes`, `Names/Links.hs:32-33`), is sealed as the site seals it (`webapp/src/crypto/seal.ts`) into 2903 characters, in an order of about 3.5 kilobytes; the service takes `sealed` up to 11095 characters (`maxSealedChars`, `Names/Orders.hs:139-140`).
 - The core measures the encoded request; one that doesn't fit goes as the hash alone, then the order as a plain code order. The Apple sandbox run (section 8, the payments release's checks by hand) measures a real transaction with the longest short link the app makes.
 - The service checks each answer's size where it makes it.
 - The catalog holds at most about 36 full-length community texts; past its bound it carries none, the ⓘ reads "This name is for its community.", and the service alerts the operator at start.
@@ -458,7 +458,7 @@ The answer: `STPNamePurchase {payment, order}`. `payment`: the years and the cod
 
 **A lapsed commitment** (decided on 11 Nov 2026): the service commits the same commitment again, with no new signature, and the order stays live; the buyer taps nothing. Since https://github.com/simplex-chat/simplex-chat/pull/8145 (`names` at 5becf05d6) it does for an order with a stored reveal; P24 does it for one without (Q29).
 
-- The controller takes the same hash once the old commitment lapsed (`commit`, `SimplexController.sol:391-396`, ens-contracts 6ccb5c52).
+- The controller takes the same hash once the old commitment lapsed (`commit`, `SimplexController.sol:392-397`, ens-contracts 6ccb5c52).
 - Without a reveal (P24), the site's orders included: the worker commits the same commitment again a second past each lapse, through `fromCommitment` (`Names/Worker.hs:175-184`), while the order's commits, mined ones included, number under 5 (`sendsUsedUp`, `Names/Worker.hs:460-461` at 5becf05d6) and the name has no owner (`ownerOfToken`, `Names/Contracts.hs:354-358` at 5becf05d6); the view reads it committed meanwhile and gives the new `revealAfter` and `revealBefore`, and the app reveals in the new window. At `names` 5becf05d6 such an order fails at the lapse, "The name was not signed in time" (`committed`, `Names/Worker.hs:256-259`).
 - With a reveal (#8145): the app signs the `RegisterName` intent and the terms acceptance with one deadline, a week ahead by the service's clock and never before `revealBefore`, as the site signs (3.2). On `CommitmentTooOld` from the register's dry run, the worker commits again and registers with the stored reveal (`judge`, `lapsedFields`, `Names/Worker.hs:201-212, 348-350` at 5becf05d6); the reveal check takes any deadline at or after `revealBefore` (`checkIntent`, `Names/Reveal.hs:119-122`).
 - An acceptance the name policy no longer holds after a re-commit is relayed again, within its deadline and its 5 sends.
@@ -514,7 +514,7 @@ Otherwise the terms read as unavailable. Only test builds accept the site's loca
 |---|---|---|
 | Catalog | The search answer's fields | 1 |
 | Terms text | `GET /api/terms/<hash>` | 1 |
-| Code check | `POST /api/code/check` | 1 |
+| Code check; beside it, opening and closing a code for payment (6.8), new | `POST /api/code/check` | 1 |
 | Code order | `POST /api/name/register` | 1 |
 | Registration view | `GET /api/registration/:id`, answered at once; the app polls | 1 |
 | Reveal | `POST /api/registration/:id/reveal` | 1 |
@@ -529,7 +529,7 @@ Otherwise the terms read as unavailable. Only test builds accept the site's loca
 
 - The service's dispatch and lane choice match each name command explicitly.
 - The main lane: the catalog, from its cache; the code check.
-- The order lane: the purchase, the code order, the reveal, Try again, another name, the relays.
+- The order lane: the purchase, the code order, opening and closing a code for payment, the reveal, Try again, another name, the relays.
 - The read lane: the view, `find`, the terms text.
 - Each lane is serial.
 - Each lane has a service-wide per-minute bound, no higher than it serves in a minute, applied at routing, before the queue; the catalog has a much larger one.
@@ -664,7 +664,7 @@ Android first; iOS gets the same code, shown only in App Store builds (6.9). Des
 - The badge lanes skip name products and the name lanes skip badge products, on both platforms.
 - **An open purchase** (paid, name unregistered) is found at start from the store's own list and continues:
   - Play: its purchases query;
-  - Apple: `Transaction.unfinished`, as for the badges' one-time products (`BadgeStore.swift:373, 385` at `app-names`): a name purchase stays unfinished until its name registers, and is open when it carries this wallet's token and no local record says it was used (only then does the app ask the service). An iOS app without P73, on any device of the Apple Account, finishes it at its sweep (3.4), and then this list misses it: the core records each receipt as the sheet returns (P19); a purchase finished elsewhere before its device recorded it (an Ask to Buy approved later, an app stopped mid-purchase) never reaches the app, and the buyer asks Apple for a refund.
+  - Apple: `Transaction.unfinished`, as for the badges' one-time products (`BadgeStore.swift:373, 385` at `app-names`): a name purchase stays unfinished until its name registers, and is open when it carries this wallet's token and no local record says it was used (only then does the app ask the service). An iOS app without P73, on any device of the Apple Account, finishes it at its sweep (3.4), and then this list misses it: the core records each receipt as the sheet returns (P19); a purchase finished elsewhere before its device recorded it (an Ask to Buy approved later, an app stopped mid-purchase) may never reach the app, and the buyer then asks Apple for a refund.
   - With the chosen name in the database, registration resumes; otherwise the app asks for a name.
 
 ```mermaid
@@ -924,7 +924,7 @@ Support drafts add "This reference links this chat to the payment"; the contact 
 
 ![Lane 2, a prepaid code](2026-10-30-names-in-app-purchases/lane2.png)
 
-- **2·1** a half-screen sheet: over 1·2 from "I have a code" and any "Register with code"; over 1·2's "Opens your address" from "Bring it into the app"; over 4·1 on iOS outside the US; over 1·5 and 4·2 from "Use a code".
+- **2·1** a half-screen sheet: over 1·2 from "I have a code" and any "Register with code"; over 1·11 from "Bring it into the app"; over 4·1 on iOS outside the US; over 1·5 and 4·2 from "Use a code".
   - Paste only: the app scans no code anywhere.
   - One field takes an owner code (`SN-` and 30 characters) or a prepaid code (`SN<length>-` and 20); `parseNameCode` tells them apart on the device.
   - A prepaid code goes as it is to the service's code check. A name code stays on the device: the app derives its wallet and sends only that wallet's signatures, to the owner-signed `find`, and reads the chain (`codeOrderOf`, `webapp/src/flow.ts:236-245`; `findHandler`, `StoreService/Web/Names/Owner.hs:44-59`).
@@ -1109,7 +1109,7 @@ sequenceDiagram
 - New in the service: finding an invoice again by its hash (badges refuse a known hash, `createInvoiceHandler`, `StoreService/Web/Server.hs:407-428`); the "confirming" state; the paid time on the code row (`PrepaidCode`, `StoreService/Names/Store.hs:382-394`), from which a refund without a draft counts.
 - A short payment leaves the code unpaid; the page shows what is still due.
 - Money reaching a paid code invoice later, and the part above the price, are recorded with the code row and alert the operator; today a paid invoice's status stays as it is (`decide ISPaid _ = Nothing`, `StoreService/Orders.hs:56`), and only name invoices alert (`moneyAfterPaid`, `StoreService/Poller.hs:235-246`).
-- Unpaid rows no money reached are swept once their "pay until" and invoice windows pass (`cleanupUnpaid`, `StoreService/Poller.hs:317-328`).
+- P59 sweeps unpaid browser code rows no money reached once their "pay until" and invoice windows pass, beside `cleanupUnpaid`, which sweeps unpaid orders today (`StoreService/Poller.hs:317-328`).
 - Refused under codes-only, as the site's name invoices are (`nameInvoiceHandler`, `StoreService/Web/Names/Orders.hs:88`).
 - **The app notices payment** through the code check over SMP (P22), with or without the link back. It reports a prepaid code's state today (`codeState`, `StoreService/Names/Codes.hs:44-55`; `codeAnswer`, `StoreService/Web/Names/Codes.hs:37-39`); P59 adds, for a browser code, "confirming", the "pay until", the open invoice's expiry, and, apart from the state, money on a closed invoice and money beyond the price. The state's order: paid, confirming, revoked, unpaid.
   - **Ask until:** the "pay until" from opening the code, moved later by each answer with a later open invoice's expiry, and for crypto by the provider's late window.
@@ -1381,7 +1381,7 @@ The wallet: P1 `core: wallet for names` merges https://github.com/simplex-chat/s
 
 Names over SMP, in the store service:
 
-- P22 `store: names over SMP — the catalog, the terms text and the code check`: the dispatch, the two names lanes, the per-lane bound at routing, the catalog's cache and its size check at start, the version; the harness the later terminal tests share: the service with names on the fake chain node (`testWorkerBoot`, `tests/Bots/StoreService/GroupIntegrationTests.hs:392`) and a CLI client set to its address (`withStoreServiceVerifierIO`, `BotTests.hs:397-421`) · medium · high · P13
+- P22 `store: names over SMP — the catalog, the terms text and the code check`: the dispatch, the two names lanes, the per-lane bound at routing, the catalog's cache and its size check at start, the version; the harness the later terminal tests share: the service with names on the fake chain node (`testWorkerBoot`, `tests/Bots/StoreService/GroupIntegrationTests.hs:402` at `app-names`) and a CLI client set to its address (`withStoreServiceVerifierIO`, `BotTests.hs:397-421`) · medium · high · P13
   - Tested: service tests: each rule of 6.3's lanes, bounds and sizes for its commands; terminal: a CLI client reads the catalog and checks a code.
 - P23 `store: names over SMP — the code order and the view` · medium · high · P22
   - Tested: service tests: 6.3's sizes for both; the SMP and web forms answer alike.
