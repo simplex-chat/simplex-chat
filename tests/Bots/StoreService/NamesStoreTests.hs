@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, insertProviderInvoice, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
+module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
@@ -53,7 +53,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "creates a paid order unpaid and live at version 1, linked to its invoice" testCreatePaid
     it "creates a code order queued with its code reserved" testCreateCode
     it "refuses a second live order for one owner and label hash, or for one commitment" testLiveUnique
-    it "leaves no registration when the code cannot be reserved" testCodeNotReservable
+    it "refuses a code order whose code cannot be reserved, leaving no registration once its writes are rolled back" testCodeNotReservable
     it "finds an exact resend by its order hash, live or not" testOrderHashLookup
     it "tells an overdue live order apart, whatever the poller marked, unless paid" testLiveOrdersOverdue
     it "closes an overdue order so a new one from the same wallet fits in the same transaction" testCloseOverdue
@@ -143,9 +143,16 @@ insertProviderInvoice db provider invId expiresAt status =
 
 -- | A paid order whose invoice, named after the registration, expires at the given time.
 placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either RegistrationRefused ())
-placePaid st rid owner o expiresAt = withTransaction st $ \db -> do
+placePaid st rid owner o expiresAt = withTransaction st $ \db -> insertOrRollBack db $ do
   insertInvoiceRow db ("inv-" <> rid) expiresAt "open"
   createPaidRegistration db (newReg rid owner o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) t0
+
+insertOrRollBack :: DB.Connection -> IO (Either e a) -> IO (Either e a)
+insertOrRollBack db insert = do
+  DB.execute_ db "SAVEPOINT order_insert"
+  inserted <- insert
+  either (const $ DB.execute_ db "ROLLBACK TO SAVEPOINT order_insert") (const $ pure ()) inserted
+  inserted <$ DB.execute_ db "RELEASE SAVEPOINT order_insert"
 
 issue :: DBStore -> Word8 -> NewPrepaidCode -> IO PrepaidCode
 issue st n c = withTransaction st $ \db -> do
@@ -156,7 +163,7 @@ usable :: NewPrepaidCode
 usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
 
 placeCode :: DBStore -> Text -> Address -> OrderFields -> PrepaidCode -> IO (Either RegistrationRefused ())
-placeCode st rid owner o code = withTransaction st $ \db -> createCodeRegistration db (newReg rid owner o) code t0
+placeCode st rid owner o code = withTransaction st $ \db -> insertOrRollBack db $ createCodeRegistration db (newReg rid owner o) code t0
 
 reg :: DBStore -> Text -> IO NameRegistration
 reg st rid = withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId rid)

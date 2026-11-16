@@ -9,7 +9,7 @@ module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, cover
 
 import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders)
-import Bots.StoreService.NamesStoreTests (at, btc, invoiceStatus, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
+import Bots.StoreService.NamesStoreTests (at, btc, insertOrRollBack, invoiceStatus, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
 import Bots.StoreService.WebTests (capturingStderr, overdueOf, rcv, withServiceStore, withServiceStores)
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -150,7 +150,7 @@ holdTerms src seen = OTBalance (RegistrationId src) holdPrice seen (Just btc)
 
 -- | A difference order holding all of the source's balance seen, its invoice of the difference expiring at the given time.
 holder :: DBStore -> Text -> Text -> Int -> UTCTime -> IO (Either RegistrationRefused ())
-holder st r src seen expiresAt = withTransaction st $ \db -> do
+holder st r src seen expiresAt = withTransaction st $ \db -> insertOrRollBack db $ do
   invoiceRow db ("inv-" <> r) False (holdPrice - seen) expiresAt
   createPaidRegistration db (newReg r ownerA (fieldsN r)) (holdTerms src seen) (paidOrder ("inv-" <> r)) {poPrice = holdPrice} t0
 
@@ -158,7 +158,7 @@ hold :: Text -> UTCTime -> Bool -> BalanceHold
 hold h bhUntil bhOverdue = BalanceHold {bhHolder = RegistrationId h, bhUntil, bhOverdue, bhFunded = False}
 
 coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either RegistrationRefused ())
-coveredSpend st r src price seen = withTransaction st $ \db -> createBalanceRegistration db (newReg r ownerA (fieldsN r)) (RegistrationId src) price seen t0
+coveredSpend st r src price seen = withTransaction st $ \db -> insertOrRollBack db $ createBalanceRegistration db (newReg r ownerA (fieldsN r)) (RegistrationId src) price seen t0
 
 -- | The holder queued and its hold spent in one transaction, as settlement does.
 settleHolder :: DB.Connection -> NameRegistration -> IO Bool
@@ -760,7 +760,7 @@ testConcurrentWrites = withServiceStores $ \open -> do
         lateSrc = "late" <> tag
     source st spendSrc 10000
     (spent, refundedSpend) <-
-      together st other (\db -> createBalanceRegistration db (newReg ("c" <> tag) ownerA (fieldsN $ "c" <> tag)) (RegistrationId spendSrc) 6000 10000 t0) (\db -> refundBalance db (RegistrationId spendSrc) 10000 t0)
+      together st other (\db -> insertOrRollBack db $ createBalanceRegistration db (newReg ("c" <> tag) ownerA (fieldsN $ "c" <> tag)) (RegistrationId spendSrc) 6000 10000 t0) (\db -> refundBalance db (RegistrationId spendSrc) 10000 t0)
     (n, isRight spent, refundedSpend) `shouldSatisfy` (\(_, a, b) -> a /= b)
     fmap (\(amount, _, _, _) -> amount) <$> figures st spendSrc t0 `shouldReturn` Just (if refundedSpend then 0 else 4000)
     invariantHolds st spendSrc

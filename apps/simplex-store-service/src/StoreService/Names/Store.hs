@@ -556,7 +556,7 @@ textMethod :: Text -> Maybe ServicePaymentMethod
 textMethod t = lookup t [(methodText m, m) | m <- [SPMCard CPStripe, SPMCrypto CCBtc, SPMCrypto CCXmr]]
 
 -- | A difference order (OTBalance) holds all of the balance seen while its invoice is open. The hold is written after the registration,
--- so the registration's row is locked before the balance's.
+-- so the registration's row is locked before the balance's. A refusal leaves its writes for the caller to roll back.
 createPaidRegistration :: DB.Connection -> NewRegistration -> OrderTerms -> PaidOrder -> UTCTime -> IO (Either RegistrationRefused ())
 createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid), nrgOwner, nrgOrder} terms PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId, poProviderRef} now' = do
   let now = truncateToSecond now'
@@ -573,9 +573,10 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
         "INSERT INTO sx_badge_service_name_invoices (invoice_id, registration_id, provider_ref, created_at) VALUES (?,?,?,?)"
         (invId, rid, poProviderRef, now)
       held' <- maybe (pure True) (\(source, seen) -> holdBalance db source seen regId now) held
-      if held' then pure $ Right () else Left RRBalanceChanged <$ deleteRegistration db regId
+      pure $ if held' then Right () else Left RRBalanceChanged
 
--- | Reserving the code is the conditional update of the transaction that creates the registration.
+-- | Reserving the code is the conditional update of the transaction that creates the registration. A refusal leaves its writes for
+-- the caller to roll back.
 createCodeRegistration :: DB.Connection -> NewRegistration -> PrepaidCode -> UTCTime -> IO (Either RegistrationRefused ())
 createCodeRegistration db new@NewRegistration {nrgId = regId, nrgOwner, nrgOrder} PrepaidCode {pcId, pcCodeHash} now' = do
   let now = truncateToSecond now'
@@ -585,11 +586,12 @@ createCodeRegistration db new@NewRegistration {nrgId = regId, nrgOwner, nrgOrder
     else
       reservePrepaidCode db pcId regId now >>= \case
         True -> pure $ Right ()
-        False -> Left RRCodeNotReservable <$ deleteRegistration db regId
+        False -> pure $ Left RRCodeNotReservable
 
 -- | A queued order whose price is spent from the source's balance in the same transaction, where its amount is the one seen and nothing holds it.
+-- A refusal leaves its writes for the caller to roll back.
 createBalanceRegistration :: DB.Connection -> NewRegistration -> RegistrationId -> Int -> Int -> UTCTime -> IO (Either RegistrationRefused ())
-createBalanceRegistration db new@NewRegistration {nrgId, nrgOwner, nrgOrder} source price seen now' = do
+createBalanceRegistration db new@NewRegistration {nrgOwner, nrgOrder} source price seen now' = do
   let now = truncateToSecond now'
   inserted <- insertRegistration db new PQueued price Nothing Nothing (Just (source, price)) (orderHash nrgOwner nrgOrder (OTBalance source price seen Nothing)) now
   if not inserted
@@ -597,11 +599,7 @@ createBalanceRegistration db new@NewRegistration {nrgId, nrgOwner, nrgOrder} sou
     else
       spendBalance db source price seen now >>= \case
         True -> pure $ Right ()
-        False -> Left RRBalanceChanged <$ deleteRegistration db nrgId
-
--- | The name invoice row goes with it.
-deleteRegistration :: DB.Connection -> RegistrationId -> IO ()
-deleteRegistration db (RegistrationId rid) = DB.execute db "DELETE FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid)
+        False -> pure $ Left RRBalanceChanged
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
 -- fromBalance: the order whose balance pays, and the cents it pays.
