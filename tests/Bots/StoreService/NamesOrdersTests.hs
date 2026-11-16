@@ -943,7 +943,7 @@ issueCode Ctx {cStore, cRandom} len years change = do
   let new = change NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
   stored <- withTransaction cStore $ \db ->
     insertPrepaidCode db new orderTime >>= \case
-      Right codeId -> fromJust <$> getPrepaidCodeById db codeId
+      Right codeId -> getPrepaidCodeById db codeId
       Left e -> error $ "code not issued: " <> show e
   pure (formatNameCode $ NCPrepaid code, stored)
 
@@ -951,7 +951,7 @@ unissuedCode :: Ctx -> Int -> IO Text
 unissuedCode Ctx {cRandom} len = formatNameCode . NCPrepaid <$> randomNamePrepaidCode cRandom len
 
 readCode :: Ctx -> PrepaidCode -> IO PrepaidCode
-readCode Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore $ \db -> fromJust <$> getPrepaidCodeById db pcId
+readCode Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore (`getPrepaidCodeById` pcId)
 
 -- | The body of /api/name/register: the order's fields and the code, without a kind, method or price.
 signedCodeBody :: Ctx -> Text -> Order -> IO J.Object

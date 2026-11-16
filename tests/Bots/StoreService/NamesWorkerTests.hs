@@ -314,7 +314,7 @@ traverseFst :: (a -> IO c) -> (a, b) -> IO (c, b)
 traverseFst f (a, b) = (,b) <$> f a
 
 codeOf :: Ctx -> PrepaidCode -> IO PrepaidCode
-codeOf Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore $ \db -> fromJust <$> getPrepaidCodeById db pcId
+codeOf Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore (`getPrepaidCodeById` pcId)
 
 nowOf :: Ctx -> IO UTCTime
 nowOf Ctx {cClock} = readIORef cClock

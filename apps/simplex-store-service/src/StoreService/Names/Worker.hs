@@ -483,9 +483,7 @@ retryCode OrdersEnv {oeStore} now NameRegistration {nrId, nrLength, nrPayment} =
   RPInvoice {} -> pure $ Right Nothing
   RPBalance -> pure $ Right Nothing
   RPCode codeId ->
-    withTransaction oeStore (`getPrepaidCodeById` codeId) <&> \case
-      Just code -> maybe (Right $ Just code) Left $ codeRefusal now nrId nrLength code
-      Nothing -> Left CRInvalid
+    withTransaction oeStore (`getPrepaidCodeById` codeId) <&> \code -> maybe (Right $ Just code) Left $ codeRefusal now nrId nrLength code
 
 -- | The register's transactions, which confirmLanded has read, are cleared with the failure; the reveal unless its intent still serves.
 requeue :: OrdersEnv -> UTCTime -> NameRegistration -> Maybe PrepaidCode -> IO Retried

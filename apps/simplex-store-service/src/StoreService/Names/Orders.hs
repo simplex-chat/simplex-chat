@@ -352,10 +352,9 @@ retargetOrder OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistratio
   case nrPayment of
     RPInvoice {} -> paidMove
     RPBalance -> paidMove
-    RPCode codeId ->
-      withTransaction oeStore (`getPrepaidCodeById` codeId) >>= \case
-        Nothing -> pure $ Left $ WRRefused $ ORCode CRInvalid
-        Just PrepaidCode {pcCodeHash} -> either (Left . WRRefused . ORCode) id <$> reserveCode oeTurns oeStore now pcCodeHash nrId ofLength (write nrPrice)
+    RPCode codeId -> do
+      PrepaidCode {pcCodeHash} <- withTransaction oeStore (`getPrepaidCodeById` codeId)
+      either (Left . WRRefused . ORCode) id <$> reserveCode oeTurns oeStore now pcCodeHash nrId ofLength (write nrPrice)
 
 versionWritten :: VersionWrite -> Either WriteRefusal Int64
 versionWritten = \case
@@ -408,9 +407,9 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
         RPCode codeId -> spendLandedCode turns st now codeId nrId write >>= traverse (paidWith codeId)
     paidWith codeId (v, spent) = do
       unless spent $ do
-        code <- withTransaction st (`getPrepaidCodeById` codeId)
+        PrepaidCode {pcCodeHash} <- withTransaction st (`getPrepaidCodeById` codeId)
         logError $
-          "names: registration " <> ridText nrId <> " turned out registered with prepaid code " <> maybe (tshow codeId) (hex . pcCodeHash) code
+          "names: registration " <> ridText nrId <> " turned out registered with prepaid code " <> hex pcCodeHash
             <> ", which was released and then spent, revoked or expired: the name was paid with it"
       pure v
     ridText (RegistrationId t) = t

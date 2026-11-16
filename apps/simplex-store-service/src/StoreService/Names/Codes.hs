@@ -140,9 +140,8 @@ spendLandedCode turns st now codeId rid = afterWrite turns st codeId (\db -> spe
 
 afterWrite :: Turns -> DBStore -> Int64 -> (DB.Connection -> IO Bool) -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 afterWrite turns st codeId change write = do
-  codeHash_ <- withTransaction st $ \db -> fmap pcCodeHash <$> getPrepaidCodeById db codeId
-  let run = withTransaction st $ \db -> write db >>= traverse (\a -> (a,) <$> change db)
-  maybe run (\codeHash -> withCodeTurn turns codeHash run) codeHash_
+  PrepaidCode {pcCodeHash} <- withTransaction st (`getPrepaidCodeById` codeId)
+  withCodeTurn turns pcCodeHash $ withTransaction st $ \db -> write db >>= traverse (\a -> (a,) <$> change db)
 
 -- | The code table keeps only the hash, so the caller must deliver the code.
 issueNameCode :: ChatController -> CodeIssuer -> Int -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)

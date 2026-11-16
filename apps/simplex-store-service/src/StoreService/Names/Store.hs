@@ -1336,9 +1336,10 @@ getPrepaidCode :: DB.Connection -> ByteString -> IO (Maybe PrepaidCode)
 getPrepaidCode db codeHash =
   maybeFirstRow toPrepaidCode $ DB.query db (prepaidCodeColumns <> " WHERE code_hash = ?") (Only $ Binary codeHash)
 
-getPrepaidCodeById :: DB.Connection -> Int64 -> IO (Maybe PrepaidCode)
+getPrepaidCodeById :: DB.Connection -> Int64 -> IO PrepaidCode
 getPrepaidCodeById db codeId =
-  maybeFirstRow toPrepaidCode $ DB.query db (prepaidCodeColumns <> " WHERE name_prepaid_code_id = ?") (Only codeId)
+  maybeFirstRow toPrepaidCode (DB.query db (prepaidCodeColumns <> " WHERE name_prepaid_code_id = ?") (Only codeId))
+    >>= maybe (E.throwIO $ BrokenInvariant $ "the prepaid code " <> tshow codeId <> " of an order is missing") pure
 
 -- | Only an unused code: not reserved, spent or revoked, paid or free, and not expired.
 reservePrepaidCode :: DB.Connection -> Int64 -> RegistrationId -> UTCTime -> IO Bool

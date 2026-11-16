@@ -157,7 +157,7 @@ insertOrRollBack db insert = do
 issue :: DBStore -> Word8 -> NewPrepaidCode -> IO PrepaidCode
 issue st n c = withTransaction st $ \db -> do
   Right codeId <- insertPrepaidCode db c {npcCodeHash = digestFixture n} t0
-  fromJust <$> getPrepaidCodeById db codeId
+  getPrepaidCodeById db codeId
 
 usable :: NewPrepaidCode
 usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
@@ -301,7 +301,7 @@ testLiveUnique = withServiceStore $ \st -> do
   existing <- withTransaction st $ \db -> mapM (getRegistration db . RegistrationId) ["r2", "r3", "r4"]
   existing `shouldBe` [Nothing, Nothing, Nothing]
   free <- withTransaction st $ \db -> getPrepaidCodeById db (pcId code)
-  (pcReservedBy =<< free) `shouldBe` Nothing
+  pcReservedBy free `shouldBe` Nothing
 
 testCodeNotReservable :: IO ()
 testCodeNotReservable = withServiceStore $ \st -> do
@@ -310,7 +310,7 @@ testCodeNotReservable = withServiceStore $ \st -> do
   placeCode st "r2" ownerB (order "bobsbakery" 2) code `shouldReturn` Left CIRCodeNotReservable
   withTransaction st (\db -> getRegistration db (RegistrationId "r2")) `shouldReturn` Nothing
   held <- withTransaction st $ \db -> getPrepaidCodeById db (pcId code)
-  (pcReservedBy =<< held) `shouldBe` Just (RegistrationId "r1")
+  pcReservedBy held `shouldBe` Just (RegistrationId "r1")
 
 testOrderHashLookup :: IO ()
 testOrderHashLookup = withServiceStore $ \st -> do
@@ -641,7 +641,7 @@ testReserveReleaseSpend = withServiceStore $ \st -> do
   run (\db -> reservePrepaidCode db pcId r1 (at 4)) `shouldReturn` False
   run (\db -> spendLandedPrepaidCode db pcId r2 (at 4)) `shouldReturn` False
   spent <- run $ \db -> getPrepaidCodeById db pcId
-  (pcReservedBy =<< spent, pcSpentAt =<< spent) `shouldBe` (Just r2, Just (at 3))
+  (pcReservedBy spent, pcSpentAt spent) `shouldBe` (Just r2, Just (at 3))
 
 testReserveRefused :: IO ()
 testReserveRefused = withServiceStore $ \st -> do
@@ -662,7 +662,7 @@ testOneCodePerRegistration = withServiceStore $ \st -> do
   placeCode st "r1" ownerA (order "alicebakery" 1) first `shouldReturn` Right ()
   withTransaction st (\db -> reservePrepaidCode db (pcId second) (RegistrationId "r1") t0) `shouldThrow` anyException
   free <- withTransaction st $ \db -> getPrepaidCodeById db (pcId second)
-  (pcReservedBy =<< free) `shouldBe` Nothing
+  pcReservedBy free `shouldBe` Nothing
 
 testRevoke :: IO ()
 testRevoke = withServiceStore $ \st -> do
@@ -679,7 +679,8 @@ testRevoke = withServiceStore $ \st -> do
   revoke spent `shouldReturn` AlreadyRedeemed
   withTransaction st (\db -> revokePrepaidCode db (digestFixture 9) t0) `shouldReturn` (NoSuchCode, Nothing)
   held <- withTransaction st $ \db -> getPrepaidCodeById db (pcId reserved)
-  (pcReservedBy =<< held, pcRevokedAt =<< held) `shouldBe` (Just (RegistrationId "r1"), Just (at 1))
+  (pcReservedBy held, pcRevokedAt held) `shouldBe` (Just (RegistrationId "r1"), Just (at 1))
+  withTransaction st (`getPrepaidCodeById` 999) `shouldThrow` (\(BrokenInvariant _) -> True)
 
 -- | An edit of one change at nonce 4.
 newEdit :: Address -> Word8 -> RecordChange -> NewRecordEdit

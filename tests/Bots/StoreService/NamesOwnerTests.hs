@@ -303,7 +303,7 @@ labelHashText label = J.String $ hex lh
     LabelHash lh = labelHash label
 
 codeRow :: Ctx -> PrepaidCode -> IO PrepaidCode
-codeRow Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore $ \db -> fromJust <$> getPrepaidCodeById db pcId
+codeRow Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore (`getPrepaidCodeById` pcId)
 
 -- | Bounded, since a deadlock would otherwise hang the suite.
 within :: String -> IO a -> IO a
