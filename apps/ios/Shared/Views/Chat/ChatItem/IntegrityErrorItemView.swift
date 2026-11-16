@@ -58,6 +58,7 @@ struct IntegrityErrorItemView: View {
 struct CIMsgError: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalMessageColumn) private var column
     var chatItem: ChatItem
     var onTap: () -> Void
 
@@ -81,6 +82,7 @@ struct CIMsgError: View {
             .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
             .textSelection(.disabled)
             .simultaneousGesture(TapGesture().onEnded(onTap))
+            .padding(.leading, inlineMeta == nil ? terminalPillStart(column) : 0)
         }
     }
 }
