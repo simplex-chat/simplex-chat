@@ -62,7 +62,6 @@ module Simplex.Chat.Store.Groups
     getMentionedMemberByMemberId,
     getGroupMemberById,
     getNonRemovedMemberById,
-    getGroupMemberByIndex,
     getGroupMemberByMemberId,
     getCreateUnknownGMByMemberId,
     getGroupMemberIdViaMemberId,
@@ -266,6 +265,7 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
+import Simplex.Messaging.Util (encodeJSON)
 #endif
 
 type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Text, Maybe Text) :. BadgeRow :. ContactDomainRow) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact, Maybe Text, Maybe UTCTime)
@@ -1202,24 +1202,6 @@ getNonRemovedMemberById db cxt user@User {userId} groupMemberId = do
       (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ? AND m.member_status NOT IN (?,?,?,?)")
       (groupMemberId, userId, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
 
-getGroupMemberByIndex :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Int64 -> ExceptT StoreError IO GroupMember
-getGroupMemberByIndex db cxt user GroupInfo {groupId} indexInGroup = do
-  currentTs <- liftIO getCurrentTime
-  ExceptT . firstRow (toContactMember currentTs cxt user) (SEGroupMemberNotFoundByIndex indexInGroup) $
-    DB.query
-      db
-      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group = ?")
-      (groupId, indexInGroup)
-
-getSupportScopeMemberByIndex :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMemberId -> Int64 -> ExceptT StoreError IO GroupMember
-getSupportScopeMemberByIndex db cxt user GroupInfo {groupId} scopeGMId indexInGroup = do
-  currentTs <- liftIO getCurrentTime
-  ExceptT . firstRow (toContactMember currentTs cxt user) (SEGroupMemberNotFoundByIndex indexInGroup) $
-    DB.query
-      db
-      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group = ? AND (m.member_role IN (?,?,?) OR m.group_member_id = ?)")
-      (groupId, indexInGroup, GRModerator, GRAdmin, GROwner, scopeGMId)
-
 getGroupMemberByMemberId :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberId -> ExceptT StoreError IO GroupMember
 getGroupMemberByMemberId db cxt user GroupInfo {groupId} memberId = do
   currentTs <- liftIO getCurrentTime
@@ -1270,31 +1252,31 @@ getGroupMembers db cxt user@User {userId, userContactId} GroupInfo {groupId} = d
       (userId, groupId, userContactId)
 
 getGroupMembersByIndexes :: DB.Connection -> StoreCxt -> User -> GroupInfo -> [Int64] -> IO [GroupMember]
-getGroupMembersByIndexes db cxt user gInfo indexesInGroup = do
-#if defined(dbPostgres)
+getGroupMembersByIndexes db cxt user GroupInfo {groupId} indexesInGroup = do
   currentTs <- getCurrentTime
-  let GroupInfo {groupId} = gInfo
   map (toContactMember currentTs cxt user) <$>
     DB.query
       db
+#if defined(dbPostgres)
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group IN ?")
       (groupId, In indexesInGroup)
 #else
-  rights <$> mapM (runExceptT . getGroupMemberByIndex db cxt user gInfo) indexesInGroup
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group IN (SELECT value FROM json_each(?))")
+      (groupId, encodeJSON indexesInGroup)
 #endif
 
 getSupportScopeMembersByIndexes :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMemberId -> [Int64] -> IO [GroupMember]
-getSupportScopeMembersByIndexes db cxt user gInfo scopeGMId indexesInGroup = do
-#if defined(dbPostgres)
+getSupportScopeMembersByIndexes db cxt user GroupInfo {groupId} scopeGMId indexesInGroup = do
   currentTs <- getCurrentTime
-  let GroupInfo {groupId} = gInfo
   map (toContactMember currentTs cxt user) <$>
     DB.query
       db
+#if defined(dbPostgres)
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group IN ? AND (m.member_role IN (?,?,?) OR m.group_member_id = ?)")
       (groupId, In indexesInGroup, GRModerator, GRAdmin, GROwner, scopeGMId)
 #else
-  rights <$> mapM (runExceptT . getSupportScopeMemberByIndex db cxt user gInfo scopeGMId) indexesInGroup
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group IN (SELECT value FROM json_each(?)) AND (m.member_role IN (?,?,?) OR m.group_member_id = ?)")
+      (groupId, encodeJSON indexesInGroup, GRModerator, GRAdmin, GROwner, scopeGMId)
 #endif
 
 getGroupModerators :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
