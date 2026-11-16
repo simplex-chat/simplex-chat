@@ -19,7 +19,7 @@ project("app")
 if(UNIX AND NOT APPLE)
     set(OS_LIB_PATH "linux")
     set(OS_LIB_EXT "so")
-    # only $ORIGIN, where libsimplex is: CMake would add the build's absolute libs directory
+    # Makes ld search libs in the same dir as libapp-lib, not in system dirs
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "$ORIGIN")
 elseif(WIN32)
@@ -29,7 +29,6 @@ else()
     set(OS_LIB_PATH "mac")
     set(OS_LIB_EXT "dylib")
     set(CMAKE_MACOSX_RPATH 1)
-    # only @loader_path: CMake would add the build's absolute libs directory, which any local user may create
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "@loader_path")
 endif()

@@ -112,8 +112,7 @@ DOS_EPOCH_YEAR = 1980
 HFS_PARTITION = "Apple_HFS"
 
 
-# rpaths relative to the library or the app, the only ones that the libraries keep: dyld searches an absolute one, which
-# another user can create, before @loader_path, and the app's entitlements disable library validation
+# rpaths relative to the library or the app, the only ones that the libraries keep
 RELATIVE_RPATHS = ("@loader_path", "@executable_path")
 
 
