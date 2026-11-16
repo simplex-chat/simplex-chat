@@ -145,11 +145,11 @@ import Simplex.Messaging.Crypto (sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding (Encoding (..), Large (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
-import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.Eth.Address (Address, addressFromBytes, unAddress)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
-import StoreService.Names.Abi (addressFromBytes, hex)
+import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (ChainSeconds, TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Commitment, TermsAcceptance (..), TermsHash)
@@ -1790,9 +1790,8 @@ int64 = fromIntegral
 word64 :: Int64 -> Word64
 word64 = fromIntegral
 
--- | Address has no exported constructor; its parser takes lowercase hex without the EIP-55 check.
 decodeAddress :: ByteString -> Either Text Address
-decodeAddress = note "address column" . addressFromBytes
+decodeAddress = either (const $ Left "address column") Right . addressFromBytes
 
 decodeSignature :: ByteString -> Either Text RecoverableSignature
 decodeSignature bs = either (Left . ("signature column: " <>) . tshow) Right $ parseSignature $ hex bs

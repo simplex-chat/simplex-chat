@@ -19,9 +19,7 @@ module StoreService.Names.Signatures
 where
 
 import Control.Applicative ((<|>))
-import Control.Monad (unless, when)
-import Crypto.Number.Serialize (os2ip)
-import qualified Crypto.PubKey.ECC.Types as ECC
+import Control.Monad (unless)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
@@ -34,7 +32,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
-import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
+import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature, deserializeSignature, lowS)
 import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode, strEncode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
@@ -84,26 +82,15 @@ communityTermsPrefix = "community/"
 signatureBytes :: Int
 signatureBytes = 65
 
-scalarSize :: Int
-scalarSize = 32
-
 addressHexLength :: Int
 addressHexLength = 40
 
 -- the contracts' SignatureChecker refuses a higher s, though recovery accepts it
-maxS :: Integer
-maxS = ECC.ecc_n (ECC.common_curve $ ECC.getCurveByName ECC.SEC_p256k1) `div` 2
-
 parseSignature :: Text -> Either SignatureError RecoverableSignature
 parseSignature t = do
-  sig <- first (const SEFormat) $ parseText (hexP signatureBytes) t
-  let (rsR, (rsS, v)) = B.splitAt scalarSize <$> B.splitAt scalarSize sig
-  rsRecId <- case B.unpack v of
-    [27] -> Right 0
-    [28] -> Right 1
-    _ -> Left SERecoveryId
-  when (os2ip rsS > maxS) $ Left SEHighS
-  pure RecoverableSignature {rsR, rsS, rsRecId}
+  sig <- first (const SERecoveryId) . deserializeSignature =<< first (const SEFormat) (parseText (hexP signatureBytes) t)
+  unless (lowS sig) $ Left SEHighS
+  pure sig
 
 -- | EIP-191 @personal_sign@ digest.
 personalDigest :: ByteString -> ByteString

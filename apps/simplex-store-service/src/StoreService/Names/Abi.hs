@@ -11,7 +11,6 @@ module StoreService.Names.Abi
     abiArray,
     uint256,
     addressWord,
-    addressFromBytes,
     selector,
     hex,
     hexP,
@@ -43,8 +42,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
-import Simplex.Messaging.Encoding.String (strDecode)
-import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.Eth.Address (Address, addressFromBytes, unAddress)
 import Simplex.Messaging.Util (eitherToMaybe)
 
 data AbiValue = Static ByteString | Dynamic ByteString
@@ -117,11 +115,7 @@ decodeAddress :: ByteString -> Either AbiError Address
 decodeAddress ret = do
   (padding, a) <- B.splitAt addressPadding <$> wordAt 0 ret
   unless (B.all (== 0) padding) $ Left AENotAddress
-  maybe (Left AENotAddress) Right $ addressFromBytes a
-
--- | Address has no exported constructor; its parser takes lowercase hex without the EIP-55 check.
-addressFromBytes :: ByteString -> Maybe Address
-addressFromBytes = eitherToMaybe . strDecode . convertToBase Base16
+  first (const AENotAddress) $ addressFromBytes a
 
 decodeBool :: ByteString -> Either AbiError Bool
 decodeBool ret =

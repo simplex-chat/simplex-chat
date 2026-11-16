@@ -17,7 +17,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust, isJust)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
@@ -33,11 +33,11 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
+import Simplex.Messaging.Eth.Address (Address, addressFromBytes, addressFromPrivateKey)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Metrics
-import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressFromBytes, addressWord, selector, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Contracts (RegisteredNames (..), newContracts, termsOf, termsText)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -142,7 +142,7 @@ censusOtherResolver = censusAddress 0x23
 censusOwner = censusAddress 0x24
 
 censusAddress :: Word8 -> Address
-censusAddress = fromJust . addressFromBytes . B.replicate 20
+censusAddress = either error id . addressFromBytes . B.replicate 20
 
 censusBase :: ByteString
 censusBase = B.replicate 32 0x11
