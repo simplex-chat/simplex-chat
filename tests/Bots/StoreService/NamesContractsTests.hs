@@ -60,7 +60,7 @@ import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Contracts
 import StoreService.Names.Registration (labelNode, namehash, nodeBytes)
-import StoreService.Names.Revert (RevertName (..))
+import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import Test.Hspec
 
@@ -129,7 +129,7 @@ testNamePolicy g = withContracts g $ \node ct -> do
   answerCall node fakeController (selector "namePolicy()") $ Returns $ B.replicate 32 0
   namePolicy ct `shouldReturn` Left (ChainUnavailable "the controller has no name policy yet")
   answerCall node fakeController (selector "namePolicy()") $ Reverts ""
-  namePolicy ct `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
+  namePolicy ct `shouldReturn` Left (ChainReverted RRWithoutData)
   answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord fakeNamePolicy
   namePolicy ct `shouldReturn` Right fakeNamePolicy
   -- read once: a controller answering no more keeps the policy read
@@ -424,13 +424,13 @@ testOwnerOfFailed :: TVar ChaChaDRG -> IO ()
 testOwnerOfFailed g = withContracts g $ \node ct -> do
   -- viem's encodeErrorResult of Error("ERC721: invalid token ID")
   answerCall node (registrarOf node) ownerOfCall $ Reverts $ unhex "08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000184552433732313a20696e76616c696420746f6b656e2049440000000000000000"
-  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted Nothing)
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted $ RRUnnamed "ERC721: invalid token ID")
   -- viem's encodeErrorResult of ReentrantCall()
   answerCall node (registrarOf node) ownerOfCall $ Reverts $ unhex "37ed32e8"
-  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted $ Just RNReentrantCall)
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted $ RRNamed RNReentrantCall)
   -- a node or proxy that keeps the reason in the message but drops the data
   setFault node "eth_call" $ RpcError (-32000) "execution reverted: ERC721: invalid token ID" Nothing
-  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted Nothing)
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted $ RRUnnamed "ERC721: invalid token ID")
   setFault node "eth_call" HttpFailure
   ownerOfToken ct Latest alice `shouldReturn` Left (ChainUnavailable "eth_call: HTTP 502")
 
@@ -464,13 +464,13 @@ testFailedRead g = withContracts g $ \node ct -> do
   setBlock node 100 now
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   answerCall node (registrarOf node) nameExpiresCall $ Reverts ""
-  nameStatus ct alice `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
+  nameStatus ct alice `shouldReturn` Left (ChainReverted RRWithoutData)
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
   setFault node "eth_getBlockByNumber" HttpFailure
   nameStatus ct alice `shouldReturn` Left (ChainUnavailable "eth_getBlockByNumber: HTTP 502")
   clearFault node "eth_getBlockByNumber"
   answerCall node fakeNamePolicy reservedNamesCall $ Reverts ""
-  nameStatus ct alice `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
+  nameStatus ct alice `shouldReturn` Left (ChainReverted RRWithoutData)
 
 testMalformed :: TVar ChaChaDRG -> IO ()
 testMalformed g = withContracts g $ \node ct -> do

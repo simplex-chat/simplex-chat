@@ -47,7 +47,7 @@ import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (Contracts, NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
 import StoreService.Names.Registration (Node, channelRecordKey, clearRecordsDigest, clearRecordsWithSigCalldata, contactRecordKey, labelNode, multicallCalldata, resolverDomain, setTextDigest, setTextWithSigCalldata)
-import StoreService.Names.Revert (RevertName (..), revertText)
+import StoreService.Names.Revert (RevertName (..), revertReasonText, revertText)
 import StoreService.Names.Sender (SendError (..), Sender, submitTransaction)
 import StoreService.Names.Store
 import StoreService.Names.Turns (Turns, withLabelTurn)
@@ -227,8 +227,8 @@ sendNew rs timer editId =
     -- anyone can relay a signed edit, so a revert may mean another relayer applied it
     dryRunAnswer name = \case
       Applied tx -> EAApplied tx
-      NonceTaken -> EAReverted $ revertText RNInvalidNonce
-      NonceFree -> EAReverted $ revertText =<< name
+      NonceTaken -> EAReverted $ Just $ revertText RNInvalidNonce
+      NonceFree -> EAReverted $ revertReasonText name
 
 -- | Left when nothing was sent: the dry run reverted or the chain failed.
 sendEdit :: Records -> RecordEdit -> IO (Either SendError ())
@@ -310,7 +310,7 @@ follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepT
     -- the edit was sent before, so its dry run's revert is its outcome
     resend =
       sendEdit rs edit >>= \case
-        Left (SEChain (ChainReverted name)) -> settle rs reId $ ESReverted $ revertText =<< name
+        Left (SEChain (ChainReverted name)) -> settle rs reId $ ESReverted $ revertReasonText name
         r -> either (stall rs reId) pure r
 
 -- | Settles the edit as the chain shows it, or runs the action when its nonce is still free.
@@ -319,7 +319,7 @@ judged rs edit@RecordEdit {reId} whenFree =
   judge rs edit >>= \case
     Left e -> stall rs reId e
     Right (Applied tx) -> settle rs reId $ ESMined tx
-    Right NonceTaken -> settle rs reId $ ESReverted $ revertText RNInvalidNonce
+    Right NonceTaken -> settle rs reId $ ESReverted $ Just $ revertText RNInvalidNonce
     Right NonceFree -> whenFree
 
 -- | Its own transactions first: a status-1 receipt answers its hash. Without one, the owner's nonce and the records.
@@ -413,7 +413,7 @@ resolver :: Records -> Address
 resolver = cResolver . ccConfig . rsChain
 
 signatureExpired :: Maybe Text
-signatureExpired = revertText RNSignatureExpired
+signatureExpired = Just $ revertText RNSignatureExpired
 
 withStore :: Records -> (DB.Connection -> IO a) -> IO a
 withStore Records {rsStore} = withTransaction rsStore

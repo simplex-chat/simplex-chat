@@ -30,7 +30,7 @@ import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (commitCalldata)
-import StoreService.Names.Revert (RevertName (..))
+import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Sender
 import StoreService.Names.Store (NameTransaction (..), TxFor (..), TxStatus (..), pendingTransactions, registrationTransactions)
 import StoreService.Names.View (addressText)
@@ -132,7 +132,7 @@ testNothingSaved :: TVar ChaChaDRG -> IO ()
 testNothingSaved g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
   setFault node "eth_estimateGas" $ revertFault insufficientAllowance
-  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEChain (ChainReverted $ Just RNInsufficientAllowance)
+  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEChain (ChainReverted $ RRNamed RNInsufficientAllowance)
   clearFault node "eth_estimateGas"
   setFault node "eth_feeHistory" HttpFailure
   submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEChain (ChainUnavailable "eth_feeHistory: HTTP 502")

@@ -37,7 +37,7 @@ where
 import Control.Concurrent.STM (TVar)
 import Control.Exception (evaluate, try)
 import Control.Logger.Simple (logWarn)
-import Control.Monad ((<=<), (>=>))
+import Control.Monad ((>=>))
 import Crypto.Number.Serialize (os2ip)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
@@ -51,7 +51,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (isDigit)
 import Data.Functor ((<&>))
 import Data.List (foldl', sort)
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -70,7 +70,7 @@ import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (addressFromBytes, hex)
-import StoreService.Names.Revert (RevertName (..), decodeRevert)
+import StoreService.Names.Revert (RevertReason (..), decodeRevert, maxNodeMessageLength)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
@@ -84,7 +84,7 @@ data ChainClient = ChainClient
 
 -- | 'ChainUnavailable' never holds the RPC URL, which can carry a provider's key.
 data ChainError
-  = ChainReverted (Maybe RevertName)
+  = ChainReverted RevertReason
   | ChainUnavailable Text
   | ChainUnderfunded Text
   | ChainGasAboveCap Word64
@@ -130,10 +130,6 @@ revertCode = 3
 
 revertMessage :: Text
 revertMessage = "execution reverted"
-
--- | A node's error message is cut to this many characters.
-maxNodeMessageLength :: Int
-maxNodeMessageLength = 200
 
 -- | How geth, reth and erigon refuse a transaction whose key cannot pay gas × fee + value, in lower case; anvil capitalizes it.
 underfundedMessage :: Text
@@ -345,7 +341,7 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
       revertData <- e .:? "data"
       pure $
         if code == revertCode || revertMessage `T.isPrefixOf` message
-          then ChainReverted $ maybe (dataless message) (decodeRevert <=< JT.parseMaybe bytes) revertData
+          then ChainReverted $ maybe (dataless message) decodeRevert $ JT.parseMaybe bytes =<< revertData
           else nodeError message $ method <> ": error " <> tshow code <> ": " <> T.take maxNodeMessageLength message
     nodeError message
       | underfundedMessage `T.isInfixOf` T.toLower message = ChainUnderfunded
@@ -353,8 +349,8 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
     unavailable reason = ChainUnavailable $ method <> ": " <> reason
     -- a node or proxy that drops the data can keep a reason in the message, as in "execution reverted: ERC721: invalid token ID"
     dataless message
-      | message == revertMessage = Just RNWithoutData
-      | otherwise = Nothing
+      | message == revertMessage = RRWithoutData
+      | otherwise = RRUnnamed $ T.take maxNodeMessageLength $ fromMaybe message $ T.stripPrefix (revertMessage <> ": ") message
 
 fetchText :: ChainClient -> Int -> String -> IO (Either (Text, Maybe Int) ByteString)
 fetchText ChainClient {ccManager, ccTimeout} maxBytes url =

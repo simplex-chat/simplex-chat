@@ -5,7 +5,7 @@ module Bots.StoreService.NameRegistrationTests (badgeNameRegistrationTests) wher
 
 import StoreService.Names.Chain
 import StoreService.Names.Registration
-import StoreService.Names.Revert (RevertName (..))
+import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import Bots.StoreService.FakeEthNode hiding (address)
 import Bots.StoreService.WebUIMock
 import Control.Concurrent.STM (TVar)
@@ -84,7 +84,7 @@ testRevertedDryRun g = withFakeEthNode $ \node -> do
   setFault node "eth_estimateGas" $ revertFault $ fromHex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
   intent <- knownIntent g knownRegistration
   c <- newChainClient g $ fakeChainConfig node
-  estimateGas c fakeSponsor (registerWithCreditCalldata intent) `shouldReturn` Left (ChainReverted $ Just RNInsufficientAllowance)
+  estimateGas c fakeSponsor (registerWithCreditCalldata intent) `shouldReturn` Left (ChainReverted $ RRNamed RNInsufficientAllowance)
 
 testCommitThenRegister :: TVar ChaChaDRG -> IO ()
 testCommitThenRegister g = withFakeEthNode $ \node -> do

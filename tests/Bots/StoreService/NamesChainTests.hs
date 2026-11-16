@@ -28,11 +28,11 @@ namesChainTests :: Spec
 namesChainTests = describe "StoreService names: chain" $ do
   g <- runIO C.newRandom
   describe "reverts" $ do
-    it "names every contract error by the selector viem encodes it with" testRevertSelectors
+    it "names every contract error by the selector viem encodes it with, Error(string) by its message and any other by its selector" testRevertSelectors
     it "writes a revert's name as the contracts declare it, none for a revert without data" testRevertText
     it "reads a dry run's revert with data by its name" $ testDryRunRevertNamed g
   describe "failures" $ do
-    it "reads eth_call faults: a bare revert as one without data, a revert reason as unknown, an RPC error without the URL, an underfunded key by its own error, a 2xx answer not JSON without quoting it, and a long message cut" $ testCallFaults g
+    it "reads eth_call faults: a bare revert as one without data, a revert reason by its message, an RPC error without the URL, an underfunded key by its own error, a 2xx answer not JSON without quoting it, and a long message cut" $ testCallFaults g
     it "gives up on a node that does not answer within the call's timeout" $ testTimeout g
     it "reads a refused connection as unavailable, without the URL" $ testRefused g
     it "refuses an answer over the size bound" $ testOversized g
@@ -98,29 +98,33 @@ viemSelectors =
 
 testRevertSelectors :: IO ()
 testRevertSelectors = do
-  map snd viemSelectors `shouldBe` filter (/= RNWithoutData) [minBound .. maxBound]
-  [(n, decodeRevert $ unhex sel <> uint256 (0 :: Int)) | (sel, n) <- viemSelectors] `shouldBe` [(n, Just n) | (_, n) <- viemSelectors]
-  decodeRevert (B.take 3 $ unhex "74480cc9") `shouldBe` Nothing
-  decodeRevert "" `shouldBe` Just RNWithoutData
+  map snd viemSelectors `shouldBe` [minBound .. maxBound]
+  [(n, decodeRevert $ unhex sel <> uint256 (0 :: Int)) | (sel, n) <- viemSelectors] `shouldBe` [(n, RRNamed n) | (_, n) <- viemSelectors]
+  decodeRevert (B.take 3 $ unhex "74480cc9") `shouldBe` RRUnnamed "0x74480c"
+  decodeRevert "" `shouldBe` RRWithoutData
+  decodeRevert errorInvalidToken `shouldBe` RRUnnamed "ERC721: invalid token ID"
+  -- viem's encodeErrorResult of Panic(0x11)
+  decodeRevert (unhex "4e487b710000000000000000000000000000000000000000000000000000000000000011") `shouldBe` RRUnnamed "0x4e487b71"
 
 testRevertText :: IO ()
 testRevertText = do
-  revertText RNInvalidNonce `shouldBe` Just "InvalidNonce"
-  revertText RNSignatureExpired `shouldBe` Just "SignatureExpired"
-  revertText RNWithoutData `shouldBe` Nothing
+  revertText RNInvalidNonce `shouldBe` "InvalidNonce"
+  revertText RNSignatureExpired `shouldBe` "SignatureExpired"
+  map revertReasonText [RRWithoutData, RRNamed RNInvalidNonce, RRUnnamed "ERC721: invalid token ID"] `shouldBe` [Nothing, Just "InvalidNonce", Just "ERC721: invalid token ID"]
 
 testDryRunRevertNamed :: TVar ChaChaDRG -> IO ()
 testDryRunRevertNamed g = withChain g $ \node c -> do
   setFault node "eth_estimateGas" $ revertFault insufficientAllowance
-  estimateGas c fakeSponsor "\x01\x02\x03\x04" `shouldReturn` Left (ChainReverted $ Just RNInsufficientAllowance)
+  estimateGas c fakeSponsor "\x01\x02\x03\x04" `shouldReturn` Left (ChainReverted $ RRNamed RNInsufficientAllowance)
   sentTransactions node `shouldReturn` []
 
 -- | A reason kept in the message names a revert that had data, so it is not read as one without.
 testCallFaults :: TVar ChaChaDRG -> IO ()
 testCallFaults g = withChain g $ \node c ->
   forM_
-    [ (RpcError (-32000) "execution reverted" Nothing, ChainReverted $ Just RNWithoutData),
-      (RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing, ChainReverted Nothing),
+    [ (RpcError (-32000) "execution reverted" Nothing, ChainReverted RRWithoutData),
+      (RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing, ChainReverted $ RRUnnamed "ERC721: invalid token ID"),
+      (RpcError 3 "execution reverted" (Just errorInvalidToken), ChainReverted $ RRUnnamed "ERC721: invalid token ID"),
       (RpcError (-32000) "header not found" Nothing, ChainUnavailable "eth_call: error -32000: header not found"),
       (RpcError (-32003) "Insufficient funds for gas * price + value" Nothing, ChainUnderfunded "eth_call: error -32003: Insufficient funds for gas * price + value"),
       (NotJson, ChainUnavailable "eth_call: not a JSON-RPC response"),
@@ -248,6 +252,10 @@ signed g c nonce =
 -- | controller.available("bakery1"), viem's encodeFunctionData
 availableCall :: ByteString
 availableCall = unhex "aeb8ce9b0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000762616b6572793100000000000000000000000000000000000000000000000000"
+
+-- | viem's encodeErrorResult of Error("ERC721: invalid token ID")
+errorInvalidToken :: ByteString
+errorInvalidToken = unhex "08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000184552433732313a20696e76616c696420746f6b656e2049440000000000000000"
 
 -- | viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
 insufficientAllowance :: ByteString

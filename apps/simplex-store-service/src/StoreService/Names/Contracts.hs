@@ -78,7 +78,7 @@ import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
 import StoreService.Names.Registration (TermsHash, channelRecordKey, contactRecordKey, labelNode, nodeBytes)
-import StoreService.Names.Revert (RevertName (..))
+import StoreService.Names.Revert (RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import StoreService.Safely (safely)
 import System.Timeout (timeout)
@@ -375,7 +375,7 @@ confirmedTag Contracts {ctChain} = fmap (AtBlock . confirmedNumber ctChain . blo
 ownerOfToken :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe Address))
 ownerOfToken ct tag lh =
   callAt ct tag (baseRegistrar ct) ("ownerOf(uint256)", labelHashArg lh) decodeAddress >>= \case
-    Left (ChainReverted (Just RNWithoutData)) -> pure $ Right Nothing
+    Left (ChainReverted RRWithoutData) -> pure $ Right Nothing
     r -> pure $ Just <$> r
 
 nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError Word64)

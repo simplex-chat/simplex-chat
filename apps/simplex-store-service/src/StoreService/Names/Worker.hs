@@ -56,7 +56,7 @@ import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), Wr
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
-import StoreService.Names.Revert (RevertName (..))
+import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
 import StoreService.Names.Store
 import StoreService.Names.Turns (Turns, withBalanceTurn, withLabelTurn)
@@ -293,7 +293,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
             Left (SEChain (ChainReverted reason)) ->
               held >>= \case
                 Right accepted | accepted == taTermsHash -> pure Again
-                _ -> judge w now r reason
+                _ -> judge w now r $ Just reason
             Left e -> pure $ failure r e
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
@@ -308,7 +308,7 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
       withinSends w now r isRegister $ submitTransaction wkSender (TxRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
         Right p -> registerSent w now r p
         Left SEInFlight -> pure Again
-        Left (SEChain (ChainReverted reason)) -> judge w now r reason
+        Left (SEChain (ChainReverted reason)) -> judge w now r $ Just reason
         Left e -> pure $ failure r e
   where
     intent = intentOf cfg r rv
@@ -330,7 +330,7 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
 -- policy read again on TermsNotAccepted; committing again with its reveal on CommitmentTooOld, which the sponsor reverts only after the
 -- intent's and the allowance's checks; kept waiting while the sponsor allowance is used up; taken on any revert while the name is not
 -- available at the confirmation depth; failed otherwise, unless the dry run named the name as gone.
-judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
+judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertReason -> IO Next
 judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
   inTurn w r $
     confirmLanded oe r >>= \case
@@ -338,14 +338,14 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
       LChanged -> pure (Nothing, Again)
       LUnread -> pure (Nothing, Retry (nrVersion r) "the register check's chain read failed")
       LNotLanded -> case reason of
-        Just e | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch] -> do
+        Just (RRNamed e) | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch] -> do
           when (e == RNTermsNotAccepted) $ forgetNamePolicy oeContracts
           store w now r {nrReveal = Nothing}
-        Just RNCommitmentTooNew -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
-        Just RNCommitmentTooOld
+        Just (RRNamed RNCommitmentTooNew) -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
+        Just (RRNamed RNCommitmentTooOld)
           | unlapsed now r -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
           | otherwise -> store w now r {nrPhase = OCommitting}
-        Just RNInsufficientAllowance -> pure (Nothing, Stalled (nrVersion r) "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance")
+        Just (RRNamed RNInsufficientAllowance) -> pure (Nothing, Stalled (nrVersion r) "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance")
         _ -> case nrReveal of
           Just NameReveal {rvLabel} ->
             availability rvLabel >>= \case
@@ -354,7 +354,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
               Right (False, True) -> pure (Nothing, Retry (nrVersion r) "the name reads taken only above the confirmation depth, where a reorg can undo it")
               -- the dry run runs on the pending block, where a competitor's register that may never mine can hold the name
               Right (True, _)
-                | reason `elem` map Just [RNNameNotAvailable, RNNameReserved] -> pure (Nothing, Retry (nrVersion r) "the dry run reverted the name as gone, but it reads available")
+                | reason `elem` map (Just . RRNamed) [RNNameNotAvailable, RNNameReserved] -> pure (Nothing, Retry (nrVersion r) "the dry run reverted the name as gone, but it reads available")
                 | otherwise -> failed w now r
           Nothing -> failed w now r
   where
