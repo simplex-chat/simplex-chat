@@ -211,17 +211,15 @@ previewPairs (Preview t r) =
     ProfileOk d -> ("profile" .= ("ok" :: Text)) : linkDataPairs d
     ProfileUnread -> ["profile" .= ("unread" :: Text)]
     ProfileUnavailable -> ["profile" .= ("unavailable" :: Text)]
-
-linkDataPairs :: LinkData -> [JT.Pair]
-linkDataPairs = \case
-  LDContact ContactShortLinkData {profile = Profile {displayName, fullName, image, peerType}, business} ->
-    profilePairs displayName fullName image <> ["peerType" .= peerType, "business" .= business]
-  LDChannel GroupShortLinkData {groupProfile = GroupProfile {displayName, fullName, image, publicGroup}, publicGroupData} ->
-    profilePairs displayName fullName image
-      <> [ "groupType" .= ((\PublicGroupProfile {groupType} -> groupType) <$> publicGroup),
-           "publicMemberCount" .= ((\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData)
-         ]
   where
+    linkDataPairs = \case
+      LDContact ContactShortLinkData {profile = Profile {displayName, fullName, image, peerType}, business} ->
+        profilePairs displayName fullName image <> ["peerType" .= peerType, "business" .= business]
+      LDChannel GroupShortLinkData {groupProfile = GroupProfile {displayName, fullName, image, publicGroup}, publicGroupData} ->
+        profilePairs displayName fullName image
+          <> [ "groupType" .= ((\PublicGroupProfile {groupType} -> groupType) <$> publicGroup),
+               "publicMemberCount" .= ((\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData)
+             ]
     profilePairs name full image' = ["displayName" .= name, "fullName" .= full, "image" .= (image' >>= imageURI)]
 
 -- | The record the link came from, as the contract names it: @simplex.contact@ holds an address.
