@@ -506,6 +506,9 @@ testMalformed g = withContracts g $ \node ct -> do
   nameExpires ct Latest alice `shouldReturn` Left (ChainUnavailable "eth_call: nameExpires(uint256) answered AEShort")
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (toInteger (maxBound :: Word64) + 1)
   sponsorNonce ct owner `shouldReturn` Left (ChainUnavailable "eth_call: nonces(address) answered AERange")
+  answerCall node fakeController minCommitmentAgeCall $ Returns $ uint256 (60 :: Int)
+  answerCall node fakeController maxCommitmentAgeCall $ Returns $ uint256 (toInteger (maxBound :: Word64) + 1)
+  commitmentAges ct `shouldReturn` Left (ChainUnavailable "eth_call: maxCommitmentAge() answered AERange")
 
 testStatusDeadline :: TVar ChaChaDRG -> IO ()
 testStatusDeadline g = withContracts g $ \node ct -> do

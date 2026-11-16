@@ -120,7 +120,7 @@ data RegisteredName = RegisteredName
 data NameRecords = NameRecords {rdContact :: Text, rdChannel :: Text, rdNonce :: Word64}
   deriving (Eq, Show)
 
-data CommitmentAges = CommitmentAges {caMin :: Integer, caMax :: Integer}
+data CommitmentAges = CommitmentAges {caMin :: Word64, caMax :: Word64}
   deriving (Eq, Show)
 
 data Terms = Terms {tmLink :: Text, tmHash :: TermsHash}
@@ -394,8 +394,8 @@ controllerAvailable ct tag label = callAt ct tag (controller ct) ("available(str
 
 commitmentAges :: Contracts -> IO (Either ChainError CommitmentAges)
 commitmentAges ct@Contracts {ctCommitmentAges} = readOnce ctCommitmentAges $ runExceptT $ do
-  caMin <- ExceptT $ call ct (controller ct) ("minCommitmentAge()", "") decodeUint256
-  caMax <- ExceptT $ call ct (controller ct) ("maxCommitmentAge()", "") decodeUint256
+  caMin <- ExceptT $ call ct (controller ct) ("minCommitmentAge()", "") decodeWord64
+  caMax <- ExceptT $ call ct (controller ct) ("maxCommitmentAge()", "") decodeWord64
   pure CommitmentAges {caMin, caMax}
 
 registrarConstants :: Contracts -> IO (Either ChainError RegistrarConstants)

@@ -179,21 +179,23 @@ commit w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistr
 -- | At the lapse second a commitment can neither register nor be committed again, so the worker waits a second past it,
 -- then commits again with the stale fields cleared.
 fromCommitment :: Worker -> UTCTime -> NameRegistration -> CommitmentAges -> Word64 -> IO Next
-fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig}} now r ages t
-  | reusable oeConfig now lapse = toCommitted w now r ages t
-  | lapse >= unixSeconds now = pure $ waitUntil r $ addUTCTime chainSecond $ secondsTime lapse
-  | lapsedFields r /= r = save w now $ lapsedFields r
-  | otherwise = sendCommit w now r
-  where
-    lapse = commitmentLapse ages t
+fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig}} now r ages t = case revealWindow ages t of
+  Nothing -> pure $ failure r $ ChainUnavailable "commitments: the reveal window passes 2^64 seconds"
+  Just window@(_, lapse)
+    | reusable oeConfig now lapse -> toCommitted w now r window t
+    | toInteger lapse >= unixSeconds now -> pure $ waitUntil r $ addUTCTime chainSecond $ secondsTime $ toInteger lapse
+    | lapsedFields r /= r -> save w now $ lapsedFields r
+    | otherwise -> sendCommit w now r
 
--- | The revealBefore of a commitment committed at this time.
-commitmentLapse :: CommitmentAges -> Word64 -> Integer
-commitmentLapse CommitmentAges {caMax} t = toInteger t + caMax
+-- | The revealAfter and revealBefore of a commitment committed at this time; Nothing past 2^64 seconds.
+revealWindow :: CommitmentAges -> Word64 -> Maybe (Word64, Word64)
+revealWindow CommitmentAges {caMin, caMax} t = (,) <$> after caMin <*> after caMax
+  where
+    after age = if age <= maxBound - t then Just (t + age) else Nothing
 
 -- | A live commitment, or a stored intent, is reused while revealMargin is left before its end, time for the page's reveal and the register to mine.
-reusable :: NamesConfig -> UTCTime -> Integer -> Bool
-reusable NamesConfig {nRevealMarginSeconds} now end = end - unixSeconds now >= toInteger nRevealMarginSeconds
+reusable :: NamesConfig -> UTCTime -> Word64 -> Bool
+reusable NamesConfig {nRevealMarginSeconds} now end = toInteger end - unixSeconds now >= toInteger nRevealMarginSeconds
 
 -- | The old commitment's transactions and reveal times; the reveal stays for the next commitment.
 lapsedFields :: NameRegistration -> NameRegistration
@@ -209,13 +211,12 @@ lapsedFields r =
 
 -- | The reveal times come from the commitment's time. When that is not the block of our commit mined with status 1,
 -- someone committed it again after a lapse, so our commit is cleared.
-toCommitted :: Worker -> UTCTime -> NameRegistration -> CommitmentAges -> Word64 -> IO Next
-toCommitted w now r CommitmentAges {caMin, caMax} t =
+toCommitted :: Worker -> UTCTime -> NameRegistration -> (Word64, Word64) -> Word64 -> IO Next
+toCommitted w now r (revealAfter, revealBefore) t =
   ourCommit w r t >>= \case
     Left e -> pure $ failure r e
-    Right ours -> save w now (minedBy ours) {nrPhase = OCommitted, nrRevealAfter = Just $ after caMin, nrRevealBefore = Just $ after caMax}
+    Right ours -> save w now (minedBy ours) {nrPhase = OCommitted, nrRevealAfter = Just revealAfter, nrRevealBefore = Just revealBefore}
   where
-    after age = fromInteger $ toInteger t + age
     minedBy = \case
       Just (h, block) -> r {nrCommitTx = Just h, nrCommitBlock = Just block}
       Nothing -> r {nrCommitTx = Nothing, nrCommitBlock = Nothing}
@@ -505,7 +506,7 @@ servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChai
   Nothing -> pure $ Right Nothing
   Just rv@NameReveal {rvNonce, rvDeadline} ->
     verifyRegisterIntent (sponsorDomain cChainId cSponsor) (fromInteger $ unixSeconds now) (intentOf cfg r rv) >>= \case
-      Right () | reusable cfg now (toInteger rvDeadline) -> fmap (\nonce -> if nonce == rvNonce then Just rv else Nothing) <$> sponsorNonce oeContracts nrOwner
+      Right () | reusable cfg now rvDeadline -> fmap (\nonce -> if nonce == rvNonce then Just rv else Nothing) <$> sponsorNonce oeContracts nrOwner
       _ -> pure $ Right Nothing
 
 data Closed = CLRegistered RegistrationId | CLRefunded UTCTime RefundRecord | CLRefused CloseRefusal

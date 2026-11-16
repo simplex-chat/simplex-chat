@@ -81,6 +81,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits for a pending commit without sending another, following its fee-bumped replacement" testPendingCommit
     it "goes to committed when the commit reverts UnexpiredCommitmentExists, in its dry run or mined, with the commitment's times" testUnexpiredCommitment
     it "sends a commit mined out of gas again" testCommitOutOfGas
+    it "retries, writing nothing, while the commitment's reveal window would pass 2^64 seconds" testRevealWindowPastRange
     it "waits a second at the lapse second, retries as usual when the dry run still reverts, then commits" testLapseSecond
     it "keeps a requeued order's intent while it commits again after a lapse, and over a third party's commitment" testIntentAcrossCommits
     it "keeps the phase while the latest block needs more than the fee cap, then commits" testFeeAboveCap
@@ -417,6 +418,15 @@ testUnexpiredCommitment = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   x2 <- stored ctx r2
   (nrPhase x2, nrRevealBefore x2, nrCommitTx x2, nrCommitBlock x2) `shouldBe` (OCommitted, Just (t2 + maxAge), Nothing, Nothing)
   length <$> sent w `shouldReturn` 1
+
+testRevealWindowPastRange :: IO ()
+testRevealWindowPastRange = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  r <- paidIn ctx aliceOrder id
+  answerCall cNode fakeController maxCommitmentAgeCall $ Returns $ uint256 (maxBound :: Word64)
+  answerCommitment w r $ orderSeconds - 600
+  steps w r >>= retrying
+  stored ctx r `shouldReturn` r
+  sent w `shouldReturn` []
 
 testCommitOutOfGas :: IO ()
 testCommitOutOfGas = withWorker $ \w@W {wCtx = ctx} -> do
