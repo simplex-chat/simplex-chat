@@ -24,7 +24,6 @@ module StoreService.Config
     providerTimeoutMicros,
     providerCheckoutTimeoutMicros,
     defaultLogLevel,
-    minNameYears,
     localChainId,
     isLoopbackHost,
     readServiceConfig,
@@ -57,7 +56,7 @@ import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format.ISO8601 (iso8601ParseM)
 import Data.Word (Word64)
-import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
+import Simplex.Chat.Badges.Code (maxNameLength, minNameLength, minNameYears)
 import Simplex.Chat.Library.Commands (mkValidName)
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey)
@@ -311,10 +310,6 @@ maxRecordEditsPerYear = 100
 
 defaultMinPriceCentsPerYear :: Int
 defaultMinPriceCentsPerYear = 5000
-
--- | The controller refuses a registration under 730 days.
-minNameYears :: Int
-minNameYears = 2
 
 -- | anvil's chain id, the only chain [issuer] dev_keys are accepted on.
 localChainId :: Word64

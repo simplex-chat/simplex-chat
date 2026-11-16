@@ -32,12 +32,11 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Code (BadgeCode, NameLength, NamePrepaidCode, maxNameLength, minNameLength, nameLength, parseBadgeCode)
+import Simplex.Chat.Badges.Code (BadgeCode, NameLength, NamePrepaidCode, maxNameLength, minNameLength, minNameYears, nameLength, parseBadgeCode)
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import StoreService.Config (minNameYears)
 
 maxBulk, maxUses, maxMonths, maxNameYears :: Int
 maxBulk = 100
