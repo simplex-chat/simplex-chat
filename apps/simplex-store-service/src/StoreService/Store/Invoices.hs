@@ -29,6 +29,7 @@ module StoreService.Store.Invoices
     expireOverdueInvoice,
     lockInvoice,
     mkQuery,
+    prefixQuery,
     unfundedQuery,
     newInvoiceId,
     readCatalogRows,
@@ -80,6 +81,7 @@ import StoreService.Store.Postgres.Migrations (servicePrefix, withPrefix)
 import Database.PostgreSQL.Simple (Only (..), Query, ToRow, (:.) (..))
 import qualified Database.PostgreSQL.Simple as PSQL
 import Database.PostgreSQL.Simple.Errors (ConstraintViolation (..), constraintViolation)
+import Database.PostgreSQL.Simple.Types (Query (..))
 #else
 import StoreService.Store.SQLite.Migrations (servicePrefix, withPrefix)
 import Database.SQLite.Simple (Only (..), Query, ToRow, (:.) (..))
@@ -175,9 +177,15 @@ unixSeconds = floor . utcTimeToPOSIXSeconds
 #if defined(dbPostgres)
 mkQuery :: Text -> Query
 mkQuery raw = fromString (T.unpack (withPrefix servicePrefix raw))
+
+prefixQuery :: Query -> Query
+prefixQuery = mkQuery . safeDecodeUtf8 . fromQuery
 #else
 mkQuery :: Text -> Query
 mkQuery raw = withPrefix servicePrefix (fromString (T.unpack raw))
+
+prefixQuery :: Query -> Query
+prefixQuery = withPrefix servicePrefix
 #endif
 
 -- Backslash-newline string gaps do not survive CPP, so these queries are joined with <>.

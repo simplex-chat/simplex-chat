@@ -151,8 +151,7 @@ import StoreService.Names.Registration (Commitment, TermsAcceptance (..), TermsH
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Providers (Rate, Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
-import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, mkQuery, newInvoiceId, note, textToCryptoCurrency, truncateToSecond, unfundedQuery)
-import qualified Text.RawString.QQ as Raw
+import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, mkQuery, newInvoiceId, note, prefixQuery, textToCryptoCurrency, truncateToSecond, unfundedQuery)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -660,8 +659,8 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
   (> 0)
     <$> executeChanging
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         INSERT INTO @name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
            price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms)
@@ -688,8 +687,9 @@ registrationColumns =
 
 registrationFrom :: Query
 registrationFrom =
-  mkQuery
-    [Raw.r|
+  " "
+    <> prefixQuery
+      [sql|
     FROM @name_registrations r
     LEFT JOIN @name_invoices ni ON ni.registration_id = r.registration_id
   |]
@@ -807,8 +807,8 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
   expired <-
     executeChanging
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
           UPDATE @invoices SET status = ?, updated_at = ?
           WHERE status = ? AND invoice_id IN (
             SELECT i.invoice_id FROM @name_invoices ni
@@ -848,8 +848,8 @@ updateRegistration db r now = do
   changed <-
     executeChanging
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         UPDATE @name_registrations
         SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, agreed_terms = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
@@ -957,8 +957,8 @@ unpaidCleanupCandidates db expiredBefore =
   map (\(rid, invId, ref) -> (RegistrationId rid, InvoiceId invId, ref))
     <$> DB.query
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         SELECT r.registration_id, ni.invoice_id, ni.provider_ref
         FROM @name_registrations r
         JOIN @name_invoices ni ON ni.registration_id = r.registration_id
@@ -982,8 +982,8 @@ deleteUnpaidRegistration db (RegistrationId rid) =
           deleted <-
             executeChanging
               db
-              ( mkQuery
-                  [Raw.r|
+              ( prefixQuery
+                  [sql|
                 DELETE FROM @name_registrations
                 WHERE registration_id = ? AND phase = ?
                   AND NOT EXISTS (
@@ -1004,8 +1004,8 @@ failedCodeOrdersBefore db cutoff =
   map (\(rid, codeId) -> (RegistrationId rid, codeId))
     <$> DB.query
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         SELECT r.registration_id, c.name_prepaid_code_id
         FROM @name_registrations r
         JOIN @name_prepaid_codes c ON c.reserved_by = r.registration_id
@@ -1112,8 +1112,8 @@ creditBalance :: DB.Connection -> RegistrationId -> Int -> UTCTime -> IO ()
 creditBalance db (RegistrationId rid) cents now' =
   DB.execute
     db
-    ( mkQuery
-        [Raw.r|
+    ( prefixQuery
+        [sql|
       INSERT INTO @name_balances (registration_id, amount, credited, refunded, created_at, updated_at)
       VALUES (?,?,?,0,?,?)
       ON CONFLICT (registration_id) DO UPDATE SET
@@ -1167,8 +1167,8 @@ refundBalance db (RegistrationId rid) cents now' =
   (> 0)
     <$> executeChanging
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         UPDATE @name_balances SET amount = 0, refunded = refunded + ?, refunded_at = ?, updated_at = ?
         WHERE registration_id = ? AND amount = ? AND amount > 0 AND reserved_by IS NULL
       |]
@@ -1288,8 +1288,8 @@ creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegi
   inserted <-
     executeChanging
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         INSERT INTO @name_late_credits (invoice_id, credit_no, registration_id, units, invoice_rate, current_rate, rate_used, cents, created_at)
         VALUES (?,?,?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
@@ -1393,8 +1393,8 @@ insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPay
   inserted <-
     executeChanging
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         INSERT INTO @name_prepaid_codes (code_hash, min_length, years, code_payment_status, expires_at, created_at, issued_in_group)
         VALUES (?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
@@ -1405,8 +1405,8 @@ insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPay
 
 prepaidCodeColumns :: Query
 prepaidCodeColumns =
-  mkQuery
-    [Raw.r|
+  prefixQuery
+    [sql|
     SELECT name_prepaid_code_id, code_hash, min_length, years, code_payment_status, reserved_by, reserved_at, spent_at, revoked_at, expires_at, created_at
     FROM @name_prepaid_codes
   |]
@@ -1435,8 +1435,8 @@ reservePrepaidCode db codeId (RegistrationId rid) now' =
   (> 0)
     <$> executeChanging
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         UPDATE @name_prepaid_codes SET reserved_by = ?, reserved_at = ?
         WHERE name_prepaid_code_id = ? AND reserved_by IS NULL AND spent_at IS NULL AND revoked_at IS NULL
           AND code_payment_status <> ? AND (expires_at IS NULL OR expires_at > ?)
@@ -1451,8 +1451,8 @@ releasePrepaidCode db codeId (RegistrationId rid) =
   (> 0)
     <$> executeChanging
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         UPDATE @name_prepaid_codes SET reserved_by = NULL, reserved_at = NULL
         WHERE name_prepaid_code_id = ? AND reserved_by = ? AND spent_at IS NULL
       |]
@@ -1465,8 +1465,8 @@ spendLandedPrepaidCode db codeId (RegistrationId rid) now' =
   (> 0)
     <$> executeChanging
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         UPDATE @name_prepaid_codes SET reserved_by = ?, reserved_at = COALESCE(reserved_at, ?), spent_at = ?
         WHERE name_prepaid_code_id = ? AND spent_at IS NULL
           AND (reserved_by = ? OR (reserved_by IS NULL AND revoked_at IS NULL AND code_payment_status <> ? AND (expires_at IS NULL OR expires_at > ?)))
@@ -1504,8 +1504,8 @@ insertTransaction db for NewTransaction {ntxRaw, ntxHash, ntxNonce} now = do
   let (kind, rid, editId) = txKind for
   DB.execute
     db
-    ( mkQuery
-        [Raw.r|
+    ( prefixQuery
+        [sql|
       INSERT INTO @name_transactions
         (registration_id, name_record_edit_id, kind, raw, tx_hash, registrar_nonce, sent_at, status)
       VALUES (?,?,?,?,?,?,?,?)
@@ -1525,8 +1525,8 @@ recordTransactionOutcome db hash from status block =
 
 transactionColumns :: Query
 transactionColumns =
-  mkQuery
-    [Raw.r|
+  prefixQuery
+    [sql|
     SELECT name_transaction_id, kind, registration_id, name_record_edit_id, raw, tx_hash, registrar_nonce, sent_at, mined_block, status
     FROM @name_transactions
   |]
@@ -1574,8 +1574,8 @@ insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreCha
   inserted <-
     executeChanging
       db
-      ( mkQuery
-          [Raw.r|
+      ( prefixQuery
+          [sql|
         INSERT INTO @name_record_edits (label_hash, owner, nonce, body_hash, state, created_at)
         VALUES (?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
@@ -1601,8 +1601,8 @@ insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreCha
 
 recordEditColumns :: Query
 recordEditColumns =
-  mkQuery
-    [Raw.r|
+  prefixQuery
+    [sql|
     SELECT name_record_edit_id, label_hash, owner, body_hash, state, revert, mined_tx, created_at
     FROM @name_record_edits
   |]
@@ -1692,8 +1692,8 @@ setTermsText :: DB.Connection -> TermsHash -> Text -> IO ()
 setTermsText db termsHash text =
   DB.execute
     db
-    ( mkQuery
-        [Raw.r|
+    ( prefixQuery
+        [sql|
       INSERT INTO @name_terms (terms_hash, terms_text) VALUES (?,?)
       ON CONFLICT (terms_hash) DO UPDATE SET terms_text = excluded.terms_text
     |]
@@ -1705,8 +1705,8 @@ namesCounts db = do
   ncPhases <- DB.query_ db (mkQuery "SELECT phase, COUNT(*) FROM @name_registrations GROUP BY phase")
   DB.query
     db
-    ( mkQuery
-        [Raw.r|
+    ( prefixQuery
+        [sql|
       SELECT
         (SELECT MIN(updated_at) FROM @name_registrations WHERE phase IN (?,?,?) OR (phase = ? AND label IS NOT NULL)),
         (SELECT COUNT(DISTINCT registrar_nonce) FROM @name_transactions WHERE status = ?),
