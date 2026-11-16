@@ -60,7 +60,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Functor ((<&>))
 import Data.Functor.Compose (Compose (..))
-import Data.IORef (IORef, atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
+import Data.IORef (IORef, atomicModifyIORef', atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
@@ -89,9 +89,9 @@ data Contracts = Contracts
     ctStore :: DBStore,
     ctTLD :: SimplexTLD,
     ctMinPriceCentsPerYear :: Int,
-    ctRegistrar :: IORef (Maybe RegistrarConstants),
-    ctCommitmentAges :: IORef (Maybe CommitmentAges),
-    ctNamePolicy :: IORef (Maybe Address),
+    ctRegistrar :: IORef (Int, Maybe RegistrarConstants),
+    ctCommitmentAges :: IORef (Int, Maybe CommitmentAges),
+    ctNamePolicy :: IORef (Int, Maybe Address),
     ctTermsTexts :: IORef (Map ByteString Text),
     -- | the terms links as read at a block, which each search for an available name would read again
     ctTermsLinks :: IORef (Maybe (Word64, (Text, Text))),
@@ -160,9 +160,9 @@ termsFetchInterval = 3600 * 1000000
 -- | Reads nothing: the registrar's constants, the commitment ages and the name policy are read on first use and kept once read.
 newContracts :: DBStore -> SimplexTLD -> Int -> ChainClient -> IO Contracts
 newContracts ctStore ctTLD ctMinPriceCentsPerYear ctChain = do
-  ctRegistrar <- newIORef Nothing
-  ctCommitmentAges <- newIORef Nothing
-  ctNamePolicy <- newIORef Nothing
+  ctRegistrar <- newIORef (0, Nothing)
+  ctCommitmentAges <- newIORef (0, Nothing)
+  ctNamePolicy <- newIORef (0, Nothing)
   ctTermsTexts <- newIORef M.empty
   ctTermsLinks <- newIORef Nothing
   ctFetchAfter <- newIORef =<< getCurrentTime
@@ -236,7 +236,7 @@ namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ (>>= nonZero) <
     nonZero policy = if B.all (== '\NUL') (unAddress policy) then Left (ChainUnavailable "the controller has no name policy yet") else Right policy
 
 forgetNamePolicy :: Contracts -> IO ()
-forgetNamePolicy Contracts {ctNamePolicy} = atomicWriteIORef ctNamePolicy Nothing
+forgetNamePolicy Contracts {ctNamePolicy} = atomicModifyIORef' ctNamePolicy $ \(g, _) -> ((g + 1, Nothing), ())
 
 communityName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
 communityName ct lh = policyCall ct Latest ("communityNames(bytes32)", labelHashArg lh) decodeBool
@@ -404,12 +404,13 @@ registrarConstants ct@Contracts {ctRegistrar} = readOnce ctRegistrar $ runExcept
   rcGracePeriod <- ExceptT $ call ct (baseRegistrar ct) ("GRACE_PERIOD()", "") decodeUint256
   pure RegistrarConstants {rcRegistry, rcGracePeriod}
 
--- | Concurrent first uses may each read; they read the same values, which the service keeps until it restarts.
-readOnce :: IORef (Maybe a) -> IO (Either ChainError a) -> IO (Either ChainError a)
+-- | Concurrent first uses may each read; a read that started before the value was forgotten is not kept.
+readOnce :: IORef (Int, Maybe a) -> IO (Either ChainError a) -> IO (Either ChainError a)
 readOnce ref readChain =
   readIORef ref >>= \case
-    Just a -> pure $ Right a
-    Nothing -> readChain >>= either (pure . Left) (\a -> Right a <$ atomicWriteIORef ref (Just a))
+    (_, Just a) -> pure $ Right a
+    (generation, Nothing) ->
+      readChain >>= traverse (\a -> a <$ atomicModifyIORef' ref (\kept@(g, _) -> (if g == generation then (g, Just a) else kept, ())))
 
 -- | Reads run at once; the first failure in argument order is the answer.
 together :: Compose Concurrently (Either ChainError) a -> IO (Either ChainError a)

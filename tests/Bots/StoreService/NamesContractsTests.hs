@@ -90,6 +90,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads the commitment ages once" $ testCommitmentAges g
   describe "name policy" $ do
     it "reads the policy from the controller once, and again after a zero answer, a failed read or once forgotten, and the reservations, listing, terms links, nonces and acceptances from it" $ testNamePolicy g
+    it "keeps no policy read that was in flight when the policy was forgotten" $ testPolicyForgottenInRead g
   describe "terms" $ do
     it "reads both terms links at one block, once per block, \"\" for one not set, and hashes a set link with keccak256 as viem does" $ testTermsLinks g
     it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
@@ -148,6 +149,15 @@ testNamePolicy g = withContracts g $ \node ct -> do
   answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord newPolicy
   namePolicy ct `shouldReturn` Right fakeNamePolicy
   forgetNamePolicy ct
+  namePolicy ct `shouldReturn` Right newPolicy
+
+testPolicyForgottenInRead :: TVar ChaChaDRG -> IO ()
+testPolicyForgottenInRead g = withContracts g $ \node ct -> do
+  (reading, gate) <- pausedAt node "eth_call" $ namePolicy ct
+  forgetNamePolicy ct
+  releaseGate gate
+  wait reading `shouldReturn` Right fakeNamePolicy
+  answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord newPolicy
   namePolicy ct `shouldReturn` Right newPolicy
 
 testTermsLinks :: TVar ChaChaDRG -> IO ()
