@@ -6,6 +6,9 @@ module StoreService.Providers
   ( ProviderError (..),
     providerErrorText,
     isTimeout,
+    providerCall,
+    decodeAnswer,
+    objectId,
     WebhookError (..),
     Received (..),
     Confirmed (..),
@@ -24,15 +27,23 @@ module StoreService.Providers
   )
 where
 
+import Control.Exception (try)
+import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import Data.ByteString (ByteString)
+import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.Scientific (Scientific)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime)
+import Network.HTTP.Client (HttpException, Manager, Request, Response (..), brReadSome, parseRequest, withResponse)
+import Network.HTTP.Types (Status (..))
 import Network.HTTP.Types.Header (Header)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount, PaymentProvider (..), ServicePaymentDestination, ServicePaymentMethod)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
 data ProviderError = ProviderError Text | ProviderTimeout Text
@@ -47,6 +58,47 @@ isTimeout :: ProviderError -> Bool
 isTimeout = \case
   ProviderTimeout _ -> True
   ProviderError _ -> False
+
+-- BTCPay puts the refusal reason at the end of an inline log, so keep enough bytes to reach it.
+maxErrorBytes :: Int64
+maxErrorBytes = 4000
+
+-- Far above any BTCPay response, far below what would exhaust the poller thread.
+maxProviderBytes :: Int64
+maxProviderBytes = 10 * 1024 * 1024
+
+providerCall :: Manager -> Int -> Text -> Text -> (Request -> Request) -> IO ([Header], Either ProviderError LB.ByteString)
+providerCall manager micros what url prepare = do
+  r <- timeout micros $ try $ do
+    req <- prepare <$> parseRequest (T.unpack url)
+    -- Read to a bound, not the whole body, so an enormous response cannot exhaust the poller thread.
+    withResponse req manager $ \resp -> do
+      taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
+      pure (responseHeaders resp, statusCode (responseStatus resp), taken)
+  pure $ case r of
+    Nothing -> ([], Left (ProviderTimeout what))
+    -- http-client hides the Authorization header when showing a Request
+    Just (Left e) -> ([], Left (ProviderError (what <> " failed: " <> tshow (e :: HttpException))))
+    Just (Right (headers, code, taken)) -> (headers, answer code taken)
+  where
+    answer code taken
+      | LB.length taken > maxProviderBytes =
+          Left . ProviderError $
+            what <> " failed: HTTP " <> tshow code <> ", and the answer is over " <> tshow maxProviderBytes <> " bytes"
+      | code >= 200 && code < 300 = Right taken
+      | otherwise = Left . ProviderError $ what <> " failed: HTTP " <> tshow code <> " " <> safeDecodeUtf8 (LB.toStrict (LB.take maxErrorBytes taken))
+
+decodeAnswer :: J.FromJSON a => Text -> LB.ByteString -> Either ProviderError a
+decodeAnswer what body = case J.eitherDecode' body of
+  Right v -> Right v
+  Left e -> Left (ProviderError (what <> ": could not read the response: " <> T.pack e))
+
+objectId :: J.Value -> Maybe Text
+objectId v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
+  J.Success o -> case KM.lookup "id" o of
+    Just (J.String i) -> Just i
+    _ -> Nothing
+  J.Error _ -> Nothing
 
 -- | WebhookStale is a valid signature with a timestamp too far from our clock.
 data WebhookError = WebhookError Text | WebhookStale Text deriving (Eq, Show)

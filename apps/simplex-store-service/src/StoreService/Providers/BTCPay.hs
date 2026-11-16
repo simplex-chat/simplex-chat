@@ -32,13 +32,15 @@ import StoreService.Providers
     Rate (..),
     Received (..),
     Uncreditable (..),
+    decodeAnswer,
+    objectId,
+    providerCall,
     providerErrorText,
     settleWindow,
     unitDecimals,
     WebhookError (..),
   )
 import StoreService.Store.Invoices (unixSeconds)
-import Control.Exception (try)
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (unless, (<=<))
 import Crypto.Hash (Digest, SHA256)
@@ -62,18 +64,9 @@ import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word32)
-import Network.HTTP.Client
-  ( HttpException,
-    Manager,
-    Request (..),
-    RequestBody (..),
-    Response (..),
-    brReadSome,
-    parseRequest,
-    withResponse,
-  )
+import Network.HTTP.Client (Manager, Request (..), RequestBody (..))
 import Network.HTTP.Client.TLS (newTlsManager)
-import Network.HTTP.Types (Header, HeaderName, Method, Query, Status (..), methodGet, methodPost, renderQuery, urlEncode)
+import Network.HTTP.Types (Header, HeaderName, Method, Query, methodGet, methodPost, renderQuery, urlEncode)
 import Simplex.Chat.PaymentService.Types
   ( CryptoCurrency (..),
     CurrencyAmount (..),
@@ -82,7 +75,6 @@ import Simplex.Chat.PaymentService.Types
     ServicePaymentMethod (..),
   )
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import System.Timeout (timeout)
 
 -- Shapes cited from BTCPay Server v2.4.5 (https://github.com/btcpayserver/btcpayserver/tree/v2.4.5):
 -- - payment methods, GET stores/{storeId}/invoices/{invoiceId}/payment-methods: BTCPayServer.Client/Models/InvoicePaymentMethodDataModel.cs,
@@ -118,13 +110,6 @@ closedInFullStatuses = [ASPaidLate, ASPaidOver]
 -- The last two are the only events a payment into a closed invoice sends.
 actedOnEventTypes :: [Text]
 actedOnEventTypes = ["InvoiceProcessing", "InvoiceSettled", "InvoiceExpired", "InvoiceInvalid", "InvoiceReceivedPayment", "InvoicePaymentSettled"]
-
-maxErrorBytes :: Int64
-maxErrorBytes = 4000
-
--- Far above any BTCPay response, far below what would exhaust the poller thread.
-maxProviderBytes :: Int64
-maxProviderBytes = 10 * 1024 * 1024
 
 listPageSize :: Int
 listPageSize = 100
@@ -337,7 +322,7 @@ btcpayProvider cfg = do
 logStoreMethods :: BTCPayEnv -> IO ()
 logStoreMethods env@BTCPayEnv {beCfg} = do
   r <- greenfield env what methodGet ["payment-methods"] [("enabledOnly", Just "true")] Nothing
-  case r >>= decodeGreenfield what of
+  case r >>= decodeAnswer what of
     Left e -> do
       logWarn ("btcpay: could not read the payment methods of store " <> bStoreId beCfg <> ": " <> providerErrorText e)
       logNote ("btcpay: this build offers " <> T.intercalate ", " knownMethodIds)
@@ -359,7 +344,7 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
     Left e -> pure (Left e)
     Right (methodId, cc) -> do
       created <- greenfield checkout what methodPost ["invoices"] [] (Just (body methodId))
-      case created >>= decodeGreenfield what of
+      case created >>= decodeAnswer what of
         Left e -> do
           logWarn ("btcpay: the failed request was " <> safeDecodeUtf8 (LB.toStrict (J.encode (body methodId))) <> " -- " <> providerErrorText e)
           pure (Left e)
@@ -411,7 +396,7 @@ cancelInvoice env ref =
 readInvoice :: BTCPayEnv -> Text -> IO (Either ProviderError (Maybe PaymentSignal))
 readInvoice env ref = do
   inv <- greenfield env what methodGet ["invoices", ref] [] Nothing
-  case inv >>= decodeGreenfield what of
+  case inv >>= decodeAnswer what of
     Left e -> pure (Left e)
     Right GInvoice {giStatus, giAdditionalStatus, giSpeedPolicy} -> do
       logAdditionalStatus ref giAdditionalStatus
@@ -438,7 +423,7 @@ listOpen env@BTCPayEnv {beCfg} = do
       | pagesLeft <= 0 = pure (Right acc {lpSkipped = lpSkipped acc <> [(Nothing, pageCapReason)]})
       | otherwise = do
           listed <- greenfield env listWhat methodGet ["invoices"] (query startDate skip) Nothing
-          case listed >>= decodeGreenfield listWhat of
+          case listed >>= decodeAnswer listWhat of
             Left e -> pure (Left e)
             Right invs -> case invoicesPass now invs of
               Left e -> pure (Left e)
@@ -451,7 +436,7 @@ listWhat :: Text
 listWhat = "list invoices"
 
 listSignals :: UTCTime -> LB.ByteString -> Either ProviderError ListPass
-listSignals now body = decodeGreenfield listWhat body >>= invoicesPass now
+listSignals now body = decodeAnswer listWhat body >>= invoicesPass now
 
 -- When paymentMethods is absent or null the pass fails, because that means includePaymentMethods was ignored, and a
 -- skip would report a healthy empty pass. Every other unreadable invoice is skipped, not failed.
@@ -460,7 +445,7 @@ invoicesPass now invs = foldr add (Right ListPass {lpMoved = [], lpSkipped = []}
   where
     add _ (Left e) = Left e
     add v (Right pass) = case J.fromJSON v of
-      J.Error e -> Right pass {lpSkipped = (invoiceIdOf v, T.pack e) : lpSkipped pass}
+      J.Error e -> Right pass {lpSkipped = (objectId v, T.pack e) : lpSkipped pass}
       J.Success gi -> addInvoice gi pass
     addInvoice GInvoice {giId, giStatus, giAdditionalStatus, giSpeedPolicy, giPaymentMethods} pass = case giPaymentMethods of
       Nothing ->
@@ -471,13 +456,6 @@ invoicesPass now invs = foldr add (Right ListPass {lpMoved = [], lpSkipped = []}
         Right Nothing -> Right pass
         Right (Just sig) -> Right pass {lpMoved = (giId, sig) : lpMoved pass}
 
-invoiceIdOf :: J.Value -> Maybe Text
-invoiceIdOf v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
-  J.Success o -> case KM.lookup "id" o of
-    Just (J.String i) -> Just i
-    _ -> Nothing
-  J.Error _ -> Nothing
-
 logAdditionalStatus :: Text -> Maybe AdditionalStatus -> IO ()
 logAdditionalStatus ref = \case
   Just s | s /= ASNone -> logNote ("btcpay: invoice " <> ref <> " additionalStatus " <> additionalStatusText s)
@@ -485,7 +463,7 @@ logAdditionalStatus ref = \case
 
 paymentMethodsSignal :: UTCTime -> Text -> BTCPayStatus -> Maybe AdditionalStatus -> Maybe SpeedPolicy -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)
 paymentMethodsSignal now ref status additional policy body =
-  decodeGreenfield "read invoice" body >>= invoiceSignal now ref status additional policy
+  decodeAnswer "read invoice" body >>= invoiceSignal now ref status additional policy
 
 -- Complete is the old API's status name and never matches, so it has no case here.
 invoiceSignal :: UTCTime -> Text -> BTCPayStatus -> Maybe AdditionalStatus -> Maybe SpeedPolicy -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
@@ -525,7 +503,7 @@ chooseMethod ref ms = case [(m, cc) | m <- ms, Just cc <- [lookup (gpmId m) meth
 
 findMethod :: Text -> Text -> Text -> LB.ByteString -> Either ProviderError GPaymentMethod
 findMethod what ref methodId body = do
-  ms <- decodeGreenfield what body
+  ms <- decodeAnswer what body
   case find ((methodId ==) . gpmId) ms of
     Just m -> Right m
     Nothing ->
@@ -585,7 +563,7 @@ currentRate env cc = (>>= rateOf) <$> greenfield env what methodGet ["rates"] [(
       CCBtc -> "BTC"
       CCXmr -> "XMR"
     rateOf body = do
-      rates :: [GRate] <- decodeGreenfield what body
+      rates :: [GRate] <- decodeAnswer what body
       GRate {grErrors, grRate} <- maybe (failed "the answer has no such pair") Right (find ((== pair) . grPair) rates)
       unless (null grErrors) $ failed (T.intercalate "; " grErrors)
       WireNum {wnText, wnValue} <- maybe (failed "no rate") Right grRate
@@ -633,46 +611,22 @@ verifyBTCPaySig secret hdrs body = do
       if geType `elem` actedOnEventTypes then Just geInvoiceId else Nothing
 
 greenfield :: BTCPayEnv -> Text -> Method -> [Text] -> Query -> Maybe J.Value -> IO (Either ProviderError LB.ByteString)
-greenfield BTCPayEnv {beCfg, beManager} what verb segments query body = do
-  r <- timeout (bTimeoutMicros beCfg) $ try $ do
-    req <- parseRequest (T.unpack url)
-    let asked =
-          req
-            { method = verb,
-              requestHeaders =
-                [ ("Authorization", "token " <> TE.encodeUtf8 (bApiKey beCfg)),
-                  ("Accept", "application/json"),
-                  ("Content-Type", "application/json")
-                ],
-              requestBody = RequestBodyLBS (maybe LB.empty J.encode body)
-            }
-    -- Read to a bound, not the whole body, so an enormous response cannot exhaust the poller thread.
-    withResponse asked beManager $ \resp -> do
-      taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
-      pure (statusCode (responseStatus resp), taken)
-  pure $ case r of
-    Nothing -> Left (ProviderTimeout what)
-    -- http-client hides the Authorization header when showing a Request
-    Just (Left (e :: HttpException)) -> Left (ProviderError (what <> " failed: " <> tshow e))
-    Just (Right (code, taken))
-      | LB.length taken > maxProviderBytes ->
-          Left . ProviderError $
-            what <> " failed: HTTP " <> tshow code <> ", and the answer is over " <> tshow maxProviderBytes <> " bytes"
-      | code >= 200 && code < 300 -> Right taken
-      | otherwise ->
-          Left . ProviderError $
-            what <> " failed: HTTP " <> tshow code <> " " <> snippet taken
+greenfield BTCPayEnv {beCfg, beManager} what verb segments query body =
+  snd <$> providerCall beManager (bTimeoutMicros beCfg) what url asked
   where
+    asked req =
+      req
+        { method = verb,
+          requestHeaders =
+            [ ("Authorization", "token " <> TE.encodeUtf8 (bApiKey beCfg)),
+              ("Accept", "application/json"),
+              ("Content-Type", "application/json")
+            ],
+          requestBody = RequestBodyLBS (maybe LB.empty J.encode body)
+        }
     url =
       T.dropWhileEnd (== '/') (bHost beCfg)
         <> "/api/v1/stores/"
         <> T.intercalate "/" (map escape (bStoreId beCfg : segments))
         <> TE.decodeUtf8 (renderQuery True query)
     escape = TE.decodeUtf8 . urlEncode False . TE.encodeUtf8
-    -- BTCPay puts the refusal reason at the end of an inline log, so keep enough bytes to reach it.
-    snippet = TE.decodeUtf8With (\_ _ -> Just '?') . LB.toStrict . LB.take maxErrorBytes
-
-decodeGreenfield :: J.FromJSON a => Text -> LB.ByteString -> Either ProviderError a
-decodeGreenfield what body = case J.eitherDecode' body of
-  Right v -> Right v
-  Left e -> Left (ProviderError (what <> ": could not read the response: " <> T.pack e))

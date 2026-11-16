@@ -22,12 +22,14 @@ import StoreService.Providers
     ProviderError (..),
     ProviderInvoice (..),
     Received (..),
+    decodeAnswer,
+    objectId,
+    providerCall,
     providerErrorText,
     settleWindow,
     WebhookError (..),
   )
 import StoreService.Store.Invoices (unixSeconds)
-import Control.Exception (try)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (unless)
 import Crypto.Hash (Digest, SHA256)
@@ -50,19 +52,9 @@ import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (POSIXTime, posixSecondsToUTCTime)
 import Data.Word (Word32)
-import Network.HTTP.Client
-  ( HttpException,
-    Manager,
-    Request (..),
-    RequestBody (..),
-    Response (..),
-    applyBasicAuth,
-    brReadSome,
-    parseRequest,
-    withResponse,
-  )
+import Network.HTTP.Client (Manager, Request (..), RequestBody (..), applyBasicAuth)
 import Network.HTTP.Client.TLS (newTlsManager)
-import Network.HTTP.Types (Header, HeaderName, Method, Query, Status (..), methodGet, methodPost, renderQuery, renderSimpleQuery)
+import Network.HTTP.Types (Header, HeaderName, Method, Query, methodGet, methodPost, renderQuery, renderSimpleQuery)
 import Simplex.Chat.PaymentService.Types
   ( CardProvider (..),
     CurrencyAmount (..),
@@ -70,15 +62,7 @@ import Simplex.Chat.PaymentService.Types
     ServicePaymentDestination (..),
     ServicePaymentMethod (..),
   )
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import System.Timeout (timeout)
-
-maxErrorBytes :: Int64
-maxErrorBytes = 4000
-
--- Far above any Stripe response, far below what would exhaust the poller thread.
-maxProviderBytes :: Int64
-maxProviderBytes = 10 * 1024 * 1024
+import Simplex.Messaging.Util (tshow)
 
 secondsPerMinute :: Int
 secondsPerMinute = 60
@@ -146,7 +130,7 @@ listOpen env@StripeEnv {seCfg} = do
                 [("created[gte]", Just createdGte), ("limit", Just (B8.pack (show listPageSize)))]
                   <> maybe [] (\a -> [("starting_after", Just (TE.encodeUtf8 a))]) after
           got <- stripeApi env listWhat methodGet ["v1", "payment_intents"] q Nothing
-          case got >>= decodeStripe listWhat of
+          case got >>= decodeAnswer listWhat of
             Left e -> pure (Left e)
             Right IntentList {ilData, ilHasMore} ->
               let acc' = merge acc (intentsPass now ilData)
@@ -161,23 +145,16 @@ intentsPass :: UTCTime -> [J.Value] -> ListPass
 intentsPass now = foldr add (ListPass [] [])
   where
     add v pass = case J.fromJSON v :: J.Result IntentRead of
-      J.Error e -> pass {lpSkipped = (intentIdOf v, T.pack e) : lpSkipped pass}
+      J.Error e -> pass {lpSkipped = (objectId v, T.pack e) : lpSkipped pass}
       J.Success ir -> case signalOf now ir of
         Left e -> pass {lpSkipped = (Just (irId ir), providerErrorText e) : lpSkipped pass}
         Right Nothing -> pass
         Right (Just sig) -> pass {lpMoved = (irId ir, sig) : lpMoved pass}
 
-intentIdOf :: J.Value -> Maybe Text
-intentIdOf v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
-  J.Success o -> case KM.lookup "id" o of
-    Just (J.String i) -> Just i
-    _ -> Nothing
-  J.Error _ -> Nothing
-
 lastId :: [J.Value] -> Maybe Text
 lastId vs = case vs of
   [] -> Nothing
-  _ -> intentIdOf (last vs)
+  _ -> objectId (last vs)
 
 data IntentList = IntentList {ilData :: [J.Value], ilHasMore :: Bool}
 
@@ -257,13 +234,13 @@ createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor
   -- a name order sent again after a lost answer gets the intent its first create made
   (replayed, keyed) <- create [("Idempotency-Key", B8.intercalate ":" [reference, amount, currency])]
   created <- if replayed then replayedIntent (snd <$> create []) keyed else pure keyed
-  pure $ created >>= decodeStripe what <&> \CreatedIntent {ciId, ciClientSecret} ->
+  pure $ created >>= decodeAnswer what <&> \CreatedIntent {ciId, ciClientSecret} ->
     ProviderInvoice {piProviderRef = ciId, piDestination = SPDCard CPStripe ciClientSecret}
   where
     what = "create intent"
     -- Stripe replays a key's first answer for 24 hours, so an error or an intent cancelled since would fail every resend.
     -- An intent that succeeded holds the order's payment, and one that cannot be read may, so neither is replaced.
-    replayedIntent fresh keyed = case keyed >>= decodeStripe what of
+    replayedIntent fresh keyed = case keyed >>= decodeAnswer what of
       Left _ -> fresh
       Right CreatedIntent {ciId} ->
         readInvoice env ciId >>= \case
@@ -284,7 +261,7 @@ readInvoice :: StripeEnv -> Text -> IO (Either ProviderError (Maybe PaymentSigna
 readInvoice env pid = do
   now <- getCurrentTime
   got <- stripeApi env what methodGet ["v1", "payment_intents", pid] [("expand[]", Just "latest_charge")] Nothing
-  case got >>= decodeStripe what of
+  case got >>= decodeAnswer what of
     Right intent@IntentRead {irStatus = PIRequiresPaymentMethod, irChargeCreated = Just _} ->
       declines >>= \case
         Right n | n >= maxDeclines -> do
@@ -296,7 +273,7 @@ readInvoice env pid = do
   where
     what = "read intent " <> pid
     declines =
-      fmap (length . filter (== CHFailed) . clStatuses) . (>>= decodeStripe "list charges")
+      fmap (length . filter (== CHFailed) . clStatuses) . (>>= decodeAnswer "list charges")
         <$> stripeApi env "list charges" methodGet ["v1", "charges"] [("payment_intent", Just $ TE.encodeUtf8 pid), ("limit", Just $ B8.pack $ show maxDeclines)] Nothing
 
 data ChargeStatus = CHSucceeded | CHPending | CHFailed | CHUnknown Text
@@ -419,46 +396,23 @@ stripeSend ::
   [Header] ->
   Maybe [(ByteString, ByteString)] ->
   IO (Bool, Either ProviderError LB.ByteString)
-stripeSend StripeEnv {seCfg, seManager} what verb segments query headers form = do
-  r <- timeout (sTimeoutMicros seCfg) $ try $ do
-    req0 <- parseRequest (T.unpack url)
-    -- applyBasicAuth must wrap the record update, because updating requestHeaders after it would drop the header it adds.
-    let req =
-          applyBasicAuth (TE.encodeUtf8 (sSecretKey seCfg)) "" $
-            req0
-              { method = verb,
-                requestHeaders =
-                  ("Accept", "application/json")
-                    : ("Stripe-Version", stripeApiVersion)
-                    : [("Content-Type", "application/x-www-form-urlencoded") | isJust form]
-                    <> headers,
-                requestBody = RequestBodyBS (maybe "" (renderSimpleQuery False) form)
-              }
-    withResponse req seManager $ \resp -> do
-      taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
-      pure (lookup "Idempotent-Replayed" (responseHeaders resp) == Just "true", statusCode (responseStatus resp), taken)
-  pure $ case r of
-    Nothing -> (False, Left (ProviderTimeout what))
-    -- http-client hides the Authorization header when showing a Request
-    Just (Left (e :: HttpException)) -> (False, Left (ProviderError (what <> " failed: " <> tshow e)))
-    Just (Right (replayed, code, taken)) -> (replayed, answer code taken)
+stripeSend StripeEnv {seCfg, seManager} what verb segments query headers form =
+  (\(answered, r) -> (lookup "Idempotent-Replayed" answered == Just "true", r)) <$> providerCall seManager (sTimeoutMicros seCfg) what url asked
   where
-    answer code taken
-      | LB.length taken > maxProviderBytes =
-          Left . ProviderError $
-            what <> " failed: HTTP " <> tshow code <> ", and the answer is over " <> tshow maxProviderBytes <> " bytes"
-      | code >= 200 && code < 300 = Right taken
-      | otherwise =
-          Left . ProviderError $
-            what <> " failed: HTTP " <> tshow code <> " " <> snippet taken
+    -- applyBasicAuth must wrap the record update, because updating requestHeaders after it would drop the header it adds.
+    asked req =
+      applyBasicAuth (TE.encodeUtf8 (sSecretKey seCfg)) "" $
+        req
+          { method = verb,
+            requestHeaders =
+              ("Accept", "application/json")
+                : ("Stripe-Version", stripeApiVersion)
+                : [("Content-Type", "application/x-www-form-urlencoded") | isJust form]
+                <> headers,
+            requestBody = RequestBodyBS (maybe "" (renderSimpleQuery False) form)
+          }
     url =
       T.dropWhileEnd (== '/') (sHost seCfg)
         <> "/"
         <> T.intercalate "/" segments
         <> TE.decodeUtf8 (renderQuery True query)
-    snippet = safeDecodeUtf8 . LB.toStrict . LB.take maxErrorBytes
-
-decodeStripe :: J.FromJSON a => Text -> LB.ByteString -> Either ProviderError a
-decodeStripe what body = case J.eitherDecode' body of
-  Right v -> Right v
-  Left e -> Left (ProviderError (what <> ": could not read the response: " <> T.pack e))
