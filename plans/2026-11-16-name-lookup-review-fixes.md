@@ -84,8 +84,8 @@ data NameChange
 
 Read from `NCLapsed`:
 - View.hs: the warning line
-- iOS `planNameWarningAlert(plan)`
-- Kotlin `planNameWarningAlert(plan)`
+- iOS `planAndConnect`
+- Kotlin `planAndConnectTask`
 
 ```mermaid
 flowchart LR
@@ -201,6 +201,5 @@ packages/simplex-chat-mcp, built and tested with the repository's types (scope `
 - `testNameRecordOrWarning`: the block time before and after `expires`.
 - `testChannelDomainVerify`: an expired name not verified.
 - `testSetNameExpired`: an expired name not set.
-- Fixtures of a lapsed name: `nameDomain` in `nameChange`.
-- Kotlin and iOS alert tests: `planNameWarningAlert(plan)`.
+- Fixtures of a lapsed name in tests/fixtures/api/names: `nameDomain` in `nameChange`; the Kotlin and iOS name tests unchanged.
 - mcp: name warning texts, a lapsed name refused, `movedFrom`, `simplexName` of a verified chat only.
