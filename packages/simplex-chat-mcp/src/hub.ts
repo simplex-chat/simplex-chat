@@ -10,7 +10,7 @@ import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
-import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
+import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, isLive, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
 import {AttachLine, LimitWindow, Limits, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {Machine, limitParts, machineParts, machineState} from "./status-line"
@@ -29,6 +29,8 @@ const cardsWait = 10
 const promptEcho = 60_000
 // spec: spec/architecture.md#hub-constants
 const maxPushed = 20
+// spec: spec/architecture.md#hub-constants
+const maxPrompted = 100
 // spec: spec/architecture.md#hub-constants
 const fileWait = 10 * 60_000
 // spec: spec/architecture.md#hub-constants
@@ -127,6 +129,8 @@ interface LineKind {
   log: string
 }
 
+type PromptKind = "message" | "edit" | "reaction"
+
 const stepLines: LineKind = {refused: noteRefused, log: "steps"}
 const textLines: LineKind = {refused: "Claude's text was not posted", log: "texts"}
 const answerLines: LineKind = {refused: "Claude's answer was not posted", log: "answers"}
@@ -141,6 +145,8 @@ export class Session {
   readonly number: number
   private name: string
   private readonly pushed: {text: string; item: T.ChatItem; at: number; quoted?: boolean}[] = []
+  private readonly prompted = new Map<number, string>()
+  private readonly liveItems = new Map<number, T.AChatItem>()
   private readonly receiving = new Map<number, {resolve: () => void; reject: (error: Error) => void}>()
   private description: {model?: string; effort?: string}
   private readonly describedAt = {model: -Infinity, effort: -Infinity}
@@ -302,13 +308,53 @@ export class Session {
 
   // spec: spec/architecture.md#hub-session-onmessage
   onMessage(ci: T.AChatItem): void {
-    const {chatDir, content, quotedItem} = ci.chatItem
+    const {chatDir, content, meta} = ci.chatItem
+    if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
+    this.passLive(chatDir.groupMember, meta.itemId)
+    if (isLive(ci.chatItem)) return this.keepLive(ci)
+    this.pass(ci, chatDir.groupMember, content.msgContent.text)
+  }
+
+  // spec: spec/architecture.md#hub-session-onupdate
+  onUpdate(ci: T.AChatItem): void {
+    const {chatDir, content, meta} = ci.chatItem
     if (chatDir.type !== "groupRcv" || content.type !== "rcvMsgContent") return
     const {text} = content.msgContent
-    if (this.refusesCommand(text, chatDir.groupMember)) return this.queue(() => this.post([{text: commandsApproversOnly}], ci.chatItem.meta.itemId))
+    if (isLive(ci.chatItem)) return this.keepLive(ci)
+    if (this.liveItems.delete(meta.itemId)) return this.pass(ci, chatDir.groupMember, text)
+    if (parseCommand(text) !== undefined) return
+    this.queue(async () => {
+      const earlier = this.prompted.get(meta.itemId)
+      if (earlier !== undefined && earlier !== text) await this.prompt(ci, text, chatDir.groupMember, undefined, this.replyTo(ci), "edit")
+    })
+  }
+
+  // spec: spec/architecture.md#hub-session-onmessage
+  private pass(ci: T.AChatItem, member: T.GroupMember, text: string): void {
+    if (this.refusesCommand(text, member)) return this.queue(() => this.post([{text: commandsApproversOnly}], ci.chatItem.meta.itemId))
     if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
-    const replyTo = quotedItem === undefined ? undefined : toReplyTo(ci.chatInfo, {...quotedItem, content: withoutEndLine(quotedItem.content, quotedItem.chatDir)}, {name: this.hub.profile.profile.displayName})
-    this.queue(() => this.prompt(ci, text, chatDir.groupMember, ci.chatItem.file, replyTo))
+    this.queue(() => this.prompt(ci, text, member, ci.chatItem.file, this.replyTo(ci)))
+  }
+
+  // spec: spec/architecture.md#hub-session-onupdate
+  private keepLive(ci: T.AChatItem): void {
+    this.liveItems.delete(ci.chatItem.meta.itemId)
+    bounded(this.liveItems.set(ci.chatItem.meta.itemId, ci))
+  }
+
+  // spec: spec/architecture.md#hub-session-onupdate
+  private passLive({groupMemberId}: T.GroupMember, itemId: number): void {
+    for (const [id, live] of this.liveItems) {
+      const {chatDir, content} = live.chatItem
+      if (id === itemId || chatDir.type !== "groupRcv" || chatDir.groupMember.groupMemberId !== groupMemberId || content.type !== "rcvMsgContent") continue
+      this.liveItems.delete(id)
+      this.pass(live, chatDir.groupMember, content.msgContent.text)
+    }
+  }
+
+  // spec: spec/architecture.md#hub-session-onmessage
+  private replyTo({chatInfo, chatItem: {quotedItem}}: T.AChatItem): ReplyTo | undefined {
+    return quotedItem === undefined ? undefined : toReplyTo(chatInfo, {...quotedItem, content: withoutEndLine(quotedItem.content, quotedItem.chatDir)}, {name: this.hub.profile.profile.displayName})
   }
 
   // spec: spec/architecture.md#hub-session-onreaction
@@ -318,7 +364,7 @@ export class Session {
     if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || this.isUser(chatDir.groupMember) || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
     if (reaction.type !== "emoji" || !reactionEmoji.includes(reaction.emoji)) return this.refuseReaction(chatDir.groupMember, chatItem)
     const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: withoutEndLine(content.msgContent, chatItem.chatDir), fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
-    this.queue(() => this.prompt({chatInfo, chatItem}, reaction.emoji, chatDir.groupMember, undefined, replyTo))
+    this.queue(() => this.prompt({chatInfo, chatItem}, reaction.emoji, chatDir.groupMember, undefined, replyTo, "reaction"))
   }
 
   // spec: spec/architecture.md#hub-session-claimpending
@@ -452,9 +498,9 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-prompt
-  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo?: ReplyTo): Promise<void> {
+  private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo?: ReplyTo, kind: PromptKind = "message"): Promise<void> {
     if (this.isUser(member)) return
-    await this.deliver(ci, text, member, ciFile, replyTo)
+    await this.deliver(ci, text, member, ciFile, replyTo, kind)
   }
 
   // spec: spec/architecture.md#hub-session-refusereaction
@@ -466,7 +512,7 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-deliver
-  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo?: ReplyTo): Promise<void> {
+  private async deliver(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo: ReplyTo | undefined, kind: PromptKind): Promise<void> {
     const left = this.hub.promptsHeldUntil - Date.now()
     if (this.onLine === undefined && left > 0) await nextChange(this.attaching, new AbortController().signal, left)
     const {chatItem} = ci
@@ -480,7 +526,10 @@ export class Session {
     }
     const promptText = replyTo === undefined ? text : `${quoteLine(replyTo)}\n${text}`
     if (this.pushed.push({text: promptText, item: chatItem, at: Date.now()}) > maxPushed) this.pushed.shift()
-    this.onLine({prompt: {text: promptText, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file}), ...(replyTo === undefined ? {} : {replyTo: {item: replyTo.item, from: replyTo.from}})}})
+    this.onLine({prompt: {text: promptText, from: member.memberProfile.displayName, item: chatItem.meta.itemId, ...(file === undefined ? {} : {file}), ...(replyTo === undefined ? {} : {replyTo: {item: replyTo.item, from: replyTo.from}}), ...(kind === "edit" ? {edited: true} : {})}})
+    if (kind === "reaction") return
+    this.prompted.delete(chatItem.meta.itemId)
+    bounded(this.prompted.set(chatItem.meta.itemId, text))
   }
 
   // spec: spec/architecture.md#hub-session-deliver
@@ -1137,6 +1186,7 @@ export class Hub implements SessionGroups {
       }
     }
     if (event.type === "chatItemReaction") sessions.find(({control}) => isGroupMessage(event.reaction, control.groupId))?.onReaction(event)
+    if (event.type === "chatItemUpdated") sessions.find(({control}) => isGroupMessage(event.chatItem, control.groupId))?.onUpdate(event.chatItem)
     const {file} = event.type === "rcvFileComplete" ? event.chatItem.chatItem : {}
     if (file !== undefined) sessions.forEach(session => session.fileDone(file.fileId))
     if (event.type === "rcvFileError") sessions.forEach(session => session.fileDone(event.rcvFileTransfer.fileId, errorText(event.agentError)))
@@ -1162,6 +1212,14 @@ export class Hub implements SessionGroups {
 // spec: spec/architecture.md#hub-notallowedforuser
 function notAllowedForUser(feature: string): string {
   return `${feature} are not allowed for User in the group of this session; its owners can allow them in the group's preferences.`
+}
+
+// spec: spec/architecture.md#hub-session-onupdate
+function bounded(known: Map<number, unknown>): void {
+  for (const key of known.keys()) {
+    if (known.size <= maxPrompted) return
+    known.delete(key)
+  }
 }
 
 function groupName(number: number, name: string): string {
