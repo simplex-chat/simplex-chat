@@ -1033,7 +1033,7 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = workflow_dispatch ] || ! git diff --quiet HEAD^1 HEAD -- \
-            apps/simplex-store-service tests/Bots/StoreService tests/Test.hs src/Simplex/Chat/PaymentService src/Simplex/Chat/Badges \
+            apps/simplex-store-service tests/Bots/StoreService tests/Test.hs src/Simplex/Chat/PaymentService src/Simplex/Chat/Badges src/Simplex/Chat/Names \
             cabal.project simplex-chat.cabal .github/workflows/build.yml; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
