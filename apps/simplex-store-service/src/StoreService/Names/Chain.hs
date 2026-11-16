@@ -86,6 +86,7 @@ data ChainClient = ChainClient
 data ChainError
   = ChainReverted (Maybe RevertName)
   | ChainUnavailable Text
+  | ChainUnderfunded Text
   | ChainGasAboveCap Word64
   deriving (Eq, Show)
 
@@ -133,6 +134,10 @@ revertMessage = "execution reverted"
 -- | A node's error message is cut to this many characters.
 maxNodeMessageLength :: Int
 maxNodeMessageLength = 200
+
+-- | How geth, reth and erigon refuse a transaction whose key cannot pay gas × fee + value, in lower case; anvil capitalizes it.
+underfundedMessage :: Text
+underfundedMessage = "insufficient funds"
 
 -- | The hex digits of a 256-bit quantity.
 maxQuantityDigits :: Int
@@ -341,7 +346,10 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
       pure $
         if code == revertCode || revertMessage `T.isPrefixOf` message
           then ChainReverted $ maybe (dataless message) (decodeRevert <=< JT.parseMaybe bytes) revertData
-          else unavailable $ "error " <> tshow code <> ": " <> T.take maxNodeMessageLength message
+          else nodeError message $ method <> ": error " <> tshow code <> ": " <> T.take maxNodeMessageLength message
+    nodeError message
+      | underfundedMessage `T.isInfixOf` T.toLower message = ChainUnderfunded
+      | otherwise = ChainUnavailable
     unavailable reason = ChainUnavailable $ method <> ": " <> reason
     -- a node or proxy that drops the data can keep a reason in the message, as in "execution reverted: ERC721: invalid token ID"
     dataless message

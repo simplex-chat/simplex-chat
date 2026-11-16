@@ -236,7 +236,7 @@ followTransactions s@Sender {snChain = c@ChainClient {ccRegistrar}, snInFlight} 
 follow :: Sender -> Word64 -> Word64 -> Word64 -> InFlight -> IO ()
 follow s@Sender {snChain = c@ChainClient {ccConfig = ChainConfig {cConfirmations}}} latest used nonce tx@InFlight {ifHashes, ifUsedSince} =
   runExceptT (forM (L.toList ifHashes) $ \h -> (h,) <$> ExceptT (transactionReceipt c h)) >>= \case
-    Left e -> warnNonce s nonce $ tshow e
+    Left e -> warnNonce s nonce logWarn $ tshow e
     Right receipts -> case [(h, r) | (h, Just r) <- receipts] of
       (h, r@Receipt {receiptBlock}) : _
         | deep receiptBlock -> settle s nonce tx $ TOConfirmed h r
@@ -262,17 +262,17 @@ resend s@Sender {snChain = c, snNow} nonce tx@InFlight {ifRaw, ifHashes = newest
         when (isNothing ifLastWarning) $ logNote $ "names sender: rebroadcasting nonce " <> tshow nonce
         broadcast s nonce ifRaw
       Right True -> pure ()
-      Left e -> warnNonce s nonce $ tshow e
+      Left e -> warnNonce s nonce logWarn $ tshow e
 
 replace :: Sender -> Word64 -> InFlight -> UTCTime -> IO Bool
 replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifRequest = old@TxRequest {trGasLimit, trMaxFeePerGas, trMaxPriorityFeePerGas}} now =
   marketFees c >>= \case
-    Left e -> False <$ warnNonce s nonce (tshow e)
+    Left e -> False <$ warnNonce s nonce logWarn (tshow e)
     Right market@(tip, _)
       | tip <= oldTip && headroomFee market <= oldMax -> False <$ update s nonce (\t -> t {ifReplaceAt = later})
       | bumped oldMax > cap -> do
           update s nonce $ \t -> t {ifReplaceAt = later}
-          False <$ warnNonce s nonce ("not replaced: a replacement would pay over the fee cap " <> tshow cap)
+          False <$ warnNonce s nonce logWarn ("not replaced: a replacement would pay over the fee cap " <> tshow cap)
       | otherwise -> do
           -- the bumped fees are at most the cap, so the replacement still outbids the old signature
           let wanted = max (headroomFee market) (bumped oldMax)
@@ -345,15 +345,17 @@ saveTransaction :: DBStore -> TxFor -> ByteString -> TxHash -> Word64 -> UTCTime
 saveTransaction st for raw hash nonce now =
   withTransaction st $ \db -> void $ insertTransaction db for NewTransaction {ntxRaw = raw, ntxHash = hash, ntxNonce = nonce} now
 
+-- | An underfunded key is an error, since only the operator can fund it.
 broadcast :: Sender -> Word64 -> ByteString -> IO ()
 broadcast s@Sender {snChain} nonce raw =
   sendRawTransaction snChain raw >>= \case
-    Left e -> warnNonce s nonce $ "not sent: " <> tshow e
+    Left e@(ChainUnderfunded _) -> warnNonce s nonce logError $ "not sent: " <> tshow e
+    Left e -> warnNonce s nonce logWarn $ "not sent: " <> tshow e
     Right _ -> update s nonce $ \t -> t {ifLastWarning = Nothing}
 
--- | Logged when it differs from the nonce's last warning. An underfunded key is an error, since only the operator can fund it.
-warnNonce :: Sender -> Word64 -> Text -> IO ()
-warnNonce Sender {snInFlight} nonce warning = do
+-- | Logged when it differs from the nonce's last warning.
+warnNonce :: Sender -> Word64 -> (Text -> IO ()) -> Text -> IO ()
+warnNonce Sender {snInFlight} nonce logAt warning = do
   changed <- atomically $ do
     inFlight <- readTVar snInFlight
     case M.lookup nonce inFlight of
@@ -361,10 +363,4 @@ warnNonce Sender {snInFlight} nonce warning = do
         | ifLastWarning == Just warning -> pure False
         | otherwise -> True <$ writeTVar snInFlight (M.insert nonce tx {ifLastWarning = Just warning} inFlight)
       Nothing -> pure True
-  when changed $ (if underfundedMessage `T.isInfixOf` T.toLower warning then logError else logWarn) message
-  where
-    message = "names sender: nonce " <> tshow nonce <> ": " <> warning
-
--- | How geth, reth and erigon refuse a transaction whose key cannot pay gas × fee + value, in lower case; anvil capitalizes it.
-underfundedMessage :: Text
-underfundedMessage = "insufficient funds"
+  when changed $ logAt $ "names sender: nonce " <> tshow nonce <> ": " <> warning

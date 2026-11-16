@@ -310,9 +310,9 @@ testRefusedSendLogged g = withSetup g $ \s@Setup {node} -> do
     clearFault node "eth_sendRawTransaction"
     followTransactions sender
   let linesWith tag message = length $ filter (\l -> tag `T.isPrefixOf` l && message `T.isInfixOf` l) $ T.lines logged
-  linesWith "[ERROR" "names sender: nonce 9: not sent: ChainUnavailable \"eth_sendRawTransaction: error -32000: insufficient funds" `shouldBe` 1
+  linesWith "[ERROR" "names sender: nonce 9: not sent: ChainUnderfunded \"eth_sendRawTransaction: error -32000: insufficient funds" `shouldBe` 1
   linesWith "[WARN" "names sender: nonce 9: not sent: ChainUnavailable \"eth_sendRawTransaction: HTTP 502\"" `shouldBe` 1
-  linesWith "[ERROR" "names sender: nonce 9: not sent: ChainUnavailable \"eth_sendRawTransaction: error -32003: Insufficient funds" `shouldBe` 1
+  linesWith "[ERROR" "names sender: nonce 9: not sent: ChainUnderfunded \"eth_sendRawTransaction: error -32003: Insufficient funds" `shouldBe` 1
   linesWith "[" "names sender: nonce 9" `shouldBe` 3
   linesWith "[" "names sender: rebroadcasting nonce 9" `shouldBe` 0
   length <$> sentTransactions node `shouldReturn` 1

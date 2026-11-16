@@ -32,7 +32,7 @@ namesChainTests = describe "StoreService names: chain" $ do
     it "writes a revert's name as the contracts declare it, none for a revert without data" testRevertText
     it "reads a dry run's revert with data by its name" $ testDryRunRevertNamed g
   describe "failures" $ do
-    it "reads eth_call faults: a bare revert as one without data, a revert reason as unknown, an RPC error without the URL, a 2xx answer not JSON without quoting it, and a long message cut" $ testCallFaults g
+    it "reads eth_call faults: a bare revert as one without data, a revert reason as unknown, an RPC error without the URL, an underfunded key by its own error, a 2xx answer not JSON without quoting it, and a long message cut" $ testCallFaults g
     it "gives up on a node that does not answer within the call's timeout" $ testTimeout g
     it "reads a refused connection as unavailable, without the URL" $ testRefused g
     it "refuses an answer over the size bound" $ testOversized g
@@ -122,6 +122,7 @@ testCallFaults g = withChain g $ \node c ->
     [ (RpcError (-32000) "execution reverted" Nothing, ChainReverted $ Just RNWithoutData),
       (RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing, ChainReverted Nothing),
       (RpcError (-32000) "header not found" Nothing, ChainUnavailable "eth_call: error -32000: header not found"),
+      (RpcError (-32003) "Insufficient funds for gas * price + value" Nothing, ChainUnderfunded "eth_call: error -32003: Insufficient funds for gas * price + value"),
       (NotJson, ChainUnavailable "eth_call: not a JSON-RPC response"),
       (RpcError (-32000) (T.replicate 1000 "x") Nothing, ChainUnavailable $ "eth_call: error -32000: " <> T.replicate 200 "x")
     ]
