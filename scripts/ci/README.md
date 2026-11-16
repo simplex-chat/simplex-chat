@@ -27,7 +27,7 @@ Endpoint: https://docs.github.com/en/rest/actions/workflows#create-a-workflow-di
 | `tests` | empty | hspec match patterns, one per line (`\n` in JSON); `/` runs the whole suite, and an empty value builds without tests |
 | `base` | `master` | the branch that the changes are compared with:<br>`stable` for a branch cut from stable<br>the parent branch for a stacked branch |
 
-When a newer dispatch on the same branch starts build-linux or build-ios, GitHub cancels the unfinished job of the older one (`cancel-in-progress`).
+When a newer dispatch on the same branch starts build-linux or build-macos, GitHub cancels the unfinished job of the older one (`cancel-in-progress`).
 
 Results:
 - Run and jobs: `GET /repos/<owner>/simplex-chat/actions/runs?head_sha=<commit>&event=workflow_dispatch` returns the run id; `GET /repos/<owner>/simplex-chat/actions/runs/<run id>/jobs` returns each step with its start, end and conclusion.
@@ -35,7 +35,7 @@ Results:
 
 ### Scopes
 
-The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for every scope except ios, and one macOS job, build-ios (macos-latest), for ios.
+The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for every scope except ios, and one macOS job, build-macos (macos-latest), for ios.
 
 #### core
 
@@ -74,8 +74,8 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - Globs:
   - apps/ios/**
   - scripts/ci/ios-stub-libs.sh
-- CI: build-ios: stub libraries, then xcodebuild for the iOS Simulator without signing.
-- Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the xcodebuild command of the step "Build iOS app" of build-ios.
+- CI: build-macos (step "Build iOS app", matrix field `ios`), after the CLI steps when they run: stub libraries, then xcodebuild for the iOS Simulator without signing.
+- Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the xcodebuild command of the step "Build iOS app" of build-macos.
 
 #### packages
 
@@ -185,7 +185,7 @@ For a scope lacking CI tests, in the pull request that changes it:
 5. This file, "Scopes": a subsection for the scope, in place of its row in "Scopes lacking CI tests".
 6. Checks: `python3 scripts/ci/test_packages_release.py`, the new case of scope-tests.sh locally, then a dispatch of the reduced build.
 
-The scope commands run in build-linux after the core tests, with Node 22 and Python 3.12 (steps "Setup Node.js" and "Setup Python"). For a scope that needs other versions, a setup step is added before "Test changed scopes", conditioned on the scope name in `needs.maybe-release.outputs.scopes`. A scope that needs macOS is a BUILD_CHANGES entry with a separate maybe-release output, as ios is, and a step in build-ios; the `if` of build-ios includes that output.
+The scope commands run in build-linux after the core tests, with Node 22 and Python 3.12 (steps "Setup Node.js" and "Setup Python"). For a scope that needs other versions, a setup step is added before "Test changed scopes", conditioned on the scope name in `needs.maybe-release.outputs.scopes`. A scope that needs macOS is a BUILD_CHANGES entry with a separate maybe-release output, as ios is, and a step at the end of build-macos with the condition `!cancelled()` and a matrix field set from that output, as the iOS steps have; the `if` of build-macos includes that output.
 
 ## Starting a run
 

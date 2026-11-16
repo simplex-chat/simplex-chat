@@ -996,13 +996,13 @@ jobs:
 # =========================
 
   build-macos:
-    name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
+    name: "${{ matrix.should_run && format('{0} (CLI,Desktop{1}), GHC: {2}', matrix.os, matrix.ios && ',iOS' || '', matrix.ghc) || format('{0} (iOS)', matrix.os) }}"
     needs: [maybe-release, variables]
-    if: needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true'
+    if: (needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true') || needs.maybe-release.outputs.ios == 'true'
     runs-on: ${{ matrix.os }}
-    concurrency:
+    concurrency: &macos-concurrency
       group: ${{ github.workflow }}-${{ github.ref }}-macos-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+      cancel-in-progress: ${{ github.event_name != 'push' }}
     strategy:
       fail-fast: false
       matrix:
@@ -1013,23 +1013,17 @@ jobs:
             cli_asset_name: simplex-chat-macos-aarch64
             desktop_asset_name: simplex-desktop-macos-aarch64.dmg
             openssl_dir: "/opt/homebrew/opt"
-            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
-          - os: macos-15-intel
-            arch: x86_64
-            ghc: ${{ needs.variables.outputs.GHC_VER }}
-            cli_asset_name: simplex-chat-macos-x86-64
-            desktop_asset_name: simplex-desktop-macos-x86_64.dmg
-            openssl_dir: "/usr/local/opt"
-            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
-    steps:
+            should_run: ${{ needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true' }}
+            ios: ${{ needs.maybe-release.outputs.ios == 'true' }}
+    steps: &macos-steps
       - name: Checkout Code
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.ios == true
         uses: actions/checkout@v3
         with:
           submodules: recursive
 
       - name: Point Command Line Tools SDK to Xcode SDK
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.ios == true
         shell: bash
         run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
@@ -1360,27 +1354,13 @@ jobs:
             !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
 
-  build-ios:
-    name: "macos-latest (iOS)"
-    needs: maybe-release
-    if: needs.maybe-release.outputs.ios == 'true'
-    runs-on: macos-latest
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-ios
-      cancel-in-progress: ${{ github.event_name != 'push' }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Point Command Line Tools SDK to Xcode SDK
-        shell: bash
-        run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
-
       - name: Check the previews listed in the snapshot tests
+        if: ${{ !cancelled() && matrix.ios == true }}
         shell: bash
         run: python3 "apps/ios/SimpleX Snapshots/check-previews.py"
 
       - name: Build iOS app
+        if: ${{ !cancelled() && matrix.ios == true }}
         timeout-minutes: 60
         shell: bash
         run: |
@@ -1395,6 +1375,25 @@ jobs:
             -skipMacroValidation \
             ARCHS=arm64 \
             CODE_SIGNING_ALLOWED=NO
+
+  build-macos-intel:
+    name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
+    needs: [maybe-release, variables]
+    if: needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true'
+    runs-on: ${{ matrix.os }}
+    concurrency: *macos-concurrency
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15-intel
+            arch: x86_64
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            cli_asset_name: simplex-chat-macos-x86-64
+            desktop_asset_name: simplex-desktop-macos-x86_64.dmg
+            openssl_dir: "/usr/local/opt"
+            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
+    steps: *macos-steps
 
 # =========================
 #      Windows Build
@@ -1709,7 +1708,7 @@ jobs:
 # =========================
 
   releases:
-    needs: [maybe-release, build-linux, build-linux-full, build-linux-push, build-linux-postgres, build-macos, build-ios, build-windows]
+    needs: [maybe-release, build-linux, build-linux-full, build-linux-push, build-linux-postgres, build-macos, build-macos-intel, build-windows]
     if: ${{ !cancelled() && (needs.maybe-release.outputs.libs_tag || needs.maybe-release.outputs.addon_draft) }}
     runs-on: ubuntu-latest
     env:
@@ -1733,7 +1732,7 @@ jobs:
 # publish under other names.
 
   publish:
-    needs: [maybe-release, build-linux, build-linux-full, build-linux-push, build-macos, build-ios, build-windows, releases]
+    needs: [maybe-release, build-linux, build-linux-full, build-linux-push, build-macos, build-macos-intel, build-windows, releases]
     if: ${{ !cancelled() && (needs.maybe-release.outputs.publish || needs.maybe-release.outputs.publish_types || needs.maybe-release.outputs.publish_mcp) }}
     runs-on: ubuntu-latest
     permissions:
