@@ -35,7 +35,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (commitCalldata)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Sender
-import StoreService.Names.Store (NameTransaction (..), TxFor (..), TxStatus (..), pendingTransactions, recordTransactionOutcome, registrationTransactions)
+import StoreService.Names.Store (NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), pendingTransactions, recordTransactionOutcome, registrationTransactions)
 import StoreService.Names.View (addressText)
 import System.Timeout (timeout)
 import Test.Hspec
@@ -111,25 +111,25 @@ testConcurrentNonces g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
   -- both dry runs pass before either reads the registrar's nonce
   setFault node "eth_getTransactionCount" $ Slow 300000
-  (Right a, Right b) <- concurrently (submitTransaction sender (TxCommit r1) fakeController $ commit 1) (submitTransaction sender (TxCommit r2) fakeController $ commit 2)
+  (Right a, Right b) <- concurrently (submitTransaction sender (TxRegistration RTCommit r1) fakeController $ commit 1) (submitTransaction sender (TxRegistration RTCommit r2) fakeController $ commit 2)
   clearFault node "eth_getTransactionCount"
   sort [ptNonce a, ptNonce b] `shouldBe` [0, 1]
   saved <- withTransaction store pendingTransactions
   map (\NameTransaction {ntFor, ntNonce, ntHash} -> (ntFor, ntNonce, ntHash)) saved
-    `shouldMatchList` [(TxCommit r1, ptNonce a, ptHash a), (TxCommit r2, ptNonce b, ptHash b)]
+    `shouldMatchList` [(TxRegistration RTCommit r1, ptNonce a, ptHash a), (TxRegistration RTCommit r2, ptNonce b, ptHash b)]
   sentTransactions node `shouldReturn` map ntRaw saved
   mapM_ (mineHash node) [ptHash a, ptHash b]
   _ <- mine node []
   followTransactions sender
   forM_ [a, b] $ \p -> outcomeOf p >>= (`shouldSatisfy` confirmedAs (ptHash p))
-  Right c <- submitTransaction sender (TxRegister r1) fakeSponsor $ commit 3
+  Right c <- submitTransaction sender (TxRegistration RTRegister r1) fakeSponsor $ commit 3
   ptNonce c `shouldBe` 2
 
 testTipFloor :: TVar ChaChaDRG -> IO ()
 testTipFloor g = withSetup g $ \s@Setup {node} -> do
   sender <- start s
   setFees node 0 fakeBaseFee
-  Right _ <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right _ <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   [raw] <- sentTransactions node
   (fees <$> decodeSignedTx raw) `shouldBe` Right (toInteger minTip, 2 * fakeBaseFee + toInteger minTip)
 
@@ -137,46 +137,46 @@ testNothingSaved :: TVar ChaChaDRG -> IO ()
 testNothingSaved g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
   setFault node "eth_estimateGas" $ revertFault insufficientAllowance
-  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEChain (ChainReverted $ RRNamed RNInsufficientAllowance)
+  submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1) `refusedWith` SEChain (ChainReverted $ RRNamed RNInsufficientAllowance)
   clearFault node "eth_estimateGas"
   setFault node "eth_feeHistory" HttpFailure
-  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEChain (ChainUnavailable "eth_feeHistory: HTTP 502")
+  submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1) `refusedWith` SEChain (ChainUnavailable "eth_feeHistory: HTTP 502")
   clearFault node "eth_feeHistory"
   withTransaction store pendingTransactions `shouldReturn` []
   sentTransactions node `shouldReturn` []
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   ptNonce p `shouldBe` 0
 
 testOneInFlight :: TVar ChaChaDRG -> IO ()
 testOneInFlight g = withSetup g $ \s@Setup {node} -> do
   sender <- start s
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
-  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEInFlight
-  Right other <- submitTransaction sender (TxRegister r1) fakeSponsor (commit 2)
+  Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
+  submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1) `refusedWith` SEInFlight
+  Right other <- submitTransaction sender (TxRegistration RTRegister r1) fakeSponsor (commit 2)
   ptNonce other `shouldBe` 1
-  (fmap ptHash <$> inFlightTransaction sender (TxCommit r1)) `shouldReturn` Just (ptHash p)
+  (fmap ptHash <$> inFlightTransaction sender (TxRegistration RTCommit r1)) `shouldReturn` Just (ptHash p)
   length <$> sentTransactions node `shouldReturn` 2
 
 testConfirmationDepth :: TVar ChaChaDRG -> IO ()
 testConfirmationDepth g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   -- a wait for an outcome not reached yet ends at its bound
   timeout 5000000 (awaitOutcome 300000 p) `shouldReturn` Just Nothing
   let TxHash h = ptHash p
   block <- mine node [(h, False)]
   followTransactions sender
-  settled sender (TxCommit r1) `shouldReturn` False
+  settled sender (TxRegistration RTCommit r1) `shouldReturn` False
   _ <- mine node []
   followTransactions sender
   outcomeOf p `shouldReturn` TOConfirmed (ptHash p) Receipt {receiptSuccess = False, receiptBlock = block}
-  settled sender (TxCommit r1) `shouldReturn` True
+  settled sender (TxRegistration RTCommit r1) `shouldReturn` True
   statuses store r1 `shouldReturn` [(ptHash p, TSReverted, Just block)]
 
 testSettledNotPending :: TVar ChaChaDRG -> IO ()
 testSettledNotPending g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   let TxHash h = ptHash p
   _ <- mine node [(h, True)]
   _ <- mine node []
@@ -189,7 +189,7 @@ testFailedSend :: TVar ChaChaDRG -> IO ()
 testFailedSend g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
   setFault node "eth_sendRawTransaction" HttpFailure
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   clearFault node "eth_sendRawTransaction"
   sentTransactions node `shouldReturn` []
   [NameTransaction {ntRaw, ntHash}] <- withTransaction store pendingTransactions
@@ -201,7 +201,7 @@ testFailedSend g = withSetup g $ \s@Setup {node, store} -> do
 testFeeBump :: TVar ChaChaDRG -> IO ()
 testFeeBump g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   [firstRaw] <- sentTransactions node
   Right first <- pure $ decodeSignedTx firstRaw
   fees first `shouldBe` (fakeTip, 2 * fakeBaseFee + fakeTip)
@@ -231,18 +231,18 @@ testFeeBump g = withSetup g $ \s@Setup {node, store} -> do
 testRestartRebroadcast :: TVar ChaChaDRG -> IO ()
 testRestartRebroadcast g = withSetup g $ \s@Setup {node, store} -> do
   crashed <- start s
-  Right p <- submitTransaction crashed (TxCommit r1) fakeController (commit 1)
+  Right p <- submitTransaction crashed (TxRegistration RTCommit r1) fakeController (commit 1)
   [raw] <- sentTransactions node
   let TxHash h = ptHash p
   dropTransaction node h
   restarted <- start s
-  Just resumed <- inFlightTransaction restarted (TxCommit r1)
+  Just resumed <- inFlightTransaction restarted (TxRegistration RTCommit r1)
   (ptHash resumed, ptNonce resumed) `shouldBe` (ptHash p, 0)
   followTransactions restarted
   sentTransactions node `shouldReturn` [raw, raw]
   followTransactions restarted
   sentTransactions node `shouldReturn` [raw, raw]
-  Right next <- submitTransaction restarted (TxCommit r2) fakeController (commit 2)
+  Right next <- submitTransaction restarted (TxRegistration RTCommit r2) fakeController (commit 2)
   ptNonce next `shouldBe` 1
   _ <- mine node [(h, True)]
   _ <- mine node []
@@ -253,7 +253,7 @@ testRestartRebroadcast g = withSetup g $ \s@Setup {node, store} -> do
 testRotatedKeyStart :: TVar ChaChaDRG -> IO ()
 testRotatedKeyStart g = withSetup g $ \s@Setup {node, store, chain = oldChain} -> do
   sender <- start s
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   let oldConfig = ccConfig oldChain
       newConfig = oldConfig {cServiceKey = either error id $ mkPrivateKey $ BA.replicate 32 0x47}
       startOn cfg = checkPendingSignatures g cfg store
@@ -276,29 +276,29 @@ testDroppedNonceUsed g =
   forM_ [\node h -> dropTransaction node h >> useNextNonce node, \node h -> mine node [(h, True)] >> pruneReceipt node h] $ \lose ->
     withSetup g $ \s@Setup {node, store} -> do
       sender <- start s
-      Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+      Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
       let TxHash h = ptHash p
       lose node h
       followTransactions sender
-      settled sender (TxCommit r1) `shouldReturn` False
+      settled sender (TxRegistration RTCommit r1) `shouldReturn` False
       _ <- mine node []
       followTransactions sender
       outcomeOf p `shouldReturn` TONonceUsed
       statuses store r1 `shouldReturn` [(ptHash p, TSDropped, Nothing)]
       length <$> sentTransactions node `shouldReturn` 1
-      Right again <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+      Right again <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
       ptNonce again `shouldBe` 1
       length <$> sentTransactions node `shouldReturn` 2
 
 testFailedRound :: TVar ChaChaDRG -> IO ()
 testFailedRound g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   mineHash node (ptHash p)
   _ <- mine node []
   renameTransactions store "sx_badge_service_name_transactions" "name_transactions_away"
   senderRound sender
-  settled sender (TxCommit r1) `shouldReturn` False
+  settled sender (TxRegistration RTCommit r1) `shouldReturn` False
   renameTransactions store "name_transactions_away" "sx_badge_service_name_transactions"
   senderRound sender
   outcomeOf p >>= (`shouldSatisfy` confirmedAs (ptHash p))
@@ -314,7 +314,7 @@ testRefusedSendLogged g = withSetup g $ \s@Setup {node} -> do
   let underfunded = "insufficient funds for gas * price + value: balance 0, tx cost 4600000000000000, overshot 4600000000000000"
   logged <- capturingStderr $ do
     setFault node "eth_sendRawTransaction" $ RpcError (-32000) underfunded Nothing
-    Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+    Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
     ptNonce p `shouldBe` 9
     followTransactions sender
     followTransactions sender
@@ -338,16 +338,16 @@ testFeeCapSubmit :: TVar ChaChaDRG -> IO ()
 testFeeCapSubmit g = withCapSetup cap g $ \s@Setup {node, store} -> do
   sender <- start s
   setFees node fakeTip (cap - fakeTip + 1)
-  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (toInteger cap + 1)
+  submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (toInteger cap + 1)
   -- twice the base fee is past Word64, which would wrap to a near-zero fee
   let hugeBaseFee = maxBound `div` 2 + 1 :: Word64
   setFees node fakeTip hugeBaseFee
-  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (toInteger hugeBaseFee + fakeTip)
+  submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (toInteger hugeBaseFee + fakeTip)
   withTransaction store pendingTransactions `shouldReturn` []
   sentTransactions node `shouldReturn` []
   let baseFee = cap `div` 2
   setFees node fakeTip baseFee
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   ptNonce p `shouldBe` 0
   [raw] <- sentTransactions node
   fees <$> decodeSignedTx raw `shouldBe` Right (fakeTip, toInteger cap)
@@ -357,7 +357,7 @@ testFeeCapSubmit g = withCapSetup cap g $ \s@Setup {node, store} -> do
 testFeeCapReplace :: TVar ChaChaDRG -> IO ()
 testFeeCapReplace g = withCapSetup cap g $ \s@Setup {node} -> do
   sender <- start s
-  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   [firstRaw] <- sentTransactions node
   Right first <- pure $ decodeSignedTx firstRaw
   txMaxFeePerGas first `shouldBe` 2 * fakeBaseFee + fakeTip
@@ -373,7 +373,7 @@ testFeeCapReplace g = withCapSetup cap g $ \s@Setup {node} -> do
   dropTransaction node bumpedHash
   followTransactions sender
   sentTransactions node `shouldReturn` [firstRaw, bumpedRaw, bumpedRaw]
-  (fmap ptHash <$> inFlightTransaction sender (TxCommit r1)) `shouldReturn` Just (TxHash bumpedHash)
+  (fmap ptHash <$> inFlightTransaction sender (TxRegistration RTCommit r1)) `shouldReturn` Just (TxHash bumpedHash)
   ptNonce p `shouldBe` 0
   where
     -- above the first max fee and its bump, below the market's headroom fee and a second bump
@@ -387,9 +387,9 @@ testTxFeeBound g = withSetup g $ \s@Setup {node} -> do
   bound `shouldSatisfy` (< fakeMaxFeePerGas)
   sender <- start s
   setFees node fakeTip bound
-  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (toInteger bound + fakeTip)
+  submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (toInteger bound + fakeTip)
   setFees node fakeTip firstBaseFee
-  Right _ <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  Right _ <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   [firstRaw] <- sentTransactions node
   Right first <- pure $ decodeSignedTx firstRaw
   (txGasLimit first, txMaxFeePerGas first) `shouldBe` (gasLimit, fromIntegral $ 2 * firstBaseFee + fakeTip)
@@ -402,7 +402,7 @@ testTxFeeBound g = withSetup g $ \s@Setup {node} -> do
   passTime s replaceAfter
   followTransactions sender
   length <$> sentTransactions node `shouldReturn` 2
-  Right _ <- submitTransaction sender (TxCommit r2) fakeController (commit 2)
+  Right _ <- submitTransaction sender (TxRegistration RTCommit r2) fakeController (commit 2)
   [_, _, cappedRaw] <- sentTransactions node
   (\Eip1559Tx {txGasLimit, txMaxFeePerGas} -> (txGasLimit, toInteger txMaxFeePerGas)) <$> decodeSignedTx cappedRaw `shouldBe` Right (gasLimit, toInteger bound)
   toInteger gasLimit * toInteger bound `shouldSatisfy` (<= maxTxFeeWei)

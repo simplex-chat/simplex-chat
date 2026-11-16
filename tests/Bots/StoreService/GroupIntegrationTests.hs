@@ -17,7 +17,7 @@ import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), newChainClient, signTransaction)
-import StoreService.Names.Store (CodeIssuer (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
+import StoreService.Names.Store (CodeIssuer (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
@@ -211,7 +211,7 @@ testOtherKeyPendingStops ps = do
   flip finally (stopGroupService t cc) $ do
     code <- issue (chatStore cc) 1 usable
     placeCode (chatStore cc) "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-    withTransaction (chatStore cc) $ \db -> void $ insertTransaction db (TxCommit $ RegistrationId "r1") NewTransaction {ntxRaw = stRaw, ntxHash = stHash, ntxNonce = 0} t0
+    withTransaction (chatStore cc) $ \db -> void $ insertTransaction db (TxRegistration RTCommit $ RegistrationId "r1") NewTransaction {ntxRaw = stRaw, ntxHash = stHash, ntxNonce = 0} t0
   env <- newServiceState
   ended <- timeout waitLimit (try $ storeService opts (Just serviceCfg) (gsCfg svc) env)
   started <- atomically (tryReadTMVar (serviceCC env))

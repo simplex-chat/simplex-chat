@@ -180,7 +180,7 @@ answerExpiry Ctx {cNode} label expiry = answerCall cNode (registrarOf cNode) (na
 sentRegister :: Ctx -> NameRegistration -> Word8 -> TxStatus -> IO TxHash
 sentRegister Ctx {cStore} NameRegistration {nrId} n status = withTransaction cStore $ \db -> do
   let h = TxHash $ digestFixture n
-  void $ insertTransaction db (TxRegister nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
+  void $ insertTransaction db (TxRegistration RTRegister nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
   recordTransactionOutcome db h TSPending status (Just 120) `shouldReturn` True
   pure h
 

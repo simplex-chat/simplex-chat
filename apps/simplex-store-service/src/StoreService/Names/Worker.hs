@@ -188,7 +188,7 @@ stepRegistration w@Worker {wkOrders = OrdersEnv {oeStore, oeNow}} rid = do
 -- | A commit of the registration in flight is waited for; otherwise commitments(commitment) decides.
 commit :: Worker -> UTCTime -> NameRegistration -> IO Next
 commit w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId, nrCommitment} =
-  inFlightTransaction wkSender (TxCommit nrId) >>= \case
+  inFlightTransaction wkSender (TxRegistration RTCommit nrId) >>= \case
     Just p -> commitSent w now r p
     Nothing ->
       runExceptT ((,) <$> ExceptT (commitmentAges oeContracts) <*> ExceptT (commitmentTime oeContracts nrCommitment)) >>= \case
@@ -244,7 +244,7 @@ toCommitted w now r (revealAfter, revealBefore) t =
 ourCommit :: Worker -> NameRegistration -> ChainSeconds -> IO (Either ChainError (Maybe (TxHash, Word64)))
 ourCommit Worker {wkOrders = OrdersEnv {oeStore, oeContracts}} NameRegistration {nrId, nrCommitTx} t = do
   txs <- withTransaction oeStore (`registrationTransactions` nrId)
-  let commits = [tx | tx@NameTransaction {ntFor = TxCommit _} <- txs]
+  let commits = [tx | tx@NameTransaction {ntFor = TxRegistration RTCommit _} <- txs]
       lastSent = [ntNonce | NameTransaction {ntHash, ntNonce} <- commits, Just ntHash == nrCommitTx]
   case [(ntHash, block) | NameTransaction {ntHash, ntNonce, ntStatus = TSMined, ntMinedBlock = Just block} <- commits, ntNonce `elem` lastSent] of
     (h, block) : _ -> fmap (\Block {blockTimestamp} -> if blockTimestamp == t then Just (h, block) else Nothing) <$> blockAt (ctChain oeContracts) block
@@ -252,7 +252,7 @@ ourCommit Worker {wkOrders = OrdersEnv {oeStore, oeContracts}} NameRegistration 
 
 sendCommit :: Worker -> UTCTime -> NameRegistration -> IO Next
 sendCommit w@Worker {wkOrders = OrdersEnv {oeConfig}, wkSender} now r@NameRegistration {nrId, nrCommitment} =
-  withinSends w now r isCommit $ submitTransaction wkSender (TxCommit nrId) (cController $ nChain oeConfig) (commitCalldata nrCommitment) >>= \case
+  withinSends w now r RTCommit $ submitTransaction wkSender (TxRegistration RTCommit nrId) (cController $ nChain oeConfig) (commitCalldata nrCommitment) >>= \case
     Right p -> commitSent w now r p
     Left SEInFlight -> pure Again
     -- UnexpiredCommitmentExists among them: a commit mined since the read, or a latest block still at the lapse second
@@ -267,7 +267,7 @@ commitSent w now r@NameRegistration {nrPhase, nrCommitTx} p
 -- | Waits for the page's reveal until the lapse, has its acceptance held by the name policy, waits for revealAfter, then registers.
 committed :: Worker -> UTCTime -> NameRegistration -> IO Next
 committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAfter} =
-  inFlightTransaction wkSender (TxRegister nrId) >>= \case
+  inFlightTransaction wkSender (TxRegistration RTRegister nrId) >>= \case
     Just p -> registerSent w now r p
     Nothing -> case nrReveal of
       Nothing -> case lapseMoment r of
@@ -290,14 +290,14 @@ unlapsed now NameRegistration {nrRevealBefore} = all ((now <=) . chainTime) nrRe
 -- acceptance, which another sent first.
 relayAcceptance :: Worker -> UTCTime -> NameRegistration -> ChainSeconds -> TermsAcceptance -> IO (Maybe Next)
 relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} deadline a@TermsAcceptance {taTermsHash} =
-  inFlightTransaction wkSender (TxAccept regId) >>= \case
+  inFlightTransaction wkSender (TxRegistration RTAccept regId) >>= \case
     Just p -> pure $ Just $ Await p
     Nothing ->
       runExceptT ((,,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (communityName oeContracts nrLabelHash) <*> ExceptT held) >>= \case
         Left e -> pure $ Just $ failure r $ SFChain e
         Right (policy, listed, accepted)
           | accepted == taTermsHash -> pure Nothing
-          | otherwise -> Just <$> withinSends w now r isAccept (relay policy (termsKind listed))
+          | otherwise -> Just <$> withinSends w now r RTAccept (relay policy (termsKind listed))
   where
     held = acceptedTerms oeContracts nrCommitment nrOwner
     relay policy kind =
@@ -306,7 +306,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
           logWarn $ "names worker: registration " <> rid <> ": its stored acceptance is refused, " <> T.pack refusal
           save w now r {nrReveal = Nothing}
         Right () ->
-          submitTransaction wkSender (TxAccept regId) policy (acceptCalldata kind nrCommitment nrOwner deadline a) >>= \case
+          submitTransaction wkSender (TxRegistration RTAccept regId) policy (acceptCalldata kind nrCommitment nrOwner deadline a) >>= \case
             Right p -> pure $ Await p
             Left SEInFlight -> pure Again
             Left (SEChain (ChainReverted reason)) ->
@@ -324,7 +324,7 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
       logWarn $ "names worker: registration " <> rid <> ": its stored intent is refused, " <> T.pack refusal
       judge w now r Nothing
     Right () ->
-      withinSends w now r isRegister $ submitTransaction wkSender (TxRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
+      withinSends w now r RTRegister $ submitTransaction wkSender (TxRegistration RTRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
         Right p -> registerSent w now r p
         Left SEInFlight -> pure Again
         Left (SEChain (ChainReverted reason)) -> judge w now r $ Just reason
@@ -340,7 +340,7 @@ registerSent w now r@NameRegistration {nrPhase, nrRegisterTx} p
 -- | With none of its register transactions in flight, none can be mined any more: each mined, or its nonce taken.
 registering :: Worker -> UTCTime -> NameRegistration -> IO Next
 registering w@Worker {wkSender} now r@NameRegistration {nrId} =
-  inFlightTransaction wkSender (TxRegister nrId) >>= \case
+  inFlightTransaction wkSender (TxRegistration RTRegister nrId) >>= \case
     Just p -> registerSent w now r p
     Nothing -> judge w now r Nothing
 
@@ -474,11 +474,11 @@ maxSendsPerKind :: Int
 maxSendsPerKind = 5
 
 -- | The send while the order has sent fewer than maxSendsPerKind transactions of its kind, else the order fails.
-withinSends :: Worker -> UTCTime -> NameRegistration -> (TxFor -> Bool) -> IO Next -> IO Next
-withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId rid} ofKind send = do
+withinSends :: Worker -> UTCTime -> NameRegistration -> RegistrationTx -> IO Next -> IO Next
+withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId rid} step send = do
   txs <- orderTransactions wkOrders r
-  let minedCommits = [ntNonce | NameTransaction {ntFor = TxCommit _, ntNonce, ntStatus = TSMined} <- txs]
-      sent = sendCount ofKind [tx | tx@NameTransaction {ntNonce} <- txs, ntNonce `notElem` minedCommits]
+  let minedCommits = [ntNonce | NameTransaction {ntFor = TxRegistration RTCommit _, ntNonce, ntStatus = TSMined} <- txs]
+      sent = sendCount step [tx | tx@NameTransaction {ntNonce} <- txs, ntNonce `notElem` minedCommits]
   if sent < maxSendsPerKind
     then send
     else do
@@ -486,19 +486,14 @@ withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId ri
       save w now r {nrPhase = OFailed now FRNotRegistered}
 
 sendsUsedUp :: OrdersEnv -> NameRegistration -> IO Bool
-sendsUsedUp oe r = orderTransactions oe r <&> \txs -> any (\ofKind -> sendCount ofKind txs >= maxSendsPerKind) [isCommit, isAccept, isRegister]
+sendsUsedUp oe r = orderTransactions oe r <&> \txs -> any (\step -> sendCount step txs >= maxSendsPerKind) [minBound .. maxBound]
 
 -- | One per nonce, as a fee replacement is the same send.
-sendCount :: (TxFor -> Bool) -> [NameTransaction] -> Int
-sendCount ofKind = length . nubOrd . map ntNonce . filter (ofKind . ntFor)
+sendCount :: RegistrationTx -> [NameTransaction] -> Int
+sendCount step txs = length $ nubOrd [ntNonce | NameTransaction {ntFor = TxRegistration s _, ntNonce} <- txs, s == step]
 
 orderTransactions :: OrdersEnv -> NameRegistration -> IO [NameTransaction]
 orderTransactions OrdersEnv {oeStore} NameRegistration {nrId} = withTransaction oeStore (`registrationTransactions` nrId)
-
-isCommit, isAccept, isRegister :: TxFor -> Bool
-isCommit = \case TxCommit _ -> True; _ -> False
-isAccept = \case TxAccept _ -> True; _ -> False
-isRegister = \case TxRegister _ -> True; _ -> False
 
 -- | The code a code order still holds, though revoked or expired since, or a released one it can reserve again.
 retryCode :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either CodeRefusal (Maybe PrepaidCode))

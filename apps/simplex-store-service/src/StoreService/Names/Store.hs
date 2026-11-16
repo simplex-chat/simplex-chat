@@ -51,6 +51,7 @@ module StoreService.Names.Store
     CodeIssuer (..),
     CodeHashTaken (..),
     TxFor (..),
+    RegistrationTx (..),
     TxStatus (..),
     NameTransaction (..),
     NewTransaction (..),
@@ -542,8 +543,18 @@ data CodeIssuer = IssuedInGroup | IssuedInConsole
 data CodeHashTaken = CodeHashTaken
   deriving (Eq, Show)
 
-data TxFor = TxCommit RegistrationId | TxAccept RegistrationId | TxRegister RegistrationId | TxEdit RecordEditId
+data TxFor = TxRegistration RegistrationTx RegistrationId | TxEdit RecordEditId
   deriving (Eq, Show)
+
+data RegistrationTx = RTCommit | RTAccept | RTRegister
+  deriving (Eq, Show, Enum, Bounded)
+
+instance TextEncoding RegistrationTx where
+  textEncode = \case
+    RTCommit -> "commit"
+    RTAccept -> "accept"
+    RTRegister -> "register"
+  textDecode = enumTextDecode
 
 -- | A dropped transaction has no receipt and its registrar nonce is used.
 data TxStatus = TSPending | TSMined | TSReverted | TSDropped
@@ -1538,27 +1549,13 @@ revokePrepaidCode db codeHash now = do
       | isJust pcRevokedAt = AlreadyRevoked pcId
       | otherwise = AlreadyRedeemed
 
-data TxKind = TKCommit | TKAccept | TKRegister | TKEdit
-  deriving (Eq, Show, Enum, Bounded)
+editKind :: Text
+editKind = "edit"
 
-instance TextEncoding TxKind where
-  textEncode = \case
-    TKCommit -> "commit"
-    TKAccept -> "accept"
-    TKRegister -> "register"
-    TKEdit -> "edit"
-  textDecode = enumTextDecode
-
-instance FromField TxKind where fromField = fromTextField_ textDecode
-
-instance ToField TxKind where toField = toField . textEncode
-
-txKind :: TxFor -> (TxKind, Maybe Text, Maybe RecordEditId)
+txKind :: TxFor -> (Text, Maybe Text, Maybe RecordEditId)
 txKind = \case
-  TxCommit (RegistrationId rid) -> (TKCommit, Just rid, Nothing)
-  TxAccept (RegistrationId rid) -> (TKAccept, Just rid, Nothing)
-  TxRegister (RegistrationId rid) -> (TKRegister, Just rid, Nothing)
-  TxEdit editId -> (TKEdit, Nothing, Just editId)
+  TxRegistration step (RegistrationId rid) -> (textEncode step, Just rid, Nothing)
+  TxEdit editId -> (editKind, Nothing, Just editId)
 
 -- | Saved once signed and before it is sent, so a restart can rebroadcast it.
 insertTransaction :: DB.Connection -> TxFor -> NewTransaction -> UTCTime -> IO Int64
@@ -1593,16 +1590,14 @@ transactionColumns =
     FROM @name_transactions
   |]
 
-type TransactionRow = (Int64, TxKind, Maybe Text, Maybe Int64, Binary ByteString, TxHash, Int64, UTCTime, Maybe Int64, TxStatus)
+type TransactionRow = (Int64, Text, Maybe Text, Maybe Int64, Binary ByteString, TxHash, Int64, UTCTime, Maybe Int64, TxStatus)
 
 toTransaction :: TransactionRow -> Either Text NameTransaction
 toTransaction (ntId, kind, rid_, editId_, Binary ntRaw, ntHash, nonce, ntSentAt, block, ntStatus) = do
-  ntFor <- case (kind, rid_, editId_) of
-    (TKCommit, Just rid, Nothing) -> Right $ TxCommit $ RegistrationId rid
-    (TKAccept, Just rid, Nothing) -> Right $ TxAccept $ RegistrationId rid
-    (TKRegister, Just rid, Nothing) -> Right $ TxRegister $ RegistrationId rid
-    (TKEdit, Nothing, Just editId) -> Right $ TxEdit editId
-    _ -> Left $ "name_transactions.kind: " <> textEncode kind
+  ntFor <- case (rid_, editId_) of
+    (Just rid, Nothing) | Just step <- textDecode kind -> Right $ TxRegistration step $ RegistrationId rid
+    (Nothing, Just editId) | kind == editKind -> Right $ TxEdit editId
+    _ -> Left $ "name_transactions.kind: " <> kind
   pure NameTransaction {ntId, ntFor, ntRaw, ntHash, ntNonce = word64 nonce, ntSentAt, ntMinedBlock = word64 <$> block, ntStatus}
 
 -- | Those without a receipt, in nonce order, for the sender to resume.

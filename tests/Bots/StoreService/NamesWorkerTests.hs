@@ -498,7 +498,7 @@ testFeeAboveCap = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
 sentCommits :: Ctx -> NameRegistration -> TxStatus -> [Word8] -> IO ()
 sentCommits Ctx {cStore} NameRegistration {nrId} status nonces = withTransaction cStore $ \db -> forM_ nonces $ \n -> do
   let h = TxHash $ digestFixture n
-  void $ insertTransaction db (TxCommit nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
+  void $ insertTransaction db (TxRegistration RTCommit nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
   recordTransactionOutcome db h TSPending status (Just 120) `shouldReturn` True
 
 testMinedCommitsUncounted :: IO ()
@@ -981,7 +981,7 @@ testRestart = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}, wSender} -> do
   answerExpiry ctx "alicebakery" expiry
   answerCommitment w r 0
   -- the commit saved and sent, the service stopped before recording committing
-  Right p <- submitTransaction wSender (TxCommit $ nrId r) fakeController (commitCalldata $ nrCommitment r)
+  Right p <- submitTransaction wSender (TxRegistration RTCommit $ nrId r) fakeController (commitCalldata $ nrCommitment r)
   w1 <- started ctx
   steps w1 r >>= awaiting >>= (`shouldBe` ptHash p) . ptHash
   x <- stored ctx r
@@ -1012,7 +1012,7 @@ testRestartRegisterSaved = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender}
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   rv <- maybe (fail "no reveal") pure $ nrReveal r
   -- the register saved and sent, the service stopped before recording registering
-  Right p <- submitTransaction wSender (TxRegister $ nrId r) fakeSponsor (registerWithCreditCalldata $ intentOf (oeConfig cOrders) r rv)
+  Right p <- submitTransaction wSender (TxRegistration RTRegister $ nrId r) fakeSponsor (registerWithCreditCalldata $ intentOf (oeConfig cOrders) r rv)
   w1 <- started ctx
   steps w1 r >>= awaiting >>= (`shouldBe` ptHash p) . ptHash
   x <- stored ctx r

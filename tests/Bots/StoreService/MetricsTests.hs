@@ -239,7 +239,7 @@ testNamesCounts = withServiceStore $ \st -> do
   placedAs "open" "h" 8 (Just BalanceUse {buSource = RegistrationId "src", buUsed = 6000})
   withTransaction st $ \db -> do
     forM_ [(40, 0, 6), (41, 1, 7), (42, 1, 8), (43, 2, 9)] $ \(n, nonce, minute) ->
-      insertTransaction db (TxCommit $ RegistrationId "q") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ digestFixture n, ntxNonce = nonce} (at minute)
+      insertTransaction db (TxRegistration RTCommit $ RegistrationId "q") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ digestFixture n, ntxNonce = nonce} (at minute)
     recordTransactionOutcome db (TxHash $ digestFixture 40) TSPending TSMined (Just 120) `shouldReturn` True
     Just mined <- insertRecordEdit db (newEdit ownerA 1 setChannel) (at 8)
     insertRecordEdit db (newEdit ownerB 3 setChannel) (at 9) >>= (`shouldSatisfy` isJust)

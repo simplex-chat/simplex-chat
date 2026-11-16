@@ -80,7 +80,7 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (TxHash)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
 
@@ -379,7 +379,7 @@ confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeS
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
 checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
   txs <- withTransaction st (`registrationTransactions` nrId)
-  let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
+  let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegistration RTRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
   runExceptT (landed mined) >>= \case
     Left e -> LUnread <$ logWarn ("names: a register check's chain read failed: " <> tshow e)
     Right Nothing -> pure LNotLanded
