@@ -102,7 +102,7 @@ Output fields by case:
 | Case | Fields | Code |
 |---|---|---|
 | `known` | `status` and the chat fields of the known chat. The plugin's rules for a known chat are in [4.1](#41-tools-in-the-plugin) | [`AgentTools.connect`, `ownChat`](../src/tools.ts) |
-| `done`, chat unknown | `action`, `status`, `type`, `connected: false`, plan fields `name`, `peer_type`, `description`, `welcome`, `commands`, `known_as` when present | [`AgentTools.connectResult`, `planFields`](../src/tools.ts) |
+| `done`, chat unknown | `action`, `status`, `type`, `connected: false`, plan fields `name`, `peer_type`, `description`, `welcome`, `commands`, `known_as`, `moved_from` when present | [`AgentTools.connectResult`, `planFields`](../src/tools.ts) |
 | `done`, chat known | `action`, `status`, chat fields, `messages` | [`AgentTools.connectedChat`](../src/tools.ts) |
 | `failed` | `action`, `status`, `error` | [`AgentTools.actionResult`](../src/tools.ts) |
 | `rejected`, `expired` | `action`, `status` | [`AgentTools.actionResult`](../src/tools.ts) |
@@ -123,6 +123,8 @@ Output fields by case:
 | `role` | | the agent's member role |
 | `connected` | active connection status `ready` | membership status `connected` or `complete` |
 
+`moved_from`: the chat reference of the agent's chat that the SimpleX name of `target` led to before it moved (`nameChange` `moved` of the plan), in each case with a plan ([`classifyPlan`, `planFields`](../src/tools.ts)).
+
 `messages`: message items among the last 50 items of the chat when the result is built, replaced by their collected copies, followed by the items collected since the connection; live items are left out; new items are marked read ([`AgentTools.connectedChat`](../src/tools.ts)).
 
 Tool errors:
@@ -131,6 +133,7 @@ Tool errors:
 |---|---|---|
 | `Not a SimpleX link or name: TARGET` | whitespace in `target`, or `invalidConnReq` from `apiConnectPlan` | [`AgentTools.plan`](../src/tools.ts) |
 | an app error text, for example `Name not found: This SimpleX name is not registered. Please check the name.`, or `SimpleX error: CHAIN: DETAILS` | other errors of `apiConnectPlan`, or a plan of type `error` | [`AgentTools.plan`, `classifyPlan`](../src/tools.ts), [`chatErrorText`](../src/log.ts) |
+| the app text of a name warning, for example `Name expired: NAME expired on DATE.` | a plan whose SimpleX name lapsed (`nameChange` `lapsed`): expired, available, reserved or not registered | [`classifyPlan`](../src/tools.ts), [`nameWarningText`](../src/log.ts) |
 | `TARGET can't be joined now: PLAN.` | `invitationLink` other than `ok` and `known`<br>`contactAddress` other than `ok`, `known`, `contactViaAddress` and `connectingConfirmReconnect`<br>`groupLink` other than `ok`, `known` and `connectingConfirmReconnect` | `notJoinable` in [`classifyPlan`](../src/tools.ts) |
 | `message: TARGET is not a contact or business address with short link data, or its contact exists without a connection.` | `message` given and the plan has `takesMessage: false` | [`AgentTools.connect`](../src/tools.ts) |
 | refusals | see [1.9](#19-action-refusals) | |

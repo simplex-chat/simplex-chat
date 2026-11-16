@@ -9,7 +9,7 @@ import {core} from "simplex-chat"
 import {Action, Actions, ConnectAction, DownloadAction, Mode, SendAction, Standing} from "../../src/actions"
 import {cardText} from "../../src/control"
 import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, quoteLine, replyText, toMessage, toReplyTo} from "../../src/messages"
-import {AgentTools, classifyPlan} from "../../src/tools"
+import {AgentTools, chatSubject, classifyPlan} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, event, fakeHooks, fileItem, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
 beforeEach(() => {
@@ -947,6 +947,29 @@ describe("connect", () => {
     }
     const {tools} = connectTools(chat)
     expect(textOf(await tools.call("connect", {target: "@nobody.simplex"}, signal().call))).toBe("Name not found: This SimpleX name is not registered. Please check the name.")
+  })
+
+  it("refuses a known chat's lapsed SimpleX name as the apps word it", async () => {
+    const chat = new FakeChat()
+    const nameDomain = {nameTLD: "simplex", domain: "ridgeline", subDomain: []}
+    const nameChange = {type: "lapsed", nameDomain, nameWarning: {type: "expired", expiredAt: "2026-01-01T12:00:00Z"}}
+    chat.responses.set("/_connect plan 1 @ridgeline.simplex", plan({type: "contactAddress", contactAddressPlan: {type: "known", contact: contact(7, "Ridgeline")}, nameChange}))
+    const {tools} = connectTools(chat)
+    expect(textOf(await tools.call("connect", {target: "@ridgeline.simplex"}, signal().call))).toBe("Name expired: ridgeline.simplex expired on 2026-01-01.")
+  })
+
+  it("reports the chat that a SimpleX name led to before it moved", () => {
+    const connectionPlan = {type: "contactAddress", contactAddressPlan: {type: "ok"}, nameChange: {type: "moved", knownChat: direct(contact(7, "Ridgeline"))}} as T.ConnectionPlan
+    const moved = classifyPlan([connectionPlan, {connFullLink: link}], {target: "@ridgeline.simplex"})
+    expect(moved).toMatchObject({join: {simplexName: "@ridgeline.simplex", movedFrom: "@7"}})
+  })
+
+  it("names a chat by its SimpleX name only while the name is verified", () => {
+    const named = (contactDomainVerified: T.DomainVerification): string | undefined =>
+      chatSubject(direct(contact(7, "Ridgeline", {contactDomain: {domain: "ridgeline.simplex"}, contactDomainVerified}))).simplexName
+    expect(named(T.DomainVerification.Verified)).toBe("@ridgeline.simplex")
+    expect(named(T.DomainVerification.Failed)).toBeUndefined()
+    expect(named(T.DomainVerification.Moved)).toBeUndefined()
   })
 
   it("connects a known prepared contact, and deletes it when the connection fails", async () => {

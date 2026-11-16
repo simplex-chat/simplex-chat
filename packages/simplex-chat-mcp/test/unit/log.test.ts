@@ -24,6 +24,29 @@ describe("SimpleX errors", () => {
       "Unconfirmed name: The SimpleX name ridgeline.simplex is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.",
     ],
     [
+      "expired name",
+      {
+        type: "error",
+        errorType: {type: "simplexDomainNotReady", simplexDomain: domain, simplexDomainError: {type: "nameWarning", nameWarning: {type: "expired", expiredAt: "2026-01-01T12:00:00Z", graceUntil: "2099-01-01T12:00:00Z"}}},
+      },
+      "Name expired: ridgeline.simplex expired on 2026-01-01. Its owner can renew it until 2099-01-01.",
+    ],
+    [
+      "available name",
+      {type: "error", errorType: {type: "simplexDomainNotReady", simplexDomain: domain, simplexDomainError: {type: "nameWarning", nameWarning: {type: "available", price: {amount: 2050, years: 2}}}}},
+      "Name not registered: ridgeline.simplex is available for registration for $20.50 for 2 years.",
+    ],
+    [
+      "name reserved for community",
+      {type: "error", errorType: {type: "simplexDomainNotReady", simplexDomain: domain, simplexDomainError: {type: "nameWarning", nameWarning: {type: "reservedForCommunity"}}}},
+      "Name not registered: ridgeline.simplex is reserved for community. Please contact SimpleX Chat if you are interested in using it.",
+    ],
+    [
+      "name not registered",
+      {type: "error", errorType: {type: "simplexDomainNotReady", simplexDomain: domain, simplexDomainError: {type: "nameWarning", nameWarning: {type: "notRegistered"}}}},
+      "Name not registered: This SimpleX name is not registered. Please check the name.",
+    ],
+    [
       "file servers not approved",
       {type: "error", errorType: {type: "fileNotApproved", fileId: 7, unknownServers: ["xftp://k@xftp2.example.com", "xftp://k@xftp1.example.com:443", "xftp://j@xftp2.example.com"]}},
       "Unknown servers! Without Tor or VPN, your IP address will be visible to these XFTP relays: xftp1.example.com, xftp2.example.com.",

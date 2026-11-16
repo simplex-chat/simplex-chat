@@ -143,7 +143,7 @@ Tool definitions, call handlers, connect plans, perform steps, files.
 | Symbol | Contents |
 |---|---|
 | <a id="tools-inputs"></a>`ConnectInput`, `SendInput`, `ReceiveInput`, `LeaveInput`, `DownloadInput` | tool inputs |
-| <a id="tools-plansummary"></a>`PlanSummary` | card kind, chat type, name, SimpleX name, peer type, description, welcome, commands, `takesMessage` |
+| <a id="tools-plansummary"></a>`PlanSummary` | card kind, chat type, name, SimpleX name, the chat the name moved from, peer type, description, welcome, commands, `takesMessage` |
 | <a id="tools-chatfields"></a>`ChatFields` | chat fields of `connect` and `list` results |
 | <a id="tools-agent"></a>`Agent` | `ChatApi`, user, `Actions`, `ChatItemsWatch`, control chat reference, standing approver lookup, refused file post, data folder. The plugin adds the data root, the owning session ID, the group of `reply`, the mode setter and the record of a pending connection. |
 | <a id="tools-joinmethod"></a>`JoinMethod` | `prepared`, `prepareChannel`, `viaAddress`, `prepareContact`, `connect` |
