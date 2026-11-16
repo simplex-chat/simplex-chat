@@ -324,6 +324,8 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
     Just p -> registerSent w now r p
     Nothing -> judge w now r Nothing
 
+data Availability = AvailableAtLatest | TakenAtDepth | TakenOnlyAboveDepth
+
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
 -- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again, the name
 -- policy read again on TermsNotAccepted; committing again with its reveal on CommitmentTooOld, which the sponsor reverts only after the
@@ -337,30 +339,39 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
       LChanged -> pure (Nothing, Again)
       LUnread -> pure (Nothing, Retry (nrVersion r) "the register check's chain read failed")
       LNotLanded -> case reason of
-        Just (RRNamed e) | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch] -> do
-          when (e == RNTermsNotAccepted) $ forgetNamePolicy oeContracts
-          store w now r {nrReveal = Nothing}
+        Just (RRNamed RNInvalidNonce) -> clearReveal
+        Just (RRNamed RNTermsMismatch) -> clearReveal
+        Just (RRNamed RNTermsNotAccepted) -> forgetNamePolicy oeContracts >> clearReveal
         Just (RRNamed RNCommitmentTooNew) -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
         Just (RRNamed RNCommitmentTooOld)
           | unlapsed now r -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
           | otherwise -> store w now r {nrPhase = OCommitting}
         Just (RRNamed RNInsufficientAllowance) -> pure (Nothing, Stalled (nrVersion r) "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance")
-        _ -> case nrReveal of
-          Just NameReveal {rvLabel} ->
-            availability rvLabel >>= \case
-              Left e -> pure (Nothing, failure r e)
-              Right (False, False) -> taken w now r
-              Right (False, True) -> pure (Nothing, Retry (nrVersion r) "the name reads taken only above the confirmation depth, where a reorg can undo it")
-              -- the dry run runs on the pending block, where a competitor's register that may never mine can hold the name
-              Right (True, _)
-                | reason `elem` map (Just . RRNamed) [RNNameNotAvailable, RNNameReserved] -> pure (Nothing, Retry (nrVersion r) "the dry run reverted the name as gone, but it reads available")
-                | otherwise -> failed w now r
-          Nothing -> failed w now r
+        Just (RRNamed RNNameNotAvailable) -> notRegistered True
+        Just (RRNamed RNNameReserved) -> notRegistered True
+        _ -> notRegistered False
   where
+    clearReveal = store w now r {nrReveal = Nothing}
+    notRegistered gone = case nrReveal of
+      Just NameReveal {rvLabel} ->
+        availability rvLabel >>= \case
+          Left e -> pure (Nothing, failure r e)
+          Right TakenAtDepth -> taken w now r
+          Right TakenOnlyAboveDepth -> pure (Nothing, Retry (nrVersion r) "the name reads taken only above the confirmation depth, where a reorg can undo it")
+          -- the dry run runs on the pending block, where a competitor's register that may never mine can hold the name
+          Right AvailableAtLatest
+            | gone -> pure (Nothing, Retry (nrVersion r) "the dry run reverted the name as gone, but it reads available")
+            | otherwise -> failed w now r
+      Nothing -> failed w now r
     -- at the latest block, and at the confirmation depth while the latest reads it taken
     availability label = runExceptT $ do
       latest <- ExceptT $ controllerAvailable oeContracts Latest label
-      if latest then pure (True, True) else (False,) <$> (ExceptT (confirmedTag oeContracts) >>= \tag -> ExceptT (controllerAvailable oeContracts tag label))
+      if latest
+        then pure AvailableAtLatest
+        else do
+          tag <- ExceptT $ confirmedTag oeContracts
+          atDepth <- ExceptT $ controllerAvailable oeContracts tag label
+          pure $ if atDepth then TakenOnlyAboveDepth else TakenAtDepth
 
 -- | A paid order keeps its whole price as a balance of its own, credited in the taken write's transaction, registration before balance,
 -- in the balance's turn after the name's; a code order's code is released.
