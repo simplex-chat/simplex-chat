@@ -6,6 +6,7 @@
 module StoreService.Providers.Stripe
   ( stripeProvider,
     signalOf,
+    IntentStatus (..),
     IntentRead (..),
   )
 where
@@ -284,52 +285,65 @@ readInvoice env pid = do
   now <- getCurrentTime
   got <- stripeApi env what methodGet ["v1", "payment_intents", pid] [("expand[]", Just "latest_charge")] Nothing
   case got >>= decodeStripe what of
-    Right intent@IntentRead {irStatus = "requires_payment_method", irChargeCreated = Just _} ->
+    Right intent@IntentRead {irStatus = PIRequiresPaymentMethod, irChargeCreated = Just _} ->
       declines >>= \case
         Right n | n >= maxDeclines -> do
           logWarn $ "stripe: intent " <> pid <> " is cancelled after " <> tshow n <> " declined card payments in a row"
-          (>>= const (signalOf now intent {irStatus = "canceled"})) <$> cancelInvoice env pid
+          (Just canceledSignal <$) <$> cancelInvoice env pid
         Right _ -> pure $ signalOf now intent
         Left e -> pure $ Left e
     intent -> pure $ intent >>= signalOf now
   where
     what = "read intent " <> pid
     declines =
-      fmap (length . filter (== Just "failed") . map chargeStatus . clData) . (>>= decodeStripe "list charges")
+      fmap (length . filter (== CHFailed) . clStatuses) . (>>= decodeStripe "list charges")
         <$> stripeApi env "list charges" methodGet ["v1", "charges"] [("payment_intent", Just $ TE.encodeUtf8 pid), ("limit", Just $ B8.pack $ show maxDeclines)] Nothing
-    chargeStatus = \case
-      J.Object c -> case KM.lookup "status" c of
-        Just (J.String s) -> Just s
-        _ -> Nothing
-      _ -> Nothing
 
-newtype ChargeList = ChargeList {clData :: [J.Value]}
+data ChargeStatus = CHSucceeded | CHPending | CHFailed | CHUnknown Text
+  deriving (Eq)
+
+instance J.FromJSON ChargeStatus where
+  parseJSON = J.withText "charge status" $ \case
+    "succeeded" -> pure CHSucceeded
+    "pending" -> pure CHPending
+    "failed" -> pure CHFailed
+    s -> pure $ CHUnknown s
+
+newtype ChargeList = ChargeList {clStatuses :: [ChargeStatus]}
 
 instance J.FromJSON ChargeList where
-  parseJSON = J.withObject "charge list" $ \o -> ChargeList <$> o J..: "data"
+  parseJSON = J.withObject "charge list" $ \o -> ChargeList <$> (mapM (J.withObject "charge" (J..: "status")) =<< o J..: "data")
 
 signalOf :: UTCTime -> IntentRead -> Either ProviderError (Maybe PaymentSignal)
 signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
   case irStatus of
-    "succeeded" -> Right (Just (SigSettled (received irAmountReceived irAmountReceived) settledAt))
-    "canceled" -> Right (Just (SigClosed (received 0 0) PaidInPart))
-    s | s `elem` openStatuses -> Right Nothing
-      | otherwise -> Left (ProviderError ("stripe payment_intent: unknown status " <> s))
+    PISucceeded -> Right (Just (SigSettled (intentReceived irAmountReceived irAmountReceived) settledAt))
+    PICanceled -> Right (Just canceledSignal)
+    PIRequiresPaymentMethod -> Right Nothing
+    PIRequiresConfirmation -> Right Nothing
+    PIRequiresAction -> Right Nothing
+    PIProcessing -> Right Nothing
+    PIRequiresCapture -> Right Nothing
+    PIUnknown s -> Left (ProviderError ("stripe payment_intent: unknown status " <> s))
   where
-    openStatuses = ["requires_payment_method", "requires_confirmation", "requires_action", "processing", "requires_capture"]
-    -- only a succeeded intent's money is confirmed
-    received amt confirmed =
-      Received
-        { rcvAmount = amountFrom amt,
-          rcvCrypto = Nothing,
-          rcvDue = Nothing,
-          rcvUnits = Nothing,
-          rcvInvoicedUnits = Nothing,
-          rcvRate = Nothing,
-          rcvConfirmed = Confirmed {cfCents = amountFrom confirmed, cfUnits = Nothing},
-          rcvUncreditable = Nothing
-        }
     settledAt = maybe now posixSecondsToUTCTime irChargeCreated
+
+canceledSignal :: PaymentSignal
+canceledSignal = SigClosed (intentReceived 0 0) PaidInPart
+
+-- | Only a succeeded intent's money is confirmed.
+intentReceived :: Int64 -> Int64 -> Received
+intentReceived amt confirmed =
+  Received
+    { rcvAmount = amountFrom amt,
+      rcvCrypto = Nothing,
+      rcvDue = Nothing,
+      rcvUnits = Nothing,
+      rcvInvoicedUnits = Nothing,
+      rcvRate = Nothing,
+      rcvConfirmed = Confirmed {cfCents = amountFrom confirmed, cfUnits = Nothing},
+      rcvUncreditable = Nothing
+    }
 
 -- Clamp stops a wildly wrong figure wrapping Word32 and coming out small.
 amountFrom :: Int64 -> CurrencyAmount
@@ -337,9 +351,30 @@ amountFrom n = CurrencyAmount (fromInteger (max 0 (min largestAmount (toInteger 
   where
     largestAmount = toInteger (maxBound :: Word32)
 
+data IntentStatus
+  = PIRequiresPaymentMethod
+  | PIRequiresConfirmation
+  | PIRequiresAction
+  | PIProcessing
+  | PIRequiresCapture
+  | PICanceled
+  | PISucceeded
+  | PIUnknown Text
+
+instance J.FromJSON IntentStatus where
+  parseJSON = J.withText "payment_intent status" $ \case
+    "requires_payment_method" -> pure PIRequiresPaymentMethod
+    "requires_confirmation" -> pure PIRequiresConfirmation
+    "requires_action" -> pure PIRequiresAction
+    "processing" -> pure PIProcessing
+    "requires_capture" -> pure PIRequiresCapture
+    "canceled" -> pure PICanceled
+    "succeeded" -> pure PISucceeded
+    s -> pure $ PIUnknown s
+
 data IntentRead = IntentRead
   { irId :: Text,
-    irStatus :: Text,
+    irStatus :: IntentStatus,
     irAmountReceived :: Int64,
     irChargeCreated :: Maybe POSIXTime
   }

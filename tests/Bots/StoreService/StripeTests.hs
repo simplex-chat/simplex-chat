@@ -19,7 +19,7 @@ import StoreService.Providers
     settleWindow,
     WebhookError (..),
   )
-import StoreService.Providers.Stripe (IntentRead (..), signalOf, stripeProvider)
+import StoreService.Providers.Stripe (IntentRead (..), IntentStatus (..), signalOf, stripeProvider)
 import Bots.StoreService.FakeStripe
 import Control.Monad (join)
 import Data.Aeson ((.=))
@@ -323,15 +323,15 @@ testFakeReadUnknownStatus = withProvider $ \fake p -> do
 testSettledNoChargeReadTime :: IO ()
 testSettledNoChargeReadTime = do
   now <- getCurrentTime
-  let ir = IntentRead {irId = "pi_test_x", irStatus = "succeeded", irAmountReceived = 5400, irChargeCreated = Nothing}
+  let ir = IntentRead {irId = "pi_test_x", irStatus = PISucceeded, irAmountReceived = 5400, irChargeCreated = Nothing}
   signalOf now ir `shouldBe` Right (Just (SigSettled fiftyFourDollarsReceived now))
 
 testConfirmedOnlySucceeded :: IO ()
 testConfirmedOnlySucceeded = do
   now <- getCurrentTime
   let read' status = signalOf now IntentRead {irId = "pi_test_x", irStatus = status, irAmountReceived = 5400, irChargeCreated = Nothing}
-  read' "succeeded" `shouldBe` Right (Just (SigSettled (cardReceived 5400 5400) now))
-  read' "canceled" `shouldBe` Right (Just (SigClosed (cardReceived 0 0) PaidInPart))
+  read' PISucceeded `shouldBe` Right (Just (SigSettled (cardReceived 5400 5400) now))
+  read' PICanceled `shouldBe` Right (Just (SigClosed (cardReceived 0 0) PaidInPart))
   withProvider $ \_ p -> isNothing (pCurrentRate p) `shouldBe` True
 
 -- | A status=open query returns only open intents, which carry no signal, so the poll lists by
