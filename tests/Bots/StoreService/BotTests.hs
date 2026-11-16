@@ -500,7 +500,7 @@ testRedeemBadgeCode ps =
 testSetStoreService :: HasCallStack => TestParams -> IO ()
 testSetStoreService ps =
   withStoreService ps $ \clientCfg bsLink cc -> do
-    withNewTestChatCfg ps clientCfg {storeServiceAddress = storeServiceAddress testCfg, storeServiceDev = True} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg ps clientCfg {storeServiceAddress = storeServiceAddress testCfg, storeServiceDev = True, badgeDevRequests = True} "alice" aliceProfile $ \alice -> do
       alice ##> ("/_store service " <> bsLink)
       alice <## "ok"
       code <- issueCode cc BTSupporter 1
@@ -508,6 +508,9 @@ testSetStoreService ps =
       alice <## "badge redeemed"
       alice <## "supporter badge - active"
       alice <##. "expires "
+      alice ##> "/_badge request 1"
+      alice <##. "1: supporter"
+      issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
     withNewTestChatCfg ps clientCfg {storeServiceAddress = Nothing} "bob" bobProfile $ \bob -> do
       bob ##> ("/_store service " <> bsLink)
       bob <## "bad chat command: /_store service is only available in builds for a dev store service"
