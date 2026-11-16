@@ -182,9 +182,13 @@ internal fun addPinchListener(component: JComponent) {
     val gestureListener = Class.forName("com.apple.eawt.event.GestureListener")
     val magnificationListener = Class.forName("com.apple.eawt.event.MagnificationListener")
     val magnification = Class.forName("com.apple.eawt.event.MagnificationEvent").getMethod("getMagnification")
-    val listener = Proxy.newProxyInstance(magnificationListener.classLoader, arrayOf(magnificationListener)) { _, method, args ->
-      if (method.name == "magnify") pinchZooms.tryEmit(1 + (magnification.invoke(args[0]) as Double).toFloat())
-      null
+    val listener = Proxy.newProxyInstance(magnificationListener.classLoader, arrayOf(magnificationListener)) { proxy, method, args ->
+      when (method.name) {
+        "magnify" -> pinchZooms.tryEmit(1 + (magnification.invoke(args[0]) as Double).toFloat())
+        "equals" -> proxy === args[0]
+        "hashCode" -> System.identityHashCode(proxy)
+        else -> magnificationListener.name
+      }
     }
     Class.forName("com.apple.eawt.event.GestureUtilities")
       .getMethod("addGestureListenerTo", JComponent::class.java, gestureListener)
