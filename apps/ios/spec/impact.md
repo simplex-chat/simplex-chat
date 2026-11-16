@@ -64,6 +64,7 @@
 | Shared/Views/Chat/Group/GroupLinkView.swift | PC15 | Low | Group link creation/sharing |
 | Shared/Views/Chat/Group/GroupMemberInfoView.swift | PC3, PC14, PC16, PC30, PC31 | Medium | Member details and role management; rejected-by-operator status row for relay members |
 | Shared/Views/NewChat/NewChatView.swift | PC12, PC31 | High | New connection creation — onramp for all contacts and channels |
+| Shared/Views/NewChat/NameWarningAlert.swift | PC12 | Medium | Content of the alerts about expired, available, reserved and unregistered names |
 | Shared/Views/NewChat/QRCode.swift | PC12 | Low | QR code display/scanning utility |
 | Shared/Views/Call/ActiveCallView.swift | PC17 | Medium | Call UI rendering |
 | Shared/Views/Call/CallController.swift | PC17 | High | CallKit integration — call lifecycle |
