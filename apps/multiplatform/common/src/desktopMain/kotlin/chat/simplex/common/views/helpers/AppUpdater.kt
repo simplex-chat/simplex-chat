@@ -264,13 +264,13 @@ private fun installedSemVer(): SemVer? {
   return currentSemVer
 }
 
-fun chooseStableRelease(installed: SemVer, releases: List<GitHubRelease>): GitHubRelease? =
+internal fun chooseStableRelease(installed: SemVer, releases: List<GitHubRelease>): GitHubRelease? =
   releases.firstOrNull { r -> !r.isConsideredBeta && installed < r.semVer }
 
-fun chooseBetaRelease(installed: SemVer, releases: List<GitHubRelease>): GitHubRelease? =
+internal fun chooseBetaRelease(installed: SemVer, releases: List<GitHubRelease>): GitHubRelease? =
   releases.firstOrNull { r -> installed < r.semVer }
 
-fun chooseInternalRelease(installed: String, releases: List<GitHubRelease>): GitHubRelease? =
+internal fun chooseInternalRelease(installed: String, releases: List<GitHubRelease>): GitHubRelease? =
   releases.maxByOrNull { r -> r.publishedAt }?.takeIf { r -> r.tagName != installed }
 
 private fun getGitHubReleases(repo: String): List<GitHubRelease> {

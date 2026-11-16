@@ -446,7 +446,10 @@ check_internal_builds() {
   "$ui" wait "Check for updates" 10
   "$ui" shot update-channel-disabled
   check "Disabled is shown as the update channel after internal builds are not allowed" in_line_with Disabled "Check for updates"
-  check "Internal is not shown after internal builds are not allowed" not_on_screen Internal exact
+  open_update_channels
+  "$ui" shot update-channels-reset
+  check "the update channels lack Internal after internal builds are not allowed" not_on_screen Internal exact
+  "$ui" click-text "App version" 10
   back_to_chat_list || fail "no chat list after the update channels"
 }
 
