@@ -8,6 +8,7 @@ Base: `ep/name-alert-fixtures-2`, on master `88767bbc3` (#8220).
 
 | Finding | Change |
 |---|---|
+| A5-2 | mcp: verified names only, name warning texts, a lapsed name refused, a moved name reported |
 | A5-4 | `ToField DomainVerification`; SQL compares with parameters; `NameVerified` |
 | A5-5 | name warnings as values in the connection plan |
 | A5-7 | `NCLapsed` includes the name's domain |
@@ -22,7 +23,7 @@ Base: `ep/name-alert-fixtures-2`, on master `88767bbc3` (#8220).
 | 326cff68c | cherry-picked: a name warning matched in the same case |
 
 Not changed: A5-1, A5-3, A5-6, A5-20, A5-21, A5-23, A5-25 (master has `BadgeServiceErrorCode` in all languages).
-Not in this pull request: A5-2, A5-13.
+Not in this pull request: A5-13.
 
 ## Name lookup
 
@@ -182,6 +183,19 @@ sequenceDiagram
 - `requestBadgeIssue`: `requireBadgeService`.
 - docs/guide/register-simplex-name.md: the moved indicator, the name warning alerts.
 
+## MCP server
+
+packages/simplex-chat-mcp, built and tested with the repository's types (scope `mcp` of scripts/ci):
+
+| Function | Change |
+|---|---|
+| `simplexNameOf` | a name for `DomainVerification.Verified` only |
+| `chatErrorTypeText` | `nameWarning`: `nameWarningText` |
+| `nameWarningText` | the apps' words of the alerts for a chat not known |
+| `classifyPlan` | `lapsed`: a tool error with `nameWarningText` |
+| `classifyPlan` | `moved`: `movedFrom`, the reference of the known chat |
+| `planFields` | `moved_from` in the result of `connect` |
+
 ## Tests
 
 - `testNameRecordOrWarning`: the block time before and after `expires`.
@@ -189,3 +203,4 @@ sequenceDiagram
 - `testSetNameExpired`: an expired name not set.
 - Fixtures of a lapsed name: `nameDomain` in `nameChange`.
 - Kotlin and iOS alert tests: `planNameWarningAlert(plan)`.
+- mcp: name warning texts, a lapsed name refused, `movedFrom`, `simplexName` of a verified chat only.
