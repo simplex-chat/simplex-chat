@@ -23,6 +23,7 @@ import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.chat.item.ImageFullScreenView
 import chat.simplex.common.views.chat.item.ImageGalleryProvider
+import chat.simplex.common.views.chat.item.pinchZooms
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.swing.Swing
@@ -31,6 +32,7 @@ import org.jetbrains.skia.Image
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
+import kotlin.math.pow
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -128,6 +130,13 @@ class ImageFullScreenZoomTest {
     assertFalse(closed())
     click(300f)
     assertTrue(closed())
+  }
+
+  @Test
+  fun testPinchZoomsAtThePointerAsTheWheel() = fullScreen { _ ->
+    sendPointerEvent(PointerEventType.Move, Offset(200f, 300f))
+    pinchZooms.tryEmit(1.2f.pow(3))
+    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(530), shownAt(560)))
   }
 
   @Test

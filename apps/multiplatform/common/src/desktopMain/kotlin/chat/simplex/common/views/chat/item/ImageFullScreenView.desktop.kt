@@ -21,6 +21,7 @@ import chat.simplex.common.views.helpers.getBitmapFromByteArray
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.flow.MutableSharedFlow
 import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface
 import kotlin.math.max
 import kotlin.math.min
@@ -29,6 +30,8 @@ import kotlin.math.pow
 private const val WHEEL_ZOOM_STEP = 1.2f
 private const val MAC_SCROLL_UNITS_PER_NOTCH = 3f
 private val DRAG_THRESHOLD = 4.dp
+
+internal val pinchZooms = MutableSharedFlow<Float>(extraBufferCapacity = Int.MAX_VALUE)
 
 @Composable
 actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap) {
