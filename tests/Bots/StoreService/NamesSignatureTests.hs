@@ -12,13 +12,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
+import Simplex.Chat.Names.Abi
+import Simplex.Chat.Names.Registration
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (SimplexTLD (..), labelHash)
-import StoreService.Names.Abi
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration
 import StoreService.Names.Signatures
 import Test.Hspec
 

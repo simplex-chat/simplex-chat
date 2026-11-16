@@ -4,7 +4,6 @@
 module Bots.StoreService.NameRegistrationTests (badgeNameRegistrationTests) where
 
 import StoreService.Names.Chain
-import StoreService.Names.Registration
 import StoreService.Names.Revert (RevertName (..))
 import Bots.StoreService.FakeEthNode hiding (address)
 import Bots.StoreService.WebUIMock
@@ -16,6 +15,7 @@ import qualified Data.ByteString as B
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word (Word64)
+import Simplex.Chat.Names.Registration
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
 import Simplex.Messaging.Encoding.String (strDecode)

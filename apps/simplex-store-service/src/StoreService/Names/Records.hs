@@ -37,6 +37,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Word (Word64)
+import Simplex.Chat.Names.Registration (Node, channelRecordKey, clearRecordsDigest, clearRecordsWithSigCalldata, contactRecordKey, labelNode, multicallCalldata, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (sha256Hash)
@@ -47,7 +48,6 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (Contracts, NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
-import StoreService.Names.Registration (Node, channelRecordKey, clearRecordsDigest, clearRecordsWithSigCalldata, contactRecordKey, labelNode, multicallCalldata, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Revert (RevertName (..), revertText)
 import StoreService.Names.Sender (SendError (..), Sender, submitTransaction)
 import StoreService.Names.Store

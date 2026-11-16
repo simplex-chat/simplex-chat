@@ -49,6 +49,8 @@ import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import Network.HTTP.Types (hContentType, hLocation, status200, status302, status404, status429, status503)
+import Simplex.Chat.Names.Abi
+import Simplex.Chat.Names.Registration (labelNode, namehash, nodeBytes)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -56,10 +58,8 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Contracts
-import StoreService.Names.Registration (labelNode, namehash, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import Test.Hspec

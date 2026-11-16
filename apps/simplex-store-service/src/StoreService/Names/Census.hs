@@ -18,10 +18,10 @@ import Data.List (unfoldr)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word (Word64)
+import Simplex.Chat.Names.Abi
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError, latestBlock)
 import StoreService.Names.Contracts (Contracts, callAt)
 

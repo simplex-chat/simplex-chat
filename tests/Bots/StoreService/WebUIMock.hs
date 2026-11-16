@@ -10,12 +10,12 @@ module Bots.StoreService.WebUIMock
   )
 where
 
-import StoreService.Names.Registration (RegisterIntent (..), Registration, registerIntentDigest)
 import Control.Concurrent.STM (TVar)
 import Crypto.Random (ChaChaDRG)
 import Data.Text (Text)
 import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (NameOwnerCode, formatNameOwnerCode, nameOwnerCodeEntropy, parseNameOwnerCode, randomNameOwnerCode)
+import Simplex.Chat.Names.Registration (RegisterIntent (..), Registration, registerIntentDigest)
 import Simplex.Messaging.Crypto.BIP32 (masterKey, xkKey)
 import Simplex.Messaging.Crypto.BIP39 (entropySeed)
 import Simplex.Messaging.Crypto.BIP44 (CoinType (..), bip44Path, mkAccountIndex)

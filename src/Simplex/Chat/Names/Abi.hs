@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module StoreService.Names.Abi
+module Simplex.Chat.Names.Abi
   ( AbiValue (..),
     AbiError (..),
     abiWordSize,

@@ -17,10 +17,10 @@ import Data.Maybe (fromJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Simplex.Chat.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (NamesConfig (..), unknownKeys)
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector)
 import StoreService.Names.Community (agreedTermsHash, communityFor, termsFor)
 import StoreService.Names.Contracts (Terms (..))
 import StoreService.Names.View (addressText)

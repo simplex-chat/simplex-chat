@@ -117,7 +117,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 #### store service on Postgres
 
-- Job: test-store-postgres (ubuntu-22.04 x86_64), on a pull request that changes the store service, its tests, `tests/Test.hs`, `src/Simplex/Chat/PaymentService`, `src/Simplex/Chat/Badges`, `cabal.project`, `simplex-chat.cabal` or build.yml, and on every dispatch. Production runs the store service on Postgres only, and the SQLite jobs do not cover it.
+- Job: test-store-postgres (ubuntu-22.04 x86_64), on a pull request that changes the store service, its tests, `tests/Test.hs`, `src/Simplex/Chat/PaymentService`, `src/Simplex/Chat/Badges`, `src/Simplex/Chat/Names`, `cabal.project`, `simplex-chat.cabal` or build.yml, and on every dispatch. Production runs the store service on Postgres only, and the SQLite jobs do not cover it.
 - CI: the build-linux Docker image, a `postgres:17` container on the host network, `cabal build` with `+client_postgres`, then simplex-chat-test with `--fail-on=empty -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"`.
 - Local, with a Postgres 17 on 127.0.0.1 that trusts the `postgres` user and allows 1500 connections:
   ```sh

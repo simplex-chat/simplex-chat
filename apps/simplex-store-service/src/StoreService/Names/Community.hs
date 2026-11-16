@@ -26,10 +26,10 @@ import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word (Word64)
+import Simplex.Chat.Names.Abi (bytes32FromHex, hex)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (ChainError (..))
 import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, concurrent, namePolicy, policyNonce, termsLinks, termsOf, termsText, together)
 
