@@ -68,7 +68,7 @@ import Simplex.RemoteControl.Types
 import System.FilePath (takeDirectory, takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Concurrent (forkIO)
-import UnliftIO.Directory (canonicalizePath, copyFile, createDirectoryIfMissing, doesDirectoryExist, removeDirectoryRecursive, renameFile)
+import UnliftIO.Directory (canonicalizePath, copyFile, createDirectoryIfMissing, doesDirectoryExist, removeDirectoryRecursive, removeFile, renameFile)
 
 remoteFilesFolder :: String
 remoteFilesFolder = "simplex_v1_files"
@@ -354,7 +354,9 @@ storeRemoteFile rhId encrypted_ localPath = do
     let rhf = hf </> storePath </> remoteFilesFolder
         hPath = rhf </> takeFileName filePath'
     createDirectoryIfMissing True rhf
-    (if encrypt then renameFile else copyFile) filePath hPath
+    if encrypt
+      then renameFile filePath hPath `catchAllErrors` \_ -> copyFile filePath hPath >> removeFile filePath
+      else copyFile filePath hPath
   pure (cf :: CryptoFile) {filePath = filePath'}
   where
     encryptLocalFile :: CM CryptoFile
