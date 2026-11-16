@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -24,6 +25,7 @@ import qualified Data.Text as T
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Chat.Badges.Code (nameLength, nameLengthInt)
+import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
@@ -31,9 +33,9 @@ import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (bytes32FromHex)
 import StoreService.Names.Community (communityJSON, kindTerms, readableTerms, termsJSON, yearsFor)
 import StoreService.Names.Contracts
-import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (nameEditsLeft)
+import StoreService.Names.Registration (LinkKind (..), nameLink)
 import StoreService.Names.Store (isLabelRegistering)
 import StoreService.Names.View (tldText)
 import StoreService.Store.Invoices (unixSeconds)
@@ -118,8 +120,8 @@ recordEntities :: Profiles -> NameRecords -> IO [Entity]
 recordEntities ps NameRecords {rdContact, rdChannel} =
   mapConcurrently (uncurry $ linkEntity ps) $ recordLinks LKContact rdContact <> recordLinks LKChannel rdChannel
 
-recordLinks :: LinkKind -> Text -> [(LinkKind, Text)]
-recordLinks kind = map (kind,) . take maxEntitiesPerKey . filter ((Just kind ==) . linkKindOf) . map T.strip . T.splitOn linkSeparator
+recordLinks :: LinkKind -> Text -> [(LinkKind, ConnShortLink 'CMContact)]
+recordLinks kind = take maxEntitiesPerKey . filter ((kind ==) . fst) . mapMaybe (nameLink . T.strip) . T.splitOn linkSeparator
 
 linkSeparator :: Text
 linkSeparator = ";"
@@ -133,7 +135,7 @@ previewHandler :: Profiles -> Request -> Respond -> IO ResponseReceived
 previewHandler ps req respond =
   readBoundedBody maxBodyBytes req >>= \case
     Just body | Just (J.Object o) <- J.decode body -> case KM.lookup "link" o of
-      Just (J.String link) | Just kind <- linkKindOf link -> respond . jsonResponse status200 . J.toJSON =<< linkPreview ps kind link
+      Just (J.String link) | Just (kind, sl) <- nameLink link -> respond . jsonResponse status200 . J.toJSON =<< linkPreview ps kind sl
       _ -> respond invalidLink
     _ -> respond badRequest
 

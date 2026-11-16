@@ -467,7 +467,6 @@ executable simplex-store-service
       StoreService.Names.Env
       StoreService.Names.Label
       StoreService.Names.LateCredits
-      StoreService.Names.Links
       StoreService.Names.Orders
       StoreService.Names.Phases
       StoreService.Names.Profiles
@@ -853,7 +852,6 @@ test-suite simplex-chat-test
       StoreService.Names.Env
       StoreService.Names.Label
       StoreService.Names.LateCredits
-      StoreService.Names.Links
       StoreService.Names.Orders
       StoreService.Names.Phases
       StoreService.Names.Profiles

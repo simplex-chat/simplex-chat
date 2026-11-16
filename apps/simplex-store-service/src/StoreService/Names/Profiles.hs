@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -28,6 +29,7 @@ module StoreService.Names.Profiles
     systemResolver,
     planProfile,
     checkHosts,
+    shortLinkHosts,
     linkEntity,
     linkPreview,
   )
@@ -42,6 +44,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import Data.Bits (shiftL, shiftR, (.|.))
 import Data.Bool (bool)
+import Data.ByteString (ByteString)
 import Data.Char (toLower)
 import Data.Int (Int64)
 import Data.List (dropWhileEnd, isSuffixOf)
@@ -59,11 +62,12 @@ import Simplex.Chat.Controller (ChatResponse (..), ChatCommand (APIConnectPlan),
 import Simplex.Chat.Core (sendChatCmd)
 import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
 import Simplex.Chat.Types (AConnectTarget (..), ChatPeerType (..), Contact (..), ContactNameOrLink (..), ConnectTarget (..), GroupInfo (..), GroupProfile (..), GroupSummary (..), ImageData (..), Profile (..), User (..), fromLocalProfile)
-import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..), SConnectionMode (..), UserId, simplexShortLink)
+import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), SConnectionMode (..), UserId, simplexShortLink)
 import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
-import StoreService.Names.Links (LinkKind (..), parseShortLink, shortLinkHosts)
+import StoreService.Names.Registration (LinkKind (..))
 import System.Timeout (timeout)
 
 data ProfileLimits = ProfileLimits
@@ -110,7 +114,7 @@ data Profiles = Profiles
     previewSlots :: TVar Int,
     lookupSlots :: TVar Int,
     previewLookups :: TVar Int,
-    cache :: TVar (Map Text (Word64, LinkProfile)),
+    cache :: TVar (Map ByteString (Word64, LinkProfile)),
     refusedHosts :: TVar (Map HostName (Word64, ())),
     runningLookups :: TVar (Map HostName (Deadline, TMVar Bool))
   }
@@ -195,14 +199,16 @@ data ProfileRead = ProfileOk LinkProfile | ProfileUnread | ProfileUnavailable
 data Preview = Preview {previewType :: LinkKind, previewProfile :: ProfileRead}
   deriving (Eq, Show)
 
-data Entity = Entity {entityPreview :: Preview, link :: Text, deepLink :: Maybe Text}
+data Entity = Entity {entityPreview :: Preview, link :: ConnShortLink 'CMContact}
   deriving (Eq, Show)
 
 instance J.ToJSON Preview where
   toJSON = J.object . previewPairs
 
 instance J.ToJSON Entity where
-  toJSON Entity {entityPreview, link, deepLink} = J.object $ previewPairs entityPreview <> ["link" .= link, "deepLink" .= deepLink]
+  toJSON Entity {entityPreview, link} = J.object $ previewPairs entityPreview <> ["link" .= linkText link, "deepLink" .= linkText (simplexShortLink link)]
+    where
+      linkText = safeDecodeUtf8 . strEncode
 
 previewPairs :: Preview -> [JT.Pair]
 previewPairs (Preview t r) =
@@ -238,37 +244,36 @@ chatKindText = \case
   CKChannel -> "channel"
 
 -- | A search answer's entity, within the search bound. Every server host of the link must pass the host rule.
--- The deep link is the core's @simplex:/@ form, which carries the server; a link the core cannot parse has none.
-linkEntity :: Profiles -> LinkKind -> Text -> IO Entity
+-- The deep link is the link's @simplex:/@ form, with its server.
+linkEntity :: Profiles -> LinkKind -> ConnShortLink 'CMContact -> IO Entity
 linkEntity ps@Profiles {searchSlots} t link = do
-  r <- boundedProfile ps searchSlots [] link sl_
-  pure Entity {entityPreview = Preview t r, link, deepLink = safeDecodeUtf8 . strEncode . simplexShortLink <$> sl_}
-  where
-    sl_ = parseShortLink link
+  r <- boundedProfile ps searchSlots [] link
+  pure Entity {entityPreview = Preview t r, link}
 
 -- | A link preview, within the preview bound.
-linkPreview :: Profiles -> LinkKind -> Text -> IO Preview
-linkPreview ps@Profiles {previewSlots, previewLookups} t link = Preview t <$> boundedProfile ps previewSlots [previewLookups] link (parseShortLink link)
+linkPreview :: Profiles -> LinkKind -> ConnShortLink 'CMContact -> IO Preview
+linkPreview ps@Profiles {previewSlots, previewLookups} t sl = Preview t <$> boundedProfile ps previewSlots [previewLookups] sl
 
--- | A link the chat core cannot parse names no server it could fetch from, so it is not fetched. Each host lookup also takes
--- a slot of every pool given, beside the shared one.
-boundedProfile :: Profiles -> TVar Int -> [TVar Int] -> Text -> Maybe (ConnShortLink 'CMContact) -> IO ProfileRead
-boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, cache} slots lookupPools link sl_ =
+-- | Each host lookup also takes a slot of every pool given, beside the shared one.
+boundedProfile :: Profiles -> TVar Int -> [TVar Int] -> ConnShortLink 'CMContact -> IO ProfileRead
+boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, cache} slots lookupPools sl =
   cached >>= \case
     Just p -> pure $ ProfileOk p
-    Nothing -> case sl_ of
-      Nothing -> pure ProfileUnavailable
-      Just sl -> do
-        deadline <- deadlineIn fetchTimeout
-        checkHostsIn ps lookupPools deadline (shortLinkHosts sl) >>= \case
-          HostRefused -> pure ProfileUnavailable
-          HostUnanswered -> pure ProfileUnread
-          HostPublic -> maybe ProfileUnread ProfileOk . join <$> withSlot deadline slots (fetchLink sl >>= mapM remember)
+    Nothing -> do
+      deadline <- deadlineIn fetchTimeout
+      checkHostsIn ps lookupPools deadline (shortLinkHosts sl) >>= \case
+        HostRefused -> pure ProfileUnavailable
+        HostUnanswered -> pure ProfileUnread
+        HostPublic -> maybe ProfileUnread ProfileOk . join <$> withSlot deadline slots (fetchLink sl >>= mapM remember)
   where
-    cached = clock >>= \now -> freshEntry now link <$> readTVarIO cache
+    key = strEncode $ simplexShortLink sl
+    cached = clock >>= \now -> freshEntry now key <$> readTVarIO cache
     remember p = do
       now <- clock
-      p <$ atomically (modifyTVar' cache $ insertBounded maxCachedProfiles now link (now + cacheSeconds, p))
+      p <$ atomically (modifyTVar' cache $ insertBounded maxCachedProfiles now key (now + cacheSeconds, p))
+
+shortLinkHosts :: ConnShortLink 'CMContact -> NonEmpty TransportHost
+shortLinkHosts (CSLContact _ _ ProtocolServer {host} _) = host
 
 -- | Runs the connect plan, which reads the link data without connecting. A known chat answers with its stored profile.
 chatProfile :: ChatController -> UserId -> ProfileFetcher

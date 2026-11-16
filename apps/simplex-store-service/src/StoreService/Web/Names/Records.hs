@@ -20,9 +20,8 @@ import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (TxHash (..))
-import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), EditsLeft (..), Records, relayEdit)
-import StoreService.Names.Registration (channelRecordKey, contactRecordKey)
+import StoreService.Names.Registration (LinkKind (..), channelRecordKey, contactRecordKey, nameLink)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (RecordChange (..), SignedChange (..))
 import StoreService.Store.Invoices (unixSeconds)
@@ -55,7 +54,7 @@ editRequest o = do
   sent <- maybe (Left EIBadRequest) Right $ L.nonEmpty edits
   unless (length edits <= maxEdits && keysOnce edits && clearAlone edits && consecutive edits) $ Left EIBadRequest
   links <- mapM (\SentEdit {seChange} -> mapM linkOf seChange) sent
-  forM_ links $ mapM_ $ \(kind, value) -> unless (value == "" || linkKindOf value == Just kind) $ Left EIInvalidLink
+  forM_ links $ mapM_ $ \(kind, value) -> unless (value == "" || (fst <$> nameLink value) == Just kind) $ Left EIInvalidLink
   erChanges <- mapM signedChange sent
   pure EditRequest {erLabelHash, erChanges}
   where

@@ -18,6 +18,7 @@ import Control.Concurrent.STM
 import Control.Exception (uninterruptibleMask_)
 import Control.Monad (forM_, replicateM_)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import Data.Int (Int64)
 import qualified Data.ByteString.Base64.URL as B64URL
 import qualified Data.ByteString.Char8 as B
@@ -38,8 +39,8 @@ import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
 import Simplex.Messaging.Protocol (SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import StoreService.Names.Links (LinkKind (..))
 import StoreService.Names.Profiles
+import StoreService.Names.Registration (LinkKind (..))
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as H
 
@@ -58,7 +59,6 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "encodes a channel entity with subscribers and a simplex:/ deep link" testEntityChannelJSON
     H.it "encodes previews without a profile as empty, kind from the link" testPreviewEmptyJSON
     H.it "gives a deep link that parses back in the core with the link's server" testDeepLinkParses
-    H.it "gives a null deep link and keeps the link for a link the core cannot parse" testDeepLinkUnparsed
   describe "bounds and cache" $ do
     H.it "answers a link again from the cache, and fetches it again once the cache expires" testCacheExpiry
     H.it "does not cache a failed fetch" testFailureNotCached
@@ -169,10 +169,16 @@ newsLink = "https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAA
 shouldEncodeAs :: J.ToJSON a => a -> LB.ByteString -> Expectation
 shouldEncodeAs v expected = Just (J.toJSON v) `shouldBe` J.decode expected
 
+parsed :: Text -> ConnShortLink 'CMContact
+parsed = either error id . strDecode . encodeUtf8
+
+linksOf :: Entity -> Maybe (Text, Text)
+linksOf = JT.parseMaybe (J.withObject "entity" $ \o -> (,) <$> o J..: "link" <*> o J..: "deepLink") . J.toJSON
+
 testEntityContactJSON :: IO ()
 testEntityContactJSON = do
   ps <- quietProfiles (pure . Just . const bakery) publicResolver
-  e <- linkEntity ps LKContact bakeryLink
+  e <- linkEntity ps LKContact (parsed bakeryLink)
   e
     `shouldEncodeAs` "{\"type\": \"address\", \"kind\": \"contact\", \"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\",\
                      \ \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg==\", \"subscribers\": null, \"profile\": \"ok\",\
@@ -183,27 +189,15 @@ testEntityContactJSON = do
 testEntityChannelJSON :: IO ()
 testEntityChannelJSON = do
   ps <- quietProfiles (pure . Just . const news) publicResolver
-  e <- linkEntity ps LKChannel newsLink
+  e <- linkEntity ps LKChannel (parsed newsLink)
   e
     `shouldEncodeAs` "{\"type\": \"channel\", \"kind\": \"channel\", \"displayName\": \"Bakery news\", \"fullName\": \"Daily bakes and opening hours\",\
                      \ \"image\": null, \"subscribers\": 1204, \"profile\": \"ok\",\
                      \ \"link\": \"https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA\", \"deepLink\": \"simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im\"}"
   let simplexLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im"
-  Entity {link, deepLink} <- linkEntity ps LKChannel simplexLink
-  (link, deepLink) `shouldBe` (simplexLink, Just simplexLink)
+  linksOf <$> linkEntity ps LKChannel (parsed simplexLink) `shouldReturn` Just (simplexLink, simplexLink)
   where
     news = LinkProfile {kind = CKChannel, displayName = "Bakery news", fullName = "Daily bakes and opening hours", image = Nothing, subscribers = Just 1204}
-
-testDeepLinkUnparsed :: IO ()
-testDeepLinkUnparsed = do
-  ps <- quietProfiles answerAll publicResolver
-  e <- linkEntity ps LKContact unparsed
-  e
-    `shouldEncodeAs` "{\"type\": \"address\", \"kind\": \"contact\", \"displayName\": \"\", \"fullName\": \"\", \"image\": null, \"subscribers\": null,\
-                     \ \"profile\": \"unavailable\", \"link\": \"https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rS\", \"deepLink\": null}"
-  where
-    -- the webapp's seeded contact link, whose key is too short for the core
-    unparsed = "https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rS"
 
 testDeepLinkParses :: IO ()
 testDeepLinkParses = do
@@ -213,7 +207,7 @@ testDeepLinkParses = do
     keyedLink = "https://smp.example.com/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA?p=5224&c=LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI"
     twoHostLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=a.example.com%2Cb.example.com"
     deepLinkKeepsServer ps l = do
-      Entity {deepLink} <- linkEntity ps LKContact l
+      deepLink <- fmap snd . linksOf <$> linkEntity ps LKContact (parsed l)
       let original = parseLink l
           reparsed = maybe (Left "no deep link") parseLink deepLink
       (fmap ("simplex:/" `T.isPrefixOf`) deepLink, serverOf <$> reparsed) `shouldBe` (Just True, serverOf <$> original)
@@ -278,10 +272,10 @@ fetchCount :: Fake -> IO Int
 fetchCount Fake {fetched} = length <$> readTVarIO fetched
 
 preview :: Fake -> Text -> IO ProfileRead
-preview Fake {profiles} l = (\(Preview _ r) -> r) <$> linkPreview profiles LKContact l
+preview Fake {profiles} l = (\(Preview _ r) -> r) <$> linkPreview profiles LKContact (parsed l)
 
 search :: Fake -> Text -> IO ProfileRead
-search Fake {profiles} l = (\Entity {entityPreview = Preview _ r} -> r) <$> linkEntity profiles LKContact l
+search Fake {profiles} l = (\Entity {entityPreview = Preview _ r} -> r) <$> linkEntity profiles LKContact (parsed l)
 
 testCacheExpiry :: IO ()
 testCacheExpiry = do
@@ -456,10 +450,10 @@ testRefusedNotFetched = do
   asked <- newTVarIO []
   fake@Fake {profiles} <- newFake testLimits answerAll (stubResolver asked)
   let l = addressLink 1
-  (\(Preview _ r) -> r) <$> linkPreview profiles LKContact (l <> "?h=private.test") `shouldReturn` ProfileUnavailable
-  (\Entity {entityPreview = Preview _ r} -> r) <$> linkEntity profiles LKContact (addressLinkAt "127.0.0.1" 1) `shouldReturn` ProfileUnavailable
+  (\(Preview _ r) -> r) <$> linkPreview profiles LKContact (parsed $ l <> "?h=private.test") `shouldReturn` ProfileUnavailable
+  (\Entity {entityPreview = Preview _ r} -> r) <$> linkEntity profiles LKContact (parsed $ addressLinkAt "127.0.0.1" 1) `shouldReturn` ProfileUnavailable
   fetchCount fake `shouldReturn` 0
-  (\(Preview _ r) -> r) <$> linkPreview profiles LKContact l `shouldReturn` ProfileOk (profileFor l)
+  (\(Preview _ r) -> r) <$> linkPreview profiles LKContact (parsed l) `shouldReturn` ProfileOk (profileFor l)
   fetchCount fake `shouldReturn` 1
 
 -- Host lookups

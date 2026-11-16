@@ -1,5 +1,8 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module StoreService.Names.Registration
   ( Registration (..),
@@ -13,6 +16,9 @@ module StoreService.Names.Registration
     nodeBytes,
     namehash,
     labelNode,
+    LinkKind (..),
+    linkMaxBytes,
+    nameLink,
     contactRecordKey,
     channelRecordKey,
     sponsorDomain,
@@ -43,9 +49,10 @@ import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
+import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..))
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
-import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
@@ -75,6 +82,23 @@ nodeBytes (Node node) = node
 contactRecordKey, channelRecordKey :: ByteString
 contactRecordKey = "simplex.contact"
 channelRecordKey = "simplex.channel"
+
+data LinkKind = LKContact | LKChannel
+  deriving (Eq, Show)
+
+linkMaxBytes :: Int
+linkMaxBytes = 1024
+
+-- | A short link within the bound, as the chat core reads it, with the record kind of its type.
+nameLink :: Text -> Maybe (LinkKind, ConnShortLink 'CMContact)
+nameLink link
+  | B.length s > linkMaxBytes = Nothing
+  | otherwise = case strDecode @(ConnShortLink 'CMContact) s of
+      Right sl@(CSLContact _ CCTContact _ _) -> Just (LKContact, sl)
+      Right sl@(CSLContact _ CCTChannel _ _) -> Just (LKChannel, sl)
+      _ -> Nothing
+  where
+    s = encodeUtf8 link
 
 data RegisterIntent = RegisterIntent
   { riRegistration :: Registration,

@@ -47,9 +47,8 @@ import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (newContracts)
-import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Records
-import StoreService.Names.Registration (Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, multicallCalldata, nodeBytes, resolverDomain, setTextDigest, setTextWithSigCalldata)
+import StoreService.Names.Registration (Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, linkMaxBytes, multicallCalldata, nodeBytes, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Sender (Sender, followTransactions, newSender)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
@@ -332,7 +331,7 @@ changesOf = fmap (map scChange . L.toList . erChanges)
 testLinkBound :: IO ()
 testLinkBound = do
   let prefix = "https://smp8.simplex.im/c#"
-      linkOf n = prefix <> T.replicate (n - T.length prefix) "a"
+      linkOf n = prefix <> T.replicate (n - T.length prefix) "A"
       edit key value = editRequest $ requestOf [editFields [("key", J.String key), ("value", J.String value)]]
   fmap (L.head . L.map scChange . erChanges) (edit channelKey $ linkOf linkMaxBytes) `shouldBe` Right (channel $ linkOf linkMaxBytes)
   edit channelKey (linkOf $ linkMaxBytes + 1) `shouldBe` Left EIInvalidLink
@@ -921,7 +920,7 @@ responseParts r = do
 
 testHttpTwoLongLinks :: TVar ChaChaDRG -> IO ()
 testHttpTwoLongLinks g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
-  let longLink prefix = prefix <> T.replicate (linkMaxBytes - T.length prefix) "a"
+  let longLink prefix = prefix <> T.replicate (linkMaxBytes - T.length prefix) "A"
   body <- J.encode . editJson <$> ownerTwo s 0 (longLink "https://smp8.simplex.im/a#") (longLink "https://smp8.simplex.im/c#")
   answer <- async $ post body
   TxHash h <- mineSent s 1 True

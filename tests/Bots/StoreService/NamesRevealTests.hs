@@ -43,10 +43,9 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1P
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import StoreService.Names.Abi (hex, uint256)
-import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
+import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, linkMaxBytes, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (RevealFields (..), parseRevealFields)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..), OrderPhase (..), getRegistration)
 import StoreService.Names.Turns (labelTurnCount)
@@ -63,7 +62,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
   describe "accepted" $ do
     it "accepts a reveal with links, setting the label at a new version and waking a held poll" testWithLinks
     it "accepts a reveal without links" testWithoutLinks
-    it "accepts the reveal the page signs, as viem signs it" testViemReveal
+    it "checks the reveal the page signs, as viem signs it, through to its link, which the chat core cannot read" testViemReveal
     it "accepts a reveal with two records at the link bound, within the names body cap" testRecordsAtBound
     it "answers an identical repeat in a later phase, and refuses a different one" testRepeats
     it "answers after the name's turn, so a slow reader of one answer holds no other reveal" testAnswersAfterTurn
@@ -122,8 +121,8 @@ keyA :: Secp256k1PrivateKey
 keyA = oKey aliceOrder
 
 contactLink, channelLink :: Text
-contactLink = "https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rS"
-channelLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4Lm?v=1"
+contactLink = "https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA"
+channelLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im"
 
 -- | A short link of the kind's path padded to this many bytes.
 padded :: Text -> Int -> Text
@@ -376,7 +375,7 @@ testViemReveal = withReveals $ \Fx {fCtx = ctx} -> do
   hex (makeCommitment page) `shouldBe` "0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1"
   ownerBody ctx page `shouldReturn` body
   rid <- committed ctx (orderOf page)
-  reveal ctx rid body `shouldReturn` accepted
+  reveal ctx rid body `shouldReturn` refused 400 "invalid_link"
 
 testRecordsAtBound :: IO ()
 testRecordsAtBound = withReveals $ \Fx {fCtx = ctx} -> do

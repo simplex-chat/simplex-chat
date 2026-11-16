@@ -53,13 +53,13 @@ import Network.HTTP.Types (status404, status429)
 import Network.HTTP.Types.Status (statusCode)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Encoding.String (strDecode, strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Links (LinkKind (..), linkMaxBytes)
+import StoreService.Names.Registration (LinkKind (..), linkMaxBytes)
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
 import StoreService.Names.Store (EditState (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (HttpEnv (..), maxSearches, newHttpEnv, notFound, previewLimit, searchLimit)
@@ -452,11 +452,13 @@ testRecordLinks :: IO ()
 testRecordLinks = do
   let botLink = taggedLink "smp8.simplex.im" 'a' "Bot"
       bots = map (\n -> taggedLink "smp8.simplex.im" 'a' ("Bot" <> T.pack (show n))) [1 .. 7 :: Int]
-  recordLinks LKContact (bakeryLink <> ";" <> botLink <> " ; " <> newsLink <> ";" <> fullLink <> ";;") `shouldBe` [(LKContact, bakeryLink), (LKContact, botLink)]
-  recordLinks LKChannel (" " <> newsLink <> ";" <> bakeryLink <> ";hello") `shouldBe` [(LKChannel, newsLink)]
+  recordLinks LKContact (bakeryLink <> ";" <> botLink <> " ; " <> newsLink <> ";" <> fullLink <> ";;") `shouldBe` parsedAs LKContact [bakeryLink, botLink]
+  recordLinks LKChannel (" " <> newsLink <> ";" <> bakeryLink <> ";hello") `shouldBe` parsedAs LKChannel [newsLink]
   recordLinks LKContact fullLink `shouldBe` []
   -- a value of another kind first, so the cap counts only the record's own links
-  recordLinks LKContact (T.intercalate ";" $ newsLink : bots) `shouldBe` map (LKContact,) (take 5 bots)
+  recordLinks LKContact (T.intercalate ";" $ newsLink : bots) `shouldBe` parsedAs LKContact (take 5 bots)
+  where
+    parsedAs kind = map $ \l -> (kind, either error id $ strDecode $ encodeUtf8 l)
 
 testRecordEdits :: TVar ChaChaDRG -> IO ()
 testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom) -> withSearch g (\cfg -> cfg {nRecordEditsPerYear = perYear}) id $ \s@Search {node, store} -> do
