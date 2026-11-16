@@ -14,6 +14,9 @@ module StoreService.Names.Abi
     addressFromBytes,
     selector,
     hex,
+    hexP,
+    lowerHexP,
+    parseText,
     bytes32FromHex,
     decodeUint256,
     decodeWord64,
@@ -28,14 +31,15 @@ where
 
 import Control.Monad (unless)
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import Data.Char (isAsciiLower, isDigit, isHexDigit)
+import qualified Data.ByteString.Char8 as BC
+import Data.Char (isDigit)
 import Data.List (mapAccumL)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
@@ -86,13 +90,20 @@ selector = B.take 4 . keccak256
 hex :: ByteString -> Text
 hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
 
--- | A hash as 'hex' writes it, and only so: upper-case digits would give a second spelling of one hash.
-bytes32FromHex :: Text -> Maybe ByteString
-bytes32FromHex t = case T.stripPrefix "0x" t of
-  Just h | T.length h == 2 * abiWordSize && T.all lowerHex h -> eitherToMaybe $ convertFromBase Base16 $ encodeUtf8 h
-  _ -> Nothing
+-- | n bytes as 'hex' writes them, and only so: upper-case digits would give a second spelling of one hash.
+hexP :: Int -> A.Parser ByteString
+hexP n = A.string "0x" *> lowerHexP n
+
+lowerHexP :: Int -> A.Parser ByteString
+lowerHexP n = A.count (2 * n) (A.satisfy lowerHexDigit) >>= either fail pure . convertFromBase Base16 . BC.pack
   where
-    lowerHex c = isDigit c || (isAsciiLower c && isHexDigit c)
+    lowerHexDigit c = isDigit c || (c >= 'a' && c <= 'f')
+
+parseText :: A.Parser a -> Text -> Either String a
+parseText p = A.parseOnly (p <* A.endOfInput) . encodeUtf8
+
+bytes32FromHex :: Text -> Maybe ByteString
+bytes32FromHex = eitherToMaybe . parseText (hexP abiWordSize)
 
 decodeUint256 :: ByteString -> Either AbiError Integer
 decodeUint256 = uintAt 0

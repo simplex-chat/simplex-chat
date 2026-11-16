@@ -1,6 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Signatures
   ( SignatureError (..),
@@ -19,15 +18,16 @@ module StoreService.Names.Signatures
   )
 where
 
+import Control.Applicative ((<|>))
 import Control.Monad (unless, when)
 import Crypto.Number.Serialize (os2ip)
 import qualified Crypto.PubKey.ECC.Types as ECC
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
-import Data.Char (isAsciiLower, isDigit, isHexDigit)
+import Data.Char (isHexDigit)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -38,8 +38,8 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode, strEncode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (tshow)
-import StoreService.Names.Abi (bytes32FromHex, hex)
+import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import StoreService.Names.Abi (abiWordSize, hex, hexP, lowerHexP, parseText)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Commitment, TermsHash)
 
@@ -72,9 +72,7 @@ data AgreedTerms = AgreedTerms {atCommunityName :: Bool, atTermsHash :: TermsHas
 -- | As the order signs it: the hash in 64 lowercase hex digits, after communityTermsPrefix for the community terms.
 instance TextEncoding AgreedTerms where
   textEncode AgreedTerms {atCommunityName, atTermsHash} = (if atCommunityName then communityTermsPrefix else "") <> T.drop 2 (hex atTermsHash)
-  textDecode t = AgreedTerms community <$> bytes32FromHex ("0x" <> digits)
-    where
-      (community, digits) = maybe (False, t) (True,) $ T.stripPrefix communityTermsPrefix t
+  textDecode = eitherToMaybe . parseText (AgreedTerms <$> (True <$ A.string (encodeUtf8 communityTermsPrefix) <|> pure False) <*> lowerHexP abiWordSize)
 
 instance FromField AgreedTerms where fromField = fromTextField_ textDecode
 
@@ -83,8 +81,8 @@ instance ToField AgreedTerms where toField = toField . textEncode
 communityTermsPrefix :: Text
 communityTermsPrefix = "community/"
 
-signatureHexLength :: Int
-signatureHexLength = 130
+signatureBytes :: Int
+signatureBytes = 65
 
 scalarSize :: Int
 scalarSize = 32
@@ -98,9 +96,7 @@ maxS = ECC.ecc_n (ECC.common_curve $ ECC.getCurveByName ECC.SEC_p256k1) `div` 2
 
 parseSignature :: Text -> Either SignatureError RecoverableSignature
 parseSignature t = do
-  h <- maybe (Left SEFormat) Right $ T.stripPrefix "0x" t
-  unless (T.length h == signatureHexLength && T.all isLowerHex h) $ Left SEFormat
-  sig <- first (const SEFormat) $ convertFromBase Base16 (encodeUtf8 h)
+  sig <- first (const SEFormat) $ parseText (hexP signatureBytes) t
   let (rsR, (rsS, v)) = B.splitAt scalarSize <$> B.splitAt scalarSize sig
   rsRecId <- case B.unpack v of
     [27] -> Right 0
@@ -108,8 +104,6 @@ parseSignature t = do
     _ -> Left SERecoveryId
   when (os2ip rsS > maxS) $ Left SEHighS
   pure RecoverableSignature {rsR, rsS, rsRecId}
-  where
-    isLowerHex c = isDigit c || (isAsciiLower c && isHexDigit c)
 
 -- | EIP-191 @personal_sign@ digest.
 personalDigest :: ByteString -> ByteString

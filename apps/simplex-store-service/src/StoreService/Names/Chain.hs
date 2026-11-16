@@ -45,18 +45,19 @@ import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
-import Data.Char (isDigit)
+import Data.Char (digitToInt, isDigit, isHexDigit)
 import Data.Functor ((<&>))
 import Data.List (foldl', sort)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word64, Word8)
@@ -64,7 +65,7 @@ import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (hContentType, methodPost, statusCode, statusIsSuccessful)
-import Numeric (readHex, showHex)
+import Numeric (showHex)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), FromField (..), ToField (..), blobFieldDecoder)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
@@ -73,7 +74,7 @@ import Simplex.Messaging.Eth.RLP (RLPItem (..), rlpEncode)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (addressFromBytes, hex)
+import StoreService.Names.Abi (addressFromBytes, hex, parseText)
 import StoreService.Names.Revert (RevertReason (..), decodeRevert, maxNodeMessageLength)
 import StoreService.Store.Invoices (unixSeconds)
 import System.Timeout (timeout)
@@ -393,11 +394,11 @@ quantity =
     if n <= toInteger (maxBound :: a) then pure $ fromInteger n else fail "not a quantity"
 
 natural :: J.Value -> JT.Parser Integer
-natural = J.withText "quantity" $ \t -> case T.stripPrefix "0x" t of
-  Just h | T.length h <= maxQuantityDigits, [(n, "")] <- readHex (T.unpack h) -> pure n
-  _ -> fail "not a quantity"
+natural = nodeHex "quantity" "not a quantity" $ A.takeWhile1 isHexDigit >>= \h ->
+  if B.length h <= maxQuantityDigits then pure $ BC.foldl' (\n d -> 16 * n + toInteger (digitToInt d)) 0 h else fail "over 256 bits"
 
 bytes :: J.Value -> JT.Parser ByteString
-bytes = J.withText "data" $ \t -> case T.stripPrefix "0x" t of
-  Just h | Right bs <- convertFromBase Base16 (encodeUtf8 h) -> pure bs
-  _ -> fail "not hex data"
+bytes = nodeHex "data" "not hex data" $ A.takeWhile isHexDigit >>= either fail pure . convertFromBase Base16
+
+nodeHex :: String -> String -> A.Parser a -> J.Value -> JT.Parser a
+nodeHex name failure p = J.withText name $ either (const $ fail failure) pure . parseText (A.string "0x" *> p)

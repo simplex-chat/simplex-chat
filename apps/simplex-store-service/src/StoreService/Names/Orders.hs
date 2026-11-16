@@ -21,6 +21,8 @@ module StoreService.Names.Orders
     parseBody,
     jsonField,
     textWith,
+    hexHash,
+    hexSignature,
     boundedInteger,
     checkLength,
     checkSigner,
@@ -161,17 +163,21 @@ parseOrderRequest o = do
 
 parseOrderFields :: J.Object -> JT.Parser SignedOrderFields
 parseOrderFields o = do
-  ofLabelHash <- LabelHash <$> jsonField o "labelHash" (textWith hash32)
+  ofLabelHash <- LabelHash <$> jsonField o "labelHash" hexHash
   ofLength <- jsonField o "length" boundedInteger
   ofDuration <- jsonField o "duration" boundedInteger
-  ofCommitment <- jsonField o "commitment" (textWith hash32)
+  ofCommitment <- jsonField o "commitment" hexHash
   ofSealed <- jsonField o "sealed" $ textWith $ \t -> if T.length t <= maxSealedChars then Right t else Left "longer than its limit"
   ofAgreedTerms <- jsonField o "terms" $ textWith $ maybe (Left "not agreed terms") Right . textDecode
   timestamp <- jsonField o "timestamp" boundedInteger
-  signature <- jsonField o "signature" $ textWith $ first show . parseSignature
+  signature <- jsonField o "signature" hexSignature
   pure (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
-  where
-    hash32 = maybe (Left "not a 32-byte hash in lowercase hex") Right . bytes32FromHex
+
+hexHash :: J.Value -> JT.Parser ByteString
+hexHash = textWith $ maybe (Left "not a 32-byte hash in lowercase hex") Right . bytes32FromHex
+
+hexSignature :: J.Value -> JT.Parser RecoverableSignature
+hexSignature = textWith $ first show . parseSignature
 
 parseBody :: Text -> JT.Parser a -> Either OrderRefusal a
 parseBody what = first (\e -> ORBadRequest $ "a malformed " <> what <> ": " <> T.pack e) . JT.parseEither id

@@ -40,7 +40,6 @@ import Data.Attoparsec.Combinator (lookAhead)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import Data.Bifunctor (first)
 import qualified Data.ByteArray as BA
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit)
@@ -65,6 +64,7 @@ import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (tshow)
+import StoreService.Names.Abi (lowerHexP, parseText)
 import StoreService.Names.Label (LabelError (..), validLabel)
 import System.IO.Error (ioeGetErrorString)
 import Text.Read (readMaybe)
@@ -755,7 +755,7 @@ parseConfig ini = do
       v <- required "chain" "service_key"
       let bad = Left "chain.service_key must be 0x and 64 hex digits of a valid secp256k1 key"
       case T.stripPrefix "0x" v of
-        Just h | T.length h == 2 * serviceKeyBytes, Right bytes <- convertFromBase Base16 (encodeUtf8 h) -> either (const bad) Right (mkPrivateKey (BA.convert (bytes :: B.ByteString)))
+        Just h | Right bytes <- parseText (lowerHexP serviceKeyBytes) (T.toLower h) -> either (const bad) Right (mkPrivateKey (BA.convert bytes))
         _ -> bad
     recordEditsPerYear = do
       v <- num "names" "record_edits_per_year" defaultRecordEditsPerYear

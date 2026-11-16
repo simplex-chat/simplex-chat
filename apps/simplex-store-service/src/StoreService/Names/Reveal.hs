@@ -29,15 +29,13 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
-import StoreService.Names.Abi (bytes32FromHex)
 import StoreService.Names.Chain (ChainSeconds, chainSeconds)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Label (validLabel)
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
-import StoreService.Names.Orders (boundedInteger, jsonField, textWith)
+import StoreService.Names.Orders (boundedInteger, hexHash, hexSignature, jsonField)
 import StoreService.Names.Registration (RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
-import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
 
 data RevealRefusal = RVBadRequest | RVInvalidLink | RVChainUnavailable
@@ -58,22 +56,19 @@ data RevealRequest = RevealRequest
 instance J.FromJSON RevealRequest where
   parseJSON = J.withObject "reveal" $ \o -> do
     rqLabel <- o .: "label"
-    rqSignature <- jsonField o "signature" signature
-    rqSecret <- jsonField o "secret" hash32
+    rqSignature <- jsonField o "signature" hexSignature
+    rqSecret <- jsonField o "secret" hexHash
     records <- o .: "records"
     rqContactLinks <- records .: "contact"
     rqChannelLinks <- records .: "channel"
     rqNonce <- jsonField o "nonce" boundedInteger
     rqDeadline <- jsonField o "deadline" boundedInteger
     rqAcceptance <- jsonField o "acceptance" $ J.withObject "acceptance" $ \a -> do
-      taTermsHash <- jsonField a "termsHash" hash32
+      taTermsHash <- jsonField a "termsHash" hexHash
       taNonce <- jsonField a "nonce" boundedInteger
-      taSignature <- jsonField a "signature" signature
+      taSignature <- jsonField a "signature" hexSignature
       pure TermsAcceptance {taTermsHash, taNonce, taSignature}
     pure RevealRequest {rqLabel, rqSignature, rqSecret, rqContactLinks, rqChannelLinks, rqNonce, rqDeadline, rqAcceptance}
-    where
-      signature = textWith $ first show . parseSignature
-      hash32 = textWith $ maybe (Left "not a 32-byte hash in lowercase hex") Right . bytes32FromHex
 
 isRepeat :: RevealRequest -> NameReveal -> Bool
 isRepeat RevealRequest {rqLabel, rqSignature} NameReveal {rvLabel, rvSignature} = rqLabel == rvLabel && rqSignature == rvSignature
