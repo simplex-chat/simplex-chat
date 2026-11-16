@@ -35,7 +35,6 @@ module StoreService.Names.Orders
     movable,
     orderFieldsOf,
     checkMoveMeets,
-    checkMovePrice,
     retargetOrder,
     versionWritten,
     confirmLanded,
@@ -339,22 +338,26 @@ checkMovePrice ct NameRegistration {nrPrice} len years =
       | price > nrPrice -> pure $ Left $ ORPriceTooHigh price
       | otherwise -> pure $ Right price
 
--- | The move's write, a compare-and-set on the version read. A code order's code is checked and reserved again in the code's turn.
--- A paid order moved to a cheaper name keeps the difference as its balance, credited in the move's transaction and the balance's turn.
-retargetOrder :: OrdersEnv -> NameRegistration -> OrderFields -> Int -> IO (Either WriteRefusal Int64)
-retargetOrder OrdersEnv {oeStore, oeTurns, oeNow} r@NameRegistration {nrId, nrPayment, nrPrice} fields@OrderFields {ofLength} price = do
+-- | The move's write, a compare-and-set on the version read. A code order's code is checked and reserved again in the code's turn,
+-- keeping its price. A paid order takes the new name's price, and moved to a cheaper name keeps the difference as its balance,
+-- credited in the move's transaction and the balance's turn.
+retargetOrder :: OrdersEnv -> NameRegistration -> OrderFields -> IO (Either WriteRefusal Int64)
+retargetOrder OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrPayment, nrPrice, nrYears} fields@OrderFields {ofLength} = do
   now <- oeNow
-  let write db = versionWritten <$> retargetRegistration db r fields price now
-      paidMove
-        | price < nrPrice = withBalanceTurn oeTurns nrId $ withTransaction oeStore $ \db -> write db >>= traverse (\v -> v <$ creditBalance db nrId (nrPrice - price) now)
-        | otherwise = withTransaction oeStore write
+  let write price db = versionWritten <$> retargetRegistration db r fields price now
+      paidMove =
+        checkMovePrice oeContracts r ofLength (orderYears fields nrYears) >>= \case
+          Left refusal -> pure $ Left $ WRRefused refusal
+          Right price
+            | price < nrPrice -> withBalanceTurn oeTurns nrId $ withTransaction oeStore $ \db -> write price db >>= traverse (\v -> v <$ creditBalance db nrId (nrPrice - price) now)
+            | otherwise -> withTransaction oeStore (write price)
   case nrPayment of
     RPInvoice {} -> paidMove
     RPBalance -> paidMove
     RPCode codeId ->
       withTransaction oeStore (`getPrepaidCodeById` codeId) >>= \case
         Nothing -> pure $ Left $ WRRefused $ ORCode CRInvalid
-        Just PrepaidCode {pcCodeHash} -> either (Left . WRRefused . ORCode) id <$> reserveCode oeTurns oeStore now pcCodeHash nrId ofLength write
+        Just PrepaidCode {pcCodeHash} -> either (Left . WRRefused . ORCode) id <$> reserveCode oeTurns oeStore now pcCodeHash nrId ofLength (write nrPrice)
 
 versionWritten :: VersionWrite -> Either WriteRefusal Int64
 versionWritten = \case

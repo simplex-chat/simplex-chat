@@ -27,7 +27,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), RegistrationPayment (..), findRegistrations, getRegistration, paymentInvoice)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, paymentInvoice)
 import StoreService.Names.Turns (withLabelTurns)
 import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
@@ -120,19 +120,16 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
             LChanged -> changed
             LUnread -> refuse ORNameCheckUnavailable
       | otherwise = moveChecked now r fields
-    moveChecked now r@NameRegistration {nrMoves, nrYears, nrPrice, nrPayment} fields@OrderFields {ofLabelHash, ofLength, ofDuration}
+    moveChecked now r@NameRegistration {nrMoves, nrYears} fields@OrderFields {ofLabelHash, ofDuration}
       | nrMoves >= nMaxOrderMoves oeConfig = answerNow <$> registrationRefusalResponse env "move_limit" rid
       | otherwise =
           runExceptT (mapM_ ExceptT [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore ofLabelHash]) >>= \case
             Left refusal -> refuse refusal
-            Right () -> case nrPayment of
-              RPInvoice {} -> checkMovePrice oeContracts r ofLength years >>= either refuse (write now r fields)
-              RPBalance -> checkMovePrice oeContracts r ofLength years >>= either refuse (write now r fields)
-              RPCode _ -> write now r fields nrPrice
+            Right () -> write now r fields
       where
         years = orderYears fields nrYears
-    write now r fields price =
-      retargetOrder env r fields price >>= \case
+    write now r fields =
+      retargetOrder env r fields >>= \case
         Right v -> movedAnswer now v
         Left WRChanged -> changed
         Left (WRRefused refusal) -> refuse refusal
