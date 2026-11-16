@@ -1446,7 +1446,7 @@ testExpireCallInvitation ps =
 testRedeliveredMessage :: HasCallStack => TestParams -> IO ()
 testRedeliveredMessage =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
-    connectUsers alice bob
+    connectUsers bob alice
     withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands RENAME TO commands_")
     alice #> "@bob hello"
     bob <# "alice> hello"
