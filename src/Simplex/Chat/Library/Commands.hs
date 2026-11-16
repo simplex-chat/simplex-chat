@@ -2462,10 +2462,11 @@ processChatCommand cxt nm = \case
     claim <- maybe (throwCmdError "group has no name to verify") pure $ publicGroupAccess >>= groupDomainClaim
     -- checks the profile link, not the link we joined through (which may have rotated)
     (verified, reason) <-
-      tryAllErrors (resolveNameRecord user nm (claimDomain claim)) >>= \case
-        Right NameRecord {nrSimplexChannel}
+      tryAllErrors (resolveName user nm (claimDomain claim)) >>= \case
+        Right (Right NameRecord {nrSimplexChannel})
           | nameResolvesTo groupLink nrSimplexChannel -> pure (True, Nothing)
           | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
+        Right (Left w) -> pure (False, Just $ nameWarningReason w)
         Left (ChatErrorAgent {agentError = SMP _ (NAME SMP.NOT_FOUND)}) -> pure (False, Just "the name is not registered")
         Left e -> throwError e
     (g', _) <- withNameLock user (Just $ claimDomain claim) $ withFastStore' $ \db -> setGroupDomainVerified db user g verified
@@ -4557,7 +4558,7 @@ processChatCommand cxt nm = \case
         -- local search only: look up #d then @d in the store, without online name resolution
         | resolveMode == PRMNever -> connectPlanNoName $ ChatError CENotResolvedLocally
         | otherwise ->
-            tryAllErrors (resolveConnectableName user nm d) >>= \case
+            tryAllErrors (resolveNameRecord user nm d) >>= \case
               Right nr
                 | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
                     (addOther nr <$> connectPlanName NTPublicGroup (Right nr)) `catchAllErrors` \e ->
@@ -4759,7 +4760,7 @@ processChatCommand cxt nm = \case
           -- resolve a name to its first contact/channel short link
           resolveNameLink :: SimplexNameInfo -> CM (ConnShortLink 'CMContact)
           resolveNameLink SimplexNameInfo {nameType, nameDomain} = do
-            NameRecord {nrSimplexContact, nrSimplexChannel} <- maybe (resolveConnectableName user nm nameDomain) (ExceptT . pure) nameRec
+            NameRecord {nrSimplexContact, nrSimplexChannel} <- maybe (resolveNameRecord user nm nameDomain) (ExceptT . pure) nameRec
             let (candidates, ctType') = case nameType of
                   NTContact -> (nrSimplexContact, CCTContact)
                   NTPublicGroup -> (nrSimplexChannel, CCTChannel)
@@ -5277,19 +5278,14 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
 nameResolvesTo :: ConnShortLink 'CMContact -> [Text] -> Bool
 nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . strDecode . encodeUtf8)
 
--- the resolver now also reports names that are not registered, which stay the agent's NAME NOT_FOUND
 resolveNameRecord :: User -> NetworkRequestMode -> SimplexDomain -> CM NameRecord
-resolveNameRecord user nm domain = do
-  NameResponse {registration} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
-  case registration of
-    NRRegistered {nameRecord} -> pure nameRecord
-    _ -> throwError $ chatErrorAgent $ SMP "" (NAME SMP.NOT_FOUND)
+resolveNameRecord user nm domain = resolveName user nm domain >>= either (throwChatError . CESimplexDomainNotReady domain . SDENameWarning) pure
 
-resolveConnectableName :: User -> NetworkRequestMode -> SimplexDomain -> CM NameRecord
-resolveConnectableName user nm domain = do
+resolveName :: User -> NetworkRequestMode -> SimplexDomain -> CM (Either NameWarning NameRecord)
+resolveName user nm domain = do
   r <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
   now <- liftIO getSystemSeconds
-  either (throwChatError . CESimplexDomainNotReady domain . SDENameWarning) pure $ nameRecordOrWarning now domain r
+  pure $ nameRecordOrWarning now domain r
 
 nameRecordOrWarning :: SystemSeconds -> SimplexDomain -> NameResponse -> Either NameWarning NameRecord
 nameRecordOrWarning now SimplexDomain {domain} NameResponse {lastBlockTs, registration} = case registration of
@@ -5307,20 +5303,27 @@ nameRecordOrWarning now SimplexDomain {domain} NameResponse {lastBlockTs, regist
     asOf = fromMaybe now lastBlockTs
     labelLength = T.length domain
 
+nameWarningReason :: NameWarning -> Text
+nameWarningReason = \case
+  NWExpired {} -> "the name expired"
+  _ -> "the name is not registered"
+
 verifyEntityDomain :: User -> NetworkRequestMode -> SimplexNameType -> SimplexDomainClaim -> Maybe AConnShortLink -> CM (Maybe Bool, Maybe Text)
 verifyEntityDomain user nm nameType SimplexDomainClaim {domain = StrJSON domain, proof = proof_} connLink_ = case (proof_, connLink_) of
   (Nothing, _) -> pure (Nothing, Just "no name proof to verify")
   (_, Nothing) -> pure (Nothing, Just "no connection link to check the name against")
-  (Just proof, Just (ACSL SCMContact profileSLnk)) -> do
-    NameRecord {nrSimplexContact, nrSimplexChannel} <- resolveNameRecord user nm domain
-    let resolvedLinks = case nameType of
-          NTContact -> nrSimplexContact
-          NTPublicGroup -> nrSimplexChannel
-    if not (nameResolvesTo profileSLnk resolvedLinks)
-      then pure (Just False, Just "the name does not resolve to this address")
-      else do
-        ok <- verifyDomainProof proof profileSLnk
-        pure (Just ok, if ok then Nothing else Just "the name proof was not signed by this address's owner")
+  (Just proof, Just (ACSL SCMContact profileSLnk)) ->
+    resolveName user nm domain >>= \case
+      Left w -> pure (Just False, Just $ nameWarningReason w)
+      Right NameRecord {nrSimplexContact, nrSimplexChannel} -> do
+        let resolvedLinks = case nameType of
+              NTContact -> nrSimplexContact
+              NTPublicGroup -> nrSimplexChannel
+        if not (nameResolvesTo profileSLnk resolvedLinks)
+          then pure (Just False, Just "the name does not resolve to this address")
+          else do
+            ok <- verifyDomainProof proof profileSLnk
+            pure (Just ok, if ok then Nothing else Just "the name proof was not signed by this address's owner")
   (Just _, Just _) -> pure (Nothing, Just "unexpected connection link type for name verification")
   where
     verifyDomainProof :: SimplexDomainProof -> ShortLinkContact -> CM Bool

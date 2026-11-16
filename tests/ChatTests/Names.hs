@@ -47,6 +47,7 @@ chatNamesTests = do
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name reports it is available" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
+  it "set expired name is rejected" testSetNameExpired
   it "channel name is not verified just by joining via link" testChannelDomainLinkJoinUnverified
   it "verify channel name, fail on re-point, retain status on refresh" testChannelDomainVerify
   it "connect by channel name" testConnectByChannelName
@@ -295,6 +296,16 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames ps $ \reg ->
       alice ##> "/_set domain 1 alice.simplex"
       alice <## "SimpleX name alice.simplex has no valid connection link"
 
+testSetNameExpired :: HasCallStack => TestParams -> IO ()
+testSetNameExpired ps = withSmpServerAndNames ps $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    enableNamesRole alice
+    alice ##> "/ad"
+    (shortLink, _) <- getContactLinks alice True
+    registerExpiredName reg aliceSimplexName (aliceRecord shortLink)
+    alice ##> "/_set domain 1 alice.simplex"
+    alice <##. "SimpleX name alice.simplex expired on "
+
 -- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()
 testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames ps $ \reg ->
@@ -338,6 +349,9 @@ testChannelDomainVerify ps = withSmpServerAndNames ps $ \reg ->
         memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team verified"
+        registerExpiredName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
+        bob ##> "/_verify domain #1"
+        bob <## "SimpleX name #team not verified: the name expired"
         -- the name is re-pointed to a different link: verification fails
         registerName reg teamName (channelNameRecord "team.simplex" "https://simplex.chat/other")
         bob ##> "/_verify domain #1"
