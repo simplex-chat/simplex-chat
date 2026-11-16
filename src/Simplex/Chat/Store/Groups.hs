@@ -2324,7 +2324,7 @@ updatePreparedRelayedGroup db cxt user@User {userId} gInfo cReq cReqHash incogni
   getGroupInfoKeys db cxt user (groupId' gInfo)
 
 updatePublicMemberCount :: DB.Connection -> StoreCxt -> User -> GroupInfo -> ExceptT StoreError IO GroupInfo
-updatePublicMemberCount db cxt user GroupInfo {groupId} = do
+updatePublicMemberCount db cxt user@User {userId} GroupInfo {groupId} = do
   liftIO $ do
     totalCount <- fromMaybe 0 <$> maybeFirstRow fromOnly
       (DB.query db "SELECT summary_current_members_count FROM groups WHERE group_id = ?" (Only groupId))
@@ -2332,11 +2332,11 @@ updatePublicMemberCount db cxt user GroupInfo {groupId} = do
       (DB.query
         db
 #if defined(dbPostgres)
-        "SELECT COUNT(1) FROM group_members WHERE group_id = ? AND member_role = ? AND is_current_member(member_status)"
+        "SELECT COUNT(1) FROM group_members WHERE user_id = ? AND group_id = ? AND member_role = ? AND is_current_member(member_status)"
 #else
-        "SELECT COUNT(1) FROM group_members m JOIN group_member_status_predicates sp ON m.member_status = sp.member_status WHERE m.group_id = ? AND m.member_role = ? AND sp.current_member = 1"
+        "SELECT COUNT(1) FROM group_members m JOIN group_member_status_predicates sp ON m.member_status = sp.member_status WHERE m.user_id = ? AND m.group_id = ? AND m.member_role = ? AND sp.current_member = 1"
 #endif
-        (groupId, GRRelay))
+        (userId, groupId, GRRelay))
     let publicCount = max 0 (totalCount - relayCount) :: Int64
     currentTs <- getCurrentTime
     DB.execute db "UPDATE groups SET public_member_count = ?, updated_at = ? WHERE group_id = ?" (publicCount, currentTs, groupId)
