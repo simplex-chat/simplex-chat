@@ -1256,7 +1256,7 @@ prepareStaticDir root = do
 testServiceConfig :: FilePath -> Bool -> ServiceConfig
 testServiceConfig staticDir trustForwarded =
   ServiceConfig
-    { listener = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = staticDir, lServeWebapp = True, lTrustForwardedFor = trustForwarded, lNamesStaticDir = Nothing, lNamesPort = Nothing, lMetricsPort = Nothing},
+    { listener = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesSite = Just staticDir, lTrustForwardedFor = trustForwarded, lNamesSite = Nothing, lMetricsPort = Nothing},
       btcpay = Nothing,
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
@@ -1279,7 +1279,7 @@ testServeWebappOff =
     withTempDirectory "tests/tmp" "badge-static" $ \root -> do
       staticDir <- prepareStaticDir root
       let base = testServiceConfig staticDir False
-          cfg = base {listener = (listener base) {lServeWebapp = False}}
+          cfg = base {listener = (listener base) {lBadgesSite = Nothing}}
       withListener [] True holdMicros st cfg $ \_env client -> do
         (statusOf <$> webGet client "/") >>= (`shouldBe` 404)
         (statusOf <$> webGet client "/sw.js") >>= (`shouldBe` 404)
@@ -1320,7 +1320,7 @@ withBothSitesAs settings action =
       staticDir <- prepareStaticDir root
       namesDir <- prepareNamesDir root
       let base = testServiceConfig staticDir True
-          cfg = settings base {listener = (listener base) {lBadgesPort = 8080, lNamesStaticDir = Just namesDir, lNamesPort = Just 8081}}
+          cfg = settings base {listener = (listener base) {lBadgesPort = 8080, lNamesSite = Just (8081, namesDir)}}
       withListener [] True holdMicros st cfg $ \env badges@(mgr, _) -> do
         map fst (webListeners env) `shouldBe` [8080, 8081]
         [_, (_, namesSite)] <- pure (webListeners env)
@@ -1395,7 +1395,7 @@ testOneListenerWithoutTheNamesSite =
     withTempDirectory "tests/tmp" "badge-static" $ \root -> do
       staticDir <- prepareStaticDir root
       let base = testServiceConfig staticDir False
-          apiOnly = base {listener = (listener base) {lBadgesPort = 8080, lServeWebapp = False}}
+          apiOnly = base {listener = (listener base) {lBadgesPort = 8080, lBadgesSite = Nothing}}
       forM_ [base {listener = (listener base) {lBadgesPort = 8080}}, apiOnly] $ \cfg ->
         withListener [] True holdMicros st cfg $ \env _ -> map fst (webListeners env) `shouldBe` [8080]
 
@@ -1435,12 +1435,11 @@ testSiteDirsMustExist = do
         lc = listener (testServiceConfig staticDir False)
         missing site dir = Left ("listener." <> site <> "_static_dir = " <> dir <> " is not a directory; set it to the " <> site <> " build, since the default is the Docker image's path")
     checkSiteDirs lc `shouldReturn` Right ()
-    checkSiteDirs lc {lNamesStaticDir = Just namesDir, lNamesPort = Just 8081} `shouldReturn` Right ()
-    checkSiteDirs lc {lBadgesStaticDir = absent} `shouldReturn` missing "badges" absent
-    checkSiteDirs lc {lBadgesStaticDir = absent, lServeWebapp = False} `shouldReturn` Right ()
-    checkSiteDirs lc {lNamesStaticDir = Just absent, lNamesPort = Just 8081} `shouldReturn` missing "names" absent
-    checkSiteDirs lc {lServeWebapp = False, lNamesStaticDir = Just absent} `shouldReturn` Right ()
-    checkSiteDirs lc {lBadgesStaticDir = root </> "secret.txt"} `shouldReturn` missing "badges" (root </> "secret.txt")
+    checkSiteDirs lc {lNamesSite = Just (8081, namesDir)} `shouldReturn` Right ()
+    checkSiteDirs lc {lBadgesSite = Just absent} `shouldReturn` missing "badges" absent
+    checkSiteDirs lc {lBadgesSite = Nothing} `shouldReturn` Right ()
+    checkSiteDirs lc {lNamesSite = Just (8081, absent)} `shouldReturn` missing "names" absent
+    checkSiteDirs lc {lBadgesSite = Just (root </> "secret.txt")} `shouldReturn` missing "badges" (root </> "secret.txt")
 
 type WebClient = (Manager, String)
 

@@ -113,13 +113,12 @@ withIni t f = do
 testDefaults :: IO ()
 testDefaults = withIni fullIni $ \p -> do
   Right cfg <- readServiceConfig p
-  let ListenerConfig {lHost, lBadgesPort, lBadgesStaticDir, lServeWebapp, lTrustForwardedFor, lNamesStaticDir, lNamesPort} = listener cfg
+  let ListenerConfig {lHost, lBadgesPort, lBadgesSite, lTrustForwardedFor, lNamesSite} = listener cfg
   lHost `shouldBe` "127.0.0.1"
   lBadgesPort `shouldBe` 8080
-  lBadgesStaticDir `shouldBe` "/srv/badges"
-  lServeWebapp `shouldBe` True
+  lBadgesSite `shouldBe` Just "/srv/badges"
   lTrustForwardedFor `shouldBe` False
-  (lNamesStaticDir, lNamesPort) `shouldBe` (Nothing, Nothing)
+  lNamesSite `shouldBe` Nothing
   let PollConfig {pWaitingSeconds, pIdleSeconds} = poll cfg
   pWaitingSeconds `shouldBe` 3
   pIdleSeconds `shouldBe` 60
@@ -157,8 +156,8 @@ withListenerKeys ks = T.replace "[listener]\n" ("[listener]\n" <> T.unlines ks) 
 testBadgesListenerKeys :: IO ()
 testBadgesListenerKeys = do
   Right cfg <- parseIni (withListenerKeys ["badges_port = 9080", "badges_static_dir = ./apps/simplex-store-service/web/dist"])
-  let ListenerConfig {lBadgesPort, lBadgesStaticDir} = listener cfg
-  (lBadgesPort, lBadgesStaticDir) `shouldBe` (9080, "./apps/simplex-store-service/web/dist")
+  let ListenerConfig {lBadgesPort, lBadgesSite} = listener cfg
+  (lBadgesPort, lBadgesSite) `shouldBe` (9080, Just "./apps/simplex-store-service/web/dist")
 
 testRetiredListenerKeys :: IO ()
 testRetiredListenerKeys = do
@@ -187,7 +186,7 @@ testWebappOff :: IO ()
 testWebappOff =
   withIni (withListenerKeys ["serve_webapp = off"]) $ \p -> do
     Right cfg <- readServiceConfig p
-    lServeWebapp (listener cfg) `shouldBe` False
+    lBadgesSite (listener cfg) `shouldBe` Nothing
 
 fullStripeIni :: T.Text
 fullStripeIni =
@@ -322,7 +321,7 @@ testUnknownKeysAreNamed =
 testUnknownSectionStillBoots :: IO ()
 testUnknownSectionStillBoots =
   parseIni (fullIni <> "[legacy]\nsetting = on\n") >>= \r -> case r of
-    Right cfg -> lBadgesStaticDir (listener cfg) `shouldBe` "/srv/badges"
+    Right cfg -> lBadgesSite (listener cfg) `shouldBe` Just "/srv/badges"
     Left e -> expectationFailure ("a section nothing reads must be ignored, not refused: " <> e)
 
 -- | The ini parser stops at the first line it cannot read and keeps what it has, so without this a
@@ -816,14 +815,11 @@ testNamesWrittenOut = do
 testNamesListenerKeys :: IO ()
 testNamesListenerKeys = do
   Right cfg <- parseIni (namesIni namesSection chainSection)
-  let ListenerConfig {lNamesStaticDir, lNamesPort} = listener cfg
-  (lNamesStaticDir, lNamesPort) `shouldBe` (Just "/srv/names", Just 8081)
+  lNamesSite (listener cfg) `shouldBe` Just (8081, "/srv/names")
   Right written <- parseIni (namesIniWith ["names_static_dir = ./names/dist", "names_port = 9081"])
-  let ListenerConfig {lNamesStaticDir = dir, lNamesPort = port} = listener written
-  (dir, port) `shouldBe` (Just "./names/dist", Just 9081)
+  lNamesSite (listener written) `shouldBe` Just (9081, "./names/dist")
   Right apiOnly <- parseIni (namesIniWith ["serve_webapp = off"])
-  let ListenerConfig {lNamesStaticDir = apiOnlyDir, lNamesPort = apiOnlyPort} = listener apiOnly
-  (apiOnlyDir, apiOnlyPort) `shouldBe` (Just "/srv/names", Nothing)
+  lNamesSite (listener apiOnly) `shouldBe` Nothing
 
 testNamesSiteOnlyWithNames :: IO ()
 testNamesSiteOnlyWithNames =
@@ -838,8 +834,8 @@ testNamesPortRules = do
   refused ["badges_port = 8081"] "listener.names_port must differ from listener.badges_port"
   refused ["serve_webapp = off", "names_port = 8081"] "listener.names_port is set but serve_webapp is off, so nothing would use it"
   Right moved <- parseIni (namesIniWith ["badges_port = 8081", "names_port = 8080"])
-  let ListenerConfig {lBadgesPort, lNamesPort} = listener moved
-  (lBadgesPort, lNamesPort) `shouldBe` (8081, Just 8080)
+  let ListenerConfig {lBadgesPort, lNamesSite} = listener moved
+  (lBadgesPort, fst <$> lNamesSite) `shouldBe` (8081, Just 8080)
   where
     refused ks e = parseIni (namesIniWith ks) >>= (`shouldBe` e) . either id (const "parsed")
 

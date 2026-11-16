@@ -71,13 +71,9 @@ import Text.Read (readMaybe)
 data ListenerConfig = ListenerConfig
   { lHost :: Text,
     lBadgesPort :: Int,
-    lBadgesStaticDir :: FilePath,
-    lServeWebapp :: Bool,
+    lBadgesSite :: Maybe FilePath,
     lTrustForwardedFor :: Bool,
-    -- | @Nothing@ without @[names]@.
-    lNamesStaticDir :: Maybe FilePath,
-    -- | @Nothing@ unless the names site is served, which takes @[names]@ and @serve_webapp@ on.
-    lNamesPort :: Maybe Int,
+    lNamesSite :: Maybe (Int, FilePath),
     lMetricsPort :: Maybe Int
   }
   deriving (Eq, Show)
@@ -465,12 +461,12 @@ parseConfig ini = do
     ks -> Left ("nothing reads " <> T.unpack (T.intercalate ", " ks) <> ", and a mistyped [names] or [chain] setting would change what is sold: correct or remove it")
   lHost <- optional "listener" "host" "127.0.0.1"
   lBadgesPort <- listenerPort "badges_port" defaultBadgesPort
-  let lBadgesStaticDir = maybe defaultBadgesStaticDir T.unpack (present "listener" "badges_static_dir")
-  lServeWebapp <- bool "listener" "serve_webapp" True
+  serveWebapp <- bool "listener" "serve_webapp" True
+  let lBadgesSite = if serveWebapp then Just (maybe defaultBadgesStaticDir T.unpack (present "listener" "badges_static_dir")) else Nothing
   lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
-  (lNamesStaticDir, lNamesPort) <- namesSite lServeWebapp lBadgesPort
+  lNamesSite <- namesSite serveWebapp lBadgesPort
   lMetricsPort <- optionalPort "metrics_port"
-  when (any (\p -> p == lBadgesPort || Just p == lNamesPort) lMetricsPort) $
+  when (any (\p -> p == lBadgesPort || Just p == (fst <$> lNamesSite)) lMetricsPort) $
     Left "listener.metrics_port must differ from listener.badges_port and listener.names_port"
   btc <- btcpaySection
   str <- stripeSection
@@ -511,7 +507,7 @@ parseConfig ini = do
     Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
   pure
     ServiceConfig
-      { listener = ListenerConfig {lHost, lBadgesPort, lBadgesStaticDir, lServeWebapp, lTrustForwardedFor, lNamesStaticDir, lNamesPort, lMetricsPort},
+      { listener = ListenerConfig {lHost, lBadgesPort, lBadgesSite, lTrustForwardedFor, lNamesSite, lMetricsPort},
         btcpay = btc,
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
@@ -539,13 +535,12 @@ parseConfig ini = do
     namesSite serve badgesPort
       | not (hasSection "names") = case filter (isJust . look "listener") namesListenerKeys of
           k : _ -> unusedListenerKey k "[names] is absent"
-          [] -> Right (Nothing, Nothing)
+          [] -> Right Nothing
+      | not serve = Nothing <$ when (isJust (look "listener" "names_port")) (unusedListenerKey "names_port" "serve_webapp is off")
       | otherwise = do
-          when (not serve && isJust (look "listener" "names_port")) $ unusedListenerKey "names_port" "serve_webapp is off"
-          namesPort <- if serve then Just <$> listenerPort "names_port" defaultNamesPort else Right Nothing
-          when (namesPort == Just badgesPort) $ Left "listener.names_port must differ from listener.badges_port"
-          let staticDir = maybe defaultNamesStaticDir T.unpack (present "listener" "names_static_dir")
-          Right (Just staticDir, namesPort)
+          namesPort <- listenerPort "names_port" defaultNamesPort
+          when (namesPort == badgesPort) $ Left "listener.names_port must differ from listener.badges_port"
+          Right (Just (namesPort, maybe defaultNamesStaticDir T.unpack (present "listener" "names_static_dir")))
     num s k d = fromMaybe d <$> optionalNum s k
     -- Integer, because readMaybe at Int wraps silently, reading 2^64+4 as 4.
     optionalNum s k = forM (look s k) $ \v -> case readMaybe (T.unpack (T.strip v)) of
