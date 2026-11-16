@@ -37,6 +37,7 @@ import Simplex.Chat.Types.Preferences (ChatBotCommand (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import StoreService.Config (boundedDecimal)
 
 maxBulk, maxUses, maxMonths, maxNameYears :: Int
 maxBulk = 100
@@ -136,13 +137,8 @@ closeArgsP = MCClose <$> referenceP
 referenceP :: A.Parser Text
 referenceP = safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace)
 
--- attoparsec's decimal wraps silently at Int, so the bound is checked on the wider Integer.
 boundedInt :: CmdOpt -> A.Parser Int
-boundedInt CmdOpt {optKey, optMin, optMax} = do
-  n <- A.decimal :: A.Parser Integer
-  if n >= fromIntegral optMin && n <= fromIntegral optMax
-    then pure (fromInteger n)
-    else fail (T.unpack optKey <> " out of range")
+boundedInt CmdOpt {optMin, optMax} = boundedDecimal optMin optMax
 
 -- BadgeType decodes anything to BTUnknown, so a typo would issue an unusable code.
 badgeTypeP :: A.Parser BadgeType

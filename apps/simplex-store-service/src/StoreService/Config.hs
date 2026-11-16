@@ -26,6 +26,7 @@ module StoreService.Config
     defaultLogLevel,
     localChainId,
     isLoopbackHost,
+    boundedDecimal,
     readServiceConfig,
     iniSections,
     unknownKeys,
@@ -35,7 +36,8 @@ where
 import qualified Control.Exception as E
 import Control.Applicative ((<|>))
 import Control.Logger.Simple (LogLevel (..), logNote, logWarn)
-import Control.Monad (foldM, forM, forM_, mfilter, unless, when)
+import Control.Monad (foldM, forM_, mfilter, unless, when)
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Attoparsec.Text (char, endOfInput, option, parseOnly, satisfy, skipSpace, skipWhile, takeText, takeWhile1)
 import Data.Bifunctor (first)
 import qualified Data.ByteArray as BA
@@ -365,6 +367,11 @@ checkAppleHost creditTestPurchases AppleStoreConfig {aServerApi} = case (creditT
   (False, _) -> Left $ "apple.api_host must be " <> T.unpack defaultAppleApiHost <> " unless [dev] credit_test_purchases = on, as no other host credits a real subscription"
   (True, _) -> Left $ "[dev] credit_test_purchases = on needs [apple]'s server API key with api_host = " <> T.unpack appleSandboxHost <> ", as a Sandbox receipt would otherwise be credited as a real purchase"
 
+boundedDecimal :: Integral a => a -> a -> A.Parser a
+boundedDecimal lowest highest = do
+  n <- A.decimal
+  if n >= toInteger lowest && n <= toInteger highest then pure (fromInteger n) else fail "out of bounds"
+
 readServiceConfig :: FilePath -> IO (Either String ServiceConfig)
 readServiceConfig path =
   -- read as UTF-8 whatever the locale, which is ASCII in a container with none set
@@ -477,8 +484,8 @@ parseConfig ini = do
       Left "stripe.secret_key and stripe.publishable_key must be both live keys or both test keys"
     when (testSecretKey sSecretKey && maybe False (not . onTestChain) nms) $
       Left ("Stripe test keys are accepted with [names] only on a test chain, [chain] chain_id = " <> show localChainId <> " or " <> show sepoliaChainId)
-  pWaitingSeconds <- cadence "waiting_seconds" 3
-  pIdleSeconds <- cadence "idle_seconds" 60
+  pWaitingSeconds <- num "poll" "waiting_seconds" 1 maxBound 3
+  pIdleSeconds <- num "poll" "idle_seconds" 1 maxBound 60
   apple <- appleSection
   google <- googleSection
   devUnverifiedReceipts <- bool "dev" "accept_unverified_store_receipts" False
@@ -515,8 +522,7 @@ parseConfig ini = do
     required s k = maybe (Left (T.unpack s <> "." <> T.unpack k <> " is required")) Right (present s k)
     optional s k d = Right (fromMaybe d (present s k))
     listenerPort k d = fromMaybe d <$> optionalPort k
-    optionalPort k =
-      optionalNum "listener" k >>= mapM (\p -> if 1 <= p && p <= 65535 then Right p else Left ("listener." <> T.unpack k <> " must be between 1 and 65535"))
+    optionalPort k = optionalNum "listener" k 1 65535
     unusedListenerKey k why = Left ("listener." <> T.unpack k <> " is set but " <> why <> ", so nothing would use it")
     namesSite serve badgesPort
       | not (hasSection "names") = case filter (isJust . look "listener") namesListenerKeys of
@@ -527,31 +533,30 @@ parseConfig ini = do
           namesPort <- listenerPort "names_port" defaultNamesPort
           when (namesPort == badgesPort) $ Left "listener.names_port must differ from listener.badges_port"
           Right (Just (namesPort, maybe defaultNamesStaticDir T.unpack (present "listener" "names_static_dir")))
-    num s k d = fromMaybe d <$> optionalNum s k
-    -- Integer, because readMaybe at Int wraps silently, reading 2^64+4 as 4.
-    optionalNum s k = forM (look s k) $ \v -> case readMaybe (T.unpack (T.strip v)) of
-      Just n | n >= toInteger (minBound :: Int), n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
-      _ -> Left (T.unpack k <> " must be a whole number")
+    num :: (Integral a, Bounded a, Show a) => Text -> Text -> a -> a -> a -> Either String a
+    num s k lowest highest d = fromMaybe d <$> optionalNum s k lowest highest
+    optionalNum :: (Integral a, Bounded a, Show a) => Text -> Text -> a -> a -> Either String (Maybe a)
+    optionalNum s k lowest highest = mapM (boundedSetting (T.unpack s <> "." <> T.unpack k) lowest highest) (look s k)
+    boundedSetting :: (Integral a, Bounded a, Show a) => String -> a -> a -> Text -> Either String a
+    boundedSetting name lowest highest v =
+      first (const (name <> " must be a whole number " <> bounds)) $ A.parseOnly (boundedDecimal lowest highest <* A.endOfInput) (encodeUtf8 v)
+      where
+        bounds
+          | highest == maxBound = "of at least " <> show lowest
+          | otherwise = "between " <> show lowest <> " and " <> show highest
     bool s k d = case fmap (T.toLower . T.strip) (look s k) of
       Nothing -> Right d
       Just "on" -> Right True
       Just "off" -> Right False
       Just other -> Left (T.unpack k <> " must be on or off, not " <> T.unpack other)
-    -- num accepts 0 and negatives, and a zero cadence is a busy loop.
-    cadence k d = do
-      v <- num "poll" k d
-      if v >= 1 then Right v else Left ("poll." <> T.unpack k <> " must be at least 1 second")
     issuerSection
       | not (hasSection "issuer") = Right Nothing
       | otherwise = do
           keyIdx <- issuerIndex
           secretKey <- issuerSecret
           pure (Just BadgeIssuerKey {keyIdx, secretKey})
-    issuerIndex = required "issuer" "index" >>= keyIndex "issuer.index"
+    issuerIndex = required "issuer" "index" >>= boundedSetting "issuer.index" 1 maxBound
     issuerSecret = required "issuer" "private_key" >>= keySecret "issuer.private_key"
-    keyIndex k v = case readMaybe (T.unpack v) of
-      Just n | n >= 1, n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
-      _ -> Left (k <> " must be a positive whole number")
     keySecret k v =
       either (const (Left (k <> " is not a valid issuer secret; use the value from `simplex-chat badge keygen`"))) Right $
         strDecode (B.pack (T.unpack v))
@@ -563,7 +568,7 @@ parseConfig ini = do
       pure ks
     devKey entry = case T.breakOn ":" entry of
       (i, sk) | not (T.null sk) -> do
-        keyIdx <- keyIndex "issuer.dev_keys index" (T.strip i)
+        keyIdx <- boundedSetting "issuer.dev_keys index" 1 maxBound (T.strip i)
         secretKey <- keySecret "issuer.dev_keys secret" (T.strip (T.drop 1 sk))
         pure BadgeIssuerKey {keyIdx, secretKey}
       _ -> Left "issuer.dev_keys must be <index>:<secret> entries separated by commas"
@@ -576,14 +581,10 @@ parseConfig ini = do
           bApiKey <- required "btcpay" "api_key"
           bStoreId <- required "btcpay" "store_id"
           bWebhookSecret <- required "btcpay" "webhook_secret"
-          bExpiryMinutes <- expiryMinutes
+          bExpiryMinutes <- num "btcpay" "expiry_minutes" 1 maxBound defaultExpiryMinutes
           bSpeedPolicy <- speedPolicy
           bPaymentTolerance <- tolerance
           pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros, bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros})
-    -- A negative window puts BTCPay's startDate in the future, so every poll comes back empty.
-    expiryMinutes = do
-      v <- num "btcpay" "expiry_minutes" defaultExpiryMinutes
-      if v >= 1 then Right v else Left "btcpay.expiry_minutes must be at least 1 minute"
     speedPolicy = case look "btcpay" "speed_policy" of
       Nothing -> Right MediumSpeed
       Just v -> case lookup (T.strip v) [(speedPolicyName p, p) | p <- speedPolicies] of
@@ -604,7 +605,7 @@ parseConfig ini = do
       | not (hasSection "group") = Right Nothing
       | otherwise = do
           gDisplayName <- required "group" "display_name" >>= validGroupName
-          gNameCodesPerDay <- atLeast 0 "group" "name_codes_per_day" defaultNameCodesPerDay
+          gNameCodesPerDay <- num "group" "name_codes_per_day" 0 maxBound defaultNameCodesPerDay
           pure (Just GroupConfig {gDisplayName, gDescription = present "group" "description", gNameCodesPerDay})
     -- The core refuses a group name that mkValidName would change, so it is rejected here.
     validGroupName n =
@@ -628,7 +629,7 @@ parseConfig ini = do
           -- it is written into the sites' HTML as it is
           unless (publishableKey sPublishableKey) $ Left "stripe.publishable_key must be pk_live_ or pk_test_ followed by letters and digits"
           sWebhookSecret <- required "stripe" "webhook_secret"
-          sSessionMinutes <- sessionMinutes
+          sSessionMinutes <- num "stripe" "session_minutes" minSessionMinutes maxSessionMinutes defaultSessionMinutes
           let sHost = defaultStripeHost
           pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost, sTimeoutMicros = providerTimeoutMicros, sCheckoutTimeoutMicros = providerCheckoutTimeoutMicros})
     appleSection
@@ -663,15 +664,14 @@ parseConfig ini = do
       | not (hasSection "chain") = Left "[names] needs a [chain] section"
       | otherwise = do
           nTLD <- tldSetting
-          nYears <- num "names" "years" minNameYears
-          when (nYears < minNameYears) $ Left ("names.years must be at least " <> show minNameYears)
+          nYears <- num "names" "years" minNameYears maxBound minNameYears
           nTermStart <- termStart
-          nTermSlackSeconds <- atLeast 0 "names" "term_slack_seconds" 3600
-          nRevealMarginSeconds <- atLeast 0 "names" "reveal_margin_seconds" 900
-          nMaxOrderMoves <- atLeast 0 "names" "max_order_moves" 3
+          nTermSlackSeconds <- num "names" "term_slack_seconds" 0 maxBound 3600
+          nRevealMarginSeconds <- num "names" "reveal_margin_seconds" 0 maxBound 900
+          nMaxOrderMoves <- num "names" "max_order_moves" 0 maxBound 3
           nCodesOnly <- bool "names" "codes_only" False
-          nRecordEditsPerYear <- recordEditsPerYear
-          nMinPriceCentsPerYear <- atLeast 1 "names" "min_price_cents_per_year" defaultMinPriceCentsPerYear
+          nRecordEditsPerYear <- num "names" "record_edits_per_year" minRecordEditsPerYear maxRecordEditsPerYear defaultRecordEditsPerYear
+          nMinPriceCentsPerYear <- num "names" "min_price_cents_per_year" 1 maxBound defaultMinPriceCentsPerYear
           nCommunity <- communityList nTLD
           nChain <- chainSection
           pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nCodesOnly, nRecordEditsPerYear, nMinPriceCentsPerYear, nCommunity, nChain})
@@ -696,21 +696,18 @@ parseConfig ini = do
     labelRefusal k = \case
       LELength -> k <> " must be " <> show minNameLength <> " to " <> show maxNameLength <> " characters"
       LEChars -> k <> " must be lower-case letters and digits, with single hyphens between them"
-    atLeast lowest s k d = do
-      v <- num s k d
-      if v >= lowest then Right v else Left (T.unpack s <> "." <> T.unpack k <> " must be at least " <> show lowest)
     -- No error below quotes a value, since the URL and the key are secrets.
     chainSection = do
       cRpcUrl <- rpcUrl
-      cChainId <- positiveWord "chain_id" Nothing
+      cChainId <- optionalNum "chain" "chain_id" 1 maxBound >>= maybe (Left "chain.chain_id is required") Right
       cController <- address "controller"
       cSponsor <- address "sponsor"
       cBaseRegistrar <- address "base_registrar"
       cResolver <- address "resolver"
       cServiceKey <- serviceKey
-      cConfirmations <- atLeast 1 "chain" "confirmations" 3
-      cGasLimitCap <- positiveWord "gas_limit_cap" (Just 8000000)
-      cMaxFeePerGas <- positiveWord "max_fee_per_gas" (Just defaultMaxFeePerGas)
+      cConfirmations <- num "chain" "confirmations" 1 maxBound 3
+      cGasLimitCap <- num "chain" "gas_limit_cap" 1 maxBound 8000000
+      cMaxFeePerGas <- num "chain" "max_fee_per_gas" 1 maxBound defaultMaxFeePerGas
       pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas}
     -- http only to a node on the same machine, as the URL can carry a provider's API key
     rpcUrl = do
@@ -718,12 +715,6 @@ parseConfig ini = do
       unless ("https://" `T.isPrefixOf` v || ("http://" `T.isPrefixOf` v && isLoopbackHost (urlHost v))) $
         Left "chain.rpc_url must be an https URL, or http to a node on loopback: 127.0.0.1, ::1 or localhost"
       Right (T.unpack v)
-    positiveWord k d = case (present "chain" k, d) of
-      (Nothing, Just v) -> Right v
-      (Nothing, Nothing) -> Left ("chain." <> T.unpack k <> " is required")
-      (Just v, _) -> case readMaybe (T.unpack v) :: Maybe Integer of
-        Just n | n >= 1, n <= toInteger (maxBound :: Word64) -> Right (fromInteger n)
-        _ -> Left ("chain." <> T.unpack k <> " must be a positive whole number")
     address k = do
       v <- required "chain" k
       either (const (Left ("chain." <> T.unpack k <> " is not an Ethereum address"))) Right (strDecode (encodeUtf8 v) :: Either String Address)
@@ -733,13 +724,3 @@ parseConfig ini = do
       case T.stripPrefix "0x" v of
         Just h | T.length h == 2 * serviceKeyBytes, Right bytes <- convertFromBase Base16 (encodeUtf8 h) -> either (const bad) Right (mkPrivateKey (BA.convert (bytes :: B.ByteString)))
         _ -> bad
-    recordEditsPerYear = do
-      v <- num "names" "record_edits_per_year" defaultRecordEditsPerYear
-      if v >= minRecordEditsPerYear && v <= maxRecordEditsPerYear
-        then Right v
-        else Left ("names.record_edits_per_year must be between " <> show minRecordEditsPerYear <> " and " <> show maxRecordEditsPerYear)
-    sessionMinutes = do
-      v <- num "stripe" "session_minutes" defaultSessionMinutes
-      if v >= minSessionMinutes && v <= maxSessionMinutes
-        then Right v
-        else Left ("stripe.session_minutes must be between " <> show minSessionMinutes <> " and " <> show maxSessionMinutes <> " minutes")
