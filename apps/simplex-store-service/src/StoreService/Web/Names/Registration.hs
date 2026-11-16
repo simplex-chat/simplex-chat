@@ -19,7 +19,6 @@ import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logNote)
 import Control.Monad (join)
-import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -34,8 +33,7 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Names.Orders (OrdersEnv (..), WriteRefusal (..), versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (RegisterIntent (..))
-import StoreService.Names.Reveal (RevealFields (..), RevealRefusal (..), SignedLabel (..), checkAcceptance, checkIntent, committedRegistration, isRepeat, linksValid, parseRevealFields, parseSignedLabel, revealOf)
+import StoreService.Names.Reveal (RevealRefusal (..), checkReveal, isRepeat, linksValid)
 import StoreService.Names.Store (BrokenInvariant (..), NameRegistration (..), OrderPhase (..), getRegistration, updateRegistration)
 import StoreService.Names.Turns (withRegistrationTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
@@ -73,28 +71,24 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
     Nothing -> respond notFound
     Just r ->
       readBoundedBody nameBodyBytes req >>= \case
-        Just body | Just (J.Object o) <- J.decode body, Just signed <- parseSignedLabel o ->
-          withRegistrationTurn oeStore oeTurns r (decide o signed) >>= answer . maybe RDGone (either (const RDChanged) id)
+        Just body | Just request <- J.decode body ->
+          withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
         _ -> answer $ RDRefused RVBadRequest Nothing
   where
     rid = RegistrationId ridText
-    decide o signed r@NameRegistration {nrReveal} = do
+    decide request r@NameRegistration {nrReveal} = do
       now <- oeNow
       case nrReveal of
-        Just stored -> pure $ if isRepeat signed stored then RDAccepted Nothing else RDRefused RVBadRequest Nothing
+        Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused RVBadRequest Nothing
         Nothing
           | nrPhase (registrationAt now r) /= OCommitted -> pure $ RDRefused RVBadRequest Nothing
-          | otherwise -> case parseRevealFields o of
-              Nothing -> pure $ RDRefused RVBadRequest Nothing
-              Just fields -> either (\refusal -> pure $ RDRefused refusal Nothing) (signedReveal now r signed fields) $ committedRegistration oeConfig r signed fields
-    signedReveal now r SignedLabel {slSignature} RevealFields {rfNonce, rfDeadline, rfAcceptance} registration = do
-      let intent = RegisterIntent {riRegistration = registration, riNonce = rfNonce, riDeadline = rfDeadline, riSignature = slSignature}
-      runExceptT (ExceptT (checkIntent oeConfig oeContracts now (nrRevealBefore r) intent) >> ExceptT (checkAcceptance oeConfig oeContracts r rfDeadline rfAcceptance)) >>= \case
-        Left refusal -> pure $ RDRefused refusal Nothing
-        Right ()
-          | linksValid registration -> write now (RDAccepted . Just) r {nrReveal = Just $ revealOf intent rfAcceptance}
-          | isJust (nrLinksRefusedAt r) -> pure $ RDRefused RVInvalidLink Nothing
-          | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrLinksRefusedAt = Just now}
+          | otherwise ->
+              checkReveal oeConfig oeContracts now r request >>= \case
+                Left refusal -> pure $ RDRefused refusal Nothing
+                Right rv
+                  | linksValid rv -> write now (RDAccepted . Just) r {nrReveal = Just rv}
+                  | isJust (nrLinksRefusedAt r) -> pure $ RDRefused RVInvalidLink Nothing
+                  | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrLinksRefusedAt = Just now}
     write now decided r =
       withTransaction oeStore (\db -> versionWritten <$> updateRegistration db r now) >>= \case
         Right v -> pure $ decided v

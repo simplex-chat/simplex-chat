@@ -376,7 +376,7 @@ reveal =
       rvNonce = 3,
       rvDeadline = 1792915140,
       rvSignature = signature,
-      rvAcceptance = Nothing
+      rvAcceptance = TermsAcceptance {taTermsHash = digestFixture 11, taNonce = 0, taSignature = signature}
     }
 
 testVersionBumps :: IO ()
@@ -402,7 +402,7 @@ testRoundTrip = withServiceStore $ \st -> do
   let changed =
         r
           { nrPhase = OFailed (at 2) FRNotSignedInTime,
-            nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = Just TermsAcceptance {taTermsHash = digestFixture 10, taNonce = 4, taSignature = signature}},
+            nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = TermsAcceptance {taTermsHash = digestFixture 10, taNonce = 4, taSignature = signature}},
             nrCommitTx = Just (TxHash $ digestFixture 8),
             nrCommitBlock = Just 100,
             nrRegisterTx = Just (TxHash $ digestFixture 9),

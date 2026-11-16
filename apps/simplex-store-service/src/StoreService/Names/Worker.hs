@@ -255,7 +255,7 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
         _ -> save w now r {nrPhase = OFailed now FRNotSignedInTime}
       Just rv@NameReveal {rvAcceptance, rvDeadline} ->
         -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then decides
-        (pure (if unlapsed now r then rvAcceptance else Nothing) $>>= relayAcceptance w now r rvDeadline) >>= \case
+        (if unlapsed now r then relayAcceptance w now r rvDeadline rvAcceptance else pure Nothing) >>= \case
           Just next -> pure next
           Nothing -> case chainTime <$> nrRevealAfter of
             Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter

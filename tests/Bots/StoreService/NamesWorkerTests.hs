@@ -210,11 +210,12 @@ day = 86400
 openPhase :: NameRegistration -> NameRegistration
 openPhase r = (committedPhase r) {nrRevealAfter = Just (orderSeconds - minAge), nrRevealBefore = Just (orderSeconds - minAge + maxAge)}
 
--- | The reveal the page sends, its intent signed with the owner's key.
+-- | The reveal the page sends, its intent signed with the owner's key, its acceptance held by the policy.
 signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
-signedReveal Ctx {cRandom, cOrders} key rv r = do
+signedReveal Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration {nrCommitment, nrOwner} = do
   let RegisterIntent {riRegistration} = intentOf (oeConfig cOrders) r rv
   sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration (rvNonce rv) (rvDeadline rv))
+  answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment <> addressWord nrOwner) $ Returns $ taTermsHash $ rvAcceptance rv
   pure rv {rvSignature = sig}
 
 -- | The registration with the page's reveal of the label accepted.
@@ -475,6 +476,7 @@ testIntentAcrossCommits = withWorker $ \w@W {wCtx = ctx} -> do
   (nrPhase x, nrReveal x, nrRevealAfter x, nrRevealBefore x, nrCommitTx x, nrVersion x) `shouldBe` (OCommitting, Just reveal, Nothing, Nothing, Just commitTx, nrVersion r + 2)
   -- requeued with its intent while a third party's commit of the commitment is live: not ours, so only our commit goes
   r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} $ \o -> (openPhase o) {nrPhase = OQueued, nrReveal = Just reveal}
+  answerAccepted w r2 $ Returns $ taTermsHash $ rvAcceptance reveal
   answerCommitment w r2 (orderSeconds - 30)
   steps w r2 >>= waitingUntil >>= (`shouldBe` at (orderSeconds - 30 + minAge))
   x2 <- stored ctx r2
@@ -520,7 +522,7 @@ testLostRace = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   answerAvailable w False
   dryRunsRevert w "NameNotAvailable(string)" $ abiTuple [Dynamic $ abiBytes "alicebakery"]
-  -- held at the register check's ownerOf read, after the registration was read
+  -- held at its first chain read, the name policy's for the held acceptance, after the registration was read
   (stepping, gate) <- pausedAt cNode "eth_call" $ stepRegistration wWorker (nrId r)
   changed <- rewrite ctx r $ \o -> o {nrRevealAfter = (+ 1) <$> nrRevealAfter o}
   releaseGate gate
@@ -784,7 +786,7 @@ acceptedRevealFor :: Address -> Bool -> ByteString -> Ctx -> NameRegistration ->
 acceptedRevealFor policy community terms ctx@Ctx {cRandom} r = do
   rv <- signedReveal ctx keyA reveal {rvLabel = "alicebakery"} r
   sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId policy) (termsKind community) (nrCommitment r) terms 0 (rvDeadline rv))
-  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = Just TermsAcceptance {taTermsHash = terms, taNonce = 0, taSignature = sig}}})
+  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = TermsAcceptance {taTermsHash = terms, taNonce = 0, taSignature = sig}}})
 
 -- | The terms hash the policy holds as accepted for the registration's commitment by its owner.
 answerAccepted :: W -> NameRegistration -> CallAnswer -> IO ()
@@ -794,7 +796,7 @@ answerAccepted W {wCtx = Ctx {cNode}} NameRegistration {nrCommitment, nrOwner} =
 testAcceptanceRelayed :: IO ()
 testAcceptanceRelayed = forM_ [(False, fakeGeneralTerms, plainTerms), (True, fakeCommunityTerms, communityTerms)] $ \(community, terms, signed) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   when community $ listCommunityName cNode $ labelHash "alicebakery"
-  r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder {oTerms = signed} openPhase >>= acceptedRevealFor fakeNamePolicy community terms ctx
+  r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = acceptance}} <- paidIn ctx aliceOrder {oTerms = signed} openPhase >>= acceptedRevealFor fakeNamePolicy community terms ctx
   relay <- steps w r >>= awaiting
   [acceptRaw] <- sent w
   ((txTo &&& txData) <$> decodeSignedTx acceptRaw) `shouldBe` Right (fakeNamePolicy, acceptCalldata (termsKind community) (nrCommitment r) (nrOwner r) rvDeadline acceptance)
@@ -830,7 +832,7 @@ testAcceptanceRefused = forM_ ["TermsMismatch(bytes32,bytes32)", "InvalidNonce()
 
 testAcceptanceSentFirst :: IO ()
 testAcceptanceSentFirst = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
-  r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
   answerAccepted w r $ Returns fakeGeneralTerms
   answerCallOnce cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment r <> addressWord (nrOwner r)) $ Returns $ uint256 (0 :: Int)
   revertDryRun cNode (acceptCalldata (termsKind False) (nrCommitment r) (nrOwner r) rvDeadline acceptance) $ Just $ selector "InvalidNonce()"

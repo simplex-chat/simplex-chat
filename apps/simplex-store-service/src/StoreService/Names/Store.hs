@@ -277,7 +277,7 @@ data NameReveal = NameReveal
     rvDeadline :: ChainSeconds,
     rvSignature :: RecoverableSignature,
     -- | the owner's acceptance of the terms of the name's kind
-    rvAcceptance :: Maybe TermsAcceptance
+    rvAcceptance :: TermsAcceptance
   }
   deriving (Eq, Show)
 
@@ -771,8 +771,7 @@ toRegistration
       (Just rvLabel, Just (Binary rvSecret), Just nonce, Just deadline, Just (Binary sig)) -> do
         rvSignature <- decodeSignature sig
         rvAcceptance <- case (acceptTerms_, acceptNonce_, acceptSignature_) of
-          (Nothing, Nothing, Nothing) -> Right Nothing
-          (Just (Binary taTermsHash), Just n, Just (Binary s)) -> (\taSignature -> Just TermsAcceptance {taTermsHash, taNonce = word64 n, taSignature}) <$> decodeSignature s
+          (Just (Binary taTermsHash), Just n, Just (Binary s)) -> (\taSignature -> TermsAcceptance {taTermsHash, taNonce = word64 n, taSignature}) <$> decodeSignature s
           _ -> Left $ "name_registrations acceptance: " <> rid
         Right $ Just NameReveal {rvLabel, rvSecret, rvContactLink = nrContactLink, rvChannelLink = nrChannelLink, rvNonce = word64 nonce, rvDeadline = word64 deadline, rvSignature, rvAcceptance}
       _ -> Left $ "name_registrations reveal: " <> rid
@@ -917,7 +916,7 @@ updateRegistration db r now = do
       ORegistered expiry at -> (Just expiry, Just at, Nothing, Nothing)
       OFailed at reason -> (Nothing, Nothing, Just at, Just reason)
       _ -> (Nothing, Nothing, Nothing, Nothing)
-    acceptance = rvAcceptance =<< nrReveal
+    acceptance = rvAcceptance <$> nrReveal
     live = orderLive r
     refusal =
       DB.query db (mkQuery "SELECT version, live FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case

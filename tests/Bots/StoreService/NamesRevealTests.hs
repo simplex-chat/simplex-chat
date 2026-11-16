@@ -23,6 +23,7 @@ import qualified Data.Aeson as J
 import Data.Aeson ((.=))
 import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import Data.IORef (writeIORef)
@@ -47,7 +48,7 @@ import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
-import StoreService.Names.Reveal (RevealFields (..), parseRevealFields)
+import StoreService.Names.Reveal (RevealRequest (..))
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..), OrderPhase (..), getRegistration)
 import StoreService.Names.Turns (labelTurnCount)
 import StoreService.Web.Http (createLimit, holdMicros, nameBodyBytes, readLimit)
@@ -244,7 +245,7 @@ testAcceptanceStored = withListedReveals $ \Fx {fCtx = ctx} -> do
   sig <- signIntent ctx keyA alice 0 deadline
   acceptance <- acceptanceOf ctx keyA alice True fakeCommunityTerms 2 deadline
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 deadline) `shouldReturn` accepted
-  (rvAcceptance =<<) . nrReveal <$> stored ctx rid `shouldReturn` Just acceptance
+  fmap rvAcceptance . nrReveal <$> stored ctx rid `shouldReturn` Just acceptance
 
 testAcceptanceRefusals :: IO ()
 testAcceptanceRefusals = do
@@ -282,8 +283,8 @@ testAcceptanceFields = do
   sig <- either error id <$> signRecoverable g keyA (C.keccak256 "acceptance")
   let fields = KM.fromList ["termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int), "signature" .= hex (serializeSignature sig)]
       replaced k v = J.Object $ KM.insert k v fields
-      acceptanceRead a = rfAcceptance <$> parseRevealFields (KM.insert "acceptance" a $ bodyOf sig alice 0 revealBefore)
-  acceptanceRead (J.Object fields) `shouldBe` Just (Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 2, taSignature = sig})
+      acceptanceRead a = rqAcceptance <$> JT.parseMaybe J.parseJSON (J.Object $ KM.insert "acceptance" a $ bodyOf sig alice 0 revealBefore)
+  acceptanceRead (J.Object fields) `shouldBe` Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 2, taSignature = sig}
   forM_
     [ J.String "acceptance",
       replaced "termsHash" $ J.String $ "0x" <> T.toUpper (T.drop 2 $ hex fakeCommunityTerms),
@@ -345,7 +346,7 @@ testWithLinks = bounded "with links" $ withReveals $ \Fx {fCtx = ctx} -> do
   NameRegistration {nrVersion, nrPhase, nrReveal, nrLinksRefusedAt} <- stored ctx rid
   (nrVersion, nrPhase, nrLinksRefusedAt) `shouldBe` (v + 1, OCommitted, Nothing)
   nrReveal
-    `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig, rvAcceptance = Just acceptance}
+    `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig, rvAcceptance = acceptance}
   (status, view) <- woken "registration poll" poll
   (status, field "version" view, field "label" view) `shouldBe` (200, Just (J.toJSON $ v + 1), Just "alicebakery")
 
@@ -393,7 +394,7 @@ testRepeats = withReveals $ \Fx {fCtx = ctx} -> do
   reveal ctx rid body `shouldReturn` accepted
   v <- change ctx rid $ \r -> r {nrPhase = ORegistering}
   reveal ctx rid body `shouldReturn` accepted
-  resigned <- (\sig -> bodyOf sig alice 0 revealBefore) <$> signIntent ctx keyA alice 1 revealBefore
+  resigned <- (\sig -> KM.insert "acceptance" (fromJust $ KM.lookup "acceptance" body) $ bodyOf sig alice 0 revealBefore) <$> signIntent ctx keyA alice 1 revealBefore
   reveal ctx rid resigned `shouldReturn` badRequest
   reveal ctx rid (KM.insert "label" "alicebakerz" body) `shouldReturn` badRequest
   nrVersion <$> stored ctx rid `shouldReturn` v
@@ -421,14 +422,14 @@ testIntentRefusals = withReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
   sig <- signIntent ctx keyA alice 0 revealBefore
   other <- signIntent ctx fakeRegistrarKey alice 0 revealBefore
   early <- signIntent ctx keyA alice 0 (revealBefore - 1)
+  acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
   forM_
     [ ("high s", bodyOf (highS sig) alice 0 revealBefore),
       ("another signer", bodyOf other alice 0 revealBefore),
       ("a deadline a second before revealBefore", bodyOf early alice 0 (revealBefore - 1))
     ]
-    $ \(what, body) -> (what,) <$> reveal ctx rid body `shouldReturn` (what :: String, badRequest)
+    $ \(what, body) -> (what,) <$> reveal ctx rid (withAcceptance acceptance body) `shouldReturn` (what :: String, badRequest)
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (1 :: Int)
-  acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
@@ -544,7 +545,8 @@ testNoRefusalRecorded = withReveals $ \Fx {fCtx = ctx} -> do
   committedBad <- committed ctx (orderOf overBound)
   badBefore <- unwritten <$> stored ctx committedBad
   other <- signIntent ctx fakeRegistrarKey overBound 0 revealBefore
-  reveal ctx committedBad (bodyOf other overBound 0 revealBefore) `shouldReturn` badRequest
+  acceptance <- acceptanceOf ctx keyA overBound False fakeGeneralTerms 0 revealBefore
+  reveal ctx committedBad (withAcceptance acceptance $ bodyOf other overBound 0 revealBefore) `shouldReturn` badRequest
   unwritten <$> stored ctx committedBad `shouldReturn` badBefore
   ownerReveal ctx committedBad overBound `shouldReturn` refused 400 "invalid_link"
   isJust . nrLinksRefusedAt <$> stored ctx committedBad `shouldReturn` True

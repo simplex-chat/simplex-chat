@@ -22,8 +22,6 @@ module StoreService.Names.Orders
     jsonField,
     textWith,
     boundedInteger,
-    textField,
-    integerField,
     checkLength,
     checkSigner,
     checkOrderSigner,
@@ -52,7 +50,6 @@ import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM, unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
@@ -188,14 +185,6 @@ textWith f = J.withText "string" $ either fail pure . f
 -- | A JSON integer within the type's range; a fraction, an exponent past it, or any other value fails.
 boundedInteger :: (Integral a, Bounded a) => J.Value -> JT.Parser a
 boundedInteger = J.withScientific "integer" $ maybe (fail "not an integer in its range") pure . toBoundedInteger
-
-textField :: J.Object -> J.Key -> Maybe Text
-textField o k = case KM.lookup k o of
-  Just (J.String t) -> Just t
-  _ -> Nothing
-
-integerField :: (Integral a, Bounded a) => J.Value -> Maybe a
-integerField = JT.parseMaybe boundedInteger
 
 checkLength :: OrderFields -> Either OrderRefusal ()
 checkLength OrderFields {ofLength} =
