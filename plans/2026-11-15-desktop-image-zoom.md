@@ -6,32 +6,35 @@ On desktop, a full-screen image can't be zoomed. Android zooms it by a two-finge
 
 ## Change
 
-`ImageFullScreenView` (common code) builds the modifier of each media from its bitmap, with one platform dispatch.
+Common code is the base code: `ImageFullScreenView.kt` and `GestureDetector.kt` are unchanged, so Android behaves as on the base. Under a mouse, the common modifier leaves the view as it is: one pointer gives zoom 1 to `detectTransformGestures`, and the base rule keeps scale 1 and translation 0.
 
-Android: the chain of the base, unchanged: the layer, then `detectTransformGestures` with the base rule. `GestureDetector.kt` is unchanged.
+The desktop actuals in `ImageFullScreenView.desktop.kt` append `zoomable(content)` to the common modifier. `content` is the drawn bitmap:
 
-Desktop: the handlers precede the layer, so they get view coordinates. The layer reads the state in its block, so a wheel or pan step redraws the view without recomposing it.
+- `FullScreenImageView`: the still image or the current animation frame.
+- `FullScreenVideoView`: the current VLC frame, passed by the new `frameModifier` parameter of `SurfaceFromPlayer`. The chat item player passes none.
 
-- A mouse wheel notch zooms 1.2× at the pointer, from 1× to 20×. Every vertical scroll event acts as the wheel, a trackpad's included.
-- A primary-button drag pans the zoomed image with the pointer, 1:1, once it passes 4 dp. Then the drag is consumed, so its release closes nothing. A click whose pointer moves less than 4 dp closes the view, as before. Other buttons pan nothing.
-- The wheel, the drag and a change of the view's size keep the image within one bound per axis, `boundTranslation`: half the excess of the fitted image's zoomed size over the view. The image covers the view in an axis where it is larger, and stays centred in an axis where it is smaller.
-- The handlers are keyed by the image's size, so a bitmap decoded again for the same image keeps a gesture running.
-- The fitted size of a video is that of its preview from the sender, or of the error bitmap when the preview fails to decode. The drawn frames are not available to the common code without a new path.
+`zoomable` remembers the scale and the translation of the shown media. Its handlers precede its layer, so they receive view coordinates. The layer reads the state in its block, so a wheel or pan step redraws the view without recomposing it.
+
+- The image is zoomed 1.2× per wheel notch at the pointer, from 1× to 20×. Every vertical scroll event is taken as the wheel, a trackpad's included.
+- On macOS, a precise scroll event counts a third of a notch per unit, `wheelNotches`. Precise means `|preciseWheelRotation − wheelRotation| > 0.001`, as Compose detects it. A discrete notch counts one notch on every platform.
+- A primary-button drag pans the zoomed image 1:1 with the pointer once it passes 4 dp. The drag is then consumed, so its release closes nothing. A click whose pointer moves less than 4 dp closes the view, as before. Other buttons pan nothing.
+- The wheel, the drag and a change of the view's size keep the translation within one bound per axis, `boundTranslation`: `max(0, (w·fit·s − W) / 2)` with `fit = min(W/w, H/h)`, for content `w×h`, view `W×H` and scale `s`. The content covers the view in an axis where it is larger, and stays centred in an axis where it is smaller.
+- The handlers are keyed by the content's size. A new bitmap of the same size keeps a drag running: an animation frame, a VLC frame, or a decode of data read again.
 
 ```mermaid
 flowchart TD
-  subgraph Desktop
-    W[Wheel notch] --> Z["scale × 1.2^-notches, 1..20, at the pointer"]
-    D[Primary-button drag past 4 dp] --> P["translation + pan, 1:1, consumed"]
+  subgraph Common["Common modifier, as on the base"]
+    C["onGloballyPositioned, layer at scale 1, detectTransformGestures, fillMaxSize"]
+  end
+  subgraph Zoomable["Desktop: zoomable(content)"]
     S[View size change] --> B
-    Z --> B[boundTranslation: fitted image, per axis]
-    P --> B
-    B --> L1[layer: scale, translation]
-    K[Click under 4 dp] --> X[close]
+    D["Primary-button drag past 4 dp: pan 1:1, consumed"] --> B
+    W["Scroll: wheelNotches, then scale × 1.2^-notches, 1..20, at the pointer"] --> B
+    B["boundTranslation: content size, view size, scale"] --> L[Layer: scale, translation]
   end
-  subgraph Android
-    A[Pinch and drag] --> R[base layer and detectTransformGestures]
-  end
+  C --> S
+  L --> I["Image: still or animation frame, or VLC frame"]
+  K[Click under 4 dp] --> X[Gallery closes]
 ```
 
 ## Not in this change
@@ -40,7 +43,12 @@ The Android rule stays as on the base. A later master item fuses it with the des
 
 ## Questions for the user
 
-1. Trackpad: a vertical two-finger scroll zooms at the pointer and never pans; a horizontal scroll does nothing. Panning takes a click and drag. The zoom follows the scroll direction the system reports, so macOS natural scrolling and momentum act on the zoom too; neither is checked on a Mac.
+1. Trackpad: a vertical two-finger scroll zooms at the pointer and never pans; a horizontal scroll does nothing. Panning takes a click and drag. The zoom follows the scroll direction the system reports, so macOS natural scrolling and momentum act on the zoom too.
+   Speed, unmeasured on a Mac:
+   - 1× to 20× takes 16.4 notches.
+   - Windows: a notch scrolls a 600 px list by 90 px at the default 3 lines, so 16.4 notches equal 1479 px of scroll.
+   - macOS: a trackpad unit scrolls a list by 10 points, and counts a third of a notch, so 1× to 20× takes 49 units, 493 points of scroll.
+   - A classic Mac wheel sending fractional deltas would be taken as precise and zoom 3× slower.
 2. A click on a zoomed image closes the gallery, as a tap does on Android.
 
 ## Tests
@@ -54,10 +62,12 @@ The Android rule stays as on the base. A later master item fuses it with the des
 - a long vertical drag keeps the zoomed image over the view;
 - a letterboxed tall image stays in the view after two long drags;
 - at 4× a 60 px drag in 6 steps moves the image 60 px and keeps the view open;
-- the same when the gallery decodes a new bitmap at each call;
+- the same while the gallery returns a new copy of the data before each step, so each step draws a new bitmap; with handlers keyed by the bitmap, the drag stops and its release closes the view;
 - at 10× a 10 px drag moves the image and keeps the view open;
 - a secondary-button drag pans nothing;
 - at 4× a click with 1 px of pointer jitter closes the view;
 - a zoomed image stays over the edge of a narrower view.
 
-The drag helper renders a frame after each move, and the gallery returns one bitmap unless a test asks for a new one at each call.
+The drag helper renders a frame after each move, and the gallery returns one data array unless a test replaces it.
+
+`wheelNotches`: a precise macOS event counts a third of its delta; a discrete macOS notch and a Windows event count their delta.
