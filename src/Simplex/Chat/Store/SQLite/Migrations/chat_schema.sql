@@ -1178,10 +1178,6 @@ CREATE INDEX idx_group_snd_item_statuses_chat_item_id ON group_snd_item_statuses
 CREATE INDEX idx_group_snd_item_statuses_group_member_id ON group_snd_item_statuses(
   group_member_id
 );
-CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
-  user_id,
-  item_status
-);
 CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
   contact_group_member_id
 );
@@ -1600,6 +1596,13 @@ CREATE INDEX idx_group_members_group_id_contact_id ON group_members(
   group_id,
   contact_id
 ) WHERE contact_id IS NOT NULL;
+CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
+  user_id,
+  item_status,
+  contact_id,
+  group_id,
+  user_mention
+);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
