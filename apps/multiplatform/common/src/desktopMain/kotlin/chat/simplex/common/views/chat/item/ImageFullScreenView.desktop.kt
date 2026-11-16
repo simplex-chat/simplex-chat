@@ -17,12 +17,15 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.helpers.detectCursorMove
 import chat.simplex.common.views.helpers.getBitmapFromByteArray
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface
+import java.lang.reflect.Proxy
+import javax.swing.JComponent
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -99,11 +102,22 @@ private fun Modifier.zoomable(content: ImageBitmap): Modifier {
   var scale by remember { mutableStateOf(1f) }
   var translation by remember { mutableStateOf(Offset.Zero) }
   var viewSize by remember { mutableStateOf(IntSize.Zero) }
+  var cursor by remember { mutableStateOf<Offset?>(null) }
   val contentSize by rememberUpdatedState(IntSize(content.width, content.height))
   fun panBy(delta: Offset) {
     translation = boundTranslation(translation + delta, viewSize, contentSize, scale)
   }
+  fun zoomAt(position: Offset, zoom: Float) {
+    val zoomed = (scale * zoom).coerceIn(1f, 20f)
+    val pointer = position - Offset(viewSize.width / 2f, viewSize.height / 2f) - translation
+    val shift = pointer * (1 - zoomed / scale)
+    scale = zoomed
+    panBy(shift)
+  }
   LaunchedEffect(contentSize) { panBy(Offset.Zero) }
+  LaunchedEffect(Unit) {
+    pinchZooms.collect { zoom -> cursor?.let { zoomAt(it, zoom) } }
+  }
   return this
     .onSizeChanged {
       viewSize = it
@@ -113,6 +127,9 @@ private fun Modifier.zoomable(content: ImageBitmap): Modifier {
       detectDragPastThreshold { pan -> panBy(pan) }
     }
     .pointerInput(Unit) {
+      detectCursorMove(onExit = { cursor = null }) { cursor = it }
+    }
+    .pointerInput(Unit) {
       awaitPointerEventScope {
         while (true) {
           val event = awaitPointerEvent()
@@ -120,11 +137,7 @@ private fun Modifier.zoomable(content: ImageBitmap): Modifier {
           val change = event.changes.first()
           if (change.scrollDelta.y == 0f) continue
           val notches = wheelNotches(change.scrollDelta.y)
-          val zoomed = (scale * WHEEL_ZOOM_STEP.pow(-notches)).coerceIn(1f, 20f)
-          val pointer = change.position - Offset(size.width / 2f, size.height / 2f) - translation
-          val shift = pointer * (1 - zoomed / scale)
-          scale = zoomed
-          panBy(shift)
+          zoomAt(change.position, WHEEL_ZOOM_STEP.pow(-notches))
           change.consume()
         }
       }
@@ -163,3 +176,20 @@ private suspend fun PointerInputScope.detectDragPastThreshold(onDrag: (Offset) -
 
 private fun wheelNotches(scrollDelta: Float): Float =
   if (desktopPlatform.isMac()) scrollDelta / MAC_SCROLL_UNITS_PER_NOTCH else scrollDelta
+
+internal fun addPinchListener(component: JComponent) {
+  try {
+    val gestureListener = Class.forName("com.apple.eawt.event.GestureListener")
+    val magnificationListener = Class.forName("com.apple.eawt.event.MagnificationListener")
+    val magnification = Class.forName("com.apple.eawt.event.MagnificationEvent").getMethod("getMagnification")
+    val listener = Proxy.newProxyInstance(magnificationListener.classLoader, arrayOf(magnificationListener)) { _, method, args ->
+      if (method.name == "magnify") pinchZooms.tryEmit(1 + (magnification.invoke(args[0]) as Double).toFloat())
+      null
+    }
+    Class.forName("com.apple.eawt.event.GestureUtilities")
+      .getMethod("addGestureListenerTo", JComponent::class.java, gestureListener)
+      .invoke(null, component, listener)
+  } catch (e: ReflectiveOperationException) {
+    Log.w(TAG, "pinch zoom: gesture listener unavailable: ${e.message}")
+  }
+}
