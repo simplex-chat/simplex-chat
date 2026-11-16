@@ -10,6 +10,7 @@ module NameResolver
     withNameResolver,
     registerName,
     registerExpiredName,
+    registerExpiredName',
     registerReservedName,
     unregisterName,
     failNameResolution,
@@ -67,11 +68,11 @@ registerAnswer :: NameRegistry -> SimplexNameInfo -> TestNameAnswer -> IO ()
 registerAnswer reg ni a = atomically $ modifyTVar' reg $ M.insert (registryKey ni) a
 
 registerExpiredName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()
-registerExpiredName reg ni nameRecord =
-  registerAnswer reg ni $ AnswerRegistration NRRegistered {expires, graceUntil, reservedReason_ = Nothing, nameRecord}
-  where
-    expires = Just $ RoundedSystemTime 1767268800
-    graceUntil = Just $ RoundedSystemTime 4070952000
+registerExpiredName reg ni = registerExpiredName' reg ni (Just $ RoundedSystemTime 4070952000)
+
+registerExpiredName' :: NameRegistry -> SimplexNameInfo -> Maybe RoundedSystemTime -> NameRecord -> IO ()
+registerExpiredName' reg ni graceUntil nameRecord =
+  registerAnswer reg ni $ AnswerRegistration NRRegistered {expires = Just $ RoundedSystemTime 1767268800, graceUntil, reservedReason_ = Nothing, nameRecord}
 
 registerReservedName :: NameRegistry -> SimplexNameInfo -> NameReservedReason -> IO ()
 registerReservedName reg ni reservedReason = registerAnswer reg ni $ AnswerRegistration NRReserved {reservedReason}
