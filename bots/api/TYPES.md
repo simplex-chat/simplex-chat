@@ -89,6 +89,7 @@ This file is generated automatically.
 - [CryptoFile](#cryptofile)
 - [CryptoFileArgs](#cryptofileargs)
 - [CtrlAppInfo](#ctrlappinfo)
+- [DomainVerification](#domainverification)
 - [DroppedMsg](#droppedmsg)
 - [E2EInfo](#e2einfo)
 - [ErrorType](#errortype)
@@ -160,7 +161,10 @@ This file is generated automatically.
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
+- [NameChange](#namechange)
 - [NameErrorType](#nameerrortype)
+- [NamePrice](#nameprice)
+- [NameWarning](#namewarning)
 - [NavigationInfo](#navigationinfo)
 - [NetworkConfig](#networkconfig)
 - [NetworkError](#networkerror)
@@ -2083,10 +2087,12 @@ InvitationLink:
 ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
+- nameChange: [NameChange](#namechange)?
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
+- nameChange: [NameChange](#namechange)?
 
 Error:
 - type: "error"
@@ -2281,6 +2287,16 @@ Remote controller application info.
 - appVersionRange: [AppVersionRange](#appversionrange)
 - deviceName: string
 - compression: bool
+
+
+---
+
+## DomainVerification
+
+**Enum type**:
+- "failed"
+- "verified"
+- "moved"
 
 
 ---
@@ -2732,7 +2748,7 @@ MemberSupport:
 - rosterVersion: int64?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
-- groupDomainVerified: bool?
+- groupDomainVerified: [DomainVerification](#domainverification)?
 
 
 ---
@@ -3224,7 +3240,7 @@ Unknown:
 - localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
 - contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
-- contactDomainVerified: bool?
+- contactDomainVerified: [DomainVerification](#domainverification)?
 
 
 ---
@@ -3480,6 +3496,21 @@ SigMissing:
 
 ---
 
+## NameChange
+
+**Discriminated union type**:
+
+Lapsed:
+- type: "lapsed"
+- nameWarning: [NameWarning](#namewarning)
+
+Moved:
+- type: "moved"
+- knownChat: [ChatInfo](#chatinfo)
+
+
+---
+
 ## NameErrorType
 
 **Discriminated union type**:
@@ -3493,6 +3524,37 @@ NOT_FOUND:
 RESOLVER:
 - type: "RESOLVER"
 - resolverErr: string
+
+
+---
+
+## NamePrice
+
+**Record type**:
+- amount: int64
+- years: int
+
+
+---
+
+## NameWarning
+
+**Discriminated union type**:
+
+Expired:
+- type: "expired"
+- expiredAt: UTCTime
+- graceUntil: UTCTime?
+
+Available:
+- type: "available"
+- price: [NamePrice](#nameprice)
+
+ReservedForCommunity:
+- type: "reservedForCommunity"
+
+NotRegistered:
+- type: "notRegistered"
 
 
 ---
@@ -4386,6 +4448,10 @@ NoValidLink:
 
 UnknownDomain:
 - type: "unknownDomain"
+
+NameWarning:
+- type: "nameWarning"
+- nameWarning: [NameWarning](#namewarning)
 
 
 ---
