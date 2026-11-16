@@ -487,10 +487,8 @@ deriving instance Show AChatItemUpdate
 
 data JSONAnyChatItemUpdate c d = JSONAnyChatItemUpdate {chatInfo :: ChatInfo c, chatItem :: ChatItem c d, prevChatItem :: Maybe (ChatItem c d)}
 
-aChatItemUpdate :: AChatItem -> AChatItem -> AChatItemUpdate
-aChatItemUpdate (AChatItem c' d' _ prevCi) (AChatItem c d chatInfo ci) = AChatItemUpdate c d chatInfo ci $ case (testEquality c c', testEquality d d') of
-  (Just Refl, Just Refl) -> Just prevCi
-  _ -> Nothing
+updatedAChatItem :: AChatItemUpdate -> AChatItem
+updatedAChatItem (AChatItemUpdate c d chatInfo ci _) = AChatItem c d chatInfo ci
 
 aChatItems :: AChat -> [AChatItem]
 aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems

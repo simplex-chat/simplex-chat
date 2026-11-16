@@ -415,10 +415,10 @@ processAgentMsgRcvFile _corrId aFileId msg = do
                 _ -> pure False
               if badDigest
                 then do
-                  acis_ <- resetRcvCIFileStatus user fileId (CIFSRcvError $ FileErrOther "file digest")
-                  forM_ acis_ $ cleanupACIFile . snd
+                  upd_ <- resetRcvCIFileStatus user fileId (CIFSRcvError $ FileErrOther "file digest")
+                  forM_ upd_ $ cleanupACIFile . updatedAChatItem
                   agentXFTPDeleteRcvFile aFileId fileId
-                  forM_ acis_ $ \(prevAci, aci) -> toView $ CEvtChatItemUpdated user (aChatItemUpdate prevAci aci)
+                  forM_ upd_ $ toView . CEvtChatItemUpdated user
                 else do
                   ci_ <- withStore $ \db -> do
                     liftIO $ do
@@ -434,10 +434,10 @@ processAgentMsgRcvFile _corrId aFileId msg = do
           toView $ CEvtRcvFileWarning user ci e ft
         RFERR e
           | e == FILE NOT_APPROVED -> do
-              acis_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
-              forM_ acis_ $ cleanupACIFile . snd
+              upd_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
+              forM_ upd_ $ cleanupACIFile . updatedAChatItem
               agentXFTPDeleteRcvFile aFileId fileId
-              forM_ acis_ $ \(prevAci, aci) -> toView $ CEvtChatItemUpdated user (aChatItemUpdate prevAci aci)
+              forM_ upd_ $ toView . CEvtChatItemUpdated user
           | otherwise -> do
               aci_ <- withStore $ \db -> do
                 liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ agentFileError e)
@@ -2050,8 +2050,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           -- the file may already be accepted, so it is reset to an invitation the apps refuse by its prohibition
           Just prohibited -> do
             withStore' $ \db -> setFileProhibited db user fileId prohibited
-            acis_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
-            forM_ acis_ $ \(prevAci, aci') -> toView $ CEvtChatItemUpdated user (aChatItemUpdate prevAci aci')
+            upd_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+            forM_ upd_ $ toView . CEvtChatItemUpdated user
 
     descrBadgeStatus :: Maybe ByteString -> Integer -> RcvFileDescr -> Maybe UTCTime -> BadgeProof -> CM BadgeStatus
     descrBadgeStatus binding_ fileSize RcvFileDescr {fileDescrText} fileExpires badge = do

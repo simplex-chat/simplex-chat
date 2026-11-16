@@ -118,6 +118,7 @@ module Simplex.Chat.Store.Messages
     getLocalChatItemIdByText',
     getChatItemByFileId,
     lookupChatItemByFileId,
+    updateFileChatItem,
     getChatItemByGroupId,
     updateDirectChatItemStatus,
     setDirectSndChatItemViaProxy,
@@ -164,6 +165,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Simplex.Chat.Badges (BadgeStatus)
 import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), PaginationByTime (..))
 import Simplex.Chat.Markdown
@@ -3318,6 +3320,17 @@ lookupChatItemByFileId db cxt user fileId = do
   fmap Just (getChatItemByFileId db cxt user fileId) `catchError` \case
     SEChatItemNotFoundByFileId {} -> pure Nothing
     e -> throwError e
+
+updateFileChatItem :: DB.Connection -> StoreCxt -> User -> Int64 -> IO () -> ExceptT StoreError IO (Maybe AChatItemUpdate)
+updateFileChatItem db cxt user fileId update = do
+  prevAci_ <- lookupChatItemByFileId db cxt user fileId
+  liftIO update
+  aci_ <- lookupChatItemByFileId db cxt user fileId
+  case (prevAci_, aci_) of
+    (Nothing, Nothing) -> pure Nothing
+    (Just (AChatItem c' d' _ prevCi), Just (AChatItem c d chatInfo ci))
+      | Just Refl <- testEquality c c', Just Refl <- testEquality d d' -> pure $ Just $ AChatItemUpdate c d chatInfo ci (Just prevCi)
+    _ -> throwError $ SEInternalError $ "file update changed chat item presence, chat type or direction, file " <> show fileId
 
 getChatItemByGroupId :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO AChatItem
 getChatItemByGroupId db cxt user@User {userId} groupId = do

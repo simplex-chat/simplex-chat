@@ -849,14 +849,11 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     -- TODO re-enable redirects with relay checks
     when (isJust redirect) $ do
       cxt <- chatStoreCxt
-      acis_ <- withStore $ \db -> do
-        prevAci_ <- lookupChatItemByFileId db cxt user fileId
-        liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
-        aci_ <- lookupChatItemByFileId db cxt user fileId
-        pure $ (,) <$> prevAci_ <*> aci_
-      forM_ acis_ $ \(prevAci, aci) -> do
-        cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user (aChatItemUpdate prevAci aci)
+      upd_ <- withStore $ \db ->
+        updateFileChatItem db cxt user fileId $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
+      forM_ upd_ $ \upd -> do
+        cleanupACIFile $ updatedAChatItem upd
+        toView $ CEvtChatItemUpdated user upd
       throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
@@ -886,10 +883,10 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       pure $ all (ipAddressProtected netCfg) srvs
     relaysNotApproved :: [XFTPServer] -> CM ()
     relaysNotApproved unknownSrvs = do
-      acis_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
-      forM_ acis_ $ \(prevAci, aci) -> do
-        cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user (aChatItemUpdate prevAci aci)
+      upd_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+      forM_ upd_ $ \upd -> do
+        cleanupACIFile $ updatedAChatItem upd
+        toView $ CEvtChatItemUpdated user upd
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 cleanupACIFile :: AChatItem -> CM ()
@@ -912,17 +909,13 @@ protoServer' ServerCfg {server} = protoServer server
 getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getFastNetworkConfig
 
-resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe (AChatItem, AChatItem))
+resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItemUpdate)
 resetRcvCIFileStatus user fileId ciFileStatus = do
   cxt <- chatStoreCxt
-  withStore $ \db -> do
-    prevAci_ <- lookupChatItemByFileId db cxt user fileId
-    liftIO $ do
-      updateCIFileStatus db user fileId ciFileStatus
-      updateRcvFileStatus db fileId FSNew
-      updateRcvFileAgentId db fileId Nothing
-    aci_ <- lookupChatItemByFileId db cxt user fileId
-    pure $ (,) <$> prevAci_ <*> aci_
+  withStore $ \db -> updateFileChatItem db cxt user fileId $ do
+    updateCIFileStatus db user fileId ciFileStatus
+    updateRcvFileStatus db fileId FSNew
+    updateRcvFileAgentId db fileId Nothing
 
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do

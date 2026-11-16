@@ -147,7 +147,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
     (outputRH, r_) <- atomically $ readTBQueue outputQ
     forM_ r_ $ \case
       CEvtNewChatItems u (ci : _) -> when markRead $ markChatItemRead u ci -- At the moment of writing received items are created one at a time
-      CEvtChatItemUpdated u (AChatItemUpdate c d chat ci _) -> when markRead $ markChatItemRead u (AChatItem c d chat ci)
+      CEvtChatItemUpdated u upd -> when markRead $ markChatItemRead u (updatedAChatItem upd)
       CEvtRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
       CEvtRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
       _ -> pure ()
