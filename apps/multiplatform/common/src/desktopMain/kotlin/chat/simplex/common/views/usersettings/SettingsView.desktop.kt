@@ -18,7 +18,8 @@ actual fun AdvancedSettingsAppSection(
   SectionView {
     SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.settings_developer_tools), showSettingsModal { DeveloperView(withAuth) })
     val selectedChannel = remember { appPrefs.appUpdateChannel.state }
-    val values = AppUpdatesChannel.entries.map { it to it.text }
+    val allowInternalBuilds = remember { appPrefs.allowInternalBuilds.state }.value
+    val values = AppUpdatesChannel.entries.filter { it != AppUpdatesChannel.INTERNAL || allowInternalBuilds }.map { it to it.text }
     ExposedDropDownSettingRow(stringResource(MR.strings.app_check_for_updates), values, selectedChannel) {
       appPrefs.appUpdateChannel.set(it)
       setupUpdateChecker()
@@ -28,3 +29,13 @@ actual fun AdvancedSettingsAppSection(
 
 @Composable
 actual fun AppShutdownItem() {}
+
+@Composable
+actual fun AllowInternalBuildsItem() {
+  SettingsPreferenceItem(painterResource(MR.images.ic_download), stringResource(MR.strings.allow_internal_builds), appPrefs.allowInternalBuilds) { allowed ->
+    if (!allowed && appPrefs.appUpdateChannel.get() == AppUpdatesChannel.INTERNAL) {
+      appPrefs.appUpdateChannel.set(AppUpdatesChannel.DISABLED)
+      setupUpdateChecker()
+    }
+  }
+}

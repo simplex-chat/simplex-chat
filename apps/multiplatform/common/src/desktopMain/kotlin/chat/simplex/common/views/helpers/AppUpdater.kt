@@ -176,92 +176,96 @@ private fun createUpdateJob() {
 }
 
 
+private const val INTERNAL_BUILDS_REPO = "simplex-chat/internal-builds"
+
 fun checkForUpdate() {
   Log.d(TAG, "Checking for update")
-  val currentSemVer = SemVer.fromCurrentVersionName()
-  if (currentSemVer == null) {
-    Log.e(TAG, "Current SemVer cannot be parsed")
-    return
-  }
-  val client = setupHttpClient()
   try {
-    val request = Request.Builder().url("https://api.github.com/repos/simplex-chat/simplex-chat/releases").addHeader("User-agent", "curl").build()
-    client.newCall(request).execute().use { response ->
-      response.body?.use {
-        val body = it.string()
-        val releases = json.decodeFromString<List<GitHubRelease>>(body)
-        val release = when (appPrefs.appUpdateChannel.get()) {
-          AppUpdatesChannel.STABLE -> releases.firstOrNull { r -> !r.draft && !r.isConsideredBeta && currentSemVer < r.semVer }
-          AppUpdatesChannel.BETA -> releases.firstOrNull { r -> !r.draft && currentSemVer < r.semVer }
-          AppUpdatesChannel.DISABLED -> return
-        }
+    val release = when (appPrefs.appUpdateChannel.get()) {
+      AppUpdatesChannel.STABLE -> getNewerReleases().firstOrNull { r -> !r.isConsideredBeta }
+      AppUpdatesChannel.BETA -> getNewerReleases().firstOrNull()
+      AppUpdatesChannel.INTERNAL -> getGitHubReleases(INTERNAL_BUILDS_REPO).firstOrNull { r -> !r.draft }?.takeIf { r -> r.tagName != BuildConfigCommon.DESKTOP_VERSION_NAME }
+      AppUpdatesChannel.DISABLED -> return
+    }
 
-        if (release == null || release.tagName == appPrefs.appSkippedUpdate.get()) {
-          Log.d(TAG, "Skipping update because of the same version or skipped version")
-          return
-        }
-        val assets = chooseGitHubReleaseAssets(release)
-        // No need to show an alert if no suitable packages were found. But for Flatpak users it's useful to see release notes anyway
-        if (assets.isEmpty() && !isRunningFromFlatpak()) {
-          Log.d(TAG, "No assets to download for current system")
-          return
-        }
-        val lines = ArrayList<String>()
-        for (line in release.body.lines()) {
-          if (line == "Commits:") break
-          lines.add(line)
-        }
-        val text = lines.joinToString("\n")
-        AlertManager.shared.showAlertDialogButtonsColumn(
-          generalGetString(MR.strings.app_check_for_updates_update_available).format(release.name),
-          text = text,
-          textAlign = TextAlign.Start,
-          dismissible = false,
-          belowTextContent = {
-            ReadMoreButton(release.htmlUrl)
-          },
-          buttons = {
-            Column {
-              for (asset in assets) {
-                SectionItemView({
-                  AlertManager.shared.hideAlert()
-                  chatModel.updatingProgress.value = 0f
-                  withLongRunningApi {
-                    try {
-                      downloadAsset(asset)
-                    } finally {
-                      chatModel.updatingProgress.value = null
-                    }
-                  }
-                }) {
-                  Text(
-                    generalGetString(MR.strings.app_check_for_updates_button_download).format(
-                      if (asset.name.length > 34) "…" + asset.name.substringAfter("simplex-desktop-") else asset.name,
-                      formatBytes(asset.size)), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary
-                  )
+    if (release == null || release.tagName == appPrefs.appSkippedUpdate.get()) {
+      Log.d(TAG, "Skipping update because of the same version or skipped version")
+      return
+    }
+    val assets = chooseGitHubReleaseAssets(release)
+    // No need to show an alert if no suitable packages were found. But for Flatpak users it's useful to see release notes anyway
+    if (assets.isEmpty() && !isRunningFromFlatpak()) {
+      Log.d(TAG, "No assets to download for current system")
+      return
+    }
+    val lines = ArrayList<String>()
+    for (line in release.body.lines()) {
+      if (line == "Commits:") break
+      lines.add(line)
+    }
+    val text = lines.joinToString("\n")
+    AlertManager.shared.showAlertDialogButtonsColumn(
+      generalGetString(MR.strings.app_check_for_updates_update_available).format(release.name),
+      text = text,
+      textAlign = TextAlign.Start,
+      dismissible = false,
+      belowTextContent = {
+        ReadMoreButton(release.htmlUrl)
+      },
+      buttons = {
+        Column {
+          for (asset in assets) {
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+              chatModel.updatingProgress.value = 0f
+              withLongRunningApi {
+                try {
+                  downloadAsset(asset)
+                } finally {
+                  chatModel.updatingProgress.value = null
                 }
               }
-
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-                skipRelease(release)
-              }) {
-                Text(generalGetString(MR.strings.app_check_for_updates_button_skip), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = WarningOrange)
-              }
-
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-              }) {
-                Text(generalGetString(MR.strings.app_check_for_updates_button_remind_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-              }
+            }) {
+              Text(
+                generalGetString(MR.strings.app_check_for_updates_button_download).format(
+                  if (asset.name.length > 34) "…" + asset.name.substringAfter("simplex-desktop-") else asset.name,
+                  formatBytes(asset.size)), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary
+              )
             }
           }
-        )
+
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            skipRelease(release)
+          }) {
+            Text(generalGetString(MR.strings.app_check_for_updates_button_skip), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = WarningOrange)
+          }
+
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+          }) {
+            Text(generalGetString(MR.strings.app_check_for_updates_button_remind_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
+        }
       }
-    }
+    )
   } catch (e: Exception) {
     Log.e(TAG, "Failed to get the latest release: ${e.stackTraceToString()}")
   }
+}
+
+private fun getNewerReleases(): List<GitHubRelease> {
+  val currentSemVer = SemVer.fromCurrentVersionName()
+  if (currentSemVer == null) {
+    Log.e(TAG, "Current SemVer cannot be parsed")
+    return emptyList()
+  }
+  return getGitHubReleases("simplex-chat/simplex-chat").filter { r -> !r.draft && currentSemVer < r.semVer }
+}
+
+private fun getGitHubReleases(repo: String): List<GitHubRelease> {
+  val request = Request.Builder().url("https://api.github.com/repos/$repo/releases").addHeader("User-agent", "curl").build()
+  return setupHttpClient().newCall(request).execute().use { response -> json.decodeFromString<List<GitHubRelease>>(response.body!!.string()) }
 }
 
 private fun setupHttpClient(): OkHttpClient {

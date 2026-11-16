@@ -137,9 +137,10 @@ Platform-specific section (expect/actual composable):
 
 | Row | Description |
 |---|---|
-| App updates (Desktop) | App update checker and installer |
+| App updates (Desktop) | App update checker and installer: Disabled, Stable, Beta, and Internal (releases of simplex-chat/internal-builds) while internal builds are allowed |
 | Developer tools | Toggle developer mode |
 | Storage (developer options) | Opens `StorageView`: size of each top-level entry in the app's data, config and temp folders |
+| Allow internal builds (Desktop, developer options) | Adds Internal to the app update channels; turned off while Internal is selected, sets the channel to Disabled |
 | Chat console | Opens `ChatConsoleView` terminal |
 | Terminal always visible (Desktop) | Keep terminal window open |
 | Install terminal app | Link to CLI app on GitHub |

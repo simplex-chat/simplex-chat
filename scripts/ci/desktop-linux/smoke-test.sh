@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
-# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
+# chat list, a local group, then the chat list with the toolbar at the bottom (the default), the update channels in
+# Settings with "Allow internal builds" off and on, the chat list with the toolbar at the top, then
 # tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
@@ -378,6 +379,46 @@ send_images() {
   send_image logo-large-rgba.png png
 }
 
+not_shown() {
+  ! "$ui" find "$1" > /dev/null 2>&1
+}
+
+open_update_channels() {
+  local x y
+  read -r x y < <(left_pane_position Disabled exact) || fail "no update channel in Settings > app version"
+  "$ui" click "$x" "$y"
+  "$ui" wait Stable 10 || fail "no update channel menu"
+}
+
+check_internal_builds() {
+  local version x y
+  version=$(sed -n 's/^desktop.version_name=//p' "$(dirname "$0")/../../../apps/multiplatform/gradle.properties")
+  open_settings
+  scroll_to "$version" || fail "no app version $version in Settings"
+  read -r x y < <(left_pane_position "$version") || fail "no app version $version in Settings"
+  "$ui" click "$x" "$y"
+  "$ui" wait "Check for updates" 10
+  open_update_channels
+  "$ui" shot update-channels
+  check "the update channels lack Internal while internal builds are not allowed" not_shown Internal
+  "$ui" click-text "App version" 10
+  "$ui" click-text "Developer tools" 10
+  "$ui" wait "Show developer options" 10
+  scroll_to "Allow internal builds" || fail "no \"Allow internal builds\" in Developer tools"
+  "$ui" shot internal-builds-off
+  y=$(y_of "Allow internal builds")
+  "$ui" click "$switch_x" "$y"
+  "$ui" shot internal-builds-on
+  check "\"Allow internal builds\" is saved on" grep -qx AllowInternalBuilds=true "$state/config/simplex/settings.properties"
+  "$ui" key Escape
+  "$ui" wait "Check for updates" 10
+  open_update_channels
+  "$ui" shot update-channels-internal
+  check "the update channels list Internal while internal builds are allowed" "$ui" find Internal
+  "$ui" click-text "App version" 10
+  back_to_chat_list || fail "no chat list after the update channels"
+}
+
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
@@ -433,6 +474,7 @@ if [ "$cases" = setup ] || [ "$cases" = backend ]; then
 fi
 
 check_layout bottom
+check_internal_builds
 use_top_toolbar
 check_layout top
 send_images
