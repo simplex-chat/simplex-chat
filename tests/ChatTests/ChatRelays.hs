@@ -22,6 +22,7 @@ import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
 import Simplex.Chat.Types (B64UrlByteString (..), GroupProfile (..))
 import Simplex.Chat.Controller (CorsOrigin (..))
 import Simplex.Chat.Web (WebChannelPreview (..), WebMessage (..), extractOrigin, publicGroupIdFileName, removeStaleFiles, writeCorsConfig)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
@@ -39,6 +40,7 @@ chatRelayTests = do
     it "re-add soft-deleted relay by same name" testReAddRelaySameName
     it "test chat relay" testChatRelayTest
     it "relay invitation to non-relay address is rejected" testRelayInvNonRelayAddress
+    it "relay requests of non-relay user are not processed on start" testRelayRequestsNonRelayUser
     it "relay profile updated in address" testRelayProfileUpdateInAddress
   describe "relay capabilities" $ do
     it "relay sends webDomain in capabilities" testRelayWebCapabilities
@@ -236,6 +238,15 @@ testRelayInvNonRelayAddress ps =
       bob ##> "/gs"
       bob <## "you have no groups!"
       bob <## "to create: /g <name>"
+
+testRelayRequestsNonRelayUser :: HasCallStack => TestParams -> IO ()
+testRelayRequestsNonRelayUser ps = do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    bob ##> "/g team"
+    bob <## "group #team is created"
+    bob <## "to add members use /a team <name> or /create link #team"
+    withCCTransaction bob $ \db -> DB.execute_ db "UPDATE groups SET relay_own_status = 'invited'"
+  withTestChat ps "bob" $ \bob -> (bob </)
 
 testRelayProfileUpdateInAddress :: HasCallStack => TestParams -> IO ()
 testRelayProfileUpdateInAddress ps =
