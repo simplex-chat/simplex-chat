@@ -2855,6 +2855,7 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
+    CESimplexDomainNotReady domain (SDENameWarning w) -> [viewNameNotConnectable domain w]
     CESimplexDomainNotReady domain domainErr ->
       let notReady reason = [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
        in case domainErr of
