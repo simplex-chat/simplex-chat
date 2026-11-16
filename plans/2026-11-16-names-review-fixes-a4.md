@@ -32,7 +32,9 @@ A4-19: stripeSection refuses keys of two modes; parseConfig binds whether the ke
 
 A5-13: `minNameYears = 2` moves beside minNameLength in Simplex.Chat.Badges.Code; nameRecordOrWarning prices the available name for it.
 
-A4-22 (nCommunity keyed by LabelHash): waits for simplexmq's Ord LabelHash, which A6 pins.
+A4-22 (nCommunity keyed by LabelHash): A6 does it, after its simplexmq pin.
+
+A4-16 (serviceKey): A2-16's hex parser covers it.
 
 ## Payments and the poller
 
@@ -54,7 +56,7 @@ A4-24: Apple's signedDate is read by `.:` as milliseconds, converted by `fromMil
 A4-2: Postgres' `dbString` masks the password: a URI's user info and `password` parameter, and the `password` keyword in the keyword form, spaces around `=` and quoted values included; an unreadable string is not shown. redactPassword goes.
 
 A4-10, A4-11, one grammar and one dispatch of the commands:
-- `CmdSource` moves to Group/Command; the grammar takes it: the console's commands are typed without the `/`, and take a payment status; the group's take `uses` and have `/bulk`; months are the keyword option in both.
+- `CmdSource` moves to Group/Command; the grammar takes it: the console's commands arrive without their `//`, and take a payment status; the group's take `uses` and have `/bulk`; months are the keyword option in both, so the console's `//issue supporter 12` is `//issue supporter months 12`.
 - `GroupCmd`: `GCIssue BadgeType Int Int BadgeCodePaymentStatus` and `GCIssueName NameLength Int BadgeCodePaymentStatus`; IssueCodeOpts and issueNameCmdP go.
 - A malformed command is answered with its command's usage, an unknown console command with the list of commands, both derived from the options and their bounds.
 - `runCmd` in Group answers both sources: a name code is refused without names; a revoke names its code. The group posts the tracker of a multi-use code and limits name codes a day before it.
@@ -94,7 +96,7 @@ A4-28: `--issuer-key-idx` and `--issuer-secret` are parsed together or not at al
 
 A4-29: responseObject throws BrokenInvariant for a response that does not encode to an object.
 
-A4-33: `--execute` / `-e` runs one console command and exits, with `--run-cli`; contract-run.sh issues its codes by it.
+A4-33: `--execute` / `-e` runs one console command in CLI mode and exits; contract-run.sh issues its codes by it.
 
 ## Deployment and apps
 
