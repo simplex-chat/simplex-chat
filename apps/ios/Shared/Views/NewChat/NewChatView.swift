@@ -1377,7 +1377,7 @@ func planAndConnect(
                 } else {
                     nil
                 }
-                if let nameAlert = planNameWarningAlert(planSimplexName, connectionPlan) {
+                if let nameAlert = planNameWarningAlert(connectionPlan) {
                     await MainActor.run {
                         showNameWarningAlert(nameAlert, cleanup: cleanup) { chatInfo in openKnownChat(chatInfo.id, dismiss: dismiss, cleanup: cleanup, onOpen: onOpen) }
                     }

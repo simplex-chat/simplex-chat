@@ -2637,6 +2637,7 @@ MsgVerified_Tag = Literal["signed", "sigMissing"]
 
 class NameChange_lapsed(TypedDict):
     type: Literal["lapsed"]
+    nameDomain: "SimplexDomain"
     nameWarning: "NameWarning"
 
 class NameChange_moved(TypedDict):

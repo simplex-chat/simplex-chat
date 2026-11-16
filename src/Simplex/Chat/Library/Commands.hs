@@ -4640,7 +4640,7 @@ processChatCommand cxt nm = \case
           (nl', simplexName_) = case nl of
             CTLink sl -> (CTLink (serverShortLink sl), Nothing)
             CTName ni -> (nl, Just ni)
-          planDomain = nameDomain <$> simplexName_
+          planDomain = (\SimplexNameInfo {nameDomain} -> nameDomain) <$> simplexName_
           ctType = case nl of
             CTLink (CSLContact _ t _ _) -> t
             CTName SimplexNameInfo {nameType = NTContact} -> CCTContact
@@ -4723,13 +4723,13 @@ processChatCommand cxt nm = \case
           knownNamePlan :: (ACreatedConnLink, ConnectionPlan) -> (Maybe AChatInfo -> ShortLinkContact -> CM (ACreatedConnLink, ConnectionPlan)) -> CM (ACreatedConnLink, ConnectionPlan)
           knownNamePlan r@(l, plan) linkPlan
             | resolveMode == PRMNever = pure r
-            | Just ni <- simplexName_ =
+            | Just ni@SimplexNameInfo {nameDomain} <- simplexName_ =
                 tryAllErrors (resolveNameLink ni) >>= \case
                   Right (Right l')
                     | ACCL SCMContact (CCLink _ (Just sl)) <- l, sameShortLinkContact sl l' -> pure r
                     | otherwise -> (knownChatLink <$> linkPlan knownChat_ l') `catchAllErrors` knownPlanOnError
                   Right (Left NWNotRegistered) -> r <$ logWarn "known chat plan used, name not registered"
-                  Right (Left w) -> pure (l, setNameChange (Just $ NCLapsed w) plan)
+                  Right (Left w) -> pure (l, setNameChange (Just $ NCLapsed nameDomain w) plan)
                   Left e -> knownPlanOnError e
             | otherwise = pure r
             where
@@ -4781,7 +4781,7 @@ processChatCommand cxt nm = \case
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
       | otherwise = pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
       where
-        vName = StrJSON . nameDomain <$> planSimplexName
+        vName = (\SimplexNameInfo {nameDomain} -> StrJSON nameDomain) <$> planSimplexName
         joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
         joinChannelViaRelays ccl gld = do
           GroupInfo {groupId} <- prepareChannelGroup

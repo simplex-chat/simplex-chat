@@ -3489,6 +3489,7 @@ SigMissing:
 
 Lapsed:
 - type: "lapsed"
+- nameDomain: [SimplexDomain](#simplexdomain)
 - nameWarning: [NameWarning](#namewarning)
 
 Moved:

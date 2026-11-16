@@ -7689,7 +7689,7 @@ sealed class ConnectionPlan {
 
 @Serializable
 sealed class NameChange {
-  @Serializable @SerialName("lapsed") class Lapsed(val nameWarning: NameWarning): NameChange()
+  @Serializable @SerialName("lapsed") class Lapsed(val nameDomain: SimplexDomain, val nameWarning: NameWarning): NameChange()
   @Serializable @SerialName("moved") class Moved(val knownChat: ChatInfo): NameChange()
 }
 

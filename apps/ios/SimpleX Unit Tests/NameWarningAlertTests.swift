@@ -10,15 +10,14 @@ final class NameWarningAlertTests: XCTestCase {
         decodeAPIResult(try Data(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("names/\(name).json")))
     }
 
-    private func plan(_ name: String) throws -> (SimplexNameInfo?, ConnectionPlan) {
+    private func plan(_ name: String) throws -> ConnectionPlan {
         let r = try fixture(name)
-        let plan: (SimplexNameInfo?, ConnectionPlan)? = if case let .result(.connectionPlan(_, _, planSimplexName, _, connectionPlan)) = r { (planSimplexName, connectionPlan) } else { nil }
+        let plan: ConnectionPlan? = if case let .result(.connectionPlan(_, _, _, _, connectionPlan)) = r { connectionPlan } else { nil }
         return try XCTUnwrap(plan, r.responseType)
     }
 
     private func planAlert(_ name: String) throws -> NameWarningAlert {
-        let (planSimplexName, connectionPlan) = try plan(name)
-        return try XCTUnwrap(planNameWarningAlert(planSimplexName, connectionPlan))
+        try XCTUnwrap(planNameWarningAlert(plan(name)))
     }
 
     private func errorAlert(_ name: String) throws -> NameWarningAlert {
@@ -56,8 +55,8 @@ final class NameWarningAlertTests: XCTestCase {
     }
 
     func testKnownChatNameMoved() throws {
-        let (planSimplexName, connectionPlan) = try plan("plan-known-moved")
-        XCTAssertNil(planNameWarningAlert(planSimplexName, connectionPlan))
+        let connectionPlan = try plan("plan-known-moved")
+        XCTAssertNil(planNameWarningAlert(connectionPlan))
         XCTAssertEqual(connectionPlan.localChats.map(\.localDisplayName), ["alice"])
     }
 

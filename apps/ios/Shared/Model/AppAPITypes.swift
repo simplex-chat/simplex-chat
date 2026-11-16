@@ -1573,7 +1573,7 @@ enum ConnectionPlan: Decodable, Hashable {
 }
 
 enum NameChange: Decodable, Hashable {
-    case lapsed(nameWarning: NameWarning)
+    case lapsed(nameDomain: SimplexDomain, nameWarning: NameWarning)
     case moved(knownChat: ChatInfo)
 }
 

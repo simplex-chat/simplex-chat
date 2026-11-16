@@ -3788,6 +3788,7 @@ export namespace NameChange {
 
   export interface Lapsed extends Interface {
     type: "lapsed"
+    nameDomain: SimplexDomain
     nameWarning: NameWarning
   }
 

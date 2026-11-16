@@ -1183,7 +1183,7 @@ data ConnectionPlan
   deriving (Show)
 
 data NameChange
-  = NCLapsed {nameWarning :: NameWarning}
+  = NCLapsed {nameDomain :: SimplexDomain, nameWarning :: NameWarning}
   | NCMoved {knownChat :: AChatInfo}
   deriving (Show)
 

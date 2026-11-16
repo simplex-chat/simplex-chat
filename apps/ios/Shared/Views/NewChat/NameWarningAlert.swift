@@ -72,8 +72,8 @@ func nameWarningAlert(domain: SimplexDomain, warning: NameWarning, own: Bool, ch
     }
 }
 
-func planNameWarningAlert(_ planSimplexName: SimplexNameInfo?, _ plan: ConnectionPlan) -> NameWarningAlert? {
-    if case let .some(.lapsed(nameWarning)) = plan.nameChange, let nameDomain = planSimplexName?.nameDomain {
+func planNameWarningAlert(_ plan: ConnectionPlan) -> NameWarningAlert? {
+    if case let .some(.lapsed(nameDomain, nameWarning)) = plan.nameChange {
         nameWarningAlert(domain: nameDomain, warning: nameWarning, own: plan.isOwnLink, chat: plan.planChat)
     } else {
         nil

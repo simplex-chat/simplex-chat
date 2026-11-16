@@ -20,10 +20,7 @@ class NameWarningAlertTest {
   private fun plan(name: String): CR.CRConnectionPlan =
     assertIs<CR.CRConnectionPlan>(assertIs<API.Result>(fixture(name)).res)
 
-  private fun planAlert(name: String): NameWarningAlert {
-    val plan = plan(name)
-    return assertNotNull(planNameWarningAlert(plan.planSimplexName, plan.connectionPlan))
-  }
+  private fun planAlert(name: String): NameWarningAlert = assertNotNull(planNameWarningAlert(plan(name).connectionPlan))
 
   private fun errorAlert(name: String): NameWarningAlert {
     val error = assertIs<ChatErrorType.SimplexDomainNotReady>(assertIs<ChatError.ChatErrorChat>(assertIs<API.Error>(fixture(name)).err).errorType)
@@ -65,7 +62,7 @@ class NameWarningAlertTest {
   @Test
   fun knownChatNameMoved() {
     val plan = plan("plan-known-moved")
-    assertNull(planNameWarningAlert(plan.planSimplexName, plan.connectionPlan))
+    assertNull(planNameWarningAlert(plan.connectionPlan))
     assertEquals(listOf("alice"), plan.connectionPlan.localChats.map { it.localDisplayName })
   }
 

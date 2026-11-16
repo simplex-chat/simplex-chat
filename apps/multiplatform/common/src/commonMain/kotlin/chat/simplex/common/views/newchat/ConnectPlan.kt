@@ -139,11 +139,8 @@ fun nameWarningAlert(domain: SimplexDomain, warning: NameWarning, own: Boolean, 
   }
 }
 
-fun planNameWarningAlert(planSimplexName: SimplexNameInfo?, plan: ConnectionPlan): NameWarningAlert? {
-  val warning = (plan.nameChange as? NameChange.Lapsed)?.nameWarning
-  val domain = planSimplexName?.nameDomain
-  return if (warning != null && domain != null) nameWarningAlert(domain, warning, plan.isOwnLink, plan.planChat) else null
-}
+fun planNameWarningAlert(plan: ConnectionPlan): NameWarningAlert? =
+  (plan.nameChange as? NameChange.Lapsed)?.let { nameWarningAlert(it.nameDomain, it.nameWarning, plan.isOwnLink, plan.planChat) }
 
 private suspend fun planAndConnectTask(
   rhId: Long?,
@@ -183,7 +180,7 @@ private suspend fun planAndConnectTask(
       val label = if (it.nameType == SimplexNameType.publicGroup) MR.strings.connect_plan_join_name else MR.strings.connect_plan_connect_to_name
       generalGetString(label).format(it.shortStr)
     }
-    val nameAlert = planNameWarningAlert(planSimplexName, connectionPlan)
+    val nameAlert = planNameWarningAlert(connectionPlan)
     if (nameAlert != null) {
       showNameWarningAlert(rhId, nameAlert, cleanup) { chatInfo -> withBGApi { close(); openChat(secondaryChatsCtx = null, rhId, chatInfo) } }
       return completable

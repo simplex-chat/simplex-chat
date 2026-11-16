@@ -220,7 +220,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation showFullLinks ccLink
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged showFullLinks u c nu c'
-  CRConnectionPlan u connLink planSimplexName otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink planSimplexName connectionPlan <> otherSimplexNameNote otherSimplexName
+  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName
   CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
     DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
     GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
@@ -2260,8 +2260,8 @@ otherSimplexNameNote = \case
   Just ni@(SimplexNameInfo NTContact _) -> [plain $ "You can also connect to " <> shortNameInfoStr ni <> " in direct chat"]
   Nothing -> []
 
-viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> Maybe SimplexNameInfo -> ConnectionPlan -> [StyledString]
-viewConnectionPlan ChatConfig {logLevel, testView} _connLink planSimplexName = \case
+viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
+viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
@@ -2339,7 +2339,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planSimplexName = \
   where
     viewNameChange :: Bool -> Maybe NameChange -> [StyledString]
     viewNameChange own = \case
-      Just (NCLapsed w) -> maybe [] (\SimplexNameInfo {nameDomain} -> [viewNameWarning own nameDomain w]) planSimplexName
+      Just (NCLapsed d w) -> [viewNameWarning own d w]
       Just (NCMoved (AChatInfo _ c)) -> case c of
         DirectChat ct -> ["known contact @" <> ttyContact' ct]
         GroupChat g@GroupInfo {businessChat} _
