@@ -11,6 +11,7 @@ import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBa
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Exception (IOException, try)
 import Control.Logger.Simple
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
@@ -37,9 +38,10 @@ import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, bbsKeyGen)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
-import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getFileSize, renameFile)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
+import UnliftIO.Temporary (withTempDirectory)
 
 chatFileTests :: SpecWith TestParams
 chatFileTests = do
@@ -69,6 +71,7 @@ chatFileTests = do
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
     it "receive file marked to receive on chat start" testXFTPMarkToReceive
+    it "receive file when temp folder is on another file system" testXFTPRcvCrossDevice
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
     it "should accept file automatically with CLI option" testAutoAcceptFile
@@ -1195,6 +1198,41 @@ testXFTPMarkToReceive = do
 
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile (tmpFile bob "bob_files/test.pdf")
+      dest `shouldBe` src
+
+testXFTPRcvCrossDevice :: HasCallStack => TestParams -> IO ()
+testXFTPRcvCrossDevice ps = do
+  shmExists <- doesDirectoryExist "/dev/shm"
+  if not shmExists
+    then pendingWith "/dev/shm does not exist"
+    else withTempDirectory "/dev/shm" "simplex-test" $ \shmDir -> do
+      let probe = tmpFile ps "cross_device_probe"
+      writeFile probe ""
+      renamed <- try (renameFile probe (shmDir </> "probe")) :: IO (Either IOException ())
+      case renamed of
+        Right () -> pendingWith "/dev/shm is on the same file system as the test folder"
+        Left _ -> testChat2 aliceProfile bobProfile (test shmDir) ps
+  where
+    test shmDir alice bob = withXFTPServer alice $ do
+      setRelativePaths bob shmDir (tmpFile bob "bob_xftp")
+      connectUsers alice bob
+
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1"
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (test.pdf) for bob",
+          bob
+            <### [ "saving file 1 from alice to test.pdf",
+                   "started receiving file 1 (test.pdf) from alice"
+                 ]
+        ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile (shmDir </> "test.pdf")
       dest `shouldBe` src
 
 testXFTPRcvError :: HasCallStack => TestParams -> IO ()
