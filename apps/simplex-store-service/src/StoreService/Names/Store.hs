@@ -124,6 +124,7 @@ where
 import qualified Control.Exception as E
 import Control.Monad (when)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -742,13 +743,14 @@ type RegistrationRow =
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
-  ( (rid, nrVersion, Binary lh, nrLength, duration, Binary owner, Binary nrCommitment, nrSealed, phase, nrYears)
+  ( (rid, nrVersion, Binary lh, nrLength, duration, Binary owner, Binary commitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, nrCommitTx, commitBlock, nrRegisterTx, registerBlock, revealAfter, revealBefore, expiresAt, registeredAt)
       :. (failedAt, failReason, BI live, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
       :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
     ) = do
     nrOwner <- decodeAddress owner
+    nrCommitment <- bytes32 "commitment" commitment
     nrPhase <- case phase of
       PUnpaid -> Right $ OUnpaid live
       PQueued -> Right OQueued
@@ -768,10 +770,11 @@ toRegistration
       _ -> Left $ "name_registrations payment: " <> rid
     nrReveal <- case (label_, secret_, nonce_, deadline_, signature_) of
       (Nothing, Nothing, Nothing, Nothing, Nothing) -> Right Nothing
-      (Just rvLabel, Just (Binary rvSecret), Just nonce, Just deadline, Just (Binary sig)) -> do
+      (Just rvLabel, Just (Binary secret), Just nonce, Just deadline, Just (Binary sig)) -> do
+        rvSecret <- bytes32 "secret" secret
         rvSignature <- decodeSignature sig
         rvAcceptance <- case (acceptTerms_, acceptNonce_, acceptSignature_) of
-          (Just (Binary taTermsHash), Just n, Just (Binary s)) -> (\taSignature -> TermsAcceptance {taTermsHash, taNonce = word64 n, taSignature}) <$> decodeSignature s
+          (Just (Binary termsHash), Just n, Just (Binary s)) -> (\taTermsHash taSignature -> TermsAcceptance {taTermsHash, taNonce = word64 n, taSignature}) <$> bytes32 "accept_terms" termsHash <*> decodeSignature s
           _ -> Left $ "name_registrations acceptance: " <> rid
         Right $ Just NameReveal {rvLabel, rvSecret, rvContactLink = nrContactLink, rvChannelLink = nrChannelLink, rvNonce = word64 nonce, rvDeadline = word64 deadline, rvSignature, rvAcceptance}
       _ -> Left $ "name_registrations reveal: " <> rid
@@ -803,6 +806,10 @@ toRegistration
           nrCreatedAt,
           nrUpdatedAt
         }
+  where
+    bytes32 column b
+      | B.length b == 32 = Right b
+      | otherwise = Left $ "name_registrations." <> column <> ": not 32 bytes: " <> rid
 
 getRegistration :: DB.Connection -> RegistrationId -> IO (Maybe NameRegistration)
 getRegistration db (RegistrationId rid) =

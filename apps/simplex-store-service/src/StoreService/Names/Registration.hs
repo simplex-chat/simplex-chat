@@ -149,8 +149,7 @@ registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver
     ]
 
 verifyRegisterIntent :: Eip712Domain -> ChainSeconds -> RegisterIntent -> IO (Either String ())
-verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration {rOwner, rSecret}, riNonce, riDeadline, riSignature} = runExceptT $ do
-  unless (B.length rSecret == 32) $ throwError "secret: expected 32 bytes"
+verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration {rOwner}, riNonce, riDeadline, riSignature} = runExceptT $ do
   when (now > riDeadline) $ throwError "intent expired"
   signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"

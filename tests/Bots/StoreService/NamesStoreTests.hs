@@ -9,8 +9,10 @@ import Bots.StoreService.FakeEthNode (agreed, plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM, forM_, void)
+import qualified Data.ByteString as B
 import Data.List (sort)
 import Data.Maybe (fromJust, mapMaybe)
+import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Calendar (fromGregorian)
@@ -45,7 +47,8 @@ namesStoreTests :: Spec
 namesStoreTests = describe "StoreService names: store" $ do
   describe "migration" $ do
     it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
-    it "refuses a stored reveal whose acceptance columns are set only in part" testPartialAcceptance
+    it "refuses a stored reveal whose acceptance columns are unset or set only in part" testPartialAcceptance
+    it "refuses a stored commitment, secret or accepted terms hash that is not 32 bytes" testShortHashes
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -209,7 +212,17 @@ testPartialAcceptance = withServiceStore $ \st -> do
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
   r <- reg st "r1"
   write st r {nrReveal = Just reveal} `shouldReturn` Written 2
-  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET accept_terms = ? WHERE registration_id = 'r1'" (Only $ DB.Binary $ digestFixture 1)
+  withTransaction st $ \db -> DB.execute_ db "UPDATE sx_badge_service_name_registrations SET accept_nonce = NULL WHERE registration_id = 'r1'"
+  reg st "r1" `shouldThrow` anyException
+  withTransaction st $ \db -> DB.execute_ db "UPDATE sx_badge_service_name_registrations SET accept_terms = NULL, accept_signature = NULL WHERE registration_id = 'r1'"
+  reg st "r1" `shouldThrow` anyException
+
+testShortHashes :: IO ()
+testShortHashes = forM_ ["commitment", "secret", "accept_terms"] $ \column -> withServiceStore $ \st -> do
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  r <- reg st "r1"
+  write st r {nrReveal = Just reveal} `shouldReturn` Written 2
+  withTransaction st $ \db -> DB.execute db (fromString $ "UPDATE sx_badge_service_name_registrations SET " <> column <> " = ? WHERE registration_id = 'r1'") (Only $ DB.Binary $ B.take 31 $ digestFixture 1)
   reg st "r1" `shouldThrow` anyException
 
 testOrderHashFields :: IO ()

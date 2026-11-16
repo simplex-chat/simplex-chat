@@ -37,7 +37,6 @@ badgeNameRegistrationTests = describe "StoreService names: registration" $ do
   describe "verifying the register intent" $ do
     it "rejects an intent signed by another wallet" $ testVerifyOtherSigner g
     it "rejects an intent past its deadline" $ testVerifyExpired g
-    it "rejects a secret that is not 32 bytes" $ testVerifyShortSecret g
   -- viem's hashTypedData and encodeFunctionData against the SimplexNamePolicy ABI of ens-contracts 6ccb5c5
   describe "terms acceptance" $ do
     it "hashes AcceptGeneralTerms and AcceptCommunityTerms as the policy does" testAcceptanceDigest
@@ -72,11 +71,6 @@ testVerifyExpired :: TVar ChaChaDRG -> IO ()
 testVerifyExpired g = do
   intent <- knownIntent g knownRegistration
   verifyRegisterIntent domain (deadline + 1) intent `shouldReturn` Left "intent expired"
-
-testVerifyShortSecret :: TVar ChaChaDRG -> IO ()
-testVerifyShortSecret g = do
-  intent <- knownIntent g knownRegistration {rSecret = B.replicate 31 0x11}
-  verifyRegisterIntent domain deadline intent `shouldReturn` Left "secret: expected 32 bytes"
 
 testRevertedDryRun :: TVar ChaChaDRG -> IO ()
 testRevertedDryRun g = withFakeEthNode $ \node -> do
