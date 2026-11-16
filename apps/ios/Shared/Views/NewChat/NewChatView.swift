@@ -1299,14 +1299,15 @@ private func showOpenKnownGroupAlert(
 
 func showNameWarningAlert(_ alert: NameWarningAlert, cleanup: (() -> Void)?, openExistingChat: @escaping (ChatInfo) -> Void = { _ in }) {
     showAlert(alert.title, message: alert.message, actions: {[
-        alert.action.map { action in
-            UIAlertAction(title: action.title, style: .default) { _ in
-                switch action {
-                case .renew, .register, .reRegister: openBrowserAlert(uri: "https://simplex.domains/#testing")
-                case .connectToTeam: ChatModel.shared.appOpenUrl = simplexTeamURL
-                }
-                cleanup?()
+        alert.action.map { action -> UIAlertAction in
+            let openHowTo = { openBrowserAlert(uri: "https://simplex.domains/#testing") }
+            let (title, handler): (String, () -> Void) = switch action {
+            case .renew: (NSLocalizedString("Renew", comment: "alert action"), openHowTo)
+            case .register: (NSLocalizedString("Register", comment: "alert action"), openHowTo)
+            case .reRegister: (NSLocalizedString("Re-register", comment: "alert action"), openHowTo)
+            case .connectToTeam: (NSLocalizedString("Connect to SimpleX team", comment: "alert action"), { ChatModel.shared.appOpenUrl = simplexTeamURL })
             }
+            return UIAlertAction(title: title, style: .default) { _ in handler(); cleanup?() }
         },
         alert.chat.map { chat in UIAlertAction(title: NSLocalizedString("Open chat", comment: "new chat action"), style: .default) { _ in openExistingChat(chat) } },
         okCleanupAlertAction(cleanup: cleanup)

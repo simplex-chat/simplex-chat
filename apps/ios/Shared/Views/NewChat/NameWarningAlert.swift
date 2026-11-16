@@ -6,15 +6,6 @@ enum NameWarningAction {
     case register
     case reRegister
     case connectToTeam
-
-    var title: String {
-        switch self {
-        case .renew: NSLocalizedString("Renew", comment: "alert action")
-        case .register: NSLocalizedString("Register", comment: "alert action")
-        case .reRegister: NSLocalizedString("Re-register", comment: "alert action")
-        case .connectToTeam: NSLocalizedString("Connect to SimpleX team", comment: "alert action")
-        }
-    }
 }
 
 struct NameWarningAlert {
