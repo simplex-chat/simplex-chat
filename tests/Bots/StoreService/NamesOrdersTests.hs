@@ -56,6 +56,7 @@ where
 
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
+import Bots.StoreService.FakeHttp (nextFakeId)
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
 import Bots.StoreService.WebTests
@@ -341,11 +342,11 @@ testNamesConfig node =
     }
 
 -- | Each invoice the stub creates gets its own provider ref, and a card invoice its client secret.
-freshRefs :: IORef Int -> Provider -> Provider
-freshRefs counter p = p {pCreateInvoice = \method draft -> pCreateInvoice p method draft >>= traverse fresh}
+freshRefs :: Provider -> Provider
+freshRefs p = p {pCreateInvoice = \method draft -> pCreateInvoice p method draft >>= traverse fresh}
   where
     fresh pinv = do
-      n <- atomicModifyIORef' counter (\i -> (i + 1, i))
+      n <- atomically nextFakeId
       let ref = "pref-" <> tshow n
       pure $ case pProvider p of
         PPStripe -> pinv {piProviderRef = ref, piDestination = SPDCard CPStripe ("pi_secret_" <> tshow n)}
@@ -367,7 +368,6 @@ withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $
   phases <- newPhases
   cClock <- newIORef orderTime
   cStub <- newIORef (newStubState (Right sampleProviderInvoice))
-  counter <- newIORef (1 :: Int)
   cIps <- newIORef 1
   answerAvailable cNode
   createDirectoryIfMissing True "tests/tmp"
@@ -375,8 +375,8 @@ withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $
     staticDir <- prepareStaticDir root
     let cfg = (testServiceConfig staticDir True) {btcpay = Just testBTCPayConfig}
         cOrders = OrdersEnv {oeStore = cStore, oeConfig = testNamesConfig cNode, oeContracts = ct, oeTurns = turns, oePhases = phases, oeNow = readIORef cClock}
-        crypto = via $ freshRefs counter (stubProvider cStub)
-        card = via $ freshRefs counter (stubProvider cStub) {pProvider = PPStripe}
+        crypto = via $ freshRefs (stubProvider cStub)
+        card = via $ freshRefs (stubProvider cStub) {pProvider = PPStripe}
     waiters <- newWaiters
     hints <- newReadHints
     built <- newWebEnv cStore cfg waiters hints [crypto, card] Nothing
@@ -1269,8 +1269,9 @@ testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
   (newInv, _) <- placed ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now}
   closed <- invoiceRegistration ctx oldInv
   (nrPhase closed, nrLive closed) `shouldBe` (PUnpaid, False)
+  Just InvoiceRow {irProviderRef} <- getInvoice (cStore ctx) oldInv
   logs <- capturingStderr $ settleNow ctx oldInv settled `shouldReturn` Right ISPaid
-  logs `shouldSatisfy` T.isInfixOf "credited to the order's balance"
+  logs `shouldSatisfy` T.isInfixOf ("invoice " <> irProviderRef <> " received money after its order closed; it stays unpaid, and its money is credited to the order's balance")
   invoiceRegistration ctx oldInv `shouldReturn` closed
   new <- invoiceRegistration ctx newInv
   (nrPhase new, nrLive new, nrVersion new) `shouldBe` (PUnpaid, True, 1)
@@ -1340,7 +1341,7 @@ testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
   setSignals (cStub ctx) [(ref, SigClosed paid PaidInPart)]
   logs <- readWith poller
   refunds logs `shouldBe` 1
-  logs `shouldSatisfy` T.isInfixOf "it stays unpaid, and its money is credited to the order's balance once confirmed, else alerted"
+  logs `shouldSatisfy` T.isInfixOf ("invoice " <> ref <> " received money after its order closed; it stays unpaid, and its money is credited to the order's balance once confirmed, else alerted")
   restarted <- newPoller
   refunds <$> readWith restarted `shouldReturn` 0
   (nrPhase &&& nrLive) <$> invoiceRegistration ctx inv `shouldReturn` (PUnpaid, False)

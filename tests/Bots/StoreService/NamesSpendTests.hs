@@ -620,14 +620,14 @@ testWriteRefusedAtBalance = withSpendHook $ \hook ctx@Ctx {cOpenStore} -> do
   onCreate hook $ credit other "src" 500
   answered <- newIORef Nothing
   logs <- capturingStderr $ spend ctx src (difference 6000) >>= writeIORef answered . Just
-  logs `shouldSatisfy` T.isInfixOf "the order was refused, so invoice pref-1 is cancelled at the provider"
+  [cancelled] <- cancels ctx
+  logs `shouldSatisfy` T.isInfixOf ("the order was refused, so invoice " <> cancelled <> " is cancelled at the provider")
   Just answer <- readIORef answered
   current <- balanceOf ctx src
   (fmap blAmount current, blHold =<< current) `shouldBe` (Just 6500, Nothing)
   answer `shouldBe` balanceChanged current
   calls <- stubCalls (cStub ctx)
   [() | StubCreate {} <- calls] `shouldBe` [()]
-  length <$> cancels ctx `shouldReturn` 1
   paidFrom ctx src `shouldReturn` []
 
 testSpendRacesRefund :: IO ()

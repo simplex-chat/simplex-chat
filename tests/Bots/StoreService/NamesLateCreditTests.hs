@@ -275,15 +275,15 @@ testLiveOrderExists = withLate $ \l@Late {lStore = st} -> do
 testLiveOrderExistsHolder :: IO ()
 testLiveOrderExistsHolder = withLate $ \l@Late {lStore = st} -> do
   source st "s" 10000
-  holder st "a" "s" 10000 (at 60) `shouldReturn` Right ()
-  meetsLiveOrder st "a"
+  holder st "aheld" "s" 10000 (at 60) `shouldReturn` Right ()
+  meetsLiveOrder st "aheld"
   setRate l (Left $ ProviderError "rates down")
-  void $ readSignal l "a" (SigSettled (btcPaidOf 480000 lateUnits lateUnits) (at 10))
+  void $ readSignal l "aheld" (SigSettled (btcPaidOf 480000 lateUnits lateUnits) (at 10))
   figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
-  balanceOf st "a" `shouldReturn` Nothing
+  balanceOf st "aheld" `shouldReturn` Nothing
   setRate l (Right stubRate)
   void $ passAt l (at 20)
-  balanceOf st "a" `shouldReturn` Just (19200, 19200, 0)
+  balanceOf st "aheld" `shouldReturn` Just (19200, 19200, 0)
   invariantHolds st "s"
 
 -- late credits
@@ -330,14 +330,14 @@ testCloseAndCancel = withLate $ \l@Late {lStore = st, lWaiters} -> do
 
 testUnconfirmedThenSettled :: IO ()
 testUnconfirmedThenSettled = withLate $ \l@Late {lStore = st} -> do
-  closedOrder l "x" False
-  logs <- readSignal l "x" (SigClosed (btcPaid lateUnits 0) PaidInPart)
-  logs `shouldSatisfy` logged "NOTE" "invoice ref-inv-x holds money of its closed order not yet confirmed"
-  balanceOf st "x" `shouldReturn` Nothing
-  void $ readSignal l "x" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart)
-  void $ readSignal l "x" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart)
-  length <$> creditsOf st "x" `shouldReturn` 1
-  balanceOf st "x" `shouldReturn` Just (19200, 19200, 0)
+  closedOrder l "unconfirmed" False
+  logs <- readSignal l "unconfirmed" (SigClosed (btcPaid lateUnits 0) PaidInPart)
+  logs `shouldSatisfy` logged "NOTE" "invoice ref-inv-unconfirmed holds money of its closed order not yet confirmed"
+  balanceOf st "unconfirmed" `shouldReturn` Nothing
+  void $ readSignal l "unconfirmed" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart)
+  void $ readSignal l "unconfirmed" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart)
+  length <$> creditsOf st "unconfirmed" `shouldReturn` 1
+  balanceOf st "unconfirmed" `shouldReturn` Just (19200, 19200, 0)
 
 -- | The order was placed long before the payment, whose own row the window counts from.
 testNeverConfirmed :: IO ()
@@ -606,7 +606,7 @@ testMoneyAfterPaid = withLate $ \l@Late {lStore = st} -> do
   let paid units = SigSettled (btcPaidOf lateUnits units units) (at 10)
       alerted = logged "ERROR" "invoice ref-inv-paid was paid, and its provider now reads 480000 received, more than recorded"
   void $ readSignal l "paid" (paid lateUnits)
-  readSignal l "paid" (paid lateUnits) >>= (`shouldNotSatisfy` logged "ERROR" "was paid, and its provider")
+  readSignal l "paid" (paid lateUnits) >>= (`shouldNotSatisfy` logged "ERROR" "invoice ref-inv-paid was paid, and its provider")
   readSignal l "paid" (paid 480000) >>= (`shouldSatisfy` alerted)
   readSignal l "paid" (paid 480000) >>= (`shouldNotSatisfy` alerted)
   void $ passAt l (at 20)

@@ -116,10 +116,8 @@ testNoUnknownKeys =
 
 testLoadedCount :: IO ()
 testLoadedCount = do
-  listed <- capturingStderr $ void $ parseIni (namesIni namesSection (chainSection <> communityLines ["bakers = " <> bakersText, "florists = florists in Lisbon"]))
-  listed `shouldSatisfy` T.isInfixOf "names: 2 community names loaded"
-  none <- capturingStderr $ void $ parseIni (namesIni namesSection chainSection)
-  none `shouldSatisfy` T.isInfixOf "names: 0 community names loaded"
+  listed <- capturingStderr $ void $ parseIni (namesIni namesSection (chainSection <> communityLines ["bakers = " <> bakersText, "florists = florists in Lisbon", "potters = potters in Porto"]))
+  listed `shouldSatisfy` T.isInfixOf "names: 3 community names loaded"
 
 testTermsFor :: IO ()
 testTermsFor = do

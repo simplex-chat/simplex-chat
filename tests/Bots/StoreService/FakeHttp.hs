@@ -3,11 +3,12 @@
 module Bots.StoreService.FakeHttp
   ( setSwitch,
     stalledAnswer,
+    nextFakeId,
   )
 where
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.STM (TVar, atomically, modifyTVar')
+import Control.Concurrent.STM (STM, TVar, atomically, modifyTVar', newTVarIO)
 import Control.Monad (forever)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -15,6 +16,8 @@ import Data.ByteString.Builder (byteString)
 import Data.Text (Text)
 import Network.HTTP.Types (hContentType, ok200)
 import Network.Wai (Response, responseStream)
+import Simplex.Messaging.Util (stateTVar')
+import System.IO.Unsafe (unsafePerformIO)
 
 setSwitch :: TVar s -> Text -> (Bool -> s -> s) -> J.Object -> IO (Maybe Text)
 setSwitch state path set o = case KM.toList o of
@@ -28,3 +31,10 @@ stalledAnswer = responseStream ok200 [(hContentType, "application/json")] $ \wri
 
 trickleMicros :: Int
 trickleMicros = 100000
+
+nextFakeId :: STM Int
+nextFakeId = stateTVar' fakeIdCounter $ \n -> (n, n + 1)
+
+fakeIdCounter :: TVar Int
+fakeIdCounter = unsafePerformIO $ newTVarIO 1
+{-# NOINLINE fakeIdCounter #-}

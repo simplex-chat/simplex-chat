@@ -212,7 +212,7 @@ testCurrentTermsFetched g = withServiceStores $ \open -> withFakeEthNode $ \node
   mapM (termsText ct . termsAt) [fakeGeneralTermsText, fakeCommunityTermsText] `shouldReturn` [Right "SimpleX general terms v1", Right "SimpleX community terms v1"]
   answerCall node fakeController (selector "namePolicy()") $ Reverts ""
   unread <- restarted
-  capturingStderr (fetchCurrentTerms unread) >>= (`shouldSatisfy` T.isInfixOf "names: the terms links could not be read to fetch their texts")
+  capturingStderr (fetchCurrentTerms unread) >>= (`shouldSatisfy` T.isInfixOf "names: the terms links could not be read to fetch their texts: ChainReverted")
   fetchedTexts node `shouldReturn` paths
 
 testTermsTextNotStored :: TVar ChaChaDRG -> IO ()

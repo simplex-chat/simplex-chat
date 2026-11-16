@@ -55,6 +55,7 @@ import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (labelTurnCount, turnsCount, withLabelTurn)
 import StoreService.Names.Worker
+import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
 import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (retargetHandler)
@@ -1330,8 +1331,13 @@ closeOf Ctx {cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}} NameReg
 figuresOf :: Ctx -> NameRegistration -> IO (Maybe (Int, Int, Int, Maybe BalanceHold))
 figuresOf Ctx {cStore} NameRegistration {nrId = RegistrationId rid} = figures cStore rid orderTime
 
-refundedWhole :: NameRegistration -> Int -> RefundRecord
-refundedWhole r price = RefundRecord {rdRegistration = nrId r, rdCents = price, rdChain = [BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPayment = nrPayment r, lkProviderRef = Just "pref-1", lkPaid = price, lkFromBalance = 0, lkLateCredits = []}]}
+refundedWhole :: Ctx -> NameRegistration -> Int -> IO RefundRecord
+refundedWhole ctx r price = (\ref -> RefundRecord {rdRegistration = nrId r, rdCents = price, rdChain = [BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPayment = nrPayment r, lkProviderRef = Just ref, lkPaid = price, lkFromBalance = 0, lkLateCredits = []}]}) <$> paidRef ctx r
+
+paidRef :: Ctx -> NameRegistration -> IO Text
+paidRef Ctx {cStore} r = case nrPayment r of
+  RPInvoice _ invId -> maybe (error "no invoice row") irProviderRef <$> getInvoice cStore invId
+  other -> error $ "not paid by invoice: " <> show other
 
 testCloseFailed :: IO ()
 testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
@@ -1340,7 +1346,8 @@ testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
       price = oPrice aliceOrder
       RegistrationId rid = nrId r
   placeOrder ctx again `shouldReturn` refusedWith 409 "order_exists"
-  closeOf ctx r `shouldReturn` CLRefunded (Just orderTime) (refundedWhole r price)
+  refunded <- refundedWhole ctx r price
+  closeOf ctx r `shouldReturn` CLRefunded (Just orderTime) refunded
   x <- stored ctx r
   (nrPhase x, nrLive x, nrVersion x, nrError x) `shouldBe` (PTaken, False, nrVersion r + 1, Nothing)
   figuresOf ctx r `shouldReturn` Just (0, price, price, Nothing)
@@ -1359,7 +1366,8 @@ testCloseLapsed :: IO ()
 testCloseLapsed = withWorker $ \W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder committedPhase
   advance ctx (2 * day)
-  closeOf ctx r `shouldReturn` CLRefunded (Just $ addUTCTime day orderTime) (refundedWhole r (oPrice aliceOrder))
+  refunded <- refundedWhole ctx r (oPrice aliceOrder)
+  closeOf ctx r `shouldReturn` CLRefunded (Just $ addUTCTime day orderTime) refunded
   nrPhase <$> stored ctx r `shouldReturn` PTaken
 
 testCloseFromBalance :: IO ()
@@ -1369,6 +1377,7 @@ testCloseFromBalance = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
   withTransaction cStore $ \db -> creditBalance db (nrId paying) 30000 orderTime
   withTransaction cStore (\db -> createBalanceRegistration db (aliceRegistration "covered" 1) (nrId paying) price 30000 orderTime) `shouldReturn` Right ()
   covered <- registrationById ctx (RegistrationId "covered") >>= \r -> rewrite ctx r failedPhase
+  payingRef <- paidRef ctx paying
   closeOf ctx covered
     `shouldReturn` CLRefunded
       (Just orderTime)
@@ -1377,7 +1386,7 @@ testCloseFromBalance = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
           rdCents = price,
           rdChain =
             [ BalanceLink {lkRegistration = nrId covered, lkOwner = nrOwner covered, lkPayment = RPBalance, lkProviderRef = Nothing, lkPaid = 0, lkFromBalance = price, lkLateCredits = []},
-              BalanceLink {lkRegistration = nrId paying, lkOwner = nrOwner paying, lkPayment = nrPayment paying, lkProviderRef = Just "pref-1", lkPaid = oPrice dynamisOrder, lkFromBalance = 0, lkLateCredits = []}
+              BalanceLink {lkRegistration = nrId paying, lkOwner = nrOwner paying, lkPayment = nrPayment paying, lkProviderRef = Just payingRef, lkPaid = oPrice dynamisOrder, lkFromBalance = 0, lkLateCredits = []}
             ]
         }
   nrPhase <$> stored ctx covered `shouldReturn` PTaken

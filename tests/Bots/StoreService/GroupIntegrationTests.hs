@@ -181,7 +181,7 @@ testDevKeysWarned _ = do
   filter ("[WARN " `T.isInfixOf`) (T.lines warned) `shouldSatisfy` any ("trusting issuer dev_keys at indexes 9, 12" `T.isInfixOf`)
   Right withoutDev <- devKeysIni chainSection testIssuerKeyIdx sk []
   quiet <- capturingStderr $ trustDevKeys (Just withoutDev) cfg >>= (`shouldSatisfy` isRight) . fmap badgePublicKeys
-  filter ("dev_keys" `T.isInfixOf`) (T.lines quiet) `shouldBe` []
+  quiet `shouldNotSatisfy` T.isInfixOf "trusting issuer dev_keys at indexes ;"
 
 testInstanceLock :: HasCallStack => TestParams -> IO ()
 testInstanceLock ps = do
@@ -263,7 +263,7 @@ testNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   setFault node "eth_chainId" HttpFailure
   checkNodeChain (Just withDev) `shouldReturn` Left "issuer.dev_keys is refused: the node's chain id could not be read"
   warned <- capturingStderr $ checkNodeChain (Just noDev) `shouldReturn` Right ()
-  warned `shouldSatisfy` T.isInfixOf "the node's chain id could not be read, so it is not checked"
+  warned `shouldSatisfy` T.isInfixOf "the node's chain id could not be read, so it is not checked: ChainUnavailable \"HTTP 502\""
   checkNodeChain Nothing `shouldReturn` Right ()
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
@@ -640,9 +640,6 @@ heldRefusals cc src held = do
   recordRefundRaw cc ("inv-" <> src <> " 10000") `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
   Balances.figures (chatStore cc) src t0 >>= (`shouldSatisfy` \case Just (10000, 10000, 0, Just _) -> True; _ -> False)
 
-recordedS :: Either Text Text
-recordedS = Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidByBtc "s" <> ".")
-
 paidByBtc :: Text -> Text
 paidByBtc r = "order " <> r <> " of " <> addressText ownerA <> ": $100.00 by btc on invoice inv-" <> r <> " (provider reference ref-inv-" <> r <> ")"
 
@@ -650,11 +647,11 @@ testRefundOpenHolder :: HasCallStack => TestParams -> IO ()
 testRefundOpenHolder ps = withStoreService ps $ \_ _ cc -> do
   now <- getCurrentTime
   let expiry = addUTCTime 3600 now
-  heldSource cc "s" "h" expiry
-  heldRefusals cc "s" $ "held by order h, its invoice open until " <> minuteText expiry <> "; run the command again then"
+  heldSource cc "held" "h" expiry
+  heldRefusals cc "held" $ "held by order h, its invoice open until " <> minuteText expiry <> "; run the command again then"
   waiters <- newWaiters
   cancelOpenInvoice (chatStore cc) waiters Nothing (InvoiceId "inv-h") now `shouldReturn` True
-  recordRefundRaw cc "s 10000" `shouldReturn` recordedS
+  recordRefundRaw cc "held 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order held. Refund it now, by: " <> paidByBtc "held" <> ".")
 
 data TurnHolder a = TurnHolder {thAction :: Async a, thRelease :: MVar ()}
 

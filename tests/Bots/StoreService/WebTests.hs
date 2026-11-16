@@ -3363,16 +3363,16 @@ testSweepGivesUpPastTheWindow :: IO ()
 testSweepGivesUpPastTheWindow = bounded "sweep gives up" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
   passListing ref poller
   seedBadgePrice (weStore env) "price1"
-  iid <- seedPastWindow (weStore env) 1 "p-old" PPStripe
+  iid <- seedPastWindow (weStore env) 1 "p-gives-up" PPStripe
   failCancels ref
   firstLog <- capturingStderr (runOnePass poller >> runOnePass poller)
   invoiceStatus (weStore env) iid `shouldReturn` ISOpen
-  firstLog `shouldNotSatisfy` T.isInfixOf "expired here only"
-  failedAnHourAgo poller "p-old"
+  firstLog `shouldNotSatisfy` T.isInfixOf "invoice p-gives-up could not be cancelled"
+  failedAnHourAgo poller "p-gives-up"
   lastLog <- capturingStderr (runOnePass poller)
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
-  loggedError "invoice p-old could not be cancelled at the provider, so it was expired here only" lastLog `shouldBe` True
-  let attempt = [StubCancel "p-old", StubRead "p-old"]
+  loggedError "invoice p-gives-up could not be cancelled at the provider, so it was expired here only" lastLog `shouldBe` True
+  let attempt = [StubCancel "p-gives-up", StubRead "p-gives-up"]
   stubCalls ref `shouldReturn` concat (replicate 3 attempt)
   runOnePass poller
   stubCalls ref `shouldReturn` concat (replicate 3 attempt)

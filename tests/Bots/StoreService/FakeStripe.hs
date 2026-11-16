@@ -23,7 +23,7 @@ module Bots.StoreService.FakeStripe
 where
 
 import StoreService.Config (StripeConfig (..), providerCheckoutTimeoutMicros, providerTimeoutMicros)
-import Bots.StoreService.FakeHttp (setSwitch, stalledAnswer)
+import Bots.StoreService.FakeHttp (nextFakeId, setSwitch, stalledAnswer)
 import Control.Concurrent.STM
 import Control.Monad (forM_, when)
 import Crypto.Hash (Digest, SHA256)
@@ -105,7 +105,6 @@ data FailPlan = FailPlan {fpCalls :: Int, fpStatus :: Int}
 
 data FakeState = FakeState
   { fsIntents :: M.Map Text IntentState,
-    fsNextId :: Int,
     fsFail :: FailPlan,
     fsList :: Text,
     fsPageSize :: Maybe Int,
@@ -119,7 +118,6 @@ initialState :: FakeState
 initialState =
   FakeState
     { fsIntents = M.empty,
-      fsNextId = 1,
       fsFail = FailPlan {fpCalls = 0, fpStatus = 0},
       fsList = "intent-list",
       fsPageSize = Nothing,
@@ -321,9 +319,10 @@ fakeApp stv req respond0 = do
           currency = maybe "usd" TE.decodeUtf8 (lookup "currency" form)
       (pid, s) <- atomically $ do
         st <- readTVar stv
-        let pid = "pi_test_" <> T.justifyRight 4 '0' (tshow (fsNextId st))
+        n <- nextFakeId
+        let pid = "pi_test_" <> T.justifyRight 4 '0' (tshow n)
             s = IntentState {isStatus = "requires_payment_method", isAmount = amount, isCurrency = currency, isDeclines = 0}
-        writeTVar stv st {fsNextId = fsNextId st + 1, fsIntents = M.insert pid s (fsIntents st)}
+        writeTVar stv st {fsIntents = M.insert pid s (fsIntents st)}
         pure (pid, s)
       serve (intentFixture s) (patchIntent pid s)
 
