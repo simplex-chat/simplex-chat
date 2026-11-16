@@ -278,6 +278,7 @@ chatGroupTests = do
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
+    it "should reset unread stats for support chats on clearing group chat" testScopedSupportUnreadStatsOnClearChat
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
     it "should not read support chat items when reading group without scope" testScopedSupportUnreadStatsGroupReadNoScope
     it "should remove support chat with member when member is removed" testScopedSupportMemberRemoved
@@ -9430,6 +9431,39 @@ testScopedSupportUnreadStatsOnDelete =
     alice ##> "/member support chats #team"
     alice <## "members require attention: 0"
     alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportUnreadStatsOnClearChat :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsOnClearChat =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2 "team" alice bob
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+
+    alice #> "#team (support: bob) 2"
+    bob <# "#team (support) alice> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 1, mentions: 0"
+    bob ##> "/member support chats #team"
+    bob <## "members require attention: 0"
+    bob <## "support: unread: 1, require attention: 0, mentions: 0"
+
+    alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
+    bob #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+    bob ##> "/member support chats #team"
+    bob <## "members require attention: 0"
+    bob <## "support: unread: 0, require attention: 0, mentions: 0"
   where
     opts =
       testOpts
