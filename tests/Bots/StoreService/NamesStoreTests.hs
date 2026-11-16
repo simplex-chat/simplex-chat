@@ -129,7 +129,7 @@ price :: Int
 price = 20000
 
 paidOrder :: Text -> PaidOrder
-paidOrder invId = PaidOrder {poMethod = btc, poPrice = price, poInvoiceId = InvoiceId invId, poProviderRef = "ref-" <> invId}
+paidOrder invId = PaidOrder {poMethod = btc, poPrice = price, poInvoiceId = InvoiceId invId}
 
 insertInvoiceRow :: DB.Connection -> Text -> UTCTime -> Text -> IO ()
 insertInvoiceRow db = insertProviderInvoice db "crypto"
@@ -138,8 +138,8 @@ insertProviderInvoice :: DB.Connection -> Text -> Text -> UTCTime -> Text -> IO 
 insertProviderInvoice db provider invId expiresAt status =
   DB.execute
     db
-    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
-    ((invId, provider, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
+    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, provider_ref, price, amount, currency, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    ((invId, provider, "ref-" <> invId, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
 
 -- | A paid order whose invoice, named after the registration, expires at the given time.
 placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either BalanceInsertRefused ())
@@ -199,10 +199,15 @@ testNamesDownUp = withServiceStore $ \st -> do
   runMigrations st $ MTRDown (mapMaybe toDownMigration names)
   mapM (columnsOf st) namesTables `shouldReturn` map (const []) namesTables
   mapM (invoiceCount st) ["inv-r2", "inv-r3"] `shouldReturn` [0, 1]
-  badgeColumns `shouldReturn` map (filter (`notElem` balancePaymentColumns)) badgeBefore
+  badgeColumns `shouldReturn` zipWith beforeNames badgeTables badgeBefore
   runMigrations st $ MTRUp names
   mapM (fmap null . columnsOf st) namesTables `shouldReturn` map (const False) namesTables
   badgeColumns `shouldReturn` badgeBefore
+  where
+    beforeNames table columns
+      | table == "sx_badge_service_invoices" = filter (/= "provider_ref") columns
+      | table == "sx_badge_service_badge_code_invoices" = sort ("provider_ref" : columns)
+      | otherwise = filter (`notElem` balancePaymentColumns) columns
 
 testPartialAcceptance :: IO ()
 testPartialAcceptance = withServiceStore $ \st -> do

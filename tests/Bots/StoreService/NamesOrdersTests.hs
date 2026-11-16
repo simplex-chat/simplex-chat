@@ -77,7 +77,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Either (isRight)
+import Data.Either (isLeft, isRight)
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (sort)
 import qualified Data.Map.Strict as M
@@ -119,7 +119,7 @@ import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), ProviderRefConflict (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Limit (..), codeLimit, invoicesLimit, takeToken)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -201,7 +201,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers a name invoice 403 codes_only before reading the order, reaching no provider and writing nothing" testInvoiceCodesOnly
     it "sells a badge as before" testBadgeCodesOnly
   describe "invoice side" $ do
-    it "finds an invoice by provider ref in either table, refusing a ref both hold" testProviderRefs
+    it "finds an invoice by its provider ref, which one invoice holds, badge or name" testProviderRefs
     it "reads and sweeps name invoices with the badge ones" testPollerQueries
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
@@ -1569,19 +1569,19 @@ testCleanupReadFails = withOrders $ \ctx@Ctx {cStore = st} -> do
 testProviderRefs :: IO ()
 testProviderRefs = withServiceStore $ \st -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
-  getInvoiceByProviderRef st "ref-inv-r1" >>= \case
-    Just InvoiceRow {irInvoiceId, irProduct} -> (irInvoiceId, irProduct) `shouldBe` (InvoiceId "inv-r1", IPName (RegistrationId "r1"))
-    Nothing -> expectationFailure "the name invoice was not found by its ref"
-  withConnection st $ \db ->
-    DB.execute
-      db
-      "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-      ("badge-1" :: Text, "crypto" :: Text, 500 :: Int, 500 :: Int, "usd" :: Text, t0, "open" :: Text, t0, t0)
-  withConnection st $ \db -> do
-    DB.execute db "INSERT INTO sx_badge_service_badge_codes (code_hash, badge_type, months, code_payment_status, created_at) VALUES (?,?,?,?,?)" (DB.Binary ("hash" :: ByteString), "supporter" :: Text, 1 :: Int, "unpaid" :: Text, t0)
-    DB.execute db "INSERT INTO sx_badge_service_badge_prices (price_id, badge_type, month_price, currency, status, created_at) VALUES (?,?,?,?,?,?)" ("p1" :: Text, "supporter" :: Text, 500 :: Int, "usd" :: Text, "active" :: Text, t0)
-    DB.execute db "INSERT INTO sx_badge_service_badge_code_invoices (invoice_id, badge_code_id, price_id, provider_ref, created_at) VALUES (?, (SELECT badge_code_id FROM sx_badge_service_badge_codes), ?, ?, ?)" ("badge-1" :: Text, "p1" :: Text, "ref-inv-r1" :: Text, t0)
-  E.try (getInvoiceByProviderRef st "ref-inv-r1") `shouldReturn` Left (ProviderRefConflict "ref-inv-r1")
+  let found =
+        getInvoiceByProviderRef st "ref-inv-r1" >>= \case
+          Just InvoiceRow {irInvoiceId, irProduct} -> (irInvoiceId, irProduct) `shouldBe` (InvoiceId "inv-r1", IPName (RegistrationId "r1"))
+          Nothing -> expectationFailure "the name invoice was not found by its ref"
+  found
+  badgeInvoice <-
+    E.try $ withConnection st $ \db ->
+      DB.execute
+        db
+        "INSERT INTO sx_badge_service_invoices (invoice_id, provider, provider_ref, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
+        ("badge-1" :: Text, "crypto" :: Text, "ref-inv-r1" :: Text, 500 :: Int, 500 :: Int, "usd" :: Text, t0, "open" :: Text, t0, t0)
+  (badgeInvoice :: Either E.SomeException ()) `shouldSatisfy` isLeft
+  found
 
 testPollerQueries :: IO ()
 testPollerQueries = withServiceStore $ \st -> do

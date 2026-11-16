@@ -401,8 +401,8 @@ badgeWebTests = do
 
 testServiceColumns :: IO ()
 testServiceColumns = withServiceStore $ \st -> do
-  columnsOf st "sx_badge_service_badge_code_invoices"
-    >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["badge_code_id", "provider_ref"])
+  columnsOf st "sx_badge_service_badge_code_invoices" >>= (`shouldSatisfy` elem "badge_code_id")
+  columnsOf st "sx_badge_service_invoices" >>= (`shouldSatisfy` elem "provider_ref")
   columnsOf st "sx_badge_service_payments" >>= (`shouldSatisfy` elem "crypto_paid")
   columnsOf st "sx_badge_service_badge_codes"
     >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["expires_at", "revoked_at"])
@@ -499,19 +499,16 @@ testGroupOpsRedeemCounts = withServiceStore $ \st -> do
 
 testProviderRefUnique :: IO ()
 testProviderRefUnique = withServiceStore $ \st -> do
-  seedBadgePrice st "price1"
-  seedInvoice st "inv1"
-  seedInvoice st "inv2"
-  insertBadgeCodeInvoice st "inv1" "price1" "same-provider-ref"
-  insertBadgeCodeInvoice st "inv2" "price1" "same-provider-ref"
+  seedInvoice st "inv1" "same-provider-ref"
+  seedInvoice st "inv2" "same-provider-ref"
     `shouldThrow` anyException
 
-seedInvoice :: DBStore -> Text -> IO ()
-seedInvoice st invoiceId = withConnection st $ \db ->
+seedInvoice :: DBStore -> Text -> Text -> IO ()
+seedInvoice st invoiceId providerRef = withConnection st $ \db ->
   DB.execute
     db
-    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-    (invoiceId, "btcpay" :: Text, 500 :: Int, 500 :: Int, "usd" :: Text, "2030-01-01T00:00:00Z" :: Text, "open" :: Text, "2026-08-31T00:00:00Z" :: Text, "2026-08-31T00:00:00Z" :: Text)
+    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, provider_ref, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
+    (invoiceId, "btcpay" :: Text, providerRef, 500 :: Int, 500 :: Int, "usd" :: Text, "2030-01-01T00:00:00Z" :: Text, "open" :: Text, "2026-08-31T00:00:00Z" :: Text, "2026-08-31T00:00:00Z" :: Text)
 
 seedBadgePrice :: DBStore -> Text -> IO ()
 seedBadgePrice st priceId = withConnection st $ \db ->
@@ -519,18 +516,6 @@ seedBadgePrice st priceId = withConnection st $ \db ->
     db
     "INSERT INTO sx_badge_service_badge_prices (price_id, badge_type, month_price, currency, status, created_at) VALUES (?,?,?,?,?,?)"
     (priceId, "supporter" :: Text, 500 :: Int, "usd" :: Text, "active" :: Text, "2026-08-31T00:00:00Z" :: Text)
-
-insertBadgeCodeInvoice :: DBStore -> Text -> Text -> Text -> IO ()
-insertBadgeCodeInvoice st invoiceId priceId providerRef = withConnection st $ \db -> do
-  let codeHash = DB.Binary (digestFixture (fromIntegral (sum (map fromEnum (T.unpack invoiceId)))))
-  DB.execute
-    db
-    "INSERT INTO sx_badge_service_badge_codes (code_hash, badge_type, months, code_payment_status, created_at) VALUES (?,?,?,?,?)"
-    (codeHash, "supporter" :: Text, 1 :: Int, "unpaid" :: Text, "2026-08-31T00:00:00Z" :: Text)
-  DB.execute
-    db
-    "INSERT INTO sx_badge_service_badge_code_invoices (invoice_id, badge_code_id, price_id, created_at, provider_ref) SELECT ?, badge_code_id, ?, ?, ? FROM sx_badge_service_badge_codes WHERE code_hash = ?"
-    (invoiceId, priceId, "2026-08-31T00:00:00Z" :: Text, providerRef, codeHash)
 
 someExpiry :: UTCTime
 someExpiry = UTCTime (fromGregorian 2030 1 1) 0
