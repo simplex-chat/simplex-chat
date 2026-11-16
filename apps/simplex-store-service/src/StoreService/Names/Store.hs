@@ -721,8 +721,8 @@ getLiveOrders db commitment owner (LabelHash lh) now =
   DB.query
     db
     ( registrationColumns
-        <> ", CASE WHEN r.phase = ? AND i.status <> ? AND i.expires_at < ?"
-        <> unfunded
+        <> ", CASE WHEN"
+        <> overdueOrder "r"
         <> " THEN 1 ELSE 0 END"
         <> registrationFrom
         <> " LEFT JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id"
@@ -864,7 +864,7 @@ findRegistrations db owner now = do
         <> " JOIN sx_badge_service_name_invoices hni ON hni.registration_id = b.reserved_by"
         <> " JOIN sx_badge_service_invoices i ON i.invoice_id = hni.invoice_id"
         <> " WHERE b.registration_id = r.registration_id AND NOT ("
-        <> holdOverdue
+        <> overdueOrder "h"
         <> "))"
         <> registrationFrom
     holdParams = (PUnpaid, invoiceStatusText ISPaid, truncateToSecond now)
@@ -953,10 +953,10 @@ heldBy Balance {blHold} = case blHold of
   Just BalanceHold {bhOverdue = False} -> blHold
   _ -> Nothing
 
--- | A holder h with invoice i is overdue as getLiveOrders reads an order overdue: its invoice past its expiry, not paid, and holding no money.
+-- | The order of the alias with invoice i is overdue: unpaid, its invoice past its expiry, not paid, and holding no money.
 -- Takes the unpaid phase, the paid status and the time.
-holdOverdue :: Query
-holdOverdue = " h.phase = ? AND i.status <> ? AND i.expires_at < ?" <> unfunded
+overdueOrder :: Query -> Query
+overdueOrder alias = " " <> alias <> ".phase = ? AND i.status <> ? AND i.expires_at < ?" <> unfunded
 
 getBalance :: DB.Connection -> RegistrationId -> UTCTime -> IO (Maybe Balance)
 getBalance db (RegistrationId rid) now =
@@ -965,7 +965,7 @@ getBalance db (RegistrationId rid) now =
       db
       ( "SELECT b.registration_id, b.amount, b.credited, b.refunded, b.reserved_by, i.expires_at,"
           <> " CASE WHEN"
-          <> holdOverdue
+          <> overdueOrder "h"
           <> " THEN 1 ELSE 0 END, CASE WHEN i.invoice_id IS NOT NULL"
           <> unfunded
           <> " THEN 0 ELSE 1 END, b.refunded_at"
