@@ -124,6 +124,17 @@ class NameAlertsTest {
     connect("@alice.simplex")
     assertTexts("cath", "@alice.simplex", "Open new chat", "Cancel")
     assertLocalChats("@2")
+    press("Open new chat")
+    assertRequested { it.startsWith("/_prepare contact 1 ") && it.contains(" domain=alice.simplex ") }
+  }
+
+  @Test
+  fun okClosesNameAlert() = recordedAlerts("names/plan-known-expired") {
+    var cleanups = 0
+    connect("@alice.simplex", cleanup = { cleanups++ })
+    press("OK")
+    assertTexts()
+    assertEquals(1, cleanups)
   }
 
   @Test
@@ -194,14 +205,22 @@ class NameAlertsTest {
 
   @Test
   fun connectByNameRowShowsLocalChats() = recorded("names/plan-known") {
+    val searchText = mutableStateOf(TextFieldValue("alice"))
+    val candidate = mutableStateOf<String?>("@alice.simplex")
     setContent {
-      ConnectByNameRow("@alice.simplex", mutableStateOf(TextFieldValue("alice")), mutableStateOf("@alice.simplex"), close = null, showLocalChats = { chats -> shownLocalChats += chats.map { it.id } })
+      ConnectByNameRow("@alice.simplex", searchText, candidate, close = null, showLocalChats = { chats -> shownLocalChats += chats.map { it.id } })
       AlertManager.shared.showInView()
       AlertManager.privacySensitive.showInView()
     }
     press("Connect to @alice.simplex")
     assertTexts("Connect to @alice.simplex", "alice", "@alice.simplex", "Open chat", "Cancel")
     assertLocalChats("@2")
+    assertEquals("alice", searchText.value.text)
+    assertEquals("@alice.simplex", candidate.value)
+    press("Open chat")
+    assertRequested("/_get chat @2 initial=100")
+    assertEquals("", searchText.value.text)
+    assertEquals(null, candidate.value)
   }
 
   @Test
@@ -215,6 +234,9 @@ class NameAlertsTest {
     }
     assertEquals(DomainVerification.Moved, (chatInfo("@2") as ChatInfo.Direct).contact.profile.contactDomainVerified)
     assertEquals(DomainVerification.Moved, (chatInfo("#1") as ChatInfo.Group).groupInfo.groupDomainVerified)
+    val terminalItem = ChatModel.terminalItems.value.last()
+    assertEquals("< nameMoved", terminalItem.label)
+    assertEquals("userId: 1\ncontactIds: [2]\ngroupIds: [1]", terminalItem.details)
   }
 
   @Test
@@ -230,6 +252,7 @@ class NameAlertsTest {
     onNode(hasSetTextAction()).performTextInput("team.simplex")
     waitUntil(timeoutMillis = 5_000) { names.all { onAllNodesWithText(it).fetchSemanticsNodes().size > shownBefore.getValue(it) } }
     assertEquals(setOf("@2", "#1"), chatIds().toSet())
+    onNodeWithText("Connect to team.simplex").assertExists()
   }
 
   @Test
@@ -245,6 +268,14 @@ class NameAlertsTest {
   fun failedNameIsVerifiedAgain() = simplexName(DomainVerification.Failed) { verifications, _ ->
     onNodeWithText(SIMPLEX_NAME).performClick()
     waitUntil(timeoutMillis = 5_000) { verifications() == 1 }
+  }
+
+  @Test
+  fun failedVerificationShowsReason() = simplexName(DomainVerification.Failed, DomainVerification.Failed to "the name does not resolve to the contact's address") { verifications, _ ->
+    onNodeWithText(SIMPLEX_NAME).performClick()
+    waitUntil(timeoutMillis = 5_000) { verifications() == 1 && AlertManager.shared.hasAlertsShown() }
+    onNodeWithText("SimpleX name not verified").assertExists()
+    onNodeWithText("the name does not resolve to the contact's address").assertExists()
   }
 
   @Test
@@ -278,7 +309,11 @@ class NameAlertsTest {
     test()
   }
 
-  private fun simplexName(verified: DomainVerification?, test: ComposeUiTest.(verifications: () -> Int, copied: List<String>) -> Unit) = runComposeUiTest {
+  private fun simplexName(
+    verified: DomainVerification?,
+    verification: Pair<DomainVerification?, String?>? = null,
+    test: ComposeUiTest.(verifications: () -> Int, copied: List<String>) -> Unit
+  ) = runComposeUiTest {
     var verifications = 0
     val copied = mutableListOf<String>()
     val clipboard = object : ClipboardManager {
@@ -287,8 +322,9 @@ class NameAlertsTest {
     }
     setContent {
       CompositionLocalProvider(LocalClipboardManager provides clipboard) {
-        SimplexNameView(SIMPLEX_NAME, verified) { verifications++; null }
+        SimplexNameView(SIMPLEX_NAME, verified) { verifications++; verification }
       }
+      AlertManager.shared.showInView()
     }
     test({ verifications }, copied)
   }
@@ -298,8 +334,8 @@ class NameAlertsTest {
     return "{}"
   }
 
-  private fun ComposeUiTest.connect(name: String) {
-    runBlocking { planAndConnect(rhId = null, name, close = null, showLocalChats = { chats -> shownLocalChats += chats.map { it.id } }) }
+  private fun ComposeUiTest.connect(name: String, cleanup: (() -> Unit)? = null) {
+    runBlocking { planAndConnect(rhId = null, name, close = null, cleanup = cleanup, showLocalChats = { chats -> shownLocalChats += chats.map { it.id } }) }
     waitForIdle()
   }
 
@@ -313,10 +349,13 @@ class NameAlertsTest {
     assertEquals(texts.toList(), shownTexts())
   }
 
-  private fun ComposeUiTest.assertRequested(request: String) {
+  private fun ComposeUiTest.assertRequested(request: String) = assertRequested { it == request }
+
+  private fun ComposeUiTest.assertRequested(expected: (String) -> Boolean) {
     runCatching { waitUntil(timeoutMillis = 5_000) { synchronized(unrecorded) { unrecorded.isNotEmpty() } } }
     synchronized(unrecorded) {
-      assertEquals(listOf(request), unrecorded.toList())
+      assertEquals(1, unrecorded.size, unrecorded.toString())
+      assertTrue(expected(unrecorded.single()), unrecorded.toString())
       unrecorded.clear()
     }
     waitUntil(timeoutMillis = 5_000) { AlertManager.shared.hasAlertsShown() }
