@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
+module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
@@ -120,7 +120,7 @@ order label n =
     }
 
 newReg :: Text -> Address -> OrderFields -> NewRegistration
-newReg rid nrgOwner nrgOrder = NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears = twoYears}
+newReg rid nrgOwner nrgOrder = NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears = twoYears, nrgOrderHash = orderHash nrgOwner nrgOrder (OTInvoice btc price)}
 
 btc :: ServicePaymentMethod
 btc = SPMCrypto CCBtc
@@ -145,7 +145,7 @@ insertProviderInvoice db provider invId expiresAt status =
 placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either BalanceInsertRefused ())
 placePaid st rid owner o expiresAt = withTransaction st $ \db -> insertOrRollBack db $ do
   insertInvoiceRow db ("inv-" <> rid) expiresAt "open"
-  createPaidRegistration db (newReg rid owner o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) t0
+  createPaidRegistration db (newReg rid owner o) Nothing (paidOrder $ "inv-" <> rid) t0
 
 insertOrRollBack :: DB.Connection -> IO (Either e a) -> IO (Either e a)
 insertOrRollBack db insert = do
@@ -163,7 +163,10 @@ usable :: NewPrepaidCode
 usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
 
 placeCode :: DBStore -> Text -> Address -> OrderFields -> PrepaidCode -> IO (Either CodeInsertRefused ())
-placeCode st rid owner o code = withTransaction st $ \db -> insertOrRollBack db $ createCodeRegistration db (newReg rid owner o) code t0
+placeCode st rid owner o code = withTransaction st $ \db -> insertOrRollBack db $ createCodeRegistration db (codeReg rid owner o code) code t0
+
+codeReg :: Text -> Address -> OrderFields -> PrepaidCode -> NewRegistration
+codeReg rid owner o PrepaidCode {pcCodeHash} = (newReg rid owner o) {nrgOrderHash = orderHash owner o (OTCode pcCodeHash)}
 
 reg :: DBStore -> Text -> IO NameRegistration
 reg st rid = withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId rid)
@@ -256,9 +259,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrPhase = PUnpaid,
         nrYears = twoYears,
         nrPrice = price,
-        nrPayment = RPInvoice btc (InvoiceId "inv-r1"),
-        nrBalanceSource = Nothing,
-        nrBalanceUsed = 0,
+        nrPayment = OPInvoice btc (InvoiceId "inv-r1"),
         nrReveal = Nothing,
         nrCommitTx = Nothing,
         nrCommitBlock = Nothing,
@@ -284,7 +285,7 @@ testCreateCode = withServiceStore $ \st -> do
   code@PrepaidCode {pcId, pcCodeHash} <- issue st 1 usable
   placeCode st "r1" ownerA o code `shouldReturn` Right ()
   r <- reg st "r1"
-  (nrPhase r, nrLive r, nrPrice r, nrPayment r, nrVersion r) `shouldBe` (PQueued, True, 0, RPCode pcId, 1)
+  (nrPhase r, nrLive r, nrPrice r, nrPayment r, nrVersion r) `shouldBe` (PQueued, True, 0, OPCode pcId, 1)
   nrOrderHash r `shouldBe` orderHash ownerA o (OTCode pcCodeHash)
   held <- withTransaction st $ \db -> getPrepaidCode db pcCodeHash
   (pcReservedBy =<< held, pcReservedAt =<< held) `shouldBe` (Just (RegistrationId "r1"), Just t0)
@@ -348,7 +349,7 @@ testCloseOverdue = withServiceStore $ \st -> do
     [LiveOrder {loRegistration, loOverdue = True}] <- getLiveOrders db (ofCommitment o') ownerA (ofLabelHash o') (at 61)
     void $ closeOverdue db loRegistration (at 61)
     insertInvoiceRow db "inv-r2" (at 120) "open"
-    createPaidRegistration db (newReg "r2" ownerA o') (OTInvoice btc price) (paidOrder "inv-r2") (at 61)
+    createPaidRegistration db (newReg "r2" ownerA o') Nothing (paidOrder "inv-r2") (at 61)
   placed `shouldBe` Right ()
   old <- reg st "r1"
   (nrLive old, nrPhase old, nrVersion old) `shouldBe` (False, PUnpaid, 2)
@@ -451,7 +452,7 @@ testOrderLive :: IO ()
 testOrderLive = withServiceStore $ \st -> do
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
   paid <- reg st "r1"
-  let code = paid {nrPayment = RPCode 1}
+  let code = paid {nrPayment = OPCode 1}
       liveIn r phase = (phase, orderLive r {nrPhase = phase})
   map (liveIn paid) [minBound .. maxBound]
     `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True)]

@@ -251,7 +251,7 @@ balanceChanged b = (409, Just $ KM.fromList [("error", "balance_changed"), ("bal
 
 -- | The orders a balance paid.
 paidFrom :: Ctx -> RegistrationId -> IO [NameRegistration]
-paidFrom ctx source = filter ((== Just source) . nrBalanceSource) <$> registrationsOf ctx ownerA
+paidFrom ctx source = filter ((== Just source) . fmap buSource . paymentBalance . nrPayment) <$> registrationsOf ctx ownerA
 
 cancels :: Ctx -> IO [Text]
 cancels Ctx {cStub} = (\calls -> [r | StubCancel r <- calls]) <$> stubCalls cStub
@@ -272,15 +272,15 @@ testCoveredSpend = withSpend $ \ctx -> do
   src <- sourceOf ctx "src" 15000
   rid <- registrationAnswer . snd <$> spend ctx src (covered 15000)
   r <- registrationById ctx rid
-  (nrPhase r, nrLive r, nrPrice r, nrPayment r, nrBalanceSource r, nrBalanceUsed r) `shouldBe` (PQueued, True, 10000, RPBalance, Just src, 10000)
-  nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance src 10000 15000 Nothing)
+  (nrPhase r, nrLive r, nrPrice r, nrPayment r) `shouldBe` (PQueued, True, 10000, OPBalance BalanceUse {buSource = src, buUsed = 10000})
+  nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance Spend {spSource = src, spPrice = 10000, spBalance = 15000, spMethod = Nothing})
   nrAgreedTerms r `shouldBe` oTerms aliceOrder
   view <- viewOf ctx rid
   (field "phase" view, field "price" view, field "fromBalance" view, field "balance" view) `shouldBe` (Just "queued", Just (J.Number 10000), Just (J.Number 10000), Just J.Null)
   amountOf ctx src `shouldReturn` Just 5000
   exact <- sourceOf ctx "exact" 20000
   rid' <- registrationAnswer . snd <$> spend ctx exact (dynamis 20000 Nothing)
-  nrBalanceUsed <$> registrationById ctx rid' `shouldReturn` 20000
+  nrPayment <$> registrationById ctx rid' `shouldReturn` OPBalance BalanceUse {buSource = exact, buUsed = 20000}
   fmap (\b -> (blAmount b, blHold b)) <$> balanceOf ctx exact `shouldReturn` Just (0, Nothing)
   stubCalls (cStub ctx) `shouldReturn` []
 
@@ -296,8 +296,8 @@ testDifferenceSpend = withSpend $ \ctx -> do
   let invId = invoiceIdOf v
   holder <- invoiceRegistration ctx invId
   stubCalls (cStub ctx) `shouldReturn` [StubCreate btc OrderDraft {odAmount = CurrencyAmount 4000, odCurrency = "usd", odReference = "name:" <> hex (nrOrderHash holder)}]
-  (nrPhase holder, nrLive holder, nrPrice holder, nrPayment holder, nrBalanceSource holder, nrBalanceUsed holder) `shouldBe` (PUnpaid, True, 10000, RPInvoice btc invId, Just src, 6000)
-  nrOrderHash holder `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance src 10000 6000 (Just btc))
+  (nrPhase holder, nrLive holder, nrPrice holder, nrPayment holder) `shouldBe` (PUnpaid, True, 10000, OPDifference BalanceUse {buSource = src, buUsed = 6000} btc invId)
+  nrOrderHash holder `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance Spend {spSource = src, spPrice = 10000, spBalance = 6000, spMethod = Just btc})
   nrAgreedTerms holder `shouldBe` oTerms aliceOrder
   fmap irAmount <$> getInvoice (cStore ctx) invId `shouldReturn` Just (CurrencyAmount 4000)
   field "balance" <$> viewOf ctx src `shouldReturn` Just (J.object ["amount" J..= (6000 :: Int), "held" J..= True, "heldUntil" J..= expiry, "refunded" J..= (0 :: Int)])
@@ -526,7 +526,7 @@ testOverdueHolderSpent = withSpend $ \ctx@Ctx {cStore, cClock} -> do
   fmap irStatus <$> getInvoice cStore holderInv `shouldReturn` Just ISExpired
   (\r -> (nrLive r, nrVersion r)) <$> invoiceRegistration ctx holderInv `shouldReturn` (False, nrVersion holder + 1)
   cancels ctx `shouldReturn` [holderRef]
-  (\r -> (nrPhase r, nrBalanceUsed r)) <$> registrationById ctx rid `shouldReturn` (PQueued, 10000)
+  (\r -> (nrPhase r, buUsed <$> paymentBalance (nrPayment r))) <$> registrationById ctx rid `shouldReturn` (PQueued, Just 10000)
   fmap (\b -> (blAmount b, blHold b)) <$> balanceOf ctx src `shouldReturn` Just (0, Nothing)
 
 -- | By card, whose invoice does not expire by itself at the provider, past its 60 minutes.
@@ -541,12 +541,12 @@ overdueCardHolder ctx src = do
 
 -- | Whether the holder is live, its version, and its invoice's status.
 holderAfter :: Ctx -> NameRegistration -> IO (Bool, Int64, Maybe InvoiceStatus)
-holderAfter ctx@Ctx {cStore} NameRegistration {nrPayment} = case nrPayment of
-  RPInvoice _ invId -> do
+holderAfter ctx@Ctx {cStore} NameRegistration {nrPayment} = case paymentInvoice nrPayment of
+  Just invId -> do
     r <- invoiceRegistration ctx invId
     status <- fmap irStatus <$> getInvoice cStore invId
     pure (nrLive r, nrVersion r, status)
-  other -> error $ "not a paid order: " <> show other
+  Nothing -> error $ "not a paid order: " <> show nrPayment
 
 testDifferenceClosesHolder :: IO ()
 testDifferenceClosesHolder =
@@ -780,13 +780,13 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   let d = ridText dearer
   links ctx `shouldReturn` sort [(s, Nothing, Just d), (f, Just s, Nothing), (d, Just s, Nothing)]
   report "InvoiceSettled" dearerInv settledState
-  (\r -> (nrPhase r, nrPrice r, nrBalanceSource r, nrBalanceUsed r)) <$> registrationById ctx dearer `shouldReturn` (PQueued, 20000, Just src, 10000)
+  (\r -> (nrPhase r, nrPrice r, paymentBalance (nrPayment r))) <$> registrationById ctx dearer `shouldReturn` (PQueued, 20000, Just BalanceUse {buSource = src, buUsed = 10000})
   balanceView ctx src `shouldReturn` balanceObject 0 0
   links ctx `shouldReturn` sort [(s, Nothing, Nothing), (f, Just s, Nothing), (d, Just s, Nothing)]
   -- that order taken in turn keeps its whole price; a covered spend of alicebakery takes half, and support refunds the rest
   takenNow ctx dearer
   covering <- registrationAnswer . snd <$> spend ctx dearer (timedAt now $ (covered 20000) {sbOrder = aliceOrder {oCommitment = commitmentOf 4}})
-  (\r -> (nrPhase r, nrBalanceSource r, nrBalanceUsed r)) <$> registrationById ctx covering `shouldReturn` (PQueued, Just dearer, 10000)
+  (\r -> (nrPhase r, paymentBalance (nrPayment r))) <$> registrationById ctx covering `shouldReturn` (PQueued, Just BalanceUse {buSource = dearer, buUsed = 10000})
   dearerRef <- providerRef ctx dearerInv
   srcRef <- providerRef ctx srcInv
   owner <- addressText . nrOwner <$> registrationById ctx dearer

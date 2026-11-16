@@ -38,12 +38,12 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
 import StoreService.Names.Abi (hex)
-import StoreService.Names.Balances (Spend (..), checkSpendBalance, coveredOrderInsert, differenceOrderInsert, spendTerms)
+import StoreService.Names.Balances (Spend (..), checkSpendBalance, coveredOrderInsert, differenceOrderInsert)
 import StoreService.Names.Codes (CodeRefusal (..), readPrepaidCode)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), spendMessage)
-import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderTerms (..), PaidOrder (..), PrepaidCode (..), RegistrationPayment (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice, textMethod)
+import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice, textMethod)
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (balanceJSON, registrationAt, registrationView)
 import StoreService.Orders (publishRegistration)
@@ -88,13 +88,14 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns} http client cfg providers wa
     Right order@InvoiceOrder {ioRequest = req@OrderRequest {orOwner, orFields}, ioMethod, ioPrice} ->
       checkOrderSigner req >>= \case
         Left refusal -> refuse refusal
-        Right () ->
+        Right () -> do
+          let hash = orderHash orOwner orFields (OTInvoice ioMethod $ fromIntegral ioPrice)
           withLabelTurn oeTurns (ofLabelHash orFields) $
-            answerOrder env what req (orderHash orOwner orFields (OTInvoice ioMethod $ fromIntegral ioPrice)) (resentOrder env cfg) (newOrder order)
+            answerOrder env what req hash (resentOrder env cfg) (newOrder order hash)
   where
     what = "POST /api/invoice (name)"
     refuse = refused what
-    newOrder InvoiceOrder {ioRequest = req@OrderRequest {orOwner, orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} now = do
+    newOrder InvoiceOrder {ioRequest = req@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} hash now = do
       let years = orderYears fields $ nYears $ oeConfig env
           price = fromIntegral ioPrice
           checks =
@@ -105,13 +106,13 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns} http client cfg providers wa
               checkPrice (oeContracts env) ofLength years price
             ]
           insert new paid db at =
-            createPaidRegistration db new (OTInvoice ioMethod price) paid at >>= \case
+            createPaidRegistration db new Nothing paid at >>= \case
               Right () -> pure $ Right ()
               Left BIRLiveOrder -> pure $ Left OROrderExists
               Left BIRBalanceChanged -> E.throwIO $ BrokenInvariant "an order holding no balance was refused at a balance"
       runExceptT (mapM_ ExceptT checks) >>= \case
         Left refusal -> refuse refusal
-        Right () -> createAtProvider env http client cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = orderHash orOwner fields (OTInvoice ioMethod price), ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
+        Right () -> createAtProvider env http client cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = hash, ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
 
 -- | An order paid by invoice: its order hash, the holders its transaction closes, the order's price, what its invoice asks
 -- (less than the price when a balance paid the rest), and its insert after the invoice row's.
@@ -143,7 +144,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg provid
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
-              registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig}
+              registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash}
               paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId, poProviderRef = piProviderRef}
           placeOrder env req ivHolders (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)
             `E.catch` strandedBy provider piProviderRef
@@ -171,10 +172,13 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg provid
 -- | An exact resend, answered with its order as it reads now: the invoice view, or the id of an order without an invoice.
 resentOrder :: OrdersEnv -> ServiceConfig -> UTCTime -> NameRegistration -> IO Answer
 resentOrder env@OrdersEnv {oeStore} cfg now r@NameRegistration {nrId = rid@(RegistrationId ridText), nrPayment} = case nrPayment of
-  RPInvoice _ invId -> getInvoice oeStore invId >>= maybe (E.throwIO $ BrokenInvariant $ "the invoice of order " <> ridText <> " is missing") (fmap answerNow . invoiceViewResponse env cfg (registrationAt now r) . invoiceAt now)
-  RPBalance -> pure $ answerNow $ registrationAnswer rid
+  OPInvoice _ invId -> invoiceAnswer invId
+  OPDifference _ _ invId -> invoiceAnswer invId
+  OPBalance _ -> pure $ answerNow $ registrationAnswer rid
   -- the hash of an invoice or spend order never matches a code order's
-  RPCode _ -> E.throwIO $ BrokenInvariant $ "an invoice or spend order's hash matched code order " <> ridText
+  OPCode _ -> E.throwIO $ BrokenInvariant $ "an invoice or spend order's hash matched code order " <> ridText
+  where
+    invoiceAnswer invId = getInvoice oeStore invId >>= maybe (E.throwIO $ BrokenInvariant $ "the invoice of order " <> ridText <> " is missing") (fmap answerNow . invoiceViewResponse env cfg (registrationAt now r) . invoiceAt now)
 
 invoiceViewResponse :: OrdersEnv -> ServiceConfig -> NameRegistration -> InvoiceRow -> IO Response
 invoiceViewResponse env cfg r row = jsonResponse status200 <$> nameInvoiceView env (confirmationsFor cfg) row r
@@ -213,10 +217,11 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} provide
     issuedCode t = case parseNameCode t of
       Just (NCPrepaid code) -> readPrepaidCode oeStore code
       _ -> pure Nothing
-    signed order@OrderRequest {orOwner, orFields} code@PrepaidCode {pcCodeHash} =
+    signed order@OrderRequest {orOwner, orFields} code@PrepaidCode {pcCodeHash} = do
+      let hash = orderHash orOwner orFields (OTCode pcCodeHash)
       withLabelTurn oeTurns (ofLabelHash orFields) $
-        answerOrder env what order (orderHash orOwner orFields (OTCode pcCodeHash)) (\_ NameRegistration {nrId} -> pure $ answerNow $ registrationAnswer nrId) (\now -> newOrder now order code)
-    newOrder now order@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofDuration}, orTimestamp} code@PrepaidCode {pcYears} = do
+        answerOrder env what order hash (\_ NameRegistration {nrId} -> pure $ answerNow $ registrationAnswer nrId) (\now -> newOrder now order hash code)
+    newOrder now order@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofDuration}, orTimestamp} hash code@PrepaidCode {pcYears} = do
       let checks =
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration oeConfig now (orderYears fields pcYears) ofDuration,
@@ -227,7 +232,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} provide
         Left refusal -> refuse refusal
         Right () -> do
           rid <- newRegistrationId
-          placeCodeOrder env order rid code >>= \case
+          placeCodeOrder env order hash rid code >>= \case
             Left refusal -> refuse refusal
             Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
 
@@ -258,9 +263,10 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg pr
             Right () -> do
               let order = OrderRequest {orOwner = nrOwner, orFields = fields, orTimestamp = timestamp, orSignature = signature}
               withLabelTurn oeTurns (ofLabelHash fields) $ withBalanceTurn oeTurns source $ inTurns order spend
-    inTurns order@OrderRequest {orOwner, orFields} spend =
-      answerOrder env what order (orderHash orOwner orFields $ spendTerms spend) (resentOrder env cfg) $ \now ->
-        runExceptT (checked now order spend) >>= either refuse (place order spend)
+    inTurns order@OrderRequest {orOwner, orFields} spend = do
+      let hash = orderHash orOwner orFields (OTBalance spend)
+      answerOrder env what order hash (resentOrder env cfg) $ \now ->
+        runExceptT (checked now order spend) >>= either refuse (place order hash spend)
     checked now OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} spend@Spend {spPrice} = do
       let years = orderYears fields $ nYears oeConfig
       liftEither $ checkTimestamp now orTimestamp
@@ -270,10 +276,10 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg pr
       ExceptT $ checkNameFree oeContracts oeStore ofLabelHash
       ExceptT $ checkPrice oeContracts ofLength years spPrice
       pure holder
-    place order@OrderRequest {orOwner, orFields} spend@Spend {spPrice, spBalance, spMethod} holder = case spMethod of
+    place order@OrderRequest {orOwner, orFields} hash spend@Spend {spPrice, spBalance, spMethod} holder = case spMethod of
       Nothing -> do
         rid <- newRegistrationId
-        let new = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig}
+        let new = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = hash}
         placeOrder env order (maybeToList holder) (coveredOrderInsert spend new) >>= \case
           Left refusal -> refuse refusal
           Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
@@ -281,7 +287,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg pr
         | spPrice - spBalance < minCardChargeCents -> refuse $ ORBadRequest "a card difference under the card minimum"
       Just method ->
         createAtProvider env http (checkoutClient http req) cfg providers waiters what $
-          InvoicedOrder {ivRequest = order, ivOrderHash = orderHash orOwner orFields (spendTerms spend), ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = fromIntegral (spPrice - spBalance), ivInsert = differenceOrderInsert spend}
+          InvoicedOrder {ivRequest = order, ivOrderHash = hash, ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = fromIntegral (spPrice - spBalance), ivInsert = differenceOrderInsert spend}
 
 -- | Stripe refuses a USD charge under 50 cents, so the page offers only crypto for a smaller difference.
 minCardChargeCents :: Int

@@ -17,7 +17,7 @@ where
 
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
-import StoreService.Names.Store (LateSupport (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
+import StoreService.Names.Store (BalanceUse (..), LateSupport (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
 import StoreService.Providers (Confirmed (..), Funded (..), PaymentSignal (..), Received (..))
 import StoreService.Safely (safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
@@ -190,7 +190,7 @@ settleOrder st waiters phases invId signal now' = do
 -- BTCPay reports money paid into a closed invoice as Expired or Invalid, not Settled, so a new payment figure
 -- on a closed invoice is late too; the monotonic payment write reports each figure once.
 nameSettled :: DB.Connection -> Text -> InvoiceStatus -> Maybe InvoiceStatus -> SettledMoney -> NameRegistration -> UTCTime -> IO [NameOutcome]
-nameSettled db ref before after money r@NameRegistration {nrId, nrPhase, nrBalanceSource, nrBalanceUsed} now
+nameSettled db ref before after money r@NameRegistration {nrId, nrPhase, nrPayment} now
   | nrPhase /= PUnpaid = pure []
   | otherwise = case after of
       Just ISPaid
@@ -207,8 +207,8 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrPhase, nrBalan
   where
     closed = maybe [] (\(rid, v) -> [NOWritten rid v]) <$> closeOrder db r now
     -- the buyer paid the difference, so the order stays queued even when its hold cannot be spent
-    spendHold = case nrBalanceSource of
-      Just source -> (\spent -> [NOHoldNotSpent ref source | not spent]) <$> spendHeldBalance db nrId nrBalanceUsed now
+    spendHold = case paymentBalance nrPayment of
+      Just BalanceUse {buSource, buUsed} -> (\spent -> [NOHoldNotSpent ref buSource | not spent]) <$> spendHeldBalance db nrId buUsed now
       Nothing -> pure []
 
 -- | Clears a live unpaid order's live flag, as its invoice closes in the same transaction, and releases a balance it held.

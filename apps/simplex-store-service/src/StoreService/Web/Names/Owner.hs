@@ -27,7 +27,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, paymentInvoice)
+import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withLabelTurns)
 import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
@@ -68,7 +68,7 @@ parseFind o = do
 
 -- | balanceSource: the order whose balance paid this one; heldBy: the order whose invoice holds this one's balance.
 foundJSON :: NameRegistration -> Maybe RegistrationId -> J.Value
-foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed, nrBalanceSource} holder =
+foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} holder =
   J.object
     [ "registrationId" .= rid,
       "invoiceId" .= paymentInvoice nrPayment,
@@ -76,7 +76,7 @@ foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCre
       "createdAt" .= nrCreatedAt,
       "labelHash" .= hex lh,
       "sealed" .= nrSealed,
-      "balanceSource" .= (idText <$> nrBalanceSource),
+      "balanceSource" .= (idText . buSource <$> paymentBalance nrPayment),
       "heldBy" .= (idText <$> holder)
     ]
   where

@@ -58,7 +58,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeB
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.FakeHttp (nextFakeId)
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
-import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
+import Bots.StoreService.NamesStoreTests (btc, codeReg, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
 import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently, wait)
@@ -514,7 +514,7 @@ testPaidOrder = withOrders $ \ctx -> do
   let reference = "name:" <> hex (orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000))
   stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference}]
   reg <- invoiceRegistration ctx invId
-  (nrPhase reg, nrLive reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (PUnpaid, True, 1, 2, 10000, RPInvoice (SPMCrypto CCBtc) invId)
+  (nrPhase reg, nrLive reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (PUnpaid, True, 1, 2, 10000, OPInvoice (SPMCrypto CCBtc) invId)
   nrOrderHash reg `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000)
   nrAgreedTerms reg `shouldBe` plainTerms
 
@@ -981,7 +981,7 @@ testCodeOrder = withOrders $ \ctx -> do
   (code, issued@PrepaidCode {pcId, pcCodeHash}) <- issueCode ctx 8 2 id
   rid <- registered ctx code aliceOrder
   r <- registrationById ctx rid
-  (nrPhase r, nrLive r, nrVersion r, nrYears r, nrPrice r, nrPayment r) `shouldBe` (PQueued, True, 1, 2, 0, RPCode pcId)
+  (nrPhase r, nrLive r, nrVersion r, nrYears r, nrPrice r, nrPayment r) `shouldBe` (PQueued, True, 1, 2, 0, OPCode pcId)
   (nrOwner r, nrDuration r, nrCommitment r, nrSealed r, nrAgreedTerms r) `shouldBe` (ownerA, durationAt orderTime, oCommitment aliceOrder, oSealed aliceOrder, plainTerms)
   nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTCode pcCodeHash)
   held <- readCode ctx issued
@@ -1198,8 +1198,8 @@ testCodeNotReservable = withOrders $ \ctx@Ctx {cStore} -> do
   (_, revokedLate) <- issueCode ctx 8 2 id
   withTransaction cStore $ \db -> void $ revokePrepaidCode db (pcCodeHash revokedLate) orderTime
   req <- fromJust . Orders.parseOrderRequest <$> signedBody (cRandom ctx) aliceOrder
-  let new = NewRegistration {nrgId = RegistrationId "late", nrgOwner = ownerA, nrgOrder = fieldsOf aliceOrder, nrgYears = 2}
   forM_ [(reservedLate, CRReserved), (revokedLate, CRInvalid)] $ \(stale, refusal) -> do
+    let new = codeReg "late" ownerA (fieldsOf aliceOrder) stale
     placedOrder <- Orders.placeOrder (cOrders ctx) req [] (Orders.codeOrderInsert new stale)
     either Just (const Nothing) placedOrder `shouldBe` Just (Orders.ORCode refusal)
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
@@ -1722,8 +1722,7 @@ testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 False Nothing 0, Just $ J.Number 0)
   Right () <- withTransaction st $ \db -> do
     insertInvoiceRow db "inv-holder" holderExpiry "open"
-    let terms = OTBalance (RegistrationId "source") 20000 15000 (Just btc)
-    createPaidRegistration db (newReg "holder" ownerA (order "bobsbakery" 2)) terms (paidOrder "inv-holder") t0
+    createPaidRegistration db (newReg "holder" ownerA (order "bobsbakery" 2)) (Just BalanceUse {buSource = RegistrationId "source", buUsed = 15000}) (paidOrder "inv-holder") t0
   balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 True (Just holderExpiry) 0, Just $ J.Number 0)
   balanceOf <$> viewOf "source" (addUTCTime 1 holderExpiry) `shouldReturn` (Just $ balance 15000 False Nothing 0, Just $ J.Number 0)
   balanceOf <$> viewOf "holder" t0 `shouldReturn` (Just J.Null, Just $ J.Number 15000)

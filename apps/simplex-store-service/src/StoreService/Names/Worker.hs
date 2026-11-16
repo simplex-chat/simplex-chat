@@ -372,9 +372,10 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
 -- in the balance's turn after the name's; a code order's code is released.
 taken :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
 taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {nrId, nrPayment} = case nrPayment of
-  RPInvoice {} -> credited
-  RPBalance -> credited
-  RPCode codeId -> written r . fmap fst <$> releaseCode oeTurns oeStore codeId nrId (takenWrite now r)
+  OPInvoice {} -> credited
+  OPDifference {} -> credited
+  OPBalance _ -> credited
+  OPCode codeId -> written r . fmap fst <$> releaseCode oeTurns oeStore codeId nrId (takenWrite now r)
   where
     credited = written r <$> withBalanceTurn oeTurns nrId (withTransaction oeStore $ creditedTaken now r)
 
@@ -480,9 +481,10 @@ isRegister = \case TxRegister _ -> True; _ -> False
 -- | The code a code order still holds, though revoked or expired since, or a released one it can reserve again.
 retryCode :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either CodeRefusal (Maybe PrepaidCode))
 retryCode OrdersEnv {oeStore} now NameRegistration {nrId, nrLength, nrPayment} = case nrPayment of
-  RPInvoice {} -> pure $ Right Nothing
-  RPBalance -> pure $ Right Nothing
-  RPCode codeId ->
+  OPInvoice {} -> pure $ Right Nothing
+  OPDifference {} -> pure $ Right Nothing
+  OPBalance _ -> pure $ Right Nothing
+  OPCode codeId ->
     withTransaction oeStore (`getPrepaidCodeById` codeId) <&> \code -> maybe (Right $ Just code) Left $ codeRefusal now nrId nrLength code
 
 -- | The register's transactions, which confirmLanded has read, are cleared with the failure; the reveal unless its intent still serves.
@@ -536,7 +538,7 @@ closeRegistration st ct turns clock ref = do
   where
     refused = pure . CLRefused
     closeFailed now current = case registrationAt now current of
-      NameRegistration {nrPayment = RPCode _} -> refused CFNotFailedPaid
+      NameRegistration {nrPayment = OPCode _} -> refused CFNotFailedPaid
       r@NameRegistration {nrId, nrPhase = PFailed} ->
         checkLanded st ct turns clock r >>= \case
           LRegistered _ -> pure $ CLRegistered nrId

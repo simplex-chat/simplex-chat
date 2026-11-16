@@ -330,7 +330,8 @@ testFind :: IO ()
 testFind = withOwner $ \ctx@Ctx {cStore} -> do
   forM_ [1 .. 50 :: Int] $ \i -> do
     (_, code) <- issueCode ctx 8 2 id
-    let new = NewRegistration {nrgId = oldOrder i, nrgOwner = ownerA, nrgOrder = order ("alicebakery" <> tshow i) (fromIntegral i), nrgYears = 2}
+    let o = order ("alicebakery" <> tshow i) (fromIntegral i)
+        new = NewRegistration {nrgId = oldOrder i, nrgOwner = ownerA, nrgOrder = o, nrgYears = 2, nrgOrderHash = orderHash ownerA o (OTCode $ pcCodeHash code)}
     withTransaction cStore (\db -> createCodeRegistration db new code (addUTCTime (fromIntegral i) t0)) `shouldReturn` Right ()
   answerFree ctx "alicebakers"
   answerUnowned ctx "alicebakery50"
@@ -666,10 +667,11 @@ testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
   paying <- paidIn ctx (byB aliceOrder) failedPhase
   withTransaction cStore $ \db -> creditBalance db (nrId paying) 5000 orderTime
   let fields = OrderFields {ofLabelHash = labelHash "dynamis", ofLength = 7, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf 3, ofSealed = "sealed-dynamis-3", ofAgreedTerms = plainTerms}
-      new = NewRegistration {nrgId = RegistrationId "diff", nrgOwner = ownerA, nrgOrder = fields, nrgYears = 2}
+      spend = Spend {spSource = nrId paying, spPrice = 20000, spBalance = 5000, spMethod = Just btc}
+      new = NewRegistration {nrgId = RegistrationId "diff", nrgOwner = ownerA, nrgOrder = fields, nrgYears = 2, nrgOrderHash = orderHash ownerA fields (OTBalance spend)}
   withTransaction cStore $ \db -> do
     insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"
-    createPaidRegistration db new (OTBalance (nrId paying) 20000 5000 (Just btc)) (paidOrder "inv-diff") {poPrice = 20000} orderTime `shouldReturn` Right ()
+    createPaidRegistration db new (Just BalanceUse {buSource = nrId paying, buUsed = 5000}) (paidOrder "inv-diff") {poPrice = 20000} orderTime `shouldReturn` Right ()
   settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` Right ISPaid
   r <- registrationById ctx (RegistrationId "diff") >>= \d -> rewrite ctx d failedPhase
   to <- moveTo ctx "alicebakers" 11

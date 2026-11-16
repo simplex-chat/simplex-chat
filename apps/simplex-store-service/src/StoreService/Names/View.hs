@@ -41,7 +41,7 @@ import StoreService.Names.Community (AcceptanceAsked (..), agreedTermsHash, comm
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), HoldState (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), getBalance, getRegistration, heldBy, lateWait, paymentInvoice)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), HoldState (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), getBalance, getRegistration, heldBy, lateWait, paymentBalance, paymentInvoice)
 
 -- | The view's chain reads; a field whose read failed is null and named in unread.
 data ViewReads = ViewReads
@@ -98,7 +98,7 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "years" .= nrYears,
       "duration" .= nrDuration,
       "price" .= nrPrice,
-      "fromBalance" .= nrBalanceUsed,
+      "fromBalance" .= maybe 0 buUsed (paymentBalance nrPayment),
       "balance" .= (balanceJSON <$> balance),
       "latePayment" .= ((\w -> J.object ["waiting" .= waitingText w]) <$> late),
       "commitTx" .= (txText <$> nrCommitTx),
@@ -115,7 +115,7 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
     ]
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrBalanceUsed, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError, nrAgreedTerms} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError, nrAgreedTerms} = r
     txText (TxHash h) = hex h
     readValue = \case
       VRRead a -> Just a

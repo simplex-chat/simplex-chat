@@ -565,7 +565,7 @@ aliceFields :: Int -> OrderFields
 aliceFields n = OrderFields {ofLabelHash = labelHash "alicebakery", ofLength = 11, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf n, ofSealed = "sealed-alicebakery-" <> tshow n, ofAgreedTerms = plainTerms}
 
 aliceRegistration :: Text -> Int -> NewRegistration
-aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgYears = 2}
+aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgYears = 2, nrgOrderHash = orderHash ownerA (aliceFields n) (OTInvoice btc $ oPrice aliceOrder)}
 
 -- | The amount and credited of the order's balance.
 balanceFigures :: Ctx -> RegistrationId -> IO (Maybe (Int, Int))
@@ -584,15 +584,15 @@ testTakenFromBalance = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   wholly <- paidIn ctx (byB dynamisOrder) failedPhase
   partly <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 5} failedPhase
   withTransaction cStore $ \db -> creditBalance db (nrId wholly) 30000 orderTime >> creditBalance db (nrId partly) 4000 orderTime
-  withTransaction cStore (\db -> createBalanceRegistration db (aliceRegistration "covered" 1) (nrId wholly) price 30000 orderTime) `shouldReturn` Right ()
+  withTransaction cStore (\db -> createBalanceRegistration db (aliceRegistration "covered" 1) BalanceUse {buSource = nrId wholly, buUsed = price} 30000 orderTime) `shouldReturn` Right ()
   covered <- registrationById ctx (RegistrationId "covered") >>= \r -> rewrite ctx r openPhase >>= revealed ctx keyA "alicebakery"
   endsTaken w covered
-  (\x -> (nrPhase x, nrLive x, nrPayment x)) <$> stored ctx covered `shouldReturn` (PTaken, False, RPBalance)
+  (\x -> (nrPhase x, nrLive x, nrPayment x)) <$> stored ctx covered `shouldReturn` (PTaken, False, OPBalance BalanceUse {buSource = nrId wholly, buUsed = price})
   balanceFigures ctx (nrId covered) `shouldReturn` Just (price, price)
   balanceFigures ctx (nrId wholly) `shouldReturn` Just (30000 - price, 30000)
   withTransaction cStore $ \db -> do
     insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"
-    createPaidRegistration db (aliceRegistration "diff" 2) (OTBalance (nrId partly) price 4000 (Just btc)) (paidOrder "inv-diff") {poPrice = price} orderTime `shouldReturn` Right ()
+    createPaidRegistration db (aliceRegistration "diff" 2) (Just BalanceUse {buSource = nrId partly, buUsed = 4000}) (paidOrder "inv-diff") {poPrice = price} orderTime `shouldReturn` Right ()
   settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` Right ISPaid
   balanceFigures ctx (nrId partly) `shouldReturn` Just (0, 4000)
   diff <- registrationById ctx (RegistrationId "diff") >>= \r -> rewrite ctx r openPhase >>= revealed ctx keyA "alicebakery"
@@ -1335,9 +1335,9 @@ refundedWhole :: Ctx -> NameRegistration -> Int -> IO RefundRecord
 refundedWhole ctx r price = (\ref -> RefundRecord {rdRegistration = nrId r, rdCents = price, rdChain = [BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPayment = nrPayment r, lkProviderRef = Just ref, lkPaid = price, lkFromBalance = 0, lkLateCredits = []}]}) <$> paidRef ctx r
 
 paidRef :: Ctx -> NameRegistration -> IO Text
-paidRef Ctx {cStore} r = case nrPayment r of
-  RPInvoice _ invId -> maybe (error "no invoice row") irProviderRef <$> getInvoice cStore invId
-  other -> error $ "not paid by invoice: " <> show other
+paidRef Ctx {cStore} r = case paymentInvoice (nrPayment r) of
+  Just invId -> maybe (error "no invoice row") irProviderRef <$> getInvoice cStore invId
+  Nothing -> error $ "not paid by invoice: " <> show (nrPayment r)
 
 testCloseFailed :: IO ()
 testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
@@ -1375,7 +1375,7 @@ testCloseFromBalance = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
   paying <- paidIn ctx (byB dynamisOrder) failedPhase
   let price = oPrice aliceOrder
   withTransaction cStore $ \db -> creditBalance db (nrId paying) 30000 orderTime
-  withTransaction cStore (\db -> createBalanceRegistration db (aliceRegistration "covered" 1) (nrId paying) price 30000 orderTime) `shouldReturn` Right ()
+  withTransaction cStore (\db -> createBalanceRegistration db (aliceRegistration "covered" 1) BalanceUse {buSource = nrId paying, buUsed = price} 30000 orderTime) `shouldReturn` Right ()
   covered <- registrationById ctx (RegistrationId "covered") >>= \r -> rewrite ctx r failedPhase
   payingRef <- paidRef ctx paying
   closeOf ctx covered
@@ -1385,7 +1385,7 @@ testCloseFromBalance = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
         { rdRegistration = nrId covered,
           rdCents = price,
           rdChain =
-            [ BalanceLink {lkRegistration = nrId covered, lkOwner = nrOwner covered, lkPayment = RPBalance, lkProviderRef = Nothing, lkPaid = 0, lkFromBalance = price, lkLateCredits = []},
+            [ BalanceLink {lkRegistration = nrId covered, lkOwner = nrOwner covered, lkPayment = OPBalance BalanceUse {buSource = nrId paying, buUsed = price}, lkProviderRef = Nothing, lkPaid = 0, lkFromBalance = price, lkLateCredits = []},
               BalanceLink {lkRegistration = nrId paying, lkOwner = nrOwner paying, lkPayment = nrPayment paying, lkProviderRef = Just payingRef, lkPaid = oPrice dynamisOrder, lkFromBalance = 0, lkLateCredits = []}
             ]
         }
@@ -1451,7 +1451,7 @@ testCloseHeld = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
   withTransaction cStore $ \db -> do
     creditBalance db (nrId r) 4000 orderTime
     insertInvoiceRow db "inv-diff" expiresAt "open"
-    createPaidRegistration db (aliceRegistration "diff" 2) (OTBalance (nrId r) diffPrice 4000 (Just btc)) (paidOrder "inv-diff") {poPrice = diffPrice} orderTime `shouldReturn` Right ()
+    createPaidRegistration db (aliceRegistration "diff" 2) (Just BalanceUse {buSource = nrId r, buUsed = 4000}) (paidOrder "inv-diff") {poPrice = diffPrice} orderTime `shouldReturn` Right ()
   closeOf ctx r `shouldReturn` CLRefused (CFHeld hold)
   stored ctx r `shouldReturn` r
   figuresOf ctx r `shouldReturn` Just (4000, 4000, 0, Just hold)

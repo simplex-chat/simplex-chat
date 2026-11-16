@@ -127,9 +127,15 @@ invoiceRow db invId card cents expiresAt =
 placeOrderRow :: DBStore -> Text -> Bool -> Int -> UTCTime -> IO ()
 placeOrderRow st r card cents expiresAt = withTransaction st $ \db -> do
   invoiceRow db ("inv-" <> r) card cents expiresAt
-  createPaidRegistration db (newReg r ownerA (fieldsN r)) (OTInvoice method cents) (paidOrder ("inv-" <> r)) {poMethod = method, poPrice = cents} t0 `shouldReturn` Right ()
+  createPaidRegistration db (regFor r (OTInvoice method cents)) Nothing (paidOrder ("inv-" <> r)) {poMethod = method, poPrice = cents} t0 `shouldReturn` Right ()
   where
     method = if card then SPMCard CPStripe else btc
+
+regFor :: Text -> OrderTerms -> NewRegistration
+regFor r terms = (newReg r ownerA (fieldsN r)) {nrgOrderHash = orderHash ownerA (fieldsN r) terms}
+
+spendOf :: Text -> Int -> Int -> Maybe ServicePaymentMethod -> Spend
+spendOf src price seen method = Spend {spSource = RegistrationId src, spPrice = price, spBalance = seen, spMethod = method}
 
 -- | A taken paid order with a balance of its price.
 source :: DBStore -> Text -> Int -> IO ()
@@ -146,25 +152,28 @@ holdPrice :: Int
 holdPrice = 40000
 
 holdTerms :: Text -> Int -> OrderTerms
-holdTerms src seen = OTBalance (RegistrationId src) holdPrice seen (Just btc)
+holdTerms src seen = OTBalance $ spendOf src holdPrice seen (Just btc)
 
 -- | A difference order holding all of the source's balance seen, its invoice of the difference expiring at the given time.
 holder :: DBStore -> Text -> Text -> Int -> UTCTime -> IO (Either BalanceInsertRefused ())
 holder st r src seen expiresAt = withTransaction st $ \db -> insertOrRollBack db $ do
   invoiceRow db ("inv-" <> r) False (holdPrice - seen) expiresAt
-  createPaidRegistration db (newReg r ownerA (fieldsN r)) (holdTerms src seen) (paidOrder ("inv-" <> r)) {poPrice = holdPrice} t0
+  createPaidRegistration db (regFor r (holdTerms src seen)) (Just BalanceUse {buSource = RegistrationId src, buUsed = seen}) (paidOrder ("inv-" <> r)) {poPrice = holdPrice} t0
 
 hold :: Text -> UTCTime -> Bool -> BalanceHold
 hold h t overdue = BalanceHold {bhHolder = RegistrationId h, bhState = if overdue then HSOverdue t else HSOpen t}
 
 coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either BalanceInsertRefused ())
-coveredSpend st r src price seen = withTransaction st $ \db -> insertOrRollBack db $ createBalanceRegistration db (newReg r ownerA (fieldsN r)) (RegistrationId src) price seen t0
+coveredSpend st r src price seen = withTransaction st $ \db -> insertOrRollBack db $ coveredInsert r src price seen db t0
+
+coveredInsert :: Text -> Text -> Int -> Int -> DB.Connection -> UTCTime -> IO (Either BalanceInsertRefused ())
+coveredInsert r src price seen db = createBalanceRegistration db (regFor r (OTBalance $ spendOf src price seen Nothing)) BalanceUse {buSource = RegistrationId src, buUsed = price} seen
 
 -- | The holder queued and its hold spent in one transaction, as settlement does.
 settleHolder :: DB.Connection -> NameRegistration -> IO Bool
 settleHolder db r = do
   updateRegistration db r {nrPhase = PQueued} t0 `shouldReturn` Written (nrVersion r + 1)
-  spendHeldBalance db (nrId r) (nrBalanceUsed r) t0
+  spendHeldBalance db (nrId r) (maybe 0 buUsed $ paymentBalance $ nrPayment r) t0
 
 release :: DBStore -> Text -> IO Bool
 release st h = withTransaction st $ \db -> releaseHeldBalance db (RegistrationId h) t0
@@ -238,7 +247,7 @@ orderRequest :: Text -> OrderRequest
 orderRequest r = OrderRequest {orOwner = ownerA, orFields = fieldsN r, orTimestamp = 0, orSignature = signature}
 
 spendInsert :: Text -> Text -> Int -> Int -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())
-spendInsert r src price seen db now = first (const $ ORBalanceChanged Nothing) <$> createBalanceRegistration db (newReg r ownerA (fieldsN r)) (RegistrationId src) price seen now
+spendInsert r src price seen db now = first (const $ ORBalanceChanged Nothing) <$> coveredInsert r src price seen db now
 
 closedIds :: Either OrderRefusal [ClosedOrder] -> Either OrderRefusal [(RegistrationId, Int64)]
 closedIds = fmap $ map $ \ClosedOrder {coRegistration, coVersion} -> (nrId coRegistration, coVersion)
@@ -258,8 +267,8 @@ testSpendAtOnce = withServiceStore $ \st -> do
   source st "s" 10000
   coveredSpend st "c1" "s" 6000 10000 `shouldReturn` Right ()
   c1 <- reg st "c1"
-  (nrPhase c1, nrLive c1, nrPrice c1, nrPayment c1, nrBalanceSource c1, nrBalanceUsed c1) `shouldBe` (PQueued, True, 6000, RPBalance, Just (RegistrationId "s"), 6000)
-  nrOrderHash c1 `shouldBe` orderHash ownerA (fieldsN "c1") (OTBalance (RegistrationId "s") 6000 10000 Nothing)
+  (nrPhase c1, nrLive c1, nrPrice c1, nrPayment c1) `shouldBe` (PQueued, True, 6000, OPBalance BalanceUse {buSource = RegistrationId "s", buUsed = 6000})
+  nrOrderHash c1 `shouldBe` orderHash ownerA (fieldsN "c1") (OTBalance $ spendOf "s" 6000 10000 Nothing)
   figures st "s" t0 `shouldReturn` Just (4000, 10000, 0, Nothing)
   coveredSpend st "c2" "s" 3000 10000 `shouldReturn` Left BIRBalanceChanged
   coveredSpend st "c3" "s" 5000 4000 `shouldReturn` Left BIRBalanceChanged
@@ -280,7 +289,7 @@ testTwoHolds = withServiceStore $ \st -> do
   holder st "h2" "s" 10000 (at 60) `shouldReturn` Left BIRBalanceChanged
   absent st "h2"
   h1 <- reg st "h1"
-  (nrPhase h1, nrPayment h1, nrPrice h1, nrBalanceSource h1, nrBalanceUsed h1) `shouldBe` (PUnpaid, RPInvoice btc (InvoiceId "inv-h1"), holdPrice, Just (RegistrationId "s"), 10000)
+  (nrPhase h1, nrPayment h1, nrPrice h1) `shouldBe` (PUnpaid, OPDifference BalanceUse {buSource = RegistrationId "s", buUsed = 10000} btc (InvoiceId "inv-h1"), holdPrice)
   figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Just $ hold "h1" (at 60) False)
   release st "h1" `shouldReturn` True
   holder st "h3" "s" 9000 (at 60) `shouldReturn` Left BIRBalanceChanged
@@ -390,7 +399,7 @@ testRestart = withServiceStores $ \open -> do
   let readBack :: DBStore -> IO (Maybe (Int, Int, Int, Maybe BalanceHold), Maybe (Int, Int, Int, Maybe BalanceHold), NameRegistration, NameRegistration)
       readBack store = (,,,) <$> figures store "s" t0 <*> figures store "t" t0 <*> reg store "h" <*> reg store "c"
   stored@(held, spent, _, c) <- readBack st
-  (held, spent, nrBalanceUsed c) `shouldBe` (Just (10000, 10000, 0, Just $ hold "h" (at 60) False), Just (5000, 8000, 0, Nothing), 3000)
+  (held, spent, nrPayment c) `shouldBe` (Just (10000, 10000, 0, Just $ hold "h" (at 60) False), Just (5000, 8000, 0, Nothing), OPBalance BalanceUse {buSource = RegistrationId "t", buUsed = 3000})
   restarted <- open
   readBack restarted `shouldReturn` stored
 
@@ -415,9 +424,9 @@ testChain = withServiceStore $ \st -> do
   credit st "b" holdPrice
   coveredSpend st "c" "b" 10000 holdPrice `shouldReturn` Right ()
   withTransaction st (\db -> balanceChain db (RegistrationId "c"))
-    `shouldReturn` [ BalanceLink {lkRegistration = RegistrationId "c", lkOwner = ownerA, lkPayment = RPBalance, lkProviderRef = Nothing, lkPaid = 0, lkFromBalance = 10000, lkLateCredits = []},
-                     BalanceLink {lkRegistration = RegistrationId "b", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-b"), lkProviderRef = Just "ref-inv-b", lkPaid = holdPrice - 20000, lkFromBalance = 20000, lkLateCredits = []},
-                     BalanceLink {lkRegistration = RegistrationId "a", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-a"), lkProviderRef = Just "ref-inv-a", lkPaid = 20000, lkFromBalance = 0, lkLateCredits = []}
+    `shouldReturn` [ BalanceLink {lkRegistration = RegistrationId "c", lkOwner = ownerA, lkPayment = OPBalance BalanceUse {buSource = RegistrationId "b", buUsed = 10000}, lkProviderRef = Nothing, lkPaid = 0, lkFromBalance = 10000, lkLateCredits = []},
+                     BalanceLink {lkRegistration = RegistrationId "b", lkOwner = ownerA, lkPayment = OPDifference BalanceUse {buSource = RegistrationId "a", buUsed = 20000} btc (InvoiceId "inv-b"), lkProviderRef = Just "ref-inv-b", lkPaid = holdPrice - 20000, lkFromBalance = 20000, lkLateCredits = []},
+                     BalanceLink {lkRegistration = RegistrationId "a", lkOwner = ownerA, lkPayment = OPInvoice btc (InvoiceId "inv-a"), lkProviderRef = Just "ref-inv-a", lkPaid = 20000, lkFromBalance = 0, lkLateCredits = []}
                    ]
 
 testChainOfClosed :: IO ()
@@ -430,7 +439,7 @@ testChainOfClosed = withServiceStore $ \st -> do
   let late = lateCredit "d" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceChain db (RegistrationId "d"))
-    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "d", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-d"), lkProviderRef = Just "ref-inv-d", lkPaid = 0, lkFromBalance = 0, lkLateCredits = [late]}]
+    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "d", lkOwner = ownerA, lkPayment = OPDifference BalanceUse {buSource = RegistrationId "s", buUsed = 15000} btc (InvoiceId "inv-d"), lkProviderRef = Just "ref-inv-d", lkPaid = 0, lkFromBalance = 0, lkLateCredits = [late]}]
 
 testChainOfOverpaid :: IO ()
 testChainOfOverpaid = withServiceStore $ \st -> do
@@ -440,14 +449,13 @@ testChainOfOverpaid = withServiceStore $ \st -> do
   let late = lateCredit "o" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceChain db (RegistrationId "o"))
-    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "o", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-o"), lkProviderRef = Just "ref-inv-o", lkPaid = 20000, lkFromBalance = 0, lkLateCredits = [late]}]
+    `shouldReturn` [BalanceLink {lkRegistration = RegistrationId "o", lkOwner = ownerA, lkPayment = OPInvoice btc (InvoiceId "inv-o"), lkProviderRef = Just "ref-inv-o", lkPaid = 20000, lkFromBalance = 0, lkLateCredits = [late]}]
 
 testBalanceOrderHash :: IO ()
 testBalanceOrderHash = withServiceStore $ \st -> do
   let o = fieldsN "h"
       terms = holdTerms "s" 15000
       base = orderHash ownerA o terms
-      src = RegistrationId "s"
       variants =
         [ ("labelHash" :: Text, orderHash ownerA o {ofLabelHash = labelHash "hh"} terms),
           ("length", orderHash ownerA o {ofLength = 2} terms),
@@ -455,11 +463,11 @@ testBalanceOrderHash = withServiceStore $ \st -> do
           ("owner", orderHash ownerB o terms),
           ("commitment", orderHash ownerA o {ofCommitment = C.sha256Hash "another"} terms),
           ("sealed", orderHash ownerA o {ofSealed = ofSealed o <> "x"} terms),
-          ("paying order", orderHash ownerA o (OTBalance (RegistrationId "t") holdPrice 15000 (Just btc))),
-          ("price", orderHash ownerA o (OTBalance src (holdPrice + 1) 15000 (Just btc))),
-          ("balance", orderHash ownerA o (OTBalance src holdPrice 15001 (Just btc))),
-          ("method", orderHash ownerA o (OTBalance src holdPrice 15000 (Just $ SPMCard CPStripe))),
-          ("no method", orderHash ownerA o (OTBalance src holdPrice 15000 Nothing)),
+          ("paying order", orderHash ownerA o (OTBalance $ spendOf "t" holdPrice 15000 (Just btc))),
+          ("price", orderHash ownerA o (OTBalance $ spendOf "s" (holdPrice + 1) 15000 (Just btc))),
+          ("balance", orderHash ownerA o (OTBalance $ spendOf "s" holdPrice 15001 (Just btc))),
+          ("method", orderHash ownerA o (OTBalance $ spendOf "s" holdPrice 15000 (Just $ SPMCard CPStripe))),
+          ("no method", orderHash ownerA o (OTBalance $ spendOf "s" holdPrice 15000 Nothing)),
           ("an invoice order", orderHash ownerA o (OTInvoice btc holdPrice))
         ]
   orderHash ownerA (fieldsN "h") (holdTerms "s" 15000) `shouldBe` base
@@ -474,7 +482,7 @@ testFindBalances = withServiceStore $ \st -> do
       rid i = "r" <> T.pack (show i)
   forM_ [1 .. 52 :: Int] $ \i -> withTransaction st $ \db -> do
     invoiceRow db ("inv-" <> rid i) False 20000 (at 60)
-    createPaidRegistration db (newReg (rid i) ownerA (fieldsN $ rid i)) (OTInvoice btc 20000) (paidOrder ("inv-" <> rid i)) (at i) `shouldReturn` Right ()
+    createPaidRegistration db (newReg (rid i) ownerA (fieldsN $ rid i)) Nothing (paidOrder ("inv-" <> rid i)) (at i) `shouldReturn` Right ()
   credit st "r1" 5000
   credit st "r2" 3000
   refund st "r2" 3000 `shouldReturn` True
@@ -573,7 +581,7 @@ testRecordRefund = withServiceStore $ \st -> do
   cancelOpenInvoice st waiters Nothing (InvoiceId "inv-h") (at 2) `shouldReturn` True
   refundOf "s" 9000 t0 `shouldReturn` Left (RefundAmount 10000)
   chain <- withTransaction st $ \db -> balanceChain db (RegistrationId "s")
-  chain `shouldBe` [BalanceLink {lkRegistration = RegistrationId "s", lkOwner = ownerA, lkPayment = RPInvoice btc (InvoiceId "inv-s"), lkProviderRef = Just "ref-inv-s", lkPaid = 10000, lkFromBalance = 0, lkLateCredits = []}]
+  chain `shouldBe` [BalanceLink {lkRegistration = RegistrationId "s", lkOwner = ownerA, lkPayment = OPInvoice btc (InvoiceId "inv-s"), lkProviderRef = Just "ref-inv-s", lkPaid = 10000, lkFromBalance = 0, lkLateCredits = []}]
   refundOf "inv-s" 10000 t0 `shouldReturn` Right RefundRecord {rdRegistration = RegistrationId "s", rdCents = 10000, rdChain = chain}
   figures st "s" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
   refundOf "s" 10000 t0 `shouldReturn` Left (RefundAmount 0)
@@ -593,15 +601,16 @@ testChainText :: IO ()
 testChainText = do
   let link rid (pay, ref_) paid fromBalance lateCents =
         BalanceLink {lkRegistration = RegistrationId rid, lkOwner = ownerA, lkPayment = pay, lkProviderRef = ref_, lkPaid = paid, lkFromBalance = fromBalance, lkLateCredits = map (lateCredit rid 1 Nothing) lateCents}
-      byBtc r = (RPInvoice btc (InvoiceId $ "inv-" <> r), Just $ "ref-" <> r)
+      byBtc r = (OPInvoice btc (InvoiceId $ "inv-" <> r), Just $ "ref-" <> r)
       unbilled pay = (pay, Nothing)
+      fromB = OPBalance BalanceUse {buSource = RegistrationId "b", buUsed = 10000}
       order r = "order " <> r <> " of " <> addressText ownerA <> ": "
-  chainText [link "c" (unbilled RPBalance) 0 10000 [], link "b" (byBtc "b") 20000 20000 [], link "a" (byBtc "a") 20000 0 []]
+  chainText [link "c" (unbilled fromB) 0 10000 [], link "b" (byBtc "b") 20000 20000 [], link "a" (byBtc "a") 20000 0 []]
     `shouldBe` order "c" <> "$100.00 from the balance of order b; " <> order "b" <> "$200.00 by btc on invoice inv-b (provider reference ref-b), $200.00 from the balance of order a; " <> order "a" <> "$200.00 by btc on invoice inv-a (provider reference ref-a)"
   chainText [link "d" (byBtc "d") 0 0 [2400]] `shouldBe` order "d" <> "$24.00 late by btc on invoice inv-d (provider reference ref-d)"
   chainText [link "o" (byBtc "o") 20000 0 [2400]] `shouldBe` order "o" <> "$200.00 by btc on invoice inv-o (provider reference ref-o), $24.00 overpaid by btc on invoice inv-o (provider reference ref-o)"
-  chainText [link "p" (unbilled $ RPCode 1) 0 0 []] `shouldBe` order "p" <> "a prepaid code"
-  chainText [link "x" (unbilled RPBalance) 0 0 []] `shouldBe` order "x" <> "no payment recorded"
+  chainText [link "p" (unbilled $ OPCode 1) 0 0 []] `shouldBe` order "p" <> "a prepaid code"
+  chainText [link "x" (unbilled fromB) 0 0 []] `shouldBe` order "x" <> "no payment recorded"
 
 -- late credits
 
@@ -761,7 +770,7 @@ testConcurrentWrites = withServiceStores $ \open -> do
         lateSrc = "late" <> tag
     source st spendSrc 10000
     (spent, refundedSpend) <-
-      together st other (\db -> insertOrRollBack db $ createBalanceRegistration db (newReg ("c" <> tag) ownerA (fieldsN $ "c" <> tag)) (RegistrationId spendSrc) 6000 10000 t0) (\db -> refundBalance db (RegistrationId spendSrc) 10000 t0)
+      together st other (\db -> insertOrRollBack db $ coveredInsert ("c" <> tag) spendSrc 6000 10000 db t0) (\db -> refundBalance db (RegistrationId spendSrc) 10000 t0)
     (n, isRight spent, refundedSpend) `shouldSatisfy` (\(_, a, b) -> a /= b)
     fmap (\(amount, _, _, _) -> amount) <$> figures st spendSrc t0 `shouldReturn` Just (if refundedSpend then 0 else 4000)
     invariantHolds st spendSrc

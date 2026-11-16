@@ -12,8 +12,10 @@ module StoreService.Names.Store
     CodeHash,
     BodyHash,
     NamePhase (..),
-    RegistrationPayment (..),
+    OrderPayment (..),
+    BalanceUse (..),
     paymentInvoice,
+    paymentBalance,
     NameReveal (..),
     NameRegistration (..),
     NewRegistration (..),
@@ -23,6 +25,7 @@ module StoreService.Names.Store
     VersionWrite (..),
     LiveOrder (..),
     OrderTerms (..),
+    Spend (..),
     Balance (..),
     BalanceHold (..),
     HoldState (..),
@@ -192,18 +195,31 @@ instance FromField NamePhase where fromField = fromTextField_ textDecode
 
 instance ToField NamePhase where toField = toField . textEncode
 
--- | RPBalance: an order paid wholly from another order's balance, with neither invoice nor code.
-data RegistrationPayment
-  = RPInvoice ServicePaymentMethod InvoiceId
-  | RPCode CodeId
-  | RPBalance
+-- | OPDifference: an invoice of the price above the balance the order holds. OPBalance: wholly from a balance, with neither invoice nor code.
+data OrderPayment
+  = OPInvoice ServicePaymentMethod InvoiceId
+  | OPDifference BalanceUse ServicePaymentMethod InvoiceId
+  | OPBalance BalanceUse
+  | OPCode CodeId
   deriving (Eq, Show)
 
-paymentInvoice :: RegistrationPayment -> Maybe InvoiceId
+-- | The order whose balance pays, and the cents it pays.
+data BalanceUse = BalanceUse {buSource :: RegistrationId, buUsed :: Int}
+  deriving (Eq, Show)
+
+paymentInvoice :: OrderPayment -> Maybe InvoiceId
 paymentInvoice = \case
-  RPInvoice _ invId -> Just invId
-  RPCode _ -> Nothing
-  RPBalance -> Nothing
+  OPInvoice _ invId -> Just invId
+  OPDifference _ _ invId -> Just invId
+  OPBalance _ -> Nothing
+  OPCode _ -> Nothing
+
+paymentBalance :: OrderPayment -> Maybe BalanceUse
+paymentBalance = \case
+  OPInvoice {} -> Nothing
+  OPDifference use _ _ -> Just use
+  OPBalance use -> Just use
+  OPCode _ -> Nothing
 
 -- | The name, links and owner's intent, all set by an accepted reveal and cleared together.
 data NameReveal = NameReveal
@@ -232,9 +248,7 @@ data NameRegistration = NameRegistration
     nrPhase :: NamePhase,
     nrYears :: Int,
     nrPrice :: Int,
-    nrPayment :: RegistrationPayment,
-    nrBalanceSource :: Maybe RegistrationId,
-    nrBalanceUsed :: Int,
+    nrPayment :: OrderPayment,
     nrReveal :: Maybe NameReveal,
     nrCommitTx :: Maybe TxHash,
     nrCommitBlock :: Maybe Word64,
@@ -259,7 +273,8 @@ data NewRegistration = NewRegistration
   { nrgId :: RegistrationId,
     nrgOwner :: Address,
     nrgOrder :: OrderFields,
-    nrgYears :: Int
+    nrgYears :: Int,
+    nrgOrderHash :: OrderHash
   }
 
 -- | The invoice row is inserted by the caller, in the same transaction and before the registration.
@@ -288,8 +303,17 @@ data LiveOrder = LiveOrder
   }
   deriving (Eq, Show)
 
--- | What an order pays with, as its hash covers it. OTBalance: the paying order, the price, the balance seen, and the method of a difference.
-data OrderTerms = OTInvoice ServicePaymentMethod Int | OTCode CodeHash | OTBalance RegistrationId Int Int (Maybe ServicePaymentMethod)
+-- | What an order pays with, as its hash covers it.
+data OrderTerms = OTInvoice ServicePaymentMethod Int | OTCode CodeHash | OTBalance Spend
+
+-- | A new order paid from a balance. Its hash covers the paying order, the price, the balance the page read,
+-- and the method, present exactly when the price is more than that balance.
+data Spend = Spend
+  { spSource :: RegistrationId,
+    spPrice :: Int,
+    spBalance :: Int,
+    spMethod :: Maybe ServicePaymentMethod
+  }
 
 -- | Cents left to spend, and over the balance's life the cents credited and refunded.
 data Balance = Balance
@@ -318,7 +342,7 @@ data HoldState = HSOpen UTCTime | HSFunded | HSOverdue UTCTime
 data BalanceLink = BalanceLink
   { lkRegistration :: RegistrationId,
     lkOwner :: Address,
-    lkPayment :: RegistrationPayment,
+    lkPayment :: OrderPayment,
     lkProviderRef :: Maybe Text,
     lkPaid :: Int,
     lkFromBalance :: Int,
@@ -554,7 +578,7 @@ orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, o
     (tag, payment) = case terms of
       OTInvoice method price -> ("name-invoice" :: ByteString, smpEncode (methodText method, num price))
       OTCode codeHash -> ("name-code", smpEncode codeHash)
-      OTBalance (RegistrationId source) price seen method -> ("name-balance", smpEncode (source, num price, num seen, methodText <$> method))
+      OTBalance Spend {spSource = RegistrationId source, spPrice, spBalance, spMethod} -> ("name-balance", smpEncode (source, num spPrice, num spBalance, methodText <$> spMethod))
     num :: Int -> Int64
     num = fromIntegral
 
@@ -570,16 +594,12 @@ methodText = \case
 textMethod :: Text -> Maybe ServicePaymentMethod
 textMethod t = lookup t [(methodText m, m) | m <- [SPMCard CPStripe, SPMCrypto CCBtc, SPMCrypto CCXmr]]
 
--- | A difference order (OTBalance) holds all of the balance seen while its invoice is open. The hold is written after the registration,
+-- | A difference order holds all of the balance seen while its invoice is open. The hold is written after the registration,
 -- so the registration's row is locked before the balance's. A refusal leaves its writes for the caller to roll back.
-createPaidRegistration :: DB.Connection -> NewRegistration -> OrderTerms -> PaidOrder -> UTCTime -> IO (Either BalanceInsertRefused ())
-createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid), nrgOwner, nrgOrder} terms PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId, poProviderRef} now' = do
+createPaidRegistration :: DB.Connection -> NewRegistration -> Maybe BalanceUse -> PaidOrder -> UTCTime -> IO (Either BalanceInsertRefused ())
+createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid)} held PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId, poProviderRef} now' = do
   let now = truncateToSecond now'
-      held = case terms of
-        OTBalance source _ seen _ -> Just (source, seen)
-        OTInvoice {} -> Nothing
-        OTCode _ -> Nothing
-  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held (orderHash nrgOwner nrgOrder terms) now
+  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held now
   if not inserted
     then pure $ Left BIRLiveOrder
     else do
@@ -587,15 +607,15 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
         db
         "INSERT INTO sx_badge_service_name_invoices (invoice_id, registration_id, provider_ref, created_at) VALUES (?,?,?,?)"
         (invId, rid, poProviderRef, now)
-      held' <- maybe (pure True) (\(source, seen) -> holdBalance db source seen regId now) held
+      held' <- maybe (pure True) (\BalanceUse {buSource, buUsed} -> holdBalance db buSource buUsed regId now) held
       pure $ if held' then Right () else Left BIRBalanceChanged
 
 -- | Reserving the code is the conditional update of the transaction that creates the registration. A refusal leaves its writes for
 -- the caller to roll back.
 createCodeRegistration :: DB.Connection -> NewRegistration -> PrepaidCode -> UTCTime -> IO (Either CodeInsertRefused ())
-createCodeRegistration db new@NewRegistration {nrgId = regId, nrgOwner, nrgOrder} PrepaidCode {pcId, pcCodeHash} now' = do
+createCodeRegistration db new@NewRegistration {nrgId = regId} PrepaidCode {pcId} now' = do
   let now = truncateToSecond now'
-  inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) Nothing (orderHash nrgOwner nrgOrder (OTCode pcCodeHash)) now
+  inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) Nothing now
   if not inserted
     then pure $ Left CIRLiveOrder
     else
@@ -605,21 +625,20 @@ createCodeRegistration db new@NewRegistration {nrgId = regId, nrgOwner, nrgOrder
 
 -- | A queued order whose price is spent from the source's balance in the same transaction, where its amount is the one seen and nothing holds it.
 -- A refusal leaves its writes for the caller to roll back.
-createBalanceRegistration :: DB.Connection -> NewRegistration -> RegistrationId -> Int -> Int -> UTCTime -> IO (Either BalanceInsertRefused ())
-createBalanceRegistration db new@NewRegistration {nrgOwner, nrgOrder} source price seen now' = do
+createBalanceRegistration :: DB.Connection -> NewRegistration -> BalanceUse -> Int -> UTCTime -> IO (Either BalanceInsertRefused ())
+createBalanceRegistration db new use@BalanceUse {buSource, buUsed} seen now' = do
   let now = truncateToSecond now'
-  inserted <- insertRegistration db new PQueued price Nothing Nothing (Just (source, price)) (orderHash nrgOwner nrgOrder (OTBalance source price seen Nothing)) now
+  inserted <- insertRegistration db new PQueued buUsed Nothing Nothing (Just use) now
   if not inserted
     then pure $ Left BIRLiveOrder
     else
-      spendBalance db source price seen now >>= \case
+      spendBalance db buSource buUsed seen now >>= \case
         True -> pure $ Right ()
         False -> pure $ Left BIRBalanceChanged
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
--- fromBalance: the order whose balance pays, and the cents it pays.
-insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> Int -> Maybe ServicePaymentMethod -> Maybe CodeId -> Maybe (RegistrationId, Int) -> OrderHash -> UTCTime -> IO Bool
-insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears} phase price method codeId fromBalance hash now =
+insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> Int -> Maybe ServicePaymentMethod -> Maybe CodeId -> Maybe BalanceUse -> UTCTime -> IO Bool
+insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears, nrgOrderHash} phase price method codeId fromBalance now =
   (> 0)
     <$> executeChanging
       db
@@ -631,7 +650,7 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
         ON CONFLICT DO NOTHING
       |]
       ( (rid, initialVersion, Binary lh, ofLength, int64 ofDuration, Binary $ unAddress nrgOwner, Binary ofCommitment, ofSealed, phase, nrgYears)
-          :. (price, methodText <$> method, codeId, BI True, Binary hash, 0 :: Int, now, now, (\(RegistrationId s, _) -> s) <$> fromBalance, maybe 0 snd fromBalance)
+          :. (price, methodText <$> method, codeId, BI True, Binary nrgOrderHash, 0 :: Int, now, now, (\BalanceUse {buSource = RegistrationId s} -> s) <$> fromBalance, maybe 0 buUsed fromBalance)
           :. Only ofAgreedTerms
       )
   where
@@ -670,14 +689,17 @@ toRegistration
   ( (rid, nrVersion, Binary lh, nrLength, duration, Binary owner, Binary nrCommitment, nrSealed, nrPhase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, registerBlock, revealAfter, revealBefore, expiresAt, nrRegisteredAt)
-      :. (nrFailedAt, nrError, BI nrLive, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, nrBalanceUsed)
+      :. (nrFailedAt, nrError, BI nrLive, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
       :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
     ) = do
     nrOwner <- decodeAddress owner
-    nrPayment <- case (method_, invoiceId_, codeId_) of
-      (Just m, Just invId, Nothing) -> (`RPInvoice` InvoiceId invId) <$> note ("name_registrations.method: " <> m) (textMethod m)
-      (Nothing, Nothing, Just codeId) -> Right $ RPCode codeId
-      (Nothing, Nothing, Nothing) | isJust source_ -> Right RPBalance
+    let methodOf m = note ("name_registrations.method: " <> m) (textMethod m)
+        balanceUse source = BalanceUse {buSource = RegistrationId source, buUsed = used}
+    nrPayment <- case (method_, invoiceId_, codeId_, source_) of
+      (Just m, Just invId, Nothing, Nothing) -> (`OPInvoice` InvoiceId invId) <$> methodOf m
+      (Just m, Just invId, Nothing, Just source) -> (\method -> OPDifference (balanceUse source) method (InvoiceId invId)) <$> methodOf m
+      (Nothing, Nothing, Just codeId, Nothing) -> Right $ OPCode codeId
+      (Nothing, Nothing, Nothing, Just source) -> Right $ OPBalance $ balanceUse source
       _ -> Left $ "name_registrations payment: " <> rid
     nrReveal <- case (label_, secret_, nonce_, deadline_, signature_) of
       (Nothing, Nothing, Nothing, Nothing, Nothing) -> Right Nothing
@@ -704,8 +726,6 @@ toRegistration
           nrYears,
           nrPrice,
           nrPayment,
-          nrBalanceSource = RegistrationId <$> source_,
-          nrBalanceUsed,
           nrReveal,
           nrCommitTx = txHash <$> commitTx,
           nrCommitBlock = word64 <$> commitBlock,
@@ -1023,13 +1043,14 @@ balanceChain :: DB.Connection -> RegistrationId -> IO [BalanceLink]
 balanceChain db rid =
   getRegistration db rid >>= \case
     Nothing -> pure []
-    Just NameRegistration {nrPhase, nrOwner, nrPayment, nrBalanceSource, nrBalanceUsed} -> do
+    Just NameRegistration {nrPhase, nrOwner, nrPayment} -> do
       let pastUnpaid = nrPhase /= PUnpaid
+          used = if pastUnpaid then paymentBalance nrPayment else Nothing
       (lkPaid, lkProviderRef, lkLateCredits) <- case paymentInvoice nrPayment of
         Just invId -> (,,) <$> (if pastUnpaid then invoiceAmount db invId else pure 0) <*> providerRef db invId <*> lateCredits db invId
         Nothing -> pure (0, Nothing, [])
-      let link = BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkFromBalance = if pastUnpaid then nrBalanceUsed else 0, lkLateCredits}
-      (link :) <$> maybe (pure []) (balanceChain db) (if pastUnpaid then nrBalanceSource else Nothing)
+      let link = BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkFromBalance = maybe 0 buUsed used, lkLateCredits}
+      (link :) <$> maybe (pure []) (balanceChain db . buSource) used
 
 invoiceAmount :: DB.Connection -> InvoiceId -> IO Int
 invoiceAmount db (InvoiceId invId) =

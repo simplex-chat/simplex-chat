@@ -239,8 +239,8 @@ testFundedThenSettledLate = withLate $ \l@Late {lStore = st} -> do
   holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
   settleAt l "h" (SigFunded (btcPaidOf 480000 480000 0) PaidInFull) (at 50) `shouldReturn` Right ISOpen
   settleAt l "h" (SigSettled (btcPaidOf 480000 480000 480000) (at 120)) (at 120) `shouldReturn` Right ISPaid
-  NameRegistration {nrPhase, nrLive, nrBalanceUsed} <- reg st "h"
-  (nrPhase, nrLive, nrBalanceUsed) `shouldBe` (PQueued, True, 10000)
+  NameRegistration {nrPhase, nrLive, nrPayment} <- reg st "h"
+  (nrPhase, nrLive, buUsed <$> paymentBalance nrPayment) `shouldBe` (PQueued, True, Just 10000)
   figures st "s" (at 120) `shouldReturn` Just (0, 10000, 0, Nothing)
   invariantHolds st "s"
 
@@ -638,7 +638,7 @@ testCreditWhileHeld = withLate $ \l@Late {lStore = st} -> do
   invariantHolds st "x"
 
 coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either BalanceInsertRefused ())
-coveredSpend st r src price seen = withTransaction st $ \db -> createBalanceRegistration db (newReg r ownerA (fieldsN r)) (RegistrationId src) price seen t0
+coveredSpend st r src price seen = withTransaction st $ \db -> createBalanceRegistration db (newReg r ownerA (fieldsN r)) BalanceUse {buSource = RegistrationId src, buUsed = price} seen t0
 
 testCreditRefundTwice :: IO ()
 testCreditRefundTwice = withLate $ \l@Late {lStore = st} -> do
@@ -718,7 +718,7 @@ testFindLinks = withLate $ \Late {lStore = st} -> do
   coveredSpend st "spend" "paying" 10000 10000 `shouldReturn` Right ()
   source st "held" 10000
   holder st "holder" "held" 10000 (at 60) `shouldReturn` Right ()
-  let links now = map (\(NameRegistration {nrId = RegistrationId r, nrBalanceSource}, heldBy') -> (r, nrBalanceSource, heldBy')) <$> withTransaction st (\db -> findRegistrations db ownerA now)
+  let links now = map (\(NameRegistration {nrId = RegistrationId r, nrPayment}, heldBy') -> (r, buSource <$> paymentBalance nrPayment, heldBy')) <$> withTransaction st (\db -> findRegistrations db ownerA now)
       linked rows = filter (\(_, src, h) -> src /= Nothing || h /= Nothing) rows
   linked <$> links (at 30) `shouldReturn` [("spend", Just (RegistrationId "paying"), Nothing), ("holder", Just (RegistrationId "held"), Nothing), ("held", Nothing, Just (RegistrationId "holder"))]
   linked <$> links (at 120) `shouldReturn` [("spend", Just (RegistrationId "paying"), Nothing), ("holder", Just (RegistrationId "held"), Nothing)]

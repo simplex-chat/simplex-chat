@@ -5,7 +5,7 @@ module Bots.StoreService.MetricsTests (storeMetricsTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (minPriceCentsPerYear)
-import Bots.StoreService.NamesStoreTests (at, btc, insertInvoiceRow, insertProviderInvoice, newEdit, newReg, order, ownerA, ownerB, paidOrder, price, reveal, setChannel, t0)
+import Bots.StoreService.NamesStoreTests (at, insertInvoiceRow, insertProviderInvoice, newEdit, newReg, order, ownerA, ownerB, paidOrder, price, reveal, setChannel, t0)
 import Bots.StoreService.WebTests (digestFixture, statusOf, webGet, webRequestBody, withApp, withServiceStore)
 import Control.Concurrent.Async (cancel)
 import Control.Concurrent.STM (TVar, newTVarIO, readTVarIO)
@@ -220,14 +220,14 @@ testServiceCounts = withServiceStore $ \st -> do
 
 testNamesCounts :: IO ()
 testNamesCounts = withServiceStore $ \st -> do
-  let placedAs status rid n terms = withTransaction st $ \db -> do
+  let placedAs status rid n held = withTransaction st $ \db -> do
         insertInvoiceRow db ("inv-" <> rid) (at 60) status
-        createPaidRegistration db (newReg rid ownerA $ order (rid <> "bakery") n) terms (paidOrder $ "inv-" <> rid) t0 `shouldReturn` Right ()
+        createPaidRegistration db (newReg rid ownerA $ order (rid <> "bakery") n) held (paidOrder $ "inv-" <> rid) t0 `shouldReturn` Right ()
       moved rid minute change = withTransaction st $ \db -> do
         Just r <- getRegistration db (RegistrationId rid)
         updateRegistration db (change r) (at minute) `shouldReturn` Written 2
-  placedAs "open" "u" 1 (OTInvoice btc price)
-  mapM_ (\(rid, n) -> placedAs "paid" rid n (OTInvoice btc price)) [("src", 2), ("q", 3), ("c1", 4), ("c2", 5), ("rg", 6), ("f", 7)]
+  placedAs "open" "u" 1 Nothing
+  mapM_ (\(rid, n) -> placedAs "paid" rid n Nothing) [("src", 2), ("q", 3), ("c1", 4), ("c2", 5), ("rg", 6), ("f", 7)]
   moved "src" 1 $ \r -> r {nrPhase = PTaken}
   moved "f" 1 $ \r -> r {nrPhase = PFailed}
   moved "c1" 2 $ \r -> r {nrPhase = PCommitted}
@@ -238,7 +238,7 @@ testNamesCounts = withServiceStore $ \st -> do
     creditBalance db (RegistrationId "src") 6000 t0
     creditBalance db (RegistrationId "f") 2500 t0
     insertInvoiceRow db "inv-badge" (at 60) "open"
-  placedAs "open" "h" 8 (OTBalance (RegistrationId "src") price 6000 (Just btc))
+  placedAs "open" "h" 8 (Just BalanceUse {buSource = RegistrationId "src", buUsed = 6000})
   withTransaction st $ \db -> do
     forM_ [(40, 0, 6), (41, 1, 7), (42, 1, 8), (43, 2, 9)] $ \(n, nonce, minute) ->
       insertTransaction db (TxCommit $ RegistrationId "q") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ digestFixture n, ntxNonce = nonce} (at minute)
