@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 
 module ChatTests.Names where
@@ -25,7 +26,9 @@ import NameResolver
 import Simplex.Chat.Controller (NamePrice (..), NameWarning (..))
 import Simplex.Chat.Library.Commands (nameRecordOrWarning)
 import Simplex.Chat.Mobile (chatSendCmd)
+import Simplex.Chat.Remote.Protocol (owsf2tagged)
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), USDCents (..))
+import Simplex.Messaging.Parsers (pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
 import Simplex.Messaging.Util (safeDecodeUtf8)
@@ -1114,7 +1117,26 @@ utc = roundedToUTCTime . RoundedSystemTime
 nameFixture :: String -> TestCC -> String -> IO ()
 nameFixture fixture TestCC {chatController = cc} cmd = do
   json <- either fail (pure . stableJSON) . J.eitherDecode =<< chatSendCmd cc (B.pack cmd)
+  let owsf = tagged2owsf json
+  owsf2tagged owsf `shouldBe` json
   testGenerate ("apps/multiplatform/common/src/desktopTest/resources/names/" <> fixture <> ".json") (prettyJSON json)
+  testGenerate ("apps/ios/SimpleX Unit Tests/names/" <> fixture <> ".json") (prettyJSON owsf)
+
+tagged2owsf :: J.Value -> J.Value
+tagged2owsf = \case
+  J.Object o
+    | Just (J.String tag) <- JM.lookup TaggedObjectJSONTag o ->
+        J.object [SingleFieldJSONTag J..= True, JK.fromText tag J..= contents (JM.delete TaggedObjectJSONTag o)]
+    | otherwise -> J.Object $ fmap tagged2owsf o
+  J.Array a -> J.Array $ fmap tagged2owsf a
+  v -> v
+  where
+    contents o = case JM.toList o of
+      [(TaggedObjectJSONData, v)] | not (untaggedObject v) -> tagged2owsf v
+      _ -> J.Object $ fmap tagged2owsf o
+    untaggedObject = \case
+      J.Object o -> not $ JM.member TaggedObjectJSONTag o
+      _ -> False
 
 stableJSON :: J.Value -> J.Value
 stableJSON = \case
