@@ -6,7 +6,6 @@ module StoreService.Web.Names.Orders
   ( Answer (..),
     answerNow,
     sendAnswer,
-    firstRefusal,
     refused,
     nameInvoiceHandler,
     codeOrderHandler,
@@ -108,9 +107,9 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns} http client cfg providers wa
               checkPrice (oeContracts env) ofLength years price
             ]
           insert new paid db at = first (const OROrderExists) <$> createPaidRegistration db new (OTInvoice ioMethod price) paid at
-      firstRefusal checks >>= \case
-        Just refusal -> refuse refusal
-        Nothing -> createAtProvider env http client cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = orderHash orOwner fields (OTInvoice ioMethod price), ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
+      runExceptT (mapM_ ExceptT checks) >>= \case
+        Left refusal -> refuse refusal
+        Right () -> createAtProvider env http client cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = orderHash orOwner fields (OTInvoice ioMethod price), ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
 
 -- | An order paid by invoice: its order hash, the holders its transaction closes, the order's price, what its invoice asks
 -- (less than the price when a balance paid the rest), and its insert after the invoice row's.
@@ -219,9 +218,9 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} provide
               checkTerms oeConfig oeContracts fields,
               checkNameFree oeContracts oeStore ofLabelHash
             ]
-      firstRefusal checks >>= \case
-        Just refusal -> refuse refusal
-        Nothing -> do
+      runExceptT (mapM_ ExceptT checks) >>= \case
+        Left refusal -> refuse refusal
+        Right () -> do
           rid <- newRegistrationId
           placeCodeOrder env order rid code >>= \case
             Left refusal -> refuse refusal
@@ -317,11 +316,6 @@ cancelAtProvider Provider {pCancelInvoice} ref =
   pCancelInvoice ref >>= \case
     Left (ProviderError e) -> logWarn ("names: cancelling invoice " <> ref <> " at the provider failed: " <> e)
     Right () -> pure ()
-
-firstRefusal :: [IO (Either OrderRefusal ())] -> IO (Maybe OrderRefusal)
-firstRefusal = \case
-  [] -> pure Nothing
-  check : rest -> check >>= either (pure . Just) (const $ firstRefusal rest)
 
 nameInvoiceView :: OrdersEnv -> Maybe Int -> InvoiceRow -> NameRegistration -> IO J.Value
 nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do

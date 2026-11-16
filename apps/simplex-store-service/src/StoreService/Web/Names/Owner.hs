@@ -7,6 +7,7 @@ module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
 
 import Control.Concurrent.STM (atomically)
 import Control.Logger.Simple (logError)
+import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -31,7 +32,7 @@ import StoreService.Names.Turns (withLabelTurns)
 import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
 import StoreService.Names.Worker (sendsUsedUp)
-import StoreService.Web.Names.Orders (Answer (..), answerNow, firstRefusal, refused, sendAnswer)
+import StoreService.Web.Names.Orders (Answer (..), answerNow, refused, sendAnswer)
 import StoreService.Web.Names.Registration (registrationChangedResponse, registrationRefusalResponse)
 
 data FindRequest = FindRequest
@@ -50,9 +51,9 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
       _ -> refuse ORBadRequest
     found FindRequest {frOwner, frTimestamp, frSignature} = do
       now <- oeNow
-      firstRefusal [checkSigner frOwner (findMessage frOwner frTimestamp) frSignature, pure $ checkTimestamp now frTimestamp] >>= \case
-        Just refusal -> refuse refusal
-        Nothing ->
+      runExceptT (mapM_ ExceptT [checkSigner frOwner (findMessage frOwner frTimestamp) frSignature, pure $ checkTimestamp now frTimestamp]) >>= \case
+        Left refusal -> refuse refusal
+        Right () ->
           withTransaction oeStore (\db -> findRegistrations db frOwner now) >>= \case
             [] -> pure $ answerNow notFound
             rs -> pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (\(r, holder) -> foundJSON (registrationAt now r) holder) rs]
@@ -122,9 +123,9 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
     moveChecked now r@NameRegistration {nrMoves, nrYears, nrPrice, nrPayment} fields@OrderFields {ofLabelHash, ofLength, ofDuration}
       | nrMoves >= nMaxOrderMoves oeConfig = answerNow <$> registrationRefusalResponse env "move_limit" rid
       | otherwise =
-          firstRefusal [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore ofLabelHash] >>= \case
-            Just refusal -> refuse refusal
-            Nothing -> case nrPayment of
+          runExceptT (mapM_ ExceptT [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore ofLabelHash]) >>= \case
+            Left refusal -> refuse refusal
+            Right () -> case nrPayment of
               RPInvoice {} -> checkMovePrice oeContracts r ofLength years >>= either refuse (write now r fields)
               RPBalance -> checkMovePrice oeContracts r ofLength years >>= either refuse (write now r fields)
               RPCode _ -> write now r fields nrPrice
