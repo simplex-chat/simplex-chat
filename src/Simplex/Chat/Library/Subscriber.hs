@@ -574,7 +574,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
                 createInternalChatItem user (CDDirectRcv ct') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
                   `catchAllErrors` \_ -> pure ()
-            createRcvMsgDeliveries conn' msgMeta savedMsgIds
+            createRcvMsgDeliveries conn' msgMeta savedMsgIds `catchAllErrors` eToView
             withRcpt <- checkSendRcpt ct' $ rights aChatMsgs -- not crucial to use ct'' from processEvent
             pure (withRcpt, False)
           where
@@ -1033,7 +1033,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       | otherwise = newDeliveryTasks
                  in createDeliveryTasks gInfo' m' tasks
               else pure False
-          createRcvMsgDeliveries conn msgMeta savedMsgIds
+          createRcvMsgDeliveries conn msgMeta savedMsgIds `catchAllErrors` eToView
           withRcpt <- checkSendRcpt $ rights aChatMsgs
           pure (withRcpt, shouldDelConns)
         where
