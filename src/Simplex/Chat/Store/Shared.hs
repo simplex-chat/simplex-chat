@@ -954,7 +954,7 @@ getGroupInfoRow db cxt User {userId, userContactId} groupId = ExceptT $ do
   firstRow (toGroupInfo currentTs cxt userContactId chatTags) (SEGroupNotFound groupId) $
     DB.query
       db
-      -- mu.user_id steers the planner to idx_group_members_group_id; contact_id index is quadratic over all groups
+      -- mu.user_id avoids idx_group_members_contact_id (quadratic over all groups, #7688) if idx_group_members_group_id_contact_id is not used
       (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.user_id = ? AND mu.contact_id = ?")
       (groupId, userId, userId, userContactId)
 
