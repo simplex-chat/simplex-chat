@@ -234,7 +234,7 @@ followTransactions s@Sender {snChain = c@ChainClient {ccRegistrar}, snInFlight} 
       Right (Block {blockNumber}, used) -> forM_ (M.toAscList inFlight) $ uncurry $ follow s blockNumber used
 
 follow :: Sender -> Word64 -> Word64 -> Word64 -> InFlight -> IO ()
-follow s@Sender {snChain = c@ChainClient {ccConfig = ChainConfig {cConfirmations}}} latest used nonce tx@InFlight {ifHashes, ifUsedSince} =
+follow s@Sender {snChain = c} latest used nonce tx@InFlight {ifHashes, ifUsedSince} =
   runExceptT (forM (L.toList ifHashes) $ \h -> (h,) <$> ExceptT (transactionReceipt c h)) >>= \case
     Left e -> warnNonce s nonce logWarn $ tshow e
     Right receipts -> case [(h, r) | (h, Just r) <- receipts] of
@@ -249,7 +249,7 @@ follow s@Sender {snChain = c@ChainClient {ccConfig = ChainConfig {cConfirmations
             update s nonce $ \t -> t {ifUsedSince = Nothing}
             resend s nonce tx
   where
-    deep block = latest + 1 >= block + fromIntegral cConfirmations
+    deep block = block <= confirmedNumber c latest
 
 -- | A replacement when one is due and the market asks for it; otherwise the newest signature again if the node does not know it.
 resend :: Sender -> Word64 -> InFlight -> IO ()
