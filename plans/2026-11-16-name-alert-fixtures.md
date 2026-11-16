@@ -16,15 +16,15 @@ The user's words:
 
 ```mermaid
 flowchart LR
-  CT["core tests<br>nameFixture"] -->|"responses and parses"| F["tests/fixtures/api/names"]
+  CT["core tests<br>apiFixture, nameMovedFixture"] -->|"responses, parses, events"| F["tests/fixtures/api"]
   F --> KT["NameAlertsTest<br>desktop"]
   F --> IT["NameAlertsTests<br>iOS, hosted by the app"]
-  KT -->|"sets"| KH["chatSendCmdRetry<br>chatParseMarkdown"]
-  IT -->|"sets"| IH["sendSimpleXCmdStr<br>parseSimpleXMarkdownText"]
-  KH --> KF["planAndConnect<br>unchanged"]
-  IH --> IF["planAndConnect<br>unchanged"]
-  KF --> KA["AlertManager<br>semantics texts"]
-  IF --> IA["presented UIAlertController"]
+  KT -->|"sets"| KH["chatSendCmdRetry<br>chatParseMarkdown<br>chatParseUri"]
+  IT -->|"sets"| IH["sendSimpleXCmdStr<br>parseSimpleXMarkdownText<br>parseSanitizeUri"]
+  KH --> KF["planAndConnect, ChatListView,<br>ConnectByNameRow, SimplexNameView,<br>processReceivedMsg"]
+  IH --> IF["planAndConnect, ChatListSearchBar,<br>processReceivedMsg"]
+  KF --> KA["semantics texts, chat model"]
+  IF --> IA["presented controllers, chat model"]
 ```
 
 ## Hooks
@@ -59,7 +59,8 @@ A function of the app that calls the core is a `var`; tests set it to a responde
 - response: `chatSendCmd` of `Simplex.Chat.Mobile`, the JSON of the Kotlin app.
 - parses: `chatParseMarkdown` and `chatParseUri` of `Simplex.Chat.Mobile`.
 - placeholders: a link of the test replaced in keys and values, e.g. `CONTACT_LINK`.
-- random values replaced by their key: `createdAt`, `updatedAt`, `chatTs`, `agentConnId`, `xContactId`, `connFullLink`, `connShortLink`, `contactLink`, `groupLink`, `viaGroupLinkUri`, `simplexUri`, `memberId`, `memberPubKey`, `publicGroupId`, `businessId`, `customerId`.
+- times replaced by 1970-01-01: `createdAt`, `updatedAt`, `chatTs`, `userMemberProfileSentAt`.
+- random values replaced by their key: `agentConnId`, `xContactId`, `connFullLink`, `connShortLink`, `contactLink`, `groupLink`, `viaGroupLinkUri`, `simplexUri`, `memberId`, `memberPubKey`, `publicGroupId`, `businessId`, `customerId`.
 - events: `nameMovedFixture`, the core's encoding of `CEvtNameMoved` for chats of the test.
 - `registerExpiredName`: expiry 2026-01-01 12:00 UTC, grace until 2099-01-01 12:00 UTC.
 - written with `testGenerate`: the test fails when its file differs.
@@ -86,26 +87,36 @@ A function of the app that calls the core is a `var`; tests set it to a responde
 
 Each test sets the hooks to the fixture and the current user, runs the app's flow and compares what the app shows.
 
-| Test | Flow | Checked |
-|---|---|---|
-| plan alerts | `planAndConnect` of the name | texts of the alert, the plan's chats in the chat list and passed to `showLocalChats` |
-| buttons | a press of a button of the alert | the next alert, the opened chat, or the plan of the team address |
-| other kind | a press of "Connect to @team.simplex" | the plan of the other kind and its alert |
-| own channel, contact via address | `planAndConnect` | the alert of the known chat |
-| moved event | `processReceivedMsg` of the recorded event | the contact and group marked moved |
-| search | "team" typed in the chat list search | the chats found by the local lookups listed |
-| name view | `SimplexNameView` of each verification | a press copies a verified name and verifies a failed, moved or unchecked one |
+| Test | Flow | Checked | Apps |
+|---|---|---|---|
+| plan alerts | `planAndConnect` of the name | texts of the alert, the plan's chats in the chat list and passed to `showLocalChats` | both |
+| Renew, Register, Re-register | a press of the button | the alert to open https://simplex.domains/#testing | both |
+| Open chat | a press of the button | the chat's load requested; iOS: the chat opened | both |
+| Connect to SimpleX team | a press of the button | Kotlin: the plan of the team address requested; iOS: the team address opened | both |
+| other kind | a press of "Connect to @team.simplex" | the plan of the other kind and its alert, or the alert of its error | both |
+| own channel, contact via address | `planAndConnect` | the alert of the known chat | both |
+| moved event | `processReceivedMsg` of the recorded event | the contact and group marked moved | both |
+| search | "team.simplex" typed in the chat list search | the chats found by the local lookups listed | Kotlin: `ChatListView`; iOS: `ChatListSearchBar` |
+| connect by name | a press of `ConnectByNameRow` | the alert and the chats passed to `showLocalChats` | Kotlin |
+| name view | `SimplexNameView` of each verification | a press copies a verified name and verifies a failed, moved or unchecked one | Kotlin |
 
-A request without a recorded response fails the test.
+A request without a recorded response fails the test, unless the test expects it.
+iOS compares the texts of an alert without their order, because the order of two buttons depends on their widths.
 
 Known gaps:
 - an expired name without a grace date.
+- iOS `SimplexNameView` and `ConnectByNameRow`: a SwiftUI tap is not reachable from a unit test.
 
 ## iOS
 
 - target `SimpleX Unit Tests`, hosted by the app, as `SimpleX Snapshots`.
 - the CI stubs of `chat_migrate_init` and `chat_migrate_init_key` return an empty string, so the app opens its database error screen and calls the core no more.
 - the alert is read from `getTopViewController()`.
+- setUp and tearDown dismiss every presented controller.
+
+## Core
+
+- src/Simplex/Chat/View.hs: the arm of `CESimplexDomainNotReady` matches every `SimplexDomainError` in one `case`; GHC 8.10.7 of the full matrix rejected the arm of #8220 as incomplete.
 
 ## CI
 
