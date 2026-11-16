@@ -239,12 +239,14 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   LaunchedEffect(Unit) {
+    if (noticesShown) return@LaunchedEffect
     val showWhatsNew = shouldShowWhatsNew(chatModel)
     val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
     if (showWhatsNew || showUpdatedConditions) {
       // Requested here, so that the country is known by the time the modal opens
       platform.androidLoadPlayStoreCountry()
       delay(1000L)
+      noticesShown = true
       ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
     }
   }
@@ -729,8 +731,9 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
       Box {
         ProfileImage(
           image = image,
-          size = 37.dp * fontSizeSqrtMultiplier,
-          color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+          size = 31.dp * fontSizeSqrtMultiplier,
+          color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f),
+          modifier = Modifier.centeredIn(37.dp * fontSizeSqrtMultiplier)
         )
         if (!allRead) {
           unreadBadge()
@@ -956,6 +959,7 @@ private fun ErrorSettingsView() {
 }
 
 private var lazyListState = 0 to 0
+private var noticesShown = false
 
 enum class ScrollDirection {
   Up, Down, Idle

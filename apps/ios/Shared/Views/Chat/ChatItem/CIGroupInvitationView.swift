@@ -84,6 +84,7 @@ struct CIGroupInvitationView: View {
             .padding(.vertical, 6)
             .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
             .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
+            .padding(.leading, inlineMeta == nil ? chatItemTextPadding : 0)
         }
         .textSelection(.disabled)
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }

@@ -33,13 +33,13 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
 import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
-import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -113,6 +113,7 @@ chatGroupTests = do
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
+    it "file chunks from a member who did not send the file are ignored" testGroupFileChunkOtherMember
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -235,6 +236,7 @@ chatGroupTests = do
     it "member contact is active" testMembershipProfileUpdateContactActive
     it "member contact is deleted" testMembershipProfileUpdateContactDeleted
     it "member contact is deleted, peer type is updated" testMembershipProfileUpdateContactDeletedPeerType
+    it "change of peer type alone is sent on next message" testMembershipProfileUpdatePeerTypeOnly
     it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
     it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
     it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
@@ -2279,6 +2281,43 @@ testDeleteMemberMessagesLeftRemoved =
       cath #$> ("/_get chat #1 count=3", chat, [(1, "1"), (0, "2"), (1, "left (signed)")])
       dan #$> ("/_get chat #1 count=4", chat, [(0, "1"), (1, "2"), (0, "left (signed)"), (0, "removed you (signed)")])
 
+testGroupFileChunkOtherMember :: HasCallStack => TestParams -> IO ()
+testGroupFileChunkOtherMember =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      -- the XFTP server is not started yet, so alice's file stays uploading while cath sends her chunks
+      alice #> "/f #team ./tests/fixtures/test.txt"
+      alice <## "use /fc 1 to cancel sending"
+      forM_ [bob, cath] $ \cc -> do
+        cc <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
+        cc <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      -- cath, with a modified client, sends bob chunks naming alice's file over her own member connection
+      sharedMsgId <- itemSharedMsgId cath
+      GroupMember {groupId, activeConn = Just conn} <- getTestMember cath "team" "bob"
+      let cathSendsChunk chunk = do
+            runExceptT (sendDirectMemberMessage conn (BFileChunk sharedMsgId chunk) groupId) `runReaderT` chatController cath
+              >>= either (fail . show) (\_ -> pure ())
+            -- the next message on the same connection is shown only after the chunk is processed
+            cath #> "#team hi"
+            [alice, bob] *<# "#team cath> hi"
+
+      -- the cancel chunk is ignored, bob can still receive the file
+      cathSendsChunk FileChunkCancel
+      bob ##> ("/fr 1 " <> tmpDir bob)
+      bob <## ("saving file 1 from alice to " <> tmpFile bob "test.txt")
+      -- the data chunk is ignored, the file is not completed with cath's content
+      cathSendsChunk $ FileChunk 1 "cath's file"
+
+      withXFTPServer alice $ do
+        alice <## "completed uploading file 1 (test.txt) for #team"
+        bob <## "started receiving file 1 (test.txt) from alice"
+        bob <## "completed receiving file 1 (test.txt) from alice"
+      src <- B.readFile "./tests/fixtures/test.txt"
+      B.readFile (tmpFile bob "test.txt") `shouldReturn` src
+
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -3708,6 +3747,7 @@ testGroupLinkIgnoreRelayJoinRequest ps =
       (gShortLink, _gLink) <- getGroupLinks alice "team" GRMember True
       sendMemberJoinRequest bob gShortLink
       alice <## "warning: memberJoinRequestViaRelay (group team): ignored relay join request from bob (group does not use relays)"
+      checkPendingInvitations alice 0
       alice ##> "/ms team"
       alice <## "alice (Alice): owner, you, created group"
 
@@ -7542,6 +7582,30 @@ testMembershipProfileUpdateContactDeletedPeerType =
       bob <# "#team alisa> hello"
 
       memberAddressPeerType bob "alisa" `shouldReturn` [(Nothing, Just CPTBot)]
+
+testMembershipProfileUpdatePeerTypeOnly :: HasCallStack => TestParams -> IO ()
+testMembershipProfileUpdatePeerTypeOnly =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"shortDescr\": \"Alice\", \"peerType\": \"agent\"}"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      memberAddressPeerType bob "alice" `shouldReturn` [(Nothing, Just CPTAgent)]
+
+      alice #> "#team hello again"
+      bob <# "#team alice> hello again"
+
+      bob ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine bob
+      filter (== (0, "updated profile (signed)")) r `shouldBe` [(0, "updated profile (signed)")]
 
 testMembershipProfileUpdateContactDisabled :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactDisabled =
@@ -12130,6 +12194,7 @@ testChannelRelayInvUnsigned ps =
       (cathSLink, _cLink) <- getContactLinks cath True
       sendUnsignedRelayInv alice cathSLink
       cath <##. "error: x.grp.relay.inv: invitation is not signed by the owner"
+      checkPendingInvitations cath 0
 
 sendUnsignedRelayInv :: TestCC -> String -> IO ()
 sendUnsignedRelayInv cc relayAddress =

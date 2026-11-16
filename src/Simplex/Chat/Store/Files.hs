@@ -355,21 +355,21 @@ getGroupFileIdBySharedMsgId db userId groupId sharedMsgId =
       (userId, groupId, sharedMsgId)
 
 -- Resolve the in-flight received group inline file for a chunk: read its file_type by shared_msg_id
--- (LIMIT 1 is safe -- all files sharing a shared_msg_id share a type), then look up by type: a roster
--- file is scoped to its source relay (every relay re-serves the owner's same shared_msg_id, so the source
--- disambiguates), a normal file is by shared_msg_id. Nothing => no in-flight transfer (orphaned chunk).
+-- (LIMIT 1 is safe -- all files sharing a shared_msg_id share a type), then look up by type, in both
+-- cases scoped to the member the chunk came from: a roster file to its source relay (every relay
+-- re-serves the owner's same shared_msg_id, so the source disambiguates), a normal file to the member
+-- who sent it (shared_msg_id is known to all members, so only the sender can complete or cancel it).
+-- Nothing => no in-flight transfer from this member (orphaned chunk, or a chunk for another member's file).
 getGroupRcvFileId :: DB.Connection -> UserId -> Int64 -> GroupMemberId -> SharedMsgId -> IO (Maybe Int64)
 getGroupRcvFileId db userId groupId fromMemberId sharedMsgId = do
   fileType_ <- getFileType
   case fileType_ of
-    Just FTRoster ->
+    Just fileType ->
       maybeFirstRow fromOnly $
-        DB.query db (rcvFileIdQ <> " AND r.group_member_id = ?") (userId, groupId, sharedMsgId, FTRoster, fromMemberId)
-    Just FTNormal ->
-      maybeFirstRow fromOnly $
-        DB.query db rcvFileIdQ (userId, groupId, sharedMsgId, FTNormal)
+        DB.query db rcvFileIdQ (userId, groupId, sharedMsgId, fileType, fromMemberId)
     Nothing -> pure Nothing
   where
+    getFileType :: IO (Maybe FileType)
     getFileType =
       maybeFirstRow fromOnly $
         DB.query db "SELECT file_type FROM files WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? LIMIT 1" (userId, groupId, sharedMsgId)
@@ -377,7 +377,7 @@ getGroupRcvFileId db userId groupId fromMemberId sharedMsgId = do
       [sql|
         SELECT f.file_id FROM files f
         JOIN rcv_files r ON r.file_id = f.file_id
-        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ?
+        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ? AND r.group_member_id = ?
       |]
 
 -- The roster scratch file for a transfer (for fs/handle cleanup before deleting the transfer).

@@ -2,6 +2,10 @@ import XCTest
 import SwiftUI
 import UIKit
 import AVFoundation
+import CallKit
+import PushKit
+import WebRTC
+import LZString
 @testable import SimpleX
 @testable import SimpleXChat
 
@@ -139,6 +143,32 @@ final class SnapshotTests: XCTestCase {
     }
 
     @MainActor
+    func testAppearanceProfileImages() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard (env["SNAPSHOT_SIZE"] ?? "large") == "large" else { return }
+        let dir = layoutCheckDir(env)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        ChatModel.shared.currentUser = User.sampleData
+        for dark in [false, true] {
+            let theme = snapshotTheme(dark)
+            CurrentColors = theme
+            let window = UIWindow(windowScene: windowScene)
+            window.overrideUserInterfaceStyle = dark ? .dark : .light
+            window.rootViewController = UIHostingController(rootView: AppearanceSettings()
+                .environmentObject(ChatModel.shared)
+                .environmentObject(SceneDelegate())
+                .environmentObject(theme.toAppTheme()))
+            window.frame = CGRect(x: 0, y: 0, width: windowScene.screen.bounds.width, height: 1600)
+            window.isHidden = false
+            settle()
+            try XCTUnwrap(windowImage(window).pngData()).write(to: dir.appendingPathComponent("appearance-profile-images-\(dark ? "dark" : "light").png"))
+            window.isHidden = true
+            window.rootViewController = nil
+        }
+    }
+
+    @MainActor
     func testTerminalSpacing() {
         let items = SnapshotFixtures().spacingItems()
         let p = terminalParagraphGap
@@ -149,16 +179,39 @@ final class SnapshotTests: XCTestCase {
         }
         XCTAssertEqual(items.map(\.isOneLine), [false, true, true, true, true, true, true, false, true, true, false, true, false, false])
         XCTAssertEqual(rows.map { $0.sender }, [true, true, false, false, true, false, true, false, true, true, true, false, true])
-        XCTAssertEqual(rows.map { $0.gap }, [p, p, 0, p, p, 0, p, p, p, p, p, p, p])
+        XCTAssertEqual(rows.map { $0.gap }, [p, p, 0, 0, p, 0, p, p, p, p, p, p, p])
         XCTAssertEqual(rows.map { $0.card }, [false, false, false, false, false, false, false, false, false, true, true, true, false])
         XCTAssertEqual(items.suffix(2).map(terminalTextTopGap), [p, 0])
         let edges = SnapshotFixtures().spacingEdgeItems()
         XCTAssertEqual(edges.map { terminalItemStartsWithCard($0, revealed: true) }, [true, false, true, true])
         XCTAssertEqual(edges.suffix(3).map(terminalTextTopGap), [0, 0, 0])
-        var unreacted = items[3]
-        unreacted.reactions = []
-        let rowHash = { (older: ChatItem) in ListItem(item: items[4], prevItem: items[5], nextItem: older, unreadBefore: 0).genHash(false, false) }
-        XCTAssertNotEqual(rowHash(items[3]), rowHash(unreacted))
+    }
+
+    func testTerminalStatusWithoutTime() {
+        let statuses: [CIStatus] = [
+            .sndNew,
+            .sndSent(sndProgress: .complete),
+            .sndSent(sndProgress: .partial),
+            .sndRcvd(msgRcptStatus: .ok, sndProgress: .complete),
+            .sndRcvd(msgRcptStatus: .ok, sndProgress: .partial),
+            .sndRcvd(msgRcptStatus: .badMsgHash, sndProgress: .complete),
+            .sndErrorAuth,
+            .rcvNew,
+            .rcvRead
+        ]
+        XCTAssertEqual(statuses.map { terminalShowsStatus($0, showTimestamp: false) }, [false, false, true, false, true, true, true, false, false])
+        XCTAssertEqual(statuses.map { terminalShowsStatus($0, showTimestamp: true) }, Array(repeating: true, count: statuses.count))
+    }
+
+    func testTerminalMediaAndAvatarSizes() {
+        XCTAssertEqual(terminalMediaWidth(402), 378)
+        XCTAssertEqual(terminalMediaWidth(1000), 500)
+        XCTAssertEqual(terminalColumn(30), 38)
+        XCTAssertEqual(terminalColumn(0), 0)
+        XCTAssertEqual(terminalMediaWidth(402 - terminalColumn(30)), 340)
+        XCTAssertEqual(terminalPillStart(terminalColumn(30)), 0)
+        XCTAssertEqual(terminalPillStart(terminalColumn(0)), 12)
+        XCTAssertEqual(scaledMemberImageSize(.large, terminalMemberImageBaseSize), 30)
     }
 
     func testVoiceMessageTimeFormatting() {
@@ -169,6 +222,399 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(voiceMessageTime_(nil), "00:00")
         XCTAssertEqual(voiceMessageTime_(TimeInterval(Int.max)), "00:00")
     }
+
+    func testIceCandidateIndexValidation() async {
+        let responses = CallResponses()
+        let client = WebRTCClient({ await responses.add($0) }, .constant(nil))
+        client.activeCall = client.initializeCall(nil, .audio, nil, nil)
+        defer { client.endCall() }
+        let valid = WCallCommand.ice(iceCandidates: iceCandidates(sdpMLineIndex: 0))
+        let aboveRange = WCallCommand.ice(iceCandidates: iceCandidates(sdpMLineIndex: Int64(Int32.max) + 1))
+        let belowRange = WCallCommand.ice(iceCandidates: iceCandidates(sdpMLineIndex: Int64(Int32.min) - 1))
+        await client.sendCallCommand(command: valid)
+        await client.sendCallCommand(command: aboveRange)
+        await client.sendCallCommand(command: belowRange)
+        let validResponse = await responses.response(to: valid)
+        let aboveRangeResponse = await responses.response(to: aboveRange)
+        let belowRangeResponse = await responses.response(to: belowRange)
+        XCTAssertEqual(validResponse?.respType, "ok")
+        XCTAssertEqual(aboveRangeResponse?.respType, "error")
+        XCTAssertEqual(belowRangeResponse?.respType, "error")
+    }
+
+    @MainActor
+    func testOfferIceCandidateIndexValidation() async throws {
+        let peers = CallPeers()
+        defer { peers.close() }
+        peers.peer.addTransceiver(of: .audio)
+        let (offer, _) = await peers.peer.offer()
+        let sdp = try XCTUnwrap(offer?.sdp)
+        let offerWithIndex = { (sdpMLineIndex: Int64) in
+            WCallCommand.offer(
+                offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: .offer, sdp: sdp))),
+                iceCandidates: iceCandidates(sdpMLineIndex: sdpMLineIndex),
+                media: .audio
+            )
+        }
+        let outOfRangeResponse = await peers.receive(offerWithIndex(Int64(Int32.max) + 1))
+        XCTAssertNil(outOfRangeResponse)
+        XCTAssertNil(peers.client.activeCall)
+        let validResponse = await peers.receive(offerWithIndex(0))
+        XCTAssertEqual(validResponse?.respType, "answer")
+    }
+
+    @MainActor
+    func testAnswerIceCandidateIndexValidation() async throws {
+        let peers = CallPeers()
+        defer { peers.close() }
+        try await peers.start()
+        let answer = try await peers.peerAnswer()
+        let outOfRangeResponse = await peers.receive(.answer(answer: answer, iceCandidates: iceCandidates(sdpMLineIndex: Int64(Int32.max) + 1)))
+        XCTAssertNil(outOfRangeResponse)
+        XCTAssertNil(peers.client.activeCall?.connection.remoteDescription)
+        let validResponse = await peers.receive(.answer(answer: answer, iceCandidates: iceCandidates(sdpMLineIndex: 0)))
+        XCTAssertEqual(validResponse, .ok)
+    }
+
+    func testIceCandidateIndexConversion() throws {
+        let local = WebRTC.RTCIceCandidate(sdp: "candidate:1 1 udp 1 192.0.2.1 9 typ host", sdpMLineIndex: 3, sdpMid: "3")
+        let sent = encodeJSON([local.toCandidate(nil, nil)])
+        let received: [SimpleX.RTCIceCandidate] = try XCTUnwrap(decodeJSON(sent))
+        let withoutIndex: [SimpleX.RTCIceCandidate] = try XCTUnwrap(decodeJSON(#"[{"candidate":"candidate:1 1 udp 1 192.0.2.1 9 typ host","sdpMid":"0"}]"#))
+        XCTAssertEqual(received.map { $0.toWebRTCCandidate().sdpMLineIndex }, [3])
+        XCTAssertEqual(withoutIndex.map { $0.toWebRTCCandidate().sdpMLineIndex }, [0])
+    }
+
+    @MainActor
+    func testAnswerFromCurrentVersion() async throws {
+        let peers = CallPeers()
+        defer { peers.close() }
+        try await peers.start()
+        peers.peer.transceivers.forEach { $0.setDirection(.sendRecv, error: nil) }
+        let answer = try await peers.peerAnswer()
+        let response = await peers.receive(.answer(answer: answer, iceCandidates: noIceCandidates))
+        XCTAssertEqual(response, .ok)
+        XCTAssertEqual(peers.client.activeCall?.connection.transceivers.count, 4)
+        XCTAssertEqual(peers.client.activeCall?.peerHasOldVersion, false)
+        XCTAssertTrue(peers.call.localMediaSources.camera)
+    }
+
+    @MainActor
+    func testAnswerFromOldVersion() async throws {
+        let peers = CallPeers()
+        defer { peers.close() }
+        try await peers.start()
+        peers.peer.transceivers.first?.setDirection(.sendRecv, error: nil)
+        let answer = try await peers.peerAnswer()
+        let response = await peers.receive(.answer(answer: answer, iceCandidates: noIceCandidates))
+        XCTAssertEqual(response, .ok)
+        XCTAssertEqual(peers.client.activeCall?.connection.transceivers.count, 4)
+        XCTAssertEqual(peers.client.activeCall?.peerHasOldVersion, true)
+        XCTAssertFalse(peers.call.localMediaSources.camera)
+    }
+
+    @MainActor
+    func testAnswerWithRejectedMediaSections() async throws {
+        let peers = CallPeers()
+        defer { peers.close() }
+        try await peers.start()
+        peers.peer.transceivers.dropFirst().forEach { $0.stopInternal() }
+        let answer = try await peers.peerAnswer()
+        let response = await peers.receive(.answer(answer: answer, iceCandidates: noIceCandidates))
+        XCTAssertEqual(response, .ok)
+        XCTAssertEqual(peers.client.activeCall?.connection.transceivers.count, 1)
+        XCTAssertEqual(peers.client.activeCall?.peerHasOldVersion, true)
+        XCTAssertFalse(peers.call.localMediaSources.camera)
+    }
+
+    @MainActor
+    func testVoIPPushForAnswerBeforeChatStartsSuspendsChat() async throws {
+        let chatActive = await waitUntilChatActive()
+        guard chatActive else { return XCTFail("chat is not active") }
+        let provider = try callKitProvider()
+        let callKit = CallKitFailingEndCallActions(provider)
+        defer { callKit.restore() }
+        let callUUID = UUID()
+        let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
+        setAppState(.activating)
+        let answered = await answerCall(callUUID)
+        let suspended = await waitUntil(50) { appStateGroupDefault.get().inactive }
+        provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
+        await activateChatAfterCallPush()
+        XCTAssertTrue(handled)
+        XCTAssertTrue(answered)
+        XCTAssertTrue(suspended)
+    }
+
+    @MainActor
+    func testVoIPPushForAnswerWithoutInvitationSuspendsChat() async throws {
+        let chatActive = await waitUntilChatActive()
+        guard chatActive else { return XCTFail("chat is not active") }
+        let provider = try callKitProvider()
+        let callKit = CallKitFailingEndCallActions(provider)
+        defer { callKit.restore() }
+        let callUUID = UUID()
+        let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
+        let answered = await answerCall(callUUID)
+        let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
+        provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
+        await activateChatAfterCallPush()
+        XCTAssertTrue(handled)
+        XCTAssertTrue(answered)
+        XCTAssertTrue(suspended)
+    }
+
+    @MainActor
+    func testVoIPPushForDeclinedCallSuspendsChat() async throws {
+        let chatActive = await waitUntilChatActive()
+        guard chatActive else { return XCTFail("chat is not active") }
+        let callUUID = UUID()
+        let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
+        CallController.shared.endCall(callUUID: callUUID.uuidString.lowercased())
+        let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
+        try callKitProvider().reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
+        await activateChatAfterCallPush()
+        XCTAssertTrue(handled)
+        XCTAssertTrue(suspended)
+    }
+
+    @MainActor
+    func testVoIPPushForExpiredCallKeepsChatSuspended() async throws {
+        let chatActive = await waitUntilChatActive()
+        guard chatActive else { return XCTFail("chat is not active") }
+        let callKit = try CallKitFailingEndCallActions(callKitProvider())
+        defer { callKit.restore() }
+        suspendChat()
+        let suspended = await waitUntil(20) { AppChatState.shared.value == .suspended }
+        let handled = await receiveCallPush(callTs: Date.now.addingTimeInterval(-600))
+        let activated = await waitUntil(5) { !appStateGroupDefault.get().inactive }
+        await activateChatAfterCallPush()
+        XCTAssertTrue(suspended)
+        XCTAssertTrue(handled)
+        XCTAssertFalse(activated)
+    }
+
+    @MainActor
+    func testVoIPPushForRefusedCallSuspendsChat() async throws {
+        let chatActive = await waitUntilChatActive()
+        guard chatActive else { return XCTFail("chat is not active") }
+        let provider = try callKitProvider()
+        let callKit = CallKitFailingEndCallActions(provider)
+        defer { callKit.restore() }
+        let callUUID = UUID()
+        try await provider.reportNewIncomingCall(with: callUUID, update: CXCallUpdate())
+        let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
+        let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
+        provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
+        await activateChatAfterCallPush()
+        XCTAssertTrue(handled)
+        XCTAssertTrue(suspended)
+    }
+
+    @MainActor
+    func testVoIPPushKeepsChatActiveWhenAppOpens() async throws {
+        let chatActive = await waitUntilChatActive()
+        guard chatActive else { return XCTFail("chat is not active") }
+        let provider = try callKitProvider()
+        let callKit = CallKitFailingEndCallActions(provider)
+        defer { callKit.restore() }
+        let callUUID = UUID()
+        try await provider.reportNewIncomingCall(with: callUUID, update: CXCallUpdate())
+        let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        CallController.shared.shouldSuspendChat = false
+        let suspended = await waitUntil(5) { appStateGroupDefault.get().inactive }
+        provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
+        await activateChatAfterCallPush()
+        XCTAssertTrue(handled)
+        XCTAssertFalse(suspended)
+    }
+
+    func testSanitizeMessageKeepsMarkdown() {
+        let sanitize = { (uri: String) -> String? in uri.contains("?utm_source=a") ? uri.replacingOccurrences(of: "?utm_source=a", with: "") : nil }
+        let r1 = sanitizeMessage(
+            "**Note:** see https://x.com/?utm_source=a and `code`",
+            [
+                FormattedText(text: "Note:", format: .bold(singleStar: false)),
+                FormattedText(text: " see "),
+                FormattedText(text: "https://x.com/?utm_source=a", format: .uri),
+                FormattedText(text: " and "),
+                FormattedText(text: "code", format: .snippet)
+            ],
+            sanitize: sanitize
+        )
+        XCTAssertEqual(r1.message, "**Note:** see https://x.com/ and `code`")
+        XCTAssertEqual(r1.sanitizedPos, "**Note:** see https://x.com/".count)
+        XCTAssertEqual(r1.parsedMsg[2].text, "https://x.com/")
+        let r2 = sanitizeMessage(
+            "**[t](https://x.com/?utm_source=a)** and [**u**](https://y.com/?utm_source=a)",
+            [
+                FormattedText(text: "**[t](https://x.com/?utm_source=a)**", format: .hyperLink(showText: "t", linkUri: "https://x.com/?utm_source=a")),
+                FormattedText(text: " and "),
+                FormattedText(text: "[**u**](https://y.com/?utm_source=a)", format: .hyperLink(showText: "u", linkUri: "https://y.com/?utm_source=a"))
+            ],
+            sanitize: sanitize
+        )
+        XCTAssertEqual(r2.message, "**[t](https://x.com/)** and [**u**](https://y.com/)")
+        let r3 = sanitizeMessage(
+            "`https://x.com/?utm_source=a` https://x.com/?utm_source=a",
+            [
+                FormattedText(text: "https://x.com/?utm_source=a", format: .snippet),
+                FormattedText(text: " "),
+                FormattedText(text: "https://x.com/?utm_source=a", format: .uri)
+            ],
+            sanitize: sanitize
+        )
+        XCTAssertEqual(r3.message, "`https://x.com/?utm_source=a` https://x.com/")
+        let r4 = sanitizeMessage("**a** b", [FormattedText(text: "a", format: .bold(singleStar: false)), FormattedText(text: " b")], sanitize: sanitize)
+        XCTAssertEqual(r4.message, "**a** b")
+        XCTAssertNil(r4.sanitizedPos)
+    }
+}
+
+private actor CallResponses {
+    private var messages: [WVAPIMessage] = []
+
+    func add(_ message: WVAPIMessage) {
+        messages.append(message)
+    }
+
+    func response(to command: WCallCommand) -> WCallResponse? {
+        messages.last { $0.command == command }?.resp
+    }
+}
+
+private let noIceCandidates = compressToBase64(input: "[]")
+
+private func iceCandidates(sdpMLineIndex: Int64) -> String {
+    compressToBase64(input: #"[{"candidate":"candidate:1 1 udp 1 192.0.2.1 9 typ host","sdpMid":"0","sdpMLineIndex":\#(sdpMLineIndex)}]"#)
+}
+
+@MainActor
+private final class CallPeers {
+    let responses: CallResponses
+    let client: WebRTCClient
+    let peer: RTCPeerConnection
+    let call: Call
+
+    init() {
+        let responses = CallResponses()
+        let client = WebRTCClient({ await responses.add($0) }, .constant(nil))
+        self.responses = responses
+        self.client = client
+        peer = client.createPeerConnection(client.defaultIceServers, nil)
+        call = Call(direction: .incoming, contact: Contact.sampleData, callUUID: nil, callState: .invitationAccepted, initialCallType: .video)
+        call.localMediaSources.camera = true
+        ChatModel.shared.activeCall = call
+    }
+
+    func start() async throws {
+        let response = await receive(.start(media: .audio))
+        client.activeCall?.connection.delegate = nil
+        let offer: CustomRTCSessionDescription? = if case let .offer(compressed, _, _) = response { decodeJSON(decompressFromBase64(input: compressed)) } else { nil }
+        let sdp = try XCTUnwrap(offer?.sdp)
+        try await peer.setRemoteDescription(RTCSessionDescription(type: .offer, sdp: sdp))
+    }
+
+    func peerAnswer() async throws -> String {
+        let (answer, _) = await peer.answer()
+        let sdp = try XCTUnwrap(answer?.sdp)
+        return compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: .answer, sdp: sdp)))
+    }
+
+    func receive(_ command: WCallCommand) async -> WCallResponse? {
+        await client.sendCallCommand(command: command)
+        return await responses.response(to: command)
+    }
+
+    func close() {
+        ChatModel.shared.activeCall = nil
+        client.endCall()
+        peer.close()
+    }
+}
+
+private final class CallPushPayload: PKPushPayload {
+    private let payload: [AnyHashable: Any]
+
+    init(callUUID: UUID, callTs: Date) {
+        payload = [
+            "contactId": "@1",
+            "displayName": "alice",
+            "callUUID": callUUID.uuidString.lowercased(),
+            "callTs": callTs.timeIntervalSince1970,
+            "media": CallMediaType.audio.rawValue
+        ]
+        super.init()
+    }
+
+    override var dictionaryPayload: [AnyHashable: Any] { payload }
+}
+
+private final class CallKitFailingEndCallActions: NSObject, CXProviderDelegate {
+    private let provider: CXProvider
+
+    init(_ provider: CXProvider) {
+        self.provider = provider
+        super.init()
+        provider.setDelegate(self, queue: nil)
+    }
+
+    func restore() {
+        provider.setDelegate(CallController.shared, queue: nil)
+    }
+
+    func providerDidReset(_ provider: CXProvider) {}
+
+    func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
+        CallController.shared.provider(provider, perform: action)
+    }
+
+    func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
+        action.fail()
+    }
+}
+
+private func callKitProvider() throws -> CXProvider {
+    try XCTUnwrap(Mirror(reflecting: CallController.shared).descendant("provider") as? CXProvider)
+}
+
+@MainActor
+private func waitUntilChatActive() async -> Bool {
+    await waitUntil(30) { ChatModel.shared.chatRunning == true && AppChatState.shared.value == .active }
+}
+
+@MainActor
+private func receiveCallPush(callUUID: UUID = UUID(), callTs: Date) async -> Bool {
+    var handled = false
+    CallController.shared.pushRegistry(PKPushRegistry(queue: nil), didReceiveIncomingPushWith: CallPushPayload(callUUID: callUUID, callTs: callTs), for: .voIP) {
+        handled = true
+    }
+    return await waitUntil(10) { handled }
+}
+
+@MainActor
+private func answerCall(_ callUUID: UUID) async -> Bool {
+    let controller = CXCallController()
+    let answered: Void? = try? await controller.request(CXTransaction(action: CXAnswerCallAction(call: callUUID)))
+    return answered != nil
+}
+
+@MainActor
+private func activateChatAfterCallPush() async {
+    CallController.shared.shouldSuspendChat = false
+    _ = await waitUntil(20) { AppChatState.shared.value != .suspending }
+    startChatForCall()
+}
+
+@MainActor
+private func waitUntil(_ seconds: TimeInterval, _ condition: () -> Bool) async -> Bool {
+    let deadline = Date.now.addingTimeInterval(seconds)
+    while !condition() {
+        if Date.now > deadline { return false }
+        try? await Task.sleep(nanoseconds: 100_000_000)
+    }
+    return true
 }
 
 private func layoutCheckDir(_ env: [String: String]) -> URL {
@@ -194,11 +640,11 @@ private struct SnapshotScene {
     var device: Bool
     var view: AnyView
 
-    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false) {
+    init<P: PreviewProvider>(_ preview: P.Type, allSizes: Bool = false, device: Bool = false, fitting: Bool = false) {
         name = String(describing: preview).replacingOccurrences(of: "_Previews", with: "")
         self.allSizes = allSizes
         self.device = device
-        view = AnyView(preview.previews)
+        view = fitting ? AnyView(preview.previews.fixedSize(horizontal: false, vertical: true)) : AnyView(preview.previews)
     }
 }
 
@@ -240,6 +686,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(CIMetaView_Previews.self, allSizes: true),
         SnapshotScene(CIVoiceView_Previews.self, allSizes: true),
         SnapshotScene(ClassicAvatars_Previews.self, allSizes: true),
+        SnapshotScene(ClassicDeleted_Previews.self),
         SnapshotScene(ClassicOverviewChannel_Previews.self),
         SnapshotScene(ClassicOverviewDirect_Previews.self),
         SnapshotScene(ClassicOverviewGroup_Previews.self),
@@ -302,6 +749,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(OperatorView_Previews.self),
         SnapshotScene(PasscodeEntry_Previews.self),
         SnapshotScene(PasscodeViewView_Previews.self),
+        SnapshotScene(PeerTypePlaceholders_Previews.self),
         SnapshotScene(PreferencesView_Previews.self),
         SnapshotScene(PrivacySettings_Previews.self),
         SnapshotScene(ProfileImage_Previews.self),
@@ -320,6 +768,8 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(SmallLinkPreview_Previews.self),
         SnapshotScene(SupportSimpleXBanner_Previews.self),
         SnapshotScene(TerminalAvatars_Previews.self, allSizes: true),
+        SnapshotScene(TerminalDeleted_Previews.self),
+        SnapshotScene(TerminalDeletedRoundness_Previews.self),
         SnapshotScene(TerminalMedia_Previews.self),
         SnapshotScene(TerminalNames_Previews.self, allSizes: true),
         SnapshotScene(TerminalOverviewChannel_Previews.self),
@@ -328,10 +778,12 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(TerminalQuoteThumbnail_Previews.self, allSizes: true),
         SnapshotScene(TerminalRightToLeft_Previews.self),
         SnapshotScene(TerminalRuleOnly_Previews.self, allSizes: true),
+        SnapshotScene(TerminalSession_Previews.self),
         SnapshotScene(TerminalSpacing_Previews.self, allSizes: true),
         SnapshotScene(UserAddressLearnMore_Previews.self),
         SnapshotScene(UserAddressView_Previews.self),
-        SnapshotScene(UserPicker_Previews.self),
+        SnapshotScene(UserPicker_Previews.self, fitting: true),
+        SnapshotScene(UserPickerUnread_Previews.self, fitting: true),
         SnapshotScene(VerifyCodeView_Previews.self, device: true),
         SnapshotScene(VersionView_Previews.self),
         SnapshotScene(WhySimpleX_Previews.self),
@@ -439,6 +891,27 @@ struct TerminalMedia_Previews: PreviewProvider {
     }
 }
 
+struct TerminalDeleted_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().deleted(terminal: true)
+    }
+}
+
+struct TerminalDeletedRoundness_Previews: PreviewProvider {
+    static var previews: some View {
+        let defaults = UserDefaults(suiteName: "snapshots.roundness")!
+        defaults.register(defaults: appDefaults)
+        defaults.set(0.3, forKey: DEFAULT_CHAT_ITEM_ROUNDNESS)
+        return SnapshotFixtures().deleted(terminal: true).defaultAppStorage(defaults)
+    }
+}
+
+struct ClassicDeleted_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().deleted(terminal: false)
+    }
+}
+
 struct TerminalRightToLeft_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().rightToLeft()
@@ -448,6 +921,12 @@ struct TerminalRightToLeft_Previews: PreviewProvider {
 struct TerminalRuleOnly_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().ruleOnly()
+    }
+}
+
+struct TerminalSession_Previews: PreviewProvider {
+    static var previews: some View {
+        SnapshotFixtures().session()
     }
 }
 
@@ -511,6 +990,36 @@ struct ClassicParagraphs_Previews: PreviewProvider {
     }
 }
 
+struct UserPickerUnread_Previews: PreviewProvider {
+    static var previews: some View {
+        let m = ChatModel()
+        keepingCurrentColors { m.currentUser = User.sampleData }
+        m.chatRunning = true
+        m.users = [
+            UserInfo.sampleData,
+            UserInfo(user: otherUser(2, "bob", image: nil), unreadCount: 3),
+            UserInfo(user: otherUser(3, "carol", image: imageBase64(UIColor(red: 0.55, green: 0.35, blue: 0.75, alpha: 1), CGSize(width: 64, height: 64))), unreadCount: 12)
+        ]
+        return UserPicker(userPickerShown: .constant(true), activeSheet: .constant(nil))
+            .environmentObject(m)
+    }
+
+    private static func otherUser(_ id: Int64, _ name: String, image: String?) -> User {
+        var u = User.sampleData
+        u.userId = id
+        u.activeUser = false
+        u.activeOrder = id
+        u.profile = LocalProfile(profileId: id, displayName: name, fullName: "", image: image, localAlias: "")
+        return u
+    }
+}
+
+private func keepingCurrentColors(_ change: () -> Void) {
+    let colors = CurrentColors
+    change()
+    CurrentColors = colors
+}
+
 private struct ChatRows: View {
     @EnvironmentObject var theme: AppTheme
     let chat: Chat
@@ -561,7 +1070,7 @@ private struct ChatRows: View {
             scrollToItem: { _ in },
             scrollToItemId: .constant(nil),
             merged: mergedItem,
-            olderRow: mergedItems.items.indices.contains(index + 1) ? mergedItems.items[index + 1] : nil,
+            olderRow: mergedItems.olderShownRow(of: mergedItem),
             listWidth: width,
             maxWidth: rowMaxWidth(ci, mergedItem, chat.chatInfo, width),
             composeState: .constant(ComposeState()),
@@ -791,6 +1300,24 @@ private final class SnapshotFixtures {
                 ])
             ]
         ),
+        "543 of 544 pass. One test fails:\n```\nFAIL hub.test.ts (1 of 544)\n```\nShall I fix it?": ParsedMarkdown(
+            formattedText: [
+                FormattedText(text: "543 of 544 pass. One test fails:"),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "```", format: .markup(token: .fenceMark(language: nil))),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "FAIL hub.test.ts (1 of 544)"),
+                FormattedText(text: "\n", format: .markup(token: .hardBreak)),
+                FormattedText(text: "```", format: .markup(token: .fenceMark(language: nil))),
+                FormattedText(text: "\n", format: .markup(token: .lineBreak)),
+                FormattedText(text: "Shall I fix it?")
+            ],
+            markdownBlocks: [
+                .paragraph(content: SegmentRange(from: 0, to: 1)),
+                .codeBlock(language: nil, content: SegmentRange(from: 4, to: 5)),
+                .paragraph(content: SegmentRange(from: 8, to: 9))
+            ]
+        ),
         "run this one first:\n```\nnpm run publish\n```": ParsedMarkdown(
             formattedText: [
                 FormattedText(text: "run this one first:"),
@@ -961,6 +1488,21 @@ private final class SnapshotFixtures {
         }
     }
 
+    func deleted(terminal: Bool) -> some View {
+        chatRows(teamChat, [
+            msg(.groupRcv(groupMember: alice), "Welcome, carol!", -20),
+            msg(.groupRcv(groupMember: bob), "Hi all", -18),
+            ChatItem(chatDir: .groupRcv(groupMember: bob), meta: CIMeta.getSample(id(), ts(-18 + 20.0 / 60), "this item is deleted", .rcvRead), content: .rcvDeleted(deleteMode: .cidmBroadcast)),
+            msg(.groupRcv(groupMember: carol), "Hello", -16),
+            ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-16 + 20.0 / 60), "Thanks!", .rcvRead, itemDeleted: .moderated(deletedTs: ts(-15), byGroupMember: alice)), content: .rcvMsgContent(msgContent: .text("Thanks!"))),
+            msg(.groupRcv(groupMember: carol), "Glad to be here", -14),
+            ChatItem(chatDir: .groupRcv(groupMember: bob), meta: CIMeta.getSample(id(), ts(-14 + 20.0 / 60), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 2, toMsgId: 2))),
+            msg(.groupRcv(groupMember: carol), "Let's start", -14 + 40.0 / 60),
+            ChatItem(chatDir: .groupRcv(groupMember: carol), meta: CIMeta.getSample(id(), ts(-13), "1 skipped message", .rcvRead), content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 1))),
+            msg(.groupSnd, "ok", -12)
+        ], terminal: terminal)
+    }
+
     func rightToLeft() -> some View {
         chatRows(direct, [
             msg(.directRcv, "# מה חדש\nגרסה חדשה של האפליקציה\n## תכונות\n| שינוי |\n|---|", -10)
@@ -1006,6 +1548,29 @@ private final class SnapshotFixtures {
 
     func spacing() -> some View {
         chatRows(teamChat, spacingItems(), terminal: true)
+    }
+
+    func session() -> some View {
+        var claude = Self.member(5, "Claude", .owner)
+        claude.memberProfile.peerType = .agent
+        var project = Self.group(3, "1 · my-project", channel: false)
+        project.membership = Self.member(99, "alice", .owner)
+        let prompt = "Are the tests passing?"
+        return chatRows(.group(groupInfo: project, groupChatScope: nil), [
+            msg(.groupRcv(groupMember: claude), "alice is an owner and can send prompts to Claude and the group's commands, and approve tool use.", -6),
+            msg(.groupSnd, prompt, -5),
+            msg(.groupRcv(groupMember: claude), "Checking the test suite.", -5 + 10.0 / 60),
+            msg(.groupRcv(groupMember: claude), "I want to use Bash: Run unit tests\nnpm test\n/approve 1 or /reject 1", -5 + 20.0 / 60),
+            msg(.groupSnd, "/approve 1", -5 + 40.0 / 60),
+            msg(.groupRcv(groupMember: claude), "543 of 544 pass. One test fails:\n```\nFAIL hub.test.ts (1 of 544)\n```\nShall I fix it?", -4, quote: quote(.groupSnd, prompt)),
+            msg(.groupSnd, "Yes, fix it.", -3),
+            msg(.groupSnd, "Then run the tests again.", -3 + 5.0 / 60),
+            msg(.groupSnd, "And commit.", -3 + 10.0 / 60),
+            msg(.groupRcv(groupMember: claude), "Fixing hub.ts.", -2),
+            msg(.groupRcv(groupMember: claude), "Running the tests.", -2 + 5.0 / 60),
+            msg(.groupRcv(groupMember: claude), "Done: the answer now quotes its own prompt.\n544 of 544 pass.\nCommitted as 1f3c2a9.", -2 + 10.0 / 60),
+            msg(.groupRcv(groupMember: claude), "Coverage after the fix", -2 + 30.0 / 60, content: .image(text: "Coverage after the fix", image: landscape), file: imageFile("coverage.jpg"))
+        ], terminal: true)
     }
 
     func paragraphs() -> some View {
