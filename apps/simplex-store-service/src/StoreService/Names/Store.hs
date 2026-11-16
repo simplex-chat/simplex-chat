@@ -148,7 +148,8 @@ import StoreService.Names.Registration (Commitment, TermsAcceptance (..), TermsH
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Providers (Rate, Uncreditable (..))
 import StoreService.Store (RevokeResult (..))
-import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, note, textToCryptoCurrency, truncateToSecond, unfundedQuery)
+import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, mkQuery, newInvoiceId, note, textToCryptoCurrency, truncateToSecond, unfundedQuery)
+import qualified Text.RawString.QQ as Raw
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -605,7 +606,7 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
     else do
       DB.execute
         db
-        "INSERT INTO sx_badge_service_name_invoices (invoice_id, registration_id, provider_ref, created_at) VALUES (?,?,?,?)"
+        (mkQuery "INSERT INTO @name_invoices (invoice_id, registration_id, provider_ref, created_at) VALUES (?,?,?,?)")
         (invId, rid, poProviderRef, now)
       held' <- maybe (pure True) (\BalanceUse {buSource, buUsed} -> holdBalance db buSource buUsed regId now) held
       pure $ if held' then Right () else Left BIRBalanceChanged
@@ -642,13 +643,15 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
   (> 0)
     <$> executeChanging
       db
-      [sql|
-        INSERT INTO sx_badge_service_name_registrations
+      ( mkQuery
+          [Raw.r|
+        INSERT INTO @name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
            price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms)
         VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?)
         ON CONFLICT DO NOTHING
       |]
+      )
       ( (rid, initialVersion, Binary lh, ofLength, int64 ofDuration, Binary $ unAddress nrgOwner, Binary ofCommitment, ofSealed, phase, nrgYears)
           :. (price, methodText <$> method, codeId, BI True, Binary nrgOrderHash, 0 :: Int, now, now, (\BalanceUse {buSource = RegistrationId s} -> s) <$> fromBalance, maybe 0 buUsed fromBalance)
           :. Only ofAgreedTerms
@@ -668,10 +671,10 @@ registrationColumns =
 
 registrationFrom :: Query
 registrationFrom =
-  " "
-    <> [sql|
-    FROM sx_badge_service_name_registrations r
-    LEFT JOIN sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id
+  mkQuery
+    [Raw.r|
+    FROM @name_registrations r
+    LEFT JOIN @name_invoices ni ON ni.registration_id = r.registration_id
   |]
 
 selectRegistrations :: Query
@@ -765,7 +768,7 @@ getLiveOrders db commitment owner (LabelHash lh) now =
         <> overdueOrder "r"
         <> " THEN 1 ELSE 0 END"
         <> registrationFrom
-        <> " LEFT JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id"
+        <> mkQuery " LEFT JOIN @invoices i ON i.invoice_id = ni.invoice_id"
         <> " WHERE r.live = 1 AND (r.commitment = ? OR (r.owner = ? AND r.label_hash = ?))"
     )
     (PUnpaid, invoiceStatusText ISPaid, truncateToSecond now, Binary commitment, Binary $ unAddress owner, Binary lh)
@@ -787,12 +790,13 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
   expired <-
     executeChanging
       db
-      ( [sql|
-          UPDATE sx_badge_service_invoices SET status = ?, updated_at = ?
+      ( mkQuery
+          [Raw.r|
+          UPDATE @invoices SET status = ?, updated_at = ?
           WHERE status = ? AND invoice_id IN (
-            SELECT i.invoice_id FROM sx_badge_service_name_invoices ni
-            JOIN sx_badge_service_name_registrations r ON r.registration_id = ni.registration_id
-            JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id
+            SELECT i.invoice_id FROM @name_invoices ni
+            JOIN @name_registrations r ON r.registration_id = ni.registration_id
+            JOIN @invoices i ON i.invoice_id = ni.invoice_id
             WHERE ni.registration_id = ? AND r.version = ? AND r.live = 1 AND i.expires_at < ?
         |]
           <> unfunded
@@ -827,18 +831,20 @@ updateRegistration db r now = do
   changed <-
     executeChanging
       db
-      [sql|
-        UPDATE sx_badge_service_name_registrations
+      ( mkQuery
+          [Raw.r|
+        UPDATE @name_registrations
         SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, agreed_terms = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
           accept_terms = ?, accept_nonce = ?, accept_signature = ?, commit_tx = ?, commit_block = ?, register_tx = ?, register_block = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
           registered_at = ?, failed_at = ?, error = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
           AND (? = 0 OR (live = 1 AND NOT EXISTS (
-            SELECT 1 FROM sx_badge_service_name_registrations o
+            SELECT 1 FROM @name_registrations o
             WHERE o.live = 1 AND o.registration_id <> ? AND (o.commitment = ? OR (o.owner = ? AND o.label_hash = ?))
           )))
       |]
+      )
       ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
           :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, Binary . serializeSignature . taSignature <$> acceptance)
@@ -854,7 +860,7 @@ updateRegistration db r now = do
     acceptance = rvAcceptance =<< nrReveal
     live = orderLive r
     refusal =
-      DB.query db "SELECT version, live FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid) >>= \case
+      DB.query db (mkQuery "SELECT version, live FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case
         [(version, BI storedLive)] | version == nrVersion -> pure $ if storedLive then LiveOrderExists else NotLive
         _ -> pure VersionChanged
 
@@ -896,10 +902,12 @@ findRegistrations db owner now = do
   where
     selectHeld =
       registrationColumns
-        <> ", (SELECT b.reserved_by FROM sx_badge_service_name_balances b"
-        <> " JOIN sx_badge_service_name_registrations h ON h.registration_id = b.reserved_by"
-        <> " JOIN sx_badge_service_name_invoices hni ON hni.registration_id = b.reserved_by"
-        <> " JOIN sx_badge_service_invoices i ON i.invoice_id = hni.invoice_id"
+        <> mkQuery
+          ( ", (SELECT b.reserved_by FROM @name_balances b"
+              <> " JOIN @name_registrations h ON h.registration_id = b.reserved_by"
+              <> " JOIN @name_invoices hni ON hni.registration_id = b.reserved_by"
+              <> " JOIN @invoices i ON i.invoice_id = hni.invoice_id"
+          )
         <> " WHERE b.registration_id = r.registration_id AND NOT ("
         <> overdueOrder "h"
         <> "))"
@@ -908,12 +916,12 @@ findRegistrations db owner now = do
     found :: RegistrationRow :. Only (Maybe Text) -> Either Text (NameRegistration, Maybe RegistrationId)
     found (row :. Only holder) = (\r -> (r, RegistrationId <$> holder)) <$> toRegistration row
     newestFirst = " ORDER BY r.created_at DESC, r.registration_id DESC"
-    withBalance = " AND EXISTS (SELECT 1 FROM sx_badge_service_name_balances b WHERE b.registration_id = r.registration_id AND b.amount > 0)"
+    withBalance = mkQuery " AND EXISTS (SELECT 1 FROM @name_balances b WHERE b.registration_id = r.registration_id AND b.amount > 0)"
 
 isLabelRegistering :: DB.Connection -> LabelHash -> IO Bool
 isLabelRegistering db (LabelHash lh) =
   not . null
-    <$> ( DB.query db "SELECT 1 FROM sx_badge_service_name_registrations WHERE label_hash = ? AND phase = ? LIMIT 1" (Binary lh, PRegistering) ::
+    <$> ( DB.query db (mkQuery "SELECT 1 FROM @name_registrations WHERE label_hash = ? AND phase = ? LIMIT 1") (Binary lh, PRegistering) ::
             IO [Only Int]
         )
 
@@ -923,7 +931,7 @@ activeRegistrations db =
   map (RegistrationId . fromOnly)
     <$> DB.query
       db
-      "SELECT registration_id FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id"
+      (mkQuery "SELECT registration_id FROM @name_registrations WHERE phase IN (?,?,?,?) ORDER BY created_at, registration_id")
       (PQueued, PCommitting, PCommitted, PRegistering)
 
 -- | Unpaid orders whose invoice expired before the cutoff, without a recorded payment.
@@ -932,41 +940,45 @@ unpaidCleanupCandidates db expiredBefore =
   map (\(rid, invId, ref) -> (RegistrationId rid, InvoiceId invId, ref))
     <$> DB.query
       db
-      [sql|
+      ( mkQuery
+          [Raw.r|
         SELECT r.registration_id, ni.invoice_id, ni.provider_ref
-        FROM sx_badge_service_name_registrations r
-        JOIN sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id
-        JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id
+        FROM @name_registrations r
+        JOIN @name_invoices ni ON ni.registration_id = r.registration_id
+        JOIN @invoices i ON i.invoice_id = ni.invoice_id
         WHERE r.phase = ? AND i.expires_at < ?
-          AND NOT EXISTS (SELECT 1 FROM sx_badge_service_payments p WHERE p.invoice_id = ni.invoice_id)
+          AND NOT EXISTS (SELECT 1 FROM @payments p WHERE p.invoice_id = ni.invoice_id)
         ORDER BY i.expires_at, r.registration_id
       |]
+      )
       (PUnpaid, truncateToSecond expiredBefore)
 
 -- | Deletes an unpaid registration and its invoice, unless a payment was recorded for it or it holds a balance.
 deleteUnpaidRegistration :: DB.Connection -> RegistrationId -> IO (Either CleanupKept ())
 deleteUnpaidRegistration db (RegistrationId rid) =
-  DB.query db "SELECT registration_id FROM sx_badge_service_name_balances WHERE reserved_by = ?" (Only rid) >>= \case
+  DB.query db (mkQuery "SELECT registration_id FROM @name_balances WHERE reserved_by = ?") (Only rid) >>= \case
     Only source : _ -> pure $ Left $ CKHolder $ RegistrationId source
     [] ->
-      DB.query db "SELECT ni.invoice_id FROM sx_badge_service_name_registrations r LEFT JOIN sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id WHERE r.registration_id = ?" (Only rid) >>= \case
+      DB.query db (mkQuery "SELECT ni.invoice_id FROM @name_registrations r LEFT JOIN @name_invoices ni ON ni.registration_id = r.registration_id WHERE r.registration_id = ?") (Only rid) >>= \case
         [] -> pure $ Left CKGone
         invoiceIds -> do
           deleted <-
             executeChanging
               db
-              [sql|
-                DELETE FROM sx_badge_service_name_registrations
+              ( mkQuery
+                  [Raw.r|
+                DELETE FROM @name_registrations
                 WHERE registration_id = ? AND phase = ?
                   AND NOT EXISTS (
-                    SELECT 1 FROM sx_badge_service_name_invoices ni
-                    JOIN sx_badge_service_payments p ON p.invoice_id = ni.invoice_id
+                    SELECT 1 FROM @name_invoices ni
+                    JOIN @payments p ON p.invoice_id = ni.invoice_id
                     WHERE ni.registration_id = ?
                   )
               |]
+              )
               (rid, PUnpaid, rid)
           if deleted > 0
-            then Right () <$ mapM_ (DB.execute db "DELETE FROM sx_badge_service_invoices WHERE invoice_id = ?" . Only) [invId | Only (Just invId) <- invoiceIds :: [Only (Maybe Text)]]
+            then Right () <$ mapM_ (DB.execute db (mkQuery "DELETE FROM @invoices WHERE invoice_id = ?") . Only) [invId | Only (Just invId) <- invoiceIds :: [Only (Maybe Text)]]
             else pure $ Left CKPaid
 
 -- | Code orders failed before the cutoff that still hold their unspent code.
@@ -975,13 +987,15 @@ failedCodeOrdersBefore db cutoff =
   map (\(rid, codeId) -> (RegistrationId rid, codeId))
     <$> DB.query
       db
-      [sql|
+      ( mkQuery
+          [Raw.r|
         SELECT r.registration_id, c.name_prepaid_code_id
-        FROM sx_badge_service_name_registrations r
-        JOIN sx_badge_service_name_prepaid_codes c ON c.reserved_by = r.registration_id
+        FROM @name_registrations r
+        JOIN @name_prepaid_codes c ON c.reserved_by = r.registration_id
         WHERE r.phase = ? AND r.failed_at < ? AND c.spent_at IS NULL
         ORDER BY r.failed_at, r.registration_id
       |]
+      )
       (PFailed, truncateToSecond cutoff)
 
 -- | The hold, unless it is overdue, which reads as none.
@@ -1006,10 +1020,12 @@ getBalance db (RegistrationId rid) now =
           <> " THEN 1 ELSE 0 END, CASE WHEN i.invoice_id IS NOT NULL"
           <> unfunded
           <> " THEN 0 ELSE 1 END, b.refunded_at"
-          <> " FROM sx_badge_service_name_balances b"
-          <> " LEFT JOIN sx_badge_service_name_registrations h ON h.registration_id = b.reserved_by"
-          <> " LEFT JOIN sx_badge_service_name_invoices ni ON ni.registration_id = b.reserved_by"
-          <> " LEFT JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id"
+          <> mkQuery
+            ( " FROM @name_balances b"
+                <> " LEFT JOIN @name_registrations h ON h.registration_id = b.reserved_by"
+                <> " LEFT JOIN @name_invoices ni ON ni.registration_id = b.reserved_by"
+                <> " LEFT JOIN @invoices i ON i.invoice_id = ni.invoice_id"
+            )
           <> " WHERE b.registration_id = ?"
       )
       (PUnpaid, invoiceStatusText ISPaid, truncateToSecond now, rid)
@@ -1032,7 +1048,7 @@ balanceByReference :: DB.Connection -> Text -> UTCTime -> IO (Maybe (Registratio
 balanceByReference db ref now =
   DB.query
     db
-    "SELECT registration_id FROM sx_badge_service_name_registrations WHERE registration_id = ? UNION ALL SELECT registration_id FROM sx_badge_service_name_invoices WHERE invoice_id = ?"
+    (mkQuery "SELECT registration_id FROM @name_registrations WHERE registration_id = ? UNION ALL SELECT registration_id FROM @name_invoices WHERE invoice_id = ?")
     (ref, ref)
     >>= \case
       Only rid : _ -> (\balance -> Just (RegistrationId rid, balance)) <$> getBalance db (RegistrationId rid) now
@@ -1054,18 +1070,18 @@ balanceChain db rid =
 
 invoiceAmount :: DB.Connection -> InvoiceId -> IO Int
 invoiceAmount db (InvoiceId invId) =
-  maybeFirstRow' 0 fromOnly $ DB.query db "SELECT amount FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId)
+  maybeFirstRow' 0 fromOnly $ DB.query db (mkQuery "SELECT amount FROM @invoices WHERE invoice_id = ?") (Only invId)
 
 providerRef :: DB.Connection -> InvoiceId -> IO (Maybe Text)
 providerRef db (InvoiceId invId) =
-  maybeFirstRow fromOnly $ DB.query db "SELECT provider_ref FROM sx_badge_service_name_invoices WHERE invoice_id = ?" (Only invId)
+  maybeFirstRow fromOnly $ DB.query db (mkQuery "SELECT provider_ref FROM @name_invoices WHERE invoice_id = ?") (Only invId)
 
 lateCredits :: DB.Connection -> InvoiceId -> IO [LateCredit]
 lateCredits db (InvoiceId invId) =
   map toLateCredit
     <$> DB.query
       db
-      "SELECT invoice_id, credit_no, registration_id, units, invoice_rate, current_rate, rate_used, cents FROM sx_badge_service_name_late_credits WHERE invoice_id = ? ORDER BY credit_no"
+      (mkQuery "SELECT invoice_id, credit_no, registration_id, units, invoice_rate, current_rate, rate_used, cents FROM @name_late_credits WHERE invoice_id = ? ORDER BY credit_no")
       (Only invId)
   where
     toLateCredit (inv, lcCreditNo, reg, lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents) =
@@ -1076,14 +1092,16 @@ creditBalance :: DB.Connection -> RegistrationId -> Int -> UTCTime -> IO ()
 creditBalance db (RegistrationId rid) cents now' =
   DB.execute
     db
-    [sql|
-      INSERT INTO sx_badge_service_name_balances (registration_id, amount, credited, refunded, created_at, updated_at)
+    ( mkQuery
+        [Raw.r|
+      INSERT INTO @name_balances (registration_id, amount, credited, refunded, created_at, updated_at)
       VALUES (?,?,?,0,?,?)
       ON CONFLICT (registration_id) DO UPDATE SET
-        amount = sx_badge_service_name_balances.amount + excluded.amount,
-        credited = sx_badge_service_name_balances.credited + excluded.credited,
+        amount = @name_balances.amount + excluded.amount,
+        credited = @name_balances.credited + excluded.credited,
         updated_at = excluded.updated_at
     |]
+    )
     (rid, cents, cents, now, now)
   where
     now = truncateToSecond now'
@@ -1094,7 +1112,7 @@ spendBalance db (RegistrationId rid) price seen now =
   (> 0)
     <$> executeChanging
       db
-      "UPDATE sx_badge_service_name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ? AND amount = ? AND amount >= ? AND ? > 0 AND reserved_by IS NULL"
+      (mkQuery "UPDATE @name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ? AND amount = ? AND amount >= ? AND ? > 0 AND reserved_by IS NULL")
       (price, now, rid, seen, price, price)
 
 -- | Held by a difference order, where the amount is the one seen, above 0, and nothing holds it.
@@ -1103,7 +1121,7 @@ holdBalance db (RegistrationId rid) seen (RegistrationId holder) now =
   (> 0)
     <$> executeChanging
       db
-      "UPDATE sx_badge_service_name_balances SET reserved_by = ?, updated_at = ? WHERE registration_id = ? AND amount = ? AND ? > 0 AND reserved_by IS NULL"
+      (mkQuery "UPDATE @name_balances SET reserved_by = ?, updated_at = ? WHERE registration_id = ? AND amount = ? AND ? > 0 AND reserved_by IS NULL")
       (holder, now, rid, seen, seen)
 
 -- | The holder's hold spent and cleared, where this holder holds the balance and it still has the cents, above 0.
@@ -1112,7 +1130,7 @@ spendHeldBalance db (RegistrationId holder) used now =
   (> 0)
     <$> executeChanging
       db
-      "UPDATE sx_badge_service_name_balances SET amount = amount - ?, reserved_by = NULL, updated_at = ? WHERE reserved_by = ? AND amount >= ? AND ? > 0"
+      (mkQuery "UPDATE @name_balances SET amount = amount - ?, reserved_by = NULL, updated_at = ? WHERE reserved_by = ? AND amount >= ? AND ? > 0")
       (used, truncateToSecond now, holder, used, used)
 
 releaseHeldBalance :: DB.Connection -> RegistrationId -> UTCTime -> IO Bool
@@ -1120,7 +1138,7 @@ releaseHeldBalance db (RegistrationId holder) now =
   (> 0)
     <$> executeChanging
       db
-      "UPDATE sx_badge_service_name_balances SET reserved_by = NULL, updated_at = ? WHERE reserved_by = ?"
+      (mkQuery "UPDATE @name_balances SET reserved_by = NULL, updated_at = ? WHERE reserved_by = ?")
       (truncateToSecond now, holder)
 
 -- | All of the balance, where it is the cents given, above 0, and nothing holds it; refunded counts every refund.
@@ -1129,10 +1147,12 @@ refundBalance db (RegistrationId rid) cents now' =
   (> 0)
     <$> executeChanging
       db
-      [sql|
-        UPDATE sx_badge_service_name_balances SET amount = 0, refunded = refunded + ?, refunded_at = ?, updated_at = ?
+      ( mkQuery
+          [Raw.r|
+        UPDATE @name_balances SET amount = 0, refunded = refunded + ?, refunded_at = ?, updated_at = ?
         WHERE registration_id = ? AND amount = ? AND amount > 0 AND reserved_by IS NULL
       |]
+      )
       (cents, now, now, rid, cents)
   where
     now = truncateToSecond now'
@@ -1140,10 +1160,11 @@ refundBalance db (RegistrationId rid) cents now' =
 -- | A name invoice with its order, its invoice row and its payment row.
 lateFrom :: Query
 lateFrom =
-  " FROM sx_badge_service_name_invoices ni"
-    <> " JOIN sx_badge_service_name_registrations r ON r.registration_id = ni.registration_id"
-    <> " JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id"
-    <> " JOIN sx_badge_service_payments p ON p.invoice_id = ni.invoice_id"
+  mkQuery $
+    " FROM @name_invoices ni"
+      <> " JOIN @name_registrations r ON r.registration_id = ni.registration_id"
+      <> " JOIN @invoices i ON i.invoice_id = ni.invoice_id"
+      <> " JOIN @payments p ON p.invoice_id = ni.invoice_id"
 
 -- | Its order closed unpaid, whatever the invoice's status, since settlement queues only a live order; takes the unpaid phase.
 closedUnpaid :: Query
@@ -1166,7 +1187,7 @@ cryptoInvoice = " i.payment_crypto_currency IS NOT NULL"
 
 -- | No credit rows sum to 0, not NULL.
 creditedTotal :: Query -> Query
-creditedTotal column = " (SELECT " <> integerSum ("COALESCE(SUM(c." <> column <> "), 0)") <> " FROM sx_badge_service_name_late_credits c WHERE c.invoice_id = ni.invoice_id)"
+creditedTotal column = " (SELECT " <> integerSum ("COALESCE(SUM(c." <> column <> "), 0)") <> mkQuery " FROM @name_late_credits c WHERE c.invoice_id = ni.invoice_id)"
 
 integerSum :: Query -> Query
 #if defined(dbPostgres)
@@ -1223,7 +1244,7 @@ lateColumns =
     <> creditedTotal "units"
     <> ","
     <> creditedTotal "cents"
-    <> ", (SELECT COUNT(*) FROM sx_badge_service_name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at, i.amount, p.invoiced_units"
+    <> mkQuery ", (SELECT COUNT(*) FROM @name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at, i.amount, p.invoiced_units"
 
 type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, Int, Int, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, Int, Int, UTCTime, Int, Maybe Int64)
 
@@ -1245,11 +1266,13 @@ creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegi
   inserted <-
     executeChanging
       db
-      [sql|
-        INSERT INTO sx_badge_service_name_late_credits (invoice_id, credit_no, registration_id, units, invoice_rate, current_rate, rate_used, cents, created_at)
+      ( mkQuery
+          [Raw.r|
+        INSERT INTO @name_late_credits (invoice_id, credit_no, registration_id, units, invoice_rate, current_rate, rate_used, cents, created_at)
         VALUES (?,?,?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
       |]
+      )
       (invId, lcCreditNo, rid, lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents, now)
   when (inserted > 0) $ creditBalance db regId lcCents now
   pure $ inserted > 0
@@ -1326,7 +1349,7 @@ claimLateAlert db LateAlert {laState = LateCreditState {lsInvoice = InvoiceId in
   (> 0)
     <$> executeChanging
       db
-      ( "UPDATE sx_badge_service_name_invoices SET late_alerted_at = ?, late_alerted_units = ?, late_support = COALESCE(late_support, ?)"
+      ( mkQuery "UPDATE @name_invoices SET late_alerted_at = ?, late_alerted_units = ?, late_support = COALESCE(late_support, ?)"
           <> " WHERE invoice_id = ? AND late_alerted_at"
           <> notDistinctFrom
           <> "? AND late_alerted_units"
@@ -1338,26 +1361,29 @@ claimLateAlert db LateAlert {laState = LateCreditState {lsInvoice = InvoiceId in
 -- | The first reason given stays.
 setLateSupport :: DB.Connection -> InvoiceId -> LateSupport -> IO ()
 setLateSupport db (InvoiceId invId) support =
-  DB.execute db "UPDATE sx_badge_service_name_invoices SET late_support = COALESCE(late_support, ?) WHERE invoice_id = ?" (support, invId)
+  DB.execute db (mkQuery "UPDATE @name_invoices SET late_support = COALESCE(late_support, ?) WHERE invoice_id = ?") (support, invId)
 
 insertPrepaidCode :: DB.Connection -> NewPrepaidCode -> UTCTime -> IO (Either CodeHashTaken CodeId)
 insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, npcExpiresAt, npcIssuer} now = do
   inserted <-
     executeChanging
       db
-      [sql|
-        INSERT INTO sx_badge_service_name_prepaid_codes (code_hash, min_length, years, code_payment_status, expires_at, created_at, issued_in_group)
+      ( mkQuery
+          [Raw.r|
+        INSERT INTO @name_prepaid_codes (code_hash, min_length, years, code_payment_status, expires_at, created_at, issued_in_group)
         VALUES (?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
       |]
+      )
       (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now, BI (npcIssuer == IssuedInGroup))
   if inserted > 0 then Right <$> insertedRowId db else pure $ Left CodeHashTaken
 
 prepaidCodeColumns :: Query
 prepaidCodeColumns =
-  [sql|
+  mkQuery
+    [Raw.r|
     SELECT name_prepaid_code_id, code_hash, min_length, years, code_payment_status, reserved_by, reserved_at, spent_at, revoked_at, expires_at, created_at
-    FROM sx_badge_service_name_prepaid_codes
+    FROM @name_prepaid_codes
   |]
 
 type PrepaidCodeRow = (Int64, Binary ByteString, Int, Int, BadgeCodePaymentStatus, Maybe Text, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime) :. Only UTCTime
@@ -1367,7 +1393,7 @@ toPrepaidCode ((pcId, Binary pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, 
   PrepaidCode {pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy = RegistrationId <$> reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt, pcCreatedAt}
 
 groupNameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
-groupNameCodesIssuedSince db since = maybeFirstRow' 0 fromOnly (DB.query db "SELECT COUNT(*) FROM sx_badge_service_name_prepaid_codes WHERE created_at >= ? AND issued_in_group = 1" (Only since))
+groupNameCodesIssuedSince db since = maybeFirstRow' 0 fromOnly (DB.query db (mkQuery "SELECT COUNT(*) FROM @name_prepaid_codes WHERE created_at >= ? AND issued_in_group = 1") (Only since))
 
 getPrepaidCode :: DB.Connection -> CodeHash -> IO (Maybe PrepaidCode)
 getPrepaidCode db codeHash =
@@ -1384,11 +1410,13 @@ reservePrepaidCode db codeId (RegistrationId rid) now' =
   (> 0)
     <$> executeChanging
       db
-      [sql|
-        UPDATE sx_badge_service_name_prepaid_codes SET reserved_by = ?, reserved_at = ?
+      ( mkQuery
+          [Raw.r|
+        UPDATE @name_prepaid_codes SET reserved_by = ?, reserved_at = ?
         WHERE name_prepaid_code_id = ? AND reserved_by IS NULL AND spent_at IS NULL AND revoked_at IS NULL
           AND code_payment_status <> ? AND (expires_at IS NULL OR expires_at > ?)
       |]
+      )
       (rid, now, codeId, CPSUnpaid, now)
   where
     now = truncateToSecond now'
@@ -1398,10 +1426,12 @@ releasePrepaidCode db codeId (RegistrationId rid) =
   (> 0)
     <$> executeChanging
       db
-      [sql|
-        UPDATE sx_badge_service_name_prepaid_codes SET reserved_by = NULL, reserved_at = NULL
+      ( mkQuery
+          [Raw.r|
+        UPDATE @name_prepaid_codes SET reserved_by = NULL, reserved_at = NULL
         WHERE name_prepaid_code_id = ? AND reserved_by = ? AND spent_at IS NULL
       |]
+      )
       (codeId, rid)
 
 -- | For a registration whose register went through: spends the code it holds, or one released and still usable; False otherwise.
@@ -1410,11 +1440,13 @@ spendLandedPrepaidCode db codeId (RegistrationId rid) now' =
   (> 0)
     <$> executeChanging
       db
-      [sql|
-        UPDATE sx_badge_service_name_prepaid_codes SET reserved_by = ?, reserved_at = COALESCE(reserved_at, ?), spent_at = ?
+      ( mkQuery
+          [Raw.r|
+        UPDATE @name_prepaid_codes SET reserved_by = ?, reserved_at = COALESCE(reserved_at, ?), spent_at = ?
         WHERE name_prepaid_code_id = ? AND spent_at IS NULL
           AND (reserved_by = ? OR (reserved_by IS NULL AND revoked_at IS NULL AND code_payment_status <> ? AND (expires_at IS NULL OR expires_at > ?)))
       |]
+      )
       (rid, now, now, codeId, rid, CPSUnpaid, now)
   where
     now = truncateToSecond now'
@@ -1425,7 +1457,7 @@ revokePrepaidCode db codeHash now = do
   revoked <-
     executeChanging
       db
-      "UPDATE sx_badge_service_name_prepaid_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL AND spent_at IS NULL"
+      (mkQuery "UPDATE @name_prepaid_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL AND spent_at IS NULL")
       (truncateToSecond now, Binary codeHash)
   (\code -> (maybe NoSuchCode (result revoked) code, code)) <$> getPrepaidCode db codeHash
   where
@@ -1447,11 +1479,13 @@ insertTransaction db for NewTransaction {ntxRaw, ntxHash, ntxNonce} now = do
   let (kind, rid, editId) = txKind for
   DB.execute
     db
-    [sql|
-      INSERT INTO sx_badge_service_name_transactions
+    ( mkQuery
+        [Raw.r|
+      INSERT INTO @name_transactions
         (registration_id, name_record_edit_id, kind, raw, tx_hash, registrar_nonce, sent_at, status)
       VALUES (?,?,?,?,?,?,?,?)
     |]
+    )
     (rid, editId, kind, Binary ntxRaw, txHashField ntxHash, int64 ntxNonce, truncateToSecond now, TSPending)
   insertedRowId db
 
@@ -1461,14 +1495,15 @@ recordTransactionOutcome db hash from status block =
   (> 0)
     <$> executeChanging
       db
-      "UPDATE sx_badge_service_name_transactions SET status = ?, mined_block = ? WHERE tx_hash = ? AND status = ?"
+      (mkQuery "UPDATE @name_transactions SET status = ?, mined_block = ? WHERE tx_hash = ? AND status = ?")
       (status, int64 <$> block, txHashField hash, from)
 
 transactionColumns :: Query
 transactionColumns =
-  [sql|
+  mkQuery
+    [Raw.r|
     SELECT name_transaction_id, kind, registration_id, name_record_edit_id, raw, tx_hash, registrar_nonce, sent_at, mined_block, status
-    FROM sx_badge_service_name_transactions
+    FROM @name_transactions
   |]
 
 type TransactionRow = (Int64, Text, Maybe Text, Maybe Int64, Binary ByteString, Binary ByteString, Int64, UTCTime, Maybe Int64, TxStatus)
@@ -1514,11 +1549,13 @@ insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreCha
   inserted <-
     executeChanging
       db
-      [sql|
-        INSERT INTO sx_badge_service_name_record_edits (label_hash, owner, nonce, body_hash, state, created_at)
+      ( mkQuery
+          [Raw.r|
+        INSERT INTO @name_record_edits (label_hash, owner, nonce, body_hash, state, created_at)
         VALUES (?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
       |]
+      )
       (Binary lh, Binary $ unAddress nreOwner, int64 $ scNonce $ L.head nreChanges, Binary nreBodyHash, pendingEdit, truncateToSecond now)
   if inserted > 0
     then do
@@ -1530,7 +1567,7 @@ insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreCha
     insertChange editId SignedChange {scChange, scNonce, scDeadline, scSignature} =
       DB.execute
         db
-        "INSERT INTO sx_badge_service_name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) VALUES (?,?,?,?,?,?)"
+        (mkQuery "INSERT INTO @name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) VALUES (?,?,?,?,?,?)")
         (editId, int64 scNonce, key, value, int64 scDeadline, Binary $ serializeSignature scSignature)
       where
         (key, value) = case scChange of
@@ -1539,9 +1576,10 @@ insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreCha
 
 recordEditColumns :: Query
 recordEditColumns =
-  [sql|
+  mkQuery
+    [Raw.r|
     SELECT name_record_edit_id, label_hash, owner, body_hash, state, revert, mined_tx, created_at
-    FROM sx_badge_service_name_record_edits
+    FROM @name_record_edits
   |]
 
 type RecordEditRow = (Int64, Binary ByteString, Binary ByteString, Binary ByteString, Text, Maybe Text, Maybe (Binary ByteString), UTCTime)
@@ -1551,7 +1589,7 @@ type ChangeRow = (Int64, Maybe Text, Maybe Text, Int64, Binary ByteString)
 -- | An edit's row with its changes, in nonce order.
 readRecordEdit :: DB.Connection -> RecordEditRow -> IO RecordEdit
 readRecordEdit db row@(reId, _, _, _, _, _, _, _) = do
-  changes <- DB.query db "SELECT nonce, record_key, record_value, deadline, signature FROM sx_badge_service_name_record_changes WHERE name_record_edit_id = ? ORDER BY nonce" (Only reId)
+  changes <- DB.query db (mkQuery "SELECT nonce, record_key, record_value, deadline, signature FROM @name_record_changes WHERE name_record_edit_id = ? ORDER BY nonce") (Only reId)
   either (E.throwIO . StoreDecodeError) pure $ toRecordEdit row changes
 
 toRecordEdit :: RecordEditRow -> [ChangeRow] -> Either Text RecordEdit
@@ -1593,7 +1631,7 @@ settleRecordEdit db editId state =
   (> 0)
     <$> executeChanging
       db
-      "UPDATE sx_badge_service_name_record_edits SET state = ?, revert = ?, mined_tx = ? WHERE name_record_edit_id = ? AND state = ?"
+      (mkQuery "UPDATE @name_record_edits SET state = ?, revert = ?, mined_tx = ? WHERE name_record_edit_id = ? AND state = ?")
       (stateText, revert, txHashField <$> minedTx, editId, pendingEdit)
   where
     (stateText, revert, minedTx) = case state of
@@ -1602,13 +1640,13 @@ settleRecordEdit db editId state =
       ESReverted name -> (revertedEdit, name, Nothing)
 
 pendingEditIds :: DB.Connection -> IO [RecordEditId]
-pendingEditIds db = map fromOnly <$> DB.query db "SELECT name_record_edit_id FROM sx_badge_service_name_record_edits WHERE state = ? ORDER BY name_record_edit_id" (Only pendingEdit)
+pendingEditIds db = map fromOnly <$> DB.query db (mkQuery "SELECT name_record_edit_id FROM @name_record_edits WHERE state = ? ORDER BY name_record_edit_id") (Only pendingEdit)
 
 deleteUnsentEdit :: DB.Connection -> RecordEditId -> IO ()
 deleteUnsentEdit db editId =
   DB.execute
     db
-    "DELETE FROM sx_badge_service_name_record_edits WHERE name_record_edit_id = ? AND state = ? AND NOT EXISTS (SELECT 1 FROM sx_badge_service_name_transactions WHERE name_record_edit_id = ?)"
+    (mkQuery "DELETE FROM @name_record_edits WHERE name_record_edit_id = ? AND state = ? AND NOT EXISTS (SELECT 1 FROM @name_transactions WHERE name_record_edit_id = ?)")
     (editId, pendingEdit, editId)
 
 -- | When each edit relayed for the name since the given time was sent, oldest first.
@@ -1617,40 +1655,44 @@ relayedEditTimes db (LabelHash lh) since =
   map fromOnly
     <$> DB.query
       db
-      "SELECT created_at FROM sx_badge_service_name_record_edits WHERE label_hash = ? AND created_at > ? ORDER BY created_at"
+      (mkQuery "SELECT created_at FROM @name_record_edits WHERE label_hash = ? AND created_at > ? ORDER BY created_at")
       (Binary lh, truncateToSecond since)
 
 getTermsText :: DB.Connection -> TermsHash -> IO (Maybe ByteString)
 getTermsText db termsHash =
   maybeFirstRow (\(Only (Binary text)) -> text) $
-    DB.query db "SELECT terms_text FROM sx_badge_service_name_terms WHERE terms_hash = ?" (Only $ Binary termsHash)
+    DB.query db (mkQuery "SELECT terms_text FROM @name_terms WHERE terms_hash = ?") (Only $ Binary termsHash)
 
 setTermsText :: DB.Connection -> TermsHash -> Text -> IO ()
 setTermsText db termsHash text =
   DB.execute
     db
-    [sql|
-      INSERT INTO sx_badge_service_name_terms (terms_hash, terms_text) VALUES (?,?)
+    ( mkQuery
+        [Raw.r|
+      INSERT INTO @name_terms (terms_hash, terms_text) VALUES (?,?)
       ON CONFLICT (terms_hash) DO UPDATE SET terms_text = excluded.terms_text
     |]
+    )
     (Binary termsHash, Binary $ encodeUtf8 text)
 
 namesCounts :: DB.Connection -> IO NamesCounts
 namesCounts db = do
-  ncPhases <- DB.query_ db "SELECT phase, COUNT(*) FROM sx_badge_service_name_registrations GROUP BY phase"
+  ncPhases <- DB.query_ db (mkQuery "SELECT phase, COUNT(*) FROM @name_registrations GROUP BY phase")
   DB.query
     db
-    [sql|
+    ( mkQuery
+        [Raw.r|
       SELECT
-        (SELECT MIN(updated_at) FROM sx_badge_service_name_registrations WHERE phase IN (?,?,?) OR (phase = ? AND label IS NOT NULL)),
-        (SELECT COUNT(DISTINCT registrar_nonce) FROM sx_badge_service_name_transactions WHERE status = ?),
-        (SELECT MIN(sent_at) FROM sx_badge_service_name_transactions WHERE status = ?),
-        (SELECT COUNT(*) FROM sx_badge_service_name_invoices ni JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id WHERE i.status = ?),
-        (SELECT COUNT(*) FROM sx_badge_service_name_balances WHERE reserved_by IS NOT NULL),
-        (SELECT COALESCE(SUM(amount), 0) FROM sx_badge_service_name_balances WHERE reserved_by IS NOT NULL),
-        (SELECT COUNT(*) FROM sx_badge_service_name_record_edits WHERE state = ?),
-        (SELECT MIN(created_at) FROM sx_badge_service_name_record_edits WHERE state = ?)
+        (SELECT MIN(updated_at) FROM @name_registrations WHERE phase IN (?,?,?) OR (phase = ? AND label IS NOT NULL)),
+        (SELECT COUNT(DISTINCT registrar_nonce) FROM @name_transactions WHERE status = ?),
+        (SELECT MIN(sent_at) FROM @name_transactions WHERE status = ?),
+        (SELECT COUNT(*) FROM @name_invoices ni JOIN @invoices i ON i.invoice_id = ni.invoice_id WHERE i.status = ?),
+        (SELECT COUNT(*) FROM @name_balances WHERE reserved_by IS NOT NULL),
+        (SELECT COALESCE(SUM(amount), 0) FROM @name_balances WHERE reserved_by IS NOT NULL),
+        (SELECT COUNT(*) FROM @name_record_edits WHERE state = ?),
+        (SELECT MIN(created_at) FROM @name_record_edits WHERE state = ?)
     |]
+    )
     (PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, invoiceStatusText ISOpen, pendingEdit, pendingEdit)
     >>= \case
       [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit)] ->

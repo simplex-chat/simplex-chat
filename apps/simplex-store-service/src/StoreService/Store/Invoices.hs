@@ -28,6 +28,7 @@ module StoreService.Store.Invoices
     openInvoiceCounts,
     expireOverdueInvoice,
     lockInvoice,
+    mkQuery,
     unfundedQuery,
     newInvoiceId,
     readCatalogRows,
