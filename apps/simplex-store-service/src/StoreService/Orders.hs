@@ -109,22 +109,23 @@ settleOrder st waiters phases invId signal now' = do
   case outcome of
     Left e -> pure (Left e)
     Right (status, toPublish, name) -> do
+      let (publications, logs) = unzip $ map announced name
       -- after the commit, or a woken reader will not see the write
       atomically $ do
         case toPublish of
           PubStatus s -> publish waiters invId s
           PubPayment -> publishPayment waiters invId
           PubNothing -> pure ()
-        forM_ name $ \case
-          NOWritten rid v -> publishRegistration phases (rid, v)
-          _ -> pure ()
-      forM_ name $ \case
-        NOLate ref -> latePayment ref
-        NOHoldNotSpent ref source -> holdNotSpent ref source
-        NOLiveOrderExists ref -> liveOrderExists ref
-        NOWritten {} -> pure ()
+        sequence_ publications
+      sequence_ logs
       pure (Right status)
   where
+    announced :: NameOutcome -> (STM (), IO ())
+    announced = \case
+      NOWritten rid v -> (publishRegistration phases (rid, v), pure ())
+      NOLate ref -> (pure (), latePayment ref)
+      NOHoldNotSpent ref source -> (pure (), holdNotSpent ref source)
+      NOLiveOrderExists ref -> (pure (), liveOrderExists ref)
     now = truncateToSecond now'
     at = truncateToSecond (settledInstant signal now)
     settleRow db = \case
