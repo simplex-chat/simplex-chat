@@ -48,6 +48,8 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern P
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
+import System.Environment (lookupEnv)
+import System.Info (os)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 import UnliftIO (timeout)
@@ -98,6 +100,14 @@ it name test =
   Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
   where
     t = 180 * 1000000
+
+xitMacCI :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
+xitMacCI = ifCI (if os == "darwin" then xit else it) it
+
+ifCI :: HasCallStack => (HasCallStack => String -> a -> SpecWith b) -> (HasCallStack => String -> a -> SpecWith b) -> String -> a -> SpecWith b
+ifCI xrun run d t = do
+  ci <- runIO $ lookupEnv "CI"
+  (if ci == Just "true" then xrun else run) d t
 
 skip :: String -> SpecWith a -> SpecWith a
 skip = before_ . pendingWith
