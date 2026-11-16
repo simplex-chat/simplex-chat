@@ -9,11 +9,15 @@ simplexmq: cabal.project pins evgeny-simplex/simplexmq e684f063a, which adds:
 - FromField and ToField for Address, LabelHash and RecoverableSignature;
 - Ord LabelHash.
 
+cabal.project then pins A2's commit on top of e684f063a, for A2-3 and A2-17, in lines identical to A2's.
+
 scripts/nix/sha256map.nix changes once the commit is in simplex-chat/simplexmq; the reduced build reads no Nix map.
 
 A1-21: the registration, record edit and change rows of Names/Store.hs hold Address, LabelHash and RecoverableSignature; decodeAddress and decodeSignature go.
 
 A1-17: label turns keyed by LabelHash; withLabelTurns compares the hashes.
+
+A4-22: `nCommunity :: Map LabelHash Text`, filled by labelHash; communityFor and logNamePolicy look it up by the LabelHash.
 
 A1-14: USDCents for every cent amount of an order, a balance and a refund.
 
@@ -71,21 +75,25 @@ A6-5, wider margins:
 - testSharedHostLookup: "at once" is below fetchTimeout.
 - testConcurrentReads: the deadline 3 s.
 
-A6-6: NamesPhasesTests' held, woken and prompt stay; NamesOwnerTests' held, woken and within and NamesSpendTests' heldPoll and pollSeconds go; NamesOwnerTests' and NamesRecordsTests' bounded waits use WebTests' bounded.
+A6-6: NamesPhasesTests' held, woken and prompt stay; NamesOwnerTests' held, woken and within, NamesRecordsTests' within and NamesSpendTests' heldPoll and pollSeconds go; their bounded waits use WebTests' bounded.
 
 A6-7, each fixture once:
 - FakeEthNode: unhex and address.
 - NamesOrdersTests' exports: seconds, orderSeconds, keyA.
 - NamesContractsTests' exports: alice, gracePeriod, otherResolver, registry.
 
-A6-8, each JSON answer helper once, in WebTests: answerOf, decoding to the type the test reads; refusedWith with errorOnly.
+A6-8, each JSON answer helper once, in WebTests:
+- fieldOf: NamesOrdersTests' field, NamesRevealTests' field and NamesPhasesTests' key go; curried uses are sections of fieldOf.
+- answerOf, decoding to the type the test reads.
+- refusedWith, errorOnly inlined; the refused copies go.
+- NamesSearchTests' answers are objects.
 
 A6-9: coveredSpend and credit from NamesBalancesTests; stubRate from WebTests; invoice status by WebTests' invoiceStatus, as InvoiceStatus.
 
 A6-10: dropped, as proposed.
 
 A6-12:
-- `RegistrationView`, a record of the view's 31 fields, its JSON derived with `dropPrefix "vw"` and omitNothingFields off; balance, latePayment, acceptance and community stay JSON values.
-- registrationView returns it; its consumers encode it.
-- LateWait's JSON by enumJSON, in place of its TextEncoding.
+- `RegistrationView`, a record of the view's 31 fields, its ToJSON derived with `dropPrefix "vw"` and omitNothingFields off; balance, latePayment, acceptance and community stay JSON values.
+- registrationView returns it, built by the pure toRegistrationView; its consumers encode it.
+- LateWait's ToJSON by textToJSON of its TextEncoding.
 - testViewFields compares the view with an expected record; the invoice view keeps its key test.
