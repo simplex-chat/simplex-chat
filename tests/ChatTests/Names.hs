@@ -1,22 +1,14 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
 module ChatTests.Names where
 
-import APIDocs (testGenerate)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay, waitQueuedLinkUpdates)
 import ChatTests.Utils
 import Control.Concurrent.Async (concurrently_)
-import qualified Data.Aeson as J
-import qualified Data.Aeson.Key as JK
-import qualified Data.Aeson.KeyMap as JM
-import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Foldable (toList)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -24,11 +16,9 @@ import Data.Time.Clock (UTCTime)
 import NameResolver
 import Simplex.Chat.Controller (NamePrice (..), NameWarning (..))
 import Simplex.Chat.Library.Commands (nameRecordOrWarning)
-import Simplex.Chat.Mobile (chatParseMarkdown, chatSendCmd)
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), USDCents (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
-import Simplex.Messaging.Util (safeDecodeUtf8)
 import Test.Hspec hiding (it)
 
 chatNamesTests :: SpecWith TestParams
@@ -702,6 +692,7 @@ testPlanKnownNameStale = withAliceName $ \reg (shortLink, _) alice bob -> do
   registerName reg aliceSimplexName (aliceRecord shortLink)
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
+  nameFixture "plan-known" bob "@alice.simplex"
 
 testPlanNameResolvedEveryCall :: HasCallStack => TestParams -> IO ()
 testPlanNameResolvedEveryCall = withAliceName $ \reg (shortLink, _) _alice bob -> do
@@ -798,6 +789,7 @@ testPlanKnownNameMovedToKnownChat = withKnownAliceName $ \reg alice bob cath -> 
   bob ##> "/_connect plan 1 @alice.simplex"
   knownContactPlan "cath" "alice.simplex" bob
   bob <## "known contact @alice"
+  nameFixture "plan-moved-known" bob "@alice.simplex"
   alice ##> ("/c " <> cathLink)
   cath <#? alice
   cath ##> "/ac alice"
@@ -829,6 +821,8 @@ testPlanKnownNameMovedToBusinessChat = withKnownAliceName $ \reg _alice bob cath
   bob <## "business address: known business #cath"
   bob <## "use #cath <message> to send messages"
   bob <## "known contact @alice"
+  nameFixture "plan-moved-business" bob "@alice.simplex"
+  nameMovedFixture "event-name-moved" bob ["alice"] ["cath"]
   bob ##> "/_connect plan 1 @alice.simplex resolve=never"
   bob <## "business address: known business #cath"
   bob <## "use #cath <message> to send messages"
@@ -920,6 +914,7 @@ testPlanNameChannelNoRelays = withChannelChats $ \reg alice cath bob -> do
   bob ##> "/_connect plan 1 team.simplex"
   bob <## "group link: channel has no active relays, please try to join later"
   bob <## "You can also connect to @team.simplex in direct chat"
+  apiFixture "names/plan-channel-no-relays" bob [] ["team.simplex", "@team.simplex"] ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]
   alice ##> "/_set domain 1 team.simplex"
   alice <## "new contact address set"
   bob ##> "/_connect plan 1 @team.simplex"
@@ -953,6 +948,8 @@ testPlanNameLinkServer ps = flip withTeamChats ps $ \reg contactLink channelLink
 
 testPlanLocalChats :: HasCallStack => TestParams -> IO ()
 testPlanLocalChats = withTeamChats $ \reg contactLink channelLink alice bob -> do
+  apiFixture "names/search-team" bob [] [] ["/_connect plan 1 @team.simplex resolve=never", "/_connect plan 1 #team.simplex resolve=never"]
+  apiFixture "names/plan-own-channel" alice [] ["#team.simplex"] ["/_connect plan 1 #team.simplex"]
   bob ##> "/_connect plan 1 team.simplex resolve=never"
   knownGroupPlan "team" "team" bob
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
@@ -1020,6 +1017,7 @@ testPlanNameOtherKindMoved = withTeamChats $ \reg _contactLink channelLink alice
   bob ##> "/_connect plan 1 team.simplex"
   knownGroupPlan "team" "team" bob
   bob <## "You can also connect to @team.simplex in direct chat"
+  apiFixture "names/plan-other-kind" bob [] ["team.simplex", "@team.simplex"] ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]
   bob ##> "/_connect plan 1 @team.simplex"
   bob <## "contact address: ok to connect"
   _ <- getTermLine bob
@@ -1110,31 +1108,3 @@ testNameRecordOrWarning = do
 
 utc :: Int64 -> UTCTime
 utc = roundedToUTCTime . RoundedSystemTime
-
-nameFixture :: String -> TestCC -> String -> IO ()
-nameFixture fixture TestCC {chatController = cc} name = do
-  response <- stableJSON <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))
-  markdown <- decodeJSON $ chatParseMarkdown $ B.pack name
-  testGenerate ("tests/fixtures/api/names/" <> fixture <> ".json") $
-    prettyJSON $ J.object ["commands" J..= J.object [JK.fromString cmd J..= response], "markdown" J..= J.object [JK.fromString name J..= markdown]]
-  where
-    cmd = "/_connect plan 1 " <> name
-    decodeJSON :: LB.ByteString -> IO J.Value
-    decodeJSON = either fail pure . J.eitherDecode
-    stableJSON = \case
-      J.Object o -> J.Object $ JM.mapWithKey stableField o
-      J.Array a -> J.Array $ fmap stableJSON a
-      v -> v
-      where
-        stableField k v
-          | k `elem` ["createdAt", "updatedAt", "chatTs"] = J.String "1970-01-01T00:00:00Z"
-          | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink"] = J.String $ JK.toText k
-          | otherwise = stableJSON v
-    prettyJSON = (<> "\n") . pretty ""
-      where
-        pretty indent = \case
-          J.Object o | not (JM.null o) -> block indent "{" "}" [jsonText (J.String $ JK.toText k) <> ": " <> pretty (indent <> "  ") v | (k, v) <- JM.toList o]
-          J.Array a | not (null a) -> block indent "[" "]" (map (pretty $ indent <> "  ") $ toList a)
-          v -> jsonText v
-        block indent open close items = open <> "\n" <> T.intercalate ",\n" (map ((indent <> "  ") <>) items) <> "\n" <> indent <> close
-        jsonText = safeDecodeUtf8 . LB.toStrict . J.encode
