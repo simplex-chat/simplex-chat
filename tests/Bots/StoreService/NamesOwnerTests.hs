@@ -133,8 +133,8 @@ serveOwner ctx@Ctx {cOrders = orders, cWeb = web} action = do
 ownerRoutes :: OrdersEnv -> HttpEnv -> [Text] -> Maybe Route
 ownerRoutes orders http = \case
   ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = findLimit, rHandler = findHandler orders}
-  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders http holdMicros rid}
-  ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler orders rid}
+  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders http holdMicros (RegistrationId rid)}
+  ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler orders (RegistrationId rid)}
   _ -> Nothing
 
 signWith :: Ctx -> Secp256k1PrivateKey -> ByteString -> IO Text

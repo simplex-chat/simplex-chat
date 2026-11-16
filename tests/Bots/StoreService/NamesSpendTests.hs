@@ -137,8 +137,8 @@ serveSpend ctx@Ctx {cOrders, cWeb} action = do
   let routes :: [Text] -> Maybe Route
       routes = \case
         ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = Http.findLimit, rHandler = findHandler cOrders}
-        ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler cOrders (weHttp cWeb) (weConfig cWeb) (weProviders cWeb) (weWaiters cWeb) rid}
-        ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders (weHttp cWeb) holdMicros rid}
+        ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler cOrders (weHttp cWeb) (weConfig cWeb) (weProviders cWeb) (weWaiters cWeb) (RegistrationId rid)}
+        ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders (weHttp cWeb) holdMicros (RegistrationId rid)}
         _ -> Nothing
       app :: Application
       app req respond = fromMaybe (webApp cWeb req respond) (namesApp (weHttp cWeb) routes req respond)

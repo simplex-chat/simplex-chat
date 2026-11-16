@@ -96,9 +96,9 @@ withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
   let web = cWeb {weOrders = Just cOrders}
       routes = \case
-        ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders (weHttp web) holdMicros rid}
-        ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler cOrders rid}
-        ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler cOrders rid}
+        ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders (weHttp web) holdMicros (RegistrationId rid)}
+        ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler cOrders (RegistrationId rid)}
+        ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler cOrders (RegistrationId rid)}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   mgr <- newManager defaultManagerSettings

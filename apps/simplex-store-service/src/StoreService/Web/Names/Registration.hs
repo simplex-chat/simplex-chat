@@ -44,8 +44,8 @@ import StoreService.Web.Names.Codes (codeRefusalResponse)
 import Text.Read (readMaybe)
 
 -- | GET /api/registration/:id, held while its version is seenVersion.
-registrationHandler :: OrdersEnv -> HttpEnv -> Int -> Text -> Request -> Respond -> IO ResponseReceived
-registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold ridText req respond =
+registrationHandler :: OrdersEnv -> HttpEnv -> Int -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} http hold rid req respond =
   readNow >>= \case
     Nothing -> respond notFound
     Just (now, r@NameRegistration {nrVersion})
@@ -54,7 +54,6 @@ registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} 
             >>= maybe (respond holdsFull) (const $ readNow >>= maybe (respond notFound) answer)
       | otherwise -> answer (now, r)
   where
-    rid = RegistrationId ridText
     readNow = oeNow >>= \now -> fmap (now,) <$> withTransaction oeStore (`getRegistration` rid)
     answer (now, r) = respond . jsonResponse status200 =<< registrationView oeStore oeConfig oeContracts now (registrationAt now r)
 
@@ -66,8 +65,8 @@ data RevealDecision
   | RDGone
 
 -- | POST /api/registration/:id/reveal, its checks in the contract's order, from the stored commitment in the name's turn.
-revealHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
-revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, oeNow} ridText req respond =
+revealHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, oeNow} rid req respond =
   withTransaction oeStore (`getRegistration` rid) >>= \case
     Nothing -> respond notFound
     Just NameRegistration {nrLabelHash} ->
@@ -75,7 +74,6 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
         Just body | Just (J.Object o) <- J.decode body, Just signed <- parseSignedLabel o -> withLabelTurn oeTurns nrLabelHash (decide nrLabelHash o signed) >>= answer
         _ -> answer $ RDRefused RVBadRequest Nothing
   where
-    rid = RegistrationId ridText
     decide turnHash o signed = do
       now <- oeNow
       withTransaction oeStore (`getRegistration` rid) >>= \case
@@ -114,13 +112,12 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
     published = mapM_ (atomically . publish oePhases rid)
 
 -- | POST /api/registration/:id/retry, Try again in the name's turn; the publish and the answer come after the turn.
-retryHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
-retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} ridText _ respond =
+retryHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} rid _ respond =
   withTransaction oeStore (`getRegistration` rid) >>= \case
     Nothing -> respond notFound
     Just NameRegistration {nrLabelHash} -> withLabelTurn oeTurns nrLabelHash (decide nrLabelHash) >>= maybe (respond notFound) answer
   where
-    rid = RegistrationId ridText
     decide turnHash = withTransaction oeStore (`getRegistration` rid) >>= traverse (inTurn turnHash)
     inTurn turnHash r
       -- moved to another name while this request waited for the turn

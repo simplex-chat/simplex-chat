@@ -243,12 +243,11 @@ parseCodeOrder o = do
 
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
 -- under the new name's turn and then the balance's.
-spendHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> Request -> Respond -> IO ResponseReceived
-spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg providers waiters ridText req respond
+spendHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg providers waiters source req respond
   | nCodesOnly oeConfig = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
-    source = RegistrationId ridText
     what = "POST /api/registration/:id/spend"
     refuse = refused what
     requested = \case
