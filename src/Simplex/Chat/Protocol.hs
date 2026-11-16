@@ -815,6 +815,11 @@ isReport = \case
   MCReport {} -> True
   _ -> False
 
+dropLinkOwnerSig :: MsgContent -> MsgContent
+dropLinkOwnerSig = \case
+  MCChat {text, chatLink} -> MCChat {text, chatLink, ownerSig = Nothing}
+  mc -> mc
+
 msgContentTag :: MsgContent -> MsgContentTag
 msgContentTag = \case
   MCText _ -> MCText_
