@@ -35,7 +35,7 @@ import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord (..), NameRegistration (..), NameReservedReason, NameResponse (..), USDCents (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), labelHash)
-import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 
 data TestNameAnswer = AnswerRegistration NameRegistration | AnswerFails
 
@@ -70,7 +70,7 @@ registerAnswer reg ni a = atomically $ modifyTVar' reg $ M.insert (registryKey n
 registerExpiredName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()
 registerExpiredName reg ni = registerExpiredName' reg ni (Just $ RoundedSystemTime 4070952000)
 
-registerExpiredName' :: NameRegistry -> SimplexNameInfo -> Maybe RoundedSystemTime -> NameRecord -> IO ()
+registerExpiredName' :: NameRegistry -> SimplexNameInfo -> Maybe SystemSeconds -> NameRecord -> IO ()
 registerExpiredName' reg ni graceUntil nameRecord =
   registerAnswer reg ni $ AnswerRegistration NRRegistered {expires = Just $ RoundedSystemTime 1767268800, graceUntil, reservedReason_ = Nothing, nameRecord}
 
