@@ -191,7 +191,7 @@ chainAccepts Records {rsChain, rsContracts} EditRequest {erLabelHash, erChanges}
     refused = pure . Just . EARefused
 
 -- | Left when the name's yearly limit or hourly cap is used up, checked again under the name's turn against a concurrent edit.
--- Right Nothing when a pending or mined edit holds the first nonce. A new edit is claimed before its row commits, so the lane skips it.
+-- Right Nothing when a pending or mined edit holds the first nonce.
 insertEdit :: Records -> EditRequest -> Address -> BodyHash -> IO (Either EditAnswer (Maybe RecordEditId))
 insertEdit rs@Records {rsStore, rsTurns, rsEditsPerYear, rsNow, rsClaimed} EditRequest {erLabelHash, erChanges} signer bodyHash =
   withLabelTurn rsTurns erLabelHash $ do
@@ -210,7 +210,7 @@ insertEdit rs@Records {rsStore, rsTurns, rsEditsPerYear, rsNow, rsClaimed} EditR
   where
     edit = NewRecordEdit {nreLabelHash = erLabelHash, nreOwner = signer, nreChanges = erChanges, nreBodyHash = bodyHash}
 
--- | Nothing once sent. An edit that was not sent is answered and deleted while still claimed, so the lane cannot send it after.
+-- | An edit that was not sent is answered and deleted while still claimed, so the lane cannot send it after.
 sendNew :: Records -> RecordEditId -> IO (Maybe EditAnswer)
 sendNew rs editId = withStore rs (`getRecordEdit` editId) >>= maybe (pure Nothing) send
   where
