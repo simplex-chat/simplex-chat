@@ -612,9 +612,10 @@ testBadSignature = withOrders $ \ctx -> do
 testStaleTimestamp :: IO ()
 testStaleTimestamp = do
   let at offset = fromIntegral (toInteger (seconds orderTime) + offset)
-  forM_ [-601, 601] $ \offset -> Orders.checkTimestamp orderTime (at offset) `shouldBe` Left Orders.ORBadRequest
+  let stale = Left $ Orders.ORBadRequest "the timestamp is outside the window"
+  forM_ [-601, 601] $ \offset -> Orders.checkTimestamp orderTime (at offset) `shouldBe` stale
   -- near the top of Word64, where a sum in the timestamp's own type would wrap
-  Orders.checkTimestamp orderTime maxBound `shouldBe` Left Orders.ORBadRequest
+  Orders.checkTimestamp orderTime maxBound `shouldBe` stale
   forM_ [-600, 600] $ \offset -> Orders.checkTimestamp orderTime (at offset) `shouldBe` Right ()
 
 -- | The provider is slow, so without the name's turn both orders would pass the existing-order check and create an invoice.
@@ -663,11 +664,12 @@ testDurationSlack = withFakeEthNode $ \node -> do
       slack = fromIntegral slackSeconds
       early = durationAt orderTime
       later = addUTCTime 86400 termStart
-  forM_ [early + slack + 1, early - slack - 1] $ \d -> checked orderTime d `shouldBe` Left Orders.ORBadRequest
+      refused = Left $ Orders.ORBadRequest "the duration is not the paid years with the free days"
+  forM_ [early + slack + 1, early - slack - 1] $ \d -> checked orderTime d `shouldBe` refused
   forM_ [early + slack, early - slack] $ \d -> checked orderTime d `shouldBe` Right ()
   -- after the term start no free days are left, and fewer than the paid years are refused
   durationAt later `shouldBe` 2 * yearSeconds
-  forM_ [2 * yearSeconds - 1, 2 * yearSeconds + slack + 1] $ \d -> checked later d `shouldBe` Left Orders.ORBadRequest
+  forM_ [2 * yearSeconds - 1, 2 * yearSeconds + slack + 1] $ \d -> checked later d `shouldBe` refused
   checked later (2 * yearSeconds + slack) `shouldBe` Right ()
 
 testCatalogChanged :: IO ()

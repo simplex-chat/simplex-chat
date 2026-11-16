@@ -48,7 +48,7 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
   where
     requested = \case
       Just body | Just (J.Object o) <- J.decode body, Just request <- parseFind o -> found request
-      _ -> refuse ORBadRequest
+      _ -> refuse $ ORBadRequest "a malformed find request"
     found FindRequest {frOwner, frTimestamp, frSignature} = do
       now <- oeNow
       runExceptT (mapM_ ExceptT [checkSigner frOwner (findMessage frOwner frTimestamp) frSignature, pure $ checkTimestamp now frTimestamp]) >>= \case
@@ -90,7 +90,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
     rid = RegistrationId ridText
     requested = \case
       Just body | Just (J.Object o) <- J.decode body, Just request@(fields, _, _) <- parseOrderFields o -> either refuse (const $ signed request) (checkLength fields)
-      _ -> refuse ORBadRequest
+      _ -> refuse $ ORBadRequest "a malformed move"
     signed (fields, timestamp, signature) =
       withTransaction oeStore (`getRegistration` rid) >>= \case
         Nothing -> pure $ answerNow notFound
@@ -109,7 +109,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
     moveTo now r@NameRegistration {nrPhase} fields timestamp
       | orderFieldsOf r == fields = answerNow . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
-      | not (movable r) = refuse ORBadRequest
+      | not (movable r) = refuse $ ORBadRequest "the order is not movable"
       | nrPhase == PFailed =
           checkFailedOrder env r >>= \case
             Right () -> moveChecked now r fields

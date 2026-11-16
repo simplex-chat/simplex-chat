@@ -63,7 +63,7 @@ data InvoiceOrder = InvoiceOrder
 
 parseInvoiceOrder :: J.Object -> Either OrderRefusal InvoiceOrder
 parseInvoiceOrder o = do
-  order@InvoiceOrder {ioRequest} <- maybe (Left ORBadRequest) Right $ do
+  order@InvoiceOrder {ioRequest} <- maybe (Left $ ORBadRequest "a malformed order") Right $ do
     ioRequest <- parseOrderRequest o
     ioMethod <- case KM.lookup "method" o of
       Just (J.String t) -> textMethod t
@@ -183,6 +183,9 @@ registrationAnswer (RegistrationId rid) = jsonResponse status200 $ J.object ["re
 refused :: Text -> OrderRefusal -> IO Answer
 refused what refusal = answerNow (orderRefusalResponse refusal) <$ logNote (what <> " refused: " <> tshow refusal)
 
+notObject :: Text
+notObject = "a body that is not a JSON object within its size limit"
+
 answerOrder :: OrdersEnv -> Text -> OrderRequest -> ByteString -> (UTCTime -> NameRegistration -> IO Answer) -> (UTCTime -> IO Answer) -> IO Answer
 answerOrder OrdersEnv {oeStore, oeNow} what order hash resent new = do
   now <- oeNow
@@ -199,7 +202,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} provide
     what = "POST /api/name/register"
     ordered = \case
       Just body | Just (J.Object o) <- J.decode body -> either refuse withCode (parseCodeOrder o)
-      _ -> refuse ORBadRequest
+      _ -> refuse $ ORBadRequest notObject
     refuse = refused what
     withCode (order, codeText) =
       issuedCode codeText >>= \case
@@ -228,7 +231,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} provide
 
 parseCodeOrder :: J.Object -> Either OrderRefusal (OrderRequest, Text)
 parseCodeOrder o = do
-  order@(req, _) <- maybe (Left ORBadRequest) Right $ (,) <$> parseOrderRequest o <*> textField o "code"
+  order@(req, _) <- maybe (Left $ ORBadRequest "a malformed code order") Right $ (,) <$> parseOrderRequest o <*> textField o "code"
   order <$ checkLength (orFields req)
 
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
@@ -243,7 +246,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg pr
     refuse = refused what
     requested = \case
       Just body | Just (J.Object o) <- J.decode body -> either refuse paying (parseSpend source o)
-      _ -> refuse ORBadRequest
+      _ -> refuse $ ORBadRequest notObject
     paying ((fields, timestamp, signature), spend) =
       withTransaction oeStore (`getRegistration` source) >>= \case
         Nothing -> pure $ answerNow notFound
@@ -273,7 +276,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg pr
           Left refusal -> refuse refusal
           Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
       Just (SPMCard _)
-        | spPrice - spBalance < minCardChargeCents -> refuse ORBadRequest
+        | spPrice - spBalance < minCardChargeCents -> refuse $ ORBadRequest "a card difference under the card minimum"
       Just method ->
         createAtProvider env http (checkoutClient http req) cfg providers waiters what $
           InvoicedOrder {ivRequest = order, ivOrderHash = orderHash orOwner orFields (spendTerms spend), ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = fromIntegral (spPrice - spBalance), ivInsert = differenceOrderInsert spend}
@@ -285,7 +288,7 @@ minCardChargeCents = 50
 -- | Every format check, the method present exactly for a difference, then the length's range.
 parseSpend :: RegistrationId -> J.Object -> Either OrderRefusal ((OrderFields, Word64, RecoverableSignature), Spend)
 parseSpend spSource o = do
-  parsed@((fields, _, _), _) <- maybe (Left ORBadRequest) Right $ do
+  parsed@((fields, _, _), _) <- maybe (Left $ ORBadRequest "a malformed spend") Right $ do
     signed <- parseOrderFields o
     spPrice <- cents "price"
     spBalance <- cents "balance"
@@ -325,7 +328,7 @@ nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} confirmations 
 
 orderRefusalResponse :: OrderRefusal -> Response
 orderRefusalResponse = \case
-  ORBadRequest -> badRequest
+  ORBadRequest _ -> badRequest
   ORInvalidName -> invalidName
   OROrderExists -> jsonError status409 "order_exists"
   ORNameTaken -> jsonError status409 "name_taken"

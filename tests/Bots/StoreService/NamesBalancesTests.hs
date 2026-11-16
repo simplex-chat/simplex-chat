@@ -509,7 +509,7 @@ testOverdueHolderClosed = withOrders $ \Ctx {cStore = st, cOrders} -> do
   (blHold balance, heldBy balance) `shouldBe` (Just $ hold "h" (at 60) True, Nothing)
   Right (Just h) <- checkSpendBalance st Spend {spSource = RegistrationId "s", spPrice = 6000, spBalance = 10000, spMethod = Nothing} now
   nrId h `shouldBe` RegistrationId "h"
-  closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (\_ _ -> pure $ Left ORBadRequest) `shouldReturn` Left ORBadRequest
+  closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (\_ _ -> pure $ Left $ ORBadRequest "refused") `shouldReturn` Left (ORBadRequest "refused")
   invoiceStatus st "inv-h" `shouldReturn` "open"
   nrLive <$> reg st "h" `shouldReturn` True
   figures st "s" now `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" (at 60) True)

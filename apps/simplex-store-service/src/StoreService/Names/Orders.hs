@@ -101,7 +101,7 @@ data OrderRequest = OrderRequest
   }
 
 data OrderRefusal
-  = ORBadRequest
+  = ORBadRequest Text
   | ORInvalidName
   | OROrderExists
   | ORNameTaken
@@ -196,7 +196,7 @@ checkSigner :: Address -> ByteString -> RecoverableSignature -> IO (Either Order
 checkSigner owner msg signature =
   recoverAddress signature (personalDigest msg) >>= \case
     Right signer | signer == owner -> pure $ Right ()
-    _ -> pure $ Left ORBadRequest
+    _ -> pure $ Left $ ORBadRequest "the signature is not the owner's"
 
 checkOrderSigner :: OrderRequest -> IO (Either OrderRefusal ())
 checkOrderSigner OrderRequest {orOwner, orFields, orTimestamp, orSignature} = checkSigner orOwner (orderMessage orFields orTimestamp) orSignature
@@ -268,14 +268,14 @@ codeOrderInsert new@NewRegistration {nrgId, nrgOrder = OrderFields {ofLength}} c
 
 checkTimestamp :: UTCTime -> Word64 -> Either OrderRefusal ()
 checkTimestamp now timestamp =
-  unless (abs (toInteger timestamp - unixSeconds now) <= signedRequestSeconds) $ Left ORBadRequest
+  unless (abs (toInteger timestamp - unixSeconds now) <= signedRequestSeconds) $ Left $ ORBadRequest "the timestamp is outside the window"
 
 -- | The paid years plus the free days until the term starts, by the service's clock, within the slack.
 checkDuration :: NamesConfig -> UTCTime -> Int -> Word64 -> Either OrderRefusal ()
 checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = do
   let free = toInteger duration - toInteger years * secondsPerYear
       expected = max 0 (unixSeconds nTermStart - unixSeconds now)
-  when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left ORBadRequest
+  when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left $ ORBadRequest "the duration is not the paid years with the free days"
 
 -- | The years the payment covers, or communityYears for an order signing community terms; 'checkTerms' refuses those terms
 -- for any other name.
@@ -364,7 +364,7 @@ versionWritten = \case
   Written v -> Right v
   VersionChanged -> Left WRChanged
   LiveOrderExists -> Left $ WRRefused OROrderExists
-  NotLive -> Left $ WRRefused ORBadRequest
+  NotLive -> Left $ WRRefused $ ORBadRequest "the order is closed"
 
 confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
