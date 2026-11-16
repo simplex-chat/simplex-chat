@@ -36,7 +36,6 @@ import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.database.deleteDatabaseBackups
 import chat.simplex.common.views.migration.MigrationFileLinkData
-import chat.simplex.common.views.newchat.nameWarningAlert
 import chat.simplex.common.views.newchat.showNameWarningAlert
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -1742,7 +1741,7 @@ object ChatController {
             generalGetString(MR.strings.simplex_name_no_valid_link_desc).format(domain)
           )
         } else if (r.err.errorType.simplexDomainError is SimplexDomainError.NameWarning) {
-          showNameWarningAlert(r.rhId, nameWarningAlert(r.err.errorType.simplexDomain, r.err.errorType.simplexDomainError.nameWarning, own = false, chat = null), cleanup = null)
+          showNameWarningAlert(r.rhId, r.err.errorType.simplexDomain, r.err.errorType.simplexDomainError.nameWarning, own = false, openExistingChat = null, cleanup = null)
         } else {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.simplex_name_unconfirmed),
@@ -2962,7 +2961,7 @@ object ChatController {
   }
 
   // Spec: spec/api.md#processReceivedMsg
-  private suspend fun processReceivedMsg(msg: API) {
+  internal suspend fun processReceivedMsg(msg: API) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
     val rhId = msg.rhId
     fun active(user: UserLike): Boolean = activeUser(rhId, user)

@@ -1106,7 +1106,7 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
                     message: String.localizedStringWithFormat(NSLocalizedString("The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.", comment: ""), domain.fullDomainName)
                 )
             case let .nameWarning(warning):
-                showNameWarningAlert(nameWarningAlert(domain: domain, warning: warning, own: false, chat: nil), cleanup: nil)
+                showNameWarningAlert(domain: domain, warning: warning, own: false, openExistingChat: nil, cleanup: nil)
             }
         case .errorAgent(.NO_NAME_SERVERS):
             showAlert(

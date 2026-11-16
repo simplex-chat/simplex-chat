@@ -1,24 +1,14 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 
 module ChatTests.Names where
 
-import APIDocs (testGenerate)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay, waitQueuedLinkUpdates)
 import ChatTests.Utils
 import Control.Concurrent.Async (concurrently_)
-import Control.Exception (finally)
-import qualified Data.Aeson as J
-import qualified Data.Aeson.Key as JK
-import qualified Data.Aeson.KeyMap as JM
-import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Foldable (toList)
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -26,13 +16,9 @@ import Data.Time.Clock (UTCTime)
 import NameResolver
 import Simplex.Chat.Controller (NamePrice (..), NameWarning (..))
 import Simplex.Chat.Library.Commands (nameRecordOrWarning)
-import Simplex.Chat.Mobile (chatSendCmd)
-import Simplex.Chat.Remote.Protocol (owsf2tagged)
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), NameResponse (..), USDCents (..))
-import Simplex.Messaging.Parsers (pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
-import Simplex.Messaging.Util (safeDecodeUtf8)
 import Test.Hspec hiding (it)
 
 chatNamesTests :: SpecWith TestParams
@@ -279,7 +265,7 @@ testConnectByNameNotFound ps = withSmpServerAndNames ps $ \_reg ->
       enableNamesRole bob
       bob ##> "/c @nobody.simplex"
       bob <## "SimpleX name nobody.simplex is available: $20 for 2 years"
-      nameFixture "error-available" bob "/_connect plan 1 @nobody.simplex"
+      nameFixture "error-available" bob "@nobody.simplex"
 
 testSetNameNotOwnAddress :: HasCallStack => TestParams -> IO ()
 testSetNameNotOwnAddress ps = withSmpServerAndNames ps $ \reg ->
@@ -651,7 +637,7 @@ testPlanNameReservedOther = withAliceName $ \reg _r _alice bob -> do
   registerReservedName reg acmeName NRRTrademark
   bob ##> "/_connect plan 1 acme.simplex"
   bob <## "SimpleX name acme.simplex is not registered"
-  nameFixture "error-not-registered" bob "/_connect plan 1 acme.simplex"
+  nameFixture "error-not-registered" bob "acme.simplex"
   where
     acmeName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "acme" [])
 
@@ -670,7 +656,7 @@ testPlanKnownNameAvailable = withAliceName $ \reg _r alice bob -> do
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   bob <## "SimpleX name alice.simplex is no longer registered, available: $20 for 2 years"
-  nameFixture "plan-known-available" bob "/_connect plan 1 @alice.simplex"
+  apiFixture "names/plan-known-available" bob [] FixtureRequests {frMarkdown = ["@alice.simplex"], frUris = [nameHowToUri], frCommands = ["/_connect plan 1 @alice.simplex"]}
 
 testPlanKnownNameReserved :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameReserved = withAliceName $ \reg _r alice bob -> do
@@ -693,7 +679,7 @@ testPlanKnownNameReserved = withAliceName $ \reg _r alice bob -> do
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   bob <## "SimpleX name alice.simplex is reserved for community"
-  nameFixture "plan-known-reserved" bob "/_connect plan 1 @alice.simplex"
+  apiFixture "names/plan-known-reserved" bob [] FixtureRequests {frMarkdown = ["@alice.simplex", simplexTeamUri], frUris = [], frCommands = ["/_connect plan 1 @alice.simplex"]}
   alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
   alice <## "SimpleX name alice.simplex is reserved for community"
@@ -716,10 +702,11 @@ testPlanKnownNameStale = withAliceName $ \reg (shortLink, _) alice bob -> do
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
   bob <##. "SimpleX name alice.simplex expired on "
-  nameFixture "plan-known-expired" bob "/_connect plan 1 @alice.simplex"
+  nameFixture "plan-known-expired" bob "@alice.simplex"
   registerName reg aliceSimplexName (aliceRecord shortLink)
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
+  nameFixture "plan-known" bob "@alice.simplex"
 
 testPlanNameResolvedEveryCall :: HasCallStack => TestParams -> IO ()
 testPlanNameResolvedEveryCall = withAliceName $ \reg (shortLink, _) _alice bob -> do
@@ -739,7 +726,7 @@ testPlanOwnNameExpired = withAliceName $ \reg (shortLink, _) alice _bob -> do
   alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
   alice <##. "your SimpleX name alice.simplex expired on "
-  nameFixture "plan-own-expired" alice "/_connect plan 1 @alice.simplex"
+  apiFixture "names/plan-own-expired" alice [] FixtureRequests {frMarkdown = ["@alice.simplex"], frUris = [nameHowToUri], frCommands = ["/_connect plan 1 @alice.simplex"]}
 
 testPlanOwnNameAvailable :: HasCallStack => TestParams -> IO ()
 testPlanOwnNameAvailable = withAliceName $ \reg _r alice _bob -> do
@@ -747,7 +734,7 @@ testPlanOwnNameAvailable = withAliceName $ \reg _r alice _bob -> do
   alice ##> "/_connect plan 1 @alice.simplex"
   alice <## "contact address: own address"
   alice <## "your SimpleX name alice.simplex is no longer registered, available: $20 for 2 years"
-  nameFixture "plan-own-available" alice "/_connect plan 1 @alice.simplex"
+  apiFixture "names/plan-own-available" alice [] FixtureRequests {frMarkdown = ["@alice.simplex"], frUris = [nameHowToUri], frCommands = ["/_connect plan 1 @alice.simplex"]}
 
 testPlanNameResolveNever :: HasCallStack => TestParams -> IO ()
 testPlanNameResolveNever = withAliceName $ \reg _r alice bob -> do
@@ -781,7 +768,7 @@ testPlanKnownNameAddressChanged = withKnownAliceName $ \reg alice bob cath -> do
   bob <## "contact address: ok to connect"
   _ <- getTermLine bob
   bob <## "known contact @alice"
-  nameFixture "plan-known-moved" bob "/_connect plan 1 @alice.simplex"
+  nameFixture "plan-known-moved" bob "@alice.simplex"
   bob ##> "/_connect plan 1 @alice.simplex resolve=never"
   knownAlicePlan bob
   bob ##> "/c @alice.simplex"
@@ -816,6 +803,7 @@ testPlanKnownNameMovedToKnownChat = withKnownAliceName $ \reg alice bob cath -> 
   bob ##> "/_connect plan 1 @alice.simplex"
   knownContactPlan "cath" "alice.simplex" bob
   bob <## "known contact @alice"
+  nameFixture "plan-moved-known" bob "@alice.simplex"
   alice ##> ("/c " <> cathLink)
   cath <#? alice
   cath ##> "/ac alice"
@@ -847,6 +835,8 @@ testPlanKnownNameMovedToBusinessChat = withKnownAliceName $ \reg _alice bob cath
   bob <## "business address: known business #cath"
   bob <## "use #cath <message> to send messages"
   bob <## "known contact @alice"
+  nameFixture "plan-moved-business" bob "@alice.simplex"
+  nameMovedFixture "event-name-moved" bob ["alice"] ["cath"]
   bob ##> "/_connect plan 1 @alice.simplex resolve=never"
   bob <## "business address: known business #cath"
   bob <## "use #cath <message> to send messages"
@@ -938,6 +928,7 @@ testPlanNameChannelNoRelays = withChannelChats $ \reg alice cath bob -> do
   bob ##> "/_connect plan 1 team.simplex"
   bob <## "group link: channel has no active relays, please try to join later"
   bob <## "You can also connect to @team.simplex in direct chat"
+  apiFixture "names/plan-channel-no-relays" bob [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
   alice ##> "/_set domain 1 team.simplex"
   alice <## "new contact address set"
   bob ##> "/_connect plan 1 @team.simplex"
@@ -971,6 +962,8 @@ testPlanNameLinkServer ps = flip withTeamChats ps $ \reg contactLink channelLink
 
 testPlanLocalChats :: HasCallStack => TestParams -> IO ()
 testPlanLocalChats = withTeamChats $ \reg contactLink channelLink alice bob -> do
+  apiFixture "names/search-team" bob [] FixtureRequests {frMarkdown = ["", "team.simplex"], frUris = [], frCommands = ["/_connect plan 1 @team.simplex resolve=never", "/_connect plan 1 #team.simplex resolve=never"]}
+  apiFixture "names/plan-own-channel" alice [] FixtureRequests {frMarkdown = ["#team.simplex"], frUris = [], frCommands = ["/_connect plan 1 #team.simplex"]}
   bob ##> "/_connect plan 1 team.simplex resolve=never"
   knownGroupPlan "team" "team" bob
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
@@ -1038,6 +1031,7 @@ testPlanNameOtherKindMoved = withTeamChats $ \reg _contactLink channelLink alice
   bob ##> "/_connect plan 1 team.simplex"
   knownGroupPlan "team" "team" bob
   bob <## "You can also connect to @team.simplex in direct chat"
+  apiFixture "names/plan-other-kind" bob [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
   bob ##> "/_connect plan 1 @team.simplex"
   bob <## "contact address: ok to connect"
   _ <- getTermLine bob
@@ -1133,47 +1127,8 @@ testNameRecordOrWarning = do
 utc :: Int64 -> UTCTime
 utc = roundedToUTCTime . RoundedSystemTime
 
-nameFixture :: String -> TestCC -> String -> IO ()
-nameFixture fixture TestCC {chatController = cc} cmd = do
-  json <- either fail (pure . stableJSON) . J.eitherDecode =<< chatSendCmd cc (B.pack cmd)
-  let owsf = tagged2owsf json
-  owsf2tagged owsf `shouldBe` json
-  testGenerate ("apps/multiplatform/common/src/desktopTest/resources/names/" <> fixture <> ".json") (prettyJSON json)
-    `finally` testGenerate ("apps/ios/SimpleX Unit Tests/names/" <> fixture <> ".json") (prettyJSON owsf)
+nameHowToUri :: String
+nameHowToUri = "https://simplex.domains/#testing"
 
-tagged2owsf :: J.Value -> J.Value
-tagged2owsf = \case
-  J.Object o
-    | Just (J.String tag) <- JM.lookup TaggedObjectJSONTag o ->
-        J.object [SingleFieldJSONTag J..= True, JK.fromText tag J..= contents (JM.delete TaggedObjectJSONTag o)]
-    | otherwise -> J.Object $ fmap tagged2owsf o
-  J.Array a -> J.Array $ fmap tagged2owsf a
-  v -> v
-  where
-    contents o = case JM.toList o of
-      [(TaggedObjectJSONData, v)] | not (untaggedObject v) -> tagged2owsf v
-      _ -> J.Object $ fmap tagged2owsf o
-    untaggedObject = \case
-      J.Object o -> not $ JM.member TaggedObjectJSONTag o
-      _ -> False
-
-stableJSON :: J.Value -> J.Value
-stableJSON = \case
-  J.Object o -> J.Object $ JM.mapWithKey stableField o
-  J.Array a -> J.Array $ fmap stableJSON a
-  v -> v
-  where
-    stableField k v
-      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileUpdatedAt"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "linkOwnerId", "presHeader", "signature", "welcomeSharedMsgId", "requestSharedMsgId"] = J.String $ JK.toText k
-      | otherwise = stableJSON v
-
-prettyJSON :: J.Value -> T.Text
-prettyJSON = (<> "\n") . pretty ""
-  where
-    pretty indent = \case
-      J.Object o | not (JM.null o) -> block indent "{" "}" [jsonText (J.String $ JK.toText k) <> ": " <> pretty (indent <> "  ") v | (k, v) <- JM.toList o]
-      J.Array a | not (null a) -> block indent "[" "]" (map (pretty $ indent <> "  ") $ toList a)
-      v -> jsonText v
-    block indent open close items = open <> "\n" <> T.intercalate ",\n" (map ((indent <> "  ") <>) items) <> "\n" <> indent <> close
-    jsonText = safeDecodeUtf8 . LB.toStrict . J.encode
+simplexTeamUri :: String
+simplexTeamUri = "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"

@@ -2426,6 +2426,7 @@ testPlanAddressContactViaAddress =
 
           bob ##> ("/_connect plan 1 " <> cLink)
           bob <## "contact address: known contact without connection alice"
+          apiFixture "connect/contact-via-address" bob [(cLink, "CONTACT_LINK")] FixtureRequests {frMarkdown = [cLink], frUris = [], frCommands = ["/_connect plan 1 " <> cLink]}
 
           -- terminal api
           bob ##> ("/c " <> cLink)

@@ -35,12 +35,6 @@ func showShareSheet(items: [Any], completed: (() -> Void)? = nil) {
     }
 }
 
-extension SimplexAddress {
-    func shareAddress(short: Bool) {
-        showShareSheet(items: [simplexChatLink(connLinkContact.simplexChatUri(short: short))])
-    }
-}
-
 func showAlert(
     title: String,
     message: String? = nil,

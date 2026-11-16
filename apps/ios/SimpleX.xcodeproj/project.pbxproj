@@ -18,11 +18,6 @@
 		18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1841516F0CE5992B0EDFB377 /* GroupWelcomeView.swift */; };
 		3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */; };
 		3CDBCF4827FF621E00354CDD /* CILinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CDBCF4727FF621E00354CDD /* CILinkView.swift */; };
-		4E57A1E70000000000000002 /* NameWarningAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57A1E70000000000000001 /* NameWarningAlert.swift */; };
-		4E57A1E70000000000000003 /* NameWarningAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57A1E70000000000000001 /* NameWarningAlert.swift */; };
-		4E57A1E70000000000000004 /* AppAPITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DDBE6D2DC4106200A0EFF0 /* AppAPITypes.swift */; };
-		4E57A1E70000000000000006 /* NameWarningAlertTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57A1E70000000000000005 /* NameWarningAlertTests.swift */; };
-		4E57A1E70000000000000008 /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 		5C00168128C4FE760094D739 /* KeyChain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C00168028C4FE760094D739 /* KeyChain.swift */; };
 		5C029EA82837DBB3004A9677 /* CICallItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C029EA72837DBB3004A9677 /* CICallItemView.swift */; };
 		5C029EAA283942EA004A9677 /* CallController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C029EA9283942EA004A9677 /* CallController.swift */; };
@@ -275,6 +270,7 @@
 		E5AEC0AB2F91A6EB00270665 /* CIChatLinkHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */; };
 		E5AEC0B22F9C000100270665 /* TerminalItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0B12F9C000100270665 /* TerminalItemView.swift */; };
 		E5AEC0C22F9C000100270665 /* SnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0C12F9C000100270665 /* SnapshotTests.swift */; };
+		4E57A1E70000000000000006 /* NameAlertsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E57A1E70000000000000005 /* NameAlertsTests.swift */; };
 		E5AEC0AF2F91A73500270665 /* ComposeChatLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */; };
 		E5C0BBE82F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
 		E5C0BBEB2F82B45500EA7527 /* SharedAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */; };
@@ -291,14 +287,14 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		4E57A1E7000000000000000D /* PBXContainerItemProxy */ = {
+		E5AEC0C92F9C000100270665 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 5CE2BA672845308900EC33A6;
-			remoteInfo = SimpleXChat;
+			remoteGlobalIDString = 5CA059C9279559F40002BEB4;
+			remoteInfo = "SimpleX (iOS)";
 		};
-		E5AEC0C92F9C000100270665 /* PBXContainerItemProxy */ = {
+		4E57A1E7000000000000000D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
 			proxyType = 1;
@@ -387,9 +383,6 @@
 		18415FD2E36F13F596A45BB4 /* CIVideoView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CIVideoView.swift; sourceTree = "<group>"; };
 		3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeLinkView.swift; sourceTree = "<group>"; };
 		3CDBCF4727FF621E00354CDD /* CILinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CILinkView.swift; sourceTree = "<group>"; };
-		4E57A1E70000000000000001 /* NameWarningAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameWarningAlert.swift; sourceTree = "<group>"; };
-		4E57A1E70000000000000005 /* NameWarningAlertTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameWarningAlertTests.swift; sourceTree = "<group>"; };
-		4E57A1E70000000000000007 /* SimpleX Unit Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX Unit Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5C00168028C4FE760094D739 /* KeyChain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyChain.swift; sourceTree = "<group>"; };
 		5C029EA72837DBB3004A9677 /* CICallItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CICallItemView.swift; sourceTree = "<group>"; };
 		5C029EA9283942EA004A9677 /* CallController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallController.swift; sourceTree = "<group>"; };
@@ -688,6 +681,8 @@
 		E5AEC0B12F9C000100270665 /* TerminalItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalItemView.swift; sourceTree = "<group>"; };
 		E5AEC0C12F9C000100270665 /* SnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotTests.swift; sourceTree = "<group>"; };
 		E5AEC0C32F9C000100270665 /* SimpleX Snapshots.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX Snapshots.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E57A1E70000000000000005 /* NameAlertsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameAlertsTests.swift; sourceTree = "<group>"; };
+		4E57A1E70000000000000007 /* SimpleX Unit Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SimpleX Unit Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeChatLinkView.swift; sourceTree = "<group>"; };
 		E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SimpleXAssets.xcassets; sourceTree = "<group>"; };
 		E5C0BBEA2F82B45500EA7527 /* SharedAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SharedAssets.xcassets; sourceTree = "<group>"; };
@@ -753,14 +748,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		4E57A1E7000000000000000C /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4E57A1E70000000000000008 /* SimpleXChat.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		5CA059C7279559F40002BEB4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -787,6 +774,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		E5AEC0C62F9C000100270665 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4E57A1E7000000000000000C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1040,7 +1034,7 @@
 		4E57A1E70000000000000009 /* SimpleX Unit Tests */ = {
 			isa = PBXGroup;
 			children = (
-				4E57A1E70000000000000005 /* NameWarningAlertTests.swift */,
+				4E57A1E70000000000000005 /* NameAlertsTests.swift */,
 			);
 			path = "SimpleX Unit Tests";
 			sourceTree = "<group>";
@@ -1086,7 +1080,6 @@
 			children = (
 				640417CB2B29B8C200CCB412 /* NewChatMenuButton.swift */,
 				640417CC2B29B8C200CCB412 /* NewChatView.swift */,
-				4E57A1E70000000000000001 /* NameWarningAlert.swift */,
 				5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */,
 				E5E418002F83D2CA00252B9E /* OnboardingCards.swift */,
 				6442E0B9287F169300CEC0F9 /* AddGroupView.swift */,
@@ -1451,6 +1444,7 @@
 			buildPhases = (
 				4E57A1E7000000000000000B /* Sources */,
 				4E57A1E7000000000000000C /* Frameworks */,
+				4E57A1E70000000000000012 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -1553,6 +1547,10 @@
 						CreatedOnToolsVersion = 26.0;
 						TestTargetID = 5CA059C9279559F40002BEB4;
 					};
+					4E57A1E7000000000000000A = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 5CA059C9279559F40002BEB4;
+					};
 				};
 			};
 			buildConfigurationList = 5CA059C1279559F40002BEB4 /* Build configuration list for PBXProject "SimpleX" */;
@@ -1632,6 +1630,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4E57A1E70000000000000012 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5CDCAD432818589900503DA2 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1690,7 +1695,6 @@
 				64C06EB52A0A4A7C00792D4D /* ChatItemInfoView.swift in Sources */,
 				8CC317442D4FEB9B00292A20 /* EndlessScrollView.swift in Sources */,
 				640417CE2B29B8C200CCB412 /* NewChatView.swift in Sources */,
-				4E57A1E70000000000000002 /* NameWarningAlert.swift in Sources */,
 				6440CA03288AECA70062C672 /* AddGroupMembersView.swift in Sources */,
 				640743612CD360E600158442 /* ChooseServerOperators.swift in Sources */,
 				E5A0B0012F960000AAAA0001 /* YourNetwork.swift in Sources */,
@@ -1917,9 +1921,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4E57A1E70000000000000006 /* NameWarningAlertTests.swift in Sources */,
-				4E57A1E70000000000000003 /* NameWarningAlert.swift in Sources */,
-				4E57A1E70000000000000004 /* AppAPITypes.swift in Sources */,
+				4E57A1E70000000000000006 /* NameAlertsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1983,7 +1985,7 @@
 		};
 		4E57A1E7000000000000000E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 5CE2BA672845308900EC33A6 /* SimpleXChat */;
+			target = 5CA059C9279559F40002BEB4 /* SimpleX (iOS) */;
 			targetProxy = 4E57A1E7000000000000000D /* PBXContainerItemProxy */;
 		};
 		5CA059D9279559F40002BEB4 /* PBXTargetDependency */ = {
@@ -2465,6 +2467,7 @@
 		4E57A1E70000000000000010 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2475,12 +2478,14 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimpleX.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SimpleX";
 			};
 			name = Debug;
 		};
 		4E57A1E70000000000000011 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2491,6 +2496,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimpleX.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SimpleX";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

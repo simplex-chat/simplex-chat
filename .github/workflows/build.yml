@@ -20,6 +20,7 @@ on:
       - "apps/simplex-directory-service/**"
       - "apps/multiplatform/**"
       - "apps/ios/**"
+      - "tests/fixtures/api/**"
       - "tests/**"
       - "bots/src/**"
       - "simplex-chat.cabal"
@@ -1411,8 +1412,13 @@ jobs:
             -onlyUsePackageVersionsFromResolvedFile \
             -skipPackagePluginValidation \
             -skipMacroValidation \
+            -testLanguage en \
+            -testRegion US \
             ARCHS=arm64 \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM= \
+            PROVISIONING_PROFILE_SPECIFIER=
 
 # =========================
 #      Windows Build
