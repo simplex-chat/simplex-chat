@@ -290,7 +290,7 @@ btcReceived cents crypto due units confirmedUnits confirmedCents =
       rcvDue = Just due,
       rcvUnits = Just units,
       rcvInvoicedUnits = Just 50000,
-      rcvRate = Just "108000.12",
+      rcvRate = Just Rate {rateText = "108000.12", rateValue = 108000.12},
       rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmedCents, cfUnits = Just confirmedUnits},
       rcvUncreditable = Nothing
     }
@@ -664,7 +664,7 @@ xmrReceived =
       rcvDue = Just "0.00000000",
       rcvUnits = Just 320950000000,
       rcvInvoicedUnits = Just 320950000000,
-      rcvRate = Just "168.25",
+      rcvRate = Just Rate {rateText = "168.25", rateValue = 168.25},
       rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0},
       rcvUncreditable = Just UCNoConfirmationShown
     }

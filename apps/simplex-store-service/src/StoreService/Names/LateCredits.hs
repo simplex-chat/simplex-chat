@@ -18,16 +18,12 @@ where
 
 import qualified Control.Exception as E
 import Data.Ratio ((%))
-import Data.Scientific (Scientific)
-import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import StoreService.Names.Store (BrokenInvariant (..), LateCredit (..), LateCreditState (..), LateSupport (..), NamePhase (..), creditLatePayment, lateCreditState, setLateSupport)
 import StoreService.Providers (ProviderError (..), Rate (..))
 import StoreService.Store.Invoices (lockInvoice)
-import Text.Read (readMaybe)
 
 -- | A current rate below this fraction of the invoice's is not used: it may be a glitch or a real fall, which the owner decides on.
 minCurrentRateFraction :: Rational
@@ -43,7 +39,7 @@ data CreditOutcome
   | COCredited LateMoney LateCredit
   | CONoInvoiceFigures
   | CORateFailed ProviderError
-  | CORateFloor Text Rate
+  | CORateFloor Rate Rate
   deriving (Eq, Show)
 
 creditLateInvoice :: DBStore -> (CryptoCurrency -> IO (Either ProviderError Rate)) -> InvoiceId -> UTCTime -> IO CreditOutcome
@@ -53,12 +49,12 @@ creditLateInvoice st readRate invId@(InvoiceId invText) now =
       Nothing -> credit Nothing
       Just coin -> case invoiceFigures s of
         Nothing -> pure CONoInvoiceFigures
-        Just (invoiceText, invoiceValue, _) ->
+        Just (invoiceRate, _) ->
           readRate coin >>= \case
             Left e -> pure $ CORateFailed e
             Right rate
-              | toRational (rateValue rate) < minCurrentRateFraction * toRational invoiceValue ->
-                  CORateFloor invoiceText rate <$ withTransaction st (\db -> setLateSupport db invId LSRateFloor)
+              | toRational (rateValue rate) < minCurrentRateFraction * toRational (rateValue invoiceRate) ->
+                  CORateFloor invoiceRate rate <$ withTransaction st (\db -> setLateSupport db invId LSRateFloor)
               | otherwise -> credit (Just rate)
     _ -> pure CONothingDue
   where
@@ -102,13 +98,12 @@ unitsDue s@LateCreditState {lsConfirmedUnits, lsInvoicedUnits, lsCreditedUnits} 
       LMLate -> confirmed
       LMOverpaid -> maybe 0 (max 0 . (confirmed -) . toInteger) lsInvoicedUnits
 
--- | The invoice's rate as written and as a decimal, and its invoiced units, above 0.
-invoiceFigures :: LateCreditState -> Maybe (Text, Scientific, Integer)
+-- | The invoice's rate, and its invoiced units, above 0.
+invoiceFigures :: LateCreditState -> Maybe (Rate, Integer)
 invoiceFigures LateCreditState {lsInvoiceRate, lsInvoicedUnits} = do
-  t <- lsInvoiceRate
-  v <- readMaybe (T.unpack t)
+  rate <- lsInvoiceRate
   invoiced <- toInteger <$> lsInvoicedUnits
-  if invoiced > 0 then Just (t, v, invoiced) else Nothing
+  if invoiced > 0 then Just (rate, invoiced) else Nothing
 
 -- | The next credit of the money not yet credited: card cents as they are, crypto units as their share of the invoice's amount at the
 -- lower rate, rounded down to the cent.
@@ -116,12 +111,12 @@ lateCreditOf :: LateCreditState -> Maybe Rate -> Maybe LateCredit
 lateCreditOf s@LateCreditState {lsInvoice, lsRegistration, lsCredits, lsInvoiceAmount} rate = case (lsCoin s, rate, invoiceFigures s) of
   (Nothing, _, _)
     | centsDue s > 0 -> Just (credit Nothing Nothing Nothing Nothing (centsDue s))
-  (Just _, Just Rate {rateText, rateValue}, Just (invoiceText, invoiceValue, invoiced))
+  (Just _, Just current, Just (invoiceRate, invoiced))
     | unitsDue s > 0 ->
-        let (usedText, usedValue) = if rateValue < invoiceValue then (rateText, rateValue) else (invoiceText, invoiceValue)
+        let used = if rateValue current < rateValue invoiceRate then current else invoiceRate
             share = toInteger lsInvoiceAmount * unitsDue s % invoiced
-            cents = floor (share * toRational usedValue / toRational invoiceValue)
-         in Just (credit (Just $ fromInteger $ unitsDue s) (Just invoiceText) (Just rateText) (Just usedText) cents)
+            cents = floor (share * toRational (rateValue used) / toRational (rateValue invoiceRate))
+         in Just (credit (Just $ fromInteger $ unitsDue s) (Just invoiceRate) (Just current) (Just used) cents)
   _ -> Nothing
   where
     credit lcUnits lcInvoiceRate lcCurrentRate lcRateUsed lcCents =

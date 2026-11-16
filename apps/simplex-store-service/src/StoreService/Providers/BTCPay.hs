@@ -501,7 +501,7 @@ receivedOf decimals confirming shown invoiceSettled rate paid invoiced due payme
       rcvDue = nonNegative <$> due,
       rcvUnits = fst <$> counted,
       rcvInvoicedUnits = toUnits . wnValue =<< invoiced,
-      rcvRate = Just (wnText rate),
+      rcvRate = if wnValue rate > 0 then Just Rate {rateText = wnText rate, rateValue = wnValue rate} else Nothing,
       rcvConfirmed = case uncreditable of
         Nothing -> Confirmed {cfCents = toMinorUnits (scientific (maybe 0 (toInteger . snd) counted) (negate decimals) * wnValue rate), cfUnits = snd <$> counted}
         Just _ -> Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0},

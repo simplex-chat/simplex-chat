@@ -28,9 +28,12 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Scientific (Scientific)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime)
 import Network.HTTP.Types.Header (Header)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount, PaymentProvider (..), ServicePaymentDestination, ServicePaymentMethod)
+import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
+import Text.Read (readMaybe)
 
 data ProviderError = ProviderError Text | ProviderTimeout Text
   deriving (Eq, Show)
@@ -59,7 +62,7 @@ data Received = Received
     rcvDue :: Maybe Text,
     rcvUnits :: Maybe Int64,
     rcvInvoicedUnits :: Maybe Int64,
-    rcvRate :: Maybe Text,
+    rcvRate :: Maybe Rate,
     rcvConfirmed :: Confirmed,
     rcvUncreditable :: Maybe Uncreditable
   }
@@ -77,6 +80,15 @@ data Uncreditable = UCHighSpeed | UCUncounted | UCNoConfirmationShown
 -- | A coin's current price in the service's currency, above 0: as the provider wrote it, and as a decimal to compute with.
 data Rate = Rate {rateText :: Text, rateValue :: Scientific}
   deriving (Eq, Show)
+
+instance FromField Rate where fromField = fromTextField_ textRate
+
+instance ToField Rate where toField = toField . rateText
+
+textRate :: Text -> Maybe Rate
+textRate t = case readMaybe (T.unpack t) of
+  Just v | v > 0 -> Just Rate {rateText = t, rateValue = v}
+  _ -> Nothing
 
 -- | The decimals of each coin's atomic unit.
 unitDecimals :: CryptoCurrency -> Int

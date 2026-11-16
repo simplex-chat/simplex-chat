@@ -471,16 +471,16 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) ref = do
     COCredited money LateCredit {lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents} ->
       logNote $
         "names: invoice " <> ref <> credited money <> tshow lcCents <> " cents" <> extra money <> " to its order's balance"
-          <> maybe "" (\units -> " for " <> tshow units <> " units at " <> fromMaybe "?" lcRateUsed <> " (invoice " <> fromMaybe "?" lcInvoiceRate <> ", current " <> fromMaybe "?" lcCurrentRate <> ")") lcUnits
+          <> maybe "" (\units -> " for " <> tshow units <> " units at " <> rate lcRateUsed <> " (invoice " <> rate lcInvoiceRate <> ", current " <> rate lcCurrentRate <> ")") lcUnits
     CONoInvoiceFigures -> do
       due <- dueToWarn env now ("no invoice figures: " <> invText)
       when due $ logError ("names: invoice " <> ref <> " has confirmed late money, but no invoice rate or invoiced units were recorded to credit it at; check it at the provider")
     CORateFailed e -> do
       due <- dueToWarn env now ("rate read failed: " <> tshow (pProvider p))
       when due $ logWarn ("names: late credits wait, as the current rate cannot be read; each pass tries again: " <> providerErrorText e)
-    CORateFloor invoiceRate Rate {rateText} -> do
+    CORateFloor invoiceRate currentRate -> do
       due <- dueToWarn env now ("rate floor: " <> invText)
-      when due $ logError ("names: invoice " <> ref <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; it is never credited by itself, and support refunds it by hand")
+      when due $ logError ("names: invoice " <> ref <> " is not credited: the current rate " <> rateText currentRate <> " is below half its rate " <> rateText invoiceRate <> "; it is never credited by itself, and support refunds it by hand")
   pure outcome
   where
     credited = \case
@@ -489,6 +489,7 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) ref = do
     extra = \case
       LMLate -> ""
       LMOverpaid -> " of the extra"
+    rate = maybe "?" rateText
 
 -- | Money not yet confirmed waits for the settlement that confirms it.
 pendingLate :: PollerEnv -> InvoiceId -> Text -> IO ()
@@ -529,7 +530,7 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
     noConfirmation = "the Monero plugin shows no confirmation of this money, so it is never credited by itself; refund by hand only a transaction confirmed on chain"
     rateRead = "confirmed, the credit waits on the rate read; do not refund; fix the rate read"
     cardWaits = "confirmed, the credit waits on the poller's credit pass; do not refund; check the service log"
-    rateFloor current = "confirmed; the coin's price fell by more than half since the invoice (" <> fromMaybe "?" lsInvoiceRate <> ", " <> current <> "); it is never credited by itself; refund by hand only a transaction confirmed on chain"
+    rateFloor current = "confirmed; the coin's price fell by more than half since the invoice (" <> maybe "?" rateText lsInvoiceRate <> ", " <> current <> "); it is never credited by itself; refund by hand only a transaction confirmed on chain"
     uncounted = "an amount BTCPay reported with more decimals than its unit; check it at the provider"
 
 lateAlertText :: LateAlert -> Text -> Text

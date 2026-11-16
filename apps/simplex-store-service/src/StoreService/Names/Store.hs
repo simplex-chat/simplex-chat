@@ -138,7 +138,7 @@ import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (TermsAcceptance (..))
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
-import StoreService.Providers (Uncreditable (..))
+import StoreService.Providers (Rate, Uncreditable (..))
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, note, textToCryptoCurrency, truncateToSecond, unfundedQuery)
 
@@ -311,15 +311,15 @@ data BalanceLink = BalanceLink
   }
   deriving (Eq, Show)
 
--- | Money paid on a name invoice after its order closed, credited to that order's balance. Rates are decimal text; card money has no units or rates.
+-- | Money paid on a name invoice after its order closed, credited to that order's balance. Card money has no units or rates.
 data LateCredit = LateCredit
   { lcInvoice :: InvoiceId,
     lcCreditNo :: Int,
     lcRegistration :: RegistrationId,
     lcUnits :: Maybe Int64,
-    lcInvoiceRate :: Maybe Text,
-    lcCurrentRate :: Maybe Text,
-    lcRateUsed :: Maybe Text,
+    lcInvoiceRate :: Maybe Rate,
+    lcCurrentRate :: Maybe Rate,
+    lcRateUsed :: Maybe Rate,
     lcCents :: Int
   }
   deriving (Eq, Show)
@@ -337,7 +337,7 @@ data LateCreditState = LateCreditState
     lsConfirmedCents :: Int,
     lsReceivedUnits :: Maybe Int64,
     lsConfirmedUnits :: Maybe Int64,
-    lsInvoiceRate :: Maybe Text,
+    lsInvoiceRate :: Maybe Rate,
     lsInvoiceAmount :: Int,
     lsInvoicedUnits :: Maybe Int64,
     lsCreditedUnits :: Int64,
@@ -1189,7 +1189,7 @@ lateColumns =
     <> creditedTotal "cents"
     <> ", (SELECT COUNT(*) FROM sx_badge_service_name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at, i.amount, p.invoiced_units"
 
-type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, Int, Int, Maybe Int64, Maybe Int64) :. (Maybe Text, Int64, Int, Int, UTCTime, Int, Maybe Int64)
+type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, Int, Int, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, Int, Int, UTCTime, Int, Maybe Int64)
 
 toLateState :: LateRow -> Either Text LateCreditState
 toLateState

@@ -39,7 +39,7 @@ import StoreService.Names.View (addressText)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupUnpaid, newPollerEnv, unpaidRetention)
 import StoreService.Service (CmdSource (..), chainText, heldText)
-import StoreService.Providers (Funded (..), PaymentSignal (..))
+import StoreService.Providers (Funded (..), PaymentSignal (..), Rate (..))
 import StoreService.Waiters (newWaiters)
 import StoreService.Web.Server (WebEnv (..))
 import System.Timeout (timeout)
@@ -225,9 +225,9 @@ lateCredit r n units cents =
       lcCreditNo = n,
       lcRegistration = RegistrationId r,
       lcUnits = units,
-      lcInvoiceRate = Just "62500",
-      lcCurrentRate = Just "60000.5",
-      lcRateUsed = Just "61000",
+      lcInvoiceRate = Just Rate {rateText = "62500", rateValue = 62500},
+      lcCurrentRate = Just Rate {rateText = "60000.5", rateValue = 60000.5},
+      lcRateUsed = Just Rate {rateText = "61000", rateValue = 61000},
       lcCents = cents
     }
 
@@ -657,7 +657,7 @@ testLateScans = withServiceStore $ \st -> do
           lsConfirmedCents = 0,
           lsReceivedUnits = Just 300000,
           lsConfirmedUnits = Just 100000,
-          lsInvoiceRate = Just "62500",
+          lsInvoiceRate = Just Rate {rateText = "62500", rateValue = 62500},
           lsInvoiceAmount = 20000,
           lsInvoicedUnits = Nothing,
           lsCreditedUnits = 100000,

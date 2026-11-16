@@ -130,7 +130,7 @@ btcPaid units confirmed =
       rcvDue = Nothing,
       rcvUnits = Just units,
       rcvInvoicedUnits = Just lateUnits,
-      rcvRate = Just "62500",
+      rcvRate = Just (rateOf "62500" 62500),
       rcvConfirmed = Confirmed {cfCents = CurrencyAmount (fromIntegral $ satCents confirmed), cfUnits = Just confirmed},
       rcvUncreditable = Nothing
     }
@@ -514,7 +514,7 @@ xmrPaid uncreditable =
       rcvDue = Nothing,
       rcvUnits = Just xmrUnits,
       rcvInvoicedUnits = Just xmrUnits,
-      rcvRate = Just "168.25",
+      rcvRate = Just (rateOf "168.25" 168.25),
       rcvConfirmed = maybe (Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just xmrUnits}) (const Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}) uncreditable,
       rcvUncreditable = uncreditable
     }
@@ -560,12 +560,12 @@ testLateCreditOf = do
             lsCredits = 0,
             lsPaymentCreatedAt = at 70
           }
-      creditOf s rate = (\LateCredit {lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents} -> (lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents)) <$> lateCreditOf s (Just rate)
-      btc = closed CCBtc "62500" 20000
+      creditOf s rate = (\LateCredit {lcUnits, lcInvoiceRate, lcCurrentRate, lcRateUsed, lcCents} -> (lcUnits, rateText <$> lcInvoiceRate, rateText <$> lcCurrentRate, rateText <$> lcRateUsed, lcCents)) <$> lateCreditOf s (Just rate)
+      btc = closed CCBtc (rateOf "62500" 62500) 20000
   creditOf (btc (Just lateUnits) lateUnits) (rateOf "70000" 70000) `shouldBe` Just (Just lateUnits, Just "62500", Just "70000", Just "62500", 20000)
   creditOf (btc (Just 330000) 330000) (rateOf "62500" 62500) `shouldBe` Just (Just 330000, Just "62500", Just "62500", Just "62500", 20000)
   creditOf (btc (Just lateUnits) 480000) stubRate `shouldBe` Just (Just 480000, Just "62500", Just "60000.5", Just "60000.5", 28800)
-  creditOf (closed CCXmr "200" 10000 (Just 502112830000) 502112830000) (rateOf "200" 200) `shouldBe` Just (Just 502112830000, Just "200", Just "200", Just "200", 10000)
+  creditOf (closed CCXmr (rateOf "200" 200) 10000 (Just 502112830000) 502112830000) (rateOf "200" 200) `shouldBe` Just (Just 502112830000, Just "200", Just "200", Just "200", 10000)
   creditOf (btc Nothing lateUnits) stubRate `shouldBe` Nothing
 
 -- overpayment
