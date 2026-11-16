@@ -1,8 +1,11 @@
 package chat.simplex.app
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toComposeImageBitmap
@@ -18,7 +21,6 @@ import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.chat.item.ImageFullScreenView
 import chat.simplex.common.views.chat.item.ImageGalleryProvider
-import chat.simplex.common.views.chat.item.panFitsWidth
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
@@ -161,10 +163,33 @@ class ImageFullScreenZoomTest {
   }
 
   @Test
-  fun testAndroidPansOnlyWithinTheWidth() {
-    assertEquals(listOf(false, false, false), listOf(-1f, 0f, 1f).map { panFitsWidth(800, 1f, 0f, it) })
-    assertFalse(panFitsWidth(800, 2f, 400f, 5f))
-    assertTrue(panFitsWidth(800, 2f, 400f, -5f))
-    assertTrue(panFitsWidth(800, 2f, 0f, 5f))
+  fun testShortDragAt4xPansWithThePointer() = fullScreen { closed ->
+    wheel(400f, -8f)
+    drag(Offset(400f, 300f), Offset(340f, 300f), steps = 6)
+    assertFalse(closed())
+    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(330), shownAt(350)))
+  }
+
+  @Test
+  fun testClickWithPointerJitterCloses() = fullScreen { closed ->
+    wheel(400f, -8f)
+    drag(Offset(300f, 300f), Offset(301f, 300f))
+    assertTrue(closed())
+  }
+
+  @Test
+  fun testNarrowerViewKeepsTheZoomedImageInIt() {
+    val width = mutableStateOf(800)
+    simplexWindowState.windowState = WindowState(size = DpSize(800.dp, 600.dp))
+    ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
+      Box(Modifier.size(width.value.dp, 600.dp)) {
+        ImageFullScreenView({ gallery(quadrants(400, 200)) }) {}
+      }
+    }.use { scene ->
+      scene.wheel(0f, -3f)
+      width.value = 600
+      scene.render()
+      assertEquals(Shown.RED, scene.shownAt(15))
+    }
   }
 }
