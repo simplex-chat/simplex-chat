@@ -213,7 +213,6 @@ data NameRegistration = NameRegistration
     nrOwner :: Address,
     nrCommitment :: ByteString,
     nrSealed :: Text,
-    -- | '' for an order stored before orders signed the terms
     nrAgreedTerms :: Text,
     nrPhase :: NamePhase,
     nrYears :: Int,

@@ -204,7 +204,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
     it "has the contract's fields" testViewFields
-    it "has the terms the order signed, null for an order stored before orders signed them" testViewTerms
+    it "has the terms the order signed" testViewTerms
     it "reads the intent nonce in committed, the acceptance of the terms of the name's kind before its reveal, and nothing in taken, leaving a failed read null and named in unread" testViewReads
     it "reads the chain only in a free view slot and within one deadline, else answers every chain field unread" testViewReadsBounded
     it "reads the order's balance, held until its holder's invoice expires and free past it, and the cents its order took from another's" testViewBalance
@@ -1648,10 +1648,7 @@ testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = "2026-10-23/community"} (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  let terms :: NameRegistration -> Maybe J.Value
-      terms r' = field "terms" $ objectOf $ viewJSON (testNamesConfig node) r' Nothing Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}
-  terms r `shouldBe` Just "2026-10-23/community"
-  terms r {nrAgreedTerms = ""} `shouldBe` Just J.Null
+  field "terms" (objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}) `shouldBe` Just "2026-10-23/community"
 
 testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do

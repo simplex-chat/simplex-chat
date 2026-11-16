@@ -111,7 +111,7 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "expiresAt" .= nrExpiresAt,
       "error" .= nrError,
       "community" .= communityJSON cfg (nrLabelHash r) (isJust $ agreedTermsHash nrAgreedTerms),
-      "terms" .= (if T.null nrAgreedTerms then Nothing else Just nrAgreedTerms)
+      "terms" .= nrAgreedTerms
     ]
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
