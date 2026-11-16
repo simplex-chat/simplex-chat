@@ -17,6 +17,8 @@ module StoreService.Names.Registration
     nodeBytes,
     namehash,
     labelNode,
+    LabelError (..),
+    validLabel,
     LinkKind (..),
     recordKey,
     linkMaxBytes,
@@ -46,17 +48,19 @@ import Crypto.Number.Serialize (os2ip)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.List (find)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
+import qualified Data.Text as T
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
+import Simplex.Chat.Badges.Code (nameLength)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..))
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexDomain (..), SimplexTLD)
 import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
 
 data Registration = Registration
@@ -79,6 +83,17 @@ newtype Node = Node ByteString
 
 nodeBytes :: Node -> ByteString
 nodeBytes (Node node) = node
+
+data LabelError = LELength | LEChars
+  deriving (Eq, Show)
+
+validLabel :: SimplexTLD -> Text -> Either LabelError Text
+validLabel tld label
+  | isNothing (nameLength $ T.length label) = Left LELength
+  | T.toLower label /= label = Left LEChars
+  | otherwise = case strDecode (encodeUtf8 $ label <> decodeLatin1 (strEncode tld)) of
+      Right SimplexDomain {domain, subDomain = []} | domain == label -> Right label
+      _ -> Left LEChars
 
 data LinkKind = LKContact | LKChannel
   deriving (Eq, Show)

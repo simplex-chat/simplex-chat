@@ -65,7 +65,7 @@ import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (tshow)
-import StoreService.Names.Label (LabelError (..), validLabel)
+import StoreService.Names.Registration (LabelError (..), validLabel)
 import System.IO.Error (ioeGetErrorString)
 import Text.Read (readMaybe)
 
