@@ -27,7 +27,7 @@ import Bots.StoreService.NamesContractsTests
     year,
   )
 import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, testNamesConfig, threeYears)
-import Bots.StoreService.NamesProfilesTests (bakeryLink, channelData, contactData, jpeg, linkDataProfile, newsLink)
+import Bots.StoreService.NamesProfilesTests (bakeryLink, channelData, contactData, jpeg, linkDataProfile, newsLink, parsed)
 import Bots.StoreService.NamesStoreTests (atNonce, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
 import Bots.StoreService.WebTests (withServiceStore, withApp)
 import Control.Concurrent (threadDelay)
@@ -54,7 +54,7 @@ import Network.HTTP.Types.Status (statusCode)
 import Simplex.Chat.Types (ChatPeerType (..), ImageData (..), Profile (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (strDecode, strEncode)
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
@@ -458,7 +458,7 @@ testRecordLinks = do
   -- a value of another kind first, so the cap counts only the record's own links
   recordLinks LKContact (T.intercalate ";" $ newsLink : bots) `shouldBe` parsedAs LKContact (take 5 bots)
   where
-    parsedAs kind = map $ \l -> (kind, either error id $ strDecode $ encodeUtf8 l)
+    parsedAs kind = map ((kind,) . parsed)
 
 testRecordEdits :: TVar ChaChaDRG -> IO ()
 testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom) -> withSearch g (\cfg -> cfg {nRecordEditsPerYear = perYear}) id $ \s@Search {node, store} -> do
