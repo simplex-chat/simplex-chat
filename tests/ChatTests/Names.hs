@@ -1079,9 +1079,9 @@ testNameRecordOrWarning = do
   recordOrWarning (registered (Just 900) (Just 2000) record) `shouldBe` Left (NWExpired (utc 900) (Just $ utc 2000))
   recordOrWarning (registered (Just 900) Nothing record) `shouldBe` Left (NWExpired (utc 900) Nothing)
   recordOrWarning (registered (Just 800) (Just 900) record) `shouldBe` Left (NWExpired (utc 800) Nothing)
-  recordOrWarning (NRAvailable $ pricing 5 M.empty) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 2000) 2)
-  recordOrWarning (NRAvailable $ pricing 3 (M.fromList [(5, USDCents 5000)])) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 10000) 2)
-  recordOrWarning (NRAvailable $ pricing 6 M.empty) `shouldBe` Left NWNotRegistered
+  recordOrWarning (NRAvailable (pricing 5 M.empty) Nothing) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 2000) 2)
+  recordOrWarning (NRAvailable (pricing 3 (M.fromList [(5, USDCents 5000)])) Nothing) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 10000) 2)
+  recordOrWarning (NRAvailable (pricing 6 M.empty) Nothing) `shouldBe` Left NWNotRegistered
   recordOrWarning (NRReserved NRRCommunity) `shouldBe` Left NWReservedForCommunity
   recordOrWarning (NRReserved NRRTrademark) `shouldBe` Left NWNotRegistered
   where

@@ -2258,7 +2258,8 @@ processChatCommand cxt nm = \case
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
   APIPrepareGroup userId ccLink direct verifiedDomain groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
-        domain_ = if verifiedDomain == groupClaim gp then verifiedDomain else Nothing
+        vDomain = unStrJSON <$> verifiedDomain
+        domain_ = if vDomain == groupClaim gp then vDomain else Nothing
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
     (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId domain_
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)

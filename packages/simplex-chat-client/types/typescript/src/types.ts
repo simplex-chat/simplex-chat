@@ -3882,7 +3882,7 @@ export interface NetworkConfig {
   logTLSErrors: boolean
 }
 
-export type NetworkError =
+export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
   | NetworkError.UnknownCAError
