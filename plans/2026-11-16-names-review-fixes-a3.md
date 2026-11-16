@@ -26,7 +26,7 @@ A3-18: the lowercase test goes; `domain == label` refuses an upper-case label, a
 
 A3-3, A3-4, A3-5, A3-6:
 - `data LinkData = LDContact ContactShortLinkData | LDChannel GroupShortLinkData`; `ChatKind`, `LinkProfile` and `planProfile` go.
-- `type ProfileFetcher = ConnShortLink 'CMContact -> IO (Either ChatError (Maybe LinkData))`; Nothing for link data that does not decode.
+- `type ProfileFetcher = LinkKind -> ConnShortLink 'CMContact -> IO (Either ChatError (Maybe LinkData))`; Nothing for link data that does not decode. The kind is the one `nameLink` gave; `chatProfile` decodes by it.
 - `chatProfile cc user` reads the link data with `getShortLinkConnReq'` and `decodeLinkUserData`, in `CM` run by `runReaderT (tryAllErrors' …) cc`; the names env holds the bot's `User`.
 - `boundedProfile` logs a failed read once; a non-temporary agent error or undecodable data is `ProfileUnavailable`, any other failure `ProfileUnread`.
 - Preview JSON: `type` and `profile` always; with `ok`, `displayName`, `fullName` and `image` (data:image/ only), and `peerType` and `business` for an address, `groupType` and `publicMemberCount` for a channel. `kind` and `subscribers` go.
@@ -51,7 +51,8 @@ sequenceDiagram
 
 A3-9, A3-12: one outcome type.
 - `data EditOutcome = EOApplied (Maybe TxHash) | EOReverted (Maybe Text)`; `EditState = ESPending | ESSettled EditOutcome`; `EditAnswer`'s `EASettled EditOutcome` replaces `EAApplied` and `EAReverted`.
-- `judge` returns `Maybe EditOutcome`, Nothing for a free nonce; `Judgment` and its two mappings go. The request answers `fromMaybe (EOReverted name)`, the lane `maybe whenFree (settle … . ESSettled)`.
+- `settleRecordEdit` and `settle` take `EditOutcome`.
+- `judge` returns `Judgment`, kept as it is. One `judgmentOutcome :: Judgment -> Maybe EditOutcome`, Nothing for `NonceFree`, replaces its two mappings. The request answers `fromMaybe (EOReverted name)`, the lane `maybe whenFree (settle …)`.
 - A3-12 is superseded by A2-2: the revert is rendered to `Maybe Text` once at the settle sites, by `revertText` until A2-2's `revertReasonText` replaces it; the column keeps text.
 
 ```mermaid
@@ -105,8 +106,14 @@ A3-30: `recordsHandler` and `revealHandler` read at most `maxBodyBytes`.
 ## Tests
 
 - NamesLinksTests: `nameLink` against the chat core's grammar: canonical base64url keys, a server required, contact and channel types only.
-- NamesProfilesTests: the plan tests go; link data to preview JSON for each kind and read state; the fetch classification; the chat core read through `getShortLinkConnReq'`.
+- NamesProfilesTests: the plan tests go; link data to preview JSON for each kind and read state; the fetch classification; the chat core read through `getShortLinkConnReq'`; the `simplex:/` spelling of a cached link answered from its entry.
 - NamesRecordsTests: `EASettled`, `EARefused` reasons, `EAStaleNonce`; links of the core's grammar.
-- WebTests: forwarded IPv4 in canonical form, bracketed IPv6 taken.
+- WebTests: forwarded IPv4 in canonical form, bracketed IPv6 taken; a webhook whose verifier throws `StackOverflow` answered 200.
 - MetricsTests: `runMetrics` ends when its port is taken.
 - Route tables of the test modules wrap `RegistrationId`.
+
+## Test gaps
+
+- A3-10: the claim taken before the commit, and its release when the commit fails, are untested. A test needs a hook between the commit and the send, which Records.hs would gain for the test alone.
+- A3-11: the two log lines, of failed chain checks and of a dry-run revert not judged, are untested; the tests assert the 503 answer.
+- A3-28: `recordsHandler`'s refusal log line and the refusal of a nonce held by another edit are untested.
