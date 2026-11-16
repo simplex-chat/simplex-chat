@@ -4474,7 +4474,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         vec <- withStore (`getMemberRelationsVector` sender)
                         -- this excludes the sender
                         let introducedMemsIdxs = getRelationsIndexes MRIntroduced vec
-                        case jobScope of
+                        if null introducedMemsIdxs then pure [] else case jobScope of
                           DJSGroup {jobSpec} -> do
                             ms <- withStore' $ \db -> getGroupMembersByIndexes db cxt user gInfo introducedMemsIdxs
                             pure $ filter shouldForwardTo ms
