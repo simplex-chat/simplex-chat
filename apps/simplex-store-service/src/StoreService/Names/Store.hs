@@ -130,7 +130,7 @@ import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (maybeFirstRow, tshow)
+import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
@@ -997,7 +997,7 @@ balanceChain db rid =
     Just NameRegistration {nrPhase, nrOwner, nrPayment, nrBalanceSource, nrBalanceUsed} -> do
       let pastUnpaid = nrPhase /= PUnpaid
       lkPaid <- case nrPayment of
-        RPInvoice _ (InvoiceId invId) | pastUnpaid -> maybe 0 fromOnly . listToMaybe <$> (DB.query db "SELECT amount FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId) :: IO [Only Int])
+        RPInvoice _ (InvoiceId invId) | pastUnpaid -> maybeFirstRow' 0 fromOnly (DB.query db "SELECT amount FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId) :: IO [Only Int])
         _ -> pure 0
       (lkProviderRef, lkLateCredits) <- case nrPayment of
         RPInvoice _ invId -> (,) <$> providerRef db invId <*> lateCredits db invId
@@ -1208,14 +1208,14 @@ creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegi
 -- | Why the closed order's money on the invoice is not all credited; the one rule of the pending log and the alert.
 latePending :: DB.Connection -> InvoiceId -> IO (Maybe LatePending)
 latePending db (InvoiceId invId) =
-  maybe Nothing fromOnly . listToMaybe
-    <$> DB.query db ("SELECT" <> pendingCase <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PUnpaid)
+  maybeFirstRow' Nothing fromOnly $
+    DB.query db ("SELECT" <> pendingCase <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PUnpaid)
 
 -- | Nothing once all of the closed order's money is credited, whatever support reason was given before.
 lateWait :: DB.Connection -> InvoiceId -> IO (Maybe LateWait)
 lateWait db (InvoiceId invId) =
-  maybe Nothing waitOf . listToMaybe
-    <$> DB.query db ("SELECT" <> pendingCase <> ", ni.late_support" <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PUnpaid)
+  maybeFirstRow' Nothing waitOf $
+    DB.query db ("SELECT" <> pendingCase <> ", ni.late_support" <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PUnpaid)
   where
     waitOf :: (Maybe LatePending, Maybe LateSupport) -> Maybe LateWait
     waitOf = \case
@@ -1316,7 +1316,7 @@ toPrepaidCode ((pcId, Binary pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, 
   PrepaidCode {pcId, pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy = RegistrationId <$> reservedBy, pcReservedAt, pcSpentAt, pcRevokedAt, pcExpiresAt, pcCreatedAt}
 
 groupNameCodesIssuedSince :: DB.Connection -> UTCTime -> IO Int
-groupNameCodesIssuedSince db since = maybe 0 fromOnly <$> maybeFirstRow id (DB.query db "SELECT COUNT(*) FROM sx_badge_service_name_prepaid_codes WHERE created_at >= ? AND issued_in_group = 1" (Only since))
+groupNameCodesIssuedSince db since = maybeFirstRow' 0 fromOnly (DB.query db "SELECT COUNT(*) FROM sx_badge_service_name_prepaid_codes WHERE created_at >= ? AND issued_in_group = 1" (Only since))
 
 getPrepaidCode :: DB.Connection -> ByteString -> IO (Maybe PrepaidCode)
 getPrepaidCode db codeHash =
