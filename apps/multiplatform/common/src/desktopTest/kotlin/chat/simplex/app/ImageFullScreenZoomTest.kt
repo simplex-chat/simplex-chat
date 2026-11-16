@@ -50,10 +50,15 @@ class ImageFullScreenZoomTest {
     return ByteArrayOutputStream().also { ImageIO.write(image, "png", it) }.toByteArray()
   }
 
-  private fun gallery(image: ByteArray) = object : ImageGalleryProvider {
+  private fun gallery(image: ByteArray, decodedOnEachCall: Boolean = false) = object : ImageGalleryProvider {
+    private val decoded = ProviderMedia.Image(image, Image.makeFromEncoded(image).toComposeImageBitmap())
     override val initialIndex = 0
     override val totalMediaSize = mutableStateOf(1)
-    override fun getMedia(index: Int) = if (index == 0) ProviderMedia.Image(image, Image.makeFromEncoded(image).toComposeImageBitmap()) else null
+    override fun getMedia(index: Int) = when {
+      index != 0 -> null
+      decodedOnEachCall -> ProviderMedia.Image(image, Image.makeFromEncoded(image).toComposeImageBitmap())
+      else -> decoded
+    }
     override fun currentPageChanged(index: Int) {}
     override fun scrollToStart() {}
     override fun onDismiss(index: Int) {}
@@ -84,6 +89,7 @@ class ImageFullScreenZoomTest {
     sendPointerEvent(PointerEventType.Press, from, buttons = PointerButtons(isPrimaryPressed = true), button = PointerButton.Primary)
     for (step in 1..steps) {
       sendPointerEvent(PointerEventType.Move, from + (to - from) * (step.toFloat() / steps), buttons = PointerButtons(isPrimaryPressed = true))
+      render()
     }
     sendPointerEvent(PointerEventType.Release, to, buttons = PointerButtons(), button = PointerButton.Primary)
   }
@@ -93,11 +99,11 @@ class ImageFullScreenZoomTest {
     sendPointerEvent(PointerEventType.Release, Offset(x, 300f), buttons = PointerButtons(), button = PointerButton.Primary)
   }
 
-  private fun fullScreen(image: ByteArray = quadrants(400, 200), test: ImageComposeScene.(closed: () -> Boolean) -> Unit) {
+  private fun fullScreen(provider: ImageGalleryProvider = gallery(quadrants(400, 200)), test: ImageComposeScene.(closed: () -> Boolean) -> Unit) {
     var closed = false
     simplexWindowState.windowState = WindowState(size = DpSize(800.dp, 600.dp))
     ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
-      ImageFullScreenView({ gallery(image) }) { closed = true }
+      ImageFullScreenView({ provider }) { closed = true }
     }.use { scene -> scene.test { closed } }
   }
 
@@ -154,7 +160,7 @@ class ImageFullScreenZoomTest {
   }
 
   @Test
-  fun testDragKeepsALetterboxedImageInTheView() = fullScreen(quadrants(200, 400)) { closed ->
+  fun testDragKeepsALetterboxedImageInTheView() = fullScreen(gallery(quadrants(200, 400))) { closed ->
     wheel(400f, -8f)
     drag(Offset(750f, 300f), Offset(50f, 300f))
     drag(Offset(750f, 300f), Offset(50f, 300f))
@@ -171,6 +177,31 @@ class ImageFullScreenZoomTest {
   }
 
   @Test
+  fun testDragPansWhenTheGalleryDecodesTheImageAgain() = fullScreen(gallery(quadrants(400, 200), decodedOnEachCall = true)) { closed ->
+    wheel(400f, -8f)
+    drag(Offset(400f, 300f), Offset(340f, 300f), steps = 6)
+    assertFalse(closed())
+    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(330), shownAt(350)))
+  }
+
+  @Test
+  fun testShortPanAt10xMovesAndKeepsTheViewOpen() = fullScreen { closed ->
+    wheel(400f, -13f)
+    drag(Offset(400f, 300f), Offset(390f, 300f), steps = 2)
+    assertFalse(closed())
+    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(380), shownAt(400)))
+  }
+
+  @Test
+  fun testSecondaryButtonDragDoesNotPan() = fullScreen { _ ->
+    wheel(400f, -3f)
+    sendPointerEvent(PointerEventType.Press, Offset(500f, 300f), buttons = PointerButtons(isSecondaryPressed = true), button = PointerButton.Secondary)
+    sendPointerEvent(PointerEventType.Move, Offset(400f, 300f), buttons = PointerButtons(isSecondaryPressed = true))
+    sendPointerEvent(PointerEventType.Release, Offset(400f, 300f), buttons = PointerButtons(), button = PointerButton.Secondary)
+    assertEquals(listOf(Shown.RED, Shown.BLUE), listOf(shownAt(390), shownAt(410)))
+  }
+
+  @Test
   fun testClickWithPointerJitterCloses() = fullScreen { closed ->
     wheel(400f, -8f)
     drag(Offset(300f, 300f), Offset(301f, 300f))
@@ -180,13 +211,15 @@ class ImageFullScreenZoomTest {
   @Test
   fun testNarrowerViewKeepsTheZoomedImageInIt() {
     val width = mutableStateOf(800)
+    val provider = gallery(quadrants(400, 200))
     simplexWindowState.windowState = WindowState(size = DpSize(800.dp, 600.dp))
     ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
       Box(Modifier.size(width.value.dp, 600.dp)) {
-        ImageFullScreenView({ gallery(quadrants(400, 200)) }) {}
+        ImageFullScreenView({ provider }) {}
       }
     }.use { scene ->
       scene.wheel(0f, -3f)
+      assertEquals(Shown.RED, scene.shownAt(600))
       width.value = 600
       scene.render()
       assertEquals(Shown.RED, scene.shownAt(15))

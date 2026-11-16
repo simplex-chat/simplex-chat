@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -16,6 +17,7 @@ import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
@@ -38,14 +40,16 @@ private fun boundTranslation(translation: Offset, view: IntSize, image: IntSize,
   return Offset(translation.x.coerceIn(-maxX, maxX), translation.y.coerceIn(-maxY, maxY))
 }
 
-private suspend fun PointerInputScope.detectDragPastTouchSlop(onDrag: (Offset) -> Unit) = awaitEachGesture {
+private val DRAG_THRESHOLD = 4.dp
+
+private suspend fun PointerInputScope.detectDragPastThreshold(onDrag: (Offset) -> Unit) = awaitEachGesture {
   val down = awaitFirstDown(requireUnconsumed = false)
   var pan = Offset.Zero
   var dragging = false
   do {
     val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
     pan += change.positionChange()
-    if (!dragging) dragging = pan.getDistance() > viewConfiguration.touchSlop
+    if (!dragging) dragging = pan.getDistance() > DRAG_THRESHOLD.toPx()
     if (dragging) {
       onDrag(pan)
       pan = Offset.Zero
@@ -153,22 +157,23 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           translationX = 0f
           translationY = 0f
         }
-        val zoomLayer = Modifier.graphicsLayer(
-          scaleX = scale,
-          scaleY = scale,
-          translationX = translationX,
-          translationY = translationY,
-        )
-        fun panWithin(translation: Offset, view: IntSize, image: ImageBitmap, zoom: Float) {
-          val bounded = boundTranslation(translation, view, IntSize(image.width, image.height), zoom)
-          translationX = bounded.x
-          translationY = bounded.y
-        }
-        fun modifier(image: ImageBitmap) = Modifier
+        fun modifier(image: ImageBitmap): Modifier {
+          val imageSize = IntSize(image.width, image.height)
+          fun panBy(delta: Offset, view: IntSize) {
+            val panned = boundTranslation(Offset(translationX, translationY) + delta, view, imageSize, scale)
+            translationX = panned.x
+            translationY = panned.y
+          }
+          return Modifier
           .onGloballyPositioned {
             viewWidth = it.size.width
           }
-          .then(if (appPlatform.isAndroid) zoomLayer.pointerInput(Unit) {
+          .then(if (appPlatform.isAndroid) Modifier.graphicsLayer(
+            scaleX = scale,
+            scaleY = scale,
+            translationX = translationX,
+            translationY = translationY,
+          ).pointerInput(Unit) {
             detectTransformGestures(
               { allowTranslate },
               onGesture = { _, pan, gestureZoom, _ ->
@@ -184,11 +189,11 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
               }
             )
           } else Modifier
-            .onSizeChanged { panWithin(Offset(translationX, translationY), it, image, scale) }
-            .pointerInput(image) {
-              detectDragPastTouchSlop { pan -> panWithin(Offset(translationX, translationY) + pan, size, image, scale) }
+            .onSizeChanged { panBy(Offset.Zero, it) }
+            .pointerInput(imageSize) {
+              detectDragPastThreshold { pan -> panBy(pan, size) }
             }
-            .pointerInput(image) {
+            .pointerInput(imageSize) {
               awaitPointerEventScope {
                 while (true) {
                   val event = awaitPointerEvent()
@@ -196,17 +201,23 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
                   val change = event.changes.first()
                   if (change.scrollDelta.y == 0f) continue
                   val zoomed = (scale * WHEEL_ZOOM_STEP.pow(-change.scrollDelta.y)).coerceIn(1f, 20f)
-                  val translation = Offset(translationX, translationY)
-                  val pointer = change.position - Offset(size.width / 2f, size.height / 2f) - translation
-                  panWithin(translation + pointer * (1 - zoomed / scale), size, image, zoomed)
+                  val pointer = change.position - Offset(size.width / 2f, size.height / 2f) - Offset(translationX, translationY)
+                  val shift = pointer * (1 - zoomed / scale)
                   scale = zoomed
+                  panBy(shift, size)
                   change.consume()
                 }
               }
             }
-            .then(zoomLayer)
+            .graphicsLayer {
+              scaleX = scale
+              scaleY = scale
+              this.translationX = translationX
+              this.translationY = translationY
+            }
           )
           .fillMaxSize()
+        }
         if (media is ProviderMedia.Image) {
           val (data: ByteArray, imageBitmap: ImageBitmap) = media
           FullScreenImageView(modifier(imageBitmap), data, imageBitmap)
