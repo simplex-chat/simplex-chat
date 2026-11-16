@@ -40,6 +40,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), signRecoverable)
+import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
@@ -48,7 +49,7 @@ import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Records
-import StoreService.Names.Registration (Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, linkMaxBytes, multicallCalldata, nodeBytes, resolverDomain, setTextDigest, setTextWithSigCalldata)
+import StoreService.Names.Registration (LinkKind (..), Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, linkMaxBytes, multicallCalldata, nodeBytes, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Sender (Sender, followTransactions, newSender)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
@@ -196,10 +197,10 @@ ownerTwo s@Setup {owner} nonce contactValue channelValue = do
   pure $ editOf $ first :| [second]
 
 contact :: Text -> RecordChange
-contact = RCSetText contactKey
+contact = RCSetText LKContact
 
 channel :: Text -> RecordChange
-channel = RCSetText channelKey
+channel = RCSetText LKChannel
 
 -- | The owner's channel edit with nonce 0 and the default deadline.
 ownerEdit :: Setup -> Text -> IO EditRequest
@@ -264,7 +265,7 @@ testViemVectors g = withSetup g $ \s@Setup {owner = EphemeralWallet {ewAddress}}
   SignedChange {scSignature = setSig} <- signChange s (owner s) (channel viemChannelLink) 0 deadline
   setSig `shouldBe` viemSetSignature
   recoverAddress setSig (digestOf (channel viemChannelLink) 0 deadline) `shouldReturn` Right viemAddress
-  setTextWithSigCalldata aliceNode channelKey viemChannelLink 0 deadline setSig `shouldBe` viemSetCall
+  setTextWithSigCalldata aliceNode LKChannel viemChannelLink 0 deadline setSig `shouldBe` viemSetCall
   SignedChange {scSignature = clearSig} <- signChange s (owner s) RCClear 1 deadline
   clearSig `shouldBe` viemClearSignature
   clearRecordsWithSigCalldata aliceNode 1 deadline clearSig `shouldBe` viemClearCall
@@ -275,8 +276,8 @@ testViemMulticall g = withSetup g $ \s -> do
   [second] <- pure rest
   (scSignature first, scSignature second) `shouldBe` (viemContactSignature, viemChannelSignature)
   multicallCalldata
-    [ setTextWithSigCalldata aliceNode contactKey viemContactLink 0 deadline (scSignature first),
-      setTextWithSigCalldata aliceNode channelKey viemChannelLink 1 deadline (scSignature second)
+    [ setTextWithSigCalldata aliceNode LKContact viemContactLink 0 deadline (scSignature first),
+      setTextWithSigCalldata aliceNode LKChannel viemChannelLink 1 deadline (scSignature second)
     ]
     `shouldBe` viemMulticall
 
@@ -286,7 +287,7 @@ testRequestOrder = do
       request = editRequest . requestOf . (: [])
   changesOf (request valid) `shouldBe` Right [channel viemChannelLink]
   changesOf (request $ editFields [("clear", J.Bool True)]) `shouldBe` Right [RCClear]
-  changesOf (request $ editFields [("key", J.String contactKey), ("value", "")]) `shouldBe` Right [RCSetText contactKey ""]
+  changesOf (request $ editFields [("key", J.String contactKey), ("value", "")]) `shouldBe` Right [contact ""]
   -- formats first: a bad label hash or key is bad_request even with a bad link
   editRequest (KM.insert "labelHash" (J.String $ "0x" <> T.toUpper (T.drop 2 aliceHashText)) $ requestOf [withLink "https://x/a"]) `shouldBe` Left EIBadRequest
   request (editFields [("key", "simplex.other"), ("value", J.String viemChannelLink)]) `shouldBe` Left EIBadRequest
@@ -951,7 +952,7 @@ changeJson SignedChange {scChange, scNonce, scDeadline, scSignature} =
       ("signature", J.String $ hex $ serializeSignature scSignature)
     ]
       <> case scChange of
-        RCSetText key value -> [("key", J.String key), ("value", J.String value)]
+        RCSetText key value -> [("key", J.String $ textEncode key), ("value", J.String value)]
         RCClear -> [("clear", J.Bool True)]
 
 -- | The body of a request with these edits for alicebakery.

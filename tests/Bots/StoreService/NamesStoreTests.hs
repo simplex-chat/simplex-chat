@@ -27,7 +27,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (TermsAcceptance (..))
+import StoreService.Names.Registration (LinkKind (..), TermsAcceptance (..))
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), communityTermsPrefix, parseAnyCaseAddress, parseSignature)
 import StoreService.Names.Store
 import StoreService.Store (RevokeResult (..))
@@ -695,8 +695,8 @@ signedAt :: Word64 -> RecordChange -> SignedChange
 signedAt scNonce scChange = SignedChange {scChange, scNonce, scDeadline = 1792832400, scSignature = signature}
 
 setChannel, setContact :: RecordChange
-setChannel = RCSetText "simplex.channel" "https://smp9.simplex.im/c#abc"
-setContact = RCSetText "simplex.contact" "https://smp8.simplex.im/a#abc"
+setChannel = RCSetText LKChannel "https://smp9.simplex.im/c#abc"
+setContact = RCSetText LKContact "https://smp8.simplex.im/a#abc"
 
 testTransactions :: IO ()
 testTransactions = withServiceStore $ \st -> do

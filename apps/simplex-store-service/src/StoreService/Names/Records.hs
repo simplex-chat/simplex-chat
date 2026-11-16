@@ -33,7 +33,6 @@ import Data.Maybe (listToMaybe)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -46,7 +45,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (Contracts, NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
-import StoreService.Names.Registration (Node, channelRecordKey, clearRecordsDigest, clearRecordsWithSigCalldata, contactRecordKey, labelNode, multicallCalldata, resolverDomain, setTextDigest, setTextWithSigCalldata)
+import StoreService.Names.Registration (LinkKind (..), Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, multicallCalldata, recordKey, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Revert (RevertName (..), revertText)
 import StoreService.Names.Sender (SendError (..), Sender, submitTransaction)
 import StoreService.Names.Store
@@ -340,8 +339,8 @@ judge rs@Records {rsChain, rsContracts} RecordEdit {reId, reLabelHash, reOwner, 
             pure $ if holds then Applied Nothing else NonceTaken
   where
     holdsChange = \case
-      RCSetText key value -> (== value) <$> record (encodeUtf8 key)
-      RCClear -> (&&) <$> (unset <$> record contactRecordKey) <*> (unset <$> record channelRecordKey)
+      RCSetText key value -> (== value) <$> record (recordKey key)
+      RCClear -> (&&) <$> (unset <$> record (recordKey LKContact)) <*> (unset <$> record (recordKey LKChannel))
     record = ExceptT . textRecord rsContracts reLabelHash
     unset = (== "")
 

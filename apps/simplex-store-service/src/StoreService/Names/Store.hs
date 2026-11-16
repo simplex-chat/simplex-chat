@@ -150,7 +150,7 @@ import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (Commitment, TermsAcceptance (..), TermsHash)
+import StoreService.Names.Registration (Commitment, LinkKind, TermsAcceptance (..), TermsHash)
 import StoreService.Names.Signatures (AgreedTerms, OrderFields (..), parseSignature)
 import StoreService.Providers (Rate, Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
@@ -579,7 +579,7 @@ data NewTransaction = NewTransaction
   }
 
 -- | A text record set to a value, "" removing it, or every record cleared.
-data RecordChange = RCSetText Text Text | RCClear
+data RecordChange = RCSetText LinkKind Text | RCClear
   deriving (Eq, Show)
 
 data EditState = ESPending | ESMined (Maybe TxHash) | ESReverted (Maybe Text)
@@ -1657,7 +1657,7 @@ insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreCha
         (editId, int64 scNonce, key, value, int64 scDeadline, Binary $ serializeSignature scSignature)
       where
         (key, value) = case scChange of
-          RCSetText k v -> (Just k, Just v)
+          RCSetText k v -> (Just $ textEncode k, Just v)
           RCClear -> (Nothing, Nothing)
 
 recordEditColumns :: Query
@@ -1691,7 +1691,7 @@ toRecordEdit (reId, Binary lh, Binary owner, Binary reBodyHash, state, revert, m
     toChange (nonce, key_, value_, deadline, Binary sig) = do
       scSignature <- decodeSignature sig
       scChange <- case (key_, value_) of
-        (Just key, Just value) -> Right $ RCSetText key value
+        (Just key, Just value) | Just kind <- textDecode key -> Right $ RCSetText kind value
         (Nothing, Nothing) -> Right RCClear
         _ -> Left $ "name_record_changes record: " <> tshow reId
       pure SignedChange {scChange, scNonce = word64 nonce, scDeadline = word64 deadline, scSignature}

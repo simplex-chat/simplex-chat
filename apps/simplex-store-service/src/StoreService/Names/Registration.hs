@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -17,10 +18,9 @@ module StoreService.Names.Registration
     namehash,
     labelNode,
     LinkKind (..),
+    recordKey,
     linkMaxBytes,
     nameLink,
-    contactRecordKey,
-    channelRecordKey,
     sponsorDomain,
     resolverDomain,
     policyDomain,
@@ -45,6 +45,7 @@ import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Crypto.Number.Serialize (os2ip)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.List (find)
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
@@ -52,7 +53,7 @@ import Data.Word (Word64)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..))
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
-import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
@@ -79,17 +80,21 @@ newtype Node = Node ByteString
 nodeBytes :: Node -> ByteString
 nodeBytes (Node node) = node
 
-contactRecordKey, channelRecordKey :: ByteString
-contactRecordKey = "simplex.contact"
-channelRecordKey = "simplex.channel"
-
 data LinkKind = LKContact | LKChannel
   deriving (Eq, Show)
+
+instance TextEncoding LinkKind where
+  textEncode = \case
+    LKContact -> "simplex.contact"
+    LKChannel -> "simplex.channel"
+  textDecode t = find ((t ==) . textEncode) [LKContact, LKChannel]
+
+recordKey :: LinkKind -> ByteString
+recordKey = encodeUtf8 . textEncode
 
 linkMaxBytes :: Int
 linkMaxBytes = 1024
 
--- | A short link within the bound, as the chat core reads it, with the record kind of its type.
 nameLink :: Text -> Maybe (LinkKind, ConnShortLink 'CMContact)
 nameLink link
   | B.length s > linkMaxBytes = Nothing
@@ -201,12 +206,12 @@ acceptCalldata TermsKind {tkRelayFunction} commitment owner deadline TermsAccept
         Dynamic $ abiBytes $ serializeSignature taSignature
       ]
 
-setTextDigest :: Eip712Domain -> Node -> Text -> Text -> Word64 -> Word64 -> ByteString
-setTextDigest domain node key value nonce deadline =
+setTextDigest :: Eip712Domain -> Node -> LinkKind -> Text -> Word64 -> Word64 -> ByteString
+setTextDigest domain node kind value nonce deadline =
   hashTypedData
     domain
     "SetText(bytes32 node,string key,string value,uint256 nonce,uint256 deadline)"
-    [bytes32 $ nodeBytes node, VBytes $ encodeUtf8 key, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
+    [bytes32 $ nodeBytes node, VBytes $ recordKey kind, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
 clearRecordsDigest :: Eip712Domain -> Node -> Word64 -> Word64 -> ByteString
 clearRecordsDigest domain node nonce deadline =
@@ -215,12 +220,12 @@ clearRecordsDigest domain node nonce deadline =
     "ClearRecords(bytes32 node,uint256 nonce,uint256 deadline)"
     [bytes32 $ nodeBytes node, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-setTextWithSigCalldata :: Node -> Text -> Text -> Word64 -> Word64 -> RecoverableSignature -> ByteString
-setTextWithSigCalldata (Node node) key value nonce deadline sig =
+setTextWithSigCalldata :: Node -> LinkKind -> Text -> Word64 -> Word64 -> RecoverableSignature -> ByteString
+setTextWithSigCalldata (Node node) kind value nonce deadline sig =
   selector "setTextWithSig(bytes32,string,string,uint256,uint256,bytes)"
     <> abiTuple
       [ Static node,
-        Dynamic $ abiBytes $ encodeUtf8 key,
+        Dynamic $ abiBytes $ recordKey kind,
         Dynamic $ abiBytes $ encodeUtf8 value,
         Static $ uint256 nonce,
         Static $ uint256 deadline,
@@ -257,7 +262,7 @@ registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver}
 
 recordCalls :: Registration -> [ByteString]
 recordCalls Registration {rLabel, rTLD, rContactLink, rChannelLink} =
-  catMaybes [setText contactRecordKey <$> rContactLink, setText channelRecordKey <$> rChannelLink]
+  catMaybes [setText (recordKey LKContact) <$> rContactLink, setText (recordKey LKChannel) <$> rChannelLink]
   where
     setText key link =
       selector "setText(bytes32,string,string)"

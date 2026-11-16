@@ -77,7 +77,7 @@ import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
-import StoreService.Names.Registration (TermsHash, channelRecordKey, contactRecordKey, labelNode, nodeBytes)
+import StoreService.Names.Registration (LinkKind (..), TermsHash, labelNode, nodeBytes, recordKey)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import StoreService.Safely (safely)
@@ -192,8 +192,8 @@ nameRecords ct lh RegisteredName {rnOwner, rnResolver}
   | otherwise =
       withinDeadline ct "name records" $ together $
         (\rdContact rdChannel rdNonce -> Just NameRecords {rdContact, rdChannel, rdNonce})
-          <$> concurrent (textRecord ct lh contactRecordKey)
-          <*> concurrent (textRecord ct lh channelRecordKey)
+          <$> concurrent (textRecord ct lh $ recordKey LKContact)
+          <*> concurrent (textRecord ct lh $ recordKey LKChannel)
           <*> concurrent (resolverNonce ct rnOwner)
 
 -- | The default resolver's record, "" when unset.
