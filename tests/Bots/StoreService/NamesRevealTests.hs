@@ -48,7 +48,7 @@ import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (RevealFields (..), parseRevealFields)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), getRegistration)
+import StoreService.Names.Store (NameRegistration (..), NameReveal (..), OrderPhase (..), getRegistration)
 import StoreService.Names.Turns (labelTurnCount)
 import StoreService.Web.Http (createLimit, holdMicros, nameBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -156,7 +156,7 @@ orderOf r@Registration {rLabel} = aliceOrder {oLabel = rLabel, oCommitment = mak
 committed :: Ctx -> Order -> IO RegistrationId
 committed ctx o = do
   NameRegistration {nrId} <- paidOrder ctx o
-  _ <- change ctx nrId $ \r -> r {nrPhase = PCommitted, nrRevealAfter = Just revealAfter, nrRevealBefore = Just revealBefore}
+  _ <- change ctx nrId $ \r -> r {nrPhase = OCommitted, nrRevealAfter = Just revealAfter, nrRevealBefore = Just revealBefore}
   pure nrId
 
 paidOrder :: Ctx -> Order -> IO NameRegistration
@@ -343,7 +343,7 @@ testWithLinks = bounded "with links" $ withReveals $ \Fx {fCtx = ctx} -> do
   acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
   NameRegistration {nrVersion, nrPhase, nrReveal, nrLinksRefusedAt} <- stored ctx rid
-  (nrVersion, nrPhase, nrLinksRefusedAt) `shouldBe` (v + 1, PCommitted, Nothing)
+  (nrVersion, nrPhase, nrLinksRefusedAt) `shouldBe` (v + 1, OCommitted, Nothing)
   nrReveal
     `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig, rvAcceptance = Just acceptance}
   (status, view) <- woken "registration poll" poll
@@ -391,7 +391,7 @@ testRepeats = withReveals $ \Fx {fCtx = ctx} -> do
   rid <- committed ctx (orderOf alice)
   body <- ownerBody ctx alice
   reveal ctx rid body `shouldReturn` accepted
-  v <- change ctx rid $ \r -> r {nrPhase = PRegistering}
+  v <- change ctx rid $ \r -> r {nrPhase = ORegistering}
   reveal ctx rid body `shouldReturn` accepted
   resigned <- (\sig -> bodyOf sig alice 0 revealBefore) <$> signIntent ctx keyA alice 1 revealBefore
   reveal ctx rid resigned `shouldReturn` badRequest
@@ -472,7 +472,7 @@ testStateAndFormat = withReveals $ \Fx {fCtx = ctx@Ctx {cClock}} -> do
   reveal ctx (RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g") body `shouldReturn` refused 404 "not_found"
   NameRegistration {nrId = rid} <- paidOrder ctx (orderOf alice)
   reveal ctx rid body `shouldReturn` badRequest
-  _ <- change ctx rid $ \r -> r {nrPhase = PCommitted, nrRevealAfter = Just revealAfter, nrRevealBefore = Just revealBefore}
+  _ <- change ctx rid $ \r -> r {nrPhase = OCommitted, nrRevealAfter = Just revealAfter, nrRevealBefore = Just revealBefore}
   unchanged <- unwritten <$> stored ctx rid
   let text k = case KM.lookup k body of
         Just (J.String t) -> t

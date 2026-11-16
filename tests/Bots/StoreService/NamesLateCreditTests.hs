@@ -177,8 +177,7 @@ closedOrder :: Late -> Text -> Bool -> IO ()
 closedOrder l@Late {lStore} r card = do
   placeOrderRow lStore r card 20000 (at 60)
   settleAt l r (SigClosed nothingPaid PaidInPart) (at 61) `shouldReturn` Right ISExpired
-  NameRegistration {nrPhase, nrLive} <- reg lStore r
-  (nrPhase, nrLive) `shouldBe` (PUnpaid, False)
+  nrPhase <$> reg lStore r `shouldReturn` OUnpaid False
 
 -- | The provider reports the signal for the order's invoice, and the poller reads it on a hint, as a webhook asks; the logs.
 readSignal :: Late -> Text -> PaymentSignal -> IO Text
@@ -237,8 +236,8 @@ testFundedThenSettledLate = withLate $ \l@Late {lStore = st} -> do
   holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
   settleAt l "h" (SigFunded (btcPaidOf 480000 480000 0) PaidInFull) (at 50) `shouldReturn` Right ISOpen
   settleAt l "h" (SigSettled (btcPaidOf 480000 480000 480000) (at 120)) (at 120) `shouldReturn` Right ISPaid
-  NameRegistration {nrPhase, nrLive, nrPayment} <- reg st "h"
-  (nrPhase, nrLive, buUsed <$> paymentBalance nrPayment) `shouldBe` (PQueued, True, Just 10000)
+  NameRegistration {nrPhase, nrPayment} <- reg st "h"
+  (nrPhase, buUsed <$> paymentBalance nrPayment) `shouldBe` (OQueued, Just 10000)
   figures st "s" (at 120) `shouldReturn` Just (0, 10000, 0, Nothing)
   invariantHolds st "s"
 
@@ -249,7 +248,7 @@ testHoldNotSpent = withLate $ \l@Late {lStore = st} -> do
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_balances SET reserved_by = NULL WHERE registration_id = ?" (Only ("unspentsrc" :: Text))
   logs <- capturingStderr $ settleAt l "unspent" (SigSettled (btcPaidOf 480000 480000 480000) (at 10)) (at 10) `shouldReturn` Right ISPaid
   logs `shouldSatisfy` logged "ERROR" "invoice ref-inv-unspent queued its order as paid, but the balance of registration unspentsrc it held could not be spent"
-  nrPhase <$> reg st "unspent" `shouldReturn` PQueued
+  nrPhase <$> reg st "unspent" `shouldReturn` OQueued
   balanceOf st "unspentsrc" `shouldReturn` Just (10000, 10000, 0)
 
 -- | The unique index keeping one live order per commitment is dropped, so a second live order can meet the first at settlement.
@@ -266,8 +265,7 @@ testLiveOrderExists = withLate $ \l@Late {lStore = st} -> do
   meetsLiveOrder st "a"
   logs <- readSignal l "a" (SigSettled (btcPaid lateUnits lateUnits) (at 10))
   logs `shouldSatisfy` logged "ERROR" "invoice ref-inv-a was paid while another live order held its order's commitment, or its owner and name"
-  NameRegistration {nrPhase, nrLive} <- reg st "a"
-  (nrPhase, nrLive) `shouldBe` (PUnpaid, False)
+  nrPhase <$> reg st "a" `shouldReturn` OUnpaid False
   balanceOf st "a" `shouldReturn` Just (19200, 19200, 0)
 
 testLiveOrderExistsHolder :: IO ()
@@ -315,7 +313,7 @@ testCloseAndCancel = withLate $ \l@Late {lStore = st, lWaiters} -> do
   placeOrderRow st "p" False 20000 (at 60)
   settleAt l "p" (SigFunded (btcPaid lateUnits 160000) PaidInPart) (at 10) `shouldReturn` Right ISOpen
   void $ readSignal l "p" (SigClosed (btcPaid lateUnits 160000) PaidInPart)
-  nrLive <$> reg st "p" `shouldReturn` False
+  orderLive <$> reg st "p" `shouldReturn` False
   balanceOf st "p" `shouldReturn` Just (9600, 9600, 0)
   placeOrderRow st "c" False 20000 (at 60)
   settleAt l "c" (SigFunded (btcPaid lateUnits lateUnits) PaidInFull) (at 10) `shouldReturn` Right ISOpen
@@ -580,7 +578,7 @@ testOverpaidInTime = withLate $ \l@Late {lStore = st} -> do
   mapM_ (\(r, card) -> placeOrderRow st r card 20000 (at 60)) [("over", False), ("exact", False), ("card", True)]
   logs <- readSignal l "over" (SigSettled (btcPaidOf lateUnits 480000 480000) (at 10))
   logs `shouldSatisfy` logged "NOTE" "invoice ref-inv-over was overpaid; credited 9600 cents of the extra to its order's balance for 160000 units at 60000.5 (invoice 62500, current 60000.5)"
-  nrPhase <$> reg st "over" `shouldReturn` PQueued
+  nrPhase <$> reg st "over" `shouldReturn` OQueued
   creditsOf st "over" `shouldReturn` [(Just 160000, Just "62500", Just "60000.5", Just "60000.5", 9600)]
   balanceOf st "over" `shouldReturn` Just (9600, 9600, 0)
   void $ passAt l (at 20)
@@ -589,7 +587,7 @@ testOverpaidInTime = withLate $ \l@Late {lStore = st} -> do
   void $ readSignal l "exact" (SigSettled (btcPaidOf lateUnits lateUnits lateUnits) (at 10))
   void $ readSignal l "card" (SigSettled (cardPaid 20000 20000) (at 10))
   void $ passAt l (at 21)
-  mapM (fmap nrPhase . reg st) ["exact", "card"] `shouldReturn` [PQueued, PQueued]
+  mapM (fmap nrPhase . reg st) ["exact", "card"] `shouldReturn` [OQueued, OQueued]
   mapM (balanceOf st) ["exact", "card"] `shouldReturn` [Nothing, Nothing]
 
 testOverpaidByPass :: IO ()

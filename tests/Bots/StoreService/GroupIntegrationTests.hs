@@ -17,7 +17,7 @@ import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
-import StoreService.Names.Store (CodeIssuer (..), NamePhase (PFailed), NameRegistration (nrFailedAt, nrPhase), NewTransaction (..), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
+import StoreService.Names.Store (CodeIssuer (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
@@ -541,7 +541,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     now <- getCurrentTime
     Balances.placeOrderRow st "f" False 10000 (addUTCTime 3600 now)
     unpaid <- reg st "f"
-    write st unpaid {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    write st unpaid {nrPhase = OFailed t0 FRNotRegistered} `shouldReturn` Written 2
     answerCall node registrar (ownerOfSelector <> labelBytes "f") $ Reverts ""
     closeRaw cc "nothing" `shouldReturn` Left "Nothing recorded: no order has the reference nothing."
     logs <- capturingStderr $
@@ -557,7 +557,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     balanceRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
     Balances.placeOrderRow st "g" False 10000 (addUTCTime 3600 now)
     unpaidG <- reg st "g"
-    write st unpaidG {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    write st unpaidG {nrPhase = OFailed t0 FRNotRegistered} `shouldReturn` Written 2
     answerCall node registrar (ownerOfSelector <> labelBytes "g") $ Returns $ addressWord ownerA
     answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "g") $ Returns $ uint256 (2000000000 :: Int)
     registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
@@ -573,7 +573,7 @@ testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     now <- getCurrentTime
     Balances.placeOrderRow st "s" False 10000 (addUTCTime 3600 now)
     unpaid <- reg st "s"
-    write st unpaid {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    write st unpaid {nrPhase = OFailed t0 FRNotRegistered} `shouldReturn` Written 2
     answerCall node registrar (ownerOfSelector <> labelBytes "s") $ Reverts ""
     replyTo cc alice "/close nothing" `shouldReturn` "Nothing recorded: no order has the reference nothing."
     replyTo cc alice "/close inv-s"

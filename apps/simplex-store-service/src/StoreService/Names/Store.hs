@@ -12,6 +12,10 @@ module StoreService.Names.Store
     CodeHash,
     BodyHash,
     NamePhase (..),
+    Live,
+    OrderPhase (..),
+    namePhase,
+    FailReason (..),
     enumTextDecode,
     OrderPayment (..),
     BalanceUse (..),
@@ -200,6 +204,43 @@ instance FromField NamePhase where fromField = fromTextField_ textDecode
 
 instance ToField NamePhase where toField = toField . textEncode
 
+type Live = Bool
+
+data OrderPhase
+  = OUnpaid Live
+  | OQueued
+  | OCommitting
+  | OCommitted
+  | ORegistering
+  | ORegistered Word64 UTCTime
+  | OTaken
+  | OFailed UTCTime FailReason
+  deriving (Eq, Show)
+
+namePhase :: OrderPhase -> NamePhase
+namePhase = \case
+  OUnpaid _ -> PUnpaid
+  OQueued -> PQueued
+  OCommitting -> PCommitting
+  OCommitted -> PCommitted
+  ORegistering -> PRegistering
+  ORegistered {} -> PRegistered
+  OTaken -> PTaken
+  OFailed {} -> PFailed
+
+data FailReason = FRNotSignedInTime | FRNotRegistered
+  deriving (Eq, Show, Enum, Bounded)
+
+instance TextEncoding FailReason where
+  textEncode = \case
+    FRNotSignedInTime -> "The name was not signed in time"
+    FRNotRegistered -> "The name could not be registered"
+  textDecode = enumTextDecode
+
+instance FromField FailReason where fromField = fromTextField_ textDecode
+
+instance ToField FailReason where toField = toField . textEncode
+
 -- | OPDifference: an invoice of the price above the balance the order holds. OPBalance: wholly from a balance, with neither invoice nor code.
 data OrderPayment
   = OPInvoice ServicePaymentMethod InvoiceId
@@ -250,7 +291,7 @@ data NameRegistration = NameRegistration
     nrCommitment :: Commitment,
     nrSealed :: Text,
     nrAgreedTerms :: AgreedTerms,
-    nrPhase :: NamePhase,
+    nrPhase :: OrderPhase,
     nrYears :: Int,
     nrPrice :: Int,
     nrPayment :: OrderPayment,
@@ -261,11 +302,6 @@ data NameRegistration = NameRegistration
     nrRegisterBlock :: Maybe Word64,
     nrRevealAfter :: Maybe Word64,
     nrRevealBefore :: Maybe Word64,
-    nrExpiresAt :: Maybe Word64,
-    nrRegisteredAt :: Maybe UTCTime,
-    nrFailedAt :: Maybe UTCTime,
-    nrError :: Maybe Text,
-    nrLive :: Bool,
     nrOrderHash :: OrderHash,
     nrMoves :: Int,
     nrLinksRefusedAt :: Maybe UTCTime,
@@ -701,18 +737,27 @@ type RegistrationRow =
   (Text, Int64, Binary ByteString, Int, Int64, Binary ByteString, Binary ByteString, Text, NamePhase, Int)
     :. (Int, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe (Binary ByteString), Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
-    :. (Maybe UTCTime, Maybe Text, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, Int)
+    :. (Maybe UTCTime, Maybe FailReason, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, Int)
     :. (AgreedTerms, Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString))
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
-  ( (rid, nrVersion, Binary lh, nrLength, duration, Binary owner, Binary nrCommitment, nrSealed, nrPhase, nrYears)
+  ( (rid, nrVersion, Binary lh, nrLength, duration, Binary owner, Binary nrCommitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
-      :. (signature_, nrCommitTx, commitBlock, nrRegisterTx, registerBlock, revealAfter, revealBefore, expiresAt, nrRegisteredAt)
-      :. (nrFailedAt, nrError, BI nrLive, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
+      :. (signature_, nrCommitTx, commitBlock, nrRegisterTx, registerBlock, revealAfter, revealBefore, expiresAt, registeredAt)
+      :. (failedAt, failReason, BI live, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
       :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
     ) = do
     nrOwner <- decodeAddress owner
+    nrPhase <- case phase of
+      PUnpaid -> Right $ OUnpaid live
+      PQueued -> Right OQueued
+      PCommitting -> Right OCommitting
+      PCommitted -> Right OCommitted
+      PRegistering -> Right ORegistering
+      PRegistered -> note ("name_registrations registered: " <> rid) $ ORegistered . word64 <$> expiresAt <*> registeredAt
+      PTaken -> Right OTaken
+      PFailed -> note ("name_registrations failed: " <> rid) $ OFailed <$> failedAt <*> failReason
     let methodOf m = note ("name_registrations.method: " <> m) (textDecode m)
         balanceUse source = BalanceUse {buSource = RegistrationId source, buUsed = used}
     nrPayment <- case (method_, invoiceId_, codeId_, source_) of
@@ -753,11 +798,6 @@ toRegistration
           nrRegisterBlock = word64 <$> registerBlock,
           nrRevealAfter = word64 <$> revealAfter,
           nrRevealBefore = word64 <$> revealBefore,
-          nrExpiresAt = word64 <$> expiresAt,
-          nrRegisteredAt,
-          nrFailedAt,
-          nrError,
-          nrLive,
           nrOrderHash,
           nrMoves,
           nrLinksRefusedAt,
@@ -822,24 +862,24 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
       (ISExpired, truncateToSecond now, ISOpen, rid, nrVersion, truncateToSecond now)
   if expired > 0
     then
-      updateRegistration db r {nrLive = False} now >>= \case
+      updateRegistration db r {nrPhase = OUnpaid False} now >>= \case
         Written v -> Just v <$ releaseHeldBalance db regId now
         _ -> pure Nothing
     else pure Nothing
 
 -- | Whether an order can still progress to a registration for its name. The unique live indexes allow one such order per commitment,
 -- and one per owner and label hash, so a wallet can order a name again once its registration is done.
--- An unpaid order is live while its invoice is open, which nrLive carries; a taken order is final, its worth kept as a balance.
+-- An unpaid order is live while its invoice is open; a taken order is final, its worth kept as a balance.
 orderLive :: NameRegistration -> Bool
-orderLive NameRegistration {nrPhase, nrLive} = case nrPhase of
-  PUnpaid -> nrLive
-  PQueued -> True
-  PCommitting -> True
-  PCommitted -> True
-  PRegistering -> True
-  PFailed -> True
-  PTaken -> False
-  PRegistered -> False
+orderLive NameRegistration {nrPhase} = case nrPhase of
+  OUnpaid live -> live
+  OQueued -> True
+  OCommitting -> True
+  OCommitted -> True
+  ORegistering -> True
+  OFailed {} -> True
+  OTaken -> False
+  ORegistered {} -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
 -- A closed order is never made live again, and a write that would make the order meet another live one changes nothing.
@@ -862,18 +902,21 @@ updateRegistration db r now = do
           )))
       |]
       )
-      ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice)
+      ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
           :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, Binary . serializeSignature . taSignature <$> acceptance)
-          :. (nrCommitTx, int64 <$> nrCommitBlock, nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
-          :. (truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
+          :. (nrCommitTx, int64 <$> nrCommitBlock, nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> expiresAt)
+          :. (truncateToSecond <$> registeredAt, truncateToSecond <$> failedAt, failReason, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
           :. (rid, nrVersion, BI live, rid, Binary nrCommitment, Binary $ unAddress nrOwner, Binary lh)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
-    NameRegistration {nrCommitTx, nrCommitBlock, nrRegisterTx, nrRegisterBlock, nrRevealAfter, nrRevealBefore, nrExpiresAt} = r
-    NameRegistration {nrRegisteredAt, nrFailedAt, nrError, nrMoves, nrLinksRefusedAt} = r
+    NameRegistration {nrCommitTx, nrCommitBlock, nrRegisterTx, nrRegisterBlock, nrRevealAfter, nrRevealBefore, nrMoves, nrLinksRefusedAt} = r
+    (expiresAt, registeredAt, failedAt, failReason) = case nrPhase of
+      ORegistered expiry at -> (Just expiry, Just at, Nothing, Nothing)
+      OFailed at reason -> (Nothing, Nothing, Just at, Just reason)
+      _ -> (Nothing, Nothing, Nothing, Nothing)
     acceptance = rvAcceptance =<< nrReveal
     live = orderLive r
     refusal =
@@ -895,7 +938,7 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrSealed = ofSealed,
         nrAgreedTerms = ofAgreedTerms,
         nrPrice = price,
-        nrPhase = PQueued,
+        nrPhase = OQueued,
         nrMoves = nrMoves r + 1,
         nrReveal = Nothing,
         nrCommitTx = Nothing,
@@ -904,9 +947,7 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrRegisterBlock = Nothing,
         nrRevealAfter = Nothing,
         nrRevealBefore = Nothing,
-        nrLinksRefusedAt = Nothing,
-        nrFailedAt = Nothing,
-        nrError = Nothing
+        nrLinksRefusedAt = Nothing
       }
 
 -- | Newest first: findLimit of them, then every older one holding a balance above 0, since a balance never expires.
@@ -1077,7 +1118,7 @@ balanceChain db rid =
   getRegistration db rid >>= \case
     Nothing -> pure []
     Just NameRegistration {nrPhase, nrOwner, nrPayment} -> do
-      let pastUnpaid = nrPhase /= PUnpaid
+      let pastUnpaid = namePhase nrPhase /= PUnpaid
           used = if pastUnpaid then paymentBalance nrPayment else Nothing
       (lkPaid, lkProviderRef, lkLateCredits) <- case paymentInvoice nrPayment of
         Just invId -> (,,) <$> (if pastUnpaid then invoiceAmount db invId else pure 0) <*> providerRef db invId <*> lateCredits db invId

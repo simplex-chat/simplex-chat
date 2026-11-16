@@ -17,7 +17,7 @@ where
 
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
-import StoreService.Names.Store (BalanceUse (..), LateSupport (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
+import StoreService.Names.Store (BalanceUse (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, namePhase, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
 import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Received (..), receivedAmount, receivedConfirmed)
 import StoreService.Safely (safelyWith)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
@@ -198,12 +198,12 @@ settleOrder st waiters phases invId signal now' = do
 -- on a closed invoice is late too; the monotonic payment write reports each figure once.
 nameSettled :: DB.Connection -> Text -> InvoiceStatus -> Maybe InvoiceStatus -> SettledMoney -> NameRegistration -> UTCTime -> IO [NameOutcome]
 nameSettled db ref before after money r@NameRegistration {nrId, nrPhase, nrPayment} now
-  | nrPhase /= PUnpaid = pure []
+  | namePhase nrPhase /= PUnpaid = pure []
   | otherwise = case after of
       Just ISPaid
         | before /= ISOpen -> pure [NOLate ref]
         | otherwise ->
-            updateRegistration db r {nrPhase = PQueued} now >>= \case
+            updateRegistration db r {nrPhase = OQueued} now >>= \case
               Written v -> (NOWritten nrId v :) <$> spendHold
               NotLive -> pure [NOLate ref]
               -- an invariant broke; left live, the order would keep its hold for ever, as no sweep closes a paid invoice
@@ -220,10 +220,10 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrPhase, nrPayme
 
 -- | Clears a live unpaid order's live flag, as its invoice closes in the same transaction, and releases a balance it held.
 closeOrder :: DB.Connection -> NameRegistration -> UTCTime -> IO (Maybe (RegistrationId, Int64))
-closeOrder db r@NameRegistration {nrId, nrPhase, nrLive} now
-  | nrPhase /= PUnpaid || not nrLive = pure Nothing
+closeOrder db r@NameRegistration {nrId, nrPhase} now
+  | nrPhase /= OUnpaid True = pure Nothing
   | otherwise =
-      updateRegistration db r {nrLive = False} now >>= \case
+      updateRegistration db r {nrPhase = OUnpaid False} now >>= \case
         Written v -> Just (nrId, v) <$ releaseHeldBalance db nrId now
         _ -> E.throwIO (RegistrationChanged nrId)
 

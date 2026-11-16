@@ -28,7 +28,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage)
-import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, paymentBalance, paymentInvoice)
+import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withLabelTurns)
 import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
@@ -73,7 +73,7 @@ foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCre
   J.object
     [ "registrationId" .= rid,
       "invoiceId" .= paymentInvoice nrPayment,
-      "phase" .= (textEncode nrPhase :: Text),
+      "phase" .= (textEncode (namePhase nrPhase) :: Text),
       "createdAt" .= nrCreatedAt,
       "labelHash" .= hex lh,
       "sealed" .= nrSealed,
@@ -113,7 +113,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
       | orderFieldsOf r == fields = answerNow . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
       | not (movable r) = refuse $ ORBadRequest "the order is not movable"
-      | nrPhase == PFailed =
+      | namePhase nrPhase == PFailed =
           checkFailedOrder env r >>= \case
             Right () -> moveChecked now r fields
             Left (RTWritten v) -> written env rid v <$> registrationChangedResponse env rid

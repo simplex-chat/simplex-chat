@@ -81,7 +81,7 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (TxHash)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), PrepaidCode (..), paymentBalance, NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
 
@@ -249,10 +249,11 @@ placeOrder OrdersEnv {oeStore, oeNow} req holders insert = do
     -- read again here, since another order of its own name may have closed it meanwhile
     closeHolder db now NameRegistration {nrId} =
       getRegistration db nrId >>= \case
-        Just holder@NameRegistration {nrLive = True, nrPayment} ->
-          closeOverdue db holder now >>= \case
-            Just v -> pure $ Just ClosedOrder {coRegistration = holder, coVersion = v}
-            Nothing -> E.throwIO . OrderRefused . ORBalanceChanged =<< maybe (pure Nothing) (\BalanceUse {buSource} -> getBalance db buSource now) (paymentBalance nrPayment)
+        Just holder@NameRegistration {nrPayment}
+          | orderLive holder ->
+              closeOverdue db holder now >>= \case
+                Just v -> pure $ Just ClosedOrder {coRegistration = holder, coVersion = v}
+                Nothing -> E.throwIO . OrderRefused . ORBalanceChanged =<< maybe (pure Nothing) (\BalanceUse {buSource} -> getBalance db buSource now) (paymentBalance nrPayment)
         _ -> pure Nothing
 
 -- | In the code's turn, the code as it reads there must pay for the name; the order's insert then reserves it.
@@ -323,8 +324,8 @@ checkPrice ct len years price =
 -- | A failed order, and one whose reveal was refused for its links, can move to another name.
 movable :: NameRegistration -> Bool
 movable NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
-  PFailed -> True
-  PCommitted -> isJust nrLinksRefusedAt
+  OFailed {} -> True
+  OCommitted -> isJust nrLinksRefusedAt
   _ -> False
 
 orderFieldsOf :: NameRegistration -> OrderFields
@@ -403,13 +404,9 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
             LandedByOwner -> (Nothing, Nothing)
           registered =
             r
-              { nrPhase = PRegistered,
+              { nrPhase = ORegistered expiry now,
                 nrRegisterTx = registerTx,
-                nrRegisterBlock = registerBlock,
-                nrExpiresAt = Just expiry,
-                nrRegisteredAt = Just now,
-                nrFailedAt = Nothing,
-                nrError = Nothing
+                nrRegisterBlock = registerBlock
               }
           write db = versionWritten <$> updateRegistration db registered now
       case nrPayment of

@@ -58,10 +58,11 @@ Each finding is one commit, `store: <change>`, or `core: <change>` for src/.
 
 A1-1, the order's phase with its data:
 - `NamePhase` stays the stored tag, an SQL parameter and the metrics key.
-- `NameRegistration.nrPhase :: OrderPhase` replaces nrPhase, nrLive, nrCommitTx, nrCommitBlock, nrRegisterTx, nrRegisterBlock, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrRegisteredAt, nrFailedAt, nrError, nrLinksRefusedAt.
-- `nrReveal` stays common to all phases.
-- `type Live = Bool` in the unpaid phase; `FailReason` sum for the failed phase; transaction refs as tuples; `Commit` record shared by committed and registering.
-- `toRegistration` decodes the columns once into the phase; retarget, requeue, lapse, landed, taken and failed construct the next phase.
+- `NameRegistration.nrPhase :: OrderPhase` replaces nrPhase, nrLive, nrExpiresAt, nrRegisteredAt, nrFailedAt and nrError: `OUnpaid Live | OQueued | OCommitting | OCommitted | ORegistering | ORegistered Word64 UTCTime | OTaken | OFailed UTCTime FailReason`; `namePhase` gives the stored tag.
+- The reveal, the commit and register transactions, the reveal window and the links refusal stay common fields: the view shows them in every phase, and a requeued order recognises its commit by its transaction.
+- `type Live = Bool` in the unpaid phase; `FailReason = FRNotSignedInTime | FRNotRegistered`, stored as today's error texts.
+- `toRegistration` decodes the columns once into the phase; retarget, requeue, lapse, landed, taken and failed construct the next phase; a taken order keeps no failure time.
+- registrationAt reads a lapsed commitment as failed at its lapse; `CLRefunded` takes that time.
 
 ```mermaid
 stateDiagram-v2

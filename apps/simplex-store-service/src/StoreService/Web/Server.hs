@@ -21,7 +21,7 @@ import StoreService.Config (ListenerConfig (..), NamesConfig (..), ServiceConfig
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), ordersEnv)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
@@ -222,7 +222,7 @@ readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@Or
     seenVersion = versionParam req
     holds wait row@InvoiceRow {irStatus} NameRegistration {nrPhase, nrVersion} =
       wait == irStatus
-        && not (irStatus == ISPaid && nrPhase == PUnpaid)
+        && not (irStatus == ISPaid && namePhase nrPhase == PUnpaid)
         && samePayment req row
         && maybe (irStatus /= ISPaid) (== nrVersion) seenVersion
     hold now row r = do

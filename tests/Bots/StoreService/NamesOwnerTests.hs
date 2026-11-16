@@ -228,11 +228,11 @@ stored :: Ctx -> NameRegistration -> IO NameRegistration
 stored ctx = registrationById ctx . nrId
 
 failedPhase, registeredPhase, committedPhase, linksRefusedPhase :: NameRegistration -> NameRegistration
-failedPhase r = r {nrPhase = PFailed, nrFailedAt = Just orderTime, nrError = Just "The name could not be registered"}
-registeredPhase r = r {nrPhase = PRegistered, nrExpiresAt = Just (seconds orderTime + 3 * 31536000)}
+failedPhase r = r {nrPhase = OFailed orderTime FRNotRegistered}
+registeredPhase r = r {nrPhase = ORegistered (seconds orderTime + 3 * 31536000) orderTime}
 committedPhase r =
   r
-    { nrPhase = PCommitted,
+    { nrPhase = OCommitted,
       nrCommitTx = Just (TxHash $ digestFixture 8),
       nrCommitBlock = Just 100,
       nrRevealAfter = Just (seconds orderTime + 60),
@@ -349,7 +349,7 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
       map (field "registrationId") entries `shouldBe` map (Just . idText) (nrId lapsed : nrId paid : [oldOrder i | i <- [50, 49 .. 3]])
       case entries of
         lapsedEntry : unpaidEntry : moveEntry : _ -> do
-          (field "phase" lapsedEntry, nrPhase lapsed) `shouldBe` (Just "failed", PCommitted)
+          (field "phase" lapsedEntry, nrPhase lapsed) `shouldBe` (Just "failed", OCommitted)
           sort (KM.keys unpaidEntry) `shouldBe` sort ["registrationId", "invoiceId", "phase", "createdAt", "labelHash", "sealed", "balanceSource", "heldBy"]
           unpaidEntry
             `shouldBe` KM.fromList
@@ -403,7 +403,8 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder registeredPhase
   move ctx keyA r to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
-  let movableWith refused = [p | p <- [minBound .. maxBound], movable r {nrPhase = p, nrLinksRefusedAt = refused}]
+  let phases = [OUnpaid True, OQueued, OCommitting, OCommitted, ORegistering, nrPhase r, OTaken, nrPhase (failedPhase r)]
+      movableWith refused = [namePhase p | p <- phases, movable r {nrPhase = p, nrLinksRefusedAt = refused}]
   movableWith Nothing `shouldBe` [PFailed]
   movableWith (Just orderTime) `shouldBe` [PCommitted, PFailed]
 
@@ -430,7 +431,7 @@ testMoveAccepted = withOwner $ \ctx -> do
       ("error", J.Null)
     ]
   written <- stored ctx failedOrder
-  (nrPhase written, nrLive written, nrMoves written, nrFailedAt written, nrOrderHash written) `shouldBe` (PQueued, True, 1, Nothing, nrOrderHash failedOrder)
+  (nrPhase written, nrMoves written, nrOrderHash written) `shouldBe` (OQueued, 1, nrOrderHash failedOrder)
   -- the same name with other links, after a reveal refused for its links
   refusedOrder <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} linksRefusedPhase
   sameName <- moveTo ctx "alicebakery" 11
@@ -605,7 +606,7 @@ testMoveLanded = withOwner $ \ctx -> do
     woken poll `shouldReturn` (200, view)
     fieldsIn view [("phase", "registered"), ("expiresAt", J.toJSON expiry), ("moves", J.Number 0), ("error", J.Null), ("registerTx", maybe J.Null (J.String . hex) hash)]
     written <- stored ctx r
-    (nrPhase written, nrLive written, nrVersion written, nrLabelHash written) `shouldBe` (PRegistered, False, nrVersion r + 1, nrLabelHash r)
+    (namePhase (nrPhase written), nrVersion written, nrLabelHash written) `shouldBe` (PRegistered, nrVersion r + 1, nrLabelHash r)
   pcSpentAt <$> codeRow ctx code `shouldReturn` Just orderTime
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyB notLanded to
@@ -630,11 +631,11 @@ testMoveLandedReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   spentBefore <- codeRow ctx spentCode
   to <- moveTo ctx "alicebakers" 10
   fst <$> move ctx keyA unused to `shouldReturn` 409
-  nrPhase <$> stored ctx unused `shouldReturn` PRegistered
+  namePhase . nrPhase <$> stored ctx unused `shouldReturn` PRegistered
   (pcReservedBy &&& pcSpentAt) <$> codeRow ctx unusedCode `shouldReturn` (Just (nrId unused), Just orderTime)
   to' <- moveTo ctx "alicebakers" 11
   logs <- capturingStderr $ fst <$> move ctx keyA spentElsewhere to' `shouldReturn` 409
-  nrPhase <$> stored ctx spentElsewhere `shouldReturn` PRegistered
+  namePhase . nrPhase <$> stored ctx spentElsewhere `shouldReturn` PRegistered
   length (filter (\l -> "[ERROR " `T.isInfixOf` l && hex (pcCodeHash spentCode) `T.isInfixOf` l && idText (nrId spentElsewhere) `T.isInfixOf` l) $ T.lines logs) `shouldBe` 1
   codeRow ctx spentCode `shouldReturn` spentBefore
   stored ctx spender `shouldReturn` spenderBefore

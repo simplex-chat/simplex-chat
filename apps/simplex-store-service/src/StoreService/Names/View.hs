@@ -13,7 +13,6 @@ module StoreService.Names.View
     tldText,
     registrationAt,
     lapseMoment,
-    notSignedInTime,
     registrationVersion,
   )
 where
@@ -42,7 +41,7 @@ import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponso
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Signatures (AgreedTerms (..))
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), HoldState (..), LateWait, NamePhase (..), NameRegistration (..), NameReveal (..), getBalance, getRegistration, heldBy, lateWait, paymentBalance, paymentInvoice)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), FailReason (..), HoldState (..), LateWait, NameRegistration (..), NameReveal (..), OrderPhase (..), getBalance, getRegistration, heldBy, lateWait, namePhase, paymentBalance, paymentInvoice)
 
 -- | The view's chain reads; a field whose read failed is null and named in unread.
 data ViewReads = ViewReads
@@ -66,7 +65,7 @@ registrationView st cfg ct now r = do
 -- | The intent nonce only in committed; the acceptance too, until a reveal is stored.
 readViewChain :: Contracts -> NameRegistration -> IO ViewReads
 readViewChain ct NameRegistration {nrId = RegistrationId rid, nrPhase, nrOwner, nrLabelHash, nrReveal} = case nrPhase of
-  PCommitted -> do
+  OCommitted -> do
     deadline <- deadlineIn $ ctDeadline ct
     withSlot deadline (ctViewSlots ct) (concurrently (sponsorNonce ct nrOwner) acceptanceRead) >>= \case
       Just (nonce, acceptance_) -> ViewReads <$> readOf "intent nonce" nonce <*> maybe (pure VRNotAsked) (readOf "terms acceptance") acceptance_
@@ -86,7 +85,7 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "version" .= nrVersion,
       "moves" .= nrMoves,
       "linksRefused" .= isJust nrLinksRefusedAt,
-      "phase" .= (textEncode nrPhase :: Text),
+      "phase" .= (textEncode (namePhase nrPhase) :: Text),
       "labelHash" .= hex lh,
       "label" .= (rvLabel <$> nrReveal),
       "owner" .= nrOwner,
@@ -109,14 +108,18 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "intentNonce" .= readValue vrIntentNonce,
       "acceptance" .= (acceptanceJSON <$> readValue vrAcceptance),
       "unread" .= (["intentNonce" | isUnread vrIntentNonce] <> ["acceptance" | isUnread vrAcceptance] :: [Text]),
-      "expiresAt" .= nrExpiresAt,
-      "error" .= nrError,
+      "expiresAt" .= expiresAt,
+      "error" .= (textEncode <$> failReason :: Maybe Text),
       "community" .= communityJSON cfg (nrLabelHash r) (atCommunityName nrAgreedTerms),
       "terms" .= (textEncode nrAgreedTerms :: Text)
     ]
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError, nrAgreedTerms} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrAgreedTerms} = r
+    (expiresAt, failReason) = case nrPhase of
+      ORegistered expiry _ -> (Just expiry, Nothing)
+      OFailed _ reason -> (Nothing, Just reason)
+      _ -> (Nothing, Nothing)
     txText (TxHash h) = hex h
     readValue = \case
       VRRead a -> Just a
@@ -150,16 +153,13 @@ tldText = T.dropWhile (== '.') . safeDecodeUtf8 . strEncode
 registrationVersion :: DBStore -> RegistrationId -> IO Int64
 registrationVersion st rid = maybe 0 nrVersion <$> withTransaction st (`getRegistration` rid)
 
-notSignedInTime :: Text
-notSignedInTime = "The name was not signed in time"
-
 -- | Past revealBefore with no reveal, the commitment can no longer register, so it reads failed.
 registrationAt :: UTCTime -> NameRegistration -> NameRegistration
 registrationAt now r = case lapseMoment r of
-  Just lapse | now > lapse -> r {nrPhase = PFailed, nrError = Just notSignedInTime}
+  Just lapse | now > lapse -> r {nrPhase = OFailed lapse FRNotSignedInTime}
   _ -> r
 
 lapseMoment :: NameRegistration -> Maybe UTCTime
 lapseMoment = \case
-  NameRegistration {nrPhase = PCommitted, nrReveal = Nothing, nrRevealBefore = Just before} -> Just $ posixSecondsToUTCTime $ fromIntegral before
+  NameRegistration {nrPhase = OCommitted, nrReveal = Nothing, nrRevealBefore = Just before} -> Just $ posixSecondsToUTCTime $ fromIntegral before
   _ -> Nothing

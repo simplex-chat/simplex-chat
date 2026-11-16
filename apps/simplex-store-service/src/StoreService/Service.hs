@@ -519,7 +519,7 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
     Right (CLRefunded failedAt RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
       logNote $ "names: closed order " <> rid <> " and recorded a refund of " <> tshow rdCents <> " cents"
       pure $ Right $
-        "Closed order " <> rid <> maybe "" (\t -> ", failed at " <> fmtTime t <> ",") failedAt <> " as taken and recorded a refund of " <> dollars rdCents
+        "Closed order " <> rid <> ", failed at " <> fmtTime failedAt <> ", as taken and recorded a refund of " <> dollars rdCents
           <> ". Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> chainText rdChain <> "."
     Right (CLRegistered (RegistrationId rid)) -> do
       logNote $ "names: order " <> rid <> " set registered by " <> spelledCmd source "close" <> ", as its register went through"

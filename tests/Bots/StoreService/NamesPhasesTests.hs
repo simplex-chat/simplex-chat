@@ -29,7 +29,7 @@ import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..), phasesWaiting, publish)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
+import StoreService.Names.Store (NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Providers (Funded (..), PaymentSignal (..))
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
 import StoreService.Waiters (publishPayment, waitingCountSTM)
@@ -170,7 +170,7 @@ testEachChangeWakes = bounded "each change wakes" $ withPolls holdMicros $ \Poll
   NameRegistration {nrId} <- invoiceRegistration ctx inv
   let changes :: [(String, NameRegistration -> NameRegistration, Text, J.Value)]
       changes =
-        [("phase", \r -> r {nrPhase = PCommitting}, "phase", "committing")]
+        [("phase", \r -> r {nrPhase = OCommitting}, "phase", "committing")]
   forM_ changes $ \(what, f, k, expected) -> do
     v <- nrVersion <$> invoiceRegistration ctx inv
     invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
@@ -193,7 +193,7 @@ testPaidHoldsOnVersion = bounded "paid holds on version" $ withPolls holdMicros 
   atomically $ publishPayment (weWaiters cWeb) inv
   threadDelay parkDelay
   Async.poll poll >>= (`shouldSatisfy` isNothing)
-  v' <- change ctx nrId $ \r -> r {nrPhase = PCommitting}
+  v' <- change ctx nrId $ \r -> r {nrPhase = OCommitting}
   (_, o) <- woken "paid invoice poll" poll
   (key "version" (registrationOf o), key "phase" (registrationOf o)) `shouldBe` (Just (J.toJSON v'), Just "committing")
   -- marks other than the page saw answer at once
@@ -215,7 +215,7 @@ testOpenWakesOnVersion = bounded "open wakes on version" $ withPolls holdMicros 
   -- a version the page has not seen answers at once
   (fst <$> answeredAtOnce ctx (invoicePath inv <> following ISOpen (nrVersion - 1) "" False)) `shouldReturn` 200
   poll <- held ctx (1, 1) $ invoicePath inv <> following ISOpen nrVersion "" False
-  v' <- change ctx nrId $ \r -> r {nrError = Just "Checking the payment"}
+  v' <- change ctx nrId $ \r -> r {nrMoves = nrMoves r + 1}
   (_, o) <- woken "open invoice poll" poll
   (key "status" o, key "version" (registrationOf o)) `shouldBe` (Just "open", Just (J.toJSON v'))
   -- a seenVersion that is no version leaves the hold on the status and payment alone
@@ -259,7 +259,7 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   let revealBefore = seconds now + 600
       lapsedAt = posixSecondsToUTCTime (fromInteger revealBefore)
   pSetNow $ addUTCTime (negate shortOfMoment) lapsedAt
-  v <- change ctx nrId $ \r -> r {nrPhase = PCommitted, nrRevealAfter = Just (fromInteger $ revealBefore - 3600), nrRevealBefore = Just (fromInteger revealBefore)}
+  v <- change ctx nrId $ \r -> r {nrPhase = OCommitted, nrRevealAfter = Just (fromInteger $ revealBefore - 3600), nrRevealBefore = Just (fromInteger revealBefore)}
   (_, r) <- get ctx (registrationPath nrId)
   key "phase" r `shouldBe` Just "committed"
   invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
@@ -268,7 +268,7 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   (status, key "phase" lapsed, key "error" lapsed, key "version" lapsed) `shouldBe` (200, Just "failed", Just "The name was not signed in time", Just (J.toJSON v))
   (_, o) <- woken "invoice poll at the lapse" invoicePoll
   (key "status" o, key "phase" (registrationOf o), key "error" (registrationOf o)) `shouldBe` (Just "paid", Just "failed", Just "The name was not signed in time")
-  (nrPhase <$> invoiceRegistration ctx inv) `shouldReturn` PCommitted
+  (nrPhase <$> invoiceRegistration ctx inv) `shouldReturn` OCommitted
   -- one with a reveal set stays committed past revealBefore
   revealed <- change ctx nrId $ \r' -> r' {nrReveal = Just reveal}
   pSetNow $ addUTCTime 3600 lapsedAt

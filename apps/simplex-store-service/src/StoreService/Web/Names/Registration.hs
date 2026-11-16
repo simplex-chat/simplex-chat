@@ -35,7 +35,7 @@ import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (RegisterIntent (..))
 import StoreService.Names.Reveal (RevealFields (..), RevealRefusal (..), SignedLabel (..), checkAcceptance, checkIntent, committedRegistration, isRepeat, linksValid, parseRevealFields, parseSignedLabel, revealOf)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
+import StoreService.Names.Store (NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
@@ -84,7 +84,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
           -- moved to another name while this request waited for the turn
           | nrLabelHash /= turnHash -> pure RDChanged
           | Just stored <- nrReveal -> pure $ if isRepeat signed stored then RDAccepted Nothing else RDRefused RVBadRequest Nothing
-          | nrPhase (registrationAt now r) /= PCommitted -> pure $ RDRefused RVBadRequest Nothing
+          | nrPhase (registrationAt now r) /= OCommitted -> pure $ RDRefused RVBadRequest Nothing
           | otherwise -> case parseRevealFields o of
               Nothing -> pure $ RDRefused RVBadRequest Nothing
               Just fields -> either (\refusal -> pure $ RDRefused refusal Nothing) (signedReveal now r signed fields) $ committedRegistration oeConfig r signed fields

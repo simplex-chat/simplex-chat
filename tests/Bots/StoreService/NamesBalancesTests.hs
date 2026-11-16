@@ -142,7 +142,7 @@ source :: DBStore -> Text -> Int -> IO ()
 source st r cents = do
   placeOrderRow st r False cents (at 60)
   taken <- reg st r
-  write st taken {nrPhase = PTaken} `shouldReturn` Written 2
+  write st taken {nrPhase = OTaken} `shouldReturn` Written 2
   credit st r cents
 
 credit :: DBStore -> Text -> Int -> IO ()
@@ -172,7 +172,7 @@ coveredInsert r src price seen db = createBalanceRegistration db (regFor r (OTBa
 -- | The holder queued and its hold spent in one transaction, as settlement does.
 settleHolder :: DB.Connection -> NameRegistration -> IO Bool
 settleHolder db r = do
-  updateRegistration db r {nrPhase = PQueued} t0 `shouldReturn` Written (nrVersion r + 1)
+  updateRegistration db r {nrPhase = OQueued} t0 `shouldReturn` Written (nrVersion r + 1)
   spendHeldBalance db (nrId r) (maybe 0 buUsed $ paymentBalance $ nrPayment r) t0
 
 release :: DBStore -> Text -> IO Bool
@@ -224,7 +224,7 @@ closedWith :: DBStore -> Text -> Bool -> Paid -> UTCTime -> IO ()
 closedWith st r card paid createdAt = do
   placeOrderRow st r card 20000 (at 60)
   open <- reg st r
-  write st open {nrLive = False} `shouldReturn` Written 2
+  write st open {nrPhase = OUnpaid False} `shouldReturn` Written 2
   payment st ("inv-" <> r) paid createdAt
 
 lateCredit :: Text -> Int -> Maybe Int64 -> Int -> LateCredit
@@ -277,7 +277,7 @@ testSpendAtOnce = withServiceStore $ \st -> do
   source st "s" 10000
   coveredSpend st "c1" "s" 6000 10000 `shouldReturn` Right ()
   c1 <- reg st "c1"
-  (nrPhase c1, nrLive c1, nrPrice c1, nrPayment c1) `shouldBe` (PQueued, True, 6000, OPBalance BalanceUse {buSource = RegistrationId "s", buUsed = 6000})
+  (nrPhase c1, nrPrice c1, nrPayment c1) `shouldBe` (OQueued, 6000, OPBalance BalanceUse {buSource = RegistrationId "s", buUsed = 6000})
   nrOrderHash c1 `shouldBe` orderHash ownerA (fieldsN "c1") (OTBalance $ spendOf "s" 6000 10000 Nothing)
   figures st "s" t0 `shouldReturn` Just (4000, 10000, 0, Nothing)
   coveredSpend st "c2" "s" 3000 10000 `shouldReturn` Left BIRBalanceChanged
@@ -299,7 +299,7 @@ testTwoHolds = withServiceStore $ \st -> do
   holder st "h2" "s" 10000 (at 60) `shouldReturn` Left BIRBalanceChanged
   absent st "h2"
   h1 <- reg st "h1"
-  (nrPhase h1, nrPayment h1, nrPrice h1) `shouldBe` (PUnpaid, OPDifference BalanceUse {buSource = RegistrationId "s", buUsed = 10000} btc (InvoiceId "inv-h1"), holdPrice)
+  (nrPhase h1, nrPayment h1, nrPrice h1) `shouldBe` (OUnpaid True, OPDifference BalanceUse {buSource = RegistrationId "s", buUsed = 10000} btc (InvoiceId "inv-h1"), holdPrice)
   figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Just $ hold "h1" (at 60) False)
   release st "h1" `shouldReturn` True
   holder st "h3" "s" 9000 (at 60) `shouldReturn` Left BIRBalanceChanged
@@ -430,7 +430,7 @@ testChain = withServiceStore $ \st -> do
   b <- reg st "b"
   withTransaction st (`settleHolder` b) `shouldReturn` True
   queued <- reg st "b"
-  write st queued {nrPhase = PTaken} `shouldReturn` Written (nrVersion queued + 1)
+  write st queued {nrPhase = OTaken} `shouldReturn` Written (nrVersion queued + 1)
   credit st "b" holdPrice
   coveredSpend st "c" "b" 10000 holdPrice `shouldReturn` Right ()
   withTransaction st (\db -> balanceChain db (RegistrationId "c"))
@@ -455,7 +455,7 @@ testChainOfOverpaid :: IO ()
 testChainOfOverpaid = withServiceStore $ \st -> do
   placeOrderRow st "o" False 20000 t0
   queued <- reg st "o"
-  write st queued {nrPhase = PQueued} `shouldReturn` Written (nrVersion queued + 1)
+  write st queued {nrPhase = OQueued} `shouldReturn` Written (nrVersion queued + 1)
   let late = lateCredit "o" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceChain db (RegistrationId "o"))
@@ -515,7 +515,7 @@ testClosesRelease = withServiceStore $ \st -> do
   withTransaction st (\db -> closeOverdue db next (at 61)) `shouldReturn` Just (nrVersion next + 1)
   forM_ closes $ \c -> do
     (c,) <$> figures st ("s-" <> c) t0 `shouldReturn` (c, Just (10000, 10000, 0, Nothing))
-    (c,) . nrLive <$> reg st ("h-" <> c) `shouldReturn` (c, False)
+    (c,) . orderLive <$> reg st ("h-" <> c) `shouldReturn` (c, False)
     (c,) <$> invoiceStatus st ("inv-h-" <> c) `shouldReturn` (c, "expired")
 
 testOverdueHolderClosed :: IO ()
@@ -529,13 +529,13 @@ testOverdueHolderClosed = withOrders $ \Ctx {cStore = st, cOrders} -> do
   nrId h `shouldBe` RegistrationId "h"
   closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (\_ _ -> pure $ Left $ ORBadRequest "refused") `shouldReturn` Left (ORBadRequest "refused")
   invoiceStatus st "inv-h" `shouldReturn` "open"
-  nrLive <$> reg st "h" `shouldReturn` True
+  orderLive <$> reg st "h" `shouldReturn` True
   figures st "s" now `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" (at 60) True)
   closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (spendInsert "c" "s" 6000 10000) `shouldReturn` Right [(RegistrationId "h", nrVersion h + 1)]
   invoiceStatus st "inv-h" `shouldReturn` "expired"
-  nrLive <$> reg st "h" `shouldReturn` False
+  orderLive <$> reg st "h" `shouldReturn` False
   figures st "s" now `shouldReturn` Just (4000, 10000, 0, Nothing)
-  nrPhase <$> reg st "c" `shouldReturn` PQueued
+  nrPhase <$> reg st "c" `shouldReturn` OQueued
 
 testNamedHolders :: IO ()
 testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
@@ -557,7 +557,7 @@ testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
     blHold balance `shouldBe` Just held
     closedIds <$> Orders.placeOrder cOrders (orderRequest c) [hr] (spendInsert c s 6000 10000) `shouldReturn` Left (ORBalanceChanged $ Just balance)
     absent st c
-    nrLive <$> reg st h `shouldReturn` True
+    orderLive <$> reg st h `shouldReturn` True
     invoiceStatus st ("inv-" <> h) `shouldReturn` "open"
     figures st s now `shouldReturn` Just (10000, 10000, 0, Just held)
 
@@ -569,7 +569,7 @@ testCleanupKeepsHolder = withOrders $ \Ctx {cStore = st, cWeb} -> do
   poller <- newPollerEnv st (weWaiters cWeb) Nothing (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
   logs <- capturingStderr $ cleanupUnpaid poller due
   logs `shouldSatisfy` T.isInfixOf "the unpaid order of invoice ref-inv-h is kept because it still holds the balance of registration s"
-  nrLive <$> reg st "h" `shouldReturn` True
+  orderLive <$> reg st "h" `shouldReturn` True
   figures st "s" due `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" t0 True)
 
 -- refunds

@@ -156,7 +156,7 @@ sourceOf :: Ctx -> Text -> Int -> IO RegistrationId
 sourceOf Ctx {cStore} rid cents = do
   placePaid cStore rid ownerA (order ("source-" <> rid) 1) {ofCommitment = C.sha256Hash $ encodeUtf8 rid} (at 60) `shouldReturn` Right ()
   taken <- reg cStore rid
-  write cStore taken {nrPhase = PTaken} `shouldReturn` Written 2
+  write cStore taken {nrPhase = OTaken} `shouldReturn` Written 2
   credit cStore rid cents
   pure $ RegistrationId rid
 
@@ -273,7 +273,7 @@ testCoveredSpend = withSpend $ \ctx -> do
   src <- sourceOf ctx "src" 15000
   rid <- registrationAnswer . snd <$> spend ctx src (covered 15000)
   r <- registrationById ctx rid
-  (nrPhase r, nrLive r, nrPrice r, nrPayment r) `shouldBe` (PQueued, True, 10000, OPBalance BalanceUse {buSource = src, buUsed = 10000})
+  (nrPhase r, nrPrice r, nrPayment r) `shouldBe` (OQueued, 10000, OPBalance BalanceUse {buSource = src, buUsed = 10000})
   nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance Spend {spSource = src, spPrice = 10000, spBalance = 15000, spMethod = Nothing})
   nrAgreedTerms r `shouldBe` agreed (oTerms aliceOrder)
   view <- viewOf ctx rid
@@ -297,7 +297,7 @@ testDifferenceSpend = withSpend $ \ctx -> do
   let invId = invoiceIdOf v
   holder <- invoiceRegistration ctx invId
   stubCalls (cStub ctx) `shouldReturn` [StubCreate btc OrderDraft {odAmount = CurrencyAmount 4000, odCurrency = "usd", odReference = "name:" <> hex (nrOrderHash holder)}]
-  (nrPhase holder, nrLive holder, nrPrice holder, nrPayment holder) `shouldBe` (PUnpaid, True, 10000, OPDifference BalanceUse {buSource = src, buUsed = 6000} btc invId)
+  (nrPhase holder, nrPrice holder, nrPayment holder) `shouldBe` (OUnpaid True, 10000, OPDifference BalanceUse {buSource = src, buUsed = 6000} btc invId)
   nrOrderHash holder `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance Spend {spSource = src, spPrice = 10000, spBalance = 6000, spMethod = Just btc})
   nrAgreedTerms holder `shouldBe` agreed (oTerms aliceOrder)
   fmap irAmount <$> getInvoice (cStore ctx) invId `shouldReturn` Just (CurrencyAmount 4000)
@@ -328,7 +328,7 @@ testSpendResend = withSpend $ \ctx@Ctx {cStore, cClock} -> do
   postSpend ctx src body `shouldReturn` (200, first')
   holder <- invoiceRegistration ctx invId
   now <- readIORef cClock
-  Written _ <- withTransaction cStore $ \db -> updateRegistration db holder {nrPhase = PQueued} now
+  Written _ <- withTransaction cStore $ \db -> updateRegistration db holder {nrPhase = OQueued} now
   (\(status, v) -> (status, invoiceIdOf v, field "phase" . registrationOf =<< v)) <$> postSpend ctx src body `shouldReturn` (200, invId, Just "queued")
   other <- sourceOf ctx "other" 25000
   let paid = timedAt now $ dynamis 25000 Nothing
@@ -336,7 +336,7 @@ testSpendResend = withSpend $ \ctx@Ctx {cStore, cClock} -> do
   (200, answer) <- postSpend ctx other coveredBody
   r <- registrationById ctx $ registrationAnswer answer
   spend ctx other paid {sbOrder = (sbOrder paid) {oTimestamp = seconds now + 1}} `shouldReturn` (200, answer)
-  Written _ <- withTransaction cStore $ \db -> updateRegistration db r {nrPhase = PCommitted, nrRevealAfter = Just (seconds now), nrRevealBefore = Just (seconds now + 86400)} now
+  Written _ <- withTransaction cStore $ \db -> updateRegistration db r {nrPhase = OCommitted, nrRevealAfter = Just (seconds now), nrRevealBefore = Just (seconds now + 86400)} now
   advance ctx 3600
   postSpend ctx other coveredBody `shouldReturn` (200, answer)
   length <$> stubCalls (cStub ctx) `shouldReturn` 1
@@ -525,9 +525,9 @@ testOverdueHolderSpent = withSpend $ \ctx@Ctx {cStore, cClock} -> do
   rid <- registrationAnswer . snd <$> spend ctx src (timedAt now $ covered 10000)
   (\(status, v) -> (status, field "version" v)) <$> woken poll `shouldReturn` (200, Just (J.toJSON $ nrVersion holder + 1))
   fmap irStatus <$> getInvoice cStore holderInv `shouldReturn` Just ISExpired
-  (\r -> (nrLive r, nrVersion r)) <$> invoiceRegistration ctx holderInv `shouldReturn` (False, nrVersion holder + 1)
+  (\r -> (orderLive r, nrVersion r)) <$> invoiceRegistration ctx holderInv `shouldReturn` (False, nrVersion holder + 1)
   cancels ctx `shouldReturn` [holderRef]
-  (\r -> (nrPhase r, buUsed <$> paymentBalance (nrPayment r))) <$> registrationById ctx rid `shouldReturn` (PQueued, Just 10000)
+  (\r -> (nrPhase r, buUsed <$> paymentBalance (nrPayment r))) <$> registrationById ctx rid `shouldReturn` (OQueued, Just 10000)
   fmap (\b -> (blAmount b, blHold b)) <$> balanceOf ctx src `shouldReturn` Just (0, Nothing)
 
 -- | By card, whose invoice does not expire by itself at the provider, past its 60 minutes.
@@ -546,7 +546,7 @@ holderAfter ctx@Ctx {cStore} NameRegistration {nrPayment} = case paymentInvoice 
   Just invId -> do
     r <- invoiceRegistration ctx invId
     status <- fmap irStatus <$> getInvoice cStore invId
-    pure (nrLive r, nrVersion r, status)
+    pure (orderLive r, nrVersion r, status)
   Nothing -> error $ "not a paid order: " <> show nrPayment
 
 testDifferenceClosesHolder :: IO ()
@@ -560,7 +560,7 @@ testDifferenceClosesHolder =
       (status, v) <- spend ctx src (timedAt now body)
       status `shouldBe` 200
       next <- invoiceRegistration ctx (invoiceIdOf v)
-      nrLive next `shouldBe` True
+      orderLive next `shouldBe` True
       when sameName $ nrLabelHash next `shouldBe` nrLabelHash holder
       holderAfter ctx holder `shouldReturn` (False, nrVersion holder + 1, Just ISExpired)
       cancels ctx `shouldReturn` [holderRef]
@@ -601,7 +601,7 @@ testHolderFundedMeanwhile = withSpendHook $ \hook ctx@Ctx {cStore, cClock} -> do
   length refs `shouldBe` 1
   refs `shouldNotBe` [holderRef]
   (fmap irStatus <$> getInvoice cStore holderInv) `shouldReturn` Just ISOpen
-  nrLive <$> invoiceRegistration ctx holderInv `shouldReturn` True
+  orderLive <$> invoiceRegistration ctx holderInv `shouldReturn` True
   length <$> paidFrom ctx src `shouldReturn` 1
 
 testConcurrentSpends :: IO ()
@@ -715,7 +715,7 @@ takenNow :: Ctx -> RegistrationId -> IO ()
 takenNow ctx@Ctx {cStore, cClock} rid = do
   r <- registrationById ctx rid
   now <- readIORef cClock
-  withTransaction cStore (\db -> updateRegistration db r {nrPhase = PTaken} now >>= \w -> w <$ creditBalance db rid (nrPrice r) now)
+  withTransaction cStore (\db -> updateRegistration db r {nrPhase = OTaken} now >>= \w -> w <$ creditBalance db rid (nrPrice r) now)
     `shouldReturn` Written (nrVersion r + 1)
 
 -- | Owner A's orders as find lists them: each one's id, the order whose balance paid it, and the order holding its balance.
@@ -752,7 +752,7 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   (srcInv@(InvoiceId srcInvText), _) <- placed ctx (orderAt now aliceOrder)
   report "InvoiceSettled" srcInv settledState
   src <- orderOf srcInv
-  nrPhase <$> registrationById ctx src `shouldReturn` PQueued
+  nrPhase <$> registrationById ctx src `shouldReturn` OQueued
   takenNow ctx src
   balanceView ctx src `shouldReturn` balanceObject 10000 0
   let s = ridText src
@@ -763,7 +763,7 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   let f = ridText first
   links ctx `shouldReturn` sort [(s, Nothing, Just f), (f, Just s, Nothing)]
   report "InvoiceExpired" firstInv ["status" J..= ("Expired" :: Text)]
-  (\r -> (nrPhase r, nrLive r)) <$> registrationById ctx first `shouldReturn` (PUnpaid, False)
+  nrPhase <$> registrationById ctx first `shouldReturn` OUnpaid False
   balanceView ctx src `shouldReturn` balanceObject 10000 0
   links ctx `shouldReturn` sort [(s, Nothing, Nothing), (f, Just s, Nothing)]
   -- money paid into the expired invoice: the poller's read cannot credit it while the rate read fails, and its next credit pass does
@@ -781,13 +781,13 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   let d = ridText dearer
   links ctx `shouldReturn` sort [(s, Nothing, Just d), (f, Just s, Nothing), (d, Just s, Nothing)]
   report "InvoiceSettled" dearerInv settledState
-  (\r -> (nrPhase r, nrPrice r, paymentBalance (nrPayment r))) <$> registrationById ctx dearer `shouldReturn` (PQueued, 20000, Just BalanceUse {buSource = src, buUsed = 10000})
+  (\r -> (nrPhase r, nrPrice r, paymentBalance (nrPayment r))) <$> registrationById ctx dearer `shouldReturn` (OQueued, 20000, Just BalanceUse {buSource = src, buUsed = 10000})
   balanceView ctx src `shouldReturn` balanceObject 0 0
   links ctx `shouldReturn` sort [(s, Nothing, Nothing), (f, Just s, Nothing), (d, Just s, Nothing)]
   -- that order taken in turn keeps its whole price; a covered spend of alicebakery takes half, and support refunds the rest
   takenNow ctx dearer
   covering <- registrationAnswer . snd <$> spend ctx dearer (timedAt now $ (covered 20000) {sbOrder = aliceOrder {oCommitment = commitmentOf 4}})
-  (\r -> (nrPhase r, paymentBalance (nrPayment r))) <$> registrationById ctx covering `shouldReturn` (PQueued, Just BalanceUse {buSource = dearer, buUsed = 10000})
+  (\r -> (nrPhase r, paymentBalance (nrPayment r))) <$> registrationById ctx covering `shouldReturn` (OQueued, Just BalanceUse {buSource = dearer, buUsed = 10000})
   dearerRef <- providerRef ctx dearerInv
   srcRef <- providerRef ctx srcInv
   owner <- addressText . nrOwner <$> registrationById ctx dearer

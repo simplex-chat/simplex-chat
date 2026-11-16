@@ -61,7 +61,7 @@ import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Links (LinkKind (..), linkMaxBytes)
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
-import StoreService.Names.Store (EditState (..), NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
+import StoreService.Names.Store (EditState (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (HttpEnv (..), maxSearches, newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Search (previewHandler, recordLinks, searchHandler, termsHandler)
@@ -308,7 +308,7 @@ timed action = do
   a <- action
   (a,) . (`diffUTCTime` start) <$> getCurrentTime
 
-setPhase :: DBStore -> NamePhase -> IO ()
+setPhase :: DBStore -> OrderPhase -> IO ()
 setPhase st phase = withTransaction st $ \db -> do
   r <- fromJust <$> getRegistration db (RegistrationId "r1")
   updateRegistration db r {nrPhase = phase} t0 >>= (`shouldSatisfy` written)
@@ -332,10 +332,10 @@ testRegistering g = withSearch g id id $ \s@Search {node, store} -> do
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-  setPhase store PRegistering
+  setPhase store ORegistering
   -- no price is answered, so reading one would fail the search
   searchAlice s 12 `shouldReturn` registeringAnswer
-  setPhase store PRegistered
+  setPhase store $ ORegistered 1861833600 t0
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   searchAlice s 12 `shouldReturn` availableAnswer 10000
 
@@ -372,7 +372,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-  setPhase store PRegistering
+  setPhase store ORegistering
   searchAlice s 12 `shouldReturn` listed registeringAnswer
   registeredWith node fullLink ""
   let registered = registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))
@@ -380,7 +380,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   -- new terms on chain: the available answer carries them; a listing that cannot be read: no answer
   available node
   setCommunityTerms node fakeNewCommunityTermsText
-  setPhase store PRegistered
+  setPhase store $ ORegistered 1861833600 t0
   searchAlice s 12 `shouldReturn` listedUnder fakeNewCommunityTermsText (availableAnswer 10000)
   answerListing node alice $ Reverts ""
   searchAlice s 12 `shouldReturn` refused 503 "provider_unavailable"
