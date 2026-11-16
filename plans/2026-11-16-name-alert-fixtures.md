@@ -35,44 +35,66 @@ A function of the app that calls the core is a `var`; tests set it to a responde
 |---|---|---|
 | iOS | `sendSimpleXCmdStr` | `func sendSimpleXCmdStr` |
 | iOS | `parseSimpleXMarkdownText` | `func parseSimpleXMarkdownText` |
+| iOS | `parseSanitizeUri` | `func parseSanitizeUri` |
 | Kotlin | `chatSendCmdRetry` | `external fun chatSendCmdRetry`, now `nativeChatSendCmdRetry` with `@JvmName("chatSendCmdRetry")` |
 | Kotlin | `chatParseMarkdown` | `external fun chatParseMarkdown`, now `nativeChatParseMarkdown` with `@JvmName("chatParseMarkdown")` |
+| Kotlin | `chatParseUri` | `external fun chatParseUri`, now `nativeChatParseUri` with `@JvmName("chatParseUri")` |
 
 - The JNI symbols are unchanged.
-- The call sites are unchanged, except the two calls of `sendSimpleXCmdStr`, which lose the label and default argument.
+- The call sites are unchanged, except the calls of `sendSimpleXCmdStr` and `parseSanitizeUri`, which lose their labels and default argument.
+- Kotlin `processReceivedMsg` is `internal`, so tests process events.
 
 ## Fixtures
 
-`tests/fixtures/api/names/<fixture>.json`, written by `nameFixture fixture user name` in tests/ChatTests/Names.hs:
+`tests/fixtures/api/<area>/<fixture>.json`, written in tests/ChatTests/Utils.hs by `apiFixture fixture user placeholders FixtureRequests {frMarkdown, frUris, frCommands}`, and by `nameFixture fixture user name` for one plan of a name:
 
 ```
 {
-  "commands": {"/_connect plan 1 <name>": <response>},
-  "markdown": {"<name>": <parse>}
+  "commands": {"<command>": <response>},
+  "markdown": {"<text>": <parse>},
+  "uris": {"<uri>": <parse>}
 }
 ```
 
 - response: `chatSendCmd` of `Simplex.Chat.Mobile`, the JSON of the Kotlin app.
-- parse: `chatParseMarkdown` of `Simplex.Chat.Mobile`.
-- volatile values replaced: `createdAt`, `updatedAt`, `chatTs`, `agentConnId`, `xContactId`, `connFullLink`, `connShortLink`, `contactLink`.
+- parses: `chatParseMarkdown` and `chatParseUri` of `Simplex.Chat.Mobile`.
+- placeholders: a link of the test replaced in keys and values, e.g. `CONTACT_LINK`.
+- random values replaced by their key: `createdAt`, `updatedAt`, `chatTs`, `agentConnId`, `xContactId`, `connFullLink`, `connShortLink`, `contactLink`, `groupLink`, `viaGroupLinkUri`, `simplexUri`, `memberId`, `memberPubKey`, `publicGroupId`, `businessId`, `customerId`.
+- events: `nameMovedFixture`, the core's encoding of `CEvtNameMoved` for chats of the test.
 - `registerExpiredName`: expiry 2026-01-01 12:00 UTC, grace until 2099-01-01 12:00 UTC.
 - written with `testGenerate`: the test fails when its file differs.
 - iOS: tagged objects converted to the single-field form when the test reads them.
 
+| Fixture | Core test |
+|---|---|
+| names/plan-known-expired, plan-known | known chat, resolved on every call |
+| names/plan-own-expired | own name, expired |
+| names/plan-known-available | known chat, name now available |
+| names/plan-own-available | own name, now available |
+| names/plan-known-reserved | known chat and own name, name without link or reserved |
+| names/plan-known-moved | known chat and own name, name moved to a new address |
+| names/plan-moved-known | known chat and own name, name moved to another known chat |
+| names/plan-moved-business, event-name-moved | known chat, name moved to a known business chat |
+| names/plan-other-kind | bare name, the other kind's chat moved, offered |
+| names/plan-channel-no-relays | no local chat, the channel has no relays |
+| names/search-team, plan-own-channel | local chats, before and after the name expired |
+| names/error-available | connect by unregistered name reports it is available |
+| names/error-not-registered | reserved for another reason |
+| connect/contact-via-address | contact via address |
+
 ## Tests
 
-Each test sets the hooks to the fixture, sets the current user, runs `planAndConnect` with the name, and compares the texts of the shown alert.
+Each test sets the hooks to the fixture and the current user, runs the app's flow and compares what the app shows.
 
-| Fixture | Title | Buttons |
+| Test | Flow | Checked |
 |---|---|---|
-| plan-known-expired | Name expired | Open chat, OK |
-| plan-own-expired | Your name has expired | Renew, OK |
-| plan-known-available | Name no longer registered | Register, Open chat, OK |
-| plan-own-available | Your name has expired | Re-register, OK |
-| plan-known-reserved | Name not registered | Connect to SimpleX team, Open chat, OK |
-| plan-known-moved | the alert to open a new chat with cath, @alice.simplex | Open new chat, Cancel |
-| error-available | Name not registered | Register, OK |
-| error-not-registered | Name not registered | OK |
+| plan alerts | `planAndConnect` of the name | texts of the alert, the plan's chats in the chat list and passed to `showLocalChats` |
+| buttons | a press of a button of the alert | the next alert, the opened chat, or the plan of the team address |
+| other kind | a press of "Connect to @team.simplex" | the plan of the other kind and its alert |
+| own channel, contact via address | `planAndConnect` | the alert of the known chat |
+| moved event | `processReceivedMsg` of the recorded event | the contact and group marked moved |
+| search | "team" typed in the chat list search | the chats found by the local lookups listed |
+| name view | `SimplexNameView` of each verification | a press copies a verified name and verifies a failed, moved or unchecked one |
 
 A request without a recorded response fails the test.
 

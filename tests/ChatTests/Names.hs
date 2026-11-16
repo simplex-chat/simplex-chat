@@ -948,7 +948,7 @@ testPlanNameLinkServer ps = flip withTeamChats ps $ \reg contactLink channelLink
 
 testPlanLocalChats :: HasCallStack => TestParams -> IO ()
 testPlanLocalChats = withTeamChats $ \reg contactLink channelLink alice bob -> do
-  apiFixture "names/search-team" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_connect plan 1 @team.simplex resolve=never", "/_connect plan 1 #team.simplex resolve=never"]}
+  apiFixture "names/search-team" bob [] FixtureRequests {frMarkdown = ["", "team.simplex"], frUris = [], frCommands = ["/_connect plan 1 @team.simplex resolve=never", "/_connect plan 1 #team.simplex resolve=never"]}
   apiFixture "names/plan-own-channel" alice [] FixtureRequests {frMarkdown = ["#team.simplex"], frUris = [], frCommands = ["/_connect plan 1 #team.simplex"]}
   bob ##> "/_connect plan 1 team.simplex resolve=never"
   knownGroupPlan "team" "team" bob
