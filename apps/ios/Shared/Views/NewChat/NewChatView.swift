@@ -1297,21 +1297,65 @@ private func showOpenKnownGroupAlert(
     )
 }
 
-func showNameWarningAlert(_ alert: NameWarningAlert, cleanup: (() -> Void)?, openExistingChat: @escaping (ChatInfo) -> Void = { _ in }) {
-    showAlert(alert.title, message: alert.message, actions: {[
-        alert.action.map { action -> UIAlertAction in
-            let openHowTo = { openBrowserAlert(uri: "https://simplex.domains/#testing") }
-            let (title, handler): (String, () -> Void) = switch action {
-            case .renew: (NSLocalizedString("Renew", comment: "alert action"), openHowTo)
-            case .register: (NSLocalizedString("Register", comment: "alert action"), openHowTo)
-            case .reRegister: (NSLocalizedString("Re-register", comment: "alert action"), openHowTo)
-            case .connectToTeam: (NSLocalizedString("Connect to SimpleX team", comment: "alert action"), { ChatModel.shared.appOpenUrl = simplexTeamURL })
-            }
-            return UIAlertAction(title: title, style: .default) { _ in handler(); cleanup?() }
-        },
-        alert.chat.map { chat in UIAlertAction(title: NSLocalizedString("Open chat", comment: "new chat action"), style: .default) { _ in openExistingChat(chat) } },
-        okCleanupAlertAction(cleanup: cleanup)
-    ].compactMap { $0 }})
+private func namePrice(_ price: NamePrice) -> String {
+    let dollars = "$\(price.amount / 100)" + (price.amount % 100 == 0 ? "" : String(format: ".%02lld", price.amount % 100))
+    return String.localizedStringWithFormat(NSLocalizedString("%1$@ for %2$d years", comment: "name price"), dollars, price.years)
+}
+
+func showNameWarningAlert(
+    domain: SimplexDomain,
+    warning: NameWarning,
+    own: Bool,
+    openExistingChat: (() -> Void)?,
+    cleanup: (() -> Void)?
+) {
+    let nameStr = domain.fullDomainName
+    func alert(_ title: String, _ message: String, action: (title: String, handler: () -> Void)? = nil) {
+        showAlert(title, message: message, actions: {[
+            action.map { action in UIAlertAction(title: action.title, style: .default) { _ in action.handler(); cleanup?() } },
+            openExistingChat.map { open in UIAlertAction(title: NSLocalizedString("Open chat", comment: "new chat action"), style: .default) { _ in open() } },
+            okCleanupAlertAction(cleanup: cleanup)
+        ].compactMap { $0 }})
+    }
+    let openHowTo = { openBrowserAlert(uri: "https://simplex.domains/#testing") }
+    switch warning {
+    case let .expired(expiredAt, graceUntil) where !own:
+        let message = if let graceUntil {
+            String.localizedStringWithFormat(NSLocalizedString("%1$@ expired on %2$@. Its owner can renew it until %3$@.", comment: "alert message"), nameStr, badgeDateText(expiredAt), badgeDateText(graceUntil))
+        } else {
+            String.localizedStringWithFormat(NSLocalizedString("%1$@ expired on %2$@.", comment: "alert message"), nameStr, badgeDateText(expiredAt))
+        }
+        alert(NSLocalizedString("Name expired", comment: "alert title"), message)
+    case let .expired(expiredAt, graceUntil):
+        let message = if let graceUntil {
+            String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ expired on %2$@. Renew it before %3$@.", comment: "alert message"), nameStr, badgeDateText(expiredAt), badgeDateText(graceUntil))
+        } else {
+            String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ expired on %2$@.", comment: "alert message"), nameStr, badgeDateText(expiredAt))
+        }
+        alert(NSLocalizedString("Your name has expired", comment: "alert title"), message, action: (NSLocalizedString("Renew", comment: "alert action"), openHowTo))
+    case let .available(price) where !own:
+        alert(
+            openExistingChat == nil ? NSLocalizedString("Name not registered", comment: "alert title") : NSLocalizedString("Name no longer registered", comment: "alert title"),
+            String.localizedStringWithFormat(NSLocalizedString("%1$@ is available for registration for %2$@.", comment: "alert message"), nameStr, namePrice(price)),
+            action: (NSLocalizedString("Register", comment: "alert action"), openHowTo)
+        )
+    case let .available(price):
+        alert(
+            NSLocalizedString("Your name has expired", comment: "alert title"),
+            String.localizedStringWithFormat(NSLocalizedString("Your name %1$@ is no longer registered. It is available for registration for %2$@.", comment: "alert message"), nameStr, namePrice(price)),
+            action: (NSLocalizedString("Re-register", comment: "alert action"), openHowTo)
+        )
+    case .reservedForCommunity:
+        alert(
+            NSLocalizedString("Name not registered", comment: "alert title"),
+            String.localizedStringWithFormat(NSLocalizedString("%@ is reserved for community. Please contact SimpleX Chat if you are interested in using it.", comment: "alert message"), nameStr),
+            action: (NSLocalizedString("Connect to SimpleX team", comment: "alert action"), {
+                ChatModel.shared.appOpenUrl = simplexTeamURL
+            })
+        )
+    case .notRegistered:
+        alert(NSLocalizedString("Name not registered", comment: "alert title"), NSLocalizedString("This SimpleX name is not registered. Please check the name.", comment: ""))
+    }
 }
 
 // Spec: spec/client/navigation.md#planAndConnect
@@ -1378,9 +1422,10 @@ func planAndConnect(
                 } else {
                     nil
                 }
-                if let nameAlert = planNameWarningAlert(planSimplexName, connectionPlan) {
+                if case let .some(.lapsed(nameWarning)) = connectionPlan.nameChange, let nameDomain = planSimplexName?.nameDomain {
+                    let openExisting: (() -> Void)? = connectionPlan.planChat.map { chatInfo in { openKnownChat(chatInfo.id, dismiss: dismiss, cleanup: cleanup, onOpen: onOpen) } }
                     await MainActor.run {
-                        showNameWarningAlert(nameAlert, cleanup: cleanup) { chatInfo in openKnownChat(chatInfo.id, dismiss: dismiss, cleanup: cleanup, onOpen: onOpen) }
+                        showNameWarningAlert(domain: nameDomain, warning: nameWarning, own: connectionPlan.isOwnLink, openExistingChat: openExisting, cleanup: cleanup)
                     }
                     return
                 }

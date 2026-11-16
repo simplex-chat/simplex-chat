@@ -10,7 +10,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -67,50 +66,46 @@ private fun namePrice(price: NamePrice): String {
 
 private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert("https://simplex.domains/#testing", uriHandler)
 
-enum class NameWarningAction(val title: StringResource, val open: (UriHandler) -> Unit) {
-  Renew(MR.strings.simplex_name_renew, ::openNameHowTo),
-  Register(MR.strings.simplex_name_register, ::openNameHowTo),
-  ReRegister(MR.strings.simplex_name_re_register, ::openNameHowTo),
-  ConnectToTeam(MR.strings.simplex_name_connect_simplex_team, { it.openVerifiedSimplexUri(simplexTeamUri) }),
-}
-
-data class NameWarningAlert(val title: String, val text: String, val action: NameWarningAction?, val chat: ChatInfo?)
-
-fun showNameWarningAlert(rhId: Long?, alert: NameWarningAlert, cleanup: (() -> Unit)?, openExistingChat: (ChatInfo) -> Unit = {}) {
+fun showNameWarningAlert(
+  rhId: Long?,
+  domain: SimplexDomain,
+  warning: NameWarning,
+  own: Boolean,
+  openExistingChat: (() -> Unit)?,
+  cleanup: (() -> Unit)?
+) {
+  val nameStr = domain.fullDomainName
   fun dismiss() {
     AlertManager.privacySensitive.hideAlert()
     cleanup?.invoke()
   }
-  AlertManager.privacySensitive.showAlertDialogButtonsColumn(
-    title = alert.title,
-    text = alert.text,
-    buttons = {
-      val uriHandler = LocalUriHandler.current
-      Column {
-        if (alert.action != null) {
-          SectionItemView({ dismiss(); alert.action.open(uriHandler) }) {
-            Text(generalGetString(alert.action.title), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+  fun alert(title: String, text: String, action: Pair<String, (UriHandler) -> Unit>? = null) {
+    AlertManager.privacySensitive.showAlertDialogButtonsColumn(
+      title = title,
+      text = text,
+      buttons = {
+        val uriHandler = LocalUriHandler.current
+        Column {
+          if (action != null) {
+            SectionItemView({ dismiss(); action.second(uriHandler) }) {
+              Text(action.first, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+          }
+          if (openExistingChat != null) {
+            SectionItemView({ dismiss(); openExistingChat() }) {
+              Text(generalGetString(MR.strings.connect_plan_open_chat), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+          }
+          SectionItemView(::dismiss) {
+            Text(generalGetString(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
           }
         }
-        if (alert.chat != null) {
-          SectionItemView({ dismiss(); openExistingChat(alert.chat) }) {
-            Text(generalGetString(MR.strings.connect_plan_open_chat), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
-        }
-        SectionItemView(::dismiss) {
-          Text(generalGetString(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-      }
-    },
-    onDismissRequest = cleanup,
-    hostDevice = hostDevice(rhId),
-  )
-}
-
-fun nameWarningAlert(domain: SimplexDomain, warning: NameWarning, own: Boolean, chat: ChatInfo?): NameWarningAlert {
-  val nameStr = domain.fullDomainName
-  fun alert(title: String, text: String, action: NameWarningAction? = null) = NameWarningAlert(title, text, action, chat)
-  return when (warning) {
+      },
+      onDismissRequest = cleanup,
+      hostDevice = hostDevice(rhId),
+    )
+  }
+  when (warning) {
     is NameWarning.Expired -> if (!own) alert(
       generalGetString(MR.strings.simplex_name_expired),
       if (warning.graceUntil != null) String.format(generalGetString(MR.strings.simplex_name_expired_desc), nameStr, badgeDateText(warning.expiredAt), badgeDateText(warning.graceUntil))
@@ -119,30 +114,24 @@ fun nameWarningAlert(domain: SimplexDomain, warning: NameWarning, own: Boolean, 
       generalGetString(MR.strings.simplex_name_own_expired),
       if (warning.graceUntil != null) String.format(generalGetString(MR.strings.simplex_name_own_expired_desc), nameStr, badgeDateText(warning.expiredAt), badgeDateText(warning.graceUntil))
       else String.format(generalGetString(MR.strings.simplex_name_own_expired_no_date_desc), nameStr, badgeDateText(warning.expiredAt)),
-      NameWarningAction.Renew
+      generalGetString(MR.strings.simplex_name_renew) to ::openNameHowTo
     )
     is NameWarning.Available -> if (!own) alert(
-      generalGetString(if (chat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
+      generalGetString(if (openExistingChat == null) MR.strings.simplex_name_not_registered else MR.strings.simplex_name_no_longer_registered),
       String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
-      NameWarningAction.Register
+      generalGetString(MR.strings.simplex_name_register) to ::openNameHowTo
     ) else alert(
       generalGetString(MR.strings.simplex_name_own_expired),
       String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price)),
-      NameWarningAction.ReRegister
+      generalGetString(MR.strings.simplex_name_re_register) to ::openNameHowTo
     )
     NameWarning.ReservedForCommunity -> alert(
       generalGetString(MR.strings.simplex_name_not_registered),
       String.format(generalGetString(MR.strings.simplex_name_reserved_community_desc), nameStr),
-      NameWarningAction.ConnectToTeam
+      generalGetString(MR.strings.simplex_name_connect_simplex_team) to { uh: UriHandler -> uh.openVerifiedSimplexUri(simplexTeamUri) }
     )
     NameWarning.NotRegistered -> alert(generalGetString(MR.strings.simplex_name_not_registered), generalGetString(MR.strings.simplex_name_not_found_desc))
   }
-}
-
-fun planNameWarningAlert(planSimplexName: SimplexNameInfo?, plan: ConnectionPlan): NameWarningAlert? {
-  val warning = (plan.nameChange as? NameChange.Lapsed)?.nameWarning
-  val domain = planSimplexName?.nameDomain
-  return if (warning != null && domain != null) nameWarningAlert(domain, warning, plan.isOwnLink, plan.planChat) else null
 }
 
 private suspend fun planAndConnectTask(
@@ -183,9 +172,11 @@ private suspend fun planAndConnectTask(
       val label = if (it.nameType == SimplexNameType.publicGroup) MR.strings.connect_plan_join_name else MR.strings.connect_plan_connect_to_name
       generalGetString(label).format(it.shortStr)
     }
-    val nameAlert = planNameWarningAlert(planSimplexName, connectionPlan)
-    if (nameAlert != null) {
-      showNameWarningAlert(rhId, nameAlert, cleanup) { chatInfo -> withBGApi { close(); openChat(secondaryChatsCtx = null, rhId, chatInfo) } }
+    val nameWarning = (connectionPlan.nameChange as? NameChange.Lapsed)?.nameWarning
+    val nameDomain = planSimplexName?.nameDomain
+    if (nameWarning != null && nameDomain != null) {
+      val openExisting: (() -> Unit)? = connectionPlan.planChat?.let { chatInfo -> { withBGApi { close(); openChat(secondaryChatsCtx = null, rhId, chatInfo) } } }
+      showNameWarningAlert(rhId, nameDomain, nameWarning, connectionPlan.isOwnLink, openExisting, cleanup)
       return completable
     }
     when (connectionPlan) {

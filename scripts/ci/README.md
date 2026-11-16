@@ -45,7 +45,6 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - caches (the steps "Restore ... from cache");
   - `cabal build -j --enable-tests --ghc-options=-O0` (step "Build CLI");
   - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed.
-- App test fixtures: the responses of the core, written by the names tests (`/names tests/`) to apps/multiplatform/common/src/desktopTest/resources/names and apps/ios/SimpleX Unit Tests/names. Each fixture is rewritten by its test, and the test fails when the response differs from the committed file; the rewritten fixtures are committed, and the kotlin and ios scopes are run for them.
 - Local:
   ```sh
   cp scripts/cabal.project.local.linux cabal.project.local
@@ -75,8 +74,8 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - Globs:
   - apps/ios/**
   - scripts/ci/ios-stub-libs.sh
-- CI: build-ios: stub libraries, then xcodebuild for the iOS Simulator without signing (step "Build iOS app"), then the target SimpleX Unit Tests in a new simulator (step "Run iOS unit tests").
-- Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the commands of the steps "Build iOS app" and "Run iOS unit tests" of build-ios.
+- CI: build-ios: stub libraries, then xcodebuild for the iOS Simulator without signing.
+- Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the xcodebuild command of the step "Build iOS app" of build-ios.
 
 #### packages
 
@@ -166,6 +165,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 | Scope | Paths | CI |
 |---|---|---|
+| ios | apps/ios/** | compile only |
 | types package | packages/simplex-chat-client/types/typescript/** | compile only |
 | ts-client | packages/simplex-chat-client/typescript/** | - |
 | webrtc | packages/simplex-chat-webrtc/** | - |

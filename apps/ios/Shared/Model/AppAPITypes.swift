@@ -1666,6 +1666,10 @@ extension SimplexAddress {
     var shouldBeUpgraded: Bool {
         connLinkContact.connShortLink == nil || !shortLinkDataSet || !shortLinkLargeDataSet
     }
+
+    func shareAddress(short: Bool) {
+        showShareSheet(items: [simplexChatLink(connLinkContact.simplexChatUri(short: short))])
+    }
 }
 
 struct UserContactLink: Decodable, Hashable, SimplexAddress {

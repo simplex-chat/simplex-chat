@@ -8,13 +8,12 @@ The iOS app is a SwiftUI application that interfaces with the Haskell core libra
 
 ## Build & Development
 
-Open `SimpleX.xcodeproj` in Xcode. The project includes these targets:
+Open `SimpleX.xcodeproj` in Xcode. The project has five targets:
 - **SimpleX (iOS)** - Main app (Bundle ID: `chat.simplex.app`)
 - **SimpleXChat** - Framework containing FFI bridge and shared types
 - **SimpleX NSE** - Notification Service Extension
 - **SimpleX SE** - Share Extension
 - **Tests iOS** - UI tests
-- **SimpleX Unit Tests** - unit tests without a host app, of view content against core responses (`SimpleX Unit Tests/names`)
 
 Build and run via Xcode (Product > Build/Run). Tests run via Product > Test or:
 ```bash
