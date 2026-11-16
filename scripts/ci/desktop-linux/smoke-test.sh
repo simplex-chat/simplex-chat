@@ -435,7 +435,7 @@ check_internal_builds() {
   check "the update channels list Internal while internal builds are allowed" on_screen Internal exact
   lines=$(update_check_lines)
   "$ui" click-text Internal 10
-  check "the update check of Internal builds ends" end_update_check "$lines"
+  check "the update check started by selecting Internal logs its end or offers an update, closed with Remind later" end_update_check "$lines"
   "$ui" shot update-channel-internal
   check "Internal is saved as the update channel" grep -qx AppUpdateChannel=INTERNAL "$settings"
   check "Internal is shown as the update channel" in_line_with Internal "Check for updates"

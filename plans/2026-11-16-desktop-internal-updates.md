@@ -8,7 +8,7 @@ Internal desktop builds are published as releases of the public repository simpl
 
 - Developer options, desktop only: toggle "Allow internal builds", default off.
 - Settings > app version > "Check for updates": "Internal" is listed while the toggle is on.
-- The toggle turned off while "Internal" is selected: the channel is set to "Disabled", the preference default.
+- The toggle turned off while "Internal" is selected: the channel is set to "Disabled", the preference default, and the scheduled update check is cancelled.
 - Internal: the newest non-draft release of simplex-chat/internal-builds is offered when its tag differs from the installed version name.
 - Stable and Beta: unchanged.
 
@@ -79,6 +79,7 @@ flowchart TD
 | AppUpdaterTest.kt | the three choices |
 | SettingsView.desktop.kt | channel list without INTERNAL while the toggle is off |
 | DeveloperView.kt | toggle in the desktop developer options |
+| Platform.kt, Main.kt | desktopSetupUpdateChecker |
 | base strings.xml | "Internal", "Allow internal builds" |
 | smoke-test.sh | developer options and update channels in both toggle states; Internal selected, then reset to Disabled by the toggle |
 | spec/state.md, product/views/settings.md | channel and toggle |

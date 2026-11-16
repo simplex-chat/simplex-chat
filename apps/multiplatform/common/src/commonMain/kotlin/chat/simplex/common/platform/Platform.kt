@@ -55,6 +55,7 @@ interface PlatformInterface {
   @Composable fun androidLockPortraitOrientation() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
   @Composable fun desktopShowAppUpdateNotice() {}
+  fun desktopSetupUpdateChecker() {}
 }
 /**
  * Multiplatform project has separate directories per platform + common directory that contains directories per platform + common for all of them.
