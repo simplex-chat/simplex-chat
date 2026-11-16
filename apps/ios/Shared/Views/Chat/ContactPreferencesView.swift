@@ -13,9 +13,9 @@ struct ContactPreferencesView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Binding var contact: Contact
+    var contact: Contact
     @Binding var featuresAllowed: ContactFeaturesAllowed
-    @Binding var currentFeaturesAllowed: ContactFeaturesAllowed
+    var currentFeaturesAllowed: ContactFeaturesAllowed
     @State private var showSaveDialogue = false
     let savePreferences: () -> Void
 
@@ -127,9 +127,9 @@ struct ContactPreferencesView: View {
 struct ContactPreferencesView_Previews: PreviewProvider {
     static var previews: some View {
         ContactPreferencesView(
-            contact: Binding.constant(Contact.sampleData),
+            contact: Contact.sampleData,
             featuresAllowed: Binding.constant(ContactFeaturesAllowed.sampleData),
-            currentFeaturesAllowed: Binding.constant(ContactFeaturesAllowed.sampleData),
+            currentFeaturesAllowed: ContactFeaturesAllowed.sampleData,
             savePreferences: {}
         )
     }
