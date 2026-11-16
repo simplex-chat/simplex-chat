@@ -509,7 +509,7 @@ export interface ToolDefinition {
 // spec: spec/architecture.md#tools-replytool
 export const replyTool: ToolDefinition = {
   name: "reply",
-  description: `Sends a file to the members of the SimpleX group of this session, with text as its caption. Your final answer of each turn reaches them without this tool.
+  description: `Sends a file to the members of the SimpleX group of this session, with text as its caption. Your text of each turn reaches them without this tool.
 The file is sent at once, and the result has its item; the group's preference for files and media can refuse it, and the call then returns the refusal.`,
   inputSchema: {
     type: "object",
