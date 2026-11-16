@@ -5287,14 +5287,14 @@ resolveNameRecord user nm domain = do
 
 resolveConnectableName :: User -> NetworkRequestMode -> SimplexDomain -> CM NameRecord
 resolveConnectableName user nm domain = do
-  NameResponse {registration} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+  r <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
   now <- liftIO getSystemSeconds
-  either (throwChatError . CESimplexDomainNotReady domain . SDENameWarning) pure $ nameRecordOrWarning now domain registration
+  either (throwChatError . CESimplexDomainNotReady domain . SDENameWarning) pure $ nameRecordOrWarning now domain r
 
-nameRecordOrWarning :: SystemSeconds -> SimplexDomain -> NameRegistration -> Either NameWarning NameRecord
-nameRecordOrWarning now SimplexDomain {domain} = \case
+nameRecordOrWarning :: SystemSeconds -> SimplexDomain -> NameResponse -> Either NameWarning NameRecord
+nameRecordOrWarning now SimplexDomain {domain} NameResponse {lastBlockTs, registration} = case registration of
   NRRegistered {expires = Just expires, graceUntil}
-    | expires < now -> Left $ NWExpired (roundedToUTCTime expires) (roundedToUTCTime <$> mfilter (now <=) graceUntil)
+    | expires < asOf -> Left $ NWExpired (roundedToUTCTime expires) (roundedToUTCTime <$> mfilter (asOf <=) graceUntil)
   NRRegistered {nameRecord} -> Right nameRecord
   NRAvailable {pricing = NamePricing {registrationPrices, basePrice, minLabelLength}}
     | labelLength >= minLabelLength ->
@@ -5304,6 +5304,7 @@ nameRecordOrWarning now SimplexDomain {domain} = \case
   NRReserved {reservedReason = NRRCommunity} -> Left NWReservedForCommunity
   _ -> Left NWNotRegistered
   where
+    asOf = fromMaybe now lastBlockTs
     labelLength = T.length domain
 
 verifyEntityDomain :: User -> NetworkRequestMode -> SimplexNameType -> SimplexDomainClaim -> Maybe AConnShortLink -> CM (Maybe Bool, Maybe Text)

@@ -28,7 +28,7 @@ import Simplex.Chat.Controller (NamePrice (..), NameWarning (..))
 import Simplex.Chat.Library.Commands (nameRecordOrWarning)
 import Simplex.Chat.Mobile (chatSendCmd)
 import Simplex.Chat.Remote.Protocol (owsf2tagged)
-import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), USDCents (..))
+import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), NameResponse (..), USDCents (..))
 import Simplex.Messaging.Parsers (pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
@@ -1106,8 +1106,12 @@ testNameRecordOrWarning = do
   recordOrWarning (NRAvailable (pricing 6 M.empty) Nothing) `shouldBe` Left NWNotRegistered
   recordOrWarning (NRReserved NRRCommunity) `shouldBe` Left NWReservedForCommunity
   recordOrWarning (NRReserved NRRTrademark) `shouldBe` Left NWNotRegistered
+  recordOrWarningAt (Just 800) (registered (Just 900) (Just 2000) record) `shouldBe` Right record
+  recordOrWarningAt (Just 1200) (registered (Just 1100) (Just 2000) record) `shouldBe` Left (NWExpired (utc 1100) (Just $ utc 2000))
+  recordOrWarningAt (Just 2100) (registered (Just 1100) (Just 2000) record) `shouldBe` Left (NWExpired (utc 1100) Nothing)
   where
-    recordOrWarning = nameRecordOrWarning (RoundedSystemTime 1000) (SimplexDomain TLDSimplex "alice" [])
+    recordOrWarning = recordOrWarningAt Nothing
+    recordOrWarningAt blockTs = nameRecordOrWarning (RoundedSystemTime 1000) (SimplexDomain TLDSimplex "alice" []) . NameResponse (RoundedSystemTime <$> blockTs)
     registered expires graceUntil = NRRegistered (RoundedSystemTime <$> expires) (RoundedSystemTime <$> graceUntil) Nothing
     pricing minLabelLength registrationPrices = NamePricing {registrationPrices, basePrice = USDCents 1000, minLabelLength}
     record = contactNameRecord "alice.simplex" "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"
