@@ -178,6 +178,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20261019_chat_layout
           Simplex.Chat.Store.Postgres.Migrations.M20261021_badge_subscriptions
           Simplex.Chat.Store.Postgres.Migrations.M20261027_member_role_index
+          Simplex.Chat.Store.Postgres.Migrations.M20261101_chat_items_unread_index
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -363,6 +364,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20261019_chat_layout
           Simplex.Chat.Store.SQLite.Migrations.M20261021_badge_subscriptions
           Simplex.Chat.Store.SQLite.Migrations.M20261027_member_role_index
+          Simplex.Chat.Store.SQLite.Migrations.M20261101_chat_items_unread_index
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
