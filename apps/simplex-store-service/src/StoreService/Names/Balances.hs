@@ -21,7 +21,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import StoreService.Names.Orders (OrderRefusal (..))
 import StoreService.Names.Phases (RegistrationId)
-import StoreService.Names.Store (Balance (..), BalanceHold, BalanceLink, NameRegistration, NewRegistration, OrderTerms (..), PaidOrder, RegistrationRefused (..), balanceByReference, balanceChain, createBalanceRegistration, createPaidRegistration, getBalance, heldBy, overdueHolder, refundBalance)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink, NameRegistration, NewRegistration, OrderTerms (..), PaidOrder, RegistrationRefused (..), balanceByReference, balanceChain, createBalanceRegistration, createPaidRegistration, getBalance, getRegistration, heldBy, refundBalance)
 import StoreService.Names.Turns (Turns, withBalanceTurn)
 
 -- | RefundAmount: the balance's amount now, which is not the cents given. RefundHeld: an order holds it, overdue or not,
@@ -82,8 +82,8 @@ checkSpendBalance :: DBStore -> Spend -> UTCTime -> IO (Either OrderRefusal (May
 checkSpendBalance st Spend {spSource, spBalance} now =
   withTransaction st $ \db ->
     getBalance db spSource now >>= \case
-      Just balance@Balance {blAmount}
-        | blAmount == spBalance && isNothing (heldBy balance) -> Right <$> overdueHolder db spSource now
+      Just balance@Balance {blAmount, blHold}
+        | blAmount == spBalance && isNothing (heldBy balance) -> Right <$> maybe (pure Nothing) (getRegistration db . bhHolder) blHold
       balance -> pure $ Left $ ORBalanceChanged balance
 
 -- | The order queued, its price spent from the balance read.

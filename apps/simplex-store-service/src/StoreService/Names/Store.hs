@@ -63,7 +63,6 @@ module StoreService.Names.Store
     failedCodeOrdersBefore,
     heldBy,
     getBalance,
-    overdueHolder,
     balanceByReference,
     balanceChain,
     creditBalance,
@@ -970,13 +969,6 @@ toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI bhOverdue,
     (Just holder, Just bhUntil) -> Right $ Just BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue, bhFunded}
     (Just _, Nothing) -> Left $ "name_balances holder without an invoice: " <> rid
   pure Balance {blRegistration = RegistrationId rid, blAmount, blCredited, blRefunded, blHold, blRefundedAt}
-
--- | The order holding the balance, when its hold is overdue, for the next spend to close.
-overdueHolder :: DB.Connection -> RegistrationId -> UTCTime -> IO (Maybe NameRegistration)
-overdueHolder db rid now =
-  getBalance db rid now >>= \case
-    Just Balance {blHold = Just BalanceHold {bhHolder, bhOverdue = True}} -> getRegistration db bhHolder
-    _ -> pure Nothing
 
 -- | The order a support reference names, by its registration id or its name invoice's id, with its balance.
 balanceByReference :: DB.Connection -> Text -> UTCTime -> IO (Maybe (RegistrationId, Maybe Balance))
