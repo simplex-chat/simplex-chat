@@ -152,19 +152,19 @@ nodeChainId :: ChainClient -> IO (Either ChainError Word64)
 nodeChainId c = rpc c "eth_chainId" [] quantity
 
 latestBlock :: ChainClient -> IO (Either ChainError Block)
-latestBlock c = blockByNumber c "latest"
+latestBlock c = blockByNumber c Latest
 
 -- | A block the node does not have is a failed read.
 blockAt :: ChainClient -> Word64 -> IO (Either ChainError Block)
-blockAt c = blockByNumber c . blockTagParam . AtBlock
+blockAt c = blockByNumber c . AtBlock
 
 -- | The newest block at the configured confirmation depth below this latest one, as the sender counts it.
 confirmedNumber :: ChainClient -> Word64 -> Word64
 confirmedNumber ChainClient {ccConfig = ChainConfig {cConfirmations}} latest = latest - min latest (fromIntegral (max 1 cConfirmations) - 1)
 
-blockByNumber :: ChainClient -> J.Value -> IO (Either ChainError Block)
+blockByNumber :: ChainClient -> BlockTag -> IO (Either ChainError Block)
 blockByNumber c tag =
-  rpc c "eth_getBlockByNumber" [tag, J.Bool False] $ J.withObject "block" $ \b ->
+  rpc c "eth_getBlockByNumber" [blockTagParam tag, J.Bool False] $ J.withObject "block" $ \b ->
     Block <$> (quantity =<< b .: "number") <*> (quantity =<< b .: "timestamp") <*> (quantity =<< b .: "baseFeePerGas")
 
 -- | Nothing while the transaction is not mined, or after the node pruned its receipt.
@@ -199,7 +199,7 @@ blockTagParam = \case
 -- | The dry run of a registrar transaction; an estimate above the configured cap is refused.
 estimateGas :: ChainClient -> Address -> ByteString -> IO (Either ChainError Word64)
 estimateGas c@ChainClient {ccRegistrar, ccConfig = ChainConfig {cGasLimitCap}} to calldata =
-  (>>= capped) <$> rpc c "eth_estimateGas" [J.object ["from" .= ccRegistrar, "to" .= to, "data" .= hex calldata], "pending"] quantity
+  (>>= capped) <$> rpc c "eth_estimateGas" [J.object ["from" .= ccRegistrar, "to" .= to, "data" .= hex calldata], blockTagParam Pending] quantity
   where
     capped gas
       | gas > cGasLimitCap = Left $ ChainGasAboveCap gas
@@ -208,7 +208,7 @@ estimateGas c@ChainClient {ccRegistrar, ccConfig = ChainConfig {cGasLimitCap}} t
 -- | The median of the last blocks' median tips: eth_maxPriorityFeePerGas samples each block's cheapest transactions,
 -- which reth answers near zero.
 recentTip :: ChainClient -> IO (Either ChainError Word64)
-recentTip c = rpc c "eth_feeHistory" [J.String tipBlocks, J.String "latest", J.toJSON [50 :: Int]] medianTip
+recentTip c = rpc c "eth_feeHistory" [J.String tipBlocks, blockTagParam Latest, J.toJSON [50 :: Int]] medianTip
   where
     tipBlocks = "0xa"
     medianTip = J.withObject "fee history" $ \o -> o .: "reward" >>= mapM blockTip >>= median . sort
