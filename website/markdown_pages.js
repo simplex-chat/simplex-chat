@@ -16,7 +16,6 @@ const htmlPages = new Set([
   "crowdfunding",
   "crowdfunding-news",
   "news",
-  "livestream",
   "blog",
   "links",
   "directory",

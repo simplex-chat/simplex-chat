@@ -4,8 +4,6 @@ import { readFileSync, readdirSync } from "node:fs";
 import vm from "node:vm";
 
 const swTest = timedTest(2000);
-// The shell's deadline is 3s, so the test that waits it out needs longer.
-const stalledTest = timedTest(8000);
 
 const ORIGIN = "https://badges.simplex.chat";
 const WORKER_SOURCE = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
@@ -114,14 +112,17 @@ class FakeNet {
   readonly routes = new Map<string, { status: number; body: string }>();
   offline = false;
 
-  readonly stalled = new Set<string>();
+  readonly held = new Map<string, Promise<void>>();
 
   serve(path: string, status: number, body: string): void {
     this.routes.set(path, { status, body });
   }
 
-  stall(path: string): void {
-    this.stalled.add(path);
+  // The path's answers wait until the returned function lets them go.
+  hold(path: string): () => void {
+    let release!: () => void;
+    this.held.set(path, new Promise((resolve) => { release = resolve; }));
+    return release;
   }
 
   readonly fetch = async (input: unknown, init?: Record<string, unknown>): Promise<FakeResponse> => {
@@ -129,7 +130,7 @@ class FakeNet {
     this.requests.push(init ? { url, init } : { url });
     if (this.offline) throw new TypeError("Failed to fetch");
     const path = url.slice(ORIGIN.length);
-    if (this.stalled.has(path)) return new Promise<FakeResponse>(() => { /* never answers */ });
+    await this.held.get(path);
     const hit = this.routes.get(path);
     return hit === undefined
       ? response(url, 404, "not found")
@@ -166,12 +167,7 @@ interface Served {
 }
 
 // Loads sw.js into a fresh context so one test's top-level state cannot leak into another's.
-interface TimerSpy {
-  set: (id: number) => void;
-  clear: (id: number) => void;
-}
-
-function rig(options: { shell?: string; shellStatus?: number; missing?: readonly string[]; timers?: TimerSpy } = {}): Rig {
+function rig(options: { shell?: string; shellStatus?: number; missing?: readonly string[] } = {}): Rig {
   const net = new FakeNet();
   const caches = new FakeCacheStorage(net);
   const calls = { skipWaiting: 0, claim: 0 };
@@ -188,20 +184,7 @@ function rig(options: { shell?: string; shellStatus?: number; missing?: readonly
     clients: { claim: async () => { calls.claim++; } },
   } as Record<string, unknown>;
 
-  const spy = options.timers;
-  const watchedSetTimeout = (fn: () => void, ms: number): NodeJS.Timeout => {
-    const handle = setTimeout(fn, ms);
-    spy?.set(Number(handle));
-    return handle;
-  };
-  const watchedClearTimeout = (handle: NodeJS.Timeout): void => {
-    spy?.clear(Number(handle));
-    clearTimeout(handle);
-  };
-  const sandbox: Record<string, unknown> = {
-    self, caches, fetch: net.fetch, URL, console,
-    setTimeout: watchedSetTimeout, clearTimeout: watchedClearTimeout,
-  };
+  const sandbox: Record<string, unknown> = { self, caches, fetch: net.fetch, URL, console };
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
   vm.runInContext(WORKER_SOURCE, sandbox, { filename: "public/sw.js" });
@@ -479,28 +462,18 @@ swTest("sw: a redeployed shell reaches the page on a reload, with the old worker
   assert.deepEqual(cache.written.filter((w) => w === "/"), []);
 });
 
-swTest("sw: the shell's deadline is cleared on every path, so no request leaves a timer armed", async () => {
-  const armed: number[] = [];
-  const r = rig({ timers: { set: (id) => armed.push(id), clear: (id) => { armed.splice(armed.indexOf(id), 1); } } });
-  await r.install();
-  r.net.offline = true;
-  await r.request(`${ORIGIN}/`);
-  assert.deepEqual(armed, [], "the offline path left a timer running");
-  r.net.offline = false;
-  await r.request(`${ORIGIN}/`);
-  assert.deepEqual(armed, [], "and so did the answered path");
-});
-
-stalledTest("sw: a network that accepts and never answers falls back rather than hanging the page", async () => {
-  // fetch does not reject on a stalled connection and navigator.onLine still says online, so only a deadline serves the page.
+swTest("sw: a slow shell is waited for, so a build deployed since the install is the one served", async () => {
   const r = rig();
   await r.install();
-  r.net.stall("/");
-  const started = Date.now();
-  const served = await r.request(`${ORIGIN}/`);
-  assert.equal(served.responded, true);
-  assert.equal(served.body, SHELL_HTML, "the precached shell is what a stalled network is for");
-  assert.ok(Date.now() - started < 10_000, "and it must not wait out the browser's own timeout");
+  const deployed = SHELL_HTML.replace("<title>", "<title>deployed since ");
+  r.net.serve("/", 200, deployed);
+  const release = r.net.hold("/");
+  let answered = false;
+  const served = r.request(`${ORIGIN}/`).then((s) => { answered = true; return s; });
+  await new Promise((later) => setTimeout(later, 300));
+  assert.equal(answered, false, "the cached shell, the build before the deploy, is not served in the meantime");
+  release();
+  assert.equal((await served).body, deployed);
 });
 
 swTest("sw: a shell the listener cannot serve falls back to the cache, not to an error", async () => {

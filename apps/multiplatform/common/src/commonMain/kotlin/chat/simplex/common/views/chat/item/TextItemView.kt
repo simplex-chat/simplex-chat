@@ -211,14 +211,15 @@ fun MarkdownText (
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
   val metaCopy = if (meta != null) {
-    metaReserveCopy(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp, breakBefore = !LocalTerminalLayout.current && range?.isEmpty() != true)
+    metaReserveCopy(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp, breakBefore = range?.isEmpty() != true)
   } else null
-  if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
+  if (blockLayout && formattedText != null && markdownBlocks != null && range == null && (prefix == null || blockTextRanges(markdownBlocks).isNotEmpty())) {
     val direction = LocalLayoutDirection.current
     val terminal = LocalTerminalLayout.current
-    val trailingEmptyLines = trailingEmptyLines(text, formattedText, markdownBlocks)
-    val ruleMinWidth = if (terminal && metaCopy != null && markdownBlocks.isNotEmpty() && markdownBlocks.all { it is MarkdownBlock.Rule }) {
-      with(LocalDensity.current) { rememberTextMeasurer().measure(metaCopy, style).size.width.toDp() }
+    val trailingEmptyLines = if (terminal) 0 else trailingEmptyLines(text, formattedText, markdownBlocks)
+    val ruleMinWidth = if (terminal && meta != null && markdownBlocks.isNotEmpty() && markdownBlocks.all { it is MarkdownBlock.Rule }) {
+      val copy = metaReserveCopy(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+      with(LocalDensity.current) { rememberTextMeasurer().measure(copy, style).size.width.toDp() }
     } else 0.dp
     CompositionLocalProvider(LocalLayoutDirection provides textLayoutDirection) {
       MarkdownBlocks(
@@ -444,7 +445,7 @@ fun MarkdownText (
             is Format.Escape -> {}
             is Format.Markup -> append(
               if (range != null) ft.format.token.drawnText
-              else if (markdownBlocks != null) ft.format.token.previewText
+              else if (markdownBlocks != null && !blockLayout) ft.format.token.previewText
               else ft.text
             )
             is Format.Unknown -> append(ft.text)

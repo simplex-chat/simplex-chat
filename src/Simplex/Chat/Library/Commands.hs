@@ -67,7 +67,6 @@ import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.StoreService (BadgeBalance (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), StoreServiceCommand (..), StoreServiceErrorCode (..), StoreServiceRequest (..), StoreServiceResponse (..), SubscriptionState (..), currentStoreServiceVersion)
 import Simplex.Chat.Badges.StorePlan (storePlan)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Wallet (deriveAccount, masterMnemonic, newEntropy)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -101,7 +100,6 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Store.Wallets
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -389,7 +387,7 @@ restoreCalls = do
 stopChatController :: ChatController -> IO ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, cleanupManagerAsync, relayGroupLinkChecksAsync, webPreviewState, expireCIThreads, timedItemThreads, deliveryTaskWorkers, deliveryJobWorkers, relayRequestWorkers, badgeWorkers, storeReceiptWorkers} = do
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
-  atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
+  atomically (stateTVar' remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
   cancelAsync cleanupManagerAsync
@@ -1529,18 +1527,6 @@ processChatCommand cxt nm = \case
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
-  APIGetWallet userId -> withUserId userId $ \user ->
-    CRWallet user <$> withFastStore (`getWalletInfo` user)
-  APICreateWallet -> withUser $ \user -> do
-    entropy <- liftIO . newEntropy =<< asks random
-    CRWallet user <$> withFastStore (`createWallet` entropy)
-  APICreateWalletAccount userId -> withUserId userId $ \user -> do
-    (entropy, n) <- withFastStore (`createAccount` user)
-    g <- asks random
-    CRWalletAddress user <$> liftError' (ChatError . CEInternalError) (deriveAccount g entropy n)
-  APIExportWalletMnemonic -> withUser $ \user ->
-    CRWalletMnemonic user . masterMnemonic <$> withFastStore getWalletEntropy
-  APIDeleteWallet -> withUser_ $ withFastStore deleteWallet >> ok_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -5048,12 +5034,12 @@ processChatCommand cxt nm = \case
                     fl_ <- liftIO $ ciffForwardLink db ciff
                     pure (mcForward fl_ mc, Nothing)
                   (Just qiId, Nothing) -> do
-                    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, markdownBlocks, file} <-
+                    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, file} <-
                       getDirectChatItem db user contactId qiId
                     (origQmc, qd, sent) <- quoteData qci
                     let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                         qmc = quoteContent mc origQmc file
-                        quotedItem = CIQuote {chatDir = qd, itemId = Just qiId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText, markdownBlocks}
+                        quotedItem = mkCIQuote qd (Just qiId) itemSharedMsgId itemTs qmc
                     pure (mcQuote QuotedMsg {msgRef, content = qmc} mc, Just quotedItem)
                   (Just _, Just _) -> throwError SEInvalidQuote
                 pure (mc' {file = fInv_, ttl = ttl' <$> timed_, live = justTrue live}, quotedItem_)
@@ -5887,7 +5873,7 @@ runStoreReceiptWorker a userId Worker {doWork} = do
     -- getNextHeldStoreReceipt reads held rows only, so this says its query and its result type disagree
     notHeld receiptId = eToView $ ChatError $ CEInternalError $ "store receipt " <> show receiptId <> " is not held"
     scheduleReceipt scheduled receiptId delay = do
-      new <- atomically $ stateTVar scheduled $ \ids -> (S.notMember receiptId ids, S.insert receiptId ids)
+      new <- atomically $ stateTVar' scheduled $ \ids -> (S.notMember receiptId ids, S.insert receiptId ids)
       when new . void . liftIO . forkIO $ do
         threadDelay' $ diffToMicroseconds delay
         atomically $ modifyTVar' scheduled $ S.delete receiptId
@@ -6171,7 +6157,7 @@ emitBadgeAlert :: User -> TVar (Maybe BadgeOccurrence) -> UserBadgePurchase -> M
 emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} shownCred now balance =
   forM_ (unansweredBadgeAlert now p shownCred balance) $ \alert@BadgeAlert {kind, episode} -> do
     let occurrence = Just (kind, episode, alertSnoozeUntil)
-    raised <- atomically $ stateTVar emitted (,occurrence)
+    raised <- atomically $ stateTVar' emitted (,occurrence)
     when (raised /= occurrence) $ toView $ CEvtBadgeAlert user alert
 
 -- | Scoped to one profile, so another profile's store purchase, which may be hidden, never shows under it.
@@ -6922,11 +6908,6 @@ chatCommandP =
       "/_badge request " *> (APIRequestBadge <$> A.decimal),
       "/_store service " *> (APISetStoreService <$> strP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
-      "/_wallet create new" $> APICreateWallet,
-      "/_wallet create account " *> (APICreateWalletAccount <$> A.decimal),
-      "/_wallet export master" $> APIExportWalletMnemonic,
-      "/_wallet delete" $> APIDeleteWallet,
-      "/_wallet " *> (APIGetWallet <$> A.decimal),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),

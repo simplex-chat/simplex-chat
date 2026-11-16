@@ -23,11 +23,7 @@ const page = installPage({ storage: full });
 const { app } = page;
 
 // The publishable key is what makes the card path exist at all; with none, it refuses.
-const keyMeta = new StubElement("meta");
-keyMeta.setAttribute("id", "stripe-publishable-key");
-keyMeta.setAttribute("name", "stripe-publishable-key");
-keyMeta.setAttribute("content", PUBLISHABLE_KEY);
-page.document.byId.set("stripe-publishable-key", keyMeta);
+page.siteConfig.stripePublishableKey = PUBLISHABLE_KEY;
 
 (globalThis as unknown as { window: Record<string, unknown> }).window.Stripe = (key: string) => {
   assert.equal(key, PUBLISHABLE_KEY, "the page's own configured key");

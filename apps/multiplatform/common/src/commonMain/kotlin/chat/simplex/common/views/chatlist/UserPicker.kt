@@ -295,7 +295,7 @@ fun UserPicker(
           {
             ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
               val search = rememberSaveable { mutableStateOf("") }
-              val profileHidden = rememberSaveable { mutableStateOf(false) }
+              val profileHidden = remember { stateGetOrPut("profileHidden") { false } }
               val authorized = remember { stateGetOrPut("authorized") { false } }
               ModalView(
                 { close() },
@@ -490,7 +490,8 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
   ) {
     ProfileImage(
       image = u.image,
-      size = 54.dp * fontSizeSqrtMultiplier
+      size = 45.dp * fontSizeSqrtMultiplier,
+      modifier = Modifier.centeredIn(54.dp * fontSizeSqrtMultiplier)
     )
     // the end padding is on the row, not the name, so the badge stays right after the name
     NameWithBadge(

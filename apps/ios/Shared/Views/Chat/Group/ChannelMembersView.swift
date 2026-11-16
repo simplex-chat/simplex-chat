@@ -31,10 +31,10 @@ struct ChannelMembersView: View {
                 Section(header: Text(subscriberCountStr(subscriberCount)).foregroundColor(theme.colors.secondary)) {
                     searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
                         .padding(.leading, 8)
-                    memberRow(GMember(groupInfo.membership), user: true, showRole: true)
+                    ChannelMemberRow(chat: chat, groupInfo: groupInfo, gMember: GMember(groupInfo.membership), user: true, showRole: true)
                     let filteredMembers = s == "" ? members : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
                     ForEach(filteredMembers) { member in
-                        memberRow(member, user: false, showRole: member.wrapped.memberRole >= .member)
+                        ChannelMemberRow(chat: chat, groupInfo: groupInfo, gMember: member, user: false, showRole: member.wrapped.memberRole >= .member)
                     }
                 }
             }
@@ -48,18 +48,27 @@ struct ChannelMembersView: View {
                     searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
                         .padding(.leading, 8)
                     if groupInfo.membership.memberRole >= .member {
-                        memberRow(GMember(groupInfo.membership), user: true, showRole: true)
+                        ChannelMemberRow(chat: chat, groupInfo: groupInfo, gMember: GMember(groupInfo.membership), user: true, showRole: true)
                     }
                     let filteredContributors = s == "" ? contributors : contributors.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
                     ForEach(filteredContributors) { member in
-                        memberRow(member, user: false, showRole: member.wrapped.memberRole >= .moderator)
+                        ChannelMemberRow(chat: chat, groupInfo: groupInfo, gMember: member, user: false, showRole: member.wrapped.memberRole >= .moderator)
                     }
                 }
             }
         }
     }
+}
 
-    @ViewBuilder private func memberRow(_ gMember: GMember, user: Bool, showRole: Bool) -> some View {
+private struct ChannelMemberRow: View {
+    var chat: Chat
+    var groupInfo: GroupInfo
+    @ObservedObject var gMember: GMember
+    @EnvironmentObject var theme: AppTheme
+    var user: Bool
+    var showRole: Bool
+
+    var body: some View {
         let member = gMember.wrapped
         let nameText = Text(member.chatViewName)
             .foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)

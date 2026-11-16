@@ -215,8 +215,5 @@ undocumentedResponses =
     "CRUserProfileImage",
     "CRUserServersValidation",
     "CRVersionInfo",
-    "CRWallet",
-    "CRWalletAddress",
-    "CRWalletMnemonic",
     "CRWelcome"
   ]

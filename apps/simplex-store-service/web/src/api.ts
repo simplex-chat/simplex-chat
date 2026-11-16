@@ -183,6 +183,20 @@ async function readView(res: Response): Promise<InvoiceView> {
   return view;
 }
 
+export async function readPublishableKey(f: typeof fetch = fetch): Promise<string> {
+  const res = await f("/api/config");
+  if (!res.ok) return decodeError(res);
+  let raw: unknown;
+  try {
+    raw = await res.json();
+  } catch {
+    throw new ApiError("invalid_response", res.status);
+  }
+  const config = asObject(raw);
+  if (config === undefined || !("stripePublishableKey" in config)) throw new ApiError("invalid_response", res.status);
+  return text(config.stripePublishableKey)?.trim() ?? "";
+}
+
 export async function cancelInvoice(orderId: string, f: typeof fetch = fetch): Promise<InvoiceView> {
   return readView(await f(`/api/invoice/${encodeURIComponent(orderId)}/cancel`, { method: "POST" }));
 }
