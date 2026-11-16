@@ -37,7 +37,7 @@ import StoreService.Names.Registration (RegisterIntent (..))
 import StoreService.Names.Reveal (RevealFields (..), RevealRefusal (..), SignedLabel (..), checkAcceptance, checkIntent, committedRegistration, isRepeat, linksValid, parseRevealFields, parseSignedLabel, revealOf)
 import StoreService.Names.Store (NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Names.Turns (withLabelTurn)
-import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
+import StoreService.Names.View (RegistrationView, lapseMoment, registrationAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
 import StoreService.Web.Http (HttpEnv, Respond, badRequest, holdsFull, invalidLink, jsonResponse, nameBodyBytes, notFound, providerUnavailable, readBoundedBody, withHoldSlot)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
@@ -56,7 +56,7 @@ registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} 
   where
     rid = RegistrationId ridText
     readNow = oeNow >>= \now -> fmap (now,) <$> withTransaction oeStore (`getRegistration` rid)
-    answer (now, r) = respond . jsonResponse status200 =<< registrationView oeStore oeConfig oeContracts now (registrationAt now r)
+    answer (now, r) = respond . jsonResponse status200 . J.toJSON =<< registrationView oeStore oeConfig oeContracts now (registrationAt now r)
 
 -- | What a reveal decided in the name's turn, with the version it wrote; the publish and the answer come after the turn.
 data RevealDecision
@@ -129,7 +129,7 @@ retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} ridText _ respond =
     answer = \case
       RTWritten v -> do
         atomically $ publish oePhases rid v
-        respond . maybe notFound (jsonResponse status200) =<< currentView env rid
+        respond . maybe notFound (jsonResponse status200 . J.toJSON) =<< currentView env rid
       RTChanged -> respond =<< registrationChangedResponse env rid
       RTRefused refusal -> do
         logNote ("POST /api/registration/:id/retry refused: " <> tshow refusal)
@@ -154,7 +154,7 @@ registrationRefusalResponse env tag rid = maybe notFound refusal <$> currentView
     refusal view = jsonResponse status409 $ J.object ["error" .= tag, "registration" .= view]
 
 -- | The registration's view as it reads now.
-currentView :: OrdersEnv -> RegistrationId -> IO (Maybe J.Value)
+currentView :: OrdersEnv -> RegistrationId -> IO (Maybe RegistrationView)
 currentView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} rid =
   withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> oeNow >>= \now -> registrationView oeStore oeConfig oeContracts now (registrationAt now r))
 

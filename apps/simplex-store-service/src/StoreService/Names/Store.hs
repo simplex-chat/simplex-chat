@@ -123,6 +123,7 @@ where
 
 import qualified Control.Exception as E
 import Control.Monad (when)
+import Data.Aeson (ToJSON (toJSON))
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -142,7 +143,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding (Encoding (..), Large (..))
-import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import Simplex.Messaging.Encoding.String (TextEncoding (..), textToJSON)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..))
@@ -465,6 +466,8 @@ instance TextEncoding LateWait where
     LWCrediting -> "crediting"
     LWSupport -> "support"
   textDecode = enumTextDecode
+
+instance ToJSON LateWait where toJSON = textToJSON
 
 -- | Why a closed order's money will not be credited by itself: the provider's reason it is uncreditable, a current rate below the floor,
 -- or unconfirmed money alerted past the read window.
