@@ -119,6 +119,7 @@ runRemoteTests = do
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
     it "should send files from CLI without /store" remoteCLIFileTest
+    it "stores encrypted file when hosts folder is on another filesystem" remoteStoreFileOtherFsTest
   it "switches remote hosts" switchRemoteHostTest
   it "indicates remote hosts" indicateRemoteHostTest
   it "works with multiple profiles" multipleProfilesTest
@@ -430,6 +431,38 @@ remoteStoreFileTest =
       r <- getTermLine cc
       r `shouldStartWith` "remote host 1 error"
       r `shouldContain` err
+
+remoteStoreFileOtherFsTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteStoreFileOtherFsTest (cfg, ps) = do
+  let shmDir = "/dev/shm" </> ("simplex-test-remote-" <> show (portBase ps))
+  doesDirectoryExist "/dev/shm" >>= \case
+    False -> pendingWith "no /dev/shm"
+    True -> do
+      let probe = tmpFile ps ("simplex-test-probe-" <> show (portBase ps))
+      B.writeFile probe "probe"
+      createDirectoryIfMissing True shmDir
+      sameFs <- (renameFile probe (shmDir </> "probe") >> pure True) `catchAny` \_ -> pure False
+      removePathForcibly probe
+      when sameFs $ removePathForcibly shmDir >> pendingWith "/dev/shm is on the test filesystem"
+      testRemote (test shmDir) (cfg, ps) `finally` removePathForcibly shmDir
+  where
+    test shmDir compress mobile desktop = do
+      let mobileFiles = tmpFile mobile "mobile_files"
+      mobile ##> ("/_files_folder " <> mobileFiles)
+      mobile <## "ok"
+      desktop ##> ("/remote_hosts_folder " <> shmDir)
+      desktop <## "ok"
+      startRemote compress mobile desktop
+      rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
+      desktopHostStore <- case M.lookup (RHId 1) rhs of
+        Just (_, RHSessionConnected {storePath}) -> pure $ shmDir </> storePath </> remoteFilesFolder
+        _ -> fail "Host session 1 should be started"
+      desktop ##> "/store remote file 1 encrypt=on tests/fixtures/test.pdf"
+      desktop <## "file test.pdf stored on remote host 1"
+      Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine desktop
+      src <- B.readFile "tests/fixtures/test.pdf"
+      chatReadFile (desktopHostStore </> "test.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
+      stopMobile mobile desktop
 
 remoteCLIFileTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
 remoteCLIFileTest = testRemote3 $ \compress mobile desktop bob -> withXFTPServer mobile $ do
