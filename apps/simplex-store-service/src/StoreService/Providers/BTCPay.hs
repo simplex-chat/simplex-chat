@@ -8,6 +8,8 @@ module StoreService.Providers.BTCPay
     btcMethodId,
     xmrMethodId,
     minorToDecimal,
+    BTCPayStatus (..),
+    AdditionalStatus (..),
     paymentMethodsSignal,
     listSignals,
     verifyBTCPaySig,
@@ -110,8 +112,8 @@ knownMethodIds = map fst methodCurrencies
 confirmingPolicies :: [SpeedPolicy]
 confirmingPolicies = [MediumSpeed, LowMediumSpeed, LowSpeed]
 
-closedInFullStatuses :: [Text]
-closedInFullStatuses = ["PaidLate", "PaidOver"]
+closedInFullStatuses :: [AdditionalStatus]
+closedInFullStatuses = [ASPaidLate, ASPaidOver]
 
 -- The last two are the only events a payment into a closed invoice sends.
 actedOnEventTypes :: [Text]
@@ -176,11 +178,56 @@ maxExponent = 64
 wireDecimals :: Scientific -> Int
 wireDecimals = max 0 . negate . base10Exponent
 
+data BTCPayStatus = BSNew | BSProcessing | BSSettled | BSExpired | BSInvalid | BSUnknown Text
+  deriving (Eq, Show)
+
+instance J.FromJSON BTCPayStatus where
+  parseJSON = J.withText "invoice status" $ \case
+    "New" -> pure BSNew
+    "Processing" -> pure BSProcessing
+    "Settled" -> pure BSSettled
+    "Expired" -> pure BSExpired
+    "Invalid" -> pure BSInvalid
+    t -> pure $ BSUnknown t
+
+data BTCPayPaymentStatus = BPInvalid | BPProcessing | BPSettled | BPUnknown Text
+  deriving (Eq, Show)
+
+instance J.FromJSON BTCPayPaymentStatus where
+  parseJSON = J.withText "payment status" $ \case
+    "Invalid" -> pure BPInvalid
+    "Processing" -> pure BPProcessing
+    "Settled" -> pure BPSettled
+    t -> pure $ BPUnknown t
+
+data AdditionalStatus = ASNone | ASPaidLate | ASPaidPartial | ASPaidOver | ASMarked | ASInvalid | ASUnknown Text
+  deriving (Eq, Show)
+
+instance J.FromJSON AdditionalStatus where
+  parseJSON = J.withText "additional status" $ \case
+    "None" -> pure ASNone
+    "PaidLate" -> pure ASPaidLate
+    "PaidPartial" -> pure ASPaidPartial
+    "PaidOver" -> pure ASPaidOver
+    "Marked" -> pure ASMarked
+    "Invalid" -> pure ASInvalid
+    t -> pure $ ASUnknown t
+
+additionalStatusText :: AdditionalStatus -> Text
+additionalStatusText = \case
+  ASNone -> "None"
+  ASPaidLate -> "PaidLate"
+  ASPaidPartial -> "PaidPartial"
+  ASPaidOver -> "PaidOver"
+  ASMarked -> "Marked"
+  ASInvalid -> "Invalid"
+  ASUnknown t -> t
+
 data GInvoice = GInvoice
   { giId :: Text,
-    giStatus :: Text,
-    giAdditionalStatus :: Maybe Text,
-    giSpeedPolicy :: Maybe Text,
+    giStatus :: BTCPayStatus,
+    giAdditionalStatus :: Maybe AdditionalStatus,
+    giSpeedPolicy :: Maybe SpeedPolicy,
     giPaymentMethods :: Maybe [GPaymentMethod]
   }
   deriving (Show)
@@ -191,8 +238,11 @@ instance J.FromJSON GInvoice where
       <$> o J..: "id"
       <*> o J..: "status"
       <*> o J..:? "additionalStatus"
-      <*> (maybe (pure Nothing) (J..:? "speedPolicy") =<< o J..:? "checkout")
+      <*> ((>>= speedPolicyOf) <$> (maybe (pure Nothing) (J..:? "speedPolicy") =<< o J..:? "checkout"))
       <*> o J..:? "paymentMethods"
+    where
+      speedPolicyOf :: Text -> Maybe SpeedPolicy
+      speedPolicyOf t = find ((== t) . speedPolicyName) [minBound .. maxBound]
 
 -- totalPaid is not decoded because it counts every method's payment in this currency, so it is non-zero
 -- even when this method got nothing.
@@ -227,7 +277,7 @@ instance J.FromJSON GPaymentMethod where
 
 -- | A payment without a value is read, and only its units cannot be counted.
 data GPayment = GPayment
-  { gpStatus :: Text,
+  { gpStatus :: BTCPayPaymentStatus,
     gpReceivedDate :: WireNum,
     gpValue :: Maybe WireNum
   }
@@ -428,35 +478,35 @@ invoiceIdOf v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
     _ -> Nothing
   J.Error _ -> Nothing
 
-logAdditionalStatus :: Text -> Maybe Text -> IO ()
+logAdditionalStatus :: Text -> Maybe AdditionalStatus -> IO ()
 logAdditionalStatus ref = \case
-  Just s | s /= "None" -> logNote ("btcpay: invoice " <> ref <> " additionalStatus " <> s)
+  Just s | s /= ASNone -> logNote ("btcpay: invoice " <> ref <> " additionalStatus " <> additionalStatusText s)
   _ -> pure ()
 
-paymentMethodsSignal :: UTCTime -> Text -> Text -> Maybe Text -> Maybe Text -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)
+paymentMethodsSignal :: UTCTime -> Text -> BTCPayStatus -> Maybe AdditionalStatus -> Maybe SpeedPolicy -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)
 paymentMethodsSignal now ref status additional policy body =
   decodeGreenfield "read invoice" body >>= invoiceSignal now ref status additional policy
 
 -- Complete is the old API's status name and never matches, so it has no case here.
-invoiceSignal :: UTCTime -> Text -> Text -> Maybe Text -> Maybe Text -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
+invoiceSignal :: UTCTime -> Text -> BTCPayStatus -> Maybe AdditionalStatus -> Maybe SpeedPolicy -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
 invoiceSignal now ref status additional policy ms = do
   (m@GPaymentMethod {gpmAmount, gpmRate, gpmPaid, gpmDue, gpmPayments, gpmSettledThreshold}, cc) <- chooseMethod ref ms
   rate <- priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
   let decimals = unitDecimals cc
-      confirming = maybe False (`elem` map speedPolicyName confirmingPolicies) policy
+      confirming = maybe False (`elem` confirmingPolicies) policy
       shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
-      received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmAmount gpmDue gpmPayments
+      received = receivedOf decimals confirming shown (status == BSSettled) rate paid gpmAmount gpmDue gpmPayments
       -- BTCPay never settles an invoice it has closed, so only its additional status tells that the whole amount reached it.
       -- Its paid amount counts unconfirmed payments too, so a due at 0 or less does not.
       closedFunded = if maybe False (`elem` closedInFullStatuses) additional then PaidInFull else PaidInPart
   case status of
-    "Settled" -> Right (Just (SigSettled received (fromMaybe now (latestSettledAt m))))
-    "Processing" -> Right (Just (SigFunded received PaidInFull))
-    "Expired" -> Right (Just (SigClosed received closedFunded))
-    "Invalid" -> Right (Just (SigClosed received closedFunded))
-    "New" -> Right (SigFunded received PaidInPart <$ rcvCrypto received)
-    other -> Left (ProviderError ("btcpay invoice " <> ref <> ": unknown status " <> other))
+    BSSettled -> Right (Just (SigSettled received (fromMaybe now (latestSettledAt m))))
+    BSProcessing -> Right (Just (SigFunded received PaidInFull))
+    BSExpired -> Right (Just (SigClosed received closedFunded))
+    BSInvalid -> Right (Just (SigClosed received closedFunded))
+    BSNew -> Right (SigFunded received PaidInPart <$ rcvCrypto received)
+    BSUnknown other -> Left (ProviderError ("btcpay invoice " <> ref <> ": unknown status " <> other))
   where
     priced field =
       maybe (Left (ProviderError ("btcpay invoice " <> ref <> ": its payment method carries no " <> field))) Right
@@ -510,8 +560,8 @@ receivedOf decimals confirming shown invoiceSettled rate paid invoiced due payme
   where
     -- an overpaid invoice's due is below 0, and nothing is owed on it
     nonNegative WireNum {wnText, wnValue} = if wnValue < 0 then "0" else wnText
-    settled = filter ((== "Settled") . gpStatus) payments
-    allSettled = (invoiceSettled && not (any ((== "Processing") . gpStatus) payments)) || (not (null payments) && length settled == length payments)
+    settled = filter ((== BPSettled) . gpStatus) payments
+    allSettled = (invoiceSettled && not (any ((== BPProcessing) . gpStatus) payments)) || (not (null payments) && length settled == length payments)
     counted = do
       paidUnits <- toUnits (wnValue paid)
       settledUnits <- mapM (toUnits . wnValue <=< gpValue) settled
@@ -554,7 +604,7 @@ latestSettledAt GPaymentMethod {gpmPayments} = case mapMaybe settledAt gpmPaymen
   ts -> Just (posixSecondsToUTCTime (maximum ts))
   where
     settledAt GPayment {gpStatus, gpReceivedDate}
-      | gpStatus == "Settled" = Just (fromRational (toRational (wnValue gpReceivedDate)))
+      | gpStatus == BPSettled = Just (fromRational (toRational (wnValue gpReceivedDate)))
       | otherwise = Nothing
 
 sigHeaderName :: HeaderName
