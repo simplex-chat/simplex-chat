@@ -429,7 +429,7 @@ runBadgeCmd turns chain_ cc cmd
   | Right issueOpts <- A.parseOnly issueCmdP cmd =
       issuedReply formatBadgeCode <$> issueBadgeCode cc issueOpts
   | Right (len, years, paymentStatus) <- A.parseOnly issueNameCmdP cmd =
-      issuedReply (formatNameCode . NCPrepaid) <$> issueNameCode cc IssuedInConsole len years paymentStatus
+      issuedReply formatNameCode <$> issueNameCode cc IssuedInConsole len years paymentStatus
   | Right code <- A.parseOnly revokeCmdP cmd = textReply <$> revokeWithTracker cc code
   | Right code <- A.parseOnly revokeNameCmdP cmd = textReply <$> revokeNameCode turns cc code
   | Right moneyCmd <- A.parseOnly moneyCmdP cmd = textReply <$> runMoneyCmd FromConsole turns chain_ cc moneyCmd
@@ -582,7 +582,7 @@ dollars cents = "$" <> tshow whole <> "." <> T.justifyRight 2 '0' (tshow part)
     centsPerDollar = 100
 
 -- | Nothing marks a name code paid later, so an unpaid one would be refused for good.
-issueNameCmdP :: A.Parser (Int, Int, BadgeCodePaymentStatus)
+issueNameCmdP :: A.Parser (NameLength, Int, BadgeCodePaymentStatus)
 issueNameCmdP = do
   (len, years) <- "issue " *> nameCodeP
   paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)

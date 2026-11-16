@@ -14,7 +14,7 @@ import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cController, cServ
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, joinerAcceptance)
 import StoreService.Group.Command (maxUses)
 import StoreService.Names.Abi (addressWord, selector, uint256)
-import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
+import StoreService.Names.Codes (reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
 import StoreService.Names.Store (CodeIssuer (..), NamePhase (PFailed), NameRegistration (nrFailedAt, nrPhase), NewTransaction (..), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
@@ -48,12 +48,12 @@ import qualified Data.Aeson as J
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
-import Data.Either (isLeft, isRight)
+import Data.Either (isRight)
 import Data.Int (Int64)
 import Data.List (isInfixOf)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing, listToMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -66,7 +66,7 @@ import Network.HTTP.Types.Status (statusCode)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
 import Network.Wai.Handler.Warp (openFreePort)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Code (NameCode (..), NamePrepaidCode, formatBadgeCode, formatNameCode, namePrepaidCodeHash, namePrepaidCodeLength, parseBadgeCode, parseNameCode, randomBadgeCode, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (NamePrepaidCode, formatBadgeCode, formatNameCode, nameLength, nameLengthInt, namePrepaidCodeHash, namePrepaidCodeLength, parseBadgeCode, parseNameCode, randomBadgeCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.StoreService
 import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem, APIGroupInfo), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted, CRCustomChatResponse, CRGroupCreated, CRGroupInfo))
@@ -432,7 +432,7 @@ testGroupNameCodes ps = do
   svc <- prepareGroupService ps
   runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
     one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8"
-    namePrepaidCodeLength one `shouldBe` 8
+    nameLengthInt (namePrepaidCodeLength one) `shouldBe` 8
     prepaidTerms cc one `shouldReturn` Just (8, 2, CPSFree)
     five <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 7 years 5"
     prepaidTerms cc five `shouldReturn` Just (7, 5, CPSFree)
@@ -459,21 +459,19 @@ testOperatorNameCodes ps = do
     pollUntilTrue (listening port)
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis", "name 6 unpaid"] $ \args ->
       (args,) <$> issueRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
-    forM_ [(5, 2), (64, 2), (7, 1), (7, 11)] $ \(len, years) ->
-      ((len, years),) . isLeft <$> issueNameCode cc IssuedInConsole len years CPSFree `shouldReturn` ((len, years), True)
     countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)
-    let check code = checkPrepaid port (formatNameCode (NCPrepaid code))
+    let check code = checkPrepaid port (formatNameCode code)
         coverage :: Int -> Int -> Text -> (Int, Maybe J.Value)
         coverage minLength years state = (200, Just $ J.object ["minLength" J..= minLength, "years" J..= years, "state" J..= state])
-        revoke = revokeRaw cc . formatNameCode . NCPrepaid
+        revoke = revokeRaw cc . formatNameCode
     check paid `shouldReturn` coverage 7 3 "unused"
-    revokeRaw cc (formatNameCode (NCPrepaid paid) <> " junk") `shouldReturn` Left badgeCmdUsage
+    revokeRaw cc (formatNameCode paid <> " junk") `shouldReturn` Left badgeCmdUsage
     revoke paid `shouldReturn` Right "Revoked."
     revoke paid `shouldReturn` Right "Already revoked."
     check paid `shouldReturn` coverage 7 3 "revoked"
-    unknown <- C.newRandom >>= (`randomNamePrepaidCode` 7)
+    unknown <- C.newRandom >>= (`randomNamePrepaidCode` fromJust (nameLength 7))
     revoke unknown `shouldReturn` Left "No such code."
     held <- issueNameRaw cc "name 8"
     spent <- issueNameRaw cc "name 8"
@@ -678,8 +676,8 @@ issueNameRaw cc args =
 
 prepaidIn :: HasCallStack => Maybe Text -> IO NamePrepaidCode
 prepaidIn t = case parseNameCode =<< t of
-  Just (NCPrepaid code) -> pure code
-  _ -> error $ "no prepaid name code in: " <> show t
+  Just code -> pure code
+  Nothing -> error $ "no prepaid name code in: " <> show t
 
 prepaidTerms :: ChatController -> NamePrepaidCode -> IO (Maybe (Int, Int, BadgeCodePaymentStatus))
 prepaidTerms cc code =
@@ -1527,7 +1525,7 @@ testGroupNameCodesNamesOff ps =
   withGroupOwner ps $ \_ cc _ alice -> do
     replyTo cc alice "/issue name 8" `shouldReturn` namesOffReply
     countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 0
-    unissued <- formatNameCode . NCPrepaid <$> randomNamePrepaidCode (random cc) 8
+    unissued <- formatNameCode <$> randomNamePrepaidCode (random cc) (fromJust $ nameLength 8)
     revokeInGroup cc alice unissued "No such code."
   where
     namesOffReply = "Names are not enabled on this service, so name codes cannot be issued."

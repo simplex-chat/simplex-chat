@@ -6,12 +6,9 @@
 -- A code is "SB-" and 20 Crockford base32 characters in four groups of five:
 -- 19 payload characters and a final check character.
 --
--- A name code is one of two kinds, told apart by the length of the text after "SN":
--- - an owner code, "SN-" and 30 characters in six groups of five: the 128-bit wallet
---   entropy and the first 22 bits of its SHA-256;
--- - a prepaid code, "SN", the shortest name length it pays for in one or two ASCII digits
---   (6 to 63, no leading zero), then 20 characters in four groups of five: 19 payload
---   characters and a check character over the length digits and the payload.
+-- A prepaid name code is "SN", the shortest name length it pays for in one or two ASCII digits
+-- (6 to 63, no leading zero), then 20 characters in four groups of five: 19 payload
+-- characters and a check character over the length digits and the payload.
 --
 -- Reading folds the characters the alphabet omits so that a code copied by hand still
 -- verifies: it is case-insensitive and maps 'I' and 'L' to '1' and 'O' to '0', except in a
@@ -31,14 +28,11 @@ module Simplex.Chat.Badges.Code
     badgeCodeText,
     badgeCodeHash,
     formatBadgeCode,
-    NameCode (..),
+    NameLength,
+    nameLength,
+    nameLengthInt,
     parseNameCode,
     formatNameCode,
-    NameOwnerCode,
-    randomNameOwnerCode,
-    parseNameOwnerCode,
-    formatNameOwnerCode,
-    nameOwnerCodeEntropy,
     NamePrepaidCode,
     randomNamePrepaidCode,
     namePrepaidCodeText,
@@ -49,11 +43,11 @@ module Simplex.Chat.Badges.Code
   )
 where
 
+import Control.Applicative ((<|>))
 import Control.Concurrent.STM
-import Control.Monad (guard)
-import Crypto.Number.Serialize (i2ospOf_, os2ip)
+import Control.Monad (guard, unless)
 import Crypto.Random (ChaChaDRG)
-import Data.Bits (shiftR)
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (digitToInt, isAlphaNum, toUpper)
@@ -62,9 +56,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.BIP39 (EntropyStrength (..), WalletEntropy, mkEntropy, randomEntropy, unEntropy)
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import Text.Read (readMaybe)
 
 -- | A code that has passed its check character, in canonical form: 'codePrefix' followed by
 -- 20 upper-case alphabet characters, without separators.
@@ -149,9 +142,6 @@ formatBadgeCode (BadgeCode t) = T.intercalate "-" $ codePrefix : groups (T.drop 
       | T.null s = []
       | otherwise = let (g, rest) = T.splitAt groupLength s in g : groups rest
 
-data NameCode = NCOwner NameOwnerCode | NCPrepaid NamePrepaidCode
-  deriving (Eq, Show)
-
 nameCodePrefix :: Text
 nameCodePrefix = "SN"
 
@@ -161,93 +151,60 @@ minNameLength = 6
 maxNameLength :: Int
 maxNameLength = 63
 
--- | Read either kind of name code as typed, as 'parseBadgeCode' reads a badge code.
-parseNameCode :: Text -> Maybe NameCode
-parseNameCode t = do
-  body <- T.stripPrefix nameCodePrefix $ T.toUpper $ T.filter isAlphaNum t
-  case T.length body of
-    n
-      | n == nameOwnerCodeLength -> NCOwner <$> parseOwnerBody body
-      | n - codeLength `elem` [1 .. length (show maxNameLength)] -> NCPrepaid <$> parsePrepaidBody body
-      | otherwise -> Nothing
+-- | A name length from minNameLength to maxNameLength.
+newtype NameLength = NameLength Int
+  deriving (Eq, Ord, Show)
+
+nameLength :: Int -> Maybe NameLength
+nameLength n = NameLength n <$ guard (n >= minNameLength && n <= maxNameLength)
+
+nameLengthInt :: NameLength -> Int
+nameLengthInt (NameLength n) = n
+
+-- | Read a prepaid code as typed, as 'parseBadgeCode' reads a badge code.
+parseNameCode :: Text -> Maybe NamePrepaidCode
+parseNameCode = eitherToMaybe . A.parseOnly (strP <* A.endOfInput) . encodeUtf8 . T.toUpper . T.filter isAlphaNum
 
 -- | The code as it is shown and printed.
-formatNameCode :: NameCode -> Text
-formatNameCode = \case
-  NCOwner c -> formatNameOwnerCode c
-  NCPrepaid (NamePrepaidCode len body) -> T.intercalate "-" $ (nameCodePrefix <> tshow len) : T.chunksOf groupLength body
-
-newtype NameOwnerCode = NameOwnerCode WalletEntropy
-  deriving (Eq, Show)
-
-nameOwnerCodeLength :: Int
-nameOwnerCodeLength = 30
-
-nameOwnerCodeChecksumBits :: Int
-nameOwnerCodeChecksumBits = 22
-
-randomNameOwnerCode :: TVar ChaChaDRG -> IO NameOwnerCode
-randomNameOwnerCode drg = NameOwnerCode <$> atomically (randomEntropy ES128 drg)
-
-parseNameOwnerCode :: Text -> Maybe NameOwnerCode
-parseNameOwnerCode t =
-  parseNameCode t >>= \case
-    NCOwner c -> Just c
-    NCPrepaid _ -> Nothing
-
-parseOwnerBody :: Text -> Maybe NameOwnerCode
-parseOwnerBody body = do
-  vs <- mapM charValue $ T.unpack body
-  let (payload, checksum) = foldl' (\acc v -> acc * toInteger base + toInteger v) 0 vs `divMod` (2 ^ nameOwnerCodeChecksumBits)
-  guard $ checksum == nameOwnerCodeChecksum payload
-  NameOwnerCode <$> eitherToMaybe (mkEntropy $ i2ospOf_ 16 payload)
-
-formatNameOwnerCode :: NameOwnerCode -> Text
-formatNameOwnerCode (NameOwnerCode e) = T.intercalate "-" $ nameCodePrefix : T.chunksOf groupLength (T.pack $ map valueChar values)
-  where
-    payload = os2ip $ unEntropy e
-    n = payload * 2 ^ nameOwnerCodeChecksumBits + nameOwnerCodeChecksum payload
-    values = reverse $ take nameOwnerCodeLength $ map (fromInteger . (`mod` toInteger base)) $ iterate (`div` toInteger base) n
-
-nameOwnerCodeEntropy :: NameOwnerCode -> WalletEntropy
-nameOwnerCodeEntropy (NameOwnerCode e) = e
-
-nameOwnerCodeChecksum :: Integer -> Integer
-nameOwnerCodeChecksum = (`shiftR` (256 - nameOwnerCodeChecksumBits)) . os2ip . C.sha256Hash . i2ospOf_ 16
+formatNameCode :: NamePrepaidCode -> Text
+formatNameCode (NamePrepaidCode len body) = T.intercalate "-" $ (nameCodePrefix <> tshow (nameLengthInt len)) : T.chunksOf groupLength body
 
 -- | A prepaid code that has passed its check: the shortest name length it pays for and the
 -- 20 canonical characters after it.
-data NamePrepaidCode = NamePrepaidCode Int Text
+data NamePrepaidCode = NamePrepaidCode NameLength Text
   deriving (Eq, Show)
 
--- | The length must be 6 to 63, or the code will not parse.
-randomNamePrepaidCode :: TVar ChaChaDRG -> Int -> IO NamePrepaidCode
+-- | Encoded in the canonical form; read from it or from the shown form, the 20 characters in any case.
+instance StrEncoding NamePrepaidCode where
+  strEncode = encodeUtf8 . namePrepaidCodeText
+  strP = A.string (encodeUtf8 nameCodePrefix) *> (codeAfter 2 <|> codeAfter 1)
+    where
+      -- a leading zero adds nothing to the check, so it would give the same code a second text and hash
+      codeAfter digits = do
+        lenDigits <- (:) <$> A.satisfy (\c -> c >= '1' && c <= '9') <*> A.count (digits - 1) A.digit
+        len <- maybe (fail "a name length outside 6 to 63") pure $ nameLength $ foldl' (\n c -> n * 10 + digitToInt c) 0 lenDigits
+        vs <- concat <$> A.count (codeLength `div` groupLength) (A.option '-' (A.char '-') *> A.count groupLength codeValue)
+        let (payload, checkChar) = splitAt (codeLength - 1) vs
+        unless (checkChar == [checkValue $ lengthValues len <> payload]) $ fail "a wrong check character"
+        pure $ NamePrepaidCode len $ T.pack $ map valueChar vs
+      codeValue = A.anyChar >>= maybe (fail "not a code character") pure . charValue
+
+randomNamePrepaidCode :: TVar ChaChaDRG -> NameLength -> IO NamePrepaidCode
 randomNamePrepaidCode drg len = do
   payload <- randomPayload drg
   let vs = payload <> [checkValue $ lengthValues len <> payload]
   pure $ NamePrepaidCode len $ T.pack $ map valueChar vs
 
-parsePrepaidBody :: Text -> Maybe NamePrepaidCode
-parsePrepaidBody body = do
-  let (lenText, codeText) = T.splitAt (T.length body - codeLength) body
-  len <- readMaybe $ T.unpack lenText
-  -- a leading zero adds nothing to the check, so it would give the same code a second text and hash
-  guard $ tshow len == lenText && len >= minNameLength && len <= maxNameLength
-  vs <- mapM charValue $ T.unpack codeText
-  let (payload, checkChar) = splitAt (codeLength - 1) vs
-  guard $ checkChar == [checkValue $ lengthValues len <> payload]
-  Just $ NamePrepaidCode len $ T.pack $ map valueChar vs
-
-lengthValues :: Int -> [Int]
-lengthValues = map digitToInt . show
+lengthValues :: NameLength -> [Int]
+lengthValues = map digitToInt . show . nameLengthInt
 
 -- | The canonical form, "SN", the length and the 20 characters: the only representation hashed.
 namePrepaidCodeText :: NamePrepaidCode -> Text
-namePrepaidCodeText (NamePrepaidCode len body) = nameCodePrefix <> tshow len <> body
+namePrepaidCodeText (NamePrepaidCode len body) = nameCodePrefix <> tshow (nameLengthInt len) <> body
 
 -- | SHA-256 over the ASCII bytes of the canonical form, as 'badgeCodeHash'.
 namePrepaidCodeHash :: NamePrepaidCode -> ByteString
 namePrepaidCodeHash = C.sha256Hash . encodeUtf8 . namePrepaidCodeText
 
-namePrepaidCodeLength :: NamePrepaidCode -> Int
+namePrepaidCodeLength :: NamePrepaidCode -> NameLength
 namePrepaidCodeLength (NamePrepaidCode len _) = len

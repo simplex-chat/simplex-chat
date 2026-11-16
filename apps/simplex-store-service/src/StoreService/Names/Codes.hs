@@ -22,18 +22,17 @@ where
 
 import Control.Applicative ((<|>))
 import qualified Control.Exception as E
+import Control.Logger.Simple (logError, logWarn)
 import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Badges.Code (NamePrepaidCode, maxNameLength, minNameLength, namePrepaidCodeHash, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, nameLengthInt, namePrepaidCodeHash, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import StoreService.Config (minNameYears)
-import StoreService.Group.Command (maxNameYears)
 import StoreService.Names.Phases (RegistrationId)
 import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, CodeIssuer, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
@@ -141,19 +140,21 @@ afterWrite turns st codeId change write = do
   PrepaidCode {pcCodeHash} <- withTransaction st (`getPrepaidCodeById` codeId)
   withCodeTurn turns pcCodeHash $ withTransaction st $ \db -> write db >>= traverse (\a -> (a,) <$> change db)
 
--- | The code table keeps only the hash, so the caller must deliver the code.
-issueNameCode :: ChatController -> CodeIssuer -> Int -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)
-issueNameCode cc issuer len years paymentStatus
-  | len < minNameLength || len > maxNameLength = pure $ Left $ "name code length " <> show len <> " is outside " <> show minNameLength <> "-" <> show maxNameLength
-  | years < minNameYears || years > maxNameYears = pure $ Left $ "name code years " <> show years <> " is outside " <> show minNameYears <> "-" <> show maxNameYears
-  | otherwise = do
+-- | The code table keeps only the hash, so the caller must deliver the code. A code whose hash is taken is logged and drawn again,
+-- up to 3 times.
+issueNameCode :: ChatController -> CodeIssuer -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)
+issueNameCode cc issuer len years paymentStatus = issue (3 :: Int)
+  where
+    issue retries = do
       code <- randomNamePrepaidCode (random cc) len
       now <- getCurrentTime
-      let new = NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Nothing, npcIssuer = issuer}
-      withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) <&> \case
-        Right (Right _) -> Right code
-        Right (Left CodeHashTaken) -> Left "prepaid code hash taken"
-        Left e -> Left e
+      let new = NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = nameLengthInt len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Nothing, npcIssuer = issuer}
+      withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) >>= \case
+        Right (Right _) -> pure $ Right code
+        Right (Left CodeHashTaken)
+          | retries > 0 -> logWarn "names: a new prepaid code's hash is taken, so another code is drawn" >> issue (retries - 1)
+          | otherwise -> Left "prepaid code hash taken" <$ logError "names: the hashes of 4 new prepaid codes in a row are taken, so no code is issued"
+        Left e -> pure $ Left e
 
 -- | Left is a refusal or a failure; both sides are the text to show the operator.
 revokeNameCode :: Turns -> ChatController -> NamePrepaidCode -> IO (Either Text Text)

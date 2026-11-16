@@ -12,7 +12,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Network.HTTP.Types (status200, status400, status409)
 import Network.Wai (Request, Response, ResponseReceived)
-import Simplex.Chat.Badges.Code (NameCode (..), parseNameCode)
+import Simplex.Chat.Badges.Code (parseNameCode)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusalTag, codeState, codeStateText, readPrepaidCode)
 import StoreService.Names.Store (PrepaidCode (..))
@@ -23,10 +23,10 @@ codeCheckHandler :: DBStore -> Request -> Respond -> IO ResponseReceived
 codeCheckHandler st req respond =
   readBoundedBody maxBodyBytes req >>= \case
     Just body | Just text <- codeField body -> case parseNameCode text of
-      Just (NCPrepaid code) -> do
+      Just code -> do
         now <- getCurrentTime
         readPrepaidCode st code >>= respond . maybe (codeRefusalResponse CRInvalid) (codeAnswer now)
-      _ -> respond $ codeRefusalResponse CRInvalid
+      Nothing -> respond $ codeRefusalResponse CRInvalid
     _ -> respond badRequest
 
 codeField :: LB.ByteString -> Maybe Text

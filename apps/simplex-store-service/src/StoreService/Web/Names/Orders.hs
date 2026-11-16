@@ -30,7 +30,7 @@ import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
 import Network.HTTP.Types (status200, status403, status409, status503)
 import Network.Wai (Request, Response, ResponseReceived)
-import Simplex.Chat.Badges.Code (NameCode (..), parseNameCode)
+import Simplex.Chat.Badges.Code (parseNameCode)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -215,9 +215,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} provide
       issuedCode codeText >>= \case
         Nothing -> refuse $ ORCode CRInvalid
         Just code -> checkOrderSigner order >>= either refuse (const $ signed order code)
-    issuedCode t = case parseNameCode t of
-      Just (NCPrepaid code) -> readPrepaidCode oeStore code
-      _ -> pure Nothing
+    issuedCode = maybe (pure Nothing) (readPrepaidCode oeStore) . parseNameCode
     signed order@OrderRequest {orOwner, orFields} code@PrepaidCode {pcCodeHash} = do
       let hash = orderHash orOwner orFields (OTCode pcCodeHash)
       withLabelTurn oeTurns (ofLabelHash orFields) $

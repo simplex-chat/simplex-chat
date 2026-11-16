@@ -51,7 +51,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import GHC.Stack (HasCallStack, withFrozenCallStack)
-import Simplex.Chat.Badges.Code (BadgeCode, NameCode (..), formatBadgeCode, formatNameCode, parseBadgeCode)
+import Simplex.Chat.Badges.Code (BadgeCode, formatBadgeCode, formatNameCode, parseBadgeCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller
@@ -309,14 +309,14 @@ runGroupCmd cc turns namesOn nameCodesPerDay runMoney groupId = \case
   GCBulk bt months count -> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
   GCIssueName {} | not namesOn -> reply namesOffText
   GCIssueName len years ->
-    withinNameCodes $ issueNameCode cc IssuedInGroup len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
+    withinNameCodes $ issueNameCode cc IssuedInGroup len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode)
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> do
     outcome <- either id id <$> revokeWithTracker cc code
     reply (formatBadgeCode code <> ": " <> outcome)
   GCRevokeName code -> do
     outcome <- either id id <$> revokeNameCode turns cc code
-    reply (formatNameCode (NCPrepaid code) <> ": " <> outcome)
+    reply (formatNameCode code <> ": " <> outcome)
   GCMoney cmd -> runMoney cmd >>= void . sendGroupText cc groupId "money reply, /balance shows what was recorded" . either id id
   where
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"

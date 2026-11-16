@@ -13,6 +13,7 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
+import Data.Bits (toIntegralSized)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.List (find)
@@ -22,7 +23,7 @@ import Data.Time.Clock (UTCTime)
 import qualified Data.Text as T
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
-import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
+import Simplex.Chat.Badges.Code (nameLength, nameLengthInt)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
@@ -82,9 +83,7 @@ queryLength req = case join $ lookup "length" $ queryString req of
   _ -> Nothing
   where
     inBounds :: Integer -> Maybe Int
-    inBounds n
-      | n >= toInteger minNameLength && n <= toInteger maxNameLength = Just $ fromInteger n
-      | otherwise = Nothing
+    inBounds n = nameLengthInt <$> (nameLength =<< toIntegralSized n)
 
 searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> Bool -> Found -> IO Response
 searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh listed = \case

@@ -21,7 +21,7 @@ import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
 import Network.HTTP.Client (Manager, Response, RequestBody (..), httpLbs, method, parseRequest, requestBody, responseBody, responseStatus)
 import Network.HTTP.Types.Status (statusCode)
-import Simplex.Chat.Badges.Code (NameCode (..), NamePrepaidCode, formatNameCode, namePrepaidCodeHash, parseNameCode, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, formatNameCode, nameLength, namePrepaidCodeHash, parseNameCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -122,7 +122,7 @@ checkText :: Client -> Text -> IO (Response LB.ByteString)
 checkText client code = postCheck client (J.encode (J.object ["code" J..= code]))
 
 checkCode :: Client -> NamePrepaidCode -> IO (Response LB.ByteString)
-checkCode client = checkText client . formatNameCode . NCPrepaid
+checkCode client = checkText client . formatNameCode
 
 answerOf :: Response LB.ByteString -> (Int, Maybe J.Object)
 answerOf r = (statusCode (responseStatus r), J.decode (responseBody r))
@@ -134,7 +134,10 @@ refused :: Int -> Text -> (Int, Maybe J.Object)
 refused status tag = (status, Just $ KM.fromList [("error", J.String tag)])
 
 newCode :: Int -> IO NamePrepaidCode
-newCode len = C.newRandom >>= (`randomNamePrepaidCode` len)
+newCode len = C.newRandom >>= (`randomNamePrepaidCode` lengthOf len)
+
+lengthOf :: Int -> NameLength
+lengthOf n = fromMaybe (error $ "name length " <> show n) $ nameLength n
 
 issueAs :: DBStore -> NamePrepaidCode -> NewPrepaidCode -> IO PrepaidCode
 issueAs st code new = withTransaction st $ \db -> do
@@ -147,7 +150,7 @@ readCode st PrepaidCode {pcCodeHash} = withTransaction st (`getPrepaidCode` pcCo
 -- The webapp's and core's vector: these two spellings are one code.
 testCheckFolded :: IO ()
 testCheckFolded = withCodeCheck $ \st client -> do
-  Just (NCPrepaid code) <- pure $ parseNameCode "SN7-BJTBP-29596-R3HJ8-25YM7"
+  Just code <- pure $ parseNameCode "SN7-BJTBP-29596-R3HJ8-25YM7"
   row <- issueAs st code usable {npcMinLength = 7}
   unchanged <- readCode st row
   answerOf <$> checkText client "sn7 bjtbp 29596 r3hj8 25ym7" `shouldReturn` coverage 7 2 "unused"
@@ -295,17 +298,17 @@ testReleaseSpend = withOrders $ \turns st -> do
 testGroupNameCommands :: IO ()
 testGroupNameCommands = do
   let p = groupCmdAction GRAdmin
-  p "/issue name 8" `shouldBe` RunCmd (GCIssueName 8 2)
-  p "/issue name 63" `shouldBe` RunCmd (GCIssueName 63 2)
-  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName 6 2)
-  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName 63 10)
+  p "/issue name 8" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2)
+  p "/issue name 63" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 2)
+  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 2)
+  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 10)
   map p ["/bulk name 7 count 3", "/bulk name 12 years 2 count 100", "/bulk name 6 count 1"] `shouldBe` replicate 3 bulkUsage
   groupCmdAction GRMember "/issue name 8" `shouldBe` IgnoreMsg
 
 testGroupRevokeNameCommand :: IO ()
 testGroupRevokeNameCommand = do
   code <- newCode 8
-  let cmd = "/revoke " <> formatNameCode (NCPrepaid code)
+  let cmd = "/revoke " <> formatNameCode code
   groupCmdAction GRAdmin cmd `shouldBe` RunCmd (GCRevokeName code)
   groupCmdAction GRModerator cmd `shouldBe` ReplyText "Only admins can revoke codes. This code is now visible to all members."
   groupCmdAction GRAdmin (cmd <> " junk") `shouldBe` ReplyText "Usage: /revoke <code>"

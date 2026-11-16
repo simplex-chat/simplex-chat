@@ -91,7 +91,7 @@ import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody, re
 import Network.HTTP.Types (hContentType, status404)
 import Network.Wai (Application, requestHeaders)
 import qualified Network.Wai.Handler.Warp as Warp
-import Simplex.Chat.Badges.Code (NameCode (..), formatNameCode, namePrepaidCodeHash, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (formatNameCode, nameLength, namePrepaidCodeHash, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
@@ -944,16 +944,16 @@ testTermsCheckOrder = withOrders $ \ctx@Ctx {cNode = node} -> do
 -- | A prepaid code as the operator issues it, with its text as the page sends it.
 issueCode :: Ctx -> Int -> Int -> (NewPrepaidCode -> NewPrepaidCode) -> IO (Text, PrepaidCode)
 issueCode Ctx {cStore, cRandom} len years change = do
-  code <- randomNamePrepaidCode cRandom len
+  code <- randomNamePrepaidCode cRandom (fromJust $ nameLength len)
   let new = change NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
   stored <- withTransaction cStore $ \db ->
     insertPrepaidCode db new orderTime >>= \case
       Right codeId -> getPrepaidCodeById db codeId
       Left e -> error $ "code not issued: " <> show e
-  pure (formatNameCode $ NCPrepaid code, stored)
+  pure (formatNameCode code, stored)
 
 unissuedCode :: Ctx -> Int -> IO Text
-unissuedCode Ctx {cRandom} len = formatNameCode . NCPrepaid <$> randomNamePrepaidCode cRandom len
+unissuedCode Ctx {cRandom} len = formatNameCode <$> randomNamePrepaidCode cRandom (fromJust $ nameLength len)
 
 readCode :: Ctx -> PrepaidCode -> IO PrepaidCode
 readCode Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore (`getPrepaidCodeById` pcId)

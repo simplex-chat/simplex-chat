@@ -9,6 +9,7 @@
 
 module BadgeTests (badgeTests) where
 
+import Bots.StoreService.WebUIMock (formatNameOwnerCode, nameOwnerCodeEntropy, parseNameOwnerCode, randomNameOwnerCode)
 import StoreService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, shownServiceRequest, survive)
 import StoreService.StoreReceipts (StoreCharge (..), StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), toStoreReceipt)
 import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
@@ -380,12 +381,12 @@ testNameOwnerCodeVectors =
     let code = parseNameOwnerCode formatted
     formatNameOwnerCode <$> code `shouldBe` Just formatted
     convertToBase Base16 . unEntropy . nameOwnerCodeEntropy <$> code `shouldBe` Just entropy
-    formatNameCode <$> parseNameCode (T.toLower formatted) `shouldBe` Just formatted
+    formatNameOwnerCode <$> parseNameOwnerCode (T.toLower formatted) `shouldBe` Just formatted
 
 testNameOwnerCodeChecksum :: IO ()
 testNameOwnerCodeChecksum = do
   formatNameOwnerCode <$> parseNameOwnerCode "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BV" `shouldBe` Nothing
-  parseNameCode "SN-DWPHT-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5" `shouldBe` Nothing
+  parseNameOwnerCode "SN-DWPHT-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5" `shouldBe` Nothing
 
 -- entropy and its name code, computed by a separate Python implementation of the format,
 -- and the webapp's fixture from simplex.domains webapp/test/crypto.test.ts
@@ -400,8 +401,8 @@ nameOwnerCodeVectors =
 testNamePrepaidCodeVectors :: IO ()
 testNamePrepaidCodeVectors = do
   forM_ namePrepaidCodeVectors $ \(typed, len, canonical, display, hash) -> do
-    Just (NCPrepaid code) <- pure $ parseNameCode typed
-    (namePrepaidCodeLength code, namePrepaidCodeText code, formatNameCode (NCPrepaid code)) `shouldBe` (len, canonical, display)
+    Just code <- pure $ parseNameCode typed
+    (nameLengthInt $ namePrepaidCodeLength code, namePrepaidCodeText code, formatNameCode code) `shouldBe` (len, canonical, display)
     convertToBase Base64URLUnpadded (namePrepaidCodeHash code) `shouldBe` (hash :: ByteString)
   -- the webapp's typo vector
   parseNameCode "SN7-4K2P7-TQ9M1-ZX3RB-8HJ5X" `shouldBe` Nothing
@@ -420,18 +421,22 @@ namePrepaidCodeVectors =
     ("SN63-N0N9J-5D292-HPSYA-R911D", 63, "SN63N0N9J5D292HPSYAR911D", "SN63-N0N9J-5D292-HPSYA-R911D", "U-Nh_Kw3-xDlQuFJffkuCAyolK5m9EfN3QuYiJ28A0A")
   ]
 
+lengthOf :: Int -> NameLength
+lengthOf n = fromMaybe (error $ "name length " <> show n) $ nameLength n
+
 testNameCodeRoundTrip :: IO ()
 testNameCodeRoundTrip = do
   drg <- C.newRandom
-  owner <- NCOwner <$> randomNameOwnerCode drg
-  forM_ (typings $ formatNameCode owner) $ \typed -> parseNameCode typed `shouldBe` Just owner
+  owner <- randomNameOwnerCode drg
+  forM_ (typings $ formatNameOwnerCode owner) $ \typed -> parseNameOwnerCode typed `shouldBe` Just owner
   forM_ [6 .. 63] $ \len -> do
-    prepaid <- randomNamePrepaidCode drg len
-    let display = formatNameCode (NCPrepaid prepaid)
+    prepaid <- randomNamePrepaidCode drg (lengthOf len)
+    let display = formatNameCode prepaid
     T.length display `shouldBe` T.length (namePrepaidCodeText prepaid) + 4 -- four separators
     T.isPrefixOf ("SN" <> tshow len <> "-") display `shouldBe` True
     parseNameOwnerCode (namePrepaidCodeText prepaid) `shouldBe` Nothing
-    forM_ (namePrepaidCodeText prepaid : typings display) $ \typed -> parseNameCode typed `shouldBe` Just (NCPrepaid prepaid)
+    parseNameCode (formatNameOwnerCode owner) `shouldBe` Nothing
+    forM_ (namePrepaidCodeText prepaid : typings display) $ \typed -> parseNameCode typed `shouldBe` Just prepaid
   where
     typings display = [display, T.toLower display, T.replace "-" " " display, misreadAfterLength display]
     -- folding never applies to a prepaid code's length, which is refused when misread
@@ -445,7 +450,7 @@ testNamePrepaidCodeCheck :: IO ()
 testNamePrepaidCodeCheck = do
   drg <- C.newRandom
   forM_ [6, 9, 10, 63] $ \len -> do
-    code <- randomNamePrepaidCode drg len
+    code <- randomNamePrepaidCode drg (lengthOf len)
     let canonical = namePrepaidCodeText code
         (prefix, rest) = T.splitAt 2 canonical
         changed =
@@ -472,9 +477,9 @@ testNamePrepaidCodeCheck = do
 testNamePrepaidCodeLengthDigits :: IO ()
 testNamePrepaidCodeLengthDigits = do
   drg <- C.newRandom
-  code <- randomNamePrepaidCode drg 10
-  let display = formatNameCode (NCPrepaid code)
-  parseNameCode display `shouldBe` Just (NCPrepaid code)
+  code <- randomNamePrepaidCode drg (lengthOf 10)
+  let display = formatNameCode code
+  parseNameCode display `shouldBe` Just code
   -- O and I fold to 0 and 1 in the 20 characters, never in the length
   parseNameCode (T.replace "SN10-" "SN1O-" display) `shouldBe` Nothing
   parseNameCode (T.replace "SN10-" "SNI0-" display) `shouldBe` Nothing

@@ -32,10 +32,10 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Code (BadgeCode, NameCode (..), NamePrepaidCode, maxNameLength, minNameLength, parseBadgeCode, parseNameCode)
+import Simplex.Chat.Badges.Code (BadgeCode, NameLength, NamePrepaidCode, maxNameLength, minNameLength, nameLength, parseBadgeCode)
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
-import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (minNameYears)
 
@@ -48,7 +48,7 @@ maxNameYears = 10
 data GroupCmd
   = GCIssue BadgeType Int Int
   | GCBulk BadgeType Int Int
-  | GCIssueName Int Int
+  | GCIssueName NameLength Int
   | GCRevoke BadgeCode
   | GCRevokeName NamePrepaidCode
   | GCMoney MoneyCmd
@@ -108,15 +108,15 @@ optValueP :: CmdOpt -> A.Parser Int
 optValueP opt = A.string (encodeUtf8 (optKey opt)) *> A.space *> boundedInt opt
 
 -- | "name <length> [years <Y>]", the length and years of a prepaid name code.
-nameCodeP :: A.Parser (Int, Int)
+nameCodeP :: A.Parser (NameLength, Int)
 nameCodeP = A.string (encodeUtf8 nameKind) *> A.char ' ' *> ((,) <$> nameLengthP <*> optP yearsOpt)
 
 -- | A code's text carries the length as typed, so a leading zero is refused.
-nameLengthP :: A.Parser Int
+nameLengthP :: A.Parser NameLength
 nameLengthP =
   A.peekChar' >>= \case
     '0' -> fail "leading zero in the name length"
-    _ -> boundedInt lengthOpt
+    _ -> boundedInt lengthOpt >>= maybe (fail "length out of range") pure . nameLength
 
 groupCommands :: [ChatBotCommand]
 groupCommands = map command [minBound .. maxBound]
@@ -127,10 +127,7 @@ codeP :: A.Parser BadgeCode
 codeP = A.takeWhile1 (not . isSpace) >>= maybe (fail "not a badge code") pure . parseBadgeCode . safeDecodeUtf8
 
 prepaidCodeP :: A.Parser NamePrepaidCode
-prepaidCodeP =
-  parseNameCode . safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace) >>= \case
-    Just (NCPrepaid code) -> pure code
-    _ -> fail "not a prepaid name code"
+prepaidCodeP = strP
 
 balanceArgsP, recordRefundArgsP, closeArgsP :: A.Parser MoneyCmd
 balanceArgsP = MCBalance <$> referenceP

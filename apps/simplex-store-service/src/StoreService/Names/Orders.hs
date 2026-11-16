@@ -58,13 +58,13 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
-import Data.Maybe (catMaybes, isJust)
+import Data.Maybe (catMaybes, isJust, isNothing)
 import Data.Scientific (toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Word (Word64)
-import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
+import Simplex.Chat.Badges.Code (nameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
@@ -200,7 +200,7 @@ integerField = JT.parseMaybe boundedInteger
 
 checkLength :: OrderFields -> Either OrderRefusal ()
 checkLength OrderFields {ofLength} =
-  unless (ofLength >= minNameLength && ofLength <= maxNameLength) $ Left ORInvalidName
+  when (isNothing $ nameLength ofLength) $ Left ORInvalidName
 
 -- | The owner's EIP-191 signature over the message.
 checkSigner :: Address -> ByteString -> RecoverableSignature -> IO (Either OrderRefusal ())
