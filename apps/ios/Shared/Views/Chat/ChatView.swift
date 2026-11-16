@@ -3321,7 +3321,7 @@ func profileMenuItem(_ nameText: Text, _ image: String?, peerType: ChatPeerType?
         if let image, let img = imageFromBase64(image) {
             Image(uiImage: maskToCustomShape(img, size: 30, radius: radius))
         } else {
-            peerTypeIcon(peerType, person: Image(systemName: "person.crop.circle"), agent: Image("agent"))
+            peerTypeIcon(peerType, person: Image(systemName: "person.crop.circle"))
         }
     }
 }
