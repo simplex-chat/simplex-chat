@@ -13,6 +13,7 @@ module StoreService.Providers
     Rate (..),
     unitDecimals,
     unitName,
+    settlesOnReceipt,
     PaymentSignal (..),
     ProviderInvoice (..),
     Funded (..),
@@ -89,6 +90,11 @@ unitName = \case
   CCBtc -> "satoshi"
   CCXmr -> "piconero"
   CCLn -> "millisatoshi"
+
+settlesOnReceipt :: CryptoCurrency -> Bool
+settlesOnReceipt = \case
+  CCLn -> True
+  _ -> False
 
 -- The provider applies its own tolerance, so this cannot be recomputed from the amounts.
 data Funded = PaidInFull | PaidInPart
