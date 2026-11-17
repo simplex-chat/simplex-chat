@@ -69,7 +69,7 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
-import Data.List (find)
+import Data.List (find, isInfixOf)
 import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -79,13 +79,13 @@ import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..))
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
-import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature, deserializeSignature, lowS)
+import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, anyCaseAddressP, checksumAddressP, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexDomain (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import StoreService.Names.Chain (AbiValue (..), ChainSeconds, abiArray, abiBytes, abiTuple, abiWordSize, addressWord, hex, hexP, lowerHexP, parseText, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), ChainSeconds, abiArray, abiBytes, abiTuple, abiWordSize, addressWord, hex, lowerHexP, parseText, selector, uint256)
 
 newtype RegistrationId = RegistrationId Text
   deriving (Eq, Ord, Show)
@@ -366,15 +366,13 @@ instance ToField AgreedTerms where toField = toField . textEncode
 communityTermsPrefix :: Text
 communityTermsPrefix = "community/"
 
-signatureBytes :: Int
-signatureBytes = 65
-
--- the contracts' SignatureChecker refuses a higher s, though recovery accepts it
 parseSignature :: Text -> Either SignatureError RecoverableSignature
-parseSignature t = do
-  sig <- first (const SERecoveryId) . deserializeSignature =<< first (const SEFormat) (parseText (hexP signatureBytes) t)
-  unless (lowS sig) $ Left SEHighS
-  pure sig
+parseSignature = first signatureError . strDecode . encodeUtf8
+  where
+    signatureError e
+      | "v of 27 or 28" `isInfixOf` e = SERecoveryId
+      | "lower half" `isInfixOf` e = SEHighS
+      | otherwise = SEFormat
 
 -- | EIP-191 @personal_sign@ digest.
 personalDigest :: ByteString -> ByteString
