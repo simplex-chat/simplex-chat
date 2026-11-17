@@ -113,6 +113,8 @@ A2-36: namehash uses simplexmq's labelHash; `tldLabel` serves labelNode and the 
 - A2-12: `RevealRequest` with FromJSON, decoded once before the name's turn; SignedLabel, RevealFields, textField and integerField go.
 - A2-13: intentOf is the one builder of a Registration; committedRegistration builds the NameReveal.
 - A2-14: `checkReveal` returns the NameReveal its checks passed; the acceptance is required in the request and in NameReveal.
+  - `RVBadRequest Text`: each refusal states its reason, logged with the refused request; the HTTP answer is unchanged.
+  - The retry logs why it clears a stored reveal: the intent's check, the reveal margin or a moved sponsor nonce.
 - A2-15: toRegistration checks the 32-byte columns; verifyRegisterIntent's length check goes.
 - A2-16: `hexP` and `lowerHexP` in Abi read every 0x hash, the secret, the signature, the service key, the terms digest and AgreedTerms; Orders' `hexHash` and `hexSignature` serve the order, the reveal and the find. The node's JSON-RPC data and quantities keep their any-case rule.
 - A2-17: simplexmq exports `addressFromBytes`, `anyCaseAddressP`, `checksumAddressP` and `lowS`. parseAnyCaseAddress and parseChecksumAddress call the two parsers, their failures mapped to ADFormat and ADChecksum; parseSignature reads with deserializeSignature and lowS. SignatureError and AddressError stay.
@@ -172,7 +174,6 @@ graph LR
 ## Gaps recorded after the review
 
 - No test fails eth_chainId for a loopback terms link (review 9).
-- RevealRefusal has no reason, so the intent's and the acceptance's refusals are logged as RVBadRequest (review 14).
 - natural reads the quantity's digits by a fold of its own, and its "over 256 bits" text is not shown (review 18).
 - nameRecords reads the records and the nonce at latest, not at one block (review 23).
 - termsLinks reads, compares and writes its cache in separate steps, so concurrent reads at a changed link can each log it (review 30).

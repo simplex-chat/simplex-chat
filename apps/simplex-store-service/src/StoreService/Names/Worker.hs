@@ -517,12 +517,19 @@ requeue oe@OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId = regId@(Re
 -- | The stored reveal while its intent can still register: accepted by the worker's check before sending, revealMargin left
 -- before its deadline, and the sponsor nonce unmoved.
 servingReveal :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either ChainError (Maybe NameReveal))
-servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}, oeContracts} now r@NameRegistration {nrOwner, nrReveal} = case nrReveal of
+servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}, oeContracts} now r@NameRegistration {nrId = RegistrationId rid, nrOwner, nrReveal} = case nrReveal of
   Nothing -> pure $ Right Nothing
   Just rv@NameReveal {rvNonce, rvDeadline} ->
     verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) (intentOf cfg r rv) >>= \case
-      Right () | reusable cfg now rvDeadline -> fmap (\nonce -> if nonce == rvNonce then Just rv else Nothing) <$> sponsorNonce oeContracts nrOwner
-      _ -> pure $ Right Nothing
+      Left e -> cleared $ T.pack e
+      Right ()
+        | reusable cfg now rvDeadline ->
+            sponsorNonce oeContracts nrOwner >>= \case
+              Right nonce | nonce /= rvNonce -> cleared "the sponsor nonce moved"
+              nonceRead -> pure $ Just rv <$ nonceRead
+        | otherwise -> cleared "its deadline is within the reveal margin"
+  where
+    cleared reason = Right Nothing <$ logNote ("names: the retry of registration " <> rid <> " clears its stored reveal: " <> reason)
 
 data Closed = CLRegistered RegistrationId | CLRefunded UTCTime RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)

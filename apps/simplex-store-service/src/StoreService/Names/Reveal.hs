@@ -36,7 +36,7 @@ import StoreService.Names.Orders (boundedInteger, hexHash, hexSignature, jsonFie
 import StoreService.Names.Registration (LinkKind (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, validLabel, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
 
-data RevealRefusal = RVBadRequest | RVInvalidLink | RVChainUnavailable
+data RevealRefusal = RVBadRequest Text | RVInvalidLink | RVChainUnavailable
   deriving (Eq, Show)
 
 -- | The links of each key as sent, however many; at most one per key is a check of its own.
@@ -80,12 +80,12 @@ checkReveal cfg ct now r request = runExceptT $ do
 
 committedReveal :: NamesConfig -> NameRegistration -> RevealRequest -> Either RevealRefusal NameReveal
 committedReveal cfg@NamesConfig {nTLD} r@NameRegistration {nrLabelHash, nrLength, nrCommitment} RevealRequest {rqLabel, rqSignature, rqSecret, rqContactLinks, rqChannelLinks, rqNonce, rqDeadline, rqAcceptance} = do
-  label <- first (const RVBadRequest) $ validLabel nTLD rqLabel
-  unless (labelHash label == nrLabelHash && T.length label == nrLength) $ Left RVBadRequest
+  label <- first (RVBadRequest . ("the label is not a name: " <>) . tshow) $ validLabel nTLD rqLabel
+  unless (labelHash label == nrLabelHash && T.length label == nrLength) $ Left $ RVBadRequest "the label is not the order's"
   rvContactLink <- oneLink rqContactLinks
   rvChannelLink <- oneLink rqChannelLinks
   let rv = NameReveal {rvLabel = label, rvSecret = rqSecret, rvContactLink, rvChannelLink, rvNonce = rqNonce, rvDeadline = rqDeadline, rvSignature = rqSignature, rvAcceptance = rqAcceptance}
-  unless (makeCommitment (riRegistration $ intentOf cfg r rv) == nrCommitment) $ Left RVBadRequest
+  unless (makeCommitment (riRegistration $ intentOf cfg r rv) == nrCommitment) $ Left $ RVBadRequest "the reveal is not the order's commitment"
   pure rv
   where
     oneLink = \case
@@ -97,14 +97,14 @@ committedReveal cfg@NamesConfig {nTLD} r@NameRegistration {nrLabelHash, nrLength
 -- A deadline before revealBefore would expire while the commitment can still register.
 checkIntent :: NamesConfig -> Contracts -> UTCTime -> Maybe ChainSeconds -> RegisterIntent -> IO (Either RevealRefusal ())
 checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revealBefore intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
-  | maybe True (riDeadline <) revealBefore = pure $ Left RVBadRequest
+  | maybe True (riDeadline <) revealBefore = pure $ Left $ RVBadRequest "the intent's deadline is before revealBefore"
   | otherwise =
       verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
-        Left _ -> pure $ Left RVBadRequest
+        Left e -> pure $ Left $ RVBadRequest $ T.pack e
         Right () ->
           sponsorNonce ct rOwner >>= \case
             Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's nonce read failed: " <> tshow e)
-            Right nonce -> pure $ if nonce == riNonce then Right () else Left RVBadRequest
+            Right nonce -> pure $ if nonce == riNonce then Right () else Left $ RVBadRequest "the intent's nonce is not the sponsor's next"
 
 -- | After the intent, so only a signed request reads the policy. Every name needs its owner's signature of the acceptance
 -- its view returns, with the intent's deadline.
@@ -113,8 +113,8 @@ checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistratio
   currentAcceptance ct nrLabelHash nrOwner >>= \case
     Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's terms acceptance could not be read: " <> tshow e)
     Right AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce}
-      | taTermsHash == acTermsHash && taNonce == acNonce -> first (const RVBadRequest) <$> verifyAcceptance (policyDomain cChainId acPolicy) (termsKind acCommunity) nrOwner nrCommitment rvDeadline a
-      | otherwise -> pure $ Left RVBadRequest
+      | taTermsHash == acTermsHash && taNonce == acNonce -> first (RVBadRequest . T.pack) <$> verifyAcceptance (policyDomain cChainId acPolicy) (termsKind acCommunity) nrOwner nrCommitment rvDeadline a
+      | otherwise -> pure $ Left $ RVBadRequest "the acceptance is not of the terms and nonce the policy asks"
 
 linksValid :: NameReveal -> Bool
 linksValid NameReveal {rvContactLink, rvChannelLink} = all (ofKind LKContact) rvContactLink && all (ofKind LKChannel) rvChannelLink

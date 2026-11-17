@@ -74,14 +74,14 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
         Just body -> case J.eitherDecode body of
           Right request -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
           Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond badRequest
-        Nothing -> answer $ RDRefused RVBadRequest Nothing
+        Nothing -> answer $ RDRefused (RVBadRequest "the body is over its size limit") Nothing
   where
     decide request r@NameRegistration {nrReveal} = do
       now <- oeNow
       case nrReveal of
-        Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused RVBadRequest Nothing
+        Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused (RVBadRequest "another reveal is stored") Nothing
         Nothing
-          | nrPhase (registrationAt now r) /= OCommitted -> pure $ RDRefused RVBadRequest Nothing
+          | nrPhase (registrationAt now r) /= OCommitted -> pure $ RDRefused (RVBadRequest "the order is not committed") Nothing
           | otherwise ->
               checkReveal oeConfig oeContracts now r request >>= \case
                 Left refusal -> pure $ RDRefused refusal Nothing
@@ -100,7 +100,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
         published v
         logNote ("POST /api/registration/:id/reveal refused: " <> tshow refusal)
         respond $ case refusal of
-          RVBadRequest -> badRequest
+          RVBadRequest _ -> badRequest
           RVInvalidLink -> invalidLink
           RVChainUnavailable -> providerUnavailable
       RDChanged -> respond =<< registrationChangedResponse env rid
