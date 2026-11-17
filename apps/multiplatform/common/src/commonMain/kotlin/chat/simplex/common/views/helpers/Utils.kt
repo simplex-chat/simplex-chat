@@ -156,7 +156,7 @@ expect fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean = true): A
 
 // Hard ceiling on the decoded raster in pixels, independent of aspect ratio, so an extreme-aspect image within the
 // source cap can't blow up memory. Sized to the full-screen target's area (~18.7 MP -> ~75 MB at 4 bytes/px).
-private const val MAX_DECODED_PIXELS = 4320 * 4320
+internal const val MAX_DECODED_PIXELS = 4320 * 4320
 
 // Power-of-two subsampling factor for bounded decoding. First keeps the smaller side at or above maxDimension
 // (mirroring Android's calculateInSampleSize) so portrait images stay sharp instead of being over-subsampled by a

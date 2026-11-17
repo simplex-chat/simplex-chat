@@ -32,7 +32,6 @@ import java.net.URI
 
 private const val MAX_IMAGE_DIMENSION = 4320
 private const val MAX_SOURCE_IMAGE_DIMENSION = 16384
-private const val MAX_DECODED_PIXELS = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
 
 fun Spanned.toHtmlWithoutParagraphs(): String {
   return HtmlCompat.toHtml(this, HtmlCompat.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE)
