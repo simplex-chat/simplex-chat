@@ -17,7 +17,7 @@ fi
 
 BUILD_DIR=dist-newstyle/build/$ARCH-$OS/ghc-*/simplex-chat-*
 
-scripts/desktop/check-exports.sh
+bash scripts/desktop/check-exports.sh
 
 # IMPORTANT: in order to get a working build you should use x86_64 MinGW with make, cmake, gcc.
 # 100% working MinGW is https://github.com/brechtsanders/winlibs_mingw/releases/download/13.1.0-16.0.5-11.0.0-ucrt-r5/winlibs-x86_64-posix-seh-gcc-13.1.0-mingw-w64ucrt-11.0.0-r5.zip

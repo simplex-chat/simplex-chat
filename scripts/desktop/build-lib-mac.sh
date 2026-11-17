@@ -20,7 +20,7 @@ GHC_LIBS_DIR=$(ghc --print-libdir)
 
 BUILD_DIR=dist-newstyle/build/$ARCH-*/ghc-*/simplex-chat-*
 
-scripts/desktop/check-exports.sh
+bash scripts/desktop/check-exports.sh
 
 rm -rf $BUILD_DIR
 

@@ -22,7 +22,7 @@ cd $root_dir
 DIST_DIR="${DIST_DIR:-dist-newstyle}"
 BUILD_DIR=$DIST_DIR/build/$ARCH-$OS/ghc-${GHC_VERSION}/simplex-chat-*
 
-scripts/desktop/check-exports.sh
+bash scripts/desktop/check-exports.sh
 
 #rm -rf $BUILD_DIR
 if [[ "$DATABASE_BACKEND" == "postgres" ]]; then

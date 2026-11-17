@@ -47,6 +47,15 @@ class ProbeDefinition(unittest.TestCase):
     def render(self, *, linux=True, x64=True, native=True):
         # Use throwing compiler-project attributes: this C check must not
         # accidentally grow a GHC planning/bootstrap dependency.
+        # Path interpolations copy into the Nix store. A sandboxed eval cannot
+        # replace a store path it does not own, so keep those files as strings.
+        source_nix = (HERE / "check-windows-fs.nix").read_text()
+        rewritten = source_nix.replace(
+            "${./windows-fs/Probe.c}", '"/unused-probe.c"').replace(
+            "${./windows-fs/run.sh}", '"/unused-run.sh"')
+        with tempfile.NamedTemporaryFile("w", suffix=".nix", delete=False) as handle:
+            handle.write(rewritten)
+            sanitized = Path(handle.name)
         expression = f'''
           let pkgs = {{
             stdenv = {{ hostPlatform = {{ isLinux = {str(linux).lower()}; isx86_64 = {str(x64).lower()}; config = "host"; }};
@@ -73,10 +82,13 @@ class ProbeDefinition(unittest.TestCase):
               assert map (entry: toString entry.path) entries == [ "/C-payload" "/same-Wine" ];
               {{ outPath = "/C-and-Wine-inputs"; inherit name; }};
             runCommand = name: attrs: script: {{ inherit name attrs script; }};
-          }}; in import {HERE / 'check-windows-fs.nix'} {{ inherit pkgs; }}
+          }}; in import {sanitized} {{ inherit pkgs; }}
         '''
-        return subprocess.run(["nix", "eval", "--offline", "--impure", "--json",
-                               "--expr", expression], capture_output=True, text=True, timeout=20)
+        try:
+            return subprocess.run(["nix", "eval", "--offline", "--impure", "--json",
+                                   "--expr", expression], capture_output=True, text=True, timeout=20)
+        finally:
+            sanitized.unlink(missing_ok=True)
 
     def test_check_is_native_linux_x64_only_and_uses_no_ghc_project(self):
         result = self.render()
