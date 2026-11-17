@@ -50,7 +50,6 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Util (catchOwn', tshow)
-import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxSettlement (..), TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
 import StoreService.Names.View (addressText)

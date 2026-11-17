@@ -44,7 +44,6 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
 import Simplex.Messaging.Util (catchOwn', tshow)
-import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
 import StoreService.Names.Registration (LinkKind (..), Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, multicallCalldata, recordKey, resolverDomain, setTextDigest, setTextWithSigCalldata)

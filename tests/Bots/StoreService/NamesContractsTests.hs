@@ -54,7 +54,6 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (tshow)
-import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Community (currentAcceptance)
 import StoreService.Names.Contracts

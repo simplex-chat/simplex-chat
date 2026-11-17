@@ -18,7 +18,6 @@ import Data.Word (Word64)
 import qualified Network.HTTP.Client as HTTP
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
-import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import Test.Hspec
 

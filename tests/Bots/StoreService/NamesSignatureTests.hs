@@ -18,7 +18,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (SimplexTLD (..), labelHash)
-import StoreService.Names.Chain (AbiError (..), AbiValue (..), abiBytes, abiTuple, decodeAddress, decodeBool, decodeBytes, decodeBytes32, decodeLabels, decodeString, decodeUint256, hex, uint256)
+import StoreService.Names.Chain (AbiError (..), AbiValue (..), abiBytes, abiTuple, decodeAddress, decodeBool, decodeBytes, decodeBytes32, decodeLabels, decodeString, decodeUint256, uint256)
 import StoreService.Names.Registration
 import Test.Hspec
 
@@ -82,7 +82,7 @@ namesSignatureTests = describe "StoreService names: signatures" $ do
   describe "signature format" $ do
     it "refuses a high s, though recovery accepts it" testHighS
     it "refuses v other than 27 or 28" $
-      forM_ ["00", "01", "1d"] $ \v -> parseSignature (T.dropEnd 2 orderSignature <> v) `shouldBe` Left "Failed reading: signature: expected r, s and v of 27 or 28"
+      forM_ ["00", "01", "1d"] $ \v -> parseSignature (T.dropEnd 2 orderSignature <> v) `shouldBe` Left "Failed reading: Failed reading: signature: v is not 27 or 28"
     it "refuses uppercase hex, no 0x and a wrong length" $ do
       let badForm = Left "Failed reading: signature: expected 0x and 130 lowercase hex digits"
       parseSignature ("0x" <> T.toUpper (T.drop 2 orderSignature)) `shouldBe` badForm

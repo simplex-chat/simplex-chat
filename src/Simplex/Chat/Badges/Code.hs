@@ -167,7 +167,7 @@ nameLengthInt (NameLength n) = n
 
 -- | Read a prepaid code as typed, as 'parseBadgeCode' reads a badge code.
 parseNameCode :: Text -> Maybe NamePrepaidCode
-parseNameCode = eitherToMaybe . A.parseOnly (strP <* A.endOfInput) . encodeUtf8 . T.toUpper . T.filter isAlphaNum
+parseNameCode = eitherToMaybe . strDecode . encodeUtf8 . T.toUpper . T.filter isAlphaNum
 
 -- | The code as it is shown and printed.
 formatNameCode :: NamePrepaidCode -> Text

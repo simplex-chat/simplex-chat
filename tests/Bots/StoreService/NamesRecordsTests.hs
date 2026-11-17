@@ -46,7 +46,6 @@ import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
-import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Records
