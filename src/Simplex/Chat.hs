@@ -72,6 +72,7 @@ defaultChatConfig =
       callVRange = supportedCallVRange,
       badgePublicKeys = M.mapKeys fromIntegral entitlementIssuerKeys,
       storeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#ooSNWlEZTO2RPE0Ff5ZoybAs5zEhWLMlQrXesnhaZHM",
+      storeServiceDev = False,
       badgeCurrentTime = getCurrentTime,
       badgeRetryInterval = RetryInterval {initialInterval = 30_000000, increaseAfter = 0, maxInterval = 3600_000000},
       badgeConsecutiveRetries = 3,
@@ -157,7 +158,7 @@ newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Boo
 newChatController
   ChatDatabase {chatStore, agentStore}
   user
-  cfg@ChatConfig {agentConfig = aCfg, presetServers, inlineFiles, deviceNameForRemote, confirmMigrations}
+  cfg@ChatConfig {agentConfig = aCfg, presetServers, inlineFiles, deviceNameForRemote, confirmMigrations, storeServiceAddress}
   ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, maxChats, deviceName, webPreviewConfig, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, showFullLinks, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
@@ -203,6 +204,7 @@ newChatController
         badgeWorkers <- TM.emptyIO
         storeReceiptWorkers <- TM.emptyIO
         badgeSeq <- newTVarIO 0
+        currentStoreService <- newTVarIO storeServiceAddress
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
         chatRelayTests <- TM.emptyIO
@@ -252,6 +254,7 @@ newChatController
               badgeWorkers,
               storeReceiptWorkers,
               badgeSeq,
+              currentStoreService,
               relayGroupLinkChecksAsync,
               webPreviewState,
               chatRelayTests,

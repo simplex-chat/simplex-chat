@@ -447,6 +447,7 @@ undocumentedCommands =
     "APISetNetworkInfo",
     "APISetPublicGroupAccess",
     "APISetServerOperators",
+    "APISetStoreService",
     "APISetUserContactReceipts",
     "APISetUserGroupReceipts",
     "APISetUserServers",

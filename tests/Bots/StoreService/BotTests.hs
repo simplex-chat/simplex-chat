@@ -58,6 +58,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, 
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Word (Word32)
+import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), badgeGraceInterval, generateMasterKey)
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeHash, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
 import Simplex.Chat.Badges.Ledger (addMonths, balanceChecked, creditTypeTag, debitTypeTag, emptyEntry, endOfMondayAfter)
@@ -69,12 +70,14 @@ import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError (..), ChatErrorType (..), ChatResponse (CRBadgeState, CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Commands (heldChargeAttempts, resumeHoldLimit, subscriptionRecoveryWindow)
+import Simplex.Chat.Mobile (defaultMobileConfig)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (PPGoogle), StoreTransactionRef (StoreTransactionRef))
 import Simplex.Chat.Store.Badges (StoreHoldKind (..), clearShownBadge, getLatestIssuedCredential, getNextHeldStoreReceipt, holdStoreReceipt, holdStoreTransfer, reholdStoreReceipt, storeReceiptHeldFor)
 import Simplex.Chat.Store.Profiles (getUser, setUserBadge)
+import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
@@ -84,6 +87,7 @@ import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Data.X509 (encodeSignedObject)
 import System.Directory (createDirectoryIfMissing)
@@ -100,6 +104,8 @@ storeServiceTests :: SpecWith TestParams
 storeServiceTests = do
   it "should answer unsupported_version to unsupported command" testStoreServiceUnsupported
   it "should redeem an issued code into a badge a contact sees" testRedeemBadgeCode
+  it "should reach the store service set in a dev build, and refuse to set it in a shipped one" testSetStoreService
+  it "should keep the dev store service switch off in every shipped config" testStoreServiceDevOffInShippedConfigs
   it "should return the same badge when the same code is redeemed twice" testRedeemBadgeCodeTwice
   it "should answer code_invalid to an unknown code, indistinguishably from a malformed one" testRedeemUnknownCode
   it "should tell a second profile redeeming the same code that it is used" testRedeemSameCodeOtherProfile
@@ -495,6 +501,40 @@ testRedeemBadgeCode ps =
         bob <## "connection not verified, use /code command to see security code"
         bob <## "quantum resistant end-to-end encryption"
         bob <## currentChatVRangeInfo
+
+testSetStoreService :: HasCallStack => TestParams -> IO ()
+testSetStoreService ps =
+  withStoreService ps $ \clientCfg bsLink cc -> do
+    withNewTestChatCfg ps clientCfg {storeServiceAddress = storeServiceAddress testCfg, storeServiceDev = True, badgeDevRequests = True} "alice" aliceProfile $ \alice -> do
+      alice ##> ("/_store service " <> bsLink)
+      alice <## "ok"
+      code <- issueCode cc BTSupporter 1
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      alice ##> "/_badge request 1"
+      alice <##. "1: supporter"
+      issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
+    withNewTestChatCfg ps clientCfg {storeServiceAddress = Nothing, storeServiceDev = True} "cath" cathProfile $ \cath -> do
+      cath ##> ("/_store service " <> bsLink)
+      cath <## "ok"
+      code <- issueCode cc BTSupporter 1
+      cath ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      cath <## "badge redeemed"
+      cath <## "supporter badge - active"
+      cath <##. "expires "
+      TM.memberIO 1 (badgeWorkers $ chatController cath) `shouldReturn` True
+    withNewTestChatCfg ps clientCfg {storeServiceAddress = Nothing} "bob" bobProfile $ \bob -> do
+      bob ##> ("/_store service " <> bsLink)
+      bob <## "bad chat command: /_store service is only available in builds for a dev store service"
+      code <- issueCode cc BTSupporter 1
+      bob ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      bob <## "cannot get badge: store service not configured"
+
+testStoreServiceDevOffInShippedConfigs :: HasCallStack => TestParams -> IO ()
+testStoreServiceDevOffInShippedConfigs _ =
+  map storeServiceDev [defaultChatConfig, defaultMobileConfig, terminalChatConfig] `shouldBe` [False, False, False]
 
 testRedeemBadgeCodeTwice :: HasCallStack => TestParams -> IO ()
 testRedeemBadgeCodeTwice ps =

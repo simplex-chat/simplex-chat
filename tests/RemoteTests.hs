@@ -116,6 +116,7 @@ runRemoteTests = do
     it "refuses invalid client cert" remoteHandshakeRejectTest
     it "connects with stored server bindings" storedBindingsTest
   it "sends messages" remoteMessageTest
+  it "refuses to set the store service from a paired device" remoteStoreServiceTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
     it "should send files from CLI without /store" remoteCLIFileTest
@@ -282,6 +283,13 @@ remoteMessageTest = testRemote3 $ \compress mobile desktop bob -> do
 
   threadDelay 1000000
   logNote "done"
+
+remoteStoreServiceTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteStoreServiceTest = testRemoteCfg testCfg {storeServiceDev = True} $ \compress mobile desktop -> do
+  startRemote compress mobile desktop
+  desktop ##> "/_store service https://smp5.simplex.im/a#ooSNWlEZTO2RPE0Ff5ZoybAs5zEhWLMlQrXesnhaZHM"
+  desktop <## "bad chat command: /_store service is only available in builds for a dev store service"
+  stopMobile mobile desktop
 
 remoteStoreFileTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
 remoteStoreFileTest =
@@ -602,8 +610,11 @@ multipleProfilesTest = testRemote4 $ \compress mobile desktop bob cath -> do
 -- * Utils
 
 testRemote :: HasCallStack => (String -> TestCC -> TestCC -> IO()) -> ((Bool, Bool), TestParams) -> IO ()
-testRemote test ((mobileCompression, desktopCompression), ps) =
-  withNewTestChatCfg ps testCfg {remoteCompression = mobileCompression} "mobile" aliceProfile $ \mobile ->
+testRemote = testRemoteCfg testCfg
+
+testRemoteCfg :: HasCallStack => ChatConfig -> (String -> TestCC -> TestCC -> IO()) -> ((Bool, Bool), TestParams) -> IO ()
+testRemoteCfg mobileCfg test ((mobileCompression, desktopCompression), ps) =
+  withNewTestChatCfg ps mobileCfg {remoteCompression = mobileCompression} "mobile" aliceProfile $ \mobile ->
     withNewTestChatCfg ps testCfg {remoteCompression = desktopCompression} "desktop" aliceDesktopProfile $ \desktop ->
       let compress = " (" <> (if mobileCompression && desktopCompression then "with" else "no") <> " compression)"
        in test compress mobile desktop
