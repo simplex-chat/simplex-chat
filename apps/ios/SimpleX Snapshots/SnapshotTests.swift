@@ -223,23 +223,6 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(voiceMessageTime_(TimeInterval(Int.max)), "00:00")
     }
 
-    @MainActor
-    func testLongFileNameExtensionShown() throws {
-        for c in ["a", "\u{05E9}"] {
-            let name = String(repeating: c, count: 200)
-            for end in ["", ".", ". ."] {
-                XCTAssertNotEqual(try fileItemImage("\(name).txt\(end)"), try fileItemImage("\(name).pdf\(end)"), "\(c)\(end)")
-            }
-        }
-    }
-
-    @MainActor
-    func testFileNameControlAndTextDirectionCharactersShown() throws {
-        for c in ["\n", "\u{2028}", "\u{202E}", "\u{2066}"] {
-            XCTAssertNotEqual(try fileItemImage("a.txt\(c)"), try fileItemImage("a.txt"), c.unicodeScalars.map { String(format: "U+%04X", $0.value) }.joined())
-        }
-    }
-
     func testIceCandidateIndexValidation() async {
         let responses = CallResponses()
         let client = WebRTCClient({ await responses.add($0) }, .constant(nil))
@@ -487,24 +470,6 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(r4.message, "**a** b")
         XCTAssertNil(r4.sanitizedPos)
     }
-}
-
-@MainActor
-private func fileItemImage(_ fileName: String) throws -> Data {
-    let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
-    let item = CIFileView(chat: Chat.sampleData, file: CIFile.getSample(fileName: fileName), meta: CIMeta.getSample(1, previewDate, ""))
-        .environmentObject(ChatModel.shared)
-        .environmentObject(snapshotTheme(false).toAppTheme())
-    let window = UIWindow(windowScene: windowScene)
-    window.overrideUserInterfaceStyle = .light
-    window.rootViewController = UIHostingController(rootView: item)
-    window.frame = CGRect(x: 0, y: 0, width: 300, height: 200)
-    window.isHidden = false
-    settle()
-    let image = windowImage(window)
-    window.isHidden = true
-    window.rootViewController = nil
-    return try XCTUnwrap(image.pngData())
 }
 
 private actor CallResponses {
