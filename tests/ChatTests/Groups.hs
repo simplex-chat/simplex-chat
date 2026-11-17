@@ -13746,8 +13746,8 @@ relayConnIdToMember cc name = do
     (Only connId : _) -> pure connId
     _ -> fail $ "no relay connection to member " <> T.unpack name
 
-contactConnId :: TestCC -> T.Text -> IO ByteString
-contactConnId cc name = do
+contactAgentConnId :: TestCC -> T.Text -> IO ByteString
+contactAgentConnId cc name = do
   rows <- withCCTransaction cc $ \db ->
     DB.query
       db

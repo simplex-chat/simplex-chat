@@ -3,7 +3,7 @@
 
 module Simplex.Chat.Files where
 
-import Data.Char (isControl, toLower)
+import Data.Char (isAscii, isControl, toLower)
 import Data.List.NonEmpty (NonEmpty (..))
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages (CIFile (..))
@@ -22,9 +22,9 @@ safeFileNameStr = notDots . map safeChar . makeValid . takeFileName
 
 mediaFileName :: MsgContent -> String -> String
 mediaFileName mc name = case mc of
-  MCImage {} -> withExtension $ ".jpg" :| [".jpeg", ".png", ".gif", ".webp", ".heic", ".heif", ".hif", ".avif"]
-  MCVideo {} -> withExtension videoExtensions
-  MCVoice {} -> withExtension $ ".m4a" :| []
+  MCImage {} -> ensureExtension $ ".jpg" :| [".jpeg", ".png", ".gif", ".webp", ".heic", ".heif", ".hif", ".avif"]
+  MCVideo {} -> ensureExtension videoExtensions
+  MCVoice {} -> ensureExtension $ ".m4a" :| []
   MCText {} -> name
   MCLink {} -> name
   MCFile {} -> name
@@ -32,15 +32,16 @@ mediaFileName mc name = case mc of
   MCChat {} -> name
   MCUnknown {} -> name
   where
-    withExtension exts@(ext :| _)
-      | map toLower (takeExtension name) `elem` exts = name
+    ensureExtension exts@(ext :| _)
+      | all isAscii nameExt && map toLower nameExt `elem` exts = name
       | otherwise = name <.> ext
+    nameExt = takeExtension name
     videoExtensions =
       ".mp4"
         :| [ ".3g2", ".3gp", ".3gp2", ".3gpp", ".3gpp2", ".asf", ".avi", ".axv", ".divx", ".dl", ".dv", ".f4v",
              ".fli", ".flv", ".gl", ".lsf", ".m1v", ".m2t", ".m2ts", ".m2v", ".m4v", ".mkv", ".mng", ".mov",
              ".movie", ".mp1v", ".mp2v", ".mp4v", ".mpe", ".mpeg", ".mpeg1", ".mpeg2", ".mpeg4", ".mpg", ".mpv",
-             ".mpv1", ".mpv2", ".mts", ".ogv", ".qt", ".rm", ".rmvb", ".ts", ".vob", ".webm", ".wm", ".wmv", ".wrf", ".yt"
+             ".mpv1", ".mpv2", ".mts", ".ogv", ".qt", ".rm", ".rmvb", ".ts", ".vob", ".webm", ".wm", ".wmv", ".yt"
            ]
 
 allowedContentUpdate :: MsgContent -> MsgContent -> Maybe (CIFile d) -> Bool
