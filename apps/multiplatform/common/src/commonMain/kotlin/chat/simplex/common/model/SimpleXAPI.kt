@@ -3091,7 +3091,7 @@ object ChatController {
             chatModel.chatsContext.updateChatInfo(rhId, r.chatInfo)
           }
         }
-      is CR.NewChatItems -> withBGApi {
+      is CR.NewChatItems -> {
         r.chatItems.forEach { chatItem ->
           val cInfo = chatItem.chatInfo
           val cItem = chatItem.chatItem
@@ -3108,17 +3108,23 @@ object ChatController {
               chatModel.chatsContext.increaseUnreadCounter(rhId, r.user)
             }
           }
-          val file = cItem.file
-          val mc = cItem.content.msgContent
-          if (file != null &&
-            appPrefs.privacyAcceptImages.get() &&
-            ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
-                || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
-                || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))
-          ) {
-            receiveFile(rhId, r.user, file.fileId, auto = true)
+        }
+        withBGApi {
+          r.chatItems.forEach { chatItem ->
+            val cInfo = chatItem.chatInfo
+            val cItem = chatItem.chatItem
+            val file = cItem.file
+            val mc = cItem.content.msgContent
+            if (file != null &&
+              appPrefs.privacyAcceptImages.get() &&
+              ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
+                  || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
+                  || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))
+            ) {
+              receiveFile(rhId, r.user, file.fileId, auto = true)
+            }
+            ntfManager.notifyMessageReceived(rhId, r.user, cInfo, cItem)
           }
-          ntfManager.notifyMessageReceived(rhId, r.user, cInfo, cItem)
         }
       }
       is CR.ChatItemsStatusesUpdated ->
