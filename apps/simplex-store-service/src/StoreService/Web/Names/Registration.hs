@@ -36,7 +36,7 @@ import StoreService.Names.Orders (OrdersEnv (..), WriteRefusal (..), versionWrit
 import StoreService.Names.Phases (awaitChange, publish)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Reveal (RevealRefusal (..), checkReveal, isRepeat, linksValid)
-import StoreService.Names.Store (BrokenInvariant (..), NameRegistration (..), OrderPhase (..), getRegistration, updateRegistration)
+import StoreService.Names.Store (BrokenInvariant (..), Commit (..), NameRegistration (..), OrderPhase (..), getRegistration, updateRegistration)
 import StoreService.Names.Turns (withRegistrationTurn)
 import StoreService.Names.View (RegistrationView, lapseMoment, registrationAt, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
@@ -80,15 +80,15 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
       now <- oeNow
       case nrReveal of
         Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused RVBadRequest Nothing
-        Nothing
-          | nrPhase (registrationAt now r) /= OCommitted -> pure $ RDRefused RVBadRequest Nothing
-          | otherwise ->
-              checkReveal oeConfig oeContracts now r request >>= \case
-                Left refusal -> pure $ RDRefused refusal Nothing
-                Right rv
-                  | linksValid rv -> write now (RDAccepted . Just) r {nrReveal = Just rv}
-                  | isJust (nrLinksRefusedAt r) -> pure $ RDRefused RVInvalidLink Nothing
-                  | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrLinksRefusedAt = Just now}
+        Nothing -> case nrPhase (registrationAt now r) of
+          OCommitted Commit {cmRevealBefore} ->
+            checkReveal oeConfig oeContracts now r cmRevealBefore request >>= \case
+              Left refusal -> pure $ RDRefused refusal Nothing
+              Right rv
+                | linksValid rv -> write now (RDAccepted . Just) r {nrReveal = Just rv}
+                | isJust (nrLinksRefusedAt r) -> pure $ RDRefused RVInvalidLink Nothing
+                | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrLinksRefusedAt = Just now}
+          _ -> pure $ RDRefused RVBadRequest Nothing
     write now decided r =
       withTransaction oeStore (\db -> versionWritten <$> updateRegistration db r now) >>= \case
         Right v -> pure $ decided v

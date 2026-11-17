@@ -142,7 +142,7 @@ source :: DBStore -> Text -> USDCents -> IO ()
 source st r cents = do
   placeOrderRow st r False cents (at 60)
   taken <- reg st r
-  write st taken {nrPhase = OTaken} `shouldReturn` Written 2
+  write st taken {nrPhase = OTaken Nothing Nothing} `shouldReturn` Written 2
   credit st r cents
 
 credit :: DBStore -> Text -> USDCents -> IO ()
@@ -172,7 +172,7 @@ coveredInsert r src price seen db = createBalanceRegistration db (regFor r (OTBa
 -- | The holder queued and its hold spent in one transaction, as settlement does.
 settleHolder :: DB.Connection -> NameRegistration -> IO Bool
 settleHolder db r = do
-  updateRegistration db r {nrPhase = OQueued} t0 `shouldReturn` Written (nrVersion r + 1)
+  updateRegistration db r {nrPhase = OQueued Nothing} t0 `shouldReturn` Written (nrVersion r + 1)
   spendHeldBalance db (nrId r) (maybe 0 buUsed $ paymentBalance $ nrPayment r) t0
 
 release :: DBStore -> Text -> IO Bool
@@ -277,7 +277,7 @@ testSpendAtOnce = withServiceStore $ \st -> do
   source st "s" 10000
   coveredSpend st "c1" "s" 6000 10000 `shouldReturn` Right ()
   c1 <- reg st "c1"
-  (nrPhase c1, nrPrice c1, nrPayment c1) `shouldBe` (OQueued, 6000, OPBalance BalanceUse {buSource = RegistrationId "s", buUsed = 6000})
+  (nrPhase c1, nrPrice c1, nrPayment c1) `shouldBe` (OQueued Nothing, 6000, OPBalance BalanceUse {buSource = RegistrationId "s", buUsed = 6000})
   nrOrderHash c1 `shouldBe` orderHash ownerA (fieldsN "c1") (OTBalance $ spendOf "s" 6000 10000 Nothing)
   figures st "s" t0 `shouldReturn` Just (4000, 10000, 0, Nothing)
   coveredSpend st "c2" "s" 3000 10000 `shouldReturn` Left BIRBalanceChanged
@@ -430,7 +430,7 @@ testChain = withServiceStore $ \st -> do
   b <- reg st "b"
   withTransaction st (`settleHolder` b) `shouldReturn` True
   queued <- reg st "b"
-  write st queued {nrPhase = OTaken} `shouldReturn` Written (nrVersion queued + 1)
+  write st queued {nrPhase = OTaken Nothing Nothing} `shouldReturn` Written (nrVersion queued + 1)
   credit st "b" holdPrice
   coveredSpend st "c" "b" 10000 holdPrice `shouldReturn` Right ()
   withTransaction st (\db -> balanceChain db (RegistrationId "c"))
@@ -455,7 +455,7 @@ testChainOfOverpaid :: IO ()
 testChainOfOverpaid = withServiceStore $ \st -> do
   placeOrderRow st "o" False 20000 t0
   queued <- reg st "o"
-  write st queued {nrPhase = OQueued} `shouldReturn` Written (nrVersion queued + 1)
+  write st queued {nrPhase = OQueued Nothing} `shouldReturn` Written (nrVersion queued + 1)
   let late = lateCredit "o" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceChain db (RegistrationId "o"))
@@ -535,7 +535,7 @@ testOverdueHolderClosed = withOrders $ \Ctx {cStore = st, cOrders} -> do
   invoiceStatus st (InvoiceId "inv-h") `shouldReturn` ISExpired
   orderLive <$> reg st "h" `shouldReturn` False
   figures st "s" now `shouldReturn` Just (4000, 10000, 0, Nothing)
-  nrPhase <$> reg st "c" `shouldReturn` OQueued
+  nrPhase <$> reg st "c" `shouldReturn` OQueued Nothing
 
 testNamedHolders :: IO ()
 testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
