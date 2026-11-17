@@ -50,7 +50,7 @@ import Simplex.Chat.Badges (BadgeProof (..), BadgeProofKind (..), BadgeStatus (.
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
-import Simplex.Chat.Files (allowedContentUpdate, getChatTempDirectory, mediaFileName, safeFileNameStr)
+import Simplex.Chat.Files (getChatTempDirectory, mediaFileName, safeFileNameStr)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Markdown (ParsedMarkdown (..))
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)

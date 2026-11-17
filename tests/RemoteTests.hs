@@ -20,8 +20,8 @@ import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
 import Data.Word (Word32)
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
-import Simplex.Chat.Files (allowedContentUpdate, mediaFileName, safeFileNameStr)
-import Simplex.Chat.Messages (CIFile (..), CIFileStatus (..), FileProtocol (..))
+import Simplex.Chat.Files (mediaFileName, safeFileNameStr)
+import Simplex.Chat.Messages (CIFile (..), CIFileStatus (..), FileProtocol (..), allowedContentUpdate)
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
