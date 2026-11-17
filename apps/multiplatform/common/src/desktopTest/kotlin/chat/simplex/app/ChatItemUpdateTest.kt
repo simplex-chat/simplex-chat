@@ -21,19 +21,7 @@ class ChatItemUpdateTest {
 
   @BeforeTest
   fun setUp() {
-    ntfManager = object : NtfManager() {
-      override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) {
-        synchronized(notifications) { notifications += msgText }
-      }
-      override fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean = false
-      override fun hasNotificationsForChat(chatId: String): Boolean = false
-      override fun cancelNotificationsForChat(chatId: String) {}
-      override fun cancelNotificationsForUser(userId: Long) {}
-      override fun cancelCallNotification() {}
-      override fun cancelAllNotifications() {}
-      override fun showMessage(title: String, text: String) {}
-      override fun androidCreateNtfChannelsMaybeShowAlert() {}
-    }
+    ntfManager = recordingNtfManager { synchronized(notifications) { notifications += it } }
     simplexWindowState.windowFocused.value = false
     ChatModel.currentUser.value = User.sampleData
     ChatModel.users.add(UserInfo(User.sampleData, 0))
@@ -163,10 +151,6 @@ class ChatItemUpdateTest {
     assertNull(event.chatItem)
   }
 
-  private fun recorded(fixture: String, test: suspend (List<API>) -> Unit) = runBlocking {
-    test(json.decodeFromString(fixtureText(fixture)))
-  }
-
   private suspend fun listChat(event: API) = withContext(Dispatchers.Main) {
     ChatModel.chatsContext.updateChat(null, chatInfo(event))
   }
@@ -189,10 +173,26 @@ class ChatItemUpdateTest {
   }
 
   private fun assertNotified(vararg texts: String) = assertEventually(texts.toList()) { synchronized(notifications) { notifications.toList() } }
+}
 
-  private fun <T> assertEventually(expected: T, actual: () -> T) {
-    val until = System.currentTimeMillis() + 5_000
-    while (actual() != expected && System.currentTimeMillis() < until) Thread.sleep(10)
-    assertEquals(expected, actual())
-  }
+internal fun recorded(fixture: String, test: suspend (List<API>) -> Unit) = runBlocking {
+  test(json.decodeFromString(fixtureText(fixture)))
+}
+
+internal fun recordingNtfManager(record: (String) -> Unit): NtfManager = object : NtfManager() {
+  override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = record(msgText)
+  override fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean = false
+  override fun hasNotificationsForChat(chatId: String): Boolean = false
+  override fun cancelNotificationsForChat(chatId: String) {}
+  override fun cancelNotificationsForUser(userId: Long) {}
+  override fun cancelCallNotification() {}
+  override fun cancelAllNotifications() {}
+  override fun showMessage(title: String, text: String) {}
+  override fun androidCreateNtfChannelsMaybeShowAlert() {}
+}
+
+internal fun <T> assertEventually(expected: T, actual: () -> T) {
+  val until = System.currentTimeMillis() + 5_000
+  while (actual() != expected && System.currentTimeMillis() < until) Thread.sleep(10)
+  assertEquals(expected, actual())
 }
