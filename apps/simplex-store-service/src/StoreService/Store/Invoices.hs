@@ -69,7 +69,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransa
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Providers (Confirmed (..), CryptoReceived (..), Received (..), receivedAmount, receivedConfirmed)
 
 #if defined(dbPostgres)

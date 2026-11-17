@@ -32,8 +32,7 @@ import StoreService.Config (ServiceConfig (..))
 import StoreService.Names.Balances
 import StoreService.Names.Orders (ClosedOrder (..), OrderRefusal (..), OrderRequest (..), OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
-import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Signatures (OrderFields (..))
+import StoreService.Names.Registration (OrderFields (..), RegistrationId (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (balanceTurnCount, newTurns, turnsCount, withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (addressText)

@@ -21,7 +21,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Names.Record (USDCents)
 import StoreService.Names.Orders (OrderRefusal (..))
-import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceInsertRefused (..), BalanceLink, BalanceUse (..), BrokenInvariant (..), NameRegistration, NewRegistration, PaidOrder, Spend (..), balanceByReference, balanceChain, createBalanceRegistration, createPaidRegistration, getBalance, getRegistration, heldBy, refundBalance)
 import StoreService.Names.Turns (Turns, withBalanceTurn)
 

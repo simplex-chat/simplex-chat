@@ -102,9 +102,8 @@ import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
-import StoreService.Names.Chain (ChainClient (..), decodeSignedTx, newChainClient)
-import StoreService.Names.Signatures (AgreedTerms)
+import StoreService.Names.Chain (AbiValue (..), ChainClient (..), abiBytes, abiTuple, addressWord, decodeSignedTx, hex, newChainClient, selector, uint256)
+import StoreService.Names.Registration (AgreedTerms)
 import System.Timeout (timeout)
 
 data FakeEthNode = FakeEthNode

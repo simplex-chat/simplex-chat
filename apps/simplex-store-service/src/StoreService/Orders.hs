@@ -15,8 +15,9 @@ module StoreService.Orders
   )
 where
 
-import StoreService.Names.Phases (Phases, RegistrationId (..))
+import StoreService.Names.Phases (Phases)
 import qualified StoreService.Names.Phases as Phases
+import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, namePhase, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
 import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Received (..), receivedAmount, receivedConfirmed)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)

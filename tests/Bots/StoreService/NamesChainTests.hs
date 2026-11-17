@@ -19,9 +19,7 @@ import qualified Network.HTTP.Client as HTTP
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain
-import StoreService.Names.Revert
 import Test.Hspec
 
 namesChainTests :: Spec

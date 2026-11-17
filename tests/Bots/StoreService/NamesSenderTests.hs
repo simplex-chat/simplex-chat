@@ -28,11 +28,8 @@ import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain
-import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (commitCalldata)
-import StoreService.Names.Revert (RevertName (..), RevertReason (..))
+import StoreService.Names.Registration (RegistrationId (..), commitCalldata)
 import StoreService.Names.Sender
 import StoreService.Names.Store (NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxStatus (..), pendingTransactions, recordTransactionOutcome, registrationTransactions)
 import StoreService.Names.View (addressText)

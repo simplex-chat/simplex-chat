@@ -41,10 +41,9 @@ import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ListenerConfig (..))
 import StoreService.Metrics
-import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
-import StoreService.Names.Chain (TxHash (..))
+import StoreService.Names.Chain (AbiValue (..), TxHash (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
 import StoreService.Names.Contracts (RegisteredNames (..), newContracts, termsOf, termsText)
-import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store
 import StoreService.Store (badgeCounts)
 import StoreService.Store.Invoices (openInvoiceCounts)

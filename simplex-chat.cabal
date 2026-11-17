@@ -457,7 +457,6 @@ executable simplex-store-service
       StoreService.Group
       StoreService.Group.Command
       StoreService.Metrics
-      StoreService.Names.Abi
       StoreService.Names.Balances
       StoreService.Names.Chain
       StoreService.Names.Codes
@@ -471,9 +470,7 @@ executable simplex-store-service
       StoreService.Names.Records
       StoreService.Names.Registration
       StoreService.Names.Reveal
-      StoreService.Names.Revert
       StoreService.Names.Sender
-      StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
       StoreService.Names.View
@@ -838,7 +835,6 @@ test-suite simplex-chat-test
       StoreService.Group
       StoreService.Group.Command
       StoreService.Metrics
-      StoreService.Names.Abi
       StoreService.Names.Balances
       StoreService.Names.Chain
       StoreService.Names.Codes
@@ -852,9 +848,7 @@ test-suite simplex-chat-test
       StoreService.Names.Records
       StoreService.Names.Registration
       StoreService.Names.Reveal
-      StoreService.Names.Revert
       StoreService.Names.Sender
-      StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
       StoreService.Names.View

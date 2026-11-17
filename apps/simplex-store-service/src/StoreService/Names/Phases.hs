@@ -1,16 +1,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module StoreService.Names.Phases (Phases, RegistrationId (..), newPhases, publish, awaitChange, phasesCount, phasesWaiting) where
+module StoreService.Names.Phases (Phases, newPhases, publish, awaitChange, phasesCount, phasesWaiting) where
 
 import Control.Concurrent.STM
 import Control.Exception (bracket)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
-
-newtype RegistrationId = RegistrationId Text
-  deriving (Eq, Ord, Show)
+import StoreService.Names.Registration (RegistrationId)
 
 -- | wVersion only grows, so a publish that arrives after a newer one cannot wake anyone.
 data Watch = Watch {wVersion :: TVar Int64, wRefs :: TVar Int}

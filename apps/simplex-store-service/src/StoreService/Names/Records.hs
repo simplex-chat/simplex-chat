@@ -47,7 +47,6 @@ import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
 import StoreService.Names.Registration (LinkKind (..), Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, multicallCalldata, recordKey, resolverDomain, setTextDigest, setTextWithSigCalldata)
-import StoreService.Names.Revert (RevertName (..), revertReasonText, revertText)
 import StoreService.Names.Sender (SendError (..), Sender, submitTransaction)
 import StoreService.Names.Store
 import StoreService.Names.Turns (Turns, withLabelTurn)

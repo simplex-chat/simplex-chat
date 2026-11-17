@@ -5,7 +5,6 @@ module Bots.StoreService.NameRegistrationTests (badgeNameRegistrationTests) wher
 
 import StoreService.Names.Chain
 import StoreService.Names.Registration
-import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.WebUIMock
 import Control.Concurrent.STM (TVar)
@@ -22,7 +21,6 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
-import StoreService.Names.Signatures (parseSignature)
 import Test.Hspec
 
 badgeNameRegistrationTests :: Spec

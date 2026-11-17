@@ -419,7 +419,7 @@ sequenceDiagram
 
 Notes:
 
-- The signature and a timestamp within 600 s are checked; an owner without orders is answered `404`. 5 finds a minute are allowed per client ([`Web/Names.hs:38`](../src/StoreService/Web/Names.hs#L38), [`Web/Names/Owner.hs:44-67`](../src/StoreService/Web/Names/Owner.hs#L44-L67), [`Names/Signatures.hs:98-99`](../src/StoreService/Names/Signatures.hs#L98-L99), [`Names/Store.hs:815-837`](../src/StoreService/Names/Store.hs#L815-L837)).
+- The signature and a timestamp within 600 s are checked; an owner without orders is answered `404`. 5 finds a minute are allowed per client ([`Web/Names.hs:38`](../src/StoreService/Web/Names.hs#L38), [`Web/Names/Owner.hs:44-67`](../src/StoreService/Web/Names/Owner.hs#L44-L67), [`Names/Registration.hs:386-387`](../src/StoreService/Names/Registration.hs#L386-L387), [`Names/Store.hs:815-837`](../src/StoreService/Names/Store.hs#L815-L837)).
 
 ---
 
@@ -461,7 +461,7 @@ Notes:
 
 - `method` is present exactly when the price is above the balance, and a card difference under 50 cents is refused ([`Web/Names/Orders.hs:280-306`](../src/StoreService/Web/Names/Orders.hs#L280-L306)).
 - The chain price is checked as an order's: a price under `min_price_cents_per_year` times the paid years is answered `503 name_check_unavailable` before any payment ([`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)).
-- The spend is signed `simplex.domains spend SOURCE ...` by the source order's owner, who owns the new order ([`Web/Names/Orders.hs:249-257`](../src/StoreService/Web/Names/Orders.hs#L249-L257), [`Names/Signatures.hs:104-106`](../src/StoreService/Names/Signatures.hs#L104-L106)).
+- The spend is signed `simplex.domains spend SOURCE ...` by the source order's owner, who owns the new order ([`Web/Names/Orders.hs:249-257`](../src/StoreService/Web/Names/Orders.hs#L249-L257), [`Names/Registration.hs:392-394`](../src/StoreService/Names/Registration.hs#L392-L394)).
 - A balance amount other than the one read, or a hold, is answered `409 balance_changed`. A hold by an overdue order is treated as none, and that order is closed in the spend's transaction ([`Names/Balances.hs:79-87`](../src/StoreService/Names/Balances.hs#L79-L87), [`Names/Orders.hs:236-243`](../src/StoreService/Names/Orders.hs#L236-L243)).
 - The whole balance read is held by the difference order. At settlement the hold is spent; when it cannot be spent, the order is kept `queued` and an error is logged ([`Names/Store.hs:514-532`](../src/StoreService/Names/Store.hs#L514-L532), [`Orders.hs:200-204`](../src/StoreService/Orders.hs#L200-L204), [`Orders.hs:232-236`](../src/StoreService/Orders.hs#L232-L236)).
 - Balances are credited when a paid order is set `taken` (its whole price), when a paid order moves to a cheaper name (the difference), and with late or extra money ([`Names/Worker.hs:359-368`](../src/StoreService/Names/Worker.hs#L359-L368), [`Names/Orders.hs:341-349`](../src/StoreService/Names/Orders.hs#L341-L349), [`Names/LateCredits.hs:66-72`](../src/StoreService/Names/LateCredits.hs#L66-L72)).

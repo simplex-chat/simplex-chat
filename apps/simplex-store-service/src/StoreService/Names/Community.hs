@@ -24,11 +24,9 @@ import Data.Word (Word64)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Abi (hex)
-import StoreService.Names.Chain (ChainError (..))
+import StoreService.Names.Chain (ChainError (..), hex)
 import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, concurrent, kindTerms, namePolicy, policyNonce, termsLinks, termsText, together)
-import StoreService.Names.Registration (CommunityName, TermsHash)
-import StoreService.Names.Signatures (AgreedTerms (..))
+import StoreService.Names.Registration (AgreedTerms (..), CommunityName, TermsHash)
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} lh = M.lookup lh nCommunity

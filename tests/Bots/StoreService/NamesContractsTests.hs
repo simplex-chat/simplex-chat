@@ -55,12 +55,10 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Community (currentAcceptance)
 import StoreService.Names.Contracts
 import StoreService.Names.Registration (labelNode, namehash, nodeBytes, tldLabel)
-import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import Test.Hspec
 

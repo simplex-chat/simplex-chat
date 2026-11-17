@@ -29,7 +29,7 @@ import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), boundedDecimal)
-import StoreService.Names.Abi (bytes32FromHex)
+import StoreService.Names.Chain (bytes32FromHex)
 import StoreService.Names.Community (communityJSON, readableTerms, termsJSON, yearsFor)
 import StoreService.Names.Contracts
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)

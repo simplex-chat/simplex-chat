@@ -105,15 +105,14 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
 import StoreService.Group.Command (CmdSource (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
-import StoreService.Names.Chain (TxHash (..))
+import StoreService.Names.Chain (AbiValue (..), TxHash (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
 import StoreService.Names.Codes (CodeRefusal (..))
 import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
-import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
-import StoreService.Names.Signatures (OrderFields (..), orderMessage, personalDigest)
+import StoreService.Names.Phases (awaitChange, newPhases)
+import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), orderMessage, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (RegistrationView (..), ViewRead (..), ViewReads (..), readViewChain, registrationView, toRegistrationView)

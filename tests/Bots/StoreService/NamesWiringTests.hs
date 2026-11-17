@@ -23,6 +23,7 @@ import Network.HTTP.Types.Status (statusCode)
 import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Config (ListenerConfig (..))
 import StoreService.Names.Phases
+import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Turns
 import StoreService.Web.Http
 import StoreService.Web.Names (Route (..), namesApp)

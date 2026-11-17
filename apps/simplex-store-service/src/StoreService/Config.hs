@@ -59,13 +59,13 @@ import qualified Network.HTTP.Client as HTTP
 import Simplex.Chat.Badges.Code (maxNameLength, minNameLength, minNameYears)
 import Simplex.Chat.Library.Commands (mkValidName)
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
-import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey)
+import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import StoreService.Names.Abi (hexP, parseText)
+import StoreService.Names.Chain (ChainConfig (..), hexP, parseText)
 import StoreService.Names.Registration (LabelError (..), validLabel)
 import StoreService.StoreReceipts (StoreChecks (..))
 import System.IO.Error (ioeGetErrorString)
@@ -188,25 +188,6 @@ data NamesConfig = NamesConfig
     nChain :: ChainConfig
   }
   deriving (Eq, Show)
-
-data ChainConfig = ChainConfig
-  { cRpcUrl :: String,
-    cChainId :: Word64,
-    cController :: Address,
-    cSponsor :: Address,
-    cBaseRegistrar :: Address,
-    cResolver :: Address,
-    cServiceKey :: Secp256k1PrivateKey,
-    cConfirmations :: Int,
-    cGasLimitCap :: Word64,
-    -- | wei; no transaction is signed with a higher max fee per gas
-    cMaxFeePerGas :: Word64
-  }
-  deriving (Eq)
-
--- The RPC URL can carry a provider's API key, so neither it nor the service key is shown.
-instance Show ChainConfig where
-  show ChainConfig {cChainId} = "chain " <> show cChainId
 
 data ServiceConfig = ServiceConfig
   { listener :: ListenerConfig,

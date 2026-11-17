@@ -16,10 +16,8 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (SimplexTLD (..), labelHash)
-import StoreService.Names.Abi
-import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Chain (AbiError (..), AbiValue (..), abiBytes, abiTuple, decodeAddress, decodeBool, decodeBytes, decodeBytes32, decodeLabels, decodeString, decodeUint256, hex, uint256)
 import StoreService.Names.Registration
-import StoreService.Names.Signatures
 import Test.Hspec
 
 namesSignatureTests :: Spec

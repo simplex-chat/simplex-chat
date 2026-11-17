@@ -149,6 +149,26 @@ A2-27, A2-28: Census.hs goes; its code is in Contracts.
 
 A2-29: after the other areas merge, Abi and Revert move into Chain, and Signatures with RegistrationId into Registration.
 
+- ChainConfig is defined in Chain; Config re-exports it.
+- chainSeconds is `floor . utcTimeToPOSIXSeconds`.
+- Chain imports no service module.
+- RegistrationId is imported from Registration; Phases does not export it.
+- Abi.hs, Revert.hs and Signatures.hs are out of the cabal module lists; their deletion waits for the user, as Census.hs.
+
+```mermaid
+graph LR
+  Config --> Chain
+  Config --> Registration
+  Registration --> Chain
+  Phases --> Registration
+  Invoices[Store.Invoices] --> Registration
+  Store[Names.Store] --> Registration
+  Store --> Chain
+  Contracts --> Chain
+  Contracts --> Registration
+  Contracts --> Store
+```
+
 ## Gaps recorded after the review
 
 - No test fails eth_chainId for a loopback terms link (review 9).

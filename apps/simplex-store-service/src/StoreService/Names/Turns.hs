@@ -12,7 +12,7 @@ import qualified Data.Map.Strict as Map
 import Simplex.Messaging.Agent.Lock (Lock, createLock, withLock')
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.SimplexName (LabelHash)
-import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (CodeHash, NameRegistration (..), getRegistration)
 
 -- | Each lock counts the requests holding or waiting for it, and its entry goes when none are left.

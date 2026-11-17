@@ -20,10 +20,10 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector)
+import StoreService.Names.Chain (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector)
 import StoreService.Names.Community (communityFor, termsFor)
 import StoreService.Names.Contracts (Terms (..))
-import StoreService.Names.Signatures (AgreedTerms (..))
+import StoreService.Names.Registration (AgreedTerms (..))
 import StoreService.Names.View (addressText)
 import StoreService.Service (logNamePolicy)
 import Test.Hspec
