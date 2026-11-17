@@ -1635,7 +1635,7 @@ getStoredGroupRoster db GroupInfo {groupId} =
 createRosterTransfer :: DB.Connection -> GroupInfo -> GroupMemberId -> VersionRoster -> FD.FileDigest -> GroupMemberId -> UTCTime -> Maybe SignedMsg -> IO Int64
 createRosterTransfer db GroupInfo {groupId} fromMemberId v digest ownerGMId brokerTs sm_ = do
   -- one in-flight transfer per (group, source): drop any prior row from this source so the INSERT can't hit
-  -- the UNIQUE constraint even if the caller's fs/handle cleanup was skipped (the scratch file would then leak
+  -- the UNIQUE constraint even if the caller's fs cleanup was skipped (the scratch file would then leak
   -- until group delete, but the transfer never gets stuck). Normally cleanupRosterTransfer ran first.
   DB.execute db "DELETE FROM rcv_roster_transfers WHERE group_id = ? AND from_member_id = ?" (groupId, fromMemberId)
   DB.execute
@@ -1733,7 +1733,7 @@ setGroupLiveRoster db GroupInfo {groupId} v ownerGMId brokerTs sm_ blob = do
     )
 
 -- Delete one in-flight transfer row (its files/rcv_files/rcv_file_chunks are removed separately, with
--- the on-disk file). Caller removes the fs file + cached handle first.
+-- the on-disk file). Caller removes the fs file first.
 deleteRosterTransfer :: DB.Connection -> Int64 -> IO ()
 deleteRosterTransfer db transferId =
   DB.execute db "DELETE FROM rcv_roster_transfers WHERE roster_transfer_id = ?" (Only transferId)
