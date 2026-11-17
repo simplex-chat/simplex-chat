@@ -156,7 +156,8 @@ fun AddGroupMembersLayout(
     ) {
       ChatInfoToolbarTitle(
         ChatInfo.Group(groupInfo, groupChatScope = null),
-        imageSize = 60.dp,
+        imageSize = 50.dp,
+        imageBox = 60.dp,
         iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight
       )
     }
@@ -351,7 +352,7 @@ fun ContactCheckRow(
       }
     } else null
   ) {
-    ProfileImage(size = 36.dp, contact.image, contact.chatIconName)
+    ProfileImage(size = 30.dp, contact.image, contact.chatIconName, modifier = Modifier.centeredIn(36.dp))
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
     NameWithBadge(
       contact.chatViewName,
