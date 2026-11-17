@@ -64,6 +64,7 @@ module Simplex.Chat.Store.Messages
     updateChatItemSignedMsg,
     createGroupCIMentions,
     updateGroupCIMentions,
+    updateGroupCIUserMention,
     deleteGroupChatItem,
     updateGroupChatItemModerated,
     deleteMemberCIs,
@@ -2841,6 +2842,23 @@ updateGroupCIMentions db g ci@ChatItem {mentions} mentions'
   where
     deleteMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
     createMentions = createGroupCIMentions db g ci mentions'
+
+updateGroupCIUserMention :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
+updateGroupCIUserMention db cxt user@User {userId} g@GroupInfo {membership} scopeInfo_ ci@ChatItem {chatDir, quotedItem, mentions, meta = meta@CIMeta {itemId, itemStatus, userMention}}
+  | userMention' == userMention = pure ci
+  | otherwise = do
+      DB.execute db "UPDATE chat_items SET user_mention = ? WHERE user_id = ? AND chat_item_id = ?" (BI userMention', userId, itemId)
+      when (itemStatus == CISRcvNew) $
+        forM_ scopeInfo_ $ \scopeInfo -> updateGroupScopeUnreadStats db cxt user g scopeInfo (0, 0, fromEnum userMention - fromEnum userMention')
+      pure ci {meta = meta {userMention = userMention'}}
+  where
+    userMention' = not senderBlocked && (userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions)
+    senderBlocked = case chatDir of
+      CIGroupRcv m -> memberBlocked m
+      CIChannelRcv -> False
+    userReply = case quotedItem of
+      Just CIQuote {chatDir = CIQGroupSnd} -> True
+      _ -> False
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
 deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci = do

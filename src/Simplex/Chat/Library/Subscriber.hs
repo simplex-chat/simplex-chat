@@ -2406,7 +2406,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
                 ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
                 updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
-                updateGroupCIMentions db gInfo ci' ciMentions
+                updateGroupCIMentions db gInfo ci' ciMentions >>= updateGroupCIUserMention db cxt user gInfo scopeInfo
               toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci' ci)
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
               pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender

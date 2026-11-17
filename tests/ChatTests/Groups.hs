@@ -35,7 +35,7 @@ import Simplex.Chat.Badges (FileSizeLimits (..))
 import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (AChatItemUpdate (..), CIMention (..), CIMentionMember (..), ChatItem (ChatItem, mentions), ChatItemId)
+import Simplex.Chat.Messages (AChatItemUpdate (..), CIMention (..), CIMentionMember (..), ChatItem (ChatItem, mentions), ChatItemId, isUserMention)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
@@ -256,7 +256,7 @@ chatGroupTests = do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   describe "group member mentions" $ do
     it "should send and edit messages with member mentions" testMemberMention
-    it "should send updated item without mentions removed by edit" testMemberMentionRemovedByEdit
+    it "should send updated item with mentions added and removed by edit" testMemberMentionEdited
     it "should forward and quote message updating mentioned member name" testForwardQuoteMention
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
@@ -8488,24 +8488,29 @@ testMemberMention =
           bob <# "#team cath> [edited] hello @alice @bob"
         ]
 
-testMemberMentionRemovedByEdit :: HasCallStack => TestParams -> IO ()
-testMemberMentionRemovedByEdit ps = do
+testMemberMentionEdited :: HasCallStack => TestParams -> IO ()
+testMemberMentionEdited ps = do
   updates <- newTVarIO []
   let hook _ evt = do
         case evt of
-          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ChatItem {mentions} ChatItem {mentions = prevMentions})) ->
-            atomically $ modifyTVar' updates (<> [(M.keys mentions, M.keys prevMentions)])
+          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi)) ->
+            atomically $ modifyTVar' updates (<> [(mentionOf prevCi, mentionOf ci)])
           _ -> pure ()
         pure evt
+      mentionOf :: ChatItem c d -> ([T.Text], Bool)
+      mentionOf ci@ChatItem {mentions} = (M.keys mentions, isUserMention ci)
   withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-      bob #> "#team hello @alice"
-      alice <# "#team bob!> hello @alice"
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      bob ##> "! #team hello @alice"
+      bob <# "#team [edited] hello @alice"
+      alice <# "#team bob> [edited] hello @alice"
       bob ##> "! #team hello"
       bob <# "#team [edited] hello"
       alice <# "#team bob> [edited] hello"
-      readTVarIO updates `shouldReturn` [([], ["alice"])]
+      readTVarIO updates `shouldReturn` [(([], False), (["alice"], True)), ((["alice"], True), ([], False))]
 
 testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
 testForwardQuoteMention =
