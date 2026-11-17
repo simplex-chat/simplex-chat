@@ -201,6 +201,7 @@ chatGroupTests = do
     it "accept support chat edits only in own or moderated support chats" testSupportScopeEditNonParticipantRejected
     it "accept forwarded support chat messages only in own or moderated support chats" testSupportScopeForwardNonParticipantRejected
     it "record unknown member roles for app tests" testUnknownMemberRolesFixture
+    it "reject repeated invitation via group to joined group" testGroupInvitationViaGroupRepeatJoinedRejected
   describe "invite member via group" $ do
     it "invite member of another group" testInviteMemberViaGroup
     it "auto-accept invitation from member of another group" testInviteMemberViaGroupAutoAccept
@@ -2077,6 +2078,26 @@ testUnknownMemberRolesFixture =
       bob <## "#team: alice changed the role of cath from member to vip"
       bob <## "#team: alice changed your role from member to vip"
       apiFixture "members/unknown-roles" bob [] FixtureRequests {frMarkdown = ["", "Catherine"], frUris = [], frCommands = ["/_get chats 1 pcc=on", "/_get chat #1 count=2", "/_members #1"]}
+
+testGroupInvitationViaGroupRepeatJoinedRejected :: HasCallStack => TestParams -> IO ()
+testGroupInvitationViaGroupRepeatJoinedRejected =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      createClub alice
+      GroupMember {groupMemberId = bobId} <- getTestMember alice "team" "bob"
+      addBob alice bob bobId "club"
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob_1 joined the group")
+        (bob <## "#club: you joined the group")
+      GroupMember {groupMemberId = bobClubGMId, memberId = bobMemId} <- getTestMember alice "club" "bob_1"
+      Just cReq <- withCCTransaction alice $ \db -> withCCUser alice $ \user -> getMemberInvitation db user bobClubGMId
+      connId <- relayConnIdToMember alice "bob"
+      let inv = GroupInvitation {fromMember = MemberIdRole (MemberId "host") GROwner, fromMemberKey = Nothing, invitedMember = MemberIdRole bobMemId GRObserver, connRequest = cReq, groupProfile = groupProfileNamed "club", business = Nothing, groupLinkId = Nothing, groupSize = Nothing}
+      agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpInv inv)
+      bob <## "you already joined this group"
+      memberRoles bob "bob" `shouldReturn` ["admin", "member"]
 
 newAgentInvitation :: TestCC -> IO ConnReqInvitation
 newAgentInvitation cc = do
