@@ -12,6 +12,8 @@ final class NameAlertsTests: XCTestCase {
     private var unrecorded: [String] = []
     private var shownLocalChats: [String] = []
     private var opened = 0
+    private var verifications = 0
+    private var windows: [UIWindow] = []
 
     @MainActor
     override func setUp() async throws {
@@ -23,6 +25,7 @@ final class NameAlertsTests: XCTestCase {
     @MainActor
     override func tearDown() async throws {
         try await dismissPresented()
+        for window in windows { window.isHidden = true }
         for chat in ChatModel.shared.chats { ChatModel.shared.removeChat(chat.id) }
         ChatModel.shared.chatId = nil
         ChatModel.shared.appOpenUrl = nil
@@ -242,14 +245,51 @@ final class NameAlertsTests: XCTestCase {
     func testChatListSearchShowsChatsOfName() async throws {
         try recorded("names/search-team")
         let state = SearchState()
-        let window = UIWindow(windowScene: try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first))
-        window.rootViewController = UIHostingController(rootView: SearchHost(state: state))
-        window.isHidden = false
-        defer { window.isHidden = true }
+        try show(SearchHost(state: state))
         try await Task.sleep(nanoseconds: 100_000_000)
         state.searchText = "team.simplex"
         try await waitFor { state.filtered == ["@2", "#1"] }
         XCTAssertEqual(Set(ChatModel.shared.chats.map(\.id)), ["@2", "#1"])
+        XCTAssertNotNil(accessibilityElement("Connect to team.simplex"))
+    }
+
+    @MainActor
+    func testConnectByNameRowShowsLocalChats() async throws {
+        try recorded("names/plan-known")
+        let state = NameRowState()
+        try show(NameRowHost(state: state) { [unowned self] chats in self.shownLocalChats += chats.map(\.id) })
+        try await tap("Connect to @alice.simplex")
+        try await assertTexts(["alice", "@alice.simplex", "Open chat", "Cancel"])
+        XCTAssertEqual(shownLocalChats, ["@2"])
+        XCTAssertEqual(state.searchText, "alice")
+        XCTAssertEqual(state.candidate, "@alice.simplex")
+        try await press("Open chat")
+        try await assertRequested { $0.hasPrefix("/_get chat @2 ") }
+        XCTAssertEqual(state.searchText, "")
+        XCTAssertNil(state.candidate)
+    }
+
+    @MainActor
+    func testVerifiedNameIsCopied() async throws {
+        UIPasteboard.general.string = ""
+        try show(simplexName(.verified))
+        try await tap("@alice.simplex")
+        try await waitFor { UIPasteboard.general.string == "@alice.simplex" }
+        XCTAssertEqual(verifications, 0)
+    }
+
+    @MainActor
+    func testFailedNameIsVerifiedAgain() async throws {
+        try show(simplexName(.failed))
+        try await tap("@alice.simplex")
+        try await waitFor { self.verifications == 1 }
+    }
+
+    @MainActor
+    func testMovedNameIsVerifiedAgain() async throws {
+        try show(simplexName(.moved))
+        try await tap("@alice.simplex")
+        try await waitFor { self.verifications == 1 }
     }
 
     private func recorded(_ fixture: String) throws {
@@ -288,6 +328,54 @@ final class NameAlertsTests: XCTestCase {
     @MainActor
     private func connect(_ name: String) {
         planAndConnect(name, theme: CurrentColors.toAppTheme(), dismiss: false, showLocalChats: { [unowned self] chats in self.shownLocalChats += chats.map(\.id) }, onOpen: { [unowned self] in self.opened += 1 })
+    }
+
+    @MainActor
+    private func simplexName(_ verified: DomainVerification?) -> some View {
+        SimplexNameView(simplexName: "@alice.simplex", verified: verified) { [unowned self] in
+            await MainActor.run { self.verifications += 1 }
+            return nil
+        }
+        .environmentObject(CurrentColors.toAppTheme())
+    }
+
+    @MainActor
+    private func show<Content: View>(_ view: Content) throws {
+        try enableAccessibilityAutomation()
+        let window = UIWindow(windowScene: try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first))
+        window.rootViewController = UIHostingController(rootView: view)
+        window.isHidden = false
+        windows.append(window)
+    }
+
+    private func enableAccessibilityAutomation() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let root = try XCTUnwrap(environment["SIMULATOR_ROOT"] ?? environment["IPHONE_SIMULATOR_ROOT"])
+        let library = try XCTUnwrap(dlopen(root + "/usr/lib/libAccessibility.dylib", RTLD_NOW))
+        let setAutomationEnabled = try XCTUnwrap(dlsym(library, "_AXSSetAutomationEnabled"))
+        unsafeBitCast(setAutomationEnabled, to: (@convention(c) (Int32) -> Void).self)(1)
+    }
+
+    @MainActor
+    private func tap(_ label: String, file: StaticString = #filePath, line: UInt = #line) async throws {
+        try? await waitFor { self.accessibilityElement(label) != nil }
+        let element = try XCTUnwrap(accessibilityElement(label), "\(accessibilityNodes().compactMap(\.accessibilityLabel))", file: file, line: line)
+        XCTAssertTrue(element.accessibilityActivate(), file: file, line: line)
+    }
+
+    private func accessibilityElement(_ label: String) -> NSObject? {
+        accessibilityNodes().first { $0.isAccessibilityElement && $0.accessibilityLabel?.contains(label) == true }
+    }
+
+    private func accessibilityNodes() -> [NSObject] {
+        windows.flatMap { accessibilityNodes($0) }
+    }
+
+    private func accessibilityNodes(_ node: NSObject) -> [NSObject] {
+        let count = node.accessibilityElementCount()
+        let elements = (node.accessibilityElements as? [NSObject]) ?? (count == NSNotFound ? [] : (0..<count).compactMap { node.accessibilityElement(at: $0) as? NSObject })
+        let subviews: [NSObject] = (node as? UIView)?.subviews ?? []
+        return [node] + (elements + subviews).flatMap { accessibilityNodes($0) }
     }
 
     @MainActor
@@ -390,6 +478,29 @@ private struct SearchHost: View {
         )
         .environmentObject(ChatModel.shared)
         .environmentObject(ChatTagsModel.shared)
+        .environmentObject(CurrentColors.toAppTheme())
+    }
+}
+
+private final class NameRowState: ObservableObject {
+    @Published var searchText = "alice"
+    @Published var candidate: String? = "@alice.simplex"
+}
+
+private struct NameRowHost: View {
+    @ObservedObject var state: NameRowState
+    var showLocalChats: ([ChatInfo]) -> Void
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        ConnectByNameRow(
+            name: "@alice.simplex",
+            searchText: $state.searchText,
+            connectNameCandidate: $state.candidate,
+            searchFocussed: $focused,
+            dismiss: false,
+            showLocalChats: showLocalChats
+        )
         .environmentObject(CurrentColors.toAppTheme())
     }
 }
