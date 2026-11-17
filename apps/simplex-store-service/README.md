@@ -231,8 +231,8 @@ hours and the invoice expiry minutes, and a webhook can name an older one; past 
 such crypto. Crypto sent to a badge invoice after it was paid is reported by nothing.
 
 BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
-The invoice view reports `paidInFull` on such an invoice only once BTCPay reads it `PaidLate` or
-`PaidOver`: BTCPay's paid amount counts unconfirmed payments too, so a due of 0 or less is not
+The invoice view reports `paidInFull` on such an on-chain invoice only once BTCPay reads it `PaidLate`
+or `PaidOver`: BTCPay's paid amount counts unconfirmed payments too, so a due of 0 or less is not
 enough. It reports an overpaid invoice's `cryptoAmountDue` as `0`, never below.
 
 **Set the Monero plugin's settled-confirmation threshold (`InvoiceSettledConfirmationThreshold`) to
@@ -251,8 +251,9 @@ Lightning payment only once the node reports it settled, so the service credits 
 invoice whose due is 0 or less reads as paid in full. BTCPay gives the method's amounts in whole
 satoshi; the logs count Lightning in millisatoshi. The BOLT11 invoice expires with the order. A
 cancel does not stop it: BTCPay 2.4.4 marks the invoice `Invalid` but leaves the BOLT11 payable at
-the node until it expires. While BTCPay keeps running, it records a payment to that BOLT11, and the
-service credits it as late money. After a restart BTCPay watches only open invoices, so such a
+the node until it expires. While BTCPay keeps running, it records a payment to that BOLT11: the
+service credits it to a name order's balance as late money, and for a badge order it logs the error
+that asks for a refund. After a restart BTCPay watches only open invoices, so such a
 payment is recorded by the node alone; support finds it among the node's settled invoices by the
 BOLT11. The node needs inbound channel capacity of at least the largest order: without it the
 buyer's wallet finds no route and the payment fails there.

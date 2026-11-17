@@ -37,7 +37,7 @@
           "properties": {"provider": {"enum": ["stripe"]}}
         },
         "crypto": {
-          "properties": {"currency": {"enum": ["btc", "xmr"]}}
+          "properties": {"currency": {"enum": ["btc", "ln", "xmr"]}}
         }
       }
     },
@@ -52,7 +52,7 @@
         },
         "crypto": {
           "properties": {
-            "currency": {"enum": ["btc", "xmr"]},
+            "currency": {"enum": ["btc", "ln", "xmr"]},
             "address": {"type": "string"},
             "cryptoAmount": {"type": "string"}
           }
