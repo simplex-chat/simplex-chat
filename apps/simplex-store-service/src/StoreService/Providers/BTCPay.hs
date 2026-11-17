@@ -453,16 +453,15 @@ invoiceSignal now ref status additional policy ms = do
       received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmAmount gpmDue gpmPayments
       -- BTCPay never settles an invoice it has closed, so only its additional status tells that the whole amount reached it.
       -- Its paid amount counts unconfirmed on-chain payments too, so on chain a due at 0 or less does not.
-      closedFunded
-        | maybe False (`elem` closedInFullStatuses) additional = PaidInFull
-        | cc == CCLn && maybe False ((<= 0) . wnValue) gpmDue = PaidInFull
-        | otherwise = PaidInPart
+      lnPaidInFull = cc == CCLn && maybe False ((<= 0) . wnValue) gpmDue
+      fundedIf inFull = if inFull then PaidInFull else PaidInPart
+      closedFunded = fundedIf (maybe False (`elem` closedInFullStatuses) additional || lnPaidInFull)
   case status of
     "Settled" -> Right (Just (SigSettled received (fromMaybe now (latestSettledAt m))))
     "Processing" -> Right (Just (SigFunded received PaidInFull))
     "Expired" -> Right (Just (SigClosed received closedFunded))
     "Invalid" -> Right (Just (SigClosed received closedFunded))
-    "New" -> Right (SigFunded received PaidInPart <$ rcvCrypto received)
+    "New" -> Right (SigFunded received (fundedIf lnPaidInFull) <$ rcvCrypto received)
     other -> Left (ProviderError ("btcpay invoice " <> ref <> ": unknown status " <> other))
   where
     priced field =

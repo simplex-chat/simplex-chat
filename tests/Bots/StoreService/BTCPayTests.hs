@@ -63,6 +63,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "closes on Expired and on Invalid" testClosed
     it "reports a closed invoice paid in full only on PaidLate or PaidOver, whatever its due" testClosedPaidInFull
     it "reports a closed Lightning invoice paid in full once its due is at 0 or less, its payments settled when recorded" testLnClosedPaidInFull
+    it "reports a Lightning invoice still New but paid in full as paid in full, never as part paid" testLnNewPaidInFull
     it "reads an overpaid invoice's negative due as 0" testOverpaidDueIsZero
     it "funds on New with something received" testNewWithPayment
     it "funds on New with a payment worth less than a minor unit" testNewWithDust
@@ -245,10 +246,16 @@ testLnUnsettledConfirmsNothing =
   signalUnder (Just "HighSpeed") "Processing" [lnPaid "0.00050000" "0.00000000" [paymentOf "Processing" "0.00050000000"]]
     `shouldBe` Right (Just (SigFunded lnReceived {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}} PaidInFull))
 
+testLnNewPaidInFull :: IO ()
+testLnNewPaidInFull = do
+  signalOf "New" [lnPaid "0.00050000" "0.00000000" [paymentOf "Settled" "0.00050000000"]]
+    `shouldBe` Right (Just (SigFunded lnReceived PaidInFull))
+  signalOf "New" [lnPaid "0.00000000" "0.00050000" []] `shouldBe` Right Nothing
+
 testLnClosedPaidInFull :: IO ()
 testLnClosedPaidInFull =
   forM_ ["Invalid", "Expired"] $ \status -> do
-    let closedWith paid due = signalWith "Marked" status [lnPaid paid due [paymentOf "Settled" (paid <> "000") | paid /= "0.00000000"]]
+    let closedWith paid due = signalWith "Marked" status [lnPaid paid due [paymentOf "Settled" (paid <> "000")]]
         fundedOf = \case
           Just (SigClosed _ f) -> Just f
           _ -> Nothing
