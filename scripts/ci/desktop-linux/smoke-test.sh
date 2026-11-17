@@ -496,7 +496,7 @@ check_ui_updates() {
   local code
   code=$(sed -n 's/^desktop.version_code=//p' "$gradle_properties")
   "$ui" stop
-  sed -i 's/^AppUpdateChannel=.*/AppUpdateChannel=DISABLED/' "$settings"
+  sed -i -e 's/^AppUpdateChannel=.*/AppUpdateChannel=DISABLED/' -e 's/^OneHandUI=.*/OneHandUI=true/' "$settings"
   stage_ui_update $((code + 1))
   start_app
   check "the UI update of build $((code + 1)) runs after a restart" app_build $((code + 1))

@@ -146,7 +146,7 @@ class AppUpdaterTest {
     assertEquals(setOf("ui.json", "ui.json.sig", "ui-1.jar"), dir.list()!!.toSet())
     assertEquals(UiUpdateState.STAGED, uiUpdateState(dir))
     assertFalse(root.resolve("staging").exists())
-    assertFalse(root.parentFile.resolve("ui-2.jar").exists())
+    assertFalse(root.resolve("ui-2.jar").exists())
 
     val other = Files.createTempDirectory("ui-updates").toFile()
     assertFalse(stageUiUpdate(bundleZip(other, bundle(176, key = otherKeys.private)), other, keys.public, base, 175))
