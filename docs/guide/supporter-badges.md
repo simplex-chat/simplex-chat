@@ -50,7 +50,7 @@ the ways to get a badge on your platform.
 
 Tap **Choose your badge** (iOS) or **Buy in browser** to open the badge page,
 badges.simplex.chat. On the page, choose a **Supporter** or **Legend** badge and
-the number of months, and pay by card, Bitcoin or Monero.
+the number of months, and pay by card, Bitcoin, Lightning or Monero.
 
 - When the app is registered to open links from the page, the page shows
   **Return to SimpleX** after the payment. Tap it to open the app, which asks

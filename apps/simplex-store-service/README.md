@@ -244,14 +244,18 @@ keeps the threshold it was made with, so raising it later credits nothing alread
 
 **Lightning** is BTCPay's `BTC-LN` method: the buyer pays a BOLT11 invoice made by the store's
 Lightning node, for the whole amount or not at all. Enable it on the store with the node BTCPay
-runs; at startup the service logs an error for each of `BTC-CHAIN`, `XMR-CHAIN` and `BTC-LN` the
-store has not enabled, since BTCPay refuses every checkout on it. A settled Lightning payment is
-final, so it is credited whatever `speed_policy` says, the invoice view carries no
-`requiredConfirmations` for it, and the logs count it in millisatoshi. The BOLT11 invoice expires
-with the order, so no Lightning money arrives after the window. A cancel does not stop it: BTCPay
-2.4.4 marks the invoice `Invalid` but leaves the BOLT11 payable at the node until it expires, and
-records a payment to it as it does late on-chain money. The node needs inbound channel capacity of at
-least the largest order: without it the buyer's wallet finds no route and the payment fails there.
+runs; at startup the service logs one error naming each of `BTC-CHAIN`, `XMR-CHAIN` and `BTC-LN`
+that the store has not enabled, since BTCPay refuses every checkout on it. BTCPay records a
+Lightning payment only once the node reports it settled, so the service credits it whatever
+`speed_policy` says, the invoice view carries no `requiredConfirmations` for it, and a closed
+invoice whose due is 0 or less reads as paid in full. BTCPay gives the method's amounts in whole
+satoshi; the logs count Lightning in millisatoshi. The BOLT11 invoice expires with the order. A
+cancel does not stop it: BTCPay 2.4.4 marks the invoice `Invalid` but leaves the BOLT11 payable at
+the node until it expires. While BTCPay keeps running, it records a payment to that BOLT11, and the
+service credits it as late money. After a restart BTCPay watches only open invoices, so such a
+payment is recorded by the node alone; support finds it among the node's settled invoices by the
+BOLT11. The node needs inbound channel capacity of at least the largest order: without it the
+buyer's wallet finds no route and the payment fails there.
 
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
@@ -1686,7 +1690,7 @@ group](#balances-and-failed-orders-in-the-group)):
 
    `Paid by` starts at this order and follows every balance the money came through back to the
    first order: each order with its owner, the address that signed it, what its invoice paid and by
-   which method (`card`, `btc` or `xmr`), the part paid from the balance of the next order listed,
+   which method (`card`, `btc`, `ln` or `xmr`), the part paid from the balance of the next order listed,
    and money credited from its invoice later: marked `late` when it arrived after the invoice
    closed, and `overpaid` when it is the extra of an invoice that paid the order. The provider
    reference is the BTCPay invoice id or the Stripe PaymentIntent id, which finds the payment in the
