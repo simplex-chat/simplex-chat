@@ -423,10 +423,9 @@ final class BadgeStore: ObservableObject {
         let receipt = storeReceipt(verification)
         let t = receipt.transaction
         if t.productType == .autoRenewable { await MainActor.run { _ = priorSubscriptions?.insert(String(t.originalID)) } }
+        guard badgeProductIds.contains(receipt.productId) else { return }
         if t.productType == .autoRenewable && t.revocationDate != nil {
             // the service refuses a revoked charge as invalid, and that would refuse the whole subscription's record
-            await t.finish()
-        } else if !badgeProductIds.contains(receipt.productId) {
             await t.finish()
         } else if receipt.signatureVerified {
             try await handOver(receipt, origin: origin)
