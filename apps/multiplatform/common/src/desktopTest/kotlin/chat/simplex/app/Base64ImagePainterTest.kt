@@ -351,6 +351,25 @@ class Base64ImagePainterTest {
   }
 
   @Test
+  fun testChatListChatLinkPictureIsShownOnceDecoded() {
+    val picture = base64Png(325, 175)
+    val card = MsgContent.MCChat("", MsgChatLink.Contact("https://simplex.chat/contact", Profile.sampleData.copy(image = picture), business = false))
+    val chat = Chat.sampleData.copy(chatItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectRcv(), text = card.text).copy(content = CIContent.RcvMsgContent(card))))
+    whileDecoderIsBusy { release ->
+      scene(ROW_WIDTH, 150) {
+        SimpleXTheme {
+          ChatPreviewView(chat, true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+        }
+      }.use { scene ->
+        assertFalse(scene.render().hasRedIn(0 until 150))
+        release()
+        awaitDecodedPictures()
+        assertTrue(scene.renderUntil { it.hasRedIn(0 until 150) })
+      }
+    }
+  }
+
+  @Test
   fun testProfilePictureIsShownOnceDecoded() {
     val picture = base64Png(323, 177)
     whileDecoderIsBusy { release ->
