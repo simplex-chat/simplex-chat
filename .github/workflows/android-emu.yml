@@ -312,7 +312,9 @@ jobs:
       - name: Reach the test backend
         id: reach
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome == 'success' }}
-        run: scripts/ci/android/emulator.sh reverse 5223
+        run: |
+          scripts/ci/android/emulator.sh reverse 5223
+          scripts/ci/android/emulator.sh reverse 5224
 
       - name: Run smoke test
         id: smoke
@@ -436,7 +438,9 @@ jobs:
 
       - name: Reach the test backend
         if: steps.backend.outcome == 'success'
-        run: scripts/ci/android/emulator.sh reverse 5223
+        run: |
+          scripts/ci/android/emulator.sh reverse 5223
+          scripts/ci/android/emulator.sh reverse 5224
 
       # ui goes on every shell's PATH, where Claude's Bash tool finds it whatever environment it builds
       - name: Install Claude Code and the ui command
