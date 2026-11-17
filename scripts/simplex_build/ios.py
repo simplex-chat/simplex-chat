@@ -357,7 +357,7 @@ def build_ios_archive(source: Path, art: Path | None, out: Path, install: bool, 
 
         if art is not None:
             # The brand assets, as release-mobile.py adds them: Release.xcconfig includes Local.xcconfig, which turns on
-            # SIMPLEX_ASSETS. copy-assets.sh runs first, as its build phase runs after the extensions' catalogs are built.
+            # SIMPLEX_ASSETS.
             assets = work / IOS_ART_COPY
             shutil.copytree(art, assets, symlinks=True)
             (root.source / "apps/ios/Local.xcconfig").write_text(IOS_LOCAL_XCCONFIG.format(art=assets))
