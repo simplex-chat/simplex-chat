@@ -618,7 +618,9 @@ handleServiceRequest key verifier checks cc trackerQ_ User {userId} reqId req_ =
 responseObject :: StoreServiceResponse -> IO J.Object
 responseObject r = case J.toJSON r of
   J.Object o -> pure o
-  _ -> E.throwIO $ BrokenInvariant "a store service response is encoded as JSON other than an object"
+  _ -> logError broken >> E.throwIO (BrokenInvariant broken)
+  where
+    broken = "a store service response is encoded as JSON other than an object"
 
 errorResponse :: StoreServiceErrorCode -> StoreServiceResponse
 errorResponse code = STPError {code, message = Nothing, retryAfter = badgeErrorRetryAfter code}
