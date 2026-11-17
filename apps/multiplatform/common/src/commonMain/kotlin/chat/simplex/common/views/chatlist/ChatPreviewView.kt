@@ -494,7 +494,7 @@ fun ChatPreviewView(
                     )
                   }
                 } else {
-                  val onlySilent = n == chat.chatStats.unreadSilent && !chat.chatStats.unreadChat
+                  val onlySilent = chat.chatStats.allUnreadSilent && !chat.chatStats.unreadChat
                   UnreadBadge(
                     text = if (n > 0) unreadCountStr(n) else "",
                     backgroundColor = if (disabled || showNtfsIcon || onlySilent) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant,

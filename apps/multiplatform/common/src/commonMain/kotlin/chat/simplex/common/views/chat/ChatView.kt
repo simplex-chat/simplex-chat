@@ -2701,8 +2701,7 @@ fun BoxScope.FloatingButtons(
   val requestedTopScroll = remember { mutableStateOf(false) }
   val requestedBottomScroll = remember { mutableStateOf(false) }
   val onlySilentUnread = remember { derivedStateOf {
-    val stats = chatsCtx.chats.value.firstOrNull { it.chatInfo.id == chatInfo.value.id }?.chatStats
-    stats != null && stats.unreadCount > 0 && stats.unreadCount == stats.unreadSilent
+    chatsCtx.chats.value.firstOrNull { it.chatInfo.id == chatInfo.value.id }?.chatStats?.allUnreadSilent == true
   } }
 
   BottomEndFloatingButton(

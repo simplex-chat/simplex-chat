@@ -2584,6 +2584,8 @@ public struct ChatStats: Decodable, Hashable {
     public var minUnreadItemId: Int64 = 0
     // actual only via getChats(), otherwise, false
     public var unreadChat: Bool = false
+
+    public var allUnreadSilent: Bool { unreadCount > 0 && unreadCount == unreadSilent }
 }
 
 public enum GroupChatScope: Decodable {

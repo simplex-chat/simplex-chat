@@ -1609,7 +1609,9 @@ data class Chat(
     val minUnreadItemId: Long = 0,
     // actual only via getChats(), otherwise, false
     val unreadChat: Boolean = false
-  )
+  ) {
+    val allUnreadSilent: Boolean get() = unreadCount > 0 && unreadCount == unreadSilent
+  }
 
   companion object {
     val sampleData = Chat(

@@ -1356,7 +1356,7 @@ struct ChatView: View {
         }
 
         private var onlySilentUnread: Bool {
-            chat.chatStats.unreadCount > 0 && chat.chatStats.unreadCount == chat.chatStats.unreadSilent
+            chat.chatStats.allUnreadSilent
         }
 
         private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {

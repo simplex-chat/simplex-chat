@@ -239,7 +239,7 @@ struct ChatPreviewView: View {
                         .padding(.bottom, 1)
                 }
                 let singleUnreadIsMention = s.unreadMentions > 0 && s.unreadCount == 1
-                let onlySilent = !singleUnreadIsMention && s.unreadCount == s.unreadSilent && !s.unreadChat
+                let onlySilent = !singleUnreadIsMention && s.allUnreadSilent && !s.unreadChat
                 (singleUnreadIsMention ? attentionSign : unreadCountText(s.unreadCount))
                     .font(userFont <= .xxxLarge ? .caption : .caption2)
                     .foregroundColor(onlySilent ? theme.colors.secondary : .white)
