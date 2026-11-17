@@ -359,7 +359,7 @@ designTest("type: `Legend, 12 months` is one title, on the history list's rows a
     createdAt: "2026-08-28T11:46:00Z", status: "open" as const,
   };
   const paidNoCode = render(screens.paidNoCode({ order, settledAt: undefined }));
-  const history = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true,
+  const history = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, browserDeletesIdle: false,
     rows: [{ kind: "open" as const, order }], onOpen: () => {}, onStart: () => {},
   }));
   assert.equal(paidNoCode.all("div.name")[0]!.textContent, "Legend, 12 months");
@@ -665,7 +665,7 @@ designTest("design: no screen repeats the mark — the header carries it, and th
     assert.equal(render(node).all("svg.logo").length, 0, `${name} must not draw a second mark`);
     assert.equal(render(node).all("a.brand").length, 0, `${name} must not draw a second wordmark`);
   }
-  const codeIssued = render(screens.codeIssued({ code: "SB-YDC8A-YGQTM-PUYZ9-2TUXP", savedLocally: true }));
+  const codeIssued = render(screens.codeIssued({ code: "SB-YDC8A-YGQTM-PUYZ9-2TUXP", savedLocally: true, browserDeletesIdle: false }));
   assert.equal(codeIssued.all("div.tick").length, 1, "the code screen opens on the settled tick");
 });
 

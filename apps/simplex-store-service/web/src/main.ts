@@ -9,6 +9,7 @@ import { appCodeLink, readHash, resolveLoad } from "./routing.js";
 import * as screens from "./screens.js";
 import { appearanceFor, cardPlan, loadStripeJs, mountCard, type CardFailure, type ConfirmOutcome } from "./stripe.js";
 import { Store, type StorageLike } from "./store.js";
+import { browserDeletesIdle } from "./browser.js";
 import { STEPS } from "./domain.js";
 import type { App, Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
 import { EMBED_READY, HEIGHT_MESSAGE, NAV_MESSAGE, THEME_MESSAGE, bgFromMessage, isNewPurchaseMessage, returnUrlFromMessage, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
@@ -717,12 +718,13 @@ type CodeView = Extract<PaymentView, { screen: "codeIssued" }>;
 
 const codeRevealed = new Set<string>();
 const appLaunched = new Set<string>();
+const deletesIdle = browserDeletesIdle(navigator.userAgent);
 
 function codeScreen(view: CodeView): HTMLElement {
   const { orderId } = view.order;
   // An unsaved code exists only on this screen, so it is never held back behind a link that may fail.
   if (view.order.app !== "mobile" || !view.savedLocally) {
-    return screens.codeIssued({ code: view.code, savedLocally: view.savedLocally, app: view.order.app });
+    return screens.codeIssued({ code: view.code, savedLocally: view.savedLocally, browserDeletesIdle: deletesIdle, app: view.order.app });
   }
   const link = appCodeLink(view.code);
   const ending = screens.returnToApp({
@@ -730,6 +732,7 @@ function codeScreen(view: CodeView): HTMLElement {
     code: codeRevealed.has(orderId)
       ? { kind: "shown", code: view.code, savedLocally: view.savedLocally }
       : { kind: "hidden", onShow: () => { codeRevealed.add(orderId); paint(view); } },
+    browserDeletesIdle: deletesIdle,
   });
   // A connectivity event repaints this screen, and each repaint must not fire the scheme again.
   if (!appLaunched.has(orderId)) {
@@ -892,6 +895,7 @@ function renderCodes(entries: readonly OrderRecord[]): void {
   root.replaceChildren(screens.purchaseHistory({
     rows: historyRows(entries),
     keepsNewCodes: store.durable,
+    browserDeletesIdle: deletesIdle,
     onOpen: goToOrder,
     onStart: startPurchase,
     onForget: () => {

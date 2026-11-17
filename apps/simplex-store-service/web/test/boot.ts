@@ -40,10 +40,11 @@ export interface Page {
 export interface BootOptions {
   storage?: MemStorage;
   url?: string;
+  userAgent?: string;
 }
 
 export function installPage(opts: BootOptions = {}): Page {
-  const { app, chrome, documentElement, clipboard, document, workers, connectivity } = installDocument();
+  const { app, chrome, documentElement, clipboard, document, workers, connectivity } = installDocument(opts.userAgent);
   const storage = opts.storage ?? new MemStorage();
   const fetches: Array<{ url: string; init?: RequestInit }> = [];
   const siteConfig: Page["siteConfig"] = { stripePublishableKey: null };

@@ -169,11 +169,12 @@ export interface Connectivity {
   online: boolean;
 }
 
-export function installDocument(): {
+export function installDocument(userAgent = ""): {
   app: StubElement; chrome: StubElement; documentElement: StubElement;
   clipboard: Clipboard; document: StubDocument;
   workers: ServiceWorkers; connectivity: Connectivity;
 } {
+  const browser = { userAgent };
   const app = new StubElement("main");
   app.setAttribute("id", "app");
   const chrome = new StubElement("div");
@@ -231,6 +232,7 @@ export function installDocument(): {
     value: {
       get clipboard() { return clipboard.absent ? undefined : api; },
       get onLine() { return connectivity.online; },
+      get userAgent() { return browser.userAgent; },
       serviceWorker,
     },
   });
