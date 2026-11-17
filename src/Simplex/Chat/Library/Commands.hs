@@ -35,7 +35,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, isRight, partitionEithers, rights)
+import Data.Either (fromRight, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity (Identity (..), runIdentity)
@@ -2174,10 +2174,9 @@ processChatCommand cxt nm = \case
           pId <- createIncognitoProfile db user incognitoProfile
           updatePCCIncognito db user c (Just pId) sLnk_
         void (updatePCCShortLinkData conn $ userProfileDirect user (Just incognitoProfile) Nothing True) `catchAllErrors` \e -> do
-          reverted <- tryAllErrors . updateIfUnchanged user pId_ $ \db c -> do
-            forM_ pId_ $ deletePCCIncognitoProfile db user
-            updatePCCIncognito db user c Nothing sLnk_
-          when (isRight reverted) $ throwError e
+          tryAllErrors (updateIfUnchanged user pId_ $ \db c -> forM_ pId_ (deletePCCIncognitoProfile db user) >> updatePCCIncognito db user c Nothing sLnk_) >>= \case
+            Left (ChatError CEConnectionIncognitoChangeProhibited) -> pure ()
+            _ -> throwError e
         pure $ CRConnectionIncognitoUpdated user conn' (Just incognitoProfile)
       (ConnNew, Just pId, False) -> do
         sLnk <- updatePCCShortLinkData conn =<< presentUserBadge user Nothing (linkPresHeader <$> sLnk_) (userProfileDirect user Nothing Nothing True)
@@ -2353,50 +2352,51 @@ processChatCommand cxt nm = \case
         sLnk <- case connShortLink' connLinkToConnect of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
-        (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays}), mainCReq@(CRContactUri crData e2e)) <- getShortLinkConnReq nm user sLnk
-        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-        -- Validate link entity ID matches group profile's publicGroupId (relay groups must have both)
-        case groupSLinkData_ of
-          Just sLinkData@GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
-            | (B64UrlByteString <$> linkEntityId) == Just publicGroupId -> void $ updateGroupFromLinkData user gInfo sLinkData Nothing
-          _ -> throwChatError CEInvalidConnReq
-        let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
-            publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
-        -- Prepare group record once before connecting to relays (updatePreparedRelayedGroup):
-        -- set group link info and incognito profile, generate and store membership keys
-        incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
-        let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
-        g'@(GIK gInfo' _) <- withFastStore $ \db -> do
-          g'@(GIK gInfo' _) <- updatePreparedRelayedGroup db cxt user gInfo mainCReq cReqHash incognitoProfile rootKey publicMemberCount_
-          -- Pre-emptively create owner members with trusted keys from link data
-          forM_ owners $ \OwnerAuth {ownerId, ownerKey} -> do
-            let ctId_ = case ownerContact of
-                  Just GroupOwnerContact {contactId, memberId}
-                    | memberId == MemberId ownerId -> Just contactId
-                  _ -> Nothing
-            void $ createLinkOwnerMember db cxt user gInfo' ctId_ (MemberId ownerId) ownerKey
-          pure g'
-        rs <- mapConcurrently (connectToRelay user g') relays
-        let relayFailed = \case (_, _, Left _) -> True; _ -> False
-            (failed, succeeded) = partition relayFailed rs
-        if null succeeded
-          then do
-            -- Updated group info (connLinkPreparedConnection) - in UI it would lock ability to change
-            -- user or incognito profile for group, in case server received request while client got network error
-            toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
-            -- Prefer throwing temporary network connection error to enable retry
-            case find isTempErr failed <|> listToMaybe failed of
-              Just (_, _, Left e) -> throwError e
-              _ -> throwChatError $ CEException "no relay connection results" -- shouldn't happen
-          else do
-            gInfo'' <- withFastStore $ \db -> do
-              liftIO $ setPreparedGroupStartedConnection db groupId
-              getGroupInfo db cxt user groupId
-            -- Async retry failed relays with temporary errors
-            let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
-            void $ withGroupLock "retryRelayConnections" groupId $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
-            let relayResults = [RelayConnectionResult m (leftToMaybe r) | (_, m, r) <- rs]
-            pure $ CRStartedConnectionToGroup user gInfo'' incognitoProfile relayResults
+        withInvitationLock "connectPreparedGroup" (strEncode sLnk) $ do
+          (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays}), mainCReq@(CRContactUri crData e2e)) <- getShortLinkConnReq nm user sLnk
+          groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+          -- Validate link entity ID matches group profile's publicGroupId (relay groups must have both)
+          case groupSLinkData_ of
+            Just sLinkData@GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
+              | (B64UrlByteString <$> linkEntityId) == Just publicGroupId -> void $ updateGroupFromLinkData user gInfo sLinkData Nothing
+            _ -> throwChatError CEInvalidConnReq
+          let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
+              publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
+          -- Prepare group record once before connecting to relays (updatePreparedRelayedGroup):
+          -- set group link info and incognito profile, generate and store membership keys
+          incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
+          let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
+          g'@(GIK gInfo' _) <- withFastStore $ \db -> do
+            g'@(GIK gInfo' _) <- updatePreparedRelayedGroup db cxt user gInfo mainCReq cReqHash incognitoProfile rootKey publicMemberCount_
+            -- Pre-emptively create owner members with trusted keys from link data
+            forM_ owners $ \OwnerAuth {ownerId, ownerKey} -> do
+              let ctId_ = case ownerContact of
+                    Just GroupOwnerContact {contactId, memberId}
+                      | memberId == MemberId ownerId -> Just contactId
+                    _ -> Nothing
+              void $ createLinkOwnerMember db cxt user gInfo' ctId_ (MemberId ownerId) ownerKey
+            pure g'
+          rs <- mapConcurrently (connectToRelay user g') relays
+          let relayFailed = \case (_, _, Left _) -> True; _ -> False
+              (failed, succeeded) = partition relayFailed rs
+          if null succeeded
+            then do
+              -- Updated group info (connLinkPreparedConnection) - in UI it would lock ability to change
+              -- user or incognito profile for group, in case server received request while client got network error
+              toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
+              -- Prefer throwing temporary network connection error to enable retry
+              case find isTempErr failed <|> listToMaybe failed of
+                Just (_, _, Left e) -> throwError e
+                _ -> throwChatError $ CEException "no relay connection results" -- shouldn't happen
+            else do
+              gInfo'' <- withFastStore $ \db -> do
+                liftIO $ setPreparedGroupStartedConnection db groupId
+                getGroupInfo db cxt user groupId
+              -- Async retry failed relays with temporary errors
+              let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
+              void $ withGroupLock "retryRelayConnections" groupId $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
+              let relayResults = [RelayConnectionResult m (leftToMaybe r) | (_, m, r) <- rs]
+              pure $ CRStartedConnectionToGroup user gInfo'' incognitoProfile relayResults
         where
           leftToMaybe (Left e) = Just e
           leftToMaybe _ = Nothing
@@ -4475,12 +4475,12 @@ processChatCommand cxt nm = \case
               let chatV = initialChatVersion
               gVar <- asks random
               subMode <- chatReadVar subscriptionMode
-              (relayMember, conn, groupRelay) <- withGroupLock "addRelay" groupId $ do
+              (relayMember, conn, groupRelay@GroupRelay {groupRelayId}) <- withGroupLock "addRelay" groupId $ do
                 existingRelays <- withFastStore' $ \db -> getGroupRelays db gInfo
                 when (any (\GroupRelay {userChatRelay = UserChatRelay {chatRelayId = rId}} -> rId == chatRelayId) existingRelays) $
                   throwCmdError "relay is already in the group"
                 (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
-                withFastStore $ \db -> do
+                deleteAgentConnectionOnError connId . withFastStore $ \db -> do
                   relayMember <- createRelayForOwner db cxt gVar user gInfo relay
                   groupRelay <- createGroupRelayRecord db gInfo relayMember relay
                   conn <- createRelayConnection db cxt user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
@@ -4500,9 +4500,11 @@ processChatCommand cxt nm = \case
               dm <- encodeConnInfoSigning PQSupportOff (groupMsgSigning False g msg) msg
               sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
               let newConnStatus = if sqSecured then ConnSndReady else ConnJoined
-              withGroupLock "addRelay" groupId $ withFastStore' $ \db -> do
-                void $ updateConnectionStatusFromTo db conn ConnPrepared newConnStatus
-                updateRelayStatusFromTo db groupRelay RSNew RSInvited
+              withGroupLock "addRelay" groupId $ withFastStore $ \db -> do
+                liftIO $ do
+                  void $ updateConnectionStatusFromTo db conn ConnPrepared newConnStatus
+                  void $ updateRelayStatusFromTo db groupRelay RSNew RSInvited
+                getGroupRelayById db groupRelayId
     privateGetUser :: UserId -> CM User
     privateGetUser userId =
       tryAllErrors (withStore (`getUser` userId)) >>= \case
