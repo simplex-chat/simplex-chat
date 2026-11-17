@@ -201,9 +201,6 @@ checkInfoSize what event = do
     ECMEncoded _ -> pure ()
     ECMLarge -> throwCmdError $ what <> " is too large"
 
-imageExtensions :: [String]
-imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
-
 -- read a .png/.jpg/.jpeg image file and encode it as a data: URL ImageData, or return an error message
 loadImageData :: FilePath -> IO (Either String ImageData)
 loadImageData path = case map toLower (takeExtension path) of

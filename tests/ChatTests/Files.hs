@@ -271,16 +271,16 @@ testFilesFoldersImageSndDelete =
       alice ##> "/_send @2 json [{\"filePath\": \"test_1MB.pdf\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f @bob test_1MB.pdf"
       alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> sends file test_1MB.pdf (1017.7 KiB / 1042157 bytes)"
+      bob <# "alice> sends file test_1MB.pdf.jpg (1017.7 KiB / 1042157 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       alice <## "completed uploading file 1 (test_1MB.pdf) for bob"
 
       bob ##> "/fr 1"
       bob
-        <### [ "saving file 1 from alice to test_1MB.pdf",
-               "started receiving file 1 (test_1MB.pdf) from alice"
+        <### [ "saving file 1 from alice to test_1MB.pdf.jpg",
+               "started receiving file 1 (test_1MB.pdf.jpg) from alice"
              ]
-      bob <## "completed receiving file 1 (test_1MB.pdf) from alice"
+      bob <## "completed receiving file 1 (test_1MB.pdf.jpg) from alice"
 
       -- deleting contact should remove file
       checkActionDeletesFile (aliceFiles </> "test_1MB.pdf") $ do
@@ -288,8 +288,8 @@ testFilesFoldersImageSndDelete =
         alice <## "bob: contact is deleted"
         bob <## "alice (Alice) deleted contact with you"
         bob ##> "/fs 1"
-        bob <##. "receiving file 1 (test_1MB.pdf) complete"
-      checkActionDeletesFile (bobFiles </> "test_1MB.pdf") $ do
+        bob <##. "receiving file 1 (test_1MB.pdf.jpg) complete"
+      checkActionDeletesFile (bobFiles </> "test_1MB.pdf.jpg") $ do
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
 
