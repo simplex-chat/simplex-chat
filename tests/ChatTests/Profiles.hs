@@ -112,6 +112,7 @@ chatProfileTests = do
     it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
+    it "reject contact with notification while the sender's server is down" testRejectContactNotifyServerDown
     it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
     it "auto-reply message" testAutoReplyMessage
@@ -1849,6 +1850,22 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
 
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+
+testRejectContactNotifyServerDown :: HasCallStack => TestParams -> IO ()
+testRejectContactNotifyServerDown ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps bobOpts "bob" bobProfile $ \bob -> do
+      withSmpServer' serverCfg' $ do
+        alice ##> "/ad pq_ratchet=on"
+        (sLink, _) <- getContactLinks alice True
+        bob ##> ("/c " <> sLink)
+        alice <#? bob
+      bob <## "disconnected 1 connections on server localhost"
+      alice ##> "/rc bob notify"
+      alice <## "bob: contact request rejected"
+  where
+    serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
+    bobOpts = testOpts {coreOptions = testCoreOpts {smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]}}
 
 testKeepConnectionRequests :: HasCallStack => TestParams -> IO ()
 testKeepConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $

@@ -816,8 +816,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     -- GSMemLeft (not GSMemRejected): owner UI treats this identically to an explicit /leave from the relay; GSMemRejected has knocking-admission semantics.
                     (relay', m') <- withStore $ \db -> do
                       relay <- getGroupRelayByGMId db (groupMemberId' m)
-                      relay' <- if relayStatus relay == RSInvited
-                        then liftIO $ updateRelayStatusFromTo db relay RSInvited RSRejected
+                      relay' <- if relayStatus relay `elem` ([RSNew, RSInvited] :: [RelayStatus])
+                        then liftIO $ updateRelayStatusFromTo db relay (relayStatus relay) RSRejected
                         else pure relay
                       liftIO $ updateGroupMemberStatus db userId m GSMemLeft
                       pure (relay', m {memberStatus = GSMemLeft})

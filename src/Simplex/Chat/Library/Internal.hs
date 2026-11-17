@@ -987,7 +987,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
 -- - xContactId is set on the contact at the first acceptance attempt, not after accept success, which prevents profile updates after such attempt.
 --   It may be reasonable to set it when contact is first prepared, but then we can't use it to ignore requests after acceptance,
 --   and it may lead to race conditions with XInfo events.
-acceptContactRequest :: NetworkRequestMode -> User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, SndQueueSecured)
+acceptContactRequest :: NetworkRequestMode -> User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, CM SndQueueSecured)
 acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId_, xContactId, pqSupport} incognito = do
   subMode <- chatReadVar subscriptionMode
   let pqSup = PQSupportOn
@@ -1017,7 +1017,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile, connPresHeader conn)
   profileToSend <- presentUserBadgeWith user incognitoProfile getPresHeader $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend Nothing
-  (ct,conn,) <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
+  pure (ct, conn, withAgent $ \a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> Maybe IncognitoProfile -> CM Contact
 acceptContactRequestAsync

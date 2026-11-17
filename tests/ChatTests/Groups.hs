@@ -16,10 +16,11 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent.Async (concurrently_, withAsync)
 import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
-import Control.Monad (forM_, void, when)
+import Control.Exception (bracket)
+import Control.Monad (forM_, forever, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
 import Data.Bifunctor (second)
@@ -31,6 +32,7 @@ import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
+import qualified Network.Socket as N
 import Simplex.Chat.Badges (FileSizeLimits (..))
 import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, storeCxt, withAgent)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
@@ -144,6 +146,7 @@ chatGroupTests = do
     it "existing contact merged" testGroupLinkExistingContactMerged
     it "ignore relay join request in group without relays" testGroupLinkIgnoreRelayJoinRequest
     it "group link connection is locked with its group" testGroupLinkLockedWithGroup
+    it "group messages are received while a group link is created" testGroupLinkCreationReceivesMessages
   describe "group links - member screening" $ do
     it "reject member - blocked name" testGLinkRejectBlockedName
     it "accept member - only host approval" testGLinkApproveMember
@@ -3781,6 +3784,26 @@ testGroupLinkLockedWithGroup =
     case r of
       Right (gId, CLGroup gId') -> gId' `shouldBe` gId
       _ -> expectationFailure "group link connection is not locked with its group"
+
+testGroupLinkCreationReceivesMessages :: HasCallStack => TestParams -> IO ()
+testGroupLinkCreationReceivesMessages =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    createGroup2 "team" alice bob
+    withUnresponsiveServer (smpTestPort2 alice) $ do
+      alice #$> ("/smp smp://" <> testServerKeyHash <> "@127.0.0.1:" <> smpTestPort2 alice, id, "ok")
+      alice ##> "/create link #team"
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      alice <##. "smp agent error: BROKER"
+
+withUnresponsiveServer :: N.ServiceName -> IO a -> IO a
+withUnresponsiveServer srvPort action = do
+  addrInfo : _ <- N.getAddrInfo (Just N.defaultHints {N.addrFlags = [N.AI_PASSIVE], N.addrSocketType = N.Stream}) (Just "127.0.0.1") (Just srvPort)
+  bracket (N.socket (N.addrFamily addrInfo) (N.addrSocketType addrInfo) (N.addrProtocol addrInfo)) N.close $ \listenSock -> do
+    N.setSocketOption listenSock N.ReuseAddr 1
+    N.bind listenSock $ N.addrAddress addrInfo
+    N.listen listenSock 4
+    withAsync (forever $ N.accept listenSock >>= \(peerSock, _) -> forkIO $ threadDelay 5000000 >> N.close peerSock) $ \_ -> action
 
 testGLinkRejectBlockedName :: HasCallStack => TestParams -> IO ()
 testGLinkRejectBlockedName =
