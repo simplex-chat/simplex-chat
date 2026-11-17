@@ -41,37 +41,36 @@ import Simplex.Messaging.Protocol (BrokerErrorType (TIMEOUT), ErrorType (AUTH), 
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Names.Profiles
 import StoreService.Names.Registration (LinkKind (..))
-import Test.Hspec hiding (it)
-import qualified Test.Hspec as H
+import Test.Hspec
 
 namesProfilesTests :: Spec
 namesProfilesTests = describe "StoreService names: profiles" $ do
   describe "link data" $
-    H.it "answers the link data read, unavailable for data that does not decode or a link its server refuses, and unread for a failure that may pass" testReadOutcome
+    it "answers the link data read, unavailable for data that does not decode or a link its server refuses, and unread for a failure that may pass" testReadOutcome
   describe "JSON" $ do
-    H.it "encodes a contact entity with its profile, peer type and business flag" testEntityContactJSON
-    H.it "encodes a channel entity with its group type, subscribers and a simplex:/ deep link" testEntityChannelJSON
-    H.it "encodes previews without a profile as their type and read state alone" testPreviewEmptyJSON
-    H.it "drops an image that is not a data:image URI" testImageJSON
-    H.it "gives a deep link that parses back in the core with the link's server" testDeepLinkParses
+    it "encodes a contact entity with its profile, peer type and business flag" testEntityContactJSON
+    it "encodes a channel entity with its group type, subscribers and a simplex:/ deep link" testEntityChannelJSON
+    it "encodes previews without a profile as their type and read state alone" testPreviewEmptyJSON
+    it "drops an image that is not a data:image URI" testImageJSON
+    it "gives a deep link that parses back in the core with the link's server" testDeepLinkParses
   describe "bounds and cache" $ do
-    H.it "answers a link again from the cache, in either spelling, and fetches it again once the cache expires" testCacheExpiry
-    H.it "does not cache a failed fetch" testFailureNotCached
-    H.it "evicts the entry that expires soonest when the cache is full" testCacheBound
-    H.it "gives up a fetch that takes longer than the timeout, freeing its slot" testFetchTimeout
-    H.it "fills the preview bound while search still fetches, and a preview with no slot in time is unread" testPreviewBound
-    H.it "fills the search bound while previews still fetch" testSearchBound
-    H.it "lets a fetch wait for a slot that frees within the timeout" testSlotFreesInTime
+    it "answers a link again from the cache, in either spelling, and fetches it again once the cache expires" testCacheExpiry
+    it "does not cache a failed fetch" testFailureNotCached
+    it "evicts the entry that expires soonest when the cache is full" testCacheBound
+    it "gives up a fetch that takes longer than the timeout, freeing its slot" testFetchTimeout
+    it "fills the preview bound while search still fetches, and a preview with no slot in time is unread" testPreviewBound
+    it "fills the search bound while previews still fetch" testSearchBound
+    it "lets a fetch wait for a slot that frees within the timeout" testSlotFreesInTime
   describe "host rule" $ do
-    H.it "passes public addresses and names resolving to them, and refuses private, loopback, CGNAT, link-local, unique-local, unspecified, multicast, reserved, broadcast, benchmarking and site-local ones, also IPv4-mapped, IPv4-compatible and NAT64" testHostsChecked
-    H.it "allows .onion hosts without resolving them, and names that do not resolve here" testOnionUnresolvable
-    H.it "refuses a link with one public and one private host, and a name with one private address" testMixedHosts
-    H.it "answers a refused link unavailable without fetching it" testRefusedNotFetched
+    it "passes public addresses and names resolving to them, and refuses private, loopback, CGNAT, link-local, unique-local, unspecified, multicast, reserved, broadcast, benchmarking and site-local ones, also IPv4-mapped, IPv4-compatible and NAT64" testHostsChecked
+    it "allows .onion hosts without resolving them, and names that do not resolve here" testOnionUnresolvable
+    it "refuses a link with one public and one private host, and a name with one private address" testMixedHosts
+    it "answers a refused link unavailable without fetching it" testRefusedNotFetched
   describe "host lookups" $ do
-    H.it "bounds the lookups in flight across searches and previews, and a lookup with no slot in time is unavailable" testLookupBound
-    H.it "leaves search its lookups while previews hold all of theirs" testPreviewLookupShare
-    H.it "remembers a refused host until its time passes, also when its lookup answers after the caller gave up" testRefusedHostCache
-    H.it "shares a host's running lookup among overlapping searches, holding one slot for it, and answers unread at once past its timeout" testSharedHostLookup
+    it "bounds the lookups in flight across searches and previews, and a lookup with no slot in time is unavailable" testLookupBound
+    it "leaves search its lookups while previews hold all of theirs" testPreviewLookupShare
+    it "remembers a refused host until its time passes, also when its lookup answers after the caller gave up" testRefusedHostCache
+    it "shares a host's running lookup among overlapping searches, holding one slot for it, and answers unread at once past its timeout" testSharedHostLookup
 
 namesProfilesChatTests :: SpecWith TestParams
 namesProfilesChatTests =
