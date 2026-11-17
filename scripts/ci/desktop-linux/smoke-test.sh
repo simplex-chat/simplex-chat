@@ -616,12 +616,12 @@ check_ui_reload() {
   running=$(chat_running_responses)
   stage_ui_update $next
   reload_ui first
-  check "the UI reloads from the UI update $next without a restart" app_build $next
+  check "the UI reloads from the UI update $next, with the jars of build $((code + 1)), without a restart" app_build $((code + 1))
   check "the reloaded UI finds the chat running" [ "$(chat_running_responses)" -gt "$running" ]
   check "the reloaded UI lists \"$local_chat\"" on_screen "$local_chat"
   check "the UI update $next is confirmed after the reload" ui_update_confirmed $next
   reload_ui second
-  check "the UI reloads again from the UI update $next" app_build $next
+  check "the UI reloads again from the UI update $next" app_build $((code + 1))
   check "the app logs both reloads" [ "$(ui_reloads)" -eq 2 ]
   grep "I: UI reload" "$UI_OUT/app.log"
 }
