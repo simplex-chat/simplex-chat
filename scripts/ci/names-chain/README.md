@@ -1,6 +1,6 @@
 # SimpleX names on a local chain
 
-The app test backend of desktop, Android and iOS adds `.simplex` names on a local chain, so that the names screens' scripted cases test against the names contracts, simplexmq's resolver and the store service. The `.testing` names of each platform's `names-resolver.py` stay for the cases that use them.
+The app test backend of desktop, Android and iOS adds `.simplex` names on a local chain, so that the names screens' scripted cases test against the names contracts, simplexmq's resolver and the store service. The `.testing` names of each platform's `names-resolver.py` stay for the cases that use them. The Android emulator reaches only the first SMP server, on 5223 (`emulator.sh reverse 5223`), so an Android case that uses the second server adds its forward first.
 
 ## The build: `build.sh <package dir> <simplexmq clone>`
 
