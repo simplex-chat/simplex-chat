@@ -408,19 +408,20 @@ export function encodeQr(payload: string): QrSymbol | null {
   return { version, size: matrix.size, mask: best, modules: matrix.modules };
 }
 
-export function paymentUri(method: Chain, address: string, amount: string): string | null {
+export interface PaymentCode {
+  link: string;
+  qr: string;
+}
+
+export function paymentCode(method: Chain, address: string, amount: string): PaymentCode | null {
   if (address === "" || amount === "") return null;
   // The address is percent-encoded so that a `?`, `&`, or `#` in it cannot add its own parameters to the URI.
   const destination = encodeURIComponent(address);
-  if (method === "ln") return `lightning:${destination}`;
+  if (method === "ln") return { link: `lightning:${destination}`, qr: address.toUpperCase() };
   const scheme = method === "btc" ? "bitcoin" : "monero";
   const parameter = method === "btc" ? "amount" : "tx_amount";
-  return `${scheme}:${destination}?${parameter}=${encodeURIComponent(amount)}`;
-}
-
-export function paymentQr(method: Chain, address: string, amount: string): string | null {
-  if (method === "ln") return address === "" ? null : address.toUpperCase();
-  return paymentUri(method, address, amount);
+  const link = `${scheme}:${destination}?${parameter}=${encodeURIComponent(amount)}`;
+  return { link, qr: link };
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";

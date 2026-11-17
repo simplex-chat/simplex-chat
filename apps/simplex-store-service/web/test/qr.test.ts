@@ -12,8 +12,10 @@ installDocument();
 const qr = await import("../src/qr.js");
 const {
   alignmentPositions, capacity, dataCodewords, eccOf, encodeQr, formatBits, generatorPoly, interleave,
-  numDataCodewords, paymentQr, paymentUri, qrSvg, rawDataModules, segmentOf, versionBits,
+  numDataCodewords, paymentCode, qrSvg, rawDataModules, segmentOf, versionBits,
 } = qr;
+const linkOf = (method: "btc" | "ln" | "xmr", address: string, amount: string): string | null =>
+  paymentCode(method, address, amount)?.link ?? null;
 type QrSymbol = import("../src/qr.js").QrSymbol;
 
 const screens = await import("../src/screens.js");
@@ -527,7 +529,7 @@ function roundTrip(payload: string, what: string): Decoded {
 
 qrTest("qr: a Monero payment URI with a 95-character address round-trips", () => {
   assert.equal(MONERO_ADDRESS.length, 95, "a standard Monero address is 95 characters");
-  const uri = paymentUri("xmr", MONERO_ADDRESS, "1.482")!;
+  const uri = linkOf("xmr", MONERO_ADDRESS, "1.482")!;
   const decoded = roundTrip(uri, "the Monero URI");
   assert.equal(decoded.payload, `monero:${MONERO_ADDRESS}?tx_amount=1.482`);
   assert.ok(decoded.version >= 7, `${uri.length} bytes needs more than version 6, not version ${decoded.version}`);
@@ -535,7 +537,7 @@ qrTest("qr: a Monero payment URI with a 95-character address round-trips", () =>
 
 qrTest("qr: a Monero integrated address, 106 characters, round-trips — and needs version 8", () => {
   assert.equal(MONERO_INTEGRATED.length, 106, "an integrated address is 106 characters");
-  const uri = paymentUri("xmr", MONERO_INTEGRATED, "1.482")!;
+  const uri = linkOf("xmr", MONERO_INTEGRATED, "1.482")!;
   assert.equal(uri.length, 129);
   const decoded = roundTrip(uri, "the integrated-address URI");
   // 124 bytes does not fit version 7's 122, so a hardcoded version would truncate here.
@@ -543,7 +545,7 @@ qrTest("qr: a Monero integrated address, 106 characters, round-trips — and nee
 });
 
 qrTest("qr: a Bitcoin BIP-21 URI round-trips", () => {
-  const uri = paymentUri("btc", BITCOIN_ADDRESS, "0.00412")!;
+  const uri = linkOf("btc", BITCOIN_ADDRESS, "0.00412")!;
   assert.equal(uri, `bitcoin:${BITCOIN_ADDRESS}?amount=0.00412`);
   roundTrip(uri, "the Bitcoin URI");
 });
@@ -555,11 +557,9 @@ function fingerprint(symbol: QrSymbol): string {
 
 qrTest("qr: a 400-character BOLT11 is scanned as the bare invoice in upper case, in alphanumeric mode, at version 12", () => {
   assert.equal(BOLT11_400.length, 400);
-  const uri = paymentUri("ln", BOLT11_400, "0.00050000")!;
+  const { link: uri, qr: payload } = paymentCode("ln", BOLT11_400, "0.00050000")!;
   assert.equal(uri, `lightning:${BOLT11_400}`, "the amount is inside the invoice, so the URI carries none");
-  const payload = paymentQr("ln", BOLT11_400, "0.00050000")!;
   assert.equal(payload, BOLT11_400.toUpperCase());
-  assert.equal(paymentQr("ln", "", "0.00050000"), null, "no invoice is nothing to scan");
   const decoded = roundTrip(payload, "the Lightning invoice");
   assert.equal(decoded.mode, "alphanumeric");
   assert.ok(decoded.version <= 12, `version ${decoded.version}`);
@@ -572,8 +572,8 @@ qrTest("qr: the Bitcoin and Monero symbols stay in byte mode, identical to the b
     ["btc", BITCOIN_ADDRESS, "0.00412", 5, 3, "5ebf3ac8877a9b59d79ea81e578e9998ec0414ffa84a2bb51d8bb9cf81bb6f99"],
     ["xmr", MONERO_ADDRESS, "1.482", 7, 2, "f6a16bbcbdab85e399203c989f00b01198e5c17c4a3ef23611df5d6c898dbaf7"],
   ] as const) {
-    const uri = paymentUri(method, address, amount)!;
-    assert.equal(paymentQr(method, address, amount), uri, "the on-chain payload is the link itself");
+    const { link: uri, qr: payload } = paymentCode(method, address, amount)!;
+    assert.equal(payload, uri, "the on-chain payload is the link itself");
     assert.equal(segmentOf(uri).mode, "byte", `${uri} carries lower case`);
     const symbol = symbolOf(uri);
     assert.equal(symbol.version, version);
@@ -614,11 +614,12 @@ qrTest("qr: a multi-byte payload is encoded as UTF-8 bytes, not as characters", 
   assert.ok(new TextEncoder().encode(payload).length > payload.length, "this payload is longer in bytes than in characters");
 });
 
-qrTest("qr: paymentUri refuses half a destination", () => {
-  assert.equal(paymentUri("xmr", "", "1.482"), null, "no address is nothing to scan");
-  assert.equal(paymentUri("xmr", MONERO_ADDRESS, ""), null, "and a bare address does not prefill an amount");
-  assert.equal(paymentUri("btc", BITCOIN_ADDRESS, "0.5"), `bitcoin:${BITCOIN_ADDRESS}?amount=0.5`);
-  assert.equal(paymentUri("ln", "", "0.00050000"), null, "no invoice is nothing to scan");
+qrTest("qr: paymentCode refuses half a destination", () => {
+  assert.equal(paymentCode("xmr", "", "1.482"), null, "no address is nothing to scan");
+  assert.equal(paymentCode("xmr", MONERO_ADDRESS, ""), null, "and a bare address does not prefill an amount");
+  assert.equal(linkOf("btc", BITCOIN_ADDRESS, "0.5"), `bitcoin:${BITCOIN_ADDRESS}?amount=0.5`);
+  assert.equal(paymentCode("ln", "", "0.00050000"), null, "no invoice is nothing to scan");
+  assert.equal(paymentCode("ln", BOLT11_400, ""), null, "nor an invoice without the amount owed");
 });
 
 // A fresh regex each time, since matchAll and replace share lastIndex on one object.
@@ -662,7 +663,7 @@ qrTest("svg: the elements are in the SVG namespace, which is what makes them ren
 });
 
 qrTest("svg: the drawn modules ARE the symbol, quiet zone included", () => {
-  const payload = paymentUri("xmr", MONERO_INTEGRATED, "1.482")!;
+  const payload = linkOf("xmr", MONERO_INTEGRATED, "1.482")!;
   const svg = qrSvg(payload, "Monero payment code") as unknown as StubElement;
   const symbol = symbolOf(payload);
   const drawn = modulesOfSvg(svg);
@@ -808,10 +809,10 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
 
 qrTest("qr: an address carrying URI syntax cannot add parameters of its own", () => {
   // A ? or & in an address could inject a second amount that wallets read first, and # swallows everything after it.
-  const withQuery = paymentUri("btc", "bc1q?amount=99&x=1", "0.5")!;
+  const withQuery = linkOf("btc", "bc1q?amount=99&x=1", "0.5")!;
   assert.ok(!withQuery.includes("amount=99"), `the address must not carry parameters: ${withQuery}`);
   assert.ok(withQuery.endsWith("?amount=0.5"), `ours is the only one: ${withQuery}`);
-  const withFragment = paymentUri("xmr", "4A#frag", "0.5")!;
+  const withFragment = linkOf("xmr", "4A#frag", "0.5")!;
   assert.ok(!withFragment.includes("#"), `a fragment would swallow the amount: ${withFragment}`);
-  assert.equal(paymentUri("xmr", MONERO_ADDRESS, "1.482"), `monero:${MONERO_ADDRESS}?tx_amount=1.482`);
+  assert.equal(linkOf("xmr", MONERO_ADDRESS, "1.482"), `monero:${MONERO_ADDRESS}?tx_amount=1.482`);
 });
