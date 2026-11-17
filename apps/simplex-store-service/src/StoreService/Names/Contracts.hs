@@ -99,8 +99,8 @@ data Contracts = Contracts
     ctCommitmentAges :: IORef (Int, Maybe CommitmentAges),
     ctNamePolicy :: IORef (Int, Maybe Address),
     ctTermsTexts :: IORef (Map ByteString Text),
-    -- | the terms as read at a block, which each search for an available name would read again
-    ctTermsLinks :: IORef (Maybe (Word64, (Maybe Terms, Maybe Terms))),
+    -- | the terms links as read at a block, which each search for an available name would read again
+    ctTermsLinks :: IORef (Maybe (Word64, ((Text, Maybe Terms), (Text, Maybe Terms)))),
     ctFetchAfter :: IORef UTCTime,
     ctFetching :: MVar (),
     -- | microseconds for all the reads of one name status, of one name's records, or of one registration view
@@ -129,10 +129,10 @@ data NameRecords = NameRecords {rdContact :: Text, rdChannel :: Text, rdNonce ::
 data CommitmentAges = CommitmentAges {caMin :: ChainSeconds, caMax :: ChainSeconds}
   deriving (Eq, Show)
 
-data Terms = Terms {tmLink :: Text, tmHash :: TermsHash, tmFetch :: Maybe (String, Maybe ByteString)}
+data Terms = Terms {tmLink :: Text, tmHash :: TermsHash, tmFetch :: (String, Maybe ByteString)}
   deriving (Eq, Show)
 
-data TermsRefusal = TRLink | TRWait Int
+data TermsRefusal = TRWait Int
   deriving (Eq, Show)
 
 data RegistrarFunds = RegistrarFunds {rfBalanceWei :: Integer, rfAllowanceCents :: Integer}
@@ -274,39 +274,54 @@ termsLinks ct@Contracts {ctChain, ctTermsLinks} = runExceptT $ do
   policy <- ExceptT $ namePolicy ct
   Block {blockNumber} <- ExceptT $ latestBlock ctChain
   liftIO (readIORef ctTermsLinks) >>= \case
-    Just (at, terms) | at == blockNumber -> pure terms
+    Just (at, (general, community)) | at == blockNumber -> pure (snd general, snd community)
     cached -> do
       let link signature = concurrent $ callAt ct (AtBlock blockNumber) policy (signature, "") decodeString
-          (generalBefore, communityBefore) = maybe (Nothing, Nothing) snd cached
+          (generalBefore, communityBefore) = maybe (Nothing, Nothing) (\(_, (g, c)) -> (Just g, Just c)) cached
       (generalLink, communityLink) <- ExceptT $ together $ (,) <$> link "generalTermsLink()" <*> link "communityTermsLink()"
-      terms <- (,) <$> ExceptT (linkTerms False generalBefore generalLink) <*> ExceptT (linkTerms True communityBefore communityLink)
-      liftIO $ atomicWriteIORef ctTermsLinks $ Just (blockNumber, terms)
-      pure terms
+      general <- ExceptT $ linkTerms False generalBefore generalLink
+      community <- ExceptT $ linkTerms True communityBefore communityLink
+      liftIO $ atomicWriteIORef ctTermsLinks $ Just (blockNumber, (general, community))
+      pure (snd general, snd community)
   where
     linkTerms community before link = case before of
-      Just t@Terms {tmLink} | tmLink == link -> pure $ Right $ Just t
+      Just kept@(keptLink, _) | keptLink == link -> pure $ Right kept
       _ -> do
         r <- termsOf ct link
         case r of
-          Right (Just Terms {tmFetch = Nothing}) ->
-            logWarn $ "names: the name policy's " <> termsKindText community <> " terms are not a link the service takes, so names under them cannot be ordered: " <> link
+          Right Nothing
+            | not (T.null link) ->
+                logWarn $ "names: the name policy's " <> termsKindText community <> " terms are not a link the service takes, so names under them cannot be ordered: " <> link
           _ -> pure ()
-        pure r
+        pure $ (link,) <$> r
 
 kindTerms :: CommunityName -> (Maybe Terms, Maybe Terms) -> Maybe Terms
 kindTerms community (general, communityTerms) = if community then communityTerms else general
 
 termsOf :: Contracts -> Text -> IO (Either ChainError (Maybe Terms))
-termsOf Contracts {ctChain = c@ChainClient {ccConfig = ChainConfig {cChainId}}} link
-  | T.null link = pure $ Right Nothing
-  | otherwise =
-      fmap (Just . terms) <$> case termsLinkParts link of
-        Just (False, fetch) -> pure $ Right $ Just fetch
-        Just (True, fetch)
-          | cChainId == localChainId -> fmap (\chainId -> if chainId == localChainId then Just fetch else Nothing) <$> nodeChainId c
-        _ -> pure $ Right Nothing
+termsOf Contracts {ctChain = c@ChainClient {ccConfig = ChainConfig {cChainId}}} link =
+  fmap terms <$> case eitherToMaybe $ parseText linkP link of
+    Just (loopback, fetch)
+      | not loopback -> pure $ Right $ Just fetch
+      | cChainId == localChainId -> fmap (\chainId -> if chainId == localChainId then Just fetch else Nothing) <$> nodeChainId c
+    _ -> pure $ Right Nothing
   where
-    terms tmFetch = Terms {tmLink = link, tmHash = keccak256 $ encodeUtf8 link, tmFetch}
+    terms = fmap $ \tmFetch -> Terms {tmLink = link, tmHash = keccak256 $ encodeUtf8 link, tmFetch}
+    linkP = do
+      (url, loopback) <- A.match $ False <$ (commitP forgejoPrefix <|> commitP githubPrefix) <|> True <$ loopbackP
+      digest <- optional $ A.string "#sha256=" *> lowerHexP abiWordSize
+      if loopback && isNothing digest then fail "a loopback link without its SHA-256" else pure (loopback, (B.unpack url, digest))
+    forgejoPrefix = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/"
+    githubPrefix = "https://raw.githubusercontent.com/simplex-chat/simplex-chat/"
+    commitP prefix = A.string prefix *> lowerHexP commitBytes *> pathP
+    loopbackP = A.string "http://127.0.0.1:" *> portP *> pathP
+    portP = A.takeWhile1 isDigit >>= \port -> unless (B.take 1 port /= "0" && B.length port <= 5 && maybe False (<= maxPort) (readMaybe $ B.unpack port)) $ fail "not a port"
+    pathP = do
+      (path, segments) <- A.match $ A.char '/' *> A.takeWhile1 pathChar `A.sepBy1` A.char '/'
+      unless (all (`notElem` [".", ".."]) segments && ".md" `B.isSuffixOf` path && B.length path > B.length "/.md") $ fail "not one .md file"
+    pathChar ch = isAsciiUpper ch || isAsciiLower ch || isDigit ch || ch `elem` ("_.-" :: String)
+    commitBytes = 20
+    maxPort = 65535 :: Int
 
 termsText :: Contracts -> Terms -> IO (Either TermsRefusal Text)
 termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
@@ -334,25 +349,22 @@ runTermsFetch :: Contracts -> IO ()
 runTermsFetch ct = forever $ safely "names terms fetch" (fetchCurrentTerms ct) >> threadDelay termsFetchInterval
 
 fetchTerms :: Contracts -> Terms -> IO (Either TermsRefusal Text)
-fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash, tmFetch} =
-  case tmFetch of
-    Nothing -> pure $ Left TRLink
-    Just (url, digest) ->
-      withTransaction ctStore (`getTermsText` tmHash) >>= \case
-        Just stored -> case checked digest stored of
-          Right text -> keep text
-          Left (reason, _) -> do
-            logWarn $ "names: the stored terms text of " <> tmLink <> " is refused, " <> reason <> "; it is fetched again"
-            fetchOrWait url digest
-        Nothing -> fetchOrWait url digest
+fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash, tmFetch = (url, digest)} =
+  withTransaction ctStore (`getTermsText` tmHash) >>= \case
+    Just stored -> case checked stored of
+      Right text -> keep text
+      Left (reason, _) -> do
+        logWarn $ "names: the stored terms text of " <> tmLink <> " is refused, " <> reason <> "; it is fetched again"
+        fetchOrWait
+    Nothing -> fetchOrWait
   where
-    fetchOrWait url digest = do
+    fetchOrWait = do
       after <- readIORef ctFetchAfter
       now <- getCurrentTime
       if now < after
         then pure $ Left $ TRWait $ ceiling $ diffUTCTime after now
         else
-          (>>= checked digest) <$> fetchText ctChain maxTermsBytes url >>= \case
+          (>>= checked) <$> fetchText ctChain maxTermsBytes url >>= \case
             Right text -> keep text <* store text
             Left (reason, retryAfter) -> do
               let wait = min maxTermsBackoffSeconds $ max ctTermsBackoff $ fromMaybe 0 retryAfter
@@ -364,30 +376,10 @@ fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBacko
     store text =
       withTransaction ctStore (\db -> setTermsText db tmHash text)
         `catchOwn'` \e -> logError ("names: the terms text of " <> tmLink <> " could not be stored: " <> tshow e)
-    checked :: Maybe ByteString -> ByteString -> Either (Text, Maybe Int) Text
-    checked digest body
+    checked :: ByteString -> Either (Text, Maybe Int) Text
+    checked body
       | any (sha256Hash body /=) digest = Left ("its SHA-256 is not the link's", Nothing)
       | otherwise = first (const ("not UTF-8", Nothing)) $ decodeUtf8' body
-
-termsLinkParts :: Text -> Maybe (Bool, (String, Maybe ByteString))
-termsLinkParts = eitherToMaybe . parseText linkP
-  where
-    linkP = do
-      (url, loopback) <- A.match $ False <$ (commitP forgejoPrefix <|> commitP githubPrefix) <|> True <$ loopbackP
-      digest <- optional $ A.string "#sha256=" *> lowerHexP abiWordSize
-      if loopback && isNothing digest then fail "a loopback link without its SHA-256" else pure (loopback, (B.unpack url, digest))
-    forgejoPrefix = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/"
-    githubPrefix = "https://raw.githubusercontent.com/simplex-chat/simplex-chat/"
-    commitP prefix = A.string prefix *> A.count commitChars (A.satisfy lowerHex) *> pathP
-    loopbackP = A.string "http://127.0.0.1:" *> portP *> pathP
-    portP = A.takeWhile1 isDigit >>= \port -> unless (B.take 1 port /= "0" && B.length port <= 5 && maybe False (<= maxPort) (readMaybe $ B.unpack port)) $ fail "not a port"
-    pathP = do
-      (path, segments) <- A.match $ A.char '/' *> A.takeWhile1 pathChar `A.sepBy1` A.char '/'
-      unless (all (`notElem` [".", ".."]) segments && ".md" `B.isSuffixOf` path && B.length path > B.length "/.md") $ fail "not one .md file"
-    pathChar c = isAsciiUpper c || isAsciiLower c || isDigit c || c `elem` ("_.-" :: String)
-    lowerHex c = isDigit c || (c >= 'a' && c <= 'f')
-    commitChars = 40
-    maxPort = 65535 :: Int
 
 policyNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 policyNonce ct owner = policyCall ct Latest ("nonces(address)", addressWord owner) decodeWord64

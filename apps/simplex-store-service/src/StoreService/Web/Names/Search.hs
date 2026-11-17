@@ -149,5 +149,4 @@ termsHandler ct hashText _ respond = case bytes32FromHex hashText of
         Just t@Terms {tmLink} ->
           termsText ct t >>= \case
             Right text -> respond $ jsonResponse status200 $ J.object ["link" .= tmLink, "text" .= text]
-            Left TRLink -> respond notFound
             Left (TRWait seconds) -> respond $ termsUnavailable seconds

@@ -363,8 +363,8 @@ logNamePolicy NamesConfig {nCommunity} ct =
         Left e -> logWarn $ "names: the name policy's terms could not be read: " <> tshow e
   where
     logTerms what sold = \case
-      Nothing -> logWarn $ "names: the name policy has no " <> what <> " yet, so " <> sold <> " cannot be ordered until the owner sets them"
-      Just Terms {tmLink, tmHash, tmFetch} -> when (isJust tmFetch) $ logNote $ "names: " <> what <> " " <> tmLink <> ", hash " <> hex tmHash
+      Nothing -> logWarn $ "names: the name policy has no " <> what <> " the service takes, so " <> sold <> " cannot be ordered until the owner sets them"
+      Just Terms {tmLink, tmHash} -> logNote $ "names: " <> what <> " " <> tmLink <> ", hash " <> hex tmHash
 
 -- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
 -- terms fetch at the start and then hourly.
