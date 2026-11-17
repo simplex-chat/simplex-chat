@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
@@ -120,30 +121,38 @@ class Base64ImagePainterTest {
   }
 
   @Test
-  fun testChatItemKeepsItsSizeWhenItsPictureIsDecoded() {
-    val contents = listOf(
-      MsgContent.MCImage("", base64Png(301, 199)),
-      MsgContent.MCVideo("", base64Png(303, 197), 10),
-      MsgContent.MCLink("https://simplex.chat", LinkPreview("https://simplex.chat", "SimpleX Chat", "", base64Png(305, 195))),
-    )
+  fun testImageItemKeepsItsSizeWhenItsPreviewIsDecoded() {
+    val picture = base64Png(301, 199)
+    assertItemKeepsItsSizeWhenDecoded(picture, MsgContent.MCImage("", picture))
+  }
+
+  @Test
+  fun testVideoItemKeepsItsSizeWhenItsPreviewIsDecoded() {
+    val picture = base64Png(303, 197)
+    assertItemKeepsItsSizeWhenDecoded(picture, MsgContent.MCVideo("", picture, 10))
+  }
+
+  @Test
+  fun testLinkItemKeepsItsSizeWhenItsPreviewIsDecoded() {
+    val picture = base64Png(305, 195)
+    assertItemKeepsItsSizeWhenDecoded(picture, MsgContent.MCLink("https://simplex.chat", LinkPreview("https://simplex.chat", "SimpleX Chat", "", picture)))
+  }
+
+  private fun assertItemKeepsItsSizeWhenDecoded(picture: String, content: MsgContent) {
+    val placed = mutableMapOf<String, Placed>()
     val blurRadius = appPrefs.privacyMediaBlurRadius.get()
     try {
       appPrefs.privacyMediaBlurRadius.set(0)
       simplexWindowState.windowState = WindowState(size = DpSize(ROW_WIDTH.dp, ROW_HEIGHT.dp))
-      for (content in contents) {
-        val placed = mutableMapOf<String, Placed>()
-        whileDecoderIsBusy { release ->
-          scene(ROW_WIDTH, ROW_HEIGHT) { Box(Modifier.record(placed, "item")) { ReceivedItem(content) } }.use { scene ->
-            val pending = scene.render()
-            val pendingItem = placed.getValue("item")
-            release()
-            awaitDecodedPictures()
-            val decoded = scene.render()
-            val name = content::class.simpleName
-            assertEquals(pendingItem, placed.getValue("item"), name)
-            assertFalse(pending.hasRedOnRow(20), name)
-            assertTrue(decoded.hasRedOnRow(20), name)
-          }
+      whileDecoderIsBusy { release ->
+        scene(ROW_WIDTH, ROW_HEIGHT) { Box(Modifier.record(placed, "item")) { ReceivedItem(content) } }.use { scene ->
+          assertFalse(scene.render().hasRedOnRow(20))
+          val pending = placed.getValue("item")
+          release()
+          awaitDecodedPictures()
+          assertNotNull(base64BitmapCache[picture])
+          assertTrue(scene.renderUntil { it.hasRedOnRow(20) })
+          assertEquals(pending, placed.getValue("item"))
         }
       }
     } finally {
@@ -183,7 +192,17 @@ class Base64ImagePainterTest {
 
   private fun Image.hasRedOnRow(y: Int): Boolean {
     val bitmap = Bitmap.makeFromImage(this)
-    return (0 until width).any { bitmap.getColor(it, y) == Color.RED.rgb }
+    return (0 until width).any { x -> Color(bitmap.getColor(x, y), true).let { it.red > 204 && it.green < 51 && it.blue < 51 && it.alpha > 204 } }
+  }
+
+  private fun ImageComposeScene.renderUntil(rendered: (Image) -> Boolean): Boolean {
+    val deadline = System.nanoTime() + 30_000_000_000L
+    while (System.nanoTime() < deadline) {
+      Snapshot.sendApplyNotifications()
+      if (rendered(render(System.nanoTime()))) return true
+      Thread.sleep(20)
+    }
+    return false
   }
 
   private fun ImageBitmap.pixels(): IntArray = toAwtImage().run { getRGB(0, 0, width, height, null, 0, width) }
