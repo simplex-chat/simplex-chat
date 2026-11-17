@@ -1505,15 +1505,15 @@ processChatCommand cxt nm = \case
   APIRejectContact connReqId notify -> withUser $ \user -> do
     uclId_ <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
     withContactRequestLock "rejectContact" connReqId $ case uclId_ of
-      Nothing -> rejectCReq user -- address was deleted
-      Just uclId -> withUserContactLock "rejectContact" uclId $ rejectCReq user
+      Nothing -> rejectCReq user id -- address was deleted
+      Just uclId -> rejectCReq user $ withUserContactLock "rejectContact" uclId
     where
-      rejectCReq user = do
+      rejectCReq user withAddressLock = do
         cReq@UserContactRequest {agentInvitationId = AgentInvId invId, contactId_} <-
           withFastStore $ \db -> getContactRequest db user connReqId
-        withAgent $ \a -> rejectContactAsync a "" (aUserId user) invId (if notify then Just (strEncode CRRUserRejected) else Nothing)
+        withAgent $ \a -> rejectContact a NRMInteractive (aUserId user) invId (if notify then Just (strEncode CRRUserRejected) else Nothing)
         ct_ <-
-          withFastStore $ \db -> do
+          withAddressLock . withFastStore $ \db -> do
             ct_ <- forM contactId_ $ \contactId -> do
               ct <- getContact db cxt user contactId
               deleteContact db user ct
@@ -2181,9 +2181,12 @@ processChatCommand cxt nm = \case
         pure $ CRConnectionIncognitoUpdated user conn' (Just incognitoProfile)
       (ConnNew, Just pId, False) -> do
         sLnk <- updatePCCShortLinkData conn =<< presentUserBadge user Nothing (linkPresHeader <$> sLnk_) (userProfileDirect user Nothing Nothing True)
-        conn' <- updateIfUnchanged user (Just pId) $ \db c -> do
-          deletePCCIncognitoProfile db user pId
-          updatePCCIncognito db user c Nothing sLnk
+        conn' <- updateIfUnchanged user (Just pId) (\db c -> deletePCCIncognitoProfile db user pId >> updatePCCIncognito db user c Nothing sLnk)
+          `catchAllErrors` \e -> do
+            void . tryAllErrors $ do
+              incognitoProfile <- withFastStore $ \db -> getProfileById db userId pId
+              updatePCCShortLinkData conn $ userProfileDirect user (Just $ fromLocalProfile incognitoProfile) Nothing True
+            throwError e
         pure $ CRConnectionIncognitoUpdated user conn' Nothing
       _ -> throwChatError CEConnectionIncognitoChangeProhibited
     where
@@ -2212,15 +2215,14 @@ processChatCommand cxt nm = \case
               withAgent $ \a -> createInvitationForLink a nm (aUserId newUser) True preparedReq preparedParams userLinkData subMode
             else withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation Nothing Nothing IKPQOn True subMode
         ccLink' <- shortenCreatedLink ccLink
-        conn' <- withConnectionLock "changeConnectionUser" connId (do
+        conn' <- deleteAgentConnectionOnError agConnId . withConnectionLock "changeConnectionUser" connId $ do
           PendingContactConnection {pccConnStatus, customUserProfileId} <- withFastStore $ \db -> getPendingContactConnection db userId connId
           unless (pccConnStatus == ConnNew) $ throwChatError CEConnectionUserChangeProhibited
           withFastStore' $ \db -> do
             deleteConnectionRecord db user connId
             forM_ customUserProfileId $ \profileId ->
               deletePCCIncognitoProfile db user profileId
-            createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn)
-          `catchAllErrors` \e -> deleteAgentConnectionAsync agConnId >> throwError e
+            createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
   APIConnectPlan userId (Just ct) resolveMode linkOwnerSig_ -> withUserId userId $ \user -> do
@@ -2857,7 +2859,7 @@ processChatCommand cxt nm = \case
       Nothing -> do
         subMode <- chatReadVar subscriptionMode
         (agentConnId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff True subMode
-        addContactMember user agentConnId cReq subMode `catchAllErrors` \e -> deleteAgentConnectionAsync agentConnId >> throwError e
+        addContactMember user agentConnId cReq subMode
     where
       checkContactMember user = do
         -- TODO for large groups: no need to load all members to determine if contact is a member
@@ -2872,13 +2874,13 @@ processChatCommand cxt nm = \case
         when (incognitoMembership gInfo) $ throwChatError CEGroupIncognitoCantInvite
         pure (GIK gInfo gks, contact, contactMember contact members)
       addContactMember user agentConnId cReq subMode = withGroupLock "addMember" groupId $
-        checkContactMember user >>= \case
+        deleteAgentConnectionOnError agentConnId (checkContactMember user) >>= \case
           (g@(GIK gInfo _), contact, Nothing) -> do
             gVar <- asks random
             member <- withFastStore $ \db -> createNewContactMember db gVar user gInfo contact memRole agentConnId cReq subMode
             sendGrpInvitation user contact g member cReq
             pure $ CRSentGroupInvitation user gInfo contact member
-          (g, contact, Just member) -> resendInvitation user g contact member <* deleteAgentConnectionAsync agentConnId
+          (g, contact, Just member) -> deleteAgentConnectionAsync agentConnId >> resendInvitation user g contact member
       resendInvitation user g@(GIK gInfo _) contact@Contact {localDisplayName = cName} member@GroupMember {groupMemberId, memberStatus, memberRole = mRole}
         | memberStatus == GSMemInvited = do
             unless (mRole == memRole) $ withFastStore' $ \db -> updateGroupMemberRole db user member memRole
@@ -2894,7 +2896,7 @@ processChatCommand cxt nm = \case
       Nothing -> do
         subMode <- chatReadVar subscriptionMode
         (agentConnId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff True subMode
-        addMemberViaGroup user agentConnId cReq subMode `catchAllErrors` \e -> deleteAgentConnectionAsync agentConnId >> throwError e
+        addMemberViaGroup user agentConnId cReq subMode
     where
       checkMemberInvitedVia user = do
         (g@(GIK gInfo _), viaGInfo, m) <- withFastStore $ \db ->
@@ -2915,13 +2917,13 @@ processChatCommand cxt nm = \case
         member_ <- withFastStore' $ \db -> getMemberInvitedVia db cxt user gInfo m
         pure ((g, viaGInfo, m, mConn), member_)
       addMemberViaGroup user agentConnId cReq subMode = withGroupLock "addMember" groupId $
-        checkMemberInvitedVia user >>= \case
+        deleteAgentConnectionOnError agentConnId (checkMemberInvitedVia user) >>= \case
           ((g@(GIK gInfo _), viaGInfo, m, mConn), Nothing) -> do
             gVar <- asks random
             member <- withFastStore $ \db -> createNewMemberViaGroup db gVar cxt user gInfo m mConn memRole agentConnId cReq subMode
             sendGrpInvitationViaGroup user viaGInfo m mConn g member cReq
             pure $ CRSentGroupInvitationViaGroup user gInfo member viaGInfo m
-          (inviting, Just member) -> resendInvitation user inviting member <* deleteAgentConnectionAsync agentConnId
+          (inviting, Just member) -> deleteAgentConnectionAsync agentConnId >> resendInvitation user inviting member
       resendInvitation user (g@(GIK gInfo _), viaGInfo, m@GroupMember {localDisplayName = mName}, mConn) member@GroupMember {groupMemberId, memberStatus, memberRole = mRole}
         | memberStatus == GSMemInvited = do
             unless (mRole == memRole) $ withFastStore' $ \db -> updateGroupMemberRole db user member memRole
@@ -2959,11 +2961,12 @@ processChatCommand cxt nm = \case
           pure $ do
             void (withAgent $ \a -> joinConnection a nm (aUserId user) agentConnId (enableNtfs /= MFNone) connRequest dm PQSupportOff subMode)
               `catchAllErrors` \e -> do
-                withGroupLock "joinGroup" groupId $ withFastStore $ \db -> do
-                  GroupInfo {membership = GroupMember {memberStatus}} <- getGroupInfo db cxt user groupId
-                  when (memberStatus == GSMemAccepted) $ liftIO $ do
-                    updateGroupMemberStatus db userId fromMember GSMemInvited
-                    updateGroupMemberStatus db userId membership GSMemInvited
+                withGroupLock "joinGroup" groupId $ withFastStore' $ \db ->
+                  runExceptT (getGroupInfo db cxt user groupId) >>= \case
+                    Right GroupInfo {membership = GroupMember {memberStatus = GSMemAccepted}} -> do
+                      updateGroupMemberStatus db userId fromMember GSMemInvited
+                      updateGroupMemberStatus db userId membership GSMemInvited
+                    _ -> pure ()
                 throwError e
             updateCIGroupInvitationStatus user g CIGISAccepted `catchAllErrors` \case
               ChatErrorStore SEChatItemNotFoundByGroupId {} -> pure ()
@@ -3417,10 +3420,9 @@ processChatCommand cxt nm = \case
     (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) IKPQOff False subMode
     ccLink' <- setShortLinkType CCTGroup <$> shortenCreatedLink ccLink
     gVar <- asks random
-    (gInfo, gLink) <- withGroupLock "createGroupLink" groupId (do
+    (gInfo, gLink) <- deleteAgentConnectionOnError connId . withGroupLock "createGroupLink" groupId $ do
       gInfo <- getAdminGroup user
-      (gInfo,) <$> withFastStore (\db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId mRole subMode))
-      `catchAllErrors` \e -> deleteAgentConnectionAsync connId >> throwError e
+      (gInfo,) <$> withFastStore (\db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId mRole subMode)
     pure $ CRGroupLinkCreated user gInfo gLink
     where
       getAdminGroup user = do
@@ -4075,7 +4077,8 @@ processChatCommand cxt nm = \case
             _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
           m@GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db cxt user groupId (groupMemberId' relayMember)
           case activeConn of
-            Just Connection {connStatus} | connStatus /= ConnPrepared -> pure $ pure ()
+            Just Connection {connStatus}
+              | connStatus /= ConnPrepared && connStatus /= ConnDeleted && not (isConnFailed connStatus) -> pure $ pure ()
             _ -> void <$> prepareConnectViaContact user (Just $ PCEGroup g m) (incognitoMembership gInfo) relayLinkToConnect Nothing Nothing
       relayMember' <- withFastStore $ \db -> getGroupMember db cxt user groupId (groupMemberId' relayMember)
       pure (relayLink, relayMember', r)
