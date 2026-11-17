@@ -96,9 +96,9 @@ fun CIVideoView(
       } else {
         VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
       }
-    } else if (preview != null) {
+    } else {
       Box {
-        VideoPreviewImageView(preview, blurred = blurred, onClick = {
+        VideoPreviewImageView(previewPainter, blurred = blurred, onClick = {
           if (file != null) {
             when (file.fileStatus) {
               CIFileStatus.RcvInvitation, CIFileStatus.RcvAborted ->
@@ -423,19 +423,30 @@ fun VideoPreviewImageView(
   onClick: () -> Unit,
   onLongClick: () -> Unit
 ) {
+  VideoPreviewImageView(remember(preview) { Base64ImagePainter(preview) }, smallView, blurred, onClick, onLongClick)
+}
+
+@Composable
+fun VideoPreviewImageView(
+  preview: Base64ImagePainter,
+  smallView: Boolean,
+  blurred: MutableState<Boolean>,
+  onClick: () -> Unit,
+  onLongClick: () -> Unit
+) {
   val windowWidth = LocalWindowWidth()
   val fullWidth = remember(preview) { videoViewFullWidth(windowWidth) }
   Image(
     preview,
     contentDescription = stringResource(MR.strings.video_descr),
     modifier = Modifier
-      .mediaContentWidth(fixedMediaWidth(isTallMedia(preview.width, preview.height), fullWidth))
+      .mediaContentWidth(fixedMediaWidth(isTallMedia(preview.intrinsicSize.width, preview.intrinsicSize.height), fullWidth))
       .combinedClickable(
         onLongClick = onLongClick,
         onClick = onClick
       )
       .onRightClick(onLongClick)
-      .privacyBlur(!smallView, preview, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
+      .privacyBlur(!smallView, preview.bitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
     contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
   )
 }
