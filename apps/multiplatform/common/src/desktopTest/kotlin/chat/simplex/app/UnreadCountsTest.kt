@@ -13,6 +13,7 @@ import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.chat.apiLoadMessages
+import chat.simplex.common.views.chatlist.ActiveFilter
 import chat.simplex.common.views.chatlist.ChatListView
 import chat.simplex.common.views.chatlist.ChatPreviewView
 import chat.simplex.common.views.chatlist.markChatRead
