@@ -22,7 +22,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Names.Record (USDCents)
 import StoreService.Config (PollConfig (..))
 import StoreService.Names.Balances (recordRefund)
-import StoreService.Names.LateCredits (CreditOutcome (..), creditLateInvoice, lateCreditOf)
+import StoreService.Names.LateCredits (CreditOutcome (..), LateDue (..), creditLateInvoice, lateCreditOf)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns)
@@ -39,7 +39,7 @@ import Bots.StoreService.WebTests (withServiceStores)
 import Control.Concurrent.Async (concurrently)
 import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar)
 import Control.Monad (forM, forM_)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import StoreService.Store.Invoices (lockInvoice)
 import Database.PostgreSQL.Simple (Only (..))
 #else
@@ -557,7 +557,9 @@ testLateCreditOf = do
             lsCredits = 0,
             lsPaymentCreatedAt = at 70
           }
-      creditOf s rate = (\LateCredit {lcAmount} -> cryptoCredit lcAmount) <$> lateCreditOf s (Just rate)
+      creditOf s rate = case lateCreditOf s (Just rate) of
+        LDCredit LateCredit {lcAmount} -> Just (cryptoCredit lcAmount)
+        _ -> Nothing
       cryptoCredit = \case
         CACrypto {caUnits, caInvoiceRate, caCurrentRate, caRateUsed, caCents} -> Just (caUnits, rateText caInvoiceRate, rateText caCurrentRate, rateText caRateUsed, caCents)
         CACard _ -> Nothing
@@ -754,10 +756,11 @@ testConcurrentCredits = withServiceStores $ \open -> do
       let staleStep :: DBStore -> IO Bool
           staleStep store = do
             Just s <- withTransaction store (`lateCreditState` invOf r)
+            LDCredit c <- pure $ lateCreditOf s (Just stubRate)
             meet arrived
             withTransaction store $ \db -> do
               lockInvoice db (invOf r) (at 80)
-              creditLatePayment db (fromJust $ lateCreditOf s (Just stubRate)) (at 80)
+              creditLatePayment db c (at 80)
       (a, b) <- concurrently (staleStep st) (staleStep other)
       balanceOf st r `shouldReturn` Just (19200, 19200, 0)
       pure $ length (filter not [a, b])

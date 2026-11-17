@@ -71,7 +71,7 @@ import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Names.Chain (unixSeconds)
 import StoreService.Names.Registration (RegistrationId (..))
-import StoreService.Providers (Confirmed (..), CryptoReceived (..), Received (..), receivedAmount, receivedConfirmed)
+import StoreService.Providers (Confirmed (..), CryptoReceived (..), Received (..), Units, receivedAmount, receivedConfirmed)
 
 #if defined(dbPostgres)
 import StoreService.Store.Postgres.Migrations (servicePrefix, withPrefix)
@@ -118,7 +118,7 @@ data InvoicePayment = InvoicePayment
     ipUpdatedAt :: UTCTime,
     ipConfirmed :: Confirmed,
     -- | the crypto received in the smallest unit, Nothing for card or when uncounted
-    ipUnits :: Maybe Int64
+    ipUnits :: Maybe Units
   }
   deriving (Eq, Show)
 
