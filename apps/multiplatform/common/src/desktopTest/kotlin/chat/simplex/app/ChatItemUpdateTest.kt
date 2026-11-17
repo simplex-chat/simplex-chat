@@ -84,11 +84,11 @@ class ChatItemUpdateTest {
   fun countersFollowPreviousAndNewItem() = recorded("updates/group-mention") { (received, mentioned, unmentioned) ->
     listChat(received)
     receive(received)
-    assertEventually(Triple(1, 0, 1)) { counts() }
+    assertEventually(Triple(1, 0, 0)) { counts() }
     receive(mentioned)
     assertEquals(Triple(1, 1, 1), counts())
     receive(unmentioned)
-    assertEquals(Triple(1, 0, 1), counts())
+    assertEquals(Triple(1, 0, 0), counts())
   }
 
   @Test
@@ -103,10 +103,10 @@ class ChatItemUpdateTest {
   }
 
   @Test
-  fun updateOfChatNotListedAddsItAndNotifies() = recorded("updates/direct-edit") { (_, edited) ->
+  fun updateOfChatNotListedAddsNothing() = recorded("updates/direct-edit") { (_, edited) ->
     receive(edited)
-    assertEquals("hello there", previewText())
-    assertNotified("hello there")
+    assertEquals(listOf(), ChatModel.chatsContext.chats.value.toList())
+    assertNotified()
   }
 
   @Test
@@ -185,7 +185,7 @@ class ChatItemUpdateTest {
 
   private fun counts(): Triple<Int, Int, Int> {
     val stats = ChatModel.chatsContext.chats.value.single().chatStats
-    return Triple(stats.unreadCount, stats.unreadMentions, ChatModel.users[0].unreadCount)
+    return Triple(stats.unreadCount, stats.unreadMentions, ChatModel.activeUserUnreadCount)
   }
 
   private fun assertNotified(vararg texts: String) = assertEventually(texts.toList()) { synchronized(notifications) { notifications.toList() } }
