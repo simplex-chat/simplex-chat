@@ -141,7 +141,7 @@ registerWithCreditCalldata RegisterIntent {riRegistration, riNonce, riDeadline, 
         Dynamic $ abiBytes $ serializeSignature riSignature
       ]
 
-registerIntentDigest :: Eip712Domain -> Registration -> Word64 -> Word64 -> ByteString
+registerIntentDigest :: Eip712Domain -> Registration -> Word64 -> ChainSeconds -> ByteString
 registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver} nonce deadline =
   hashTypedData
     domain
@@ -161,19 +161,19 @@ verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration 
   signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
 
-acceptanceDigest :: Eip712Domain -> TermsKind -> ByteString -> ByteString -> Word64 -> Word64 -> ByteString
+acceptanceDigest :: Eip712Domain -> TermsKind -> ByteString -> ByteString -> Word64 -> ChainSeconds -> ByteString
 acceptanceDigest domain TermsKind {tkAcceptType} commitment termsHash nonce deadline =
   hashTypedData
     domain
     tkAcceptType
     [bytes32 commitment, bytes32 termsHash, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-verifyAcceptance :: Eip712Domain -> TermsKind -> Address -> ByteString -> Word64 -> TermsAcceptance -> IO (Either String ())
+verifyAcceptance :: Eip712Domain -> TermsKind -> Address -> ByteString -> ChainSeconds -> TermsAcceptance -> IO (Either String ())
 verifyAcceptance domain kind owner commitment deadline TermsAcceptance {taTermsHash, taNonce, taSignature} = runExceptT $ do
   signer <- ExceptT $ recoverAddress taSignature $ acceptanceDigest domain kind commitment taTermsHash taNonce deadline
   unless (signer == owner) $ throwError "acceptance is not signed by the owner"
 
-acceptCalldata :: TermsKind -> ByteString -> Address -> Word64 -> TermsAcceptance -> ByteString
+acceptCalldata :: TermsKind -> ByteString -> Address -> ChainSeconds -> TermsAcceptance -> ByteString
 acceptCalldata TermsKind {tkRelayFunction} commitment owner deadline TermsAcceptance {taTermsHash, taNonce, taSignature} =
   selector tkRelayFunction
     <> abiTuple
@@ -185,21 +185,21 @@ acceptCalldata TermsKind {tkRelayFunction} commitment owner deadline TermsAccept
         Dynamic $ abiBytes $ serializeSignature taSignature
       ]
 
-setTextDigest :: Eip712Domain -> Node -> Text -> Text -> Word64 -> Word64 -> ByteString
+setTextDigest :: Eip712Domain -> Node -> Text -> Text -> Word64 -> ChainSeconds -> ByteString
 setTextDigest domain node key value nonce deadline =
   hashTypedData
     domain
     "SetText(bytes32 node,string key,string value,uint256 nonce,uint256 deadline)"
     [bytes32 $ nodeBytes node, VBytes $ encodeUtf8 key, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-clearRecordsDigest :: Eip712Domain -> Node -> Word64 -> Word64 -> ByteString
+clearRecordsDigest :: Eip712Domain -> Node -> Word64 -> ChainSeconds -> ByteString
 clearRecordsDigest domain node nonce deadline =
   hashTypedData
     domain
     "ClearRecords(bytes32 node,uint256 nonce,uint256 deadline)"
     [bytes32 $ nodeBytes node, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-setTextWithSigCalldata :: Node -> Text -> Text -> Word64 -> Word64 -> RecoverableSignature -> ByteString
+setTextWithSigCalldata :: Node -> Text -> Text -> Word64 -> ChainSeconds -> RecoverableSignature -> ByteString
 setTextWithSigCalldata (Node node) key value nonce deadline sig =
   selector "setTextWithSig(bytes32,string,string,uint256,uint256,bytes)"
     <> abiTuple
@@ -211,7 +211,7 @@ setTextWithSigCalldata (Node node) key value nonce deadline sig =
         Dynamic $ abiBytes $ serializeSignature sig
       ]
 
-clearRecordsWithSigCalldata :: Node -> Word64 -> Word64 -> RecoverableSignature -> ByteString
+clearRecordsWithSigCalldata :: Node -> Word64 -> ChainSeconds -> RecoverableSignature -> ByteString
 clearRecordsWithSigCalldata (Node node) nonce deadline sig =
   selector "clearRecordsWithSig(bytes32,uint256,uint256,bytes)"
     <> abiTuple [Static node, Static $ uint256 nonce, Static $ uint256 deadline, Dynamic $ abiBytes $ serializeSignature sig]
