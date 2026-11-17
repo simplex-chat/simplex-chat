@@ -57,9 +57,10 @@ sequenceDiagram
   Q-->>U: event
 ```
 
-- One reader thread per controller; a new controller clears the queue and starts a new reader, and the old one ends after its wait.
+- One reader thread and one queue of one event per controller; a new controller gets a new queue and reader, and the old reader ends after its wait, its event left in the old queue.
+- The reader waits until the queue has room, so pending events stay in the core's bounded queue, as before.
 - The desktop receiver takes events with `runInterruptible`, so cancelling it ends the wait; Android reads the core as before.
-- Events that arrive during a reload wait in the queue for the next UI.
+- Events that arrive during a reload wait in the core for the next UI.
 
 ## Hand-off in CoreKt
 
@@ -79,7 +80,7 @@ sequenceDiagram
   participant F as fixed loop
   participant N as new UI
   D->>O: Reload
-  O->>O: refused during a call, while the chat is not running, or without installed jars
+  O->>O: refused during a call, while the chat is not running, with a self-destruct passcode, or without installed jars
   O->>O: update checker, audio and video stopped
   O->>O: hand-off: ctrl, encryption; controller removed, receiver cancelled
   O->>O: single-instance lock handed off, watcher closed
@@ -93,6 +94,8 @@ sequenceDiagram
 ```
 
 - The loop runs only in the system class loader, and only while the UI that returned asked for a reload.
+- A UI that fails in a reload marks its UI update failed, and the process exits; the next start runs an older UI.
+- With a self-destruct passcode, the controller starts only after the passcode is entered, and the handed-off one would serve the decoy profile, so the reload is refused.
 - `simplex.ui_update` names the running UI update's directory; the installed own jars run with the property cleared, so they confirm and fail nothing.
 - "Use the installed UI" marks the running UI update failed and reloads; the update alert offers "Reload now".
 

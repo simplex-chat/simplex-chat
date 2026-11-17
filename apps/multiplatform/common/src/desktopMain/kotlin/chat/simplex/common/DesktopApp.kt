@@ -94,7 +94,10 @@ fun showApp() {
 }
 
 fun reloadUi(): Boolean {
-  if (chatModel.activeCall.value != null || !chatModel.controller.hasChatCtrl() || chatModel.chatRunning.value != true || !uiReloadable()) return false
+  if (
+    chatModel.activeCall.value != null || !chatModel.controller.hasChatCtrl() || chatModel.chatRunning.value != true ||
+    DatabaseUtils.ksSelfDestructPassword.get() != null || !uiReloadable()
+  ) return false
   stopUpdateChecker()
   AudioPlayer.stop()
   VideoPlayerHolder.stopAll()

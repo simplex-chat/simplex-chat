@@ -610,7 +610,7 @@ chat_running_responses() {
 check_ui_reload() {
   local code next reloads running
   code=$(sed -n 's/^desktop.version_code=//p' "$gradle_properties")
-  next=$((code + 6))
+  next=$((code + 7))
   "$ui" stop
   sed -i -e 's/^AppUpdateChannel=.*/AppUpdateChannel=INTERNAL/' -e 's/^AllowInternalBuilds=.*/AllowInternalBuilds=true/' "$settings"
   start_app

@@ -28,6 +28,7 @@ import java.util.Collections
 import java.util.Enumeration
 import java.util.jar.JarFile
 import java.util.zip.ZipFile
+import kotlin.system.exitProcess
 
 const val UI_UPDATE_CONFIRM_DELAY = 10_000L
 const val UI_UPDATE_MAX_SIZE = 256L shl 20
@@ -78,7 +79,13 @@ fun runReloadedUis(mainClass: String, args: Array<String>) {
     val runtime = Runtime.getRuntime()
     System.gc()
     println("I: UI reload, heap used ${(runtime.totalMemory() - runtime.freeMemory()) shr 20} MB")
-    runUi(uiUpdateMain(mainClass) ?: installedUiMain(mainClass) ?: return, args)
+    try {
+      runUi(uiUpdateMain(mainClass) ?: installedUiMain(mainClass) ?: throw IllegalStateException("no installed UI jars"), args)
+    } catch (e: Throwable) {
+      println("E: reloaded UI failed: ${e.stackTraceToString()}")
+      failRunningUiUpdate()
+      exitProcess(1)
+    }
   }
 }
 

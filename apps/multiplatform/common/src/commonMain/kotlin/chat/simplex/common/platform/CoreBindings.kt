@@ -48,23 +48,26 @@ var reloadedChatDbEncrypted: Boolean? = null
 var reloadedInstanceLock: FileLock? = null
 var uiReloadRequested = false
 
-private val chatEvents = LinkedBlockingQueue<String>()
-@Volatile private var chatEventsCtrl: ChatCtrl? = null
+private class ChatEvents(val ctrl: ChatCtrl) {
+  val queue = LinkedBlockingQueue<String>(1)
+}
+
+private val chatEventsLock = Any()
+@Volatile private var chatEvents: ChatEvents? = null
 
 fun takeChatEvent(ctrl: ChatCtrl, timeout: Int): String {
-  synchronized(chatEvents) {
-    if (chatEventsCtrl != ctrl) {
-      chatEventsCtrl = ctrl
-      chatEvents.clear()
+  val events = synchronized(chatEventsLock) {
+    chatEvents?.takeIf { it.ctrl == ctrl } ?: ChatEvents(ctrl).also { created ->
+      chatEvents = created
       val reader = Thread({
-        while (chatEventsCtrl == ctrl) {
+        while (chatEvents === created) {
           val event = chatRecvMsgWait(ctrl, timeout)
-          if (event != "" && chatEventsCtrl == ctrl) chatEvents.put(event)
+          while (event != "" && chatEvents === created && !created.queue.offer(event, 1, TimeUnit.SECONDS)) {}
         }
       }, "simplex-core-events")
       reader.isDaemon = true
       reader.start()
     }
   }
-  return chatEvents.poll(timeout.toLong(), TimeUnit.MICROSECONDS) ?: ""
+  return events.queue.poll(timeout.toLong(), TimeUnit.MICROSECONDS) ?: ""
 }
