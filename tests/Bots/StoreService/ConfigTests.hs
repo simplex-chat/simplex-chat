@@ -53,7 +53,7 @@ badgeConfigTests = describe "store service config" $ do
   it "refuses a host that would send the api key in the clear" testHostMustBeHttps
   it "names a setting nothing reads, in every section it parses" testUnknownKeysAreNamed
   it "ignores a section nothing reads rather than refusing the file" testUnknownSectionStillBoots
-  it "refuses a file one malformed line would silently truncate" testMalformedLineRefused
+  it "refuses a line that is neither a header, a setting nor a comment, naming its line" testMalformedLineRefused
   it "reads the file as UTF-8 whatever the locale, and refuses one that is not UTF-8" testUtf8File
   it "accepts a comment or blank line after the last setting" testTrailingCommentIsAccepted
   it "refuses a setting written as key: value, naming its line and quoting no value" testColonSettingRefused
@@ -321,10 +321,7 @@ testUnknownSectionStillBoots =
 
 testMalformedLineRefused :: IO ()
 testMalformedLineRefused =
-  withIni (withListenerKeys ["trust_forwarded_for on"]) $ \p ->
-    readServiceConfig p >>= \r -> case r of
-      Left e -> e `shouldContain` "malformed"
-      Right cfg -> expectationFailure ("a truncated file must not boot, and this one kept " <> show (btcpay cfg))
+  parseIni (withListenerKeys ["trust_forwarded_for on"]) `shouldReturn` Left (malformedLine 2)
 
 testColonSettingRefused :: IO ()
 testColonSettingRefused = do
