@@ -3127,10 +3127,10 @@ object ChatController {
           val cItem = chatItem.chatItem
           if (!cItem.isDeletedContent && active(r.user)) {
             withContext(Dispatchers.Main) {
-              chatModel.chatsContext.upsertChatItem(rhId, cInfo, cItem)
+              chatModel.chatsContext.replaceChatItem(rhId, cInfo, cItem)
             }
             withContext(Dispatchers.Main) {
-              chatModel.secondaryChatsContext.value?.upsertChatItem(rhId, cInfo, cItem)
+              chatModel.secondaryChatsContext.value?.replaceChatItem(rhId, cInfo, cItem)
             }
           }
         }
@@ -3178,7 +3178,7 @@ object ChatController {
             if (toChatItem == null) {
               chatModel.chatsContext.removeChatItem(rhId, cInfo, cItem)
             } else {
-              chatModel.chatsContext.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+              chatModel.chatsContext.applyChatItemUpdate(rhId, cInfo, toChatItem.chatItem, cItem)
             }
             if (cItem.isActiveReport) {
               chatModel.chatsContext.decreaseGroupReportsCounter(rhId, cInfo.id)
@@ -3188,7 +3188,7 @@ object ChatController {
             if (toChatItem == null) {
               chatModel.secondaryChatsContext.value?.removeChatItem(rhId, cInfo, cItem)
             } else {
-              chatModel.secondaryChatsContext.value?.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+              chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rhId, cInfo, toChatItem.chatItem, cItem)
             }
           }
         }
@@ -3781,10 +3781,10 @@ object ChatController {
       val cInfo = aChatItem.chatInfo
       val cItem = aChatItem.chatItem
       withContext(Dispatchers.Main) {
-        chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem)
+        chatModel.chatsContext.replaceChatItem(rh, cInfo, cItem)
       }
       withContext(Dispatchers.Main) {
-        chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
+        chatModel.secondaryChatsContext.value?.replaceChatItem(rh, cInfo, cItem)
       }
     }
   }
@@ -3821,7 +3821,7 @@ object ChatController {
         } else {
           CIDeleted.Deleted(Clock.System.now())
         }
-        chatsCtx.upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+        chatsCtx.replaceChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
       }
     }
     withContext(Dispatchers.Main) {
@@ -3838,7 +3838,7 @@ object ChatController {
           } else {
             CIDeleted.Deleted(Clock.System.now())
           }
-          chatsCtx.upsertChatItem(rhId, cInfo.copy(groupChatScope = chatsCtx.groupScopeInfo), cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+          chatsCtx.replaceChatItem(rhId, cInfo.copy(groupChatScope = chatsCtx.groupScopeInfo), cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
         }
       }
     }

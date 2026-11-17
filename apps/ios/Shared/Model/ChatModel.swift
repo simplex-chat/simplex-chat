@@ -770,44 +770,10 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
-        // update chat list
-        var itemAdded: Bool = false
+    func replaceChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         if cInfo.groupChatScope() == nil {
-            if let chat = getChat(cInfo.id) {
-                if let pItem = chat.chatItems.last {
-                    if pItem.id == cItem.id || (chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
-                        chat.chatItems = [cItem]
-                    }
-                } else {
-                    chat.chatItems = [cItem]
-                }
-            } else {
-                addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
-                itemAdded = true
-            }
-            if cItem.isDeletedContent || cItem.meta.itemDeleted != nil {
-                VoiceItemState.stopVoiceInChatView(cInfo, cItem)
-            }
-        }
-        // update current scope
-        if let ciIM = getCIItemsModel(cInfo, cItem) {
-            itemAdded = _upsertChatItem(ciIM, cInfo, cItem)
-        }
-        return itemAdded
-    }
-
-    func applyChatItemUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ prevItem: ChatItem) {
-        if cInfo.groupChatScope() == nil {
-            if let chat = getChat(cInfo.id) {
-                if chat.chatItems.last?.id == cItem.id {
-                    chat.chatItems = [cItem]
-                }
-                let unread = unreadCountChange(prevItem, cItem) { $0.isRcvNew }
-                let mentions = unreadCountChange(prevItem, cItem) { $0.isRcvNew && $0.meta.userMention }
-                if unread != 0 || mentions != 0 {
-                    unreadCollector.changeUnreadCounter(cInfo.id, by: unread, unreadMentions: mentions)
-                }
+            if let chat = getChat(cInfo.id), chat.chatItems.last?.id == cItem.id {
+                chat.chatItems = [cItem]
             }
             if cItem.isDeletedContent || cItem.meta.itemDeleted != nil {
                 VoiceItemState.stopVoiceInChatView(cInfo, cItem)
@@ -816,6 +782,17 @@ final class ChatModel: ObservableObject {
         if let ciIM = getCIItemsModel(cInfo, cItem), let i = getChatItemIndex(ciIM, cItem) {
             _replaceChatItem(ciIM, at: i, with: cItem)
         }
+    }
+
+    func applyChatItemUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ prevItem: ChatItem) {
+        if cInfo.groupChatScope() == nil {
+            let unread = unreadCountChange(prevItem, cItem) { $0.isRcvNew }
+            let mentions = unreadCountChange(prevItem, cItem) { $0.isRcvNew && $0.meta.userMention }
+            if unread != 0 || mentions != 0 {
+                unreadCollector.changeUnreadCounter(cInfo.id, by: unread, unreadMentions: mentions)
+            }
+        }
+        replaceChatItem(cInfo, cItem)
     }
 
     private func _replaceChatItem(_ ciIM: ItemsModel, at i: Int, with cItem: ChatItem) {

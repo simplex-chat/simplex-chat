@@ -457,6 +457,19 @@ Haskell core generates ChatEvent.chatItemUpdated(user, chatItemUpdate: AChatItem
     → An update of a locally deleted message creates it again: the core sends newChatItems
 ```
 
+### Item Statuses, Files and Deletions (Events)
+```
+chatItemsStatusesUpdated, file events, groupChatItemsDeleted
+    → ChatModel.replaceChatItem(chatInfo, chatItem):
+        1. Replace the preview if it is this item
+        2. Replace the item in ItemsModel.reversedChatItems if it is loaded,
+           never insert it
+chatItemsDeleted with toChatItem
+    → ChatModel.applyChatItemUpdate(chatInfo, toChatItem, deletedChatItem)
+chatItemsDeleted without toChatItem
+    → ChatModel.removeChatItem(chatInfo, deletedChatItem)
+```
+
 ### Sending a Message
 ```
 User taps send in ComposeView

@@ -856,7 +856,7 @@ fun ComposeView(
         )
         if (updatedItem != null) {
           withContext(Dispatchers.Main) {
-            chatsCtx.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+            chatsCtx.replaceChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
           }
         }
         return updatedItem?.chatItem

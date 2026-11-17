@@ -668,61 +668,11 @@ object ChatModel {
           chatId.value == cInfo.id && cItem.isReport
       }
 
-    suspend fun upsertChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem): Boolean {
-      var itemAdded = false
-      // update chat list
+    suspend fun replaceChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
       if (cInfo.groupChatScope() == null) {
         val i = getChatIndex(rhId, cInfo.id)
-        val chat: Chat
-        if (i >= 0) {
-          chat = chats[i]
-          val pItem = chat.chatItems.lastOrNull()
-          if (pItem?.id == cItem.id) {
-            chats[i] = chat.copy(chatItems = arrayListOf(cItem))
-            if (pItem.isRcvNew && !cItem.isRcvNew) {
-              // status changed from New to Read, update counter
-              decreaseCounterInPrimaryContext(rhId, cInfo.id)
-            }
-          }
-        } else {
-          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
-          itemAdded = true
-        }
-      }
-      // update current scope
-      withContext(Dispatchers.Main) {
-        if (chatItemBelongsToScope(cInfo, cItem) && !replaceLoadedChatItem(cItem)) {
-          addToChatItems(cItem)
-          itemAdded = true
-        }
-      }
-      return  itemAdded
-    }
-
-    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem) {
-      if (cInfo.groupChatScope() == null) {
-        val i = getChatIndex(rhId, cInfo.id)
-        if (i >= 0) {
-          val chat = chats[i]
-          val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew }
-          val mentionsChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && it.meta.userMention }
-          val countersChanged = secondaryContextFilter == null && (unreadChange != 0 || mentionsChange != 0)
-          val wasUnread = chat.unreadTag
-          chats[i] = chat.copy(
-            chatItems = if (chat.chatItems.lastOrNull()?.id == cItem.id) arrayListOf(cItem) else chat.chatItems,
-            chatStats = if (countersChanged) {
-              chat.chatStats.copy(
-                unreadCount = maxOf(0, chat.chatStats.unreadCount + unreadChange),
-                unreadMentions = maxOf(0, chat.chatStats.unreadMentions + mentionsChange)
-              )
-            } else {
-              chat.chatStats
-            }
-          )
-          if (countersChanged) {
-            changeUnreadCounterInPrimaryContext(rhId, currentUser.value!!, unreadChange)
-            updateChatTagReadInPrimaryContext(chats[i], wasUnread)
-          }
+        if (i >= 0 && chats[i].chatItems.lastOrNull()?.id == cItem.id) {
+          chats[i] = chats[i].copy(chatItems = arrayListOf(cItem))
         }
       }
       withContext(Dispatchers.Main) {
@@ -732,13 +682,36 @@ object ChatModel {
       }
     }
 
-    private fun replaceLoadedChatItem(cItem: ChatItem): Boolean {
+    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem) {
+      if (cInfo.groupChatScope() == null) {
+        val i = getChatIndex(rhId, cInfo.id)
+        if (i >= 0) {
+          val chat = chats[i]
+          val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew }
+          val mentionsChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && it.meta.userMention }
+          if (secondaryContextFilter == null && (unreadChange != 0 || mentionsChange != 0)) {
+            val wasUnread = chat.unreadTag
+            chats[i] = chat.copy(
+              chatStats = chat.chatStats.copy(
+                unreadCount = maxOf(0, chat.chatStats.unreadCount + unreadChange),
+                unreadMentions = maxOf(0, chat.chatStats.unreadMentions + mentionsChange)
+              )
+            )
+            changeUnreadCounterInPrimaryContext(rhId, currentUser.value!!, unreadChange)
+            updateChatTagReadInPrimaryContext(chats[i], wasUnread)
+          }
+        }
+      }
+      replaceChatItem(rhId, cInfo, cItem)
+    }
+
+    private fun replaceLoadedChatItem(cItem: ChatItem) {
       if (cItem.isDeletedContent || cItem.meta.itemDeleted != null) {
         AudioPlayer.stop(cItem)
       }
       val items = chatItems.value
       val itemIndex = items.indexOfFirst { it.id == cItem.id }
-      if (itemIndex < 0) return false
+      if (itemIndex < 0) return
       val oldStatus = items[itemIndex].meta.itemStatus
       val newStatus = cItem.meta.itemStatus
       items[itemIndex] = if (shouldKeepOldSndCIStatus(oldStatus, newStatus)) {
@@ -746,7 +719,6 @@ object ChatModel {
       } else {
         cItem
       }
-      return true
     }
 
     suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {

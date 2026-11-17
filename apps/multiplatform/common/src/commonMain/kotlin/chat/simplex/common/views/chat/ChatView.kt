@@ -589,7 +589,7 @@ fun ChatView(
                   toChatItem = deleted.toChatItem?.chatItem
                   withContext(Dispatchers.Main) {
                     if (toChatItem != null) {
-                      chatModel.chatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
+                      chatModel.chatsContext.applyChatItemUpdate(chatRh, chatInfo, toChatItem, deletedChatItem)
                     } else {
                       chatModel.chatsContext.removeChatItem(chatRh, chatInfo, deletedChatItem)
                     }
@@ -601,7 +601,7 @@ fun ChatView(
                   }
                   withContext(Dispatchers.Main) {
                     if (toChatItem != null) {
-                      chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+                      chatModel.secondaryChatsContext.value?.applyChatItemUpdate(chatRh, chatInfo, toChatItem, deletedChatItem)
                     } else {
                       chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, deletedChatItem)
                     }
@@ -3450,7 +3450,7 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           for (di in deleted) {
             val toChatItem = di.toChatItem?.chatItem
             if (toChatItem != null) {
-              chatModel.chatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
+              chatModel.chatsContext.applyChatItemUpdate(chatRh, chatInfo, toChatItem, di.deletedChatItem.chatItem)
             } else {
               chatModel.chatsContext.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
@@ -3467,7 +3467,7 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           for (di in deleted) {
             val toChatItem = di.toChatItem?.chatItem
             if (toChatItem != null) {
-              chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+              chatModel.secondaryChatsContext.value?.applyChatItemUpdate(chatRh, chatInfo, toChatItem, di.deletedChatItem.chatItem)
             } else {
               chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
@@ -3504,7 +3504,7 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           for (di in deleted) {
             val toChatItem = di.toChatItem?.chatItem
             if (toChatItem != null) {
-              chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+              chatModel.secondaryChatsContext.value?.applyChatItemUpdate(chatRh, chatInfo, toChatItem, di.deletedChatItem.chatItem)
             } else {
               chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }

@@ -2747,7 +2747,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             let cInfo = chatItem.chatInfo
             let cItem = chatItem.chatItem
             if !cItem.isDeletedContent && active(user) {
-                _ = await MainActor.run { m.upsertChatItem(cInfo, cItem) }
+                await MainActor.run { m.replaceChatItem(cInfo, cItem) }
             }
             if let endTask = m.messageDelivery[cItem.id] {
                 switch cItem.meta.itemStatus {
@@ -2787,7 +2787,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         await MainActor.run {
             for item in items {
                 if let toChatItem = item.toChatItem {
-                    _ = m.upsertChatItem(toChatItem.chatInfo, toChatItem.chatItem)
+                    m.applyChatItemUpdate(toChatItem.chatInfo, toChatItem.chatItem, item.deletedChatItem.chatItem)
                 } else {
                     m.removeChatItem(item.deletedChatItem.chatInfo, item.deletedChatItem.chatItem)
                 }
@@ -3230,11 +3230,7 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
     if active(user) {
-        if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
-            if cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
-            }
-        }
+        await MainActor.run { m.replaceChatItem(cInfo, cItem) }
     }
 }
 
@@ -3284,7 +3280,7 @@ func groupChatItemsDeleted(_ user: UserRef, _ groupInfo: GroupInfo, _ chatItemID
             await MainActor.run {
                 var newItem = ci
                 newItem.meta.itemDeleted = deleted
-                _ = m.upsertChatItem(cInfo, newItem)
+                m.replaceChatItem(cInfo, newItem)
             }
             notFound -= 1
             if notFound == 0 { break }
