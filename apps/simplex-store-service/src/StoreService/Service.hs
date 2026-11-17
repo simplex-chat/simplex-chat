@@ -644,37 +644,37 @@ storeServiceResponse key verifier checks cc trackerQ_ = \case
   Left code -> pure $ errorResponse code
   Right StoreServiceRequest {purchaseKey, request} ->
     logNote ("badge request: " <> commandName request) >> case request of
-        STCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
-          Just k -> redeemCode key cc trackerQ_ k masterKey code
-          Nothing -> pure $ errorResponse STEBadRequest
-        STCPurchaseBadge {masterKey, payment, upgrade}
-          | Just receipt_ <- toStoreReceipt verifier payment -> case (purchaseKey, upgrade) of
-              (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc verifier checks RUPurchase k masterKey) receipt_
-              -- store upgrades are not built, and ignoring one would credit its months at the discounted price
-              (Just _, Just _) -> pure $ errorResponse STEBadRequest
-              (Nothing, _) -> pure $ errorResponse STEBadRequest
-        STCIssueBadge {balance} -> case purchaseKey of
-          Just k -> issueBadgeCmd key cc verifier k Nothing balance
-          Nothing -> pure $ errorResponse STEBadRequest
-        -- only an App Store subscription changes tier on the same transaction; Play gives a change a new token
-        STCUpgradeBadgeSubscription {payment = payment@SPApple {}, balance}
-          | Just k <- purchaseKey,
-            Just receipt_ <- toStoreReceipt verifier payment ->
-              either storeRefusalResponse (upgradeSubscriptionCmd key cc verifier k balance) receipt_
-        STCUpgradeBadgeSubscription {} -> pure $ errorResponse STEBadRequest
-        STCTransferBadge {masterKey, payment}
-          | Just k <- purchaseKey,
-            Just receipt_ <- toStoreReceipt verifier payment ->
-              either storeRefusalResponse (purchaseWithReceipt key cc verifier checks (RUTransfer $ presentedTransaction payment) k masterKey) receipt_
-        STCTransferBadge {} -> pure $ errorResponse STEBadRequest
-        -- Every command but redeemBadgeCode and purchaseBadge from a store needs a key the service already knows; those two create the purchase, so their key is unknown on a first purchase.
-        _ -> case purchaseKey of
-          Nothing -> pure $ errorResponse STEUnsupportedVersion
-          Just k ->
-            withDB' "purchaseKeyExists" cc (`purchaseKeyExists` k) >>= \case
-              Right True -> pure $ errorResponse STEUnsupportedVersion
-              Right False -> pure $ errorResponse STEUnknownPurchaseKey
-              Left _ -> pure $ errorResponse STEInternal
+      STCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
+        Just k -> redeemCode key cc trackerQ_ k masterKey code
+        Nothing -> pure $ errorResponse STEBadRequest
+      STCPurchaseBadge {masterKey, payment, upgrade}
+        | Just receipt_ <- toStoreReceipt verifier payment -> case (purchaseKey, upgrade) of
+            (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc verifier checks RUPurchase k masterKey) receipt_
+            -- store upgrades are not built, and ignoring one would credit its months at the discounted price
+            (Just _, Just _) -> pure $ errorResponse STEBadRequest
+            (Nothing, _) -> pure $ errorResponse STEBadRequest
+      STCIssueBadge {balance} -> case purchaseKey of
+        Just k -> issueBadgeCmd key cc verifier k Nothing balance
+        Nothing -> pure $ errorResponse STEBadRequest
+      -- only an App Store subscription changes tier on the same transaction; Play gives a change a new token
+      STCUpgradeBadgeSubscription {payment = payment@SPApple {}, balance}
+        | Just k <- purchaseKey,
+          Just receipt_ <- toStoreReceipt verifier payment ->
+            either storeRefusalResponse (upgradeSubscriptionCmd key cc verifier k balance) receipt_
+      STCUpgradeBadgeSubscription {} -> pure $ errorResponse STEBadRequest
+      STCTransferBadge {masterKey, payment}
+        | Just k <- purchaseKey,
+          Just receipt_ <- toStoreReceipt verifier payment ->
+            either storeRefusalResponse (purchaseWithReceipt key cc verifier checks (RUTransfer $ presentedTransaction payment) k masterKey) receipt_
+      STCTransferBadge {} -> pure $ errorResponse STEBadRequest
+      -- Every command but redeemBadgeCode and purchaseBadge from a store needs a key the service already knows; those two create the purchase, so their key is unknown on a first purchase.
+      _ -> case purchaseKey of
+        Nothing -> pure $ errorResponse STEUnsupportedVersion
+        Just k ->
+          withDB' "purchaseKeyExists" cc (`purchaseKeyExists` k) >>= \case
+            Right True -> pure $ errorResponse STEUnsupportedVersion
+            Right False -> pure $ errorResponse STEUnknownPurchaseKey
+            Left _ -> pure $ errorResponse STEInternal
 
 badgeNow :: ChatController -> IO UTCTime
 badgeNow ChatController {config = ChatConfig {badgeCurrentTime}} = badgeCurrentTime
