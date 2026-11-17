@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 const domTest = timedTest(2000);
 
 import { StubElement, installDocument } from "./stub-dom.js";
-import { historyRows, withoutCode } from "../src/order.js";
+import { historyRows, receivedMoney, withoutCode } from "../src/order.js";
 type UnpaidOrder = import("../src/order.js").UnpaidOrder;
 
 const { clipboard } = installDocument();
@@ -1016,6 +1016,15 @@ domTest("screens: the four the history list states are told apart by their own g
     ["paid", "paid, and the code was not saved here", "waiting for payment", "this invoice expired"]);
   assert.deepEqual(drawn.map((_, i) => status(i).getAttribute("class")),
     ["status settled", "status lost", "status pending", "status lost"]);
+});
+
+domTest("order: money has reached an invoice by any one of its full verdict, a crypto figure or a charged amount", () => {
+  for (const reached of [{ paidInFull: true }, { cryptoAmountPaid: "0" }, { amountPaid: 1 }]) {
+    assert.equal(receivedMoney(reached), true, JSON.stringify(reached));
+  }
+  for (const nothing of [undefined, {}, { amountPaid: 0 }, { paidInFull: false }]) {
+    assert.equal(receivedMoney(nothing), false, JSON.stringify(nothing));
+  }
 });
 
 domTest("screens: a canceled order that money reached afterwards is listed as expired with its Open link, an empty one as canceled", () => {

@@ -2,7 +2,7 @@ import { CATALOG, SINGLE_MONTH, offerTotal, savingPercent, type Offer, type Pric
 import { minimumFor, perkAmount } from "./crowdfunding.js";
 import { generate, hash } from "./codes.js";
 import { Flow, type CheckoutOutcome, type Selection } from "./flow.js";
-import { applyView, historyRows, selectionFromOrder, type PaymentView, withoutDestination } from "./order.js";
+import { applyView, historyRows, receivedMoney, selectionFromOrder, type PaymentView, withoutDestination } from "./order.js";
 import { money, moneyCompact } from "./format.js";
 import * as api from "./api.js";
 import { appCodeLink, readHash, resolveLoad } from "./routing.js";
@@ -602,7 +602,7 @@ async function cancelInvoice(orderId: string, method: Method): Promise<void> {
     cancelNotice = { orderId, epoch: flow.epoch, message: screens.CANCEL_STILL_OPEN };
     refuseCancel(orderId, resume, screens.CANCEL_STILL_OPEN);
   }
-  if (cancelled.paidInFull === true || cancelled.cryptoAmountPaid !== undefined) {
+  if (receivedMoney(cancelled)) {
     flow.watch(orderId, resume);
     return;
   }

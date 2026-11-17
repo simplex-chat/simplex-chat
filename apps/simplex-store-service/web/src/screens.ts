@@ -1,7 +1,7 @@
 import { money, countdown, outstanding, startedAgo, type Outstanding } from "./format.js";
 import { badgeIcon, chevronLeft, hamburger, hasBadgeArt, methodMark, wefunderMark } from "./icons.js";
 import { paymentCode, qrSvg } from "./qr.js";
-import type { HistoryRow, UnpaidOrder } from "./order.js";
+import { type HistoryRow, receivedMoney, type UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
 import { THEMES, type App, type Chain, type Method, type Theme } from "./domain.js";
 import type { CardFailure } from "./stripe.js";
@@ -763,7 +763,7 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
   const paid = o.invoice?.amountPaid;
   // A payment can land after the window closes, so this screen must count any crypto figure as money
   // and not tell the buyer nothing arrived.
-  const funded = o.invoice?.paidInFull === true || o.invoice?.cryptoAmountPaid !== undefined || (paid !== undefined && paid > 0);
+  const funded = receivedMoney(o.invoice);
   const lightningNote = (o.invoice?.cryptoCurrency ?? o.order.method) === "ln" ? [el("p", { class: "muted" }, LIGHTNING_DO_NOT_PAY)] : [];
   if (o.canceled === true && !funded) {
     return panel(
