@@ -836,7 +836,8 @@ testFakeCreateBody = withProvider $ \fake p -> do
                     [ "expirationMinutes" .= fakeExpiryMinutes,
                       "speedPolicy" .= ("MediumSpeed" :: Text),
                       "paymentTolerance" .= (0.5 :: Double),
-                      "paymentMethods" .= ([btcMethodId] :: [Text])
+                      "paymentMethods" .= ([btcMethodId] :: [Text]),
+                      "lazyPaymentMethods" .= False
                     ]
               ]
           )

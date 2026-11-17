@@ -335,7 +335,8 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
                 "expirationMinutes" J..= bExpiryMinutes beCfg,
                 "speedPolicy" J..= speedPolicyName (bSpeedPolicy beCfg),
                 "paymentTolerance" J..= bPaymentTolerance beCfg,
-                "paymentMethods" J..= [methodId]
+                "paymentMethods" J..= [methodId],
+                "lazyPaymentMethods" J..= False
               ]
         ]
     destination methodId cc ref ms = do
