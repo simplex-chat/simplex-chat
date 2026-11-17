@@ -3135,7 +3135,7 @@ object ChatController {
           }
         }
       is CR.ChatItemUpdated ->
-        if (r.chatItemUpdate != null) chatItemUpdateNotify(rhId, r.user, r.chatItemUpdate)
+        if (r.chatItemUpdate != null) chatItemUpdate(rhId, r.user, r.chatItemUpdate)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
@@ -3844,7 +3844,7 @@ object ChatController {
     }
   }
 
-  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, update: AChatItemUpdate) {
+  private suspend fun chatItemUpdate(rh: Long?, user: UserLike, update: AChatItemUpdate) {
     val cInfo = update.chatInfo
     val cItem = update.chatItem
     val prevItem = update.prevChatItem
@@ -3856,13 +3856,12 @@ object ChatController {
         withContext(Dispatchers.Main) { chatModel.chatsContext.decreaseUnreadCounter(rh, user) }
       }
     } else {
-      val createdChat = withContext(Dispatchers.Main) {
+      withContext(Dispatchers.Main) {
         chatModel.chatsContext.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
       withContext(Dispatchers.Main) {
         chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
-      if (createdChat) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
     }
   }
 

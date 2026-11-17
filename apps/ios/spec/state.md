@@ -452,6 +452,7 @@ Haskell core generates ChatEvent.chatItemUpdated(user, chatItemUpdate: AChatItem
         2. Replace the preview if it is this item
         3. Replace the item in ItemsModel.reversedChatItems if it is loaded,
            never insert it
+    → A chat that is not in the list is not added, and no notification is shown
     → Another user's event changes that user's unread counter by the same difference
     → An update of a locally deleted message creates it again: the core sends newChatItems
 ```

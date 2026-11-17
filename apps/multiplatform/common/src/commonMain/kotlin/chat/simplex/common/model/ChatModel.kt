@@ -699,8 +699,7 @@ object ChatModel {
       return  itemAdded
     }
 
-    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem): Boolean {
-      var itemAdded = false
+    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem) {
       if (cInfo.groupChatScope() == null) {
         val i = getChatIndex(rhId, cInfo.id)
         if (i >= 0) {
@@ -724,9 +723,6 @@ object ChatModel {
             changeUnreadCounterInPrimaryContext(rhId, currentUser.value!!, unreadChange)
             updateChatTagReadInPrimaryContext(chats[i], wasUnread)
           }
-        } else {
-          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
-          itemAdded = true
         }
       }
       withContext(Dispatchers.Main) {
@@ -734,7 +730,6 @@ object ChatModel {
           replaceLoadedChatItem(cItem)
         }
       }
-      return itemAdded
     }
 
     private fun replaceLoadedChatItem(cItem: ChatItem): Boolean {

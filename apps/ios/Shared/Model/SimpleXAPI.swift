@@ -3244,11 +3244,7 @@ func chatItemUpdate(_ user: any UserLike, _ update: AChatItemUpdate) async {
     let cItem = update.chatItem
     let prevItem = update.prevChatItem
     if active(user) {
-        if await MainActor.run(body: { m.applyChatItemUpdate(cInfo, cItem, prevItem) }) {
-            if cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
-            }
-        }
+        await MainActor.run { m.applyChatItemUpdate(cInfo, cItem, prevItem) }
     } else {
         let change = unreadCountChange(prevItem, cItem) { $0.isRcvNew && cInfo.ntfsEnabled(chatItem: $0) }
         if change > 0 {

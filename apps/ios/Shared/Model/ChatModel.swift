@@ -797,8 +797,7 @@ final class ChatModel: ObservableObject {
         return itemAdded
     }
 
-    func applyChatItemUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ prevItem: ChatItem) -> Bool {
-        var chatAdded = false
+    func applyChatItemUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ prevItem: ChatItem) {
         if cInfo.groupChatScope() == nil {
             if let chat = getChat(cInfo.id) {
                 if chat.chatItems.last?.id == cItem.id {
@@ -809,9 +808,6 @@ final class ChatModel: ObservableObject {
                 if unread != 0 || mentions != 0 {
                     unreadCollector.changeUnreadCounter(cInfo.id, by: unread, unreadMentions: mentions)
                 }
-            } else {
-                addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
-                chatAdded = true
             }
             if cItem.isDeletedContent || cItem.meta.itemDeleted != nil {
                 VoiceItemState.stopVoiceInChatView(cInfo, cItem)
@@ -820,7 +816,6 @@ final class ChatModel: ObservableObject {
         if let ciIM = getCIItemsModel(cInfo, cItem), let i = getChatItemIndex(ciIM, cItem) {
             _replaceChatItem(ciIM, at: i, with: cItem)
         }
-        return chatAdded
     }
 
     private func _replaceChatItem(_ ciIM: ItemsModel, at i: Int, with cItem: ChatItem) {
