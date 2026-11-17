@@ -232,6 +232,12 @@ class AnimatedImageBoundsTest {
   }
 
   @Test
+  fun testAFrameCostOverTheStopBoundIsWaitedOutInFull() {
+    assertEquals(1001, frameWait(20, 1001))
+    assertEquals(5500, frameWait(20, 5500))
+  }
+
+  @Test
   fun testAFrameCostingUpToTheBoundIsWaitedOut() {
     assertTrue(frameCostWithinBounds(0))
     assertTrue(frameCostWithinBounds(85))

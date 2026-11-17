@@ -1,6 +1,8 @@
 package chat.simplex.app
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
@@ -69,6 +71,40 @@ class ImageFullScreenViewTest {
   }
 
   @Test
+  fun testFullScreenAnimationStopsOnAFrameDecodedInOverASecond() {
+    simplexWindowState.windowState = WindowState(size = DpSize(SCENE_SIZE.dp, SCENE_SIZE.dp))
+    val white = gifFrame(16, KEEP, pixelsOf(WHITE, 16 * 16))
+    val slowBlack = gifFrame(16, KEEP, longestRunsOf(BLACK, 5_000_000))
+    val data = gif(16, sequenceOf(white, white, slowBlack, white))
+    scene { FullScreenImageView(Modifier.fillMaxSize(), data, solidImage(Color.BLUE)) }.use { scene ->
+      assertTrue(scene.renderUntil { it.centerColor() == Color.BLACK.rgb })
+      assertFalse(scene.renderUntil(timeoutMs = 3_000) { it.centerColor() == Color.WHITE.rgb })
+    }
+  }
+
+  @Test
+  fun testFullScreenAnimationPlaysBesideAnimationsOverTheFrameLimit() {
+    simplexWindowState.windowState = WindowState(size = DpSize(SCENE_SIZE.dp, SCENE_SIZE.dp))
+    val restorePrevious = gifFrame(1, RESTORE_PREVIOUS, ByteArray(0))
+    val overLimit = gif(2, sequence {
+      yield(gifFrame(2, KEEP, pixelsOf(WHITE, 2 * 2)))
+      repeat(104_000) { yield(restorePrevious) }
+    })
+    val animation = encodeAnimatedGif(Color.GREEN, Color.YELLOW)
+    val animationShown = mutableStateOf(false)
+    scene {
+      Box(Modifier.fillMaxSize()) {
+        repeat(2) { FullScreenImageView(Modifier.size(1.dp), overLimit, solidImage(Color.BLUE)) }
+        if (animationShown.value) FullScreenImageView(Modifier.fillMaxSize(), animation, solidImage(Color.BLUE))
+      }
+    }.use { scene ->
+      scene.render()
+      animationShown.value = true
+      assertTrue(scene.renderUntil(timeoutMs = 5_000) { it.centerColor() == Color.YELLOW.rgb })
+    }
+  }
+
+  @Test
   fun testGalleryLoadsImagesOffTheUiThread() {
     simplexWindowState.windowState = WindowState(size = DpSize(SCENE_SIZE.dp, SCENE_SIZE.dp))
     val image = ProviderMedia.Image(encodePng(2, 2, Color.RED), solidImage(Color.RED))
@@ -120,8 +156,8 @@ class ImageFullScreenViewTest {
   private fun scene(content: @Composable () -> Unit): ImageComposeScene =
     ImageComposeScene(width = SCENE_SIZE, height = SCENE_SIZE, density = Density(1f), coroutineContext = Dispatchers.Unconfined, content = content)
 
-  private fun ImageComposeScene.renderUntil(rendered: (Image) -> Boolean): Boolean {
-    val deadline = System.nanoTime() + 30_000_000_000L
+  private fun ImageComposeScene.renderUntil(timeoutMs: Long = 30_000, rendered: (Image) -> Boolean): Boolean {
+    val deadline = System.nanoTime() + timeoutMs * 1_000_000
     while (System.nanoTime() < deadline) {
       Snapshot.sendApplyNotifications()
       if (rendered(render(System.nanoTime()))) return true
@@ -164,7 +200,74 @@ class ImageFullScreenViewTest {
       graphics.dispose()
     }
 
+  private fun gif(side: Int, frames: Sequence<ByteArray>): ByteArray =
+    ByteArrayOutputStream().use { out ->
+      out.write("GIF89a".toByteArray())
+      out.write(bytes(side, 0, side, 0, 0x80, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF))
+      out.write(bytes(0x21, 0xFF, 11) + "NETSCAPE2.0".toByteArray() + bytes(3, 1, 0, 0, 0))
+      frames.forEach { out.write(it) }
+      out.write(0x3B)
+      out.toByteArray()
+    }
+
+  private fun gifFrame(side: Int, disposal: Int, lzw: ByteArray): ByteArray =
+    ByteArrayOutputStream().use { out ->
+      out.write(bytes(0x21, 0xF9, 4, disposal shl 2, 2, 0, 0, 0, 0x2C, 0, 0, 0, 0, side, 0, side, 0, 0, 2))
+      for (start in lzw.indices step 255) {
+        val length = minOf(255, lzw.size - start)
+        out.write(length)
+        out.write(lzw, start, length)
+      }
+      out.write(0)
+      out.toByteArray()
+    }
+
+  private fun pixelsOf(color: Int, count: Int): ByteArray =
+    lzw { code ->
+      code(CLEAR_CODE, 3)
+      for (i in 0 until count) code(color, codeWidth(FIRST_ENTRY + i - 1))
+      code(END_CODE, codeWidth(FIRST_ENTRY + count - 1))
+    }
+
+  private fun longestRunsOf(color: Int, count: Int): ByteArray =
+    lzw { code ->
+      code(CLEAR_CODE, 3)
+      code(color, 3)
+      for (entry in FIRST_ENTRY..LAST_ENTRY) code(entry, codeWidth(entry))
+      repeat(count) { code(LAST_ENTRY, codeWidth(LAST_ENTRY)) }
+      code(END_CODE, codeWidth(LAST_ENTRY))
+    }
+
+  private fun codeWidth(nextEntry: Int): Int = maxOf(3, Int.SIZE_BITS - Integer.numberOfLeadingZeros(nextEntry))
+
+  private fun lzw(codes: (code: (value: Int, width: Int) -> Unit) -> Unit): ByteArray =
+    ByteArrayOutputStream().use { out ->
+      var bits = 0L
+      var count = 0
+      codes { value, width ->
+        bits = bits or (value.toLong() shl count)
+        count += width
+        while (count >= 8) {
+          out.write(bits.toInt() and 0xFF)
+          bits = bits ushr 8
+          count -= 8
+        }
+      }
+      if (count > 0) out.write(bits.toInt() and 0xFF)
+      out.toByteArray()
+    }
+
+  private fun bytes(vararg values: Int): ByteArray = values.map { it.toByte() }.toByteArray()
+
   private companion object {
     const val SCENE_SIZE = 100
+    const val BLACK = 0
+    const val WHITE = 1
+    const val KEEP = 1
+    const val RESTORE_PREVIOUS = 3
+    const val CLEAR_CODE = 4
+    const val END_CODE = 5
+    const val FIRST_ENTRY = 6
+    const val LAST_ENTRY = 4095
   }
 }
