@@ -408,7 +408,9 @@ processAgentMsgRcvFile _corrId aFileId msg = do
             Nothing -> throwChatError $ CEInternalError "no target path for received XFTP file"
             Just targetPath -> do
               fsTargetPath <- lift $ toFSFilePath targetPath
-              renameFile xftpPath fsTargetPath
+              renameFile xftpPath fsTargetPath `catchAllErrors` \_ -> do
+                copyFile xftpPath fsTargetPath
+                removeFile xftpPath `catchAllErrors` \_ -> pure ()
               badDigest <- case ft of
                 RcvFileTransfer {fileInvitation = FileInvitation {fileDigest = Just d}, cryptoArgs} ->
                   (/= d) <$> cryptoFileDigest (CryptoFile fsTargetPath cryptoArgs)
