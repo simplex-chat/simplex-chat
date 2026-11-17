@@ -252,6 +252,7 @@ chatGroupTests = do
     it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
+    it "reset quota warnings when delivery continues" testGroupMemberQuotaWarningsReset
   describe "group member reports" $ do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   describe "group member mentions" $ do
@@ -8291,6 +8292,36 @@ testGroupMemberInactive ps = do
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               }
         }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testGroupMemberQuotaWarningsReset :: HasCallStack => TestParams -> IO ()
+testGroupMemberQuotaWarningsReset ps =
+  withSmpServer' serverCfg' $
+    withNewTestChatCfg ps cfg' "alice" aliceProfile $ \alice -> do
+      withNewTestChatOpts ps opts' "bob" bobProfile $ \bob -> do
+        createGroup2 "team" alice bob
+        alice #> "#team hi"
+        bob <# "#team alice> hi"
+        threadDelay 1000000
+      forM_ [1 .. quotaErrInactiveCount] $ \i -> do
+        let msgs = map (\j -> show i <> "." <> show j) [1 .. 3 :: Int]
+        forM_ msgs $ \msg -> alice #> ("#team " <> msg)
+        threadDelay 500000
+        withTestChatOpts ps opts' "bob" $ \bob ->
+          bob <### ("subscribed 2 connections on server localhost" : map (\msg -> WithTime ("#team alice> " <> msg)) msgs)
+  where
+    serverCfg' =
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
+          msgQueueQuota = 2
+        }
+    cfg' = testCfg {agentConfig = testAgentCfg {messageRetryInterval = (messageRetryInterval testAgentCfg) {riSlow = defaultReconnectInterval {initialInterval = 5_000_000}}}}
     opts' =
       testOpts
         { coreOptions =
