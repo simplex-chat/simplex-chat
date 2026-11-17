@@ -56,15 +56,6 @@ final class ReceivedPicturesTests: XCTestCase {
         XCTAssertNil(try loadedImage(grayPngData(16384, 4097)))
     }
 
-    func testImportedWallpaperKeepsItsSize() throws {
-        try FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
-        let imported = ThemeWallpaper(image: "data:image/png;base64," + pngData(1500, 1000).base64EncodedString()).importFromString()
-        let fileName = try XCTUnwrap(imported.imageFile)
-        defer { removeWallpaperFile(fileName: fileName) }
-        XCTAssertEqual(UIImage(contentsOfFile: getWallpaperFilePath(fileName).path)?.size, CGSize(width: 1500, height: 1000))
-        XCTAssertEqual(ThemeWallpaper(image: "data:image/png;base64,AAAA").importFromString(), ThemeWallpaper())
-    }
-
     private func receivedPicture() async throws -> CIFile {
         let commands = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(contentsOf: fixtureURL("api/files/received-image.json"))) as? [String: [String: Any]])["commands"] ?? [:]
         sendSimpleXCmdStr = { [unowned self] cmd, _, _ in

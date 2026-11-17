@@ -223,6 +223,15 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(voiceMessageTime_(TimeInterval(Int.max)), "00:00")
     }
 
+    func testImportedWallpaperKeepsItsSize() throws {
+        try FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
+        let imported = ThemeWallpaper(image: "data:image/png;base64," + pngData(1500, 1000).base64EncodedString()).importFromString()
+        let fileName = try XCTUnwrap(imported.imageFile)
+        defer { removeWallpaperFile(fileName: fileName) }
+        XCTAssertEqual(UIImage(contentsOfFile: getWallpaperFilePath(fileName).path)?.size, CGSize(width: 1500, height: 1000))
+        XCTAssertEqual(ThemeWallpaper(image: "data:image/png;base64,AAAA").importFromString(), ThemeWallpaper())
+    }
+
     func testIceCandidateIndexValidation() async {
         let responses = CallResponses()
         let client = WebRTCClient({ await responses.add($0) }, .constant(nil))
@@ -470,6 +479,12 @@ final class SnapshotTests: XCTestCase {
         XCTAssertEqual(r4.message, "**a** b")
         XCTAssertNil(r4.sanitizedPos)
     }
+}
+
+private func pngData(_ width: Int, _ height: Int) -> Data {
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = 1
+    return UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format).pngData { _ in }
 }
 
 private actor CallResponses {
