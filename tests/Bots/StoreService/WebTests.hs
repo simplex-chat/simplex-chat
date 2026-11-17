@@ -22,6 +22,8 @@ module Bots.StoreService.WebTests
     stubCalls,
     setSignals,
     sampleProviderInvoice,
+    stubRate,
+    invoiceStatus,
     prepareStaticDir,
     testServiceConfig,
     testBTCPayConfig,
@@ -31,6 +33,8 @@ module Bots.StoreService.WebTests
     statusOf,
     jsonObject,
     fieldOf,
+    answerOf,
+    refusedWith,
     rcv,
     bounded,
     seedCheckoutCatalog,
@@ -1502,6 +1506,12 @@ jsonObject r = case J.decode (responseBody r) of
 
 fieldOf :: J.Object -> Text -> Maybe J.Value
 fieldOf o k = KM.lookup (K.fromText k) o
+
+answerOf :: J.FromJSON a => Response LB.ByteString -> (Int, Maybe a)
+answerOf r = (statusOf r, J.decode (responseBody r))
+
+refusedWith :: Int -> Text -> (Int, Maybe J.Object)
+refusedWith status tag = (status, Just $ KM.fromList [("error", J.String tag)])
 
 timedGet :: WebClient -> String -> IO (NominalDiffTime, Response LB.ByteString)
 timedGet client target = do

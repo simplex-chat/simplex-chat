@@ -61,6 +61,7 @@ import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Functor ((<&>))
 import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
+import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
@@ -72,6 +73,7 @@ import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
@@ -202,16 +204,16 @@ textRecord ct lh key = call ct (resolver ct) ("text(bytes32,string)", abiTuple [
 -- | Cents for a label of this length and these years. The oracle prices by length only,
 -- so a placeholder label of that length keeps the label from the RPC node. A price under the floor for these years is refused: a node
 -- answering one would sell names below it while the sponsor allowance pays their rent.
-chainPriceCents :: Contracts -> Int -> Int -> IO (Either ChainError Int)
+chainPriceCents :: Contracts -> Int -> Int -> IO (Either ChainError USDCents)
 chainPriceCents ct@Contracts {ctMinPriceCentsPerYear} len years = fmap (>>= checkFloor) . call ct (controller ct) ("rentPriceUSD(string,uint256)", args) $ \ret -> do
   base <- decodeUint256 ret
   let cents = base `div` attoUsdPerCent
-  if cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
+  if cents <= toInteger (maxBound :: Int64) then Right (fromInteger cents) else Left AERange
   where
     args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 $ toInteger years * secondsPerYear]
     checkFloor cents
       | toInteger cents >= toInteger ctMinPriceCentsPerYear * toInteger years = Right cents
-      | otherwise = Left $ ChainUnavailable $ "rentPriceUSD answered " <> tshow cents <> " cents for " <> tshow years <> " years, under names.min_price_cents_per_year"
+      | otherwise = Left $ ChainUnavailable $ "rentPriceUSD answered " <> tshow (toInteger cents) <> " cents for " <> tshow years <> " years, under names.min_price_cents_per_year"
 
 sponsorNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", addressWord owner) decodeWord64

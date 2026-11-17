@@ -63,7 +63,7 @@ import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runWorkers)
 import StoreService.Options
 import StoreService.Poller (PollerEnv (peListedOk), expiryGrace, newPollerEnv, newReadHints, runPoller)
-import StoreService.Providers (Provider (pProvider))
+import StoreService.Providers (Provider (pProvider), minorDecimal)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store
@@ -115,7 +115,8 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
+import Simplex.Messaging.Names.Record (USDCents)
+import Simplex.Messaging.SimplexName (SimplexTLD)
 import Simplex.Messaging.Util (catchOwn, catchOwn', raceAny_, safeDecodeUtf8, stateTVar', tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
@@ -330,7 +331,7 @@ logNamePolicy NamesConfig {nCommunity} ct =
     Right policy -> do
       logNote $ "names: name policy " <> addressText policy
       forM_ (M.toList nCommunity) $ \(h, text) ->
-        communityName ct (LabelHash h) >>= \case
+        communityName ct h >>= \case
           Right False -> logWarn $ "names: [community] lists a name the name policy does not list, so it is sold as a plain name: " <> text
           Right True -> pure ()
           Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> text <> ": " <> tshow e
@@ -435,17 +436,17 @@ showRefund source cc ref = do
     nextStep Balance {blAmount, blHold} = case blHold of
       Just hold -> "It cannot be refunded now: " <> heldText source hold <> "."
       Nothing
-        | blAmount > 0 -> "To record its refund: " <> spelledCmd source "record_refund" <> " " <> ref <> " " <> tshow blAmount
+        | blAmount > 0 -> "To record its refund: " <> spelledCmd source "record_refund" <> " " <> ref <> " " <> tshow (toInteger blAmount)
         | otherwise -> "Nothing to refund."
 
 -- | The refund is recorded before support pays it, so the balance cannot be spent meanwhile.
-refundBalanceCmd :: CmdSource -> Turns -> ChatController -> T.Text -> Int -> IO (Either T.Text T.Text)
+refundBalanceCmd :: CmdSource -> Turns -> ChatController -> T.Text -> USDCents -> IO (Either T.Text T.Text)
 refundBalanceCmd source turns ChatController {chatStore} ref cents = do
   now <- getCurrentTime
   ((Right <$> recordRefund turns chatStore ref cents now) `catchOwn` (pure . Left)) >>= \case
     Right (Right RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
       -- The registration id, not the reference, since an invoice id is kept out of the logs.
-      logNote $ "names: recorded a refund of " <> tshow rdCents <> " cents for order " <> rid
+      logNote $ "names: recorded a refund of " <> tshow (toInteger rdCents) <> " cents for order " <> rid
       pure $ Right $ "Recorded a refund of " <> dollars rdCents <> " for order " <> rid <> ". Refund it now, by: " <> chainText rdChain <> "."
     Right (Left refusal) -> pure $ Left $ "Nothing recorded: " <> refusalText refusal <> "."
     Left e -> Left "The refund could not be recorded." <$ logError ("names: recording a refund failed: " <> tshow e)
@@ -466,7 +467,7 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
   ct <- newContracts chatStore tld minPriceCentsPerYear chain
   ((Right <$> closeRegistration chatStore ct turns getCurrentTime ref) `catchOwn` (pure . Left)) >>= \case
     Right (CLRefunded failedAt RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
-      logNote $ "names: closed order " <> rid <> " and recorded a refund of " <> tshow rdCents <> " cents"
+      logNote $ "names: closed order " <> rid <> " and recorded a refund of " <> tshow (toInteger rdCents) <> " cents"
       pure $ Right $
         "Closed order " <> rid <> ", failed at " <> fmtTime failedAt <> ", as taken and recorded a refund of " <> dollars rdCents
           <> ". Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> chainText rdChain <> "."
@@ -523,11 +524,8 @@ chainText chain = T.intercalate "; " $ zipWith linkText chain (map (Just . lkReg
       Just (RegistrationId source) | cents > 0 -> [dollars cents <> " from the balance of order " <> source]
       _ -> []
 
-dollars :: Int -> T.Text
-dollars cents = "$" <> tshow whole <> "." <> T.justifyRight 2 '0' (tshow part)
-  where
-    (whole, part) = cents `quotRem` centsPerDollar
-    centsPerDollar = 100
+dollars :: USDCents -> T.Text
+dollars = ("$" <>) . minorDecimal
 
 processQueuedRequests :: BadgeIssuerKey -> Maybe (TQueue GroupEvent) -> ServiceState -> IO ()
 processQueuedRequests key trackerQ_ env = do

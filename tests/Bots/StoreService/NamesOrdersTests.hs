@@ -18,6 +18,8 @@ module Bots.StoreService.NamesOrdersTests
     commitmentOf,
     fieldsOf,
     orderTime,
+    orderSeconds,
+    seconds,
     placeOrder,
     placed,
     post,
@@ -35,9 +37,7 @@ module Bots.StoreService.NamesOrdersTests
     registered,
     registrationById,
     registrationsOf,
-    field,
     advance,
-    refusedWith,
     malformedTerms,
     listName,
     threeYears,
@@ -57,7 +57,7 @@ where
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.FakeHttp (nextFakeId)
-import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
+import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.NamesStoreTests (btc, codeReg, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
 import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
@@ -71,7 +71,6 @@ import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
-import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
@@ -87,7 +86,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
-import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody, responseHeaders)
+import Network.HTTP.Client (defaultManagerSettings, newManager, responseHeaders)
 import Network.HTTP.Types (hContentType, status404)
 import Network.Wai (Application, requestHeaders)
 import qualified Network.Wai.Handler.Warp as Warp
@@ -101,11 +100,13 @@ import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey, si
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
 import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
+import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
 import StoreService.Names.Codes (CodeRefusal (..))
 import StoreService.Names.Community (AcceptanceAsked (..))
@@ -115,7 +116,7 @@ import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
-import StoreService.Names.View (ViewRead (..), ViewReads (..), readViewChain, registrationView, viewJSON)
+import StoreService.Names.View (RegistrationView (..), ViewRead (..), ViewReads (..), readViewChain, registrationView, toRegistrationView)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
@@ -207,6 +208,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
     it "has the contract's fields" testViewFields
+    it "answers every field of a failed, a requeued and a taken order" testViewStates
     it "has the terms the order signed" testViewTerms
     it "reads the intent nonce in committed, the acceptance of the terms of the name's kind before its reveal, and nothing in taken, leaving a failed read null and named in unread" testViewReads
     it "reads the chain only in a free view slot and within one deadline, else answers every chain field unread" testViewReadsBounded
@@ -217,6 +219,9 @@ namesOrdersTests = describe "StoreService names: orders" $ do
 -- 21 October 2026 09:15 UTC, the webapp's signed order vector's timestamp
 orderTime :: UTCTime
 orderTime = posixSecondsToUTCTime 1792574100
+
+orderSeconds :: Word64
+orderSeconds = seconds orderTime
 
 termStart :: UTCTime
 termStart = posixSecondsToUTCTime 1798761600
@@ -257,7 +262,7 @@ data Order = Order
     oSealed :: Text,
     oDuration :: Word64,
     oMethod :: Text,
-    oPrice :: Int,
+    oPrice :: USDCents,
     oTerms :: Text,
     oTimestamp :: Word64
   }
@@ -278,7 +283,7 @@ aliceOrder =
     }
 
 -- the launch price of 11 letters for 2 years
-alicePrice :: Int
+alicePrice :: USDCents
 alicePrice = 10000
 
 commitmentOf :: Int -> ByteString
@@ -436,8 +441,7 @@ post :: Ctx -> String -> LB.ByteString -> IO (Int, Maybe J.Object)
 post Ctx {cClient, cIps} path body = do
   n <- atomicModifyIORef' cIps (\i -> (i + 1, i))
   let ip = "198." <> show (n `div` 250) <> "." <> show (n `mod` 250 + 1) <> ".1"
-  r <- webRequestBody cClient "POST" path [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ip)] body
-  pure (statusOf r, J.decode (responseBody r))
+  answerOf <$> webRequestBody cClient "POST" path [(hContentType, "application/json"), ("X-Forwarded-For", BC.pack ip)] body
 
 postOrder :: Ctx -> J.Object -> IO (Int, Maybe J.Object)
 postOrder ctx = post ctx "/api/invoice" . J.encode
@@ -452,19 +456,10 @@ placed ctx o =
     (200, Just v) | Just (J.String invId) <- KM.lookup "invoiceId" v -> pure (InvoiceId invId, v)
     other -> error $ "order refused: " <> show other
 
-errorOnly :: Text -> Maybe J.Object
-errorOnly tag = Just $ KM.fromList [("error", J.String tag)]
-
-refusedWith :: Int -> Text -> (Int, Maybe J.Object)
-refusedWith status tag = (status, errorOnly tag)
-
 registrationOf :: J.Object -> J.Object
 registrationOf v = case KM.lookup "registration" v of
   Just (J.Object r) -> r
   _ -> error "no registration in the view"
-
-field :: Text -> J.Object -> Maybe J.Value
-field k = KM.lookup (K.fromText k)
 
 advance :: Ctx -> NominalDiffTime -> IO ()
 advance Ctx {cClock} by = modifyIORef' cClock (addUTCTime by)
@@ -485,7 +480,7 @@ settled :: PaymentSignal
 settled = SigSettled (rcv 10000 (Just "0.00156")) orderTime
 
 textOf :: Text -> Maybe J.Object -> Text
-textOf k v = case field k =<< v of
+textOf k v = case (`fieldOf` k) =<< v of
   Just (J.String t) -> t
   other -> error $ T.unpack k <> ": " <> show other
 
@@ -501,19 +496,19 @@ testPaidOrder = withOrders $ \ctx -> do
   (invId, v) <- placed ctx aliceOrder
   sort (KM.keys v)
     `shouldBe` sort ["invoiceId", "status", "amount", "currency", "expiresAt", "kind", "registration", "address", "cryptoAmount", "cryptoCurrency", "requiredConfirmations"]
-  field "kind" v `shouldBe` Just "name"
-  field "status" v `shouldBe` Just "open"
-  field "amount" v `shouldBe` Just (J.Number 10000)
-  field "currency" v `shouldBe` Just "usd"
-  field "expiresAt" v `shouldBe` Just (J.toJSON $ addUTCTime (45 * 60) orderTime)
+  fieldOf v "kind" `shouldBe` Just "name"
+  fieldOf v "status" `shouldBe` Just "open"
+  fieldOf v "amount" `shouldBe` Just (J.Number 10000)
+  fieldOf v "currency" `shouldBe` Just "usd"
+  fieldOf v "expiresAt" `shouldBe` Just (J.toJSON $ addUTCTime (45 * 60) orderTime)
   let r = registrationOf v
-  field "phase" r `shouldBe` Just "unpaid"
-  field "version" r `shouldBe` Just (J.Number 1)
-  field "owner" r `shouldBe` Just (J.String ownerAText)
-  field "labelHash" r `shouldBe` Just (J.String $ hex $ (\(LabelHash h) -> h) alice)
-  field "price" r `shouldBe` Just (J.Number 10000)
-  field "duration" r `shouldBe` Just (J.toJSON $ durationAt orderTime)
-  field "terms" r `shouldBe` Just (J.String plainTerms)
+  fieldOf r "phase" `shouldBe` Just "unpaid"
+  fieldOf r "version" `shouldBe` Just (J.Number 1)
+  fieldOf r "owner" `shouldBe` Just (J.String ownerAText)
+  fieldOf r "labelHash" `shouldBe` Just (J.String $ hex $ (\(LabelHash h) -> h) alice)
+  fieldOf r "price" `shouldBe` Just (J.Number 10000)
+  fieldOf r "duration" `shouldBe` Just (J.toJSON $ durationAt orderTime)
+  fieldOf r "terms" `shouldBe` Just (J.String plainTerms)
   let reference = "name:" <> hex (orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000))
   stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference}]
   reg <- invoiceRegistration ctx invId
@@ -558,9 +553,9 @@ testResendPastUnpaid = withOrders $ \ctx -> do
   setFault (cNode ctx) "eth_call" HttpFailure
   (status, v) <- placeOrder ctx aliceOrder {oTimestamp = seconds orderTime + 1}
   status `shouldBe` 200
-  (field "invoiceId" =<< v) `shouldBe` Just (J.String $ (\(InvoiceId t) -> t) invId)
-  (field "status" =<< v) `shouldBe` Just "paid"
-  (field "phase" . registrationOf =<< v) `shouldBe` Just "queued"
+  ((`fieldOf` "invoiceId") =<< v) `shouldBe` Just (J.String $ (\(InvoiceId t) -> t) invId)
+  ((`fieldOf` "status") =<< v) `shouldBe` Just "paid"
+  ((`fieldOf` "phase") . registrationOf =<< v) `shouldBe` Just "queued"
 
 testResendReadsTime :: IO ()
 testResendReadsTime = do
@@ -568,7 +563,7 @@ testResendReadsTime = do
     (invId, _) <- placed ctx aliceOrder
     advance ctx (45 * 60 + 1)
     (status, v) <- placeOrder ctx aliceOrder
-    (status, field "status" =<< v, field "phase" . registrationOf =<< v) `shouldBe` (200, Just "expired", Just "unpaid")
+    (status, (`fieldOf` "status") =<< v, (`fieldOf` "phase") . registrationOf =<< v) `shouldBe` (200, Just "expired", Just "unpaid")
     fmap irStatus <$> getInvoice (cStore ctx) invId `shouldReturn` Just ISOpen
   withOrders $ \ctx@Ctx {cStore, cClock} -> do
     (invId, _) <- placed ctx aliceOrder
@@ -578,7 +573,7 @@ testResendReadsTime = do
     let lapse = seconds now + 600
     Written version <- withTransaction cStore $ \db ->
       updateRegistration db r {nrPhase = OCommitted, nrRevealAfter = Just (lapse - 3600), nrRevealBefore = Just lapse} now
-    let resend = (\(status, v) -> (status, field "status" =<< v, (field "phase" &&& field "error") . registrationOf <$> v)) <$> placeOrder ctx aliceOrder
+    let resend = (\(status, v) -> (status, (`fieldOf` "status") =<< v, ((`fieldOf` "phase") &&& (`fieldOf` "error")) . registrationOf <$> v)) <$> placeOrder ctx aliceOrder
     resend `shouldReturn` (200, Just "paid", Just (Just "committed", Just J.Null))
     advance ctx 601
     resend `shouldReturn` (200, Just "paid", Just (Just "failed", Just "The name was not signed in time"))
@@ -777,9 +772,7 @@ testFormats = withOrders $ \ctx -> do
 
 -- | The name on the operator's community list.
 listName :: Text -> NamesConfig -> NamesConfig
-listName label cfg = cfg {nCommunity = M.insert lh bakers (nCommunity cfg)}
-  where
-    LabelHash lh = labelHash label
+listName label cfg = cfg {nCommunity = M.insert (labelHash label) bakers (nCommunity cfg)}
 
 threeYears :: NamesConfig -> NamesConfig
 threeYears cfg = cfg {nYears = 3}
@@ -849,7 +842,7 @@ testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . list
   stubCalls (cStub ctx) `shouldReturn` []
   registrationsOf ctx ownerA `shouldReturn` []
   (invId, v) <- placed ctx dynamis {oTerms = communityTerms}
-  field "terms" (registrationOf v) `shouldBe` Just (J.String communityTerms)
+  fieldOf (registrationOf v) "terms" `shouldBe` Just (J.String communityTerms)
   nrAgreedTerms <$> invoiceRegistration ctx invId `shouldReturn` agreed communityTerms
   void $ placed ctx aliceOrder
 
@@ -894,7 +887,7 @@ testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" 
       communitySignature = "0x11ade94c79f14bdfde60b23f60f217206b7fd6b29504a2e3020eaef5dabbf24c39330b92099ce6564c36c0a2e484c91a5a9cfa341285a05a169bafbb1dfd1cb01c"
   signedBody (cRandom ctx) community >>= (`shouldBe` withSignature communitySignature (unsignedBody community))
   (status, v) <- postOrder ctx $ withSignature communitySignature (unsignedBody community)
-  (status, field "terms" . registrationOf =<< v, field "community" . registrationOf =<< v)
+  (status, (`fieldOf` "terms") . registrationOf =<< v, (`fieldOf` "community") . registrationOf =<< v)
     `shouldBe` (200, Just (J.String communityTerms), Just (communityEntry bakers))
 
 testTermsAfterRestart :: IO ()
@@ -924,7 +917,7 @@ testResendAfterBump = withOrders $ \ctx -> do
   (nrAgreedTerms n, nrAgreedTerms o) `shouldBe` (agreed newerTerms, agreed plainTerms)
   nrOrderHash n `shouldNotBe` nrOrderHash o
   (status, v) <- postOrder ctx body
-  (status, field "invoiceId" =<< v, field "status" =<< v) `shouldBe` (200, Just (J.String invText), Just "expired")
+  (status, (`fieldOf` "invoiceId") =<< v, (`fieldOf` "status") =<< v) `shouldBe` (200, Just (J.String invText), Just "expired")
 
 testTermsCheckOrder :: IO ()
 testTermsCheckOrder = withOrders $ \ctx@Ctx {cNode = node} -> do
@@ -1169,7 +1162,7 @@ testCodeSizes = withOrders $ \ctx -> do
   let with k v = KM.insert k v good
   forM_ [KM.delete "code" good, with "code" (J.Number 8), with "labelHash" (J.String "0x1234")] $ \body ->
     postRegister ctx body `shouldReturn` refusedWith 400 "bad_request"
-  forM_ ["[]", "{"] $ \body -> post ctx "/api/name/register" body `shouldReturn` (400, errorOnly "bad_request")
+  forM_ ["[]", "{"] $ \body -> post ctx "/api/name/register" body `shouldReturn` refusedWith 400 "bad_request"
   -- the formats and the length come before the code
   forM_ [5, 64] $ \len -> postRegister ctx (KM.insert "code" "not a code" $ with "length" (J.Number len)) `shouldReturn` refusedWith 400 "invalid_name"
   longest <- signedCodeBody ctx code aliceOrder {oSealed = T.replicate 11095 "a"}
@@ -1243,8 +1236,8 @@ testOrderAfterCancel = withOrders $ \ctx -> do
   (invId@(InvoiceId invText), _) <- placed ctx aliceOrder
   (status, v) <- post ctx ("/api/invoice/" <> T.unpack invText <> "/cancel") ""
   status `shouldBe` 200
-  (field "status" =<< v) `shouldBe` Just "expired"
-  (field "version" . registrationOf =<< v) `shouldBe` Just (J.Number 2)
+  ((`fieldOf` "status") =<< v) `shouldBe` Just "expired"
+  ((`fieldOf` "version") . registrationOf =<< v) `shouldBe` Just (J.Number 2)
   old <- invoiceRegistration ctx invId
   orderLive old `shouldBe` False
   (newInvId, _) <- placed ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds orderTime + 1}
@@ -1368,11 +1361,11 @@ testCancelAnswers = withOrders $ \ctx -> do
   withOrdersCancelling settled $ \ctx' -> do
     (invId, _) <- placed ctx' aliceOrder
     (status, v) <- cancelAt ctx' invId
-    (status, field "status" =<< v, field "phase" . registrationOf =<< v) `shouldBe` (200, Just "paid", Just "queued")
+    (status, (`fieldOf` "status") =<< v, (`fieldOf` "phase") . registrationOf =<< v) `shouldBe` (200, Just "paid", Just "queued")
   withOrdersCancelling (SigFunded (rcv 0 Nothing) PaidInFull) $ \ctx' -> do
     (invId, _) <- placed ctx' aliceOrder
     (status, v) <- cancelAt ctx' invId
-    (status, field "status" =<< v, field "paidInFull" =<< v) `shouldBe` (200, Just "expired", Just (J.Bool True))
+    (status, (`fieldOf` "status") =<< v, (`fieldOf` "paidInFull") =<< v) `shouldBe` (200, Just "expired", Just (J.Bool True))
     r <- invoiceRegistration ctx' invId
     (orderLive r, nrVersion r) `shouldBe` (False, 2)
   where
@@ -1386,7 +1379,7 @@ testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx
   let alert = "invoice " <> irProviderRef <> " received money after"
   logs <- capturingStderr $ do
     (status, v) <- post ctx ("/api/invoice/" <> T.unpack (invoiceText invId) <> "/cancel") ""
-    (status, field "status" =<< v, field "cryptoAmountPaid" =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
+    (status, (`fieldOf` "status") =<< v, (`fieldOf` "cryptoAmountPaid") =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
   length (T.breakOnAll alert logs) `shouldBe` 1
   capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf alert)
   nrPhase <$> invoiceRegistration ctx invId `shouldReturn` OUnpaid False
@@ -1402,8 +1395,7 @@ testNamesOff = withOrders $ \ctx -> do
   Warp.testWithApplication (pure $ webApp (cWeb ctx) {weOrders = Nothing}) $ \port -> do
     let off = ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
     logs <- capturingStderr $ do
-      r <- webGet (cClient off) ("/api/invoice/" <> T.unpack t)
-      (statusOf r, J.decode (responseBody r)) `shouldBe` refusedWith 503 "provider_unavailable"
+      answerOf <$> webGet (cClient off) ("/api/invoice/" <> T.unpack t) `shouldReturn` refusedWith 503 "provider_unavailable"
       post off ("/api/invoice/" <> T.unpack t <> "/cancel") "" `shouldReturn` refusedWith 503 "provider_unavailable"
     logs `shouldSatisfy` T.isInfixOf ("invoice " <> irProviderRef <> " is a name's, and this service sells no names")
     logs `shouldNotSatisfy` T.isInfixOf t
@@ -1424,9 +1416,9 @@ testBadgeCodesOnly :: IO ()
 testBadgeCodesOnly = withOrders $ \open -> withSettings codesOnly open $ \ctx@Ctx {cStore} -> do
   seedCheckoutCatalog cStore
   (status, view) <- post ctx "/api/invoice" (createBody supporterPriceId Nothing "btc" (codeHashText sampleCode))
-  (status, field "badgeType" =<< view) `shouldBe` (200, Just "supporter")
+  (status, (`fieldOf` "badgeType") =<< view) `shouldBe` (200, Just "supporter")
   stubCalls (cStub ctx) >>= \case
-    [StubCreate method OrderDraft {odReference}] -> (method, Just (J.String odReference)) `shouldBe` (btc, field "invoiceId" =<< view)
+    [StubCreate method OrderDraft {odReference}] -> (method, Just (J.String odReference)) `shouldBe` (btc, (`fieldOf` "invoiceId") =<< view)
     other -> expectationFailure ("provider calls: " <> show other)
 
 -- | The provider's cancel settles the invoice with the signal before it answers.
@@ -1612,44 +1604,118 @@ testViewFields :: IO ()
 testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  let v = objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}
-  sort (KM.keys v)
-    `shouldBe` sort
-      [ "id", "version", "moves", "linksRefused", "phase", "labelHash", "label", "owner", "commitment", "sealed", "resolver", "sponsor", "chainId", "tld",
-        "years", "duration", "price", "fromBalance", "balance", "latePayment", "commitTx", "registerTx", "revealAfter", "revealBefore", "intentNonce", "acceptance", "unread", "expiresAt", "error", "community", "terms"
-      ]
-  field "latePayment" v `shouldBe` Just J.Null
-  let waiting w = field "latePayment" $ objectOf $ viewJSON (testNamesConfig node) r Nothing (Just w) ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}
-  map waiting [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]
+  let viewWith late vr = toRegistrationView (testNamesConfig node) r Nothing late vr
+      notAsked = ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}
+  viewWith Nothing notAsked
+    `shouldBe` RegistrationView
+      { vwId = "r1",
+        vwVersion = 1,
+        vwMoves = 0,
+        vwLinksRefused = False,
+        vwPhase = "unpaid",
+        vwLabelHash = hex $ (\(LabelHash h) -> h) alice,
+        vwLabel = Nothing,
+        vwOwner = ownerA,
+        vwCommitment = hex $ digestFixture 1,
+        vwSealed = "sealed-alicebakery-1",
+        vwResolver = fakeResolver,
+        vwSponsor = fakeSponsor,
+        vwChainId = 31337,
+        vwTld = "simplex",
+        vwYears = 2,
+        vwDuration = 69292800,
+        vwPrice = 20000,
+        vwFromBalance = 0,
+        vwBalance = Nothing,
+        vwLatePayment = Nothing,
+        vwCommitTx = Nothing,
+        vwRegisterTx = Nothing,
+        vwRevealAfter = Nothing,
+        vwRevealBefore = Nothing,
+        vwIntentNonce = Nothing,
+        vwAcceptance = Nothing,
+        vwUnread = [],
+        vwExpiresAt = Nothing,
+        vwError = Nothing,
+        vwCommunity = J.Null,
+        vwTerms = plainTerms
+      }
+  map (\w -> vwLatePayment $ viewWith (Just w) notAsked) [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]
   let acceptance community h = AcceptanceAsked {acCommunity = community, acPolicy = fakeNamePolicy, acTermsHash = h, acNonce = 2}
-      acceptanceOf a = field "acceptance" (objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRRead a})
+      acceptanceOf a = vwAcceptance $ viewWith Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRRead a}
       acceptanceJSON :: Text -> ByteString -> Maybe J.Value
       acceptanceJSON kind h = Just (J.object ["kind" .= kind, "policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex h, "nonce" .= (2 :: Int)])
   acceptanceOf (acceptance False fakeGeneralTerms) `shouldBe` acceptanceJSON "general" fakeGeneralTerms
   acceptanceOf (acceptance True fakeCommunityTerms) `shouldBe` acceptanceJSON "community" fakeCommunityTerms
-  map (`field` v) ["id", "phase", "owner", "tld", "chainId", "linksRefused", "label", "unread", "sponsor", "fromBalance", "balance", "community", "terms"]
-    `shouldBe` map
-      Just
-      [ "r1",
-        "unpaid",
-        J.String ownerAText,
-        "simplex",
-        J.Number 31337,
-        J.Bool False,
-        J.Null,
-        J.Array mempty,
-        J.String $ safeDecodeUtf8 $ strEncode fakeSponsor,
-        J.Number 0,
-        J.Null,
-        J.Null,
-        J.String plainTerms
-      ]
+
+testViewStates :: IO ()
+testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  g <- C.newRandom
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  Right () <- placePaid st "r1" ownerA o (addUTCTime 3600 t0)
+  let written change = do
+        Written _ <- withTransaction st $ \db -> getRegistration db rid >>= \r -> updateRegistration db (change $ fromJust r) t0
+        withTransaction st $ \db -> fromJust <$> getRegistration db rid
+      viewOf r = J.toJSON <$> registrationView st (testNamesConfig node) ct t0 r
+  failed <-
+    written $ \r ->
+      r
+        { nrPhase = OFailed t0 FRNotRegistered,
+          nrReveal = Just reveal,
+          nrCommitTx = Just $ TxHash $ digestFixture 8,
+          nrCommitBlock = Just 100,
+          nrRevealAfter = Just 1792574160,
+          nrRevealBefore = Just 1792660500,
+          nrRegisterTx = Just $ TxHash $ digestFixture 9,
+          nrRegisterBlock = Just 120
+        }
+  viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", "failed"), ("registerTx", txText 9), ("error", "The name could not be registered"), ("balance", J.Null)]
+  requeued <- written $ \r -> r {nrPhase = OQueued, nrRegisterTx = Nothing, nrRegisterBlock = Nothing}
+  viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", "queued"), ("registerTx", J.Null), ("error", J.Null), ("balance", J.Null)]
+  taken <- written $ \r -> r {nrPhase = OTaken}
+  withTransaction st $ \db -> creditBalance db rid 20000 t0
+  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", "taken"), ("registerTx", J.Null), ("error", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "held" .= False, "heldUntil" .= J.Null, "refunded" .= (0 :: Int)])]
+  where
+    o = order "alicebakery" 1
+    rid = RegistrationId "r1"
+    txText n = J.String $ hex $ digestFixture n
+    view changed =
+      J.Object $
+        KM.fromList changed
+          <> KM.fromList
+            [ ("id", "r1"),
+              ("moves", J.Number 0),
+              ("linksRefused", J.Bool False),
+              ("labelHash", J.String $ hex $ (\(LabelHash h) -> h) $ ofLabelHash o),
+              ("label", "alicebakery"),
+              ("owner", J.String ownerAText),
+              ("commitment", J.String $ hex $ ofCommitment o),
+              ("sealed", "sealed-alicebakery-1"),
+              ("resolver", J.String $ safeDecodeUtf8 $ strEncode fakeResolver),
+              ("sponsor", J.String $ safeDecodeUtf8 $ strEncode fakeSponsor),
+              ("chainId", J.Number 31337),
+              ("tld", "simplex"),
+              ("years", J.Number 2),
+              ("duration", J.Number 69292800),
+              ("price", J.Number 20000),
+              ("fromBalance", J.Number 0),
+              ("latePayment", J.Null),
+              ("commitTx", txText 8),
+              ("revealAfter", J.Number 1792574160),
+              ("revealBefore", J.Number 1792660500),
+              ("intentNonce", J.Null),
+              ("acceptance", J.Null),
+              ("unread", J.Array mempty),
+              ("expiresAt", J.Null),
+              ("community", J.Null),
+              ("terms", J.String plainTerms)
+            ]
 
 testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = agreed communityTerms} (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  field "terms" (objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}) `shouldBe` Just (J.String communityTerms)
+  vwTerms (toRegistrationView (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}) `shouldBe` communityTerms
 
 testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1677,8 +1743,8 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   setFault node "eth_call" HttpFailure
   readViewChain ct committed `shouldReturn` ViewReads VRUnread VRUnread
   readViewChain ct taken `shouldReturn` ViewReads VRNotAsked VRNotAsked
-  let v = objectOf $ viewJSON (testNamesConfig node) committed Nothing Nothing (ViewReads VRUnread VRUnread)
-  (field "intentNonce" v, field "acceptance" v, field "unread" v) `shouldBe` (Just J.Null, Just J.Null, Just (J.toJSON ["intentNonce", "acceptance" :: Text]))
+  let v = toRegistrationView (testNamesConfig node) committed Nothing Nothing (ViewReads VRUnread VRUnread)
+  (vwIntentNonce v, vwAcceptance v, vwUnread v) `shouldBe` (Nothing, Nothing, ["intentNonce", "acceptance"])
 
 testViewReadsBounded :: IO ()
 testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1713,9 +1779,9 @@ testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       viewOf :: Text -> UTCTime -> IO J.Object
       viewOf rid now = do
         r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId rid)
-        objectOf <$> registrationView st (testNamesConfig node) ct now r
+        objectOf . J.toJSON <$> registrationView st (testNamesConfig node) ct now r
       balanceOf :: J.Object -> (Maybe J.Value, Maybe J.Value)
-      balanceOf v = (field "balance" v, field "fromBalance" v)
+      balanceOf v = (fieldOf v "balance", fieldOf v "fromBalance")
       balance :: Int -> Bool -> Maybe UTCTime -> Int -> J.Value
       balance amount held heldUntil refunded = J.object ["amount" .= amount, "held" .= held, "heldUntil" .= heldUntil, "refunded" .= refunded]
   Right () <- placePaid st "source" ownerA (order "alicebakery" 1) holderExpiry
@@ -1732,4 +1798,4 @@ testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   withTransaction st (\db -> refundBalance db (RegistrationId "source") 15000 t0) `shouldReturn` True
   v <- viewOf "source" t0
   balanceOf v `shouldBe` (Just $ balance 0 False Nothing 15000, Just $ J.Number 0)
-  field "version" v `shouldBe` Just (J.toJSON version)
+  fieldOf v "version" `shouldBe` Just (J.toJSON version)

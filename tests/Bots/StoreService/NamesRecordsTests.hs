@@ -6,9 +6,9 @@
 module Bots.StoreService.NamesRecordsTests (namesRecordsTests) where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (minPriceCentsPerYear)
+import Bots.StoreService.NamesContractsTests (alice, gracePeriod, minPriceCentsPerYear, otherResolver, registry)
 import Bots.StoreService.NamesStoreTests (t0)
-import Bots.StoreService.WebTests (withServiceStore)
+import Bots.StoreService.WebTests (bounded, withServiceStore)
 import Bots.StoreService.WebUIMock (EphemeralWallet (..), newEphemeralWallet, walletFromCode)
 import Control.Concurrent.Async (Async, async, concurrently, wait)
 import Control.Concurrent.STM
@@ -17,7 +17,6 @@ import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.ByteString.Builder (toLazyByteString)
@@ -41,9 +40,9 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), signRecoverable)
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
+import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
 import StoreService.Names.Chain
@@ -223,16 +222,13 @@ mineSent s@Setup {node, sender, records} n ok = do
 
 -- | The transactions sent, once the request that sent the n-th has let go of its edit, since until then a round skips the edit.
 sentBy :: Setup -> Int -> IO [ByteString]
-sentBy Setup {node, records} n = within $ do
+sentBy Setup {node, records} n = bounded "the sent transactions" $ do
   raws <- awaitSent node n
   atomically $ readTVar (rsClaimed records) >>= check . S.null
   pure raws
 
 answerOf :: Async EditAnswer -> IO EditAnswer
-answerOf = within . wait
-
-within :: IO a -> IO a
-within action = timeout 5000000 action >>= maybe (fail "timed out") pure
+answerOf = bounded "the edit's answer" . wait
 
 stateOf :: Setup -> EditRequest -> IO (Maybe EditState)
 stateOf Setup {store} req = withTransaction store $ \db -> fmap reState <$> getRecordEditByBody db (bodyHashOf req)
@@ -459,7 +455,7 @@ testConcurrentTwin g = withSetup g $ \s@Setup {node, records} -> do
   _ <- sentBy s 1
   clearFault node "eth_getBlockByNumber"
   h <- mineSent s 1 True
-  within (wait answers) `shouldReturn` (EASettled (EOApplied $ Just h), EASettled (EOApplied $ Just h))
+  bounded "the edits' answers" (wait answers) `shouldReturn` (EASettled (EOApplied $ Just h), EASettled (EOApplied $ Just h))
   length <$> sentTransactions node `shouldReturn` 1
   editRows s `shouldReturn` 1
 
@@ -715,11 +711,11 @@ testBadRowSkipped g = withSetup g $ \s@Setup {store, clock} -> do
     DB.execute
       db
       "INSERT INTO sx_badge_service_name_record_edits (label_hash, owner, nonce, body_hash, state, created_at) VALUES (?,?,5,?,'pending',?)"
-      (Binary $ unLabel alice, Binary $ unAddress viemAddress, Binary $ B.replicate 32 0, now)
+      (alice, viemAddress, Binary $ B.replicate 32 0, now)
     DB.execute
       db
       "INSERT INTO sx_badge_service_name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) SELECT name_record_edit_id, 5, 'simplex.channel', NULL, ?, ? FROM sx_badge_service_name_record_edits WHERE nonce = 5"
-      (deadline, Binary $ serializeSignature viemSetSignature)
+      (deadline, viemSetSignature)
   req <- ownerEdit s viemChannelLink
   saveUnsent s req
   s' <- restart s
@@ -899,11 +895,11 @@ testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post 
   editRows s `shouldReturn` 0
   answer <- async $ post $ editBody viemChannelLink
   TxHash h <- mineSent s 1 True
-  within (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
+  bounded "the edit's answer" (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
   setNonce s 1
   next <- async . post . J.encode . editJson =<< signEdit s (owner s) (channel "https://smp9.simplex.im/c#next") 1 deadline
   _ <- mineSent s 2 False
-  within (wait next) `shouldReturn` (409, Just $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= J.Null], Nothing)
+  bounded "the edit's answer" (wait next) `shouldReturn` (409, Just $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= J.Null], Nothing)
 
 testEditResponses :: IO ()
 testEditResponses =
@@ -931,7 +927,7 @@ testHttpTwoLongLinks g = withSetup g $ \s@Setup {records} -> withRecordsApp reco
   body <- J.encode . editJson <$> ownerTwo s 0 (longLink "https://smp8.simplex.im/a#") (longLink "https://smp8.simplex.im/c#")
   answer <- async $ post body
   TxHash h <- mineSent s 1 True
-  within (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
+  bounded "the edit's answer" (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
 
 -- | Posts a body to the records handler, answering the status, the JSON body and Retry-After.
 withRecordsApp :: Records -> ((LB.ByteString -> IO (Int, Maybe J.Value, Maybe ByteString)) -> IO a) -> IO a
@@ -988,9 +984,6 @@ digestOf change nonce dl = case change of
 resolverDomain' :: Eip712Domain
 resolverDomain' = resolverDomain fakeChainId fakeResolver
 
-alice :: LabelHash
-alice = labelHash "alicebakery"
-
 aliceNode :: Node
 aliceNode = labelNode TLDSimplex alice
 
@@ -1008,13 +1001,8 @@ channelKey = "simplex.channel"
 deadline :: Word64
 deadline = 1767229200
 
-nameExpiry, gracePeriod :: Word64
+nameExpiry :: Word64
 nameExpiry = 1861833600
-gracePeriod = 7776000
-
-registry, otherResolver :: Address
-registry = address "0x5fbdb2315678afecb367f032d93f642f64180aa3"
-otherResolver = address "0x4826533b4897376654bb4d4ad88b7fafd0c98528"
 
 -- | The fake node's first block time.
 genesis :: Word64
@@ -1056,6 +1044,3 @@ viemMulticall = unhex "ac9650d80000000000000000000000000000000000000000000000000
 viemSetCall, viemClearCall :: ByteString
 viemSetCall = unhex "71a218a70f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006955c7100000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e6368616e6e656c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e68747470733a2f2f736d70382e73696d706c65782e696d2f632359386d3300000000000000000000000000000000000000000000000000000000000000000041fce4c6865591609c07ef3d94f376187d8a20cd9d94b4affcb60b55e999038fbd4e45c42b5fafe66a8d4f756e99398602eacef777b4dce4afd0a767cddadf3ca91c00000000000000000000000000000000000000000000000000000000000000"
 viemClearCall = unhex "6463e6140f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000006955c710000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000410565f7e5a591c200fcc358c1d9e9293721d0b99f0285b589211203e311e8e6167ee822d664048870bdd8552263d25bbf45e7f4985fd3b8c3a19cfced44ef9d561c00000000000000000000000000000000000000000000000000000000000000"
-
-unhex :: ByteString -> ByteString
-unhex = either error id . convertFromBase Base16

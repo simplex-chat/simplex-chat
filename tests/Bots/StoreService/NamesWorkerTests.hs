@@ -7,12 +7,12 @@ module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (figures)
-import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, noncesCall, registrarOf, unhex)
+import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, noncesCall, registrarOf)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
-import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, stubCalls, webGet, withApp)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, fieldOf, jsonObject, refusedWith, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -30,15 +30,15 @@ import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word8, Word64)
-import Network.HTTP.Client (responseBody)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig)
@@ -192,9 +192,6 @@ minAge, maxAge :: Word64
 minAge = 60
 maxAge = 86400
 
-orderSeconds :: Word64
-orderSeconds = floor $ utcTimeToPOSIXSeconds orderTime
-
 expiry :: Word64
 expiry = orderSeconds + 2 * 31536000
 
@@ -307,7 +304,7 @@ published W {wCtx = ctx} r action = do
   a <- action
   (status, view) <- woken "the registration poll" poll
   NameRegistration {nrVersion = written} <- stored ctx r
-  (status, field "version" view, written > nrVersion) `shouldBe` (200, Just (J.toJSON written), True)
+  (status, fieldOf view "version", written > nrVersion) `shouldBe` (200, Just (J.toJSON written), True)
   pure a
 
 traverseFst :: (a -> IO c) -> (a, b) -> IO (c, b)
@@ -328,12 +325,12 @@ testCodesOnlyRegister :: IO ()
 testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   (text, code) <- issueCode ctx 8 2 id
   (status, coverage) <- post ctx "/api/code/check" (J.encode $ J.object ["code" J..= text])
-  (status, field "state" =<< coverage) `shouldBe` (200, Just "unused")
+  (status, (`fieldOf` "state") =<< coverage) `shouldBe` (200, Just "unused")
   placeOrder ctx aliceOrder `shouldReturn` refusedWith 403 "codes_only"
   r <- registrationById ctx =<< registered ctx text aliceOrder
   commitWaitRegister w (r, code)
-  (status', view) <- (statusOf &&& J.decode . responseBody) <$> webGet cClient (registrationPath $ nrId r)
-  (status', field "phase" =<< view) `shouldBe` (200, Just "registered")
+  (status', view) <- answerOf <$> webGet cClient (registrationPath $ nrId r)
+  (status', (`fieldOf` "phase") =<< view) `shouldBe` (200, Just "registered")
   stubCalls (cStub ctx) `shouldReturn` []
 
 -- | A queued code order, committed, revealed and registered.
@@ -568,7 +565,7 @@ aliceRegistration :: Text -> Int -> NewRegistration
 aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgYears = 2, nrgOrderHash = orderHash ownerA (aliceFields n) (OTInvoice btc $ oPrice aliceOrder)}
 
 -- | The amount and credited of the order's balance.
-balanceFigures :: Ctx -> RegistrationId -> IO (Maybe (Int, Int))
+balanceFigures :: Ctx -> RegistrationId -> IO (Maybe (USDCents, USDCents))
 balanceFigures Ctx {cStore} rid = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (\db -> getBalance db rid orderTime)
 
 -- | The register's dry run reverts on a name someone else holds, so the registration ends taken.
@@ -622,7 +619,7 @@ testTakenWakesPoll = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   isJust <$> Async.poll waiting `shouldReturn` False
   endsTaken w r
   (status, view) <- woken "the registration poll" waiting
-  (status, field "phase" view) `shouldBe` (200, Just "taken")
+  (status, fieldOf view "phase") `shouldBe` (200, Just "taken")
   balanceFigures ctx (nrId r) `shouldReturn` Just (500 + oPrice aliceOrder, 500 + oPrice aliceOrder)
   where
     shortWait = 500000
@@ -1112,7 +1109,7 @@ testRetryLanded = withWorker $ \W {wCtx = ctx} -> do
   TxHash minedHash <- sentRegister ctx redeemed 1 TSMined
   answerExpiry ctx "alicebakery" expiry
   v <- retried ctx redeemed
-  (field "phase" v, field "registerTx" v, field "expiresAt" v, field "error" v) `shouldBe` (Just "registered", Just (J.String $ hex minedHash), Just (J.toJSON expiry), Just J.Null)
+  (fieldOf v "phase", fieldOf v "registerTx", fieldOf v "expiresAt", fieldOf v "error") `shouldBe` (Just "registered", Just (J.String $ hex minedHash), Just (J.toJSON expiry), Just J.Null)
   x <- stored ctx redeemed
   (namePhase (nrPhase x), nrVersion x) `shouldBe` (PRegistered, nrVersion redeemed + 1)
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
@@ -1121,7 +1118,7 @@ testRetryLanded = withWorker $ \W {wCtx = ctx} -> do
   answerOwner ctx "dynamis" (nrOwner owned)
   answerExpiry ctx "dynamis" expiry
   v' <- retried ctx owned
-  (field "phase" v', field "registerTx" v', field "expiresAt" v') `shouldBe` (Just "registered", Just J.Null, Just (J.toJSON expiry))
+  (fieldOf v' "phase", fieldOf v' "registerTx", fieldOf v' "expiresAt") `shouldBe` (Just "registered", Just J.Null, Just (J.toJSON expiry))
 
 testRetryUnread :: IO ()
 testRetryUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}} -> do
@@ -1163,11 +1160,11 @@ testRetryReleasedCode = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
   -- a code its order still holds stays good for it, though revoked and expired since
   (holding, heldCode@PrepaidCode {pcCodeHash}) <- codeOrder 6 failedPhase
   withTransaction cStore $ \db -> revokePrepaidCode db pcCodeHash orderTime >> expire db pcCodeHash
-  field "phase" <$> retried ctx holding `shouldReturn` Just "queued"
+  (`fieldOf` "phase") <$> retried ctx holding `shouldReturn` Just "queued"
   pcReservedBy <$> codeOf ctx heldCode `shouldReturn` Just (nrId holding)
   -- a released code still unused is reserved again
   (unused, unusedCode) <- codeOrder 7 failedPhase >>= released
-  field "phase" <$> retried ctx unused `shouldReturn` Just "queued"
+  (`fieldOf` "phase") <$> retried ctx unused `shouldReturn` Just "queued"
   (pcReservedBy &&& pcSpentAt) <$> codeOf ctx unusedCode `shouldReturn` (Just (nrId unused), Nothing)
 
 testRetryRequeue :: IO ()
@@ -1176,7 +1173,7 @@ testRetryRequeue = withWorker $ \w@W {wCtx = ctx} -> do
   h <- sentRegister ctx committed 1 TSReverted
   r <- rewrite ctx committed $ \o -> (failedPhase o) {nrRegisterTx = Just h, nrRegisterBlock = Just 120}
   v <- published w r $ retried ctx r
-  (field "phase" v, field "registerTx" v, field "error" v, field "version" v) `shouldBe` (Just "queued", Just J.Null, Just J.Null, Just (J.toJSON $ nrVersion r + 1))
+  (fieldOf v "phase", fieldOf v "registerTx", fieldOf v "error", fieldOf v "version") `shouldBe` (Just "queued", Just J.Null, Just J.Null, Just (J.toJSON $ nrVersion r + 1))
   x <- stored ctx r
   (nrPhase x, nrRegisterTx x, nrRegisterBlock x) `shouldBe` (OQueued, Nothing, Nothing)
   (nrCommitTx x, nrCommitBlock x, nrRevealAfter x, nrRevealBefore x) `shouldBe` (nrCommitTx r, nrCommitBlock r, nrRevealAfter r, nrRevealBefore r)
@@ -1187,7 +1184,7 @@ testRetryLiveCommitment = withWorker $ \w@W {wCtx = ctx} -> do
   f <- failedAfterRegister w r
   answerNonce w $ rvNonce reveal
   v <- retried ctx f
-  (field "phase" v, field "label" v) `shouldBe` (Just "queued", Just "alicebakery")
+  (fieldOf v "phase", fieldOf v "label") `shouldBe` (Just "queued", Just "alicebakery")
   steps w f >>= waitingUntil >>= (`shouldBe` at (t + minAge))
   x <- stored ctx f
   (nrPhase x, nrReveal x, nrCommitTx x, nrCommitBlock x, nrRevealBefore x) `shouldBe` (OCommitted, nrReveal f, nrCommitTx f, nrCommitBlock f, Just (t + maxAge))
@@ -1201,7 +1198,7 @@ testRetryShortDeadline = withWorker $ \w@W {wCtx = ctx} -> do
   short <- rewrite ctx f $ \o -> o {nrReveal = Just rv}
   answerNonce w $ rvNonce rv
   v <- retried ctx short
-  (field "phase" v, field "label" v) `shouldBe` (Just "queued", Just J.Null)
+  (fieldOf v "phase", fieldOf v "label") `shouldBe` (Just "queued", Just J.Null)
   nrReveal <$> stored ctx short `shouldReturn` Nothing
 
 testRetryLapsedIntent :: IO ()
@@ -1211,7 +1208,7 @@ testRetryLapsedIntent = withWorker $ \w@W {wCtx = ctx} -> do
   f <- failedAfterRegister w r >>= \x -> rewrite ctx x (\o -> o {nrReveal = Just rv})
   answerNonce w $ rvNonce rv
   advance ctx $ fromIntegral (t + maxAge + 1 - orderSeconds)
-  field "label" <$> retried ctx f `shouldReturn` Just "alicebakery"
+  (`fieldOf` "label") <$> retried ctx f `shouldReturn` Just "alicebakery"
   void $ steps w f >>= awaiting
   x <- stored ctx f
   (nrPhase x, nrReveal x, nrRevealBefore x) `shouldBe` (OCommitting, Just rv, Nothing)
@@ -1223,7 +1220,7 @@ testRetryNonceMoved = withWorker $ \w@W {wCtx = ctx} -> do
   f <- failedAfterRegister w r
   answerNonce w $ rvNonce reveal + 1
   v <- retried ctx f
-  (field "phase" v, field "label" v, field "commitTx" v) `shouldBe` (Just "queued", Just J.Null, txJSON (nrCommitTx f))
+  (fieldOf v "phase", fieldOf v "label", fieldOf v "commitTx") `shouldBe` (Just "queued", Just J.Null, txJSON (nrCommitTx f))
   nrReveal <$> stored ctx f `shouldReturn` Nothing
 
 testRetryRefusedIntent :: IO ()
@@ -1235,7 +1232,7 @@ testRetryRefusedIntent = withWorker $ \w@W {wCtx = ctx} -> do
   f' <- rewrite ctx f $ \o -> o {nrReveal = Just rv}
   answerNonce w $ rvNonce reveal
   v <- retried ctx f'
-  (field "phase" v, field "label" v) `shouldBe` (Just "queued", Just J.Null)
+  (fieldOf v "phase", fieldOf v "label") `shouldBe` (Just "queued", Just J.Null)
   nrReveal <$> stored ctx f' `shouldReturn` Nothing
 
 testRetryThirdParty :: IO ()
@@ -1248,11 +1245,11 @@ testRetryThirdParty = withWorker $ \w@W {wCtx = ctx} -> do
   answerCommitment w f t'
   advance ctx $ fromIntegral (t' + 10 - orderSeconds)
   v <- retried ctx f
-  (field "label" v, field "commitTx" v) `shouldBe` (Just J.Null, txJSON (nrCommitTx f))
+  (fieldOf v "label", fieldOf v "commitTx") `shouldBe` (Just J.Null, txJSON (nrCommitTx f))
   steps w f >>= waitingUntil >>= (`shouldBe` at (t' + maxAge + 1))
   x <- stored ctx f
   (nrPhase x, nrReveal x, nrCommitTx x, nrCommitBlock x, nrRevealBefore x) `shouldBe` (OCommitted, Nothing, Nothing, Nothing, Just (t' + maxAge))
-  field "commitTx" <$> viewOf ctx f `shouldReturn` Just J.Null
+  (`fieldOf` "commitTx") <$> viewOf ctx f `shouldReturn` Just J.Null
   length <$> sent w `shouldReturn` 1
 
 testRetryMargin :: IO ()
@@ -1262,7 +1259,7 @@ testRetryMargin = withWorker $ \w@W {wCtx = ctx} -> do
   answerNonce w $ rvNonce reveal
   let lapse = t + maxAge
   advance ctx $ fromIntegral (lapse - 600 - orderSeconds)
-  field "label" <$> retried ctx f `shouldReturn` Just J.Null
+  (`fieldOf` "label") <$> retried ctx f `shouldReturn` Just J.Null
   steps w f >>= waitingUntil >>= (`shouldBe` at (lapse + 1))
   advance ctx 601
   void $ steps w f >>= awaiting
@@ -1279,12 +1276,12 @@ testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   let path = registrationPath (nrId r) <> "?seenVersion=" <> show (nrVersion r)
   poll <- held ctx (0, 1) path
   v <- retried ctx r
-  (field "phase" v, field "version" v, field "error" v) `shouldBe` (Just "queued", Just (J.toJSON $ nrVersion r + 1), Just J.Null)
+  (fieldOf v "phase", fieldOf v "version", fieldOf v "error") `shouldBe` (Just "queued", Just (J.toJSON $ nrVersion r + 1), Just J.Null)
   (status, view) <- woken "the poll held at the lapse" poll
-  (status, field "phase" view) `shouldBe` (200, Just "queued")
+  (status, fieldOf view "phase") `shouldBe` (200, Just "queued")
   -- prompt is far below the 30-second hold
   (status', view') <- timeout prompt (webGet cClient path >>= \resp -> (statusOf resp,) <$> jsonObject resp) >>= maybe (fail "the old version was held") pure
-  (status', field "version" view') `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1))
+  (status', fieldOf view' "version") `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1))
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
   -- the commitment lapsed, so the worker commits it again
   answerCommitment w r $ fromJust (nrRevealBefore r) - maxAge
@@ -1301,7 +1298,7 @@ testRetryLostRace = withWorker $ \W {wCtx = ctx@Ctx {cNode}} -> do
   answer <- timeout prompt (wait retrying') >>= maybe (fail "the retry did not finish") pure
   view <- viewOf ctx r
   answer `shouldBe` (409, Just $ KM.fromList [("error", "registration_changed"), ("registration", J.Object view)])
-  field "version" view `shouldBe` Just (J.toJSON $ nrVersion r + 1)
+  fieldOf view "version" `shouldBe` Just (J.toJSON $ nrVersion r + 1)
   stored ctx r `shouldReturn` changed
 
 testRetryInNameTurn :: IO ()
@@ -1322,19 +1319,19 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
             putMVar release ()
             timeout prompt (wait requesting) >>= maybe (fail "the retry did not finish") pure
   (status, v) <- whileHeld (retryOf ctx r) (stored ctx r `shouldReturn` r)
-  (status, field "phase" =<< v) `shouldBe` (200, Just "queued")
+  (status, (`fieldOf` "phase") =<< v) `shouldBe` (200, Just "queued")
   -- moved to another name while the retry waited for the old name's turn
   (status', v') <- whileHeld (retryOf ctx moving) (void $ rewrite ctx moving $ \o -> o {nrLabelHash = labelHash "dynamis", nrLength = 7})
-  (status', field "error" =<< v') `shouldBe` (409, Just "registration_changed")
+  (status', (`fieldOf` "error") =<< v') `shouldBe` (409, Just "registration_changed")
   nrPhase <$> stored ctx moving `shouldReturn` nrPhase moving
 
 closeOf :: Ctx -> NameRegistration -> IO Closed
 closeOf Ctx {cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}} NameRegistration {nrId = RegistrationId rid} = closeRegistration oeStore oeContracts oeTurns oeNow rid
 
-figuresOf :: Ctx -> NameRegistration -> IO (Maybe (Int, Int, Int, Maybe BalanceHold))
+figuresOf :: Ctx -> NameRegistration -> IO (Maybe (USDCents, USDCents, USDCents, Maybe BalanceHold))
 figuresOf Ctx {cStore} NameRegistration {nrId = RegistrationId rid} = figures cStore rid orderTime
 
-refundedWhole :: Ctx -> NameRegistration -> Int -> IO RefundRecord
+refundedWhole :: Ctx -> NameRegistration -> USDCents -> IO RefundRecord
 refundedWhole ctx r price = (\ref -> RefundRecord {rdRegistration = nrId r, rdCents = price, rdChain = [BalanceLink {lkRegistration = nrId r, lkOwner = nrOwner r, lkPayment = nrPayment r, lkProviderRef = Just ref, lkPaid = price, lkFromBalance = 0, lkLateCredits = []}]}) <$> paidRef ctx r
 
 paidRef :: Ctx -> NameRegistration -> IO Text

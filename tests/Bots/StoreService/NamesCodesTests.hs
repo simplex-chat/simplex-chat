@@ -6,7 +6,7 @@
 module Bots.StoreService.NamesCodesTests (namesCodesTests) where
 
 import Bots.StoreService.NamesStoreTests (order, ownerA, ownerB, placeCode, placePaid, usable)
-import Bots.StoreService.WebTests (withServiceStore, withApp)
+import Bots.StoreService.WebTests (answerOf, refusedWith, withServiceStore, withApp)
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently)
@@ -19,8 +19,7 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
-import Network.HTTP.Client (Manager, Response, RequestBody (..), httpLbs, method, parseRequest, requestBody, responseBody, responseStatus)
-import Network.HTTP.Types.Status (statusCode)
+import Network.HTTP.Client (Manager, Response, RequestBody (..), httpLbs, method, parseRequest, requestBody)
 import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, formatNameCode, nameLength, namePrepaidCodeHash, parseNameCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -126,14 +125,8 @@ checkText client code = postCheck client (J.encode (J.object ["code" J..= code])
 checkCode :: Client -> NamePrepaidCode -> IO (Response LB.ByteString)
 checkCode client = checkText client . formatNameCode
 
-answerOf :: Response LB.ByteString -> (Int, Maybe J.Object)
-answerOf r = (statusCode (responseStatus r), J.decode (responseBody r))
-
 coverage :: Int -> Int -> Text -> (Int, Maybe J.Object)
 coverage minLength years state = (200, Just $ KM.fromList [("minLength", J.toJSON minLength), ("years", J.toJSON years), ("state", J.String state)])
-
-refused :: Int -> Text -> (Int, Maybe J.Object)
-refused status tag = (status, Just $ KM.fromList [("error", J.String tag)])
 
 newCode :: Int -> IO NamePrepaidCode
 newCode len = C.newRandom >>= (`randomNamePrepaidCode` lengthOf len)
@@ -161,7 +154,7 @@ testCheckFolded = withCodeCheck $ \st client -> do
 testCheckInvalid :: IO ()
 testCheckInvalid = withCodeCheck $ \_ client -> do
   unknown <- newCode 8
-  let invalid = refused 400 "code_invalid"
+  let invalid = refusedWith 400 "code_invalid"
   answerOf <$> checkCode client unknown `shouldReturn` invalid
   forM_
     [ "SN-DWPHS-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5",
@@ -171,7 +164,7 @@ testCheckInvalid = withCodeCheck $ \_ client -> do
 
 testCheckBadBody :: IO ()
 testCheckBadBody = withCodeCheck $ \_ client -> do
-  let badRequest = refused 400 "bad_request"
+  let badRequest = refusedWith 400 "bad_request"
   forM_ ["", "not json", "[\"SN7-BJTBP-29596-R3HJ8-25YM7\"]", "{}", "{\"code\": 7}", "{\"code\": null}"] $ \body ->
     (body,) . answerOf <$> postCheck client body `shouldReturn` (body, badRequest)
   let overCap = "{\"code\": \"SN7-BJTBP-29596-R3HJ8-25YM7\", \"pad\": \"" <> LB.replicate 8192 'x' <> "\"}"

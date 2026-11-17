@@ -6,9 +6,9 @@
 
 module Bots.StoreService.NamesLateCreditTests (namesLateCreditTests) where
 
-import Bots.StoreService.NamesBalancesTests (fieldsN, figures, holder, invariantHolds, placeOrderRow, source)
-import Bots.StoreService.NamesStoreTests (at, newReg, ownerA, reg, t0)
-import Bots.StoreService.WebTests (StubCall (..), StubState (..), capturingStderr, newStubState, sampleProviderInvoice, setSignals, stubCalls, stubProvider, withServiceStore)
+import Bots.StoreService.NamesBalancesTests (coveredSpend, figures, holder, invariantHolds, placeOrderRow, source)
+import Bots.StoreService.NamesStoreTests (at, ownerA, reg, t0)
+import Bots.StoreService.WebTests (StubCall (..), StubState (..), capturingStderr, newStubState, sampleProviderInvoice, setSignals, stubCalls, stubProvider, stubRate, withServiceStore)
 import Control.Monad (void)
 import qualified Data.Aeson as J
 import Data.Int (Int64)
@@ -19,6 +19,7 @@ import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Names.Record (USDCents)
 import StoreService.Config (PollConfig (..))
 import StoreService.Names.Balances (recordRefund)
 import StoreService.Names.LateCredits (CreditOutcome (..), creditLateInvoice, lateCreditOf)
@@ -169,9 +170,6 @@ setRate Late {lStub} r = atomicModifyIORef' lStub $ \s -> (s {ssRate = r}, ())
 rateOf :: Text -> Rational -> Rate
 rateOf t v = Rate {rateText = t, rateValue = fromRational v}
 
-stubRate :: Rate
-stubRate = rateOf "60000.5" 60000.5
-
 -- | An unpaid order of 20000 cents, crypto unless card, whose invoice the provider closed with nothing received.
 closedOrder :: Late -> Text -> Bool -> IO ()
 closedOrder l@Late {lStore} r card = do
@@ -198,7 +196,7 @@ alertsAt :: Late -> Either ProviderError Rate -> UTCTime -> IO Text
 alertsAt Late {lStore} r now = withLateOn lStore $ \l@Late {lPoller} -> setRate l r >> capturingStderr (cleanupUnpaid lPoller now)
 
 -- | Amount, credited and refunded of the order's balance.
-balanceOf :: DBStore -> Text -> IO (Maybe (Int, Int, Int))
+balanceOf :: DBStore -> Text -> IO (Maybe (USDCents, USDCents, USDCents))
 balanceOf st r = fmap (\(amount, credited, refunded, _) -> (amount, credited, refunded)) <$> figures st r t0
 
 -- | Units, the invoice's, current and used rates, and cents of each credit of the order's invoice.
@@ -638,9 +636,6 @@ testCreditWhileHeld = withLate $ \l@Late {lStore = st} -> do
   settleAt l "h" (SigSettled (btcPaidOf 332800 330000 330000) (at 10)) (at 10) `shouldReturn` ISPaid
   figures st "x" (at 10) `shouldReturn` Just (4800, 24000, 0, Nothing)
   invariantHolds st "x"
-
-coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either BalanceInsertRefused ())
-coveredSpend st r src price seen = withTransaction st $ \db -> createBalanceRegistration db (newReg r ownerA (fieldsN r)) BalanceUse {buSource = RegistrationId src, buUsed = price} seen t0
 
 testCreditRefundTwice :: IO ()
 testCreditRefundTwice = withLate $ \l@Late {lStore = st} -> do

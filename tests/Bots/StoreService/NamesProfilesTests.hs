@@ -507,7 +507,7 @@ testSharedHostLookup = do
   replicateConcurrently 4 (search fake (slow 1)) `shouldReturn` replicate 4 ProfileUnread
   joined <- getCurrentTime
   search fake (slow 2) `shouldReturn` ProfileUnread
-  (`diffUTCTime` joined) <$> getCurrentTime >>= (`shouldSatisfy` (< 0.2))
+  (`diffUTCTime` joined) <$> getCurrentTime >>= (`shouldSatisfy` (< fromIntegral testTimeout / 1000000))
   lookups `shouldReturn` 1
   search fake (addressLink 1) `shouldReturn` ProfileUnavailable
   atomically $ putTMVar gate ()

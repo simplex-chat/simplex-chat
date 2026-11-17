@@ -13,7 +13,6 @@ import Control.Concurrent.STM
 import Control.Monad (forM_, replicateM_)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.ByteArray as BA
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.List (sort)
@@ -428,9 +427,6 @@ refusedWith submit expected =
   submit >>= \case
     Left e -> e `shouldBe` expected
     Right p -> expectationFailure $ "sent with nonce " <> show (ptNonce p)
-
-unhex :: ByteString -> ByteString
-unhex = either error id . convertFromBase Base16
 
 viemTxYParity1ShortS :: ByteString
 viemTxYParity1ShortS = unhex "02f86f827a693b843b9aca00850737be76008306ddd0945fbdb2315678afecb367f032d93f642f64180aa38082abcdc001a03e704053d6725b7b06476fca04827611f81b637f38b5ab351d62c236252ac06e9f9738e8cce6189740f438c699b4b77b8f9c4a15376ed3b3ef48fea57c459ed8"
