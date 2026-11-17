@@ -276,7 +276,8 @@ thread (`base64ImageDecoder`); the other parts of the item, such as file status 
 whose view leaves the composition before its decoding starts is not decoded. A picture whose header is readable keeps
 the header's size: when its decoding fails, the error picture is drawn at that size. Pictures are decoded with the
 subsampling of `imageSampleSize(width, height, 512)`, at most about one megapixel. The cache holds up to 1000 entries
-and 64 MB of pixels and keys, and keeps the error picture of a picture that cannot be decoded.
+and 64 MB of bitmap memory and keys, and keeps the error picture of a picture that cannot be decoded. Android clears
+the cache when the app's UI is hidden or memory is low (`onTrimMemory` at `TRIM_MEMORY_UI_HIDDEN` or above).
 
 Notifications of contact requests and incoming calls decode the contact's picture with `base64ToBitmap` where they are
 created. The Android call service shows the app icon until the picture is decoded on the background thread. The
