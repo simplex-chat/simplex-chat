@@ -2116,11 +2116,11 @@ testBusinessAddressPreparedContactAccepted =
       bob ##> "/_connect contact @2"
       bob <## "biz: connection started"
       biz <## "#bob (Bob): accepting business address request..."
-      bob <## "#biz: joining the group..."
+      bob <## "#biz_1: joining the group..."
       concurrently_
         (biz <## "#bob: bob_1 joined the group")
-        (bob <## "#biz: you joined the group")
-      bob #> "#biz hello"
+        (bob <## "#biz_1: you joined the group")
+      bob #> "#biz_1 hello"
       biz <# "#bob bob_1> hello"
 
 newAgentInvitation :: TestCC -> IO ConnReqInvitation
