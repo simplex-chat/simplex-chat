@@ -100,7 +100,28 @@ def link_desktop_libs(source: Path, platform_dir: str, compose_dir: str) -> None
 CORE_HASH = "core-hash"
 
 
-UI_UPDATE_CLASSES = ("chat/simplex/desktop/MainKt.class", "chat/simplex/common/BuildConfigCommon.class")
+UI_UPDATES_SOURCE = "apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/helpers/UiUpdates.kt"
+
+
+CORE_SOURCES = (
+    "src",
+    "cabal.project",
+    "simplex-chat.cabal",
+    "PRIVACY.md",
+    "libsimplex.dll.def",
+    "apps/multiplatform/common/src/commonMain/cpp/desktop/CMakeLists.txt",
+    "apps/multiplatform/common/src/commonMain/cpp/desktop/include",
+    "apps/multiplatform/common/src/commonMain/cpp/desktop/simplex-api.c",
+    "apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/platform/CoreBindings.kt",
+    UI_UPDATES_SOURCE,
+)
+
+
+UI_UPDATE_CLASSES = (
+    "chat/simplex/desktop/MainKt.class",
+    "chat/simplex/common/BuildConfigCommon.class",
+    "org/nanohttpd/protocols/http/NanoHTTPD.class",
+)
 
 
 JAR_CONTENT_HASH = re.compile(r"(-[0-9a-f]{16,32})?\.jar$")
@@ -109,8 +130,31 @@ JAR_CONTENT_HASH = re.compile(r"(-[0-9a-f]{16,32})?\.jar$")
 CLASSPATH_ENTRY = re.compile(r"app\.classpath=\$APPDIR[/\\]+(.+)")
 
 
-def ui_base(core_hash: str, dependencies: Sequence[str]) -> str:
-    lines = [core_hash, *sorted(JAR_CONTENT_HASH.sub("", name) for name in dependencies)]
+JAVA_OPTION = "java-options="
+
+
+APP_VERSION_OPTION = "-Djpackage.app-version="
+
+
+def ui_core_hash(source: Path) -> str | None:
+    if not (source / UI_UPDATES_SOURCE).is_file():
+        return None
+    digest = hashlib.sha256()
+    for name in CORE_SOURCES:
+        root = source / name
+        files = [root] if root.is_file() else [p for p in root.rglob("*") if p.is_file()] if root.is_dir() else []
+        for path in sorted(p.relative_to(source).as_posix() for p in files):
+            digest.update(f"{path} {sha256(source / path)}\n".encode())
+    return digest.hexdigest()
+
+
+def ui_base(core_hash: str, dependencies: Sequence[str], runtime: Sequence[str], options: Sequence[str]) -> str:
+    lines = [
+        f"core {core_hash}",
+        *sorted(f"jar {JAR_CONTENT_HASH.sub('', name)}" for name in dependencies),
+        *(f"runtime {line}" for line in runtime),
+        *(f"option {option}" for option in options if not option.startswith(APP_VERSION_OPTION)),
+    ]
     return hashlib.sha256("".join(f"{line}\n" for line in lines).encode()).hexdigest()
 
 
@@ -119,11 +163,13 @@ def ui_jar(jar: Path) -> bool:
         return any(name in UI_UPDATE_CLASSES for name in z.namelist())
 
 
-def zip_ui_update(jars: Path, core_hash: str, source: Path, out: Path) -> None:
-    cfg = single_file(jars, "*.cfg").read_text().splitlines()
+def zip_ui_update(jars: Path, runtime: Path, core_hash: str, source: Path, out: Path) -> None:
+    cfg =single_file(jars, "*.cfg").read_text(encoding="utf-8").splitlines()
     classpath = [jars.joinpath(*re.split(r"[/\\]+", m[1])) for line in cfg if (m := CLASSPATH_ENTRY.fullmatch(line))]
     ui = [jar for jar in classpath if ui_jar(jar)]
-    base = ui_base(core_hash, [jar.name for jar in classpath if jar not in ui])
+    release = [line for line in runtime.read_text(encoding="utf-8").splitlines() if line.strip()]
+    options = [line.removeprefix(JAVA_OPTION) for line in cfg if line.startswith(JAVA_OPTION)]
+    base = ui_base(core_hash, [jar.name for jar in classpath if jar not in ui], release, options)
     version_code = int(gradle_property(source, "desktop.version_code"))
     manifest = {"version_code": version_code, "base": base, "jars": {jar.name: sha256(jar) for jar in ui}}
     date_time = time.gmtime(int(SOURCE_DATE_EPOCH))[:6]

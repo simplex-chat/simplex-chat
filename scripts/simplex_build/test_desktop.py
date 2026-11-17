@@ -533,7 +533,25 @@ class HostDesktopTest(unittest.TestCase):
 
     def test_ui_base_is_the_apps(self):
         jars = ["c-3-1234567890abcdef.jar", "b-1.0-0123456789abcdef0123456789abcdef.jar", "a-2.jar"]
-        self.assertEqual(build_script.ui_base("core-1", jars), "edccfa7920449a4d5a3cac37746f82d760a61616c2f034fac4c93d1b63a7e45c")
+        runtime = ['JAVA_VERSION="17.0.13"', 'MODULES="java.base"']
+        options = ["-Djpackage.app-version=7.1.4", "-Dcompose.application.resources.dir=$APPDIR/resources"]
+        self.assertEqual(
+            build_script.ui_base("core-1", jars, runtime, options), "920b1c4905c17ebda03c93a8f659b3ef21d7041f7a0149250da18ae328ad01f6"
+        )
+
+    def test_ui_core_hash_is_of_the_core_sources_of_a_source_with_ui_updates(self):
+        self.assertIsNone(build_script.ui_core_hash(self.source))
+        ui_updates = self.source / build_script.UI_UPDATES_SOURCE
+        ui_updates.parent.mkdir(parents=True)
+        ui_updates.write_text("ui")
+        (self.source / "src/Simplex").mkdir(parents=True)
+        (self.source / "src/Simplex/Chat.hs").write_text("chat")
+        (self.source / "cabal.project").write_text("project")
+        core_hash = build_script.ui_core_hash(self.source)
+        (self.source / "README.md").write_text("readme")
+        self.assertEqual(build_script.ui_core_hash(self.source), core_hash)
+        (self.source / "src/Simplex/Chat.hs").write_text("chat 2")
+        self.assertNotEqual(build_script.ui_core_hash(self.source), core_hash)
 
     def test_ui_update_has_the_apps_own_jars_for_its_base(self):
         app = self.root / "SimpleX/app"
@@ -541,6 +559,7 @@ class HostDesktopTest(unittest.TestCase):
         own = {
             "desktop-jvm-7.1.4-3066ac60aa3aec2984be8f2f76d0fdf4.jar": "chat/simplex/desktop/MainKt.class",
             "common-desktop-7.1.4-f81867c79b291d1711913a8939399b.jar": "chat/simplex/common/BuildConfigCommon.class",
+            "nanohttpd-efb2ebf-0123456789abcdef.jar": "org/nanohttpd/protocols/http/NanoHTTPD.class",
         }
         dependencies = {"a-2-0123456789abcdef.jar": "a/A.class", "resources\\vlc\\plugins\\libbluray-1.4.0.jar": "b/B.class"}
         for name, entry in {**own, **dependencies}.items():
@@ -548,12 +567,21 @@ class HostDesktopTest(unittest.TestCase):
             jar.parent.mkdir(parents=True, exist_ok=True)
             with zipfile.ZipFile(jar, "w") as z:
                 z.writestr(entry, b"class")
-        (app / "SimpleX.cfg").write_text("[Application]\r\n" + "".join(f"app.classpath=$APPDIR\\{name}\r\n" for name in [*own, *dependencies]))
+        options = ["-Djpackage.app-version=7.1.4", "-Dcompose.application.resources.dir=$APPDIR\\resources"]
+        (app / "SimpleX.cfg").write_text(
+            "[Application]\r\n"
+            + "".join(f"app.classpath=$APPDIR\\{name}\r\n" for name in [*own, *dependencies])
+            + "[JavaOptions]\r\n"
+            + "".join(f"java-options={option}\r\n" for option in options)
+        )
+        runtime = self.root / "SimpleX/runtime/release"
+        runtime.parent.mkdir(parents=True)
+        runtime.write_text('JAVA_VERSION="17.0.13"\n\nMODULES="java.base"\n')
         properties = self.source / "apps/multiplatform/gradle.properties"
         properties.parent.mkdir(parents=True)
         properties.write_text("desktop.version_name=7.1.4\ndesktop.version_code=176\n")
-        build_script.zip_ui_update(app, "core-1", self.source, self.out)
-        base = build_script.ui_base("core-1", ["a-2.jar", "libbluray-1.4.0.jar"])
+        build_script.zip_ui_update(app, runtime, "core-1", self.source, self.out)
+        base = build_script.ui_base("core-1", ["a-2.jar", "libbluray-1.4.0.jar"], ['JAVA_VERSION="17.0.13"', 'MODULES="java.base"'], options)
         with zipfile.ZipFile(self.out / f"simplex-desktop-ui-{base}.zip") as z:
             self.assertEqual(sorted(z.namelist()), sorted(["ui.json", *own]))
             manifest = json.loads(z.read("ui.json"))

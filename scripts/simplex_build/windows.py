@@ -46,6 +46,7 @@ from .desktop import (
     link_desktop_libs,
     remove_skiko_runtime,
     run_cabal,
+    ui_core_hash,
     zip_desktop_core,
     zip_desktop_libs,
     zip_ui_update,
@@ -312,9 +313,8 @@ def package_msi(source: Path, work: Path) -> Path:
     return msi
 
 
-def build_desktop_windows(
-    source: Path, out: Path, core: Path | None = None, core_out: Path | None = None, core_hash: str | None = None
-) -> None:
+def build_desktop_windows(source: Path, out: Path, core: Path | None = None, core_out: Path | None = None) -> None:
+    core_hash = ui_core_hash(source)
     host = WINDOWS_DESKTOP
     check_line_endings(source)
     paths = windows_machine_paths(source)
@@ -341,7 +341,7 @@ def build_desktop_windows(
         shutil.copy(msi, out / host.desktop)
         app = single_dir(root.source / DESKTOP_RELEASE_DIR / "app", "*imple*")
         if core_hash:
-            zip_ui_update(app / "app", core_hash, root.source, out)
+            zip_ui_update(app / "app", app / "runtime/release", core_hash, root.source, out)
         found = find_machine_paths([out / host.cli, app, msi], paths, encodings=WINDOWS_PATH_ENCODINGS)
     check_machine_paths(found)
 

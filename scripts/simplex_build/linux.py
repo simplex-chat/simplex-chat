@@ -43,6 +43,7 @@ from .desktop import (
     install_desktop_core,
     link_desktop_libs,
     remove_skiko_runtime,
+    ui_core_hash,
     zip_desktop_core,
     zip_desktop_libs,
     zip_ui_update,
@@ -264,7 +265,7 @@ def package_desktop_deb(runner: Runner, source: Path, arch: str, codename: str, 
     app = single_dir(extracted / "opt", "*imple*")
     remove_skiko_runtime(app / "lib/app")
     if core_hash:
-        zip_ui_update(app / "lib/app", core_hash, source, out)
+        zip_ui_update(app / "lib/app", app / "lib/runtime/release", core_hash, source, out)
     edit_lines(extracted / "DEBIAN/control", lambda line: f"{line}~{codename}" if "Version" in line else line)
     for entry in app.glob("lib/*.desktop"):
         edit_lines(entry, register_url_schemes)
@@ -407,9 +408,9 @@ def build_desktop_linux(
     docker_image: Path | None = None,
     core: Path | None = None,
     core_out: Path | None = None,
-    core_hash: str | None = None,
 ) -> None:
     """The Linux release files of an Ubuntu image, with their released names, and on APPIMAGE_IMAGE the libraries."""
+    core_hash = ui_core_hash(source)
     (source / "cabal.project.local").write_text(DESKTOP_CABAL_LOCAL)
     normalize_permissions(source)
     log(f"building Ubuntu {image.version} {image.arch} CLI and desktop apps")

@@ -516,12 +516,10 @@ jobs:
           path: ${{ runner.temp }}/core
 
       - name: Build CLI and desktop apps
-        env:
-          CORE_HASH: ${{ steps.names.outputs.core }}-${{ hashFiles('apps/multiplatform/common/src/commonMain/cpp/desktop/**') }}
         run: |
           version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
           python3 scripts/simplex-chat-build.py build desktop linux ${{ matrix.ubuntu }} --version "$version" --out "$RUNNER_TEMP/out" \
-            --docker-image "$RUNNER_TEMP/docker-image/image.tar" --core-hash "$CORE_HASH" \
+            --docker-image "$RUNNER_TEMP/docker-image/image.tar" \
             ${{ steps.core.outputs.found == 'true' && '--core "$RUNNER_TEMP/core/desktop-core.zip"' || '--core-out "$RUNNER_TEMP/core/desktop-core.zip"' }}
 
       - name: Upload Docker image
@@ -649,9 +647,8 @@ jobs:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ inputs.internal-release && github.ref == 'refs/heads/master' && secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN || '' }}
           APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ inputs.internal-release && github.ref == 'refs/heads/master' && secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID || '' }}
           APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ inputs.internal-release && github.ref == 'refs/heads/master' && secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD || '' }}
-          CORE_HASH: ${{ steps.names.outputs.core }}-${{ hashFiles('apps/multiplatform/common/src/commonMain/cpp/desktop/**') }}
         run: |
-          python3 scripts/simplex-chat-build.py build desktop macos --out "$RUNNER_TEMP/out" --core-hash "$CORE_HASH" \
+          python3 scripts/simplex-chat-build.py build desktop macos --out "$RUNNER_TEMP/out" \
             ${{ steps.core.outputs.found == 'true' && '--core "$RUNNER_TEMP/core/desktop-core.zip"' || '--core-out "$RUNNER_TEMP/core/desktop-core.zip"' }}
 
       - name: Upload core library
@@ -767,11 +764,10 @@ jobs:
       - name: Build CLI, desktop app and libraries
         env:
           SIMPLEX_INTERNAL_RELEASE: ${{ inputs.internal-release }}
-          CORE_HASH: ${{ steps.names.outputs.core }}-${{ hashFiles('apps/multiplatform/common/src/commonMain/cpp/desktop/**') }}
         run: |
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
           core="$(cygpath -w "$RUNNER_TEMP")/core/desktop-core.zip"
-          python scripts/simplex-chat-build.py build desktop windows --out "$(cygpath -w "$RUNNER_TEMP")/out" --core-hash "$CORE_HASH" \
+          python scripts/simplex-chat-build.py build desktop windows --out "$(cygpath -w "$RUNNER_TEMP")/out" \
             ${{ steps.core.outputs.found == 'true' && '--core "$core"' || '--core-out "$core"' }}
 
       - name: Upload core library

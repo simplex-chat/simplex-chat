@@ -53,6 +53,7 @@ from .desktop import (
     install_desktop_core,
     link_desktop_libs,
     macos_desktop,
+    ui_core_hash,
     zip_desktop_core,
     zip_desktop_libs,
     zip_ui_update,
@@ -549,9 +550,8 @@ def build_macos_libs(source: Path, database: Database, out: Path, require_signin
     check_machine_paths(found)
 
 
-def build_desktop_macos(
-    source: Path, out: Path, require_signing: bool, core: Path | None = None, core_out: Path | None = None, core_hash: str | None = None
-) -> None:
+def build_desktop_macos(source: Path, out: Path, require_signing: bool, core: Path | None = None, core_out: Path | None = None) -> None:
+    core_hash = ui_core_hash(source)
     host = macos_desktop()
     signed = apple_signing(require_signing)
     paths = machine_paths(source, require_xcode(XCODE))
@@ -579,7 +579,7 @@ def build_desktop_macos(
         normalize_app(app)
         sign_app(app, keychain)
         if core_hash:
-            zip_ui_update(app / "Contents/app", core_hash, root.source, out)
+            zip_ui_update(app / "Contents/app", app / "Contents/runtime/Contents/Home/release", core_hash, root.source, out)
         # the app's resources have the libraries and the app's own JNI library, which Gradle builds
         check_deployment_target([out / host.cli, app / COMPOSE_RESOURCES])
         check_relative_rpaths(sorted((app / COMPOSE_RESOURCES).glob("*.dylib")))

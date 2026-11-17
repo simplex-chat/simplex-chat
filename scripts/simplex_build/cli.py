@@ -9,9 +9,9 @@ Compare a released file with the one that build made, allowing only its signatur
 
 Build one commit's release files, as CI does; desktop, libs and openssl build for the machine they run on:
     simplex-chat-build.py build desktop linux <22.04|24.04> --version <x.y.z> [--docker-image <tar>]
-        [--core <zip> | --core-out <zip>] [--core-hash <text>] --out <dir>
-    simplex-chat-build.py build desktop macos [--require-signing] [--core <zip> | --core-out <zip>] [--core-hash <text>] --out <dir>
-    simplex-chat-build.py build desktop windows [--core <zip> | --core-out <zip>] [--core-hash <text>] --out <dir>
+        [--core <zip> | --core-out <zip>] --out <dir>
+    simplex-chat-build.py build desktop macos [--require-signing] [--core <zip> | --core-out <zip>] --out <dir>
+    simplex-chat-build.py build desktop windows [--core <zip> | --core-out <zip>] --out <dir>
     simplex-chat-build.py build libs linux [--ubuntu <22.04|24.04>] [--database <sqlite|postgres>] [--dist-dir <dir>]
         [--host | --container <name>] --out <dir>
     simplex-chat-build.py build libs macos [--database <sqlite|postgres>] [--require-signing] --out <dir>
@@ -175,7 +175,6 @@ class BuildDesktopLinux:
     docker_image: Path | None = None
     core: Path | None = None
     core_out: Path | None = None
-    core_hash: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -240,7 +239,6 @@ class BuildDesktopMacos:
     require_signing: bool
     core: Path | None = None
     core_out: Path | None = None
-    core_hash: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -249,7 +247,6 @@ class BuildDesktopWindows:
     source: Path
     core: Path | None = None
     core_out: Path | None = None
-    core_hash: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -379,7 +376,7 @@ def build(command: Build) -> None:
             saved_image = docker_image.resolve() if docker_image else None
             with android_container(source, out, set_pid_max=False, signing=signing, image=saved_image) as container:
                 build_bundle(container, source, libs.resolve(), out, signing)
-        case BuildDesktopLinux(image=ubuntu, version=version, docker_image=docker_image, core=core, core_out=core_out, core_hash=core_hash):
+        case BuildDesktopLinux(image=ubuntu, version=version, docker_image=docker_image, core=core, core_out=core_out):
             require_platform(Platform.LINUX)
             require_tools(["docker"])
             build_desktop_linux(
@@ -390,7 +387,6 @@ def build(command: Build) -> None:
                 docker_image.resolve() if docker_image else None,
                 core.resolve() if core else None,
                 core_out.resolve() if core_out else None,
-                core_hash,
             )
         case BuildLinuxLibs(image=image, database=database, dist_dir=dist_dir, builder=builder):
             require_platform(Platform.LINUX)
@@ -417,16 +413,14 @@ def build(command: Build) -> None:
             require_platform(openssl_platform)
             require_tools(["perl", "make"])
             build_host_openssl(source, out)
-        case BuildDesktopMacos(require_signing=require_signing, core=core, core_out=core_out, core_hash=core_hash):
+        case BuildDesktopMacos(require_signing=require_signing, core=core, core_out=core_out):
             require_platform(Platform.MACOS)
             require_tools(MACOS_DESKTOP_TOOLS)
-            build_desktop_macos(
-                source, out, require_signing, core.resolve() if core else None, core_out.resolve() if core_out else None, core_hash
-            )
-        case BuildDesktopWindows(core=core, core_out=core_out, core_hash=core_hash):
+            build_desktop_macos(source, out, require_signing, core.resolve() if core else None, core_out.resolve() if core_out else None)
+        case BuildDesktopWindows(core=core, core_out=core_out):
             require_platform(Platform.WINDOWS)
             require_tools(WINDOWS_DESKTOP_TOOLS)
-            build_desktop_windows(source, out, core.resolve() if core else None, core_out.resolve() if core_out else None, core_hash)
+            build_desktop_windows(source, out, core.resolve() if core else None, core_out.resolve() if core_out else None)
         case BuildIosArchive(art=art, install_nix=install, core=core):
             require_platform(Platform.MACOS)
             require_tools(IOS_TOOLS)
@@ -507,9 +501,6 @@ def parse_build_args(argv: Sequence[str]) -> Command:
     cores = desktop_core.add_mutually_exclusive_group()
     cores.add_argument("--core", type=Path, help="the CLI and core libraries that --core-out saved, in place of building them")
     cores.add_argument("--core-out", type=Path, help="where the CLI and core libraries are saved, for --core")
-    desktop_core.add_argument(
-        "--core-hash", help="the hash of the core sources: the app gets it, and simplex-desktop-ui-<base>.zip has its own jars"
-    )
 
     desktop = kinds.add_parser("desktop", help="all release files of this machine's platform").add_subparsers(
         dest="platform", required=True
@@ -567,13 +558,11 @@ def parse_build_args(argv: Sequence[str]) -> Command:
     match args.kind, getattr(args, "platform", None):
         case "desktop", Platform.LINUX:
             image = linux_image(args.image, platform.machine())
-            return BuildDesktopLinux(
-                image, args.version, args.out, args.source, args.docker_image, args.core, args.core_out, args.core_hash
-            )
+            return BuildDesktopLinux(image, args.version, args.out, args.source, args.docker_image, args.core, args.core_out)
         case "desktop", Platform.MACOS:
-            return BuildDesktopMacos(args.out, args.source, args.require_signing, args.core, args.core_out, args.core_hash)
+            return BuildDesktopMacos(args.out, args.source, args.require_signing, args.core, args.core_out)
         case "desktop", Platform.WINDOWS:
-            return BuildDesktopWindows(args.out, args.source, args.core, args.core_out, args.core_hash)
+            return BuildDesktopWindows(args.out, args.source, args.core, args.core_out)
         case "libs", Platform.LINUX:
             image = linux_image(args.ubuntu, platform.machine())
             builder = LibsBuilder(args.host, args.container)
