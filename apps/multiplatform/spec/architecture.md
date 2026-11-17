@@ -345,7 +345,7 @@ Examples from platform files:
 | `expect class VideoPlayer` | [`VideoPlayer.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/VideoPlayer.kt#L25) | 25 |
 | `expect class RecorderNative` | [`RecAndPlay.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/RecAndPlay.kt#L17) | 17 |
 | `expect val cryptor: CryptorInterface` | [`Cryptor.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Cryptor.kt#L9) | 9 |
-| `expect fun base64ToBitmap(base64ImageString: String): ImageBitmap` | [`Images.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Images.kt#L18) | 18 |
+| `expect fun base64ToBitmap(base64ImageString: String): ImageBitmap` | [`Images.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Images.kt#L30) | 30 |
 | `expect fun getWakeLock(timeout: Long): (() -> Unit)` | [`SimplexService.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/SimplexService.kt#L3) | 3 |
 | `expect class GlobalExceptionsHandler` | [`UI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/UI.kt#L24) | 24 |
 | `expect fun UriHandler.sendEmail(subject: String, body: CharSequence)` | [`Share.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Share.kt#L7) | 7 |
@@ -420,7 +420,7 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | VideoPlayer.kt | [`common/src/commonMain/kotlin/chat/simplex/common/platform/VideoPlayer.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/VideoPlayer.kt) | `VideoPlayerInterface`, `expect class VideoPlayer` |
 | RecAndPlay.kt | [`common/src/commonMain/kotlin/chat/simplex/common/platform/RecAndPlay.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/RecAndPlay.kt) | `RecorderInterface`, `AudioPlayerInterface` |
 | Cryptor.kt | [`common/src/commonMain/kotlin/chat/simplex/common/platform/Cryptor.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Cryptor.kt) | `CryptorInterface` |
-| Images.kt | [`common/src/commonMain/kotlin/chat/simplex/common/platform/Images.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Images.kt) | `base64ToBitmap`, `resizeImageToStrSize` |
+| Images.kt | [`common/src/commonMain/kotlin/chat/simplex/common/platform/Images.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Images.kt) | `base64ToBitmap`, `rememberBase64ImagePainter`, `resizeImageToStrSize` |
 | SimplexService.kt | [`common/src/commonMain/kotlin/chat/simplex/common/platform/SimplexService.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/SimplexService.kt) | `expect fun getWakeLock()` |
 
 ### Entry Points

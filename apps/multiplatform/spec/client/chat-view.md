@@ -265,6 +265,16 @@ decode stops on the frame it reached rather than falling back to the still. The 
 still image. Only GIF reaches this path: desktop decodes stills with ImageIO, which has no WebP reader, so a
 received `.webp` renders only as the sender's preview and never opens full screen.
 
+### Pictures in Messages
+
+The pictures that messages contain as base64 are drawn by `rememberBase64ImagePainter` in `platform/Images.kt`:
+previews of images, videos and links, quoted pictures, profile pictures and the pictures of chat links. A picture in
+the cache of decoded pictures is drawn at once. For any other picture, the size of the decoded picture is read from its
+header (`base64BitmapSize`), the view has that size and stays empty, and the picture is decoded on one background
+thread (`base64ImageDecoder`). A picture whose view leaves the composition before its decoding starts is not decoded.
+The cache holds up to 200 pictures and 64 MB. The compose area decodes the user's own pictures on the UI thread
+(`ComposeImageView`, `ComposeLinkView`).
+
 ---
 
 ## 6. Context Menu Actions
