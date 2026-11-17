@@ -320,7 +320,9 @@ class AlertManager {
                 Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
                 horizontalAlignment = Alignment.CenterHorizontally
               ) {
-                profileImage()
+                Box(Modifier.centeredIn(138.dp)) {
+                  profileImage()
+                }
                 Spacer(Modifier.height(DEFAULT_PADDING_HALF))
                 val nameFontSize = MaterialTheme.typography.h4.fontSize
                 Text(

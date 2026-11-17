@@ -1,16 +1,16 @@
 // Written by scripts/ci/packages_release.py from the simplex-chat-libs releases.
 
-export const LIBS_RELEASE = "core-7.1.0.20"
+export const LIBS_RELEASE = "core-7.1.3.0"
 
 export const ADDON_RELEASE: string | undefined = "nodejs-addon-cce06d8"
 
 export const SHA256: {readonly [asset: string]: string} = {
-  "simplex-chat-libs-linux-aarch64.zip": "4df035d1a095c4137fef01efe1eaead52fc739ee1bf50aad47bf48862db37f61",
-  "simplex-chat-libs-linux-x86_64-postgres.zip": "65373594e9e5d6f2cdf963e933ab5b2b7b21e3b015143c47b24aba48bf1f683e",
-  "simplex-chat-libs-linux-x86_64.zip": "3080a41272f9ca1b670b0faf9bfc67919d0dc0e82defaebb423e1aae1f327af3",
-  "simplex-chat-libs-macos-aarch64.zip": "78b398f1521dbbb464e5946bde26d47f51ba90039194452d40dde1f078f19483",
-  "simplex-chat-libs-macos-x86_64.zip": "13d7613f20cf5c7657addca3f7f022bf9ef8bdf0d358e632546eab6eb1322385",
-  "simplex-chat-libs-windows-x86_64.zip": "c34acfeb8d55a90550e4e0000da4ae39cde53e39481139ad697ba55aefb25ce6",
+  "simplex-chat-libs-linux-aarch64.zip": "46e296417de8cddc0d6f800d7c634dec410a1af20ea38ff31f224ef388aaeb00",
+  "simplex-chat-libs-linux-x86_64-postgres.zip": "ea89b4e95836c79c887cc13a2dc9fc66e319b21ee4148ca38817539657601050",
+  "simplex-chat-libs-linux-x86_64.zip": "12b6ea97c64a5ea53a66f47e827dc8c0d6bc767fd44b22aab47786ac90e91d01",
+  "simplex-chat-libs-macos-aarch64.zip": "b7612b05cd17267f4e24efacfd16fa4a9f9b0c39b34c2f52465e34395492a452",
+  "simplex-chat-libs-macos-x86_64.zip": "ce7a9a2be0cd0e6782902d8ce4420e8660e4e2360d7fc0248584a0163f1a236d",
+  "simplex-chat-libs-windows-x86_64.zip": "a9ed55c82753d57cfddaddee78cc989b0edf3fe5fe08d7214e6f84ab43609999",
   "simplex-chat-nodejs-linux-aarch64.node": "de09cf5653772370fbd1ab2b046a9a2b68f3d2a078103befb2d4eb3e11748ebb",
   "simplex-chat-nodejs-linux-x86_64.node": "fda77e39a5d38b1132a6a04ef9f9cd2c939a429e709f28c81c3777684ba73603",
   "simplex-chat-nodejs-macos-aarch64.node": "3da7ae0064c151a0508d3f0a208a9af5647a8113df8d9164f76c786a882d68df",

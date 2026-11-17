@@ -15,6 +15,7 @@ struct MarkedDeletedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.revealed) var revealed: Bool
+    @Environment(\.terminalMessageColumn) private var column
     @ObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel
     var chatItem: ChatItem
@@ -31,6 +32,7 @@ struct MarkedDeletedItemView: View {
             .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
             .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
             .textSelection(.disabled)
+            .padding(.leading, inlineMeta == nil ? terminalPillStart(column) : 0)
         }
     }
 

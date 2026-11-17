@@ -838,6 +838,7 @@ func MemberProfileImage(
 ) -> some View {
     ProfileImage(
         imageStr: mem.image,
+        icon: peerTypeIcon(mem.memberProfile.peerType),
         size: size,
         color: color,
         backgroundColor: backgroundColor,

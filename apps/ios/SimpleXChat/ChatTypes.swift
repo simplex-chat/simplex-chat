@@ -184,7 +184,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         localBadge: LocalBadge? = nil,
         localAlias: String,
         contactDomain: SimplexDomainClaim? = nil,
-        contactDomainVerified: Bool? = nil
+        contactDomainVerified: DomainVerification? = nil
     ) {
         self.profileId = profileId
         self.displayName = displayName
@@ -213,7 +213,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var localBadge: LocalBadge?
     public var localAlias: String
     public var contactDomain: SimplexDomainClaim?
-    public var contactDomainVerified: Bool?
+    public var contactDomainVerified: DomainVerification?
 
     public var profileDescription: String? { description }
 
@@ -314,11 +314,11 @@ extension ChatLayout: Codable {
     }
 }
 
-public func peerTypeIcon(_ peerType: ChatPeerType?) -> Image {
+public func peerTypeIcon(_ peerType: ChatPeerType?, person: Image = Image(systemName: "person.crop.circle.fill"), agent: Image = Image("agent")) -> Image {
     switch peerType {
     case .bot: Image(systemName: "cube.fill")
-    case .agent: Image("agent")
-    default: Image(systemName: "person.crop.circle.fill")
+    case .agent: agent
+    default: person
     }
 }
 
@@ -670,7 +670,7 @@ public struct BadgeAlert: Codable, Hashable {
     public var dateText: String { badgeDateText(date) }
 }
 
-private func badgeDateText(_ date: Date) -> String {
+public func badgeDateText(_ date: Date) -> String {
     DateFormatter.localizedString(from: date, dateStyle: .long, timeStyle: .none)
 }
 
@@ -961,18 +961,6 @@ public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> 
         files: fullPreferences.files,
         calls: fullPreferences.calls,
         commands: fullPreferences.commands
-    )
-}
-
-public func contactUserPreferencesToPreferences(_ contactUserPreferences: ContactUserPreferences) -> Preferences {
-    Preferences(
-        timedMessages: contactUserPreferences.timedMessages.userPreference.preference,
-        fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
-        reactions: contactUserPreferences.reactions.userPreference.preference,
-        voice: contactUserPreferences.voice.userPreference.preference,
-        files: contactUserPreferences.files.userPreference.preference,
-        calls: contactUserPreferences.calls.userPreference.preference,
-        commands: contactUserPreferences.commands
     )
 }
 
@@ -3076,7 +3064,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var localAlias: String
-    public var groupDomainVerified: Bool?
+    public var groupDomainVerified: DomainVerification?
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -3191,9 +3179,28 @@ public struct SimplexDomainClaim: Codable, Hashable {
     }
 }
 
+public enum DomainVerification: String, Codable, Hashable {
+    case failed
+    case verified
+    case moved
+}
+
 public enum SimplexDomainError: Decodable, Hashable {
     case noValidLink
     case unknownDomain
+    case nameWarning(nameWarning: NameWarning)
+}
+
+public enum NameWarning: Decodable, Hashable {
+    case expired(expiredAt: Date, graceUntil: Date?)
+    case available(price: NamePrice)
+    case reservedForCommunity
+    case notRegistered
+}
+
+public struct NamePrice: Decodable, Hashable {
+    public var amount: Int64
+    public var years: Int
 }
 
 public struct RelayCapabilities: Codable, Hashable {
@@ -5779,25 +5786,25 @@ public enum MsgChatLink: Equatable, Hashable {
         }
     }
 
-    public var iconName: String {
+    public var icon: Image {
         switch self {
         case let .group(_, groupProfile):
-            groupProfile.isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill"
-        case let .contact(_, _, business):
-            business ? "briefcase.circle.fill" : "person.crop.circle.fill"
-        case .invitation:
-            "person.crop.circle.fill"
+            Image(systemName: groupProfile.isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill")
+        case let .contact(_, profile, business):
+            business ? Image(systemName: "briefcase.circle.fill") : peerTypeIcon(profile.peerType)
+        case let .invitation(_, profile):
+            peerTypeIcon(profile.peerType)
         }
     }
 
-    public var smallIconName: String {
+    public func smallIcon(agent: Image = Image("agent")) -> Image {
         switch self {
         case let .group(_, groupProfile):
-            groupProfile.isChannel ? "antenna.radiowaves.left.and.right" : "person.2"
-        case let .contact(_, _, business):
-            business ? "briefcase" : "person"
-        case .invitation:
-            "person"
+            Image(systemName: groupProfile.isChannel ? "antenna.radiowaves.left.and.right" : "person.2")
+        case let .contact(_, profile, business):
+            business ? Image(systemName: "briefcase") : peerTypeIcon(profile.peerType, person: Image(systemName: "person"), agent: agent)
+        case let .invitation(_, profile):
+            peerTypeIcon(profile.peerType, person: Image(systemName: "person"), agent: agent)
         }
     }
 
