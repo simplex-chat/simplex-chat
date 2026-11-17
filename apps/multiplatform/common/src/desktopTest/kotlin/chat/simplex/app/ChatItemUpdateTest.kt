@@ -3,6 +3,7 @@ package chat.simplex.app
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.NotificationAction
 import chat.simplex.common.platform.NtfManager
+import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.call.RcvCallInvitation
@@ -10,10 +11,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
 
 class ChatItemUpdateTest {
+  private val sendCmd = chatSendCmdRetry
   private val notifications = mutableListOf<String>()
 
   @BeforeTest
@@ -44,6 +47,7 @@ class ChatItemUpdateTest {
     ChatModel.currentUser.value = null
     ChatModel.users.clear()
     simplexWindowState.windowFocused.value = true
+    chatSendCmdRetry = sendCmd
   }
 
   @Test
@@ -146,11 +150,13 @@ class ChatItemUpdateTest {
 
   @Test
   fun responseAndEventDecodeToTheirFields() = recorded("updates/direct-edit") { (_, edited) ->
-    val user = json.encodeToString(UserRef(userId = 1, localDisplayName = "alice", activeUser = true, showNtfs = true))
-    val item = json.encodeToString(AChatItem(ChatInfo.Direct(Contact.sampleData), ChatItem.getSampleData(1, CIDirection.DirectRcv(), text = "hello edited")))
-    val response = json.decodeFromString<API>("""{"result": {"type": "chatItemUpdated", "user": $user, "chatItem": $item}}""").result as CR.ChatItemUpdated
-    assertEquals("hello edited", response.chatItem?.chatItem?.text)
-    assertNull(response.chatItemUpdate)
+    val response = Json.parseToJsonElement(fixtureText("updates/update-response")).jsonObject.getValue("commands").jsonObject.values.single().toString()
+    val sent = mutableListOf<String>()
+    chatSendCmdRetry = { _, cmd, _ -> sent += cmd; response }
+    val updated = ChatController.apiUpdateChatItem(null, ChatType.Direct, 2, null, 8, UpdatedMessage(MsgContent.MCText("hello there"), mapOf()))
+    assertTrue(sent.single().startsWith("/_update item @2 8 "))
+    assertEquals(8L, updated?.chatItem?.id)
+    assertEquals("hello there", updated?.chatItem?.text)
     val event = edited.result as CR.ChatItemUpdated
     assertEquals("hello there", event.chatItemUpdate?.chatItem?.text)
     assertEquals("hello", event.chatItemUpdate?.prevChatItem?.text)
