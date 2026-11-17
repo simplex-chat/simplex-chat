@@ -285,13 +285,13 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
       when (irStatus == ISPaid) $ moneyAfterPaid env now row signal
       when (isJust (decide irStatus signal)) $
         settleOrder peStore peWaiters pePhases irInvoiceId signal now >>= \status -> do
-            reportSettled irProduct irStatus status
-            case (irProduct, find ((== provider) . pProvider) peProviders) of
-              (IPName _, Just p) ->
-                creditLate env p now irInvoiceId ref >>= \case
-                  CONothingDue -> pendingLate env irInvoiceId ref
-                  _ -> pure ()
-              _ -> pure ()
+          reportSettled irProduct irStatus status
+          case (irProduct, find ((== provider) . pProvider) peProviders) of
+            (IPName _, Just p) ->
+              creditLate env p now irInvoiceId ref >>= \case
+                CONothingDue -> pendingLate env irInvoiceId ref
+                _ -> pure ()
+            _ -> pure ()
     _ -> pure ()
   where
     reportSettled sold before after

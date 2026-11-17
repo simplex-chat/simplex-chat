@@ -294,7 +294,7 @@ badgeWebTests = do
     it "publishes what it found when it loses the status guard" testLosingTheStatusGuardStillWakesTheHold
     it "never downgrades a settled payment row" testSettledPaymentIsNotDowngraded
     it "fills in a crypto amount that only arrived later" testCryptoAmountFillsInFromNull
-    it "answers Left for an invoice this service does not hold" testUnknownInvoiceSettlesNothing
+    it "throws BrokenInvariant for an invoice this service does not hold, writing no payment" testUnknownInvoiceSettlesNothing
     it "publishes after the commit, so a woken reader finds the row" testPublishIsAfterCommit
     it "wakes a request the listener is holding, from settleOrder itself" testSettlementWakesAHeldRequest
     it "reports settledAt from the payment row, not from the invoice" testSettledAtIsThePaymentRow
