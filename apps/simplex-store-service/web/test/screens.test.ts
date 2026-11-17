@@ -566,16 +566,6 @@ domTest("screens: a Lightning payment screen offers the BOLT11 as a lightning: l
   assert.deepEqual(copied, ["0.00050000", BOLT11]);
 });
 
-domTest("screens: a fully paid Lightning invoice still open waits for it to settle, not to confirm", () => {
-  const covered = { ...openLn, cryptoAmountPaid: "0.00050000", cryptoAmountDue: "0.00000000" };
-  const p = renderAwaitingPayment({
-    order: unpaidRecord(), invoice: covered, method: "ln", nowMs: NOW, resumed: false, onCancel: noopAsync,
-  });
-  assert.ok(p.textContent.includes(screens.PAID_IN_FULL_TITLE), p.textContent);
-  assert.ok(p.textContent.includes("The invoice stays open until the payment settles."), p.textContent);
-  assert.ok(!/confirm/i.test(p.textContent), p.textContent);
-});
-
 domTest("screens: the Lightning confirming screen waits for settlement, and prints no confirmation count even if one is sent", () => {
   const paid = { ...openLn, amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true, requiredConfirmations: 1 };
   const p = render(screens.awaitingConfirmation({

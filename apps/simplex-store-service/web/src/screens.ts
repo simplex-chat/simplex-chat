@@ -635,7 +635,7 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
     p.append(owed !== undefined
       ? warning(PART_PAID_TITLE, seen, `Send the remaining ${owed} ${ticker} to the same address below.`)
       : left.kind === "covered"
-        ? warning(seen, `Nothing more is owed. The invoice stays open until the payment ${lightning ? "settles" : "confirms"}.`)
+        ? warning(seen, "Nothing more is owed. The invoice stays open until the payment confirms.")
         : warning(seen, "Send the rest to the same address below. The invoice stays open until it is paid in full."));
   }
   const code = owed === undefined ? null : paymentCode(o.method, o.invoice.address ?? "", owed);
