@@ -326,22 +326,22 @@ type NamesOn = Bool
 
 runCmd :: CodeIssuer -> ChatController -> Turns -> NamesOn -> (MoneyCmd -> IO (Either Text Text)) -> GroupCmd -> IO (Either Text Text)
 runCmd source cc turns namesOn runMoney = \case
-  GCIssue bt months uses status -> issued formatBadgeCode . fmap fst <$> issueOneCode cc bt months status uses
+  GCIssue bt months uses status -> codeReply formatBadgeCode . fmap fst <$> issueOneCode cc bt months status uses
   GCBulk bt months count -> Right <$> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
   GCIssueName {} | not namesOn -> pure $ Left namesOffText
-  GCIssueName len years status -> issued formatNameCode <$> issueNameCode cc source len years status
+  GCIssueName len years status -> codeReply formatNameCode <$> issueNameCode cc source len years status
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> named (formatBadgeCode code) <$> revokeWithTracker cc code
   GCRevokeName code -> named (formatNameCode code) <$> revokeNameCode turns cc code
   GCMoney cmd -> runMoney cmd
   where
-    issued format = bimap (const issueFailedText) (("Code: " <>) . format)
+    codeReply format = bimap (const issueFailedText) (("Code: " <>) . format)
     named shown = let prefixed = ((shown <> ": ") <>) in bimap prefixed prefixed
     issueMany count issueOne = do
-      (errs, codes) <- partitionEithers <$> replicateM count issueOne
+      (errs, issued) <- partitionEithers <$> replicateM count issueOne
       pure . T.intercalate "\n" $ case errs of
-        [] -> codes
-        _ : _ -> codes <> ["Issued " <> tshow (length codes) <> " of " <> tshow count <> " codes. The remaining codes could not be issued."]
+        [] -> issued
+        _ : _ -> issued <> ["Issued " <> tshow (length issued) <> " of " <> tshow count <> " codes. The remaining codes could not be issued."]
 
 namesOffText :: Text
 namesOffText = "Names are not enabled on this service, so name codes cannot be issued."
