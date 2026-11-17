@@ -1626,7 +1626,8 @@ The other questions:
 - **Q1.** Keep a recovery key that finds no names on a new phone? → Yes, after a warning (6·3).
 - **Q2.** The word for your own name coming into the app? → "Move"; "transfer" for someone else.
 - **Q3.** ⚠ Legal. Must buyers be 18 or older, and does the app say so? → No line in the app: the Names Conditions set no age.
-- **Q4.** ⚠ Legal. The app's own purchase terms, besides the Names Conditions? → Yes: a purchase section in the Names Conditions, which have none today, its text approved by the lead; each later change to it is a new version in the registry, so a separate page outside it is the other option. Until the lead answers, the Names Conditions stay without a purchase section, and nothing is built on one.- **Q5.** Decided. When iOS store payment is switched on? → In the payments release, shown only in App Store builds, as the badges (6.9).
+- **Q4.** ⚠ Legal. The app's own purchase terms, besides the Names Conditions? → Yes: a purchase section in the Names Conditions, which have none today, its text approved by the lead; each later change to it is a new version in the registry, so a separate page outside it is the other option. Until the lead answers, the Names Conditions stay without a purchase section, and nothing is built on one.
+- **Q5.** Decided. When iOS store payment is switched on? → In the payments release, shown only in App Store builds, as the badges (6.9).
 - **Q6.** ⚠ Privacy policy. Linking a payment to its name? → Register at once, fine for v1; `PRIVACY.md` states it (section 7, P57b), the screens don't.
 - **Q7.** Detail of Q24. What the invoice's link holds? → The code's hash alone; no order code shows (decided on 11 Nov).
 - **Q8.** Decided. Apple product type? → Consumable, as the badges' one-time products (6.2).
