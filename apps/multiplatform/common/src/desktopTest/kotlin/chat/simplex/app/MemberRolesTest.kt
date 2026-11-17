@@ -142,6 +142,7 @@ class MemberRolesTest {
   @Test
   fun groupLinkRoleIsShownInTerminal() {
     assertContains(groupLink(GroupMemberRole.Observer).toString(), "acceptMemberRole=observer")
+    assertContains(groupLink(GroupMemberRole.Unknown("vip")).toString(), "acceptMemberRole=vip")
   }
 
   @Test

@@ -3260,7 +3260,7 @@ sealed class GroupMemberRole: Comparable<GroupMemberRole> {
 
   override fun compareTo(other: GroupMemberRole): Int = comparisonValue.compareTo(other.comparisonValue)
 
-  override fun toString(): String = memberRole
+  final override fun toString(): String = memberRole
 }
 
 object GroupMemberRoleSerializer : KSerializer<GroupMemberRole> {
