@@ -1552,13 +1552,23 @@ revokePrepaidCode db codeHash now = do
       | isJust pcRevokedAt = AlreadyRevoked pcId
       | otherwise = AlreadyRedeemed
 
-editKind :: Text
-editKind = "edit"
+data TxKind = TKRegistration RegistrationTx | TKEdit
+  deriving (Eq, Show)
 
-txKind :: TxFor -> (Text, Maybe Text, Maybe RecordEditId)
+instance TextEncoding TxKind where
+  textEncode = \case
+    TKRegistration step -> textEncode step
+    TKEdit -> "edit"
+  textDecode t = lookup t [(textEncode k, k) | k <- TKEdit : map TKRegistration [minBound .. maxBound]]
+
+instance FromField TxKind where fromField = fromTextField_ textDecode
+
+instance ToField TxKind where toField = toField . textEncode
+
+txKind :: TxFor -> (TxKind, Maybe Text, Maybe RecordEditId)
 txKind = \case
-  TxRegistration step (RegistrationId rid) -> (textEncode step, Just rid, Nothing)
-  TxEdit editId -> (editKind, Nothing, Just editId)
+  TxRegistration step (RegistrationId rid) -> (TKRegistration step, Just rid, Nothing)
+  TxEdit editId -> (TKEdit, Nothing, Just editId)
 
 -- | Saved once signed and before it is sent, so a restart can rebroadcast it.
 insertTransaction :: DB.Connection -> TxFor -> NewTransaction -> UTCTime -> IO Int64
@@ -1598,14 +1608,14 @@ transactionColumns =
     FROM @name_transactions
   |]
 
-type TransactionRow = (Int64, Text, Maybe Text, Maybe Int64, Binary ByteString, TxHash, Int64, UTCTime, Maybe Int64, TxStatus)
+type TransactionRow = (Int64, TxKind, Maybe Text, Maybe Int64, Binary ByteString, TxHash, Int64, UTCTime, Maybe Int64, TxStatus)
 
 toTransaction :: TransactionRow -> Either Text NameTransaction
 toTransaction (ntId, kind, rid_, editId_, Binary ntRaw, ntHash, nonce, ntSentAt, block, ntStatus) = do
-  ntFor <- case (rid_, editId_) of
-    (Just rid, Nothing) | Just step <- textDecode kind -> Right $ TxRegistration step $ RegistrationId rid
-    (Nothing, Just editId) | kind == editKind -> Right $ TxEdit editId
-    _ -> Left $ "name_transactions.kind: " <> kind
+  ntFor <- case (kind, rid_, editId_) of
+    (TKRegistration step, Just rid, Nothing) -> Right $ TxRegistration step $ RegistrationId rid
+    (TKEdit, Nothing, Just editId) -> Right $ TxEdit editId
+    _ -> Left $ "name_transactions.kind: " <> textEncode kind
   pure NameTransaction {ntId, ntFor, ntRaw, ntHash, ntNonce = word64 nonce, ntSentAt, ntMinedBlock = word64 <$> block, ntStatus}
 
 -- | Those without a receipt, in nonce order, for the sender to resume.
