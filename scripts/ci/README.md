@@ -45,7 +45,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - caches (the steps "Restore ... from cache");
   - `cabal build -j --enable-tests --ghc-options=-O0` (step "Build CLI");
   - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed.
-- App test fixtures: core tests write the core's responses that the app tests use to tests/fixtures/api (`/names tests/` to tests/fixtures/api/names, `/contact via address/` to tests/fixtures/api/connect), and fail when a response differs from the committed file; the rewritten files are committed, and the kotlin and ios scopes run for them.
+- App test fixtures: core tests write the core's responses that the app tests use to tests/fixtures/api (`/names tests/` to tests/fixtures/api/names, `/contact via address/` to tests/fixtures/api/connect, `/files folder: send and receive image/` to tests/fixtures/api/files), and fail when a response differs from the committed file; the rewritten files are committed, and the kotlin and ios scopes run for them.
 - Local:
   ```sh
   cp scripts/cabal.project.local.linux cabal.project.local
