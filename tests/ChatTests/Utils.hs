@@ -806,13 +806,6 @@ lastItemId cc = do
   cc ##> "/last_item_id"
   getTermLine' (Just "last item id") cc
 
-itemIdByText :: HasCallStack => TestCC -> String -> IO String
-itemIdByText cc text = do
-  itemIds <- withCCTransaction cc $ \db -> DB.query db "SELECT chat_item_id FROM chat_items WHERE item_text = ?" (Only text)
-  case itemIds of
-    [Only itemId'] -> pure $ show (itemId' :: Int)
-    _ -> error $ "item " <> show text <> ": " <> show (length itemIds) <> " items"
-
 showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
   cc <## ("user profile: " <> name)
