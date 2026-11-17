@@ -4,7 +4,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
@@ -189,6 +193,32 @@ class Base64ImagePainterTest {
   fun testLinkItemKeepsItsSizeWhenItsPreviewIsDecoded() {
     val picture = base64Png(305, 195)
     assertItemKeepsItsSizeWhenDecoded(picture, MsgContent.MCLink("https://simplex.chat", LinkPreview("https://simplex.chat", "SimpleX Chat", "", picture)))
+  }
+
+  @Test
+  fun testBlurredItemShowsItsBlurredPreviewOnceDecoded() {
+    val picture = base64Png(313, 187)
+    withMediaBlurRadius(50) {
+      whileDecoderIsBusy { release ->
+        scene(ROW_WIDTH, ROW_HEIGHT) { ReceivedItem(MsgContent.MCImage("", picture)) }.use { scene ->
+          assertFalse(scene.render().hasRedOnRow(20))
+          release()
+          awaitDecodedPictures()
+          assertTrue(scene.renderUntil { it.hasRedOnRow(20) })
+        }
+      }
+    }
+  }
+
+  @Test
+  fun testSceneShowsPicturesRequestedAfterItsFirstFrame() {
+    val picture = base64Png(61, 47)
+    val image = renderScene(width = SCENE_SIZE, height = SCENE_SIZE, frames = 2) {
+      var shown by remember { mutableStateOf(false) }
+      LaunchedEffect(Unit) { shown = true }
+      if (shown) Image(rememberBase64ImagePainter(picture), null, Modifier.fillMaxSize())
+    }
+    assertTrue(image.isRedAt(SCENE_SIZE / 2, SCENE_SIZE / 2))
   }
 
   @Test

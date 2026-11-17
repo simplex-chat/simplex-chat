@@ -38,9 +38,11 @@ private object InstantMotion : MotionDurationScale {
 
 fun renderScene(direction: LayoutDirection = LayoutDirection.Ltr, width: Int = 400, height: Int = 400, frames: Int = 1, content: @Composable () -> Unit): Image =
   ImageComposeScene(width = width, height = height, density = Density(1f), layoutDirection = direction, coroutineContext = Dispatchers.Unconfined + InstantMotion, content = content).use { scene ->
-    scene.render(0)
-    awaitDecodedPictures()
-    (0 until frames).map { scene.render(it * 1_000_000_000L) }.last()
+    repeat(frames) {
+      scene.render(it * 1_000_000_000L)
+      awaitDecodedPictures()
+    }
+    scene.render((frames - 1) * 1_000_000_000L)
   }
 
 fun awaitDecodedPictures() {
