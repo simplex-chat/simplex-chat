@@ -9,6 +9,9 @@
 
 module BadgeTests (badgeTests) where
 
+import StoreService.Names.Orders (OrderRequest (..), integerField, parseOrderFields, parseOrderRequest, textField)
+import StoreService.Names.Reveal (RevealFields (..), SignedLabel (..), parseRevealFields, parseSignedLabel)
+import StoreService.Names.Signatures (OrderFields (..), parseAnyCaseAddress, parseSignature)
 import StoreService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, shownServiceRequest, survive)
 import StoreService.StoreReceipts (StoreCharge (..), StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), toStoreReceipt)
 import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
@@ -18,6 +21,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Exception (SomeAsyncException, SomeException, catch, fromException, throwIO)
 import Control.Monad (forM_)
 import Data.ByteArray.Encoding (Base (Base16, Base64URLUnpadded), convertToBase)
+import qualified Data.ByteString as B
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Lazy as LB
@@ -50,9 +54,10 @@ import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Crypto.BIP39 (unEntropy)
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Names.Record (TermsDoc (..), USDCents (..))
 import Simplex.Messaging.Protocol (BrokerErrorType (..), ErrorType (AUTH), NetworkError (..))
-import Simplex.Messaging.SimplexName (SimplexTLD (..))
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version.Internal (Version (..))
 import Test.Hspec
@@ -129,6 +134,10 @@ badgeTests = do
     it "error response matches the schema" testErrorResponseJSON
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
     it "pins the wire tag of every command, response and error code" testServiceWireTags
+    it "name commands and answers round-trip, every constructor" testNameServiceJSON
+    it "name request bodies are read by the web routes' parsers" testNameWebBodiesJSON
+    it "name purchase answers are two-part, the order part after a credited payment" testNamePurchaseJSON
+    it "name refusals take the web's error form, and unknown values are kept" testNameRefusalJSON
   describe "badge state" $ do
     it "carries a subscription's plan and last seen state, renewing only when it was seen renewing, and bounds a state it does not know" testBadgeSubscriptionJSON
     it "derives one alert for a subscription in order of urgency, dated paidThrough, leaves prepaid alerts as they were, and derives none for a purchase Restore moved away" testSubscriptionAlertDerivation
@@ -1802,6 +1811,335 @@ testServiceWireTags = do
       STETestPurchase -> "test_purchase"
       STEInternal -> "internal"
       STEUnknown t -> t
+
+testNameServiceJSON :: IO ()
+testNameServiceJSON = do
+  let payment = SPApple {jws = "a.b.c"}
+      commands =
+        [ STCGetNameCatalog,
+          STCGetNameTerms {termsHash = testNameHash},
+          STCCheckNameCode {code = testPrepaidCode},
+          STCOpenNameCode {code = testPrepaidCode},
+          STCCloseNameCode {code = testPrepaidCode},
+          STCOrderName {nameOrder = testCodeOrder},
+          STCPurchaseName {payment, purchaseCode = NPCHash {codeHash = testNameHash}},
+          STCPurchaseName {payment, purchaseCode = NPCOrder {nameOrder = testCodeOrder}},
+          STCGetNameRegistration {registrationId = testRegistrationId},
+          STCRevealName {registrationId = testRegistrationId, reveal = testNameReveal},
+          STCRetryName {registrationId = testRegistrationId},
+          STCFindNameOrders {owner = testNameOwner, timestamp = 1792574100, signature = testNameSignature},
+          STCOrderAnotherName {registrationId = testRegistrationId, signedOrder = testSignedOrder},
+          STCGetNameMove {nameMove = testNameMove},
+          STCApproveNameMove {nameMove = testNameMove, nonce = 0, deadline = 1792577700, signature = testNameSignature},
+          STCAcceptNameMoveTerms {nameMove = testNameMove, moveOffer = 1, termsHash = testNameHash, nonce = 0, deadline = 1792577700, signature = testNameSignature},
+          STCClaimNameMove {nameMove = testNameMove, moveOffer = 1, nonce = 0, deadline = 1792577700, signature = testNameSignature}
+        ]
+      saleStates =
+        [ NSSOpen,
+          NSSCodesOnly,
+          NSSClosedForDay {reopensAt = Nothing},
+          NSSClosedForDay {reopensAt = Just 1792610100},
+          NSSUnknown {tag = "futureState", json = KM.fromList [("type", J.String "futureState")]}
+        ]
+      codeStates = [NCSUnused, NCSReserved, NCSUsed, NCSRevoked, NCSExpired, NCSUnpaid, NCSConfirming, NCSUnknown "future_state"]
+      phases = [NRPUnpaid, NRPQueued, NRPCommitting, NRPCommitted, NRPRegistering, NRPRegistered, NRPTaken, NRPFailed, NRPUnknown "future_phase"]
+      refusals =
+        [ NRFBadRequest,
+          NRFInvalidName,
+          NRFInvalidLink,
+          NRFNotFound,
+          NRFOrderExists,
+          NRFNameTaken,
+          NRFNameCheckUnavailable,
+          NRFProviderUnavailable,
+          NRFCodeInvalid,
+          NRFCodeUsed,
+          NRFCodeReserved,
+          NRFCodeExpired,
+          NRFCodeNotCovering,
+          NRFPaymentPending,
+          NRFPaymentReceived,
+          NRFSaleClosed {saleState = NSSCodesOnly},
+          NRFTermsUnavailable {retryAfter = Just 3600},
+          NRFTermsUnavailable {retryAfter = Nothing},
+          NRFTermsChanged {terms = testTermsRef, community = Just testNameCommunity},
+          NRFTermsChanged {terms = testTermsRef, community = Nothing},
+          NRFCommitLimit,
+          NRFSendsUsedUp,
+          NRFMoveLimit {registration = testNameView NRPRegistered},
+          NRFRegistrationChanged {registration = testNameView NRPCommitted},
+          NRFMovesUsedUp {nextAt = 1792660500},
+          NRFMoveReverted {revert = Just "0x08c379a0"},
+          NRFMoveReverted {revert = Nothing},
+          NRFMovePending,
+          NRFUnknown {tag = "future_refusal", json = KM.fromList [("error", J.String "future_refusal"), ("detail", J.Number 1)]}
+        ]
+      answers =
+        map (\saleState -> STPNameCatalog {nameCatalog = testNameCatalog saleState}) saleStates
+          <> map (\state -> STPNameCode {nameCode = testNameCodeInfo state}) codeStates
+          <> map (\phase -> STPNameRegistration {registration = testNameView phase}) phases
+          <> map (\refusal -> STPNameRefused {refusal}) refusals
+          <> [ STPNameCatalog
+                 { nameCatalog =
+                     (testNameCatalog NSSOpen)
+                       { price = Nothing,
+                         invoiceWindow = Nothing,
+                         terms = NameCatalogTerms {generalTerms = Nothing, communityTerms = Nothing},
+                         communityTexts = M.empty
+                       }
+                 },
+               STPNameTerms {termsDoc = TermsDoc {termsLink = testTermsLink, termsZstd = Nothing}},
+               STPNameCode {nameCode = (testNameCodeInfo NCSUnused) {browserPayment = Nothing}},
+               STPNameCode
+                 { nameCode =
+                     (testNameCodeInfo NCSUnpaid)
+                       { browserPayment = Just NameCodePayment {payUntil = futureTime, invoicePayableUntil = Nothing, moneyOnClosedInvoice = True, moneyBeyondPrice = True}
+                       }
+                 },
+               STPNameOrderPlaced {registrationId = testRegistrationId},
+               STPNamePurchase {nameCode = testNameCodeInfo NCSUsed, orderAnswer = Nothing},
+               STPNamePurchase {nameCode = testNameCodeInfo NCSReserved, orderAnswer = Just NOAPlaced {registrationId = testRegistrationId}},
+               STPNamePurchase {nameCode = testNameCodeInfo NCSUnused, orderAnswer = Just NOARefused {refusal = NRFNameTaken}},
+               STPNameRegistration
+                 { registration = (testNameView NRPFailed) {label = Nothing, acceptance = Nothing, community = Nothing, failure = Just "the commit reverted"}
+                 },
+               STPNameRegistration
+                 { registration =
+                     (testNameView NRPRegistering)
+                       { intentNonce = Just 1,
+                         acceptance = Just NameAcceptanceAsked {kind = NTKGeneral, policy = testNameRecipient, termsHash = testNameHash, nonce = 1}
+                       }
+                 },
+               STPNameRevealed,
+               STPNameOrders {registrations = map testFoundOrder phases, more = True},
+               STPNameOrders {registrations = [], more = False},
+               STPNameMove {moveReads = NameMoveReads {holderNonce = 0, moveOffer = 1, recipientNonce = 2, termsNonce = 3, policy = testNameRecipient, community = Just testNameCommunity}},
+               STPNameMove {moveReads = NameMoveReads {holderNonce = 0, moveOffer = 1, recipientNonce = 2, termsNonce = 3, policy = testNameRecipient, community = Nothing}}
+             ]
+      testFoundOrder phase = NameFoundOrder {registrationId = testRegistrationId, phase, createdAt = futureTime, labelHash = testNameHash, sealed = "sealed"}
+  mapM_ roundTrips commands
+  mapM_ roundTrips answers
+
+testNameWebBodiesJSON :: IO ()
+testNameWebBodiesJSON = do
+  Right signature <- pure $ parseSignature testNameSignature
+  let fields =
+        OrderFields
+          { ofLabelHash = LabelHash testNameHashBytes,
+            ofLength = 7,
+            ofDuration = 69292800,
+            ofCommitment = testNameHashBytes,
+            ofSealed = "sealed",
+            ofAgreedTerms = T.replicate 32 "ab"
+          }
+  J.Object codeOrder <- pure $ J.toJSON testCodeOrder
+  case parseOrderRequest codeOrder of
+    Just OrderRequest {orOwner, orFields, orTimestamp, orSignature} -> do
+      orOwner `shouldBe` testNameOwner
+      (orFields == fields) `shouldBe` True
+      orTimestamp `shouldBe` 1792574100
+      orSignature `shouldBe` signature
+    Nothing -> expectationFailure "the code order is not read as POST /api/name/register reads its body"
+  textField codeOrder "code" `shouldBe` Just testPrepaidCode
+  J.Object anotherName <- pure $ J.toJSON testSignedOrder
+  case parseOrderFields anotherName of
+    Just (orFields, orTimestamp, orSignature) -> do
+      (orFields == fields) `shouldBe` True
+      orTimestamp `shouldBe` 1792574100
+      orSignature `shouldBe` signature
+    Nothing -> expectationFailure "another name's order is not read as its route reads its body"
+  J.Object reveal <- pure $ J.toJSON testNameReveal
+  slLabel <$> parseSignedLabel reveal `shouldBe` Just "alice42"
+  case parseRevealFields reveal of
+    Just RevealFields {rfContactLinks, rfChannelLinks, rfNonce, rfDeadline, rfAcceptance} -> do
+      rfContactLinks `shouldBe` [testContactLink]
+      rfChannelLinks `shouldBe` []
+      (rfNonce, rfDeadline) `shouldBe` (0, 1792577700)
+      isJust rfAcceptance `shouldBe` True
+    Nothing -> expectationFailure "the reveal is not read as its route reads its body"
+  J.Object findBody <- pure $ J.toJSON STCFindNameOrders {owner = testNameOwner, timestamp = 1792574100, signature = testNameSignature}
+  parseAnyCaseAddress <$> textField findBody "owner" `shouldBe` Just (Right testNameOwner)
+  (integerField =<< KM.lookup "timestamp" findBody) `shouldBe` Just (1792574100 :: Int)
+  parseSignature <$> textField findBody "signature" `shouldBe` Just (Right signature)
+
+testNamePurchaseJSON :: IO ()
+testNamePurchaseJSON = do
+  let nameCode = NameCodeInfo {minLength = 7, years = 2, state = NCSUnused, browserPayment = Nothing}
+      nameCodeJSON = J.object ["minLength" J..= (7 :: Int), "years" J..= (2 :: Int), "state" J..= ("unused" :: T.Text)]
+  J.toJSON STPNamePurchase {nameCode, orderAnswer = Just NOAPlaced {registrationId = testRegistrationId}}
+    `shouldBe` J.object
+      [ "type" J..= ("namePurchase" :: T.Text),
+        "nameCode" J..= nameCodeJSON,
+        "orderAnswer" J..= J.object ["type" J..= ("placed" :: T.Text), "registrationId" J..= ("t2Jk8RmQ4vXw9NcP3yLb6g" :: T.Text)]
+      ]
+  J.toJSON STPNamePurchase {nameCode, orderAnswer = Just NOARefused {refusal = NRFNameTaken}}
+    `shouldBe` J.object
+      [ "type" J..= ("namePurchase" :: T.Text),
+        "nameCode" J..= nameCodeJSON,
+        "orderAnswer" J..= J.object ["type" J..= ("refused" :: T.Text), "refusal" J..= J.object ["error" J..= ("name_taken" :: T.Text)]]
+      ]
+  J.toJSON STPNamePurchase {nameCode, orderAnswer = Nothing}
+    `shouldBe` J.object ["type" J..= ("namePurchase" :: T.Text), "nameCode" J..= nameCodeJSON]
+  J.toJSON STPError {code = STEReceiptUsed, message = Nothing, retryAfter = Nothing}
+    `shouldBe` J.object ["type" J..= ("error" :: T.Text), "code" J..= ("receipt_used" :: T.Text)]
+
+testNameRefusalJSON :: IO ()
+testNameRefusalJSON = do
+  J.toJSON STPNameRefused {refusal = NRFTermsChanged {terms = testTermsRef, community = Just testNameCommunity}}
+    `shouldBe` J.object
+      [ "type" J..= ("nameRefused" :: T.Text),
+        "refusal"
+          J..= J.object
+            [ "error" J..= ("terms_changed" :: T.Text),
+              "terms" J..= J.object ["hash" J..= testNameHash, "link" J..= testTermsLink],
+              "community" J..= J.object ["for" J..= ("SimpleX users" :: T.Text), "years" J..= (2 :: Int)]
+            ]
+      ]
+  J.toJSON NRFSaleClosed {saleState = NSSClosedForDay {reopensAt = Just 1792610100}}
+    `shouldBe` J.object
+      [ "error" J..= ("sale_closed" :: T.Text),
+        "saleState" J..= J.object ["type" J..= ("closedForDay" :: T.Text), "reopensAt" J..= (1792610100 :: Int)]
+      ]
+  J.toJSON NRFNameTaken `shouldBe` J.object ["error" J..= ("name_taken" :: T.Text)]
+  let futureRefusal = J.object ["error" J..= ("future_refusal" :: T.Text), "detail" J..= (1 :: Int)]
+  case J.fromJSON futureRefusal of
+    J.Success r@NRFUnknown {tag} -> do
+      tag `shouldBe` "future_refusal"
+      J.toJSON r `shouldBe` futureRefusal
+    r -> expectationFailure $ "expected NRFUnknown, got " <> show r
+  let futureState = J.object ["type" J..= ("futureState" :: T.Text)]
+  case J.fromJSON futureState of
+    J.Success s@NSSUnknown {tag} -> do
+      tag `shouldBe` "futureState"
+      J.toJSON s `shouldBe` futureState
+    r -> expectationFailure $ "expected NSSUnknown, got " <> show r
+  J.fromJSON (J.String "future_state") `shouldBe` J.Success (NCSUnknown "future_state")
+  J.toJSON (NCSUnknown "future_state") `shouldBe` J.String "future_state"
+  J.fromJSON (J.String "future_phase") `shouldBe` J.Success (NRPUnknown "future_phase")
+  J.toJSON (NRPUnknown "future_phase") `shouldBe` J.String "future_phase"
+
+testNameHash :: T.Text
+testNameHash = "0x" <> T.replicate 32 "ab"
+
+testNameHashBytes :: ByteString
+testNameHashBytes = B.replicate 32 0xab
+
+testNameSignature :: T.Text
+testNameSignature = "0x" <> T.replicate 32 "11" <> T.replicate 31 "00" <> "01" <> "1b"
+
+testNameOwner :: Address
+testNameOwner = either error id $ strDecode "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+
+testNameRecipient :: Address
+testNameRecipient = either error id $ strDecode "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6"
+
+testPrepaidCode :: T.Text
+testPrepaidCode = "SN7-BJTBP-29596-R3HJ8-25YM7"
+
+testRegistrationId :: NameRegistrationId
+testRegistrationId = NameRegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
+
+testContactLink :: T.Text
+testContactLink = "https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2Fexample.com%2Fq"
+
+testTermsLink :: T.Text
+testTermsLink = "https://example.com/terms.md#sha256=" <> T.replicate 32 "cd"
+
+testSignedOrder :: SignedNameOrder
+testSignedOrder =
+  SignedNameOrder
+    { labelHash = testNameHash,
+      labelLength = 7,
+      duration = 69292800,
+      commitment = testNameHash,
+      sealed = "sealed",
+      terms = T.replicate 32 "ab",
+      timestamp = 1792574100,
+      signature = testNameSignature
+    }
+
+testCodeOrder :: NameCodeOrder
+testCodeOrder = NameCodeOrder {code = testPrepaidCode, owner = testNameOwner, signedOrder = testSignedOrder}
+
+testNameReveal :: SignedNameReveal
+testNameReveal =
+  SignedNameReveal
+    { label = "alice42",
+      signature = testNameSignature,
+      secret = testNameHash,
+      nonce = 0,
+      deadline = 1792577700,
+      records = NameRevealRecords {contact = [testContactLink], channel = []},
+      acceptance = NameRevealAcceptance {termsHash = testNameHash, nonce = 1, signature = testNameSignature}
+    }
+
+testNameMove :: NameMove
+testNameMove = NameMove {labelHash = testNameHash, holder = testNameOwner, recipient = testNameRecipient}
+
+testTermsRef :: NameTermsRef
+testTermsRef = NameTermsRef {termsHash = testNameHash, termsLink = testTermsLink}
+
+testNameCommunity :: NameCommunity
+testNameCommunity = NameCommunity {communityFor = Just "SimpleX users", communityYears = 2}
+
+testNameCatalog :: NameSaleState -> NameCatalog
+testNameCatalog saleState =
+  NameCatalog
+    { saleState,
+      years = 2,
+      termStart = 1792574100,
+      price = Just (USDCents 1000),
+      invoiceWindow = Just 3600,
+      tld = TLDSimplex,
+      chainId = 1,
+      resolver = testNameRecipient,
+      sponsor = testNameOwner,
+      terms = NameCatalogTerms {generalTerms = Just testTermsRef, communityTerms = Just testTermsRef},
+      communityTexts = M.fromList [(testNameHash, "SimpleX users")],
+      products = ["name_2y"],
+      time = 1792574100
+    }
+
+testNameCodeInfo :: NameCodeState -> NameCodeInfo
+testNameCodeInfo state =
+  NameCodeInfo
+    { minLength = 7,
+      years = 2,
+      state,
+      browserPayment = Just NameCodePayment {payUntil = futureTime, invoicePayableUntil = Just futureTime, moneyOnClosedInvoice = False, moneyBeyondPrice = False}
+    }
+
+testNameView :: NameRegistrationPhase -> NameRegistrationView
+testNameView phase =
+  NameRegistrationView
+    { registrationId = testRegistrationId,
+      version = 3,
+      moves = 0,
+      linksRefused = False,
+      phase,
+      labelHash = testNameHash,
+      label = Just "alice42",
+      owner = testNameOwner,
+      commitment = testNameHash,
+      resolver = testNameRecipient,
+      sponsor = testNameOwner,
+      chainId = 1,
+      tld = TLDSimplex,
+      years = 2,
+      duration = 69292800,
+      commitTx = Just testNameHash,
+      registerTx = Nothing,
+      revealAfter = Just 1792574160,
+      revealBefore = Just 1792660500,
+      intentNonce = Just 0,
+      acceptance = Just NameAcceptanceAsked {kind = NTKCommunity, policy = testNameRecipient, termsHash = testNameHash, nonce = 0},
+      unread = ["0x" <> T.replicate 32 "ef"],
+      expiresAt = Nothing,
+      failure = Nothing,
+      sendsUsedUp = False,
+      community = Just testNameCommunity,
+      terms = Just (T.replicate 32 "ab")
+    }
 
 pinsTypeTag :: (HasCallStack, J.ToJSON a, J.FromJSON a) => (a -> T.Text) -> a -> IO ()
 pinsTypeTag tagOf x = do
