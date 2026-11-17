@@ -8316,19 +8316,10 @@ testGroupMemberQuotaWarningsReset ps =
         withTestChatOpts ps opts' "bob" $ \bob ->
           bob <### ("subscribed 2 connections on server localhost" : map (\msg -> WithTime ("#team alice> " <> msg)) msgs)
   where
-    serverCfg' =
-      (smpServerCfg ps)
-        { transports = [(smpTestPort2 ps, transport @TLS, False)],
-          msgQueueQuota = 2
-        }
-    cfg' = testCfg {agentConfig = testAgentCfg {messageRetryInterval = (messageRetryInterval testAgentCfg) {riSlow = defaultReconnectInterval {initialInterval = 5_000_000}}}}
-    opts' =
-      testOpts
-        { coreOptions =
-            testCoreOpts
-              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
-              }
-        }
+    serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)], msgQueueQuota = 2}
+    slowRetryInterval = defaultReconnectInterval {initialInterval = 5_000_000}
+    cfg' = testCfg {agentConfig = testAgentCfg {messageRetryInterval = (messageRetryInterval testAgentCfg) {riSlow = slowRetryInterval}}}
+    opts' = testOpts {coreOptions = testCoreOpts {smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]}}
 
 testGroupMemberReports :: HasCallStack => TestParams -> IO ()
 testGroupMemberReports =
