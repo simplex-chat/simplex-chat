@@ -64,7 +64,7 @@ import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (tshow)
-import StoreService.Names.Abi (lowerHexP, parseText)
+import StoreService.Names.Abi (hexP, parseText)
 import StoreService.Names.Label (LabelError (..), validLabel)
 import System.IO.Error (ioeGetErrorString)
 import Text.Read (readMaybe)
@@ -753,10 +753,10 @@ parseConfig ini = do
       either (const (Left ("chain." <> T.unpack k <> " is not an Ethereum address"))) Right (strDecode (encodeUtf8 v) :: Either String Address)
     serviceKey = do
       v <- required "chain" "service_key"
-      let bad = Left "chain.service_key must be 0x and 64 hex digits of a valid secp256k1 key"
-      case T.stripPrefix "0x" v of
-        Just h | Right bytes <- parseText (lowerHexP serviceKeyBytes) (T.toLower h) -> either (const bad) Right (mkPrivateKey (BA.convert bytes))
-        _ -> bad
+      let bad = Left "chain.service_key must be 0x and 64 lowercase hex digits of a valid secp256k1 key"
+      case parseText (hexP serviceKeyBytes) v of
+        Right bytes -> either (const bad) Right (mkPrivateKey (BA.convert bytes))
+        Left _ -> bad
     recordEditsPerYear = do
       v <- num "names" "record_edits_per_year" defaultRecordEditsPerYear
       if v >= minRecordEditsPerYear && v <= maxRecordEditsPerYear

@@ -25,7 +25,6 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
-import Data.Char (isHexDigit)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -33,8 +32,8 @@ import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature, deserializeSignature, lowS)
-import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode, strEncode)
-import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import Simplex.Messaging.Eth.Address (Address, anyCaseAddressP, checksumAddressP, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Names.Abi (abiWordSize, hex, hexP, lowerHexP, parseText)
@@ -82,9 +81,6 @@ communityTermsPrefix = "community/"
 signatureBytes :: Int
 signatureBytes = 65
 
-addressHexLength :: Int
-addressHexLength = 40
-
 -- the contracts' SignatureChecker refuses a higher s, though recovery accepts it
 parseSignature :: Text -> Either SignatureError RecoverableSignature
 parseSignature t = do
@@ -116,14 +112,8 @@ orderWords :: OrderFields -> [Text]
 orderWords OrderFields {ofLabelHash = LabelHash labelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} =
   [hex labelHash, tshow ofLength, tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed, textEncode ofAgreedTerms]
 
--- the address parser checks EIP-55 only on mixed-case hex, so one-case text is refused here by comparing the encoding
 parseChecksumAddress :: Text -> Either AddressError Address
-parseChecksumAddress t = do
-  a <- parseAnyCaseAddress t
-  unless (strEncode a == encodeUtf8 t) $ Left ADChecksum
-  pure a
+parseChecksumAddress t = parseAnyCaseAddress t >> first (const ADChecksum) (parseText checksumAddressP t)
 
 parseAnyCaseAddress :: Text -> Either AddressError Address
-parseAnyCaseAddress t = case T.stripPrefix "0x" t of
-  Just h | T.length h == addressHexLength && T.all isHexDigit h -> first (const ADFormat) $ strDecode $ encodeUtf8 $ T.toLower h
-  _ -> Left ADFormat
+parseAnyCaseAddress = first (const ADFormat) . parseText anyCaseAddressP

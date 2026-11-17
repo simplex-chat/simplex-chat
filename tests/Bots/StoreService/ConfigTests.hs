@@ -904,8 +904,9 @@ testNamesBadServiceKey = do
   let withKey v = map (\l -> if "service_key =" `T.isPrefixOf` l then "service_key = " <> v else l) chainSection
       refused v = do
         e <- namesRefusal namesSection (withKey v)
-        e `shouldBe` "chain.service_key must be 0x and 64 hex digits of a valid secp256k1 key"
+        e `shouldBe` "chain.service_key must be 0x and 64 lowercase hex digits of a valid secp256k1 key"
   refused (T.drop 2 serviceKeyHex)
+  refused ("0x" <> T.toUpper (T.drop 2 serviceKeyHex))
   refused (T.dropEnd 2 serviceKeyHex)
   refused ("0x" <> T.replicate 64 "0")
   -- the curve order n is not a valid key
