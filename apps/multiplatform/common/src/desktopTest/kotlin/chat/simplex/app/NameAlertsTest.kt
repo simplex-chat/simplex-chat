@@ -418,9 +418,9 @@ class NameAlertsTest {
 
   private fun chatInfo(id: String): ChatInfo = ChatModel.chatsContext.chats.value.first { it.id == id }.chatInfo
 
-  private fun fixtureText(name: String): String = File("../../../tests/fixtures/api/$name.json").readText()
-
   private companion object {
     const val SIMPLEX_NAME = "@alice.simplex"
   }
 }
+
+internal fun fixtureText(name: String): String = File("../../../tests/fixtures/api/$name.json").readText()

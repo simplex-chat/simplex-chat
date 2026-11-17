@@ -271,11 +271,6 @@ final class NameAlertsTests: XCTestCase {
         }
     }
 
-    private func fixtureJSON(_ fixture: String) throws -> Any {
-        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../tests/fixtures/api/\(fixture).json")
-        return try JSONSerialization.jsonObject(with: Data(contentsOf: url))
-    }
-
     private func unrecordedRequest(_ request: String) {
         locked { unrecorded.append(request) }
     }
@@ -323,15 +318,6 @@ final class NameAlertsTests: XCTestCase {
             let button = try XCTUnwrap(buttons(shown.view).first { $0.title(for: .normal) == title }, file: file, line: line)
             button.sendActions(for: .touchUpInside)
         }
-    }
-
-    @MainActor
-    private func waitFor(_ condition: @escaping () -> Bool) async throws {
-        for _ in 0..<600 {
-            if condition() { return }
-            try await Task.sleep(nanoseconds: 50_000_000)
-        }
-        throw XCTestError(.timeoutWhileWaiting)
     }
 
     @MainActor
@@ -408,10 +394,15 @@ private struct SearchHost: View {
     }
 }
 
+func fixtureJSON(_ fixture: String) throws -> Any {
+    let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../tests/fixtures/api/\(fixture).json")
+    return try JSONSerialization.jsonObject(with: Data(contentsOf: url))
+}
+
 func singleFieldJSON(_ value: Any) -> Any {
     if let object = value as? [String: Any] {
         var fields = jsonFields(object)
-        guard let tag = object["type"] as? String else { return fields }
+        guard let tag = object["type"] as? String, !msgContentTypes.contains(tag) else { return fields }
         fields["type"] = nil
         return ["_owsf": true, tag: fields]
     } else if let array = value as? [Any] {
@@ -420,6 +411,8 @@ func singleFieldJSON(_ value: Any) -> Any {
         return value
     }
 }
+
+private let msgContentTypes: Set<String> = ["text", "link", "image", "video", "voice", "file", "report", "chat"]
 
 private let taggedObjectKeys: Set = ["msgContent", "chatLink"]
 
@@ -431,4 +424,13 @@ private func jsonFields(_ object: [String: Any]) -> [String: Any] {
             fields[field.key] = singleFieldJSON(field.value)
         }
     }
+}
+
+@MainActor
+func waitFor(_ condition: @escaping () -> Bool) async throws {
+    for _ in 0..<600 {
+        if condition() { return }
+        try await Task.sleep(nanoseconds: 50_000_000)
+    }
+    throw XCTestError(.timeoutWhileWaiting)
 }
