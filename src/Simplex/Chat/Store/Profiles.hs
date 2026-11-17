@@ -204,19 +204,18 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
                 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR (g.enable_ntfs = 2 AND i.user_mention = 1))
             |]
             (userId, CISRcvNew)
-      pendingCount <-
-        maybeFirstRow fromOnly $
-          DB.query
-            db
-            [sql|
-              SELECT COALESCE(SUM(CASE WHEN g.enable_ntfs = 2 THEN mu.support_chat_items_mentions ELSE mu.support_chat_items_unread END), 0)
-              FROM group_members mu
-              JOIN groups g ON g.group_id = mu.group_id
-              WHERE mu.contact_id = ? AND mu.member_status IN (?,?)
-                AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR g.enable_ntfs = 2)
-            |]
-            (userContactId, GSMemPendingApproval, GSMemPendingReview)
-      pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount + fromMaybe 0 pendingCount}
+      pendingCounts <-
+        DB.query
+          db
+          [sql|
+            SELECT CASE WHEN g.enable_ntfs = 2 THEN mu.support_chat_items_mentions ELSE mu.support_chat_items_unread END
+            FROM group_members mu
+            JOIN groups g ON g.group_id = mu.group_id
+            WHERE mu.contact_id = ? AND mu.member_status IN (?,?)
+              AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR g.enable_ntfs = 2)
+          |]
+          (userContactId, GSMemPendingApproval, GSMemPendingReview)
+      pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount + sum (map fromOnly pendingCounts)}
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db = do
