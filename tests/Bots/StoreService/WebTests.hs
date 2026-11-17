@@ -38,6 +38,11 @@ module Bots.StoreService.WebTests
     supporterPriceId,
     codeHashText,
     sampleCode,
+    stringField,
+    viewInvoice,
+    CodeRow (..),
+    settledCode,
+    loggedError,
   )
 where
 
