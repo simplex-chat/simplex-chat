@@ -58,7 +58,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeB
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.FakeHttp (nextFakeId)
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.NamesStoreTests (btc, codeReg, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
+import Bots.StoreService.NamesStoreTests (btc, codeReg, commitFixture, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
 import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently, wait)
@@ -570,13 +570,14 @@ testResendReadsTime = do
     r <- invoiceRegistration ctx invId
     now <- readIORef cClock
     let lapse = seconds now + 600
+        lapsing = OCommitted Commit {cmTx = Nothing, cmRevealAfter = lapse - 3600, cmRevealBefore = lapse}
     Written version <- withTransaction cStore $ \db ->
-      updateRegistration db r {nrPhase = OCommitted, nrRevealAfter = Just (lapse - 3600), nrRevealBefore = Just lapse} now
+      updateRegistration db r {nrPhase = lapsing} now
     let resend = (\(status, v) -> (status, (`fieldOf` "status") =<< v, ((`fieldOf` "phase") &&& (`fieldOf` "error")) . registrationOf <$> v)) <$> placeOrder ctx aliceOrder
     resend `shouldReturn` (200, Just "paid", Just (Just "committed", Just J.Null))
     advance ctx 601
     resend `shouldReturn` (200, Just "paid", Just (Just "failed", Just "The name was not signed in time"))
-    (nrPhase &&& nrVersion) <$> invoiceRegistration ctx invId `shouldReturn` (OCommitted, version)
+    (nrPhase &&& nrVersion) <$> invoiceRegistration ctx invId `shouldReturn` (lapsing, version)
 
 testOneFieldDiffers :: IO ()
 testOneFieldDiffers = withOrders $ \ctx -> do
@@ -698,7 +699,7 @@ testNameTaken = withOrders $ \ctx@Ctx {cNode = node} -> do
   -- another wallet's order of the name being registered here
   Right () <- placePaid (cStore ctx) "other" ownerB (order "alicebakery" 9) (addUTCTime 3600 t0)
   other <- withTransaction (cStore ctx) $ \db -> fromJust <$> getRegistration db (RegistrationId "other")
-  Written _ <- withTransaction (cStore ctx) $ \db -> updateRegistration db other {nrPhase = ORegistering} t0
+  Written _ <- withTransaction (cStore ctx) $ \db -> updateRegistration db other {nrPhase = ORegistering commitFixture $ TxHash $ digestFixture 9} t0
   placeOrder ctx aliceOrder `shouldReturn` refusedWith 409 "name_taken"
   stubCalls (cStub ctx) `shouldReturn` []
   where
@@ -979,7 +980,7 @@ testCodeOrder = withOrders $ \ctx -> do
   (code, issued@PrepaidCode {pcId, pcCodeHash}) <- issueCode ctx 8 2 id
   rid <- registered ctx code aliceOrder
   r <- registrationById ctx rid
-  (nrPhase r, nrVersion r, nrYears r, nrPrice r, nrPayment r) `shouldBe` (OQueued, 1, 2, 0, OPCode pcId)
+  (nrPhase r, nrVersion r, nrYears r, nrPrice r, nrPayment r) `shouldBe` (OQueued Nothing, 1, 2, 0, OPCode pcId)
   (nrOwner r, nrDuration r, nrCommitment r, nrSealed r, nrAgreedTerms r) `shouldBe` (ownerA, durationAt orderTime, oCommitment aliceOrder, oSealed aliceOrder, agreed plainTerms)
   nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTCode pcCodeHash)
   held <- readCode ctx issued
@@ -999,7 +1000,7 @@ testCodeResend = withOrders $ \ctx -> do
   r <- registrationById ctx rid
   now <- readIORef (cClock ctx)
   withTransaction (cStore ctx) $ \db -> do
-    updateRegistration db r {nrPhase = ORegistered (seconds now + 31536000) now} now `shouldReturn` Written 2
+    updateRegistration db r {nrPhase = ORegistered Nothing Nothing (seconds now + 31536000) now} now `shouldReturn` Written 2
     spendLandedPrepaidCode db pcId rid now `shouldReturn` True
   advance ctx 3600
   setFault (cNode ctx) "eth_call" HttpFailure
@@ -1099,7 +1100,7 @@ testCodeClosesOverdue = withOrders $ \ctx -> do
   irStatus oldRow `shouldBe` ISExpired
   old <- invoiceRegistration ctx oldInv
   (nrPhase old, nrVersion old) `shouldBe` (OUnpaid False, 2)
-  nrPhase <$> registrationById ctx rid `shouldReturn` OQueued
+  nrPhase <$> registrationById ctx rid `shouldReturn` OQueued Nothing
   calls <- stubCalls (cStub ctx)
   [c | c@StubCancel {} <- calls] `shouldBe` [StubCancel (irProviderRef oldRow)]
 
@@ -1276,7 +1277,7 @@ testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
   new <- invoiceRegistration ctx newInv
   (nrPhase new, nrVersion new) `shouldBe` (OUnpaid True, 1)
   settleNow ctx newInv settled `shouldReturn` ISPaid
-  (nrPhase <$> invoiceRegistration ctx newInv) `shouldReturn` OQueued
+  (nrPhase <$> invoiceRegistration ctx newInv) `shouldReturn` OQueued Nothing
 
 -- | Paid in full at minute 44 of 45 and confirming after; a second tab's order at minute 46 must not refund it.
 testFundedOverdueKept :: IO ()
@@ -1292,7 +1293,7 @@ testFundedOverdueKept = withOrders $ \ctx -> do
   withTransaction (cStore ctx) (\db -> closeOverdue db r now) `shouldReturn` Nothing
   (irStatus <$>) <$> getInvoice (cStore ctx) inv `shouldReturn` Just ISOpen
   settleNow ctx inv settled `shouldReturn` ISPaid
-  nrPhase <$> invoiceRegistration ctx inv `shouldReturn` OQueued
+  nrPhase <$> invoiceRegistration ctx inv `shouldReturn` OQueued Nothing
 
 -- | The real BTCPay adapter against the fake: a payment into an expired invoice reads Expired with PaidLate,
 -- into a cancelled one Invalid, and into one only we closed New and paid in part.
@@ -1443,7 +1444,7 @@ testSettlementQueues = withOrders $ \ctx -> do
   settleNow ctx invId settled `shouldReturn` ISPaid
   timeout 2000000 (wait waiter) `shouldReturn` Just True
   r <- invoiceRegistration ctx invId
-  (nrPhase r, nrVersion r) `shouldBe` (OQueued, 2)
+  (nrPhase r, nrVersion r) `shouldBe` (OQueued Nothing, 2)
 
 -- | Postgres serializes the payment with a concurrent overdue close only on this row; SQLite shows that it is written.
 testSettlementLocksInvoice :: IO ()
@@ -1656,22 +1657,17 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         Written _ <- withTransaction st $ \db -> getRegistration db rid >>= \r -> updateRegistration db (change $ fromJust r) t0
         withTransaction st $ \db -> fromJust <$> getRegistration db rid
       viewOf r = J.toJSON <$> registrationView st (testNamesConfig node) ct t0 r
+      onChain = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = 1792574160, cmRevealBefore = 1792660500}
   failed <-
     written $ \r ->
       r
-        { nrPhase = OFailed t0 FRNotRegistered,
-          nrReveal = Just reveal,
-          nrCommitTx = Just $ TxHash $ digestFixture 8,
-          nrCommitBlock = Just 100,
-          nrRevealAfter = Just 1792574160,
-          nrRevealBefore = Just 1792660500,
-          nrRegisterTx = Just $ TxHash $ digestFixture 9,
-          nrRegisterBlock = Just 120
+        { nrPhase = OFailed (Just $ CSCommitted onChain) (Just $ TxHash $ digestFixture 9) t0 FRNotRegistered,
+          nrReveal = Just reveal
         }
   viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", "failed"), ("registerTx", txText 9), ("error", "The name could not be registered"), ("balance", J.Null)]
-  requeued <- written $ \r -> r {nrPhase = OQueued, nrRegisterTx = Nothing, nrRegisterBlock = Nothing}
+  requeued <- written $ \r -> r {nrPhase = OQueued $ phaseCommit $ nrPhase r}
   viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", "queued"), ("registerTx", J.Null), ("error", J.Null), ("balance", J.Null)]
-  taken <- written $ \r -> r {nrPhase = OTaken}
+  taken <- written $ \r -> r {nrPhase = OTaken (phaseCommit $ nrPhase r) (phaseRegisterTx $ nrPhase r)}
   withTransaction st $ \db -> creditBalance db rid 20000 t0
   viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", "taken"), ("registerTx", J.Null), ("error", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "held" .= False, "heldUntil" .= J.Null, "refunded" .= (0 :: Int)])]
   where
@@ -1726,7 +1722,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
         Written _ <- withTransaction st $ \db -> updateRegistration db r {nrPhase = phase} t0
         withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
-  committed <- inPhase OCommitted
+  committed <- inPhase $ OCommitted commitFixture
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
   readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) (VRRead AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = fakeGeneralTerms, acNonce = 2})
   -- the policy lists the name: the page signs the community terms' acceptance with the policy's nonce, until a reveal is stored
@@ -1737,7 +1733,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) VRUnread
   setCommunityTerms node fakeCommunityTermsText
   readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (VRRead 4) VRNotAsked
-  taken <- inPhase OTaken
+  taken <- inPhase $ OTaken Nothing Nothing
   readViewChain ct taken `shouldReturn` ViewReads VRNotAsked VRNotAsked
   setFault node "eth_call" HttpFailure
   readViewChain ct committed `shouldReturn` ViewReads VRUnread VRUnread
@@ -1753,7 +1749,7 @@ testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   paid <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
-  Written _ <- withTransaction st $ \db -> updateRegistration db paid {nrPhase = OCommitted} t0
+  Written _ <- withTransaction st $ \db -> updateRegistration db paid {nrPhase = OCommitted commitFixture} t0
   committed <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   let unread = ViewReads VRUnread VRUnread
   atomically $ writeTVar (ctViewSlots ct) 0

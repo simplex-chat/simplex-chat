@@ -28,8 +28,8 @@ import Bots.StoreService.NamesContractsTests
   )
 import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, testNamesConfig, threeYears)
 import Bots.StoreService.NamesProfilesTests (bakeryLink, channelData, contactData, jpeg, linkDataProfile, newsLink, parsed)
-import Bots.StoreService.NamesStoreTests (atNonce, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
-import Bots.StoreService.WebTests (answerOf, refusedWith, withServiceStore, withApp)
+import Bots.StoreService.NamesStoreTests (atNonce, commitFixture, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
+import Bots.StoreService.WebTests (answerOf, digestFixture, refusedWith, withServiceStore, withApp)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Monad (forM_)
@@ -56,7 +56,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..))
-import StoreService.Names.Chain (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), TxHash (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Registration (LinkKind (..), RegistrationId (..), linkMaxBytes)
 import StoreService.Names.Profiles (HostResolver, ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
@@ -320,10 +320,10 @@ testRegistering g = withSearch g id id $ \s@Search {node, store} -> do
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-  setPhase store ORegistering
+  setPhase store $ ORegistering commitFixture $ TxHash $ digestFixture 9
   -- no price is answered, so reading one would fail the search
   searchAlice s 12 `shouldReturn` registeringAnswer
-  setPhase store $ ORegistered 1861833600 t0
+  setPhase store $ ORegistered Nothing Nothing 1861833600 t0
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   searchAlice s 12 `shouldReturn` availableAnswer 10000
 
@@ -360,7 +360,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-  setPhase store ORegistering
+  setPhase store $ ORegistering commitFixture $ TxHash $ digestFixture 9
   searchAlice s 12 `shouldReturn` listed registeringAnswer
   registeredWith node fullLink ""
   let registered = registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))
@@ -368,7 +368,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   -- new terms on chain: the available answer carries them; a listing that cannot be read: no answer
   available node
   setCommunityTerms node fakeNewCommunityTermsText
-  setPhase store $ ORegistered 1861833600 t0
+  setPhase store $ ORegistered Nothing Nothing 1861833600 t0
   searchAlice s 12 `shouldReturn` listedUnder fakeNewCommunityTermsText (availableAnswer 10000)
   answerListing node alice $ Reverts ""
   searchAlice s 12 `shouldReturn` refusedWith 503 "provider_unavailable"

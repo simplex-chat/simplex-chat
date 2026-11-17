@@ -221,17 +221,13 @@ stored :: Ctx -> NameRegistration -> IO NameRegistration
 stored ctx = registrationById ctx . nrId
 
 failedPhase, registeredPhase, committedPhase, linksRefusedPhase :: NameRegistration -> NameRegistration
-failedPhase r = r {nrPhase = OFailed orderTime FRNotRegistered}
-registeredPhase r = r {nrPhase = ORegistered (seconds orderTime + 3 * 31536000) orderTime}
-committedPhase r =
-  r
-    { nrPhase = OCommitted,
-      nrCommitTx = Just (TxHash $ digestFixture 8),
-      nrCommitBlock = Just 100,
-      nrRevealAfter = Just (seconds orderTime + 60),
-      nrRevealBefore = Just (seconds orderTime + 86400)
-    }
+failedPhase r = r {nrPhase = failedFrom orderTime FRNotRegistered $ nrPhase r}
+registeredPhase r = r {nrPhase = ORegistered (phaseCommit $ nrPhase r) Nothing (seconds orderTime + 3 * 31536000) orderTime}
+committedPhase r = r {nrPhase = OCommitted committedCommit}
 linksRefusedPhase r = (committedPhase r) {nrLinksRefusedAt = Just orderTime}
+
+committedCommit :: Commit
+committedCommit = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = seconds orderTime + 60, cmRevealBefore = seconds orderTime + 86400}
 
 -- | Another name's fields, with the page's duration for 2 years at the service's clock.
 moveTo :: Ctx -> Text -> Int -> IO OrderFields
@@ -316,14 +312,14 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
   (InvoiceId invId, _) <- placed ctx aliceOrder
   paid <- invoiceRegistration ctx (InvoiceId invId)
   advance ctx 1
-  lapsed <- paidIn ctx dynamisOrder $ \r -> (committedPhase r) {nrRevealBefore = Just (seconds orderTime)}
+  lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = seconds orderTime}}
   findBody ctx keyA (T.toLower ownerAText) (seconds orderTime) >>= postFind ctx >>= \case
     (200, Just v) | Just (J.Array found) <- KM.lookup "registrations" v -> do
       let entries = map objectEntry $ toList found
       map (`fieldOf` "registrationId") entries `shouldBe` map (Just . idText) (nrId lapsed : nrId paid : [oldOrder i | i <- [50, 49 .. 3]])
       case entries of
         lapsedEntry : unpaidEntry : moveEntry : _ -> do
-          (fieldOf lapsedEntry "phase", nrPhase lapsed) `shouldBe` (Just "failed", OCommitted)
+          (fieldOf lapsedEntry "phase", namePhase $ nrPhase lapsed) `shouldBe` (Just "failed", PCommitted)
           sort (KM.keys unpaidEntry) `shouldBe` sort ["registrationId", "invoiceId", "phase", "createdAt", "labelHash", "sealed", "balanceSource", "heldBy"]
           unpaidEntry
             `shouldBe` KM.fromList
@@ -377,7 +373,7 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder registeredPhase
   move ctx keyA r to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
-  let phases = [OUnpaid True, OQueued, OCommitting, OCommitted, ORegistering, nrPhase r, OTaken, nrPhase (failedPhase r)]
+  let phases = [OUnpaid True, OQueued Nothing, OCommitting Nothing, OCommitted committedCommit, ORegistering committedCommit (TxHash $ digestFixture 9), nrPhase r, OTaken Nothing Nothing, nrPhase (failedPhase r)]
       movableWith refused = [namePhase p | p <- phases, movable r {nrPhase = p, nrLinksRefusedAt = refused}]
   movableWith Nothing `shouldBe` [PFailed]
   movableWith (Just orderTime) `shouldBe` [PCommitted, PFailed]
@@ -405,15 +401,15 @@ testMoveAccepted = withOwner $ \ctx -> do
       ("error", J.Null)
     ]
   written <- stored ctx failedOrder
-  (nrPhase written, nrMoves written, nrOrderHash written) `shouldBe` (OQueued, 1, nrOrderHash failedOrder)
+  (nrPhase written, nrMoves written, nrOrderHash written) `shouldBe` (OQueued Nothing, 1, nrOrderHash failedOrder)
   -- the same name with other links, after a reveal refused for its links
   refusedOrder <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} linksRefusedPhase
   sameName <- moveTo ctx "alicebakery" 11
   v2 <- moved ctx keyB refusedOrder sameName
   fieldsIn v2 [("phase", "queued"), ("labelHash", labelHashText "alicebakery"), ("linksRefused", J.Bool False), ("commitTx", J.Null), ("revealAfter", J.Null), ("moves", J.Number 1)]
-  (nrLinksRefusedAt &&& nrCommitTx) <$> stored ctx refusedOrder `shouldReturn` (Nothing, Nothing)
+  (nrLinksRefusedAt &&& nrPhase) <$> stored ctx refusedOrder `shouldReturn` (Nothing, OQueued Nothing)
   -- a committed order with no reveal past revealBefore reads failed
-  lapsed <- paidIn ctx dynamisOrder $ \r -> (committedPhase r) {nrRevealBefore = Just (seconds orderTime - 1)}
+  lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = seconds orderTime - 1}}
   back <- moveTo ctx "alicebakery" 12
   v3 <- moved ctx keyA lapsed back
   fieldsIn v3 [("phase", "queued"), ("error", J.Null), ("price", J.Number 10000)]

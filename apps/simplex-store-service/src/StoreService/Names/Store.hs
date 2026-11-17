@@ -13,8 +13,14 @@ module StoreService.Names.Store
     BodyHash,
     NamePhase (..),
     Live,
+    Commit (..),
+    CommitStep (..),
     OrderPhase (..),
     namePhase,
+    phaseCommit,
+    phaseRegisterTx,
+    commitTxOf,
+    failedFrom,
     FailReason (..),
     enumTextDecode,
     OrderPayment (..),
@@ -209,27 +215,67 @@ instance ToField NamePhase where toField = toField . textEncode
 
 type Live = Bool
 
+data Commit = Commit
+  { cmTx :: Maybe (TxHash, Word64),
+    cmRevealAfter :: ChainSeconds,
+    cmRevealBefore :: ChainSeconds
+  }
+  deriving (Eq, Show)
+
+data CommitStep = CSSent TxHash | CSCommitted Commit
+  deriving (Eq, Show)
+
 data OrderPhase
   = OUnpaid Live
-  | OQueued
-  | OCommitting
-  | OCommitted
-  | ORegistering
-  | ORegistered ChainSeconds UTCTime
-  | OTaken
-  | OFailed UTCTime FailReason
+  | OQueued (Maybe CommitStep)
+  | OCommitting (Maybe TxHash)
+  | OCommitted Commit
+  | ORegistering Commit TxHash
+  | ORegistered (Maybe CommitStep) (Maybe (TxHash, Maybe Word64)) ChainSeconds UTCTime
+  | OTaken (Maybe CommitStep) (Maybe TxHash)
+  | OFailed (Maybe CommitStep) (Maybe TxHash) UTCTime FailReason
   deriving (Eq, Show)
 
 namePhase :: OrderPhase -> NamePhase
 namePhase = \case
   OUnpaid _ -> PUnpaid
-  OQueued -> PQueued
-  OCommitting -> PCommitting
-  OCommitted -> PCommitted
-  ORegistering -> PRegistering
+  OQueued _ -> PQueued
+  OCommitting _ -> PCommitting
+  OCommitted _ -> PCommitted
+  ORegistering {} -> PRegistering
   ORegistered {} -> PRegistered
-  OTaken -> PTaken
+  OTaken {} -> PTaken
   OFailed {} -> PFailed
+
+phaseCommit :: OrderPhase -> Maybe CommitStep
+phaseCommit = \case
+  OUnpaid _ -> Nothing
+  OQueued step -> step
+  OCommitting tx -> CSSent <$> tx
+  OCommitted c -> Just $ CSCommitted c
+  ORegistering c _ -> Just $ CSCommitted c
+  ORegistered step _ _ _ -> step
+  OTaken step _ -> step
+  OFailed step _ _ _ -> step
+
+phaseRegisterTx :: OrderPhase -> Maybe TxHash
+phaseRegisterTx = \case
+  OUnpaid _ -> Nothing
+  OQueued _ -> Nothing
+  OCommitting _ -> Nothing
+  OCommitted _ -> Nothing
+  ORegistering _ tx -> Just tx
+  ORegistered _ tx _ _ -> fst <$> tx
+  OTaken _ tx -> tx
+  OFailed _ tx _ _ -> tx
+
+commitTxOf :: CommitStep -> Maybe TxHash
+commitTxOf = \case
+  CSSent tx -> Just tx
+  CSCommitted Commit {cmTx} -> fst <$> cmTx
+
+failedFrom :: UTCTime -> FailReason -> OrderPhase -> OrderPhase
+failedFrom failedAt reason p = OFailed (phaseCommit p) (phaseRegisterTx p) failedAt reason
 
 data FailReason = FRNotSignedInTime | FRNotRegistered
   deriving (Eq, Show, Enum, Bounded)
@@ -299,12 +345,6 @@ data NameRegistration = NameRegistration
     nrPrice :: USDCents,
     nrPayment :: OrderPayment,
     nrReveal :: Maybe NameReveal,
-    nrCommitTx :: Maybe TxHash,
-    nrCommitBlock :: Maybe Word64,
-    nrRegisterTx :: Maybe TxHash,
-    nrRegisterBlock :: Maybe Word64,
-    nrRevealAfter :: Maybe ChainSeconds,
-    nrRevealBefore :: Maybe ChainSeconds,
     nrOrderHash :: OrderHash,
     nrMoves :: Int,
     nrLinksRefusedAt :: Maybe UTCTime,
@@ -764,21 +804,34 @@ toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
   ( (rid, nrVersion, nrLabelHash, len, duration, nrOwner, Binary commitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
-      :. (signature_, nrCommitTx, commitBlock, nrRegisterTx, registerBlock, revealAfter, revealBefore, expiresAt, registeredAt)
+      :. (signature_, commitTx, commitBlock, registerTx, registerBlock, revealAfter, revealBefore, expiresAt, registeredAt)
       :. (failedAt, failReason, BI live, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
       :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
     nrCommitment <- bytes32 "commitment" commitment
+    commitStep <- case (commitTx, commitBlock, revealAfter, revealBefore) of
+      (Nothing, Nothing, Nothing, Nothing) -> Right Nothing
+      (Just tx, Nothing, Nothing, Nothing) -> Right $ Just $ CSSent tx
+      (Just tx, Just block, Just after, Just before) -> Right $ Just $ CSCommitted Commit {cmTx = Just (tx, word64 block), cmRevealAfter = word64 after, cmRevealBefore = word64 before}
+      (Nothing, Nothing, Just after, Just before) -> Right $ Just $ CSCommitted Commit {cmTx = Nothing, cmRevealAfter = word64 after, cmRevealBefore = word64 before}
+      _ -> Left $ "name_registrations commit: " <> rid
     nrPhase <- case phase of
       PUnpaid -> Right $ OUnpaid live
-      PQueued -> Right OQueued
-      PCommitting -> Right OCommitting
-      PCommitted -> Right OCommitted
-      PRegistering -> Right ORegistering
-      PRegistered -> note ("name_registrations registered: " <> rid) $ ORegistered . word64 <$> expiresAt <*> registeredAt
-      PTaken -> Right OTaken
-      PFailed -> note ("name_registrations failed: " <> rid) $ OFailed <$> failedAt <*> failReason
+      PQueued -> Right $ OQueued commitStep
+      PCommitting -> case commitStep of
+        Nothing -> Right $ OCommitting Nothing
+        Just (CSSent tx) -> Right $ OCommitting $ Just tx
+        Just (CSCommitted _) -> Left $ "name_registrations committing: " <> rid
+      PCommitted -> case commitStep of
+        Just (CSCommitted c) -> Right $ OCommitted c
+        _ -> Left $ "name_registrations committed: " <> rid
+      PRegistering -> case (commitStep, registerTx) of
+        (Just (CSCommitted c), Just tx) -> Right $ ORegistering c tx
+        _ -> Left $ "name_registrations registering: " <> rid
+      PRegistered -> note ("name_registrations registered: " <> rid) $ ORegistered commitStep ((\tx -> (tx, word64 <$> registerBlock)) <$> registerTx) . word64 <$> expiresAt <*> registeredAt
+      PTaken -> Right $ OTaken commitStep registerTx
+      PFailed -> note ("name_registrations failed: " <> rid) $ OFailed commitStep registerTx <$> failedAt <*> failReason
     let methodOf m = note ("name_registrations.method: " <> m) (textDecode m)
         balanceUse source = BalanceUse {buSource = RegistrationId source, buUsed = used}
     nrPayment <- case (method_, invoiceId_, codeId_, source_) of
@@ -812,12 +865,6 @@ toRegistration
           nrPrice,
           nrPayment,
           nrReveal,
-          nrCommitTx,
-          nrCommitBlock = word64 <$> commitBlock,
-          nrRegisterTx,
-          nrRegisterBlock = word64 <$> registerBlock,
-          nrRevealAfter = word64 <$> revealAfter,
-          nrRevealBefore = word64 <$> revealBefore,
           nrOrderHash,
           nrMoves,
           nrLinksRefusedAt,
@@ -897,12 +944,12 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
 orderLive :: NameRegistration -> Bool
 orderLive NameRegistration {nrPhase} = case nrPhase of
   OUnpaid live -> live
-  OQueued -> True
-  OCommitting -> True
-  OCommitted -> True
-  ORegistering -> True
+  OQueued _ -> True
+  OCommitting _ -> True
+  OCommitted _ -> True
+  ORegistering {} -> True
   OFailed {} -> True
-  OTaken -> False
+  OTaken {} -> False
   ORegistered {} -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
@@ -929,18 +976,22 @@ updateRegistration db r now = do
       ( (nrLabelHash, nameLengthInt nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, rvSignature <$> nrReveal)
           :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
-          :. (nrCommitTx, int64 <$> nrCommitBlock, nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> expiresAt)
+          :. (commitTx, int64 <$> commitBlock, phaseRegisterTx nrPhase, int64 <$> registerBlock, int64 <$> revealAfter, int64 <$> revealBefore, int64 <$> expiresAt)
           :. (truncateToSecond <$> registeredAt, truncateToSecond <$> failedAt, failReason, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
           :. (rid, nrVersion, BI live, rid, Binary nrCommitment, nrOwner, nrLabelHash)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
-    NameRegistration {nrCommitTx, nrCommitBlock, nrRegisterTx, nrRegisterBlock, nrRevealAfter, nrRevealBefore, nrMoves, nrLinksRefusedAt} = r
-    (expiresAt, registeredAt, failedAt, failReason) = case nrPhase of
-      ORegistered expiry at -> (Just expiry, Just at, Nothing, Nothing)
-      OFailed at reason -> (Nothing, Nothing, Just at, Just reason)
-      _ -> (Nothing, Nothing, Nothing, Nothing)
+    NameRegistration {nrMoves, nrLinksRefusedAt} = r
+    (commitTx, commitBlock, revealAfter, revealBefore) = case phaseCommit nrPhase of
+      Nothing -> (Nothing, Nothing, Nothing, Nothing)
+      Just (CSSent tx) -> (Just tx, Nothing, Nothing, Nothing)
+      Just (CSCommitted Commit {cmTx, cmRevealAfter, cmRevealBefore}) -> (fst <$> cmTx, snd <$> cmTx, Just cmRevealAfter, Just cmRevealBefore)
+    (expiresAt, registeredAt, registerBlock, failedAt, failReason) = case nrPhase of
+      ORegistered _ tx expiry at -> (Just expiry, Just at, snd =<< tx, Nothing, Nothing)
+      OFailed _ _ at reason -> (Nothing, Nothing, Nothing, Just at, Just reason)
+      _ -> (Nothing, Nothing, Nothing, Nothing, Nothing)
     acceptance = rvAcceptance <$> nrReveal
     live = orderLive r
     refusal =
@@ -962,15 +1013,9 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrSealed = ofSealed,
         nrAgreedTerms = ofAgreedTerms,
         nrPrice = price,
-        nrPhase = OQueued,
+        nrPhase = OQueued Nothing,
         nrMoves = nrMoves r + 1,
         nrReveal = Nothing,
-        nrCommitTx = Nothing,
-        nrCommitBlock = Nothing,
-        nrRegisterTx = Nothing,
-        nrRegisterBlock = Nothing,
-        nrRevealAfter = Nothing,
-        nrRevealBefore = Nothing,
         nrLinksRefusedAt = Nothing
       }
 

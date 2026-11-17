@@ -72,10 +72,10 @@ instance J.FromJSON RevealRequest where
 isRepeat :: RevealRequest -> NameReveal -> Bool
 isRepeat RevealRequest {rqLabel, rqSignature} NameReveal {rvLabel, rvSignature} = rqLabel == rvLabel && rqSignature == rvSignature
 
-checkReveal :: NamesConfig -> Contracts -> UTCTime -> NameRegistration -> RevealRequest -> IO (Either RevealRefusal NameReveal)
-checkReveal cfg ct now r request = runExceptT $ do
+checkReveal :: NamesConfig -> Contracts -> UTCTime -> NameRegistration -> ChainSeconds -> RevealRequest -> IO (Either RevealRefusal NameReveal)
+checkReveal cfg ct now r revealBefore request = runExceptT $ do
   rv <- liftEither $ committedReveal cfg r request
-  ExceptT $ checkIntent cfg ct now (nrRevealBefore r) (intentOf cfg r rv)
+  ExceptT $ checkIntent cfg ct now revealBefore (intentOf cfg r rv)
   ExceptT $ checkAcceptance cfg ct r rv
   pure rv
 
@@ -96,9 +96,9 @@ committedReveal cfg@NamesConfig {nTLD} r@NameRegistration {nrLabelHash, nrLength
 
 -- | The deadline and the owner's signature first, so a request nobody signed reads nothing from the chain.
 -- A deadline before revealBefore would expire while the commitment can still register.
-checkIntent :: NamesConfig -> Contracts -> UTCTime -> Maybe ChainSeconds -> RegisterIntent -> IO (Either RevealRefusal ())
+checkIntent :: NamesConfig -> Contracts -> UTCTime -> ChainSeconds -> RegisterIntent -> IO (Either RevealRefusal ())
 checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revealBefore intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
-  | maybe True (riDeadline <) revealBefore = pure $ Left $ RVBadRequest "the intent's deadline is before revealBefore"
+  | riDeadline < revealBefore = pure $ Left $ RVBadRequest "the intent's deadline is before revealBefore"
   | otherwise =
       verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
         Left e -> pure $ Left $ RVBadRequest $ T.pack e

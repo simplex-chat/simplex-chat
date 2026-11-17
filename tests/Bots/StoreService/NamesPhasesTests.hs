@@ -29,7 +29,7 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (phasesWaiting, publish)
 import StoreService.Names.Registration (RegistrationId (..))
-import StoreService.Names.Store (NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, updateRegistration)
+import StoreService.Names.Store (Commit (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Providers (Funded (..), PaymentSignal (..))
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
 import StoreService.Waiters (publishPayment, waitingCountSTM)
@@ -164,7 +164,7 @@ testEachChangeWakes = bounded "each change wakes" $ withPolls holdMicros $ \Poll
   NameRegistration {nrId} <- invoiceRegistration ctx inv
   let changes :: [(String, NameRegistration -> NameRegistration, Text, J.Value)]
       changes =
-        [("phase", \r -> r {nrPhase = OCommitting}, "phase", "committing")]
+        [("phase", \r -> r {nrPhase = OCommitting Nothing}, "phase", "committing")]
   forM_ changes $ \(what, f, k, expected) -> do
     v <- nrVersion <$> invoiceRegistration ctx inv
     invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
@@ -187,7 +187,7 @@ testPaidHoldsOnVersion = bounded "paid holds on version" $ withPolls holdMicros 
   atomically $ publishPayment (weWaiters cWeb) inv
   threadDelay parkDelay
   Async.poll poll >>= (`shouldSatisfy` isNothing)
-  v' <- change ctx nrId $ \r -> r {nrPhase = OCommitting}
+  v' <- change ctx nrId $ \r -> r {nrPhase = OCommitting Nothing}
   (_, o) <- woken "paid invoice poll" poll
   (fieldOf (registrationOf o) "version", fieldOf (registrationOf o) "phase") `shouldBe` (Just (J.toJSON v'), Just "committing")
   -- marks other than the page saw answer at once
@@ -253,7 +253,8 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   let revealBefore = seconds now + 600
       lapsedAt = posixSecondsToUTCTime (fromIntegral revealBefore)
   pSetNow $ addUTCTime (negate shortOfMoment) lapsedAt
-  v <- change ctx nrId $ \r -> r {nrPhase = OCommitted, nrRevealAfter = Just (revealBefore - 3600), nrRevealBefore = Just revealBefore}
+  let committed = OCommitted Commit {cmTx = Nothing, cmRevealAfter = revealBefore - 3600, cmRevealBefore = revealBefore}
+  v <- change ctx nrId $ \r -> r {nrPhase = committed}
   (_, r) <- get ctx (registrationPath nrId)
   fieldOf r "phase" `shouldBe` Just "committed"
   invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
@@ -262,7 +263,7 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   (status, fieldOf lapsed "phase", fieldOf lapsed "error", fieldOf lapsed "version") `shouldBe` (200, Just "failed", Just "The name was not signed in time", Just (J.toJSON v))
   (_, o) <- woken "invoice poll at the lapse" invoicePoll
   (fieldOf o "status", fieldOf (registrationOf o) "phase", fieldOf (registrationOf o) "error") `shouldBe` (Just "paid", Just "failed", Just "The name was not signed in time")
-  (nrPhase <$> invoiceRegistration ctx inv) `shouldReturn` OCommitted
+  (nrPhase <$> invoiceRegistration ctx inv) `shouldReturn` committed
   -- one with a reveal set stays committed past revealBefore
   revealed <- change ctx nrId $ \r' -> r' {nrReveal = Just reveal}
   pSetNow $ addUTCTime 3600 lapsedAt

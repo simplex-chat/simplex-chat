@@ -12,7 +12,7 @@ import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, com
 import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (ownerA)
-import Bots.StoreService.WebTests (bounded, fieldOf, jsonObject, refusedWith, statusOf, webGet, webRequestBody)
+import Bots.StoreService.WebTests (bounded, digestFixture, fieldOf, jsonObject, refusedWith, statusOf, webGet, webRequestBody)
 import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM
@@ -42,11 +42,11 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
-import StoreService.Names.Chain (hex, uint256)
+import StoreService.Names.Chain (TxHash (..), hex, uint256)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Registration (Registration (..), RegistrationId (..), TermsAcceptance (..), acceptanceDigest, linkMaxBytes, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (RevealRequest (..))
-import StoreService.Names.Store (NameRegistration (..), NameReveal (..), OrderPhase (..), getRegistration)
+import StoreService.Names.Store (Commit (..), NameRegistration (..), NameReveal (..), OrderPhase (..), getRegistration)
 import StoreService.Names.Turns (labelTurnCount)
 import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -113,6 +113,9 @@ revealAfter, revealBefore :: Word64
 revealAfter = orderSeconds - 60
 revealBefore = orderSeconds + 86400
 
+openWindow :: Commit
+openWindow = Commit {cmTx = Nothing, cmRevealAfter = revealAfter, cmRevealBefore = revealBefore}
+
 contactLink, channelLink :: Text
 contactLink = "https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA"
 channelLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im"
@@ -148,7 +151,7 @@ orderOf r@Registration {rLabel} = aliceOrder {oLabel = rLabel, oCommitment = mak
 committed :: Ctx -> Order -> IO RegistrationId
 committed ctx o = do
   NameRegistration {nrId} <- paidOrder ctx o
-  _ <- change ctx nrId $ \r -> r {nrPhase = OCommitted, nrRevealAfter = Just revealAfter, nrRevealBefore = Just revealBefore}
+  _ <- change ctx nrId $ \r -> r {nrPhase = OCommitted openWindow}
   pure nrId
 
 paidOrder :: Ctx -> Order -> IO NameRegistration
@@ -329,7 +332,7 @@ testWithLinks = bounded "with links" $ withReveals $ \Fx {fCtx = ctx} -> do
   acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
   NameRegistration {nrVersion, nrPhase, nrReveal, nrLinksRefusedAt} <- stored ctx rid
-  (nrVersion, nrPhase, nrLinksRefusedAt) `shouldBe` (v + 1, OCommitted, Nothing)
+  (nrVersion, nrPhase, nrLinksRefusedAt) `shouldBe` (v + 1, OCommitted openWindow, Nothing)
   nrReveal
     `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig, rvAcceptance = acceptance}
   (status, view) <- woken "registration poll" poll
@@ -377,7 +380,7 @@ testRepeats = withReveals $ \Fx {fCtx = ctx} -> do
   rid <- committed ctx (orderOf alice)
   body <- ownerBody ctx alice
   reveal ctx rid body `shouldReturn` accepted
-  v <- change ctx rid $ \r -> r {nrPhase = ORegistering}
+  v <- change ctx rid $ \r -> r {nrPhase = ORegistering openWindow $ TxHash $ digestFixture 9}
   reveal ctx rid body `shouldReturn` accepted
   resigned <- (\sig -> KM.insert "acceptance" (fromJust $ KM.lookup "acceptance" body) $ bodyOf sig alice 0 revealBefore) <$> signIntent ctx keyA alice 1 revealBefore
   reveal ctx rid resigned `shouldReturn` badRequest
@@ -458,7 +461,7 @@ testStateAndFormat = withReveals $ \Fx {fCtx = ctx@Ctx {cClock}} -> do
   reveal ctx (RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g") body `shouldReturn` refusedWith 404 "not_found"
   NameRegistration {nrId = rid} <- paidOrder ctx (orderOf alice)
   reveal ctx rid body `shouldReturn` badRequest
-  _ <- change ctx rid $ \r -> r {nrPhase = OCommitted, nrRevealAfter = Just revealAfter, nrRevealBefore = Just revealBefore}
+  _ <- change ctx rid $ \r -> r {nrPhase = OCommitted openWindow}
   unchanged <- unwritten <$> stored ctx rid
   let text k = case KM.lookup k body of
         Just (J.String t) -> t
@@ -544,7 +547,7 @@ testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx} -> do
     rid <- committed ctx (orderOf r)
     body <- ownerBody ctx r
     (inFlight, gate) <- pausedAtChainRead ctx (reveal ctx rid body)
-    v <- change ctx rid $ \x -> x {nrRevealAfter = (+ 60) <$> nrRevealAfter x, nrRevealBefore = (+ 60) <$> nrRevealBefore x}
+    v <- change ctx rid $ \x -> x {nrPhase = OCommitted openWindow {cmRevealAfter = revealAfter + 60, cmRevealBefore = revealBefore + 60}}
     releaseGate gate
     (status, answer) <- wait inFlight
     let view = registrationOf $ fromJust answer

@@ -203,7 +203,7 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrPhase, nrPayme
       Just ISPaid
         | before /= ISOpen -> pure [NOLate ref]
         | otherwise ->
-            updateRegistration db r {nrPhase = OQueued} now >>= \case
+            updateRegistration db r {nrPhase = OQueued Nothing} now >>= \case
               Written v -> (NOWritten nrId v :) <$> spendHold
               NotLive -> pure [NOLate ref]
               -- an invariant broke; left live, the order would keep its hold for ever, as no sweep closes a paid invoice

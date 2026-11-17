@@ -78,7 +78,7 @@ import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Chain (TxHash, bytes32FromHex, hex)
 import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, phaseCommit, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
 
@@ -313,7 +313,7 @@ checkPrice ct len years price =
 movable :: NameRegistration -> Bool
 movable NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
   OFailed {} -> True
-  OCommitted -> isJust nrLinksRefusedAt
+  OCommitted _ -> isJust nrLinksRefusedAt
   _ -> False
 
 orderFieldsOf :: NameRegistration -> OrderFields
@@ -370,7 +370,7 @@ confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeS
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
 -- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
-checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
+checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPhase, nrPayment} = do
   txs <- withTransaction st (`registrationTransactions` nrId)
   let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegistration RTRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
   runExceptT (landed mined) >>= \case
@@ -386,16 +386,11 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
       forM how $ \l -> (l,) <$> ExceptT (nameExpires ct confirmed nrLabelHash)
     markRegistered how expiry = do
       now <- clock
-      let (registerTx, registerBlock) = case how of
-            LandedByReceipt tx block -> (Just tx, block)
+      let registerTx = case how of
+            LandedByReceipt tx block -> Just (tx, block)
             -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
-            LandedByOwner -> (Nothing, Nothing)
-          registered =
-            r
-              { nrPhase = ORegistered expiry now,
-                nrRegisterTx = registerTx,
-                nrRegisterBlock = registerBlock
-              }
+            LandedByOwner -> Nothing
+          registered = r {nrPhase = ORegistered (phaseCommit nrPhase) registerTx expiry now}
           write db = versionWritten <$> updateRegistration db registered now
       case nrPayment of
         OPInvoice {} -> withTransaction st write

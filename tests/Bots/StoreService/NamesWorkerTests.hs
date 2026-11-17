@@ -203,7 +203,18 @@ day = 86400
 
 -- | Committed a minute before the order.
 openPhase :: NameRegistration -> NameRegistration
-openPhase r = (committedPhase r) {nrRevealAfter = Just (orderSeconds - minAge), nrRevealBefore = Just (orderSeconds - minAge + maxAge)}
+openPhase r = r {nrPhase = OCommitted openCommit}
+
+openCommit :: Commit
+openCommit = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = orderSeconds - minAge, cmRevealBefore = orderSeconds - minAge + maxAge}
+
+commitAt :: Word64 -> Maybe (TxHash, Word64) -> Commit
+commitAt t tx = Commit {cmTx = tx, cmRevealAfter = t + minAge, cmRevealBefore = t + maxAge}
+
+revealBeforeOf :: NameRegistration -> Maybe Word64
+revealBeforeOf r = case phaseCommit $ nrPhase r of
+  Just (CSCommitted Commit {cmRevealBefore}) -> Just cmRevealBefore
+  _ -> Nothing
 
 -- | The reveal the page sends, its intent signed with the owner's key.
 signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
@@ -342,7 +353,7 @@ commitWaitRegister w@W {wCtx = ctx} (r, code) = do
   void $ published w r $ steps w r >>= awaiting
   [commitRaw] <- sent w
   committing <- stored ctx r
-  (nrPhase committing, nrCommitTx committing, nrVersion committing) `shouldBe` (OCommitting, Just (TxHash $ keccak256 commitRaw), nrVersion r + 1)
+  (nrPhase committing, nrVersion committing) `shouldBe` (OCommitting $ Just $ TxHash $ keccak256 commitRaw, nrVersion r + 1)
   -- the commit in flight is waited for
   steps w r >>= awaiting >>= (`shouldBe` TxHash (keccak256 commitRaw)) . ptHash
   length <$> sent w `shouldReturn` 1
@@ -352,8 +363,8 @@ commitWaitRegister w@W {wCtx = ctx} (r, code) = do
   -- committed, waiting for the reveal until the lapse
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (t + maxAge + 1)
   committed <- stored ctx r
-  (nrPhase committed, nrRevealAfter committed, nrRevealBefore committed, nrCommitTx committed, nrCommitBlock committed)
-    `shouldBe` (OCommitted, Just (t + minAge), Just (t + maxAge), Just (TxHash $ keccak256 commitRaw), Just commitBlock)
+  let onChain = commitAt t $ Just (TxHash $ keccak256 commitRaw, commitBlock)
+  nrPhase committed `shouldBe` OCommitted onChain
   -- the page reveals before revealAfter
   void $ revealed ctx keyA "alicebakery" r
   steps w r >>= waitingUntil >>= (`shouldBe` at (t + minAge))
@@ -361,12 +372,12 @@ commitWaitRegister w@W {wCtx = ctx} (r, code) = do
   void $ published w r $ steps w r >>= awaiting
   registerTx <- newestHash w
   registering <- stored ctx r
-  (nrPhase registering, nrRegisterTx registering) `shouldBe` (ORegistering, Just registerTx)
+  nrPhase registering `shouldBe` ORegistering onChain registerTx
   registerBlock <- mineNewest w True
   now <- nowOf ctx
   published w r (steps w r) >>= done
   x <- stored ctx r
-  (nrPhase x, nrRegisterTx x, nrRegisterBlock x, orderLive x) `shouldBe` (ORegistered expiry now, Just registerTx, Just registerBlock, False)
+  (nrPhase x, orderLive x) `shouldBe` (ORegistered (Just $ CSCommitted onChain) (Just (registerTx, Just registerBlock)) expiry now, False)
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
   steps w r >>= done
 
@@ -386,7 +397,7 @@ testPendingCommit = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do
   inFlight <- stored ctx r
   steps w r >>= awaiting >>= (`shouldBe` replacement) . ptHash
   x <- stored ctx r
-  (nrPhase x, nrCommitTx x, nrVersion x) `shouldBe` (OCommitting, Just replacement, nrVersion inFlight + 1)
+  (nrPhase x, nrVersion x) `shouldBe` (OCommitting $ Just replacement, nrVersion inFlight + 1)
   length <$> sent w `shouldReturn` 2
 
 testUnexpiredCommitment :: IO ()
@@ -403,7 +414,7 @@ testUnexpiredCommitment = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   dryRunsPass w
   steps w r >>= waitingUntil >>= (`shouldBe` at (t + maxAge + 1))
   x <- stored ctx r
-  (nrPhase x, nrRevealAfter x, nrRevealBefore x, nrCommitTx x) `shouldBe` (OCommitted, Just (t + minAge), Just (t + maxAge), Nothing)
+  nrPhase x `shouldBe` OCommitted (commitAt t Nothing)
   -- a commit sent, mined with status 0 after another commit of it
   r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} id
   answerCommitment w r2 0
@@ -413,7 +424,7 @@ testUnexpiredCommitment = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   answerCommitment w r2 t2
   steps w r2 >>= waitingUntil >>= (`shouldBe` at (t2 + maxAge + 1))
   x2 <- stored ctx r2
-  (nrPhase x2, nrRevealBefore x2, nrCommitTx x2, nrCommitBlock x2) `shouldBe` (OCommitted, Just (t2 + maxAge), Nothing, Nothing)
+  nrPhase x2 `shouldBe` OCommitted (commitAt t2 Nothing)
   length <$> sent w `shouldReturn` 1
 
 testRevealWindowPastRange :: IO ()
@@ -436,7 +447,7 @@ testCommitOutOfGas = withWorker $ \w@W {wCtx = ctx} -> do
   [_, raw] <- sent w
   txNonce <$> either error pure (decodeSignedTx raw) `shouldReturn` 1
   x <- stored ctx r
-  (nrPhase x, nrCommitTx x) `shouldBe` (OCommitting, Just second)
+  nrPhase x `shouldBe` OCommitting (Just second)
 
 testLapseSecond :: IO ()
 testLapseSecond = withWorker $ \w@W {wCtx = ctx} -> do
@@ -457,25 +468,25 @@ testLapseSecond = withWorker $ \w@W {wCtx = ctx} -> do
   dryRunsPass w
   advance ctx 1
   void $ steps w r >>= awaiting
-  nrPhase <$> stored ctx r `shouldReturn` OCommitting
+  namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
   length <$> sent w `shouldReturn` 1
 
 testIntentAcrossCommits :: IO ()
 testIntentAcrossCommits = withWorker $ \w@W {wCtx = ctx} -> do
   -- requeued by Try again with its intent, its commitment lapsed
-  r <- paidIn ctx aliceOrder $ \o -> (openPhase o) {nrPhase = OQueued, nrReveal = Just reveal}
+  r <- paidIn ctx aliceOrder $ \o -> o {nrPhase = OQueued $ Just $ CSCommitted openCommit, nrReveal = Just reveal}
   answerCommitment w r (orderSeconds - maxAge - 1)
   void $ steps w r >>= awaiting
   x <- stored ctx r
   commitTx <- newestHash w
-  (nrPhase x, nrReveal x, nrRevealAfter x, nrRevealBefore x, nrCommitTx x, nrVersion x) `shouldBe` (OCommitting, Just reveal, Nothing, Nothing, Just commitTx, nrVersion r + 2)
+  (nrPhase x, nrReveal x, nrVersion x) `shouldBe` (OCommitting $ Just commitTx, Just reveal, nrVersion r + 2)
   -- requeued with its intent while a third party's commit of the commitment is live: not ours, so only our commit goes
-  r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} $ \o -> (openPhase o) {nrPhase = OQueued, nrReveal = Just reveal}
+  r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} $ \o -> o {nrPhase = OQueued $ Just $ CSCommitted openCommit, nrReveal = Just reveal}
   answerAccepted w r2 $ Returns $ taTermsHash $ rvAcceptance reveal
   answerCommitment w r2 (orderSeconds - 30)
   steps w r2 >>= waitingUntil >>= (`shouldBe` at (orderSeconds - 30 + minAge))
   x2 <- stored ctx r2
-  (nrPhase x2, nrReveal x2, nrCommitTx x2, nrRevealBefore x2) `shouldBe` (OCommitted, Just reveal, Nothing, Just (orderSeconds - 30 + maxAge))
+  (nrPhase x2, nrReveal x2) `shouldBe` (OCommitted (commitAt (orderSeconds - 30) Nothing), Just reveal)
   length <$> sent w `shouldReturn` 1
 
 testFeeAboveCap :: IO ()
@@ -488,7 +499,7 @@ testFeeAboveCap = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   sent w `shouldReturn` []
   setFees cNode fakeTip fakeBaseFee
   void $ steps w r >>= awaiting
-  nrPhase <$> stored ctx r `shouldReturn` OCommitting
+  namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
 
 sentCommits :: Ctx -> NameRegistration -> TxSettlement -> [Word8] -> IO ()
 sentCommits Ctx {cStore} NameRegistration {nrId} settlement nonces = withTransaction cStore $ \db -> forM_ nonces $ \n -> do
@@ -503,13 +514,13 @@ testMinedCommitsUncounted = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
   sendsUsedUp cOrders r `shouldReturn` True
   answerCommitment w r 0
   void $ steps w r >>= awaiting
-  nrPhase <$> stored ctx r `shouldReturn` OCommitting
+  namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
   r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} id
   sentCommits ctx r2 (TSRevertedAt 120) [11 .. 10 + fromIntegral maxSendsPerKind]
   answerCommitment w r2 0
   steps w r2 >>= done
   now <- nowOf ctx
-  nrPhase <$> stored ctx r2 `shouldReturn` OFailed now FRNotRegistered
+  nrPhase <$> stored ctx r2 `shouldReturn` OFailed Nothing Nothing now FRNotRegistered
   length <$> sent w `shouldReturn` 1
 
 testLostRace :: IO ()
@@ -518,7 +529,7 @@ testLostRace = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
   answerAvailable w False
   dryRunsRevert w "NameNotAvailable(string)" $ abiTuple [Dynamic $ abiBytes "alicebakery"]
   (stepping, gate) <- pausedAt cNode "eth_call" $ stepRegistration wWorker (nrId r)
-  changed <- rewrite ctx r $ \o -> o {nrRevealAfter = (+ 1) <$> nrRevealAfter o}
+  changed <- rewrite ctx r $ \o -> o {nrPhase = OCommitted openCommit {cmRevealAfter = cmRevealAfter openCommit + 1}}
   releaseGate gate
   timeout prompt (wait stepping) >>= maybe (fail "the step did not finish") (pure . shape) >>= (`shouldBe` "Again")
   stored ctx r `shouldReturn` changed
@@ -562,7 +573,7 @@ testTwoWallets = withWorker $ \w@W {wCtx = ctx} -> do
   dryRunsRevert w "NameNotAvailable(string)" $ abiTuple [Dynamic $ abiBytes "alicebakery"]
   published w b (steps w b) >>= done
   x <- stored ctx b
-  (nrPhase x, nrPrice x, nrPayment x) `shouldBe` (OTaken, nrPrice b, nrPayment b)
+  (namePhase $ nrPhase x, nrPrice x, nrPayment x) `shouldBe` (PTaken, nrPrice b, nrPayment b)
   fmap (\Balance {blAmount, blCredited, blHold} -> (blAmount, blCredited, blHold)) <$> withTransaction (cStore ctx) (\db -> getBalance db (nrId b) orderTime)
     `shouldReturn` Just (nrPrice b, nrPrice b, Nothing)
   length <$> sent w `shouldReturn` 1
@@ -594,7 +605,7 @@ testTakenFromBalance = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   withTransaction cStore (\db -> createBalanceRegistration db (aliceRegistration "covered" 1) BalanceUse {buSource = nrId wholly, buUsed = price} 30000 orderTime) `shouldReturn` Right ()
   covered <- registrationById ctx (RegistrationId "covered") >>= \r -> rewrite ctx r openPhase >>= revealed ctx keyA "alicebakery"
   endsTaken w covered
-  (\x -> (nrPhase x, nrPayment x)) <$> stored ctx covered `shouldReturn` (OTaken, OPBalance BalanceUse {buSource = nrId wholly, buUsed = price})
+  (\x -> (namePhase $ nrPhase x, nrPayment x)) <$> stored ctx covered `shouldReturn` (PTaken, OPBalance BalanceUse {buSource = nrId wholly, buUsed = price})
   balanceFigures ctx (nrId covered) `shouldReturn` Just (price, price)
   balanceFigures ctx (nrId wholly) `shouldReturn` Just (30000 - price, 30000)
   withTransaction cStore $ \db -> do
@@ -604,7 +615,7 @@ testTakenFromBalance = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   balanceFigures ctx (nrId partly) `shouldReturn` Just (0, 4000)
   diff <- registrationById ctx (RegistrationId "diff") >>= \r -> rewrite ctx r openPhase >>= revealed ctx keyA "alicebakery"
   endsTaken w diff
-  nrPhase <$> stored ctx diff `shouldReturn` OTaken
+  namePhase . nrPhase <$> stored ctx diff `shouldReturn` PTaken
   balanceFigures ctx (nrId diff) `shouldReturn` Just (price, price)
   balanceFigures ctx (nrId partly) `shouldReturn` Just (0, 4000)
 
@@ -646,7 +657,7 @@ testPendingCompetitor = withWorker $ \w@W {wCtx = ctx} -> do
   -- the competitor's register dropped
   dryRunsPass w
   void $ steps w r >>= awaiting
-  nrPhase <$> stored ctx r `shouldReturn` ORegistering
+  namePhase . nrPhase <$> stored ctx r `shouldReturn` PRegistering
 
 testRevertTaken :: IO ()
 testRevertTaken = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
@@ -656,7 +667,7 @@ testRevertTaken = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   setFault cNode "eth_estimateGas" $ RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing
   published w r (steps w r) >>= done
   x <- stored ctx r
-  nrPhase x `shouldBe` OTaken
+  namePhase (nrPhase x) `shouldBe` PTaken
   PrepaidCode {pcReservedBy, pcSpentAt} <- codeOf ctx code
   (pcReservedBy, pcSpentAt) `shouldBe` (Nothing, Nothing)
   balanceFigures ctx (nrId r) `shouldReturn` Nothing
@@ -671,11 +682,11 @@ testTakenAtDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   latest <- mine cNode []
   answerCallFrom cNode latest fakeController availableCall $ Returns $ uint256 (0 :: Int)
   steps w r >>= retrying
-  (nrPhase <$> stored ctx r) `shouldReturn` OCommitted
+  (nrPhase <$> stored ctx r) `shouldReturn` nrPhase r
   -- confirmations 3: two more blocks put it at the depth
   replicateM_ 2 $ mine cNode []
   steps w r >>= done
-  (nrPhase <$> stored ctx r) `shouldReturn` OTaken
+  (namePhase . nrPhase <$> stored ctx r) `shouldReturn` PTaken
   sent w `shouldReturn` []
 
 testRevertFailed :: IO ()
@@ -686,7 +697,7 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   steps w r >>= done
   now <- nowOf ctx
   x <- stored ctx r
-  (nrPhase x, orderLive x) `shouldBe` (OFailed now FRNotRegistered, True)
+  (nrPhase x, orderLive x) `shouldBe` (failedFrom now FRNotRegistered (nrPhase r), True)
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
   -- a revert without data while the name is available fails a paid order too
   p <- paidIn ctx dynamisOrder openPhase >>= revealed ctx keyA "dynamis"
@@ -705,7 +716,7 @@ testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   setFault cNode "eth_estimateGas" $ revertFault $ unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
   steps w r >>= stalled >>= (`shouldBe` SFAllowanceUsedUp)
   x <- stored ctx r
-  (nrPhase x, nrVersion x) `shouldBe` (OCommitted, nrVersion r)
+  (nrPhase x, nrVersion x) `shouldBe` (nrPhase r, nrVersion r)
   sent w `shouldReturn` []
   dryRunsPass w
   void $ steps w r >>= awaiting
@@ -714,7 +725,7 @@ testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
 testAllowanceAcrossLapse :: IO ()
 testAllowanceAcrossLapse = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}} -> do
   let lapse = orderSeconds + 10
-  r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just lapse}) >>= revealed ctx keyA "alicebakery"
+  r <- paidIn ctx aliceOrder (\o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = lapse}}) >>= revealed ctx keyA "alicebakery"
   rv <- maybe (fail "no reveal") pure $ nrReveal r
   let registerCall = registerWithCreditCalldata $ intentOf (oeConfig cOrders) r rv
   answerAvailable w True
@@ -727,7 +738,7 @@ testAllowanceAcrossLapse = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}} -
   revertDryRun cNode registerCall $ Just $ selector "CommitmentTooOld(bytes32,uint256,uint256)"
   void $ steps w r >>= awaiting
   committing <- stored ctx r
-  (nrPhase committing, nrReveal committing, nrRevealBefore committing) `shouldBe` (OCommitting, Just rv, Nothing)
+  (namePhase $ nrPhase committing, nrReveal committing) `shouldBe` (PCommitting, Just rv)
   t <- mineNewest w True >>= blockTime w
   answerCommitment w r t
   revertDryRun cNode registerCall Nothing
@@ -735,7 +746,7 @@ testAllowanceAcrossLapse = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}} -
   advance ctx $ fromIntegral (t + minAge - lapse - 1)
   void $ steps w r >>= awaiting
   x <- stored ctx r
-  (nrPhase x, nrReveal x, nrRevealBefore x) `shouldBe` (ORegistering, Just rv, Just (t + maxAge))
+  (namePhase $ nrPhase x, nrReveal x, revealBeforeOf x) `shouldBe` (PRegistering, Just rv, Just (t + maxAge))
   length <$> sent w `shouldReturn` 2
 
 testSendsCapped :: IO ()
@@ -747,7 +758,7 @@ testSendsCapped = withWorker $ \w@W {wCtx = ctx} -> do
   steps w r >>= done
   now <- nowOf ctx
   x <- stored ctx r
-  nrPhase x `shouldBe` OFailed now FRNotRegistered
+  nrPhase x `shouldBe` failedFrom now FRNotRegistered (nrPhase r)
   sent w `shouldReturn` []
   fst <$> retryOf ctx x `shouldReturn` 400
   answerFree ctx "alicebakers"
@@ -767,7 +778,7 @@ testInvalidNonce = forM_ [("InvalidNonce()", fakeNamePolicy), ("TermsNotAccepted
   dryRunsRevert w revert ""
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
-  (nrPhase x, nrReveal x, nrVersion x, nrRevealBefore x) `shouldBe` (OCommitted, Nothing, nrVersion r + 1, nrRevealBefore r)
+  (nrPhase x, nrReveal x, nrVersion x) `shouldBe` (nrPhase r, Nothing, nrVersion r + 1)
   sent w `shouldReturn` []
   namePolicy oeContracts `shouldReturn` Right policyAfter
 
@@ -802,11 +813,11 @@ testAcceptanceRelayed = forM_ [(False, fakeGeneralTerms, plainTerms), (True, fak
   void $ published w r $ steps w r >>= awaiting
   [_, registerRaw] <- sent w
   (txTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
-  nrPhase <$> stored ctx r `shouldReturn` ORegistering
+  namePhase . nrPhase <$> stored ctx r `shouldReturn` PRegistering
 
 testAcceptanceBeforeWait :: IO ()
 testAcceptanceBeforeWait = withWorker $ \w@W {wCtx = ctx} -> do
-  r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealAfter = Just (orderSeconds + 60)}) >>= acceptedReveal ctx
+  r <- paidIn ctx aliceOrder (\o -> o {nrPhase = OCommitted openCommit {cmRevealAfter = orderSeconds + 60}}) >>= acceptedReveal ctx
   void $ steps w r >>= awaiting
   [acceptRaw] <- sent w
   (txTo <$> decodeSignedTx acceptRaw) `shouldBe` Right fakeNamePolicy
@@ -821,7 +832,7 @@ testAcceptanceRefused = forM_ ["TermsMismatch(bytes32,bytes32)", "InvalidNonce()
   dryRunsRevert w revert ""
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
-  (nrPhase x, nrReveal x) `shouldBe` (OCommitted, Nothing)
+  (nrPhase x, nrReveal x) `shouldBe` (nrPhase r, Nothing)
   sent w `shouldReturn` []
 
 testAcceptanceSentFirst :: IO ()
@@ -834,7 +845,7 @@ testAcceptanceSentFirst = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   [registerRaw] <- sent w
   (txTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
   x <- stored ctx r
-  (nrPhase x, nrReveal x) `shouldBe` (ORegistering, nrReveal r)
+  (namePhase $ nrPhase x, nrReveal x) `shouldBe` (PRegistering, nrReveal r)
 
 testAcceptanceMinedFailed :: IO ()
 testAcceptanceMinedFailed = withWorker $ \w@W {wCtx = ctx} -> do
@@ -846,7 +857,7 @@ testAcceptanceMinedFailed = withWorker $ \w@W {wCtx = ctx} -> do
   [_, registerRaw] <- sent w
   (txTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
   x <- stored ctx r
-  (nrPhase x, nrReveal x) `shouldBe` (ORegistering, nrReveal r)
+  (namePhase $ nrPhase x, nrReveal x) `shouldBe` (PRegistering, nrReveal r)
 
 testAcceptanceUnread :: IO ()
 testAcceptanceUnread = withWorker $ \w@W {wCtx = ctx} -> do
@@ -861,7 +872,7 @@ testAcceptanceOtherPolicy = forM_ [acceptedRevealFor fakeSponsor False fakeGener
   r <- paidIn ctx aliceOrder openPhase >>= accepted ctx
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
-  (nrPhase x, nrReveal x) `shouldBe` (OCommitted, Nothing)
+  (nrPhase x, nrReveal x) `shouldBe` (nrPhase r, Nothing)
   sent w `shouldReturn` []
 
 testAcceptanceExpired :: IO ()
@@ -872,12 +883,12 @@ testAcceptanceExpired = withWorker $ \w@W {wCtx = ctx} -> do
   steps w r >>= done
   now <- nowOf ctx
   x <- stored ctx r
-  nrPhase x `shouldBe` OFailed now FRNotRegistered
+  nrPhase x `shouldBe` failedFrom now FRNotRegistered (nrPhase r)
   sent w `shouldReturn` []
 
 testAcceptanceLapsed :: IO ()
 testAcceptanceLapsed = withWorker $ \w@W {wCtx = ctx} -> do
-  r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just (orderSeconds - minAge)}) >>= acceptedReveal ctx
+  r <- paidIn ctx aliceOrder (\o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = orderSeconds - minAge}}) >>= acceptedReveal ctx
   void $ steps w r
   txs <- sent w
   (txTo <$>) . decodeSignedTx <$> txs `shouldNotContain` [Right fakeNamePolicy]
@@ -916,12 +927,12 @@ testMinedRevertTaken = withWorker $ \w@W {wCtx = ctx} -> do
   void $ mineNewest w False
   steps w r >>= done
   x <- stored ctx r
-  nrPhase x `shouldBe` OTaken
+  namePhase (nrPhase x) `shouldBe` PTaken
   pcReservedBy <$> codeOf ctx code `shouldReturn` Nothing
 
 testExpiredIntent :: IO ()
 testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
-  r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just (rvDeadline reveal)}) >>= revealed ctx keyA "alicebakery"
+  r <- paidIn ctx aliceOrder (\o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = rvDeadline reveal}}) >>= revealed ctx keyA "alicebakery"
   answerAvailable w True
   advance ctx $ fromIntegral (rvDeadline reveal - orderSeconds) + 1
   logs <- capturingStderr $ steps w r >>= done
@@ -933,13 +944,13 @@ testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
 testFailedOnlySettled :: IO ()
 testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
-  r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} (\o -> (openPhase o) {nrRevealBefore = Just (orderSeconds + 3 * 86400)}) >>= revealed ctx keyB "alicebakery"
+  r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} (\o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = orderSeconds + 3 * 86400}}) >>= revealed ctx keyB "alicebakery"
   answerAvailable w True
   p <- steps w r >>= awaiting
   -- past revealBefore, the register in flight can still be mined
   advance ctx $ 2 * day
   steps w r >>= awaiting >>= (`shouldBe` ptHash p) . ptHash
-  nrPhase <$> stored ctx r `shouldReturn` ORegistering
+  nrPhase <$> stored ctx r `shouldReturn` ORegistering openCommit (ptHash p)
   void $ mineNewest w False
   steps w r >>= done
   namePhase . nrPhase <$> stored ctx r `shouldReturn` PFailed
@@ -956,7 +967,7 @@ testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> d
   -- judged from chain state with no hash known to have mined: no register transaction (contract section 6)
   now <- nowOf ctx
   x2 <- stored ctx r2
-  (nrPhase x2, nrRegisterTx x2, nrRegisterBlock x2) `shouldBe` (ORegistered expiry now, Nothing, Nothing)
+  nrPhase x2 `shouldBe` ORegistered (phaseCommit $ nrPhase r2) Nothing expiry now
 
 testLapseFailed :: IO ()
 testLapseFailed = withWorker $ \w@W {wCtx = ctx} -> do
@@ -966,7 +977,7 @@ testLapseFailed = withWorker $ \w@W {wCtx = ctx} -> do
   published w r (steps w r) >>= done
   now <- nowOf ctx
   x <- stored ctx r
-  (nrPhase x, orderLive x) `shouldBe` (OFailed now FRNotSignedInTime, True)
+  (nrPhase x, orderLive x) `shouldBe` (failedFrom now FRNotSignedInTime (nrPhase r), True)
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
 
 testRestart :: IO ()
@@ -979,20 +990,20 @@ testRestart = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}, wSender} -> do
   w1 <- started ctx
   steps w1 r >>= awaiting >>= (`shouldBe` ptHash p) . ptHash
   x <- stored ctx r
-  (nrPhase x, nrCommitTx x) `shouldBe` (OCommitting, Just (ptHash p))
+  nrPhase x `shouldBe` OCommitting (Just $ ptHash p)
   length <$> sent w `shouldReturn` 1
   commitBlock <- mineNewest w1 True
   t <- blockTime w1 commitBlock
   answerCommitment w r t
   w2 <- started ctx
   void $ steps w2 r >>= waitingUntil
-  nrPhase <$> stored ctx r `shouldReturn` OCommitted
+  nrPhase <$> stored ctx r `shouldReturn` OCommitted (commitAt t $ Just (ptHash p, commitBlock))
   void $ revealed ctx keyA "alicebakery" r
   advance ctx $ fromIntegral (t + minAge) - fromIntegral orderSeconds
   register <- steps w2 r >>= awaiting
   w3 <- started ctx
   steps w3 r >>= awaiting >>= (`shouldBe` ptHash register) . ptHash
-  nrPhase <$> stored ctx r `shouldReturn` ORegistering
+  nrPhase <$> stored ctx r `shouldReturn` ORegistering (commitAt t $ Just (ptHash p, commitBlock)) (ptHash register)
   void $ mineNewest w3 True
   w4 <- started ctx
   steps w4 r >>= done
@@ -1010,7 +1021,7 @@ testRestartRegisterSaved = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender}
   w1 <- started ctx
   steps w1 r >>= awaiting >>= (`shouldBe` ptHash p) . ptHash
   x <- stored ctx r
-  (nrPhase x, nrRegisterTx x) `shouldBe` (ORegistering, Just (ptHash p))
+  nrPhase x `shouldBe` ORegistering openCommit (ptHash p)
   steps w1 r >>= awaiting >>= (`shouldBe` ptHash p) . ptHash
   length <$> sent w `shouldReturn` 1
 
@@ -1023,16 +1034,16 @@ testRunWorkers = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} ->
     timeout prompt (awaitSent cNode 1) >>= maybe (fail "no commit was sent") (const $ pure ())
     changed <- awaitChange (oePhases cOrders) (nrId r) (nrVersion <$> stored ctx r) (nrVersion r) prompt
     changed `shouldBe` True
-    nrPhase <$> stored ctx r `shouldReturn` OCommitting
+    namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
   nrPhase <$> invoiceRegistration ctx unpaid `shouldReturn` OUnpaid True
   length <$> sent w `shouldReturn` 1
 
 testCodeSweep :: IO ()
 testCodeSweep = withWorker $ \W {wCtx = ctx, wWorker} -> do
   (old, oldCode) <- codeIn ctx 8 aliceOrder failedPhase
-  (recent, recentCode) <- codeIn ctx 7 dynamisOrder $ \x -> x {nrPhase = OFailed (addUTCTime (2 * day) orderTime) FRNotRegistered}
+  (recent, recentCode) <- codeIn ctx 7 dynamisOrder $ \x -> x {nrPhase = OFailed Nothing Nothing (addUTCTime (2 * day) orderTime) FRNotRegistered}
   -- failed long ago, then requeued by Try again
-  (requeued, requeuedCode) <- codeIn ctx 8 (byB aliceOrder) {oCommitment = commitmentOf 2} $ \x -> (failedPhase x) {nrPhase = OQueued}
+  (requeued, requeuedCode) <- codeIn ctx 8 (byB aliceOrder) {oCommitment = commitmentOf 2} $ \x -> (failedPhase x) {nrPhase = OQueued Nothing}
   advance ctx $ 31 * day
   sweepFailedCodes wWorker
   map pcReservedBy <$> mapM (codeOf ctx) [oldCode, recentCode, requeuedCode] `shouldReturn` [Nothing, Just (nrId recent), Just (nrId requeued)]
@@ -1053,7 +1064,7 @@ testLandedAtDepth = withOrders $ \ctx@Ctx {cNode, cOrders} -> do
   confirmLanded cOrders r `shouldReturn` LRegistered (nrVersion r + 1)
   now <- nowOf ctx
   x <- stored ctx r
-  (nrPhase x, nrRegisterTx x) `shouldBe` (ORegistered expiry now, Nothing)
+  nrPhase x `shouldBe` ORegistered Nothing Nothing expiry now
 
 -- retry
 
@@ -1089,16 +1100,16 @@ committedByUs w@W {wCtx = ctx} r = do
 -- | Failed after its register reverted, with the intent the page signed for the commit's window.
 failedAfterRegister :: W -> NameRegistration -> IO NameRegistration
 failedAfterRegister W {wCtx = ctx} r = do
-  rv <- signedReveal ctx keyA reveal {rvDeadline = fromJust $ nrRevealBefore r} r
+  rv <- signedReveal ctx keyA reveal {rvDeadline = fromJust $ revealBeforeOf r} r
   h <- sentRegister ctx r 2 $ TSRevertedAt 120
-  rewrite ctx r $ \o -> (failedPhase o) {nrReveal = Just rv, nrRegisterTx = Just h, nrRegisterBlock = Just 120}
+  rewrite ctx r $ \o -> o {nrPhase = OFailed (phaseCommit $ nrPhase o) (Just h) orderTime FRNotRegistered, nrReveal = Just rv}
 
 testRetryNotFailed :: IO ()
 testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
   queued <- paidIn ctx aliceOrder id
   committed <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} committedPhase
-  registeredOrder <- paidIn ctx dynamisOrder $ \o -> o {nrPhase = ORegistered expiry orderTime}
-  taken <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 4} $ \o -> o {nrPhase = OTaken}
+  registeredOrder <- paidIn ctx dynamisOrder $ \o -> o {nrPhase = ORegistered Nothing Nothing expiry orderTime}
+  taken <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 4} $ \o -> o {nrPhase = OTaken Nothing Nothing}
   forM_ [queued, committed, registeredOrder, taken] $ \r -> do
     (nrPhase r,) <$> retryOf ctx r `shouldReturn` (nrPhase r, refusedWith 400 "bad_request")
     stored ctx r `shouldReturn` r
@@ -1181,12 +1192,11 @@ testRetryRequeue :: IO ()
 testRetryRequeue = withWorker $ \w@W {wCtx = ctx} -> do
   committed <- paidIn ctx aliceOrder openPhase
   h <- sentRegister ctx committed 1 $ TSRevertedAt 120
-  r <- rewrite ctx committed $ \o -> (failedPhase o) {nrRegisterTx = Just h, nrRegisterBlock = Just 120}
+  r <- rewrite ctx committed $ \o -> o {nrPhase = OFailed (phaseCommit $ nrPhase o) (Just h) orderTime FRNotRegistered}
   v <- published w r $ retried ctx r
   (fieldOf v "phase", fieldOf v "registerTx", fieldOf v "error", fieldOf v "version") `shouldBe` (Just "queued", Just J.Null, Just J.Null, Just (J.toJSON $ nrVersion r + 1))
   x <- stored ctx r
-  (nrPhase x, nrRegisterTx x, nrRegisterBlock x) `shouldBe` (OQueued, Nothing, Nothing)
-  (nrCommitTx x, nrCommitBlock x, nrRevealAfter x, nrRevealBefore x) `shouldBe` (nrCommitTx r, nrCommitBlock r, nrRevealAfter r, nrRevealBefore r)
+  nrPhase x `shouldBe` OQueued (phaseCommit $ nrPhase r)
 
 testRetryLiveCommitment :: IO ()
 testRetryLiveCommitment = withWorker $ \w@W {wCtx = ctx} -> do
@@ -1197,7 +1207,7 @@ testRetryLiveCommitment = withWorker $ \w@W {wCtx = ctx} -> do
   (fieldOf v "phase", fieldOf v "label") `shouldBe` (Just "queued", Just "alicebakery")
   steps w f >>= waitingUntil >>= (`shouldBe` at (t + minAge))
   x <- stored ctx f
-  (nrPhase x, nrReveal x, nrCommitTx x, nrCommitBlock x, nrRevealBefore x) `shouldBe` (OCommitted, nrReveal f, nrCommitTx f, nrCommitBlock f, Just (t + maxAge))
+  (namePhase $ nrPhase x, nrReveal x, phaseCommit $ nrPhase x, revealBeforeOf x) `shouldBe` (PCommitted, nrReveal f, phaseCommit $ nrPhase f, Just (t + maxAge))
   length <$> sent w `shouldReturn` 1
 
 testRetryShortDeadline :: IO ()
@@ -1221,7 +1231,7 @@ testRetryLapsedIntent = withWorker $ \w@W {wCtx = ctx} -> do
   (`fieldOf` "label") <$> retried ctx f `shouldReturn` Just "alicebakery"
   void $ steps w f >>= awaiting
   x <- stored ctx f
-  (nrPhase x, nrReveal x, nrRevealBefore x) `shouldBe` (OCommitting, Just rv, Nothing)
+  (namePhase $ nrPhase x, nrReveal x) `shouldBe` (PCommitting, Just rv)
   length <$> sent w `shouldReturn` 2
 
 testRetryNonceMoved :: IO ()
@@ -1230,7 +1240,7 @@ testRetryNonceMoved = withWorker $ \w@W {wCtx = ctx} -> do
   f <- failedAfterRegister w r
   answerNonce w $ rvNonce reveal + 1
   v <- retried ctx f
-  (fieldOf v "phase", fieldOf v "label", fieldOf v "commitTx") `shouldBe` (Just "queued", Just J.Null, txJSON (nrCommitTx f))
+  (fieldOf v "phase", fieldOf v "label", fieldOf v "commitTx") `shouldBe` (Just "queued", Just J.Null, txJSON (commitTxOf =<< phaseCommit (nrPhase f)))
   nrReveal <$> stored ctx f `shouldReturn` Nothing
 
 testRetryRefusedIntent :: IO ()
@@ -1238,7 +1248,7 @@ testRetryRefusedIntent = withWorker $ \w@W {wCtx = ctx} -> do
   (r, _) <- paidIn ctx aliceOrder id >>= committedByUs w
   f <- failedAfterRegister w r
   -- not signed by the owner, as the worker's check reads an intent after a change of the [chain] settings
-  rv <- signedReveal ctx keyB reveal {rvDeadline = fromJust $ nrRevealBefore r} r
+  rv <- signedReveal ctx keyB reveal {rvDeadline = fromJust $ revealBeforeOf r} r
   f' <- rewrite ctx f $ \o -> o {nrReveal = Just rv}
   answerNonce w $ rvNonce reveal
   v <- retried ctx f'
@@ -1255,10 +1265,10 @@ testRetryThirdParty = withWorker $ \w@W {wCtx = ctx} -> do
   answerCommitment w f t'
   advance ctx $ fromIntegral (t' + 10 - orderSeconds)
   v <- retried ctx f
-  (fieldOf v "label", fieldOf v "commitTx") `shouldBe` (Just J.Null, txJSON (nrCommitTx f))
+  (fieldOf v "label", fieldOf v "commitTx") `shouldBe` (Just J.Null, txJSON (commitTxOf =<< phaseCommit (nrPhase f)))
   steps w f >>= waitingUntil >>= (`shouldBe` at (t' + maxAge + 1))
   x <- stored ctx f
-  (nrPhase x, nrReveal x, nrCommitTx x, nrCommitBlock x, nrRevealBefore x) `shouldBe` (OCommitted, Nothing, Nothing, Nothing, Just (t' + maxAge))
+  (nrPhase x, nrReveal x) `shouldBe` (OCommitted (commitAt t' Nothing), Nothing)
   (`fieldOf` "commitTx") <$> viewOf ctx f `shouldReturn` Just J.Null
   length <$> sent w `shouldReturn` 1
 
@@ -1275,7 +1285,7 @@ testRetryMargin = withWorker $ \w@W {wCtx = ctx} -> do
   void $ steps w f >>= awaiting
   commitTx <- newestHash w
   x <- stored ctx f
-  (nrPhase x, nrReveal x, nrCommitTx x, nrRevealBefore x) `shouldBe` (OCommitting, Nothing, Just commitTx, Nothing)
+  (nrPhase x, nrReveal x) `shouldBe` (OCommitting $ Just commitTx, Nothing)
   length <$> sent w `shouldReturn` 2
 
 testRetryLapsed :: IO ()
@@ -1294,9 +1304,9 @@ testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   (status', fieldOf view' "version") `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1))
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
   -- the commitment lapsed, so the worker commits it again
-  answerCommitment w r $ fromJust (nrRevealBefore r) - maxAge
+  answerCommitment w r $ fromJust (revealBeforeOf r) - maxAge
   void $ steps w r >>= awaiting
-  nrPhase <$> stored ctx r `shouldReturn` OCommitting
+  namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
 
 testRetryLostRace :: IO ()
 testRetryLostRace = withWorker $ \W {wCtx = ctx@Ctx {cNode}} -> do
@@ -1359,7 +1369,7 @@ testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
   refunded <- refundedWhole ctx r price
   closeOf ctx r `shouldReturn` CLRefunded orderTime refunded
   x <- stored ctx r
-  (nrPhase x, nrVersion x) `shouldBe` (OTaken, nrVersion r + 1)
+  (nrPhase x, nrVersion x) `shouldBe` (OTaken Nothing Nothing, nrVersion r + 1)
   figuresOf ctx r `shouldReturn` Just (0, price, price, Nothing)
   turnsCount (oeTurns cOrders) `shouldReturn` 0
   recordRefund (oeTurns cOrders) cStore rid price orderTime `shouldReturn` Left (RefundAmount 0)
@@ -1378,7 +1388,7 @@ testCloseLapsed = withWorker $ \W {wCtx = ctx} -> do
   advance ctx (2 * day)
   refunded <- refundedWhole ctx r (oPrice aliceOrder)
   closeOf ctx r `shouldReturn` CLRefunded (addUTCTime day orderTime) refunded
-  nrPhase <$> stored ctx r `shouldReturn` OTaken
+  nrPhase <$> stored ctx r `shouldReturn` OTaken (phaseCommit $ nrPhase r) Nothing
 
 testCloseFromBalance :: IO ()
 testCloseFromBalance = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
@@ -1399,7 +1409,7 @@ testCloseFromBalance = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
               BalanceLink {lkRegistration = nrId paying, lkOwner = nrOwner paying, lkPayment = nrPayment paying, lkProviderRef = Just payingRef, lkPaid = oPrice dynamisOrder, lkFromBalance = 0, lkLateCredits = []}
             ]
         }
-  nrPhase <$> stored ctx covered `shouldReturn` OTaken
+  nrPhase <$> stored ctx covered `shouldReturn` OTaken Nothing Nothing
   figuresOf ctx covered `shouldReturn` Just (0, price, price, Nothing)
   figuresOf ctx paying `shouldReturn` Just (30000 - price, 30000, 0, Nothing)
 
@@ -1411,7 +1421,7 @@ testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
   closeOf ctx owned `shouldReturn` CLRegistered (nrId owned)
   now <- nowOf ctx
   x <- stored ctx owned
-  (nrPhase x, orderLive x) `shouldBe` (ORegistered expiry now, False)
+  (nrPhase x, orderLive x) `shouldBe` (ORegistered Nothing Nothing expiry now, False)
   figuresOf ctx owned `shouldReturn` Nothing
   minedOrder <- paidIn ctx dynamisOrder failedPhase
   answerUnowned ctx "dynamis"
@@ -1419,7 +1429,7 @@ testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
   minedHash <- sentRegister ctx minedOrder 1 $ TSMinedAt 120
   closeOf ctx minedOrder `shouldReturn` CLRegistered (nrId minedOrder)
   y <- stored ctx minedOrder
-  (nrPhase y, nrRegisterTx y) `shouldBe` (ORegistered expiry now, Just minedHash)
+  nrPhase y `shouldBe` ORegistered Nothing (Just (minedHash, Just 120)) expiry now
   figuresOf ctx minedOrder `shouldReturn` Nothing
 
 testCloseRefused :: IO ()
@@ -1470,5 +1480,5 @@ testCloseHeld = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
   closeOf ctx r >>= \case
     CLRefunded _ RefundRecord {rdCents} -> rdCents `shouldBe` whole
     other -> expectationFailure $ "not refunded: " <> show other
-  nrPhase <$> stored ctx r `shouldReturn` OTaken
+  nrPhase <$> stored ctx r `shouldReturn` OTaken Nothing Nothing
   figuresOf ctx r `shouldReturn` Just (0, whole, whole, Nothing)

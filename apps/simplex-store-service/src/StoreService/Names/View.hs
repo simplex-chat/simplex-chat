@@ -41,7 +41,7 @@ import StoreService.Names.Community (AcceptanceAsked (..), communityJSON, curren
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (AgreedTerms (..), RegistrationId (..), termsKindText, tldLabel)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), FailReason (..), HoldState (..), LateWait, NameRegistration (..), NameReveal (..), OrderPhase (..), getBalance, getRegistration, heldBy, lateWait, namePhase, paymentBalance, paymentInvoice)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), CommitStep (..), FailReason (..), HoldState (..), LateWait, NameRegistration (..), NameReveal (..), OrderPhase (..), commitTxOf, failedFrom, getBalance, getRegistration, heldBy, lateWait, namePhase, paymentBalance, paymentInvoice, phaseCommit, phaseRegisterTx)
 
 -- | The view's chain reads; a field whose read failed is null and named in unread.
 data ViewReads = ViewReads
@@ -102,7 +102,7 @@ registrationView st cfg ct now r = do
 -- | The intent nonce only in committed; the acceptance too, until a reveal is stored.
 readViewChain :: Contracts -> NameRegistration -> IO ViewReads
 readViewChain ct NameRegistration {nrId = RegistrationId rid, nrPhase, nrOwner, nrLabelHash, nrReveal} = case nrPhase of
-  OCommitted -> do
+  OCommitted _ -> do
     deadline <- deadlineIn $ ctDeadline ct
     withSlot deadline (ctViewSlots ct) (concurrently (sponsorNonce ct nrOwner) acceptanceRead) >>= \case
       Just (nonce, acceptance_) -> ViewReads <$> readOf "intent nonce" nonce <*> maybe (pure VRNotAsked) (readOf "terms acceptance") acceptance_
@@ -138,10 +138,10 @@ toRegistrationView cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResol
       vwFromBalance = maybe 0 buUsed (paymentBalance nrPayment),
       vwBalance = balanceJSON <$> balance,
       vwLatePayment = (\w -> J.object ["waiting" .= w]) <$> late,
-      vwCommitTx = txText <$> nrCommitTx,
-      vwRegisterTx = txText <$> nrRegisterTx,
-      vwRevealAfter = nrRevealAfter,
-      vwRevealBefore = nrRevealBefore,
+      vwCommitTx = txText <$> (commitTxOf =<< commitStep),
+      vwRegisterTx = txText <$> phaseRegisterTx nrPhase,
+      vwRevealAfter = cmRevealAfter <$> commit,
+      vwRevealBefore = cmRevealBefore <$> commit,
       vwIntentNonce = readValue vrIntentNonce,
       vwAcceptance = acceptanceJSON <$> readValue vrAcceptance,
       vwUnread = ["intentNonce" | isUnread vrIntentNonce] <> ["acceptance" | isUnread vrAcceptance],
@@ -152,10 +152,14 @@ toRegistrationView cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResol
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrAgreedTerms} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms} = r
+    commitStep = phaseCommit nrPhase
+    commit = case commitStep of
+      Just (CSCommitted c) -> Just c
+      _ -> Nothing
     (expiresAt, failReason) = case nrPhase of
-      ORegistered expiry _ -> (Just expiry, Nothing)
-      OFailed _ reason -> (Nothing, Just reason)
+      ORegistered _ _ expiry _ -> (Just expiry, Nothing)
+      OFailed _ _ _ reason -> (Nothing, Just reason)
       _ -> (Nothing, Nothing)
     txText (TxHash h) = hex h
     readValue = \case
@@ -189,10 +193,10 @@ registrationVersion st rid = maybe 0 nrVersion <$> withTransaction st (`getRegis
 -- | Past revealBefore with no reveal, the commitment can no longer register, so it reads failed.
 registrationAt :: UTCTime -> NameRegistration -> NameRegistration
 registrationAt now r = case lapseMoment r of
-  Just lapse | now > lapse -> r {nrPhase = OFailed lapse FRNotSignedInTime}
+  Just lapse | now > lapse -> r {nrPhase = failedFrom lapse FRNotSignedInTime $ nrPhase r}
   _ -> r
 
 lapseMoment :: NameRegistration -> Maybe UTCTime
 lapseMoment = \case
-  NameRegistration {nrPhase = OCommitted, nrReveal = Nothing, nrRevealBefore = Just before} -> Just $ chainTime before
+  NameRegistration {nrPhase = OCommitted Commit {cmRevealBefore}, nrReveal = Nothing} -> Just $ chainTime cmRevealBefore
   _ -> Nothing
