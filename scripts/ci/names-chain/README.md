@@ -61,4 +61,4 @@ It runs `order.mjs set-link`, which signs a contact link edit of the name in `na
 
 The keys are public test keys: anvil's development mnemonic, which `dev/deploy.ts` uses, and the dev issuer key of `scripts/store-service/dev/chain.sh` at index 999, which the store service accepts only on chain 31337. The codes and the name code are test values on a local chain, printed in public logs. Every part but the second SMP server listens on 127.0.0.1 only.
 
-The start needs Node 24 (`actions/setup-node` in each job that starts the backend), a `python3` of 3.11 or newer for the resolver, `jq`, `curl`, `nc` and `sqlite3`. Android forwards the emulator's port 5224 to the runner's (`emulator.sh reverse 5224`), as it does 5223.
+The start needs Node 24 (`actions/setup-node` in each job that starts the backend), a `python3` of 3.11 or newer for the resolver, `jq`, `curl`, `nc` and `sqlite3`.
