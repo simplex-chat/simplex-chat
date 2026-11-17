@@ -1994,9 +1994,10 @@ processChatCommand cxt nm = \case
         gInfo' <- case groupSLinkData_ of
           Just sLinkData -> fst <$> updateGroupFromLinkData user groupId sLinkData Nothing
           _ -> pure gInfo
-        when (memberRole' (membership gInfo) /= GROwner && memberCurrent (membership gInfo)) $
-          withGroupLock "syncSubscriberRelays" groupId $
-            syncSubscriberRelays user gInfo' currentRelayLinks
+        withGroupLock "syncSubscriberRelays" groupId $ do
+          g@GroupInfo {membership} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+          when (memberRole' membership /= GROwner && memberCurrent membership) $
+            syncSubscriberRelays user g currentRelayLinks
         pure $ CRGroupInfo user gInfo'
       _ -> throwCmdError "group link data not available"
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
@@ -2178,7 +2179,6 @@ processChatCommand cxt nm = \case
           void (updatePCCShortLinkData conn $ userProfileDirect user (Just incognitoProfile) Nothing True) `catchAllErrors` \e -> do
             tryAllErrors (updateIfUnchanged user pId_ $ \db c -> forM_ pId_ (deletePCCIncognitoProfile db user) >> updatePCCIncognito db user c Nothing sLnk_) >>= \case
               Left (ChatError CEConnectionIncognitoChangeProhibited) -> pure ()
-              Left (ChatErrorStore SEPendingConnectionNotFound {}) -> pure ()
               _ -> throwError e
           pure $ CRConnectionIncognitoUpdated user conn' (Just incognitoProfile)
         (ConnNew, Just pId, False) -> do
@@ -3959,7 +3959,11 @@ processChatCommand cxt nm = \case
                 )
     connectViaContact :: User -> Maybe PreparedChatEntity -> IncognitoEnabled -> CreatedLinkContact -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> CM ConnectViaContactResult
     connectViaContact user preparedEntity_ incognito ccLink@(CCLink cReq _) welcomeSharedMsgId msg_ =
-      withInvitationLock "connectViaContact" (strEncode cReq) . join $ prepareConnectViaContact user preparedEntity_ incognito ccLink welcomeSharedMsgId msg_
+      withInvitationLock "connectViaContact" (strEncode cReq) . join $ do
+        preparedEntity' <- withFastStore $ \db -> forM preparedEntity_ $ \case
+          PCEContact ct -> PCEContact <$> getContact db cxt user (contactId' ct)
+          PCEGroup (GIK gInfo _) m -> PCEGroup <$> getGroupInfoKeys db cxt user (groupId' gInfo) <*> getGroupMember db cxt user (groupId' gInfo) (groupMemberId' m)
+        prepareConnectViaContact user preparedEntity' incognito ccLink welcomeSharedMsgId msg_
     prepareConnectViaContact :: User -> Maybe PreparedChatEntity -> IncognitoEnabled -> CreatedLinkContact -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> CM (CM ConnectViaContactResult)
     prepareConnectViaContact user@User {userId} preparedEntity_ incognito (CCLink cReq@(CRContactUri crData@ConnReqUriData {crClientData} e2e) sLnk) welcomeSharedMsgId msg_ = do
       let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli

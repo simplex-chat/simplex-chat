@@ -15,7 +15,8 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently, concurrently_)
+import Control.Concurrent.Async (concurrently, concurrently_, wait, withAsync)
+import Control.Concurrent.STM (atomically, putTMVar, takeTMVar)
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader (runReaderT)
@@ -27,7 +28,8 @@ import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
-import Simplex.Chat.Controller (CM, ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Controller (CM, ChatCommand (APIConnectPreparedContact, APISetConnectionIncognito), ChatConfig (..), ChatController (ChatController, chatLock, smpAgent), ChatHooks (..), ChatResponse (CRConnectionIncognitoUpdated, CRContactAlreadyExists), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Library.Commands (execChatCommand')
 import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XOk), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
@@ -138,6 +140,7 @@ chatProfileTests = do
     it "set connection incognito prohibited during negotiation" testSetConnectionIncognitoProhibitedDuringNegotiation
     it "connection incognito unchanged errors" testConnectionIncognitoUnchangedErrors
     it "set, reset, set connection incognito" testSetResetSetConnectionIncognito
+    it "set connection incognito returns the link error when the connection is deleted" testSetConnectionIncognitoDeleted
     it "join group incognito" testJoinGroupIncognito
     it "join group incognito as bot" $ testJoinGroupIncognitoPeerType (Just CPTBot)
     it "join group incognito as human" $ testJoinGroupIncognitoPeerType Nothing
@@ -199,6 +202,7 @@ shortLinkTests = do
   it "prepare contact via address and connect after it is deleted" testShortLinkDeletedAddress
   it "prepare contact via address and connect with retry after error" testShortLinkAddressConnectRetry
   it "prepare contact via address and connect incognito with retry" testShortLinkAddressConnectRetryIncognito
+  it "prepare contact via address and connect twice at once" testShortLinkAddressConnectTwice
   it "prepare business chat using address short link data and connect" testShortLinkAddressPrepareBusiness
   it "connect to business address with request message" testBusinessAddressRequestMessage
   it "prepare group using group short link data and connect" testShortLinkPrepareGroup
@@ -2760,6 +2764,33 @@ testSetResetSetConnectionIncognito = testChat2 aliceProfile bobProfile $
     alice `hasContactProfiles` ["alice", "bob", T.pack aliceIncognito]
     bob `hasContactProfiles` ["bob", T.pack aliceIncognito]
 
+testSetConnectionIncognitoDeleted :: HasCallStack => TestParams -> IO ()
+testSetConnectionIncognitoDeleted ps =
+  withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice -> do
+    withSmpServer' serverCfg' $ do
+      alice ##> "/connect"
+      void $ getInvitation alice
+    alice <## "disconnected 1 connections on server 127.0.0.1"
+    withUnresponsiveServer (smpTestPort2 ps) $ do
+      r <- withAsync (execChatCommand' (APISetConnectionIncognito 1 True) 0 `runReaderT` chatController alice) $ \a -> do
+        threadDelay 1000000
+        alice ##> "/_delete :1"
+        alice <## "connection :1 deleted"
+        wait a
+      case r of
+        Right CRConnectionIncognitoUpdated {} -> expectationFailure "deleted connection is reported as changed to incognito"
+        _ -> pure ()
+  where
+    serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
+    cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003"]
+              }
+        }
+
 testJoinGroupIncognito :: HasCallStack => TestParams -> IO ()
 testJoinGroupIncognito =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
@@ -4630,6 +4661,32 @@ testShortLinkAddressConnectRetryIncognito ps =
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+testShortLinkAddressConnectTwice :: HasCallStack => TestParams -> IO ()
+testShortLinkAddressConnectTwice = testChat2 aliceProfile bobProfile test
+  where
+    test alice bob = do
+      alice ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks alice True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      let lock = chatLock $ chatController bob
+          connect = execChatCommand' (APIConnectPreparedContact 2 False Nothing) 0 `runReaderT` chatController bob
+          alreadyExists = \case
+            Right CRContactAlreadyExists {} -> True
+            _ -> False
+      atomically $ putTMVar lock "test"
+      (r1, r2) <- withAsync (concurrently connect connect) $ \a -> do
+        threadDelay 1000000
+        void . atomically $ takeTMVar lock
+        wait a
+      length (filter alreadyExists [r1, r2]) `shouldBe` 1
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
 
 testShortLinkAddressPrepareBusiness :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressPrepareBusiness = testChat3 businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile test
