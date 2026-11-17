@@ -1,13 +1,34 @@
 package chat.simplex.app
 
+import androidx.compose.ui.test.ComposeUiTest
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.runComposeUiTest
 import boofcv.alg.fiducial.qrcode.QrCode
+import chat.simplex.common.model.*
+import chat.simplex.common.views.chat.ChatInfoView
+import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.newchat.qrCodeBitmap
+import chat.simplex.res.MR
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
+@OptIn(ExperimentalTestApi::class)
 class QRCodeTest {
   private val link = "https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FWHV0YU1sYlU7NqiEHkHDB6gxO1ofTync%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAWbebOqVYuBXaiqHcXYjEHCpYi6VzDlu6CVaijDTmsQU%253D"
+
+  @AfterTest
+  fun tearDown() {
+    ChatModel.chatsContext.chats.value.clear()
+    ChatModel.currentUser.value = null
+  }
 
   @Test
   fun testQRCodeBitmapOfLinkWithinCapacity() {
@@ -19,5 +40,27 @@ class QRCodeTest {
   fun testNoQRCodeBitmapOfLinkAboveCapacity() {
     assertNull(qrCodeBitmap("$link&data=${"a".repeat(3000)}", errorLevel = QrCode.ErrorLevel.L))
     assertNull(qrCodeBitmap("$link&data=${"a".repeat(2400)}", errorLevel = QrCode.ErrorLevel.M))
+  }
+
+  @Test
+  fun testContactInfoShowsQRCodeOfAddress() = contactInfo(link) {
+    onNodeWithText(generalGetString(MR.strings.share_address)).assertExists()
+    onAllNodesWithContentDescription(generalGetString(MR.strings.image_descr_qr_code)).assertCountEquals(1)
+  }
+
+  @Test
+  fun testContactInfoWithoutQRCodeOfAddressAboveCapacity() = contactInfo("$link&data=${"a".repeat(3000)}") {
+    onNodeWithText(generalGetString(MR.strings.share_address)).assertExists()
+    onAllNodesWithContentDescription(generalGetString(MR.strings.image_descr_qr_code)).assertCountEquals(0)
+  }
+
+  private fun contactInfo(address: String, test: ComposeUiTest.() -> Unit) = runComposeUiTest {
+    val contact = Contact.sampleData.copy(profile = LocalProfile.sampleData.copy(contactLink = address))
+    ChatModel.currentUser.value = User.sampleData
+    runBlocking { withContext(Dispatchers.Main) { ChatModel.chatsContext.updateChat(null, ChatInfo.Direct(contact)) } }
+    setContent {
+      ChatInfoView(ChatModel.chatsContext, ChatModel, contact, connectionStats = null, customUserProfile = null, localAlias = "", connectionCode = null, close = {}, onSearchClicked = {})
+    }
+    test()
   }
 }
