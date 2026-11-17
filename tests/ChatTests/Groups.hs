@@ -8244,7 +8244,7 @@ testBlockForAllLeftRemoved =
 testGroupMemberInactive :: HasCallStack => TestParams -> IO ()
 testGroupMemberInactive ps = do
   withSmpServer' serverCfg' $ do
-    withNewTestChatCfgOpts ps cfg' testOpts "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice -> do
       withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
         createGroup2 "team" alice bob
 
