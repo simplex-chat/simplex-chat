@@ -32,10 +32,10 @@ import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
+import Simplex.Chat.Messages (AChatItemUpdate (..), CIMention (..), CIMentionMember (..), ChatItem (ChatItem, mentions), ChatItemId, isUserMention)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
@@ -256,6 +256,7 @@ chatGroupTests = do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   describe "group member mentions" $ do
     it "should send and edit messages with member mentions" testMemberMention
+    it "should send updated item with mentions added and removed by edit" testMemberMentionEdited
     it "should forward and quote message updating mentioned member name" testForwardQuoteMention
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
@@ -275,6 +276,7 @@ chatGroupTests = do
     it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
+    it "should correctly maintain unread stats for support chats on editing mentions" testScopedSupportUnreadStatsOnMentionEdit
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
     it "should not read support chat items when reading group without scope" testScopedSupportUnreadStatsGroupReadNoScope
@@ -1439,7 +1441,7 @@ testGroupMessageEditHistory =
 
       alice ##> ("/_update item #1 " <> aliceItemId <> " text hey there")
       alice <# "#team [edited] hey there"
-      bob <# "#team alice> [edited] hey there"
+      bob <# "#team alice> hey there"
 
       alice ##> "/item info #team hey"
       alice <##. "sent at: "
@@ -1507,7 +1509,7 @@ testGroupMessageDelete =
       bob <# "#team [edited] > alice hello!"
       bob <## "      hi alice"
       concurrently_
-        (alice <# "#team bob> [edited] hi alice")
+        (alice <# "#team bob> hi alice")
         ( do
             cath <# "#team bob> [edited] > alice hello!"
             cath <## "      hi alice"
@@ -8488,6 +8490,35 @@ testMemberMention =
           bob <# "#team cath> [edited] hello @alice @bob"
         ]
 
+testMemberMentionEdited :: HasCallStack => TestParams -> IO ()
+testMemberMentionEdited ps = do
+  updates <- newTVarIO []
+  events <- newTVarIO []
+  let hook _ evt = do
+        recordItemEvent events evt
+        case evt of
+          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi)) ->
+            atomically $ modifyTVar' updates (<> [(mentionOf prevCi, mentionOf ci)])
+          _ -> pure ()
+        pure evt
+      mentionOf :: ChatItem c d -> ([T.Text], Bool)
+      mentionOf ci@ChatItem {mentions} = (M.keys mentions, isUserMention ci)
+  withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} testOpts {markRead = False} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/unmute mentions #team"
+      alice <## "ok"
+      eventsFixture "updates/group-mention" events $ do
+        bob #> "#team hello"
+        alice <# "#team bob> hello <muted>"
+        bob ##> "! #team hello @alice"
+        bob <# "#team [edited] hello @alice"
+        alice <# "#team bob> [edited] hello @alice"
+        bob ##> "! #team hello"
+        bob <# "#team [edited] hello"
+        alice <# "#team bob> [edited] hello <muted>"
+      readTVarIO updates `shouldReturn` [(([], False), (["alice"], True)), ((["alice"], True), ([], False))]
+
 testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
 testForwardQuoteMention =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -9336,6 +9367,31 @@ testScopedSupportUnreadStatsOnRead =
 
     cath ##> "/member support chats #team"
     cath <// 50000
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportUnreadStatsOnMentionEdit :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsOnMentionEdit =
+  testChatOpts4 opts aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+
+    dan ##> "/_send #1(_support:3) text 1"
+    dan <# "#team (support: bob) 1"
+    alice <# "#team (support: bob) dan> 1"
+    bob <# "#team (support) dan> 1"
+    danItemId <- lastItemId dan
+
+    dan ##> ("/_update item #1(_support:3) " <> danItemId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"@alice 1\"}, \"mentions\": {\"alice\": 1}}")
+    dan <# "#team (support: bob) [edited] @alice 1"
+    alice <# "#team (support: bob) dan> [edited] @alice 1"
+    bob <# "#team (support) dan> [edited] @alice 1"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 0, mentions: 1"
   where
     opts =
       testOpts
@@ -13577,8 +13633,8 @@ testChannelUpdateFallbackSendAsGroup ps =
             aliceMsgId <- lastItemId alice
             alice ##> ("/_update item #1 " <> aliceMsgId <> " text channel msg updated")
             alice <# "#team [edited] channel msg updated"
-            -- bob's item was locally deleted, fallback recreates it with [edited] marker
-            bob <# "#team> [edited] channel msg updated"
+            -- bob's item was locally deleted, fallback recreates it as a new item
+            bob <# "#team> channel msg updated"
             [cath, dan, eve] *<# "#team> [edited] channel msg updated"
 
             -- now test sendAsGroup=False case
@@ -13597,7 +13653,7 @@ testChannelUpdateFallbackSendAsGroup ps =
             alice ##> ("/_update item #1 " <> aliceMsgId2 <> " text member msg updated")
             alice <# "#team [edited] member msg updated"
             -- bob's internally deleted item is re-created as from member (sendAsGroup=False)
-            bob <# "#team alice> [edited] member msg updated"
+            bob <# "#team alice> member msg updated"
             -- forwarded members see correct member attribution
             [cath, dan, eve] *<# "#team alice> [edited] member msg updated"
 
@@ -14173,7 +14229,7 @@ testChannelSignedHistory ps =
 
       -- catch-up subscriber joins late: as-group edited content + signed member post (author unknown to dan, shown by id hash), deleted excluded
       memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
-      dan <# "#team> [edited] history one edited (signed)"
+      dan <# "#team> history one edited (signed) [>>]"
       dan .<## "> from cath member (signed) [>>]"
       dan #$> ("/_get chat #1 count=100 search=history one edited", chat, [(0, "history one edited (signed)")])
       dan #$> ("/_get chat #1 count=100 search=from cath member", chat, [(0, "from cath member (signed)")])
