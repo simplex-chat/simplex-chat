@@ -224,7 +224,7 @@ toCommitted :: Worker -> UTCTime -> NameRegistration -> (ChainSeconds, ChainSeco
 toCommitted w now r (revealAfter, revealBefore) t =
   ourCommit w r t >>= \case
     Left e -> pure $ failure r $ SFChain e
-    Right ours -> save w now r {nrPhase = OCommitted Commit {cmTx = ours, cmRevealAfter = revealAfter, cmRevealBefore = revealBefore}}
+    Right ours -> save w now r {nrPhase = OCommitted Commit {cmTx = ours, cmRevealAfter = revealAfter, cmRevealBefore = revealBefore, cmLinksRefusedAt = Nothing}}
 
 -- | Among the signatures of the commit last sent, the one mined with status 1 at the commitment's time.
 ourCommit :: Worker -> NameRegistration -> ChainSeconds -> IO (Either ChainError (Maybe (TxHash, Word64)))
@@ -261,23 +261,21 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal} c@Commit {
         _ -> save w now r {nrPhase = failedFrom now FRNotSignedInTime $ nrPhase r}
       Just rv@NameReveal {rvAcceptance, rvDeadline} ->
         -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then decides
-        (if unlapsed now r then relayAcceptance w now r rvDeadline rvAcceptance else pure Nothing) >>= \case
+        (if unlapsed now c then relayAcceptance w now r c rvDeadline rvAcceptance else pure Nothing) >>= \case
           Just next -> pure next
           Nothing
             | now < chainTime cmRevealAfter -> pure $ waitUntil r $ chainTime cmRevealAfter
             | otherwise -> sendRegister w now r c rv
 
-unlapsed :: UTCTime -> NameRegistration -> Bool
-unlapsed now NameRegistration {nrPhase} = case phaseCommit nrPhase of
-  Just (CSCommitted Commit {cmRevealBefore}) -> now <= chainTime cmRevealBefore
-  _ -> True
+unlapsed :: UTCTime -> Commit -> Bool
+unlapsed now Commit {cmRevealBefore} = now <= chainTime cmRevealBefore
 
 -- | The relay of the reveal's acceptance to the name policy, sent without waiting for revealAfter; Nothing once the policy
 -- stores that acceptance. One signed for another policy, before a setNamePolicy, or for the other kind of terms, clears the
 -- reveal for the page to sign again; the relay's dry run's revert is judged as a register's is, unless the policy holds the
 -- acceptance, which another sent first.
-relayAcceptance :: Worker -> UTCTime -> NameRegistration -> ChainSeconds -> TermsAcceptance -> IO (Maybe Next)
-relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} deadline a@TermsAcceptance {taTermsHash} =
+relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Commit -> ChainSeconds -> TermsAcceptance -> IO (Maybe Next)
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} c deadline a@TermsAcceptance {taTermsHash} =
   inFlightTransaction wkSender (TxRegistration RTAccept regId) >>= \case
     Just p -> pure $ Just $ Await p
     Nothing ->
@@ -300,7 +298,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
             Left (SEChain (ChainReverted reason)) ->
               held >>= \case
                 Right accepted | accepted == taTermsHash -> pure Again
-                _ -> judge w now r $ Just reason
+                _ -> judge w now r c $ Just reason
             Left e -> pure $ failure r $ SFSend e
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
@@ -310,12 +308,12 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
     -- past its deadline the intent can no longer register; a wrong signer follows a change of the chain settings since the reveal
     Left refusal -> do
       logWarn $ "names worker: registration " <> rid <> ": its stored intent is refused, " <> T.pack refusal
-      judge w now r Nothing
+      judge w now r c Nothing
     Right () ->
       withinSends w now r RTRegister $ submitTransaction wkSender (TxRegistration RTRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
         Right p -> registerSent w now r c p
         Left SEInFlight -> pure Again
-        Left (SEChain (ChainReverted reason)) -> judge w now r $ Just reason
+        Left (SEChain (ChainReverted reason)) -> judge w now r c $ Just reason
         Left e -> pure $ failure r $ SFSend e
   where
     intent = intentOf cfg r rv
@@ -330,7 +328,7 @@ registering :: Worker -> UTCTime -> NameRegistration -> Commit -> IO Next
 registering w@Worker {wkSender} now r@NameRegistration {nrId} c =
   inFlightTransaction wkSender (TxRegistration RTRegister nrId) >>= \case
     Just p -> registerSent w now r c p
-    Nothing -> judge w now r Nothing
+    Nothing -> judge w now r c Nothing
 
 data Availability = AvailableAtLatest | TakenAtDepth | TakenOnlyAboveDepth
 
@@ -339,8 +337,8 @@ data Availability = AvailableAtLatest | TakenAtDepth | TakenOnlyAboveDepth
 -- policy read again on TermsNotAccepted; committing again with its reveal on CommitmentTooOld, which the sponsor reverts only after the
 -- intent's and the allowance's checks; kept waiting while the sponsor allowance is used up; taken on any revert while the name is not
 -- available at the confirmation depth; failed otherwise, unless the dry run named the name as gone.
-judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertReason -> IO Next
-judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
+judge :: Worker -> UTCTime -> NameRegistration -> Commit -> Maybe RevertReason -> IO Next
+judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} c reason =
   inTurn w r $
     confirmLanded oe r >>= \case
       LRegistered v -> pure (Just v, Again)
@@ -352,7 +350,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
         Just (RRNamed RNTermsNotAccepted) -> forgetNamePolicy oeContracts >> clearReveal
         Just (RRNamed RNCommitmentTooNew) -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
         Just (RRNamed RNCommitmentTooOld)
-          | unlapsed now r -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
+          | unlapsed now c -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
           | otherwise -> store w now r {nrPhase = OCommitting Nothing}
         Just (RRNamed RNInsufficientAllowance) -> pure (Nothing, Stalled (nrVersion r) SFAllowanceUsedUp)
         Just (RRNamed RNNameNotAvailable) -> notRegistered True
@@ -441,7 +439,7 @@ retryRegistration oe@OrdersEnv {oeNow} current = do
   now <- oeNow
   case registrationAt now current of
     -- its commitment fixes the refused links, so only another name can register
-    NameRegistration {nrPhase = OFailed {}, nrLinksRefusedAt = Just _} -> pure $ RTRefused RFLinksRefused
+    NameRegistration {nrPhase = OFailed (Just (CSCommitted Commit {cmLinksRefusedAt = Just _})) _ _ _} -> pure $ RTRefused RFLinksRefused
     r@NameRegistration {nrPhase = OFailed {}} ->
       checkFailedOrder oe r >>= \case
         Left retried -> pure retried

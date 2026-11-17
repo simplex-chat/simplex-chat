@@ -318,7 +318,7 @@ testSpendResend = withSpend $ \ctx@Ctx {cStore, cClock} -> do
   (200, answer) <- postSpend ctx other coveredBody
   r <- registrationById ctx $ registrationAnswer answer
   spend ctx other paid {sbOrder = (sbOrder paid) {oTimestamp = seconds now + 1}} `shouldReturn` (200, answer)
-  Written _ <- withTransaction cStore $ \db -> updateRegistration db r {nrPhase = OCommitted Commit {cmTx = Nothing, cmRevealAfter = seconds now, cmRevealBefore = seconds now + 86400}} now
+  Written _ <- withTransaction cStore $ \db -> updateRegistration db r {nrPhase = OCommitted Commit {cmTx = Nothing, cmRevealAfter = seconds now, cmRevealBefore = seconds now + 86400, cmLinksRefusedAt = Nothing}} now
   advance ctx 3600
   postSpend ctx other coveredBody `shouldReturn` (200, answer)
   length <$> stubCalls (cStub ctx) `shouldReturn` 1

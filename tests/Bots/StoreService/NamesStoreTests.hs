@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, commitFixture, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
+module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, commitFixture, linksRefusedAt, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.FakeEthNode (address, agreed, lengthOf, plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, invoiceStatus, runMigrations, sampleInvoice, seedBadgePrice, withServiceStore)
@@ -292,7 +292,6 @@ testCreatePaid = withServiceStore $ \st -> do
         nrReveal = Nothing,
         nrOrderHash = orderHash ownerA o (OTInvoice btc price),
         nrMoves = 0,
-        nrLinksRefusedAt = Nothing,
         nrCreatedAt = t0,
         nrUpdatedAt = t0
       }
@@ -397,7 +396,12 @@ reveal =
     }
 
 commitFixture :: Commit
-commitFixture = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = 1792828800, cmRevealBefore = 1792915140}
+commitFixture = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = 1792828800, cmRevealBefore = 1792915140, cmLinksRefusedAt = Nothing}
+
+linksRefusedAt :: NameRegistration -> Maybe UTCTime
+linksRefusedAt NameRegistration {nrPhase} = case phaseCommit nrPhase of
+  Just (CSCommitted Commit {cmLinksRefusedAt}) -> cmLinksRefusedAt
+  _ -> Nothing
 
 testVersionBumps :: IO ()
 testVersionBumps = withServiceStore $ \st -> do
@@ -409,10 +413,10 @@ testVersionBumps = withServiceStore $ \st -> do
   write st r2 {nrPhase = OCommitted commitFixture} `shouldReturn` Written 3
   r3 <- reg st "r1"
   write st r3 {nrReveal = Just reveal} `shouldReturn` Written 4
-  write st r3 {nrLinksRefusedAt = Just (at 5)} `shouldReturn` VersionChanged
+  write st r3 {nrPhase = OCommitted commitFixture {cmLinksRefusedAt = Just (at 5)}} `shouldReturn` VersionChanged
   write st r1 {nrPhase = OFailed Nothing Nothing (at 5) FRNotRegistered} `shouldReturn` VersionChanged
   r4 <- reg st "r1"
-  (nrVersion r4, nrPhase r4, nrReveal r4, nrLinksRefusedAt r4) `shouldBe` (4, OCommitted commitFixture, Just reveal, Nothing)
+  (nrVersion r4, nrPhase r4, nrReveal r4) `shouldBe` (4, OCommitted commitFixture, Just reveal)
 
 testRoundTrip :: IO ()
 testRoundTrip = withServiceStore $ \st -> do
@@ -421,13 +425,13 @@ testRoundTrip = withServiceStore $ \st -> do
   r <- reg st "r1"
   let changed =
         r
-          { nrPhase = OFailed (Just $ CSCommitted commitFixture) (Just $ TxHash $ digestFixture 9) (at 2) FRNotSignedInTime,
+          { nrPhase = OFailed (Just $ CSCommitted refused) (Just $ TxHash $ digestFixture 9) (at 2) FRNotSignedInTime,
             nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = TermsAcceptance {taTermsHash = digestFixture 10, taNonce = 4, taSignature = signature}},
-            nrLinksRefusedAt = Just (at 4),
             nrMoves = 2,
             nrAgreedTerms = agreed (communityTermsPrefix <> plainTerms)
           }
-      registered = changed {nrPhase = ORegistered (Just $ CSCommitted commitFixture) (Just (TxHash $ digestFixture 9, Just 120)) 1861833600 (at 3)}
+      refused = commitFixture {cmLinksRefusedAt = Just (at 4)}
+      registered = changed {nrPhase = ORegistered (Just $ CSCommitted refused) (Just (TxHash $ digestFixture 9, Just 120)) 1861833600 (at 3)}
   write st changed `shouldReturn` Written 2
   reg st "r1" `shouldReturn` changed {nrVersion = 2, nrUpdatedAt = at 1}
   write st registered {nrVersion = 2} `shouldReturn` Written 3
@@ -511,9 +515,8 @@ testRetarget = withServiceStore $ \st -> do
   r <- reg st "r1"
   let failed =
         r
-          { nrPhase = OFailed (Just $ CSCommitted commitFixture {cmRevealAfter = 1, cmRevealBefore = 2}) (Just $ TxHash $ digestFixture 9) (at 5) FRNotRegistered,
-            nrReveal = Just reveal,
-            nrLinksRefusedAt = Just (at 4)
+          { nrPhase = OFailed (Just $ CSCommitted commitFixture {cmRevealAfter = 1, cmRevealBefore = 2, cmLinksRefusedAt = Just (at 4)}) (Just $ TxHash $ digestFixture 9) (at 5) FRNotRegistered,
+            nrReveal = Just reveal
           }
   write st failed `shouldReturn` Written 2
   withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o' 10000 (at 6)) `shouldReturn` Written 3

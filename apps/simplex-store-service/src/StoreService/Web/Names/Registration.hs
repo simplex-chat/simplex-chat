@@ -81,13 +81,13 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
       case nrReveal of
         Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused (RVBadRequest "another reveal is stored") Nothing
         Nothing -> case nrPhase (registrationAt now r) of
-          OCommitted Commit {cmRevealBefore} ->
+          OCommitted c@Commit {cmRevealBefore, cmLinksRefusedAt} ->
             checkReveal oeConfig oeContracts now r cmRevealBefore request >>= \case
               Left refusal -> pure $ RDRefused refusal Nothing
               Right rv
                 | linksValid rv -> write now (RDAccepted . Just) r {nrReveal = Just rv}
-                | isJust (nrLinksRefusedAt r) -> pure $ RDRefused RVInvalidLink Nothing
-                | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrLinksRefusedAt = Just now}
+                | isJust cmLinksRefusedAt -> pure $ RDRefused RVInvalidLink Nothing
+                | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrPhase = OCommitted c {cmLinksRefusedAt = Just now}}
           _ -> pure $ RDRefused (RVBadRequest "the order is not committed") Nothing
     write now decided r =
       withTransaction oeStore (\db -> versionWritten <$> updateRegistration db r now) >>= \case

@@ -121,7 +121,7 @@ toRegistrationView cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResol
     { vwId = rid,
       vwVersion = nrVersion,
       vwMoves = nrMoves,
-      vwLinksRefused = isJust nrLinksRefusedAt,
+      vwLinksRefused = isJust (cmLinksRefusedAt =<< commit),
       vwPhase = textEncode (namePhase nrPhase),
       vwLabelHash = hex lh,
       vwLabel = rvLabel <$> nrReveal,
@@ -151,7 +151,7 @@ toRegistrationView cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResol
       vwTerms = textEncode nrAgreedTerms
     }
   where
-    NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
+    NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
     NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms} = r
     commitStep = phaseCommit nrPhase
     commit = case commitStep of

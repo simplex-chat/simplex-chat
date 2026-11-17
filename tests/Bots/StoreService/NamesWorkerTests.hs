@@ -206,10 +206,10 @@ openPhase :: NameRegistration -> NameRegistration
 openPhase r = r {nrPhase = OCommitted openCommit}
 
 openCommit :: Commit
-openCommit = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = orderSeconds - minAge, cmRevealBefore = orderSeconds - minAge + maxAge}
+openCommit = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = orderSeconds - minAge, cmRevealBefore = orderSeconds - minAge + maxAge, cmLinksRefusedAt = Nothing}
 
 commitAt :: Word64 -> Maybe (TxHash, Word64) -> Commit
-commitAt t tx = Commit {cmTx = tx, cmRevealAfter = t + minAge, cmRevealBefore = t + maxAge}
+commitAt t tx = Commit {cmTx = tx, cmRevealAfter = t + minAge, cmRevealBefore = t + maxAge, cmLinksRefusedAt = Nothing}
 
 revealBeforeOf :: NameRegistration -> Maybe Word64
 revealBeforeOf r = case phaseCommit $ nrPhase r of
@@ -1117,7 +1117,7 @@ testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
 
 testRetryLinksRefused :: IO ()
 testRetryLinksRefused = withWorker $ \W {wCtx = ctx} -> do
-  r <- paidIn ctx aliceOrder $ \o -> (failedPhase o) {nrLinksRefusedAt = Just orderTime}
+  r <- paidIn ctx aliceOrder $ \o -> o {nrPhase = OFailed (Just $ CSCommitted openCommit {cmLinksRefusedAt = Just orderTime}) Nothing orderTime FRNotRegistered}
   -- unowned with no reveal stored, so only its refused links keep it from being queued again
   answerUnowned ctx "alicebakery"
   retryOf ctx r `shouldReturn` refusedWith 400 "bad_request"
