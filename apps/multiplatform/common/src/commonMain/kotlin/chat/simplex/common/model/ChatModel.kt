@@ -182,10 +182,12 @@ object ChatModel {
   val silentTags = mutableStateMapOf<Long, Int>()
   val priorityTags = mutableStateMapOf<Long, Int>()
 
-  fun tagCounts(unreadTag: UnreadTag): List<MutableMap<Long, Int>> = when (unreadTag) {
-    UnreadTag.HighPriority -> listOf(unreadTags, priorityTags)
-    UnreadTag.Unread -> listOf(unreadTags)
-    UnreadTag.Silent -> listOf(silentTags)
+  fun tagCounts(unreadTag: UnreadTag): List<MutableMap<Long, Int>> = tagCounts(unreadTag, unreadTags, silentTags, priorityTags)
+
+  private fun <M> tagCounts(unreadTag: UnreadTag, unread: M, silent: M, priority: M): List<M> = when (unreadTag) {
+    UnreadTag.HighPriority -> listOf(unread, priority)
+    UnreadTag.Unread -> listOf(unread)
+    UnreadTag.Silent -> listOf(silent)
     UnreadTag.Read -> emptyList()
   }
 
@@ -337,12 +339,7 @@ object ChatModel {
           newPresetTags[tag] = (newPresetTags[tag] ?: 0) + 1
         }
       }
-      val newTagCounts = when (chat.unreadTag) {
-        UnreadTag.HighPriority -> listOf(newUnreadTags, newPriorityTags)
-        UnreadTag.Unread -> listOf(newUnreadTags)
-        UnreadTag.Silent -> listOf(newSilentTags)
-        UnreadTag.Read -> emptyList()
-      }
+      val newTagCounts = tagCounts(chat.unreadTag, newUnreadTags, newSilentTags, newPriorityTags)
       val chatTags: List<Long> = when (val cInfo = chat.chatInfo) {
         is ChatInfo.Direct -> cInfo.contact.chatTags
         is ChatInfo.Group -> cInfo.groupInfo.chatTags
