@@ -674,7 +674,7 @@ getRemoteInvitation :: HasCallStack => TestCC -> IO ([String], String)
 getRemoteInvitation desktop = do
   addrs <- getTermLine desktop >>= \case
     "Remote session invitation:" -> pure []
-    l -> words (dropStrPrefix "other addresses: " l) <$ desktop <## "Remote session invitation:"
+    l -> evaluate (words $ dropStrPrefix "other addresses: " l) <* desktop <## "Remote session invitation:"
   (addrs,) <$> getTermLine desktop
 
 verifyRemoteCtrl :: TestCC -> TestCC -> IO ()
