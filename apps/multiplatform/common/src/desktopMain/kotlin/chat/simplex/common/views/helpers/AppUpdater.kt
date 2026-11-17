@@ -183,7 +183,8 @@ private const val INTERNAL_BUILDS_REPO = "simplex-chat/internal-builds"
 fun checkForUpdate() {
   Log.d(TAG, "Checking for update")
   try {
-    val release = when (appPrefs.appUpdateChannel.get()) {
+    val channel = appPrefs.appUpdateChannel.get()
+    val release = when (channel) {
       AppUpdatesChannel.STABLE -> chooseStableRelease(installedSemVer() ?: return, getGitHubReleases(RELEASES_REPO))
       AppUpdatesChannel.BETA -> chooseBetaRelease(installedSemVer() ?: return, getGitHubReleases(RELEASES_REPO))
       AppUpdatesChannel.INTERNAL -> chooseInternalRelease(BuildConfigCommon.DESKTOP_VERSION_NAME, getGitHubReleases(INTERNAL_BUILDS_REPO))
@@ -206,6 +207,7 @@ fun checkForUpdate() {
       lines.add(line)
     }
     val text = lines.joinToString("\n")
+    if (appPrefs.appUpdateChannel.get() != channel) return
     AlertManager.shared.showAlertDialogButtonsColumn(
       generalGetString(MR.strings.app_check_for_updates_update_available).format(release.name),
       text = text,

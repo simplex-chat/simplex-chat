@@ -11,6 +11,7 @@ Internal desktop builds are published as releases of the public repository simpl
 - The toggle turned off while "Internal" is selected: the channel is set to "Disabled", the preference default, and the scheduled update check is cancelled.
 - Internal: the newest non-draft release of simplex-chat/internal-builds is offered when its tag differs from the installed version name.
 - Stable and Beta: unchanged.
+- A check whose channel is changed during its request shows no alert.
 
 ## Types
 
