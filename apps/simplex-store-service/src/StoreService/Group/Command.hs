@@ -11,17 +11,7 @@ module StoreService.Group.Command
     groupCmdAction,
     consoleCmd,
     groupCommands,
-    codeP,
-    badgeTypeP,
-    nameCodeP,
-    prepaidCodeP,
-    balanceArgsP,
-    recordRefundArgsP,
-    closeArgsP,
-    textTokenP,
-    maxMonths,
     maxUses,
-    maxNameYears,
   )
 where
 
@@ -80,7 +70,9 @@ groupCmdAction role t = case parsedCmd IssuedInGroup t of
   _ -> IgnoreMsg
 
 consoleCmd :: Text -> Either Text GroupCmd
-consoleCmd t = either (const $ Left consoleUsage) snd $ parsedCmd IssuedInConsole t
+consoleCmd t = either (const $ Left usage) snd $ parsedCmd IssuedInConsole t
+  where
+    usage = T.intercalate "\n" $ "Usage:" : map (\tag -> cmdText IssuedInConsole tag (cmdParams IssuedInConsole tag)) (sourceTags IssuedInConsole)
 
 parsedCmd :: CodeIssuer -> Text -> Either String (CmdTag, Either Text GroupCmd)
 parsedCmd source = A.parseOnly (cmdActionP source) . encodeUtf8 . T.strip
@@ -109,9 +101,7 @@ cmdArgsP source = \case
   CTClose -> GCMoney <$> closeArgsP
   where
     countP = A.space *> optValueP countOpt
-
-statusP :: [BadgeCodePaymentStatus] -> A.Parser BadgeCodePaymentStatus
-statusP statuses = A.option CPSFree (A.space *> mfilter (`elem` statuses) textTokenP)
+    statusP statuses = A.option CPSFree (A.space *> mfilter (`elem` statuses) textTokenP)
 
 issueUses :: CodeIssuer -> Maybe CmdOpt
 issueUses = \case
@@ -252,9 +242,6 @@ cmdUsage source = \case
   where
     plainUsage tag = "Usage: " <> cmdText source tag (cmdParams source tag)
     badgeKindsText = T.intercalate ", " badgeKinds
-
-consoleUsage :: Text
-consoleUsage = T.intercalate "\n" $ "Usage:" : map (\tag -> cmdText IssuedInConsole tag (cmdParams IssuedInConsole tag)) (sourceTags IssuedInConsole)
 
 kindUsage :: CodeIssuer -> CmdTag -> Text -> [(Text, [CmdOpt], [BadgeCodePaymentStatus])] -> [Text] -> Text
 kindUsage source tag kindArgs kinds examples =

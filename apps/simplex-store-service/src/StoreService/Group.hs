@@ -17,7 +17,6 @@ module StoreService.Group
     groupEvent,
     hasTracker,
     refreshTracker,
-    revokeWithTracker,
     coalesceTrackerRefreshes,
     TrackerAction (..),
     trackerDecision,
