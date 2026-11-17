@@ -4,10 +4,13 @@ import androidx.compose.ui.graphics.toAwtImage
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.platform.appFilesDir
 import chat.simplex.common.platform.base64ToBitmap
+import chat.simplex.common.platform.chatResizeImage
+import chat.simplex.common.platform.getWallpaperFilePath
 import chat.simplex.common.ui.theme.ThemeWallpaper
 import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
 import chat.simplex.common.views.helpers.getLoadedImage
 import chat.simplex.common.views.helpers.imageSampleSize
+import chat.simplex.common.views.helpers.removeWallpaperFile
 import chat.simplex.common.views.helpers.sourceDimensionsWithinLimits
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -38,10 +41,16 @@ import kotlin.test.assertTrue
 
 class ImageDecodeBoundsTest {
   private val receivedFiles = mutableListOf<File>()
+  private val resizeImage = chatResizeImage
 
   @AfterTest
   fun deleteReceivedFiles() {
     receivedFiles.forEach { it.delete() }
+  }
+
+  @AfterTest
+  fun restoreImageResize() {
+    chatResizeImage = resizeImage
   }
 
   @Test
@@ -120,11 +129,31 @@ class ImageDecodeBoundsTest {
   }
 
   @Test
+  fun testBase64ImagesAreCachedUpTo200() {
+    val images = (0..200).map { Base64.getEncoder().encodeToString(encodeMarkedPng(1, 1, it)) }
+    val bitmaps = images.map { base64ToBitmap(it) }
+    assertSame(bitmaps[1], base64ToBitmap(images[1]))
+    assertNotSame(bitmaps[0], base64ToBitmap(images[0]))
+  }
+
+  @Test
   fun testDecodeRejectsMultiScanJpegOverLowerPixelLimit() {
     assertFailsWith<IOException> { decodeBoundedBufferedImage(progressiveJpegHeaders(4097, 4096), 1000) }
     assertFailsWith<IOException> { decodeBoundedBufferedImage(sequentialJpegHeaders(4097, 4096, scanComponents = 1), 1000) }
     assertEquals(1024, decodeBoundedBufferedImage(progressiveJpegHeaders(4096, 4096), 1000).width)
     assertEquals(1024, decodeBoundedBufferedImage(sequentialJpegHeaders(4096, 4097, scanComponents = 3), 1000).width)
+  }
+
+  @Test
+  fun testDecodeAcceptsSequentialJpegWithMetadataSegmentsOverMultiScanLimit() {
+    val headers = sequentialJpegHeaders(4096, 4097, scanComponents = 3)
+    val metadata = jpeg(
+      *segment(0xE0, *"JFIF".map { it.code }.toIntArray(), 0, 1, 1, 0, 0, 1, 0, 1, 0, 0),
+      *segment(0xE1, *"Exif".map { it.code }.toIntArray(), 0, 0),
+      *segment(0xFE, *"comment".map { it.code }.toIntArray()),
+      *segment(0xDD, 0, 0),
+    )
+    assertEquals(1024, decodeBoundedBufferedImage(headers.copyOf(2) + metadata + headers.copyOfRange(2, headers.size), 1000).width)
   }
 
   @Test
@@ -211,6 +240,19 @@ class ImageDecodeBoundsTest {
   @Test
   fun testWallpaperThatCannotBeDecodedIsNotImported() {
     assertEquals(ThemeWallpaper(), ThemeWallpaper(image = "data:image/png;base64,AAAA").importFromString())
+  }
+
+  @Test
+  fun testImportedWallpaperKeepsItsSize() {
+    chatResizeImage = { buffer, _, _ -> Base64.getEncoder().encodeToString(ByteArray(buffer.remaining()).also { buffer.get(it) }) }
+    val imported = ThemeWallpaper(image = "data:image/png;base64," + Base64.getEncoder().encodeToString(encodePng(1500, 1000))).importFromString()
+    val fileName = assertNotNull(imported.imageFile)
+    try {
+      val saved = ImageIO.read(File(getWallpaperFilePath(fileName)))
+      assertEquals(1500 to 1000, saved.width to saved.height)
+    } finally {
+      removeWallpaperFile(fileName)
+    }
   }
 
   @Test

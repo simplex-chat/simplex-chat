@@ -40,7 +40,7 @@ external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
 external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
 external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
 external fun chatResizeImageUri(buffer: ByteBuffer, maxSize: Int): String
-external fun chatResizeImage(buffer: ByteBuffer, maxSize: Int, png: Int): String
+@JvmName("chatResizeImage") external fun nativeChatResizeImage(buffer: ByteBuffer, maxSize: Int, png: Int): String
 external fun chatResizeImageFileUri(path: String, maxSize: Int): String
 external fun chatResizeImageFile(path: String, maxSize: Int, png: Int): String
 external fun chatResizeImageFdUri(fd: Int, maxSize: Int): String
@@ -48,6 +48,7 @@ external fun chatResizeImageFd(fd: Int, maxSize: Int, png: Int): String
 var chatSendCmdRetry: (ChatCtrl, String, Int) -> String = ::nativeChatSendCmdRetry
 var chatParseMarkdown: (String) -> String = ::nativeChatParseMarkdown
 var chatParseUri: (String, Int) -> String = ::nativeChatParseUri
+var chatResizeImage: (ByteBuffer, Int, Int) -> String = ::nativeChatResizeImage
 
 // the code in core's canonical form (prefix and 20 characters, no separators), or null when core rejects it.
 // The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.
