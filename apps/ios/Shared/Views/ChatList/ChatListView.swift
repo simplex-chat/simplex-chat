@@ -959,16 +959,7 @@ struct ConnectByNameRow: View {
     var showLocalChats: (([ChatInfo]) -> Void)? = nil
 
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: name.hasPrefix("@") ? "at" : "number")
-                .foregroundColor(theme.colors.primary)
-            Text(String.localizedStringWithFormat(NSLocalizedString("Connect to %@", comment: "new chat action"), name))
-                .foregroundColor(theme.colors.primary)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .onTapGesture {
+        Button {
             searchFocussed = false
             planAndConnect(
                 name,
@@ -980,7 +971,18 @@ struct ConnectByNameRow: View {
                     connectNameCandidate = nil
                 }
             )
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: name.hasPrefix("@") ? "at" : "number")
+                    .foregroundColor(theme.colors.primary)
+                Text(String.localizedStringWithFormat(NSLocalizedString("Connect to %@", comment: "new chat action"), name))
+                    .foregroundColor(theme.colors.primary)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 }
 
