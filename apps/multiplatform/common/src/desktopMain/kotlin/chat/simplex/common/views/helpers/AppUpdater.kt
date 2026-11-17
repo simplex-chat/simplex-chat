@@ -17,7 +17,6 @@ import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.onboarding.ReadMoreButton
 import chat.simplex.res.*
 import kotlinx.coroutines.*
-import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -106,7 +105,7 @@ data class GitHubRelease(
   private val preRelease: Boolean,
   val body: String,
   @SerialName("published_at")
-  val publishedAt: Instant,
+  val publishedAt: String,
   val assets: List<GitHubAsset>
 ) {
   @Transient
@@ -187,7 +186,7 @@ fun checkForUpdate() {
     val release = when (channel) {
       AppUpdatesChannel.STABLE -> chooseStableRelease(installedSemVer() ?: return, getGitHubReleases(RELEASES_REPO))
       AppUpdatesChannel.BETA -> chooseBetaRelease(installedSemVer() ?: return, getGitHubReleases(RELEASES_REPO))
-      AppUpdatesChannel.INTERNAL -> chooseInternalRelease(BuildConfigCommon.DESKTOP_VERSION_NAME, getGitHubReleases(INTERNAL_BUILDS_REPO))
+      AppUpdatesChannel.INTERNAL -> chooseInternalRelease(BuildConfigCommon.DESKTOP_VERSION_CODE, getGitHubReleases(INTERNAL_BUILDS_REPO))
       AppUpdatesChannel.DISABLED -> return
     }
 
@@ -272,8 +271,12 @@ internal fun chooseStableRelease(installed: SemVer, releases: List<GitHubRelease
 internal fun chooseBetaRelease(installed: SemVer, releases: List<GitHubRelease>): GitHubRelease? =
   releases.firstOrNull { r -> installed < r.semVer }
 
-internal fun chooseInternalRelease(installed: String, releases: List<GitHubRelease>): GitHubRelease? =
-  releases.maxByOrNull { r -> r.publishedAt }?.takeIf { r -> r.tagName != installed }
+internal fun chooseInternalRelease(installedCode: Int, releases: List<GitHubRelease>): GitHubRelease? =
+  releases
+    .mapNotNull { r -> r.tagName.substringAfterLast('-', "").toIntOrNull()?.let { code -> r to code } }
+    .filter { (_, code) -> code > installedCode }
+    .maxByOrNull { (_, code) -> code }
+    ?.first
 
 private fun getGitHubReleases(repo: String): List<GitHubRelease> {
   val request = Request.Builder().url("https://api.github.com/repos/$repo/releases").addHeader("User-agent", "curl").build()

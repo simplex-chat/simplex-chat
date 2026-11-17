@@ -9,7 +9,7 @@ Internal desktop builds are published as releases of the public repository simpl
 - Developer options, desktop only: toggle "Allow internal builds", default off.
 - Settings > app version > "Check for updates": "Internal" is listed while the toggle is on.
 - The toggle turned off while "Internal" is selected: the channel is set to "Disabled", the preference default, and the scheduled update check is cancelled.
-- Internal: the newest non-draft release of simplex-chat/simplex-chat-test is offered when its tag differs from the installed version name.
+- Internal: of the non-draft releases of simplex-chat/simplex-chat-test, the one with the highest build number in its tag is offered when that number is greater than the installed desktop.version_code; a tag without a build number is skipped.
 - Stable and Beta: unchanged.
 - A check whose channel is changed during its request shows no alert.
 
@@ -53,18 +53,20 @@ flowchart TD
   V -->|yes| M[non-draft releases of simplex-chat/simplex-chat newer than the installed version]
   M -->|Stable| S[first not beta]
   M -->|Beta| B[first]
-  C -->|Internal| I[non-draft releases of simplex-chat/simplex-chat-test]
-  I --> F[latest published_at]
-  F --> T{tag = installed version name}
-  T -->|yes| N[nothing offered]
-  T -->|no| O[offered]
+  C -->|Internal| I[non-draft releases of simplex-chat/simplex-chat-test with a build number in the tag]
+  I --> F[build number greater than the installed desktop.version_code]
+  F --> T{any}
+  T -->|no| N[nothing offered]
+  T -->|yes| O[the highest build number offered]
 ```
 
 ## Internal releases
 
 | Field | Value |
 |---|---|
-| tag | the build's desktop.version_name |
+| tag | `<desktop.version_name>-<desktop.version_code>`, for example 7.1.4-175005 |
+| desktop.version_code of the build | committed desktop.version_code × 1000 + n |
+| desktop.version_name of the build | as committed |
 | name | set |
 | body | set |
 | commit | one release per commit |
