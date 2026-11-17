@@ -50,7 +50,7 @@ import Simplex.Chat.Badges (BadgeProof (..), BadgeProofKind (..), BadgeStatus (.
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
-import Simplex.Chat.Files (getChatTempDirectory, mediaFileName, mediaFileNameMatches, safeFileNameStr)
+import Simplex.Chat.Files (allowedContentUpdate, getChatTempDirectory, mediaFileName, safeFileNameStr)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Markdown (ParsedMarkdown (..))
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
@@ -2118,7 +2118,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           cci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case cci of
             CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemForwarded, itemLive}, content = CIRcvMsgContent oldMC, file}
-              | isNothing itemForwarded && mediaFileNameMatches mc file -> do
+              | isNothing itemForwarded && allowedContentUpdate oldMC mc file -> do
                   let changed = mc /= oldMC
                   if changed || fromMaybe False itemLive
                     then do
@@ -2374,8 +2374,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   Nothing -> getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
             (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
           case cci of
-            CChatItem SMDRcv ChatItem {file}
-              | not (mediaFileNameMatches mc file) -> messageError "x.msg.update: invalid message update" $> Nothing
             CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
               | isSender m' -> requireVerifiedEdit (CDGroupRcv gInfo scopeInfo m') itemVerified $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
@@ -2395,10 +2393,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     Nothing -> createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs) $> Nothing
               | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
-        updateCI showGroupAsSender ci scopeInfo oldMC itemLive memberId = do
+        updateCI showGroupAsSender ci@ChatItem {file} scopeInfo oldMC itemLive memberId = do
           let changed = mc /= oldMC
-          if changed || fromMaybe False itemLive
-            then do
+          if
+            | not (allowedContentUpdate oldMC mc file) ->
+                messageError "x.msg.update: invalid message update" $> Nothing
+            | changed || fromMaybe False itemLive -> do
               ci' <- withStore' $ \db -> do
                 when changed $
                   addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
@@ -2411,7 +2411,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci')
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
               pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
-            else do
+            | otherwise -> do
               toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
               pure Nothing
 

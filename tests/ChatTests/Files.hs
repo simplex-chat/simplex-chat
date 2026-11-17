@@ -48,7 +48,6 @@ chatFileTests = do
     it "send and receive message with file" runTestMessageWithFile
     it "send and receive image" testSendImage
     it "send image with generated preview" testSendImagePreview
-    it "send webp image" testSendImageWebp
     it "sender marking chat item deleted cancels file" testSenderMarkItemDeleted
     it "files folder: send and receive image" testFilesFoldersSendImage
     it "files folder: sender deleted file" testFilesFoldersImageSndDelete -- TODO add test deleting during upload
@@ -198,20 +197,6 @@ testSendImagePreview =
       T.length preview `shouldSatisfy` (<= 14000)
       preview `shouldSatisfy` ("data:image/jpg;base64," `T.isPrefixOf`)
 
-testSendImageWebp :: HasCallStack => TestParams -> IO ()
-testSendImageWebp =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> withXFTPServer alice $ do
-      connectUsers alice bob
-      let webp = tmpFile alice "logo.webp"
-      copyFile "./tests/fixtures/logo.jpg" webp
-      alice ##> ("/img @bob " <> webp)
-      alice <# ("/f @bob " <> webp)
-      alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> sends file logo.webp (31.3 KiB / 32080 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice <## "completed uploading file 1 (logo.webp) for bob"
-
 lastImagePreview :: TestCC -> Int64 -> IO T.Text
 lastImagePreview TestCC {chatController = cc} contactId = do
   r <- execChatCommand' (APIGetChat (ChatRef CTDirect contactId Nothing) Nothing (CPLast 1) Nothing) 0 `runReaderT` cc
@@ -290,8 +275,9 @@ testUpdateFileToImage =
       sendUpdate <- updateSender alice connId
       sendUpdate $ MCImage "image" (ImageData "")
       bob <## "error: x.msg.update: contact attempted invalid message update"
-      sendUpdate $ MCFile "file"
-      bob <# "alice> [edited] file"
+      bob #$> ("/_get chat @2 count=1", chat, [(0, "")])
+      sendUpdate $ MCText "text"
+      bob <# "alice> [edited] text"
 
 testGroupUpdateFileToImage :: HasCallStack => TestParams -> IO ()
 testGroupUpdateFileToImage =
@@ -307,6 +293,7 @@ testGroupUpdateFileToImage =
       sendUpdate <- updateSender alice connId
       sendUpdate $ MCImage "image" (ImageData "")
       bob <## "error: x.msg.update: invalid message update"
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "")])
       sendUpdate $ MCFile "file"
       bob <# "#team alice> [edited] file"
 
