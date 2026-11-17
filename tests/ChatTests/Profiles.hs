@@ -174,6 +174,7 @@ chatProfileTests = do
       it "files & media in caption updates" testGroupPrefsFilesCaptionUpdate
       it "files & media in link preview updates" testGroupPrefsFilesLinkPreviewUpdate
       it "files & media in link preview updates of messages not received" testGroupPrefsFilesLinkPreviewUpdateNew
+      it "files & media in link previews of support chats" testGroupPrefsFilesLinkPreviewSupport
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
       it "SimpleX links in link previews" testGroupPrefsSimplexLinksPreview
       it "SimpleX links in link preview updates" testGroupPrefsSimplexLinksPreviewUpdate
@@ -3928,6 +3929,24 @@ testGroupPrefsFilesLinkPreviewUpdateNew = testChat3 aliceProfile bobProfile cath
       GroupMember {groupId, activeConn = Just conn} <- getTestMember cc "team" toName
       runExceptT (sendDirectMemberMessage conn (XMsgUpdate (SharedMsgId "new_msg") testLinkMC M.empty Nothing Nothing Nothing Nothing) groupId) `runReaderT` chatController cc
         >>= either (fail . show) (\_ -> pure ())
+
+testGroupPrefsFilesLinkPreviewSupport :: HasCallStack => TestParams -> IO ()
+testGroupPrefsFilesLinkPreviewSupport = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+    threadDelay 1000000
+    alice ##> "/set files #team on owner"
+    alice <## "updated group preferences:"
+    alice <## "Files and media: on for owners"
+    forM_ [bob, cath] $ \cc -> do
+      cc <## "alice updated group #team: (signed)"
+      cc <## "updated group preferences:"
+      cc <## "Files and media: on for owners"
+    threadDelay 1000000
+    bob ##> ("/_send #1(_support) json [{\"msgContent\": " <> T.unpack (encodeJSON testLinkMC) <> "}]")
+    bob <# "#team (support) https://simplex.chat"
+    alice <# "#team (support: bob) bob> https://simplex.chat"
+    lastItemIsLink alice `shouldReturn` True
 
 createGroupFilesForOwners :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
 createGroupFilesForOwners alice bob cath = do
