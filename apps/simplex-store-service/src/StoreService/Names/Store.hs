@@ -48,7 +48,6 @@ module StoreService.Names.Store
     BrokenInvariant (..),
     PrepaidCode (..),
     NewPrepaidCode (..),
-    CodeIssuer (..),
     CodeHashTaken (..),
     TxFor (..),
     RegistrationTx (..),
@@ -58,6 +57,7 @@ module StoreService.Names.Store
     NewTransaction (..),
     RecordChange (..),
     SignedChange (..),
+    EditOutcome (..),
     EditState (..),
     RecordEdit (..),
     NewRecordEdit (..),
@@ -125,6 +125,7 @@ where
 
 import qualified Control.Exception as E
 import Control.Monad (when)
+import Data.Aeson (ToJSON (toJSON))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Int (Int64)
@@ -145,16 +146,16 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding (Encoding (..), Large (..))
-import Simplex.Messaging.Encoding.String (TextEncoding (..))
-import Simplex.Messaging.Eth.Address (Address, addressFromBytes, unAddress)
-import Simplex.Messaging.Eth.EIP712 (serializeSignature)
+import Simplex.Messaging.Encoding.String (TextEncoding (..), textToJSON)
+import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
-import StoreService.Names.Abi (hex)
+import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Chain (ChainSeconds, TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (Commitment, TermsAcceptance (..), TermsHash)
-import StoreService.Names.Signatures (AgreedTerms, OrderFields (..), parseSignature)
+import StoreService.Names.Registration (Commitment, LinkKind, TermsAcceptance (..), TermsHash)
+import StoreService.Names.Signatures (AgreedTerms, OrderFields (..))
 import StoreService.Providers (Rate, Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, lockInvoice, mkQuery, newInvoiceId, note, prefixQuery, truncateToSecond, unfundedQuery)
@@ -253,7 +254,7 @@ data OrderPayment
   deriving (Eq, Show)
 
 -- | The order whose balance pays, and the cents it pays.
-data BalanceUse = BalanceUse {buSource :: RegistrationId, buUsed :: Int}
+data BalanceUse = BalanceUse {buSource :: RegistrationId, buUsed :: USDCents}
   deriving (Eq, Show)
 
 paymentInvoice :: OrderPayment -> Maybe InvoiceId
@@ -296,7 +297,7 @@ data NameRegistration = NameRegistration
     nrAgreedTerms :: AgreedTerms,
     nrPhase :: OrderPhase,
     nrYears :: Int,
-    nrPrice :: Int,
+    nrPrice :: USDCents,
     nrPayment :: OrderPayment,
     nrReveal :: Maybe NameReveal,
     nrCommitTx :: Maybe TxHash,
@@ -324,9 +325,8 @@ data NewRegistration = NewRegistration
 -- | The invoice row is inserted by the caller, in the same transaction and before the registration.
 data PaidOrder = PaidOrder
   { poMethod :: ServicePaymentMethod,
-    poPrice :: Int,
-    poInvoiceId :: InvoiceId,
-    poProviderRef :: Text
+    poPrice :: USDCents,
+    poInvoiceId :: InvoiceId
   }
 
 data CodeInsertRefused = CIRLiveOrder | CIRCodeNotReservable
@@ -348,23 +348,23 @@ data LiveOrder = LiveOrder
   deriving (Eq, Show)
 
 -- | What an order pays with, as its hash covers it.
-data OrderTerms = OTInvoice ServicePaymentMethod Int | OTCode CodeHash | OTBalance Spend
+data OrderTerms = OTInvoice ServicePaymentMethod USDCents | OTCode CodeHash | OTBalance Spend
 
 -- | A new order paid from a balance. Its hash covers the paying order, the price, the balance the page read,
 -- and the method, present exactly when the price is more than that balance.
 data Spend = Spend
   { spSource :: RegistrationId,
-    spPrice :: Int,
-    spBalance :: Int,
+    spPrice :: USDCents,
+    spBalance :: USDCents,
     spMethod :: Maybe ServicePaymentMethod
   }
 
 -- | Cents left to spend, and over the balance's life the cents credited and refunded.
 data Balance = Balance
   { blRegistration :: RegistrationId,
-    blAmount :: Int,
-    blCredited :: Int,
-    blRefunded :: Int,
+    blAmount :: USDCents,
+    blCredited :: USDCents,
+    blRefunded :: USDCents,
     blHold :: Maybe BalanceHold,
     blRefundedAt :: Maybe UTCTime
   }
@@ -388,8 +388,8 @@ data BalanceLink = BalanceLink
     lkOwner :: Address,
     lkPayment :: OrderPayment,
     lkProviderRef :: Maybe Text,
-    lkPaid :: Int,
-    lkFromBalance :: Int,
+    lkPaid :: USDCents,
+    lkFromBalance :: USDCents,
     lkLateCredits :: [LateCredit]
   }
   deriving (Eq, Show)
@@ -405,11 +405,11 @@ data LateCredit = LateCredit
 
 -- | Card cents, or crypto units credited in cents at the rate used, the lower of the invoice's and the current one.
 data CreditAmount
-  = CACard Int
-  | CACrypto {caUnits :: Units, caInvoiceRate :: Rate, caCurrentRate :: Rate, caRateUsed :: Rate, caCents :: Int}
+  = CACard USDCents
+  | CACrypto {caUnits :: Units, caInvoiceRate :: Rate, caCurrentRate :: Rate, caRateUsed :: Rate, caCents :: USDCents}
   deriving (Eq, Show)
 
-creditCents :: CreditAmount -> Int
+creditCents :: CreditAmount -> USDCents
 creditCents = \case
   CACard cents -> cents
   CACrypto {caCents} -> caCents
@@ -422,10 +422,10 @@ data LateCreditState = LateCreditState
     lsPhase :: NamePhase,
     lsLive :: Bool,
     lsSupport :: Maybe LateSupport,
-    lsReceivedCents :: Int,
+    lsReceivedCents :: USDCents,
     lsFigures :: LateFigures,
-    lsInvoiceAmount :: Int,
-    lsCreditedCents :: Int,
+    lsInvoiceAmount :: USDCents,
+    lsCreditedCents :: USDCents,
     lsCredits :: Int,
     lsPaymentCreatedAt :: UTCTime
   }
@@ -433,7 +433,7 @@ data LateCreditState = LateCreditState
 
 -- | Card money counted in cents; crypto in units, with the invoice's rate and invoiced units it is credited at.
 data LateFigures
-  = LFCard {lfConfirmedCents :: Int}
+  = LFCard {lfConfirmedCents :: USDCents}
   | LFCrypto
       { lfCoin :: CryptoCurrency,
         lfReceivedUnits :: Maybe Units,
@@ -469,6 +469,8 @@ instance TextEncoding LateWait where
     LWCrediting -> "crediting"
     LWSupport -> "support"
   textDecode = enumTextDecode
+
+instance ToJSON LateWait where toJSON = textToJSON
 
 -- | Why a closed order's money will not be credited by itself: the provider's reason it is uncreditable, a current rate below the floor,
 -- or unconfirmed money alerted past the read window.
@@ -535,11 +537,8 @@ data NewPrepaidCode = NewPrepaidCode
     npcYears :: Int,
     npcPaymentStatus :: BadgeCodePaymentStatus,
     npcExpiresAt :: Maybe UTCTime,
-    npcIssuer :: CodeIssuer
+    npcIssuer :: CmdSource
   }
-
-data CodeIssuer = IssuedInGroup | IssuedInConsole
-  deriving (Eq, Show)
 
 data CodeHashTaken = CodeHashTaken
   deriving (Eq, Show)
@@ -594,10 +593,17 @@ data NewTransaction = NewTransaction
   }
 
 -- | A text record set to a value, "" removing it, or every record cleared.
-data RecordChange = RCSetText Text Text | RCClear
+data RecordChange = RCSetText LinkKind Text | RCClear
   deriving (Eq, Show)
 
-data EditState = ESPending | ESMined (Maybe TxHash) | ESReverted (Maybe Text)
+data EditOutcome
+  = -- | mined, Nothing when found applied with the applying transaction unknown
+    EOApplied (Maybe TxHash)
+  | -- | the revert's name when known; the nonce is free again
+    EOReverted (Maybe Text)
+  deriving (Eq, Show)
+
+data EditState = ESPending | ESSettled EditOutcome
   deriving (Eq, Show)
 
 -- | A change the owner signed for the resolver's nonce it names.
@@ -656,7 +662,7 @@ orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, o
       OTInvoice method price -> ("name-invoice" :: ByteString, smpEncode (textEncode method, num price))
       OTCode codeHash -> ("name-code", smpEncode codeHash)
       OTBalance Spend {spSource = RegistrationId source, spPrice, spBalance, spMethod} -> ("name-balance", smpEncode (source, num spPrice, num spBalance, textEncode <$> spMethod))
-    num :: Int -> Int64
+    num :: Integral a => a -> Int64
     num = fromIntegral
 
 newRegistrationId :: IO RegistrationId
@@ -665,7 +671,7 @@ newRegistrationId = (\(InvoiceId t) -> RegistrationId t) <$> newInvoiceId
 -- | A difference order holds all of the balance seen while its invoice is open. The hold is written after the registration,
 -- so the registration's row is locked before the balance's. A refusal leaves its writes for the caller to roll back.
 createPaidRegistration :: DB.Connection -> NewRegistration -> Maybe BalanceUse -> PaidOrder -> UTCTime -> IO (Either BalanceInsertRefused ())
-createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid)} held PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId, poProviderRef} now' = do
+createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid)} held PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId} now' = do
   let now = truncateToSecond now'
   inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held now
   if not inserted
@@ -673,8 +679,8 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
     else do
       DB.execute
         db
-        (mkQuery "INSERT INTO @name_invoices (invoice_id, registration_id, provider_ref, created_at) VALUES (?,?,?,?)")
-        (invId, rid, poProviderRef, now)
+        (mkQuery "INSERT INTO @name_invoices (invoice_id, registration_id, created_at) VALUES (?,?,?)")
+        (invId, rid, now)
       held' <- maybe (pure True) (\BalanceUse {buSource, buUsed} -> holdBalance db buSource buUsed regId now) held
       pure $ if held' then Right () else Left BIRBalanceChanged
 
@@ -693,7 +699,7 @@ createCodeRegistration db new@NewRegistration {nrgId = regId} PrepaidCode {pcId}
 
 -- | A queued order whose price is spent from the source's balance in the same transaction, where its amount is the one seen and nothing holds it.
 -- A refusal leaves its writes for the caller to roll back.
-createBalanceRegistration :: DB.Connection -> NewRegistration -> BalanceUse -> Int -> UTCTime -> IO (Either BalanceInsertRefused ())
+createBalanceRegistration :: DB.Connection -> NewRegistration -> BalanceUse -> USDCents -> UTCTime -> IO (Either BalanceInsertRefused ())
 createBalanceRegistration db new use@BalanceUse {buSource, buUsed} seen now' = do
   let now = truncateToSecond now'
   inserted <- insertRegistration db new PQueued buUsed Nothing Nothing (Just use) now
@@ -705,7 +711,7 @@ createBalanceRegistration db new use@BalanceUse {buSource, buUsed} seen now' = d
         False -> pure $ Left BIRBalanceChanged
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
-insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> Int -> Maybe ServicePaymentMethod -> Maybe CodeId -> Maybe BalanceUse -> UTCTime -> IO Bool
+insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> USDCents -> Maybe ServicePaymentMethod -> Maybe CodeId -> Maybe BalanceUse -> UTCTime -> IO Bool
 insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears, nrgOrderHash} phase price method codeId fromBalance now =
   (> 0)
     <$> executeChanging
@@ -719,12 +725,12 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
         ON CONFLICT DO NOTHING
       |]
       )
-      ( (rid, initialVersion, Binary lh, ofLength, int64 ofDuration, Binary $ unAddress nrgOwner, Binary ofCommitment, ofSealed, phase, nrgYears)
+      ( (rid, initialVersion, ofLabelHash, ofLength, int64 ofDuration, nrgOwner, Binary ofCommitment, ofSealed, phase, nrgYears)
           :. (price, method, codeId, BI True, Binary nrgOrderHash, 0 :: Int, now, now, (\BalanceUse {buSource = RegistrationId s} -> s) <$> fromBalance, maybe 0 buUsed fromBalance)
           :. Only ofAgreedTerms
       )
   where
-    OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = nrgOrder
+    OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = nrgOrder
 
 registrationColumns :: Query
 registrationColumns =
@@ -749,21 +755,20 @@ selectRegistrations :: Query
 selectRegistrations = registrationColumns <> registrationFrom
 
 type RegistrationRow =
-  (Text, Int64, Binary ByteString, Int, Int64, Binary ByteString, Binary ByteString, Text, NamePhase, Int)
-    :. (Int, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
-    :. (Maybe (Binary ByteString), Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
-    :. (Maybe UTCTime, Maybe FailReason, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, Int)
-    :. (AgreedTerms, Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString))
+  (Text, Int64, LabelHash, Int, Int64, Address, Binary ByteString, Text, NamePhase, Int)
+    :. (USDCents, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
+    :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
+    :. (Maybe UTCTime, Maybe FailReason, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, USDCents)
+    :. (AgreedTerms, Maybe (Binary ByteString), Maybe Int64, Maybe RecoverableSignature)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
-  ( (rid, nrVersion, Binary lh, nrLength, duration, Binary owner, Binary commitment, nrSealed, phase, nrYears)
+  ( (rid, nrVersion, nrLabelHash, nrLength, duration, nrOwner, Binary commitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, nrCommitTx, commitBlock, nrRegisterTx, registerBlock, revealAfter, revealBefore, expiresAt, registeredAt)
       :. (failedAt, failReason, BI live, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
       :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
     ) = do
-    nrOwner <- decodeAddress owner
     nrCommitment <- bytes32 "commitment" commitment
     nrPhase <- case phase of
       PUnpaid -> Right $ OUnpaid live
@@ -784,11 +789,10 @@ toRegistration
       _ -> Left $ "name_registrations payment: " <> rid
     nrReveal <- case (label_, secret_, nonce_, deadline_, signature_) of
       (Nothing, Nothing, Nothing, Nothing, Nothing) -> Right Nothing
-      (Just rvLabel, Just (Binary secret), Just nonce, Just deadline, Just (Binary sig)) -> do
+      (Just rvLabel, Just (Binary secret), Just nonce, Just deadline, Just rvSignature) -> do
         rvSecret <- bytes32 "secret" secret
-        rvSignature <- decodeSignature sig
         rvAcceptance <- case (acceptTerms_, acceptNonce_, acceptSignature_) of
-          (Just (Binary termsHash), Just n, Just (Binary s)) -> (\taTermsHash taSignature -> TermsAcceptance {taTermsHash, taNonce = word64 n, taSignature}) <$> bytes32 "accept_terms" termsHash <*> decodeSignature s
+          (Just (Binary termsHash), Just n, Just taSignature) -> (\taTermsHash -> TermsAcceptance {taTermsHash, taNonce = word64 n, taSignature}) <$> bytes32 "accept_terms" termsHash
           _ -> Left $ "name_registrations acceptance: " <> rid
         Right $ Just NameReveal {rvLabel, rvSecret, rvContactLink = nrContactLink, rvChannelLink = nrChannelLink, rvNonce = word64 nonce, rvDeadline = word64 deadline, rvSignature, rvAcceptance}
       _ -> Left $ "name_registrations reveal: " <> rid
@@ -796,7 +800,7 @@ toRegistration
       NameRegistration
         { nrId = RegistrationId rid,
           nrVersion,
-          nrLabelHash = LabelHash lh,
+          nrLabelHash,
           nrLength,
           nrDuration = word64 duration,
           nrOwner,
@@ -837,7 +841,7 @@ getRegistrationByOrderHash db hash =
 
 -- | Overdue whatever status the poller has marked, as long as the invoice is not paid and holds no money, as the sweep decides.
 getLiveOrders :: DB.Connection -> Commitment -> Address -> LabelHash -> UTCTime -> IO [LiveOrder]
-getLiveOrders db commitment owner (LabelHash lh) now =
+getLiveOrders db commitment owner lh now =
   DB.query
     db
     ( registrationColumns
@@ -848,7 +852,7 @@ getLiveOrders db commitment owner (LabelHash lh) now =
         <> mkQuery " LEFT JOIN @invoices i ON i.invoice_id = ni.invoice_id"
         <> " WHERE r.live = 1 AND (r.commitment = ? OR (r.owner = ? AND r.label_hash = ?))"
     )
-    (PUnpaid, ISPaid, truncateToSecond now, Binary commitment, Binary $ unAddress owner, Binary lh)
+    (PUnpaid, ISPaid, truncateToSecond now, Binary commitment, owner, lh)
     >>= decodeAll toLiveOrder
   where
     toLiveOrder (row :. Only (BI loOverdue)) = (\loRegistration -> LiveOrder {loRegistration, loOverdue}) <$> toRegistration row
@@ -922,16 +926,16 @@ updateRegistration db r now = do
           )))
       |]
       )
-      ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
-          :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
-          :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, Binary . serializeSignature . taSignature <$> acceptance)
+      ( (nrLabelHash, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
+          :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, rvSignature <$> nrReveal)
+          :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
           :. (nrCommitTx, int64 <$> nrCommitBlock, nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> expiresAt)
           :. (truncateToSecond <$> registeredAt, truncateToSecond <$> failedAt, failReason, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
-          :. (rid, nrVersion, BI live, rid, Binary nrCommitment, Binary $ unAddress nrOwner, Binary lh)
+          :. (rid, nrVersion, BI live, rid, Binary nrCommitment, nrOwner, nrLabelHash)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
-    NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
+    NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
     NameRegistration {nrCommitTx, nrCommitBlock, nrRegisterTx, nrRegisterBlock, nrRevealAfter, nrRevealBefore, nrMoves, nrLinksRefusedAt} = r
     (expiresAt, registeredAt, failedAt, failReason) = case nrPhase of
       ORegistered expiry at -> (Just expiry, Just at, Nothing, Nothing)
@@ -946,7 +950,7 @@ updateRegistration db r now = do
 
 -- | Another name, or other links, with the terms agreed for it: queued again with the reveal, transactions, reveal times and link refusal cleared.
 -- The order hash stays the original order's, so a resend of that order still finds it.
-retargetRegistration :: DB.Connection -> NameRegistration -> OrderFields -> Int -> UTCTime -> IO VersionWrite
+retargetRegistration :: DB.Connection -> NameRegistration -> OrderFields -> USDCents -> UTCTime -> IO VersionWrite
 retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} price =
   updateRegistration
     db
@@ -974,8 +978,8 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
 -- Each with the order holding its balance, as getBalance reads the hold at the given time.
 findRegistrations :: DB.Connection -> Address -> UTCTime -> IO [(NameRegistration, Maybe RegistrationId)]
 findRegistrations db owner now = do
-  newest <- DB.query db (selectHeld <> " WHERE r.owner = ?" <> newestFirst <> " LIMIT ?") (holdParams :. (Binary $ unAddress owner, findLimit)) >>= decodeAll found
-  holding <- DB.query db (selectHeld <> " WHERE r.owner = ?" <> withBalance <> newestFirst) (holdParams :. Only (Binary $ unAddress owner)) >>= decodeAll found
+  newest <- DB.query db (selectHeld <> " WHERE r.owner = ?" <> newestFirst <> " LIMIT ?") (holdParams :. (owner, findLimit)) >>= decodeAll found
+  holding <- DB.query db (selectHeld <> " WHERE r.owner = ?" <> withBalance <> newestFirst) (holdParams :. Only owner) >>= decodeAll found
   pure $ newest <> filter ((`notElem` map (nrId . fst) newest) . nrId . fst) holding
   where
     selectHeld =
@@ -997,9 +1001,9 @@ findRegistrations db owner now = do
     withBalance = mkQuery " AND EXISTS (SELECT 1 FROM @name_balances b WHERE b.registration_id = r.registration_id AND b.amount > 0)"
 
 isLabelRegistering :: DB.Connection -> LabelHash -> IO Bool
-isLabelRegistering db (LabelHash lh) =
+isLabelRegistering db lh =
   not . null
-    <$> ( DB.query db (mkQuery "SELECT 1 FROM @name_registrations WHERE label_hash = ? AND phase = ? LIMIT 1") (Binary lh, PRegistering) ::
+    <$> ( DB.query db (mkQuery "SELECT 1 FROM @name_registrations WHERE label_hash = ? AND phase = ? LIMIT 1") (lh, PRegistering) ::
             IO [Only Int]
         )
 
@@ -1020,7 +1024,7 @@ unpaidCleanupCandidates db expiredBefore =
       db
       ( prefixQuery
           [sql|
-        SELECT r.registration_id, ni.invoice_id, ni.provider_ref
+        SELECT r.registration_id, ni.invoice_id, i.provider_ref
         FROM @name_registrations r
         JOIN @name_invoices ni ON ni.registration_id = r.registration_id
         JOIN @invoices i ON i.invoice_id = ni.invoice_id
@@ -1108,7 +1112,7 @@ getBalance db (RegistrationId rid) now =
       )
       (PUnpaid, ISPaid, truncateToSecond now, rid)
 
-toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
+toBalance :: (Text, USDCents, USDCents, USDCents, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
 toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI overdue, BI funded, blRefundedAt) = do
   blHold <- case (holder_, until_) of
     (Nothing, _) -> Right Nothing
@@ -1146,13 +1150,13 @@ balanceChain db rid =
       let link = BalanceLink {lkRegistration = rid, lkOwner = nrOwner, lkPayment = nrPayment, lkProviderRef, lkPaid, lkFromBalance = maybe 0 buUsed used, lkLateCredits}
       (link :) <$> maybe (pure []) (balanceChain db . buSource) used
 
-invoiceAmount :: DB.Connection -> InvoiceId -> IO Int
+invoiceAmount :: DB.Connection -> InvoiceId -> IO USDCents
 invoiceAmount db (InvoiceId invId) =
   maybeFirstRow' 0 fromOnly $ DB.query db (mkQuery "SELECT amount FROM @invoices WHERE invoice_id = ?") (Only invId)
 
 providerRef :: DB.Connection -> InvoiceId -> IO (Maybe Text)
 providerRef db (InvoiceId invId) =
-  maybeFirstRow fromOnly $ DB.query db (mkQuery "SELECT provider_ref FROM @name_invoices WHERE invoice_id = ?") (Only invId)
+  maybeFirstRow fromOnly $ DB.query db (mkQuery "SELECT provider_ref FROM @invoices WHERE invoice_id = ?") (Only invId)
 
 lateCredits :: DB.Connection -> InvoiceId -> IO [LateCredit]
 lateCredits db (InvoiceId invId) =
@@ -1169,7 +1173,7 @@ lateCredits db (InvoiceId invId) =
         _ -> Left $ "name_late_credits figures: " <> inv
 
 -- | Adds to the order's balance, making it on its first credit.
-creditBalance :: DB.Connection -> RegistrationId -> Int -> UTCTime -> IO ()
+creditBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO ()
 creditBalance db (RegistrationId rid) cents now' =
   DB.execute
     db
@@ -1188,7 +1192,7 @@ creditBalance db (RegistrationId rid) cents now' =
     now = truncateToSecond now'
 
 -- | The price, above 0, spent at once, where the amount is the one seen and nothing holds it.
-spendBalance :: DB.Connection -> RegistrationId -> Int -> Int -> UTCTime -> IO Bool
+spendBalance :: DB.Connection -> RegistrationId -> USDCents -> USDCents -> UTCTime -> IO Bool
 spendBalance db (RegistrationId rid) price seen now =
   (> 0)
     <$> executeChanging
@@ -1197,7 +1201,7 @@ spendBalance db (RegistrationId rid) price seen now =
       (price, now, rid, seen, price, price)
 
 -- | Held by a difference order, where the amount is the one seen, above 0, and nothing holds it.
-holdBalance :: DB.Connection -> RegistrationId -> Int -> RegistrationId -> UTCTime -> IO Bool
+holdBalance :: DB.Connection -> RegistrationId -> USDCents -> RegistrationId -> UTCTime -> IO Bool
 holdBalance db (RegistrationId rid) seen (RegistrationId holder) now =
   (> 0)
     <$> executeChanging
@@ -1206,7 +1210,7 @@ holdBalance db (RegistrationId rid) seen (RegistrationId holder) now =
       (holder, now, rid, seen, seen)
 
 -- | The holder's hold spent and cleared, where this holder holds the balance and it still has the cents, above 0.
-spendHeldBalance :: DB.Connection -> RegistrationId -> Int -> UTCTime -> IO Bool
+spendHeldBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
 spendHeldBalance db (RegistrationId holder) used now =
   (> 0)
     <$> executeChanging
@@ -1223,7 +1227,7 @@ releaseHeldBalance db (RegistrationId holder) now =
       (truncateToSecond now, holder)
 
 -- | All of the balance, where it is the cents given, above 0, and nothing holds it; refunded counts every refund.
-refundBalance :: DB.Connection -> RegistrationId -> Int -> UTCTime -> IO Bool
+refundBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
 refundBalance db (RegistrationId rid) cents now' =
   (> 0)
     <$> executeChanging
@@ -1327,7 +1331,7 @@ lateColumns =
     <> creditedTotal "cents"
     <> mkQuery ", (SELECT COUNT(*) FROM @name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at, i.amount, p.invoiced_units"
 
-type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, Int, Int, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, Int, Int, UTCTime, Int, Maybe Int64)
+type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, USDCents, USDCents, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, USDCents, Int, UTCTime, USDCents, Maybe Int64)
 
 toLateState :: LateRow -> Either Text LateCreditState
 toLateState
@@ -1395,7 +1399,7 @@ uncreditedLateInvoices db = (<>) <$> uncredited closedUnpaid uncreditedMoney <*>
       map (\(invId, ref) -> (InvoiceId invId, ref))
         <$> DB.query
           db
-          ("SELECT ni.invoice_id, ni.provider_ref" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
+          ("SELECT ni.invoice_id, i.provider_ref" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
           (PUnpaid, LSRateFloor)
 
 -- | Pending money of closed orders, then of overpaid invoices, whose payment row was created before the cutoff, never alerted, or alerted
@@ -1411,7 +1415,7 @@ lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid pendingCase <*> alertsD
             <> pending
             <> ","
             <> receivedFigure
-            <> ", ni.late_alerted_at, ni.late_alerted_units, ni.provider_ref"
+            <> ", ni.late_alerted_at, ni.late_alerted_units, i.provider_ref"
             <> lateFrom
             <> " WHERE"
             <> order
@@ -1461,7 +1465,7 @@ insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPay
         ON CONFLICT DO NOTHING
       |]
       )
-      (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now, BI (npcIssuer == IssuedInGroup))
+      (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now, BI (npcIssuer == FromGroup))
   if inserted > 0 then Right <$> insertedRowId db else pure $ Left CodeHashTaken
 
 prepaidCodeColumns :: Query
@@ -1650,7 +1654,7 @@ instance ToField EditTag where toField = toField . textEncode
 
 -- | Nothing when a pending or mined edit already starts at the owner's first nonce.
 insertRecordEdit :: DB.Connection -> NewRecordEdit -> UTCTime -> IO (Maybe RecordEditId)
-insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreChanges, nreBodyHash} now = do
+insertRecordEdit db NewRecordEdit {nreLabelHash, nreOwner, nreChanges, nreBodyHash} now = do
   inserted <-
     executeChanging
       db
@@ -1661,7 +1665,7 @@ insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreCha
         ON CONFLICT DO NOTHING
       |]
       )
-      (Binary lh, Binary $ unAddress nreOwner, int64 $ scNonce $ L.head nreChanges, Binary nreBodyHash, ETPending, truncateToSecond now)
+      (nreLabelHash, nreOwner, int64 $ scNonce $ L.head nreChanges, Binary nreBodyHash, ETPending, truncateToSecond now)
   if inserted > 0
     then do
       editId <- insertedRowId db
@@ -1673,10 +1677,10 @@ insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreCha
       DB.execute
         db
         (mkQuery "INSERT INTO @name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) VALUES (?,?,?,?,?,?)")
-        (editId, int64 scNonce, key, value, int64 scDeadline, Binary $ serializeSignature scSignature)
+        (editId, int64 scNonce, key, value, int64 scDeadline, scSignature)
       where
         (key, value) = case scChange of
-          RCSetText k v -> (Just k, Just v)
+          RCSetText k v -> (Just $ textEncode k, Just v)
           RCClear -> (Nothing, Nothing)
 
 recordEditColumns :: Query
@@ -1687,9 +1691,9 @@ recordEditColumns =
     FROM @name_record_edits
   |]
 
-type RecordEditRow = (Int64, Binary ByteString, Binary ByteString, Binary ByteString, EditTag, Maybe Text, Maybe TxHash, UTCTime)
+type RecordEditRow = (Int64, LabelHash, Address, Binary ByteString, EditTag, Maybe Text, Maybe TxHash, UTCTime)
 
-type ChangeRow = (Int64, Maybe Text, Maybe Text, Int64, Binary ByteString)
+type ChangeRow = (Int64, Maybe Text, Maybe Text, Int64, RecoverableSignature)
 
 -- | An edit's row with its changes, in nonce order.
 readRecordEdit :: DB.Connection -> RecordEditRow -> IO RecordEdit
@@ -1698,19 +1702,17 @@ readRecordEdit db row@(reId, _, _, _, _, _, _, _) = do
   either (E.throwIO . StoreDecodeError) pure $ toRecordEdit row changes
 
 toRecordEdit :: RecordEditRow -> [ChangeRow] -> Either Text RecordEdit
-toRecordEdit (reId, Binary lh, Binary owner, Binary reBodyHash, state, revert, minedTx, reCreatedAt) changeRows = do
-  reOwner <- decodeAddress owner
+toRecordEdit (reId, reLabelHash, reOwner, Binary reBodyHash, state, revert, minedTx, reCreatedAt) changeRows = do
   reChanges <- note ("name_record_edits changes: " <> tshow reId) . L.nonEmpty =<< mapM toChange changeRows
   let reState = case state of
         ETPending -> ESPending
-        ETMined -> ESMined minedTx
-        ETReverted -> ESReverted revert
-  pure RecordEdit {reId, reLabelHash = LabelHash lh, reOwner, reChanges, reBodyHash, reState, reCreatedAt}
+        ETMined -> ESSettled $ EOApplied minedTx
+        ETReverted -> ESSettled $ EOReverted revert
+  pure RecordEdit {reId, reLabelHash, reOwner, reChanges, reBodyHash, reState, reCreatedAt}
   where
-    toChange (nonce, key_, value_, deadline, Binary sig) = do
-      scSignature <- decodeSignature sig
+    toChange (nonce, key_, value_, deadline, scSignature) = do
       scChange <- case (key_, value_) of
-        (Just key, Just value) -> Right $ RCSetText key value
+        (Just key, Just value) | Just kind <- textDecode key -> Right $ RCSetText kind value
         (Nothing, Nothing) -> Right RCClear
         _ -> Left $ "name_record_changes record: " <> tshow reId
       pure SignedChange {scChange, scNonce = word64 nonce, scDeadline = word64 deadline, scSignature}
@@ -1729,18 +1731,17 @@ getRecordEditByBody db bodyHash =
     DB.query db (recordEditColumns <> " WHERE body_hash = ? ORDER BY name_record_edit_id DESC LIMIT 1") (Only $ Binary bodyHash)
 
 -- | Settles a pending edit; False when it was settled already.
-settleRecordEdit :: DB.Connection -> RecordEditId -> EditState -> IO Bool
-settleRecordEdit db editId state =
+settleRecordEdit :: DB.Connection -> RecordEditId -> EditOutcome -> IO Bool
+settleRecordEdit db editId outcome =
   (> 0)
     <$> executeChanging
       db
       (mkQuery "UPDATE @name_record_edits SET state = ?, revert = ?, mined_tx = ? WHERE name_record_edit_id = ? AND state = ?")
       (tag, revert, minedTx, editId, ETPending)
   where
-    (tag, revert, minedTx) = case state of
-      ESPending -> (ETPending, Nothing, Nothing)
-      ESMined tx -> (ETMined, Nothing, tx)
-      ESReverted name -> (ETReverted, name, Nothing)
+    (tag, revert, minedTx) = case outcome of
+      EOApplied tx -> (ETMined, Nothing, tx)
+      EOReverted name -> (ETReverted, name, Nothing)
 
 pendingEditIds :: DB.Connection -> IO [RecordEditId]
 pendingEditIds db = map fromOnly <$> DB.query db (mkQuery "SELECT name_record_edit_id FROM @name_record_edits WHERE state = ? ORDER BY name_record_edit_id") (Only ETPending)
@@ -1754,12 +1755,12 @@ deleteUnsentEdit db editId =
 
 -- | When each edit relayed for the name since the given time was sent, oldest first.
 relayedEditTimes :: DB.Connection -> LabelHash -> UTCTime -> IO [UTCTime]
-relayedEditTimes db (LabelHash lh) since =
+relayedEditTimes db lh since =
   map fromOnly
     <$> DB.query
       db
       (mkQuery "SELECT created_at FROM @name_record_edits WHERE label_hash = ? AND created_at > ? ORDER BY created_at")
-      (Binary lh, truncateToSecond since)
+      (lh, truncateToSecond since)
 
 getTermsText :: DB.Connection -> TermsHash -> IO (Maybe ByteString)
 getTermsText db termsHash =
@@ -1807,12 +1808,6 @@ int64 = fromIntegral
 
 word64 :: Int64 -> Word64
 word64 = fromIntegral
-
-decodeAddress :: ByteString -> Either Text Address
-decodeAddress = either (const $ Left "address column") Right . addressFromBytes
-
-decodeSignature :: ByteString -> Either Text RecoverableSignature
-decodeSignature bs = either (Left . ("signature column: " <>) . tshow) Right $ parseSignature $ hex bs
 
 decodeAll :: (row -> Either Text a) -> [row] -> IO [a]
 decodeAll decode = either (E.throwIO . StoreDecodeError) pure . traverse decode

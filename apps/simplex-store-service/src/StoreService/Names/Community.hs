@@ -22,7 +22,7 @@ import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import Data.Word (Word64)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.SimplexName (LabelHash (..))
+import Simplex.Messaging.SimplexName (LabelHash)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (ChainError (..))
@@ -31,7 +31,7 @@ import StoreService.Names.Registration (CommunityName, TermsHash)
 import StoreService.Names.Signatures (AgreedTerms (..))
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
-communityFor NamesConfig {nCommunity} (LabelHash h) = M.lookup h nCommunity
+communityFor NamesConfig {nCommunity} lh = M.lookup lh nCommunity
 
 termsFor :: CommunityName -> Terms -> AgreedTerms
 termsFor community Terms {tmHash} = AgreedTerms {atCommunityName = community, atTermsHash = tmHash}

@@ -24,7 +24,7 @@ import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
-import Data.Maybe (isJust, maybeToList)
+import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
@@ -35,7 +35,8 @@ import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), I
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (textDecode)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Names.Record (USDCents)
+import Simplex.Messaging.Util (isAsyncCancellation, tshow)
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
 import StoreService.Names.Abi (hex)
@@ -57,7 +58,7 @@ import StoreService.Web.Names.Codes (codeRefusalResponse)
 data InvoiceOrder = InvoiceOrder
   { ioRequest :: OrderRequest,
     ioMethod :: ServicePaymentMethod,
-    ioPrice :: Word32
+    ioPrice :: USDCents
   }
 
 parseInvoiceOrder :: J.Object -> Either OrderRefusal InvoiceOrder
@@ -65,12 +66,15 @@ parseInvoiceOrder o = do
   order@InvoiceOrder {ioRequest} <- parseBody "order" $ do
     ioRequest <- parseOrderRequest o
     ioMethod <- jsonField o "method" paymentMethod
-    ioPrice <- jsonField o "price" boundedInteger
+    ioPrice <- jsonField o "price" invoiceCents
     pure InvoiceOrder {ioRequest, ioMethod, ioPrice}
   order <$ checkLength (orFields ioRequest)
 
 paymentMethod :: J.Value -> JT.Parser ServicePaymentMethod
 paymentMethod = textWith $ maybe (Left "not a payment method") Right . textDecode
+
+invoiceCents :: J.Value -> JT.Parser USDCents
+invoiceCents v = fromIntegral <$> (boundedInteger v :: JT.Parser Word32)
 
 -- | An order's answer and the work its commit leaves, both done after the name's turn, so a slow client holds no turn.
 data Answer = Answer {aResponse :: Response, aAfter :: IO ()}
@@ -91,7 +95,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns} http client cfg providers wa
       checkOrderSigner req >>= \case
         Left refusal -> refuse refusal
         Right () -> do
-          let hash = orderHash orOwner orFields (OTInvoice ioMethod $ fromIntegral ioPrice)
+          let hash = orderHash orOwner orFields (OTInvoice ioMethod ioPrice)
           withLabelTurn oeTurns (ofLabelHash orFields) $
             answerOrder env what req hash (resentOrder env cfg) (newOrder order hash)
   where
@@ -99,13 +103,12 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns} http client cfg providers wa
     refuse = refused what
     newOrder InvoiceOrder {ioRequest = req@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} hash now = do
       let years = orderYears fields $ nYears $ oeConfig env
-          price = fromIntegral ioPrice
           checks =
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration (oeConfig env) now years ofDuration,
               checkTerms (oeConfig env) (oeContracts env) fields,
               checkNameFree (oeContracts env) oeStore ofLabelHash,
-              checkPrice (oeContracts env) ofLength years price
+              checkPrice (oeContracts env) ofLength years ioPrice
             ]
           insert new paid db at =
             createPaidRegistration db new Nothing paid at >>= \case
@@ -114,7 +117,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns} http client cfg providers wa
               Left BIRBalanceChanged -> E.throwIO $ BrokenInvariant "an order holding no balance was refused at a balance"
       runExceptT (mapM_ ExceptT checks) >>= \case
         Left refusal -> refuse refusal
-        Right () -> createAtProvider env http client cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = hash, ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
+        Right () -> createAtProvider env http client cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = hash, ivHolders = [], ivMethod = ioMethod, ivPrice = ioPrice, ivAmount = ioPrice, ivInsert = insert}
 
 -- | An order paid by invoice: its order hash, the holders its transaction closes, the order's price, what its invoice asks
 -- (less than the price when a balance paid the rest), and its insert after the invoice row's.
@@ -123,8 +126,8 @@ data InvoicedOrder = InvoicedOrder
     ivOrderHash :: OrderHash,
     ivHolders :: [NameRegistration],
     ivMethod :: ServicePaymentMethod,
-    ivPrice :: Int,
-    ivAmount :: Word32,
+    ivPrice :: USDCents,
+    ivAmount :: USDCents,
     ivInsert :: NewRegistration -> PaidOrder -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())
   }
 
@@ -138,16 +141,16 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg provid
     Just provider -> limitedCheckout http client ivMethod (pure . answerNow) $ do
       invId <- newInvoiceId
       now <- truncateToSecond <$> oeNow
-      let amount = CurrencyAmount ivAmount
+      let amount = CurrencyAmount $ fromIntegral ivAmount
       pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> hex ivOrderHash} >>= \case
         Left e -> do
           logError (what <> " failed at the provider: " <> providerErrorText e)
           pure $ answerNow providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
-          let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
+          let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
               registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash}
-              paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId, poProviderRef = piProviderRef}
+              paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId}
           placeOrder env req ivHolders (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)
             `E.catch` strandedBy provider piProviderRef
             >>= \case
@@ -165,11 +168,10 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg provid
     -- An invoice created at the provider for an order that was not written would stay payable with nothing watching it.
     strandedBy :: Provider -> Text -> E.SomeException -> IO a
     strandedBy provider ref e = do
-      unless (isAsync e) $ do
+      unless (isAsyncCancellation e) $ do
         logError (what <> ": the order was not written, so invoice " <> ref <> " is cancelled at the provider: " <> tshow e)
         cancelAtProvider provider ref
       E.throwIO e
-    isAsync e = isJust (E.fromException e :: Maybe E.SomeAsyncException)
 
 -- | An exact resend, answered with its order as it reads now: the invoice view, or the id of an order without an invoice.
 resentOrder :: OrdersEnv -> ServiceConfig -> UTCTime -> NameRegistration -> IO Answer
@@ -243,12 +245,11 @@ parseCodeOrder o = do
 
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
 -- under the new name's turn and then the balance's.
-spendHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> Request -> Respond -> IO ResponseReceived
-spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg providers waiters ridText req respond
+spendHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg providers waiters source req respond
   | nCodesOnly oeConfig = sendAnswer respond =<< refuse ORCodesOnly
   | otherwise = readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
-    source = RegistrationId ridText
     what = "POST /api/registration/:id/spend"
     refuse = refused what
     requested = \case
@@ -287,10 +288,10 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} http cfg pr
         | spPrice - spBalance < minCardChargeCents -> refuse $ ORBadRequest "a card difference under the card minimum"
       Just method ->
         createAtProvider env http (checkoutClient http req) cfg providers waiters what $
-          InvoicedOrder {ivRequest = order, ivOrderHash = hash, ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = fromIntegral (spPrice - spBalance), ivInsert = differenceOrderInsert spend}
+          InvoicedOrder {ivRequest = order, ivOrderHash = hash, ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = spPrice - spBalance, ivInsert = differenceOrderInsert spend}
 
 -- | Stripe refuses a USD charge under 50 cents, so the page offers only crypto for a smaller difference.
-minCardChargeCents :: Int
+minCardChargeCents :: USDCents
 minCardChargeCents = 50
 
 -- | Every format check, the method present exactly for a difference, then the length's range.
@@ -308,8 +309,8 @@ parseSpend spSource o = do
   parsed <$ checkLength fields
   where
     -- positive, and within an invoice amount's range
-    cents :: J.Key -> JT.Parser Int
-    cents k = jsonField o k $ \v -> boundedInteger v >>= \n -> if n > (0 :: Word32) then pure (fromIntegral n) else fail "not above 0"
+    cents :: J.Key -> JT.Parser USDCents
+    cents k = jsonField o k $ \v -> invoiceCents v >>= \n -> if n > 0 then pure n else fail "not above 0"
 
 -- | After the commit, the closed orders' invoices and versions are published, and their invoices cancelled at the provider,
 -- best effort, as the poller's sweep would cancel them.

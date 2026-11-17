@@ -63,7 +63,7 @@ import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeGraceInterval, badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..))
-import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
+import Simplex.Chat.Badges.Code (badgeCodeText, minNameYears, parseBadgeCode)
 import Simplex.Chat.StoreService (BadgeBalance (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), StoreServiceCommand (..), StoreServiceErrorCode (..), StoreServiceRequest (..), StoreServiceResponse (..), SubscriptionState (..), currentStoreServiceVersion)
 import Simplex.Chat.Badges.StorePlan (storePlan)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
@@ -5323,7 +5323,7 @@ nameRecordOrWarning now SimplexDomain {domain} = \case
   NRAvailable {pricing = NamePricing {registrationPrices, basePrice, minLabelLength}}
     | labelLength >= minLabelLength ->
         let USDCents perYear = M.findWithDefault basePrice labelLength registrationPrices
-            years = 2
+            years = minNameYears
          in Left $ NWAvailable NamePrice {amount = USDCents (perYear * fromIntegral years), years}
   NRReserved {reservedReason = NRRCommunity} -> Left NWReservedForCommunity
   _ -> Left NWNotRegistered

@@ -11,6 +11,7 @@ import Network.Wai (Request, ResponseReceived, pathInfo)
 import StoreService.Config (ServiceConfig)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Orders (ordersEnv)
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, createLimit, findLimit, holdMicros, limited, only, previewLimit, readLimit, recordsLimit, searchLimit)
 import StoreService.Web.Names.Codes (codeCheckHandler)
 import StoreService.Web.Names.Orders (codeOrderHandler, spendHandler)
@@ -36,11 +37,11 @@ namesRoutes cfg http env@NamesEnv {neConfig, neStore, neContracts, neProfiles, n
   ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler neConfig http neStore neContracts neProfiles getCurrentTime hash}
   -- above /api/registration/:id, which it would otherwise match
   ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = findLimit, rHandler = findHandler (ordersEnv env)}
-  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler (ordersEnv env) http holdMicros rid}
-  ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler (ordersEnv env) rid}
-  ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler (ordersEnv env) rid}
-  ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler (ordersEnv env) rid}
-  ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler (ordersEnv env) http cfg neProviders neWaiters rid}
+  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler (ordersEnv env) http holdMicros (RegistrationId rid)}
+  ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler (ordersEnv env) (RegistrationId rid)}
+  ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler (ordersEnv env) (RegistrationId rid)}
+  ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler (ordersEnv env) (RegistrationId rid)}
+  ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler (ordersEnv env) http cfg neProviders neWaiters (RegistrationId rid)}
   _ -> Nothing
 
 -- | Nothing for a path no route knows. The limit is taken only once the route and the method match.

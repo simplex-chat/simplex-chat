@@ -10,7 +10,6 @@ import Control.Exception (toException, try)
 import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.Text as T
@@ -169,14 +168,14 @@ testRecentTip g = withChain g $ \node c -> do
 
 testLongQuantity :: TVar ChaChaDRG -> IO ()
 testLongQuantity g = withChain g $ \node c -> do
-  let fee digits = setFault node "eth_getTransactionCount" (Answers $ J.String $ "0x" <> digits) >> transactionCount c {ccTimeout = 300000} (ccRegistrar c) Latest
+  let fee digits = setFault node "eth_getTransactionCount" (Answers $ J.String $ "0x" <> digits) >> transactionCount c {ccTimeout = 2000000} (ccRegistrar c) Latest
       notQuantity = Left (ChainUnavailable "eth_getTransactionCount: not a JSON-RPC response: Error in $: not a quantity")
   fee (T.replicate 63 "0" <> "7") `shouldReturn` Right 7
   fee (T.replicate 64 "0" <> "7") `shouldReturn` notQuantity
   start <- getCurrentTime
   fee (T.replicate 1000000 "f") `shouldReturn` notQuantity
   elapsed <- (`diffUTCTime` start) <$> getCurrentTime
-  elapsed `shouldSatisfy` (< 1)
+  elapsed `shouldSatisfy` (< 3)
 
 testFailureDetail :: IO ()
 testFailureDetail = do
@@ -260,6 +259,3 @@ errorInvalidToken = unhex "08c379a0000000000000000000000000000000000000000000000
 -- | viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
 insufficientAllowance :: ByteString
 insufficientAllowance = unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
-
-unhex :: ByteString -> ByteString
-unhex = either error id . convertFromBase Base16

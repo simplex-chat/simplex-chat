@@ -28,7 +28,6 @@ BADGES_URL="http://127.0.0.1:$BADGES_PORT"
 CODES_URL="http://127.0.0.1:$CODES_PORT"
 TERMS_URL="http://127.0.0.1:8098"
 STARTUP_SECONDS=120
-CLI_TIMEOUT_SECONDS=120
 # The test suite's public issuer secret (issuerSecret in tests/Bots/StoreService/ConfigTests.hs), trusted
 # through [issuer] dev_keys, which the service accepts only on chain 31337. Never use it elsewhere.
 DEV_ISSUER_INDEX=999
@@ -175,82 +174,23 @@ start_service() {
   answering "$SERVICE_PID" "$SERVICE_URL/"
 }
 
-# The console started on a new database leaves its terminal in line mode and reads no keys, so the
-# service's first start makes the database.
-make_database() {
-  start_service
-  kill "$SERVICE_PID"
-  wait "$SERVICE_PID" || true
-}
-
-# //issue in --run-cli, with the service stopped, as the README says. The console reads a terminal, so
-# each command is typed into a pseudo-terminal, and its "Code: ..." answer read.
+# //issue with the service stopped, as the README says.
 issue_codes() {
-  python3 -I - "$CLI_TIMEOUT_SECONDS" "$RUN_DIR/codes.json" "${CODES[@]}" -- \
-    "$STORE_SERVICE_BIN" --run-cli --no-address --service-config "$INI" -d "$DB" > "$RUN_DIR/issue.log" 2>&1 <<'PY'
-import fcntl, json, os, pty, re, select, signal, struct, sys, termios, time
-
-args = sys.argv[1:]
-timeout, out = float(args[0]), args[1]
-split = args.index("--")
-commands, cli = args[2:split], args[split + 1:]
-ANSI = re.compile(rb"\x1b\[[0-9;?]*[A-Za-z]")
-CODE = re.compile(rb"Code: (SN(\d+)(?:-[0-9A-Z]+)+)")
-REFUSED = re.compile(rb"bad chat command|chat error|[Ee]rror:")
-
-pid, fd = pty.fork()
-if pid == 0:
-    os.execvp(cli[0], cli)
-# the console's terminal library divides by the window's size
-fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 50, 200, 0, 0))
-seen = b""
-
-def fail(message):
-    os.kill(pid, signal.SIGTERM)
-    sys.exit(message)
-
-def expect(pattern):
-    global seen
-    deadline = time.monotonic() + timeout
-    while True:
-        text = ANSI.sub(b"", seen)
-        if (refused := REFUSED.search(text)):
-            fail(f"refused: {text[refused.start():].splitlines()[0].decode(errors='replace')}")
-        if (found := pattern.search(text)):
-            seen = text[found.end():]
-            return found
-        left = deadline - time.monotonic()
-        if left <= 0 or not select.select([fd], [], [], left)[0]:
-            fail(f"no {pattern.pattern!r} within {timeout} s")
-        try:
-            chunk = os.read(fd, 65536)
-        except OSError:
-            chunk = b""
-        if not chunk:
-            fail(f"the console ended before {pattern.pattern!r}")
-        sys.stdout.buffer.write(chunk)
-        seen += chunk
-
-# The console loses keys sent in a burst, so each key waits for the echo of the one before.
-def type_line(line):
-    for typed in range(1, len(line) + 1):
-        os.write(fd, line[typed - 1].encode())
-        expect(re.compile(b"> " + re.escape(line[:typed].encode())))
-    os.write(fd, b"\r")
-
-# the empty input line, which the welcome text's "> " lines are not
-expect(re.compile(rb"Current user: .*\n(?:.*\n)*?.*>  "))
-codes = []
-for command in commands:
-    type_line(f"//issue {command}")
-    found = expect(CODE)
-    years = re.search(r"years (\d+)", command)
-    codes.append({"code": found[1].decode(), "minLength": int(found[2]), "years": int(years[1]) if years else 2})
-type_line("/quit")
-os.waitpid(pid, 0)
-with open(out, "w") as f:
-    json.dump(codes, f)
-PY
+  local i command out code years
+  for i in "${!CODES[@]}"; do
+    command="//issue ${CODES[$i]}"
+    out="$RUN_DIR/issue-$i.out"
+    "$STORE_SERVICE_BIN" --no-address --service-config "$INI" -d "$DB" --execute "$command" > "$out" 2>> "$RUN_DIR/issue.log"
+    code="$(sed -nE 's/^Code: (SN[0-9]+(-[0-9A-Z]+)+)$/\1/p' "$out")"
+    if [ -z "$code" ]; then
+      echo "$command printed no code; see $out" >&2
+      exit 1
+    fi
+    years=2
+    if [[ "$command" =~ years\ ([0-9]+) ]]; then years="${BASH_REMATCH[1]}"; fi
+    [[ "$code" =~ ^SN([0-9]+)- ]]
+    jq -cn --arg code "$code" --argjson minLength "${BASH_REMATCH[1]}" --argjson years "$years" '{$code, $minLength, $years}'
+  done | jq -s . > "$RUN_DIR/codes.json"
 }
 
 # The tests' MOCK_URL. POST /control/code hands out the issued codes; the reset of /control/search
@@ -354,7 +294,6 @@ start_chain
 start_terms
 build_site
 write_ini
-make_database
 issue_codes
 start_service
 start_code_server

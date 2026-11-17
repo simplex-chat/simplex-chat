@@ -49,13 +49,12 @@ import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain
 import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxSettlement (..), TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
 import StoreService.Names.View (addressText)
-import StoreService.Safely (safely)
 import StoreService.Store.Invoices (StoreDecodeError (..))
 
 data Sender = Sender
@@ -233,7 +232,7 @@ runSender s = forever $ senderRound s >> threadDelay followInterval
 
 -- | A round that fails is logged, so the lane goes on to the next one.
 senderRound :: Sender -> IO ()
-senderRound s = void $ safely "names sender: the round" (followTransactions s)
+senderRound s = followTransactions s `catchOwn'` \e -> logError ("names sender: the round failed; the next pass will run: " <> tshow e)
 
 -- | One round over the transactions in flight, lowest nonce first. Only one thread may run it.
 followTransactions :: Sender -> IO ()

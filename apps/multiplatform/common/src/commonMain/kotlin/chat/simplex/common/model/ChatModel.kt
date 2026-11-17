@@ -2398,7 +2398,7 @@ data class BadgeIssueError(
 @Serializable
 sealed class BadgeIssueFailure {
   // retryable is the service's own view of transience: it gave retryAfter
-  @Serializable @SerialName("serviceError") data class ServiceError(val code: BadgeServiceErrorCode, val retryable: Boolean) : BadgeIssueFailure()
+  @Serializable @SerialName("serviceError") data class ServiceError(val code: StoreServiceErrorCode, val retryable: Boolean) : BadgeIssueFailure()
   @Serializable @SerialName("serviceTimeout") object ServiceTimeout : BadgeIssueFailure()
   @Serializable @SerialName("network") data class Network(val agentError: String) : BadgeIssueFailure()
   @Serializable @SerialName("invalidCredential") object InvalidCredential : BadgeIssueFailure()

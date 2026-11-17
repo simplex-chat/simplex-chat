@@ -11,6 +11,7 @@ import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, nameLength, randomBadgeCode)
+import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Controller (ChatCommand (AcceptMember, DeleteGroup, MemberRole))
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import Simplex.Chat.Types (GroupProfile (..))
@@ -25,17 +26,17 @@ badgeGroupTests = describe "badge group" $ do
       issueUsage = ReplyText "Usage: /issue <kind> [<length>] [years <Y> | months <M>] [uses <N>]\nname <length>: length 6–63, years 2–10\nsupporter, legend, investor: months 1–12, uses 1–1000\ne.g. /issue name 6 years 5 · /issue supporter months 12"
       bulkUsage = ReplyText "Usage: /bulk <kind> [months <M>] count <N>\nsupporter, legend, investor: months 1–12, count 1–100\ne.g. /bulk legend months 3 count 10"
       revokeUsage = ReplyText "Usage: /revoke <code>"
-  it "issue defaults" $ p "/issue supporter" `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
-  it "issue with months and uses" $ p "/issue legend months 6 uses 50" `shouldBe` RunCmd (GCIssue BTLegend 6 50)
+  it "issue defaults" $ p "/issue supporter" `shouldBe` RunCmd (GCIssue BTSupporter 1 1 CPSFree)
+  it "issue with months and uses" $ p "/issue legend months 6 uses 50" `shouldBe` RunCmd (GCIssue BTLegend 6 50 CPSFree)
   it "bulk with count" $ p "/bulk supporter count 20" `shouldBe` RunCmd (GCBulk BTSupporter 1 20)
   it "issue and bulk take every badge type" $ do
     map p ["/issue supporter", "/issue legend", "/issue investor"]
-      `shouldBe` map (\bt -> RunCmd (GCIssue bt 1 1)) [BTSupporter, BTLegend, BTInvestor]
+      `shouldBe` map (\bt -> RunCmd (GCIssue bt 1 1 CPSFree)) [BTSupporter, BTLegend, BTInvestor]
     map p ["/bulk supporter count 2", "/bulk legend count 2", "/bulk investor count 2"]
       `shouldBe` map (\bt -> RunCmd (GCBulk bt 1 2)) [BTSupporter, BTLegend, BTInvestor]
   it "parses the examples in the usage replies" $ do
-    p "/issue supporter months 12" `shouldBe` RunCmd (GCIssue BTSupporter 12 1)
-    p "/issue investor uses 50" `shouldBe` RunCmd (GCIssue BTInvestor 1 50)
+    p "/issue supporter months 12" `shouldBe` RunCmd (GCIssue BTSupporter 12 1 CPSFree)
+    p "/issue investor uses 50" `shouldBe` RunCmd (GCIssue BTInvestor 1 50 CPSFree)
     p "/bulk legend months 3 count 10" `shouldBe` RunCmd (GCBulk BTLegend 3 10)
   it "rejects a length, the names unit or the other command's option for a badge" $ do
     map p ["/issue supporter 6", "/issue supporter years 2", "/issue legend months 3 years 2", "/issue supporter count 2", "/issue supporter uses 2 months 3"]
@@ -55,9 +56,9 @@ badgeGroupTests = describe "badge group" $ do
     p ("/bulk supporter count " <> past64) `shouldBe` bulkUsage
     p ("/issue supporter months " <> past64) `shouldBe` issueUsage
   it "accepts the upper bounds" $ do
-    p "/issue supporter uses 1000" `shouldBe` RunCmd (GCIssue BTSupporter 1 1000)
+    p "/issue supporter uses 1000" `shouldBe` RunCmd (GCIssue BTSupporter 1 1000 CPSFree)
     p "/bulk supporter count 100" `shouldBe` RunCmd (GCBulk BTSupporter 1 100)
-    p "/issue supporter months 12" `shouldBe` RunCmd (GCIssue BTSupporter 12 1)
+    p "/issue supporter months 12" `shouldBe` RunCmd (GCIssue BTSupporter 12 1 CPSFree)
   it "revoke" $ do
     code <- newCode
     p ("/revoke " <> badgeCodeText code) `shouldBe` RunCmd (GCRevoke code)
@@ -116,7 +117,7 @@ badgeGroupTests = describe "badge group" $ do
     it "runs a name code command for a moderator and above, saying nothing to a member" $ do
       Just six <- pure $ nameLength 6
       map (`groupCmdAction` "/issue name 6") [GRMember, GRModerator, GRAdmin, GROwner]
-        `shouldBe` [IgnoreMsg, RunCmd (GCIssueName six 2), RunCmd (GCIssueName six 2), RunCmd (GCIssueName six 2)]
+        `shouldBe` [IgnoreMsg, RunCmd (GCIssueName six 2 CPSFree), RunCmd (GCIssueName six 2 CPSFree), RunCmd (GCIssueName six 2 CPSFree)]
     it "runs /balance, /record_refund and /close only for an owner, saying nothing to others" $ do
       let roles = [GRMember, GRModerator, GRAdmin, GROwner]
           ownerOnly cmd = replicate 3 IgnoreMsg <> [RunCmd (GCMoney cmd)]
@@ -131,7 +132,7 @@ badgeGroupTests = describe "badge group" $ do
           <> replicate 5 (ReplyText "Usage: /record_refund <reference> <cents>")
           <> replicate 2 (ReplyText "Usage: /close <reference>")
     it "accepts a command padded with whitespace" $ do
-      p " /issue supporter " `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
+      p " /issue supporter " `shouldBe` RunCmd (GCIssue BTSupporter 1 1 CPSFree)
       p "\t/bulk supporter count 1" `shouldBe` RunCmd (GCBulk BTSupporter 1 1)
     it "says nothing to anything that is not an advertised command" $
       map p ["", "hello", "issue supporter", "/issued supporter", "/help", "see /issue above"]

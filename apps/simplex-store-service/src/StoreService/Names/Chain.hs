@@ -70,7 +70,7 @@ import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAdd
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), decodeEip1559Tx, eip1559SigningHash, signEip1559Tx)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (hex, parseText)
+import StoreService.Names.Abi (ChainSeconds, hex, parseText)
 import StoreService.Names.Revert (RevertReason (..), decodeRevert, maxNodeMessageLength)
 import StoreService.Store.Invoices (unixSeconds)
 import System.Timeout (timeout)
@@ -100,8 +100,6 @@ instance ToField TxHash where toField (TxHash h) = toField (Binary h)
 
 data SignedTx = SignedTx {stRaw :: ByteString, stHash :: TxHash}
   deriving (Eq, Show)
-
-type ChainSeconds = Word64
 
 data Block = Block {blockNumber :: Word64, blockTimestamp :: ChainSeconds, blockBaseFee :: Word64}
   deriving (Eq, Show)

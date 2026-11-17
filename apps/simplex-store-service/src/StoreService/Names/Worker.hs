@@ -46,7 +46,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Util (tshow, ($>>=))
+import Simplex.Messaging.Util (catchOwn', tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), ChainSeconds, TxHash, blockAt, chainSeconds, chainTime)
@@ -61,7 +61,6 @@ import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcom
 import StoreService.Names.Store
 import StoreService.Names.Turns (Turns, withBalanceTurn, withLabelTurn, withRegistrationTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion)
-import StoreService.Safely (safely, safelyWith)
 
 data Worker = Worker
   { wkOrders :: OrdersEnv,
@@ -127,7 +126,7 @@ newWorker wkOrders wkSender = Worker wkOrders wkSender <$> newTVarIO M.empty
 -- | A thread for each registration in the worker's phases, started by a scan every scanInterval; they stop with it.
 runWorkers :: Worker -> IO ()
 runWorkers w@Worker {wkThreads} =
-  forever (safely "names worker: the scan" (startWorkers w) >> threadDelay scanInterval)
+  forever ((startWorkers w `catchOwn'` \e -> logError ("names worker: the scan failed; the next pass will run: " <> tshow e)) >> threadDelay scanInterval)
     `finally` (readTVarIO wkThreads >>= mapM_ cancel)
 
 startWorkers :: Worker -> IO ()
@@ -139,7 +138,7 @@ startWorkers w@Worker {wkOrders = OrdersEnv {oeStore}, wkThreads} = do
     mask_ $ asyncWithUnmask (\unmask -> unmask $ work w rid) >>= atomically . modifyTVar' wkThreads . M.insert rid
 
 work :: Worker -> RegistrationId -> IO ()
-work w rid@(RegistrationId ridText) = void $ safely ("names worker: registration " <> ridText) $ follow w rid Nothing
+work w rid@(RegistrationId ridText) = follow w rid Nothing `catchOwn'` \e -> logError ("names worker: registration " <> ridText <> " failed; the next scan starts it again: " <> tshow e)
 
 -- | Steps until the registration leaves the worker's phases, logging a lasting failure once.
 follow :: Worker -> RegistrationId -> Maybe StepFailure -> IO ()
@@ -529,7 +528,7 @@ servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChai
 data Closed = CLRegistered RegistrationId | CLRefunded UTCTime RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)
 
-data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFUnread | CFChanged | CFWriteRefused OrderRefusal | CFHeld BalanceHold | CFBalanceChanged
+data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFUnread | CFChanged | CFHeld BalanceHold | CFBalanceChanged
   deriving (Eq, Show)
 
 newtype CloseRefused = CloseRefused CloseRefusal
@@ -568,13 +567,14 @@ refundTaken st turns now r@NameRegistration {nrId} =
         _ ->
           creditedTaken now r db >>= \case
             Left WRChanged -> pure $ Left CFChanged
-            Left (WRRefused refusal) -> pure $ Left $ CFWriteRefused refusal
+            Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "the taken write of order " <> ridText <> " was refused as " <> tshow refusal <> ", while a write that closes an order is refused only as changed"
             Right _ -> Right <$> refundAll db
     refundAll db = do
       cents <- maybe 0 blAmount <$> getBalance db nrId now
       refundBalance db nrId cents now >>= \case
         True -> RefundRecord nrId cents <$> balanceChain db nrId
         False -> E.throwIO $ CloseRefused CFBalanceChanged
+    RegistrationId ridText = nrId
 
 -- | Each code order failed for failedCodeHold gives its code back, in its name's and its code's turns, unless it was requeued meanwhile.
 sweepFailedCodes :: Worker -> IO ()
@@ -582,10 +582,11 @@ sweepFailedCodes Worker {wkOrders = OrdersEnv {oeStore, oeTurns, oeNow}} = do
   cutoff <- addUTCTime (negate failedCodeHold) <$> oeNow
   orders <- withTransaction oeStore (`failedCodeOrdersBefore` cutoff)
   released <- forM orders $ \(rid@(RegistrationId ridText), codeId) ->
-    safelyWith ("names code sweep: registration " <> ridText) False $
-      withTransaction oeStore (`getRegistration` rid) >>= \case
+    ( withTransaction oeStore (`getRegistration` rid) >>= \case
         Just NameRegistration {nrLabelHash} -> withLabelTurn oeTurns nrLabelHash $ either (const False) snd <$> releaseCode oeTurns oeStore codeId rid (stillFailed cutoff rid)
         Nothing -> pure False
+    )
+      `catchOwn'` \e -> False <$ logError ("names code sweep: registration " <> ridText <> " failed; the next sweep tries it again: " <> tshow e)
   let count = length $ filter id released
   when (count > 0) $ logNote $ "names code sweep: released the codes of " <> tshow count <> " failed order(s)"
   where
@@ -595,4 +596,4 @@ sweepFailedCodes Worker {wkOrders = OrdersEnv {oeStore, oeTurns, oeNow}} = do
         _ -> Left ()
 
 runCodeSweep :: Worker -> IO ()
-runCodeSweep w = forever $ safely "names code sweep" (sweepFailedCodes w) >> threadDelay sweepInterval
+runCodeSweep w = forever $ (sweepFailedCodes w `catchOwn'` \e -> logError ("names code sweep failed; the next pass will run: " <> tshow e)) >> threadDelay sweepInterval

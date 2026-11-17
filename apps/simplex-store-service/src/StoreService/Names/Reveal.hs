@@ -32,10 +32,8 @@ import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Chain (ChainSeconds, chainSeconds)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
-import StoreService.Names.Label (validLabel)
-import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Orders (boundedInteger, hexHash, hexSignature, jsonField)
-import StoreService.Names.Registration (RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (LinkKind (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, validLabel, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
 
 data RevealRefusal = RVBadRequest | RVInvalidLink | RVChainUnavailable
@@ -121,7 +119,7 @@ checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistratio
 linksValid :: NameReveal -> Bool
 linksValid NameReveal {rvContactLink, rvChannelLink} = all (ofKind LKContact) rvContactLink && all (ofKind LKChannel) rvChannelLink
   where
-    ofKind kind link = linkKindOf link == Just kind
+    ofKind kind link = (fst <$> nameLink link) == Just kind
 
 intentOf :: NamesConfig -> NameRegistration -> NameReveal -> RegisterIntent
 intentOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameRegistration {nrOwner, nrDuration} NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink, rvNonce, rvDeadline, rvSignature} =

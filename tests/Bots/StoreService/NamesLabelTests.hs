@@ -5,7 +5,7 @@ module Bots.StoreService.NamesLabelTests (namesLabelTests) where
 import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
-import StoreService.Names.Label
+import StoreService.Names.Registration (LabelError (..), validLabel)
 import Test.Hspec
 
 namesLabelTests :: Spec

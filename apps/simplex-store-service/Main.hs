@@ -7,6 +7,7 @@ import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Service
 import StoreService.Store.Migrate (instanceLockCheckInterval, withInstanceLock)
 import Control.Logger.Simple (LogConfig (..), setLogLevel, withGlobalLogging)
+import Data.Maybe (isJust)
 import GHC.IO.Encoding (setLocaleEncoding)
 import Simplex.Chat.Terminal (terminalChatConfig)
 import System.IO (hSetEncoding, stderr, stdout, utf8)
@@ -19,10 +20,10 @@ main = do
   mapM_ (`hSetEncoding` utf8) [stdout, stderr]
   withGlobalLogging LogConfig {lc_file = Nothing, lc_stderr = True} $ do
     setLogLevel defaultLogLevel
-    opts@StoreServiceOpts {runCLI, serviceConfigFile} <- welcomeGetOpts
+    opts@StoreServiceOpts {runCLI, consoleCommand, serviceConfigFile} <- welcomeGetOpts
     serviceCfg <- traverse readConfigOrExit serviceConfigFile
     mapM_ (setLogLevel . serviceLogLevel) serviceCfg
     withInstanceLock instanceLockCheckInterval opts $
-      if runCLI
+      if runCLI || isJust consoleCommand
         then storeServiceCLI opts serviceCfg
         else newServiceState >>= storeService opts serviceCfg terminalChatConfig

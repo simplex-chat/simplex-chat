@@ -1,5 +1,9 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module StoreService.Names.Registration
   ( Registration (..),
@@ -17,8 +21,12 @@ module StoreService.Names.Registration
     labelNode,
     childNode,
     tldLabel,
-    contactRecordKey,
-    channelRecordKey,
+    LabelError (..),
+    validLabel,
+    LinkKind (..),
+    recordKey,
+    linkMaxBytes,
+    nameLink,
     sponsorDomain,
     resolverDomain,
     policyDomain,
@@ -43,17 +51,21 @@ import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Crypto.Number.Serialize (os2ip)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import Data.Maybe (catMaybes)
+import Data.List (find)
+import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
+import qualified Data.Text as T
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
+import Simplex.Chat.Badges.Code (nameLength)
+import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..))
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
+import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
-import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
-import StoreService.Names.Chain (ChainSeconds)
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexDomain (..), SimplexTLD (..), labelHash)
+import StoreService.Names.Abi (AbiValue (..), ChainSeconds, abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
 
 data Registration = Registration
   { rLabel :: Text,
@@ -76,9 +88,40 @@ newtype Node = Node ByteString
 nodeBytes :: Node -> ByteString
 nodeBytes (Node node) = node
 
-contactRecordKey, channelRecordKey :: ByteString
-contactRecordKey = "simplex.contact"
-channelRecordKey = "simplex.channel"
+data LabelError = LELength | LEChars
+  deriving (Eq, Show)
+
+validLabel :: SimplexTLD -> Text -> Either LabelError Text
+validLabel tld label
+  | isNothing (nameLength $ T.length label) = Left LELength
+  | otherwise = case strDecode (encodeUtf8 $ label <> decodeLatin1 (strEncode tld)) of
+      Right SimplexDomain {domain, subDomain = []} | domain == label -> Right label
+      _ -> Left LEChars
+
+data LinkKind = LKContact | LKChannel
+  deriving (Eq, Show)
+
+instance TextEncoding LinkKind where
+  textEncode = \case
+    LKContact -> "simplex.contact"
+    LKChannel -> "simplex.channel"
+  textDecode t = find ((t ==) . textEncode) [LKContact, LKChannel]
+
+recordKey :: LinkKind -> ByteString
+recordKey = encodeUtf8 . textEncode
+
+linkMaxBytes :: Int
+linkMaxBytes = 1024
+
+nameLink :: Text -> Maybe (LinkKind, ConnShortLink 'CMContact)
+nameLink link
+  | B.length s > linkMaxBytes = Nothing
+  | otherwise = case strDecode @(ConnShortLink 'CMContact) s of
+      Right sl@(CSLContact _ CCTContact _ _) -> Just (LKContact, sl)
+      Right sl@(CSLContact _ CCTChannel _ _) -> Just (LKChannel, sl)
+      _ -> Nothing
+  where
+    s = encodeUtf8 link
 
 data RegisterIntent = RegisterIntent
   { riRegistration :: Registration,
@@ -185,12 +228,12 @@ acceptCalldata TermsKind {tkRelayFunction} commitment owner deadline TermsAccept
         Dynamic $ abiBytes $ serializeSignature taSignature
       ]
 
-setTextDigest :: Eip712Domain -> Node -> Text -> Text -> Word64 -> ChainSeconds -> ByteString
-setTextDigest domain node key value nonce deadline =
+setTextDigest :: Eip712Domain -> Node -> LinkKind -> Text -> Word64 -> ChainSeconds -> ByteString
+setTextDigest domain node kind value nonce deadline =
   hashTypedData
     domain
     "SetText(bytes32 node,string key,string value,uint256 nonce,uint256 deadline)"
-    [bytes32 $ nodeBytes node, VBytes $ encodeUtf8 key, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
+    [bytes32 $ nodeBytes node, VBytes $ recordKey kind, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
 clearRecordsDigest :: Eip712Domain -> Node -> Word64 -> ChainSeconds -> ByteString
 clearRecordsDigest domain node nonce deadline =
@@ -199,12 +242,12 @@ clearRecordsDigest domain node nonce deadline =
     "ClearRecords(bytes32 node,uint256 nonce,uint256 deadline)"
     [bytes32 $ nodeBytes node, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-setTextWithSigCalldata :: Node -> Text -> Text -> Word64 -> ChainSeconds -> RecoverableSignature -> ByteString
-setTextWithSigCalldata (Node node) key value nonce deadline sig =
+setTextWithSigCalldata :: Node -> LinkKind -> Text -> Word64 -> ChainSeconds -> RecoverableSignature -> ByteString
+setTextWithSigCalldata (Node node) kind value nonce deadline sig =
   selector "setTextWithSig(bytes32,string,string,uint256,uint256,bytes)"
     <> abiTuple
       [ Static node,
-        Dynamic $ abiBytes $ encodeUtf8 key,
+        Dynamic $ abiBytes $ recordKey kind,
         Dynamic $ abiBytes $ encodeUtf8 value,
         Static $ uint256 nonce,
         Static $ uint256 deadline,
@@ -241,7 +284,7 @@ registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver}
 
 recordCalls :: Registration -> [ByteString]
 recordCalls Registration {rLabel, rTLD, rContactLink, rChannelLink} =
-  catMaybes [setText contactRecordKey <$> rContactLink, setText channelRecordKey <$> rChannelLink]
+  catMaybes [setText (recordKey LKContact) <$> rContactLink, setText (recordKey LKChannel) <$> rChannelLink]
   where
     setText key link =
       selector "setText(bytes32,string,string)"

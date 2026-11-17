@@ -464,9 +464,7 @@ executable simplex-store-service
       StoreService.Names.Community
       StoreService.Names.Contracts
       StoreService.Names.Env
-      StoreService.Names.Label
       StoreService.Names.LateCredits
-      StoreService.Names.Links
       StoreService.Names.Orders
       StoreService.Names.Phases
       StoreService.Names.Profiles
@@ -486,7 +484,6 @@ executable simplex-store-service
       StoreService.Providers
       StoreService.Providers.BTCPay
       StoreService.Providers.Stripe
-      StoreService.Safely
       StoreService.Service
       StoreService.Store
       StoreService.Store.Invoices
@@ -524,7 +521,6 @@ executable simplex-store-service
     , http-client ==0.7.*
     , http-client-tls ==0.3.*
     , http-types ==0.12.*
-    , ini ==0.4.1
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network ==3.1.*
@@ -849,9 +845,7 @@ test-suite simplex-chat-test
       StoreService.Names.Community
       StoreService.Names.Contracts
       StoreService.Names.Env
-      StoreService.Names.Label
       StoreService.Names.LateCredits
-      StoreService.Names.Links
       StoreService.Names.Orders
       StoreService.Names.Phases
       StoreService.Names.Profiles
@@ -871,7 +865,6 @@ test-suite simplex-chat-test
       StoreService.Providers
       StoreService.Providers.BTCPay
       StoreService.Providers.Stripe
-      StoreService.Safely
       StoreService.Service
       StoreService.Store
       StoreService.Store.Invoices
@@ -935,7 +928,6 @@ test-suite simplex-chat-test
     , http-client ==0.7.*
     , http-client-tls ==0.3.*
     , http-types ==0.12.*
-    , ini ==0.4.1
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network ==3.1.*

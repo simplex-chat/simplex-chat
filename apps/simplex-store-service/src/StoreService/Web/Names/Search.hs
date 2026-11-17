@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -13,37 +14,35 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
-import Data.Bits (toIntegralSized)
-import qualified Data.ByteString.Char8 as B
-import Data.Char (isDigit)
 import Data.List (find)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import qualified Data.Text as T
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
-import Simplex.Chat.Badges.Code (nameLength, nameLengthInt)
+import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
+import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Names.Record (USDCents)
+import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import StoreService.Config (ChainConfig (..), NamesConfig (..))
+import StoreService.Config (ChainConfig (..), NamesConfig (..), boundedDecimal)
 import StoreService.Names.Abi (bytes32FromHex)
 import StoreService.Names.Community (communityJSON, readableTerms, termsJSON, yearsFor)
 import StoreService.Names.Contracts
-import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (nameEditsLeft)
-import StoreService.Names.Registration (CommunityName, tldLabel)
+import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink, tldLabel)
 import StoreService.Names.Store (isLabelRegistering)
 import StoreService.Store.Invoices (unixSeconds)
 import StoreService.Web.Http (HttpEnv, Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, rateLimited, readBoundedBody, searchSlot, termsUnavailable)
 import StoreService.Web.Names.Records (editsLeftJSON)
 import System.Timeout (timeout)
-import Text.Read (readMaybe)
 
 data Found
-  = FAvailable Int (Maybe Terms)
+  = FAvailable USDCents (Maybe Terms)
   | -- | the chain says available while a registration here has its register sent, not mined
     FRegistering
   | FReserved
@@ -78,12 +77,7 @@ searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond 
 
 -- | Nothing unless @length@ is a decimal integer in the label's bounds.
 queryLength :: Request -> Maybe Int
-queryLength req = case join $ lookup "length" $ queryString req of
-  Just s | not (B.null s) && B.all isDigit s -> readMaybe (B.unpack s) >>= inBounds
-  _ -> Nothing
-  where
-    inBounds :: Integer -> Maybe Int
-    inBounds n = nameLengthInt <$> (nameLength =<< toIntegralSized n)
+queryLength req = join (lookup "length" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal minNameLength maxNameLength)
 
 searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> CommunityName -> Found -> IO Response
 searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh community = \case
@@ -118,8 +112,8 @@ recordEntities :: Profiles -> NameRecords -> IO [Entity]
 recordEntities ps NameRecords {rdContact, rdChannel} =
   mapConcurrently (uncurry $ linkEntity ps) $ recordLinks LKContact rdContact <> recordLinks LKChannel rdChannel
 
-recordLinks :: LinkKind -> Text -> [(LinkKind, Text)]
-recordLinks kind = map (kind,) . take maxEntitiesPerKey . filter ((Just kind ==) . linkKindOf) . map T.strip . T.splitOn linkSeparator
+recordLinks :: LinkKind -> Text -> [(LinkKind, ConnShortLink 'CMContact)]
+recordLinks kind = take maxEntitiesPerKey . filter ((kind ==) . fst) . mapMaybe (nameLink . T.strip) . T.splitOn linkSeparator
 
 linkSeparator :: Text
 linkSeparator = ";"
@@ -133,7 +127,7 @@ previewHandler :: Profiles -> Request -> Respond -> IO ResponseReceived
 previewHandler ps req respond =
   readBoundedBody maxBodyBytes req >>= \case
     Just body | Just (J.Object o) <- J.decode body -> case KM.lookup "link" o of
-      Just (J.String link) | Just kind <- linkKindOf link -> respond . jsonResponse status200 . J.toJSON =<< linkPreview ps kind link
+      Just (J.String link) | Just (kind, sl) <- nameLink link -> respond . jsonResponse status200 . J.toJSON =<< linkPreview ps kind sl
       _ -> respond invalidLink
     _ -> respond badRequest
 

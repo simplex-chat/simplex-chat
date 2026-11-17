@@ -4,7 +4,7 @@ module StoreService.Names.Env (NamesEnv (..), newNamesEnv) where
 
 import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Messaging.Agent.Protocol (UserId)
+import Simplex.Chat.Types (User)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (newChainClient)
@@ -19,7 +19,7 @@ import StoreService.Waiters (Waiters)
 
 data NamesEnv = NamesEnv
   { neChat :: ChatController,
-    neUserId :: UserId,
+    neUser :: User,
     neConfig :: NamesConfig,
     neStore :: DBStore,
     nePhases :: Phases,
@@ -32,12 +32,12 @@ data NamesEnv = NamesEnv
     neProviders :: [Provider]
   }
 
-newNamesEnv :: ChatController -> UserId -> NamesConfig -> DBStore -> Turns -> Waiters -> [Provider] -> IO NamesEnv
-newNamesEnv neChat@ChatController {random} neUserId neConfig@NamesConfig {nTLD, nChain, nRecordEditsPerYear, nMinPriceCentsPerYear} neStore neTurns neWaiters neProviders = do
+newNamesEnv :: ChatController -> User -> NamesConfig -> DBStore -> Turns -> Waiters -> [Provider] -> IO NamesEnv
+newNamesEnv neChat@ChatController {random} neUser neConfig@NamesConfig {nTLD, nChain, nRecordEditsPerYear, nMinPriceCentsPerYear} neStore neTurns neWaiters neProviders = do
   nePhases <- newPhases
   chain <- newChainClient random nChain
   neContracts <- newContracts neStore nTLD nMinPriceCentsPerYear chain
-  neProfiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile neChat neUserId) systemResolver
+  neProfiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile neChat neUser) systemResolver
   neSender <- newSender random chain neStore getCurrentTime
   neRecords <- newRecords neStore neTurns neContracts neSender nTLD nRecordEditsPerYear getCurrentTime
-  pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, neTurns, neContracts, neProfiles, neSender, neRecords, neWaiters, neProviders}
+  pure NamesEnv {neChat, neUser, neConfig, neStore, nePhases, neTurns, neContracts, neProfiles, neSender, neRecords, neWaiters, neProviders}

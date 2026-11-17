@@ -5,6 +5,7 @@
 module StoreService.Names.Abi
   ( AbiValue (..),
     AbiError (..),
+    ChainSeconds,
     abiWordSize,
     abiTuple,
     abiBytes,
@@ -56,6 +57,8 @@ data AbiError
   | AENotUtf8
   | AERange
   deriving (Eq, Show)
+
+type ChainSeconds = Word64
 
 abiWordSize :: Int
 abiWordSize = 32

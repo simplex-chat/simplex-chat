@@ -26,20 +26,18 @@ module Bots.StoreService.NamesOwnerTests
     rewrite,
     sentRegister,
     stored,
-    woken,
   )
 where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rentPriceCall, threeYearsOf11, unhex)
+import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rentPriceCall, threeYearsOf11)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
-import Bots.StoreService.NamesPhasesTests (registrationPath)
-import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, webGet, withApp)
+import Bots.StoreService.NamesPhasesTests (held, registrationPath, seenVersion, woken)
+import Bots.StoreService.WebTests (bounded, capturingStderr, digestFixture, fieldOf, jsonObject, refusedWith, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (Async, async, cancel, wait)
+import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
 import Control.Monad (forM, forM_, void)
@@ -52,8 +50,7 @@ import Data.List (find, sort, sortOn)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, addUTCTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import Data.Time.Clock (addUTCTime)
 import Data.Word (Word64, Word8)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -62,23 +59,23 @@ import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
+import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (addressWord, hex, uint256)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..), movable, signedRequestSeconds)
-import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage)
 import StoreService.Names.Store hiding (findLimit)
-import StoreService.Names.Turns (withLabelTurn)
+import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (HttpEnv, createLimit, findLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (findHandler, retargetHandler)
 import StoreService.Web.Names.Registration (registrationHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
-import System.Timeout (timeout)
 import Test.Hspec
 
 namesOwnerTests :: Spec
@@ -133,8 +130,8 @@ serveOwner ctx@Ctx {cOrders = orders, cWeb = web} action = do
 ownerRoutes :: OrdersEnv -> HttpEnv -> [Text] -> Maybe Route
 ownerRoutes orders http = \case
   ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = findLimit, rHandler = findHandler orders}
-  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders http holdMicros rid}
-  ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler orders rid}
+  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders http holdMicros (RegistrationId rid)}
+  ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler orders (RegistrationId rid)}
   _ -> Nothing
 
 signWith :: Ctx -> Secp256k1PrivateKey -> ByteString -> IO Text
@@ -142,9 +139,6 @@ signWith Ctx {cRandom} key msg = hex . serializeSignature . either (error . show
 
 clockSeconds :: Ctx -> IO Word64
 clockSeconds Ctx {cClock} = seconds <$> readIORef cClock
-
-seconds :: UTCTime -> Word64
-seconds = floor . utcTimeToPOSIXSeconds
 
 signedWindow :: Word64
 signedWindow = fromInteger signedRequestSeconds
@@ -199,7 +193,7 @@ answerReserved Ctx {cNode} label reason = do
 paidIn :: Ctx -> Order -> (NameRegistration -> NameRegistration) -> IO NameRegistration
 paidIn ctx o change = do
   (invId, _) <- placed ctx o
-  settleNow ctx invId settled `shouldReturn` Right ISPaid
+  settleNow ctx invId settled `shouldReturn` ISPaid
   r <- invoiceRegistration ctx invId
   rewrite ctx r change
 
@@ -221,7 +215,7 @@ rewrite Ctx {cStore, cClock} NameRegistration {nrId} change = do
       refused -> error $ "not written: " <> show refused
 
 -- | The amount and credited of the order's balance.
-balanceOf :: Ctx -> NameRegistration -> IO (Maybe (Int, Int))
+balanceOf :: Ctx -> NameRegistration -> IO (Maybe (USDCents, USDCents))
 balanceOf Ctx {cStore} NameRegistration {nrId} = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (\db -> getBalance db nrId orderTime)
 
 stored :: Ctx -> NameRegistration -> IO NameRegistration
@@ -293,7 +287,7 @@ currentFields NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment,
   OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed, ofAgreedTerms = nrAgreedTerms}
 
 fieldsIn :: J.Object -> [(Text, J.Value)] -> Expectation
-fieldsIn v = mapM_ (\(k, value) -> (k, field k v) `shouldBe` (k, Just value))
+fieldsIn v = mapM_ (\(k, value) -> (k, fieldOf v k) `shouldBe` (k, Just value))
 
 refusedWithView :: Text -> J.Object -> (Int, Maybe J.Object)
 refusedWithView tag view = (409, Just $ KM.fromList [("error", J.String tag), ("registration", J.Object view)])
@@ -305,25 +299,6 @@ labelHashText label = J.String $ hex lh
 
 codeRow :: Ctx -> PrepaidCode -> IO PrepaidCode
 codeRow Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore (`getPrepaidCodeById` pcId)
-
--- | Bounded, since a deadlock would otherwise hang the suite.
-within :: String -> IO a -> IO a
-within what action = timeout 10000000 action >>= maybe (error $ what <> " did not finish") pure
-
--- | A registration poll at the order's version, once the server holds it.
-held :: Ctx -> NameRegistration -> IO (Async (Int, J.Object))
-held ctx@Ctx {cOrders} NameRegistration {nrId, nrVersion} = do
-  waiting <- atomically $ phasesWaiting (oePhases cOrders)
-  poll <- async $ webGet (cClient ctx) (registrationPath nrId <> "?seenVersion=" <> show nrVersion) >>= \resp -> (statusOf resp,) <$> jsonObject resp
-  within "the hold" $ atomically $ phasesWaiting (oePhases cOrders) >>= check . (> waiting)
-  pure poll
-
-woken :: Async (Int, J.Object) -> IO (Int, J.Object)
-woken poll = timeout 5000000 (wait poll) >>= maybe (cancel poll >> error "the poll was not woken") pure
-
--- | Long enough for a request just sent to reach its turns.
-parkDelay :: Int
-parkDelay = 200000
 
 -- tests
 
@@ -346,10 +321,10 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
   findBody ctx keyA (T.toLower ownerAText) (seconds orderTime) >>= postFind ctx >>= \case
     (200, Just v) | Just (J.Array found) <- KM.lookup "registrations" v -> do
       let entries = map objectEntry $ toList found
-      map (field "registrationId") entries `shouldBe` map (Just . idText) (nrId lapsed : nrId paid : [oldOrder i | i <- [50, 49 .. 3]])
+      map (`fieldOf` "registrationId") entries `shouldBe` map (Just . idText) (nrId lapsed : nrId paid : [oldOrder i | i <- [50, 49 .. 3]])
       case entries of
         lapsedEntry : unpaidEntry : moveEntry : _ -> do
-          (field "phase" lapsedEntry, nrPhase lapsed) `shouldBe` (Just "failed", OCommitted)
+          (fieldOf lapsedEntry "phase", nrPhase lapsed) `shouldBe` (Just "failed", OCommitted)
           sort (KM.keys unpaidEntry) `shouldBe` sort ["registrationId", "invoiceId", "phase", "createdAt", "labelHash", "sealed", "balanceSource", "heldBy"]
           unpaidEntry
             `shouldBe` KM.fromList
@@ -450,7 +425,7 @@ testMoveRepeat = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder failedPhase
   -- the current fields from failed: nothing moves
   (status, v) <- move ctx keyA r (currentFields r)
-  (status, field "phase" =<< v, field "moves" =<< v) `shouldBe` (200, Just "failed", Just (J.Number 0))
+  (status, (`fieldOf` "phase") =<< v, (`fieldOf` "moves") =<< v) `shouldBe` (200, Just "failed", Just (J.Number 0))
   stored ctx r `shouldReturn` r
   to <- moveTo ctx "alicebakers" 10
   body <- moveBody ctx keyA (nrId r) to
@@ -470,7 +445,7 @@ testMoveTermsOnly :: IO ()
 testMoveTermsOnly = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder $ \p -> (failedPhase p) {nrAgreedTerms = agreed olderTerms}
   (status, v) <- move ctx keyA r (currentFields r) {ofAgreedTerms = agreed plainTerms}
-  (status, field "phase" =<< v, field "moves" =<< v) `shouldBe` (200, Just "queued", Just (J.Number 1))
+  (status, (`fieldOf` "phase") =<< v, (`fieldOf` "moves") =<< v) `shouldBe` (200, Just "queued", Just (J.Number 1))
   (nrAgreedTerms &&& nrMoves) <$> stored ctx r `shouldReturn` (agreed plainTerms, 1)
 
 testMoveTermsChanged :: IO ()
@@ -539,7 +514,7 @@ testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   answer <- move ctx keyA r to
   view <- getView ctx r
   answer `shouldBe` refusedWithView "registration_changed" view
-  field "phase" view `shouldBe` Just "registered"
+  fieldOf view "phase" `shouldBe` Just "registered"
 
 testMoveLimit :: IO ()
 testMoveLimit = withOwner $ \ctx -> do
@@ -548,13 +523,13 @@ testMoveLimit = withOwner $ \ctx -> do
   forM_ (zip [1 :: Int ..] ["alicebakers", "alicebakery", "alicebakers"]) $ \(n, label) -> do
     to <- moveTo ctx label (10 + n)
     v <- moved ctx keyA r to
-    field "moves" v `shouldBe` Just (J.toJSON n)
+    fieldOf v "moves" `shouldBe` Just (J.toJSON n)
     rewrite ctx r failedPhase
   limited <- stored ctx r
   to <- moveTo ctx "alicebakery" 20
   view <- getView ctx limited
   move ctx keyA limited to {ofAgreedTerms = agreed olderTerms} `shouldReturn` refusedWithView "move_limit" view
-  (field "moves" view, field "phase" view) `shouldBe` (Just (J.Number 3), Just "failed")
+  (fieldOf view "moves", fieldOf view "phase") `shouldBe` (Just (J.Number 3), Just "failed")
   stored ctx r `shouldReturn` limited
 
 testMoveMeetsOrder :: IO ()
@@ -598,12 +573,12 @@ testMoveLanded = withOwner $ \ctx -> do
   void $ sentRegister ctx notLanded 2 $ TSRevertedAt 120
   answerOwner ctx "alicebakery" (nrOwner minedOrder)
   forM_ [(minedOrder, Just minedHash), (ownedOrder, Nothing)] $ \(r, hash) -> do
-    poll <- held ctx r
+    poll <- held ctx (0, 1) $ registrationPath (nrId r) <> seenVersion (nrVersion r)
     to <- moveTo ctx "alicebakers" 10
     answer <- move ctx keyA r to
     view <- getView ctx r
     answer `shouldBe` refusedWithView "registration_changed" view
-    woken poll `shouldReturn` (200, view)
+    woken "the registration poll" poll `shouldReturn` (200, view)
     fieldsIn view [("phase", "registered"), ("expiresAt", J.toJSON expiry), ("moves", J.Number 0), ("error", J.Null), ("registerTx", maybe J.Null (J.String . hex) hash)]
     written <- stored ctx r
     (namePhase (nrPhase written), nrVersion written, nrLabelHash written) `shouldBe` (PRegistered, nrVersion r + 1, nrLabelHash r)
@@ -657,8 +632,8 @@ testMovePrice = withOwner $ \ctx -> do
   stored ctx dear `shouldReturn` dear
   balanceOf ctx dear `shouldReturn` Nothing
   v <- moved ctx keyB dear toCheaper
-  (field "price" v, field "phase" v, field "fromBalance" v) `shouldBe` (Just (J.Number 10000), Just "queued", Just (J.Number 0))
-  field "balance" v `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int)])
+  (fieldOf v "price", fieldOf v "phase", fieldOf v "fromBalance") `shouldBe` (Just (J.Number 10000), Just "queued", Just (J.Number 0))
+  fieldOf v "balance" `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int)])
   nrPrice <$> stored ctx dear `shouldReturn` 10000
   balanceOf ctx dear `shouldReturn` Just (10000, 10000)
 
@@ -674,11 +649,11 @@ testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
   withTransaction cStore $ \db -> do
     insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"
     createPaidRegistration db new (Just BalanceUse {buSource = nrId paying, buUsed = 5000}) (paidOrder "inv-diff") {poPrice = 20000} orderTime `shouldReturn` Right ()
-  settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` Right ISPaid
+  settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` ISPaid
   r <- registrationById ctx (RegistrationId "diff") >>= \d -> rewrite ctx d failedPhase
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyA r to
-  (field "price" v, field "fromBalance" v) `shouldBe` (Just (J.Number 10000), Just (J.Number 5000))
+  (fieldOf v "price", fieldOf v "fromBalance") `shouldBe` (Just (J.Number 10000), Just (J.Number 5000))
   balanceOf ctx r `shouldReturn` Just (10000, 10000)
   balanceOf ctx paying `shouldReturn` Just (0, 5000)
 
@@ -693,7 +668,7 @@ testMoveCodeOrder = withOwner $ \ctx@Ctx {cStore} -> do
   withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary pcCodeHash)
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyA r to
-  (field "phase" v, field "price" v) `shouldBe` (Just "queued", Just (J.Number 0))
+  (fieldOf v "phase", fieldOf v "price") `shouldBe` (Just "queued", Just (J.Number 0))
   (pcReservedBy &&& pcSpentAt) <$> codeRow ctx code `shouldReturn` (Just (nrId r), Nothing)
 
 testMoveReleasedCode :: IO ()
@@ -729,7 +704,7 @@ testMoveSizes = withOwner $ \ctx -> do
   stored ctx r `shouldReturn` r
   -- an owner in the body is ignored
   (status, v) <- postMove ctx (nrId r) (KM.insert "owner" (J.String ownerBText) body)
-  (status, field "sealed" =<< v, field "owner" =<< v) `shouldBe` (200, Just (J.String $ ofSealed longest), Just (J.String ownerAText))
+  (status, (`fieldOf` "sealed") =<< v, (`fieldOf` "owner") =<< v) `shouldBe` (200, Just (J.String $ ofSealed longest), Just (J.String ownerAText))
 
 testMoveRefusedSigner :: IO ()
 testMoveRefusedSigner = withOwner $ \ctx -> do
@@ -752,10 +727,10 @@ testMoveLostRace = withOwner $ \ctx@Ctx {cNode} -> do
     (moving, gate) <- pausedAt cNode "eth_call" $ move ctx keyA r to
     changed <- rewrite ctx r id
     releaseGate gate
-    answer <- within "the move" $ wait moving
+    answer <- bounded "the move" $ wait moving
     view <- getView ctx changed
     answer `shouldBe` refusedWithView "registration_changed" view
-    field "version" view `shouldBe` Just (J.toJSON $ nrVersion r + 1)
+    fieldOf view "version" `shouldBe` Just (J.toJSON $ nrVersion r + 1)
     stored ctx r `shouldReturn` changed
     balanceOf ctx r `shouldReturn` Nothing
 
@@ -783,10 +758,11 @@ testMovesCross = withOwnerAs (\cfg -> cfg {nMaxOrderMoves = 100}) $ \ctx -> do
     holder <- async $ withLabelTurn (oeTurns $ cOrders ctx) (labelHash high) $ putMVar holding () >> takeMVar release
     takeMVar holding
     let started = if odd n then [lowMove, highMove] else [highMove, lowMove]
-    moves <- forM started $ \(r, body) -> async (postMove ctx (nrId r) body) <* threadDelay parkDelay
+        queuedOnLow k = bounded "the move's turn" $ atomically $ labelTurnCount (oeTurns $ cOrders ctx) (labelHash low) >>= check . (== k)
+    moves <- forM (zip [1 ..] started) $ \(k, (r, body)) -> async (postMove ctx (nrId r) body) <* queuedOnLow k
     putMVar release ()
     wait holder
-    outcomes <- within ("round " <> show n) $ mapM wait moves
+    outcomes <- bounded ("round " <> show n) $ mapM wait moves
     map fst outcomes `shouldBe` [200, 200]
     forM_ [a, b] $ \r -> rewrite ctx r failedPhase
   where
@@ -796,8 +772,8 @@ testPollsWoken :: IO ()
 testPollsWoken = withOwner $ \ctx -> do
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
-  poll <- held ctx r
+  poll <- held ctx (0, 1) $ registrationPath (nrId r) <> seenVersion (nrVersion r)
   to <- moveTo ctx "alicebakers" 10
   void $ moved ctx keyA r to
-  (status, v) <- woken poll
-  (status, field "version" v, field "phase" v) `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1), Just "queued")
+  (status, v) <- woken "the registration poll" poll
+  (status, fieldOf v "version", fieldOf v "phase") `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1), Just "queued")

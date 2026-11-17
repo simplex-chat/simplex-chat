@@ -84,11 +84,10 @@ foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCre
     idText (RegistrationId t) = t
 
 -- | POST /api/registration/:id/name, another name or other links, under the turns of both names.
-retargetHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
-retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} ridText req respond =
+retargetHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} rid@(RegistrationId ridText) req respond =
   readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
-    rid = RegistrationId ridText
     requested = \case
       Just body | Just (J.Object o) <- J.decode body -> either refuse signed $ do
         request@(fields, _, _) <- parseBody "move" $ parseOrderFields o
@@ -107,7 +106,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
       now <- oeNow
       moveTo now (registrationAt now stored) fields timestamp
     moveTo now r@NameRegistration {nrPhase} fields timestamp
-      | orderFieldsOf r == fields = answerNow . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now r
+      | orderFieldsOf r == fields = answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
       | not (movable r) = refuse $ ORBadRequest "the order is not movable"
       | namePhase nrPhase == PFailed =
@@ -132,7 +131,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
         Left (WRRefused refusal) -> refuse refusal
     movedAnswer now v =
       withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just r -> written env rid v . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now (registrationAt now r)
+        Just r -> written env rid v . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now (registrationAt now r)
         Nothing -> answerNow internalError <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
     changed = answerNow <$> registrationChangedResponse env rid
     what = "POST /api/registration/:id/name"

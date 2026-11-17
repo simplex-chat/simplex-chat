@@ -27,9 +27,9 @@ import Bots.StoreService.NamesContractsTests
     year,
   )
 import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, testNamesConfig, threeYears)
-import Bots.StoreService.NamesProfilesTests (bakeryLink, jpeg, newsLink)
+import Bots.StoreService.NamesProfilesTests (bakeryLink, channelData, contactData, jpeg, linkDataProfile, newsLink, parsed)
 import Bots.StoreService.NamesStoreTests (atNonce, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
-import Bots.StoreService.WebTests (withServiceStore, withApp)
+import Bots.StoreService.WebTests (answerOf, refusedWith, withServiceStore, withApp)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Monad (forM_)
@@ -47,21 +47,21 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
-import Network.HTTP.Client (Manager, Request, RequestBody (..), httpLbs, method, parseRequest, requestBody, responseBody, responseHeaders, responseStatus)
+import Network.HTTP.Client (Manager, Request, RequestBody (..), httpLbs, method, parseRequest, requestBody, responseHeaders)
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types (status404, status429)
-import Network.HTTP.Types.Status (statusCode)
+import Simplex.Chat.Types (ChatPeerType (..), ImageData (..), Profile (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Links (LinkKind (..), linkMaxBytes)
-import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
-import StoreService.Names.Store (EditState (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
+import StoreService.Names.Registration (LinkKind (..), linkMaxBytes)
+import StoreService.Names.Profiles (HostResolver, ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
+import StoreService.Names.Store (EditOutcome (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (HttpEnv (..), maxSearches, newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Search (previewHandler, recordLinks, searchHandler, termsHandler)
@@ -102,8 +102,8 @@ withSearch :: TVar ChaChaDRG -> (NamesConfig -> NamesConfig) -> (Contracts -> Co
 withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContracts g $ \node ct -> do
   fetched <- newTVarIO []
   searchesAtFetch <- newTVarIO []
-  http@HttpEnv {heSearches} <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesPort = Nothing, lMetricsPort = Nothing}
-  let fetch sl = atomically (readTVar heSearches >>= modifyTVar' searchesAtFetch . (:)) >> fakeFetch fetched sl
+  http@HttpEnv {heSearches} <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesSite = Nothing, lTrustForwardedFor = False, lNamesSite = Nothing, lMetricsPort = Nothing}
+  let fetch kind sl = atomically (readTVar heSearches >>= modifyTVar' searchesAtFetch . (:)) >> fakeFetch fetched kind sl
   ps <- newProfiles defaultProfileLimits {fetchTimeout = fetchMicros} monotonicSeconds fetch stubResolver
   let cfg = adjustConfig $ testNamesConfig node
       routes = \case
@@ -118,7 +118,7 @@ aliceCommunity :: Text
 aliceCommunity = "bakers and bakeries in Lisbon"
 
 listAlice :: NamesConfig -> NamesConfig
-listAlice cfg = cfg {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) aliceCommunity}
+listAlice cfg = cfg {nCommunity = M.singleton alice aliceCommunity}
 
 -- | The answer as it reads for a name the policy lists, with its text from the ini and, when available, the policy's community terms.
 listed :: Answer -> Answer
@@ -129,36 +129,31 @@ listedUnder :: ByteString -> Answer -> Answer
 listedUnder text = withTerms (termsEntry text) . withField "community" (communityEntry aliceCommunity)
 
 withTerms :: J.Value -> Answer -> Answer
-withTerms terms answer@(_, Just (J.Object o))
+withTerms terms answer@(_, Just o)
   | KM.member "terms" o = withField "terms" terms answer
 withTerms _ answer = answer
 
 withField :: J.Key -> J.Value -> Answer -> Answer
-withField k v (status, answer) = (status, inserted <$> answer)
-  where
-    inserted = \case
-      J.Object o -> J.Object $ KM.insert k v o
-      other -> other
+withField k v (status, answer) = (status, KM.insert k v <$> answer)
 
 fetchMicros :: Int
 fetchMicros = 500000
 
 -- | Answers by the tag at the start of the link's key; a link tagged Gone is not read.
 fakeFetch :: TVar [Text] -> ProfileFetcher
-fakeFetch fetched sl = do
+fakeFetch fetched _ sl = do
   let l = decodeUtf8 $ strEncode sl
   atomically $ modifyTVar' fetched (l :)
-  pure $ case T.drop 1 $ snd $ T.breakOn "#" l of
+  pure $ Right $ case T.drop 1 $ snd $ T.breakOn "#" l of
     key
-      | "Y8m3" `T.isPrefixOf` key -> Just bakery
-      | "Rk27" `T.isPrefixOf` key -> Just news
-      | "Bot" `T.isPrefixOf` key -> Just helper {kind = CKBot}
-      | "Biz" `T.isPrefixOf` key -> Just helper {kind = CKBusiness}
+      | "Y8m3" `T.isPrefixOf` key -> Just $ contactData False bakery
+      | "Rk27" `T.isPrefixOf` key -> Just $ channelData Nothing (Just 1204)
+      | "Bot" `T.isPrefixOf` key -> Just $ contactData False helper {peerType = Just CPTBot}
+      | "Biz" `T.isPrefixOf` key -> Just $ contactData True helper
       | otherwise -> Nothing
   where
-    bakery = LinkProfile {kind = CKContact, displayName = "Alice's Bakery", fullName = "Sourdough and pastries, Lisbon", image = Just jpeg, subscribers = Nothing}
-    news = LinkProfile {kind = CKChannel, displayName = "Bakery news", fullName = "Daily bakes and opening hours", image = Nothing, subscribers = Just 1204}
-    helper = LinkProfile {kind = CKContact, displayName = "helper", fullName = "", image = Nothing, subscribers = Nothing}
+    bakery = linkDataProfile "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just $ ImageData jpeg)
+    helper = linkDataProfile "helper" "" Nothing
 
 -- | private.test resolves to a private address, any other name to a public one.
 stubResolver :: HostResolver
@@ -175,10 +170,7 @@ taggedLink host kind tag = "https://" <> host <> "/" <> T.singleton kind <> "#" 
 fetchedLinks :: Search -> IO [Text]
 fetchedLinks Search {fetched} = readTVarIO fetched
 
-type Answer = (Int, Maybe J.Value)
-
-answerOf :: HTTP.Response LB.ByteString -> Answer
-answerOf r = (statusCode (responseStatus r), J.decode (responseBody r))
+type Answer = (Int, Maybe J.Object)
 
 send :: Search -> String -> (Request -> Request) -> IO (HTTP.Response LB.ByteString)
 send Search {client = (mgr, base)} path modify = do
@@ -198,10 +190,7 @@ previewOf :: Search -> Text -> IO Answer
 previewOf s l = answerOf <$> postPreview s (J.encode $ J.object ["link" .= l])
 
 ok :: [(J.Key, J.Value)] -> Answer
-ok = (200,) . Just . J.object
-
-refused :: Int -> Text -> Answer
-refused status tag = (status, Just $ J.object ["error" .= tag])
+ok = (200,) . Just . KM.fromList
 
 -- chain
 
@@ -288,13 +277,13 @@ recordsOf :: Text -> Text -> J.Value
 recordsOf contact channel = J.object ["contact" .= contact, "channel" .= channel]
 
 -- | A preview's fields, and with the link and its deep link a search answer's entity.
-chat :: Text -> Text -> Text -> Text -> Maybe Text -> Maybe Int -> Text -> [(J.Key, J.Value)]
-chat t kind displayName fullName image subscribers profile =
-  ["type" .= t, "kind" .= kind, "displayName" .= displayName, "fullName" .= fullName, "image" .= image, "subscribers" .= subscribers, "profile" .= profile]
+chat :: Text -> Text -> Text -> Maybe Text -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
+chat t displayName fullName image kind =
+  ["type" .= t, "profile" .= str "ok", "displayName" .= displayName, "fullName" .= fullName, "image" .= image] <> kind
 
 bakeryChat, newsChat :: [(J.Key, J.Value)]
-bakeryChat = chat "address" "contact" "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just jpeg) Nothing "ok"
-newsChat = chat "channel" "channel" "Bakery news" "Daily bakes and opening hours" Nothing (Just 1204) "ok"
+bakeryChat = chat "address" "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just jpeg) ["peerType" .= J.Null, "business" .= False]
+newsChat = chat "channel" "Bakery news" "Daily bakes and opening hours" Nothing ["groupType" .= J.Null, "publicMemberCount" .= (1204 :: Int)]
 
 entity :: [(J.Key, J.Value)] -> Text -> Text -> J.Value
 entity fields l deepLink = J.object $ fields <> ["link" .= l, "deepLink" .= deepLink]
@@ -357,7 +346,7 @@ testSearchSlot g = withSearch g id id $ \s@Search {node, searches, searchesAtFet
   fst <$> searchAlice s 12 `shouldReturn` 200
   readTVarIO searchesAtFetch `shouldReturn` [0, 0]
   atomically $ writeTVar searches maxSearches
-  searchAlice s 12 `shouldReturn` refused 429 "rate_limited"
+  searchAlice s 12 `shouldReturn` refusedWith 429 "rate_limited"
 
 testCommunity :: TVar ChaChaDRG -> IO ()
 testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
@@ -383,7 +372,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   setPhase store $ ORegistered 1861833600 t0
   searchAlice s 12 `shouldReturn` listedUnder fakeNewCommunityTermsText (availableAnswer 10000)
   answerListing node alice $ Reverts ""
-  searchAlice s 12 `shouldReturn` refused 503 "provider_unavailable"
+  searchAlice s 12 `shouldReturn` refusedWith 503 "provider_unavailable"
 
 testTermsUnavailable :: TVar ChaChaDRG -> IO ()
 testTermsUnavailable g = withSearch g listAlice id $ \s@Search {node} -> do
@@ -410,27 +399,27 @@ testTerms g = withSearch g id id $ \s@Search {node} -> do
       otherLink = "https://example.org/terms.md"
   answerOf <$> terms (hex fakeGeneralTerms) `shouldReturn` termsAnswer fakeGeneralTermsText
   answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` termsAnswer fakeCommunityTermsText
-  answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refused 404 "not_found"
+  answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refusedWith 404 "not_found"
   setCommunityTerms node fakeNewCommunityTermsText
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` termsAnswer fakeNewCommunityTermsText
-  answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` refused 404 "not_found"
+  answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` refusedWith 404 "not_found"
   setGeneralTerms node ""
-  answerOf <$> terms (hex $ C.keccak256 "") `shouldReturn` refused 404 "not_found"
-  answerOf <$> terms (hex fakeGeneralTerms) `shouldReturn` refused 404 "not_found"
+  answerOf <$> terms (hex $ C.keccak256 "") `shouldReturn` refusedWith 404 "not_found"
+  answerOf <$> terms (hex fakeGeneralTerms) `shouldReturn` refusedWith 404 "not_found"
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ textAnswer otherLink
   nextBlock node
-  answerOf <$> terms (hex $ C.keccak256 $ encodeUtf8 otherLink) `shouldReturn` refused 404 "not_found"
+  answerOf <$> terms (hex $ C.keccak256 $ encodeUtf8 otherLink) `shouldReturn` refusedWith 404 "not_found"
   setGeneralTerms node fakeNewGeneralTermsText
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status429 [("Retry-After", "60")] ""
   r <- terms (hex fakeNewGeneralTerms)
-  (answerOf r, lookup "Retry-After" (responseHeaders r)) `shouldBe` (refused 503 "terms_unavailable", Just "60")
+  (answerOf r, lookup "Retry-After" (responseHeaders r)) `shouldBe` (refusedWith 503 "terms_unavailable", Just "60")
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status404 [] ""
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` termsAnswer fakeNewCommunityTermsText
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
   nextBlock node
-  answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refused 503 "provider_unavailable"
+  answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refusedWith 503 "provider_unavailable"
   forM_ [T.toUpper (hex fakeGeneralTerms), T.drop 2 (hex fakeGeneralTerms), "0x12"] $ \h ->
-    answerOf <$> terms h `shouldReturn` refused 400 "bad_request"
+    answerOf <$> terms h `shouldReturn` refusedWith 400 "bad_request"
 
 testCommunityWithoutText :: TVar ChaChaDRG -> IO ()
 testCommunityWithoutText g = withSearch g id id $ \s@Search {node} -> do
@@ -438,7 +427,7 @@ testCommunityWithoutText g = withSearch g id id $ \s@Search {node} -> do
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   answer <- searchAlice s 12
-  (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "community"))) `shouldBe` Just (communityEntry J.Null)
+  (snd answer >>= JT.parseMaybe (J..: "community")) `shouldBe` Just (communityEntry J.Null)
 
 testCommunityYears :: TVar ChaChaDRG -> IO ()
 testCommunityYears g = withSearch g threeYears id $ \s@Search {node} -> do
@@ -446,17 +435,19 @@ testCommunityYears g = withSearch g threeYears id $ \s@Search {node} -> do
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   answer <- searchAlice s 12
-  (snd answer >>= JT.parseMaybe (J.withObject "answer" $ \o -> (,,) <$> o J..: "years" <*> o J..: "price" <*> (o J..: "community" >>= (J..: "years")))) `shouldBe` Just (3 :: Int, 10000 :: Int, 2 :: Int)
+  (snd answer >>= JT.parseMaybe (\o -> (,,) <$> o J..: "years" <*> o J..: "price" <*> (o J..: "community" >>= (J..: "years")))) `shouldBe` Just (3 :: Int, 10000 :: Int, 2 :: Int)
 
 testRecordLinks :: IO ()
 testRecordLinks = do
   let botLink = taggedLink "smp8.simplex.im" 'a' "Bot"
       bots = map (\n -> taggedLink "smp8.simplex.im" 'a' ("Bot" <> T.pack (show n))) [1 .. 7 :: Int]
-  recordLinks LKContact (bakeryLink <> ";" <> botLink <> " ; " <> newsLink <> ";" <> fullLink <> ";;") `shouldBe` [(LKContact, bakeryLink), (LKContact, botLink)]
-  recordLinks LKChannel (" " <> newsLink <> ";" <> bakeryLink <> ";hello") `shouldBe` [(LKChannel, newsLink)]
+  recordLinks LKContact (bakeryLink <> ";" <> botLink <> " ; " <> newsLink <> ";" <> fullLink <> ";;") `shouldBe` parsedAs LKContact [bakeryLink, botLink]
+  recordLinks LKChannel (" " <> newsLink <> ";" <> bakeryLink <> ";hello") `shouldBe` parsedAs LKChannel [newsLink]
   recordLinks LKContact fullLink `shouldBe` []
   -- a value of another kind first, so the cap counts only the record's own links
-  recordLinks LKContact (T.intercalate ";" $ newsLink : bots) `shouldBe` map (LKContact,) (take 5 bots)
+  recordLinks LKContact (T.intercalate ";" $ newsLink : bots) `shouldBe` parsedAs LKContact (take 5 bots)
+  where
+    parsedAs kind = map ((kind,) . parsed)
 
 testRecordEdits :: TVar ChaChaDRG -> IO ()
 testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom) -> withSearch g (\cfg -> cfg {nRecordEditsPerYear = perYear}) id $ \s@Search {node, store} -> do
@@ -469,15 +460,15 @@ testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom
   Just revertedId <- inserted 3 5
   Just _ <- inserted 4 1
   withTransaction store $ \db -> do
-    settleRecordEdit db minedId (ESMined Nothing) `shouldReturn` True
-    settleRecordEdit db revertedId (ESReverted Nothing) `shouldReturn` True
+    settleRecordEdit db minedId (EOApplied Nothing) `shouldReturn` True
+    settleRecordEdit db revertedId (EOReverted Nothing) `shouldReturn` True
   answer <- searchAlice s 12
-  (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "recordEdits")))
+  (snd answer >>= JT.parseMaybe (J..: "recordEdits"))
     `shouldBe` Just (editsLeft left $ J.toJSON (floor (utcTimeToPOSIXSeconds $ daysAgo returnsFrom) + 365 * 86400 :: Int))
 
 testFailedReads :: TVar ChaChaDRG -> IO ()
 testFailedReads g = withSearch g id id $ \s@Search {node} -> do
-  let unavailable = refused 503 "provider_unavailable"
+  let unavailable = refusedWith 503 "provider_unavailable"
   available node
   searchAlice s 12 `shouldReturn` unavailable
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 9999
@@ -508,7 +499,7 @@ testOneDeadline g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Sea
   fst <$> searchAlice s 12 `shouldReturn` 200
   forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ deadline * 2 `div` 7
   (answer, elapsed) <- timed $ searchAlice s 12
-  answer `shouldBe` refused 503 "provider_unavailable"
+  answer `shouldBe` refusedWith 503 "provider_unavailable"
   elapsed `shouldSatisfy` (< 3)
   answerRegistered node otherResolver
   searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText J.Null
@@ -521,7 +512,7 @@ testSlowTerms g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Searc
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   setFault node "GET" $ Slow $ deadline * 3 `div` 2
   (answer, elapsed) <- timed $ searchAlice s 12
-  answer `shouldBe` refused 503 "provider_unavailable"
+  answer `shouldBe` refusedWith 503 "provider_unavailable"
   elapsed `shouldSatisfy` (< 2)
   clearFault node "GET"
   threadDelay deadline
@@ -534,8 +525,8 @@ testBadHash :: TVar ChaChaDRG -> IO ()
 testBadHash g = withSearch g id id $ \s -> do
   let hexDigits = T.drop 2 aliceHex
   forM_ [T.toUpper aliceHex, "0x" <> T.toUpper hexDigits, hexDigits, "0x" <> T.drop 1 hexDigits, aliceHex <> "0", "0x" <> T.replicate 64 "g", "0X" <> hexDigits] $ \h ->
-    (h, searchName s h "?length=12") `shouldReturnPair` refused 400 "bad_request"
-  searchName s ("0x" <> T.toUpper hexDigits) "?length=5" `shouldReturn` refused 400 "bad_request"
+    (h, searchName s h "?length=12") `shouldReturnPair` refusedWith 400 "bad_request"
+  searchName s ("0x" <> T.toUpper hexDigits) "?length=5" `shouldReturn` refusedWith 400 "bad_request"
   where
     shouldReturnPair (h, act) expected = act >>= \a -> (h, a) `shouldBe` (h, expected)
 
@@ -543,7 +534,7 @@ testBadLength :: TVar ChaChaDRG -> IO ()
 testBadLength g = withSearch g id id $ \s@Search {node} -> do
   reserved node
   forM_ ["?length=5", "?length=64", "", "?length=", "?length", "?length=abc", "?length=6.0", "?length=%2B7", "?length=-6", "?length=%207", "?length=0x6", "?length=18446744073709551622"] $ \q ->
-    searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, refused 400 "invalid_name")
+    searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, refusedWith 400 "invalid_name")
   forM_ ["?length=6", "?length=63", "?length=007"] $ \q ->
     searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, reservedAnswer)
 
@@ -554,14 +545,14 @@ testPreviewKinds g = withSearch g id id $ \s -> do
   previewOf s bakeryLink `shouldReturn` ok bakeryChat
   previewOf s newsLink `shouldReturn` ok newsChat
   previewOf s "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im" `shouldReturn` ok newsChat
-  previewOf s (taggedLink "smp8.simplex.im" 'a' "Bot") `shouldReturn` ok (chat "address" "bot" "helper" "" Nothing Nothing "ok")
-  previewOf s (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (chat "address" "business" "helper" "" Nothing Nothing "ok")
+  previewOf s (taggedLink "smp8.simplex.im" 'a' "Bot") `shouldReturn` ok (chat "address" "helper" "" Nothing ["peerType" .= str "bot", "business" .= False])
+  previewOf s (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (chat "address" "helper" "" Nothing ["peerType" .= J.Null, "business" .= True])
 
 testPreviewInvalid :: TVar ChaChaDRG -> IO ()
 testPreviewInvalid g = withSearch g id id $ \s -> do
   let base = bakeryLink <> "?x="
       padded n = base <> T.replicate (n - T.length base) "a"
-      invalid = refused 400 "invalid_link"
+      invalid = refusedWith 400 "invalid_link"
   forM_ ["hello", "", fullLink, bakeryLink <> ";" <> bakeryLink, " " <> bakeryLink, taggedLink "smp8.simplex.im" 'g' "Y8m3", padded (linkMaxBytes + 1)] $ \l ->
     previewOf s l >>= \a -> (l, a) `shouldBe` (l, invalid)
   answerOf <$> postPreview s "{}" `shouldReturn` invalid
@@ -572,4 +563,4 @@ testPreviewInvalid g = withSearch g id id $ \s -> do
 testPreviewBadBody :: TVar ChaChaDRG -> IO ()
 testPreviewBadBody g = withSearch g id id $ \s -> do
   forM_ ["[]", "\"link\"", "not json", "", J.encode (J.object ["link" .= T.replicate 9000 "a"])] $ \body ->
-    answerOf <$> postPreview s body >>= \a -> (body, a) `shouldBe` (body, refused 400 "bad_request")
+    answerOf <$> postPreview s body >>= \a -> (body, a) `shouldBe` (body, refusedWith 400 "bad_request")

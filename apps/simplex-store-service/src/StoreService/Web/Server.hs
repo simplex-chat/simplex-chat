@@ -47,7 +47,7 @@ import Data.Functor ((<&>))
 import Data.List (isPrefixOf)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes, fromMaybe, isJust)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -62,7 +62,7 @@ import Simplex.Chat.Badges.Types (BadgeOfferId (..), BadgePriceId (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
-import Simplex.Messaging.Util (raceAny_, tshow)
+import Simplex.Messaging.Util (catchOwn', raceAny_, tshow)
 import System.Directory (canonicalizePath, doesDirectoryExist, doesFileExist)
 import System.FilePath (pathSeparator, takeExtension, (</>))
 
@@ -74,27 +74,21 @@ data WebEnv = WebEnv
     weHoldMicros :: Int,
     weHints :: ReadHints,
     weHttp :: HttpEnv,
-    -- | The badges build, @Nothing@ when @serve_webapp@ is off.
-    weBadgesSite :: Maybe FilePath,
-    -- | The names build, @Nothing@ unless the names site is served on @names_port@.
-    weNamesSite :: Maybe FilePath,
     -- | @Nothing@ when the ini has no @[names]@ section.
     weNames :: Maybe NamesEnv,
     -- | The name orders' part of weNames, which tests set without a chat controller.
     weOrders :: Maybe OrdersEnv,
-    -- | When each provider last delivered a webhook that verified, by its text encoding.
-    weWebhookAt :: TVar (Map Text UTCTime)
+    -- | When each provider last delivered a webhook that verified.
+    weWebhookAt :: TVar (Map PaymentProvider UTCTime)
   }
 
 newWebEnv :: DBStore -> ServiceConfig -> Waiters -> ReadHints -> [Provider] -> Maybe NamesEnv -> IO WebEnv
 newWebEnv weStore weConfig weWaiters weHints weProviders weNames = do
   weHttp <- newHttpEnv lc
   weWebhookAt <- newTVarIO M.empty
-  pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weBadgesSite, weNamesSite, weNames, weOrders = ordersEnv <$> weNames, weWebhookAt}
+  pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weNames, weOrders = ordersEnv <$> weNames, weWebhookAt}
   where
-    lc@ListenerConfig {lServeWebapp, lBadgesStaticDir, lNamesStaticDir, lNamesPort} = listener weConfig
-    weBadgesSite = if lServeWebapp then Just lBadgesStaticDir else Nothing
-    weNamesSite = lNamesPort *> lNamesStaticDir
+    lc = listener weConfig
 
 listenerConfig :: WebEnv -> ListenerConfig
 listenerConfig WebEnv {weConfig} = listener weConfig
@@ -115,7 +109,7 @@ webhookResponse st = responseLBS st [(hCacheControl, "no-store")] ""
 
 -- | The badges port's app.
 webApp :: WebEnv -> Application
-webApp env = siteApp env (weBadgesSite env)
+webApp env = siteApp env (lBadgesSite $ listenerConfig env)
 
 -- | Every port answers the API and the webhooks, and serves its own site's files.
 siteApp :: WebEnv -> Maybe FilePath -> Application
@@ -428,13 +422,9 @@ parseCreateRequest o = do
 -- | A provider retries a delivery it sees fail, so anything thrown below is caught and answered 200 anyway.
 webhookHandler :: WebEnv -> PaymentProvider -> Text -> Request -> Respond -> IO ResponseReceived
 webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
-  E.try deliver >>= \case
-    Right received -> pure received
-    Left e -> case E.fromException e of
-      Just async' -> E.throwIO (async' :: E.SomeAsyncException)
-      Nothing -> do
-        logError (route <> ": the delivery could not be handled, so no read was queued: " <> tshow (e :: E.SomeException))
-        respond webhookOk
+  deliver `catchOwn'` \e -> do
+    logError (route <> ": the delivery could not be handled, so no read was queued: " <> tshow e)
+    respond webhookOk
   where
     deliver :: IO ResponseReceived
     deliver = case providerNamed (weProviders env) provider of
@@ -451,7 +441,7 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
               Left (WebhookError e) -> refuse e
               Left (WebhookStale e) -> logRefusal logWarn (route <> " refused: " <> e) >> respond webhookRefused
               Right ref_ -> do
-                atomically $ modifyTVar' (weWebhookAt env) $ M.insert (textEncode provider) now
+                atomically $ modifyTVar' (weWebhookAt env) $ M.insert provider now
                 maybe (ignore body "nothing this service acts on") (resolve body) ref_
     refuse :: Text -> IO ResponseReceived
     refuse why = logRefusal logNote (route <> " refused: " <> why) >> respond webhookRefused
@@ -502,9 +492,9 @@ logRequestException _ e = when (Warp.defaultShouldDisplayException e) $ logError
 
 -- | Each port with its app: the badges site's, and the names site's when it is served.
 webListeners :: WebEnv -> [(Int, Application)]
-webListeners env@WebEnv {weNamesSite} = (lBadgesPort, webApp env) : [(port, siteApp env weNamesSite) | Just port <- [lNamesPort]]
+webListeners env = (lBadgesPort, webApp env) : [(port, siteApp env (Just dir)) | Just (port, dir) <- [lNamesSite]]
   where
-    ListenerConfig {lBadgesPort, lNamesPort} = listenerConfig env
+    ListenerConfig {lBadgesPort, lNamesSite} = listenerConfig env
 
 runWebListeners :: WebEnv -> IO ()
 runWebListeners env = do
@@ -515,14 +505,14 @@ runWebListeners env = do
 
 -- | Each build that is served must be a directory, or the service would serve nothing.
 checkSiteDirs :: ListenerConfig -> IO (Either String ())
-checkSiteDirs ListenerConfig {lServeWebapp, lBadgesStaticDir, lNamesStaticDir, lNamesPort} =
+checkSiteDirs ListenerConfig {lBadgesSite, lNamesSite} =
   filterM (fmap not . doesDirectoryExist . snd) used <&> \case
     (site, dir) : _ -> Left ("listener." <> site <> "_static_dir = " <> dir <> " is not a directory; set it to the " <> site <> " build, since the default is the Docker image's path")
     [] -> Right ()
   where
     used =
-      [("badges", lBadgesStaticDir) | lServeWebapp]
-        <> [("names", dir) | Just dir <- [lNamesStaticDir], isJust lNamesPort]
+      [("badges", dir) | Just dir <- [lBadgesSite]]
+        <> [("names", dir) | Just (_, dir) <- [lNamesSite]]
 
 warnIfHeaderTrustIsExposed :: ListenerConfig -> IO ()
 warnIfHeaderTrustIsExposed ListenerConfig {lHost, lTrustForwardedFor} =

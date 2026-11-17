@@ -6,7 +6,7 @@
 module Bots.StoreService.NamesCodesTests (namesCodesTests) where
 
 import Bots.StoreService.NamesStoreTests (order, ownerA, ownerB, placeCode, placePaid, usable)
-import Bots.StoreService.WebTests (withServiceStore, withApp)
+import Bots.StoreService.WebTests (answerOf, refusedWith, withServiceStore, withApp)
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently)
@@ -19,8 +19,7 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
-import Network.HTTP.Client (Manager, Response, RequestBody (..), httpLbs, method, parseRequest, requestBody, responseBody, responseStatus)
-import Network.HTTP.Types.Status (statusCode)
+import Network.HTTP.Client (Manager, Response, RequestBody (..), httpLbs, method, parseRequest, requestBody)
 import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, formatNameCode, nameLength, namePrepaidCodeHash, parseNameCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -106,7 +105,7 @@ testCodeStates = do
 -- The route as namesRoutes registers it, since a NamesEnv needs a running chat controller.
 withCodeCheck :: (DBStore -> Client -> IO a) -> IO a
 withCodeCheck action = withServiceStore $ \st -> do
-  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesPort = Nothing, lMetricsPort = Nothing}
+  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesSite = Nothing, lTrustForwardedFor = False, lNamesSite = Nothing, lMetricsPort = Nothing}
   let routes = \case
         ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler st}
         _ -> Nothing
@@ -126,14 +125,8 @@ checkText client code = postCheck client (J.encode (J.object ["code" J..= code])
 checkCode :: Client -> NamePrepaidCode -> IO (Response LB.ByteString)
 checkCode client = checkText client . formatNameCode
 
-answerOf :: Response LB.ByteString -> (Int, Maybe J.Object)
-answerOf r = (statusCode (responseStatus r), J.decode (responseBody r))
-
 coverage :: Int -> Int -> Text -> (Int, Maybe J.Object)
 coverage minLength years state = (200, Just $ KM.fromList [("minLength", J.toJSON minLength), ("years", J.toJSON years), ("state", J.String state)])
-
-refused :: Int -> Text -> (Int, Maybe J.Object)
-refused status tag = (status, Just $ KM.fromList [("error", J.String tag)])
 
 newCode :: Int -> IO NamePrepaidCode
 newCode len = C.newRandom >>= (`randomNamePrepaidCode` lengthOf len)
@@ -161,7 +154,7 @@ testCheckFolded = withCodeCheck $ \st client -> do
 testCheckInvalid :: IO ()
 testCheckInvalid = withCodeCheck $ \_ client -> do
   unknown <- newCode 8
-  let invalid = refused 400 "code_invalid"
+  let invalid = refusedWith 400 "code_invalid"
   answerOf <$> checkCode client unknown `shouldReturn` invalid
   forM_
     [ "SN-DWPHS-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5",
@@ -171,7 +164,7 @@ testCheckInvalid = withCodeCheck $ \_ client -> do
 
 testCheckBadBody :: IO ()
 testCheckBadBody = withCodeCheck $ \_ client -> do
-  let badRequest = refused 400 "bad_request"
+  let badRequest = refusedWith 400 "bad_request"
   forM_ ["", "not json", "[\"SN7-BJTBP-29596-R3HJ8-25YM7\"]", "{}", "{\"code\": 7}", "{\"code\": null}"] $ \body ->
     (body,) . answerOf <$> postCheck client body `shouldReturn` (body, badRequest)
   let overCap = "{\"code\": \"SN7-BJTBP-29596-R3HJ8-25YM7\", \"pad\": \"" <> LB.replicate 8192 'x' <> "\"}"
@@ -300,10 +293,10 @@ testReleaseSpend = withOrders $ \turns st -> do
 testGroupNameCommands :: IO ()
 testGroupNameCommands = do
   let p = groupCmdAction GRAdmin
-  p "/issue name 8" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2)
-  p "/issue name 63" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 2)
-  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 2)
-  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 10)
+  p "/issue name 8" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2 CPSFree)
+  p "/issue name 63" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 2 CPSFree)
+  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 2 CPSFree)
+  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 10 CPSFree)
   map p ["/bulk name 7 count 3", "/bulk name 12 years 2 count 100", "/bulk name 6 count 1"] `shouldBe` replicate 3 bulkUsage
   groupCmdAction GRMember "/issue name 8" `shouldBe` IgnoreMsg
 
