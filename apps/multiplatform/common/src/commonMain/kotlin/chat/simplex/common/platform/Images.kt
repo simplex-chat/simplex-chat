@@ -115,15 +115,13 @@ suspend fun base64ToBitmapInBackground(base64ImageString: String): ImageBitmap =
   withContext(base64ImageDecoder) { base64ToBitmap(base64ImageString) }
 
 @Stable
-class Base64ImagePainter private constructor(private val placeholderSize: IntSize, bitmap: ImageBitmap?) : Painter() {
+class Base64ImagePainter internal constructor(pictureSize: IntSize, bitmap: ImageBitmap?) : Painter() {
   internal constructor(bitmap: ImageBitmap) : this(IntSize(bitmap.width, bitmap.height), bitmap)
-  internal constructor(placeholderSize: IntSize) : this(placeholderSize, null)
 
   var bitmap: ImageBitmap? by mutableStateOf(bitmap)
     internal set
 
-  override val intrinsicSize: Size
-    get() = (bitmap?.let { IntSize(it.width, it.height) } ?: placeholderSize).toSize()
+  override val intrinsicSize: Size = pictureSize.toSize()
 
   override fun DrawScope.onDraw() {
     bitmap?.let { drawImage(it, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt())) }
@@ -133,9 +131,12 @@ class Base64ImagePainter private constructor(private val placeholderSize: IntSiz
 @Composable
 fun rememberBase64ImagePainter(base64ImageString: String): Base64ImagePainter {
   val painter = remember(base64ImageString) {
-    cachedBase64Bitmap(base64ImageString)?.let { Base64ImagePainter(it) }
-      ?: base64BitmapSize(base64ImageString)?.let { Base64ImagePainter(it) }
-      ?: Base64ImagePainter(errorImageBitmap)
+    val decoded = cachedBase64Bitmap(base64ImageString)
+    if (decoded != null && decoded !== errorImageBitmap) {
+      Base64ImagePainter(decoded)
+    } else {
+      base64BitmapSize(base64ImageString)?.let { Base64ImagePainter(it, decoded) } ?: Base64ImagePainter(errorImageBitmap)
+    }
   }
   LaunchedEffect(painter) {
     if (painter.bitmap == null) painter.bitmap = base64ToBitmapInBackground(base64ImageString)
