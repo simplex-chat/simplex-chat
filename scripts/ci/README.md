@@ -126,6 +126,13 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   PGHOST=127.0.0.1 LANG=C.UTF-8 "$(cabal list-bin --builddir dist-postgres --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test)" -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"
   ```
 
+#### store service Lightning end to end
+
+- Workflow: store-lightning-e2e.yml, job test (ubuntu-22.04 x86_64), on a dispatch and on a push to `sh/lightning-e2e`. It is not part of build.yml.
+- CI: `scripts/store-service/dev/lightning.sh` (BTCPay Server 2.4.4 on regtest with its LND node and a payer's LND node), the build-linux Docker image, a `postgres:17` container, `cabal build` with `+client_postgres`, then simplex-chat-test with `--fail-on=empty,pending -m "StoreService Lightning e2e"` and the variables of `scripts/store-service/dev/lightning.env`.
+- The Docker image layers are read from and written to the registry cache `simplex-chat-build-cache:22.04-x86_64-ghc9.6.3-lightning-e2e`.
+- Local: scripts/store-service/README.md, "Lightning end-to-end tests".
+
 #### website
 
 - Globs:

@@ -1,0 +1,161 @@
+name: store-lightning-e2e
+
+on:
+  push:
+    branches:
+      - sh/lightning-e2e
+  workflow_dispatch:
+
+env:
+  ghc: 9.6.3
+  branch: ${{ github.ref_name }}
+  image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:22.04-x86_64-ghc9.6.3
+  lightning_stack: scripts/store-service/dev/lightning.yml
+  cabal_flags: --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres'
+
+jobs:
+  test:
+    name: "ubuntu-22.04-x86_64 (store service, Lightning e2e), GHC: 9.6.3"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 150
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Free disk space
+        shell: bash
+        run: ./scripts/ci/linux_util_free_space.sh
+
+      - name: Start BTCPay and the Lightning nodes
+        shell: bash
+        run: ./scripts/store-service/dev/lightning.sh
+
+      - name: Get UID and GID
+        id: ids
+        run: |
+          echo "uid=$(id -u)" >> $GITHUB_OUTPUT
+          echo "gid=$(id -g)" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: simplex-chat/docker-setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Compute image cache week
+        id: week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and cache Docker image
+        uses: simplex-chat/docker-build-push-action@v6
+        with:
+          context: .
+          load: true
+          file: Dockerfile.build
+          tags: build/22.04:latest
+          build-args: |
+            TAG=22.04
+            HASH=sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5
+            GHC=${{ env.ghc }}
+            USER_UID=${{ steps.ids.outputs.uid }}
+            USER_GID=${{ steps.ids.outputs.gid }}
+          cache-from: |
+            type=registry,ref=${{ env.image_cache }}-${{ steps.week.outputs.week }}
+            type=registry,ref=${{ env.image_cache }}-lightning-e2e
+          cache-to: type=registry,ref=${{ env.image_cache }}-lightning-e2e,mode=max,ignore-error=true
+
+      - name: Start PostgreSQL
+        shell: bash
+        run: |
+          docker run -d --name postgres --network host -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17 \
+            -c listen_addresses=127.0.0.1 -c max_connections=1500
+          for _ in $(seq 60); do
+            docker exec postgres pg_isready -q -h 127.0.0.1 && exit 0
+            sleep 1
+          done
+          docker logs postgres
+          exit 1
+
+      - name: Start container
+        shell: bash
+        run: |
+          mkdir -p ~/.cabal
+          docker run -t -d \
+            --name builder \
+            --network host \
+            -e CABAL_DIR=/home/builder/.cabal \
+            -e PGHOST=127.0.0.1 \
+            -e LANG=C.UTF-8 \
+            -v ~/.cabal:/home/builder/.cabal \
+            -v /home/runner/work/_temp:/home/runner/work/_temp \
+            -v ${{ github.workspace }}:/project \
+            build/22.04:latest
+
+      - name: Compute cache key prefix
+        id: keys
+        run: |
+          toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
+          echo "deps=deps-ubuntu-22.04-x86_64-postgres-tests-ghc${{ env.ghc }}-$toolchain" >> "$GITHUB_OUTPUT"
+
+      - name: Restore dependencies from cache
+        id: restore-deps
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.deps }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.deps }}-
+
+      - name: Prepare cabal.project.local
+        shell: bash
+        run: |
+          echo "ignore-project: False"    >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    flags: +openssl"      >> cabal.project.local
+
+      - name: Build tests
+        id: build
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          cabal update
+          cabal build -j --enable-tests --ghc-options=-O0 ${{ env.cabal_flags }} simplex-chat-test
+
+      - name: Compute dependency cache key
+        if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
+        id: hash-deps
+        shell: bash
+        run: echo "hash=$(ls ~/.cabal/store/ghc-*/ | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Save dependencies to cache
+        if: ${{ !cancelled() && steps.hash-deps.outcome == 'success' && steps.restore-deps.outputs.cache-matched-key != format('{0}-{1}-{2}', steps.keys.outputs.deps, env.branch, steps.hash-deps.outputs.hash) }}
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
+
+      - name: Run the Lightning tests
+        timeout-minutes: 20
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          set -a
+          . scripts/store-service/dev/lightning.env
+          set +a
+          test=$(cabal list-bin ${{ env.cabal_flags }} simplex-chat-test | tail -n 1)
+          "$test" --fail-on=empty,pending -m "StoreService Lightning e2e"
+
+      - name: Show the stack's logs
+        if: failure()
+        shell: bash
+        run: |
+          docker compose -f "$lightning_stack" ps -a
+          docker compose -f "$lightning_stack" logs --no-color --tail 400 btcpay merchant_lnd payer_lnd
