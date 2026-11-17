@@ -1581,6 +1581,36 @@ testServiceWireTags = do
             expiresAt = futureTime,
             paymentTo = SPDCard {provider = CPStripe, url = "https://checkout.example/inv-1"}
           }
+      hash32 = "0x" <> T.replicate 32 "ab"
+      signature = "0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b"
+      deadline = 1792577700
+      prepaidCode = "SN7-BJTBP-29596-R3HJ8-25YM7"
+      owner = either error id $ strDecode "0x9a676e781a523b5d0c0e43731313a708cb607508"
+      registrationId = NameRegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
+      signedOrder =
+        SignedNameOrder
+          { labelHash = hash32,
+            labelLength = 7,
+            duration = 69292800,
+            commitment = hash32,
+            sealed = "sealed",
+            terms = hash32,
+            timestamp = 1792574100,
+            signature
+          }
+      nameOrder = NameCodeOrder {code = prepaidCode, owner, signedOrder}
+      reveal =
+        SignedNameReveal
+          { label = "alice42",
+            signature,
+            secret = hash32,
+            nonce = 0,
+            deadline,
+            records = NameRevealRecords {contact = [], channel = []},
+            acceptance = NameRevealAcceptance {termsHash = hash32, nonce = 0, signature}
+          }
+      recipient = either error id $ strDecode "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6"
+      nameMove = NameMove {labelHash = hash32, holder = owner, recipient}
       commands =
         [ STCGetBadgeCatalog,
           STCGetBadgeInvoice {priceId = BadgePriceId "price-1", offerId = Just (BadgeOfferId "offer-1"), badgeInfo, paymentVia = SPMCard {provider = CPStripe}, upgrade = Nothing},
@@ -1589,7 +1619,23 @@ testServiceWireTags = do
           STCUpgradeBadgeSubscription {payment, balance},
           STCTransferBadge {masterKey, payment},
           STCIssueBadge {balance},
-          STCPauseBadge
+          STCPauseBadge,
+          STCGetNameCatalog,
+          STCGetNameTerms {termsHash = hash32},
+          STCCheckNameCode {code = prepaidCode},
+          STCOpenNameCode {code = prepaidCode},
+          STCCloseNameCode {code = prepaidCode},
+          STCOrderName {nameOrder},
+          STCPurchaseName {payment, purchaseCode = NPCOrder {nameOrder}},
+          STCGetNameRegistration {registrationId},
+          STCRevealName {registrationId, reveal},
+          STCRetryName {registrationId},
+          STCFindNameOrders {owner, timestamp = 1792574100, signature},
+          STCOrderAnotherName {registrationId, signedOrder},
+          STCGetNameMove {nameMove},
+          STCApproveNameMove {nameMove, nonce = 0, deadline, signature},
+          STCAcceptNameMoveTerms {nameMove, moveOffer = 1, termsHash = hash32, nonce = 0, deadline, signature},
+          STCClaimNameMove {nameMove, moveOffer = 1, nonce = 1, deadline, signature}
         ]
       responses =
         [ STPBadgeCatalog {catalog = BadgeCatalog {prices = [], offers = []}, badgeStatement = Just statement},
@@ -1635,6 +1681,22 @@ testServiceWireTags = do
       STCTransferBadge {} -> "transferBadge"
       STCIssueBadge {} -> "issueBadge"
       STCPauseBadge -> "pauseBadge"
+      STCGetNameCatalog -> "getNameCatalog"
+      STCGetNameTerms {} -> "getNameTerms"
+      STCCheckNameCode {} -> "checkNameCode"
+      STCOpenNameCode {} -> "openNameCode"
+      STCCloseNameCode {} -> "closeNameCode"
+      STCOrderName {} -> "orderName"
+      STCPurchaseName {} -> "purchaseName"
+      STCGetNameRegistration {} -> "getNameRegistration"
+      STCRevealName {} -> "revealName"
+      STCRetryName {} -> "retryName"
+      STCFindNameOrders {} -> "findNameOrders"
+      STCOrderAnotherName {} -> "orderAnotherName"
+      STCGetNameMove {} -> "getNameMove"
+      STCApproveNameMove {} -> "approveNameMove"
+      STCAcceptNameMoveTerms {} -> "acceptNameMoveTerms"
+      STCClaimNameMove {} -> "claimNameMove"
     responseTag = \case
       STPBadgeCatalog {} -> "badgeCatalog"
       STPBadgeInvoice {} -> "badgeInvoice"

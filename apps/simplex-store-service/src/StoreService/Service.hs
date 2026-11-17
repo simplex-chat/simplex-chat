@@ -1079,6 +1079,22 @@ commandName = \case
   STCTransferBadge {payment} -> "transferBadge " <> paymentName payment
   STCIssueBadge {} -> "issueBadge"
   STCPauseBadge -> "pauseBadge"
+  STCGetNameCatalog -> "getNameCatalog"
+  STCGetNameTerms {} -> "getNameTerms"
+  STCCheckNameCode {} -> "checkNameCode"
+  STCOpenNameCode {} -> "openNameCode"
+  STCCloseNameCode {} -> "closeNameCode"
+  STCOrderName {} -> "orderName"
+  STCPurchaseName {payment} -> "purchaseName " <> paymentName payment
+  STCGetNameRegistration {} -> "getNameRegistration"
+  STCRevealName {} -> "revealName"
+  STCRetryName {} -> "retryName"
+  STCFindNameOrders {} -> "findNameOrders"
+  STCOrderAnotherName {} -> "orderAnotherName"
+  STCGetNameMove {} -> "getNameMove"
+  STCApproveNameMove {} -> "approveNameMove"
+  STCAcceptNameMoveTerms {} -> "acceptNameMoveTerms"
+  STCClaimNameMove {} -> "claimNameMove"
   where
     paymentName = \case
       SPApple {} -> "(App Store)"

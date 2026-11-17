@@ -1,6 +1,9 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -16,6 +19,14 @@ module Simplex.Chat.StoreService
     currentStoreServiceVersion,
     supportedStoreServiceVRange,
     BadgeUpgrade (..),
+    NameRegistrationId (..),
+    SignedNameOrder (..),
+    NameCodeOrder (..),
+    NamePurchaseCode (..),
+    SignedNameReveal (..),
+    NameRevealRecords (..),
+    NameRevealAcceptance (..),
+    NameMove (..),
     StoreServiceResponse (..),
     StoreServiceErrorCode (..),
     SubscriptionState (..),
@@ -31,18 +42,19 @@ module Simplex.Chat.StoreService
   ) where
 
 import Control.Applicative ((<|>))
-import Data.Aeson (FromJSON (..), ToJSON (..), (.:))
+import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
-import Data.Word (Word8, Word16, Word32)
+import Data.Word (Word8, Word16, Word32, Word64)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Types
 import Simplex.Chat.PaymentService
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Version (VersionRange, VersionScope, mkVersionRange)
 import Simplex.Messaging.Version.Internal (Version (..))
@@ -104,6 +116,44 @@ data StoreServiceCommand
       { balance :: BadgeBalance -- no badgeRequest: the service holds the key, the tier and the expiry
       }
   | STCPauseBadge
+  | STCGetNameCatalog
+  | STCGetNameTerms {termsHash :: Text}
+  | STCCheckNameCode {code :: Text}
+  | STCOpenNameCode {code :: Text}
+  | STCCloseNameCode {code :: Text}
+  | STCOrderName {nameOrder :: NameCodeOrder}
+  | STCPurchaseName {payment :: ServicePayment, purchaseCode :: NamePurchaseCode}
+  | STCGetNameRegistration {registrationId :: NameRegistrationId}
+  | STCRevealName {registrationId :: NameRegistrationId, reveal :: SignedNameReveal}
+  | STCRetryName {registrationId :: NameRegistrationId}
+  | STCFindNameOrders
+      { owner :: Address,
+        timestamp :: Word64,
+        signature :: Text
+      }
+  | STCOrderAnotherName {registrationId :: NameRegistrationId, signedOrder :: SignedNameOrder}
+  | STCGetNameMove {nameMove :: NameMove}
+  | STCApproveNameMove
+      { nameMove :: NameMove,
+        nonce :: Word64,
+        deadline :: Word64,
+        signature :: Text
+      }
+  | STCAcceptNameMoveTerms
+      { nameMove :: NameMove,
+        moveOffer :: Word64,
+        termsHash :: Text,
+        nonce :: Word64,
+        deadline :: Word64,
+        signature :: Text
+      }
+  | STCClaimNameMove
+      { nameMove :: NameMove,
+        moveOffer :: Word64,
+        nonce :: Word64,
+        deadline :: Word64,
+        signature :: Text
+      }
 
 data BadgeUpgrade = BadgeUpgrade
   { fromPurchaseKey :: C.PublicKeyEd25519,
@@ -111,6 +161,62 @@ data BadgeUpgrade = BadgeUpgrade
     receiptSignature :: C.Signature 'C.Ed25519,
     balance :: BadgeBalance
   }
+
+newtype NameRegistrationId = NameRegistrationId Text
+  deriving newtype (Eq, Show, ToJSON, FromJSON)
+
+data SignedNameOrder = SignedNameOrder
+  { labelHash :: Text,
+    labelLength :: Int,
+    duration :: Word64,
+    commitment :: Text,
+    sealed :: Text,
+    terms :: Text,
+    timestamp :: Word64,
+    signature :: Text
+  }
+  deriving (Eq, Show)
+
+data NameCodeOrder = NameCodeOrder
+  { code :: Text,
+    owner :: Address,
+    signedOrder :: SignedNameOrder
+  }
+  deriving (Eq, Show)
+
+data NamePurchaseCode = NPCHash {codeHash :: Text} | NPCOrder {nameOrder :: NameCodeOrder}
+  deriving (Eq, Show)
+
+data SignedNameReveal = SignedNameReveal
+  { label :: Text,
+    signature :: Text,
+    secret :: Text,
+    nonce :: Word64,
+    deadline :: Word64,
+    records :: NameRevealRecords,
+    acceptance :: NameRevealAcceptance
+  }
+  deriving (Eq, Show)
+
+data NameRevealRecords = NameRevealRecords
+  { contact :: [Text],
+    channel :: [Text]
+  }
+  deriving (Eq, Show)
+
+data NameRevealAcceptance = NameRevealAcceptance
+  { termsHash :: Text,
+    nonce :: Word64,
+    signature :: Text
+  }
+  deriving (Eq, Show)
+
+data NameMove = NameMove
+  { labelHash :: Text,
+    holder :: Address,
+    recipient :: Address
+  }
+  deriving (Eq, Show)
 
 data StoreServiceResponse
   = STPBadgeCatalog
@@ -250,6 +356,51 @@ $(JQ.deriveJSON defaultJSON ''BadgeStatement)
 $(JQ.deriveJSON defaultJSON ''BadgeBalance)
 
 $(JQ.deriveJSON defaultJSON ''BadgeUpgrade)
+
+instance ToJSON SignedNameOrder where
+  toJSON = J.object . signedOrderPairs
+
+instance FromJSON SignedNameOrder where
+  parseJSON = J.withObject "SignedNameOrder" $ \o ->
+    SignedNameOrder
+      <$> o .: "labelHash"
+      <*> o .: "length"
+      <*> o .: "duration"
+      <*> o .: "commitment"
+      <*> o .: "sealed"
+      <*> o .: "terms"
+      <*> o .: "timestamp"
+      <*> o .: "signature"
+
+signedOrderPairs :: SignedNameOrder -> [J.Pair]
+signedOrderPairs SignedNameOrder {labelHash, labelLength, duration, commitment, sealed, terms, timestamp, signature} =
+  [ "labelHash" .= labelHash,
+    "length" .= labelLength,
+    "duration" .= duration,
+    "commitment" .= commitment,
+    "sealed" .= sealed,
+    "terms" .= terms,
+    "timestamp" .= timestamp,
+    "signature" .= signature
+  ]
+
+instance ToJSON NameCodeOrder where
+  toJSON NameCodeOrder {code, owner, signedOrder} =
+    J.object $ ["code" .= code, "owner" .= owner] <> signedOrderPairs signedOrder
+
+instance FromJSON NameCodeOrder where
+  parseJSON = J.withObject "NameCodeOrder" $ \o ->
+    NameCodeOrder <$> o .: "code" <*> o .: "owner" <*> parseJSON (J.Object o)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "NPC") ''NamePurchaseCode)
+
+$(JQ.deriveJSON defaultJSON ''NameRevealRecords)
+
+$(JQ.deriveJSON defaultJSON ''NameRevealAcceptance)
+
+$(JQ.deriveJSON defaultJSON ''SignedNameReveal)
+
+$(JQ.deriveJSON defaultJSON ''NameMove)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "STC") ''StoreServiceCommand)
 
