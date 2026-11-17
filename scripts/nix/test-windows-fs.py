@@ -3,7 +3,9 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -19,10 +21,13 @@ class ProbeDefinition(unittest.TestCase):
             "${./windows-fs/Probe.c}", "/unused-probe.c")
         with tempfile.TemporaryDirectory() as temp:
             temp = Path(temp)
+            bash = shutil.which("bash")
+            if bash is None:
+                raise RuntimeError("bash is not on PATH")
             for name, body in [("sha256sum", "cat >/dev/null"),
                                ("fake-cc", "touch probe.exe")]:
                 path = temp / name
-                path.write_text("#!/usr/bin/env bash\n" + body + "\n")
+                path.write_text(f"#!{bash}\n" + body + "\n")
                 path.chmod(0o755)
             # Standard fixup hooks read optional variables without nounset.
             suffix = '\n[ -f probe.exe ]\n[ -z "$exit_code" ]\n'
@@ -92,7 +97,7 @@ class ProbeDefinition(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             temp = Path(temp)
             wine = temp / "fake-wine"
-            wine.write_text('''#!/usr/bin/env python3
+            wine.write_text(f'''#!{sys.executable}
 import json,os,pathlib,sys
 exe,strict,short,long,archive=sys.argv[1:]
 assert strict=="--strict"
@@ -100,12 +105,12 @@ assert len(long)>260 and len(archive)==319
 assert all(pathlib.Path(p).read_bytes()==bytes([1,0]) for p in [short,long,archive])
 assert pathlib.Path.cwd().is_relative_to(pathlib.Path(os.environ["TMPDIR"]).resolve())
 assert os.environ["WINEPREFIX"].startswith(os.environ["TMPDIR"])
-pathlib.Path(os.environ["CAPTURE"]).write_text(json.dumps({"args":sys.argv[1:],"prefix":os.environ["WINEPREFIX"]}))
+pathlib.Path(os.environ["CAPTURE"]).write_text(json.dumps({{"args":sys.argv[1:],"prefix":os.environ["WINEPREFIX"]}}))
 sys.exit(int(os.environ["PROBE_EXIT"]))
 ''')
             wine.chmod(0o755)
             server = temp / "fake-wineserver"
-            server.write_text('''#!/usr/bin/env python3
+            server.write_text(f'''#!{sys.executable}
 import os,pathlib,sys
 assert sys.argv[1:]==["-k"]
 pathlib.Path(os.environ["CLEANUP"]).write_text(os.environ["WINEPREFIX"])

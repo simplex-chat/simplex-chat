@@ -30,8 +30,9 @@ class MobileLinkArguments(unittest.TestCase):
             library.mkdir()
             (library / "libHSfixture.a").touch()
             compiler = root / "ghc"
+            # The linux builders have no /usr/bin/env, so name the interpreter.
             compiler.write_text(
-                "#!/usr/bin/env python3\nimport json,os,sys\n"
+                f"#!{sys.executable}\nimport json,os,sys\n"
                 "if sys.argv[1:]==['--numeric-version']:\n"
                 " print('9.14.1');sys.exit(0)\n"
                 "with open(os.environ['ARGV_LOG'],'a') as f:\n"
@@ -41,7 +42,7 @@ class MobileLinkArguments(unittest.TestCase):
             compiler.chmod(0o755)
             package_tool = root / "ghc-pkg"
             package_tool.write_text(
-                "#!/usr/bin/env python3\nimport os,sys\n"
+                f"#!{sys.executable}\nimport os,sys\n"
                 "field=sys.argv[-2]\n"
                 "print({'id':'fixture-unit','hs-libraries':'HSfixture',"
                 "'library-dirs':os.environ['FIXTURE_LIBRARY']}[field])\n"

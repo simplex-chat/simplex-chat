@@ -47,7 +47,9 @@ let
   '';
 
   windowsFsScript = pkgs.runCommand "test-windows-fs-script" {
-    nativeBuildInputs = [ pkgs.python3 ];
+    nativeBuildInputs = [ pkgs.python3 pkgs.nix ];
+    # The nix package does not enable nix-command on its own.
+    NIX_CONFIG = "extra-experimental-features = nix-command flakes";
   } ''
     set -eu
     dir=$TMPDIR/scripts
@@ -65,6 +67,7 @@ let
   windowsPackaging = pkgs.runCommand "test-windows-packaging" {
     nativeBuildInputs = [ pkgs.python3 pkgs.nix pkgs.zip pkgs.binutils pkgs.bash ];
     requiredSystemFeatures = [ "recursive-nix" ];
+    NIX_CONFIG = "extra-experimental-features = nix-command flakes";
   } ''
     set -eu
     root=$TMPDIR/repo
@@ -87,7 +90,10 @@ let
     echo ok > $out/result
   '';
 
-  cabalTest = haskellLib.check nativeProject.simplex-chat.components.tests.simplex-chat-test;
+  # Schema dump shells out to sqlite3. The default sqlite output is the library.
+  cabalTest = (haskellLib.check nativeProject.simplex-chat.components.tests.simplex-chat-test).overrideAttrs (old: {
+    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ pkgs.sqlite.bin ];
+  });
 
   xcodetest = pkgs.runCommand "xcodetest" {
     nativeBuildInputs = [ pkgs.python3 pkgs.bash ];

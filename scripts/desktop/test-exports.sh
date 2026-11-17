@@ -6,8 +6,9 @@ repo=$(cd "$(dirname "$0")/../.." && pwd)
 fixture=$(mktemp -d)
 trap 'rm -rf "$fixture"' EXIT
 mkdir -p "$fixture/bin"
+# /bin/sh exists in a Nix sandbox. /usr/bin/env does not on the linux builders.
 cat > "$fixture/bin/ghc" <<'STUB'
-#!/usr/bin/env bash
+#!/bin/sh
 case "$1" in
   --numeric-version) echo 9.6.3 ;;
   --print-libdir) echo /unused-ghc-libdir ;;
@@ -15,7 +16,7 @@ case "$1" in
 esac
 STUB
 cat > "$fixture/bin/cabal" <<'STUB'
-#!/usr/bin/env bash
+#!/bin/sh
 echo BUILD_REACHED
 exit 77
 STUB
