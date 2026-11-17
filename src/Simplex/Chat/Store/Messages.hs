@@ -29,8 +29,7 @@ module Simplex.Chat.Store.Messages
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
     getLastRcvMsgInfo,
-    checkRcvMsgAcknowledged,
-    createNewRcvMessage,
+    getRcvMsgDeliveryStatus,
     updateMsgDeliveryStatus,
     createPendingGroupMessage,
     getPendingGroupMessages,
@@ -326,13 +325,13 @@ getLastRcvMsgInfo db connId =
     rcvMsgInfo (msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta) =
       RcvMsgInfo {msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta}
 
-checkRcvMsgAcknowledged :: DB.Connection -> Int64 -> AgentMsgId -> IO Bool
-checkRcvMsgAcknowledged db connId agentMsgId =
-  fromOnly . head
-    <$> DB.query
+getRcvMsgDeliveryStatus :: DB.Connection -> Int64 -> AgentMsgId -> IO (Maybe (MsgDeliveryStatus 'MDRcv))
+getRcvMsgDeliveryStatus db connId agentMsgId =
+  maybeFirstRow fromOnly $
+    DB.query
       db
-      "SELECT EXISTS (SELECT 1 FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ? AND delivery_status = ?)"
-      (connId, agentMsgId, MDSRcvAcknowledged)
+      "SELECT delivery_status FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ? LIMIT 1"
+      (connId, agentMsgId)
 
 createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
 createNewRcvMessage db connOrGroupId newMessage@NewRcvMessage {chatMsgEvent, verifiedMsg, brokerTs} sharedMsgId_ authorMember forwardedByMember =

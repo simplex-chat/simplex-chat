@@ -562,19 +562,21 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         MSG msgMeta _msgFlags msgBody -> do
           tags <- newTVarIO []
           withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
-            unlessM (rcvMsgRepeated conn msgMeta) $ do
-              let MsgMeta {pqEncryption} = msgMeta
-              (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
-              checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchAllErrors` \_ -> pure ()
-              forM_ aChatMsgs $ \case
-                Right (APMsg _ (ParsedMsg _ _ chatMsg)) ->
-                  processEvent ct' conn' tags eInfo chatMsg `catchAllErrors` \e -> eToView e
-                Left e -> do
-                  atomically $ modifyTVar' tags ("error" :)
-                  logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
-                  createInternalChatItem user (CDDirectRcv ct') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
-                    `catchAllErrors` \_ -> pure ()
-              setRcvMsgAcknowledged conn msgMeta
+            rcvMsgDeliveryStatus conn msgMeta >>= \case
+              Just MDSRcvAcknowledged -> pure ()
+              status_ -> do
+                let MsgMeta {pqEncryption} = msgMeta
+                (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
+                when (isNothing status_) $ checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchAllErrors` \_ -> pure ()
+                forM_ aChatMsgs $ \case
+                  Right (APMsg _ (ParsedMsg _ _ chatMsg)) ->
+                    processEvent ct' conn' tags eInfo chatMsg `catchAllErrors` \e -> eToView e
+                  Left e -> do
+                    atomically $ modifyTVar' tags ("error" :)
+                    logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
+                    createInternalChatItem user (CDDirectRcv ct') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
+                      `catchAllErrors` \_ -> pure ()
+                setRcvMsgAcknowledged conn msgMeta
             (,False) <$> checkSendRcpt ct (rights aChatMsgs) -- not crucial to use ct'' from processEvent
           where
             aChatMsgs = parseChatMessages msgBody
@@ -620,7 +622,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           withAckMessage' "contact rcvd" agentConnId msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
         MSGERR MsgMeta {integrity = MsgOk} -> logError "MSGERR with MsgOk integrity"
-        MSGERR msgMeta -> checkIntegrityCreateItem (CDDirectRcv ct) msgMeta `catchAllErrors` \_ -> pure ()
+        MSGERR msgMeta -> unless (redelivered msgMeta) $ checkIntegrityCreateItem (CDDirectRcv ct) msgMeta `catchAllErrors` \_ -> pure ()
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn' connInfo
@@ -1019,21 +1021,24 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       MSG msgMeta _msgFlags msgBody -> do
         tags <- newTVarIO []
         withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
-          shouldDelConns <- ifM (rcvMsgRepeated conn msgMeta) (pure False) $ do
-            -- possible improvement is to choose scope based on event (some events specify scope)
-            (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-            checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
-            newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] aChatMsgs
-            shouldDelConns' <-
-              if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
-                then
-                  let tasks
-                        | not (relayServesGroup gInfo') = filter relayRemovedNewTask newDeliveryTasks
-                        | otherwise = newDeliveryTasks
-                   in createDeliveryTasks gInfo' m' tasks
-                else pure False
-            setRcvMsgAcknowledged conn msgMeta
-            pure shouldDelConns'
+          shouldDelConns <-
+            rcvMsgDeliveryStatus conn msgMeta >>= \case
+              Just MDSRcvAcknowledged -> pure False
+              status_ -> do
+                -- possible improvement is to choose scope based on event (some events specify scope)
+                (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
+                when (isNothing status_) $ checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
+                newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] aChatMsgs
+                shouldDelConns' <-
+                  if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
+                    then
+                      let tasks
+                            | not (relayServesGroup gInfo') = filter relayRemovedNewTask newDeliveryTasks
+                            | otherwise = newDeliveryTasks
+                       in createDeliveryTasks gInfo' m' tasks
+                    else pure False
+                setRcvMsgAcknowledged conn msgMeta
+                pure shouldDelConns'
           (,shouldDelConns) <$> checkSendRcpt (rights aChatMsgs)
         where
           aChatMsgs = parseChatMessages msgBody
@@ -1192,7 +1197,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
       MSGERR MsgMeta {integrity = MsgOk} -> logError "MSGERR with MsgOk integrity"
-      MSGERR msgMeta -> do
+      MSGERR msgMeta -> unless (redelivered msgMeta) $ do
         (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
         checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
       SENT msgId proxy -> do
@@ -2768,14 +2773,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} hostContact_
 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> CM ()
-    checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs), redelivered} = case integrity of
-      MsgError e | not redelivered -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
-      _ -> pure ()
+    checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
+      MsgOk -> pure ()
+      MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
 
-    rcvMsgRepeated :: Connection -> MsgMeta -> CM Bool
-    rcvMsgRepeated Connection {connId} MsgMeta {recipient = (agentMsgId, _), redelivered}
-      | redelivered = withStore' $ \db -> checkRcvMsgAcknowledged db connId agentMsgId
-      | otherwise = pure False
+    rcvMsgDeliveryStatus :: Connection -> MsgMeta -> CM (Maybe (MsgDeliveryStatus 'MDRcv))
+    rcvMsgDeliveryStatus Connection {connId} MsgMeta {recipient = (agentMsgId, _), redelivered}
+      | redelivered = withStore' $ \db -> getRcvMsgDeliveryStatus db connId agentMsgId
+      | otherwise = pure Nothing
 
     setRcvMsgAcknowledged :: Connection -> MsgMeta -> CM ()
     setRcvMsgAcknowledged Connection {connId} MsgMeta {recipient = (agentMsgId, _)} =
@@ -4122,7 +4127,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta `catchAllErrors` \_ -> pure ()
+      unless (redelivered msgMeta) $ checkIntegrityCreateItem (CDDirectRcv ct) msgMeta `catchAllErrors` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore' $ \db -> updateMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         updateDirectItemStatus ct conn agentMsgId $ CISSndRcvd msgRcptStatus SSPComplete
@@ -4130,7 +4135,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     groupMsgReceived gInfo m conn@Connection {connId} msgMeta msgRcpts = do
       (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-      checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
+      unless (redelivered msgMeta) $ checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         acis <- withStore $ \db -> do
           liftIO $ updateMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
