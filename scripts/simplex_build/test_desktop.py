@@ -542,16 +542,18 @@ class HostDesktopTest(unittest.TestCase):
             "desktop-jvm-7.1.4-3066ac60aa3aec2984be8f2f76d0fdf4.jar": "chat/simplex/desktop/MainKt.class",
             "common-desktop-7.1.4-f81867c79b291d1711913a8939399b.jar": "chat/simplex/common/BuildConfigCommon.class",
         }
-        dependency = "a-2-0123456789abcdef.jar"
-        for name, entry in {**own, dependency: "a/A.class"}.items():
-            with zipfile.ZipFile(app / name, "w") as z:
+        dependencies = {"a-2-0123456789abcdef.jar": "a/A.class", "resources\\vlc\\plugins\\libbluray-1.4.0.jar": "b/B.class"}
+        for name, entry in {**own, **dependencies}.items():
+            jar = app.joinpath(*name.split("\\"))
+            jar.parent.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(jar, "w") as z:
                 z.writestr(entry, b"class")
-        (app / "SimpleX.cfg").write_text("[Application]\r\n" + "".join(f"app.classpath=$APPDIR\\{name}\r\n" for name in [*own, dependency]))
+        (app / "SimpleX.cfg").write_text("[Application]\r\n" + "".join(f"app.classpath=$APPDIR\\{name}\r\n" for name in [*own, *dependencies]))
         properties = self.source / "apps/multiplatform/gradle.properties"
         properties.parent.mkdir(parents=True)
         properties.write_text("desktop.version_name=7.1.4\ndesktop.version_code=176\n")
         build_script.zip_ui_update(app, "core-1", self.source, self.out)
-        base = build_script.ui_base("core-1", ["a-2.jar"])
+        base = build_script.ui_base("core-1", ["a-2.jar", "libbluray-1.4.0.jar"])
         with zipfile.ZipFile(self.out / f"simplex-desktop-ui-{base}.zip") as z:
             self.assertEqual(sorted(z.namelist()), sorted(["ui.json", *own]))
             manifest = json.loads(z.read("ui.json"))

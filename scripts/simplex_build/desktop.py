@@ -106,6 +106,9 @@ UI_UPDATE_CLASSES = ("chat/simplex/desktop/MainKt.class", "chat/simplex/common/B
 JAR_CONTENT_HASH = re.compile(r"(-[0-9a-f]{16,32})?\.jar$")
 
 
+CLASSPATH_ENTRY = re.compile(r"app\.classpath=\$APPDIR[/\\]+(.+)")
+
+
 def ui_base(core_hash: str, dependencies: Sequence[str]) -> str:
     lines = [core_hash, *sorted(JAR_CONTENT_HASH.sub("", name) for name in dependencies)]
     return hashlib.sha256("".join(f"{line}\n" for line in lines).encode()).hexdigest()
@@ -118,16 +121,16 @@ def ui_jar(jar: Path) -> bool:
 
 def zip_ui_update(jars: Path, core_hash: str, source: Path, out: Path) -> None:
     cfg = single_file(jars, "*.cfg").read_text().splitlines()
-    classpath = [re.split(r"[/\\]", line)[-1] for line in cfg if line.startswith("app.classpath=")]
-    ui = [name for name in classpath if ui_jar(jars / name)]
-    base = ui_base(core_hash, [name for name in classpath if name not in ui])
+    classpath = [jars.joinpath(*re.split(r"[/\\]+", m[1])) for line in cfg if (m := CLASSPATH_ENTRY.fullmatch(line))]
+    ui = [jar for jar in classpath if ui_jar(jar)]
+    base = ui_base(core_hash, [jar.name for jar in classpath if jar not in ui])
     version_code = int(gradle_property(source, "desktop.version_code"))
-    manifest = {"version_code": version_code, "base": base, "jars": {name: sha256(jars / name) for name in ui}}
+    manifest = {"version_code": version_code, "base": base, "jars": {jar.name: sha256(jar) for jar in ui}}
     date_time = time.gmtime(int(SOURCE_DATE_EPOCH))[:6]
     with zipfile.ZipFile(out / f"simplex-desktop-ui-{base}.zip", "w") as z:
         z.writestr(zipfile.ZipInfo("ui.json", date_time), json.dumps(manifest))
-        for name in ui:
-            z.writestr(zipfile.ZipInfo(name, date_time), (jars / name).read_bytes())
+        for jar in ui:
+            z.writestr(zipfile.ZipInfo(jar.name, date_time), jar.read_bytes())
 
 
 def remove_skiko_runtime(app: Path) -> None:
