@@ -7,17 +7,17 @@ module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withLabelTurns,
 
 import Control.Concurrent.STM
 import Control.Exception (bracket)
-import Data.ByteString (ByteString)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Simplex.Messaging.Agent.Lock (Lock, createLock, withLock')
 import Simplex.Messaging.SimplexName (LabelHash)
 import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Store (CodeHash)
 
 -- | Each lock counts the requests holding or waiting for it, and its entry goes when none are left.
 type TurnLocks k = TVar (Map k (Lock, Int))
 
-data Turns = Turns {labelTurns :: TurnLocks LabelHash, codeTurns :: TurnLocks ByteString, balanceTurns :: TurnLocks RegistrationId}
+data Turns = Turns {labelTurns :: TurnLocks LabelHash, codeTurns :: TurnLocks CodeHash, balanceTurns :: TurnLocks RegistrationId}
 
 newTurns :: IO Turns
 newTurns = Turns <$> newTVarIO Map.empty <*> newTVarIO Map.empty <*> newTVarIO Map.empty
@@ -43,10 +43,10 @@ labelTurnCount :: Turns -> LabelHash -> STM Int
 labelTurnCount Turns {labelTurns} = turnRequests labelTurns
 
 -- | Keyed by the code's SHA-256 hash.
-withCodeTurn :: Turns -> ByteString -> IO a -> IO a
+withCodeTurn :: Turns -> CodeHash -> IO a -> IO a
 withCodeTurn Turns {codeTurns} = withTurn codeTurns
 
-codeTurnCount :: Turns -> ByteString -> STM Int
+codeTurnCount :: Turns -> CodeHash -> STM Int
 codeTurnCount Turns {codeTurns} = turnRequests codeTurns
 
 -- | Keyed by the order the balance belongs to.
