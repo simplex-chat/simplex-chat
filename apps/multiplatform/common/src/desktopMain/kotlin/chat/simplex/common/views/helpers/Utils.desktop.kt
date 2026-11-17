@@ -231,7 +231,7 @@ internal fun decodeBoundedBufferedImage(data: ByteArray, maxDimension: Int): Buf
 internal fun sourceDimensionsWithinLimits(width: Int, height: Int): Boolean =
   width in 1..MAX_SOURCE_IMAGE_DIMENSION && height in 1..MAX_SOURCE_IMAGE_DIMENSION && width * height <= MAX_SOURCE_IMAGE_PIXELS
 
-private fun gifMetadataWithinLimits(data: ByteArray): Boolean {
+internal fun gifMetadataWithinLimits(data: ByteArray): Boolean {
   var subBlocks = 0
   fun afterSubBlocks(start: Int): Int {
     var pos = start

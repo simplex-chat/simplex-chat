@@ -102,6 +102,14 @@ class Base64ImagePainterTest {
   }
 
   @Test
+  fun testGifPictureWithTooManyMetadataBlocksIsShownAsTheErrorPicture() {
+    val error = base64ToBitmap(base64Png(4321, 1))
+    assertEquals(IntSize(2, 2), base64BitmapSize(base64GifWithComment(1000)))
+    assertEquals(IntSize(error.width, error.height), base64BitmapSize(base64GifWithComment(1025)))
+    assertContentEquals(error.pixels(), base64ToBitmap(base64GifWithComment(1025)).pixels())
+  }
+
+  @Test
   fun testPictureIsNotDecodedForAViewThatIsGone() {
     val picture = base64Png(43, 37)
     whileDecoderIsBusy {
@@ -183,11 +191,21 @@ class Base64ImagePainterTest {
   private fun base64Png(width: Int, height: Int): String =
     "data:image/png;base64," + Base64.getEncoder().encodeToString(png(width, height))
 
-  private fun png(width: Int, height: Int): ByteArray {
+  private fun base64GifWithComment(subBlocks: Int): String {
+    val gif = encodeImage(2, 2, "gif")
+    val flags = gif[10].toInt()
+    val headerSize = 13 + if (flags and 0x80 != 0) 3 shl ((flags and 7) + 1) else 0
+    val comment = byteArrayOf(0x21, 0xFE.toByte()) + ByteArray(subBlocks * 2) { if (it % 2 == 0) 1 else 'x'.code.toByte() } + byteArrayOf(0)
+    return Base64.getEncoder().encodeToString(gif.copyOf(headerSize) + comment + gif.copyOfRange(headerSize, gif.size))
+  }
+
+  private fun png(width: Int, height: Int): ByteArray = encodeImage(width, height, "png")
+
+  private fun encodeImage(width: Int, height: Int, format: String): ByteArray {
     val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
     image.createGraphics().apply { color = Color.RED; fillRect(0, 0, width, height); dispose() }
     return ByteArrayOutputStream().use { out ->
-      ImageIO.write(image, "png", out)
+      ImageIO.write(image, format, out)
       out.toByteArray()
     }
   }
