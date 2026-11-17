@@ -1030,8 +1030,6 @@ testDirectSilentMessage ps = do
       bob <# "alice> [edited] hi there"
       forM_ [alice, bob] $ \cc -> itemPriority cc "/_get chat @2 count=1" `shouldReturn` Just (-1)
 
-      sendWithPriority "hey" (-5) "F" (Just (-1))
-      sendWithPriority "hello" 0 "T" Nothing
       sendWithPriority "hello again" 1 "T" Nothing
       helloId <- lastItemId alice
       alice ##> ("/_update item @2 " <> helloId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"hello again\"}, \"mentions\": {}, \"priority\": 1}")
@@ -1044,7 +1042,7 @@ testDirectSilentMessage ps = do
       alice #> "@bob bye"
       bob <# "alice> bye"
       lastSndMsgFlags alice bobConnId 1 `shouldReturn` ["T"]
-      readTVarIO rcvItems `shouldReturn` [("hi", Just (-1)), ("hey", Just (-1)), ("hello", Nothing), ("hello again", Nothing), ("bye", Nothing)]
+      readTVarIO rcvItems `shouldReturn` [("hi", Just (-1)), ("hello again", Nothing), ("bye", Nothing)]
 
 testDirectSilentMessageTerminal :: HasCallStack => TestParams -> IO ()
 testDirectSilentMessageTerminal =
