@@ -2660,8 +2660,8 @@ func processReceivedMsg(_ res: ChatEvent) async {
                         m.addChat(Chat(chat))
                     } else if m.chatId == chat.id {
                         m.updateChatInfo(chat.chatInfo)
-                    } else {
-                        m.replaceChat(chat.id, Chat(chat))
+                    } else if let currentChat = m.getChat(chat.id) {
+                        m.replaceChat(chat.id, Chat(chatInfo: chat.chatInfo.keepingChatSettings(of: currentChat.chatInfo), chatItems: chat.chatItems, chatStats: chat.chatStats))
                     }
                 } else {
                     let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
@@ -2739,7 +2739,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 }
             }
             if cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+                await NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
         }
     case let .chatItemsStatusesUpdated(user, chatItems):
@@ -3232,7 +3232,7 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     if active(user) {
         if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
             if cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+                await NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
         }
     }

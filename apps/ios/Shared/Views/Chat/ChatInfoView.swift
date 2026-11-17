@@ -461,7 +461,7 @@ struct ChatInfoView: View {
                         contact.activeConn?.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
                         connectionCode = existingCode
                         DispatchQueue.main.async {
-                            chat.chatInfo = .direct(contact: contact)
+                            chat.chatInfo = ChatInfo.direct(contact: contact).keepingChatSettings(of: chat.chatInfo)
                         }
                         return r
                     }

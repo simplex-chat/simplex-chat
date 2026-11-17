@@ -985,7 +985,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       val wasFavorite = chatInfo.chatSettings?.favorite ?: false
       chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
       withContext(Dispatchers.Main) {
-        chatModel.chatsContext.updateChatInfo(remoteHostId, newChatInfo)
+        chatModel.chatsContext.setChatSettings(remoteHostId, chatInfo.id, chatSettings)
       }
       if (chatSettings.enableNtfs == MsgFilter.None) {
         ntfManager.cancelNotificationsForChat(chatInfo.id)
