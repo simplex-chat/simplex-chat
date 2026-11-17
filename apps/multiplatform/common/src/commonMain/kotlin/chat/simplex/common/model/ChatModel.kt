@@ -461,6 +461,7 @@ object ChatModel {
       if (secondaryContextFilter == null) {
         addPresetChatTags(chat.chatInfo, chat.chatStats)
       }
+      updateChatTagReadInPrimaryContext(chat, wasUnread = false)
       popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = 0)
     }
 
@@ -494,7 +495,9 @@ object ChatModel {
         } else if (currentCInfo is ChatInfo.Group && newCInfo is ChatInfo.Group && newCInfo.groupChatScope != null) {
           newCInfo = newCInfo.copy(groupInfo = newCInfo.groupInfo, groupChatScope = null)
         }
+        val wasUnread = chats[i].unreadTag
         chats[i] = chats[i].copy(chatInfo = newCInfo)
+        updateChatTagReadInPrimaryContext(chats[i], wasUnread)
       }
     }
 

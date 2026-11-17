@@ -613,6 +613,7 @@ final class ChatModel: ObservableObject {
             addChat_(chat, at: 0)
         }
         ChatTagsModel.shared.addPresetChatTags(chat.chatInfo, chat.chatStats)
+        ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: false)
         popChatCollector.throttlePopChat(chat.chatInfo.id, currentPosition: 0)
     }
 
@@ -623,12 +624,14 @@ final class ChatModel: ObservableObject {
     // Spec: spec/state.md#updateChatInfo
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
+            let wasUnread = chats[i].unreadTag
             if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
                 chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: nil)
             } else {
                 chats[i].chatInfo = cInfo
             }
             chats[i].created = Date.now
+            ChatTagsModel.shared.updateChatTagRead(chats[i], wasUnread: wasUnread)
         }
     }
 
