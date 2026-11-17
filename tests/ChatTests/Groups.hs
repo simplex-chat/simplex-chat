@@ -39,7 +39,7 @@ import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscr
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (AChat (..), AChatItem (..), ACChatItem (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority, userMention), Chat (Chat, chatItems, chatStats), ChatItem (ChatItem, content, meta), ChatItemId, ChatStats (..), ChatType (CTGroup), highPriority, toChatType)
+import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIMention (..), CIMentionMember (..), CIMeta (CIMeta, priority, userMention), Chat (Chat, chatItems, chatStats), ChatItem (ChatItem, content, mentions, meta), ChatItemId, ChatStats (..), ChatType (CTGroup), highPriority, isUserMention, toChatType)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (MsgDirection (MDRcv), ciMsgContent, publicGroupNoE2EText, toMsgDirection)
 import Simplex.Chat.Options
@@ -263,6 +263,7 @@ chatGroupTests = do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   describe "group member mentions" $ do
     it "should send and edit messages with member mentions" testMemberMention
+    it "should send updated item with mentions added and removed by edit" testMemberMentionEdited
     it "should forward and quote message updating mentioned member name" testForwardQuoteMention
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
@@ -292,6 +293,7 @@ chatGroupTests = do
     it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
+    it "should correctly maintain unread stats for support chats on editing mentions" testScopedSupportUnreadStatsOnMentionEdit
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
     it "should not read support chat items when reading group without scope" testScopedSupportUnreadStatsGroupReadNoScope
@@ -8897,6 +8899,30 @@ testMemberMention =
           bob <# "#team cath> [edited] hello @alice @bob"
         ]
 
+testMemberMentionEdited :: HasCallStack => TestParams -> IO ()
+testMemberMentionEdited ps = do
+  updates <- newTVarIO []
+  let hook _ evt = do
+        case evt of
+          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi)) ->
+            atomically $ modifyTVar' updates (<> [(mentionOf prevCi, mentionOf ci)])
+          _ -> pure ()
+        pure evt
+      mentionOf :: ChatItem c d -> ([T.Text], Bool)
+      mentionOf ci@ChatItem {mentions} = (M.keys mentions, isUserMention ci)
+  withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      bob ##> "! #team hello @alice"
+      bob <# "#team [edited] hello @alice"
+      alice <# "#team bob> [edited] hello @alice"
+      bob ##> "! #team hello"
+      bob <# "#team [edited] hello"
+      alice <# "#team bob> [edited] hello"
+      readTVarIO updates `shouldReturn` [(([], False), (["alice"], True)), ((["alice"], True), ([], False))]
+
 testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
 testForwardQuoteMention =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -9745,6 +9771,31 @@ testScopedSupportUnreadStatsOnRead =
 
     cath ##> "/member support chats #team"
     cath <// 50000
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportUnreadStatsOnMentionEdit :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsOnMentionEdit =
+  testChatOpts4 opts aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+
+    dan ##> "/_send #1(_support:3) text 1"
+    dan <# "#team (support: bob) 1"
+    alice <# "#team (support: bob) dan> 1"
+    bob <# "#team (support) dan> 1"
+    danItemId <- lastItemId dan
+
+    dan ##> ("/_update item #1(_support:3) " <> danItemId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"@alice 1\"}, \"mentions\": {\"alice\": 1}}")
+    dan <# "#team (support: bob) [edited] @alice 1"
+    alice <# "#team (support: bob) dan> [edited] @alice 1"
+    bob <# "#team (support) dan> [edited] @alice 1"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 0, mentions: 1"
   where
     opts =
       testOpts
@@ -14259,7 +14310,7 @@ priorityRaisedCfg = do
   raised <- newTVarIO []
   let hook _ evt = do
         case evt of
-          Right (CEvtChatItemUpdated _ (AChatItem _ _ _ ChatItem {content, meta}) (Just (ACChatItem _ _ ChatItem {meta = prevMeta@CIMeta {userMention, priority}})))
+          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ChatItem {content, meta} ChatItem {meta = prevMeta@CIMeta {userMention, priority}}))
             | highPriority meta && not (highPriority prevMeta) ->
                 atomically $ modifyTVar' raised (<> [(msgContentText mc, not userMention, maybe False (< 0) priority) | Just mc <- [ciMsgContent content]])
           _ -> pure ()

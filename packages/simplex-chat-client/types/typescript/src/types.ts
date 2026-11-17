@@ -16,6 +16,13 @@ export interface AChatItem {
   chatInfo: ChatInfo
   chatItem: ChatItem
 }
+// Updated message, with the message before the update.
+
+export interface AChatItemUpdate {
+  chatInfo: ChatInfo
+  chatItem: ChatItem
+  prevChatItem: ChatItem
+}
 
 export interface AddRelayResult {
   relay: UserChatRelay
@@ -2355,11 +2362,13 @@ export namespace ConnectionPlan {
   export interface ContactAddress extends Interface {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
+    nameChange?: NameChange
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
+    nameChange?: NameChange
   }
 
   export interface Error extends Interface {
@@ -2533,6 +2542,12 @@ export interface CtrlAppInfo {
   appVersionRange: AppVersionRange
   deviceName: string
   compression: boolean
+}
+
+export enum DomainVerification {
+  Failed = "failed",
+  Verified = "verified",
+  Moved = "moved",
 }
 
 export interface DroppedMsg {
@@ -3042,7 +3057,7 @@ export interface GroupInfo {
   rosterVersion?: number // int64
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
-  groupDomainVerified?: boolean
+  groupDomainVerified?: DomainVerification
 }
 
 export interface GroupLink {
@@ -3490,7 +3505,7 @@ export interface LocalProfile {
   localBadge?: LocalBadge
   localAlias: string
   contactDomain?: SimplexDomainClaim
-  contactDomainVerified?: boolean
+  contactDomainVerified?: DomainVerification
 }
 
 export type MarkdownBlock = 
@@ -3776,6 +3791,26 @@ export namespace MsgVerified {
   }
 }
 
+export type NameChange = NameChange.Lapsed | NameChange.Moved
+
+export namespace NameChange {
+  export type Tag = "lapsed" | "moved"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Lapsed extends Interface {
+    type: "lapsed"
+    nameWarning: NameWarning
+  }
+
+  export interface Moved extends Interface {
+    type: "moved"
+    knownChat: ChatInfo
+  }
+}
+
 export type NameErrorType = NameErrorType.NO_RESOLVER | NameErrorType.NOT_FOUND | NameErrorType.RESOLVER
 
 export namespace NameErrorType {
@@ -3796,6 +3831,44 @@ export namespace NameErrorType {
   export interface RESOLVER extends Interface {
     type: "RESOLVER"
     resolverErr: string
+  }
+}
+
+export interface NamePrice {
+  amount: number // int64
+  years: number // int
+}
+
+export type NameWarning = 
+  | NameWarning.Expired
+  | NameWarning.Available
+  | NameWarning.ReservedForCommunity
+  | NameWarning.NotRegistered
+
+export namespace NameWarning {
+  export type Tag = "expired" | "available" | "reservedForCommunity" | "notRegistered"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Expired extends Interface {
+    type: "expired"
+    expiredAt: string // ISO-8601 timestamp
+    graceUntil?: string // ISO-8601 timestamp
+  }
+
+  export interface Available extends Interface {
+    type: "available"
+    price: NamePrice
+  }
+
+  export interface ReservedForCommunity extends Interface {
+    type: "reservedForCommunity"
+  }
+
+  export interface NotRegistered extends Interface {
+    type: "notRegistered"
   }
 }
 
@@ -4746,10 +4819,13 @@ export interface SimplexDomainClaim {
   proof?: SimplexDomainProof
 }
 
-export type SimplexDomainError = SimplexDomainError.NoValidLink | SimplexDomainError.UnknownDomain
+export type SimplexDomainError = 
+  | SimplexDomainError.NoValidLink
+  | SimplexDomainError.UnknownDomain
+  | SimplexDomainError.NameWarning
 
 export namespace SimplexDomainError {
-  export type Tag = "noValidLink" | "unknownDomain"
+  export type Tag = "noValidLink" | "unknownDomain" | "nameWarning"
 
   interface Interface {
     type: Tag
@@ -4761,6 +4837,11 @@ export namespace SimplexDomainError {
 
   export interface UnknownDomain extends Interface {
     type: "unknownDomain"
+  }
+
+  export interface NameWarning extends Interface {
+    type: "nameWarning"
+    nameWarning: NameWarning
   }
 }
 

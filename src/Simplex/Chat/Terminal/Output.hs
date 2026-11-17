@@ -147,7 +147,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
     (outputRH, r_) <- atomically $ readTBQueue outputQ
     forM_ r_ $ \case
       CEvtNewChatItems u (ci : _) -> when markRead $ markChatItemRead u ci -- At the moment of writing received items are created one at a time
-      CEvtChatItemUpdated u ci _ -> when markRead $ markChatItemRead u ci
+      CEvtChatItemUpdated u upd -> when markRead $ markChatItemRead u (updatedAChatItem upd)
       CEvtRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
       CEvtRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
       _ -> pure ()
@@ -179,10 +179,10 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
     when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       msgNtf cInfo chatDir $ msgText mc formattedText
-  CEvtChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = meta@CIMeta {priority}}) prevCi_ ->
+  CEvtChatItemUpdated u (AChatItemUpdate _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = meta@CIMeta {priority}} ChatItem {meta = prevMeta}) ->
     when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
-      when (highPriority meta && any (\(ACChatItem _ _ ChatItem {meta = prevMeta}) -> not $ highPriority prevMeta) prevCi_) $
+      when (highPriority meta && not (highPriority prevMeta)) $
         msgNtf cInfo chatDir $ msgText mc formattedText
   CEvtContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct

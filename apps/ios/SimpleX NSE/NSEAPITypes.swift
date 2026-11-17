@@ -89,7 +89,7 @@ enum NSEChatEvent: Decodable, ChatAPIResult {
     case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
     case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest)
     case newChatItems(user: UserRef, chatItems: [AChatItem])
-    case chatItemUpdated(user: UserRef, chatItem: AChatItem, prevChatItem: ChatItem?)
+    case chatItemUpdated(user: UserRef, chatItemUpdate: AChatItemUpdate)
     case duplicateGroupMessage(user: UserRef, member: GroupMember)
     case rcvFileSndCancelled(user: UserRef, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
     case sndFileComplete(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
@@ -121,7 +121,7 @@ enum NSEChatEvent: Decodable, ChatAPIResult {
         case let .newChatItems(u, chatItems):
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
             return withUser(u, itemsString)
-        case let .chatItemUpdated(u, chatItem, _): return withUser(u, String(describing: chatItem))
+        case let .chatItemUpdated(u, chatItemUpdate): return withUser(u, String(describing: chatItemUpdate))
         case let .duplicateGroupMessage(u, member): return withUser(u, String(describing: member))
         case let .rcvFileSndCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
         case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))

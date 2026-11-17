@@ -538,7 +538,7 @@ object ChatModel {
 
     suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo, groupChatScope = null))
 
-    private suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
+    suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
       if (hasChat(rhId, cInfo.id)) {
         updateChatInfo(rhId, cInfo)
       } else if (addMissing) {
@@ -720,7 +720,7 @@ object ChatModel {
       return  itemAdded
     }
 
-    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem?): Boolean {
+    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem): Boolean {
       var itemAdded = false
       if (cInfo.groupChatScope() == null) {
         val i = getChatIndex(rhId, cInfo.id)
@@ -756,9 +756,8 @@ object ChatModel {
         }
       }
       withContext(Dispatchers.Main) {
-        if (chatItemBelongsToScope(cInfo, cItem) && !replaceLoadedChatItem(cItem) && prevItem == null) {
-          addToChatItems(cItem)
-          itemAdded = true
+        if (chatItemBelongsToScope(cInfo, cItem)) {
+          replaceLoadedChatItem(cItem)
         }
       }
       return itemAdded
@@ -2274,7 +2273,7 @@ data class LocalProfile(
   val peerType: ChatPeerType? = null,
   val localBadge: LocalBadge? = null,
   val contactDomain: SimplexDomainClaim? = null,
-  val contactDomainVerified: Boolean? = null
+  val contactDomainVerified: DomainVerification? = null
 ): NamedChat {
   override val profileDescription: String? get() = description
 
@@ -2714,7 +2713,7 @@ object BadgeAlertKindSerializer : KSerializer<BadgeAlertKind> {
   override fun serialize(encoder: Encoder, value: BadgeAlertKind) = encoder.encodeString(value.text)
 }
 
-private fun badgeDateText(date: Instant): String {
+fun badgeDateText(date: Instant): String {
   val ts = date.toLocalDateTime(TimeZone.currentSystemDefault())
   return ts.toJavaLocalDateTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
 }
@@ -2770,7 +2769,7 @@ data class GroupInfo (
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
-  val groupDomainVerified: Boolean? = null,
+  val groupDomainVerified: DomainVerification? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -2900,6 +2899,13 @@ data class SimplexDomainClaim(
   val proof: SimplexDomainProof? = null
 ) {
   val shortName: String get() = domain.removeSuffix(".simplex")
+}
+
+@Serializable
+enum class DomainVerification {
+  @SerialName("failed") Failed,
+  @SerialName("verified") Verified,
+  @SerialName("moved") Moved,
 }
 
 @Serializable
@@ -3602,6 +3608,13 @@ data class ChatItemDeletion (
 class AChatItem (
   val chatInfo: ChatInfo,
   val chatItem: ChatItem
+)
+
+@Serializable
+class AChatItemUpdate (
+  val chatInfo: ChatInfo,
+  val chatItem: ChatItem,
+  val prevChatItem: ChatItem
 )
 
 @Serializable
@@ -4343,13 +4356,8 @@ sealed class CIStatus {
   }
 }
 
-fun unreadCountChange(prevItem: ChatItem?, cItem: ChatItem, counted: (ChatItem) -> Boolean): Int =
-  if (prevItem == null) 0 else (if (counted(cItem)) 1 else 0) - (if (counted(prevItem)) 1 else 0)
-
-fun chatItemUpdateNotifies(cItem: ChatItem, prevItem: ChatItem?, itemAdded: Boolean): Boolean =
-  itemAdded
-    || (prevItem != null && cItem.meta.highPriority && !prevItem.meta.highPriority)
-    || (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed)
+fun unreadCountChange(prevItem: ChatItem, cItem: ChatItem, counted: (ChatItem) -> Boolean): Int =
+  (if (counted(cItem)) 1 else 0) - (if (counted(prevItem)) 1 else 0)
 
 fun shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus): Boolean =
   when {

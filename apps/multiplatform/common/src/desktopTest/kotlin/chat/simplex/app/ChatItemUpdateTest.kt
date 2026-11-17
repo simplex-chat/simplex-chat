@@ -5,10 +5,12 @@ import chat.simplex.common.platform.chatModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertNull
 
 class ChatItemUpdateTest {
   private fun rcvItem(id: Long, text: String, status: CIStatus = CIStatus.RcvNew(), mention: Boolean = false): ChatItem {
@@ -58,38 +60,26 @@ class ChatItemUpdateTest {
   }
 
   @Test
-  fun updateWithoutPreviousItemInsertsAndKeepsCounters() = withOpenChat { chatsCtx, cInfo ->
-    chatsCtx.addChatItem(null, cInfo, rcvItem(1, "hello"))
-    assertTrue(chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(2, "from an older host"), null))
-    assertEquals(listOf(1L, 2L), chatsCtx.chatItems.value.map { it.id })
-    assertFalse(chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(2, "from an older host, read", status = CIStatus.RcvRead()), null))
-    assertEquals("from an older host, read", chatsCtx.chatItems.value.last().text)
-    assertEquals(Triple(1, 0, 1), counts(chatsCtx))
-  }
-
-  @Test
   fun countersFollowPreviousAndNewItem() = withOpenChat { chatsCtx, cInfo ->
     chatsCtx.addChatItem(null, cInfo, rcvItem(1, "hello"))
     chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(1, "hello @alice", mention = true), rcvItem(1, "hello"))
     assertEquals(Triple(1, 1, 1), counts(chatsCtx))
-    chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(1, "hello", status = CIStatus.RcvRead()), rcvItem(1, "hello @alice", mention = true))
-    assertEquals(Triple(0, 0, 0), counts(chatsCtx))
+    chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(1, "hello"), rcvItem(1, "hello @alice", mention = true))
+    assertEquals(Triple(1, 0, 1), counts(chatsCtx))
   }
 
   @Test
-  fun updateNotifiesOnlyForAddedItemOrMissedCall() {
-    assertFalse(chatItemUpdateNotifies(rcvItem(1, "edited"), rcvItem(1, "hello"), itemAdded = false))
-    assertTrue(chatItemUpdateNotifies(rcvItem(1, "inserted"), null, itemAdded = true))
-    val missedCall = rcvItem(2, "").copy(content = CIContent.RcvCall(status = CICallStatus.Missed, duration = 0))
-    assertTrue(chatItemUpdateNotifies(missedCall, null, itemAdded = false))
-  }
-
-  @Test
-  fun updateNotifiesForRaiseOnly() {
-    val normal = rcvItem(1, "done")
-    val high = normal.copy(meta = normal.meta.copy(priority = 1, userMention = true))
-    assertTrue(chatItemUpdateNotifies(high, normal, itemAdded = false))
-    assertFalse(chatItemUpdateNotifies(high, high, itemAdded = false))
-    assertFalse(chatItemUpdateNotifies(high, null, itemAdded = false))
+  fun responseAndEventDecodeToTheirFields() {
+    val user = json.encodeToString(UserRef(userId = 1, localDisplayName = "alice", activeUser = true, showNtfs = true))
+    val cInfo = ChatInfo.Direct(Contact.sampleData)
+    val item = json.encodeToString(AChatItem(cInfo, rcvItem(1, "hello edited")))
+    val update = json.encodeToString(AChatItemUpdate(cInfo, rcvItem(1, "hello edited"), rcvItem(1, "hello")))
+    val response = json.decodeFromString<API>("""{"result": {"type": "chatItemUpdated", "user": $user, "chatItem": $item}}""").result as CR.ChatItemUpdated
+    assertEquals("hello edited", response.chatItem?.chatItem?.text)
+    assertNull(response.chatItemUpdate)
+    val event = json.decodeFromString<API>("""{"result": {"type": "chatItemUpdated", "user": $user, "chatItemUpdate": $update}}""").result as CR.ChatItemUpdated
+    assertEquals("hello edited", event.chatItemUpdate?.chatItem?.text)
+    assertEquals("hello", event.chatItemUpdate?.prevChatItem?.text)
+    assertNull(event.chatItem)
   }
 }

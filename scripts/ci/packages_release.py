@@ -72,8 +72,8 @@ BUILD_CHANGES = {
         ".github/actions/**",
         ".github/changelog_conf.json",
     ],
-    "kotlin": ["apps/multiplatform/**", "Dockerfile*", ".github/workflows/build.yml", ".github/actions/**"],
-    "ios": ["apps/ios/**", "scripts/ci/ios-stub-libs.sh"],
+    "kotlin": ["apps/multiplatform/**", "tests/fixtures/api/**", "Dockerfile*", ".github/workflows/build.yml", ".github/actions/**"],
+    "ios": ["apps/ios/**", "tests/fixtures/api/**", "scripts/ci/ios-stub-libs.sh"],
     "packages": [
         "packages/simplex-chat-nodejs/**",
         "packages/simplex-chat-client/types/typescript/**",
@@ -85,11 +85,7 @@ SCOPE_CHANGES = {
     "badge-web": ["apps/simplex-badge-service/web/**"],
     "ci-scripts": ["scripts/ci/packages_release.py", "scripts/ci/test_packages_release.py"],
     "website": ["website/src/js/simplex-lib.jsc", "website/test/**", "website/package.json"],
-    "mcp": [
-        "packages/simplex-chat-mcp/**",
-        "packages/simplex-chat-nodejs/**",
-        "packages/simplex-chat-client/types/typescript/**",
-    ],
+    "mcp": ["packages/simplex-chat-mcp/**"],
     "support-bot": ["apps/simplex-support-bot/**"],
     "support-bot-light": ["apps/simplex-support-bot-light/**", "packages/simplex-chat-python/**"],
 }

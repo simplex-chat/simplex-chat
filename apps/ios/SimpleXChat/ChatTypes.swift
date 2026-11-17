@@ -180,7 +180,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         localBadge: LocalBadge? = nil,
         localAlias: String,
         contactDomain: SimplexDomainClaim? = nil,
-        contactDomainVerified: Bool? = nil
+        contactDomainVerified: DomainVerification? = nil
     ) {
         self.profileId = profileId
         self.displayName = displayName
@@ -209,7 +209,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var localBadge: LocalBadge?
     public var localAlias: String
     public var contactDomain: SimplexDomainClaim?
-    public var contactDomainVerified: Bool?
+    public var contactDomainVerified: DomainVerification?
 
     public var profileDescription: String? { description }
 
@@ -666,7 +666,7 @@ public struct BadgeAlert: Codable, Hashable {
     public var dateText: String { badgeDateText(date) }
 }
 
-private func badgeDateText(_ date: Date) -> String {
+public func badgeDateText(_ date: Date) -> String {
     DateFormatter.localizedString(from: date, dateStyle: .long, timeStyle: .none)
 }
 
@@ -3073,7 +3073,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var localAlias: String
-    public var groupDomainVerified: Bool?
+    public var groupDomainVerified: DomainVerification?
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -3180,9 +3180,28 @@ public struct SimplexDomainClaim: Codable, Hashable {
     }
 }
 
+public enum DomainVerification: String, Codable, Hashable {
+    case failed
+    case verified
+    case moved
+}
+
 public enum SimplexDomainError: Decodable, Hashable {
     case noValidLink
     case unknownDomain
+    case nameWarning(nameWarning: NameWarning)
+}
+
+public enum NameWarning: Decodable, Hashable {
+    case expired(expiredAt: Date, graceUntil: Date?)
+    case available(price: NamePrice)
+    case reservedForCommunity
+    case notRegistered
+}
+
+public struct NamePrice: Decodable, Hashable {
+    public var amount: Int64
+    public var years: Int
 }
 
 public struct RelayCapabilities: Codable, Hashable {
@@ -3906,6 +3925,12 @@ public struct ChatItemDeletion: Decodable, Hashable {
 public struct AChatItem: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
+}
+
+public struct AChatItemUpdate: Decodable, Hashable {
+    public var chatInfo: ChatInfo
+    public var chatItem: ChatItem
+    public var prevChatItem: ChatItem
 }
 
 public struct CIMentionMember: Decodable, Hashable {
@@ -4670,14 +4695,13 @@ public enum CIStatus: Decodable, Hashable {
     }
 }
 
-public func unreadCountChange(_ prevItem: ChatItem?, _ cItem: ChatItem, _ counted: (ChatItem) -> Bool) -> Int {
-    guard let prevItem else { return 0 }
-    return (counted(cItem) ? 1 : 0) - (counted(prevItem) ? 1 : 0)
+public func unreadCountChange(_ prevItem: ChatItem, _ cItem: ChatItem, _ counted: (ChatItem) -> Bool) -> Int {
+    (counted(cItem) ? 1 : 0) - (counted(prevItem) ? 1 : 0)
 }
 
 extension ChatItem {
-    public func isRaised(from prevItem: ChatItem?) -> Bool {
-        meta.highPriority && prevItem.map { !$0.meta.highPriority } == true
+    public func isRaised(from prevItem: ChatItem) -> Bool {
+        meta.highPriority && !prevItem.meta.highPriority
     }
 }
 

@@ -480,6 +480,9 @@ class ChangesTest(GitRepoTest):
     def test_core_change_builds_only_the_core(self):
         self.assertEqual(self.builds("src/Simplex/Chat.hs"), {"haskell"})
 
+    def test_api_fixture_change_builds_the_core_and_both_apps(self):
+        self.assertEqual(self.builds("tests/fixtures/api/names/plan-known-expired.json"), {"haskell", "kotlin", "ios"})
+
     def test_ios_stub_script_builds_only_ios(self):
         self.assertEqual(self.builds("scripts/ci/ios-stub-libs.sh"), {"ios"})
 
@@ -523,9 +526,9 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("packages/simplex-chat-mcp/src/tools.ts"), set())
         self.assertEqual(self.values["scopes"], "mcp")
 
-    def test_library_change_builds_packages_and_tests_the_mcp_scope(self):
+    def test_library_change_builds_packages_without_the_mcp_scope(self):
         self.assertEqual(self.builds("packages/simplex-chat-nodejs/src/api.ts"), {"packages"})
-        self.assertEqual(self.values["scopes"], "mcp")
+        self.assertEqual(self.values["scopes"], "")
 
     def test_support_bot_change_tests_its_scope(self):
         self.assertEqual(self.builds("apps/simplex-support-bot/src/bot.ts"), set())

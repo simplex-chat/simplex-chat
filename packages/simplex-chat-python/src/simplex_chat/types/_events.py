@@ -61,8 +61,7 @@ class ChatItemsDeleted(TypedDict):
 class ChatItemUpdated(TypedDict):
     type: Literal["chatItemUpdated"]
     user: "T.User"
-    chatItem: "T.AChatItem"
-    prevChatItem: NotRequired["T.ChatItem"]
+    chatItemUpdate: "T.AChatItemUpdate"
 
 class GroupChatItemsDeleted(TypedDict):
     type: Literal["groupChatItemsDeleted"]
