@@ -636,6 +636,9 @@ final class ChatModel: ObservableObject {
             }
             chats[i].created = Date.now
             ChatTagsModel.shared.updateChatTagRead(chats[i], wasUnread: wasUnread)
+            if chats[i].unreadTag != wasUnread {
+                objectWillChange.send()
+            }
             if chats[i].userUnreadCount != wasUserUnreadCount {
                 updateNtfBadgeCount()
             }
@@ -1180,6 +1183,9 @@ final class ChatModel: ObservableObject {
         chats[chatIndex].chatStats.unreadCount = max(0, stats.unreadCount + count)
         chats[chatIndex].chatStats.unreadMentions = max(0, stats.unreadMentions + unreadMentions)
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
+        if chats[chatIndex].unreadTag != wasUnread {
+            objectWillChange.send()
+        }
         updateNtfBadgeCount()
     }
 
