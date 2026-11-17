@@ -4295,9 +4295,6 @@ sealed class CIStatus {
 fun unreadCountChange(prevItem: ChatItem, cItem: ChatItem, counted: (ChatItem) -> Boolean): Int =
   (if (counted(cItem)) 1 else 0) - (if (counted(prevItem)) 1 else 0)
 
-fun chatItemUpdateNotifies(cItem: ChatItem, itemAdded: Boolean): Boolean =
-  itemAdded || (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed)
-
 fun shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus): Boolean =
   when {
     oldStatus is CIStatus.SndRcvd && newStatus !is CIStatus.SndRcvd -> true

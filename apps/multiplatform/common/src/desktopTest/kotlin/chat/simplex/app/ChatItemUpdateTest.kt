@@ -11,7 +11,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class ChatItemUpdateTest {
   private fun rcvItem(id: Long, text: String, status: CIStatus = CIStatus.RcvNew(), mention: Boolean = false): ChatItem {
@@ -65,8 +64,8 @@ class ChatItemUpdateTest {
     chatsCtx.addChatItem(null, cInfo, rcvItem(1, "hello"))
     chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(1, "hello @alice", mention = true), rcvItem(1, "hello"))
     assertEquals(Triple(1, 1, 1), counts(chatsCtx))
-    chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(1, "hello", status = CIStatus.RcvRead()), rcvItem(1, "hello @alice", mention = true))
-    assertEquals(Triple(0, 0, 0), counts(chatsCtx))
+    chatsCtx.applyChatItemUpdate(null, cInfo, rcvItem(1, "hello"), rcvItem(1, "hello @alice", mention = true))
+    assertEquals(Triple(1, 0, 1), counts(chatsCtx))
   }
 
   @Test
@@ -82,13 +81,5 @@ class ChatItemUpdateTest {
     assertEquals("hello edited", event.chatItemUpdate?.chatItem?.text)
     assertEquals("hello", event.chatItemUpdate?.prevChatItem?.text)
     assertNull(event.chatItem)
-  }
-
-  @Test
-  fun updateNotifiesOnlyForAddedItemOrMissedCall() {
-    assertFalse(chatItemUpdateNotifies(rcvItem(1, "edited"), itemAdded = false))
-    assertTrue(chatItemUpdateNotifies(rcvItem(1, "inserted"), itemAdded = true))
-    val missedCall = rcvItem(2, "").copy(content = CIContent.RcvCall(status = CICallStatus.Missed, duration = 0))
-    assertTrue(chatItemUpdateNotifies(missedCall, itemAdded = false))
   }
 }
