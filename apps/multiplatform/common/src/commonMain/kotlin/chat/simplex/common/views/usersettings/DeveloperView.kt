@@ -59,7 +59,7 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
           }
           SettingsPreferenceItem(painterResource(MR.images.ic_download), stringResource(MR.strings.allow_internal_builds), appPrefs.allowInternalBuilds) { allowed ->
             if (!allowed && appPrefs.appUpdateChannel.get() == AppUpdatesChannel.INTERNAL) {
-              appPrefs.appUpdateChannel.set(AppUpdatesChannel.DISABLED)
+              appPrefs.appUpdateChannel.set(AppUpdatesChannel.STABLE)
               platform.desktopSetupUpdateChecker()
             }
           }

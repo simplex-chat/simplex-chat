@@ -2,7 +2,7 @@
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list, a local group, then the chat list with the toolbar at the bottom (the default), the update channels in
-# Settings with "Allow internal builds" off and on, Internal selected and reset to Disabled by the toggle turned off,
+# Settings with "Allow internal builds" off and on, Internal selected and reset to Stable by the toggle turned off,
 # the chat list with the toolbar at the top, then
 # tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
@@ -382,9 +382,9 @@ send_images() {
 
 open_update_channels() {
   local x y
-  read -r x y < <(left_pane_position Disabled exact) || fail "no update channel in Settings > app version"
+  read -r x y < <(left_pane_position "$1" exact) || fail "no update channel $1 in Settings > app version"
   "$ui" click "$x" "$y"
-  "$ui" wait Stable 10 || fail "no update channel menu"
+  "$ui" wait Beta 10 || fail "no update channel menu"
 }
 
 switch_internal_builds() {
@@ -422,7 +422,7 @@ check_internal_builds() {
   read -r x y < <(left_pane_position "$version") || fail "no app version $version in Settings"
   "$ui" click "$x" "$y"
   "$ui" wait "Check for updates" 10
-  open_update_channels
+  open_update_channels Disabled
   "$ui" shot update-channels
   check "the update channels lack Internal while internal builds are not allowed" not_on_screen Internal exact
   "$ui" click-text "App version" 10
@@ -430,7 +430,7 @@ check_internal_builds() {
   check "\"Allow internal builds\" is saved on" grep -qx AllowInternalBuilds=true "$settings"
   "$ui" key Escape
   "$ui" wait "Check for updates" 10
-  open_update_channels
+  open_update_channels Disabled
   "$ui" shot update-channels-internal
   check "the update channels list Internal while internal builds are allowed" on_screen Internal exact
   lines=$(update_check_lines)
@@ -439,14 +439,16 @@ check_internal_builds() {
   "$ui" shot update-channel-internal
   check "Internal is saved as the update channel" grep -qx AppUpdateChannel=INTERNAL "$settings"
   check "Internal is shown as the update channel" in_line_with Internal "Check for updates"
+  lines=$(update_check_lines)
   switch_internal_builds off
+  check "the update check started by the reset to Stable logs its end or offers an update, closed with Remind later" end_update_check "$lines"
   check "\"Allow internal builds\" is saved off" grep -qx AllowInternalBuilds=false "$settings"
-  check "the update channel is saved as Disabled after internal builds are not allowed" grep -qx AppUpdateChannel=DISABLED "$settings"
+  check "the update channel is saved as Stable after internal builds are not allowed" grep -qx AppUpdateChannel=STABLE "$settings"
   "$ui" key Escape
   "$ui" wait "Check for updates" 10
-  "$ui" shot update-channel-disabled
-  check "Disabled is shown as the update channel after internal builds are not allowed" in_line_with Disabled "Check for updates"
-  open_update_channels
+  "$ui" shot update-channel-stable
+  check "Stable is shown as the update channel after internal builds are not allowed" in_line_with Stable "Check for updates"
+  open_update_channels Stable
   "$ui" shot update-channels-reset
   check "the update channels lack Internal after internal builds are not allowed" not_on_screen Internal exact
   "$ui" click-text "App version" 10

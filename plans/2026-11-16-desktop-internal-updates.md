@@ -8,7 +8,7 @@ Internal desktop builds are published as releases of the public repository simpl
 
 - Developer options, desktop only: toggle "Allow internal builds", default off.
 - Settings > app version > "Check for updates": "Internal" is listed while the toggle is on.
-- The toggle turned off while "Internal" is selected: the channel is set to "Disabled", the preference default, and the scheduled update check is cancelled.
+- The toggle turned off while "Internal" is selected: the channel is set to "Stable", and the update checker restarts on it; an internal build keeps the released version name, so Stable offers the next public release.
 - Internal: of the non-draft releases of simplex-chat/simplex-chat-test, the one with the highest build number in its tag is offered when that number is greater than the installed desktop.version_code; a tag without a build number is skipped.
 - Stable and Beta: unchanged.
 - A check whose channel is changed during its request shows no alert.
@@ -40,7 +40,7 @@ stateDiagram-v2
   On --> Off: toggle off
   On --> OnInternal: Internal selected
   OnInternal --> On: Disabled, Stable or Beta selected
-  OnInternal --> Off: toggle off, channel set to Disabled
+  OnInternal --> Off: toggle off, channel set to Stable
 ```
 
 ## Release choice
@@ -64,9 +64,9 @@ flowchart TD
 
 | Field | Value |
 |---|---|
-| tag | `<desktop.version_name>-<desktop.version_code>`, for example 7.1.4-175005 |
-| desktop.version_code of the build | committed desktop.version_code × 1000 + n |
-| desktop.version_name of the build | as committed |
+| tag | `<desktop.version_name>-<desktop.version_code>`, for example 7.1.4-176 |
+| desktop.version_code | sequential, committed in master; a bump commit, daily or by a person, raises it and starts an internal release |
+| desktop.version_name | as committed, unchanged by a bump commit |
 | name | set |
 | body | set |
 | commit | one release per commit |
@@ -84,5 +84,5 @@ flowchart TD
 | DeveloperView.kt | toggle in the desktop developer options |
 | Platform.kt, Main.kt | desktopSetupUpdateChecker |
 | base strings.xml | "Internal", "Allow internal builds" |
-| smoke-test.sh | developer options and update channels in both toggle states; Internal selected, then reset to Disabled by the toggle |
+| smoke-test.sh | developer options and update channels in both toggle states; Internal selected, then reset to Stable by the toggle |
 | spec/state.md, spec/architecture.md, product/views/settings.md, desktop-linux/README.md | channel, toggle, platform hook, smoke case |
