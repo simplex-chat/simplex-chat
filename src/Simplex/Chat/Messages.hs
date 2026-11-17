@@ -291,6 +291,10 @@ isACIUserMention (AChatItem _ _ _ ci) = isUserMention ci
 isUserMention :: ChatItem c d -> Bool
 isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 
+userMentioned :: GroupMember -> Bool -> Bool -> Map MemberName CIMention -> Bool
+userMentioned membership senderBlocked userReply mentions =
+  not senderBlocked && (userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions)
+
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv

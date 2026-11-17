@@ -2848,7 +2848,7 @@ updateGroupCIUserMention db cxt user@User {userId} g@GroupInfo {membership} scop
         forM_ scopeInfo_ $ \scopeInfo -> updateGroupScopeUnreadStats db cxt user g scopeInfo (0, 0, fromEnum userMention - fromEnum userMention')
       pure ci {meta = meta {userMention = userMention'}}
   where
-    userMention' = not senderBlocked && (userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions)
+    userMention' = userMentioned membership senderBlocked userReply mentions
     senderBlocked = case chatDir of
       CIGroupRcv m -> memberBlocked m
       CIChannelRcv -> False

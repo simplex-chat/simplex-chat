@@ -3102,11 +3102,10 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
       let senderBlocked = case cd of
             CDGroupRcv _g _scope m -> memberBlocked m
             _ -> False
-          userReply = not senderBlocked && case cmToQuotedMsg chatMsgEvent of
+          userReply = case cmToQuotedMsg chatMsgEvent of
             Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
             _ -> False
-          userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
-       in pure (mentions', userMention')
+       in pure (mentions', userMentioned membership senderBlocked userReply mentions')
     memberChatStats :: Bool -> Maybe (Int, MemberAttention, Int)
     memberChatStats userMention = case cd of
       CDGroupRcv _g (Just scope) m ->
