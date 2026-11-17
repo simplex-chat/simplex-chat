@@ -27,11 +27,11 @@ module Simplex.Chat.Store.Messages
     deleteGroupChatItemsMessages,
     createNewSndMessage,
     createSndMsgDelivery,
-    createRcvMsgDelivery,
+    createNewMessageAndRcvMsgDelivery,
     getLastRcvMsgInfo,
-    checkMsgDeliveryExists,
+    checkRcvMsgAcknowledged,
     createNewRcvMessage,
-    updateSndMsgDeliveryStatus,
+    updateMsgDeliveryStatus,
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
@@ -274,20 +274,40 @@ createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId} messageId = do
     (messageId, connId, agentMsgId, currentTs, currentTs, currentTs, MDSSndAgent)
   insertedRowId db
 
-createRcvMsgDelivery :: DB.Connection -> RcvMsgDelivery -> MessageId -> IO ()
-createRcvMsgDelivery db RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} msgId = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      INSERT INTO msg_deliveries
-        (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, delivery_status)
-      SELECT m.message_id, c.connection_id, ?, ?, ?, ?, ?, ?
-      FROM messages m
-      JOIN connections c ON c.connection_id = ?
-      WHERE m.message_id = ?
-    |]
-    (agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs, MDSRcvAgent, connId, msgId)
+createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO (Maybe RcvMessage)
+createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} authorGroupMemberId_ forwardedByMember =
+  liftIO savedRcvMsg >>= \case
+    Just (_, True) -> pure Nothing
+    Just (msgId, False) -> pure $ Just $ toRcvMessage newMessage sharedMsgId_ authorGroupMemberId_ forwardedByMember msgId
+    Nothing -> do
+      msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ authorGroupMemberId_ forwardedByMember
+      liftIO $ do
+        currentTs <- getCurrentTime
+        DB.execute
+          db
+          [sql|
+            INSERT INTO msg_deliveries
+              (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, delivery_status)
+            VALUES (?,?,?,?,?,?,?,?)
+          |]
+          (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs, MDSRcvAgent)
+      pure $ Just msg
+  where
+    savedRcvMsg :: IO (Maybe (MessageId, Bool))
+    savedRcvMsg = case sharedMsgId_ of
+      Just sharedMsgId
+        | redelivered agentMsgMeta ->
+            maybeFirstRow id $
+              DB.query
+                db
+                [sql|
+                  SELECT d.message_id, EXISTS (SELECT 1 FROM chat_item_messages i WHERE i.message_id = d.message_id)
+                  FROM msg_deliveries d
+                  JOIN messages m ON m.message_id = d.message_id
+                  WHERE d.connection_id = ? AND d.agent_msg_id = ? AND m.shared_msg_id = ?
+                |]
+                (connId, agentMsgId, sharedMsgId)
+      _ -> pure Nothing
 
 getLastRcvMsgInfo :: DB.Connection -> Int64 -> IO (Maybe RcvMsgInfo)
 getLastRcvMsgInfo db connId =
@@ -306,16 +326,16 @@ getLastRcvMsgInfo db connId =
     rcvMsgInfo (msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta) =
       RcvMsgInfo {msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta}
 
-checkMsgDeliveryExists :: DB.Connection -> Int64 -> AgentMsgId -> IO Bool
-checkMsgDeliveryExists db connId agentMsgId =
+checkRcvMsgAcknowledged :: DB.Connection -> Int64 -> AgentMsgId -> IO Bool
+checkRcvMsgAcknowledged db connId agentMsgId =
   fromOnly . head
     <$> DB.query
       db
-      "SELECT EXISTS (SELECT 1 FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ?)"
-      (connId, agentMsgId)
+      "SELECT EXISTS (SELECT 1 FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ? AND delivery_status = ?)"
+      (connId, agentMsgId, MDSRcvAcknowledged)
 
 createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, verifiedMsg, brokerTs} sharedMsgId_ authorMember forwardedByMember =
+createNewRcvMessage db connOrGroupId newMessage@NewRcvMessage {chatMsgEvent, verifiedMsg, brokerTs} sharedMsgId_ authorMember forwardedByMember =
   case connOrGroupId of
     ConnectionId connId -> liftIO $ insertRcvMsg (Just connId) Nothing
     GroupId groupId -> case sharedMsgId_ of
@@ -349,12 +369,17 @@ createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, verifiedMsg, b
         |]
         ((MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, (\SignedMsg {chatBinding} -> chatBinding) <$> signedMsg_, DB.Binary . smpEncode . signatures <$> signedMsg_, brokerTs, currentTs, currentTs, connId_, groupId_)
          :. (sharedMsgId_, authorMember, forwardedByMember))
-      msgId <- insertedRowId db
-      pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgSigned, signedMsg_, signedByGMId_ = signedMsg_ *> authorMember, forwardedByMember}
-    (msgSigned, signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
+      toRcvMessage newMessage sharedMsgId_ authorMember forwardedByMember <$> insertedRowId db
+    (_, signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
 
-updateSndMsgDeliveryStatus :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> IO ()
-updateSndMsgDeliveryStatus db connId agentMsgId sndMsgDeliveryStatus = do
+toRcvMessage :: forall e. MsgEncodingI e => NewRcvMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> MessageId -> RcvMessage
+toRcvMessage NewRcvMessage {chatMsgEvent, verifiedMsg} sharedMsgId_ authorMember forwardedByMember msgId =
+  RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgSigned, signedMsg_, signedByGMId_ = signedMsg_ *> authorMember, forwardedByMember}
+  where
+    (msgSigned, signedMsg_, _) = verifiedMsgParts verifiedMsg
+
+updateMsgDeliveryStatus :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus d -> IO ()
+updateMsgDeliveryStatus db connId agentMsgId msgDeliveryStatus = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -363,7 +388,7 @@ updateSndMsgDeliveryStatus db connId agentMsgId sndMsgDeliveryStatus = do
       SET delivery_status = ?, updated_at = ?
       WHERE connection_id = ? AND agent_msg_id = ?
     |]
-    (sndMsgDeliveryStatus, currentTs, connId, agentMsgId)
+    (msgDeliveryStatus, currentTs, connId, agentMsgId)
 
 createPendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> IO ()
 createPendingGroupMessage db groupMemberId messageId = do
