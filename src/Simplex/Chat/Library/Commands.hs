@@ -3480,7 +3480,7 @@ processChatCommand cxt nm = \case
   APIAcceptMemberContact contactId -> withUser $ \user -> do
     (g, mConn, ct, groupDirectInv) <- withFastStore $ \db -> getMemberContactInvited db cxt user contactId
     when (groupDirectInvStartedConnection groupDirectInv) $ throwCmdError "connection already started"
-    connectMemberContact user g mConn ct groupDirectInv `catchAllErrors` \e -> do
+    connectMemberContact user g mConn groupDirectInv `catchAllErrors` \e -> do
       -- get updated contact, in case connection was started
       ct' <- withFastStore $ \db -> getContact db cxt user contactId
       toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
@@ -3491,8 +3491,9 @@ processChatCommand cxt nm = \case
       getContact db cxt user contactId
     pure $ CRMemberContactAccepted user ct'
     where
-      connectMemberContact user gInfo mConn Contact {activeConn} GroupDirectInvitation {groupDirectInvLink = cReq} =
+      connectMemberContact user gInfo mConn GroupDirectInvitation {groupDirectInvLink = cReq} =
         withInvitationLock "connect" (strEncode cReq) $ do
+          Contact {activeConn} <- withFastStore $ \db -> getContact db cxt user contactId
           subMode <- chatReadVar subscriptionMode
           case activeConn of
             -- Nothing is legacy branch for exisiting contacts without prepared connection;

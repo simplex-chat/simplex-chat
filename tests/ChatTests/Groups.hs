@@ -17,8 +17,8 @@ import ChatTests.DBUtils
 import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
-import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
+import Control.Concurrent.Async (concurrently, concurrently_, wait, withAsync)
+import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, putTMVar, readTVarIO, takeTMVar, writeTVar)
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
@@ -32,7 +32,8 @@ import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Controller (ChatCommand (APIAcceptMemberContact), ChatController (ChatController, chatLock, smpAgent, subscriptionMode), ChatConfig (..), ChatError (ChatError), ChatErrorType (CEException), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Library.Commands (execChatCommand')
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
@@ -191,6 +192,7 @@ chatGroupTests = do
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
     it "manually accept contact with group member" testMemberContactAccept
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
+    it "accept contact with group member twice at once" testMemberContactAcceptTwice
   describe "invite member via group" $ do
     it "invite member of another group" testInviteMemberViaGroup
     it "auto-accept invitation from member of another group" testInviteMemberViaGroupAutoAccept
@@ -5533,6 +5535,34 @@ testMemberContactAccept =
             cath <## "use /d #team to delete the local copy of the group"
         ]
 
+      bob <##> cath
+
+testMemberContactAcceptTwice :: HasCallStack => TestParams -> IO ()
+testMemberContactAcceptTwice =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob ##> "/_create member contact #1 3"
+      bob <## "contact for member #team cath is created"
+      bob ##> "/_invite member contact @3"
+      bob <## "sent invitation to connect directly to member #team cath"
+      cath <## "#team bob requests to create direct contact with you"
+      cath <## "to accept: /accept_member_contact @bob"
+      cath <## "to reject: /delete @bob (the sender will NOT be notified)"
+      let lock = chatLock $ chatController cath
+          accept = execChatCommand' (APIAcceptMemberContact 3) 0 `runReaderT` chatController cath
+          alreadyStarted r = case r of
+            Left (ChatError (CEException e)) -> "connection already started" `isInfixOf` e
+            _ -> False
+      atomically $ putTMVar lock "test"
+      (r1, r2) <- withAsync (concurrently accept accept) $ \a -> do
+        threadDelay 1000000
+        void . atomically $ takeTMVar lock
+        wait a
+      length (filter alreadyStarted [r1, r2]) `shouldBe` 1
+      concurrently_
+        (bob <## "cath (Catherine): contact is connected")
+        (cath <## "bob (Bob): contact is connected")
       bob <##> cath
 
 testMemberContactAcceptIncognito :: HasCallStack => TestParams -> IO ()
