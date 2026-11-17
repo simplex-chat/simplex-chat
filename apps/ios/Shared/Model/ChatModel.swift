@@ -723,7 +723,7 @@ final class ChatModel: ObservableObject {
         // update chat list
         if let i = getChatIndex(cInfo.id) {
             // update preview
-            if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
+            if cInfo.inMainChatList {
                 chats[i].chatItems = switch cInfo {
                 case .group:
                     if let currentPreviewItem = chats[i].chatItems.first {
@@ -783,7 +783,7 @@ final class ChatModel: ObservableObject {
     }
 
     func replaceChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        if cInfo.groupChatScope() == nil {
+        if cInfo.inMainChatList {
             if let chat = getChat(cInfo.id), chat.chatItems.last?.id == cItem.id {
                 chat.chatItems = [cItem]
             }
@@ -858,10 +858,10 @@ final class ChatModel: ObservableObject {
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update chat list
-        if cInfo.groupChatScope() == nil {
-            if cItem.isRcvNew {
-                unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
-            }
+        if cInfo.groupChatScope() == nil && cItem.isRcvNew {
+            unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
+        }
+        if cInfo.inMainChatList {
             // update previews
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last, pItem.id == cItem.id {

@@ -2388,6 +2388,10 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var inMainChatList: Bool {
+        groupChatScope() == nil || groupInfo?.membership.memberPending == true
+    }
+
     public var sendAsGroup: Bool {
         if let g = groupInfo, g.useRelays && g.membership.memberRole >= .owner {
             switch groupChatScope() {

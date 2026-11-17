@@ -619,7 +619,7 @@ object ChatModel {
             else -> cItem
           }
           chats[i] = chat.copy(chatItems = arrayListOf(newPreviewItem))
-          changeChatStats(i,cInfo, null, cItem)
+          changeChatStats(i, cInfo, null, cItem)
         }
         // pop chat
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
@@ -666,7 +666,7 @@ object ChatModel {
       }
 
     suspend fun replaceChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
-      if (cInfo.groupChatScope() == null) {
+      if (cInfo.inMainChatList) {
         val i = getChatIndex(rhId, cInfo.id)
         if (i >= 0 && chats[i].chatItems.lastOrNull()?.id == cItem.id) {
           chats[i] = chats[i].copy(chatItems = arrayListOf(cItem))
@@ -682,7 +682,7 @@ object ChatModel {
     suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem) {
       val i = getChatIndex(rhId, cInfo.id)
       if (i >= 0) {
-        changeChatStats(i,cInfo, prevItem, cItem)
+        changeChatStats(i, cInfo, prevItem, cItem)
       }
       replaceChatItem(rhId, cInfo, cItem)
     }
@@ -717,12 +717,12 @@ object ChatModel {
 
     fun removeChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
       // update chat list
-      if (cInfo.groupChatScope() == null) {
+      if (cInfo.inMainChatList) {
         // update preview
         val i = getChatIndex(rhId, cInfo.id)
         val chat: Chat
         if (i >= 0) {
-          changeChatStats(i,cInfo, cItem, null)
+          changeChatStats(i, cInfo, cItem, null)
           chat = chats[i]
           val pItem = chat.chatItems.lastOrNull()
           if (pItem?.id == cItem.id) {
@@ -770,7 +770,7 @@ object ChatModel {
           for (item in chatItems.value) {
             if (isRemovedMemberItem(item)) {
               if (i >= 0) {
-                changeChatStats(i,cInfo, item, null)
+                changeChatStats(i, cInfo, item, null)
               }
               if (item.isActiveReport) {
                 decreaseGroupReportsCounter(rhId, groupInfo.id)
