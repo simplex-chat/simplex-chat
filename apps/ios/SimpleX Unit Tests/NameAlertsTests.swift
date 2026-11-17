@@ -92,6 +92,7 @@ final class NameAlertsTests: XCTestCase {
         XCTAssertEqual(shownLocalChats, ["@2"])
         try await press("Open new chat")
         try await assertRequested { $0.hasPrefix("/_prepare contact 1 ") && $0.contains(" domain=alice.simplex ") }
+        try await assertTexts(["Error opening chat", "no data", "Ok"])
     }
 
     @MainActor
