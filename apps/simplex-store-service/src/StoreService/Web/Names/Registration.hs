@@ -21,7 +21,6 @@ import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Int (Int64)
 import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
@@ -29,6 +28,7 @@ import Data.Time.Clock (UTCTime, diffUTCTime)
 import Network.HTTP.Types (status200, status409)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (boundedDecimal)
 import StoreService.Names.Orders (OrdersEnv (..))
@@ -165,4 +165,4 @@ heldFor hold now moments = fromInteger $ minimum $ toInteger hold : [ceiling (di
 
 -- | Nothing unless seenVersion is a decimal version, so any other value answers at once.
 versionParam :: Request -> Maybe Int64
-versionParam req = join (lookup "seenVersion" $ queryString req) >>= eitherToMaybe . A.parseOnly (boundedDecimal 0 maxBound <* A.endOfInput)
+versionParam req = join (lookup "seenVersion" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound)

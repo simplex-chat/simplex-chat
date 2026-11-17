@@ -13,7 +13,6 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
-import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.List (find)
 import Data.Maybe (mapMaybe)
 import Data.Text (Text)
@@ -23,6 +22,7 @@ import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), boundedDecimal)
@@ -75,7 +75,7 @@ searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond 
 
 -- | Nothing unless @length@ is a decimal integer in the label's bounds.
 queryLength :: Request -> Maybe Int
-queryLength req = join (lookup "length" $ queryString req) >>= eitherToMaybe . A.parseOnly (boundedDecimal minNameLength maxNameLength <* A.endOfInput)
+queryLength req = join (lookup "length" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal minNameLength maxNameLength)
 
 searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> Bool -> Found -> IO Response
 searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh listed = \case

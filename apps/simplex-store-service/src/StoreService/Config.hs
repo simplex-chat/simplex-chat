@@ -64,6 +64,7 @@ import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Names.Label (LabelError (..), validLabel)
@@ -525,17 +526,13 @@ parseConfig ini = do
           namesPort <- listenerPort "names_port" defaultNamesPort
           when (namesPort == badgesPort) $ Left "listener.names_port must differ from listener.badges_port"
           Right (Just (namesPort, maybe defaultNamesStaticDir T.unpack (present "listener" "names_static_dir")))
-    num :: (Integral a, Bounded a, Show a) => Text -> Text -> a -> a -> a -> Either String a
+    num :: (Integral a, Show a) => Text -> Text -> a -> a -> a -> Either String a
     num s k lowest highest d = fromMaybe d <$> optionalNum s k lowest highest
-    optionalNum :: (Integral a, Bounded a, Show a) => Text -> Text -> a -> a -> Either String (Maybe a)
+    optionalNum :: (Integral a, Show a) => Text -> Text -> a -> a -> Either String (Maybe a)
     optionalNum s k lowest highest = mapM (boundedSetting (T.unpack s <> "." <> T.unpack k) lowest highest) (look s k)
-    boundedSetting :: (Integral a, Bounded a, Show a) => String -> a -> a -> Text -> Either String a
+    boundedSetting :: (Integral a, Show a) => String -> a -> a -> Text -> Either String a
     boundedSetting name lowest highest v =
-      first (const (name <> " must be a whole number " <> bounds)) $ A.parseOnly (boundedDecimal lowest highest <* A.endOfInput) (encodeUtf8 v)
-      where
-        bounds
-          | highest == maxBound = "of at least " <> show lowest
-          | otherwise = "between " <> show lowest <> " and " <> show highest
+      first (const (name <> " must be a whole number from " <> show lowest <> " to " <> show highest)) $ parseAll (boundedDecimal lowest highest) (encodeUtf8 v)
     bool s k d = case fmap (T.toLower . T.strip) (look s k) of
       Nothing -> Right d
       Just "on" -> Right True
@@ -692,7 +689,7 @@ parseConfig ini = do
     -- No error below quotes a value, since the URL and the key are secrets.
     chainSection = do
       cRpcUrl <- rpcUrl
-      cChainId <- optionalNum "chain" "chain_id" 1 maxBound >>= maybe (Left "chain.chain_id is required") Right
+      cChainId <- required "chain" "chain_id" >>= boundedSetting "chain.chain_id" 1 maxBound
       cController <- address "controller"
       cSponsor <- address "sponsor"
       cBaseRegistrar <- address "base_registrar"

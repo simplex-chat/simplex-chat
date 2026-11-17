@@ -46,9 +46,7 @@ import qualified Data.Aeson.Types as JT
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
-import Data.Char (isDigit)
 import Data.Functor ((<&>))
 import Data.List (foldl', sort)
 import Data.Maybe (isJust)
@@ -67,12 +65,12 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress)
 import Simplex.Messaging.Eth.RLP (RLPItem (..), rlpEncode)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
-import Simplex.Messaging.Util (tshow)
-import StoreService.Config (ChainConfig (..))
+import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import StoreService.Config (ChainConfig (..), boundedDecimal)
 import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Revert (RevertName (..), decodeRevert)
 import System.Timeout (timeout)
-import Text.Read (readMaybe)
 
 data ChainClient = ChainClient
   { ccManager :: Manager,
@@ -364,10 +362,7 @@ fetchText ChainClient {ccManager, ccTimeout} maxBytes url =
     within b
       | LB.length b > fromIntegral maxBytes = Left ("over " <> tshow maxBytes <> " bytes", Nothing)
       | otherwise = Right $ LB.toStrict b
-    retryAfter v
-      | not (B.null v) && B.length v <= maxRetryAfterDigits && BC.all isDigit v = readMaybe $ BC.unpack v
-      | otherwise = Nothing
-    maxRetryAfterDigits = 9
+    retryAfter = eitherToMaybe . parseAll (boundedDecimal 0 maxBound)
 
 -- | Only the kind of failure, for callers: an exception's text can hold the URL or its host.
 httpFailure :: HTTP.HttpException -> Text
