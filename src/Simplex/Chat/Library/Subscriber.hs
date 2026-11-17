@@ -2399,7 +2399,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           let changed = mc /= oldMC
           if changed || fromMaybe False itemLive
             then do
-              ci' <- withStore' $ \db -> do
+              (gInfo', ci') <- withStore' $ \db -> do
                 when changed $
                   addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
                 reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
@@ -2408,7 +2408,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
                 updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
                 updateGroupCIMentions db gInfo ci' ciMentions >>= updateGroupCIUserMention db cxt user gInfo scopeInfo
-              toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci' ci)
+              toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTGroup SMDRcv (GroupChat gInfo' scopeInfo) ci' ci)
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
               pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
             else do
