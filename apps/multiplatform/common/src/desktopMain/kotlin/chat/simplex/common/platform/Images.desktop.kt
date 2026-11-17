@@ -19,6 +19,7 @@ import java.net.URI
 import java.util.*
 import javax.imageio.*
 import javax.imageio.stream.ImageInputStream
+import javax.imageio.stream.MemoryCacheImageInputStream
 import javax.imageio.stream.MemoryCacheImageOutputStream
 
 private fun errorBitmap(): ImageBitmap =
@@ -71,7 +72,7 @@ private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: 
     .removePrefix("data:image/jpg;base64,")
   val bytes = Base64.getMimeDecoder().decode(imageString)
   if (ImageFileType.GIF.matches(bytes) && !gifMetadataWithinLimits(bytes)) return null
-  val stream = ImageIO.createImageInputStream(ByteArrayInputStream(bytes))
+  val stream = MemoryCacheImageInputStream(ByteArrayInputStream(bytes))
   val reader = receivedImageReader(stream)
   try {
     reader.setInput(stream)
