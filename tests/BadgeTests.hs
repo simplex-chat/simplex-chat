@@ -1919,6 +1919,10 @@ testNameServiceJSON = do
       testFoundOrder phase = NameFoundOrder {registrationId = testRegistrationId, phase, createdAt = futureTime, labelHash = testNameHash, sealed = "sealed"}
   mapM_ roundTrips commands
   mapM_ roundTrips answers
+  mapM_ (\x -> J.eitherDecode (J.encode x) `shouldBe` Right x) refusals
+  mapM_ (\x -> J.eitherDecode (J.encode x) `shouldBe` Right x) saleStates
+  mapM_ (\x -> J.eitherDecode (J.encode x) `shouldBe` Right x) codeStates
+  mapM_ (\x -> J.eitherDecode (J.encode x) `shouldBe` Right x) phases
 
 testNameWebBodiesJSON :: IO ()
 testNameWebBodiesJSON = do
@@ -1928,7 +1932,7 @@ testNameWebBodiesJSON = do
           { ofLabelHash = LabelHash testNameHashBytes,
             ofLength = 7,
             ofDuration = 69292800,
-            ofCommitment = testNameHashBytes,
+            ofCommitment = testNameCommitmentBytes,
             ofSealed = "sealed",
             ofAgreedTerms = T.replicate 32 "ab"
           }
@@ -2024,6 +2028,12 @@ testNameHash = "0x" <> T.replicate 32 "ab"
 testNameHashBytes :: ByteString
 testNameHashBytes = B.replicate 32 0xab
 
+testNameCommitment :: T.Text
+testNameCommitment = "0x" <> T.replicate 32 "cd"
+
+testNameCommitmentBytes :: ByteString
+testNameCommitmentBytes = B.replicate 32 0xcd
+
 testNameSignature :: T.Text
 testNameSignature = "0x" <> T.replicate 32 "11" <> T.replicate 31 "00" <> "01" <> "1b"
 
@@ -2051,7 +2061,7 @@ testSignedOrder =
     { labelHash = testNameHash,
       labelLength = 7,
       duration = 69292800,
-      commitment = testNameHash,
+      commitment = testNameCommitment,
       sealed = "sealed",
       terms = T.replicate 32 "ab",
       timestamp = 1792574100,
@@ -2120,7 +2130,7 @@ testNameView phase =
       labelHash = testNameHash,
       label = Just "alice42",
       owner = testNameOwner,
-      commitment = testNameHash,
+      commitment = testNameCommitment,
       resolver = testNameRecipient,
       sponsor = testNameOwner,
       chainId = 1,
@@ -2133,7 +2143,7 @@ testNameView phase =
       revealBefore = Just 1792660500,
       intentNonce = Just 0,
       acceptance = Just NameAcceptanceAsked {kind = NTKCommunity, policy = testNameRecipient, termsHash = testNameHash, nonce = 0},
-      unread = ["0x" <> T.replicate 32 "ef"],
+      unread = ["acceptance"],
       expiresAt = Nothing,
       failure = Nothing,
       sendsUsedUp = False,
