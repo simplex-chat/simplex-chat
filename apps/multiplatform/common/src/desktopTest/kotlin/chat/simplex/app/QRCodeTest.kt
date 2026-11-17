@@ -5,19 +5,24 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import boofcv.alg.fiducial.qrcode.QrCode
 import chat.simplex.common.model.*
 import chat.simplex.common.views.chat.ChatInfoView
 import chat.simplex.common.views.helpers.LocalAppBarHandler
 import chat.simplex.common.views.helpers.rememberAppBarHandler
+import chat.simplex.common.views.newchat.LocalFixedQRCode
+import chat.simplex.common.views.newchat.SimpleXLinkQRCode
 import chat.simplex.common.views.newchat.qrCodeBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlin.test.AfterTest
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -53,6 +58,19 @@ class QRCodeTest {
   fun testContactInfoWithoutQRCodeOfAddressAboveCapacity() = contactInfo("$link&data=${"a".repeat(3000)}") {
     onNodeWithText(ADDRESS_FOOTER).assertExists()
     onAllNodesWithContentDescription("QR Code").assertCountEquals(0)
+  }
+
+  @Test
+  fun testNoShareOfQRCodeAboveCapacity() = runComposeUiTest {
+    var shared = false
+    setContent {
+      CompositionLocalProvider(LocalFixedQRCode provides qrCodeBitmap(link, errorLevel = QrCode.ErrorLevel.L)) {
+        SimpleXLinkQRCode("$link&data=${"a".repeat(3000)}", onShare = { shared = true })
+      }
+    }
+    onNodeWithContentDescription("QR Code").performClick()
+    waitForIdle()
+    assertFalse(shared)
   }
 
   private fun contactInfo(address: String, test: ComposeUiTest.() -> Unit) = runComposeUiTest {
