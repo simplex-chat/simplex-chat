@@ -2076,7 +2076,7 @@ testUnknownMemberRolesFixture =
         agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemRole memId (GRUnknown "vip") Nothing Nothing)
       bob <## "#team: alice changed the role of cath from member to vip"
       bob <## "#team: alice changed your role from member to vip"
-      apiFixture "members/unknown-roles" bob [] FixtureRequests {frMarkdown = [""], frUris = [], frCommands = ["/_get chats 1 pcc=on", "/_get chat #1 count=2", "/_members #1"]}
+      apiFixture "members/unknown-roles" bob [] FixtureRequests {frMarkdown = ["", "Catherine"], frUris = [], frCommands = ["/_get chats 1 pcc=on", "/_get chat #1 count=2", "/_members #1"]}
 
 newAgentInvitation :: TestCC -> IO ConnReqInvitation
 newAgentInvitation cc = do
