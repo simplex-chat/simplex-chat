@@ -71,8 +71,7 @@ suspend fun processLoadedChat(
             chatModel.chatsContext.addChat(chat)
           } else {
             chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo)
-            // unreadChat is currently not actual in getChat query (always false)
-            chatModel.chatsContext.updateChatStats(chat.remoteHostId, chat.id, chat.chatStats.copy(unreadChat = oldChat.chatStats.unreadChat))
+            chatModel.chatsContext.updateChatStats(chat.remoteHostId, chat.id, oldChat.chatStats.copy(reportsCount = chat.chatStats.reportsCount))
           }
         }
       }
