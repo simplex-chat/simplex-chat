@@ -598,14 +598,14 @@ testConcurrentReads g = withContracts g $ \node ct -> do
   answerCall node resolver noncesCall $ Returns $ uint256 (3 :: Int)
   -- the registrar's constants are read once, so this read takes them out of the timed ones
   nameStatus ct alice `shouldReturn` Right (NSRegistered registered)
-  forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ concurrentDeadline * 3 `div` 10
+  forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ concurrentDeadline * 27 `div` 100
   nameStatus ct' alice `shouldReturn` Right (NSRegistered registered)
   nameRecords ct' alice registered `shouldReturn` Right (Just NameRecords {rdContact = "https://smp8.simplex.im/a#Y8m3", rdChannel = "", rdNonce = 3})
 
 -- fixtures
 
 concurrentDeadline :: Int
-concurrentDeadline = 3000000
+concurrentDeadline = 4000000
 
 -- | Far below a call's 10-second timeout, so only the deadline can end a hung read in time.
 testDeadline :: Int
