@@ -20,6 +20,7 @@ on:
       - "apps/simplex-directory-service/**"
       - "apps/multiplatform/**"
       - "apps/ios/**"
+      - "tests/fixtures/api/**"
       - "tests/**"
       - "bots/src/**"
       - "simplex-chat.cabal"
@@ -1395,6 +1396,29 @@ jobs:
             -skipMacroValidation \
             ARCHS=arm64 \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Run iOS unit tests
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          runtime=com.apple.CoreSimulator.SimRuntime.iOS-$(xcrun --sdk iphonesimulator --show-sdk-version | tr . -)
+          device=$(xcrun simctl list runtimes --json | python3 -c 'import json, sys; r = next(r for r in json.load(sys.stdin)["runtimes"] if r["identifier"] == sys.argv[1]); print(next(t["identifier"] for t in r["supportedDeviceTypes"] if t["productFamily"] == "iPhone"))' "$runtime")
+          udid=$(xcrun simctl create unit-tests "$device" "$runtime")
+          xcodebuild test \
+            -project apps/ios/SimpleX.xcodeproj \
+            -scheme "SimpleX Unit Tests" \
+            -configuration Debug \
+            -destination "id=$udid" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            -testLanguage en \
+            -testRegion US \
+            ARCHS=arm64 \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM= \
+            PROVISIONING_PROFILE_SPECIFIER=
 
 # =========================
 #      Windows Build

@@ -550,6 +550,8 @@ public func sendSimpleXCmd<R: ChatAPIResult>(      // API.swift L115
 ) -> APIResult<R>
 ```
 
+`sendSimpleXCmd` calls [`sendSimpleXCmdStr`](../SimpleXChat/API.swift#L128), a `var` holding the call of `chat_send_cmd_retry`; [`parseSimpleXMarkdownText`](../SimpleXChat/API.swift#L154) is a `var` holding the call of `chat_parse_markdown`, and [`parseSanitizeUri`](../SimpleXChat/API.swift#L206) a `var` holding the call of `chat_parse_uri`. Tests replace them with responses recorded by the core tests.
+
 ### Event Receiver
 
 ```swift

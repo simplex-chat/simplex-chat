@@ -2961,7 +2961,7 @@ object ChatController {
   }
 
   // Spec: spec/api.md#processReceivedMsg
-  private suspend fun processReceivedMsg(msg: API) {
+  internal suspend fun processReceivedMsg(msg: API) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
     val rhId = msg.rhId
     fun active(user: UserLike): Boolean = activeUser(rhId, user)
