@@ -60,19 +60,19 @@ searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond 
       registering <- withTransaction st (`isLabelRegistering` lh)
       searchSlot http (timeout (ctDeadline ct) (runExceptT $ found lh len registering)) >>= \case
         Nothing -> respond $ rateLimited 1
-        Just (Just (Right (f, listed))) -> respond =<< searchAnswer cfg st ps clock lh listed f
+        Just (Just (Right (f, community))) -> respond =<< searchAnswer cfg st ps clock lh community f
         Just (Just (Left e)) -> unavailable $ tshow e
         Just Nothing -> unavailable "timed out"
   where
     found lh len registering = do
-      (status, listed) <- ExceptT $ together $ (,) <$> concurrent (nameStatus ct lh) <*> concurrent (communityName ct lh)
-      (,listed) <$> case status of
+      (status, community) <- ExceptT $ together $ (,) <$> concurrent (nameStatus ct lh) <*> concurrent (communityName ct lh)
+      (,community) <$> case status of
         NSAvailable
           | registering -> pure FRegistering
-          | otherwise -> ExceptT $ together $ FAvailable <$> concurrent (chainPriceCents ct len (yearsFor listed nYears)) <*> concurrent (readableNow listed)
+          | otherwise -> ExceptT $ together $ FAvailable <$> concurrent (chainPriceCents ct len (yearsFor community nYears)) <*> concurrent (readableNow community)
         NSReserved -> pure FReserved
         NSRegistered name -> FRegistered name <$> ExceptT (nameRecords ct lh name)
-    readableNow listed = termsLinks ct >>= traverse (\links -> eitherToMaybe <$> (wait =<< async (readableTerms ct $ kindTerms listed links)))
+    readableNow community = termsLinks ct >>= traverse (\links -> eitherToMaybe <$> (wait =<< async (readableTerms ct $ kindTerms community links)))
     unavailable :: Text -> IO ResponseReceived
     unavailable why = logWarn ("GET /api/name: a chain read failed: " <> why) >> respond providerUnavailable
 
@@ -86,7 +86,7 @@ queryLength req = case join $ lookup "length" $ queryString req of
     inBounds n = nameLengthInt <$> (nameLength =<< toIntegralSized n)
 
 searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> CommunityName -> Found -> IO Response
-searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh listed = \case
+searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh community = \case
   FAvailable price readable ->
     ok $
       ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
@@ -106,7 +106,7 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nCh
         <> chain
   where
     ok :: [JT.Pair] -> IO Response
-    ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh listed]
+    ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh community]
     chain = ["chainId" .= cChainId, "tld" .= tldLabel nTLD]
     termStart = unixSeconds nTermStart
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]

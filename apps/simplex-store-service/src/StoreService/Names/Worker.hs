@@ -295,9 +295,9 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
     Nothing ->
       runExceptT ((,,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (communityName oeContracts nrLabelHash) <*> ExceptT held) >>= \case
         Left e -> pure $ Just $ failure r $ SFChain e
-        Right (policy, listed, accepted)
+        Right (policy, community, accepted)
           | accepted == taTermsHash -> pure Nothing
-          | otherwise -> Just <$> withinSends w now r RTAccept (relay policy (termsKind listed))
+          | otherwise -> Just <$> withinSends w now r RTAccept (relay policy (termsKind community))
   where
     held = acceptedTerms oeContracts nrCommitment nrOwner
     relay policy kind =

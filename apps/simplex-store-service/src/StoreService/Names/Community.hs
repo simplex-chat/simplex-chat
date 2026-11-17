@@ -34,18 +34,18 @@ communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} (LabelHash h) = M.lookup h nCommunity
 
 termsFor :: CommunityName -> Terms -> AgreedTerms
-termsFor listed Terms {tmHash} = AgreedTerms {atCommunityName = listed, atTermsHash = tmHash}
+termsFor community Terms {tmHash} = AgreedTerms {atCommunityName = community, atTermsHash = tmHash}
 
 -- | Null for plain terms.
 communityJSON :: NamesConfig -> LabelHash -> CommunityName -> J.Value
-communityJSON cfg lh listed = if listed then J.object ["for" .= communityFor cfg lh, "years" .= communityYears] else J.Null
+communityJSON cfg lh community = if community then J.object ["for" .= communityFor cfg lh, "years" .= communityYears] else J.Null
 
 -- | The paid years of a community name, whatever years its code or [names] years gives.
 communityYears :: Int
 communityYears = 2
 
 yearsFor :: CommunityName -> Int -> Int
-yearsFor listed years = if listed then communityYears else years
+yearsFor community years = if community then communityYears else years
 
 termsJSON :: Maybe Terms -> J.Value
 termsJSON = maybe J.Null $ \Terms {tmLink, tmHash} -> J.object ["hash" .= hex tmHash, "link" .= tmLink]
@@ -53,7 +53,7 @@ termsJSON = maybe J.Null $ \Terms {tmLink, tmHash} -> J.object ["hash" .= hex tm
 -- | Whether the policy lists the name, and the terms it is sold under: the community terms for a listed name, else the
 -- general terms.
 nameTerms :: Contracts -> LabelHash -> IO (Either ChainError (CommunityName, Maybe Terms))
-nameTerms ct lh = together $ (\listed links -> (listed, kindTerms listed links)) <$> concurrent (communityName ct lh) <*> concurrent (termsLinks ct)
+nameTerms ct lh = together $ (\community links -> (community, kindTerms community links)) <$> concurrent (communityName ct lh) <*> concurrent (termsLinks ct)
 
 readableTerms :: Contracts -> Maybe Terms -> IO (Either (Maybe Int) Terms)
 readableTerms ct = maybe (pure $ Left Nothing) $ \t -> bimap waitOf (const t) <$> termsText ct t

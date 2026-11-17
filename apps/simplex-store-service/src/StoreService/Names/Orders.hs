@@ -292,10 +292,10 @@ checkTerms :: NamesConfig -> Contracts -> OrderFields -> IO (Either OrderRefusal
 checkTerms cfg ct OrderFields {ofLabelHash, ofAgreedTerms} =
   nameTerms ct ofLabelHash >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's terms check failed: " <> tshow e)
-    Right (listed, terms) ->
+    Right (community, terms) ->
       readableTerms ct terms <&> \case
         Left wait -> Left $ ORTermsUnavailable wait
-        Right t -> unless (ofAgreedTerms == termsFor listed t) $ Left $ ORTermsChanged (termsJSON $ Just t) (communityJSON cfg ofLabelHash listed)
+        Right t -> unless (ofAgreedTerms == termsFor community t) $ Left $ ORTermsChanged (termsJSON $ Just t) (communityJSON cfg ofLabelHash community)
 
 -- | A name being registered here searches as available, so it is checked here too.
 checkNameFree :: Contracts -> DBStore -> LabelHash -> IO (Either OrderRefusal ())
