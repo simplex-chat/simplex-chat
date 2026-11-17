@@ -25,7 +25,6 @@ module StoreService.Names.Orders
     hexSignature,
     boundedInteger,
     checkSigner,
-    checkOrderSigner,
     existingOrder,
     placeOrder,
     placeCodeOrder,
@@ -78,7 +77,7 @@ import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Chain (TxHash, bytes32FromHex, hex)
-import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
+import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), parseChecksumAddress, parseSignature, personalDigest)
 import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
@@ -199,9 +198,6 @@ checkSigner owner msg signature =
   recoverAddress signature (personalDigest msg) >>= \case
     Right signer | signer == owner -> pure $ Right ()
     _ -> pure $ Left $ ORBadRequest "the signature is not the owner's"
-
-checkOrderSigner :: OrderRequest -> IO (Either OrderRefusal ())
-checkOrderSigner OrderRequest {orOwner, orFields, orTimestamp, orSignature} = checkSigner orOwner (orderMessage orFields orTimestamp) orSignature
 
 existingOrder :: DB.Connection -> OrderRequest -> OrderHash -> UTCTime -> IO ExistingOrder
 existingOrder db req hash now =
