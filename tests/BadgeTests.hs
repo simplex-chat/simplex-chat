@@ -50,7 +50,9 @@ import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Crypto.BIP39 (unEntropy)
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Names.Record (TermsDoc (..), USDCents (..))
 import Simplex.Messaging.Protocol (BrokerErrorType (..), ErrorType (AUTH), NetworkError (..))
+import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version.Internal (Version (..))
 import Test.Hspec
@@ -1611,6 +1613,62 @@ testServiceWireTags = do
           }
       recipient = either error id $ strDecode "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6"
       nameMove = NameMove {labelHash = hash32, holder = owner, recipient}
+      termsUrl = "https://example.com/terms.md#sha256=" <> T.replicate 32 "cd"
+      termsRef = NameTermsRef {termsHash = hash32, termsLink = termsUrl}
+      community = Just NameCommunity {communityFor = Just "SimpleX users", communityYears = 2}
+      nameCatalog =
+        NameCatalog
+          { saleState = NSSClosedForDay {reopensAt = Just 1792610100},
+            years = 1,
+            termStart = 1792574100,
+            price = Just (USDCents 500),
+            invoiceWindow = Just 3600,
+            tld = TLDSimplex,
+            chainId = 1,
+            resolver = recipient,
+            sponsor = owner,
+            terms = NameCatalogTerms {generalTerms = Just termsRef, communityTerms = Nothing},
+            communityTexts = M.fromList [(hash32, "SimpleX users")],
+            products = ["name_1y"],
+            time = 1792574100
+          }
+      nameCode =
+        NameCodeInfo
+          { minLength = 7,
+            years = 1,
+            state = NCSUnpaid,
+            browserPayment = Just NameCodePayment {payUntil = futureTime, invoicePayableUntil = Just futureTime, moneyOnClosedInvoice = False, moneyBeyondPrice = False}
+          }
+      registration =
+        NameRegistrationView
+          { registrationId,
+            version = 3,
+            moves = 0,
+            linksRefused = False,
+            phase = NRPRegistered,
+            labelHash = hash32,
+            label = Just "alice42",
+            owner,
+            commitment = hash32,
+            resolver = recipient,
+            sponsor = owner,
+            chainId = 1,
+            tld = TLDSimplex,
+            years = 1,
+            duration = 69292800,
+            commitTx = Just hash32,
+            registerTx = Just hash32,
+            revealAfter = Just 1792574160,
+            revealBefore = Just 1792660500,
+            intentNonce = Just 0,
+            acceptance = Just NameAcceptanceAsked {kind = NTKCommunity, policy = recipient, termsHash = hash32, nonce = 0},
+            unread = [],
+            expiresAt = Just 1824110100,
+            failure = Nothing,
+            sendsUsedUp = False,
+            community,
+            terms = Just hash32
+          }
       commands =
         [ STCGetBadgeCatalog,
           STCGetBadgeInvoice {priceId = BadgePriceId "price-1", offerId = Just (BadgeOfferId "offer-1"), badgeInfo, paymentVia = SPMCard {provider = CPStripe}, upgrade = Nothing},
@@ -1641,7 +1699,17 @@ testServiceWireTags = do
         [ STPBadgeCatalog {catalog = BadgeCatalog {prices = [], offers = []}, badgeStatement = Just statement},
           STPBadgeInvoice {invoice, badgeType = BTSupporter, months = 3},
           STPBadgeCredential {credential = Nothing, receipt = Just "receipt", statement, subscription = Just SSRenewing},
-          STPError {code = STEInternal, message = Nothing, retryAfter = Nothing}
+          STPError {code = STEInternal, message = Nothing, retryAfter = Nothing},
+          STPNameCatalog {nameCatalog},
+          STPNameTerms {termsDoc = TermsDoc {termsLink = termsUrl, termsZstd = Nothing}},
+          STPNameCode {nameCode},
+          STPNameOrderPlaced {registrationId},
+          STPNamePurchase {nameCode, orderAnswer = Just NOARefused {refusal = NRFTermsChanged {terms = termsRef, community}}},
+          STPNameRegistration {registration},
+          STPNameRevealed,
+          STPNameOrders {registrations = [NameFoundOrder {registrationId, phase = NRPCommitted, createdAt = futureTime, labelHash = hash32, sealed = "sealed"}], more = False},
+          STPNameMove {moveReads = NameMoveReads {holderNonce = 0, moveOffer = 1, recipientNonce = 0, termsNonce = 0, policy = recipient, community}},
+          STPNameRefused {refusal = NRFSaleClosed {saleState = NSSCodesOnly}}
         ]
       errors =
         [ STEBadRequest,
@@ -1702,6 +1770,16 @@ testServiceWireTags = do
       STPBadgeInvoice {} -> "badgeInvoice"
       STPBadgeCredential {} -> "badgeCredential"
       STPError {} -> "error"
+      STPNameCatalog {} -> "nameCatalog"
+      STPNameTerms {} -> "nameTerms"
+      STPNameCode {} -> "nameCode"
+      STPNameOrderPlaced {} -> "nameOrderPlaced"
+      STPNamePurchase {} -> "namePurchase"
+      STPNameRegistration {} -> "nameRegistration"
+      STPNameRevealed -> "nameRevealed"
+      STPNameOrders {} -> "nameOrders"
+      STPNameMove {} -> "nameMove"
+      STPNameRefused {} -> "nameRefused"
     errorTag = \case
       STEBadRequest -> "bad_request"
       STEUnsupportedVersion -> "unsupported_version"
