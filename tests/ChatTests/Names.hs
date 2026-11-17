@@ -333,6 +333,7 @@ testChannelDomainVerify ps = withSmpServerAndNames ps $ \reg ->
         bob <## "group link: known group #team"
         bob <## "SimpleX name: #team (verification failed)"
         bob <## "use #team <message> to send messages"
+        apiFixture "names/plan-known-failed" bob [(shortLink, "TEAM_LINK")] FixtureRequests {frMarkdown = [shortLink], frUris = [], frCommands = ["/_connect plan 1 " <> shortLink]}
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -689,6 +690,11 @@ testPlanKnownNameStale = withAliceName $ \reg (shortLink, _) alice bob -> do
   knownAlicePlan bob
   bob <##. "SimpleX name alice.simplex expired on "
   nameFixture "plan-known-expired" bob "@alice.simplex"
+  registerExpiredName' reg aliceSimplexName Nothing (aliceRecord shortLink)
+  bob ##> "/_connect plan 1 @alice.simplex"
+  knownAlicePlan bob
+  bob <##. "SimpleX name alice.simplex expired on "
+  nameFixture "plan-known-expired-no-grace" bob "@alice.simplex"
   registerName reg aliceSimplexName (aliceRecord shortLink)
   bob ##> "/_connect plan 1 @alice.simplex"
   knownAlicePlan bob
@@ -713,6 +719,11 @@ testPlanOwnNameExpired = withAliceName $ \reg (shortLink, _) alice _bob -> do
   alice <## "contact address: own address"
   alice <##. "your SimpleX name alice.simplex expired on "
   apiFixture "names/plan-own-expired" alice [] FixtureRequests {frMarkdown = ["@alice.simplex"], frUris = [nameHowToUri], frCommands = ["/_connect plan 1 @alice.simplex"]}
+  registerExpiredName' reg aliceSimplexName Nothing (aliceRecord shortLink)
+  alice ##> "/_connect plan 1 @alice.simplex"
+  alice <## "contact address: own address"
+  alice <##. "your SimpleX name alice.simplex expired on "
+  nameFixture "plan-own-expired-no-grace" alice "@alice.simplex"
 
 testPlanOwnNameAvailable :: HasCallStack => TestParams -> IO ()
 testPlanOwnNameAvailable = withAliceName $ \reg _r alice _bob -> do
@@ -857,6 +868,7 @@ testPlanChannelNameMoved = withChannelChats $ \reg alice cath bob -> do
   alice ##> "/_connect plan 1 #team.simplex"
   alice <## "group link: own link for group #team"
   alice <##. "your SimpleX name team.simplex expired on "
+  apiFixture "names/plan-own-channel-expired" alice [] FixtureRequests {frMarkdown = ["#team.simplex"], frUris = [nameHowToUri], frCommands = ["/_connect plan 1 #team.simplex"]}
   (shortLink2, fullLink2) <- prepareChannel' 2 "teamv2" alice cath
   registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink2))
   setChannelDomain alice cath "alice_1" "teamv2" "team.simplex"
@@ -864,6 +876,7 @@ testPlanChannelNameMoved = withChannelChats $ \reg alice cath bob -> do
   bob <## "group link: ok to connect via relays"
   _ <- getTermLine bob
   bob <## "known channel #team"
+  apiFixture "names/plan-channel-moved" bob [] FixtureRequests {frMarkdown = ["#team.simplex"], frUris = [], frCommands = ["/_connect plan 1 #team.simplex"]}
   memberJoinChannel' "teamv2" 2 1 1 1 [cath] [alice] shortLink2 fullLink2 bob
   bob ##> "/_verify domain #2"
   bob <## "SimpleX name #team verified"
@@ -871,6 +884,7 @@ testPlanChannelNameMoved = withChannelChats $ \reg alice cath bob -> do
   knownGroupPlan "teamv2" "team" bob
   alice ##> "/_connect plan 1 #team.simplex resolve=never"
   alice <## "group link: own link for group #teamv2"
+  apiFixture "names/plan-old-channel" bob [(shortLink, "TEAM_LINK")] FixtureRequests {frMarkdown = [shortLink], frUris = [], frCommands = ["/_connect plan 1 " <> shortLink]}
 
 testPlanChannelNameMovedNoRelays :: HasCallStack => TestParams -> IO ()
 testPlanChannelNameMovedNoRelays = withChannelChats $ \reg alice cath bob -> do
