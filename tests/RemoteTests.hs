@@ -71,16 +71,24 @@ remoteTests = describe "Remote" $ do
         (uncurry mediaFileName)
         [ (image, "IMG_1.jpg"),
           (image, "IMG_1.WEBP"),
+          (image, "IMG_1.heic"),
           (image, "test.pdf"),
+          (image, "test.pdf.jpg"),
           (image, "test"),
           (video, "video_1.3gp"),
           (video, "video_1.mkv"),
+          (video, "video_1.divx"),
           (video, "test.txt"),
+          (video, "test.txt.mp4"),
+          (video, "VIDEO_1.MP4"),
+          (video, "test.dif"),
           (voice, "voice_1.m4a"),
           (voice, "test.pdf"),
+          (voice, "test.pdf.m4a"),
+          (image, "test.pdf."),
           (MCFile "", "test.pdf")
         ]
-        `shouldBe` ["IMG_1.jpg", "IMG_1.WEBP", "test.pdf.jpg", "test.jpg", "video_1.3gp", "video_1.mkv", "test.txt.mp4", "voice_1.m4a", "test.pdf.m4a", "test.pdf"]
+        `shouldBe` ["IMG_1.jpg", "IMG_1.WEBP", "IMG_1.heic", "test.pdf.jpg", "test.pdf.jpg", "test.jpg", "video_1.3gp", "video_1.mkv", "video_1.divx", "test.txt.mp4", "test.txt.mp4", "VIDEO_1.MP4", "test.dif.mp4", "voice_1.m4a", "test.pdf.m4a", "test.pdf.m4a", "test.pdf..jpg", "test.pdf"]
   describe "skipped keys" $ do
     it "keeps the most recent skipped keys" $ \_ -> do
       (_, pk) <- atomically . C.generateKeyPair =<< C.newRandom

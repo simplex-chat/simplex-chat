@@ -13769,6 +13769,18 @@ relayConnIdToMember cc name = do
     (Only connId : _) -> pure connId
     _ -> fail $ "no relay connection to member " <> T.unpack name
 
+contactConnId :: TestCC -> T.Text -> IO ByteString
+contactConnId cc name = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query
+      db
+      "SELECT c.agent_conn_id FROM connections c JOIN contacts ct ON ct.contact_id = c.contact_id WHERE ct.local_display_name = ?"
+      (Only name) ::
+      IO [Only ByteString]
+  case rows of
+    (Only connId : _) -> pure connId
+    _ -> fail $ "no connection to contact " <> T.unpack name
+
 agentSendBody :: TestCC -> ByteString -> ByteString -> IO ()
 agentSendBody cc connId body = do
   let ChatController {smpAgent} = chatController cc
