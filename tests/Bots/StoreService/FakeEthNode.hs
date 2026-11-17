@@ -117,7 +117,7 @@ data CallAnswer = Returns ByteString | Reverts ByteString
 data TextAnswer = TextAnswer Status ResponseHeaders LB.ByteString
 
 data Fault
-  = RpcError Int Text (Maybe ByteString)
+  = RpcError Int Text (Maybe J.Value)
   | -- | answers only once the node is closed
     Hang
   | HttpFailure
@@ -362,7 +362,7 @@ pausedAt node method action = do
   timeout gateArrival (awaitGate gate) >>= maybe (cancel inFlight >> fail ("no " <> T.unpack method <> " reached the gate")) (const $ pure (inFlight, gate))
 
 revertFault :: ByteString -> Fault
-revertFault = RpcError 3 "execution reverted" . Just
+revertFault = RpcError 3 "execution reverted" . Just . J.String . hex
 
 -- | Sets the latest block's number and time.
 setBlock :: FakeEthNode -> Word64 -> Word64 -> IO ()
@@ -464,7 +464,7 @@ answer st method params = do
           let key = (unAddress to, calldata)
               callAnswer = \case
                 Just (Returns ret) -> result $ hex ret
-                Just (Reverts revertData) -> rpcError 3 "execution reverted" (Just revertData)
+                Just (Reverts revertData) -> rpcError 3 "execution reverted" (Just $ J.String $ hex revertData)
                 Nothing -> rpcError (-32000) "no fake answer for this call" Nothing
            in case M.lookup key fsCallsOnce of
                 Just a -> callAnswer (Just a) <$ writeTVar st s {fsCallsOnce = M.delete key fsCallsOnce}
@@ -474,7 +474,7 @@ answer st method params = do
     ("eth_estimateGas", call : _)
       | Just (_, calldata) <- JT.parseMaybe callTarget call,
         Just revertData <- M.lookup calldata fsDryRuns ->
-          pure $ rpcError 3 "execution reverted" (Just revertData)
+          pure $ rpcError 3 "execution reverted" (Just $ J.String $ hex revertData)
     ("eth_estimateGas", _) -> pure $ result $ quantity fakeGas
     ("eth_getTransactionCount", [_, J.String "latest"]) -> pure $ result $ quantity $ toInteger fsUsed
     ("eth_getTransactionCount", [_, J.String "pending"]) ->
@@ -516,8 +516,8 @@ answer st method params = do
 blockJson :: Word64 -> Word64 -> Word64 -> J.Value
 blockJson baseFee number time = J.object ["number" .= quantity (toInteger number), "timestamp" .= quantity (toInteger time), "baseFeePerGas" .= quantity (toInteger baseFee)]
 
-rpcError :: Int -> Text -> Maybe ByteString -> [JT.Pair]
-rpcError code message revertData = ["error" .= J.object (["code" .= code, "message" .= message] <> maybe [] (\d -> ["data" .= hex d]) revertData)]
+rpcError :: Int -> Text -> Maybe J.Value -> [JT.Pair]
+rpcError code message revertData = ["error" .= J.object (["code" .= code, "message" .= message] <> maybe [] (\d -> ["data" .= d]) revertData)]
 
 quantity :: Integer -> Text
 quantity n = "0x" <> T.pack (showHex n "")

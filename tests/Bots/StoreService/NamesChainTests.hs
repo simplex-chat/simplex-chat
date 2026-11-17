@@ -20,7 +20,7 @@ import qualified Network.HTTP.Client as HTTP
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import StoreService.Config (ChainConfig (..))
-import StoreService.Names.Abi (uint256)
+import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain
 import StoreService.Names.Revert
 import Test.Hspec
@@ -125,7 +125,8 @@ testCallFaults g = withChain g $ \node c ->
   forM_
     [ (RpcError (-32000) "execution reverted" Nothing, ChainReverted RRWithoutData),
       (RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing, ChainReverted $ RRUnnamed "ERC721: invalid token ID"),
-      (RpcError 3 "execution reverted" (Just errorInvalidToken), ChainReverted $ RRUnnamed "ERC721: invalid token ID"),
+      (RpcError 3 "execution reverted" (Just $ J.String $ hex errorInvalidToken), ChainReverted $ RRUnnamed "ERC721: invalid token ID"),
+      (RpcError 3 "execution reverted" (Just $ J.String "not hex"), ChainReverted $ RRUnnamed "execution reverted"),
       (RpcError (-32000) "header not found" Nothing, ChainUnavailable "eth_call: error -32000: header not found"),
       (RpcError (-32003) "Insufficient funds for gas * price + value" Nothing, ChainUnderfunded "eth_call: error -32003: Insufficient funds for gas * price + value"),
       (NotJson, ChainUnavailable "eth_call: not a JSON-RPC response"),

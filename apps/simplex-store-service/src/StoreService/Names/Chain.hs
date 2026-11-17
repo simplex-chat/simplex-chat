@@ -276,7 +276,7 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
       revertData <- e .:? "data"
       pure $
         if code == revertCode || revertMessage `T.isPrefixOf` message
-          then ChainReverted $ maybe (dataless message) decodeRevert $ JT.parseMaybe bytes =<< revertData
+          then ChainReverted $ maybe (dataless message) (maybe (unnamed message) decodeRevert . JT.parseMaybe bytes) revertData
           else nodeError message $ method <> ": error " <> tshow code <> ": " <> T.take maxNodeMessageLength message
     nodeError message
       | underfundedMessage `T.isInfixOf` T.toLower message = ChainUnderfunded
@@ -285,7 +285,8 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
     -- a node or proxy that drops the data can keep a reason in the message, as in "execution reverted: ERC721: invalid token ID"
     dataless message
       | message == revertMessage = RRWithoutData
-      | otherwise = RRUnnamed $ T.take maxNodeMessageLength $ fromMaybe message $ T.stripPrefix (revertMessage <> ": ") message
+      | otherwise = unnamed message
+    unnamed message = RRUnnamed $ T.take maxNodeMessageLength $ fromMaybe message $ T.stripPrefix (revertMessage <> ": ") message
 
 fetchText :: ChainClient -> Int -> String -> IO (Either (Text, Maybe Int) ByteString)
 fetchText ChainClient {ccManager, ccTimeout} maxBytes url =
