@@ -64,6 +64,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "reports a closed invoice paid in full only on PaidLate or PaidOver, whatever its due" testClosedPaidInFull
     it "reports a closed Lightning invoice paid in full once its due is at 0 or less, its payments settled when recorded" testLnClosedPaidInFull
     it "reports a Lightning invoice still New but paid in full as paid in full, never as part paid" testLnNewPaidInFull
+    it "reads the bodies BTCPay 2.4.4 recorded for a settled and for a cancelled then paid Lightning invoice" testRecordedLnBodies
     it "reads an overpaid invoice's negative due as 0" testOverpaidDueIsZero
     it "funds on New with something received" testNewWithPayment
     it "funds on New with a payment worth less than a minor unit" testNewWithDust
@@ -245,6 +246,26 @@ testLnUnsettledConfirmsNothing :: IO ()
 testLnUnsettledConfirmsNothing =
   signalUnder (Just "HighSpeed") "Processing" [lnPaid "0.00050000" "0.00000000" [paymentOf "Processing" "0.00050000000"]]
     `shouldBe` Right (Just (SigFunded lnReceived {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}} PaidInFull))
+
+testRecordedLnBodies :: IO ()
+testRecordedLnBodies = do
+  settled <- J.encode <$> fixtureResponse "payment-methods-ln-settled"
+  cancelledPaid <- J.encode <$> fixtureResponse "payment-methods-ln-cancelled-paid"
+  let received =
+        Received
+          { rcvAmount = CurrencyAmount 500,
+            rcvCrypto = Just "0.0000463",
+            rcvDue = Just "0",
+            rcvUnits = Just 4630000,
+            rcvInvoicedUnits = Just 4630000,
+            rcvRate = Just "108000.12",
+            rcvConfirmed = Confirmed {cfCents = CurrencyAmount 500, cfUnits = Just 4630000},
+            rcvUncreditable = Nothing
+          }
+  paymentMethodsSignal readTime ref "Settled" (Just "None") (Just "MediumSpeed") settled
+    `shouldBe` Right (Just (SigSettled received (posixSecondsToUTCTime 1794920747)))
+  paymentMethodsSignal readTime ref "Invalid" (Just "Marked") (Just "MediumSpeed") cancelledPaid
+    `shouldBe` Right (Just (SigClosed received PaidInFull))
 
 testLnNewPaidInFull :: IO ()
 testLnNewPaidInFull = do
