@@ -2837,13 +2837,10 @@ testGroupAsync ps = do
     withTestChat ps "cath" $ \cath -> do
       concurrentlyN_
         [ do
-            bob <## "subscribed 2 connections on server localhost"
-            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <### ["subscribed 2 connections on server localhost", "#team: alice added cath (Catherine) to the group (connecting...)"]
             bob <# "#team alice> hello cath"
             bob <## "#team: new member cath is connected",
-          do
-            cath <## "subscribed 3 connections on server localhost"
-            cath <## "#team: member bob (Bob) is connected"
+          cath <### ["subscribed 3 connections on server localhost", "#team: member bob (Bob) is connected"]
         ]
   threadDelay 500000
   withTestChat ps "bob" $ \bob -> do
