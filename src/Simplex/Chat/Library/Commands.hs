@@ -3454,9 +3454,9 @@ processChatCommand cxt nm = \case
         (connId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff True subMode
         -- [incognito] reuse membership incognito profile
         ct <- withGroupLock "createMemberContact" gId (do
-          GroupMember {memberContactId} <- withFastStore $ \db -> getGroupMember db cxt user gId gMemberId
+          m'@GroupMember {memberContactId} <- withFastStore $ \db -> getGroupMember db cxt user gId gMemberId
           when (isJust memberContactId) $ throwCmdError "member contact already exists"
-          withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode)
+          withFastStore' $ \db -> createMemberContact db user connId cReq g m' mConn subMode)
           `onChatError` deleteAgentConnectionAsync connId
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         -- TODO not sure it is correct to set connections status here?
