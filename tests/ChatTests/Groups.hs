@@ -276,6 +276,7 @@ chatGroupTests = do
     it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
+    it "should correctly maintain unread stats for support chats on editing mentions" testScopedSupportUnreadStatsOnMentionEdit
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
     it "should not read support chat items when reading group without scope" testScopedSupportUnreadStatsGroupReadNoScope
@@ -9360,6 +9361,31 @@ testScopedSupportUnreadStatsOnRead =
 
     cath ##> "/member support chats #team"
     cath <// 50000
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportUnreadStatsOnMentionEdit :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsOnMentionEdit =
+  testChatOpts4 opts aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+
+    dan ##> "/_send #1(_support:3) text 1"
+    dan <# "#team (support: bob) 1"
+    alice <# "#team (support: bob) dan> 1"
+    bob <# "#team (support) dan> 1"
+    danItemId <- lastItemId dan
+
+    dan ##> ("/_update item #1(_support:3) " <> danItemId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"@alice 1\"}, \"mentions\": {\"alice\": 1}}")
+    dan <# "#team (support: bob) [edited] @alice 1"
+    alice <# "#team (support: bob) dan> [edited] @alice 1"
+    bob <# "#team (support) dan> [edited] @alice 1"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 0, mentions: 1"
   where
     opts =
       testOpts

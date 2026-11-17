@@ -2233,11 +2233,7 @@ updateGroupScopeUnreadStats db cxt user g@GroupInfo {membership} scopeInfo (unre
         pure g {membership = membership'}
       Just member -> do
         member' <- updateGMStats member
-        let didRequire = gmRequiresAttention member
-            nowRequires = gmRequiresAttention member'
-        if (not nowRequires && didRequire)
-          then decreaseGroupMembersRequireAttention db user g
-          else pure g
+        updateGroupMembersRequireAttention db user g member member'
   where
     updateGMStats m@GroupMember {groupMemberId} = do
       currentTs <- getCurrentTime
