@@ -9,9 +9,7 @@ import androidx.compose.ui.test.runComposeUiTest
 import boofcv.alg.fiducial.qrcode.QrCode
 import chat.simplex.common.model.*
 import chat.simplex.common.views.chat.ChatInfoView
-import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.newchat.qrCodeBitmap
-import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -44,14 +42,14 @@ class QRCodeTest {
 
   @Test
   fun testContactInfoShowsQRCodeOfAddress() = contactInfo(link) {
-    onNodeWithText(generalGetString(MR.strings.share_address)).assertExists()
-    onAllNodesWithContentDescription(generalGetString(MR.strings.image_descr_qr_code)).assertCountEquals(1)
+    onNodeWithText(ADDRESS_FOOTER).assertExists()
+    onAllNodesWithContentDescription("QR Code").assertCountEquals(1)
   }
 
   @Test
   fun testContactInfoWithoutQRCodeOfAddressAboveCapacity() = contactInfo("$link&data=${"a".repeat(3000)}") {
-    onNodeWithText(generalGetString(MR.strings.share_address)).assertExists()
-    onAllNodesWithContentDescription(generalGetString(MR.strings.image_descr_qr_code)).assertCountEquals(0)
+    onNodeWithText(ADDRESS_FOOTER).assertExists()
+    onAllNodesWithContentDescription("QR Code").assertCountEquals(0)
   }
 
   private fun contactInfo(address: String, test: ComposeUiTest.() -> Unit) = runComposeUiTest {
@@ -62,5 +60,9 @@ class QRCodeTest {
       ChatInfoView(ChatModel.chatsContext, ChatModel, contact, connectionStats = null, customUserProfile = null, localAlias = "", connectionCode = null, close = {}, onSearchClicked = {})
     }
     test()
+  }
+
+  private companion object {
+    const val ADDRESS_FOOTER = "You can share this address with your contacts to let them connect with alice."
   }
 }
