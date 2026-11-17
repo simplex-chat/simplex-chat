@@ -59,8 +59,7 @@ storeMetricsTests = describe "StoreService: metrics" $ do
 testCensus :: TVar ChaChaDRG -> IO ()
 testCensus g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
-  let ns = NamesSource {nsContracts = ct}
-      answer to signature args = answerCall node to (selector signature <> args) . Returns
+  let answer to signature args = answerCall node to (selector signature <> args) . Returns
       str t = abiTuple [Dynamic (abiBytes $ encodeUtf8 t)]
       texts n (contact, channel) =
         forM_ [("simplex.contact", contact), ("simplex.channel", channel)] $ \(key, text) ->
@@ -97,7 +96,7 @@ testCensus g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   texts shopNode ("https://smp8.simplex.im/a#shop", "https://smp8.simplex.im/c#shop")
   answer censusSubnames "childrenLength(bytes32)" shopNode $ uint256 (0 :: Int)
   v <- newTVarIO noCensusRead
-  readCensus ns v
+  readCensus ct v
   fmap (rgBlock . fst) . crCensus <$> readTVarIO v `shouldReturn` Just 1
   let counted =
         [ "simplex_names{level=\"2\",records=\"none\"} 1",
@@ -131,7 +130,7 @@ testCensus g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   filter ("simplex_names{" `T.isPrefixOf`) <$> censusLines `shouldReturn` counted
   censusLines >>= \ls -> forM_ lengths $ \l -> (l, l `elem` ls) `shouldBe` (l, True)
   setFault node "eth_getBlockByNumber" HttpFailure
-  readCensus ns v
+  readCensus ct v
   crFailures <$> readTVarIO v `shouldReturn` 1
   filter ("simplex_names{" `T.isPrefixOf`) <$> censusLines `shouldReturn` counted
 
@@ -268,13 +267,12 @@ testNamesCounts = withServiceStore $ \st -> do
 testChainRead :: TVar ChaChaDRG -> IO ()
 testChainRead g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
-  let ns = NamesSource {nsContracts = ct}
   registrar <- addressFromPrivateKey g fakeRegistrarKey
   answerCall node fakeSponsor (selector "registrarAllowance(address)" <> addressWord registrar) $ Returns $ uint256 (123456 * 10 ^ (16 :: Int) + 5 :: Integer)
   setFault node "eth_getBalance" $ Answers $ J.String "0x15af1d78b58c40000"
   v <- newTVarIO noChainRead
   started <- getCurrentTime
-  readChain ns v
+  readChain ct v
   ended <- getCurrentTime
   ChainRead {crReadAt} <- readTVarIO v
   readAt <- maybe (fail "no chain read succeeded") pure crReadAt
@@ -291,11 +289,11 @@ testChainRead g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       <> ["simplex_store_names_chain_read_timestamp_seconds " <> seconds readAt, "simplex_store_names_chain_read_ok 1"]
   Right (Just general) <- termsOf ct $ fakeTermsLink fakeGeneralTermsText
   termsText ct general `shouldReturn` Right "SimpleX general terms v1"
-  readChain ns v
+  readChain ct v
   fetched <- chainSamples <$> readTVarIO v
   filter ("simplex_store_names_terms_held" `T.isPrefixOf`) fetched `shouldBe` held "1"
   setFault node "eth_getBalance" HttpFailure
-  readChain ns v
+  readChain ct v
   chainSamples <$> readTVarIO v `shouldReturn` init fetched <> ["simplex_store_names_chain_read_ok 0"]
 
 testScrape :: TVar ChaChaDRG -> IO ()
@@ -306,7 +304,6 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   v <- newTVarIO noChainRead
   census <- newTVarIO noCensusRead
   let badgesOnly = MetricsEnv {meStore = st, meProviders = ["crypto"], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}
-      ns = NamesSource {nsContracts = ct}
   withApp (metricsApp badgesOnly v census) $ \client -> do
     r <- webGet client "/metrics"
     (statusOf r, lookup hContentType (responseHeaders r)) `shouldBe` (200, Just "text/plain; version=0.0.4; charset=utf-8")
@@ -316,8 +313,8 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
     filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_", "simplex_names", "simplex_name_"]) samples `shouldBe` []
     statusOf <$> webGet client "/" `shouldReturn` 404
     statusOf <$> webRequestBody client "POST" "/metrics" [] "" `shouldReturn` 405
-  (reads', _) <- pausedAt node "eth_getBalance" (runChainReads ns v)
-  (`finally` cancel reads') $ withApp (metricsApp badgesOnly {meNames = Just ns} v census) $ \client -> do
+  (reads', _) <- pausedAt node "eth_getBalance" (runChainReads ct v)
+  (`finally` cancel reads') $ withApp (metricsApp badgesOnly {meNames = Just ct} v census) $ \client -> do
     r <- timeout scrapeMicros (webGet client "/metrics") >>= maybe (fail "the scrape waited for the node") pure
     let samples = typedSamples $ bodyText r
     forM_ ["simplex_store_badges_codes_open 0", "simplex_store_names_orders{phase=\"unpaid\"} 0", "simplex_names_refresh_failures_total 0"] $ \s ->

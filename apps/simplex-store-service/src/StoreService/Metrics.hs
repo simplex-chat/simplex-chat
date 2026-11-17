@@ -3,7 +3,6 @@
 
 module StoreService.Metrics
   ( MetricsEnv (..),
-    NamesSource (..),
     ChainRead (..),
     ProviderTimes (..),
     CensusRead (..),
@@ -60,10 +59,8 @@ data MetricsEnv = MetricsEnv
     meListedOk :: TVar (Map Text UTCTime),
     meWebhookAt :: TVar (Map Text UTCTime),
     -- | @Nothing@ when the ini has no @[names]@ section.
-    meNames :: Maybe NamesSource
+    meNames :: Maybe Contracts
   }
-
-data NamesSource = NamesSource {nsContracts :: Contracts}
 
 -- | Each part keeps its last value while its read fails.
 data ChainRead = ChainRead
@@ -87,11 +84,11 @@ chainReadInterval = 60 * 1000000
 metricsHost :: String
 metricsHost = "127.0.0.1"
 
-readChain :: NamesSource -> TVar ChainRead -> IO ()
-readChain NamesSource {nsContracts} v = do
-  funds <- registrarFunds nsContracts
-  head' <- latestBlock $ ctChain nsContracts
-  terms <- termsHeld nsContracts
+readChain :: Contracts -> TVar ChainRead -> IO ()
+readChain ct v = do
+  funds <- registrarFunds ct
+  head' <- latestBlock $ ctChain ct
+  terms <- termsHeld ct
   now <- getCurrentTime
   let ok = isRight funds && isRight head' && isRight terms
   atomically $ modifyTVar' v $ \ChainRead {crFunds, crHead, crTerms, crReadAt} ->
@@ -109,9 +106,9 @@ readChain NamesSource {nsContracts} v = do
     warnIfFailed :: Show e => Text -> Either e a -> IO ()
     warnIfFailed what = either (\e -> logWarn $ "store metrics: " <> what <> " could not be read: " <> tshow e) (const $ pure ())
 
-runChainReads :: NamesSource -> TVar ChainRead -> IO ()
-runChainReads ns v = forever $ do
-  done <- safely "store metrics: the chain read" (readChain ns v)
+runChainReads :: Contracts -> TVar ChainRead -> IO ()
+runChainReads ct v = forever $ do
+  done <- safely "store metrics: the chain read" (readChain ct v)
   unless done $ atomically $ modifyTVar' v $ \cr -> cr {crOk = False}
   threadDelay chainReadInterval
 
@@ -124,9 +121,9 @@ noCensusRead = CensusRead {crCensus = Nothing, crFailures = 0}
 censusInterval :: Int
 censusInterval = 300 * 1000000
 
-readCensus :: NamesSource -> TVar CensusRead -> IO ()
-readCensus NamesSource {nsContracts} v = do
-  counted <- registeredNames nsContracts
+readCensus :: Contracts -> TVar CensusRead -> IO ()
+readCensus ct v = do
+  counted <- registeredNames ct
   case counted of
     Right census -> do
       now <- getCurrentTime
@@ -135,9 +132,9 @@ readCensus NamesSource {nsContracts} v = do
       atomically $ modifyTVar' v $ \cr -> cr {crFailures = crFailures cr + 1}
       logWarn $ "store metrics: the names census failed: " <> tshow e
 
-runCensus :: NamesSource -> TVar CensusRead -> IO ()
-runCensus ns v = forever $ do
-  done <- safely "store metrics: the names census" (readCensus ns v)
+runCensus :: Contracts -> TVar CensusRead -> IO ()
+runCensus ct v = forever $ do
+  done <- safely "store metrics: the names census" (readCensus ct v)
   unless done $ atomically $ modifyTVar' v $ \cr -> cr {crFailures = crFailures cr + 1}
   threadDelay censusInterval
 

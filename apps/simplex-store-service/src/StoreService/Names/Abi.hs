@@ -43,6 +43,7 @@ import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Eth.Address (Address, addressFromBytes, unAddress)
+import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (eitherToMaybe)
 
 data AbiValue = Static ByteString | Dynamic ByteString
@@ -97,7 +98,7 @@ lowerHexP n = A.count (2 * n) (A.satisfy lowerHexDigit) >>= either fail pure . c
     lowerHexDigit c = isDigit c || (c >= 'a' && c <= 'f')
 
 parseText :: A.Parser a -> Text -> Either String a
-parseText p = A.parseOnly (p <* A.endOfInput) . encodeUtf8
+parseText p = parseAll p . encodeUtf8
 
 bytes32FromHex :: Text -> Maybe ByteString
 bytes32FromHex = eitherToMaybe . parseText (hexP abiWordSize)
