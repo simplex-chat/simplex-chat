@@ -2062,7 +2062,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     processFileInvitation :: Maybe FileInvitation -> MsgContent -> (FileInvitation -> CM (Maybe FileProhibited)) -> (DB.Connection -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> CM (Maybe (RcvFileTransfer, CIFile 'MDRcv))
     processFileInvitation fInv_ mc fileProhibited_ createRcvFT = forM fInv_ $ \fInv -> do
       ChatConfig {fileChunkSize} <- asks config
-      fInv'@FileInvitation {fileName, fileSize} <- validateFileInvitation (Just mc) fInv
+      fInv'@FileInvitation {fileName, fileSize} <- validateFileInvitation mc fInv
       fileProhibited <- fileProhibited_ fInv'
       inline <- receiveInlineMode fInv' (Just mc) fileChunkSize
       ft@RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFT db fInv' fileProhibited inline fileChunkSize
@@ -2079,17 +2079,17 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           fileSource = (`CryptoFile` cryptoArgs) <$> filePath
       pure (ft', CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol, fileExpires = Nothing, fileProhibited})
 
-    mkValidFileInvitation :: Maybe MsgContent -> FileInvitation -> FileInvitation
-    mkValidFileInvitation mc_ fInv@FileInvitation {fileName} = fInv {fileName = maybe id mediaFileName mc_ $ safeFileNameStr fileName}
+    mkValidFileInvitation :: MsgContent -> FileInvitation -> FileInvitation
+    mkValidFileInvitation mc fInv@FileInvitation {fileName} = fInv {fileName = mediaFileName mc $ safeFileNameStr fileName}
 
-    validateFileInvitation :: Maybe MsgContent -> FileInvitation -> CM FileInvitation
-    validateFileInvitation mc_ fInv@FileInvitation {fileName, fileSize, fileDescr}
+    validateFileInvitation :: MsgContent -> FileInvitation -> CM FileInvitation
+    validateFileInvitation mc fInv@FileInvitation {fileName, fileSize, fileDescr}
       | fileSize <= 0 = throwChatError $ CEFileSize fileName
       | otherwise = do
           -- a file that requires a badge is received from the description message, where the proof binds the description
           needsBadge <- fileNeedsBadge fileSize
           let fileDescr' = if needsBadge then dummyFileDescr <$ fileDescr else fileDescr
-          pure $ mkValidFileInvitation mc_ fInv {fileDescr = fileDescr'}
+          pure $ mkValidFileInvitation mc fInv {fileDescr = fileDescr'}
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> CM ()
     messageUpdate ct@Contact {contactId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
@@ -2535,7 +2535,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> CM ()
     processFileInvitation' ct fInv msg@RcvMessage {sharedMsgId_} msgMeta = do
       ChatConfig {fileChunkSize} <- asks config
-      fInv'@FileInvitation {fileName, fileSize} <- validateFileInvitation Nothing fInv
+      fInv'@FileInvitation {fileName, fileSize} <- validateFileInvitation (MCFile "") fInv
       fileProhibited <- rcvDirectFileProhibited ct fInv'
       inline <- receiveInlineMode fInv' Nothing fileChunkSize
       RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFileTransfer db userId ct fInv' fileProhibited inline fileChunkSize
