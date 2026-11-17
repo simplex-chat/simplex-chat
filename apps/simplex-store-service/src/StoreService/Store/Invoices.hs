@@ -64,7 +64,7 @@ import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.StoreService (BadgePrice (..), BadgeOffer (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
-import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..))
+import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency, CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
@@ -388,22 +388,22 @@ discountCols :: OfferDiscount -> (Maybe Word32, Maybe Word32)
 discountCols (ODFreeMonths f) = (Just (fromIntegral f), Nothing)
 discountCols (ODDiscount d) = (Nothing, Just (fromIntegral d))
 
-mkDestination :: Maybe Text -> Maybe Text -> Maybe Text -> Maybe Text -> Maybe ServicePaymentDestination
+mkDestination :: Maybe Text -> Maybe Text -> Maybe CryptoCurrency -> Maybe Text -> Maybe ServicePaymentDestination
 mkDestination (Just url) _ _ _ = Just (SPDCard CPStripe url)
-mkDestination Nothing (Just addr) (Just curTxt) (Just amt) = (\cur -> SPDCrypto cur addr amt) <$> textDecode curTxt
+mkDestination Nothing (Just addr) (Just cur) (Just amt) = Just (SPDCrypto cur addr amt)
 mkDestination _ _ _ _ = Nothing
 
-destinationCols :: ServicePaymentDestination -> (Maybe Text, Maybe Text, Maybe Text, Maybe Text)
+destinationCols :: ServicePaymentDestination -> (Maybe Text, Maybe Text, Maybe CryptoCurrency, Maybe Text)
 destinationCols (SPDCard _ url) = (Just url, Nothing, Nothing, Nothing)
-destinationCols (SPDCrypto cur addr amt) = (Nothing, Just addr, Just (textEncode cur), Just amt)
+destinationCols (SPDCrypto cur addr amt) = (Nothing, Just addr, Just cur, Just amt)
 
 note :: Text -> Maybe a -> Either Text a
 note ctx = maybe (Left ctx) Right
 
 type InvoiceCols =
   (Text, Text, Text, Maybe BadgeType, Maybe Word32, Maybe Text)
-    :. (Word32, Word32, Text, Maybe Text, Maybe Text, Maybe Text)
-    :. (Maybe Text, UTCTime, Text, UTCTime)
+    :. (Word32, Word32, Text, Maybe Text, Maybe Text, Maybe CryptoCurrency)
+    :. (Maybe Text, UTCTime, InvoiceStatus, UTCTime)
     :. (Maybe Word32, Maybe Text, Maybe Text, Maybe Int, Maybe Text, Maybe UTCTime, Maybe Word32, Maybe Int64)
     :. Only (Maybe Int64)
 
@@ -411,7 +411,7 @@ mkInvoiceRow :: InvoiceCols -> Either Text InvoiceRow
 mkInvoiceRow
   ( (invId, providerTxt, providerRef, badgeType, months, registrationId)
       :. (price, amount, currency, url, addr, cryptoCur)
-      :. (cryptoAmt, expiresAt, statusTxt, createdAt)
+      :. (cryptoAmt, expiresAt, status, createdAt)
       :. (pAmount, pCryptoPaid, pCryptoDue, pPaidInFull, pStatus, pUpdatedAt, pConfirmedAmount, pConfirmedUnits)
       :. Only pUnits
     ) = do
@@ -420,7 +420,6 @@ mkInvoiceRow
       (Just bt, Just m, Nothing) -> Right (IPBadge bt (fromIntegral m))
       (Nothing, Nothing, Just rid) -> Right (IPName (RegistrationId rid))
       _ -> Left ("invoice product: " <> providerRef)
-    status <- note "invoices.status" (textDecode statusTxt)
     destination <- note "invoice payment destination" (mkDestination url addr cryptoCur cryptoAmt)
     pure
       InvoiceRow
