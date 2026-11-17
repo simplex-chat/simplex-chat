@@ -75,7 +75,6 @@ fun ProfileImage(
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
   blurred: Boolean = false,
-  async: Boolean = false,
   modifier: Modifier = Modifier
 ) {
   Box(modifier.size(size)) {
@@ -104,22 +103,12 @@ fun ProfileImage(
         )
       }
     } else {
-      if (async) {
-        Base64AsyncImage(
-          base64ImageString = image,
-          contentDescription = stringResource(MR.strings.image_descr_profile_image),
-          contentScale = ContentScale.Crop,
-          modifier = Modifier.fillMaxSize().profileIconShape(size, blurred)
-        )
-      } else {
-        val imageBitmap = base64ToBitmap(image)
-        Image(
-          bitmap = imageBitmap,
-          contentDescription = stringResource(MR.strings.image_descr_profile_image),
-          contentScale = ContentScale.Crop,
-          modifier = Modifier.fillMaxSize().profileIconShape(size, blurred)
-        )
-      }
+      Base64AsyncImage(
+        base64ImageString = image,
+        contentDescription = stringResource(MR.strings.image_descr_profile_image),
+        contentScale = ContentScale.Crop,
+        modifier = Modifier.fillMaxSize().profileIconShape(size, blurred)
+      )
     }
   }
 }

@@ -47,7 +47,7 @@ fun CIImageView(
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
-  val previewBitmap = remember(image) { base64ToBitmap(image) }
+  val preview = rememberBase64ImagePainter(image)
   @Composable
   fun progressIndicator() {
     CircularProgressIndicator(
@@ -107,20 +107,20 @@ fun CIImageView(
   }
 
   @Composable
-  fun imageView(imageBitmap: ImageBitmap, onClick: () -> Unit) {
+  fun imageView(painter: Base64ImagePainter, onClick: () -> Unit) {
     Image(
-      imageBitmap,
+      painter,
       contentDescription = stringResource(MR.strings.image_descr),
       // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .mediaContentWidth(fixedMediaWidth(tall = isTallMedia(imageBitmap.width, imageBitmap.height)))
+        .mediaContentWidth(fixedMediaWidth(tall = isTallMedia(painter.intrinsicSize.width, painter.intrinsicSize.height)))
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, imageBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, painter.bitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
       contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
     )
   }
@@ -144,7 +144,7 @@ fun CIImageView(
             onClick = onClick
           )
           .onRightClick { showMenu.value = true }
-          .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+          .privacyBlur(!smallView, preview.bitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
@@ -155,10 +155,10 @@ fun CIImageView(
           onClick = {}
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, preview.bitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentAlignment = Alignment.Center
       ) {
-        imageView(previewBitmap, onClick = onClick)
+        imageView(preview, onClick = onClick)
         Icon(
           painterResource(MR.images.ic_open_in_new),
           contentDescription = stringResource(MR.strings.image_descr),
@@ -192,13 +192,13 @@ fun CIImageView(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
       .then(
         if (!smallView) {
-          val tall = isTallMedia(previewBitmap.width, previewBitmap.height)
+          val tall = isTallMedia(preview.intrinsicSize.width, preview.intrinsicSize.height)
           val fixed = fixedMediaWidth(tall)
           val w = fixed ?: DEFAULT_MAX_IMAGE_WIDTH
           // Height follows the measured (clamped) width, not nominal w, else wide images get an empty strip below.
           Modifier.mediaWidth(fixed, tall).layout { measurable, constraints ->
             val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
-            val height = (width * (previewBitmap.height.toFloat() / previewBitmap.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
+            val height = (width * (preview.intrinsicSize.height / preview.intrinsicSize.width).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
             val placeable = measurable.measure(Constraints.fixed(width, height))
             layout(width, height) { placeable.place(0, 0) }
           }
@@ -232,7 +232,7 @@ fun CIImageView(
       val (imageBitmap, data, _) = loaded
       SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, blurred, @Composable { painter, onClick -> ImageView(painter, image, onClick) })
     } else {
-      imageView(previewBitmap, onClick = {
+      imageView(preview, onClick = {
         if (file != null) {
           when {
             file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted ->

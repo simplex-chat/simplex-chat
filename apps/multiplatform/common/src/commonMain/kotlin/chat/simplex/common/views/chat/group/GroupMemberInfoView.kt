@@ -934,7 +934,6 @@ fun MemberProfileImage(
   mem: GroupMember,
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
-  async: Boolean = false,
   modifier: Modifier = Modifier
 ) {
   ProfileImage(
@@ -944,7 +943,6 @@ fun MemberProfileImage(
     color = color,
     backgroundColor = backgroundColor,
     blurred = mem.blocked,
-    async = async,
     modifier = modifier
   )
 }
