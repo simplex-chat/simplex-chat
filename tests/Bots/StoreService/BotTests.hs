@@ -117,7 +117,7 @@ storeServiceTests = do
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
-  it "should run the console command given by --execute as the chat command" testExecuteOption
+  it "should set the chat command to the console command given by --execute" testExecuteOption
   it "should refuse to start when the [issuer] key is not one clients trust" testIssuerIniKeyMustBeTrusted
   it "should trust [issuer] dev_keys beside the clients' keys, and refuse one at a trusted index" testDevKeysTrusted
   it "should credit a code's months and issue one credential per month" testCodeMonthsRenew

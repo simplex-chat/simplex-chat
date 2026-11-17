@@ -174,8 +174,7 @@ start_service() {
   answering "$SERVICE_PID" "$SERVICE_URL/"
 }
 
-# //issue with --execute, with the service stopped, as the README says. Each run prints its answer, a
-# "Code: ..." line when it issues the code, and exits.
+# //issue with the service stopped, as the README says.
 issue_codes() {
   local i command out code years
   for i in "${!CODES[@]}"; do
