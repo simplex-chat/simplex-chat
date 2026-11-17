@@ -255,13 +255,13 @@ docs                 x.msg.new priority in the protocol doc and schema; bots/REA
 part                         approved section    work
 x.msg.update priority        2                   XMsgUpdate.priority, last field, at its positional uses
 UpdatedMessage.priority      2                   /_update item json with "priority": 1
-CEvtChatItemUpdated          2                   prevChatItem :: Maybe ACChatItem (#8219); a raise: high chatItem, prevChatItem not high
+CEvtChatItemUpdated          2                   chatItemUpdate :: AChatItemUpdate (#8219); a raise: high chatItem, prevChatItem not high
 ChatStats                    1, 6                unreadHighPriority :: IntDef, groups only
 preference                   3                   GFMsgPriority, MsgPriorityGroupPreference, default on for admins
                                                  /set priority #<group> on|off [<role>], CLI views; no feature items, no app screens
 sending                      4                   group: 1 when groupFeatureUserAllowed SGFMsgPriority, otherwise omitted; contact: omitted
 raise by the author          4                   APIUpdateChatItem: raise, condition, SMP flag on for the raising update
-receiving                    5                   rcvPriorityAllowed; userMention for high priority; groupMessageUpdate raise
+receiving                    5                   rcvPriorityAllowed; userMention for high priority, kept by edits (updateGroupCIUserMention, #8219); groupMessageUpdate raise
 storage                      6                   updateGroupChatItem_ writes item_priority and user_mention
 notifications                1, 8                attention item in mode "Mentions"; raise notified once, unread or read
 apps model                   8                   CIMeta.highPriority, unreadHighPriority counters, priorityTags, raise event handling

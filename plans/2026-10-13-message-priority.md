@@ -77,7 +77,7 @@ Controller.hs
   ComposedMessage (:1335)      priority :: Maybe Int      -- new; FromJSON (:1934): v .:? "priority"
   UpdatedMessage (:1343)       priority :: Maybe Int      -- new last field; JSON derived (:1947)
                                positional uses: Library/Commands.hs:798, 2697, 2701, 6562; apps/simplex-badge-service/src/BadgeService/Group.hs:344
-  CEvtChatItemUpdated (:980)   prevChatItem :: Maybe ACChatItem    -- #8219: the item before the update
+  CEvtChatItemUpdated (:980)   chatItemUpdate :: AChatItemUpdate   -- #8219: chatItem and prevChatItem, the item before the update
                                a raise: chatItem is high priority, prevChatItem is not
 ```
 - In a signed message `priority` is covered by the signature. The chat protocol version is unchanged.
@@ -165,6 +165,7 @@ updateCI (:2368), new parameters: priority of the update; cd of the item (the va
   condition    :2371: changed || the item is live || requested
   edited       :2377: changed && itemLive /= Just True
   item         when raise: CIMeta.priority = Just 1 and userMention = True, before updateGroupChatItem (:2379)
+  userMention  updateGroupCIUserMention (#8219), after updateGroupCIMentions: mention or reply || high priority, as for a new item
   event        :2382: chatItemUpdated with prevChatItem, the item before the raise (#8219)
   delivery     as now (:2384)
 ```
@@ -205,7 +206,7 @@ GroupStatsRow :791               unreadHighPriority added after unreadMentions
 findGroupChatPreviews_ :899      :925: SUM(CASE WHEN user_mention = 1 AND item_priority > 0 THEN 1 ELSE 0 END) AS UnreadHighPriority
 getGroupUnreadCount_ :1739       :1743: the same sum in COALESCE; returns count, mentions, high priority; used at :1703, :1708, :1718
 ```
-- `user_mention = 1` is tested first in both sums: the table row is read for attention items only, with `idx_chat_items_group_scope_stats_all` as it is. These two sums are the only aggregates of `item_priority`. A received high priority item always has `user_mention = 1`: both columns are written together at creation and at a raise.
+- `user_mention = 1` is tested first in both sums: the table row is read for attention items only, with `idx_chat_items_group_scope_stats_all` as it is. These two sums are the only aggregates of `item_priority`. A received high priority item always has `user_mention = 1`: both columns are written together at creation and at a raise, and an edit keeps it (`updateGroupCIUserMention`, #8219).
 
 ## 7. API and CLI
 `/_send` (`Library/Commands.hs:6174`) and `/_update item` (`:6183`) syntax is unchanged. `priority` is a property of each composed message and of the updated message:
@@ -214,7 +215,7 @@ getGroupUnreadCount_ :1739       :1743: the same sum in COALESCE; returns count,
 /_update item #1 5 json {"msgContent": {"type": "text", "text": "done"}, "mentions": {}, "priority": 1}
 ```
 - Streamed message: sent with `live=on`, updated with `live=on`, completed by `/_update item` without `live` and with `"priority": 1`. A message that is not live is raised by the same command, with or without a change of the text.
-- For a contact and a note folder `priority` is ignored by both commands. Responses and events: `CIMeta.priority` in chat items; `ChatStats.unreadHighPriority` where the other counters are returned; a raise is the event `chatItemUpdated` with a high priority `chatItem` and a `prevChatItem` that is not.
+- For a contact and a note folder `priority` is ignored by both commands. Responses and events: `CIMeta.priority` in chat items; `ChatStats.unreadHighPriority` where the other counters are returned; a raise is the event `chatItemUpdated` whose `chatItemUpdate` has a high priority `chatItem` and a `prevChatItem` that is not.
 
 ## 8. Apps: model
 `K`: `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/`. `I`: `apps/ios/`.
@@ -320,8 +321,10 @@ forwarding host or relay before         signed message: forwarded as received by
 owner before this release               the preference is absent: the default; the received preference JSON is kept (prefsToRow, Types/Preferences.hs:181) and parsed after an upgrade
                                         preferences saved by an app before this release are sent without msgPriority: the default applies again
 remote desktop                          host JSON is decoded by the controller core (Remote/Protocol.hs:71, :185)
-                                        newer desktop, older mobile: priority absent, unreadHighPriority 0, msgPriority by omittedField, prevChatItem absent
-                                        older desktop, newer mobile: a high priority item is shown as a mention; a raise is shown as an update, without a notification
+                                        newer desktop, older mobile: priority absent, unreadHighPriority 0, msgPriority by omittedField
+                                        older desktop, newer mobile: a high priority item is shown as a mention
+                                        chatItemUpdated, also a raise, between a peer with #8219 and a peer without it: a protocol error in the chat console,
+                                          until the version bump after #8219 refuses such peers
 bots                                    priority of ComposedMessage and UpdatedMessage is optional and ignored by a core before this release (Controller.hs:1934, :1947); the response fields of section 7 are added
 downgrade                               item_priority is dropped; user_mention = 1 is kept: the items are shown as mentions
 ```
@@ -359,7 +362,7 @@ core types        MsgContainer.priority
                   CIMeta.priority
                   NewSndChatItemData.priority
                   ChatStats.unreadHighPriority
-                  CEvtChatItemUpdated.prevChatItem (#8219)
+                  AChatItemUpdate.prevChatItem (#8219)
                   IntDef
 core functions    limitPriority
                   cmPriority
