@@ -63,7 +63,7 @@ flowchart LR
   N["newChatItems"] --> A["addChatItem"]
   U["chatItemUpdated<br>deletion with mark"] --> P["applyChatItemUpdate(prev, item)"]
   D["deletion"] --> R["removeChatItem(prev)"]
-  S["statuses, file events,<br>reports archived"] --> C["updateChatItem"]
+  S["statuses, file events,<br>reports archived, own edits"] --> C["replaceChatItem"]
   M["items read"] --> K["markChatItemsRead"]
   A & P & R & K -->|"+ item - prev,<br>main chat"| ST["chatStats"]
   A & P & R -->|"chat info of the event"| GI["membership.supportChat<br>membersRequireAttention"]
@@ -82,13 +82,13 @@ flowchart LR
 | `chatItemUpdated` | `applyChatItemUpdate(prev, item)` | + item - prev | replaced if it is the item | replaced if loaded |
 | deletion with `toChatItem`, event or response | `applyChatItemUpdate(deleted, marked)` | + marked - deleted | replaced if it is the item | replaced if loaded |
 | deletion without it | `removeChatItem(deleted)` | - deleted | "deleted" if it is the item | removed if loaded |
-| statuses, file events, reports archived | `updateChatItem(item)` | none | replaced if it is the item | replaced if loaded |
+| statuses, file events, reports archived, own edits | `replaceChatItem(item)` | none | replaced if it is the item | replaced if loaded |
 | items read | `markChatItemsRead` | - items read | none | marked |
 
 - + item: 1 is added to row unread for an unread item of the main chat, and to row mentions for one with a mention of the user.
 - Row counters are kept at 0 or above.
 - Items of a member removed with messages are counted out by the same rule (`removeMemberItems`).
-- `upsertChatItem` is removed.
+- `upsertChatItem` is replaced by `replaceChatItem`, which inserts nothing.
 - No item is added to the open chat and no chat to the list by an update or deletion, and no notification is shown for it (Q5).
 - A missing chat is added by its new item, with the item counted (P6).
 - The preview is taken from the scope shown in the row (`inMainChatList`) in each call (P17).
@@ -98,15 +98,17 @@ flowchart LR
 
 ### Counters
 
-- `Chat.unreadCount`, `Chat.unreadMentions`: the row counters of the rule, read by the row badge, `unreadTag` and "Mark read".
+- `Chat.unreadStats`: `chatStats` with the row counters of the rule, read by the row badge, `unreadTag`, `userUnreadCount` and "Mark read".
 - `Chat.userUnreadCount`: the chat's part of the profile count.
+- `ChatInfo.countsInUserUnread(item)`: the rule for one item of another profile.
 - Active profile: the sum of `userUnreadCount` over the list.
   - Kotlin: `ChatModel.activeUserUnreadCount`, read by the desktop tray.
   - iOS: `totalUnreadCountForAllUsers()`, set as the icon badge after each change of a row, of the list or of another profile's count.
   - The stored count of the active profile is not changed.
 - Other profiles: the core's count, changed per event by + item - prev with `isRcvNew`, `inMainChatList` and `ntfsEnabled`.
 - `unreadTag`: row counters by notifications, `unreadChat`, or the support flag (`supportUnreadCount > 0`) unless notifications are off (P13, Q3).
-- Unread tag counts are changed by `unreadTag` before and after each row change, `updateChatInfo` included; they are no longer changed in `updateChatSettings` (both apps).
+- Unread tag counts are changed by `unreadTag` before and after each row change, `updateChatInfo`, `addChat` and Kotlin `replaceChat` included; they are no longer changed in `updateChatSettings` (both apps) and in Kotlin "mark unread" and "mark read".
+- iOS: the chat list is published when a row's `unreadTag` changes, so the Unread filter is updated.
 - With "Mark read" on a pending member's group, the chat with admins is read too (`apiSupportChatRead`, the user's scope) (Q2).
 
 ### Open chat, Kotlin
@@ -120,7 +122,7 @@ flowchart LR
 - `getUsersInfo`, per profile:
   - contacts: unread items joined through each contact, by `enable_ntfs` (P11, Q6);
   - groups: unread items of the main chat joined through each group, by `enable_ntfs` (P5, P11);
-  - pending memberships: `support_chat_items_unread`, or `support_chat_items_mentions` for mentions-only (Q2).
+  - pending memberships, found by the user's contact: `support_chat_items_unread`, or `support_chat_items_mentions` for mentions-only (Q2).
 - The update event of a received edit has the group info with the support chat counters after the edit; `updateGroupCIUserMention` returns it.
 
 ```mermaid
@@ -162,24 +164,26 @@ flowchart LR
 
 ### Recording
 
-Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItemsDeleted`, `chatItemsStatusesUpdated`, `rcvFileStart`, `rcvFileComplete`. Recipients have `markRead = False`.
+Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItemsDeleted`, `chatItemsStatusesUpdated`. Recipients have `markRead = False`. File events use the call of statuses (`replaceChatItem`) and are tested through statuses.
 
 | Fixture | Core test | Recorded |
 |---|---|---|
-| counts/group-deleted | Groups.hs, "deleted unread items change the counters" | alice: a mention, a message, the message marked deleted, the mention removed |
-| counts/statuses | Direct.hs, "sent item statuses" | bob, the sender: statuses of "hello" |
-| counts/file-received | Files.hs, "received file events" | alice: a file message, file started, file completed |
-| counts/pending-support | Groups.hs, "pending member counts admins' messages" | eve, pending review: an admin message, its edit with a mention, a second message, its deletion<br>`/_get chats 1 pcc=on`<br>`/_read chat items #1(_support) <id>` |
-| counts/moderator-support | Groups.hs, "moderator receives support messages" | alice, the owner: a member's support message, a main chat message<br>`/_read chat items #1(_support:<id>) <id>` |
-| counts/muted | Direct.hs, "message in a muted chat" | alice: a message from a muted contact |
-| counts/chat-page | Direct.hs, "chat page during new messages" | alice: two messages<br>`/_get chat @2 initial=100` between them |
+| counts/group-marked | Groups.hs, "unread counts of deleted group items" | alice: a mention, a message, the message marked deleted |
+| counts/group-removed | the same test, with full deletion on | alice: the mention removed |
+| counts/direct-muted | Direct.hs, "unread counts of a muted chat, its statuses and its page" | alice: two messages from a muted contact |
+| counts/direct-statuses | the same test | bob, the sender: statuses of the first message |
+| counts/chat-page | the same test | `/_get chat @2 initial=100` between the two messages |
+| counts/moderator-support | Groups.hs, "unread counts of a moderator's support chat" | alice, the owner: a member's support message, a main chat message |
+| counts/moderator-read | the same test | `/_read chat items #1(_support:2) <id>` |
+| counts/pending-support | Groups.hs, "unread counts of a pending member's chat with admins" | cath, pending review: an admin message, its edit with a mention, a second message, its removal |
+| counts/pending-read | the same test | `/_read chat #1(_support)` |
 
 ### Core
 
 | Test | Checked |
 |---|---|
-| profile counts follow the rule | `/users` unread of: a muted contact 0, a mentions-only group its mentions, a member's support message to a moderator 0, admins' messages to a pending member counted |
-| query plans | chat_query_plans.txt: both counts search `chat_items` by user, chat and status |
+| the tests above | `/users` unread: a muted contact 0; deleted group items 1; a member's support message to the owner not counted; a pending member's admin message counted, 0 after it is read |
+| query plans | chat_query_plans.txt: the counts search `chat_items` by user, chat and status, and memberships by the user's contact |
 
 ### Kotlin, desktop
 
@@ -187,33 +191,37 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 
 | Test | Fixture | Checked |
 |---|---|---|
-| status of an unloaded item | counts/statuses | nothing inserted; the preview replaced only if it is the item |
-| file event of an unloaded item | counts/file-received | nothing inserted |
-| deletion mark of an unloaded item | counts/group-deleted | nothing inserted; counters unchanged |
-| removed unread mention | counts/group-deleted | row 2 1, then 1 0 |
-| new item and its removal | counts/group-deleted | the removal processed right after its item: the mention absent, row 1 0 |
-| profile count by notifications | updates/group-mention, counts/muted | 0, 1, 0 for the mentions-only group; 0 for the muted contact; 1 after unmute |
-| chat outside the list | counts/muted | added with row unread 1 |
-| opening keeps the row count | counts/chat-page | row 2 after the page with 1 |
-| pending member's row | counts/pending-support | badge 1 from the counter; the edit in the preview; the deletion in the badge and the preview; 0 after the read response; the badge in `ChatPreviewView` |
-| moderator's support message | counts/moderator-support | row unread 0; profile count 0; the group in `ChatListView` with the Unread filter |
-| support chat view | counts/moderator-support | the support chat's context keeps its own list after a pop; its unread count in `ChatView` of the support chat |
+| status of an unloaded item | counts/direct-statuses | nothing inserted; the preview has the new status |
+| deletion mark of an unloaded item | counts/group-marked | nothing inserted; counters 2 1 2 |
+| removed unread mention | counts/group-marked, counts/group-removed | 2 1 2, then 1 0 1 |
+| new item and its removal | counts/group-marked, counts/group-removed | the removal processed right after its item: the mention absent, 0 0 0 |
+| profile count, mentions-only group | updates/group-mention | 1 0 0, 1 1 1, 1 0 0 |
+| profile count, muted chat | counts/direct-muted | 2 0 0, then 2 0 2 after unmute |
+| chat outside the list | counts/direct-muted | added with 1 0 0 |
+| opening keeps the row count | counts/direct-muted, counts/chat-page | 2 0 0 after the page with 1 |
+| pending member's row | counts/pending-support, counts/pending-read | row 1 0, 1 1, 2 1, 1 1 from the counter; the edit in the preview; 0 0 after "Mark read" |
+| pending member's badge | counts/pending-support | "1" in `ChatPreviewView` |
+| moderator's support message | counts/moderator-support | row 0 0, profile 0; the group in `ChatListView` with the Unread filter |
+| support chat context | counts/moderator-support | `chatState.unreadTotal` 1; its list keeps only its chat after a pop |
+| reading a support chat | counts/moderator-support, counts/moderator-read | row 1 0 kept; support flag cleared |
 | counters follow previous and new item, changed | updates/group-mention | 1 0 0, 1 1 1, 1 0 0 |
 | update of a chat not listed, changed | updates/direct-edit | no chat added, no notification |
 
 ### iOS
 
-`UnreadCountsTests` in "SimpleX Unit Tests"; `setNtfBadgeCount` also recorded by `RecordingNtfManager`.
+`UnreadCountsTests` in "SimpleX Unit Tests"; `setNtfBadgeCount` recorded by `BadgeRecordingNtfManager`.
 
 | Test | Fixture | Checked |
 |---|---|---|
-| status, file event and deletion mark of an unloaded item | counts/statuses, counts/file-received, counts/group-deleted | nothing inserted; the preview not replaced by an unloaded item |
-| removed unread mention | counts/group-deleted | row 2 1, then 1 0 |
-| profile count by notifications | updates/group-mention, counts/muted | badge 0, 1, 0; 0 for the muted contact |
-| chat outside the list | counts/muted | added with row unread 1 |
-| pending member's row | counts/pending-support | as in Kotlin, without the view |
-| moderator's support message | counts/moderator-support | row unread 0; `unreadTag` true |
-| reading a support chat keeps the group row | counts/moderator-support | row unread unchanged after the read |
+| status of an unloaded item | counts/direct-statuses | nothing inserted; the preview has the new status |
+| deletion mark of an unloaded item | counts/group-marked | nothing inserted; 2 1 2 |
+| removed unread mention | counts/group-marked, counts/group-removed | 2 1 2, then 1 0 1 |
+| profile count, mentions-only group | updates/group-mention | 1 0 0, 1 1 1, 1 0 0; badge 0 |
+| profile count, muted chat | counts/direct-muted | 2 0 0, then 2 0 2 and badge 2 after unmute |
+| chat outside the list | counts/direct-muted | added with 1 0 0 |
+| pending member's row | counts/pending-support, counts/pending-read | as in Kotlin |
+| moderator's support message | counts/moderator-support | row 0 0, profile 0; `unreadTag` true |
+| reading a support chat keeps the group row | counts/moderator-support, counts/moderator-read | 1 0 1 kept |
 | counters follow previous and new item, changed | updates/group-mention | 1 0 0, 1 1 1, 1 0 0 |
 | update of a chat not listed, changed | updates/direct-edit | no chat added, no notification |
 
@@ -228,3 +236,5 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 - A status that arrives before the send response adds its item is lost; the item has the response's status until the next status.
 - Unloaded unread items of a member removed with messages stay counted until the next list load.
 - A chat added from outside the loaded list has the messages received since counted.
+- Kotlin: the scroll button's count source is tested on the support chat's `ChatsContext`; `ChatView` is not composed in tests.
+- Kotlin: removing a chat with unread messages leaves its list tag dot until the next list load (`removeChat`).
