@@ -129,8 +129,8 @@ class ImageDecodeBoundsTest {
   }
 
   @Test
-  fun testBase64ImagesAreCachedUpTo200() {
-    val images = (0..200).map { Base64.getEncoder().encodeToString(encodeMarkedPng(1, 1, it)) }
+  fun testBase64ImagesAreCachedUpTo1000() {
+    val images = (0..1000).map { Base64.getEncoder().encodeToString(encodeMarkedPng(1, 1, it)) }
     val bitmaps = images.map { base64ToBitmap(it) }
     assertSame(bitmaps[1], base64ToBitmap(images[1]))
     assertNotSame(bitmaps[0], base64ToBitmap(images[0]))

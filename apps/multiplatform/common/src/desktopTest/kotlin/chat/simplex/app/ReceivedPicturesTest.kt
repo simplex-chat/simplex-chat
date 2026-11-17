@@ -133,8 +133,8 @@ class ReceivedPicturesTest {
 
   private fun ImageComposeScene.settled(): ByteArray {
     repeat(50) {
-      Snapshot.sendApplyNotifications()
       render(System.nanoTime())
+      awaitDecodedPictures()
       Thread.sleep(20)
     }
     return assertNotNull(Bitmap.makeFromImage(render(System.nanoTime())).readPixels())
