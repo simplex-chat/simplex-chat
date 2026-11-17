@@ -140,7 +140,7 @@ Controller.hs                          ComposedMessage.priority and its parser
 Messages.hs                            CIMeta.priority; mkCIMeta, dummyMeta
 Library/Commands.hs                    direct prepareMsgs (:4958) sets priority; group prepareMsgs (:5037) passes it;
                                        other ComposedMessage values: priority Nothing
-Library/Internal.hs                    prepareGroupMsg priority parameter; sendHistory with the item's priority;
+Library/Internal.hs                    prepareGroupMsg priority parameter; sendHistory with the item's silent priority;
                                        eventHasNotification at :2255, :2755; deliverMessage takes the event;
                                        NewSndChatItemData.priority; saveSndChatItems; saveRcvChatItem'; mkChatItem_
 Store/Messages.hs                      createNewChatItem_ writes item_priority; ChatItemModeRow (:2288) and the item queries
@@ -238,7 +238,7 @@ core functions       limitPriority (-1 .. 0)
                      msgPriority
                      cmPriority
                      eventHasNotification
-                     prepareGroupMsg, parameter priority; sendHistory with the stored priority
+                     prepareGroupMsg, parameter priority; sendHistory with the stored silent priority
 storage              chat_items.item_priority (M20261113_item_priority)
                      idx_chat_items_contacts_silent, idx_chat_items_groups_priority (M20261113_item_priority)
 counts               unread silent items in the chat list, one chat, a member support scope, the core's unread filters and profile totals
@@ -293,6 +293,9 @@ approved text                                      becomes
 8     unreadTags, priorityTags                     unreadTags, priorityTags, silentTags
 10    Output.hs: notification for a raise          kept; the built silent checks stay; a raised item is no longer silent
 11    "1 or above ... received as normal" (doc)    the receiver rules and the preference of the approved plan
+5     item created by x.msg.update: its priority   normal priority: eventPriority of x.msg.update is 0 (5a9677981)
+4, 5  raise conditions                             also an item that is not deleted (receiver) and in the main scope (sender) (5a9677981)
+5     history: the priority of the stored item     silent kept, high dropped by the member that sends history; live forwards keep it (c2ccb6775)
 ```
 
 The NSE decisions of this plan stay. A raise reaches the NSE as `.messageReceived`, which replaces the default best attempt, so the `.noNtf` rule for a push of only silent messages does not hide a raise. Silent is still accepted from every sender in every chat. High priority keeps the preference of the approved plan, and a raise keeps its main scope rule.
