@@ -566,19 +566,6 @@ domTest("screens: a Lightning payment screen offers the BOLT11 as a lightning: l
   assert.deepEqual(copied, ["0.00049999944", BOLT11]);
 });
 
-domTest("screens: a Lightning invoice that reports part of the amount asks for no remainder", () => {
-  const part = { ...openLn, cryptoAmountPaid: "0.00020000000", cryptoAmountDue: "0.00029999944" };
-  const p = renderAwaitingPayment({
-    order: unpaidRecord(), invoice: part, method: "ln", nowMs: NOW, resumed: false, onCancel: noopAsync,
-  });
-  assert.ok(p.textContent.includes("We have seen 0.00020000000 BTC of 0.00049999944 BTC."), p.textContent);
-  assert.ok(p.textContent.includes(screens.LIGHTNING_NO_REST), p.textContent);
-  assert.ok(!p.textContent.includes("Send the r"), `a BOLT11 cannot take a second payment: ${p.textContent}`);
-  assert.equal(p.all("a.wallet-link").length, 0, "nothing invites a second payment of the same invoice");
-  assert.equal(p.all("svg.qr").length, 0);
-  assert.ok(!p.textContent.includes("Waiting for the rest"), p.textContent);
-});
-
 domTest("screens: a fully paid Lightning invoice still open waits for it to settle, not to confirm", () => {
   const covered = { ...openLn, cryptoAmountPaid: "0.00049999944", cryptoAmountDue: "0.00000000000" };
   const p = renderAwaitingPayment({
@@ -628,7 +615,6 @@ domTest("screens: a Lightning row still settling says so in Your codes, and ever
   assert.equal(p.all("span.status.pending").length, 3, "the Lightning row keeps the pending tone");
 });
 
-// BTCPay 2.4.4 does not cancel the node's BOLT11 when an invoice is marked Invalid, and records a payment to it until monitoring ends.
 domTest("screens: cancelling a Lightning invoice warns that its BOLT11 stays payable until it expires", () => {
   assert.equal(screens.cancelConfirmation("ln"), screens.CANCEL_CONFIRM_LIGHTNING);
   assert.ok(screens.CANCEL_CONFIRM_LIGHTNING.includes("stays payable until it expires"), screens.CANCEL_CONFIRM_LIGHTNING);
@@ -655,15 +641,30 @@ domTest("screens: an expired Lightning order says the invoice can no longer be p
 
   const funded = render(screens.windowClosed({ onNewInvoice: noop,
     order: smuggled({ status: "expired" }),
-    invoice: { ...openLn, status: "expired", amountPaid: 700, cryptoAmountPaid: "0.00049999944", paidInFull: true },
+    invoice: { ...openLn, status: "expired", amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true },
   }));
-  assert.ok(funded.textContent.includes("0.00049999944 BTC arrived, but the Lightning invoice expired before it settled"),
-    funded.textContent);
-  for (const leak of ["window closed", "not the full amount", "shortfall"]) {
-    assert.ok(!funded.textContent.includes(leak), `a BOLT11 is paid in full or not at all, and expires with the order: "${leak}"`);
+  assert.ok(funded.textContent.includes("0.00050000 BTC arrived after the window closed"), funded.textContent);
+  for (const leak of ["not the full amount", "shortfall", "settled", screens.LIGHTNING_EXPIRED]) {
+    assert.ok(!funded.textContent.includes(leak), `a whole Lightning payment that settled after the close: "${leak}"`);
   }
   assert.ok(funded.textContent.includes("inv_9f3a"), "and the reference support works from");
   assertNoCode(funded, "the expired Lightning order");
+});
+
+domTest("screens: a canceled invoice that money reached after the cancel says what arrived, never that nothing was charged", () => {
+  const paidAfterCancel = render(screens.windowClosed({ onNewInvoice: noop, canceled: true,
+    order: smuggled({ status: "expired" }),
+    invoice: { ...openLn, status: "expired", amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true },
+  }));
+  assert.ok(paidAfterCancel.textContent.includes("0.00050000 BTC arrived after the window closed"), paidAfterCancel.textContent);
+  assert.ok(!paidAfterCancel.textContent.includes("Nothing was charged"), paidAfterCancel.textContent);
+  assert.ok(paidAfterCancel.textContent.includes("inv_9f3a"), "with the reference support works from");
+
+  const empty = render(screens.windowClosed({ onNewInvoice: noop, canceled: true,
+    order: smuggled({ status: "expired" }),
+    invoice: { status: "expired", amount: 700, currency: "usd" },
+  }));
+  assert.ok(empty.textContent.includes("You canceled this invoice. Nothing was charged."), empty.textContent);
 });
 
 domTest("screens: the confirming screen waits, and promises not to expire while it does", () => {

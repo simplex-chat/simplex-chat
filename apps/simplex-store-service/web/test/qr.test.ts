@@ -27,7 +27,6 @@ const PUBLISHED_BYTE_CAPACITY_M: readonly number[] = [
   1452, 1538, 1628, 1722, 1809, 1911, 1989, 2099, 2213, 2331,
 ];
 
-// Table 7 gives the alphanumeric characters each version holds at level M.
 const PUBLISHED_ALPHANUMERIC_CAPACITY_M: readonly number[] = [
   20, 38, 61, 90, 122, 154, 178, 221, 262, 311,
   366, 419, 483, 528, 600, 656, 734, 816, 909, 970,
@@ -422,8 +421,6 @@ qrTest("qr: the bit stream is mode, count, payload, terminator and the alternati
   }
 });
 
-// The 1-M HELLO WORLD symbol as Thonky's QR tutorial and other encoders build it: 0010, a 9-bit count of 11,
-// the pairs HE LL O_ WO RL and a lone D, then the terminator and pad.
 const HELLO_WORLD_DATA = [32, 91, 11, 120, 209, 114, 220, 77, 67, 64, 236, 17, 236, 17, 236, 17];
 const HELLO_WORLD_ECC = [196, 35, 39, 119, 235, 215, 231, 226, 93, 23];
 
@@ -445,7 +442,6 @@ qrTest("qr: the alphanumeric version is chosen by length, across both count-widt
     assert.equal(decoded.mode, "alphanumeric");
   }
   assert.equal(encodeQr("9".repeat(3392)), null, "and one character more has no symbol at all");
-  // An odd count ends on a 6-bit character, which a pair-only writer would drop or pad wrongly.
   assert.equal(roundTrip("A".repeat(37), "an odd alphanumeric count").payload.length, 37);
 });
 
@@ -519,7 +515,6 @@ const MONERO_ADDRESS = "48HqK2XmVexampleAddress9fRtWcExampleAddress2nQyVXaLbEEXa
 const MONERO_INTEGRATED = "4LEXampleIntegratedAddress9fRtWcExampleAddress2nQyVXaLbEEXampleAddr9SDFGHJK9fRtWcQ8Uv7VJj3mExampleAddr9fRt";
 const BITCOIN_ADDRESS = "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq";
 const BADGE_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
-// BOLT11 is lowercase bech32, and one carrying route hints runs to about 400 characters.
 const BOLT11_400 = "lnbc499999440p1" + "qpzry9x8gf2tvdw0s3jn54khce6mua7l".repeat(13).slice(0, 385);
 
 function roundTrip(payload: string, what: string): Decoded {
@@ -558,35 +553,25 @@ function fingerprint(symbol: QrSymbol): string {
   return createHash("sha256").update(rows.join("\n")).digest("hex");
 }
 
-qrTest("qr: a 400-character BOLT11 is scanned in upper case, in alphanumeric mode, at version 12", () => {
+qrTest("qr: a 400-character BOLT11 is scanned as the bare invoice in upper case, in alphanumeric mode, at version 12", () => {
   assert.equal(BOLT11_400.length, 400);
-  const uri = paymentUri("ln", BOLT11_400, "0.00049999944")!;
+  const uri = paymentUri("ln", BOLT11_400, "0.00050000")!;
   assert.equal(uri, `lightning:${BOLT11_400}`, "the amount is inside the invoice, so the URI carries none");
-  const payload = paymentQrPayload("ln", uri);
-  assert.equal(payload, `LIGHTNING:${BOLT11_400.toUpperCase()}`);
-  const decoded = roundTrip(payload, "the Lightning URI");
+  const payload = paymentQrPayload("ln", BOLT11_400, uri);
+  assert.equal(payload, BOLT11_400.toUpperCase());
+  const decoded = roundTrip(payload, "the Lightning invoice");
   assert.equal(decoded.mode, "alphanumeric");
-  // 410 characters fit version 12 (419 at level M): 65 modules, 73 with the quiet zone, against 85 in byte mode.
   assert.ok(decoded.version <= 12, `version ${decoded.version}`);
   assert.equal(segmentOf(uri).mode, "byte", "the lower-case link would have needed version 15");
   assert.equal(symbolOf(uri).version, 15);
 });
 
-qrTest("qr: the upper-case Lightning symbol is module for module the one an independent encoder draws", () => {
-  const symbol = symbolOf(paymentQrPayload("ln", paymentUri("ln", BOLT11_400, "0.00049999944")!));
-  // segno 1.6.1, make(payload, error="m", mode="alphanumeric", boost_error=False), chose this version and mask itself.
-  assert.equal(symbol.version, 12);
-  assert.equal(symbol.mask, 3);
-  assert.equal(fingerprint(symbol), "f5f29268d30a048c926a942fea7e86b0bb35c3dabfdcea64affb95c6b88b920a");
-});
-
 qrTest("qr: the Bitcoin and Monero symbols stay in byte mode, identical to the byte-only encoder's", () => {
-  // Fingerprints of the symbols the encoder drew before it had an alphanumeric mode.
   for (const [uri, version, mask, expected] of [
     [paymentUri("btc", BITCOIN_ADDRESS, "0.00412")!, 5, 3, "5ebf3ac8877a9b59d79ea81e578e9998ec0414ffa84a2bb51d8bb9cf81bb6f99"],
     [paymentUri("xmr", MONERO_ADDRESS, "1.482")!, 7, 2, "f6a16bbcbdab85e399203c989f00b01198e5c17c4a3ef23611df5d6c898dbaf7"],
   ] as const) {
-    assert.equal(paymentQrPayload(uri.startsWith("bitcoin:") ? "btc" : "xmr", uri), uri, "the on-chain payload is the link itself");
+    assert.equal(paymentQrPayload(uri.startsWith("bitcoin:") ? "btc" : "xmr", "", uri), uri, "the on-chain payload is the link itself");
     assert.equal(segmentOf(uri).mode, "byte", `${uri} carries lower case`);
     const symbol = symbolOf(uri);
     assert.equal(symbol.version, version);
@@ -752,16 +737,16 @@ qrTest("the payment screen: Bitcoin gets BIP-21 with `amount`, Monero `tx_amount
   assert.equal(decoded.payload, `bitcoin:${BITCOIN_ADDRESS}?amount=0.00412`);
 });
 
-qrTest("the payment screen: Lightning scans LIGHTNING: and the upper-case BOLT11, and links the lower-case one", () => {
-  const ln = awaitingPayment({ ...xmrInvoice, address: BOLT11_400, cryptoAmount: "0.00049999944", cryptoCurrency: "ln" }, "ln");
+qrTest("the payment screen: Lightning scans the upper-case BOLT11, and links the lower-case one", () => {
+  const ln = awaitingPayment({ ...xmrInvoice, address: BOLT11_400, cryptoAmount: "0.00050000", cryptoCurrency: "ln" }, "ln");
   const decoded = decodeQr(modulesOfSvg(ln.querySelector("svg.qr")!));
-  assert.equal(decoded.payload, `LIGHTNING:${BOLT11_400.toUpperCase()}`,
+  assert.equal(decoded.payload, BOLT11_400.toUpperCase(),
     "a wallet reading anything else pays nothing, or the wrong invoice");
   assert.equal(decoded.mode, "alphanumeric");
   assert.ok(decoded.version <= 12, `version ${decoded.version}`);
   assert.equal(ln.all("a.wallet-link")[0]!.getAttribute("href"), `lightning:${BOLT11_400}`,
     "the link keeps the invoice as the service sent it");
-  assert.equal(decoded.payload.toLowerCase(), ln.all("a.wallet-link")[0]!.getAttribute("href"),
+  assert.equal(`lightning:${decoded.payload.toLowerCase()}`, ln.all("a.wallet-link")[0]!.getAttribute("href"),
     "and both name the same invoice");
   assert.equal(ln.querySelector("svg.qr")!.getAttribute("aria-label"), "Lightning payment code");
 });

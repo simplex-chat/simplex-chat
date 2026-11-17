@@ -825,7 +825,7 @@ e2eTest("e2e: a Lightning invoice is a BOLT11 with no confirmations, and cannot 
       { priceId: "price_supporter", method: "ln", codeHash: await hash(generate()) }, f);
     assert.equal(inv.cryptoCurrency, "ln");
     assert.match(inv.address ?? "", /^lnbc[0-9a-z]{250,}$/, "a lowercase BOLT11 of realistic length");
-    assert.match(inv.cryptoAmount ?? "", /^\d+\.\d{11}$/, "BTC to the millisatoshi");
+    assert.match(inv.cryptoAmount ?? "", /^\d+\.\d{8}$/, "BTC in whole satoshi, as BTCPay rounds a Lightning method's amount");
     const open = await readInvoice(inv.invoiceId, f);
     assert.equal(open.requiredConfirmations, undefined, "a Lightning payment is final once paid");
     assert.equal((await control(f, "partial", inv.invoiceId)).status, 400, "a BOLT11 is paid in full or not at all");

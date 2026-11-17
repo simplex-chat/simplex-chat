@@ -2,7 +2,6 @@ import type { Chain } from "./domain.js";
 
 export type Mode = "byte" | "alphanumeric";
 const MODE_INDICATORS: Readonly<Record<Mode, number>> = { byte: 0b0100, alphanumeric: 0b0010 };
-// The character count's width for versions 1-9, 10-26 and 27-40 (Table 3).
 const COUNT_BITS: Readonly<Record<Mode, readonly [number, number, number]>> = {
   byte: [8, 16, 16],
   alphanumeric: [9, 11, 13],
@@ -413,16 +412,14 @@ export function paymentUri(method: Chain, address: string, amount: string): stri
   if (address === "" || amount === "") return null;
   // The address is percent-encoded so that a `?`, `&`, or `#` in it cannot add its own parameters to the URI.
   const destination = encodeURIComponent(address);
-  // A BOLT11 invoice carries its own amount, so the URI adds none.
   if (method === "ln") return `lightning:${destination}`;
   const scheme = method === "btc" ? "bitcoin" : "monero";
   const parameter = method === "btc" ? "amount" : "tx_amount";
   return `${scheme}:${destination}?${parameter}=${encodeURIComponent(amount)}`;
 }
 
-// BOLT11 is bech32, which wallets read in either case, and only its upper case fits alphanumeric mode.
-export function paymentQrPayload(method: Chain, uri: string): string {
-  return method === "ln" ? uri.toUpperCase() : uri;
+export function paymentQrPayload(method: Chain, address: string, uri: string): string {
+  return method === "ln" ? address.toUpperCase() : uri;
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";

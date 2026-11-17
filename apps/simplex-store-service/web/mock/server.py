@@ -37,16 +37,15 @@ OFFERS = {
 }
 MIME = {".html": "text/html", ".css": "text/css", ".js": "text/javascript",
         ".svg": "image/svg+xml", ".json": "application/json", ".webmanifest": "application/manifest+json"}
-# BTCPay's default speed policy asks for one confirmation; a Lightning payment needs none.
+# BTCPay's default speed policy asks for one confirmation.
 REQUIRED_CONFIRMATIONS = 1
 CHAINS = ("btc", "ln", "xmr")
-# The Lightning destination is a made-up BOLT11 of a typical length, not one a wallet can pay.
 ADDRESSES = {
     "btc": "bc1qexampleaddress0k3jq2wvcgmqz",
-    "ln": "lnbc499999440p1" + ("qpzry9x8gf2tvdw0s3jn54khce6mua7l" * 12)[:345],
+    "ln": "lnbc500u1" + ("qpzry9x8gf2tvdw0s3jn54khce6mua7l" * 12)[:351],
     "xmr": "48HqK2XmVexampleAddress9fRtWc",
 }
-CRYPTO_AMOUNTS = {"btc": "1.482", "ln": "0.00049999944", "xmr": "1.482"}
+CRYPTO_AMOUNTS = {"btc": "1.482", "ln": "0.00050000", "xmr": "1.482"}
 
 LOCK = threading.Lock()
 INVOICES = {}
@@ -174,7 +173,6 @@ class Handler(BaseHTTPRequestHandler):
                     # Monero reports the payment as paid in full while its figures are still zero.
                     inv["paidInFull"] = True
                 elif action == "partial" and inv["method"] == "ln":
-                    # A BOLT11 invoice is paid in full or not at all.
                     return self._send(400, {"error": "bad_request"})
                 elif action == "partial":
                     inv["amountPaid"] = inv["amount"] // 2
