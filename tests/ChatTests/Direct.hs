@@ -302,21 +302,20 @@ testRetryConnectingClientTimeout ps = do
   inv <- withSmpServer' serverCfg' $ do
     withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice -> do
       alice ##> "/_connect 1"
-      (shortInv, inv) <- getInvitations alice
+      inv <- getInvitation alice
 
-      withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
-        bob ##> ("/_connect plan 1 " <> shortInv)
+      withNewTestChatCfgOpts ps cfgZeroTimeout opts' "bob" bobProfile $ \bob -> do
+        bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
-        void $ getTermLine bob
-
-      withTestChatCfgOpts ps cfgZeroTimeout opts' "bob" $ \bob -> do
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
         bob <## ("smp agent error: BROKER {brokerAddress = \"smp://" <> testServerKeyHash <> "@localhost:" <> smpTestPort2 ps <> "\", brokerErr = TIMEOUT}")
 
       pure inv
 
-  logFile <- readFile $ tmp <> "/smp-server-store.log"
-  logFile `shouldContain` "SECURE"
+  -- TODO enable with slow_servers SMP response delay, the client may drop SKEY before sending
+  -- logFile <- readFile $ tmp <> "/smp-server-store.log"
+  -- logFile `shouldContain` "SECURE"
 
   withSmpServer' serverCfg' $ do
     withTestChatCfgOpts ps cfg' opts' "alice" $ \alice -> do
