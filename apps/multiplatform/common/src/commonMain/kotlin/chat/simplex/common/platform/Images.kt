@@ -91,18 +91,19 @@ fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long
 
 internal val base64BitmapCache = Collections.synchronizedMap(object : LinkedHashMap<String, ImageBitmap>(200, 0.75f, true) {
   override fun removeEldestEntry(eldest: Map.Entry<String, ImageBitmap>): Boolean {
-    var bytes = values.sumOf { it.bytes() }
-    val bitmaps = values.iterator()
-    while (size > 1 && (size > 200 || bytes > MAX_BASE64_BITMAP_CACHE_BYTES)) {
-      bytes -= bitmaps.next().bytes()
-      bitmaps.remove()
+    var bytes = entries.sumOf { it.bytes() }
+    val cached = entries.iterator()
+    while (size > 1 && (size > MAX_BASE64_BITMAP_CACHE_COUNT || bytes > MAX_BASE64_BITMAP_CACHE_BYTES)) {
+      bytes -= cached.next().bytes()
+      cached.remove()
     }
     return false
   }
 })
 
-private fun ImageBitmap.bytes(): Long = width.toLong() * height * 4
+private fun Map.Entry<String, ImageBitmap>.bytes(): Long = key.length + value.width.toLong() * value.height * 4
 
+private const val MAX_BASE64_BITMAP_CACHE_COUNT = 1000
 private const val MAX_BASE64_BITMAP_CACHE_BYTES = 64L * 1024 * 1024
 
 @OptIn(ExperimentalCoroutinesApi::class)
