@@ -2348,6 +2348,93 @@
           "userId": 1
         }
       }
+    },
+    "/_show_address 1": {
+      "result": {
+        "contactLink": {
+          "addressSettings": {
+            "businessAddress": false
+          },
+          "connLinkContact": {
+            "connFullLink": "connFullLink",
+            "connShortLink": "connShortLink"
+          },
+          "shortLinkDataSet": true,
+          "shortLinkLargeDataSet": true,
+          "userContactLinkId": 1
+        },
+        "type": "userContactLink",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "alice",
+          "profile": {
+            "displayName": "alice",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Alice"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
     }
   },
   "markdown": {},

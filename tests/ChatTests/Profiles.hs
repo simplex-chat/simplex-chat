@@ -2564,7 +2564,8 @@ testContactNoticeFixtures =
           { frMarkdown = [aliceLink, cathLink],
             frUris = [],
             frCommands =
-              [ "/_get chat @4 count=0",
+              [ "/_get chat @2 count=0",
+                "/_get chat @4 count=0",
                 "/_delete @2 full notify=off",
                 "/_delete @3 full notify=off",
                 "/_delete @4 full notify=off",
@@ -2593,7 +2594,8 @@ testContactDeletionFixtures =
           { frMarkdown = [],
             frUris = [],
             frCommands =
-              [ "/_get chat @2 count=0",
+              [ "/_show_address 1",
+                "/_get chat @2 count=0",
                 "/_get chat @3 count=0",
                 "/_get chat @4 count=0",
                 "/_get chat @5 count=0",
@@ -2631,7 +2633,8 @@ testBusinessFixtures = testChat4 businessProfile bobProfile cathProfile danProfi
         { frMarkdown = [],
           frUris = [],
           frCommands =
-            [ "/_members #1",
+            [ "/_show_address 1",
+              "/_members #1",
               "/_members #2",
               "/_members #3",
               "/_delete #1 full notify=off notice={\"ttl\":86400}",

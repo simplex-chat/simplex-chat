@@ -15,6 +15,8 @@ import chat.simplex.common.views.newchat.LinkNoticeTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
+import java.time.format.FormatStyle
 import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
@@ -30,6 +32,7 @@ class ModerationTest : RecordedApiTest() {
     ChatController.appPrefs.showDeleteConversationNotice.set(showDeleteConversationNotice)
     ChatModel.groupMembers.value = emptyList()
     ChatModel.groupMembersIndexes.value = emptyMap()
+    ChatModel.userAddress.value = null
   }
 
   @Test
@@ -130,6 +133,7 @@ class ModerationTest : RecordedApiTest() {
   fun unblockMember() = recordedAlerts("bans/block-members") {
     val (groupInfo, _) = openGroup()
     val bob = member(blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
+    replaceMembers(listOf(bob))
     unblockForAllAlert(null, groupInfo, bob)
     assertTexts("Unblock member for all?", "Messages from bob will be shown for all members.", "Cancel", "Unblock for all")
     press("Unblock for all")
@@ -139,10 +143,12 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun unblockMembers() = recordedAlerts("bans/block-members") {
     val (groupInfo, members) = openGroup()
+    replaceMembers(blockedMembers("/_block #1 3 blocked=on ttl=604800") + blockedMembers("/_block #1 4 blocked=on"))
     unblockForAllAlert(null, groupInfo, listOf(member(members, "cath").groupMemberId, member(members, "dan").groupMemberId))
     assertTexts("Unblock members for all?", "Messages from these members will be shown for all members.", "Cancel", "Unblock for all")
     press("Unblock for all")
     awaitMember("cath") { !it.blockedByAdmin }
+    awaitMember("dan") { !it.blockedByAdmin }
   }
 
   @Test
@@ -189,6 +195,18 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
+  fun removeBlockedMembers() = recordedAlerts("bans/block-members") {
+    val (groupInfo, _) = openGroup()
+    removeMembersAlert(null, groupInfo, blockedMembers("/_block #1 2,3 blocked=on ttl=86400"))
+    assertTexts(
+      "Remove members?", "Members won't be notified, and can't rejoin while blocked.",
+      "Block for", "1 day", "Remove", "Remove and delete messages", "Cancel"
+    )
+    press("Remove")
+    assertRequested("/_remove #1 2,3 messages=off notice={\"ttl\":86400}")
+  }
+
+  @Test
   fun removeMemberNotBlocked() = recordedAlerts("bans/block-members") {
     val (groupInfo, members) = openGroup()
     removeMemberAlert(null, groupInfo, member(members, "dan"))
@@ -209,8 +227,9 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun showMemberMessages() = recordedAlerts("bans/hide-messages") {
     val (groupInfo, members) = openGroup()
-    val cath = member(members, "cath")
-    unblockMemberAlert(null, groupInfo, cath.copy(memberSettings = cath.memberSettings.copy(showMessages = false)))
+    val cath = member(members, "cath").let { it.copy(memberSettings = it.memberSettings.copy(showMessages = false)) }
+    replaceMembers(listOf(cath))
+    unblockMemberAlert(null, groupInfo, cath)
     assertTexts("Show messages?", "Messages from cath will be shown!", "Cancel", "Show")
     press("Show")
     awaitMember("cath") { it.memberSettings.showMessages }
@@ -277,6 +296,7 @@ class ModerationTest : RecordedApiTest() {
   fun unblockSubscriber() = recordedAlerts("bans/channel") {
     val (groupInfo, _) = openGroup()
     val cath = member(blockedMembers("/_block #1 3 blocked=on ttl=86400"), "cath")
+    replaceMembers(listOf(cath))
     unblockForAllAlert(null, groupInfo, cath)
     assertTexts("Unblock subscriber for all?", "Messages from cath will be shown for all subscribers.", "Cancel", "Unblock for all")
     press("Unblock for all")
@@ -339,11 +359,12 @@ class ModerationTest : RecordedApiTest() {
 
   @Test
   fun deleteBusinessChatKeepingConversation() = recordedAlerts("bans/business") {
+    loadAddress()
     val (groupInfo, _) = openGroup("/_members #2")
     deleteGroupDialog(groupChat(groupInfo), groupInfo, ChatModel)
     assertTexts("Delete chat?", "cath\n\nChat will be deleted for all members - this cannot be undone!", "Delete", "Cancel")
     press("Delete")
-    assertTexts("Delete chat?", "cath will be notified.", "Keep conversation", "Delete", "Cancel")
+    assertTexts("Delete chat?", "cath will be notified, and can reconnect via your address.", "Keep conversation", "Delete", "Cancel")
     onNode(isToggleable()).performClick()
     press("Delete")
     waitUntil(timeoutMillis = 5_000) { (chatInfo(groupInfo.id) as ChatInfo.Group).groupInfo.membership.memberStatus == GroupMemberStatus.MemGroupDeleted }
@@ -373,11 +394,12 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun deleteContactNotifying() = recordedAlerts("bans/contact-deletion") {
     ChatController.appPrefs.privacyContactDeletion.set(ContactDeletion.Notify)
+    loadAddress()
     val chat = openContact("/_get chat @5 count=0")
     deleteContactDialog(chat, ChatModel)
     assertTexts("Delete contact?", "Contact with eve will be deleted - this cannot be undone!", "Delete", "Cancel")
     press("Delete")
-    assertTexts("Delete contact?", "eve will be notified.", "Keep conversation", "Delete", "Cancel")
+    assertTexts("Delete contact?", "eve will be notified, and can reconnect via your address.", "Keep conversation", "Delete", "Cancel")
     press("Delete")
     waitUntil(timeoutMillis = 5_000) { !chatIds().contains(chat.id) }
   }
@@ -385,14 +407,45 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun deleteContactSilentlyKeepingConversation() = recordedAlerts("bans/contact-deletion") {
     ChatController.appPrefs.privacyContactDeletion.set(ContactDeletion.Ask)
+    loadAddress()
     val chat = openContact("/_get chat @5 count=0")
     deleteContactDialog(chat, ChatModel)
     assertTexts("Delete contact?", "Contact with eve will be deleted - this cannot be undone!", "Delete and notify", "Delete silently", "Cancel")
     press("Delete silently")
-    assertTexts("Delete contact?", "eve won't be notified.", "Keep conversation", "Delete", "Cancel")
+    assertTexts("Delete contact?", "eve won't be notified, and can reconnect via your address.", "Keep conversation", "Delete", "Cancel")
     onNode(isToggleable()).performClick()
     press("Delete")
     assertRequested("/_delete @5 entity notify=off")
+  }
+
+  @Test
+  fun deleteContactWithoutAddress() = recordedAlerts("bans/contact-notices") {
+    ChatController.appPrefs.privacyContactDeletion.set(ContactDeletion.Ask)
+    val chat = openContact("/_get chat @2 count=0")
+    deleteContactDialog(chat, ChatModel)
+    press("Delete silently")
+    assertTexts("Delete contact?", "alice won't be notified.", "Keep conversation", "Delete", "Cancel")
+    press("Delete")
+    waitUntil(timeoutMillis = 5_000) { !chatIds().contains(chat.id) }
+  }
+
+  @Test
+  fun archiveContactFails() = recordedAlerts("bans/contact-deletion") {
+    val chat = openContact("/_get chat @3 count=0")
+    archiveContact(chat, (chat.chatInfo as ChatInfo.Direct).contact, ChatModel)
+    assertRequested("/_delete @3 archive")
+    assertEquals("Error archiving contact", shownTexts().first())
+  }
+
+  @Test
+  fun customerLoadFailureShowsNothing() = recordedAlerts("bans/business") {
+    val (groupInfo, _) = openGroup()
+    val unknown = groupInfo.copy(groupId = 9)
+    deleteAndBanCustomer(groupChat(unknown), unknown)
+    waitUntil(timeoutMillis = 5_000) { synchronized(unrecorded) { unrecorded == listOf("/_members #9") } }
+    synchronized(unrecorded) { unrecorded.clear() }
+    waitForIdle()
+    assertTexts()
   }
 
   @Test
@@ -504,6 +557,14 @@ class ModerationTest : RecordedApiTest() {
     return group.groupInfo to group.members
   }
 
+  private fun loadAddress() {
+    ChatModel.userAddress.value = (recordedResult("/_show_address 1") as CR.UserContactLink).contactLink
+  }
+
+  private fun replaceMembers(members: List<GroupMember>) {
+    ChatModel.groupMembers.value = ChatModel.groupMembers.value.map { m -> members.firstOrNull { it.groupMemberId == m.groupMemberId } ?: m }
+  }
+
   private fun openContact(cmd: String): Chat = openChat((recordedResult(cmd) as CR.ApiChat).chat)
 
   private fun openChat(chat: Chat): Chat {
@@ -518,7 +579,5 @@ class ModerationTest : RecordedApiTest() {
 
   private fun member(members: List<GroupMember>, name: String): GroupMember = members.first { it.displayName == name }
 
-  private companion object {
-    const val UNTIL = "Jan 1, 2099, 12:00 PM"
-  }
+  private val UNTIL: String get() = localTimestamp(Instant.parse("2099-01-01T12:00:00Z"), FormatStyle.SHORT)
 }

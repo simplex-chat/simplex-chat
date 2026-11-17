@@ -17,6 +17,7 @@ final class ModerationTests: RecordedAPITestCase {
         showDeleteConversationNoticeDefault.set(showDeleteConversationNotice)
         ChatModel.shared.groupMembers = []
         ChatModel.shared.groupMembersIndexes = [:]
+        ChatModel.shared.userAddress = nil
         AlertManager.shared.presentAlert = false
         try await super.tearDown()
     }
@@ -131,6 +132,7 @@ final class ModerationTests: RecordedAPITestCase {
         try recorded("bans/block-members")
         let (groupInfo, _) = try openGroup()
         let bob = try member(try blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
+        replaceMembers([bob])
         AlertManager.shared.showAlert(unblockForAllAlert(groupInfo, bob))
         try await assertTexts(["Unblock member for all?", "Messages from bob will be shown for all members.", "Unblock for all", "Cancel"])
         try await press("Unblock for all")
@@ -197,6 +199,7 @@ final class ModerationTests: RecordedAPITestCase {
         let (groupInfo, members) = try openGroup()
         var cath = try member(members, "cath")
         cath.memberSettings.showMessages = false
+        replaceMembers([cath])
         AlertManager.shared.showAlert(unblockMemberAlert(groupInfo, cath))
         try await assertTexts(["Show messages?", "Messages from cath will be shown!", "Show", "Cancel"])
         try await press("Show")
@@ -242,6 +245,7 @@ final class ModerationTests: RecordedAPITestCase {
         try recorded("bans/channel")
         let (groupInfo, _) = try openGroup()
         let cath = try member(try blockedMembers("/_block #1 3 blocked=on ttl=86400"), "cath")
+        replaceMembers([cath])
         AlertManager.shared.showAlert(unblockForAllAlert(groupInfo, cath))
         try await assertTexts(["Unblock subscriber for all?", "Messages from cath will be shown for all subscribers.", "Unblock for all", "Cancel"])
         try await press("Unblock for all")
@@ -315,12 +319,13 @@ final class ModerationTests: RecordedAPITestCase {
     @MainActor
     func testDeleteBusinessChatKeepingConversation() async throws {
         try recorded("bans/business")
+        try loadAddress()
         let (groupInfo, _) = try openGroup("/_members #2")
         AlertManager.shared.showAlert(deleteGroupAlert(groupChat(groupInfo), groupInfo))
         try await assertTexts(["Delete chat?", "cath\n\nChat will be deleted for all members - this cannot be undone!", "Delete", "Cancel"])
         try await press("Delete")
         let dialog = try await sheet(KeepConversationDialog.self)
-        XCTAssertEqual(shownText(dialog.footer), "cath will be notified.")
+        XCTAssertEqual(shownText(dialog.footer), "cath will be notified, and can reconnect via your address.")
         dialog.close { dialog.delete(true) }
         try await waitFor { self.groupInfo(groupInfo.id)?.membership.memberStatus == .memGroupDeleted }
     }
@@ -356,12 +361,13 @@ final class ModerationTests: RecordedAPITestCase {
     func testDeleteContactNotifying() async throws {
         try recorded("bans/contact-deletion")
         privacyContactDeletionDefault.set(.notify)
+        try loadAddress()
         let (chat, contact) = try openContact("/_get chat @5 count=0")
         deleteContactDialog(chat, contact, dismissToChatList: false, showAlert: { AlertManager.shared.showAlert($0.alert) }, showActionSheet: { _ in XCTFail("action sheet in Notify mode") })
         try await assertTexts(["Delete contact?", "Contact with eve will be deleted - this cannot be undone!", "Delete", "Cancel"])
         try await press("Delete")
         let dialog = try await sheet(KeepConversationDialog.self)
-        XCTAssertEqual(shownText(dialog.footer), "eve will be notified.")
+        XCTAssertEqual(shownText(dialog.footer), "eve will be notified, and can reconnect via your address.")
         dialog.close { dialog.delete(false) }
         try await waitFor { ChatModel.shared.getChat(chat.id) == nil }
     }
@@ -370,16 +376,53 @@ final class ModerationTests: RecordedAPITestCase {
     func testDeleteContactSilentlyKeepingConversation() async throws {
         try recorded("bans/contact-deletion")
         privacyContactDeletionDefault.set(.ask)
+        try loadAddress()
         let (chat, contact) = try openContact("/_get chat @5 count=0")
         try await withActionSheetHost { host in
             deleteContactDialog(chat, contact, dismissToChatList: false, showAlert: { AlertManager.shared.showAlert($0.alert) }, showActionSheet: { host.sheet = $0 })
             try await assertTexts(["Delete contact?", "Contact with eve will be deleted - this cannot be undone!", "Delete and notify", "Delete silently", "Cancel"])
             try await press("Delete silently")
             let dialog = try await sheet(KeepConversationDialog.self)
-            XCTAssertEqual(shownText(dialog.footer), "eve won't be notified.")
+            XCTAssertEqual(shownText(dialog.footer), "eve won't be notified, and can reconnect via your address.")
             dialog.close { dialog.delete(true) }
             try await assertRequested { $0 == "/_delete @5 entity notify=off" }
+            try await waitFor { AlertManager.shared.presentAlert }
         }
+    }
+
+    @MainActor
+    func testDeleteContactWithoutAddress() async throws {
+        try recorded("bans/contact-notices")
+        privacyContactDeletionDefault.set(.ask)
+        let (chat, contact) = try openContact("/_get chat @2 count=0")
+        try await withActionSheetHost { host in
+            deleteContactDialog(chat, contact, dismissToChatList: false, showAlert: { AlertManager.shared.showAlert($0.alert) }, showActionSheet: { host.sheet = $0 })
+            try await press("Delete silently")
+            let dialog = try await sheet(KeepConversationDialog.self)
+            XCTAssertEqual(shownText(dialog.footer), "alice won't be notified.")
+            dialog.close { dialog.delete(false) }
+            try await waitFor { ChatModel.shared.getChat(chat.id) == nil }
+        }
+    }
+
+    @MainActor
+    func testArchiveContactFails() async throws {
+        try recorded("bans/contact-deletion")
+        let (chat, contact) = try openContact("/_get chat @3 count=0")
+        archiveContact(chat, contact)
+        try await assertRequested { $0 == "/_delete @3 archive" }
+        try await waitFor { self.shownTexts().contains("Error archiving contact") }
+    }
+
+    @MainActor
+    func testBlockMemberFails() async throws {
+        try recorded("bans/block-members")
+        let (groupInfo, members) = try openGroup()
+        showBanMemberSheet(groupInfo, try member(members, "dan"))
+        let dialog = try await sheet(BanDialog.self)
+        dialog.close { dialog.actions[0].action(.week) }
+        try await assertRequested { $0 == "/_block #1 4 blocked=on ttl=604800" }
+        try await waitFor { self.shownTexts().contains("Error blocking member for all") }
     }
 
     @MainActor
@@ -440,6 +483,7 @@ final class ModerationTests: RecordedAPITestCase {
         XCTAssertEqual(shownText(keep.footer), "cath won't be notified, and can't connect to you for 1 week.")
         keep.close { keep.delete(false) }
         try await assertRequested { $0 == "/_delete @3 full notify=off notice={\"ttl\":604800}" }
+        try await waitFor { AlertManager.shared.presentAlert }
     }
 
     @MainActor
@@ -512,6 +556,20 @@ final class ModerationTests: RecordedAPITestCase {
         ChatModel.shared.groupMembers = group.members.map { GMember($0) }
         ChatModel.shared.populateGroupMembersIndexes()
         return (group.groupInfo, group.members)
+    }
+
+    @MainActor
+    private func loadAddress() throws {
+        let r: ChatResponse1 = try recordedResult("/_show_address 1")
+        guard case let .userContactLink(_, contactLink) = r else { throw UnexpectedRecording(cmd: "/_show_address 1") }
+        ChatModel.shared.userAddress = contactLink
+    }
+
+    @MainActor
+    private func replaceMembers(_ members: [GroupMember]) {
+        for m in members {
+            if let i = ChatModel.shared.groupMembersIndexes[m.groupMemberId] { ChatModel.shared.groupMembers[i].wrapped = m }
+        }
     }
 
     @MainActor
