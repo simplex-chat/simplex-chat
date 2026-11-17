@@ -210,7 +210,7 @@ day = 86400
 openPhase :: NameRegistration -> NameRegistration
 openPhase r = (committedPhase r) {nrRevealAfter = Just (orderSeconds - minAge), nrRevealBefore = Just (orderSeconds - minAge + maxAge)}
 
--- | The reveal the page sends, its intent signed with the owner's key, its acceptance held by the policy.
+-- | The reveal the page sends, its intent signed with the owner's key.
 signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
 signedReveal Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration {nrCommitment, nrOwner} = do
   let RegisterIntent {riRegistration} = intentOf (oeConfig cOrders) r rv
@@ -522,7 +522,6 @@ testLostRace = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   answerAvailable w False
   dryRunsRevert w "NameNotAvailable(string)" $ abiTuple [Dynamic $ abiBytes "alicebakery"]
-  -- held at its first chain read, the name policy's for the held acceptance, after the registration was read
   (stepping, gate) <- pausedAt cNode "eth_call" $ stepRegistration wWorker (nrId r)
   changed <- rewrite ctx r $ \o -> o {nrRevealAfter = (+ 1) <$> nrRevealAfter o}
   releaseGate gate

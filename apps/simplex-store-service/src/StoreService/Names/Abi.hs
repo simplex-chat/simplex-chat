@@ -88,7 +88,6 @@ selector = B.take 4 . keccak256
 hex :: ByteString -> Text
 hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
 
--- | n bytes as 'hex' writes them, and only so: upper-case digits would give a second spelling of one hash.
 hexP :: Int -> A.Parser ByteString
 hexP n = A.string "0x" *> lowerHexP n
 

@@ -80,7 +80,6 @@ checkReveal cfg ct now r request = runExceptT $ do
   ExceptT $ checkAcceptance cfg ct r rv
   pure rv
 
--- | The reveal the commitment was made from, with the order's stored owner and duration and the default resolver.
 committedReveal :: NamesConfig -> NameRegistration -> RevealRequest -> Either RevealRefusal NameReveal
 committedReveal cfg@NamesConfig {nTLD} r@NameRegistration {nrLabelHash, nrLength, nrCommitment} RevealRequest {rqLabel, rqSignature, rqSecret, rqContactLinks, rqChannelLinks, rqNonce, rqDeadline, rqAcceptance} = do
   label <- first (const RVBadRequest) $ validLabel nTLD rqLabel
@@ -124,7 +123,6 @@ linksValid NameReveal {rvContactLink, rvChannelLink} = all (ofKind LKContact) rv
   where
     ofKind kind link = linkKindOf link == Just kind
 
--- | The intent an accepted reveal stored, as the register sends it.
 intentOf :: NamesConfig -> NameRegistration -> NameReveal -> RegisterIntent
 intentOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameRegistration {nrOwner, nrDuration} NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink, rvNonce, rvDeadline, rvSignature} =
   RegisterIntent {riRegistration = registration, riNonce = rvNonce, riDeadline = rvDeadline, riSignature = rvSignature}

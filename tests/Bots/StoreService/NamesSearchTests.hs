@@ -501,7 +501,6 @@ testFailedReads g = withSearch g id id $ \s@Search {node} -> do
   nextBlock node
   fst <$> searchAlice s 12 `shouldReturn` 200
 
--- | Each slow read takes 40% of the deadline: the status's two concurrent rounds meet it, the records' third round passes it.
 testOneDeadline :: TVar ChaChaDRG -> IO ()
 testOneDeadline g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Search {node} -> do
   registeredWith node bakeryLink newsLink

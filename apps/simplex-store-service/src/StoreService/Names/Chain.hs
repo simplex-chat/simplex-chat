@@ -223,7 +223,6 @@ signTransaction g ChainClient {ccConfig = ChainConfig {cServiceKey}} tx = fmap s
   where
     signed raw = SignedTx {stRaw = raw, stHash = TxHash $ keccak256 raw}
 
--- | A raw transaction from 'signTransaction', as it was signed.
 decodeSignedTx :: ByteString -> Either String Eip1559Tx
 decodeSignedTx = fmap fst . decodeEip1559Tx
 

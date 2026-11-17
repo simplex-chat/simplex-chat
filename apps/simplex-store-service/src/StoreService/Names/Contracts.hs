@@ -456,7 +456,6 @@ registrarConstants ct@Contracts {ctRegistrar} = readOnce ctRegistrar $ runExcept
   rcGracePeriod <- ExceptT $ call ct (baseRegistrar ct) ("GRACE_PERIOD()", "") decodeUint256
   pure RegistrarConstants {rcRegistry, rcGracePeriod}
 
--- | Concurrent first uses may each read; a read that started before the value was forgotten is not kept.
 readOnce :: IORef (Int, Maybe a) -> IO (Either ChainError a) -> IO (Either ChainError a)
 readOnce ref readChain =
   readIORef ref >>= \case

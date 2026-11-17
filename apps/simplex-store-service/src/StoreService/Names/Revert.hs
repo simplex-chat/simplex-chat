@@ -118,7 +118,6 @@ revertSignature = \case
 revertText :: RevertName -> Text
 revertText = decodeLatin1 . BC.takeWhile (/= '(') . revertSignature
 
--- | As the revert column and the answer's revert field show it, none for a revert without data.
 revertReasonText :: RevertReason -> Maybe Text
 revertReasonText = \case
   RRWithoutData -> Nothing
@@ -132,8 +131,6 @@ revertSelectors = M.fromList [(selector $ revertSignature n, n) | n <- [minBound
 maxNodeMessageLength :: Int
 maxNodeMessageLength = 200
 
--- | A revert's reason by its data: one of the contracts' errors by its selector, Solidity's Error(string) by its message,
--- any other by its selector in hex.
 decodeRevert :: ByteString -> RevertReason
 decodeRevert revertData
   | B.null revertData = RRWithoutData

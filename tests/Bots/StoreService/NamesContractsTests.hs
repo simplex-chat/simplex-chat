@@ -420,9 +420,9 @@ testStatusAtOneBlock g = withContracts g $ \node ct -> do
   answerRegistered node resolver
   setBlock node 100 now
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (now + year)
-  -- the registrar's constants are read once, so the next status's first call is the expiry
   nameStatus ct alice `shouldReturn` registered
   answerCallFrom node 101 registry registryOwnerCall $ Returns $ addressWord newPolicy
+  answerCallFrom node 101 (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
   (status, gate) <- pausedAt node "eth_call" $ nameStatus ct alice
   setBlock node 101 now
   releaseGate gate
@@ -555,8 +555,6 @@ testRecordsDeadline g = withContracts g $ \node ct -> do
   elapsed <- timed $ nameRecords ct {ctDeadline = testDeadline} alice (registeredAlice (resolverOf node) $ now + year) `shouldReturn` Left (ChainUnavailable "name records: timed out")
   elapsed `shouldSatisfy` (< 2)
 
--- | The status's reads in sequence (four) and the records' (three) pass the deadline, while their concurrent rounds
--- (three: the block, the expiry, the owner with the resolver; and one) meet it.
 testConcurrentReads :: TVar ChaChaDRG -> IO ()
 testConcurrentReads g = withContracts g $ \node ct -> do
   let resolver = resolverOf node

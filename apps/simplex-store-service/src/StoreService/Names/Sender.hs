@@ -191,7 +191,6 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar, ccConfig = Cha
       throwError $ SEFeeAboveCap needed
     when (bounded && headroomFee market > cap) $
       logNote $ "names sender: nonce " <> tshow nonce <> " at max fee " <> tshow cap <> ", capped so that its gas limit " <> tshow gasLimit <> " costs at most " <> maxTxFeeText
-    -- both fit Word64: the tip is at most the needed fee, and the max fee at most the cap
     let request =
           Eip1559Tx
             { txChainId = cChainId,
