@@ -2,14 +2,14 @@
 
 ## Problem
 
-Internal desktop builds are published as releases of the public repository simplex-chat/internal-builds. The desktop app reads releases of simplex-chat/simplex-chat only, so testers cannot be offered internal builds.
+Internal desktop builds are published as releases of the public repository simplex-chat/simplex-chat-test, which contains only releases and one commit per release. The desktop app reads releases of simplex-chat/simplex-chat only, so testers cannot be offered internal builds.
 
 ## Behaviour
 
 - Developer options, desktop only: toggle "Allow internal builds", default off.
 - Settings > app version > "Check for updates": "Internal" is listed while the toggle is on.
 - The toggle turned off while "Internal" is selected: the channel is set to "Disabled", the preference default, and the scheduled update check is cancelled.
-- Internal: the newest non-draft release of simplex-chat/internal-builds is offered when its tag differs from the installed version name.
+- Internal: the newest non-draft release of simplex-chat/simplex-chat-test is offered when its tag differs from the installed version name.
 - Stable and Beta: unchanged.
 - A check whose channel is changed during its request shows no alert.
 
@@ -53,7 +53,7 @@ flowchart TD
   V -->|yes| M[non-draft releases of simplex-chat/simplex-chat newer than the installed version]
   M -->|Stable| S[first not beta]
   M -->|Beta| B[first]
-  C -->|Internal| I[non-draft releases of simplex-chat/internal-builds]
+  C -->|Internal| I[non-draft releases of simplex-chat/simplex-chat-test]
   I --> F[latest published_at]
   F --> T{tag = installed version name}
   T -->|yes| N[nothing offered]
@@ -83,4 +83,4 @@ flowchart TD
 | Platform.kt, Main.kt | desktopSetupUpdateChecker |
 | base strings.xml | "Internal", "Allow internal builds" |
 | smoke-test.sh | developer options and update channels in both toggle states; Internal selected, then reset to Disabled by the toggle |
-| spec/state.md, product/views/settings.md | channel and toggle |
+| spec/state.md, spec/architecture.md, product/views/settings.md, desktop-linux/README.md | channel, toggle, platform hook, smoke case |

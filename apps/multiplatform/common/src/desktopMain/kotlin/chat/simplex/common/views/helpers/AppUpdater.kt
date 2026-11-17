@@ -178,7 +178,7 @@ private fun createUpdateJob() {
 
 
 private const val RELEASES_REPO = "simplex-chat/simplex-chat"
-private const val INTERNAL_BUILDS_REPO = "simplex-chat/internal-builds"
+private const val INTERNAL_BUILDS_REPO = "simplex-chat/simplex-chat-test"
 
 fun checkForUpdate() {
   Log.d(TAG, "Checking for update")
