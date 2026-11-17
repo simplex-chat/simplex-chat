@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.GroupInfo
+import chat.simplex.common.platform.base64ToBitmap
 import chat.simplex.common.views.helpers.ChatInfoImage
 import chat.simplex.common.views.helpers.ProfileImage
 import org.jetbrains.skia.Bitmap
@@ -51,6 +52,7 @@ class FlatAvatarTest {
     for (chatInfo in listOf(ChatInfo.Direct.sampleData, ChatInfo.Group.sampleData, ChatInfo.Local.sampleData, channel)) {
       assertEquals(0..26, inkAcrossMiddle { ChatInfoImage(chatInfo, 27.dp, Color.Black) }, chatInfo.chatType.name)
     }
+    base64ToBitmap(photo)
     assertEquals(0..26, inkAcrossMiddle { ProfileImage(27.dp, photo) })
   }
 }
