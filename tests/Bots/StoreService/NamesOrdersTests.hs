@@ -99,7 +99,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey, signRecoverable)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.Eth.EIP712 (serializeSignature)
+import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -295,7 +295,7 @@ fieldsOf Order {oLabel, oCommitment, oSealed, oDuration, oTerms} =
 signedBody :: TVar ChaChaDRG -> Order -> IO J.Object
 signedBody g o@Order {oKey, oTimestamp} = do
   sig <- either error id <$> signRecoverable g oKey (personalDigest $ orderMessage (fieldsOf o) oTimestamp)
-  pure $ withSignature (hex $ serializeSignature sig) (unsignedBody o)
+  pure $ withSignature (hex $ smpEncode sig) (unsignedBody o)
 
 unsignedBody :: Order -> J.Object
 unsignedBody o@Order {oOwner, oMethod, oPrice, oTimestamp} =

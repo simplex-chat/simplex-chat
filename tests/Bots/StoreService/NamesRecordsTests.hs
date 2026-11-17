@@ -42,7 +42,8 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), signRecoverable)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
-import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
+import Simplex.Messaging.Encoding (Encoding (..))
+import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import StoreService.Config (ChainConfig (..))
@@ -241,7 +242,7 @@ editRows Setup {store} = withTransaction store $ \db -> do
 -- | As the relay keys a sent request: each signed digest and its signature, in order.
 bodyHashOf :: EditRequest -> ByteString
 bodyHashOf EditRequest {erChanges} =
-  C.sha256Hash $ B.concat [digestOf scChange scNonce scDeadline <> serializeSignature scSignature | SignedChange {scChange, scNonce, scDeadline, scSignature} <- L.toList erChanges]
+  C.sha256Hash $ B.concat [digestOf scChange scNonce scDeadline <> smpEncode scSignature | SignedChange {scChange, scNonce, scDeadline, scSignature} <- L.toList erChanges]
 
 -- | Saves an edit as a request does before it joins the sender, as if the service stopped right after.
 saveUnsent :: Setup -> EditRequest -> IO ()
@@ -948,7 +949,7 @@ changeJson SignedChange {scChange, scNonce, scDeadline, scSignature} =
   KM.fromList $
     [ ("nonce", J.toJSON scNonce),
       ("deadline", J.toJSON scDeadline),
-      ("signature", J.String $ hex $ serializeSignature scSignature)
+      ("signature", J.String $ hex $ smpEncode scSignature)
     ]
       <> case scChange of
         RCSetText key value -> [("key", J.String $ textEncode key), ("value", J.String value)]

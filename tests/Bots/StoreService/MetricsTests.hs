@@ -36,7 +36,8 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Eth.Address (Address, addressFromBytes, addressFromPrivateKey)
+import Simplex.Messaging.Encoding (Encoding (..))
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ListenerConfig (..))
@@ -154,7 +155,7 @@ censusOtherResolver = censusAddress 0x23
 censusOwner = censusAddress 0x24
 
 censusAddress :: Word8 -> Address
-censusAddress = either error id . addressFromBytes . B.replicate 20
+censusAddress = either error id . smpDecode . B.replicate 20
 
 censusBase :: ByteString
 censusBase = B.replicate 32 0x11

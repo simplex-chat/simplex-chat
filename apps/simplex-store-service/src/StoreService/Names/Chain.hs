@@ -101,7 +101,8 @@ import Numeric (showHex)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), FromField (..), ToField (..), blobFieldDecoder)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey)
-import Simplex.Messaging.Eth.Address (Address, addressFromBytes, addressFromPrivateKey, recoverAddress, unAddress)
+import Simplex.Messaging.Encoding (Encoding (..))
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), decodeEip1559Tx, eip1559SigningHash, signEip1559Tx)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
@@ -448,7 +449,7 @@ decodeAddress :: ByteString -> Either AbiError Address
 decodeAddress ret = do
   (padding, a) <- B.splitAt addressPadding <$> wordAt 0 ret
   unless (B.all (== 0) padding) $ Left AENotAddress
-  first (const AENotAddress) $ addressFromBytes a
+  first (const AENotAddress) $ smpDecode a
 
 decodeBool :: ByteString -> Either AbiError Bool
 decodeBool ret =

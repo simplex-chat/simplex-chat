@@ -43,7 +43,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Eth.EIP712 (serializeSignature)
+import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
@@ -201,7 +201,7 @@ spendBody Ctx {cRandom} source SpendBody {sbOrder = o@Order {oKey, oPrice, oTime
         ("balance", J.toJSON sbBalance),
         ("terms", J.String $ textEncode ofAgreedTerms),
         ("timestamp", J.toJSON oTimestamp),
-        ("signature", J.String $ hex $ serializeSignature sig)
+        ("signature", J.String $ hex $ smpEncode sig)
       ]
         <> maybe [] (\m -> [("method", J.String m)]) sbMethod
   where
