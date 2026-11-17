@@ -659,9 +659,13 @@ testDirectQuoteReceivedContent =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
+      alice ##> "/receipts @bob off"
+      alice <## "ok"
       alice #> "@bob hello"
       bob <# "alice> hello"
       helloMsgId <- itemSharedMsgId bob
+      bob #> "@alice hi"
+      alice <# "bob> hi"
       connId <- contactAgentConnId bob "alice"
       sentAt <- getCurrentTime
       let sendReply replyId quotedId quotedSent =
