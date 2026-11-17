@@ -2535,17 +2535,18 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> CM ()
     processFileInvitation' ct fInv msg@RcvMessage {sharedMsgId_} msgMeta = do
       ChatConfig {fileChunkSize} <- asks config
-      fInv'@FileInvitation {fileName, fileSize} <- validateFileInvitation (MCFile "") fInv
+      fInv'@FileInvitation {fileName, fileSize} <- validateFileInvitation mc fInv
       fileProhibited <- rcvDirectFileProhibited ct fInv'
       inline <- receiveInlineMode fInv' Nothing fileChunkSize
       RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFileTransfer db userId ct fInv' fileProhibited inline fileChunkSize
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
           ciFile = Just $ CIFile {fileId, fileName, fileSize, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol, fileExpires = Nothing, fileProhibited}
-          content = ciContentNoParse $ CIRcvMsgContent $ MCFile ""
+          content = ciContentNoParse $ CIRcvMsgContent mc
       (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg sharedMsgId_ brokerTs content ciFile Nothing False M.empty
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
       where
         brokerTs = metaBrokerTs msgMeta
+        mc = MCFile ""
 
     blockedMemberCI :: GroupInfo -> GroupMember -> ChatItem 'CTGroup 'MDRcv -> CM (ChatItem 'CTGroup 'MDRcv)
     blockedMemberCI gInfo m ci
