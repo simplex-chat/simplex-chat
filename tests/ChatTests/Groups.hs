@@ -319,6 +319,7 @@ chatGroupTests = do
       it "should preserve working link after profile update" testChannelLinkAfterProfileUpdate
       it "should preserve working link after welcome message update" testChannelLinkAfterWelcomeUpdate
       it "should set chat layout of channel joined via relays from link data" testChannelChatLayout
+      it "should deliver channel web page to subscribers" testChannelWebPage
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should keep channel profile from link data when joining" testChannelJoinKeepsLinkProfile
       it "should apply channel profile from link data when joining" testChannelJoinAppliesLinkProfile
@@ -10737,6 +10738,28 @@ testChannelChatLayout ps =
         groupChatLayout alice "team" `shouldReturn` Just CLTerminal
         groupChatLayout bob "team" `shouldReturn` Just CLTerminal
         groupChatLayout cath "team" `shouldReturn` Just CLTerminal
+
+testChannelWebPage :: HasCallStack => TestParams -> IO ()
+testChannelWebPage ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        waitQueuedLinkUpdates alice
+        alice ##> ("/public group access #team web=" <> webPage)
+        alice <## ("updated public group access: web=" <> webPage)
+        concurrentlyN_
+          [ do
+              bob <## "alice updated group #team: (signed)"
+              bob <## ("updated public group access: web=" <> webPage),
+            do
+              cath <## "alice updated group #team: (signed)"
+              cath <## ("updated public group access: web=" <> webPage)
+          ]
+        apiFixture "links/channel-web-page" cath [] FixtureRequests {frMarkdown = [], frUris = [webPage], frCommands = ["/_get chat #1 count=0"]}
+  where
+    webPage = "https://example.com/news"
 
 testChannelOwnerKeyAfterLinkUpdate :: HasCallStack => TestParams -> IO ()
 testChannelOwnerKeyAfterLinkUpdate ps =

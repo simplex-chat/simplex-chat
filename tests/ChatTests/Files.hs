@@ -71,6 +71,7 @@ chatFileTests = do
     it "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
+    it "cancel receiving file before accepting it" testXFTPCancelNotAccepted
     it "should accept file automatically with CLI option" testAutoAcceptFile
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
   describe "file transfer over XFTP without chat items" $ do
@@ -1277,6 +1278,21 @@ testXFTPCancelRcvRepeat =
       dest `shouldBe` src
   where
     cfg = testCfg {xftpDescrPartSize = 200}
+
+testXFTPCancelNotAccepted :: HasCallStack => TestParams -> IO ()
+testXFTPCancelNotAccepted =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer alice $ do
+      connectUsers alice bob
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for bob"
+      alice <##> bob
+      apiFixture "files/cancel-not-accepted" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/fcancel 1"]}
+      bob ##> "/fs 1"
+      bob <## "receiving file 1 (test.pdf) not accepted yet, use /fr 1 to receive file"
 
 testAutoAcceptFile :: HasCallStack => TestParams -> IO ()
 testAutoAcceptFile =
