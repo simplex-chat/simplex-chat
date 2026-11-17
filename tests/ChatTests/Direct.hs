@@ -17,6 +17,8 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
 import Control.Monad (forM_, void, (>=>))
+import Control.Monad.Except (runExceptT)
+import Control.Monad.Reader (runReaderT)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -30,11 +32,14 @@ import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
-import Simplex.Chat.Messages (ChatItemId)
+import Simplex.Chat.Library.Internal (createInternalChatItem)
+import Simplex.Chat.Messages (ChatDirection (CDDirectRcv), ChatItemId)
+import Simplex.Chat.Messages.CIContent (CIContent (CIRcvIntegrityError))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.Protocol (MsgErrorType (MsgSkipped))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkTimeout (..))
@@ -79,6 +84,7 @@ chatDirectTests = do
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
     it "initial chat pagination" testChatPaginationInitial
+    it "skipped messages items with any message IDs" testSkippedMessagesItems
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -416,6 +422,19 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
       testOpts
         { markRead = False
         }
+
+testSkippedMessagesItems :: HasCallStack => TestParams -> IO ()
+testSkippedMessagesItems =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    ct <- getTestCCContact bob 2
+    withCCUser bob $ \u ->
+      forM_ [MsgSkipped 2 9, MsgSkipped (minBound + 1) 99] $ \msgErr ->
+        runExceptT (createInternalChatItem u (CDDirectRcv ct) (CIRcvIntegrityError msgErr) Nothing) `runReaderT` chatController bob
+          >>= either (fail . show) pure
+    bob <# "alice> skipped message ID 2..9"
+    bob <# "alice> skipped message ID -9223372036854775807..99"
+    apiFixture "messages/skipped-messages" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat @2 count=2"]}
 
 testDuplicateContactsSeparate :: HasCallStack => TestParams -> IO ()
 testDuplicateContactsSeparate =
