@@ -566,6 +566,7 @@ testLateCreditOf = do
   creditOf (btc (Just 330000) 330000) (rateOf "62500" 62500) `shouldBe` Just (Just 330000, Just "62500", Just "62500", Just "62500", 20000)
   creditOf (btc (Just lateUnits) 480000) stubRate `shouldBe` Just (Just 480000, Just "62500", Just "60000.5", Just "60000.5", 28800)
   creditOf (closed CCXmr "200" 10000 (Just 502112830000) 502112830000) (rateOf "200" 200) `shouldBe` Just (Just 502112830000, Just "200", Just "200", Just "200", 10000)
+  creditOf (closed CCLn "62500" 20000 (Just 320000000) 320000000) (rateOf "50000" 50000) `shouldBe` Just (Just 320000000, Just "62500", Just "50000", Just "50000", 16000)
   creditOf (btc Nothing lateUnits) stubRate `shouldBe` Nothing
 
 -- overpayment

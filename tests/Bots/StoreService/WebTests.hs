@@ -362,7 +362,8 @@ badgeWebTests = do
   describe "store service checkout" $ do
     it "answers the checkout fields and writes the three rows" testCreateInvoice
     it "carries no code and no code hash, over the raw bytes" testCreateCarriesNoCode
-    it "tells the provider xmr rather than the chain another request used" testXmrReachesTheProviderAsXmr
+    it "tells the provider xmr rather than the chain another request used" (testCoinReachesTheProvider "xmr" CCXmr)
+    it "tells the provider ln for a Lightning checkout" (testCoinReachesTheProvider "ln" CCLn)
     it "derives badgeType, months and amount from the catalog, never from the body" testCreateDerivesFromCatalog
     it "refuses every catalog_changed condition before the provider" testCatalogRefusalCostsNothing
     it "refuses a code_hash already sold before the provider" testCodeConflictCostsNothing
@@ -2171,12 +2172,12 @@ testCreateInvoice = bounded "create invoice" $ withCheckout $ \ref env client ->
       InvoiceId (odReference draft) `shouldBe` invId
     other -> expectationFailure ("provider calls: " <> show other)
 
-testXmrReachesTheProviderAsXmr :: IO ()
-testXmrReachesTheProviderAsXmr = bounded "xmr is xmr" $ withCheckout $ \ref _ client -> do
-  r <- postCreateAs client 1 (createBody supporterPriceId Nothing "xmr" (codeHashText sampleCode))
+testCoinReachesTheProvider :: Text -> CryptoCurrency -> IO ()
+testCoinReachesTheProvider methodName coin = bounded (T.unpack methodName <> " reaches the provider") $ withCheckout $ \ref _ client -> do
+  r <- postCreateAs client 1 (createBody supporterPriceId Nothing methodName (codeHashText sampleCode))
   statusOf r `shouldBe` 200
   stubCalls ref >>= \case
-    [StubCreate method _] -> method `shouldBe` SPMCrypto CCXmr
+    [StubCreate method _] -> method `shouldBe` SPMCrypto coin
     other -> expectationFailure ("provider calls: " <> show other)
 
 testCreateCarriesNoCode :: IO ()
