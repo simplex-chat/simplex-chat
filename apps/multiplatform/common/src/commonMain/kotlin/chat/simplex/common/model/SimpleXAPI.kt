@@ -3848,8 +3848,6 @@ object ChatController {
     val cInfo = update.chatInfo
     val cItem = update.chatItem
     val prevItem = update.prevChatItem
-    val missedCall = cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed
-    val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
     if (!activeUser(rh, user)) {
       val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && cInfo.ntfsEnabled(it) }
       if (unreadChange > 0) {
@@ -3857,7 +3855,6 @@ object ChatController {
       } else if (unreadChange < 0) {
         withContext(Dispatchers.Main) { chatModel.chatsContext.decreaseUnreadCounter(rh, user) }
       }
-      if (missedCall) notify()
     } else {
       val createdChat = withContext(Dispatchers.Main) {
         chatModel.chatsContext.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
@@ -3865,7 +3862,7 @@ object ChatController {
       withContext(Dispatchers.Main) {
         chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
-      if (createdChat || missedCall) notify()
+      if (createdChat) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
     }
   }
 
