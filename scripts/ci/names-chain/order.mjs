@@ -5,10 +5,9 @@ import { pathToFileURL } from "node:url"
 const PHASE_MS = 300_000
 const NO_LINKS = { contact: "", channel: "" }
 
-const [command, service, ...args] = process.argv.slice(2)
-const webapp = process.env.NAMES_WEBAPP
+const [webapp, command, service, ...args] = process.argv.slice(2)
 if (!webapp || !service) {
-  console.error("usage: NAMES_WEBAPP=<webapp dir> order.mjs register <service url> <code> <label> <out .json> | set-link <service url> <name-code .json> <address>")
+  console.error("usage: order.mjs <webapp dir> register <service url> <code> <label> <out .json> | <webapp dir> set-link <service url> <name-code .json> <address>")
   process.exit(1)
 }
 

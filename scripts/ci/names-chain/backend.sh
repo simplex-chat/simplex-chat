@@ -13,7 +13,8 @@ service_url=http://127.0.0.1:$service_port
 min_commitment_age=5
 issuer_index=999
 issuer_secret=Grc_c1bKCSa3U8mMwRy6XNTJNwSveJi332wAqyyCy2o=
-codes=("name 6" "name 6" "name 6" "name 7 years 5" "name 8")
+owner_code="name 6"
+test_codes=("name 6" "name 6" "name 7 years 5" "name 8")
 free_label=cifreename
 unlinked_label=harbour
 owner_label=ciowner
@@ -62,13 +63,9 @@ field() {
   jq -er ".$1" "$work/chain.json"
 }
 
-answers_rpc() {
-  curl -sf -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}' "$rpc_url"
-}
-
 start_chain() {
   start_part chain-anvil "$names/anvil" --chain-id 31337 --host 127.0.0.1 --port "$rpc_port" --block-time 1 --prune-history 8 --silent
-  until_ready chain-anvil "anvil does not answer on $rpc_url" answers_rpc
+  until_ready chain-anvil "anvil does not answer on $rpc_url" curl -sf -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}' "$rpc_url"
   start_part chain-terms env TERMS_DIR="$work/names-terms" node "$names/webapp/dev/serve-terms.ts"
   until_ready chain-terms "the terms server does not answer on $terms_url" curl -s -o /dev/null "$terms_url/terms/"
   if ! env RPC_URL="$rpc_url" LOCAL_CHAIN_OUT="$work/chain.json" MIN_COMMITMENT_AGE="$min_commitment_age" ENS_CONTRACTS_DIR="$names/contracts" \
@@ -148,13 +145,9 @@ INI
   chmod 600 "$service_ini"
 }
 
-answers_code_check() {
-  curl -s -o /dev/null -X POST -H 'content-type: application/json' --data '{"code":""}' "$service_url/api/code/check"
-}
-
 start_service() {
   start_part store-service "${service[@]}" -y
-  until_ready store-service "the store service does not answer on $service_url" answers_code_check
+  until_ready store-service "the store service does not answer on $service_url" curl -s -o /dev/null -X POST -H 'content-type: application/json' --data '{"code":""}' "$service_url/api/code/check"
 }
 
 service_address() {
@@ -170,17 +163,19 @@ make_service() {
   start_service
   until_ready store-service "the store service did not create its address" has_service_address
   stop_process store-service INT
+  rm -f "$work/store-service.pid"
   service_address > "$work/store-service"
   echo "store service address: $(cat "$work/store-service")"
 }
 
 issue_codes() {
-  if ! python3 -I "$here/issue-codes.py" "$startup_seconds" "$work/chain-codes.json" "${codes[@]}" -- "${service[@]}" --run-cli --no-address > "$work/store-service-cli.log" 2>&1; then
+  if ! python3 -I "$here/issue-codes.py" "$startup_seconds" "$work/chain-codes.json" "$owner_code" "${test_codes[@]}" -- "${service[@]}" --run-cli --no-address > "$work/store-service-cli.log" 2>&1; then
     echo "error: the codes were not issued"
     cat "$work/store-service-cli.log"
     return 1
   fi
   echo "issued codes: $(cat "$work/chain-codes.json")"
+  jq '.[1:]' "$work/chain-codes.json" > "$work/name-codes.json"
 }
 
 chain_chat() {
@@ -191,10 +186,6 @@ chain_chat() {
   cat "$work/chain-out"
   echo "::endgroup::"
   return "$status"
-}
-
-probe() {
-  chain_chat chain_probe ci_probe 5 "$1"
 }
 
 expect_out() {
@@ -218,16 +209,16 @@ until_shown() {
 
 probe_names() {
   chain_chat chain_probe ci_probe 1 "/user"
-  probe "/_connect plan 1 @$free_label.simplex" || true
+  chain_chat chain_probe ci_probe 5 "/_connect plan 1 @$free_label.simplex" || true
   expect_out "SimpleX name $free_label\.simplex is available: "
-  probe "/_connect plan 1 @$unlinked_label.simplex" || true
+  chain_chat chain_probe ci_probe 5 "/_connect plan 1 @$unlinked_label.simplex" || true
   expect_out "SimpleX name $unlinked_label\.simplex has no valid connection link"
   echo "names resolve from the chain: $free_label is available, $unlinked_label has no link"
 }
 
 check_code() {
   local code answer
-  code=$(jq -er '.[1].code' "$work/chain-codes.json")
+  code=$(jq -er '.[0].code' "$work/name-codes.json")
   answer=$(curl -s -X POST -H 'content-type: application/json' --data "$(jq -cn --arg c "$code" '{code: $c}')" "$service_url/api/code/check")
   echo "code check of $code: $answer"
   case "$answer" in
@@ -240,21 +231,17 @@ check_code() {
   esac
 }
 
-order() {
-  NAMES_WEBAPP=$names/webapp node "$here/order.mjs" "$@"
-}
-
 register_owner_name() {
   local code
   code=$(jq -er '.[0].code' "$work/chain-codes.json")
-  if ! order register "$service_url" "$code" "$owner_label" "$work/name-code.json"; then
+  if ! node "$here/order.mjs" "$names/webapp" register "$service_url" "$code" "$owner_label" "$work/name-code.json"; then
     show_log store-service
     return 1
   fi
 }
 
 set_link() {
-  if ! order set-link "$service_url" "$work/name-code.json" "$1"; then
+  if ! node "$here/order.mjs" "$names/webapp" set-link "$service_url" "$work/name-code.json" "$1"; then
     show_log store-service
     return 1
   fi
@@ -300,7 +287,6 @@ start() {
   start_service
   probe_names
   check_code
-  jq '.[1:]' "$work/chain-codes.json" > "$work/name-codes.json"
   register_owner_name
   claim_owner_name
   show_outputs
