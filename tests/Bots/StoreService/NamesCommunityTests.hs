@@ -4,7 +4,7 @@
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
 import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, unknownIn)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, answerListing, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeGeneralTerms, fakeGeneralTermsText, fakeNamePolicy, fakeTermsLink, fetchedTexts, setCommunityTerms, setGeneralTerms, nextBlock)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), address, answerCall, fakeController, fakeNamePolicy, fakeTermsHash, fakeTermsLink, fetchedTexts, setCommunityTerms, setGeneralTerms, nextBlock)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
@@ -20,7 +20,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Chain (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector)
+import StoreService.Names.Chain (AbiValue (..), abiBytes, abiTuple, addressWord, bytes32FromHex, hex, selector, uint256)
 import StoreService.Names.Community (communityFor, termsFor)
 import StoreService.Names.Contracts (Terms (..))
 import StoreService.Names.Registration (AgreedTerms (..))
@@ -133,13 +133,23 @@ testTermsFor = do
 testStartupCheck :: TVar ChaChaDRG -> IO ()
 testStartupCheck g = withContracts g $ \node ct -> do
   cfg <- withCommunity ["alicebakery = Alice's bakery"]
+  let policy = address "0x00000000000000000000000000000000057a7700"
+      generalText = "SimpleX general terms of the startup check"
+      communityText = "SimpleX community terms of the startup check"
+      LabelHash lh = aliceHash
+      listing = selector "communityNames(bytes32)" <> lh
+      linked text = Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 $ fakeTermsLink text]
+  answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord policy
+  answerCall node policy listing $ Returns $ uint256 (0 :: Int)
+  answerCall node policy (selector "generalTermsLink()") $ linked generalText
+  answerCall node policy (selector "communityTermsLink()") $ linked communityText
   logged <- capturingStderr $ logNamePolicy cfg ct
-  logged `shouldSatisfy` T.isInfixOf ("names: name policy " <> addressText fakeNamePolicy)
-  logged `shouldSatisfy` T.isInfixOf ("names: general terms " <> fakeTermsLink fakeGeneralTermsText <> ", hash " <> hex fakeGeneralTerms)
-  logged `shouldSatisfy` T.isInfixOf ("names: community terms " <> fakeTermsLink fakeCommunityTermsText <> ", hash " <> hex fakeCommunityTerms)
+  logged `shouldSatisfy` T.isInfixOf ("names: name policy " <> addressText policy)
+  logged `shouldSatisfy` T.isInfixOf ("names: general terms " <> fakeTermsLink generalText <> ", hash " <> hex (fakeTermsHash generalText))
+  logged `shouldSatisfy` T.isInfixOf ("names: community terms " <> fakeTermsLink communityText <> ", hash " <> hex (fakeTermsHash communityText))
   logged `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
   fetchedTexts node `shouldReturn` []
-  answerListing node aliceHash $ Reverts ""
+  answerCall node policy listing $ Reverts ""
   unread <- capturingStderr $ logNamePolicy cfg ct
   unread `shouldSatisfy` T.isInfixOf "names: a [community] name's listing could not be read: Alice's bakery"
 

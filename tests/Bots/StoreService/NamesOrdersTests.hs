@@ -1465,7 +1465,7 @@ testSweepSkipsBadRow = withOrders $ \ctx@Ctx {cStore = st} -> do
   let later = addUTCTime 3600 orderTime
   overdue@[OverdueInvoice {oiProviderRef = badRef}, _] <- mapM (overdueOf st) [bad, good]
   logs <- capturingStderr $ expireOverdue st (weWaiters $ cWeb ctx) (Just $ oePhases $ cOrders ctx) later later overdue `shouldReturn` [good]
-  logs `shouldSatisfy` T.isInfixOf ("invoice " <> badRef)
+  logs `shouldSatisfy` T.isInfixOf ("expiring invoice " <> badRef <> " failed")
   logs `shouldNotSatisfy` T.isInfixOf (invoiceText bad)
   (irStatus <$>) <$> getInvoice st bad `shouldReturn` Just ISOpen
   r <- invoiceRegistration ctx good

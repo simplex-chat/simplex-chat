@@ -612,7 +612,7 @@ testRefundRecorded ps = withStoreService ps $ \_ _ cc -> do
   Balances.source st "s" 10000
   balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //record_refund inv-s 10000")
   logs <- capturingStderr $ recordRefundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
-  logs `shouldSatisfy` T.isInfixOf "names: recorded a refund of 10000 cents for order s"
+  T.lines logs `shouldSatisfy` any (T.isSuffixOf "names: recorded a refund of 10000 cents for order s")
   Balances.figures st "s" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
   balanceRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
   Balances.credit st "s" 2505
