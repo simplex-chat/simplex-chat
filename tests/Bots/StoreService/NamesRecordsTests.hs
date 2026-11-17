@@ -8,7 +8,8 @@ module Bots.StoreService.NamesRecordsTests (namesRecordsTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (alice, gracePeriod, minPriceCentsPerYear, otherResolver, registry)
 import Bots.StoreService.NamesStoreTests (t0)
-import Bots.StoreService.WebTests (bounded, withServiceStore)
+import Bots.StoreService.WebTests (bounded, refusedWith, withServiceStore)
+import qualified Bots.StoreService.WebTests as WT
 import Bots.StoreService.WebUIMock (EphemeralWallet (..), newEphemeralWallet, walletFromCode)
 import Control.Concurrent.Async (Async, async, concurrently, wait)
 import Control.Concurrent.STM
@@ -30,7 +31,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
-import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders, responseStatus)
+import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseHeaders)
 import Network.HTTP.Types (hContentType, statusCode)
 import qualified Network.Wai as W
 import qualified Network.Wai.Handler.Warp as Warp
@@ -887,38 +888,38 @@ t0Seconds = floor $ utcTimeToPOSIXSeconds t0
 testHttp :: TVar ChaChaDRG -> IO ()
 testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
   let editBody value = J.encode $ requestOf [editFields [("key", J.String channelKey), ("value", J.String value)]]
-  post "[]" `shouldReturn` (400, Just $ errorJson "bad_request", Nothing)
-  post (editBody "https://x/a") `shouldReturn` (400, Just $ errorJson "invalid_link", Nothing)
+  post "[]" `shouldReturn` (refusedWith 400 "bad_request", Nothing)
+  post (editBody "https://x/a") `shouldReturn` (refusedWith 400 "invalid_link", Nothing)
   let overCap = KM.insert "pad" (J.String $ T.replicate maxBodyBytes "a") $ requestOf [editFields [("key", J.String channelKey), ("value", J.String viemChannelLink)]]
-  post (J.encode overCap) `shouldReturn` (400, Just $ errorJson "bad_request", Nothing)
+  post (J.encode overCap) `shouldReturn` (refusedWith 400 "bad_request", Nothing)
   editRows s `shouldReturn` 0
   answer <- async $ post $ editBody viemChannelLink
   TxHash h <- mineSent s 1 True
-  bounded "the edit's answer" (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
+  bounded "the edit's answer" (wait answer) `shouldReturn` ((200, Just $ KM.fromList ["tx" .= hex h]), Nothing)
   setNonce s 1
   next <- async . post . J.encode . editJson =<< signEdit s (owner s) (channel "https://smp9.simplex.im/c#next") 1 deadline
   _ <- mineSent s 2 False
-  bounded "the edit's answer" (wait next) `shouldReturn` (409, Just $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= J.Null], Nothing)
+  bounded "the edit's answer" (wait next) `shouldReturn` ((409, Just $ KM.fromList ["error" .= ("record_reverted" :: Text), "revert" .= J.Null]), Nothing)
 
 testEditResponses :: IO ()
 testEditResponses =
   mapM (responseParts . editResponse) [EAPending, EAUnavailable, EACapped 3600, EALimited (addUTCTime (fromIntegral yearSeconds) t0), EARefused "the name is not registered", EAStaleNonce]
-    `shouldReturn` [ (504, Just $ errorJson "edit_pending", Nothing),
-                     (503, Just $ errorJson "provider_unavailable", Nothing),
-                     (429, Just $ errorJson "rate_limited", Just "3600"),
-                     (429, Just $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= (t0Seconds + yearSeconds)], Nothing),
-                     (400, Just $ errorJson "bad_request", Nothing),
-                     (409, Just $ errorJson "stale_nonce", Nothing)
+    `shouldReturn` [ (refusedWith 504 "edit_pending", Nothing),
+                     (refusedWith 503 "provider_unavailable", Nothing),
+                     (refusedWith 429 "rate_limited", Just "3600"),
+                     ((429, Just $ KM.fromList ["error" .= ("edit_limit" :: Text), "nextAt" .= (t0Seconds + yearSeconds)]), Nothing),
+                     (refusedWith 400 "bad_request", Nothing),
+                     (refusedWith 409 "stale_nonce", Nothing)
                    ]
 
 -- | A response's status, JSON body and Retry-After, as withRecordsApp reads them over HTTP.
-responseParts :: W.Response -> IO (Int, Maybe J.Value, Maybe ByteString)
+responseParts :: W.Response -> IO ((Int, Maybe J.Object), Maybe ByteString)
 responseParts r = do
   let (status, headers, withBody) = W.responseToStream r
   chunks <- newTVarIO mempty
   withBody $ \stream -> stream (\b -> atomically $ modifyTVar' chunks (<> b)) (pure ())
   bytes <- toLazyByteString <$> readTVarIO chunks
-  pure (statusCode status, J.decode bytes, lookup "Retry-After" headers)
+  pure ((statusCode status, J.decode bytes), lookup "Retry-After" headers)
 
 testHttpTwoLongLinks :: TVar ChaChaDRG -> IO ()
 testHttpTwoLongLinks g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
@@ -926,19 +927,16 @@ testHttpTwoLongLinks g = withSetup g $ \s@Setup {records} -> withRecordsApp reco
   body <- J.encode . editJson <$> ownerTwo s 0 (longLink "https://smp8.simplex.im/a#") (longLink "https://smp8.simplex.im/c#")
   answer <- async $ post body
   TxHash h <- mineSent s 1 True
-  bounded "the edit's answer" (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
+  bounded "the edit's answer" (wait answer) `shouldReturn` ((200, Just $ KM.fromList ["tx" .= hex h]), Nothing)
 
 -- | Posts a body to the records handler, answering the status, the JSON body and Retry-After.
-withRecordsApp :: Records -> ((LB.ByteString -> IO (Int, Maybe J.Value, Maybe ByteString)) -> IO a) -> IO a
+withRecordsApp :: Records -> ((LB.ByteString -> IO ((Int, Maybe J.Object), Maybe ByteString)) -> IO a) -> IO a
 withRecordsApp rs action = Warp.testWithApplication (pure $ recordsHandler rs) $ \port -> do
   manager <- newManager defaultManagerSettings
   action $ \body -> do
     req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/name/records"
     resp <- httpLbs req {method = "POST", requestHeaders = [(hContentType, "application/json")], requestBody = RequestBodyLBS body} manager
-    pure (statusCode $ responseStatus resp, J.decode $ responseBody resp, lookup "Retry-After" $ responseHeaders resp)
-
-errorJson :: Text -> J.Value
-errorJson tag = J.object ["error" .= tag]
+    pure (WT.answerOf resp, lookup "Retry-After" $ responseHeaders resp)
 
 -- fixtures
 

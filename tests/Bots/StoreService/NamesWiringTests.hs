@@ -3,7 +3,7 @@
 
 module Bots.StoreService.NamesWiringTests (namesWiringTests) where
 
-import Bots.StoreService.WebTests (withApp)
+import Bots.StoreService.WebTests (answerOf, refusedWith, statusOf, withApp)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently_, replicateConcurrently_, wait)
 import qualified Control.Concurrent.Async as Async
@@ -12,14 +12,12 @@ import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad (forM_, replicateM_)
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
 import Data.Maybe (fromMaybe, isNothing)
-import Network.HTTP.Client (Manager, Response, httpLbs, parseRequest, responseBody, responseHeaders, responseStatus)
+import Network.HTTP.Client (Manager, Response, httpLbs, parseRequest, responseHeaders)
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types (Method, hCacheControl, hContentType, status200)
-import Network.HTTP.Types.Status (statusCode)
 import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Config (ListenerConfig (..))
 import StoreService.Names.Phases
@@ -131,32 +129,24 @@ send (mgr, base) verb target = do
   req <- parseRequest (base <> target)
   httpLbs req {HTTP.method = verb} mgr
 
-errorTag :: Response LB.ByteString -> Maybe J.Value
-errorTag r = case J.decode (responseBody r) of
-  Just (J.Object o) -> KM.lookup "error" o
-  _ -> Nothing
-
 testWrongMethod :: IO ()
 testWrongMethod = withProbeRouter $ \client -> do
   replicateM_ 2 $ do
     r <- send client "POST" "/api/probe/x"
-    statusCode (responseStatus r) `shouldBe` 405
+    answerOf r `shouldBe` refusedWith 405 "method_not_allowed"
     lookup "Allow" (responseHeaders r) `shouldBe` Just "GET"
     lookup hContentType (responseHeaders r) `shouldBe` Just "application/json"
     lookup hCacheControl (responseHeaders r) `shouldBe` Just "no-store"
-    errorTag r `shouldBe` Just (J.String "method_not_allowed")
   allowed <- send client "GET" "/api/probe/x"
-  statusCode (responseStatus allowed) `shouldBe` 200
+  statusOf allowed `shouldBe` 200
   limitedR <- send client "GET" "/api/probe/x"
-  statusCode (responseStatus limitedR) `shouldBe` 429
-  errorTag limitedR `shouldBe` Just (J.String "rate_limited")
+  answerOf limitedR `shouldBe` refusedWith 429 "rate_limited"
   lookup "Retry-After" (responseHeaders limitedR) `shouldSatisfy` maybe False (BC.all (`elem` ['0' .. '9']))
 
 testUnknownPath :: IO ()
 testUnknownPath = withProbeRouter $ \client -> do
   r <- send client "POST" "/api/probe"
-  statusCode (responseStatus r) `shouldBe` 404
-  errorTag r `shouldBe` Just (J.String "not_found")
+  answerOf r `shouldBe` refusedWith 404 "not_found"
 
 -- | Runs the holders concurrently and returns the most that were inside at once.
 mostInside :: Int -> ((IO () -> IO ()) -> IO ()) -> IO Int
