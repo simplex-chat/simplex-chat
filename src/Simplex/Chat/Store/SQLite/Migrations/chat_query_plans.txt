@@ -61,6 +61,18 @@ SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_memb
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
 
 Query: 
+                  SELECT d.message_id, EXISTS (SELECT 1 FROM chat_item_messages i WHERE i.message_id = d.message_id)
+                  FROM msg_deliveries d
+                  JOIN messages m ON m.message_id = d.message_id
+                  WHERE d.connection_id = ? AND d.agent_msg_id = ? AND m.shared_msg_id = ?
+                
+Plan:
+SEARCH d USING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
+SEARCH m USING COVERING INDEX idx_messages_shared_msg_id (shared_msg_id=? AND rowid=?)
+CORRELATED SCALAR SUBQUERY 1
+SEARCH i USING COVERING INDEX sqlite_autoindex_chat_item_messages_1 (message_id=?)
+
+Query: 
                   UPDATE groups
                   SET chat_ts = ?,
                       members_require_attention = MAX(0, members_require_attention - 1)
@@ -762,6 +774,13 @@ Query:
               msg_sent, chat_msg_event, msg_body, msg_chat_binding, msg_signatures, connection_id, group_id,
               shared_msg_id, shared_msg_id_user, created_at, updated_at
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+          
+Plan:
+
+Query: 
+            INSERT INTO msg_deliveries
+              (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, delivery_status)
+            VALUES (?,?,?,?,?,?,?,?)
           
 Plan:
 
@@ -5220,18 +5239,6 @@ Plan:
 
 Query: 
       INSERT INTO msg_deliveries
-        (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, delivery_status)
-      SELECT m.message_id, c.connection_id, ?, ?, ?, ?, ?, ?
-      FROM messages m
-      JOIN connections c ON c.connection_id = ?
-      WHERE m.message_id = ?
-    
-Plan:
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      INSERT INTO msg_deliveries
         (message_id, connection_id, agent_msg_id, chat_ts, created_at, updated_at, delivery_status)
       VALUES (?,?,?,?,?,?,?)
     
@@ -6950,6 +6957,18 @@ Query: DELETE FROM chat_item_versions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
 
+Query: DELETE FROM chat_items WHERE item_text = 'hello'
+Plan:
+SCAN chat_items
+SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
+SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
+SEARCH calls USING COVERING INDEX idx_calls_chat_item_id (chat_item_id=?)
+SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_2 (chat_item_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_chat_item_id (fwd_from_chat_item_id=?)
+SEARCH files USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
+SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
+
 Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_item_viewed (user_id=? AND contact_id=?)
@@ -7636,11 +7655,11 @@ SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
 SEARCH group_relays USING COVERING INDEX idx_group_relays_chat_relay_id (chat_relay_id=?)
 
-Query: SELECT EXISTS (SELECT 1 FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ?)
+Query: SELECT EXISTS (SELECT 1 FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ? AND delivery_status = ?)
 Plan:
 SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
-SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
+SEARCH msg_deliveries USING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
 
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:
@@ -7843,6 +7862,10 @@ SCAN calls USING COVERING INDEX idx_calls_contact_id
 Query: SELECT count(1) FROM chat_items WHERE chat_item_id > ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid>?)
+
+Query: SELECT count(1) FROM chat_items WHERE item_content LIKE '%rcvIntegrityError%'
+Plan:
+SCAN chat_items
 
 Query: SELECT count(1) FROM files WHERE file_digest IS NOT NULL
 Plan:

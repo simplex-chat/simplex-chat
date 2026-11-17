@@ -1529,6 +1529,10 @@ Query: UPDATE connections SET enable_ntfs = ? WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
 
+Query: UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1
+Plan:
+SCAN connections USING COVERING INDEX idx_connections_deleted
+
 Query: UPDATE connections SET pq_support = ? WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
