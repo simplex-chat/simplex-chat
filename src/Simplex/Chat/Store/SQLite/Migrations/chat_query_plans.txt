@@ -4058,7 +4058,7 @@ Query:
         FROM group_members
         WHERE user_id = ? AND member_restriction = ? AND member_restriction_expires_at <= ?
           AND member_status NOT IN (?,?,?,?)
-
+      
 Plan:
 SEARCH group_members USING INDEX idx_group_members_member_restriction_expires_at (user_id=? AND member_restriction_expires_at<?)
 
@@ -7655,6 +7655,10 @@ Query: SELECT COUNT(1) FROM commands WHERE command_function = 'set_short_link'
 Plan:
 SCAN commands
 
+Query: SELECT COUNT(1) FROM connections WHERE conn_type = 'contact' AND conn_status = 'ready' AND contact_conn_initiated = 1
+Plan:
+SCAN connections
+
 Query: SELECT COUNT(1) FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ? AND c.conn_status != 'deleted'
 Plan:
 SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
@@ -7676,6 +7680,12 @@ SEARCH sp USING INDEX sqlite_autoindex_group_member_status_predicates_1 (member_
 Query: SELECT COUNT(1) FROM groups WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
+
+Query: SELECT COUNT(1) FROM groups g WHERE g.use_relays = 1 AND g.roster_version IS NULL AND EXISTS (SELECT 1 FROM group_members r WHERE r.group_id = g.group_id AND r.member_role = 'relay' AND r.member_status = 'connected')
+Plan:
+SCAN g
+CORRELATED SCALAR SUBQUERY 1
+SEARCH r USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 
 Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_status = ? 
 Plan:
@@ -7868,6 +7878,10 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT conn_status FROM connections WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT conn_status FROM connections WHERE group_member_id IS NOT NULL
+Plan:
+SCAN connections
 
 Query: SELECT connection_id FROM connections WHERE user_id = ? AND contact_id = ?
 Plan:
@@ -8067,6 +8081,10 @@ SCAN badge_purchases
 Query: SELECT item_content FROM chat_items WHERE group_id = 1 ORDER BY chat_item_id DESC LIMIT 1
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
+
+Query: SELECT item_status FROM chat_items WHERE item_text = ?
+Plan:
+SCAN chat_items
 
 Query: SELECT last_insert_rowid()
 Plan:
@@ -8444,6 +8462,10 @@ Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET user_mention = ? WHERE user_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
