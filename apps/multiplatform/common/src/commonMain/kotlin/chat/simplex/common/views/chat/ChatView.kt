@@ -257,13 +257,7 @@ fun ChatView(
       }
     }
     val view = LocalMultiplatformView()
-    // We need to have real unreadCount value for displaying it inside top right button
-    // Having activeChat reloaded on every change in it is inefficient (UI lags)
-    val unreadCount = remember {
-      derivedStateOf {
-        chatsCtx.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatStats?.unreadCount ?: 0
-      }
-    }
+    val unreadCount = chatsCtx.chatState.unreadTotal.collectAsState()
     val clipboard = LocalClipboardManager.current
     val terminal = chatInfo.activeChatLayout(user) == ChatLayoutMode.Terminal
     CompositionLocalProvider(
