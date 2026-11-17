@@ -35,9 +35,6 @@ private const val MAX_SOURCE_IMAGE_DIMENSION = 16384
 private const val MAX_SOURCE_IMAGE_PIXELS = 8192 * 8192
 private const val MAX_MULTI_SCAN_SOURCE_PIXELS = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
 private const val MAX_GIF_METADATA_SUB_BLOCKS = 1024
-// Hard ceiling on the decoded raster in pixels, independent of aspect ratio, so an extreme-aspect image within the
-// source cap can't blow up memory. Sized to the full-screen target's area (~18.7 MP -> ~75 MB at 4 bytes/px).
-private const val MAX_DECODED_PIXELS = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
 private fun fontStyle(color: String) =
   SpanStyle(color = Color(color.replace("#", "ff").toLongOrNull(16) ?: Color.White.toArgb().toLong()))
 
@@ -273,24 +270,6 @@ private fun jpegHasMultipleScans(data: ByteArray): Boolean {
     pos += 2 + (data.byteAt(pos + 2) shl 8 or data.byteAt(pos + 3))
   }
   return false
-}
-
-// Power-of-two subsampling factor for bounded decoding. First keeps the smaller side at or above maxDimension
-// (mirroring Android's calculateInSampleSize) so portrait images stay sharp instead of being over-subsampled by a
-// larger-side cap; then bounds the total decoded pixels so an extreme aspect ratio can't exceed the memory ceiling.
-internal fun imageSampleSize(width: Int, height: Int, maxDimension: Int): Int {
-  var sampleSize = 1
-  if (height > maxDimension || width > maxDimension) {
-    val halfHeight = height / 2
-    val halfWidth = width / 2
-    while (halfHeight / sampleSize >= maxDimension && halfWidth / sampleSize >= maxDimension) {
-      sampleSize *= 2
-    }
-  }
-  while ((width / sampleSize) * (height / sampleSize) > minOf(MAX_DECODED_PIXELS, 4 * maxDimension * maxDimension)) {
-    sampleSize *= 2
-  }
-  return sampleSize
 }
 
 // LALAL implement to support animated drawable
