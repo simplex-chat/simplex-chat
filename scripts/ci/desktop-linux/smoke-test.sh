@@ -488,10 +488,12 @@ start_app() {
 }
 
 app_build() {
+  local shown=0
   open_app_version
   "$ui" shot "app-build-$1"
-  on_screen "App build: $1"
+  on_screen "App build: $1" || shown=1
   back_to_chat_list || fail "no chat list after the app version"
+  return $shown
 }
 
 check_ui_updates() {
