@@ -46,8 +46,12 @@ def main():
             if not target:
                 raise RuntimeError(f'Missing cached host tool: {name}')
             (tools / 'bin' / name).symlink_to(target)
+        # The linux builders have no /bin/bash. Use the bash Nix put on PATH.
+        bash = shutil.which('bash')
+        if bash is None:
+            raise RuntimeError('bash is not on PATH')
         tree = tools / 'bin' / 'tree'
-        tree.write_text('#!/bin/sh\nexit 0\n')
+        tree.write_text(f'#!{bash}\nexit 0\n')
         tree.chmod(0o755)
         providers = {}
         for name in ['openssl', 'zlib', 'libffi', 'gmp', 'gcc', 'mcfgthreads']:
@@ -132,7 +136,7 @@ in import {ROOT / 'package-windows.nix'} {arguments}
                 (out / 'bin').mkdir(parents=True)
                 shutil.copyfile(fixture / 'simplex-chat.exe', out / 'bin' / 'simplex-chat.exe')
                 env = dict(os.environ, out=str(out))
-                run(['/bin/bash', '-e', '-c', shell], cwd=fixture, env=env)
+                run([bash, '-e', '-c', shell], cwd=fixture, env=env)
                 archive_path = next(out.glob('*.zip'))
                 with zipfile.ZipFile(archive_path) as archive:
                     assert archive.testzip() is None
