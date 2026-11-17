@@ -26,6 +26,7 @@ import chat.simplex.common.platform.errorImageBitmap
 import chat.simplex.common.platform.rememberBase64ImagePainter
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.item.FramedItemView
+import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -33,10 +34,13 @@ import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
 import java.awt.Color
 import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
+import java.nio.file.StandardWatchEventKinds
 import java.util.Base64
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.zip.CRC32
 import javax.imageio.ImageIO
 import kotlin.test.Test
@@ -126,6 +130,29 @@ class Base64ImagePainterTest {
     assertEquals(IntSize(2, 2), base64BitmapSize(base64GifWithComment(1000)))
     assertNull(base64BitmapSize(base64GifWithComment(1025)))
     assertSame(errorImageBitmap, base64ToBitmap(base64GifWithComment(1025)))
+  }
+
+  @Test
+  fun testReceivedPicturesAreReadWithoutTemporaryFiles() = withTempDir { dir ->
+    val cacheDirectory = ImageIO.getCacheDirectory()
+    val useCache = ImageIO.getUseCache()
+    try {
+      ImageIO.setUseCache(true)
+      ImageIO.setCacheDirectory(dir.toFile())
+      dir.fileSystem.newWatchService().use { watcher ->
+        dir.register(watcher, StandardWatchEventKinds.ENTRY_CREATE)
+        val picture = base64Png(47, 39)
+        assertEquals(IntSize(47, 39), base64BitmapSize(picture))
+        assertEquals(47, base64ToBitmap(picture).width)
+        assertEquals(47, decodeBoundedBufferedImage(png(47, 39), 1000).width)
+        assertNull(watcher.poll(1, TimeUnit.SECONDS))
+        ImageIO.createImageInputStream(ByteArrayInputStream(png(1, 1))).close()
+        assertNotNull(watcher.poll(10, TimeUnit.SECONDS))
+      }
+    } finally {
+      ImageIO.setCacheDirectory(cacheDirectory)
+      ImageIO.setUseCache(useCache)
+    }
   }
 
   @Test

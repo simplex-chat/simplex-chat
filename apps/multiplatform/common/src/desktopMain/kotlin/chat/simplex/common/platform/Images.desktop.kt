@@ -23,7 +23,7 @@ import javax.imageio.stream.MemoryCacheImageInputStream
 import javax.imageio.stream.MemoryCacheImageOutputStream
 
 internal actual val errorImageBitmap: ImageBitmap by lazy {
-  ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="))).toComposeImageBitmap()
+  ImageIO.read(MemoryCacheImageInputStream(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg==")))).toComposeImageBitmap()
 }
 
 private const val MAX_IMAGE_DIMENSION = 4320
@@ -69,17 +69,18 @@ private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: 
     .removePrefix("data:image/jpg;base64,")
   val bytes = Base64.getMimeDecoder().decode(imageString)
   if (ImageFileType.GIF.matches(bytes) && !gifMetadataWithinLimits(bytes)) return null
-  val stream = MemoryCacheImageInputStream(ByteArrayInputStream(bytes))
-  val reader = receivedImageReader(stream)
-  try {
-    reader.setInput(stream)
-    val width = reader.getWidth(0)
-    val height = reader.getHeight(0)
-    if (width <= 0 || height <= 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || height > width * 256) return null
-    val sampleSize = imageSampleSize(width, height, MAX_PREVIEW_DIMENSION)
-    return read(reader, sampleSize, IntSize((width + sampleSize - 1) / sampleSize, (height + sampleSize - 1) / sampleSize))
-  } finally {
-    reader.dispose()
+  MemoryCacheImageInputStream(ByteArrayInputStream(bytes)).use { stream ->
+    val reader = receivedImageReader(stream)
+    try {
+      reader.setInput(stream)
+      val width = reader.getWidth(0)
+      val height = reader.getHeight(0)
+      if (width <= 0 || height <= 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || height > width * 256) return null
+      val sampleSize = imageSampleSize(width, height, MAX_PREVIEW_DIMENSION)
+      return read(reader, sampleSize, IntSize((width + sampleSize - 1) / sampleSize, (height + sampleSize - 1) / sampleSize))
+    } finally {
+      reader.dispose()
+    }
   }
 }
 

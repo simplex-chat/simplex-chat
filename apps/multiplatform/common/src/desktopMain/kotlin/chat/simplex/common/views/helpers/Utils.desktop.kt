@@ -17,6 +17,7 @@ import java.io.IOException
 import java.net.URI
 import java.util.*
 import javax.imageio.ImageIO
+import javax.imageio.stream.MemoryCacheImageInputStream
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlinx.coroutines.Dispatchers
@@ -206,9 +207,7 @@ private fun decodeBoundedImage(data: ByteArray, maxDimension: Int): ImageBitmap 
 // then downsamples (like Android's inSampleSize) so even large legitimate images decode to a bounded raster.
 internal fun decodeBoundedBufferedImage(data: ByteArray, maxDimension: Int): BufferedImage {
   if (ImageFileType.GIF.matches(data) && !gifMetadataWithinLimits(data)) throw IOException("Image metadata exceeds limit")
-  val stream = ImageIO.createImageInputStream(ByteArrayInputStream(data))
-    ?: throw IOException("Unsupported image format")
-  stream.use {
+  MemoryCacheImageInputStream(ByteArrayInputStream(data)).use {
     val reader = receivedImageReader(it)
     try {
       reader.input = it
