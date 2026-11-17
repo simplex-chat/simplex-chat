@@ -32,7 +32,7 @@ final class ChatItemsTests: XCTestCase {
 
     @MainActor
     func testFilesOfBlockedMembersAreNotReceived() async throws {
-        let (user, chat) = try recordedChat("files/images-of-blocked-members", "/_get chat #1 count=4")
+        let (user, chat) = try recordedChat("files/images-of-blocked-members", "/_get chat #1 count=6")
         await processReceivedMsg(.newChatItems(user: user, chatItems: chat.chatItems.map { AChatItem(chatInfo: chat.chatInfo, chatItem: $0) }))
         try await waitFor { self.receivedFiles().contains("/freceive 3") }
         try await Task.sleep(nanoseconds: 500_000_000)

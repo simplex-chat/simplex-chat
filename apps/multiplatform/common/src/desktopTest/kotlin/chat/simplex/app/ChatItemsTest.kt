@@ -59,7 +59,7 @@ class ChatItemsTest {
   @Test
   fun filesOfBlockedMembersAreNotReceived() {
     ntfManager = silentNtfManager
-    val recorded = recordedChat("files/images-of-blocked-members", "/_get chat #1 count=4")
+    val recorded = recordedChat("files/images-of-blocked-members", "/_get chat #1 count=6")
     val event = CR.NewChatItems(recorded.user, recorded.chat.chatItems.map { AChatItem(recorded.chat.chatInfo, it) })
     runBlocking {
       ChatController.processReceivedMsg(API.Result(null, event))

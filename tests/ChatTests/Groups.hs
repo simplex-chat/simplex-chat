@@ -8091,7 +8091,12 @@ testBlockedMemberImages =
         cc <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
         cc <## "use /fr 3 [<dir>/ | <path>] to receive it"
 
-      apiFixture "files/images-of-blocked-members" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=4"]}
+      bob #> "#team hi"
+      forM_ [alice, cath] (<# "#team bob> hi [blocked by admin] <muted>")
+      alice #> "#team hey"
+      [bob, cath] *<# "#team alice> hey"
+
+      apiFixture "files/images-of-blocked-members" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=6"]}
   where
     sendImage :: HasCallStack => TestCC -> Int -> IO ()
     sendImage cc fileId = do
