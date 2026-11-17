@@ -166,6 +166,29 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testGroupLinkAsAddress() async throws {
+        try recorded("connect/group-link-as-address")
+        connect("GROUP_LINK")
+        try await assertTexts(["Invalid connection link", "Please check that you used the correct link or ask your contact to send you another one.", "Ok"])
+    }
+
+    @MainActor
+    func testGroupLinkAsChannel() async throws {
+        try recorded("connect/group-link-as-channel")
+        connect("GROUP_LINK")
+        try await assertTexts(["Invalid connection link", "Please check that you used the correct link or ask your contact to send you another one.", "Ok"])
+    }
+
+    @MainActor
+    func testRejectedContactInChatList() async throws {
+        try recorded("connect/request-rejected")
+        ChatModel.shared.updateChats(try apiGetChats())
+        guard case let .direct(contact)? = ChatModel.shared.getContactChat(2)?.chatInfo else { return XCTFail("contact not decoded: \(ChatModel.shared.chats.map(\.id))") }
+        XCTAssertEqual(contact.contactStatus.rawValue, "rejected")
+        XCTAssertFalse(contact.active)
+    }
+
+    @MainActor
     func testNameMovedEvent() async throws {
         var contact = Contact.sampleData
         contact.contactId = 2
