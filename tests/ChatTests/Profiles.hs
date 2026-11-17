@@ -3919,10 +3919,10 @@ testGroupPrefsFilesLinkPreviewUpdateNew = testChat3 aliceProfile bobProfile cath
   \alice bob cath -> do
     createGroupFilesForOwners alice bob cath
     sendLinkUpdate bob "alice"
-    alice <# "#team bob> [edited] https://simplex.chat"
+    alice <# "#team bob> https://simplex.chat"
     lastItemIsLink alice `shouldReturn` False
     sendLinkUpdate alice "bob"
-    bob <# "#team alice> [edited] https://simplex.chat"
+    bob <# "#team alice> https://simplex.chat"
     lastItemIsLink bob `shouldReturn` True
   where
     sendLinkUpdate cc toName = do
