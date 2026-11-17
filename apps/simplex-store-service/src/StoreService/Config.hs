@@ -9,7 +9,6 @@ module StoreService.Config
     BTCPayConfig (..),
     StripeConfig (..),
     SpeedPolicy (..),
-    speedPolicyName,
     PollConfig (..),
     AppleStoreConfig (..),
     AppleServerApi (..),
@@ -43,7 +42,7 @@ import Data.Bifunctor (first)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
 import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit)
-import Data.List (intercalate, nub, partition)
+import Data.List (find, intercalate, nub, partition)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -60,7 +59,7 @@ import Simplex.Chat.Badges.Code (maxNameLength, minNameLength, minNameYears)
 import Simplex.Chat.Library.Commands (mkValidName)
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
 import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
-import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
@@ -88,12 +87,13 @@ data SpeedPolicy = HighSpeed | MediumSpeed | LowMediumSpeed | LowSpeed
 speedPolicies :: [SpeedPolicy]
 speedPolicies = [minBound .. maxBound]
 
-speedPolicyName :: SpeedPolicy -> Text
-speedPolicyName = \case
-  HighSpeed -> "HighSpeed"
-  MediumSpeed -> "MediumSpeed"
-  LowMediumSpeed -> "LowMediumSpeed"
-  LowSpeed -> "LowSpeed"
+instance TextEncoding SpeedPolicy where
+  textEncode = \case
+    HighSpeed -> "HighSpeed"
+    MediumSpeed -> "MediumSpeed"
+    LowMediumSpeed -> "LowMediumSpeed"
+    LowSpeed -> "LowSpeed"
+  textDecode t = find ((== t) . textEncode) speedPolicies
 
 data BTCPayConfig = BTCPayConfig
   { bHost :: Text,
@@ -556,12 +556,12 @@ parseConfig ini = do
           pure (Just BTCPayConfig {bHost, bApiKey, bStoreId, bWebhookSecret, bExpiryMinutes, bSpeedPolicy, bPaymentTolerance, bTimeoutMicros = providerTimeoutMicros, bCheckoutTimeoutMicros = providerCheckoutTimeoutMicros})
     speedPolicy = case look "btcpay" "speed_policy" of
       Nothing -> Right MediumSpeed
-      Just v -> case lookup (T.strip v) [(speedPolicyName p, p) | p <- speedPolicies] of
+      Just v -> case textDecode (T.strip v) of
         Just p -> Right p
         Nothing ->
           Left
             ( "btcpay.speed_policy must be one of "
-                <> T.unpack (T.intercalate ", " (map speedPolicyName speedPolicies))
+                <> T.unpack (T.intercalate ", " (map textEncode speedPolicies))
                 <> ", not "
                 <> T.unpack (T.strip v)
             )
