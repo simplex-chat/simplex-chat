@@ -1456,15 +1456,26 @@ data class Chat(
     }
 
   val unreadTag: Boolean get() = when (chatInfo.chatSettings?.enableNtfs) {
-    All -> chatStats.unreadChat || chatStats.unreadCount > 0
-    Mentions -> chatStats.unreadChat || chatStats.unreadMentions > 0
-    else -> chatStats.unreadChat
+    All -> unreadStats.unreadChat || unreadStats.unreadCount > 0
+    Mentions -> unreadStats.unreadChat || unreadStats.unreadMentions > 0
+    else -> unreadStats.unreadChat
   }
 
   val userUnreadCount: Int get() = when (chatInfo.chatSettings?.enableNtfs) {
-    All -> chatStats.unreadCount
-    Mentions -> chatStats.unreadMentions
+    All -> unreadStats.unreadCount
+    Mentions -> unreadStats.unreadMentions
     else -> 0
+  }
+
+  val pendingSupportChat: GroupSupportChat? get() =
+    chatInfo.groupInfo_?.membership?.takeIf { it.memberPending }?.supportChat
+
+  val unreadStats: ChatStats get() {
+    val supportChat = pendingSupportChat ?: return chatStats
+    return chatStats.copy(
+      unreadCount = chatStats.unreadCount + supportChat.unread,
+      unreadMentions = chatStats.unreadMentions + supportChat.mentions
+    )
   }
 
   val id: String get() = chatInfo.id
@@ -1799,7 +1810,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     ntfsEnabled(ci.meta.userMention)
 
   fun countsInUserUnread(ci: ChatItem): Boolean =
-    ci.isRcvNew && groupChatScope() == null && ntfsEnabled(ci)
+    ci.isRcvNew && inMainChatList && ntfsEnabled(ci)
 
   fun ntfsEnabled(userMention: Boolean): Boolean =
     when (chatSettings?.enableNtfs) {

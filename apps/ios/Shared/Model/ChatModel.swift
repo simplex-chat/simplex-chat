@@ -1454,18 +1454,30 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
 
     var unreadTag: Bool {
         switch chatInfo.chatSettings?.enableNtfs {
-        case .all: chatStats.unreadChat || chatStats.unreadCount > 0
-        case .mentions: chatStats.unreadChat || chatStats.unreadMentions > 0
-        default: chatStats.unreadChat
+        case .all: unreadStats.unreadChat || unreadStats.unreadCount > 0
+        case .mentions: unreadStats.unreadChat || unreadStats.unreadMentions > 0
+        default: unreadStats.unreadChat
         }
     }
 
     var userUnreadCount: Int {
         switch chatInfo.chatSettings?.enableNtfs {
-        case .all: chatStats.unreadCount
-        case .mentions: chatStats.unreadMentions
+        case .all: unreadStats.unreadCount
+        case .mentions: unreadStats.unreadMentions
         default: 0
         }
+    }
+
+    var pendingSupportChat: GroupSupportChat? {
+        if let membership = chatInfo.groupInfo?.membership, membership.memberPending { membership.supportChat } else { nil }
+    }
+
+    var unreadStats: ChatStats {
+        guard let supportChat = pendingSupportChat else { return chatStats }
+        var stats = chatStats
+        stats.unreadCount += supportChat.unread
+        stats.unreadMentions += supportChat.mentions
+        return stats
     }
 
     var id: ChatId { get { chatInfo.id } }

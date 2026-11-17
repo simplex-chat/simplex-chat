@@ -3863,6 +3863,7 @@ object ChatController {
       }
     } else {
       withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateChatInfo(rh, cInfo)
         chatModel.chatsContext.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
       withContext(Dispatchers.Main) {

@@ -459,11 +459,11 @@ fun ChatPreviewView(
           Spacer(Modifier.width(8.sp.toDp()))
 
           Box(Modifier.widthIn(min = 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
-            val n = chat.chatStats.unreadCount
+            val n = chat.unreadStats.unreadCount
             val ntfsMode = chat.chatInfo.chatSettings?.enableNtfs
             val showNtfsIcon = !chat.chatInfo.ntfsEnabled(false) && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
             if (n > 0 || chat.chatStats.unreadChat) {
-              val unreadMentions = chat.chatStats.unreadMentions
+              val unreadMentions = chat.unreadStats.unreadMentions
               Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.sp.toDp())) {
                 val mentionColor = when {
                   disabled -> MaterialTheme.colors.secondary

@@ -2409,7 +2409,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     }
 
     public func countsInUserUnread(_ chatItem: ChatItem) -> Bool {
-        chatItem.isRcvNew && groupChatScope() == nil && ntfsEnabled(chatItem: chatItem)
+        chatItem.isRcvNew && inMainChatList && ntfsEnabled(chatItem: chatItem)
     }
 
     public func ntfsEnabled(_ userMention: Bool) -> Bool {

@@ -1896,6 +1896,10 @@ func markChatRead(_ im: ItemsModel, _ chat: Chat) async {
                 withAnimation { ChatModel.shared.markAllChatItemsRead(im, cInfo) }
             }
         }
+        if let supportChat = chat.pendingSupportChat, supportChat.unread > 0 {
+            let (groupInfo, _) = try await apiSupportChatRead(type: .group, id: chat.chatInfo.apiId, scope: .memberSupport(groupMemberId_: nil))
+            await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
+        }
         if chat.chatStats.unreadChat {
             await markChatUnread(chat, unreadChat: false)
         }
@@ -3240,7 +3244,10 @@ func chatItemUpdate(_ user: any UserLike, _ update: AChatItemUpdate) async {
     let cItem = update.chatItem
     let prevItem = update.prevChatItem
     if active(user) {
-        await MainActor.run { m.applyChatItemUpdate(cInfo, cItem, prevItem) }
+        await MainActor.run {
+            m.updateChatInfo(cInfo)
+            m.applyChatItemUpdate(cInfo, cItem, prevItem)
+        }
     } else {
         let change = unreadCountChange(prevItem, cItem) { cInfo.countsInUserUnread($0) }
         if change > 0 {

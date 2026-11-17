@@ -36,8 +36,8 @@ import kotlinx.coroutines.*
 @Composable
 fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
-  val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
-    chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+  val showMarkRead = remember(chat.unreadStats.unreadCount, chat.chatStats.unreadChat) {
+    chat.unreadStats.unreadCount > 0 || chat.chatStats.unreadChat
   }
   val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)
   val linkMode by remember { chatModel.controller.appPrefs.simplexLinkMode.state }
@@ -655,6 +655,16 @@ fun markChatRead(c: Chat) {
         chat.chatInfo.chatType,
         chat.chatInfo.apiId
       )
+      chat = chatModel.getChat(chat.id) ?: return@withApi
+    }
+    val supportChat = chat.pendingSupportChat
+    if (supportChat != null && supportChat.unread > 0) {
+      val r = chatModel.controller.apiSupportChatRead(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, GroupChatScope.MemberSupport(groupMemberId_ = null))
+      if (r != null) {
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(chat.remoteHostId, r.first)
+        }
+      }
       chat = chatModel.getChat(chat.id) ?: return@withApi
     }
     if (chat.chatStats.unreadChat) {
