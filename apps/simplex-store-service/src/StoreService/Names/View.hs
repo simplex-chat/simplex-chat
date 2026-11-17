@@ -37,7 +37,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (ChainError, ChainSeconds, Hex32 (..), TxHash (..), chainTime)
-import StoreService.Names.Community (AcceptanceAsked (..), communityJSON, currentAcceptance)
+import StoreService.Names.Community (AcceptanceAsked (..), Community, communityOf, currentAcceptance)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (AgreedTerms (..), RegistrationId (..), termsKindText)
@@ -79,7 +79,7 @@ data RegistrationView = RegistrationView
     vwUnread :: [Text],
     vwExpiresAt :: Maybe ChainSeconds,
     vwError :: Maybe Text,
-    vwCommunity :: J.Value,
+    vwCommunity :: Maybe Community,
     vwTerms :: Text
   }
   deriving (Eq, Show)
@@ -139,7 +139,7 @@ toRegistrationView cfg r balance late ViewReads {vrIntentNonce, vrAcceptance} =
       vwUnread = ["intentNonce" | isUnread vrIntentNonce] <> ["acceptance" | isUnread vrAcceptance],
       vwExpiresAt = expiresAt,
       vwError = textEncode <$> failReason,
-      vwCommunity = communityJSON cfg (nrLabelHash r) (atCommunityName nrAgreedTerms),
+      vwCommunity = communityOf cfg (nrLabelHash r) (atCommunityName nrAgreedTerms),
       vwTerms = textEncode nrAgreedTerms
     }
   where

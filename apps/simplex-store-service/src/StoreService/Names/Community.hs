@@ -1,12 +1,16 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module StoreService.Names.Community
-  ( communityFor,
+  ( Community (..),
+    TermsLink (..),
+    communityFor,
     termsFor,
-    communityJSON,
+    communityOf,
     yearsFor,
-    termsJSON,
+    termsLink,
     nameTerms,
     readableTerms,
     AcceptanceAsked (..),
@@ -15,18 +19,28 @@ module StoreService.Names.Community
 where
 
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
-import Data.Aeson ((.=))
-import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (bimap)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import Data.Word (Word64)
 import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.SimplexName (LabelHash)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (ChainError (..))
 import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, concurrent, kindTerms, namePolicy, policyNonce, termsLinks, termsText, together)
 import StoreService.Names.Registration (AgreedTerms (..), CommunityName, TermsHash)
+
+data Community = Community {for :: Maybe Text, years :: Int}
+  deriving (Eq, Show)
+
+data TermsLink = TermsLink {link :: Text, hash :: TermsHash}
+  deriving (Eq, Show)
+
+$(JQ.deriveToJSON defaultJSON ''Community)
+
+$(JQ.deriveToJSON defaultJSON ''TermsLink)
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} lh = M.lookup lh nCommunity
@@ -34,9 +48,9 @@ communityFor NamesConfig {nCommunity} lh = M.lookup lh nCommunity
 termsFor :: CommunityName -> Terms -> AgreedTerms
 termsFor community Terms {tmHash} = AgreedTerms {atCommunityName = community, atTermsHash = tmHash}
 
--- | Null for plain terms.
-communityJSON :: NamesConfig -> LabelHash -> CommunityName -> J.Value
-communityJSON cfg lh community = if community then J.object ["for" .= communityFor cfg lh, "years" .= communityYears] else J.Null
+-- | Nothing for plain terms.
+communityOf :: NamesConfig -> LabelHash -> CommunityName -> Maybe Community
+communityOf cfg lh community = if community then Just Community {for = communityFor cfg lh, years = communityYears} else Nothing
 
 -- | The paid years of a community name, whatever years its code or [names] years gives.
 communityYears :: Int
@@ -45,8 +59,8 @@ communityYears = 2
 yearsFor :: CommunityName -> Int -> Int
 yearsFor community years = if community then communityYears else years
 
-termsJSON :: Maybe Terms -> J.Value
-termsJSON = maybe J.Null $ \Terms {tmLink, tmHash} -> J.object ["hash" .= tmHash, "link" .= tmLink]
+termsLink :: Terms -> TermsLink
+termsLink Terms {tmLink, tmHash} = TermsLink {link = tmLink, hash = tmHash}
 
 -- | Whether the policy lists the name, and the terms it is sold under: the community terms for a listed name, else the
 -- general terms.

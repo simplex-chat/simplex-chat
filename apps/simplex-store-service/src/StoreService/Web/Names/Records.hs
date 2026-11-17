@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editRequest, editResponse, editsLeftJSON) where
+module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editRequest, editResponse) where
 
 import Control.Logger.Simple (logNote)
 import Control.Monad (forM_, unless)
@@ -20,7 +20,7 @@ import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Messaging.Encoding.String (strDecode, textDecode)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Names.Chain (Hex32 (..))
-import StoreService.Names.Records (EditAnswer (..), EditRequest (..), EditsLeft (..), Records, relayEdit)
+import StoreService.Names.Records (EditAnswer (..), EditRequest (..), Records, relayEdit)
 import StoreService.Names.Registration (LinkKind, nameLink, parseSignature)
 import StoreService.Names.Store (EditOutcome (..), RecordChange (..), SignedChange (..))
 import StoreService.Store.Invoices (unixSeconds)
@@ -83,8 +83,4 @@ editResponse = \case
   EAUnavailable -> providerUnavailable
   EACapped seconds -> rateLimited seconds
   EALimited nextAt -> jsonResponse status429 $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= unixSeconds nextAt]
-
--- | The search answer's recordEdits.
-editsLeftJSON :: EditsLeft -> J.Value
-editsLeftJSON EditsLeft {elLeft, elNextAt} = J.object ["left" .= elLeft, "nextAt" .= (unixSeconds <$> elNextAt)]
 

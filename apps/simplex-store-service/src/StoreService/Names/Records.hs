@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
 -- | Record edits signed by a name's owner, each request relayed as one transaction through the registrar key's sender and followed to its outcome.
@@ -25,6 +26,8 @@ import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM, forM_, forever, unless, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
+import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.IORef (newIORef, readIORef, writeIORef)
@@ -42,6 +45,7 @@ import Simplex.Messaging.Crypto (sha256Hash)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
 import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Names.Chain
@@ -94,6 +98,8 @@ data EditAnswer
 -- | The edits a name has left in its window, and when the next one returns; Nothing while none counts.
 data EditsLeft = EditsLeft {elLeft :: Int, elNextAt :: Maybe UTCTime}
   deriving (Eq, Show)
+
+$(JQ.deriveToJSON defaultJSON {J.fieldLabelModifier = dropPrefix "el"} ''EditsLeft)
 
 -- | What the chain shows of an edit none of whose transactions mined.
 data Judgment

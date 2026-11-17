@@ -799,7 +799,7 @@ termsChanged text community =
       KM.fromList
         [ ("error", "terms_changed"),
           ("terms", termsEntry text),
-          ("community", maybe J.Null communityEntry community)
+          ("community", maybe J.Null (communityEntry . Just) community)
         ]
   )
 
@@ -808,8 +808,8 @@ otherCommunityTerms :: Text
 otherCommunityTerms = communityTermsOf fakeNewCommunityTerms
 
 -- | A listed name's community entry: the ini's text and its years.
-communityEntry :: J.ToJSON a => a -> J.Value
-communityEntry for = J.object ["for" .= for, "years" .= (2 :: Int)]
+communityEntry :: Maybe Text -> J.Value
+communityEntry for = J.object $ maybe [] (\f -> ["for" .= f]) for <> ["years" .= (2 :: Int)]
 
 termsEntry :: ByteString -> J.Value
 termsEntry text = J.object ["hash" .= hex (fakeTermsHash text), "link" .= fakeTermsLink text]
@@ -888,7 +888,7 @@ testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" 
   signedBody (cRandom ctx) community >>= (`shouldBe` withSignature communitySignature (unsignedBody community))
   (status, v) <- postOrder ctx $ withSignature communitySignature (unsignedBody community)
   (status, (`fieldOf` "terms") . registrationOf =<< v, (`fieldOf` "community") . registrationOf =<< v)
-    `shouldBe` (200, Just (J.String communityTerms), Just (communityEntry bakers))
+    `shouldBe` (200, Just (J.String communityTerms), Just (communityEntry $ Just bakers))
 
 testTermsAfterRestart :: IO ()
 testTermsAfterRestart = withOrders $ \ctx@Ctx {cNode, cOpenStore, cOrders, cRandom} -> do
@@ -1633,7 +1633,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwUnread = [],
         vwExpiresAt = Nothing,
         vwError = Nothing,
-        vwCommunity = J.Null,
+        vwCommunity = Nothing,
         vwTerms = plainTerms
       }
   map (\w -> vwLatePayment $ viewWith (Just w) notAsked) [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]

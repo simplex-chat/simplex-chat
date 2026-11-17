@@ -43,7 +43,7 @@ import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
 import StoreService.Names.Balances (Spend (..), checkSpendBalance, coveredOrderInsert, differenceOrderInsert)
 import StoreService.Names.Codes (CodeRefusal (..), readPrepaidCode)
-import StoreService.Names.Community (termsJSON)
+import StoreService.Names.Community (termsLink)
 import StoreService.Names.Orders
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), orderMessage, spendMessage)
 import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
@@ -336,6 +336,6 @@ orderRefusalResponse = \case
   ORCode refusal -> codeRefusalResponse refusal
   ORPriceTooHigh price -> jsonResponse status409 $ J.object ["error" .= ("price_too_high" :: Text), "price" .= price]
   ORBalanceChanged balance -> jsonResponse status409 $ J.object ["error" .= ("balance_changed" :: Text), "balance" .= (balanceJSON <$> balance)]
-  ORTermsChanged terms community -> jsonResponse status409 $ J.object ["error" .= ("terms_changed" :: Text), "terms" .= termsJSON (Just terms), "community" .= community]
+  ORTermsChanged terms community -> jsonResponse status409 $ J.object ["error" .= ("terms_changed" :: Text), "terms" .= termsLink terms, "community" .= community]
   ORTermsUnavailable wait -> maybe (jsonError status503 "terms_unavailable") termsUnavailable wait
   ORCodesOnly -> jsonError status403 "codes_only"

@@ -47,7 +47,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Network.HTTP.Client (Manager, Request, RequestBody (..), httpLbs, method, parseRequest, requestBody, responseHeaders)
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types (status404, status429)
@@ -126,12 +125,13 @@ listed = listedUnder fakeCommunityTermsText
 
 -- | As 'listed', under the community terms of this text.
 listedUnder :: ByteString -> Answer -> Answer
-listedUnder text = withTerms (termsEntry text) . withField "community" (communityEntry aliceCommunity)
+listedUnder text = withTerms (Just $ termsEntry text) . withField "community" (communityEntry $ Just aliceCommunity)
 
-withTerms :: J.Value -> Answer -> Answer
-withTerms terms answer@(_, Just o)
-  | KM.member "terms" o = withField "terms" terms answer
-withTerms _ answer = answer
+withTerms :: Maybe J.Value -> Answer -> Answer
+withTerms terms (status, answer) = (status, (\o -> maybe o (\f -> KM.insert "found" (withFoundTerms f) o) (KM.lookup "found" o)) <$> answer)
+  where
+    withFoundTerms (J.Object f) | KM.lookup "type" f == Just (str "available") = J.Object $ maybe (KM.delete "terms" f) (\t -> KM.insert "terms" t f) terms
+    withFoundTerms f = f
 
 withField :: J.Key -> J.Value -> Answer -> Answer
 withField k v (status, answer) = (status, KM.insert k v <$> answer)
@@ -229,41 +229,36 @@ textAnswer t = abiTuple [Dynamic $ abiBytes $ encodeUtf8 t]
 str :: Text -> J.Value
 str = J.String
 
-availableAnswer :: Int -> Answer
-availableAnswer price =
-  ok
-    [ "status" .= str "available",
-      "price" .= price,
-      "currency" .= str "usd",
-      "years" .= (2 :: Int),
-      "community" .= J.Null,
-      "terms" .= termsEntry fakeGeneralTermsText
-    ]
+found :: [(J.Key, J.Value)] -> Answer
+found fields = ok ["found" .= J.object fields]
 
-registeredAnswer :: [J.Value] -> J.Value -> Text -> J.Value -> Answer
-registeredAnswer entities records resolver nonce =
-  ok
-    [ "status" .= str "registered",
-      "entities" .= entities,
-      "records" .= records,
+availableAnswer :: Int -> Answer
+availableAnswer price = found ["type" .= str "available", "price" .= price, "years" .= (2 :: Int), "terms" .= termsEntry fakeGeneralTermsText]
+
+registeredAnswer :: [J.Value] -> J.Value -> Text -> Answer
+registeredAnswer entities records resolver =
+  found
+    [ "type" .= str "registered",
       "owner" .= ownerText,
       "resolver" .= resolver,
-      "recordsNonce" .= nonce,
-      "recordEdits" .= if records == J.Null then J.Null else editsLeft 3 J.Null,
       "expiresAt" .= (now + year),
       "gracePeriod" .= gracePeriod,
-      "community" .= J.Null
+      "entities" .= entities,
+      "records" .= records
     ]
 
-editsLeft :: Int -> J.Value -> J.Value
-editsLeft left nextAt = J.object ["left" .= left, "nextAt" .= nextAt]
+editsLeft :: Int -> Maybe UTCTime -> J.Value
+editsLeft left nextAt = J.object $ ["left" .= left] <> maybe [] (\t -> ["nextAt" .= t]) nextAt
 
 reservedAnswer, registeringAnswer :: Answer
-reservedAnswer = ok ["status" .= str "reserved", "community" .= J.Null]
-registeringAnswer = ok ["status" .= str "registered", "entities" .= ([] :: [J.Value]), "community" .= J.Null]
+reservedAnswer = found ["type" .= str "reserved"]
+registeringAnswer = found ["type" .= str "registering"]
 
-recordsOf :: Text -> Text -> J.Value
-recordsOf contact channel = J.object ["contact" .= contact, "channel" .= channel]
+ownRecords :: Text -> Text -> J.Value
+ownRecords contact channel = J.object ["type" .= str "own", "contact" .= contact, "channel" .= channel, "nonce" .= (0 :: Int), "edits" .= editsLeft 3 Nothing]
+
+otherRecords :: J.Value
+otherRecords = J.object ["type" .= str "other"]
 
 -- | A preview's fields, and with the link and its deep link a search answer's entity.
 chat :: Text -> J.Value -> [(J.Key, J.Value)]
@@ -330,9 +325,8 @@ testRegistered g = withSearch g id id $ \s@Search {node} -> do
       [ entity bakeryChat bakeryLink "simplex:/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA?h=smp8.simplex.im",
         entity newsChat newsLink "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im"
       ]
-      (recordsOf bakeryLink newsLink)
+      (ownRecords bakeryLink newsLink)
       resolverText
-      (J.toJSON (0 :: Int))
 
 testSearchSlot :: TVar ChaChaDRG -> IO ()
 testSearchSlot g = withSearch g id id $ \s@Search {node, searches, searchesAtFetch} -> do
@@ -358,7 +352,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   setPhase store $ ORegistering commitFixture $ TxHash $ hashFixture 9
   searchAlice s 12 `shouldReturn` listed registeringAnswer
   registeredWith node fullLink ""
-  let registered = registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))
+  let registered = registeredAnswer [] (ownRecords fullLink "") resolverText
   searchAlice s 12 `shouldReturn` listed registered
   -- new terms on chain: the available answer carries them; a listing that cannot be read: no answer
   available node
@@ -373,18 +367,18 @@ testTermsUnavailable g = withSearch g listAlice id $ \s@Search {node} -> do
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   setGeneralTerms node ""
-  searchAlice s 12 `shouldReturn` withTerms J.Null (availableAnswer 10000)
+  searchAlice s 12 `shouldReturn` withTerms Nothing (availableAnswer 10000)
   listCommunityName node alice
   searchAlice s 12 `shouldReturn` listed (availableAnswer 10000)
   setCommunityTerms node ""
-  searchAlice s 12 `shouldReturn` withTerms J.Null (listed $ availableAnswer 10000)
+  searchAlice s 12 `shouldReturn` withTerms Nothing (listed $ availableAnswer 10000)
   answerListing node alice $ Returns $ uint256 (0 :: Int)
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ textAnswer "https://example.org/terms.md"
   nextBlock node
-  searchAlice s 12 `shouldReturn` withTerms J.Null (availableAnswer 10000)
+  searchAlice s 12 `shouldReturn` withTerms Nothing (availableAnswer 10000)
   setGeneralTerms node fakeNewGeneralTermsText
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status429 [("Retry-After", "2")] ""
-  searchAlice s 12 `shouldReturn` withTerms J.Null (availableAnswer 10000)
+  searchAlice s 12 `shouldReturn` withTerms Nothing (availableAnswer 10000)
 
 testTerms :: TVar ChaChaDRG -> IO ()
 testTerms g = withSearch g id id $ \s@Search {node} -> do
@@ -421,7 +415,7 @@ testCommunityWithoutText g = withSearch g id id $ \s@Search {node} -> do
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   answer <- searchAlice s 12
-  (snd answer >>= JT.parseMaybe (J..: "community")) `shouldBe` Just (communityEntry J.Null)
+  (snd answer >>= JT.parseMaybe (J..: "community")) `shouldBe` Just (communityEntry Nothing)
 
 testCommunityYears :: TVar ChaChaDRG -> IO ()
 testCommunityYears g = withSearch g threeYears id $ \s@Search {node} -> do
@@ -429,7 +423,7 @@ testCommunityYears g = withSearch g threeYears id $ \s@Search {node} -> do
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   answer <- searchAlice s 12
-  (snd answer >>= JT.parseMaybe (\o -> (,,) <$> o J..: "years" <*> o J..: "price" <*> (o J..: "community" >>= (J..: "years")))) `shouldBe` Just (3 :: Int, 10000 :: Int, 2 :: Int)
+  (snd answer >>= JT.parseMaybe (\o -> (,,) <$> (o J..: "found" >>= (J..: "years")) <*> (o J..: "found" >>= (J..: "price")) <*> (o J..: "community" >>= (J..: "years")))) `shouldBe` Just (2 :: Int, 10000 :: Int, 2 :: Int)
 
 testRecordLinks :: IO ()
 testRecordLinks = do
@@ -457,8 +451,8 @@ testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom
     settleRecordEdit db minedId (EOApplied Nothing) `shouldReturn` True
     settleRecordEdit db revertedId (EOReverted Nothing) `shouldReturn` True
   answer <- searchAlice s 12
-  (snd answer >>= JT.parseMaybe (J..: "recordEdits"))
-    `shouldBe` Just (editsLeft left $ J.toJSON (floor (utcTimeToPOSIXSeconds $ daysAgo returnsFrom) + 365 * 86400 :: Int))
+  (snd answer >>= JT.parseMaybe (\o -> o J..: "found" >>= (J..: "records") >>= (J..: "edits")))
+    `shouldBe` Just (editsLeft left $ Just $ addUTCTime (365 * 86400) $ daysAgo returnsFrom)
 
 testFailedReads :: TVar ChaChaDRG -> IO ()
 testFailedReads g = withSearch g id id $ \s@Search {node} -> do
@@ -496,7 +490,7 @@ testOneDeadline g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Sea
   answer `shouldBe` refusedWith 503 "provider_unavailable"
   elapsed `shouldSatisfy` (< 3)
   answerRegistered node otherResolver
-  searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText J.Null
+  searchAlice s 12 `shouldReturn` registeredAnswer [] otherRecords otherResolverText
   where
     deadline = 2000000
 

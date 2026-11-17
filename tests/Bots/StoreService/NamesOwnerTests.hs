@@ -454,7 +454,7 @@ testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
   move ctx keyA r to {ofAgreedTerms = agreed plainTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   stored ctx r `shouldReturn` r
   v <- moved ctx keyA r to {ofAgreedTerms = agreed communityTerms}
-  fieldsIn v [("terms", J.String communityTerms), ("community", communityEntry bakers)]
+  fieldsIn v [("terms", J.String communityTerms), ("community", communityEntry $ Just bakers)]
   nrAgreedTerms <$> stored ctx r `shouldReturn` agreed communityTerms
 
 testMoveCommunityYears :: IO ()
