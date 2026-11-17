@@ -333,7 +333,7 @@ class MainTest(unittest.TestCase):
                 patch_all("write_sha256sums"),
             ):
                 build_script.build(command)
-        self.assertEqual(build.call_args.args[4:], (None, None, pathlib.Path("c.zip").resolve()))
+        self.assertEqual(build.call_args.args[4:], (None, None, pathlib.Path("c.zip").resolve(), None))
 
     def test_ios_needs_nix_unless_installing_it(self):
         with tempfile.TemporaryDirectory() as tmp:
