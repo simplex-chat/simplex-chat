@@ -26,6 +26,7 @@ import Data.Char (isDigit)
 import Data.Int (Int64)
 import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, diffUTCTime)
 import Network.HTTP.Types (status200, status409)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
@@ -71,9 +72,10 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
     Nothing -> respond notFound
     Just r ->
       readBoundedBody nameBodyBytes req >>= \case
-        Just body | Just request <- J.decode body ->
-          withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
-        _ -> answer $ RDRefused RVBadRequest Nothing
+        Just body -> case J.eitherDecode body of
+          Right request -> withRegistrationTurn oeStore oeTurns r (decide request) >>= answer . maybe RDGone (either (const RDChanged) id)
+          Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond badRequest
+        Nothing -> answer $ RDRefused RVBadRequest Nothing
   where
     rid = RegistrationId ridText
     decide request r@NameRegistration {nrReveal} = do

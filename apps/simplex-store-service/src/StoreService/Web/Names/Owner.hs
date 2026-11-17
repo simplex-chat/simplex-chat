@@ -27,7 +27,7 @@ import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
-import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage)
+import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, retargetMessage)
 import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (registrationAt, registrationView)
@@ -64,7 +64,7 @@ parseFind :: J.Object -> JT.Parser FindRequest
 parseFind o = do
   frOwner <- jsonField o "owner" $ textWith $ first show . parseAnyCaseAddress
   frTimestamp <- jsonField o "timestamp" boundedInteger
-  frSignature <- jsonField o "signature" $ textWith $ first show . parseSignature
+  frSignature <- jsonField o "signature" hexSignature
   pure FindRequest {frOwner, frTimestamp, frSignature}
 
 -- | balanceSource: the order whose balance paid this one; heldBy: the order whose invoice holds this one's balance.
