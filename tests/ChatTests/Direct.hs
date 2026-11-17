@@ -21,6 +21,7 @@ import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (intercalate, isPrefixOf, stripPrefix)
@@ -31,9 +32,9 @@ import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (CEvtChatItemUpdated), ChatHooks (..), PresetServers (..), defaultChatHooks)
 import Simplex.Chat.Library.Internal (createInternalChatItem)
-import Simplex.Chat.Messages (ChatDirection (CDDirectRcv), ChatItemId)
+import Simplex.Chat.Messages (AChatItemUpdate (..), CIMeta (CIMeta, itemText), ChatDirection (CDDirectRcv), ChatItem (ChatItem, meta), ChatItemId)
 import Simplex.Chat.Messages.CIContent (CIContent (CIRcvIntegrityError))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -43,7 +44,7 @@ import Simplex.Messaging.Agent.Protocol (MsgErrorType (MsgSkipped))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkTimeout (..))
-import Control.Concurrent.STM (atomically, readTVarIO)
+import Control.Concurrent.STM (atomically, modifyTVar', newTVarIO, readTVarIO)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
@@ -74,6 +75,7 @@ chatDirectTests = do
     it "delete conversation keeping contact" testDeleteConversationKeepContact
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
+    it "updated item event has the previous item" testDirectMessageUpdatePrevItem
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
     it "direct message delete multiple" testDirectMessageDeleteMultiple
@@ -113,6 +115,7 @@ chatDirectTests = do
     it "negotiate call" testNegotiateCall
     it "negotiate call between current and v1 clients" testNegotiateCallV1
     it "mark expired call invitation missed on restore" testExpireCallInvitation
+    it "mark call invitation missed when the caller ends the call" testMissedCall
   describe "maintenance mode" $ do
     it "stop chat stops all threads, start chat restarts them" testStopStartChat
 #if !defined(dbPostgres)
@@ -789,7 +792,7 @@ testDirectMessageEditHistory =
 
       alice ##> ("/_update item @2 " <> itemId 1 <> " text hey there")
       alice <# "@bob [edited] hey there"
-      bob <# "alice> [edited] hey there"
+      bob <# "alice> hey there"
 
       alice ##> "/item info @bob hey"
       alice <##. "sent at: "
@@ -803,6 +806,46 @@ testDirectMessageEditHistory =
       bob <##. "received at: "
       bob <## "message history:"
       bob .<## ": hey there"
+
+testDirectMessageUpdatePrevItem :: HasCallStack => TestParams -> IO ()
+testDirectMessageUpdatePrevItem ps = do
+  updates <- newTVarIO []
+  encoded <- newTVarIO []
+  events <- newTVarIO []
+  let hook _ evt = do
+        recordItemEvent events evt
+        case evt of
+          Right e@CEvtChatItemUpdated {} -> atomically $ modifyTVar' encoded (<> [J.toJSON e])
+          _ -> pure ()
+        case J.decode . J.encode <$> evt of
+          Right (Just (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi))) -> atomically $ modifyTVar' updates (<> [(itemText' ci, itemText' prevCi)])
+          _ -> pure ()
+        pure evt
+      itemText' :: ChatItem c d -> T.Text
+      itemText' ChatItem {meta = CIMeta {itemText}} = itemText
+  withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} testOpts {markRead = False} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      eventsFixture "updates/direct-edit" events $ do
+        bob #> "@alice hello"
+        alice <# "bob> hello"
+        withCCTransaction bob (\db -> DB.query db "SELECT item_status FROM chat_items WHERE item_text = ?" (Only ("hello" :: String))) `shouldEventuallyReturn` [Only ("snd_rcvd ok complete" :: String)]
+        apiFixture "updates/update-response" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_update item @2 " <> itemId 1 <> " text hello there"]}
+        alice <# "bob> [edited] hello there"
+        bob #> "@alice how are you"
+        alice <# "bob> how are you"
+        bob ##> ("/_update item @2 " <> itemId 1 <> " text hello, alice")
+        bob <# "@alice [edited] hello, alice"
+        alice <# "bob> [edited] hello, alice"
+      alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
+      eventsFixture "updates/direct-recreated" events $ do
+        bob ##> ("/_update item @2 " <> itemId 1 <> " text hello again")
+        bob <# "@alice [edited] hello again"
+        alice <# "bob> hello again"
+      alice #$> ("/_get chat @2 count=1", chat, [(0, "hello again")])
+      readTVarIO updates `shouldReturn` [("hello there", "hello"), ("hello, alice", "hello there")]
+      J.Object evt : _ <- readTVarIO encoded
+      KM.member "chatItemUpdate" evt `shouldBe` True
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
 testDirectMessageDelete =
@@ -838,7 +881,7 @@ testDirectMessageDelete =
       bob ##> ("/_update item @2 " <> itemId 2 <> " text hey alice")
       bob <# "@alice [edited] > hello 🙂"
       bob <## "      hey alice"
-      alice <# "bob> [edited] hey alice"
+      alice <# "bob> hey alice"
       alice @@@ [("@bob", "hey alice")]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hey alice")])
 
@@ -1459,6 +1502,20 @@ testExpireCallInvitation ps =
       bob <## "subscribed 1 connections on server localhost"
       M.member 2 <$> readTVarIO (currentCalls $ chatController bob) `shouldReturn` False
       callRowCount bob `shouldReturn` 0
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
+
+testMissedCall :: HasCallStack => TestParams -> IO ()
+testMissedCall ps = do
+  events <- newTVarIO []
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just $ \_ evt -> evt <$ recordItemEvent events evt}} testOpts {markRead = False} "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      eventsFixture "updates/missed-call" events $ do
+        inviteToCall alice bob
+        alice ##> "/_call end @2"
+        alice <## "ok"
+        bob <## "call with alice ended"
+        (length <$> readTVarIO events) `shouldEventuallyReturn` 2
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
 
 testStopStartChat :: HasCallStack => TestParams -> IO ()
