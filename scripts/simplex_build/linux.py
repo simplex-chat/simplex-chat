@@ -30,6 +30,7 @@ from .common import (
 from .desktop import (
     CLI_BUILD_STEPS,
     COMPOSE_ARCHES,
+    CORE_HASH,
     DESKTOP_ENV,
     DESKTOP_RELEASE_DIR,
     SOURCE_DATE_EPOCH,
@@ -44,6 +45,7 @@ from .desktop import (
     remove_skiko_runtime,
     zip_desktop_core,
     zip_desktop_libs,
+    zip_ui_update,
 )
 from .docker import OUT, PROJECT, Container, HostRunner, Runner, Step
 
@@ -247,7 +249,7 @@ def register_url_schemes(line: str) -> str:
     return DESKTOP_MIME_TYPES if line.startswith("MimeType=") else line
 
 
-def package_desktop_deb(runner: Runner, source: Path, arch: str, codename: str) -> Path:
+def package_desktop_deb(runner: Runner, source: Path, arch: str, codename: str, core_hash: str | None, out: Path) -> Path:
     """jpackage's deb without the skiko runtime jar, versioned for the Ubuntu release and with fixed timestamps."""
     multiplatform = source / "apps/multiplatform"
     runner.run(Step(("./gradlew", f"-Psimplex.assets.dir={DESKTOP_ENV['ASSETS_DIR']}", "packageDeb"), runner.path(multiplatform)))
@@ -261,6 +263,8 @@ def package_desktop_deb(runner: Runner, source: Path, arch: str, codename: str) 
     runner.run(Step(("dpkg-deb", "-R", runner.path(jpackage_debs[0]), "./extracted"), runner.path(multiplatform)))
     app = single_dir(extracted / "opt", "*imple*")
     remove_skiko_runtime(app / "lib/app")
+    if core_hash:
+        zip_ui_update(app / "lib/app", core_hash, source, out)
     edit_lines(extracted / "DEBIAN/control", lambda line: f"{line}~{codename}" if "Version" in line else line)
     for entry in app.glob("lib/*.desktop"):
         edit_lines(entry, register_url_schemes)
@@ -403,6 +407,7 @@ def build_desktop_linux(
     docker_image: Path | None = None,
     core: Path | None = None,
     core_out: Path | None = None,
+    core_hash: str | None = None,
 ) -> None:
     """The Linux release files of an Ubuntu image, with their released names, and on APPIMAGE_IMAGE the libraries."""
     (source / "cabal.project.local").write_text(DESKTOP_CABAL_LOCAL)
@@ -433,8 +438,10 @@ def build_desktop_linux(
                 zip_desktop_core(work / "simplex-chat", libs, core_out)
             add_vlc_linux(container, libs, image.arch, work)
             check_origin_runpaths(container, [libs])
+            if core_hash:
+                (libs / CORE_HASH).write_text(core_hash)
             link_desktop_libs(source, f"linux-{image.arch}", f"linux-{COMPOSE_ARCHES[image.arch]}")
-            deb = package_desktop_deb(container, source, image.arch, ubuntu_codename(container))
+            deb = package_desktop_deb(container, source, image.arch, ubuntu_codename(container), core_hash, out)
             shutil.copy(deb, out / desktop_files(image)[2])
             if image.version == APPIMAGE_IMAGE:
                 zip_desktop_libs(libs, [], out / linux_libs_zip(image.arch, Database.SQLITE))

@@ -1,6 +1,8 @@
 """What the Linux, macOS and Windows desktop builds share."""
 
 import enum
+import hashlib
+import json
 import os
 import platform
 import re
@@ -11,7 +13,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from .common import BuildError, Platform, edit_lines, host_platform, remove_tree, run, single_file
+from .common import BuildError, Platform, edit_lines, gradle_property, host_platform, remove_tree, run, sha256, single_file
 from .docker import Step
 
 DESKTOP_ENV = {"ASSETS_DIR": "../../assets"}
@@ -93,6 +95,39 @@ def link_desktop_libs(source: Path, platform_dir: str, compose_dir: str) -> None
         shutil.copytree(desktop_libs(source, platform_dir), link)
     else:
         link.symlink_to(target)
+
+
+CORE_HASH = "core-hash"
+
+
+UI_UPDATE_CLASSES = ("chat/simplex/desktop/MainKt.class", "chat/simplex/common/BuildConfigCommon.class")
+
+
+JAR_CONTENT_HASH = re.compile(r"(-[0-9a-f]{16,32})?\.jar$")
+
+
+def ui_base(core_hash: str, dependencies: Sequence[str]) -> str:
+    lines = [core_hash, *sorted(JAR_CONTENT_HASH.sub("", name) for name in dependencies)]
+    return hashlib.sha256("".join(f"{line}\n" for line in lines).encode()).hexdigest()
+
+
+def ui_jar(jar: Path) -> bool:
+    with zipfile.ZipFile(jar) as z:
+        return any(name in UI_UPDATE_CLASSES for name in z.namelist())
+
+
+def zip_ui_update(jars: Path, core_hash: str, source: Path, out: Path) -> None:
+    cfg = single_file(jars, "*.cfg").read_text().splitlines()
+    classpath = [re.split(r"[/\\]", line)[-1] for line in cfg if line.startswith("app.classpath=")]
+    ui = [name for name in classpath if ui_jar(jars / name)]
+    base = ui_base(core_hash, [name for name in classpath if name not in ui])
+    version_code = int(gradle_property(source, "desktop.version_code"))
+    manifest = {"version_code": version_code, "base": base, "jars": {name: sha256(jars / name) for name in ui}}
+    date_time = time.gmtime(int(SOURCE_DATE_EPOCH))[:6]
+    with zipfile.ZipFile(out / f"simplex-desktop-ui-{base}.zip", "w") as z:
+        z.writestr(zipfile.ZipInfo("ui.json", date_time), json.dumps(manifest))
+        for name in ui:
+            z.writestr(zipfile.ZipInfo(name, date_time), (jars / name).read_bytes())
 
 
 def remove_skiko_runtime(app: Path) -> None:
@@ -188,7 +223,7 @@ def run_cabal(source: Path, args: Sequence[str], capture: bool = False) -> str:
 
 def zip_desktop_libs(libs: Path, extra: Sequence[Path], target: Path) -> None:
     """The library release: the files directly in the desktop app's libraries directory, under libs/."""
-    files = sorted([p for p in libs.iterdir() if p.is_file()] + list(extra))
+    files = sorted([p for p in libs.iterdir() if p.is_file() and p.name != CORE_HASH] + list(extra))
     date_time = time.gmtime(int(SOURCE_DATE_EPOCH))[:6]
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
         for path in files:

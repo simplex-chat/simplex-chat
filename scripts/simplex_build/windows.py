@@ -30,6 +30,7 @@ from .common import (
     touch_tree,
 )
 from .desktop import (
+    CORE_HASH,
     DESKTOP_ENV,
     DESKTOP_RELEASE_DIR,
     SOURCE_DATE_EPOCH,
@@ -47,6 +48,7 @@ from .desktop import (
     run_cabal,
     zip_desktop_core,
     zip_desktop_libs,
+    zip_ui_update,
 )
 from .openssl import OpenSsl, check_static_openssl, host_openssl, openssl_work, static_libcrypto
 
@@ -310,7 +312,9 @@ def package_msi(source: Path, work: Path) -> Path:
     return msi
 
 
-def build_desktop_windows(source: Path, out: Path, core: Path | None = None, core_out: Path | None = None) -> None:
+def build_desktop_windows(
+    source: Path, out: Path, core: Path | None = None, core_out: Path | None = None, core_hash: str | None = None
+) -> None:
     host = WINDOWS_DESKTOP
     check_line_endings(source)
     paths = windows_machine_paths(source)
@@ -330,10 +334,14 @@ def build_desktop_windows(source: Path, out: Path, core: Path | None = None, cor
         if core_out:
             zip_desktop_core(out / host.cli, libs, core_out)
         add_vlc_windows(libs, work)
+        if core_hash:
+            (libs / CORE_HASH).write_text(core_hash)
         link_desktop_libs(root.source, host.libs_dir, "windows-x64")
         msi = package_msi(root.source, work)
         shutil.copy(msi, out / host.desktop)
         app = single_dir(root.source / DESKTOP_RELEASE_DIR / "app", "*imple*")
+        if core_hash:
+            zip_ui_update(app / "app", core_hash, root.source, out)
         found = find_machine_paths([out / host.cli, app, msi], paths, encodings=WINDOWS_PATH_ENCODINGS)
     check_machine_paths(found)
 

@@ -274,9 +274,11 @@ On master, the macOS jobs of `build-apps.yml` sign and notarize the apps with th
 | `build`, `build-apps.yml` | `APPLE_SIMPLEX_*` in the macOS jobs, on master<br>`SIMPLEX_ART_SSH_KEY` in the iOS job | every app; on master, the macOS apps signed with the Developer ID and notarized |
 | `ios` | `IOS_*`, `APP_STORE_CONNECT_*` | the archive exported with the Apple Distribution certificate and uploaded for internal testing only (`testFlightInternalTestingOnly`) |
 | `android` | `ANDROID_UPLOAD_*`, `GOOGLE_PLAY_SERVICE_ACCOUNT` | the Play bundle signed with the upload key and released to the internal track; while a Play update is in review, the upload fails and the review continues (`changesInReviewBehavior=ERROR_IF_IN_REVIEW`) |
-| `publish` | `ANDROID_TEST_*`, `SIMPLEX_CHAT_TEST_TOKEN` | the test APKs signed as `simplex.apk` and `simplex-armv7a.apk`; in simplex-chat-test, a commit of `release.json` with the version names, the build numbers and the commit, and the release `<desktop.version_name>-<desktop.version_code>` with the desktop apps and the APKs |
+| `publish` | `DESKTOP_UI_UPDATE_KEY`, `ANDROID_TEST_*`, `SIMPLEX_CHAT_TEST_TOKEN` | the `ui.json` of each `simplex-desktop-ui-<base>.zip` signed; the test APKs signed as `simplex.apk` and `simplex-armv7a.apk`; in simplex-chat-test, a commit of `release.json` with the version names, the build numbers and the commit, and the release `<desktop.version_name>-<desktop.version_code>` with the desktop apps, their UI updates and the APKs |
 
 A step without its secrets skips with a notice, so that the workflow runs in a fork without keys. The `ios` job is skipped with a notice while `MARKETING_VERSION` is not above the version in the App Store, whose TestFlight train is closed.
+
+Each desktop job of `build-apps.yml` writes `core-hash`, the name of its core artifact and a hash of the JNI library's sources, into the app's resources, and saves `simplex-desktop-ui-<base>.zip`: the app's own jars and `ui.json`, for the apps with the same core hash and the same other jars (plans/2026-11-17-desktop-ui-updates.md on the desktop-ui-updates branch). An app on the Internal channel downloads it in place of a package, and runs its jars after a restart.
 
 The msi version of an internal release is `<major>.<minor>.<desktop.version_code>` (`SIMPLEX_INTERNAL_RELEASE` in apps/multiplatform/desktop/build.gradle.kts); public releases keep `<major>.<minor>.<patch>`. jpackage derives the msi's product code from its version, and Windows Installer refuses an msi whose product is installed from another msi. jpackage's msi removes an installed build of any other version, higher or lower, so a public msi replaces an internal one.
 
@@ -312,6 +314,7 @@ The msi version of an internal release is `<major>.<minor>.<desktop.version_code
    | `ANDROID_TEST_KEY_ALIAS` | the alias of the test key | `gh secret set ANDROID_TEST_KEY_ALIAS --env internal-release --body <alias>` |
    | `ANDROID_TEST_KEY_PASSWORD` | the password of the test key | `gh secret set ANDROID_TEST_KEY_PASSWORD --env internal-release` |
    | `SIMPLEX_CHAT_TEST_TOKEN` | a fine-grained token, resource owner simplex-chat, repository simplex-chat-test only, permission Contents read and write | `gh secret set SIMPLEX_CHAT_TEST_TOKEN --env internal-release` |
+   | `DESKTOP_UI_UPDATE_KEY` | the Ed25519 key that signs the UI updates, PEM; its public key, `openssl pkey -in ui-update.pem -pubout -outform DER \| base64`, is `desktop.ui_update_key` in apps/multiplatform/gradle.properties | `openssl genpkey -algorithm ed25519 -out ui-update.pem`, then `gh secret set DESKTOP_UI_UPDATE_KEY --env internal-release < ui-update.pem` |
 
    The macOS jobs use the repository secrets `APPLE_SIMPLEX_SIGNING_KEYCHAIN`, `APPLE_SIMPLEX_NOTARIZATION_APPLE_ID` and `APPLE_SIMPLEX_NOTARIZATION_PASSWORD` of build.yml.
 3. In App Store Connect, a TestFlight internal group that receives new builds automatically.

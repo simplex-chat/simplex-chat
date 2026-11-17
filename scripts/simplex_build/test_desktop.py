@@ -1,4 +1,5 @@
 import contextlib
+import json
 import os
 import pathlib
 import plistlib
@@ -529,3 +530,37 @@ class HostDesktopTest(unittest.TestCase):
             (app / "SimpleX.cfg").read_text().splitlines(),
             ["[Application]", "app.classpath=$APPDIR\\desktop-jvm-7.1.7-854b.jar", "app.classpath=$APPDIR\\skiko-awt-0.9.4.2-aa36.jar"],
         )
+
+    def test_ui_base_is_the_apps(self):
+        jars = ["c-3-1234567890abcdef.jar", "b-1.0-0123456789abcdef0123456789abcdef.jar", "a-2.jar"]
+        self.assertEqual(build_script.ui_base("core-1", jars), "edccfa7920449a4d5a3cac37746f82d760a61616c2f034fac4c93d1b63a7e45c")
+
+    def test_ui_update_has_the_apps_own_jars_for_its_base(self):
+        app = self.root / "SimpleX/app"
+        app.mkdir(parents=True)
+        own = {
+            "desktop-jvm-7.1.4-3066ac60aa3aec2984be8f2f76d0fdf4.jar": "chat/simplex/desktop/MainKt.class",
+            "common-desktop-7.1.4-f81867c79b291d1711913a8939399b.jar": "chat/simplex/common/BuildConfigCommon.class",
+        }
+        dependency = "a-2-0123456789abcdef.jar"
+        for name, entry in {**own, dependency: "a/A.class"}.items():
+            with zipfile.ZipFile(app / name, "w") as z:
+                z.writestr(entry, b"class")
+        (app / "SimpleX.cfg").write_text("[Application]\r\n" + "".join(f"app.classpath=$APPDIR\\{name}\r\n" for name in [*own, dependency]))
+        properties = self.source / "apps/multiplatform/gradle.properties"
+        properties.parent.mkdir(parents=True)
+        properties.write_text("desktop.version_name=7.1.4\ndesktop.version_code=176\n")
+        build_script.zip_ui_update(app, "core-1", self.source, self.out)
+        base = build_script.ui_base("core-1", ["a-2.jar"])
+        with zipfile.ZipFile(self.out / f"simplex-desktop-ui-{base}.zip") as z:
+            self.assertEqual(sorted(z.namelist()), sorted(["ui.json", *own]))
+            manifest = json.loads(z.read("ui.json"))
+        self.assertEqual(manifest, {"version_code": 176, "base": base, "jars": {name: build_script.sha256(app / name) for name in own}})
+
+    def test_libs_zip_leaves_out_the_core_hash(self):
+        libs = self.root / "libs"
+        libs.mkdir()
+        (libs / "libsimplex.so").write_bytes(b"simplex")
+        (libs / build_script.CORE_HASH).write_text("core-1")
+        build_script.zip_desktop_libs(libs, [], self.out / "libs.zip")
+        self.assertEqual(self.zip_names("libs.zip"), ["libs/libsimplex.so"])

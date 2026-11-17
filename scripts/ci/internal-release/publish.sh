@@ -13,6 +13,19 @@ trap 'rm -rf "$work"' EXIT
 mkdir -p "$release"
 cp "$desktop"/simplex-desktop-* "$release"
 
+if [ -n "${DESKTOP_UI_UPDATE_KEY:-}" ]; then
+  printf '%s\n' "$DESKTOP_UI_UPDATE_KEY" > "$work/ui-update.pem"
+  for zip in "$release"/simplex-desktop-ui-*.zip; do
+    [ -e "$zip" ] || continue
+    unzip -p "$zip" ui.json > "$work/ui.json"
+    openssl pkeyutl -sign -inkey "$work/ui-update.pem" -rawin -in "$work/ui.json" -out "$work/ui.json.sig"
+    (cd "$work" && zip -q "$zip" ui.json.sig)
+  done
+else
+  rm -f "$release"/simplex-desktop-ui-*.zip
+  echo "::notice title=UI updates::DESKTOP_UI_UPDATE_KEY is not set: the release has no UI updates"
+fi
+
 if [ -n "${ANDROID_TEST_KEYSTORE:-}" ]; then
   base64 --decode <<< "$ANDROID_TEST_KEYSTORE" > "$work/test.keystore"
   apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n 1)

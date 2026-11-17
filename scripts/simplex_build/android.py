@@ -17,6 +17,7 @@ from .common import (
     checkout,
     download,
     extract_flat,
+    gradle_property,
     log,
     release_url,
     run,
@@ -75,10 +76,7 @@ def android_build_tag(tag: str, existing_tags: Sequence[str], arch: Arch) -> str
 
 
 def android_vercode(source: Path) -> str:
-    for line in (source / "apps/multiplatform/gradle.properties").read_text().splitlines():
-        if line.startswith("android.version_code="):
-            return line.split("=", 1)[1].strip()
-    raise BuildError("android.version_code not found in apps/multiplatform/gradle.properties")
+    return gradle_property(source, "android.version_code")
 
 
 @dataclass(frozen=True, slots=True)

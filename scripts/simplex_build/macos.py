@@ -39,6 +39,7 @@ from .common import (
 )
 from .desktop import (
     COMPOSE_ARCHES,
+    CORE_HASH,
     DESKTOP_ENV,
     DESKTOP_RELEASE_DIR,
     SOURCE_DATE_EPOCH,
@@ -54,6 +55,7 @@ from .desktop import (
     macos_desktop,
     zip_desktop_core,
     zip_desktop_libs,
+    zip_ui_update,
 )
 from .dmg import build_dmg, build_libdmg, copy_dmg_signature, dmg_signature
 from .ios import minimum_versions, version_tuple
@@ -547,7 +549,9 @@ def build_macos_libs(source: Path, database: Database, out: Path, require_signin
     check_machine_paths(found)
 
 
-def build_desktop_macos(source: Path, out: Path, require_signing: bool, core: Path | None = None, core_out: Path | None = None) -> None:
+def build_desktop_macos(
+    source: Path, out: Path, require_signing: bool, core: Path | None = None, core_out: Path | None = None, core_hash: str | None = None
+) -> None:
     host = macos_desktop()
     signed = apple_signing(require_signing)
     paths = machine_paths(source, require_xcode(XCODE))
@@ -569,9 +573,13 @@ def build_desktop_macos(source: Path, out: Path, require_signing: bool, core: Pa
             zip_desktop_core(out / host.cli, libs, core_out)
         found = find_machine_paths([out / host.cli, libs], paths)
         add_vlc_mac(libs, host.arch, work)
+        if core_hash:
+            (libs / CORE_HASH).write_text(core_hash)
         app = build_app(root.source, keychain)
         normalize_app(app)
         sign_app(app, keychain)
+        if core_hash:
+            zip_ui_update(app / "Contents/app", core_hash, root.source, out)
         # the app's resources have the libraries and the app's own JNI library, which Gradle builds
         check_deployment_target([out / host.cli, app / COMPOSE_RESOURCES])
         check_relative_rpaths(sorted((app / COMPOSE_RESOURCES).glob("*.dylib")))

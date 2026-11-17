@@ -229,7 +229,7 @@ class DesktopTest(unittest.TestCase):
             original_touch(root, epoch)
 
         with patch_all("touch_tree", touch):
-            deb = build_script.package_desktop_deb(runner, self.source, "x86_64", "jammy")
+            deb = build_script.package_desktop_deb(runner, self.source, "x86_64", "jammy", None, self.root)
         self.assertEqual(deb, release / "simplex_x86_64.deb")
         self.assertEqual(captured["control"], "Package: simplex\nVersion: 7.1.0-1~jammy\n")
         self.assertNotIn("skiko", captured["cfg"])

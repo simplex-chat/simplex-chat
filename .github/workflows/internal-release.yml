@@ -141,8 +141,9 @@ jobs:
           path: ${{ runner.temp }}/android
           merge-multiple: true
 
-      - name: Sign the test APKs and publish
+      - name: Sign the test APKs and UI updates, and publish
         env:
+          DESKTOP_UI_UPDATE_KEY: ${{ secrets.DESKTOP_UI_UPDATE_KEY }}
           ANDROID_TEST_KEYSTORE: ${{ secrets.ANDROID_TEST_KEYSTORE }}
           ANDROID_TEST_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_TEST_KEYSTORE_PASSWORD }}
           ANDROID_TEST_KEY_ALIAS: ${{ secrets.ANDROID_TEST_KEY_ALIAS }}

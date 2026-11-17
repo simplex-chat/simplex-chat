@@ -131,6 +131,13 @@ def sha256(path: Path) -> str:
         return hashlib.file_digest(f, "sha256").hexdigest()
 
 
+def gradle_property(source: Path, name: str) -> str:
+    for line in (source / "apps/multiplatform/gradle.properties").read_text().splitlines():
+        if line.startswith(f"{name}="):
+            return line.split("=", 1)[1].strip()
+    raise BuildError(f"{name} not found in apps/multiplatform/gradle.properties")
+
+
 def write_sha256sums(directory: Path, target: Path | None = None) -> None:
     files = sorted(p for p in directory.iterdir() if p.is_file() and p.name not in ("SHA256SUMS", "_sha256sums"))
     hashes = {p.name: sha256(p) for p in files}
