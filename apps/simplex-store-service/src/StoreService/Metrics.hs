@@ -24,7 +24,6 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Logger.Simple (logWarn)
 import Control.Monad (forever, unless, void)
-import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isRight)
 import Data.List (nub, sort)
@@ -151,21 +150,21 @@ serviceText providers invoices BadgeCounts {bcPurchases, bcSubscriptions, bcOpen
       gauge "simplex_store_invoices_overdue" "Open invoices past their expiry and its grace with no money received, which the poller expires once the provider answers" [labelled "provider" (textEncode p) (value n) | (p, (_, n)) <- invoiceCounts],
       gauge "simplex_store_provider_list_ok_timestamp_seconds" "When the poller last listed the provider's open invoices successfully" [labelled "provider" (textEncode p) (timestamp t) | (p, t) <- M.toList ptListedOk],
       gauge "simplex_store_provider_webhook_timestamp_seconds" "When the provider last delivered a webhook that verified" [labelled "provider" (textEncode p) (timestamp t) | (p, t) <- M.toList ptWebhookAt],
-      gauge "simplex_store_badges_purchases" "Badge purchases by status" [labelled "status" s (value n) | (s, n) <- withZeros purchaseStatuses (map (first textEncode) bcPurchases)],
-      gauge "simplex_store_badges_subscriptions" "App store subscriptions paying for badges, by state" [labelled "state" s (value n) | (s, n) <- withZeros subscriptionStates (map (first textEncode) bcSubscriptions)],
+      gauge "simplex_store_badges_purchases" "Badge purchases by status" [labelled "status" (textEncode s) (value n) | (s, n) <- withZeros purchaseStatuses bcPurchases],
+      gauge "simplex_store_badges_subscriptions" "App store subscriptions paying for badges, by state" [labelled "state" (textEncode s) (value n) | (s, n) <- withZeros subscriptionStates bcSubscriptions],
       gauge "simplex_store_badges_codes_open" "Badge codes paid or free, not revoked or expired, with redemptions left" (Just $ value bcOpenCodes)
     ]
   where
     invoiceCounts = M.toList $ M.union (M.fromList [(p, (n, overdue)) | (p, n, overdue) <- invoices]) (M.fromList [(p, (0, 0)) | p <- providers])
 
-withZeros :: [Text] -> [(Text, Int)] -> [(Text, Int)]
-withZeros known counts = M.toList $ M.union (M.fromList counts) (M.fromList [(k, 0) | k <- known])
+withZeros :: Eq a => [a] -> [(a, Int)] -> [(a, Int)]
+withZeros known counts = [(k, fromMaybe 0 $ lookup k counts) | k <- known] <> [c | c@(s, _) <- counts, s `notElem` known]
 
-purchaseStatuses :: [Text]
-purchaseStatuses = map textEncode [PSAcquiring, PSIssued, PSSuperseded, PSFailed]
+purchaseStatuses :: [BadgePurchaseStatus]
+purchaseStatuses = [PSAcquiring, PSIssued, PSSuperseded, PSFailed]
 
-subscriptionStates :: [Text]
-subscriptionStates = map textEncode [SSRenewing, SSCancelled, SSBillingRetry, SSEnded]
+subscriptionStates :: [SubscriptionState]
+subscriptionStates = [SSRenewing, SSCancelled, SSBillingRetry, SSEnded]
 
 namesText :: NamesCounts -> ChainRead -> Text
 namesText NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} =
