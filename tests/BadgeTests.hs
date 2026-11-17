@@ -1592,92 +1592,6 @@ testServiceWireTags = do
             expiresAt = futureTime,
             paymentTo = SPDCard {provider = CPStripe, url = "https://checkout.example/inv-1"}
           }
-      hash32 = "0x" <> T.replicate 32 "ab"
-      signature = "0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b"
-      deadline = 1792577700
-      prepaidCode = "SN7-BJTBP-29596-R3HJ8-25YM7"
-      owner = either error id $ strDecode "0x9a676e781a523b5d0c0e43731313a708cb607508"
-      registrationId = NameRegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
-      signedOrder =
-        SignedNameOrder
-          { labelHash = hash32,
-            labelLength = 7,
-            duration = 69292800,
-            commitment = hash32,
-            sealed = "sealed",
-            terms = hash32,
-            timestamp = 1792574100,
-            signature
-          }
-      nameOrder = NameCodeOrder {code = prepaidCode, owner, signedOrder}
-      reveal =
-        SignedNameReveal
-          { label = "alice42",
-            signature,
-            secret = hash32,
-            nonce = 0,
-            deadline,
-            records = NameRevealRecords {contact = [], channel = []},
-            acceptance = NameRevealAcceptance {termsHash = hash32, nonce = 0, signature}
-          }
-      recipient = either error id $ strDecode "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6"
-      nameMove = NameMove {labelHash = hash32, holder = owner, recipient}
-      termsUrl = "https://example.com/terms.md#sha256=" <> T.replicate 32 "cd"
-      termsRef = NameTermsRef {termsHash = hash32, termsLink = termsUrl}
-      community = Just NameCommunity {communityFor = Just "SimpleX users", communityYears = 2}
-      nameCatalog =
-        NameCatalog
-          { saleState = NSSClosedForDay {reopensAt = Just 1792610100},
-            years = 1,
-            termStart = 1792574100,
-            price = Just (USDCents 500),
-            invoiceWindow = Just 3600,
-            tld = TLDSimplex,
-            chainId = 1,
-            resolver = recipient,
-            sponsor = owner,
-            terms = NameCatalogTerms {generalTerms = Just termsRef, communityTerms = Nothing},
-            communityTexts = M.fromList [(hash32, "SimpleX users")],
-            products = ["name_1y"],
-            time = 1792574100
-          }
-      nameCode =
-        NameCodeInfo
-          { minLength = 7,
-            years = 1,
-            state = NCSUnpaid,
-            browserPayment = Just NameCodePayment {payUntil = futureTime, invoicePayableUntil = Just futureTime, moneyOnClosedInvoice = False, moneyBeyondPrice = False}
-          }
-      registration =
-        NameRegistrationView
-          { registrationId,
-            version = 3,
-            moves = 0,
-            linksRefused = False,
-            phase = NRPRegistered,
-            labelHash = hash32,
-            label = Just "alice42",
-            owner,
-            commitment = hash32,
-            resolver = recipient,
-            sponsor = owner,
-            chainId = 1,
-            tld = TLDSimplex,
-            years = 1,
-            duration = 69292800,
-            commitTx = Just hash32,
-            registerTx = Just hash32,
-            revealAfter = Just 1792574160,
-            revealBefore = Just 1792660500,
-            intentNonce = Just 0,
-            acceptance = Just NameAcceptanceAsked {kind = NTKCommunity, policy = recipient, termsHash = hash32, nonce = 0},
-            unread = [],
-            expiresAt = Just 1824110100,
-            failure = Nothing,
-            sendsUsedUp = False,
-            community,
-            terms = Just hash32
-          }
       commands =
         [ STCGetBadgeCatalog,
           STCGetBadgeInvoice {priceId = BadgePriceId "price-1", offerId = Just (BadgeOfferId "offer-1"), badgeInfo, paymentVia = SPMCard {provider = CPStripe}, upgrade = Nothing},
@@ -1688,36 +1602,36 @@ testServiceWireTags = do
           STCIssueBadge {balance},
           STCPauseBadge,
           STCGetNameCatalog,
-          STCGetNameTerms {termsHash = hash32},
-          STCCheckNameCode {code = prepaidCode},
-          STCOpenNameCode {code = prepaidCode},
-          STCCloseNameCode {code = prepaidCode},
-          STCOrderName {nameOrder},
-          STCPurchaseName {payment, purchaseCode = NPCOrder {nameOrder}},
-          STCGetNameRegistration {registrationId},
-          STCRevealName {registrationId, reveal},
-          STCRetryName {registrationId},
-          STCFindNameOrders {owner, timestamp = 1792574100, signature},
-          STCOrderAnotherName {registrationId, signedOrder},
-          STCGetNameMove {nameMove},
-          STCApproveNameMove {nameMove, nonce = 0, deadline, signature},
-          STCAcceptNameMoveTerms {nameMove, moveOffer = 1, termsHash = hash32, nonce = 0, deadline, signature},
-          STCClaimNameMove {nameMove, moveOffer = 1, nonce = 1, deadline, signature}
+          STCGetNameTerms {termsHash = testNameHash},
+          STCCheckNameCode {code = testPrepaidCode},
+          STCOpenNameCode {code = testPrepaidCode},
+          STCCloseNameCode {code = testPrepaidCode},
+          STCOrderName {nameOrder = testCodeOrder},
+          STCPurchaseName {payment, purchaseCode = NPCOrder {nameOrder = testCodeOrder}},
+          STCGetNameRegistration {registrationId = testRegistrationId},
+          STCRevealName {registrationId = testRegistrationId, reveal = testNameReveal},
+          STCRetryName {registrationId = testRegistrationId},
+          STCFindNameOrders {owner = testNameOwner, timestamp = 1792574100, signature = testNameSignature},
+          STCOrderAnotherName {registrationId = testRegistrationId, signedOrder = testSignedOrder},
+          STCGetNameMove {nameMove = testNameMove},
+          STCApproveNameMove {nameMove = testNameMove, nonce = 0, deadline = 1792577700, signature = testNameSignature},
+          STCAcceptNameMoveTerms {nameMove = testNameMove, moveOffer = 1, termsHash = testNameHash, nonce = 0, deadline = 1792577700, signature = testNameSignature},
+          STCClaimNameMove {nameMove = testNameMove, moveOffer = 1, nonce = 1, deadline = 1792577700, signature = testNameSignature}
         ]
       responses =
         [ STPBadgeCatalog {catalog = BadgeCatalog {prices = [], offers = []}, badgeStatement = Just statement},
           STPBadgeInvoice {invoice, badgeType = BTSupporter, months = 3},
           STPBadgeCredential {credential = Nothing, receipt = Just "receipt", statement, subscription = Just SSRenewing},
           STPError {code = STEInternal, message = Nothing, retryAfter = Nothing},
-          STPNameCatalog {nameCatalog},
-          STPNameTerms {termsDoc = TermsDoc {termsLink = termsUrl, termsZstd = Nothing}},
-          STPNameCode {nameCode},
-          STPNameOrderPlaced {registrationId},
-          STPNamePurchase {nameCode, orderAnswer = Just NOARefused {refusal = NRFTermsChanged {terms = termsRef, community}}},
-          STPNameRegistration {registration},
+          STPNameCatalog {nameCatalog = testNameCatalog NSSOpen},
+          STPNameTerms {termsDoc = TermsDoc {termsLink = testTermsLink, termsZstd = Nothing}},
+          STPNameCode {nameCode = testNameCodeInfo NCSUnpaid},
+          STPNameOrderPlaced {registrationId = testRegistrationId},
+          STPNamePurchase {nameCode = testNameCodeInfo NCSUsed, orderAnswer = Just NOARefused {refusal = NRFTermsChanged {terms = testTermsRef, community = Just testNameCommunity}}},
+          STPNameRegistration {registration = testNameView NRPRegistered},
           STPNameRevealed,
-          STPNameOrders {registrations = [NameFoundOrder {registrationId, phase = NRPCommitted, createdAt = futureTime, labelHash = hash32, sealed = "sealed"}], more = False},
-          STPNameMove {moveReads = NameMoveReads {holderNonce = 0, moveOffer = 1, recipientNonce = 0, termsNonce = 0, policy = recipient, community}},
+          STPNameOrders {registrations = [NameFoundOrder {registrationId = testRegistrationId, phase = NRPCommitted, createdAt = futureTime, labelHash = testNameHash, sealed = "sealed"}], more = False},
+          STPNameMove {moveReads = NameMoveReads {holderNonce = 0, moveOffer = 1, recipientNonce = 0, termsNonce = 0, policy = testNameRecipient, community = Just testNameCommunity}},
           STPNameRefused {refusal = NRFSaleClosed {saleState = NSSCodesOnly}}
         ]
       errors =
