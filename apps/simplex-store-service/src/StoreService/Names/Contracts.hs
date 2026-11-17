@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Contracts
@@ -55,6 +56,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Concurrently (..), mapConcurrently)
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (TVar, newTVarIO)
+import Control.Exception (try)
 import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forever, unless)
 import Control.Monad.Except (ExceptT (..), runExceptT)
@@ -63,7 +65,9 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy as LB
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
+import Data.Functor ((<&>))
 import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicModifyIORef', atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
 import qualified Data.List.NonEmpty as L
@@ -75,6 +79,8 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
+import qualified Network.HTTP.Client as HTTP
+import Network.HTTP.Types (statusCode)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
@@ -82,7 +88,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (catchOwn', eitherToMaybe, toChunks, tshow)
 import StoreService.Config (ChainConfig (..), localChainId)
 import StoreService.Names.Abi
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, confirmedNumber, ethCallAt, fetchText, latestBlock, nodeChainId, registrarBalance)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, confirmedNumber, ethCallAt, httpFailure, latestBlock, nodeChainId, registrarBalance)
 import StoreService.Names.Registration (CommunityName, TermsHash, channelRecordKey, childNode, contactRecordKey, labelNode, nodeBytes, termsKindText)
 import StoreService.Names.Revert (RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
@@ -380,6 +386,27 @@ fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBacko
     checked body
       | any (sha256Hash body /=) digest = Left ("its SHA-256 is not the link's", Nothing)
       | otherwise = first (const ("not UTF-8", Nothing)) $ decodeUtf8' body
+
+fetchText :: ChainClient -> Int -> String -> IO (Either (Text, Maybe Int) ByteString)
+fetchText ChainClient {ccManager, ccTimeout} maxBytes url =
+  timeout ccTimeout (try get) <&> \case
+    Nothing -> Left ("timed out", Nothing)
+    Just (Left (e :: HTTP.HttpException)) -> Left (httpFailure e, Nothing)
+    Just (Right r) -> r
+  where
+    get = do
+      req <- HTTP.parseRequest url
+      HTTP.withResponse req {HTTP.redirectCount = 0} ccManager $ \resp -> answer (HTTP.responseStatus resp) (HTTP.responseHeaders resp) (HTTP.responseBody resp)
+    answer status headers body
+      | statusCode status /= 200 = pure $ Left ("HTTP " <> tshow (statusCode status), retryAfter =<< lookup "Retry-After" headers)
+      | otherwise = within <$> HTTP.brReadSome body (maxBytes + 1)
+    within b
+      | LB.length b > fromIntegral maxBytes = Left ("over " <> tshow maxBytes <> " bytes", Nothing)
+      | otherwise = Right $ LB.toStrict b
+    retryAfter v
+      | not (B.null v) && B.length v <= maxRetryAfterDigits && B.all isDigit v = readMaybe $ B.unpack v
+      | otherwise = Nothing
+    maxRetryAfterDigits = 9
 
 policyNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 policyNonce ct owner = policyCall ct Latest ("nonces(address)", addressWord owner) decodeWord64

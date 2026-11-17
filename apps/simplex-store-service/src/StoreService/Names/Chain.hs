@@ -31,7 +31,7 @@ module StoreService.Names.Chain
     decodeSignedTx,
     transactionSigner,
     sendRawTransaction,
-    fetchText,
+    httpFailure,
     httpFailureDetail,
   )
 where
@@ -50,8 +50,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
-import Data.Char (digitToInt, isDigit, isHexDigit)
-import Data.Functor ((<&>))
+import Data.Char (digitToInt, isHexDigit)
 import Data.List (foldl', sort)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
@@ -75,7 +74,6 @@ import StoreService.Names.Abi (hex, parseText)
 import StoreService.Names.Revert (RevertReason (..), decodeRevert, maxNodeMessageLength)
 import StoreService.Store.Invoices (unixSeconds)
 import System.Timeout (timeout)
-import Text.Read (readMaybe)
 
 data ChainClient = ChainClient
   { ccManager :: Manager,
@@ -287,27 +285,6 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
       | message == revertMessage = RRWithoutData
       | otherwise = unnamed message
     unnamed message = RRUnnamed $ T.take maxNodeMessageLength $ fromMaybe message $ T.stripPrefix (revertMessage <> ": ") message
-
-fetchText :: ChainClient -> Int -> String -> IO (Either (Text, Maybe Int) ByteString)
-fetchText ChainClient {ccManager, ccTimeout} maxBytes url =
-  timeout ccTimeout (try get) <&> \case
-    Nothing -> Left ("timed out", Nothing)
-    Just (Left (e :: HTTP.HttpException)) -> Left (httpFailure e, Nothing)
-    Just (Right r) -> r
-  where
-    get = do
-      req <- HTTP.parseRequest url
-      HTTP.withResponse req {HTTP.redirectCount = 0} ccManager $ \resp -> answer (HTTP.responseStatus resp) (HTTP.responseHeaders resp) (HTTP.responseBody resp)
-    answer status headers body
-      | statusCode status /= 200 = pure $ Left ("HTTP " <> tshow (statusCode status), retryAfter =<< lookup "Retry-After" headers)
-      | otherwise = within <$> HTTP.brReadSome body (maxBytes + 1)
-    within b
-      | LB.length b > fromIntegral maxBytes = Left ("over " <> tshow maxBytes <> " bytes", Nothing)
-      | otherwise = Right $ LB.toStrict b
-    retryAfter v
-      | not (B.null v) && B.length v <= maxRetryAfterDigits && BC.all isDigit v = readMaybe $ BC.unpack v
-      | otherwise = Nothing
-    maxRetryAfterDigits = 9
 
 -- | Only the kind of failure, for callers: an exception's text can hold the URL or its host.
 httpFailure :: HTTP.HttpException -> Text
