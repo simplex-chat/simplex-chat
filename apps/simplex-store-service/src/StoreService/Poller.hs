@@ -165,7 +165,8 @@ runPass :: PollerEnv -> IO ()
 runPass env@PollerEnv {peStore, peProviders} = do
   now <- getCurrentTime
   forgetRates env
-  rows <- unpaidRefs peStore (addUTCTime (negate settleWindow) now)
+  (unknown, rows) <- unpaidRefs peStore (addUTCTime (negate settleWindow) now)
+  mapM_ (uncurry $ warnNoProvider env now) unknown
   let bulk = length rows > readsPerPass
   listNow <- listDue env now bulk
   missed <-
@@ -218,10 +219,12 @@ coveringProvider :: PollerEnv -> UTCTime -> (PaymentProvider, Text) -> IO (Maybe
 coveringProvider env@PollerEnv {peProviders} now (provider, ref) =
   case find ((== provider) . pProvider) peProviders of
     Just p -> pure (Just p)
-    Nothing -> do
-      due <- dueToWarn env now ("no provider for " <> textEncode provider)
-      when due $ logError ("badge poller: invoice " <> ref <> " names provider " <> textEncode provider <> ", which this build has none of")
-      pure Nothing
+    Nothing -> Nothing <$ warnNoProvider env now (textEncode provider) ref
+
+warnNoProvider :: PollerEnv -> UTCTime -> Text -> Text -> IO ()
+warnNoProvider env now provider ref = do
+  due <- dueToWarn env now ("no provider for " <> provider)
+  when due $ logError ("badge poller: invoice " <> ref <> " names provider " <> provider <> ", which this build has none of")
 
 rowIsCovered :: PollerEnv -> UTCTime -> (PaymentProvider, Text) -> IO Bool
 rowIsCovered env now row = isJust <$> coveringProvider env now row

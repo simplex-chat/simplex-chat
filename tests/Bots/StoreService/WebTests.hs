@@ -338,6 +338,7 @@ badgeWebTests = do
     it "gives up no invoice while every read fails, and counts no failure from a pass in which its provider answered nothing" testSweepCountsAnsweredFailures
     it "reads the invoice whose last failure is oldest first, so one unreadable invoice delays the others by one pass" testSweepReadsOldestFailureFirst
     it "sweeps around an overdue invoice whose provider this build does not know, leaving it open" testSweepSkipsAnUnknownProvider
+    it "warns once an hour of an unpaid invoice whose provider this build does not know" testUnpaidUnknownProviderWarnedHourly
     it "warns once per order while a cancel keeps failing" testSweepWarnsOncePerOrder
     it "cancels at most a pass-sized batch, leaving the rest for the next pass" testSweepCapsCancelsPerPass
     it "reports a skipped invoice once, and again only after the interval" testSkipWarningsAreRateLimited
@@ -3489,6 +3490,16 @@ testSweepSkipsAnUnknownProvider = bounded "sweep around an unknown provider" $ w
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
   independentStatus (weStore env) unknown `shouldReturn` Just "open"
   logged `shouldSatisfy` loggedError "store: overdue invoice p-unknown names provider nonsense"
+
+testUnpaidUnknownProviderWarnedHourly :: IO ()
+testUnpaidUnknownProviderWarnedHourly = bounded "unpaid invoice of an unknown provider" $ withStubPoller raceHold $ \_ poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  InvoiceId unknownId <- seedOpenRef (weStore env) 1 "p-unknown" (addUTCTime 3600 now)
+  withConnection (weStore env) $ \db ->
+    DB.execute db "UPDATE sx_badge_service_invoices SET provider = ? WHERE invoice_id = ?" ("nonsense" :: Text, unknownId)
+  logged <- capturingStderr (runOnePass poller >> runOnePass poller)
+  length (filter (loggedError "badge poller: invoice p-unknown names provider nonsense") (T.lines logged)) `shouldBe` 1
 
 testSweepKeepsFailuresBeyondTheCap :: IO ()
 testSweepKeepsFailuresBeyondTheCap = bounded "sweep keeps failures past the cap" $ withPayableStubPoller raceHold $ \ref poller env _ -> do

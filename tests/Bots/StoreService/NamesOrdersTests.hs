@@ -1581,7 +1581,7 @@ testProviderRefs = withServiceStore $ \st -> do
 testPollerQueries :: IO ()
 testPollerQueries = withServiceStore $ \st -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
-  unpaidRefs st (addUTCTime (-60) t0) `shouldReturn` [(PPCrypto, "ref-inv-r1")]
+  unpaidRefs st (addUTCTime (-60) t0) `shouldReturn` ([], [(PPCrypto, "ref-inv-r1")])
   map oiProviderRef <$> overdueInvoices st (addUTCTime 7200 t0) `shouldReturn` ["ref-inv-r1"]
   overdueInvoices st t0 `shouldReturn` []
 

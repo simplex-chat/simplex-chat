@@ -490,7 +490,7 @@ testHintPastWindow = withLate $ \l@Late {lStore = st} -> do
   now <- getCurrentTime
   let longAgo = addUTCTime (negate $ settleWindow + 3600) now
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_invoices SET created_at = ? WHERE invoice_id = 'inv-x'" (Only longAgo)
-  unpaidRefs st (addUTCTime (negate settleWindow) now) >>= (`shouldNotSatisfy` elem (PPCrypto, refOf "x"))
+  snd <$> unpaidRefs st (addUTCTime (negate settleWindow) now) >>= (`shouldNotSatisfy` elem (PPCrypto, refOf "x"))
   void $ readSignal l "x" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart)
   balanceOf st "x" `shouldReturn` Just (19200, 19200, 0)
 

@@ -144,11 +144,11 @@ runCensus ns v = forever $ do
   threadDelay censusInterval
 
 -- | Open invoices come as (provider, open, overdue).
-serviceText :: [PaymentProvider] -> [(Text, Int, Int)] -> BadgeCounts -> ProviderTimes -> Text
+serviceText :: [PaymentProvider] -> [(PaymentProvider, Int, Int)] -> BadgeCounts -> ProviderTimes -> Text
 serviceText providers invoices BadgeCounts {bcPurchases, bcSubscriptions, bcOpenCodes} ProviderTimes {ptListedOk, ptWebhookAt} =
   T.concat
-    [ gauge "simplex_store_invoices_open" "Open invoices by provider" [labelled "provider" p (value n) | (p, (n, _)) <- invoiceCounts],
-      gauge "simplex_store_invoices_overdue" "Open invoices past their expiry and its grace with no money received, which the poller expires once the provider answers" [labelled "provider" p (value n) | (p, (_, n)) <- invoiceCounts],
+    [ gauge "simplex_store_invoices_open" "Open invoices by provider" [labelled "provider" (textEncode p) (value n) | (p, (n, _)) <- invoiceCounts],
+      gauge "simplex_store_invoices_overdue" "Open invoices past their expiry and its grace with no money received, which the poller expires once the provider answers" [labelled "provider" (textEncode p) (value n) | (p, (_, n)) <- invoiceCounts],
       gauge "simplex_store_provider_list_ok_timestamp_seconds" "When the poller last listed the provider's open invoices successfully" [labelled "provider" (textEncode p) (timestamp t) | (p, t) <- M.toList ptListedOk],
       gauge "simplex_store_provider_webhook_timestamp_seconds" "When the provider last delivered a webhook that verified" [labelled "provider" (textEncode p) (timestamp t) | (p, t) <- M.toList ptWebhookAt],
       gauge "simplex_store_badges_purchases" "Badge purchases by status" [labelled "status" s (value n) | (s, n) <- withZeros purchaseStatuses (map (first textEncode) bcPurchases)],
@@ -156,7 +156,7 @@ serviceText providers invoices BadgeCounts {bcPurchases, bcSubscriptions, bcOpen
       gauge "simplex_store_badges_codes_open" "Badge codes paid or free, not revoked or expired, with redemptions left" (Just $ value bcOpenCodes)
     ]
   where
-    invoiceCounts = M.toList $ M.union (M.fromList [(p, (n, overdue)) | (p, n, overdue) <- invoices]) (M.fromList [(textEncode p, (0, 0)) | p <- providers])
+    invoiceCounts = M.toList $ M.union (M.fromList [(p, (n, overdue)) | (p, n, overdue) <- invoices]) (M.fromList [(p, (0, 0)) | p <- providers])
 
 withZeros :: [Text] -> [(Text, Int)] -> [(Text, Int)]
 withZeros known counts = M.toList $ M.union (M.fromList counts) (M.fromList [(k, 0) | k <- known])

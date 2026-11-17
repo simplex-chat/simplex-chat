@@ -50,6 +50,7 @@ import Control.Logger.Simple (logError)
 import Crypto.Random (getRandomBytes)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
+import Data.Either (partitionEithers)
 import Data.Int (Int64)
 import qualified Data.ByteString.Char8 as BC8
 import Data.Maybe (catMaybes)
@@ -563,16 +564,10 @@ getInvoice st (InvoiceId invId) = withConnection st $ \db -> selectInvoiceRow db
 getInvoiceByProviderRef :: DBStore -> Text -> IO (Maybe InvoiceRow)
 getInvoiceByProviderRef st ref = withConnection st $ \db -> selectInvoiceRow db qGetInvoiceByProviderRef ref
 
-unpaidRefs :: DBStore -> UTCTime -> IO [(PaymentProvider, Text)]
-unpaidRefs st since = do
-  rows <- withConnection st $ \db -> DB.query db qUnpaidRefs (Only since)
-  catMaybes <$> mapM unpaidRef rows
+unpaidRefs :: DBStore -> UTCTime -> IO ([(Text, Text)], [(PaymentProvider, Text)])
+unpaidRefs st since = partitionEithers . map unpaidRef <$> withConnection st (\db -> DB.query db qUnpaidRefs (Only since))
   where
-    unpaidRef (providerTxt, ref) = case textDecode providerTxt of
-      Just provider -> pure $ Just (provider, ref)
-      Nothing -> do
-        logError ("store: unpaid invoice " <> ref <> " names provider " <> providerTxt <> ", which this build does not know, so it is not read")
-        pure Nothing
+    unpaidRef (providerTxt, ref) = maybe (Left (providerTxt, ref)) (\provider -> Right (provider, ref)) (textDecode providerTxt)
 
 codeHashExists :: DBStore -> ByteString -> IO Bool
 codeHashExists st codeHash = withConnection st $ \db ->
@@ -598,7 +593,7 @@ overdueInvoices st cutoff = do
         pure Nothing
 
 -- | Open invoices by provider, each with how many of them the sweep would expire at this cutoff.
-openInvoiceCounts :: DB.Connection -> UTCTime -> IO [(Text, Int, Int)]
+openInvoiceCounts :: DB.Connection -> UTCTime -> IO [(PaymentProvider, Int, Int)]
 openInvoiceCounts db cutoff = DB.query db qOpenInvoiceCounts (Only (truncateToSecond cutoff))
 
 -- | Expires the invoice if it is still open, has received no money, and is past the cutoff.

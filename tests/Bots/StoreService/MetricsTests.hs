@@ -177,13 +177,13 @@ testServiceCounts = withServiceStore $ \st -> do
         "INSERT INTO sx_badge_service_badge_codes (code_hash, badge_type, months, code_payment_status, redeem_limit, redeem_count, revoked_at, expires_at, created_at) VALUES (?,?,?,?,?,?,?,?,?)"
         (Binary $ digestFixture n, "supporter" :: Text, 1 :: Int, paymentStatus, redeemLimit, redeemCount, revokedAt, expiresAt, t0)
   (invoices, badges) <- withTransaction st $ \db -> (,) <$> openInvoiceCounts db (at 10) <*> badgeCounts db (at 10)
-  invoices `shouldBe` [("crypto", 2, 1), ("stripe", 1, 0)]
+  invoices `shouldBe` [(PPCrypto, 2, 1), (PPStripe, 1, 0)]
   let times = ProviderTimes {ptListedOk = M.fromList [(PPCrypto, at 11), (PPStripe, at 12)], ptWebhookAt = M.fromList [(PPStripe, at 13)]}
   typedSamples (serviceText [PPCrypto, PPStripe] invoices badges times)
-    `shouldBe` [ "simplex_store_invoices_open{provider=\"crypto\"} 2",
-                 "simplex_store_invoices_open{provider=\"stripe\"} 1",
-                 "simplex_store_invoices_overdue{provider=\"crypto\"} 1",
+    `shouldBe` [ "simplex_store_invoices_open{provider=\"stripe\"} 1",
+                 "simplex_store_invoices_open{provider=\"crypto\"} 2",
                  "simplex_store_invoices_overdue{provider=\"stripe\"} 0",
+                 "simplex_store_invoices_overdue{provider=\"crypto\"} 1",
                  "simplex_store_provider_list_ok_timestamp_seconds{provider=\"stripe\"} " <> seconds (at 12),
                  "simplex_store_provider_list_ok_timestamp_seconds{provider=\"crypto\"} " <> seconds (at 11),
                  "simplex_store_provider_webhook_timestamp_seconds{provider=\"stripe\"} " <> seconds (at 13),
@@ -202,10 +202,10 @@ testServiceCounts = withServiceStore $ \st -> do
     openInvoiceCounts db (at 10)
   closed `shouldBe` []
   filter ("simplex_store_invoices_" `T.isPrefixOf`) (typedSamples (serviceText [PPCrypto, PPStripe] closed badges times))
-    `shouldBe` [ "simplex_store_invoices_open{provider=\"crypto\"} 0",
-                 "simplex_store_invoices_open{provider=\"stripe\"} 0",
-                 "simplex_store_invoices_overdue{provider=\"crypto\"} 0",
-                 "simplex_store_invoices_overdue{provider=\"stripe\"} 0"
+    `shouldBe` [ "simplex_store_invoices_open{provider=\"stripe\"} 0",
+                 "simplex_store_invoices_open{provider=\"crypto\"} 0",
+                 "simplex_store_invoices_overdue{provider=\"stripe\"} 0",
+                 "simplex_store_invoices_overdue{provider=\"crypto\"} 0"
                ]
   where
     -- open: the first two; then unpaid, used up, revoked, expired
