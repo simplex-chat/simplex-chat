@@ -728,9 +728,9 @@ final class ChatModel: ObservableObject {
                 default:
                     [cItem]
                 }
-                if case .rcvNew = cItem.meta.itemStatus {
-                    unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
-                }
+            }
+            if cInfo.groupChatScope() == nil, case .rcvNew = cItem.meta.itemStatus {
+                unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
             }
             // pop chat
             popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
@@ -1055,7 +1055,9 @@ final class ChatModel: ObservableObject {
             }
             chatIM.chatState.itemsRead(unreadItemIds, chatIM.reversedChatItems.reversed())
         }
-        self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count, unreadMentions: -mentionsRead)
+        if cInfo.groupChatScope() == nil {
+            self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count, unreadMentions: -mentionsRead)
+        }
     }
 
     private let unreadCollector = UnreadCollector()
@@ -1163,10 +1165,10 @@ final class ChatModel: ObservableObject {
     func changeUnreadCounter(_ chatIndex: Int, by count: Int, unreadMentions: Int) {
         let wasUnread = chats[chatIndex].unreadTag
         let stats = chats[chatIndex].chatStats
-        chats[chatIndex].chatStats.unreadCount = stats.unreadCount + count
-        chats[chatIndex].chatStats.unreadMentions = stats.unreadMentions + unreadMentions
+        chats[chatIndex].chatStats.unreadCount = max(0, stats.unreadCount + count)
+        chats[chatIndex].chatStats.unreadMentions = max(0, stats.unreadMentions + unreadMentions)
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
-        changeUnreadCounter(user: currentUser!, by: count)
+        changeUnreadCounter(user: currentUser!, by: chats[chatIndex].chatStats.unreadCount - stats.unreadCount)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
