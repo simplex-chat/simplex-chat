@@ -44,7 +44,6 @@ module StoreService.Names.Registration
     setTextWithSigCalldata,
     clearRecordsWithSigCalldata,
     multicallCalldata,
-    SignatureError (..),
     AddressError (..),
     OrderFields (..),
     AgreedTerms (..),
@@ -69,7 +68,7 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
-import Data.List (find, isInfixOf)
+import Data.List (find)
 import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -79,7 +78,7 @@ import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..))
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
-import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
+import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature, SignatureError, signatureFromHex)
 import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, anyCaseAddressP, checksumAddressP, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
@@ -328,12 +327,6 @@ tldLabel TLDSimplex = "simplex"
 tldLabel TLDTesting = "testing"
 tldLabel TLDWeb = ""
 
-data SignatureError
-  = SEFormat
-  | SERecoveryId
-  | SEHighS
-  deriving (Eq, Show)
-
 data AddressError
   = ADFormat
   | ADChecksum
@@ -367,12 +360,7 @@ communityTermsPrefix :: Text
 communityTermsPrefix = "community/"
 
 parseSignature :: Text -> Either SignatureError RecoverableSignature
-parseSignature = first signatureError . strDecode . encodeUtf8
-  where
-    signatureError e
-      | "v of 27 or 28" `isInfixOf` e = SERecoveryId
-      | "lower half" `isInfixOf` e = SEHighS
-      | otherwise = SEFormat
+parseSignature = signatureFromHex . encodeUtf8
 
 -- | EIP-191 @personal_sign@ digest.
 personalDigest :: ByteString -> ByteString
