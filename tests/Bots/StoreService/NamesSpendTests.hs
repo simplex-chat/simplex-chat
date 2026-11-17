@@ -36,6 +36,7 @@ import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Network.HTTP.Types (hContentType)
 import Network.Wai (Application)
 import qualified Network.Wai as Wai
+import Simplex.Chat.Badges.Code (nameLengthInt)
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -192,7 +193,7 @@ spendBody Ctx {cRandom} source SpendBody {sbOrder = o@Order {oKey, oPrice, oTime
   pure $
     KM.fromList $
       [ ("labelHash", J.String $ hex lh),
-        ("length", J.toJSON ofLength),
+        ("length", J.toJSON (nameLengthInt ofLength)),
         ("duration", J.toJSON ofDuration),
         ("commitment", J.String $ hex ofCommitment),
         ("sealed", J.String ofSealed),

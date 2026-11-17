@@ -76,14 +76,14 @@ codeRefusalTag = \case
 
 -- | Why the code cannot pay for the registration's name of this length. A code the registration
 -- already holds stays good for it until spent, even if revoked or expired since.
-codeRefusal :: UTCTime -> RegistrationId -> Int -> PrepaidCode -> Maybe CodeRefusal
+codeRefusal :: UTCTime -> RegistrationId -> NameLength -> PrepaidCode -> Maybe CodeRefusal
 codeRefusal now rid len code@PrepaidCode {pcReservedBy, pcSpentAt, pcMinLength}
   | isJust pcSpentAt = Just CRUsed
   | pcReservedBy == Just rid = covering
   | otherwise = stateRefusal (codeState now code) <|> covering
   where
     covering
-      | len < pcMinLength = Just CRNotCovering
+      | nameLengthInt len < pcMinLength = Just CRNotCovering
       | otherwise = Nothing
 
 stateRefusal :: CodeState -> Maybe CodeRefusal
@@ -96,7 +96,7 @@ stateRefusal = \case
   CSUnpaid -> Just CRPaymentPending
 
 -- | Why a conditional reservation of the code refused it, as the code reads now.
-reserveRefusal :: DB.Connection -> UTCTime -> CodeHash -> RegistrationId -> Int -> IO CodeRefusal
+reserveRefusal :: DB.Connection -> UTCTime -> CodeHash -> RegistrationId -> NameLength -> IO CodeRefusal
 reserveRefusal db now codeHash rid len = maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid len) <$> getPrepaidCode db codeHash
 
 readPrepaidCode :: DBStore -> NamePrepaidCode -> IO (Maybe PrepaidCode)
@@ -109,7 +109,7 @@ instance E.Exception ReservationRefused
 
 -- | In the code's turn and one transaction, the code is checked, the write runs, then the code is reserved for the
 -- registration, so the registration's row is locked before the code's. A refused reservation rolls the write back.
-reserveCode :: Turns -> DBStore -> UTCTime -> CodeHash -> RegistrationId -> Int -> (DB.Connection -> IO (Either e a)) -> IO (Either CodeRefusal (Either e a))
+reserveCode :: Turns -> DBStore -> UTCTime -> CodeHash -> RegistrationId -> NameLength -> (DB.Connection -> IO (Either e a)) -> IO (Either CodeRefusal (Either e a))
 reserveCode turns st now codeHash rid len write =
   withCodeTurn turns codeHash $ either (\(ReservationRefused refusal) -> Left refusal) id <$> E.try (withTransaction st reserve)
   where

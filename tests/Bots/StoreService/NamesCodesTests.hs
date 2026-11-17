@@ -5,6 +5,7 @@
 
 module Bots.StoreService.NamesCodesTests (namesCodesTests) where
 
+import Bots.StoreService.FakeEthNode (lengthOf)
 import Bots.StoreService.NamesStoreTests (order, ownerA, ownerB, placeCode, placePaid, usable)
 import Bots.StoreService.WebTests (answerOf, refusedWith, withServiceStore, withApp)
 import Control.Arrow ((&&&))
@@ -20,7 +21,7 @@ import Data.Text (Text)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
 import Network.HTTP.Client (Manager, Response, RequestBody (..), httpLbs, method, parseRequest, requestBody)
-import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, formatNameCode, nameLength, namePrepaidCodeHash, parseNameCode, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (NamePrepaidCode, formatNameCode, namePrepaidCodeHash, parseNameCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -131,9 +132,6 @@ coverage minLength years state = (200, Just $ KM.fromList [("minLength", J.toJSO
 newCode :: Int -> IO NamePrepaidCode
 newCode len = C.newRandom >>= (`randomNamePrepaidCode` lengthOf len)
 
-lengthOf :: Int -> NameLength
-lengthOf n = fromMaybe (error $ "name length " <> show n) $ nameLength n
-
 issueAs :: DBStore -> NamePrepaidCode -> NewPrepaidCode -> IO PrepaidCode
 issueAs st code new = withTransaction st $ \db -> do
   Right _ <- insertPrepaidCode db new {npcCodeHash = namePrepaidCodeHash code} tNow
@@ -186,9 +184,9 @@ testReserve = withOrders $ \turns st -> do
   code <- newCode 8
   PrepaidCode {pcCodeHash} <- issueAs st code usable
   let holderInWrite db = Right . (pcReservedBy =<<) <$> getPrepaidCode db pcCodeHash :: IO (Either Text (Maybe RegistrationId))
-  reserveCode turns st tNow pcCodeHash r1 8 holderInWrite `shouldReturn` Right (Right Nothing)
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 8) holderInWrite `shouldReturn` Right (Right Nothing)
   (pcReservedBy =<<) <$> withTransaction st (`getPrepaidCode` pcCodeHash) `shouldReturn` Just r1
-  reserveCode turns st tNow pcCodeHash r1 11 holderInWrite `shouldReturn` Right (Right (Just r1))
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 11) holderInWrite `shouldReturn` Right (Right (Just r1))
 
 testReserveRefusals :: IO ()
 testReserveRefusals = withOrders $ \turns st -> do
@@ -207,7 +205,7 @@ testReserveRefusals = withOrders $ \turns st -> do
   withTransaction st (\db -> spendLandedPrepaidCode db (pcId ownRow) (RegistrationId "r6") tNow) `shouldReturn` True
   fst <$> withTransaction st (\db -> revokePrepaidCode db (pcCodeHash revokedRow) tNow) `shouldReturn` Revoked (pcId revokedRow)
   wrote <- newIORef False
-  let reserveFor rid hash len = reserveCode turns st tNow hash rid len (\_ -> Right () <$ writeIORef wrote True :: IO (Either Text ()))
+  let reserveFor rid hash len = reserveCode turns st tNow hash rid (lengthOf len) (\_ -> Right () <$ writeIORef wrote True :: IO (Either Text ()))
       reserve = reserveFor r1
       rows = [reservedRow, usedRow, ownRow, revokedRow, expiredRow, unpaidRow, shortRow]
   rowsBefore <- mapM (readCode st) rows
@@ -234,18 +232,18 @@ testReserveHeld = withOrders $ \turns st -> do
   fst <$> withTransaction st (\db -> revokePrepaidCode db pcCodeHash tNow) `shouldReturn` Revoked (pcId row)
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (tNow, DB.Binary pcCodeHash)
   held <- readCode st row
-  reserveCode turns st tNow pcCodeHash r3 9 writeOk `shouldReturn` Right (Right ())
-  reserveCode turns st tNow pcCodeHash r3 7 writeOk `shouldReturn` Left CRNotCovering
-  reserveCode turns st tNow pcCodeHash r1 9 writeOk `shouldReturn` Left CRInvalid
+  reserveCode turns st tNow pcCodeHash r3 (lengthOf 9) writeOk `shouldReturn` Right (Right ())
+  reserveCode turns st tNow pcCodeHash r3 (lengthOf 7) writeOk `shouldReturn` Left CRNotCovering
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 9) writeOk `shouldReturn` Left CRInvalid
   readCode st row `shouldReturn` held
 
 testReserveWriteRefused :: IO ()
 testReserveWriteRefused = withOrders $ \turns st -> do
   code <- newCode 8
   row@PrepaidCode {pcCodeHash} <- issueAs st code usable
-  reserveCode turns st tNow pcCodeHash r1 8 (\_ -> pure (Left "registration_changed" :: Either Text ())) `shouldReturn` Right (Left "registration_changed")
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 8) (\_ -> pure (Left "registration_changed" :: Either Text ())) `shouldReturn` Right (Left "registration_changed")
   (pcReservedBy =<<) <$> readCode st row `shouldReturn` Nothing
-  reserveCode turns st tNow pcCodeHash r2 8 writeOk `shouldReturn` Right (Right ())
+  reserveCode turns st tNow pcCodeHash r2 (lengthOf 8) writeOk `shouldReturn` Right (Right ())
   (pcReservedBy =<<) <$> readCode st row `shouldReturn` Just r2
 
 -- | The write reserves the code for another registration, as a writer outside this process could between the check and the reservation.
@@ -254,7 +252,7 @@ testReserveRollsBack = withOrders $ \turns st -> do
   code <- newCode 8
   row@PrepaidCode {pcId, pcCodeHash} <- issueAs st code usable
   let takenMeanwhile db = Right () <$ reservePrepaidCode db pcId r2 tNow :: IO (Either Text ())
-  reserveCode turns st tNow pcCodeHash r1 8 takenMeanwhile `shouldReturn` Left CRReserved
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 8) takenMeanwhile `shouldReturn` Left CRReserved
   readCode st row `shouldReturn` Just row
 
 testConcurrentReserve :: IO ()
@@ -262,7 +260,7 @@ testConcurrentReserve = withOrders $ \turns st -> do
   code <- newCode 8
   row@PrepaidCode {pcCodeHash} <- issueAs st code usable
   let slowWrite _ = Right () <$ threadDelay 100000 :: IO (Either Text ())
-      reserveFor rid = reserveCode turns st tNow pcCodeHash rid 8 slowWrite
+      reserveFor rid = reserveCode turns st tNow pcCodeHash rid (lengthOf 8) slowWrite
   outcomes <- concurrently (reserveFor r1) (reserveFor r2)
   outcomes `shouldSatisfy` (`elem` [(Right (Right ()), Left CRReserved), (Left CRReserved, Right (Right ()))])
   holder <- (pcReservedBy =<<) <$> readCode st row

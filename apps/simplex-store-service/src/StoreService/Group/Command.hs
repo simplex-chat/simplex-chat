@@ -147,7 +147,7 @@ nameLengthP :: A.Parser NameLength
 nameLengthP =
   A.peekChar' >>= \case
     '0' -> fail "leading zero in the name length"
-    _ -> boundedInt lengthOpt >>= maybe (fail "length out of range") pure . nameLength
+    _ -> boundedDecimal 0 maxBound >>= maybe (fail "length out of range") pure . nameLength
 
 groupCommands :: [ChatBotCommand]
 groupCommands = map command [minBound .. maxBound]

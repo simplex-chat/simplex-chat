@@ -82,6 +82,7 @@ import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types (statusCode)
+import Simplex.Chat.Badges.Code (NameLength, nameLengthInt)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
@@ -239,13 +240,13 @@ textRecordAt ct tag node key = callAt ct tag (resolver ct) ("text(bytes32,string
 -- | Cents for a label of this length and these years. The oracle prices by length only,
 -- so a placeholder label of that length keeps the label from the RPC node. A price under the floor for these years is refused: a node
 -- answering one would sell names below it while the sponsor allowance pays their rent.
-chainPriceCents :: Contracts -> Int -> Int -> IO (Either ChainError USDCents)
+chainPriceCents :: Contracts -> NameLength -> Int -> IO (Either ChainError USDCents)
 chainPriceCents ct@Contracts {ctMinPriceCentsPerYear} len years = fmap (>>= checkFloor) . call ct (controller ct) ("rentPriceUSD(string,uint256)", args) $ \ret -> do
   base <- decodeUint256 ret
   let cents = base `div` attoUsdPerCent
   if cents <= toInteger (maxBound :: Int64) then Right (fromInteger cents) else Left AERange
   where
-    args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 $ toInteger years * secondsPerYear]
+    args = abiTuple [Dynamic $ abiBytes $ B.replicate (nameLengthInt len) 'a', Static $ uint256 $ toInteger years * secondsPerYear]
     checkFloor cents
       | toInteger cents >= toInteger ctMinPriceCentsPerYear * toInteger years = Right cents
       | otherwise = Left $ ChainUnavailable $ "rentPriceUSD answered " <> tshow (toInteger cents) <> " cents for " <> tshow years <> " years, under names.min_price_cents_per_year"

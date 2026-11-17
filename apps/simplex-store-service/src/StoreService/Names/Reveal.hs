@@ -25,6 +25,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
+import Simplex.Chat.Badges.Code (nameLengthInt)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
@@ -81,7 +82,7 @@ checkReveal cfg ct now r request = runExceptT $ do
 committedReveal :: NamesConfig -> NameRegistration -> RevealRequest -> Either RevealRefusal NameReveal
 committedReveal cfg@NamesConfig {nTLD} r@NameRegistration {nrLabelHash, nrLength, nrCommitment} RevealRequest {rqLabel, rqSignature, rqSecret, rqContactLinks, rqChannelLinks, rqNonce, rqDeadline, rqAcceptance} = do
   label <- first (const RVBadRequest) $ validLabel nTLD rqLabel
-  unless (labelHash label == nrLabelHash && T.length label == nrLength) $ Left RVBadRequest
+  unless (labelHash label == nrLabelHash && T.length label == nameLengthInt nrLength) $ Left RVBadRequest
   rvContactLink <- oneLink rqContactLinks
   rvChannelLink <- oneLink rqChannelLinks
   let rv = NameReveal {rvLabel = label, rvSecret = rqSecret, rvContactLink, rvChannelLink, rvNonce = rqNonce, rvDeadline = rqDeadline, rvSignature = rqSignature, rvAcceptance = rqAcceptance}

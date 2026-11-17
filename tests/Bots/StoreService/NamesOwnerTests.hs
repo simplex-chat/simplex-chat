@@ -52,6 +52,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (addUTCTime)
 import Data.Word (Word64, Word8)
+import Simplex.Chat.Badges.Code (nameLengthInt)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -236,7 +237,7 @@ linksRefusedPhase r = (committedPhase r) {nrLinksRefusedAt = Just orderTime}
 moveTo :: Ctx -> Text -> Int -> IO OrderFields
 moveTo Ctx {cClock} label n = do
   t <- readIORef cClock
-  pure OrderFields {ofLabelHash = labelHash label, ofLength = T.length label, ofDuration = yearsDuration 2 t, ofCommitment = commitmentOf n, ofSealed = "sealed-" <> label <> "-" <> tshow n, ofAgreedTerms = agreed plainTerms}
+  pure OrderFields {ofLabelHash = labelHash label, ofLength = lengthOf (T.length label), ofDuration = yearsDuration 2 t, ofCommitment = commitmentOf n, ofSealed = "sealed-" <> label <> "-" <> tshow n, ofAgreedTerms = agreed plainTerms}
 
 moveBody :: Ctx -> Secp256k1PrivateKey -> RegistrationId -> OrderFields -> IO J.Object
 moveBody ctx key rid fields = clockSeconds ctx >>= moveBodyAt ctx key rid fields
@@ -247,7 +248,7 @@ moveBodyAt ctx key rid fields@OrderFields {ofLabelHash = LabelHash lh, ofLength,
   pure $
     KM.fromList
       [ ("labelHash", J.String $ hex lh),
-        ("length", J.toJSON ofLength),
+        ("length", J.toJSON (nameLengthInt ofLength)),
         ("duration", J.toJSON ofDuration),
         ("commitment", J.String $ hex ofCommitment),
         ("sealed", J.String ofSealed),
@@ -546,8 +547,9 @@ testMoveOrderChecks :: IO ()
 testMoveOrderChecks = withOwner $ \ctx@Ctx {cNode} -> do
   r <- paidIn ctx aliceOrder failedPhase
   to <- moveTo ctx "alicebakers" 10
-  move ctx keyA r to {ofLength = 5} `shouldReturn` refusedWith 400 "invalid_name"
-  move ctx keyA r to {ofLength = 64} `shouldReturn` refusedWith 400 "invalid_name"
+  let withLength len = moveBody ctx keyA (nrId r) to >>= postMove ctx (nrId r) . KM.insert "length" (J.Number len)
+  withLength 5 `shouldReturn` refusedWith 400 "invalid_name"
+  withLength 64 `shouldReturn` refusedWith 400 "invalid_name"
   answerFree ctx "alicebakers"
   move ctx keyA r to {ofDuration = ofDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
   answerReserved ctx "alicebakers" 1
@@ -641,7 +643,7 @@ testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
   answerFree ctx "alicebakers"
   paying <- paidIn ctx (byB aliceOrder) failedPhase
   withTransaction cStore $ \db -> creditBalance db (nrId paying) 5000 orderTime
-  let fields = OrderFields {ofLabelHash = labelHash "dynamis", ofLength = 7, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf 3, ofSealed = "sealed-dynamis-3", ofAgreedTerms = agreed plainTerms}
+  let fields = OrderFields {ofLabelHash = labelHash "dynamis", ofLength = lengthOf 7, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf 3, ofSealed = "sealed-dynamis-3", ofAgreedTerms = agreed plainTerms}
       spend = Spend {spSource = nrId paying, spPrice = 20000, spBalance = 5000, spMethod = Just btc}
       new = NewRegistration {nrgId = RegistrationId "diff", nrgOwner = ownerA, nrgOrder = fields, nrgYears = 2, nrgOrderHash = orderHash ownerA fields (OTBalance spend)}
   withTransaction cStore $ \db -> do

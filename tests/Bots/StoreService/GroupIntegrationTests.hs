@@ -515,7 +515,7 @@ testRevokeTakesCodeTurn ps = do
     now <- getCurrentTime
     placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 now) `shouldReturn` Right ()
     reserved <- issueNameRaw cc "name 8"
-    reserving <- holdTurn $ \body -> reserveCode turns st now (namePrepaidCodeHash reserved) (RegistrationId "r1") 8 (\_ -> Right <$> body :: IO (Either Text ()))
+    reserving <- holdTurn $ \body -> reserveCode turns st now (namePrepaidCodeHash reserved) (RegistrationId "r1") (fromJust $ nameLength 8) (\_ -> Right <$> body :: IO (Either Text ()))
     revokeAfter reserved (releaseTurn reserving) `shouldReturn` Right "Revoked. The order holding it keeps it."
     finished (thAction reserving) `shouldReturn` Right (Right ())
 

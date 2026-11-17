@@ -20,7 +20,7 @@ import Data.Time.Clock (UTCTime)
 import qualified Data.Text as T
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
-import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
+import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Names.Record (USDCents)
@@ -75,8 +75,8 @@ searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond 
     unavailable why = logWarn ("GET /api/name: a chain read failed: " <> why) >> respond providerUnavailable
 
 -- | Nothing unless @length@ is a decimal integer in the label's bounds.
-queryLength :: Request -> Maybe Int
-queryLength req = join (lookup "length" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal minNameLength maxNameLength)
+queryLength :: Request -> Maybe NameLength
+queryLength req = join (lookup "length" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound) >>= nameLength
 
 searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> CommunityName -> Found -> IO Response
 searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh community = \case

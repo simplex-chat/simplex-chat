@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module StoreService.Web.Names.Orders
   ( Answer (..),
@@ -19,7 +20,7 @@ where
 import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
-import Control.Monad (forM_, unless)
+import Control.Monad (forM_, join, unless)
 import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
 import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
@@ -62,13 +63,11 @@ data InvoiceOrder = InvoiceOrder
   }
 
 parseInvoiceOrder :: J.Object -> Either OrderRefusal InvoiceOrder
-parseInvoiceOrder o = do
-  order@InvoiceOrder {ioRequest} <- parseBody "order" $ do
-    ioRequest <- parseOrderRequest o
-    ioMethod <- jsonField o "method" paymentMethod
-    ioPrice <- jsonField o "price" invoiceCents
-    pure InvoiceOrder {ioRequest, ioMethod, ioPrice}
-  order <$ checkLength (orFields ioRequest)
+parseInvoiceOrder o = join $ parseBody "order" $ do
+  request <- parseOrderRequest o
+  ioMethod <- jsonField o "method" paymentMethod
+  ioPrice <- jsonField o "price" invoiceCents
+  pure $ (\ioRequest -> InvoiceOrder {ioRequest, ioMethod, ioPrice}) <$> request
 
 paymentMethod :: J.Value -> JT.Parser ServicePaymentMethod
 paymentMethod = textWith $ maybe (Left "not a payment method") Right . textDecode
@@ -239,9 +238,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns} provide
             Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
 
 parseCodeOrder :: J.Object -> Either OrderRefusal (OrderRequest, Text)
-parseCodeOrder o = do
-  order@(req, _) <- parseBody "code order" $ (,) <$> parseOrderRequest o <*> o .: "code"
-  order <$ checkLength (orFields req)
+parseCodeOrder o = join $ parseBody "code order" $ (\request code -> (,code) <$> request) <$> parseOrderRequest o <*> o .: "code"
 
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
 -- under the new name's turn and then the balance's.
@@ -296,17 +293,15 @@ minCardChargeCents = 50
 
 -- | Every format check, the method present exactly for a difference, then the length's range.
 parseSpend :: RegistrationId -> J.Object -> Either OrderRefusal (SignedOrderFields, Spend)
-parseSpend spSource o = do
-  parsed@((fields, _, _), _) <- parseBody "spend" $ do
-    signed <- parseOrderFields o
-    spPrice <- cents "price"
-    spBalance <- cents "balance"
-    spMethod <- case (KM.member "method" o, spPrice > spBalance) of
-      (False, False) -> pure Nothing
-      (True, True) -> Just <$> jsonField o "method" paymentMethod
-      _ -> fail "the method is present exactly when the price is above the balance"
-    pure (signed, Spend {spSource, spPrice, spBalance, spMethod})
-  parsed <$ checkLength fields
+parseSpend spSource o = join $ parseBody "spend" $ do
+  signed <- parseOrderFields o
+  spPrice <- cents "price"
+  spBalance <- cents "balance"
+  spMethod <- case (KM.member "method" o, spPrice > spBalance) of
+    (False, False) -> pure Nothing
+    (True, True) -> Just <$> jsonField o "method" paymentMethod
+    _ -> fail "the method is present exactly when the price is above the balance"
+  pure $ (,Spend {spSource, spPrice, spBalance, spMethod}) <$> signed
   where
     -- positive, and within an invoice amount's range
     cents :: J.Key -> JT.Parser USDCents
