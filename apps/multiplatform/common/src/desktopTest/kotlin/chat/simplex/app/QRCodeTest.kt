@@ -1,5 +1,6 @@
 package chat.simplex.app
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
@@ -9,6 +10,8 @@ import androidx.compose.ui.test.runComposeUiTest
 import boofcv.alg.fiducial.qrcode.QrCode
 import chat.simplex.common.model.*
 import chat.simplex.common.views.chat.ChatInfoView
+import chat.simplex.common.views.helpers.LocalAppBarHandler
+import chat.simplex.common.views.helpers.rememberAppBarHandler
 import chat.simplex.common.views.newchat.qrCodeBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -57,7 +60,9 @@ class QRCodeTest {
     ChatModel.currentUser.value = User.sampleData
     runBlocking { withContext(Dispatchers.Main) { ChatModel.chatsContext.updateChat(null, ChatInfo.Direct(contact)) } }
     setContent {
-      ChatInfoView(ChatModel.chatsContext, ChatModel, contact, connectionStats = null, customUserProfile = null, localAlias = "", connectionCode = null, close = {}, onSearchClicked = {})
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        ChatInfoView(ChatModel.chatsContext, ChatModel, contact, connectionStats = null, customUserProfile = null, localAlias = "", connectionCode = null, close = {}, onSearchClicked = {})
+      }
     }
     test()
   }
