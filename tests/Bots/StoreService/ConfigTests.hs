@@ -785,7 +785,7 @@ testNamesDefaults = do
   let ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas} = nChain
   cRpcUrl `shouldBe` T.unpack rpcUrl
   cChainId `shouldBe` 31337
-  [cController, cSponsor, cBaseRegistrar, cResolver] `shouldBe` map (address . encodeUtf8) [controllerAddr, sponsorAddr, registrarAddr, resolverAddr]
+  (cController, cSponsor, cBaseRegistrar, cResolver) `shouldBe` (address (encodeUtf8 controllerAddr), address (encodeUtf8 sponsorAddr), address (encodeUtf8 registrarAddr), address (encodeUtf8 resolverAddr))
   Right expectedKey <- pure (mkPrivateKey (BA.pack [0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3, 0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x94, 0x4b, 0xac, 0xb4, 0x78, 0xcb, 0xed, 0x5e, 0xfc, 0xae, 0x78, 0x4d, 0x7b, 0xf4, 0xf2, 0xff, 0x80]))
   (cServiceKey == expectedKey) `shouldBe` True
   cConfirmations `shouldBe` 3
