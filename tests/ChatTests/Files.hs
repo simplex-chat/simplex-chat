@@ -47,6 +47,7 @@ chatFileTests = do
     it "send and receive message with file" runTestMessageWithFile
     it "send and receive image" testSendImage
     it "send image with generated preview" testSendImagePreview
+    it "send image with webp extension" testSendImageWebp
     it "sender marking chat item deleted cancels file" testSenderMarkItemDeleted
     it "files folder: send and receive image" testFilesFoldersSendImage
     it "files folder: sender deleted file" testFilesFoldersImageSndDelete -- TODO add test deleting during upload
@@ -194,6 +195,20 @@ testSendImagePreview =
       preview <- lastImagePreview bob 2
       T.length preview `shouldSatisfy` (<= 14000)
       preview `shouldSatisfy` ("data:image/jpg;base64," `T.isPrefixOf`)
+
+testSendImageWebp :: HasCallStack => TestParams -> IO ()
+testSendImageWebp =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> withXFTPServer alice $ do
+      connectUsers alice bob
+      let webpFile = tmpFile alice "logo.webp"
+      copyFile "./tests/fixtures/logo.jpg" webpFile
+      alice ##> ("/img @bob " <> webpFile)
+      alice <# ("/f @bob " <> webpFile)
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file logo.webp (31.3 KiB / 32080 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (logo.webp) for bob"
 
 lastImagePreview :: TestCC -> Int64 -> IO T.Text
 lastImagePreview TestCC {chatController = cc} contactId = do
