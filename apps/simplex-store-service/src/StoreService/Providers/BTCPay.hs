@@ -32,6 +32,7 @@ import StoreService.Providers
     Received (..),
     Uncreditable (..),
     settleWindow,
+    settlesOnReceipt,
     timeoutError,
     unitDecimals,
     WebhookError (..),
