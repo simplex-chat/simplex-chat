@@ -179,9 +179,11 @@ on_chat_list() {
   not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && not_on_screen "New chat" && on_screen "Search or paste SimpleX link"
 }
 
-# Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
+# Opens Settings from the user menu, behind the profile picture at the left of the toolbar, in the line of its title "Chats".
 open_settings() {
-  "$ui" click 27 730
+  local y
+  y=$(y_of Chats) || y=730
+  "$ui" click 27 "$y"
   "$ui" click-text "Settings" 10
 }
 
@@ -496,7 +498,7 @@ check_ui_updates() {
   local code
   code=$(sed -n 's/^desktop.version_code=//p' "$gradle_properties")
   "$ui" stop
-  sed -i -e 's/^AppUpdateChannel=.*/AppUpdateChannel=DISABLED/' -e 's/^OneHandUI=.*/OneHandUI=true/' "$settings"
+  sed -i 's/^AppUpdateChannel=.*/AppUpdateChannel=DISABLED/' "$settings"
   stage_ui_update $((code + 1))
   start_app
   check "the UI update of build $((code + 1)) runs after a restart" app_build $((code + 1))
