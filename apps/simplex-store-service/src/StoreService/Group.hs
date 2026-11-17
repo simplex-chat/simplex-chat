@@ -10,6 +10,7 @@ module StoreService.Group
     joinerAcceptance,
     runGroupLane,
     runCmd,
+    NamesOn,
     inertGroupConfig,
     GroupEvent (..),
     GroupAction (..),
@@ -321,7 +322,9 @@ runGroupCmd cc turns nameCodesPerDay_ runMoney groupId = \case
           | otherwise -> reply $ "At most " <> tshow nameCodesPerDay <> " name codes are issued in a day, " <> tshow issued <> " so far. Issue more with //issue name in --run-cli."
         Left _ -> reply issueFailedText
 
-runCmd :: CodeIssuer -> ChatController -> Turns -> Bool -> (MoneyCmd -> IO (Either Text Text)) -> GroupCmd -> IO (Either Text Text)
+type NamesOn = Bool
+
+runCmd :: CodeIssuer -> ChatController -> Turns -> NamesOn -> (MoneyCmd -> IO (Either Text Text)) -> GroupCmd -> IO (Either Text Text)
 runCmd source cc turns namesOn runMoney = \case
   GCIssue bt months uses status -> issued formatBadgeCode . fmap fst <$> issueOneCode cc bt months status uses
   GCBulk bt months count -> Right <$> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
