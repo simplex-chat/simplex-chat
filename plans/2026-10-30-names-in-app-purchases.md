@@ -251,7 +251,7 @@ The contracts: `simplex-network/ens-contracts` at 6ccb5c52, the commit the site'
 - **D7.** One registration encoder: the ABI encoding, the commitment and the `RegisterName` intent move into the chat library.
 - **D8.** The CLI first, then Kotlin, then Swift: each core pull request adds its `/name …` form and a terminal test; one Kotlin pass covers Android and desktop; Swift mirrors it.
 - **D9.** Every build registers a name with a code, pasted on one half-screen sheet, never scanned. Builds that can't pay in the app take the app's steps, then pay in the browser for a prepaid code the buyer never sees (row 4, Q24). In the codes release, iOS outside the US takes a code with no search. A site-bought name comes in with its name code (D11).
-- **D10.** Signing stays in the core: a library function takes an account index and uses the account key only inside it; named commands build and sign their own messages; no chat command signs text its caller gives.
+- **D10.** Signing stays in the core: a library function takes the device wallet's account index or a name code, derives the key and uses it only inside; named commands build and sign their own messages; no chat command signs text its caller gives.
 - **D11.** A name code is a wallet, and redeeming one is a transfer. The name code stays on the device and the app sends only that wallet's signatures; a prepaid code is sent as it is. The code's wallet offers the name with `approveWithSig`, and the app's account accepts the terms and takes it with `claimWithSig`: three transactions, each relayed by the service; then the recovery key owns the name. In stage 1 only a name that already opens this profile's address or channel moves.
 - **D12.** The recovery key comes after the search and before the checkout, the first time only. 1·4 creates it; a half-screen sheet over it, 1·4a, offers to save it; saving is optional; the words show only on Show; a quiet reminder until Copy or Show. Restore comes in stage 2, with its scan.
 - **D13.** The app signs each order with the terms the user ticked for it on the checkout: one tick, whose link opens a half-screen sheet with the SimpleX Names Conditions' obligation, a second for a community name, and Accept (the obligation on the checkout itself is Q25's alternative B), one link to one document, opened from the sheet as onboarding's conditions of use; the checkout's buttons stay off until ticked. The sheet's words are the Names Conditions' own; the tick's are the site's.
@@ -623,7 +623,7 @@ stateDiagram-v2
 ```
 
 - Signing is a library function (D10): EIP-191 for the order messages, 65 bytes with a low `s`; EIP-712 for the `RegisterName` intent, the terms acceptance under the `SimplexNamePolicy` domain (`acceptanceDigest`, `policyDomain`, `termsKind`), the record-edit intent and the transfer intents.
-- Each new wallet and name command is listed in `allowRemoteCommand` (`src/Simplex/Chat/Controller.hs:749-788` at `app-names` 9757c5e8b) as refused from a paired device, with a test.
+- Each new wallet and name command is listed in `allowRemoteCommand` (`src/Simplex/Chat/Controller.hs:749-788` at `app-names` 9757c5e8b) as refused from a paired device, with a test; each one that carries a code or a receipt is masked in the chat console's list by `obfuscated`, as the badge commands are (iOS `AppAPITypes.swift:680-687`, Kotlin `SimpleXAPI.kt:4656`, at `app-names` 9757c5e8b), and the words are sent with `log: false`.
 - The workers' progress events hold the order's id and phase only.
 
 | Command | CLI form | Does | Stage |
@@ -638,7 +638,7 @@ stateDiagram-v2
 | Try again, another name | `/_name retry`, `/_name other` | The order's next step | 1 |
 | Claim | `/_name claim` | The address or channel claims the registered name | 1 |
 | Redeem | `/_name redeem` | The code's wallet; its names read with `find` and the chain; the transfer, recorded before the first relay and resumed by its worker | 1 |
-| Import | `/_wallet import`, `/_wallet check word` | Restores from the 24 words; refused where a wallet exists; the counter set past the accounts found; one word checked against the list | 2 |
+| Import | `/_wallet import`, `/_wallet check words` | Restores from the 24 words; refused where a wallet exists; the counter set past the accounts found; one word or the 24 words checked, nothing stored | 2 |
 | Scan | `/_wallet find names` | Over ROWN, with a gap limit, a start index, progress events and a stop | 2 |
 | Set what it opens | `/_name set links` | The relayed record edit, and the edits left | 2 |
 
@@ -1155,7 +1155,7 @@ stateDiagram-v2
 - The check: the app's receipt named `receipt` from the first frame, then, on iOS 16 and later, the verified app transaction's environment `production` (`BadgeStore.swift:44, 148, 223-230` at master 225b3eef6).
 - A failed or unverified read of the app transaction keeps the receipt's answer, as for the badges.
 - App Store builds: 1·5's Pay and the store sheet; "Buy in browser" in the US storefront only (D18).
-- TestFlight, App Review and Xcode builds can't pay in the app: row 4 in every storefront, and a code, as the badges show their site button and code there (`BadgesSupportSimplexView.swift:50-74`).
+- TestFlight, App Review and Xcode builds can't pay in the app: row 4 in every storefront, and a code, as the badges show their site button and code there (`BadgesSupportSimplexView.swift:68-75` at `app-names` 9757c5e8b).
 - App Review's and TestFlight's purchases are test purchases, refused in production.
 - The name product is submitted with the payments release's version; App Review sees the browser path, as for the badges, whose products Apple approved in 7.1.1.
 - A sandbox run (section 8, by hand) uses P46's test switch, which shows the store purchase in a test build, false in every shipped build.
@@ -1626,7 +1626,7 @@ The other questions:
 - **Q1.** Keep a recovery key that finds no names on a new phone? → Yes, after a warning (6·3).
 - **Q2.** The word for your own name coming into the app? → "Move"; "transfer" for someone else.
 - **Q3.** ⚠ Legal. Must buyers be 18 or older, and does the app say so? → No line in the app: the Names Conditions set no age.
-- **Q4.** ⚠ Legal. The app's own purchase terms, besides the Names Conditions? → Yes: a purchase section in the Names Conditions, which have none today, its text approved by the lead; each later change to it is a new version in the registry, so a separate page outside it is the other option.- **Q5.** Decided. When iOS store payment is switched on? → In the payments release, shown only in App Store builds, as the badges (6.9).
+- **Q4.** ⚠ Legal. The app's own purchase terms, besides the Names Conditions? → Yes: a purchase section in the Names Conditions, which have none today, its text approved by the lead; each later change to it is a new version in the registry, so a separate page outside it is the other option. Until the lead answers, the Names Conditions stay without a purchase section, and nothing is built on one.- **Q5.** Decided. When iOS store payment is switched on? → In the payments release, shown only in App Store builds, as the badges (6.9).
 - **Q6.** ⚠ Privacy policy. Linking a payment to its name? → Register at once, fine for v1; `PRIVACY.md` states it (section 7, P57b), the screens don't.
 - **Q7.** Detail of Q24. What the invoice's link holds? → The code's hash alone; no order code shows (decided on 11 Nov).
 - **Q8.** Decided. Apple product type? → Consumable, as the badges' one-time products (6.2).
