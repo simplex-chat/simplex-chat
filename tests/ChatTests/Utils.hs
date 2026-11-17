@@ -1041,6 +1041,6 @@ stableJSON = \case
   v -> v
   where
     stableField k v
-      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs", "fileExpires"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId"] = J.String $ JK.toText k
+      | k `elem` ["createdAt", "updatedAt", "chatTs", "itemTs", "fileExpires", "userMemberProfileSentAt"] = J.String "1970-01-01T00:00:00Z"
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText"] = J.String $ JK.toText k
       | otherwise = stableJSON v
