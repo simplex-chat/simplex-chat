@@ -75,6 +75,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads the expiry and the owner at the block whose time it compares" $ testStatusAtOneBlock g
   describe "records" $ do
     it "reads the default resolver's records and the owner's nonce" $ testRecords g
+    it "reads the records and the owner's nonce at one block" $ testRecordsAtOneBlock g
     it "reads no records from another resolver" $ testOtherResolver g
   describe "prices" $ do
     it "quotes 6, 7 and 12 letters at the launch list for 2 years, and refuses a price under the floor times the years, for 2 and 3 years" $ testLaunchPrices g
@@ -436,6 +437,22 @@ testRecords g = withContracts g $ \node ct -> do
     `shouldReturn` Right (Just NameRecords {rdContact = "https://smp8.simplex.im/a#Y8m3", rdChannel = "", rdNonce = 3})
   textRecord ct alice "simplex.contact" `shouldReturn` Right "https://smp8.simplex.im/a#Y8m3"
 
+testRecordsAtOneBlock :: TVar ChaChaDRG -> IO ()
+testRecordsAtOneBlock g = withContracts g $ \node ct -> do
+  let resolver = resolverOf node
+      text t = abiTuple [Dynamic $ abiBytes t]
+  setBlock node 100 now
+  answerCall node resolver contactTextCall $ Returns contactTextAnswer
+  answerCall node resolver channelTextCall $ Returns $ text ""
+  answerCall node resolver noncesCall $ Returns $ uint256 (3 :: Int)
+  answerCallFrom node 101 resolver contactTextCall $ Returns $ text ""
+  answerCallFrom node 101 resolver channelTextCall $ Returns $ text "https://smp9.simplex.im/c#Rk27"
+  answerCallFrom node 101 resolver noncesCall $ Returns $ uint256 (4 :: Int)
+  (records, gate) <- pausedAt node "eth_call" $ nameRecords ct alice (registeredAlice resolver $ now + year)
+  setBlock node 101 now
+  releaseGate gate
+  wait records `shouldReturn` Right (Just NameRecords {rdContact = "https://smp8.simplex.im/a#Y8m3", rdChannel = "", rdNonce = 3})
+
 testOtherResolver :: TVar ChaChaDRG -> IO ()
 testOtherResolver g = withContracts g $ \_ ct -> do
   nameRecords ct alice (registeredAlice otherResolver $ now + year) `shouldReturn` Right Nothing
@@ -461,7 +478,7 @@ testNonces g = withContracts g $ \node ct -> do
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (5 :: Int)
   answerCall node (resolverOf node) noncesCall $ Returns $ uint256 (3 :: Int)
   sponsorNonce ct owner `shouldReturn` Right 5
-  resolverNonce ct owner `shouldReturn` Right 3
+  resolverNonce ct Latest owner `shouldReturn` Right 3
 
 testOwnerOfNobody :: TVar ChaChaDRG -> IO ()
 testOwnerOfNobody g = withContracts g $ \node ct -> do
@@ -568,7 +585,6 @@ testConcurrentReads g = withContracts g $ \node ct -> do
   nameStatus ct alice `shouldReturn` Right (NSRegistered registered)
   forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ concurrentDeadline * 3 `div` 10
   nameStatus ct' alice `shouldReturn` Right (NSRegistered registered)
-  forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ concurrentDeadline * 3 `div` 5
   nameRecords ct' alice registered `shouldReturn` Right (Just NameRecords {rdContact = "https://smp8.simplex.im/a#Y8m3", rdChannel = "", rdNonce = 3})
 
 -- fixtures

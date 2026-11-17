@@ -220,14 +220,17 @@ nameStatus ct@Contracts {ctChain} lh = withinDeadline ct "name status" $ runExce
 
 -- | Nothing for a name on another resolver contract, or none: the service reads no records from a contract it does not know.
 nameRecords :: Contracts -> LabelHash -> RegisteredName -> IO (Either ChainError (Maybe NameRecords))
-nameRecords ct lh RegisteredName {rnOwner, rnResolver}
+nameRecords ct@Contracts {ctChain} lh RegisteredName {rnOwner, rnResolver}
   | rnResolver /= resolver ct = pure $ Right Nothing
-  | otherwise =
-      withinDeadline ct "name records" $ together $
+  | otherwise = withinDeadline ct "name records" $ runExceptT $ do
+      Block {blockNumber} <- ExceptT $ latestBlock ctChain
+      let at = AtBlock blockNumber
+          record = concurrent . textRecordAt ct at (nodeArg ct lh) . recordKey
+      ExceptT $ together $
         (\rdContact rdChannel rdNonce -> Just NameRecords {rdContact, rdChannel, rdNonce})
-          <$> concurrent (textRecord ct lh $ recordKey LKContact)
-          <*> concurrent (textRecord ct lh $ recordKey LKChannel)
-          <*> concurrent (resolverNonce ct rnOwner)
+          <$> record LKContact
+          <*> record LKChannel
+          <*> concurrent (resolverNonce ct at rnOwner)
 
 -- | The default resolver's record, "" when unset.
 textRecord :: Contracts -> LabelHash -> ByteString -> IO (Either ChainError Text)
@@ -259,8 +262,8 @@ registrarFunds ct@Contracts {ctChain = c@ChainClient {ccRegistrar}} =
   where
     allowance = call ct (cSponsor $ chainConfig ct) ("registrarAllowance(address)", addressWord ccRegistrar) $ fmap (`div` attoUsdPerCent) . decodeUint256
 
-resolverNonce :: Contracts -> Address -> IO (Either ChainError Word64)
-resolverNonce ct owner = call ct (resolver ct) ("nonces(address)", addressWord owner) decodeWord64
+resolverNonce :: Contracts -> BlockTag -> Address -> IO (Either ChainError Word64)
+resolverNonce ct tag owner = callAt ct tag (resolver ct) ("nonces(address)", addressWord owner) decodeWord64
 
 -- | The policy holding the reserved and the community names, read once: as the service starts, or on first use after that
 -- read failed, found none set, or was forgotten as a register reverted TermsNotAccepted.

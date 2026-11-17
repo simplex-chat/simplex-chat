@@ -38,7 +38,7 @@ data StepFailure
 - A2-31: blockByNumber takes BlockTag; every tag is rendered by blockTagParam.
 - A2-32: the sender counts depth by confirmedNumber.
 - A2-34: Contracts exports `ctChain`; Worker, the census, Metrics and Records take the client from it. NamesEnv's chain client and Metrics' NamesSource go.
-- A2-20: nameStatus reads the latest block first and every call at it.
+- A2-20: nameStatus and nameRecords read the latest block first and every call at it; resolverNonce takes the block tag.
 - A2-21: a cached chain read is `(generation, Maybe a)`; forgetNamePolicy increments the generation, and a read completed after it is not kept.
 - A2-22: commitment ages are Word64; fromCommitment adds them to the commitment's time, Nothing past 2^64 seconds.
 - A2-19: `type ChainSeconds = Word64`, `chainTime` and `chainSeconds` in Chain, at every chain time and every signed deadline; RegistrarFunds built by record syntax.
@@ -175,6 +175,5 @@ graph LR
 ## Gaps recorded after the review
 
 - No test fails eth_chainId for a loopback terms link (review 9).
-- nameRecords reads the records and the nonce at latest, not at one block (review 23).
 - termsLinks reads, compares and writes its cache in separate steps, so concurrent reads at a changed link can each log it (review 30).
 - No test pins nameStatus's reservedNames read at the block (review 24).

@@ -194,7 +194,7 @@ chainAccepts rs@Records {rsContracts} EditRequest {erLabelHash, erChanges} signe
         NSRegistered RegisteredName {rnOwner, rnResolver}
           | rnOwner /= signer -> refused "the signer does not own the name"
           | rnResolver /= resolver rs -> refused "the name is on another resolver"
-          | otherwise -> (\nonce -> if nonce == firstNonce erChanges then Nothing else Just EAStaleNonce) <$> ExceptT (resolverNonce rsContracts signer)
+          | otherwise -> (\nonce -> if nonce == firstNonce erChanges then Nothing else Just EAStaleNonce) <$> ExceptT (resolverNonce rsContracts Latest signer)
         _ -> refused "the name is not registered"
   where
     refused = pure . Just . EARefused
@@ -336,7 +336,7 @@ judge rs@Records {rsContracts} RecordEdit {reId, reLabelHash, reOwner, reChanges
   case [h | (h, Just Receipt {receiptSuccess = True}) <- receipts] of
     h : _ -> pure $ Applied $ Just h
     [] -> do
-      nonce <- ExceptT $ resolverNonce rsContracts reOwner
+      nonce <- ExceptT $ resolverNonce rsContracts Latest reOwner
       if
         | nonce <= firstNonce reChanges -> pure NonceFree
         | nonce <= lastNonce reChanges -> pure NonceTaken
