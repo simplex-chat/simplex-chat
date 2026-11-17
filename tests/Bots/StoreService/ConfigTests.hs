@@ -50,7 +50,7 @@ badgeConfigTests = describe "store service config" $ do
   it "accepts a poll cadence and refuses a zero or negative one" testPollCadence
   it "accepts an expiry window and refuses a zero or negative one" testExpiryMinutes
   it "accepts a payment tolerance and refuses one that settles for a satoshi" testPaymentTolerance
-  it "refuses a host that would send the api key in the clear" testHostMustBeHttps
+  it "refuses a host that would send the api key in the clear or that the HTTP client cannot parse, in any case of the scheme" testHostMustBeHttps
   it "names a setting nothing reads, in every section it parses" testUnknownKeysAreNamed
   it "ignores a section nothing reads rather than refusing the file" testUnknownSectionStillBoots
   it "refuses a line that is neither a header, a setting nor a comment, naming its line" testMalformedLineRefused
@@ -376,11 +376,16 @@ testPaymentTolerance = do
     withTolerance key act = withIni (fullIni <> key) $ \p -> readServiceConfig p >>= act
 
 testHostMustBeHttps :: IO ()
-testHostMustBeHttps =
+testHostMustBeHttps = do
   withIni (T.replace "https://" "http://" fullIni) $ \p ->
     readServiceConfig p >>= \r -> case r of
       Left e -> e `shouldContain` "https"
       Right _ -> expectationFailure "an http host carries the api key in the clear"
+  parseIni (withHost "https://btcpay.example.org:port") `shouldReturn` Left "btcpay.host must be an absolute https URL"
+  Right ServiceConfig {btcpay = Just BTCPayConfig {bHost}} <- parseIni (withHost "HTTPS://btcpay.example.org")
+  bHost `shouldBe` "HTTPS://btcpay.example.org"
+  where
+    withHost host = T.replace "host = https://btcpay.example.org" ("host = " <> host) fullIni
 
 -- A real 32-byte base64url secret, as `simplex-chat badge keygen` prints it.
 issuerSecret :: T.Text
@@ -713,7 +718,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a bad or wrongly checksummed contract address, naming the key" testNamesBadAddress
   it "refuses a bad service key without quoting it" testNamesBadServiceKey
   it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
-  it "takes an http rpc_url only to a node on loopback, any other only as https" testNamesRpcUrlHttps
+  it "takes an http rpc_url only to a node on loopback, any other only as https, in any case of the scheme, and refuses one the HTTP client cannot parse" testNamesRpcUrlHttps
   it "refuses a [names] or [chain] setting nothing reads, terms_version among them, naming each" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
   it "reads record_edits_per_year as a known setting, 3 when absent, and refuses a value outside 1-100" testNamesRecordEdits
@@ -905,10 +910,10 @@ testNamesBadServiceKey = do
 
 testNamesRpcUrlHttps :: IO ()
 testNamesRpcUrlHttps = do
-  forM_ ["https://eth.example.org/v2/rpc-token-value", "http://127.0.0.1:8545", "http://[::1]:8545", "http://LOCALHOST:8545/"] $ \url -> do
+  forM_ ["https://eth.example.org/v2/rpc-token-value", "http://127.0.0.1:8545", "http://[::1]:8545", "http://LOCALHOST:8545/", "HTTPS://eth.example.org/v2/rpc-token-value", "HTTP://127.0.0.1:8545"] $ \url -> do
     ChainConfig {cRpcUrl} <- nChain <$> parsedNames namesSection (withRpcUrl url)
     cRpcUrl `shouldBe` T.unpack url
-  forM_ ["http://eth.example.org/v2/rpc-token-value", "http://127.0.0.1.example.org:8545", "http://localhost@eth.example.org/rpc-token-value", "http://10.0.0.5:8545"] $ \url -> do
+  forM_ ["http://eth.example.org/v2/rpc-token-value", "http://127.0.0.1.example.org:8545", "http://localhost@eth.example.org/rpc-token-value", "http://10.0.0.5:8545", "https://eth.example.org:port/v2/rpc-token-value"] $ \url -> do
     e <- namesRefusal namesSection (withRpcUrl url)
     e `shouldBe` rpcUrlRefusal
     e `shouldNotContain` "rpc-token-value"
