@@ -28,15 +28,20 @@ private const val MAX_IMAGE_DIMENSION = 4320
 private const val MAX_PREVIEW_DIMENSION = 512
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap =
-  base64BitmapCache.getOrPut(base64ImageString) {
-    try {
-      readBase64Image(base64ImageString) { imageBytes, options, _ ->
-        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options).asImageBitmap()
-      } ?: errorImageBitmap
-    } catch (e: Exception) {
-      Log.e(TAG, "base64ToBitmap error: $e")
-      errorImageBitmap
+  try {
+    base64BitmapCache.getOrPut(base64ImageString) {
+      try {
+        readBase64Image(base64ImageString) { imageBytes, options, _ ->
+          BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options).asImageBitmap()
+        } ?: errorImageBitmap
+      } catch (e: Exception) {
+        Log.e(TAG, "base64ToBitmap error: $e")
+        errorImageBitmap
+      }
     }
+  } catch (e: Error) {
+    Log.e(TAG, "base64ToBitmap error: $e")
+    errorImageBitmap
   }
 
 actual fun base64BitmapSize(base64ImageString: String): IntSize? =
