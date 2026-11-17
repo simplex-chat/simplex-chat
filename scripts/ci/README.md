@@ -47,7 +47,7 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   - `cabal build -j --enable-tests --ghc-options=-O0` (step "Build CLI");
   - the badge service web app, `npm ci` and `npm run build` in apps/simplex-badge-service/web with Node.js 22, for the test "serves the built web app" (step "Build badge web app for tests");
   - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed;
-  - step "Check generated files": it fails if a test changed a tracked file, and uploads the change as artifact `generated-files-<job>`. The tests named "verify and overwrite" overwrite their files (schema dumps, query plans, API docs), so a stale file fails here even when the test passes on retry.
+  - step "Check generated files": it fails if a test changed a tracked file, and uploads the change as artifact `generated-files-<job>`. The tests "verify and overwrite schema dump", "verify and overwrite query plans" and the "generate ..." tests of the API docs overwrite their files, so a stale file fails here even when the test passes on retry.
 - CI, in test-postgres, except on stable and v* tags:
   - the Docker image and dependency cache of build-linux, and its own build directory cache `dist-postgres-<target>`;
   - simplex-chat-test built with `--constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres'` at -O0 (step "Build tests");
