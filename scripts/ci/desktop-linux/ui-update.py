@@ -11,6 +11,7 @@ from pathlib import Path
 
 OWN_CLASSES = ("chat/simplex/desktop/MainKt.class", "chat/simplex/common/BuildConfigCommon.class")
 JAR_CONTENT_HASH = re.compile(r"(-[0-9a-f]{16,32})?\.jar$")
+CLASSPATH_ENTRY = re.compile(r"app\.classpath=\$APPDIR[/\\]+(.+)")
 
 
 def own(jar: Path) -> bool:
@@ -22,8 +23,8 @@ def base(app: Path) -> str:
     jars = app / "lib/app"
     core_hash = (jars / "resources/core-hash").read_text().strip()
     cfg = next(jars.glob("*.cfg")).read_text().splitlines()
-    names = [line.rsplit("/", 1)[-1] for line in cfg if line.startswith("app.classpath=")]
-    dependencies = sorted(JAR_CONTENT_HASH.sub("", name) for name in names if not own(jars / name))
+    classpath = [jars.joinpath(*re.split(r"[/\\]+", m[1])) for line in cfg if (m := CLASSPATH_ENTRY.fullmatch(line))]
+    dependencies = sorted(JAR_CONTENT_HASH.sub("", jar.name) for jar in classpath if not own(jar))
     return hashlib.sha256("".join(f"{line}\n" for line in [core_hash, *dependencies]).encode()).hexdigest()
 
 
