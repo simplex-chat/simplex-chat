@@ -93,8 +93,9 @@ unitName = \case
 
 settlesOnReceipt :: CryptoCurrency -> Bool
 settlesOnReceipt = \case
+  CCBtc -> False
+  CCXmr -> False
   CCLn -> True
-  _ -> False
 
 -- The provider applies its own tolerance, so this cannot be recomputed from the amounts.
 data Funded = PaidInFull | PaidInPart
