@@ -666,17 +666,20 @@ testDirectQuoteReceivedContent =
       sentAt <- getCurrentTime
       let sendReply replyId quotedId quotedSent =
             agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange (Just $ SharedMsgId replyId) $ XMsgNew $
-              mcQuote QuotedMsg {msgRef = MsgRef {msgId = Just quotedId, sentAt, sent = quotedSent, memberId = Nothing}, content = MCText "quoted text"} (MCText "reply")
-      sendReply "reply_1" helloMsgId False
+              mcQuote QuotedMsg {msgRef = MsgRef {msgId = quotedId, sentAt, sent = quotedSent, memberId = Nothing}, content = MCText "quoted text"} (MCText "reply")
+      sendReply "reply_1" (Just helloMsgId) False
       alice <# "bob> > hello"
       alice <## "      reply"
-      sendReply "reply_2" (SharedMsgId "unknown") False
+      sendReply "reply_2" (Just $ SharedMsgId "unknown") False
       alice <# "bob> > quoted text"
       alice <## "      reply"
-      sendReply "reply_3" helloMsgId True
+      sendReply "reply_3" (Just helloMsgId) True
       alice <# "bob> > hello"
       alice <## "      reply"
-      alice #$> ("/_get chat @2 count=3", chat', [((0, "reply"), Just (1, "hello")), ((0, "reply"), Just (1, "quoted text")), ((0, "reply"), Just (1, "hello"))])
+      sendReply "reply_4" Nothing False
+      alice <# "bob> > quoted text"
+      alice <## "      reply"
+      alice #$> ("/_get chat @2 count=4", chat', [((0, "reply"), Just (1, "hello")), ((0, "reply"), Just (1, "quoted text")), ((0, "reply"), Just (1, "hello")), ((0, "reply"), Just (1, "quoted text"))])
 
 testDirectMessageUpdate :: HasCallStack => TestParams -> IO ()
 testDirectMessageUpdate =
