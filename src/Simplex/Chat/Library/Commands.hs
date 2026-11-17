@@ -4475,12 +4475,12 @@ processChatCommand cxt nm = \case
               let chatV = initialChatVersion
               gVar <- asks random
               subMode <- chatReadVar subscriptionMode
-              (relayMember, conn, groupRelay@GroupRelay {groupRelayId}) <- withGroupLock "addRelay" groupId $ do
+              (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+              (relayMember, conn, groupRelay@GroupRelay {groupRelayId}) <- deleteAgentConnectionOnError connId . withGroupLock "addRelay" groupId $ do
                 existingRelays <- withFastStore' $ \db -> getGroupRelays db gInfo
                 when (any (\GroupRelay {userChatRelay = UserChatRelay {chatRelayId = rId}} -> rId == chatRelayId) existingRelays) $
                   throwCmdError "relay is already in the group"
-                (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
-                deleteAgentConnectionOnError connId . withFastStore $ \db -> do
+                withFastStore $ \db -> do
                   relayMember <- createRelayForOwner db cxt gVar user gInfo relay
                   groupRelay <- createGroupRelayRecord db gInfo relayMember relay
                   conn <- createRelayConnection db cxt user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
