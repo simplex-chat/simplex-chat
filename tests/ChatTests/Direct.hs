@@ -810,8 +810,8 @@ testDirectMessageUpdatePrevItem ps = do
       eventsFixture "updates/direct-edit" events $ do
         bob #> "@alice hello"
         alice <# "bob> hello"
-        bob ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
-        bob <# "@alice [edited] hello there"
+        withCCTransaction bob (\db -> DB.query db "SELECT item_status FROM chat_items WHERE item_text = ?" (Only ("hello" :: String))) `shouldEventuallyReturn` [Only ("snd_rcvd ok complete" :: String)]
+        apiFixture "updates/update-response" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_update item @2 " <> itemId 1 <> " text hello there"]}
         alice <# "bob> [edited] hello there"
         bob #> "@alice how are you"
         alice <# "bob> how are you"
