@@ -7,10 +7,10 @@ module Simplex.Chat.Options.Postgres where
 
 import Control.Monad (void)
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isAlphaNum, isSpace)
 import Foreign.C.String
+import Network.HTTP.Types (urlDecode)
 import Options.Applicative
 import Numeric.Natural (Natural)
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
@@ -62,13 +62,11 @@ migrationBackupPathP = pure Nothing
 
 dbString :: ChatDbOpts -> String
 dbString ChatDbOpts {dbConnstr} = either (const "(unreadable connection string)") B.unpack $ A.parseOnly (redactedConnstrP <* A.endOfInput) (B.pack dbConnstr)
-
-redactedConnstrP :: A.Parser ByteString
-redactedConnstrP = uriP <|> keywordsP
   where
+    redactedConnstrP = uriP <|> keywordsP
     uriP = do
       scheme <- "postgresql://" <|> "postgres://"
-      authority <- A.takeWhile (\c -> c /= '/' && c /= '?')
+      authority <- (<>) <$> A.option "" ((<>) <$> A.takeWhile (\c -> c /= '@' && c /= '/') <*> "@") <*> A.takeWhile (\c -> c /= '/' && c /= '?')
       path <- A.takeWhile (/= '?')
       query_ <- optional (A.char '?' *> A.takeByteString)
       pure $ scheme <> maskedUserInfo authority <> path <> maybe "" (("?" <>) . B.intercalate "&" . map maskedParam . B.split '&') query_
@@ -77,7 +75,7 @@ redactedConnstrP = uriP <|> keywordsP
           (user, password) = B.break (== ':') userInfo
        in if B.null password then authority else user <> ":***@" <> hosts
     maskedParam param
-      | B.takeWhile (/= '=') param == "password" = "password=***"
+      | urlDecode False (B.takeWhile (/= '=') param) == "password" = "password=***"
       | otherwise = param
     keywordsP = B.unwords <$> (A.skipSpace *> A.many' (keywordP <* A.skipSpace))
     keywordP = do
