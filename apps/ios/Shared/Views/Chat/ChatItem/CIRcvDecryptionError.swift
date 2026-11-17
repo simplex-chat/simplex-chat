@@ -18,6 +18,7 @@ struct CIRcvDecryptionError: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     @Environment(\.showTimestamp) var showTimestamp: Bool
+    @Environment(\.terminalMessageColumn) private var column
     var msgDecryptError: MsgDecryptError
     var msgCount: UInt32
     var chatItem: ChatItem
@@ -110,6 +111,7 @@ struct CIRcvDecryptionError: View {
         }
         .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
         .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
+        .padding(.leading, inlineMeta == nil ? terminalPillStart(column) : 0)
     }
 
     private func basicDecryptionErrorItem(_ inlineMeta: CIMetaView?) -> some View {
