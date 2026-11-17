@@ -15,11 +15,12 @@ data RevertReason = RRWithoutData | RRNamed RevertName | RRUnnamed Text
 - RNWithoutData goes; `revertSignature` and `revertText` are total.
 - `decodeRevert`: empty data, a known selector, Error(string) by its message, any other selector in hex.
 - A node message without data: "execution reverted" alone is RRWithoutData; its suffix is RRUnnamed.
+- Data that is present but not hex: RRUnnamed with the node's message.
 - `revertReasonText :: RevertReason -> Maybe Text` renders the revert column and the answer's revert field.
 
 A2-33: requeue and the reveal's write fail on a refused write as a BrokenInvariant; only a changed version answers registration_changed.
 
-A2-37: `StepFailure` in Retry and Stalled, compared by Eq, rendered by `stepFailureText` only in the log line.
+A2-37: `StepFailure` in Retry and Stalled, compared by Eq, rendered only in follow's log line.
 
 ```haskell
 data StepFailure
@@ -36,19 +37,19 @@ data StepFailure
 
 - A2-31: blockByNumber takes BlockTag; every tag is rendered by blockTagParam.
 - A2-32: the sender counts depth by confirmedNumber.
-- A2-34: Contracts exports `ctChain`; Worker, the census, Metrics and Records take the client from it.
+- A2-34: Contracts exports `ctChain`; Worker, the census, Metrics and Records take the client from it. NamesEnv's chain client and Metrics' NamesSource go.
 - A2-20: nameStatus reads the latest block first and every call at it.
 - A2-21: a cached chain read is `(generation, Maybe a)`; forgetNamePolicy increments the generation, and a read completed after it is not kept.
-- A2-22: commitment ages are Word64; `revealWindow` adds them to the commitment's time, Nothing past 2^64 seconds.
-- A2-19: `type ChainSeconds = Word64`, `chainTime` and `chainSeconds` in Chain, at every chain time; RegistrarFunds built by record syntax.
+- A2-22: commitment ages are Word64; fromCommitment adds them to the commitment's time, Nothing past 2^64 seconds.
+- A2-19: `type ChainSeconds = Word64`, `chainTime` and `chainSeconds` in Chain, at every chain time and every signed deadline; RegistrarFunds built by record syntax.
 
 ## Transactions
 
 - A2-4: Eip1559Tx is the request type; TxRequest goes. The sender's fees are Integer, narrowed once into Word128 under the fee cap.
-- A2-5: one decoder, `signedTx`, under decodeSignedTx (newSender) and transactionSigner (the start check), one acceptance for both.
-- A2-25: `data TxSettlement = TSMinedAt Word64 | TSRevertedAt Word64 | TSDroppedTx` in Sender, produced once per hash in settle; recordTransactionOutcome keeps its arguments, and a hash whose row was not pending is logged.
-- A2-26: `data TxFor = TxRegistration RegistrationTx RegistrationId | TxEdit RecordEditId`, `data RegistrationTx = RTCommit | RTAccept | RTRegister` with TextEncoding, stored as the kind column's text; TxKind and the predicates go. withinSends and sendsUsedUp keep their rules on mined commits.
-- A2-3: simplexmq 5cb1893c on evgeny-simplex/simplexmq ep/usdcents-instances: `rlpP` (canonical RLP), `decodeEip1559Tx` and `eip1559SigningHash` beside signEip1559Tx; decodeSignedTx and transactionSigner call them.
+- A2-5: one decoder, simplexmq's `decodeEip1559Tx`, under decodeSignedTx (newSender) and transactionSigner (the start check), one acceptance for both.
+- A2-25: `data TxSettlement = TSMinedAt Word64 | TSRevertedAt Word64 | TSDroppedTx` in Store, the argument of recordTransactionOutcome, produced once per hash in settle; a hash whose row was not pending is logged.
+- A2-26: `data TxFor = TxRegistration RegistrationTx RegistrationId | TxEdit RecordEditId`, `data RegistrationTx = RTCommit | RTAccept | RTRegister` with TextEncoding. The stored kind is `data TxKind = TKRegistration RegistrationTx | TKEdit` with its field instances; the predicates go. withinSends and sendsUsedUp keep their rules on mined commits.
+- A2-3: simplexmq on evgeny-simplex/simplexmq ep/usdcents-instances: `rlpP` (canonical RLP), `decodeEip1559Tx` and `eip1559SigningHash` beside signEip1559Tx; decodeSignedTx and transactionSigner call them.
 
 ## Worker's judgment
 
@@ -82,10 +83,10 @@ A2-6: `type CommunityName = Bool` at every site of the terms kind, as AgreedTerm
 
 A2-7, A2-8, A2-35: the terms link is parsed once, where termsLinks reads it.
 
-- termsLinkParts is an attoparsec grammar.
-- `Terms {tmLink, tmHash, tmFetch :: Maybe (String, Maybe ByteString)}`; `termsOf :: Contracts -> Text -> IO (Either ChainError (Maybe Terms))` parses, with the loopback chain check; a failed chain id read fails the terms read.
-- termsLinks returns `(Maybe Terms, Maybe Terms)`, parses a link only when it differs from the one read before, and logs a link the service does not take then.
-- termsLinkAllowed goes; fetchTerms reads tmFetch; kindTerms moves beside termsLinks; logNamePolicy logs set terms only.
+- termsOf parses the link by a local attoparsec grammar, with the loopback chain check; a failed chain id read fails the terms read.
+- `Terms {tmLink, tmHash, tmFetch :: (String, Maybe ByteString)}`; `termsOf :: Contracts -> Text -> IO (Either ChainError (Maybe Terms))`. A link the service does not fetch gives no terms, so no acceptance of it is asked; TRLink goes.
+- termsLinks returns `(Maybe Terms, Maybe Terms)`, keeps each kind's link text with its terms, parses a link only when its text differs from the one read before, and logs a link the service does not take then.
+- termsLinkAllowed goes; fetchTerms reads tmFetch; kindTerms moves beside termsLinks.
 
 ```mermaid
 sequenceDiagram
@@ -103,7 +104,7 @@ sequenceDiagram
   end
 ```
 
-A2-38: dropped, as decisions-data.json `refined` proposes.
+A2-38: fetchText moves to the terms code in Contracts, its only caller's module; its result stays the tuple. Chain exports httpFailure.
 
 A2-36: namehash uses simplexmq's labelHash; `tldLabel` serves labelNode and the view's TLD.
 
@@ -113,8 +114,9 @@ A2-36: namehash uses simplexmq's labelHash; `tldLabel` serves labelNode and the 
 - A2-13: intentOf is the one builder of a Registration; committedRegistration builds the NameReveal.
 - A2-14: `checkReveal` returns the NameReveal its checks passed; the acceptance is required in the request and in NameReveal.
 - A2-15: toRegistration checks the 32-byte columns; verifyRegisterIntent's length check goes.
-- A2-16: `hexP` and `lowerHexP` in Abi read every 0x hash, the secret, the signature, the terms digest and AgreedTerms; Orders' `hexHash` and `hexSignature` serve the order and the reveal. The node's JSON-RPC data and quantities, the owner's address and the service key keep their any-case rules.
-- A2-17: simplexmq 5cb1893c exports `addressFromBytes` and `lowS`; parseSignature reads with deserializeSignature and lowS. SignatureError and AddressError stay.
+- A2-16: `hexP` and `lowerHexP` in Abi read every 0x hash, the secret, the signature, the service key, the terms digest and AgreedTerms; Orders' `hexHash` and `hexSignature` serve the order, the reveal and the find. The node's JSON-RPC data and quantities keep their any-case rule.
+- A2-17: simplexmq exports `addressFromBytes`, `anyCaseAddressP`, `checksumAddressP` and `lowS`. parseAnyCaseAddress and parseChecksumAddress call the two parsers, their failures mapped to ADFormat and ADChecksum; parseSignature reads with deserializeSignature and lowS. SignatureError and AddressError stay.
+- A2-12: a reveal that does not decode is logged with aeson's error.
 - A2-11: `withRegistrationTurn` and `withRegistrationTurns` in Turns read the order again in its name's turn; `type Moved = ()`. The reveal, Try again, the close and the move use them.
 
 ```mermaid
@@ -146,3 +148,12 @@ A2-27, A2-28: Census.hs goes; its code is in Contracts.
 ## Modules
 
 A2-29: after the other areas merge, Abi and Revert move into Chain, and Signatures with RegistrationId into Registration.
+
+## Gaps recorded after the review
+
+- No test fails eth_chainId for a loopback terms link (review 9).
+- RevealRefusal has no reason, so the intent's and the acceptance's refusals are logged as RVBadRequest (review 14).
+- natural reads the quantity's digits by a fold of its own, and its "over 256 bits" text is not shown (review 18).
+- nameRecords reads the records and the nonce at latest, not at one block (review 23).
+- termsLinks reads, compares and writes its cache in separate steps, so concurrent reads at a changed link can each log it (review 30).
+- No test pins nameStatus's reservedNames read at the block (review 24).
