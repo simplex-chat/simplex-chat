@@ -29,7 +29,7 @@ import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, co
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, refusedWith)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, refusedWith, statusOf)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, reg, t0, usable, write)
@@ -60,8 +60,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders, responseStatus)
-import Network.HTTP.Types.Status (statusCode)
+import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
 import Network.Wai.Handler.Warp (openFreePort)
 import Simplex.Chat.Badges (BadgeType (..))
@@ -287,7 +286,7 @@ testNamesBoot ps = do
     let request path = parseRequest $ "http://127.0.0.1:" <> show port <> path
         answer req = answerOf <$> httpLbs req mgr
     unknown <- request "/api/names/unknown"
-    statusCode . responseStatus <$> httpLbs unknown mgr `shouldReturn` 404
+    statusOf <$> httpLbs unknown mgr `shouldReturn` 404
     records <- request "/api/name/records"
     answer records {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
     register <- request "/api/name/register"
@@ -297,15 +296,15 @@ testNamesBoot ps = do
     terms <- request "/api/terms/0x12"
     answer terms `shouldReturn` refusedWith 400 "bad_request"
     termsPosted <- httpLbs terms {method = "POST"} mgr
-    (statusCode $ responseStatus termsPosted, lookup "Allow" $ responseHeaders termsPosted) `shouldBe` (405, Just "GET")
+    (statusOf termsPosted, lookup "Allow" $ responseHeaders termsPosted) `shouldBe` (405, Just "GET")
     registration <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g"
     answer registration `shouldReturn` refusedWith 404 "not_found"
     posted <- httpLbs registration {method = "POST"} mgr
-    (statusCode $ responseStatus posted, lookup "Allow" $ responseHeaders posted) `shouldBe` (405, Just "GET")
+    (statusOf posted, lookup "Allow" $ responseHeaders posted) `shouldBe` (405, Just "GET")
     found <- request "/api/registration/find"
     answer found {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
     foundByGet <- httpLbs found mgr
-    (statusCode $ responseStatus foundByGet, lookup "Allow" $ responseHeaders foundByGet) `shouldBe` (405, Just "POST")
+    (statusOf foundByGet, lookup "Allow" $ responseHeaders foundByGet) `shouldBe` (405, Just "POST")
     owned <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/name"
     answer owned {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
     coded <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/code"
@@ -313,7 +312,7 @@ testNamesBoot ps = do
     revealed <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/reveal"
     answer revealed {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 404 "not_found"
     revealedByGet <- httpLbs revealed mgr
-    (statusCode $ responseStatus revealedByGet, lookup "Allow" $ responseHeaders revealedByGet) `shouldBe` (405, Just "POST")
+    (statusOf revealedByGet, lookup "Allow" $ responseHeaders revealedByGet) `shouldBe` (405, Just "POST")
     spent <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend"
     -- formats are checked before the order, so only a well-formed body reaches the 404
     let spendBody =
@@ -331,11 +330,11 @@ testNamesBoot ps = do
             ]
     answer spent {method = "POST", requestBody = RequestBodyLBS $ J.encode spendBody} `shouldReturn` refusedWith 404 "not_found"
     spentByGet <- httpLbs spent mgr
-    (statusCode $ responseStatus spentByGet, lookup "Allow" $ responseHeaders spentByGet) `shouldBe` (405, Just "POST")
+    (statusOf spentByGet, lookup "Allow" $ responseHeaders spentByGet) `shouldBe` (405, Just "POST")
     retried <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/retry"
     answer retried {method = "POST"} `shouldReturn` refusedWith 404 "not_found"
     retriedByGet <- httpLbs retried mgr
-    (statusCode $ responseStatus retriedByGet, lookup "Allow" $ responseHeaders retriedByGet) `shouldBe` (405, Just "POST")
+    (statusOf retriedByGet, lookup "Allow" $ responseHeaders retriedByGet) `shouldBe` (405, Just "POST")
     -- each limit's routes share one client's minute, whatever they answer; a client of its own per limit
     let rid = "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g"
         limits =
@@ -351,7 +350,7 @@ testNamesBoot ps = do
       let from (m, path) = do
             req <- request path
             r <- httpLbs req {method = m, requestBody = RequestBodyLBS "{}", requestHeaders = [("X-Forwarded-For", fromString $ "203.0.113." <> show i)]} mgr
-            pure (limit, path, statusCode $ responseStatus r, isJust $ lookup "Retry-After" $ responseHeaders r)
+            pure (limit, path, statusOf r, isJust $ lookup "Retry-After" $ responseHeaders r)
       forM_ (take perMinute $ cycle routes) $ \route -> from route >>= \(_, path, status, _) -> (limit, path, status == 429) `shouldBe` (limit :: Text, path, False)
       forM_ routes $ \route@(_, path) -> from route `shouldReturn` (limit, path, 429, True)
     poll t >>= (`shouldSatisfy` isNothing)
@@ -373,7 +372,7 @@ testNamesBootCodesOnly ps = do
     posted "/api/name/register" "{}" `shouldReturn` refusedWith 400 "bad_request"
     posted "/api/code/check" "{}" `shouldReturn` refusedWith 400 "bad_request"
     badgesShell <- parseRequest ("http://127.0.0.1:" <> show port <> "/") >>= (`httpLbs` mgr)
-    (statusCode $ responseStatus badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)
+    (statusOf badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)
     config <- parseRequest ("http://127.0.0.1:" <> show port <> "/api/config") >>= (`httpLbs` mgr)
     answerOf config `shouldBe` (200, Just $ J.object ["mode" J..= ("codes" :: Text), "stripePublishableKey" J..= J.Null])
     poll t >>= (`shouldSatisfy` isNothing)
@@ -394,7 +393,7 @@ testNamesBootPriceFloor ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     mgr <- newManager defaultManagerSettings
     let searched = do
           req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/name/" <> T.unpack aliceHex <> "?length=11"
-          statusCode . responseStatus <$> httpLbs req mgr
+          statusOf <$> httpLbs req mgr
     searched `shouldReturn` 200
     answerCall node controller (rentPriceCall 11) $ Returns $ rentPriceAnswer 14999
     searched `shouldReturn` 503
