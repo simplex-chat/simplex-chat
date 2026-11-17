@@ -736,7 +736,9 @@ final class ChatModel: ObservableObject {
             popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
         } else {
             if cInfo.groupChatScope() == nil {
-                addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
+                let unread = cItem.isRcvNew ? 1 : 0
+                let mentions = cItem.isRcvNew && cItem.meta.userMention ? 1 : 0
+                addChat(Chat(chatInfo: cInfo, chatItems: [cItem], chatStats: ChatStats(unreadCount: unread, unreadMentions: mentions)))
             } else {
                 addChat(Chat(chatInfo: cInfo, chatItems: []))
             }

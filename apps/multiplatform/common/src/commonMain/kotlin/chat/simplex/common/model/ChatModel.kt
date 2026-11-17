@@ -623,7 +623,7 @@ object ChatModel {
         }
       } else {
         if (cInfo.groupChatScope() == null) {
-          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem), chatStats = Chat.ChatStats().withItemChange(null, cItem)))
         } else {
           addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = emptyList()))
         }
