@@ -1,9 +1,6 @@
 name: store-lightning-e2e
 
 on:
-  push:
-    branches:
-      - sh/lightning-e2e
   workflow_dispatch:
 
 env:
@@ -20,7 +17,7 @@ jobs:
     timeout-minutes: 150
     permissions:
       contents: read
-      packages: write
+      packages: read
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -68,10 +65,7 @@ jobs:
             GHC=${{ env.ghc }}
             USER_UID=${{ steps.ids.outputs.uid }}
             USER_GID=${{ steps.ids.outputs.gid }}
-          cache-from: |
-            type=registry,ref=${{ env.image_cache }}-${{ steps.week.outputs.week }}
-            type=registry,ref=${{ env.image_cache }}-lightning-e2e
-          cache-to: type=registry,ref=${{ env.image_cache }}-lightning-e2e,mode=max,ignore-error=true
+          cache-from: type=registry,ref=${{ env.image_cache }}-${{ steps.week.outputs.week }}
 
       - name: Start PostgreSQL
         shell: bash
