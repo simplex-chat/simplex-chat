@@ -113,6 +113,7 @@ chatDirectTests = do
     it "negotiate call" testNegotiateCall
     it "negotiate call between current and v1 clients" testNegotiateCallV1
     it "mark expired call invitation missed on restore" testExpireCallInvitation
+    it "mark call invitation missed when the caller ends the call" testMissedCall
   describe "maintenance mode" $ do
     it "stop chat stops all threads, start chat restarts them" testStopStartChat
 #if !defined(dbPostgres)
@@ -795,7 +796,9 @@ testDirectMessageUpdatePrevItem :: HasCallStack => TestParams -> IO ()
 testDirectMessageUpdatePrevItem ps = do
   updates <- newTVarIO []
   encoded <- newTVarIO []
+  events <- newTVarIO []
   let hook _ evt = do
+        recordItemEvent events evt
         case evt of
           Right e@CEvtChatItemUpdated {} -> atomically $ modifyTVar' encoded (<> [J.toJSON e])
           _ -> pure ()
@@ -805,21 +808,28 @@ testDirectMessageUpdatePrevItem ps = do
         pure evt
       itemText' :: ChatItem c d -> T.Text
       itemText' ChatItem {meta = CIMeta {itemText}} = itemText
-  withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "alice" aliceProfile $ \alice ->
+  withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} testOpts {markRead = False} "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       connectUsers alice bob
-      bob #> "@alice hello"
-      alice <# "bob> hello"
-      bob ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
-      bob <# "@alice [edited] hello there"
-      alice <# "bob> [edited] hello there"
+      eventsFixture "updates/direct-edit" events $ do
+        bob #> "@alice hello"
+        alice <# "bob> hello"
+        withCCTransaction bob (\db -> DB.query db "SELECT item_status FROM chat_items WHERE item_text = ?" (Only ("hello" :: String))) `shouldEventuallyReturn` [Only ("snd_rcvd ok complete" :: String)]
+        apiFixture "updates/update-response" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_update item @2 " <> itemId 1 <> " text hello there"]}
+        alice <# "bob> [edited] hello there"
+        bob #> "@alice how are you"
+        alice <# "bob> how are you"
+        bob ##> ("/_update item @2 " <> itemId 1 <> " text hello, alice")
+        bob <# "@alice [edited] hello, alice"
+        alice <# "bob> [edited] hello, alice"
       alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
-      bob ##> ("/_update item @2 " <> itemId 1 <> " text hello again")
-      bob <# "@alice [edited] hello again"
-      alice <# "bob> hello again"
+      eventsFixture "updates/direct-recreated" events $ do
+        bob ##> ("/_update item @2 " <> itemId 1 <> " text hello again")
+        bob <# "@alice [edited] hello again"
+        alice <# "bob> hello again"
       alice #$> ("/_get chat @2 count=1", chat, [(0, "hello again")])
-      readTVarIO updates `shouldReturn` [("hello there", "hello")]
-      [J.Object evt] <- readTVarIO encoded
+      readTVarIO updates `shouldReturn` [("hello there", "hello"), ("hello, alice", "hello there")]
+      J.Object evt : _ <- readTVarIO encoded
       KM.member "chatItemUpdate" evt `shouldBe` True
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
@@ -1539,6 +1549,20 @@ testExpireCallInvitation ps =
       bob <## "subscribed 1 connections on server localhost"
       M.member 2 <$> readTVarIO (currentCalls $ chatController bob) `shouldReturn` False
       callRowCount bob `shouldReturn` 0
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
+
+testMissedCall :: HasCallStack => TestParams -> IO ()
+testMissedCall ps = do
+  events <- newTVarIO []
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just $ \_ evt -> evt <$ recordItemEvent events evt}} testOpts {markRead = False} "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      eventsFixture "updates/missed-call" events $ do
+        inviteToCall alice bob
+        alice ##> "/_call end @2"
+        alice <## "ok"
+        bob <## "call with alice ended"
+        (length <$> readTVarIO events) `shouldEventuallyReturn` 2
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
 
 testStopStartChat :: HasCallStack => TestParams -> IO ()
