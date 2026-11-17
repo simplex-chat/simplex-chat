@@ -3166,9 +3166,6 @@ deleteAgentConnectionAsync' :: ConnId -> Bool -> CM ()
 deleteAgentConnectionAsync' acId waitDelivery = do
   withAgent (\a -> deleteConnectionAsync a waitDelivery acId) `catchAllErrors` eToView
 
-deleteAgentConnectionOnError :: ConnId -> CM a -> CM a
-deleteAgentConnectionOnError acId action = action `catchAllErrors` \e -> deleteAgentConnectionAsync acId >> throwError e
-
 deleteAgentConnectionsAsync :: [ConnId] -> CM ()
 deleteAgentConnectionsAsync acIds = deleteAgentConnectionsAsync' acIds False
 {-# INLINE deleteAgentConnectionsAsync #-}
