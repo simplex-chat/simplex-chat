@@ -146,14 +146,14 @@ class ImageDecodeBoundsTest {
 
   @Test
   fun testDecodeAcceptsSequentialJpegWithMetadataSegmentsOverMultiScanLimit() {
-    val headers = sequentialJpegHeaders(4096, 4097, scanComponents = 3)
+    val headers = sequentialJpegHeaders(4320, 4321, scanComponents = 3)
     val metadata = jpeg(
       *segment(0xE0, *"JFIF".map { it.code }.toIntArray(), 0, 1, 1, 0, 0, 1, 0, 1, 0, 0),
       *segment(0xE1, *"Exif".map { it.code }.toIntArray(), 0, 0),
       *segment(0xFE, *"comment".map { it.code }.toIntArray()),
       *segment(0xDD, 0, 0),
     )
-    assertEquals(1024, decodeBoundedBufferedImage(headers.copyOf(2) + metadata + headers.copyOfRange(2, headers.size), 1000).width)
+    assertEquals(1080, decodeBoundedBufferedImage(headers.copyOf(2) + metadata + headers.copyOfRange(2, headers.size), 1000).width)
   }
 
   @Test
