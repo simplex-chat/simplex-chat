@@ -1,0 +1,150 @@
+name: internal-release
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - apps/multiplatform/gradle.properties
+      - apps/ios/SimpleX.xcodeproj/project.pbxproj
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: internal-release-${{ github.ref }}
+
+jobs:
+  start:
+    name: Build numbers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      release: ${{ github.event_name == 'workflow_dispatch' || steps.raised.outputs.release == 'true' }}
+      testflight: ${{ steps.testflight.outputs.open }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Build numbers raised, version names kept
+        id: raised
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          git fetch -q --depth=1 origin "$BEFORE"
+          scripts/ci/internal-release/build-numbers.sh raised "$BEFORE" HEAD >> "$GITHUB_OUTPUT"
+
+      - name: TestFlight train of the marketing version
+        id: testflight
+        run: |
+          version=$(scripts/ci/internal-release/build-numbers.sh show HEAD | jq -r .ios.version_name)
+          released=$(curl -fsS --retry 3 "https://itunes.apple.com/lookup?bundleId=chat.simplex.app" | jq -r '.results[0].version // ""')
+          if [ "$version" != "$released" ] && [ "$(printf '%s\n' "$released" "$version" | sort -V | tail -n 1)" = "$version" ]; then
+            echo "open=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=TestFlight::$released is released in the App Store, which closes the TestFlight train of $version: the iOS upload waits for a higher MARKETING_VERSION"
+          fi
+
+  build:
+    name: Build
+    needs: start
+    if: needs.start.outputs.release == 'true'
+    uses: ./.github/workflows/build-apps.yml
+    with:
+      environment: internal-release
+    secrets: inherit
+
+  ios:
+    name: TestFlight
+    needs: [start, build]
+    if: needs.start.outputs.testflight == 'true'
+    runs-on: macos-26
+    timeout-minutes: 60
+    environment: internal-release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Use the release Xcode
+        uses: ./.github/actions/xcode
+
+      - name: Download the archive
+        uses: actions/download-artifact@v8
+        with:
+          name: ios-archive-unsigned
+          path: ${{ runner.temp }}/ios
+
+      - name: Export and upload
+        env:
+          IOS_DISTRIBUTION_CERTIFICATE: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE }}
+          IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+          IOS_PROFILE_APP: ${{ secrets.IOS_PROFILE_APP }}
+          IOS_PROFILE_NSE: ${{ secrets.IOS_PROFILE_NSE }}
+          IOS_PROFILE_SE: ${{ secrets.IOS_PROFILE_SE }}
+          APP_STORE_CONNECT_KEY: ${{ secrets.APP_STORE_CONNECT_KEY }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          unzip -q "$RUNNER_TEMP/ios/SimpleX.xcarchive.zip" -d "$RUNNER_TEMP/ios"
+          scripts/ci/internal-release/testflight.sh "$RUNNER_TEMP/ios/SimpleX.xcarchive"
+
+  android:
+    name: Google Play internal testing
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: internal-release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download the bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: android-bundle-unsigned
+          path: ${{ runner.temp }}/bundle
+
+      - name: Sign and upload
+        env:
+          ANDROID_UPLOAD_KEYSTORE: ${{ secrets.ANDROID_UPLOAD_KEYSTORE }}
+          ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
+        run: scripts/ci/internal-release/google-play.sh "$RUNNER_TEMP/bundle/simplex.aab"
+
+  publish:
+    name: simplex-chat-test release
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: internal-release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download the desktop apps
+        uses: actions/download-artifact@v8
+        with:
+          pattern: desktop-{ubuntu,macos,windows}-*
+          path: ${{ runner.temp }}/desktop
+          merge-multiple: true
+
+      - name: Download the APKs
+        uses: actions/download-artifact@v8
+        with:
+          pattern: android-{aarch64,armv7a}-unsigned
+          path: ${{ runner.temp }}/android
+          merge-multiple: true
+
+      - name: Sign the test APKs and publish
+        env:
+          ANDROID_TEST_KEYSTORE: ${{ secrets.ANDROID_TEST_KEYSTORE }}
+          ANDROID_TEST_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_TEST_KEYSTORE_PASSWORD }}
+          ANDROID_TEST_KEY_ALIAS: ${{ secrets.ANDROID_TEST_KEY_ALIAS }}
+          ANDROID_TEST_KEY_PASSWORD: ${{ secrets.ANDROID_TEST_KEY_PASSWORD }}
+          SIMPLEX_CHAT_TEST_TOKEN: ${{ secrets.SIMPLEX_CHAT_TEST_TOKEN }}
+        run: scripts/ci/internal-release/publish.sh "$RUNNER_TEMP/desktop" "$RUNNER_TEMP/android" "$RUNNER_TEMP/release"

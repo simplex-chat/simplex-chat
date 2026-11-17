@@ -1,0 +1,45 @@
+name: daily-bump
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: The branch whose build numbers are raised
+        type: string
+        default: master
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  bump:
+    name: Build numbers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      BRANCH: ${{ inputs.branch || 'master' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Raise the build numbers
+        id: bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          scripts/ci/internal-release/build-numbers.sh bump >> "$GITHUB_OUTPUT"
+
+      - name: Push and start the internal release
+        if: steps.bump.outputs.bumped == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git push origin "HEAD:$BRANCH"
+          gh workflow run internal-release.yml --ref "$BRANCH"

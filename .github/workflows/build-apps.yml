@@ -3,26 +3,37 @@ name: build-apps
 on:
   workflow_dispatch:
     inputs:
-      android:
+      android: &android
         description: Build the Android APKs
         type: boolean
         default: true
-      ios:
+      ios: &ios
         description: Build the iOS archive
         type: boolean
         default: true
-      linux:
+      linux: &linux
         description: Build the Linux CLI and desktop apps
         type: boolean
         default: true
-      macos:
+      macos: &macos
         description: Build the macOS CLI and desktop apps
         type: boolean
         default: true
-      windows:
+      windows: &windows
         description: Build the Windows CLI and desktop app
         type: boolean
         default: true
+  workflow_call:
+    inputs:
+      android: *android
+      ios: *ios
+      linux: *linux
+      macos: *macos
+      windows: *windows
+      environment:
+        description: The environment in which the macOS jobs sign and notarize the desktop apps; empty builds them unsigned
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -432,7 +443,7 @@ jobs:
       - name: Download the CLI
         uses: actions/download-artifact@v8
         with:
-          name: desktop-macos-aarch64-unsigned
+          name: desktop-macos-aarch64
           path: ${{ runner.temp }}/cli
 
       - name: Quantum resistant contact
@@ -586,6 +597,7 @@ jobs:
     needs: old-database
     if: inputs.macos
     runs-on: ${{ matrix.runner }}
+    environment: ${{ inputs.environment }}
     timeout-minutes: 240
     strategy:
       fail-fast: false
@@ -632,6 +644,10 @@ jobs:
           path: ${{ runner.temp }}/core
 
       - name: Build CLI, desktop app and libraries
+        env:
+          APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ inputs.environment && secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN || '' }}
+          APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ inputs.environment && secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID || '' }}
+          APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ inputs.environment && secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD || '' }}
         run: |
           python3 scripts/simplex-chat-build.py build desktop macos --out "$RUNNER_TEMP/out" \
             ${{ steps.core.outputs.found == 'true' && '--core "$RUNNER_TEMP/core/desktop-core.zip"' || '--core-out "$RUNNER_TEMP/core/desktop-core.zip"' }}
@@ -649,7 +665,7 @@ jobs:
       - name: Upload apps
         uses: actions/upload-artifact@v7
         with:
-          name: desktop-macos-${{ matrix.arch }}-unsigned
+          name: desktop-macos-${{ matrix.arch }}
           path: ${{ runner.temp }}/out
           compression-level: 0
           retention-days: 30

@@ -1,6 +1,6 @@
 # App builds for signing
 
-`.github/workflows/build-apps.yml` builds the Android and iOS apps of a commit without signing them and uploads them as artifacts, to be signed outside CI. No signing key or certificate reaches GitHub.
+`.github/workflows/build-apps.yml` builds the Android and iOS apps of a commit without signing them and uploads them as artifacts, to be signed outside CI or by `internal-release.yml` ([internal releases](../README.md#internal-releases)). Called by `internal-release.yml` with its environment, the macOS jobs sign and notarize the desktop apps with the Developer ID in that environment.
 
 Each job runs `scripts/simplex-chat-build.py build` (its code is the `scripts/simplex_build` package, tested with `python3 -m unittest discover -s scripts/simplex_build -t scripts`), the script that also reproduces releases ([docs/REPRODUCE.md](../../../docs/REPRODUCE.md)), so a reproduce run rebuilds an APK exactly as this workflow built it. The same commands build locally: `build apk <arch> --out <dir>`, `build aab --libs <dir> --out <dir>` with Docker, and `build xcarchive --art <simplex-chat-art> --out <dir>` on a Mac with Xcode and Nix.
 
@@ -17,7 +17,7 @@ Two tests cover the OpenSSL of the mobile apps' core beyond opening a database:
 
 ## Running it
 
-The workflow runs only when started by hand, on any branch: in the Actions tab, `build-apps` → Run workflow, or `gh workflow run build-apps.yml --ref <branch>`. A newer run on the same branch cancels the older one. Start it on master or a branch of master: armv7a is built from the same commit, which `stable` only supports once it carries the armv7a build of master.
+The workflow runs when `internal-release.yml` calls it (workflow_call), with the input `environment`, or when started by hand, on any branch: in the Actions tab, `build-apps` → Run workflow, or `gh workflow run build-apps.yml --ref <branch>`. A newer run on the same branch cancels the older one. Start it on master or a branch of master: armv7a is built from the same commit, which `stable` only supports once it carries the armv7a build of master.
 
 The inputs `android`, `ios`, `linux`, `macos` and `windows`, on by default, choose the jobs; a test job runs only when the jobs it needs ran.
 
