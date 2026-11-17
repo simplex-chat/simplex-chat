@@ -61,6 +61,7 @@ import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Functor ((<&>))
 import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
+import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
@@ -208,7 +209,7 @@ chainPriceCents :: Contracts -> Int -> Int -> IO (Either ChainError USDCents)
 chainPriceCents ct@Contracts {ctMinPriceCentsPerYear} len years = fmap (>>= checkFloor) . call ct (controller ct) ("rentPriceUSD(string,uint256)", args) $ \ret -> do
   base <- decodeUint256 ret
   let cents = base `div` attoUsdPerCent
-  if cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
+  if cents <= toInteger (maxBound :: Int64) then Right (fromInteger cents) else Left AERange
   where
     args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 $ toInteger years * secondsPerYear]
     checkFloor cents
