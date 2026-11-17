@@ -29,15 +29,14 @@ import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import StoreService.Config (ChainConfig (..), NamesConfig (..), boundedDecimal)
+import StoreService.Config (NamesConfig (..), boundedDecimal)
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Community (communityJSON, readableTerms, termsJSON, yearsFor)
 import StoreService.Names.Contracts
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (nameEditsLeft)
-import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink, tldLabel)
+import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink)
 import StoreService.Names.Store (isLabelRegistering)
-import StoreService.Store.Invoices (unixSeconds)
 import StoreService.Web.Http (HttpEnv, Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, rateLimited, readBoundedBody, searchSlot, termsUnavailable)
 import StoreService.Web.Names.Records (editsLeftJSON)
 import System.Timeout (timeout)
@@ -81,14 +80,10 @@ queryLength :: Request -> Maybe NameLength
 queryLength req = join (lookup "length" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound) >>= nameLength
 
 searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> CommunityName -> Found -> IO Response
-searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh community = \case
+searchAnswer cfg@NamesConfig {nYears, nRecordEditsPerYear} st ps clock lh community = \case
   FAvailable price readable ->
-    ok $
-      ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
-        <> ["resolver" .= cResolver, "sponsor" .= cSponsor]
-        <> chain
-        <> ["terms" .= termsJSON readable]
-  FRegistering -> ok ["status" .= ("registered" :: Text), "entities" .= ([] :: [Entity]), "tld" .= tldLabel nTLD]
+    ok ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "terms" .= termsJSON readable]
+  FRegistering -> ok ["status" .= ("registered" :: Text), "entities" .= ([] :: [Entity])]
   FReserved -> ok ["status" .= ("reserved" :: Text)]
   FRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt, rnGracePeriod} records_ -> do
     entities <- maybe (pure []) (recordEntities ps) records_
@@ -98,12 +93,9 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nCh
       ["status" .= ("registered" :: Text), "entities" .= entities, "records" .= (recordsJSON <$> records_)]
         <> ["owner" .= rnOwner, "resolver" .= rnResolver, "recordsNonce" .= (rdNonce <$> records_), "recordEdits" .= (editsLeftJSON <$> edits)]
         <> ["expiresAt" .= rnExpiresAt, "gracePeriod" .= rnGracePeriod]
-        <> chain
   where
     ok :: [JT.Pair] -> IO Response
     ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh community]
-    chain = ["chainId" .= cChainId, "tld" .= tldLabel nTLD]
-    termStart = unixSeconds nTermStart
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]
     editsLeft = clock >>= \now -> withTransaction st $ \db -> nameEditsLeft db nRecordEditsPerYear lh now
 

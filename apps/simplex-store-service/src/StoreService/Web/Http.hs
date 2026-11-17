@@ -292,7 +292,7 @@ hostKey KeyPrefix {kpOctets, kpGroups} = \case
 apiHeaders :: [Header]
 apiHeaders = [(hContentType, "application/json"), (hCacheControl, "no-store")]
 
-jsonResponse :: Status -> J.Value -> Response
+jsonResponse :: J.ToJSON a => Status -> a -> Response
 jsonResponse st = responseLBS st apiHeaders . J.encode
 
 jsonError :: Status -> Text -> Response

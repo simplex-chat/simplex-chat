@@ -1,7 +1,9 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module StoreService.Web.Server
   ( WebEnv (..),
@@ -17,11 +19,12 @@ module StoreService.Web.Server
 where
 
 import StoreService.Catalog (PricedOffer (..), priceOffer)
-import StoreService.Config (ListenerConfig (..), NamesConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
+import StoreService.Config (ChainConfig (..), ListenerConfig (..), NamesConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
+import StoreService.Names.Chain (ChainSeconds, chainSeconds)
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), jsonField, ordersEnv, textWith)
 import StoreService.Names.Phases (awaitChange)
-import StoreService.Names.Registration (RegistrationId)
+import StoreService.Names.Registration (RegistrationId, tldLabel)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
@@ -41,6 +44,7 @@ import Control.Monad (filterM, void, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as LB
@@ -53,7 +57,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8')
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
-import Data.Word (Word8)
+import Data.Word (Word64, Word8)
 import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status409, status413)
 import Network.Wai
 import qualified Network.Wai.Handler.Warp as Warp
@@ -62,11 +66,31 @@ import Simplex.Chat.Badges.Types (BadgeOfferId (..), BadgePriceId (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
+import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', raceAny_, tshow)
 import System.Directory (canonicalizePath, doesDirectoryExist, doesFileExist)
 import System.FilePath (pathSeparator, takeExtension, (</>))
+
+data SiteConfig = SiteConfig
+  { stripePublishableKey :: Maybe Text,
+    names :: Maybe NamesSite
+  }
+
+data NamesSite = NamesSite
+  { codesOnly :: Bool,
+    chainId :: Word64,
+    resolver :: Address,
+    sponsor :: Address,
+    tld :: Text,
+    termStart :: ChainSeconds
+  }
+
+$(JQ.deriveToJSON defaultJSON ''NamesSite)
+
+$(JQ.deriveToJSON J.defaultOptions ''SiteConfig)
 
 data WebEnv = WebEnv
   { weStore :: DBStore,
@@ -141,13 +165,16 @@ serveSite siteDir path respond =
     Nothing -> respond notFound
     Just (root, file) -> respond (responseFile status200 (staticHeaders root file) file Nothing)
 
--- | What the pages read at load: the names mode, which the badges site ignores, and the Stripe publishable key.
-siteConfig :: ServiceConfig -> J.Value
+-- | What the pages read at load: the Stripe publishable key, and what the names page needs of the deployment, which the badges site ignores.
+siteConfig :: ServiceConfig -> SiteConfig
 siteConfig ServiceConfig {names, stripe} =
-  J.object
-    [ "mode" .= (if maybe False nCodesOnly names then "codes" else "open" :: Text),
-      "stripePublishableKey" .= (sPublishableKey <$> stripe)
-    ]
+  SiteConfig
+    { stripePublishableKey = sPublishableKey <$> stripe,
+      names = namesSite <$> names
+    }
+  where
+    namesSite NamesConfig {nCodesOnly, nTLD, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} =
+      NamesSite {codesOnly = nCodesOnly, chainId = cChainId, resolver = cResolver, sponsor = cSponsor, tld = tldLabel nTLD, termStart = chainSeconds nTermStart}
 
 resolveInside :: FilePath -> [Text] -> IO (Maybe (FilePath, FilePath))
 resolveInside dir segments = either ioFailed id <$> E.try attempt

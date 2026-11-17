@@ -35,12 +35,12 @@ import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import StoreService.Config (ChainConfig (..), NamesConfig (..))
+import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (ChainError, ChainSeconds, Hex32 (..), TxHash (..), chainTime)
 import StoreService.Names.Community (AcceptanceAsked (..), communityJSON, currentAcceptance)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
-import StoreService.Names.Registration (AgreedTerms (..), RegistrationId (..), termsKindText, tldLabel)
+import StoreService.Names.Registration (AgreedTerms (..), RegistrationId (..), termsKindText)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), CommitStep (..), FailReason (..), HoldState (..), LateWait, NameRegistration (..), NameReveal (..), OrderPhase (..), commitTxOf, failedFrom, getBalance, getRegistration, heldBy, lateWait, namePhase, paymentBalance, paymentInvoice, phaseCommit, phaseRegisterTx)
 
 -- | The view's chain reads; a field whose read failed is null and named in unread.
@@ -64,10 +64,6 @@ data RegistrationView = RegistrationView
     vwOwner :: Address,
     vwCommitment :: Hex32,
     vwSealed :: Text,
-    vwResolver :: Address,
-    vwSponsor :: Address,
-    vwChainId :: Word64,
-    vwTld :: Text,
     vwYears :: Int,
     vwDuration :: Word64,
     vwPrice :: USDCents,
@@ -116,7 +112,7 @@ readViewChain ct NameRegistration {nrId = RegistrationId rid, nrPhase, nrOwner, 
     unread = ViewReads {vrIntentNonce = VRUnread, vrAcceptance = if isNothing nrReveal then VRUnread else VRNotAsked}
 
 toRegistrationView :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> ViewReads -> RegistrationView
-toRegistrationView cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrAcceptance} =
+toRegistrationView cfg r balance late ViewReads {vrIntentNonce, vrAcceptance} =
   RegistrationView
     { vwId = rid,
       vwVersion = nrVersion,
@@ -128,10 +124,6 @@ toRegistrationView cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResol
       vwOwner = nrOwner,
       vwCommitment = nrCommitment,
       vwSealed = nrSealed,
-      vwResolver = cResolver,
-      vwSponsor = cSponsor,
-      vwChainId = cChainId,
-      vwTld = tldLabel nTLD,
       vwYears = nrYears,
       vwDuration = nrDuration,
       vwPrice = nrPrice,

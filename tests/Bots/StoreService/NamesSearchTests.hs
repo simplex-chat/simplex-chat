@@ -197,15 +197,11 @@ ok = (200,) . Just . KM.fromList
 aliceHex :: Text
 aliceHex = "0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6"
 
--- viem: getAddress of the fake node's owner, default resolver, sponsor and another resolver
-ownerText, resolverText, sponsorText, otherResolverText :: Text
+-- viem: getAddress of the fake node's owner, default resolver and another resolver
+ownerText, resolverText, otherResolverText :: Text
 ownerText = "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73"
 resolverText = "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6"
-sponsorText = "0x9A676e781A523b5d0C0e43731313A708CB607508"
 otherResolverText = "0x4826533B4897376654Bb4d4AD88B7faFD0C98528"
-
-termStart :: Int
-termStart = 1798761600
 
 nameState :: FakeEthNode -> Integer -> Integer -> IO ()
 nameState node expires reason = do
@@ -239,11 +235,6 @@ availableAnswer price =
       "price" .= price,
       "currency" .= str "usd",
       "years" .= (2 :: Int),
-      "termStart" .= termStart,
-      "resolver" .= resolverText,
-      "sponsor" .= sponsorText,
-      "chainId" .= fakeChainId,
-      "tld" .= str "simplex",
       "community" .= J.Null,
       "terms" .= termsEntry fakeGeneralTermsText
     ]
@@ -260,8 +251,6 @@ registeredAnswer entities records resolver nonce =
       "recordEdits" .= if records == J.Null then J.Null else editsLeft 3 J.Null,
       "expiresAt" .= (now + year),
       "gracePeriod" .= gracePeriod,
-      "chainId" .= fakeChainId,
-      "tld" .= str "simplex",
       "community" .= J.Null
     ]
 
@@ -270,7 +259,7 @@ editsLeft left nextAt = J.object ["left" .= left, "nextAt" .= nextAt]
 
 reservedAnswer, registeringAnswer :: Answer
 reservedAnswer = ok ["status" .= str "reserved", "community" .= J.Null]
-registeringAnswer = ok ["status" .= str "registered", "entities" .= ([] :: [J.Value]), "tld" .= str "simplex", "community" .= J.Null]
+registeringAnswer = ok ["status" .= str "registered", "entities" .= ([] :: [J.Value]), "community" .= J.Null]
 
 recordsOf :: Text -> Text -> J.Value
 recordsOf contact channel = J.object ["contact" .= contact, "channel" .= channel]

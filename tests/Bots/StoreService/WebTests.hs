@@ -35,6 +35,7 @@ module Bots.StoreService.WebTests
     fieldOf,
     answerOf,
     refusedWith,
+    siteConfigJson,
     rcv,
     bounded,
     seedCheckoutCatalog,
@@ -63,7 +64,7 @@ import StoreService.Web.Http
 import StoreService.Web.Server
 import Bots.StoreService.BotTests (codeCounts, newPurchaseKeys)
 import Bots.StoreService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
-import Bots.StoreService.ConfigTests (chainSection, namesSection, parsedNames)
+import Bots.StoreService.ConfigTests (chainSection, namesSection, parsedNames, resolverAddr, sponsorAddr)
 import Bots.StoreService.FakeBTCPay
 import Bots.StoreService.FakeStripe (FakeStripe (..), fakeIntentStatus, setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
 import Control.Concurrent (forkIO, forkOn, getNumCapabilities, threadDelay)
@@ -280,7 +281,7 @@ badgeWebTests = do
     it "answers a handler exception with 500 internal, and keeps serving" testHandlerExceptionIsContained
     it "logs a handler exception as one service log record, never a bare line" testHandlerExceptionIsLogged
   describe "StoreService names: sites" $ do
-    it "answers GET /api/config on both ports with the names mode and the publishable key, never cached" testServesSiteConfig
+    it "answers GET /api/config on both ports with the publishable key and the names deployment, never cached" testServesSiteConfig
     it "serves both shells as built, whatever the mode and the key" testServesShellsAsBuilt
     it "serves each site on its own port only, whatever the Host, and the API on both" testEachPortServesItsSite
     it "listens on the badges port alone without the names site" testOneListenerWithoutTheNamesSite
@@ -1328,8 +1329,18 @@ namesWithCodesOnly on = parsedNames (namesSection <> ["codes_only = " <> if on t
 configOf :: WebClient -> IO (Int, Maybe ByteString, Maybe J.Value)
 configOf client = (\r -> (statusOf r, headerOf r hCacheControl, J.decode (responseBody r))) <$> webGet client "/api/config"
 
-siteConfigJson :: Text -> Maybe Text -> Maybe J.Value
-siteConfigJson mode key = Just $ J.object ["mode" J..= mode, "stripePublishableKey" J..= key]
+siteConfigJson :: Maybe Bool -> Maybe Text -> Maybe J.Value
+siteConfigJson codesOnly key = Just $ J.object ["stripePublishableKey" J..= key, "names" J..= (namesSiteJson <$> codesOnly)]
+  where
+    namesSiteJson on =
+      J.object
+        [ "codesOnly" J..= on,
+          "chainId" J..= (31337 :: Int),
+          "resolver" J..= resolverAddr,
+          "sponsor" J..= sponsorAddr,
+          "tld" J..= ("testing" :: Text),
+          "termStart" J..= (1798761600 :: Int)
+        ]
 
 testServesSiteConfig :: IO ()
 testServesSiteConfig = bounded "site config" $ do
@@ -1337,10 +1348,10 @@ testServesSiteConfig = bounded "site config" $ do
   open <- namesWithCodesOnly False
   let answers settings expected = withBothSitesAs settings $ \badges namesSite ->
         forM_ [badges, namesSite] $ \client -> configOf client `shouldReturn` (200, Just "no-store", expected)
-  answers (\cfg -> cfg {names = Just codesOnly}) (siteConfigJson "codes" Nothing)
-  answers (\cfg -> cfg {names = Just codesOnly, stripe = Just publishTestStripe}) (siteConfigJson "codes" (Just "pk_test_injected"))
-  answers (\cfg -> cfg {names = Just open, stripe = Just publishTestStripe}) (siteConfigJson "open" (Just "pk_test_injected"))
-  answers (\cfg -> cfg {names = Nothing}) (siteConfigJson "open" Nothing)
+  answers (\cfg -> cfg {names = Just codesOnly}) (siteConfigJson (Just True) Nothing)
+  answers (\cfg -> cfg {names = Just codesOnly, stripe = Just publishTestStripe}) (siteConfigJson (Just True) (Just "pk_test_injected"))
+  answers (\cfg -> cfg {names = Just open, stripe = Just publishTestStripe}) (siteConfigJson (Just False) (Just "pk_test_injected"))
+  answers (\cfg -> cfg {names = Nothing}) (siteConfigJson Nothing Nothing)
 
 testServesShellsAsBuilt :: IO ()
 testServesShellsAsBuilt = bounded "shells as built" $ do

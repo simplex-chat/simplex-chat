@@ -29,7 +29,7 @@ import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, co
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, refusedWith, statusOf)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, refusedWith, siteConfigJson, statusOf)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, reg, t0, usable, write)
@@ -374,7 +374,7 @@ testNamesBootCodesOnly ps = do
     badgesShell <- parseRequest ("http://127.0.0.1:" <> show port <> "/") >>= (`httpLbs` mgr)
     (statusOf badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)
     config <- parseRequest ("http://127.0.0.1:" <> show port <> "/api/config") >>= (`httpLbs` mgr)
-    answerOf config `shouldBe` (200, Just $ J.object ["mode" J..= ("codes" :: Text), "stripePublishableKey" J..= J.Null])
+    (statusOf config, J.decode $ responseBody config) `shouldBe` (200, siteConfigJson (Just True) Nothing)
     poll t >>= (`shouldSatisfy` isNothing)
 
 testNamesBootPriceFloor :: HasCallStack => TestParams -> IO ()
