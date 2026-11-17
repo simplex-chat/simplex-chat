@@ -236,7 +236,7 @@ It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OA
 
 ## Builds for signing
 
-`build-apps.yml`, started by hand or by `internal-release.yml`, builds the Android APKs, the Play bundle and the iOS archive of a commit without signing them, and uploads them as artifacts for signing outside CI: [details](build-apps/README.md).
+`build-apps.yml`, started by hand or by `internal-release.yml`, builds the Android APKs, the Play bundle and the iOS archive of a commit without signing them, and uploads them as artifacts, which are signed outside CI or by `internal-release.yml`: [details](build-apps/README.md).
 
 ## Internal releases
 
@@ -248,36 +248,37 @@ flowchart LR
   D -->|workflow_dispatch| R
   P[Person] -->|push: build numbers + 1| M
   M -->|push: every build number raised,<br>version names kept| R[internal-release.yml]
-  R --> B[build-apps.yml:<br>all apps built and tested]
-  B -->|approval 1, at the start| S[macOS apps signed and notarized]
-  B -->|approval 2, after the tests| I[TestFlight internal testing]
-  B -->|approval 2| A[Play internal track]
-  B -->|approval 2| T[simplex-chat-test release]
+  R --> B[build-apps.yml:<br>all apps built and tested,<br>macOS apps signed and notarized on master]
+  B -->|approval| I[TestFlight internal testing]
+  B -->|approval| A[Play internal track]
+  B -->|approval| T[simplex-chat-test release]
 ```
 
 ### Start
 
 | Workflow | Starts on | Does |
 |---|---|---|
-| `daily-bump.yml` | 04:00 UTC on the default branch, stable, once stable has the workflow<br>a manual run, input `branch`, default master | when the branch has commits after the last change of a build number: commits + 1 to `android.version_code` and `desktop.version_code` (apps/multiplatform/gradle.properties) and to every `CURRENT_PROJECT_VERSION` (apps/ios/SimpleX.xcodeproj/project.pbxproj), pushes with GITHUB_TOKEN, then starts `internal-release.yml` on the branch, as GitHub starts no workflow for that push |
-| `internal-release.yml` | a push to master that raises the three build numbers and keeps `android.version_name`, `desktop.version_name` and `MARKETING_VERSION`<br>a manual run | builds the commit with `build-apps.yml`, then signs and uploads the apps |
+| `daily-bump.yml` | 04:17 UTC<br>a manual run, input `branch`, default master | when the branch has commits after the last change of a build number: commits + 1 to `android.version_code` and `desktop.version_code` (apps/multiplatform/gradle.properties) and to every `CURRENT_PROJECT_VERSION` (apps/ios/SimpleX.xcodeproj/project.pbxproj), pushes with GITHUB_TOKEN, then starts `internal-release.yml` on the branch, as GitHub starts no workflow for that push |
+| `internal-release.yml` | a push to master that raises the three build numbers and keeps `android.version_name`, `desktop.version_name` and `MARKETING_VERSION`<br>a manual run | builds the commit with `build-apps.yml` (input `sign`), then signs and uploads the apps |
 
-`scripts/ci/internal-release/build-numbers.sh` reads, compares and raises the build numbers. A run waits while an earlier run of the branch is unfinished.
+GitHub runs a scheduled workflow only from the default branch, stable, and starts a manual run only of a workflow on the default branch or of one that has run before. So both workflow files are committed to stable too, when they are merged into master and at each change: the schedule runs stable's `daily-bump.yml`, which raises the build numbers of master with master's scripts.
+
+`scripts/ci/internal-release/build-numbers.sh` reads, compares and raises the build numbers. A run waits while an earlier run of the branch is unfinished (`queue: max`).
 
 ### Jobs
 
-Every job with secrets runs in the environment `internal-release`, and starts after a reviewer approves it: the macOS jobs when the build starts, the other three together when every build and smoke test has passed.
+On master, the macOS jobs of `build-apps.yml` sign and notarize the apps with the repository secrets of build.yml. The jobs `ios`, `android` and `publish` run in the environment `internal-release`, and start after a reviewer approves them, all three at once, when every build and smoke test has passed.
 
 | Job | Secrets | Result |
 |---|---|---|
-| `build`, `build-apps.yml` | the repository's `APPLE_SIMPLEX_*`, in the macOS jobs | every app, macOS apps signed with the Developer ID and notarized |
+| `build`, `build-apps.yml` | `APPLE_SIMPLEX_*` in the macOS jobs, on master<br>`SIMPLEX_ART_SSH_KEY` in the iOS job | every app; on master, the macOS apps signed with the Developer ID and notarized |
 | `ios` | `IOS_*`, `APP_STORE_CONNECT_*` | the archive exported with the Apple Distribution certificate and uploaded for internal testing only (`testFlightInternalTestingOnly`) |
-| `android` | `ANDROID_UPLOAD_*`, `GOOGLE_PLAY_SERVICE_ACCOUNT` | the Play bundle signed with the upload key and released to the internal track |
+| `android` | `ANDROID_UPLOAD_*`, `GOOGLE_PLAY_SERVICE_ACCOUNT` | the Play bundle signed with the upload key and released to the internal track; while a Play update is in review, the upload fails and the review continues (`changesInReviewBehavior=ERROR_IF_IN_REVIEW`) |
 | `publish` | `ANDROID_TEST_*`, `SIMPLEX_CHAT_TEST_TOKEN` | the test APKs signed as `simplex.apk` and `simplex-armv7a.apk`; in simplex-chat-test, a commit of `release.json` with the version names, the build numbers and the commit, and the release `<desktop.version_name>-<desktop.version_code>` with the desktop apps and the APKs |
 
 A step without its secrets skips with a notice, so that the workflow runs in a fork without keys. The `ios` job is skipped with a notice while `MARKETING_VERSION` is not above the version in the App Store, whose TestFlight train is closed.
 
-The msi version is `<major>.<minor>.<desktop.version_code>` (apps/multiplatform/desktop/build.gradle.kts): jpackage derives the msi's product code from its version, and Windows Installer refuses an msi whose product is installed from another msi. jpackage's msi removes an installed build of any other version, so a public msi also replaces an internal one.
+The msi version of every Windows build, internal and public, is `<major>.<minor>.<desktop.version_code>` (apps/multiplatform/desktop/build.gradle.kts), so that internal and public msi files share one increasing sequence. jpackage derives the msi's product code from its version, and Windows Installer refuses an msi whose product is installed from another msi. jpackage's msi removes an installed build of any other version, higher or lower.
 
 ### Setup
 
@@ -313,11 +314,14 @@ The msi version is `<major>.<minor>.<desktop.version_code>` (apps/multiplatform/
    | `SIMPLEX_CHAT_TEST_TOKEN` | a fine-grained token, resource owner simplex-chat, repository simplex-chat-test only, permission Contents read and write | `gh secret set SIMPLEX_CHAT_TEST_TOKEN --env internal-release` |
 
    The macOS jobs use the repository secrets `APPLE_SIMPLEX_SIGNING_KEYCHAIN`, `APPLE_SIMPLEX_NOTARIZATION_APPLE_ID` and `APPLE_SIMPLEX_NOTARIZATION_PASSWORD` of build.yml.
-3. In App Store Connect, a TestFlight internal group that receives new builds automatically; in Play Console, the internal testers list.
-4. In simplex-chat/simplex-chat-test, the rules of master and of tags allow the token's owner to push and to create tags.
+3. In App Store Connect, a TestFlight internal group that receives new builds automatically.
+4. In Google Cloud, the Google Play Developer API enabled in the project of the service account; in Play Console, Users and permissions, the service account invited with "Release apps to testing tracks" for chat.simplex.app, and the internal testers list.
+5. In simplex-chat/simplex-chat-test, the rules of master and of tags allow the token's owner to push and to create tags.
+6. On stable, `.github/workflows/daily-bump.yml` and `.github/workflows/internal-release.yml` as on master.
 
 ### Running by hand
 
 - `gh workflow run daily-bump.yml`: raises the build numbers of master and releases it.
-- `gh workflow run internal-release.yml --ref master`: releases master with its current build numbers, for example after a failed run.
-- In a fork, `gh workflow run daily-bump.yml --ref <branch> -f branch=<branch>` raises the build numbers of the branch and runs the release up to the signing steps, which print their notices.
+- `gh workflow run internal-release.yml --ref master`: releases master with its current build numbers.
+- A failed run: "Re-run failed jobs" on its page, which uses the run's builds; a new run builds again, and Google Play, TestFlight and simplex-chat-test refuse the build numbers and the tag of the uploads that succeeded.
+- In a fork, after a push run of each workflow on a branch, `gh workflow run daily-bump.yml --ref <branch> -f branch=<branch>` raises the build numbers of the branch and runs the release up to the signing steps, which print their notices.

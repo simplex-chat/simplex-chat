@@ -15,6 +15,7 @@ permissions:
 
 concurrency:
   group: internal-release-${{ github.ref }}
+  queue: max
 
 jobs:
   start:
@@ -45,7 +46,7 @@ jobs:
           if [ "$version" != "$released" ] && [ "$(printf '%s\n' "$released" "$version" | sort -V | tail -n 1)" = "$version" ]; then
             echo "open=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice title=TestFlight::$released is released in the App Store, which closes the TestFlight train of $version: the iOS upload waits for a higher MARKETING_VERSION"
+            echo "::notice title=TestFlight::the App Store has $released, so the TestFlight train of $version is closed: the iOS upload is skipped until MARKETING_VERSION is above $released"
           fi
 
   build:
@@ -54,7 +55,7 @@ jobs:
     if: needs.start.outputs.release == 'true'
     uses: ./.github/workflows/build-apps.yml
     with:
-      environment: internal-release
+      sign: true
     secrets: inherit
 
   ios:

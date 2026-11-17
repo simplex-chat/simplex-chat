@@ -30,17 +30,17 @@ on:
       linux: *linux
       macos: *macos
       windows: *windows
-      environment:
-        description: The environment in which the macOS jobs sign and notarize the desktop apps; empty builds them unsigned
-        type: string
-        default: ""
+      sign:
+        description: Sign and notarize the macOS apps, on master only
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: build-apps-${{ github.ref }}
+  group: build-apps-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -597,7 +597,6 @@ jobs:
     needs: old-database
     if: inputs.macos
     runs-on: ${{ matrix.runner }}
-    environment: ${{ inputs.environment }}
     timeout-minutes: 240
     strategy:
       fail-fast: false
@@ -645,9 +644,9 @@ jobs:
 
       - name: Build CLI, desktop app and libraries
         env:
-          APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ inputs.environment && secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN || '' }}
-          APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ inputs.environment && secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID || '' }}
-          APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ inputs.environment && secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD || '' }}
+          APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ inputs.sign && github.ref == 'refs/heads/master' && secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN || '' }}
+          APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ inputs.sign && github.ref == 'refs/heads/master' && secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID || '' }}
+          APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ inputs.sign && github.ref == 'refs/heads/master' && secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD || '' }}
         run: |
           python3 scripts/simplex-chat-build.py build desktop macos --out "$RUNNER_TEMP/out" \
             ${{ steps.core.outputs.found == 'true' && '--core "$RUNNER_TEMP/core/desktop-core.zip"' || '--core-out "$RUNNER_TEMP/core/desktop-core.zip"' }}

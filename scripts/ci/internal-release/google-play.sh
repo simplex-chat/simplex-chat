@@ -43,5 +43,5 @@ edit=$(play -X POST "$edits" | jq -r .id)
 code=$(play -X POST -H "Content-Type: application/octet-stream" --data-binary "@$bundle" "$uploads/$edit/bundles?uploadType=media" | jq -r .versionCode)
 jq -n --arg code "$code" '{track: "internal", releases: [{versionCodes: [$code], status: "completed"}]}' \
   | play -X PUT -H "Content-Type: application/json" --data-binary @- "$edits/$edit/tracks/internal" > /dev/null
-play -X POST "$edits/$edit:commit" > /dev/null
+play -X POST "$edits/$edit:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW" > /dev/null
 echo "::notice title=Google Play::version code $code is released to internal testing"
