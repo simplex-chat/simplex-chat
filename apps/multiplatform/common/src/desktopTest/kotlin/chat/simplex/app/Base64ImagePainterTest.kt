@@ -9,8 +9,6 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
@@ -24,6 +22,7 @@ import chat.simplex.common.platform.base64BitmapCache
 import chat.simplex.common.platform.base64BitmapSize
 import chat.simplex.common.platform.base64ImageDecoder
 import chat.simplex.common.platform.base64ToBitmap
+import chat.simplex.common.platform.errorImageBitmap
 import chat.simplex.common.platform.rememberBase64ImagePainter
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.item.FramedItemView
@@ -41,7 +40,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.zip.CRC32
 import javax.imageio.ImageIO
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -81,19 +79,30 @@ class Base64ImagePainterTest {
   }
 
   @Test
-  fun testPictureOverTheSizeLimitIsShownAsTheErrorPicture() {
+  fun testPictureOverTheSizeLimitIsShownAsTheErrorPictureWithoutWaitingForTheDecoder() {
     val picture = base64Png(4321, 1)
-    val error = base64ToBitmap(picture)
     lateinit var painter: Base64ImagePainter
-    whileDecoderIsBusy { release ->
+    whileDecoderIsBusy {
       scene { Image(rememberBase64ImagePainter(picture).also { painter = it }, null, Modifier.fillMaxSize()) }.use { scene ->
         scene.render()
-        assertNull(painter.bitmap)
-        assertEquals(Size(error.width.toFloat(), error.height.toFloat()), painter.intrinsicSize)
-        release()
-        awaitDecodedPictures()
+        assertSame(errorImageBitmap, painter.bitmap)
+      }
+    }
+    assertNull(base64BitmapSize(picture))
+    assertSame(errorImageBitmap, base64ToBitmap(picture))
+  }
+
+  @Test
+  fun testPictureThatCannotBeDecodedIsNotDecodedAgain() {
+    val picture = Base64.getEncoder().encodeToString(png(31, 29).copyOf(33))
+    assertEquals(IntSize(31, 29), base64BitmapSize(picture))
+    assertSame(errorImageBitmap, base64ToBitmap(picture))
+    assertSame(errorImageBitmap, base64BitmapCache[picture])
+    lateinit var painter: Base64ImagePainter
+    whileDecoderIsBusy {
+      scene { Image(rememberBase64ImagePainter(picture).also { painter = it }, null, Modifier.fillMaxSize()) }.use { scene ->
         scene.render()
-        assertContentEquals(error.pixels(), assertNotNull(painter.bitmap).pixels())
+        assertSame(errorImageBitmap, painter.bitmap)
       }
     }
   }
@@ -114,10 +123,9 @@ class Base64ImagePainterTest {
 
   @Test
   fun testGifPictureWithTooManyMetadataBlocksIsShownAsTheErrorPicture() {
-    val error = base64ToBitmap(base64Png(4321, 1))
     assertEquals(IntSize(2, 2), base64BitmapSize(base64GifWithComment(1000)))
-    assertEquals(IntSize(error.width, error.height), base64BitmapSize(base64GifWithComment(1025)))
-    assertContentEquals(error.pixels(), base64ToBitmap(base64GifWithComment(1025)).pixels())
+    assertNull(base64BitmapSize(base64GifWithComment(1025)))
+    assertSame(errorImageBitmap, base64ToBitmap(base64GifWithComment(1025)))
   }
 
   @Test
@@ -214,8 +222,6 @@ class Base64ImagePainterTest {
     }
     return false
   }
-
-  private fun ImageBitmap.pixels(): IntArray = toAwtImage().run { getRGB(0, 0, width, height, null, 0, width) }
 
   private fun base64Png(width: Int, height: Int): String =
     "data:image/png;base64," + Base64.getEncoder().encodeToString(png(width, height))

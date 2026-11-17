@@ -27,26 +27,26 @@ import kotlin.math.min
 private const val MAX_IMAGE_DIMENSION = 4320
 private const val MAX_PREVIEW_DIMENSION = 512
 
-actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
-  base64BitmapCache[base64ImageString]?.let { return it }
-  return try {
-    readBase64Image(base64ImageString) { imageBytes, options, _ ->
-      BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options).asImageBitmap().also {
-        base64BitmapCache[base64ImageString] = it
-      }
-    } ?: errorBitmap.asImageBitmap()
-  } catch (e: Exception) {
-    Log.e(TAG, "base64ToBitmap error: $e")
-    errorBitmap.asImageBitmap()
+actual fun base64ToBitmap(base64ImageString: String): ImageBitmap =
+  base64BitmapCache.getOrPut(base64ImageString) {
+    try {
+      readBase64Image(base64ImageString) { imageBytes, options, _ ->
+        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options).asImageBitmap()
+      } ?: errorImageBitmap
+    } catch (e: Exception) {
+      Log.e(TAG, "base64ToBitmap error: $e")
+      errorImageBitmap
+    }
   }
-}
 
-actual fun base64BitmapSize(base64ImageString: String): IntSize =
+actual fun base64BitmapSize(base64ImageString: String): IntSize? =
   try {
     readBase64Image(base64ImageString) { _, _, size -> size }
   } catch (e: Exception) {
     null
-  } ?: IntSize(errorBitmap.width, errorBitmap.height)
+  }
+
+internal actual val errorImageBitmap: ImageBitmap = errorBitmap.asImageBitmap()
 
 private fun <T : Any> readBase64Image(base64ImageString: String, read: (imageBytes: ByteArray, options: BitmapFactory.Options, size: IntSize) -> T): T? {
   val imageString = base64ImageString

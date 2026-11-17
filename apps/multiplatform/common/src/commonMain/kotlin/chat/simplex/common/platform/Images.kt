@@ -28,7 +28,8 @@ import java.util.Collections
 import kotlin.math.roundToInt
 
 expect fun base64ToBitmap(base64ImageString: String): ImageBitmap
-expect fun base64BitmapSize(base64ImageString: String): IntSize
+expect fun base64BitmapSize(base64ImageString: String): IntSize?
+internal expect val errorImageBitmap: ImageBitmap
 expect fun decodeBase64Image(base64: String, width: Int): ImageBitmap?
 expect fun cropToSquare(image: ImageBitmap): ImageBitmap
 expect fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOutputStream
@@ -108,7 +109,10 @@ private const val MAX_BASE64_BITMAP_CACHE_BYTES = 64L * 1024 * 1024
 internal val base64ImageDecoder = Dispatchers.IO.limitedParallelism(1)
 
 @Stable
-class Base64ImagePainter internal constructor(private val placeholderSize: IntSize, bitmap: ImageBitmap?) : Painter() {
+class Base64ImagePainter private constructor(private val placeholderSize: IntSize, bitmap: ImageBitmap?) : Painter() {
+  internal constructor(bitmap: ImageBitmap) : this(IntSize(bitmap.width, bitmap.height), bitmap)
+  internal constructor(placeholderSize: IntSize) : this(placeholderSize, null)
+
   var bitmap: ImageBitmap? by mutableStateOf(bitmap)
     internal set
 
@@ -123,8 +127,9 @@ class Base64ImagePainter internal constructor(private val placeholderSize: IntSi
 @Composable
 fun rememberBase64ImagePainter(base64ImageString: String): Base64ImagePainter {
   val painter = remember(base64ImageString) {
-    val cached = base64BitmapCache[base64ImageString]
-    Base64ImagePainter(cached?.let { IntSize(it.width, it.height) } ?: base64BitmapSize(base64ImageString), cached)
+    base64BitmapCache[base64ImageString]?.let { Base64ImagePainter(it) }
+      ?: base64BitmapSize(base64ImageString)?.let { Base64ImagePainter(it) }
+      ?: Base64ImagePainter(errorImageBitmap)
   }
   LaunchedEffect(painter) {
     if (painter.bitmap == null) painter.bitmap = withContext(base64ImageDecoder) { base64ToBitmap(base64ImageString) }

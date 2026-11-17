@@ -22,8 +22,9 @@ import javax.imageio.stream.ImageInputStream
 import javax.imageio.stream.MemoryCacheImageInputStream
 import javax.imageio.stream.MemoryCacheImageOutputStream
 
-private fun errorBitmap(): ImageBitmap =
+internal actual val errorImageBitmap: ImageBitmap by lazy {
   ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="))).toComposeImageBitmap()
+}
 
 private const val MAX_IMAGE_DIMENSION = 4320
 private const val MAX_PREVIEW_DIMENSION = 512
@@ -43,26 +44,24 @@ internal fun receivedImageReadParam(reader: ImageReader, sampleSize: Int): Image
 
 internal fun ByteArray.byteAt(pos: Int): Int = if (pos < size) this[pos].toInt() and 0xFF else 0
 
-actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
-  base64BitmapCache[base64ImageString]?.let { return it }
-  return try {
-    readBase64Image(base64ImageString) { reader, sampleSize, _ ->
-      reader.read(0, receivedImageReadParam(reader, sampleSize)).toComposeImageBitmap().also {
-        base64BitmapCache[base64ImageString] = it
-      }
-    } ?: errorBitmap()
-  } catch (e: Throwable) {
-    Log.e(TAG, "base64ToBitmap error: $e")
-    errorBitmap()
+actual fun base64ToBitmap(base64ImageString: String): ImageBitmap =
+  base64BitmapCache.getOrPut(base64ImageString) {
+    try {
+      readBase64Image(base64ImageString) { reader, sampleSize, _ ->
+        reader.read(0, receivedImageReadParam(reader, sampleSize)).toComposeImageBitmap()
+      } ?: errorImageBitmap
+    } catch (e: Throwable) {
+      Log.e(TAG, "base64ToBitmap error: $e")
+      errorImageBitmap
+    }
   }
-}
 
-actual fun base64BitmapSize(base64ImageString: String): IntSize =
+actual fun base64BitmapSize(base64ImageString: String): IntSize? =
   try {
     readBase64Image(base64ImageString) { _, _, size -> size }
   } catch (e: Throwable) {
     null
-  } ?: errorBitmap().run { IntSize(width, height) }
+  }
 
 private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: ImageReader, sampleSize: Int, size: IntSize) -> T): T? {
   val imageString = base64ImageString
