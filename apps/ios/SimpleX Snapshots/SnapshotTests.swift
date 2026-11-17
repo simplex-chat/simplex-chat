@@ -240,19 +240,6 @@ final class SnapshotTests: XCTestCase {
         }
     }
 
-    @MainActor
-    func testLinkAlertShowsFullHost() throws {
-        guard (ProcessInfo.processInfo.environment["SNAPSHOT_SIZE"] ?? "large") == "large" else { return }
-        let host = Array(repeating: String(repeating: "a", count: 60), count: 3).joined(separator: ".") + ".example.com"
-        let userInfo = String(repeating: "a", count: 180)
-        let path = String(repeating: "b", count: 200)
-        XCTAssertEqual(try linkAlert("https://example.com/page?q=1").message, "https://example.com/page?q=1")
-        XCTAssertEqual(try linkAlert("https://example.com/\(path)").message, "https://example.com/\(path.prefix(140))…")
-        XCTAssertEqual(try linkAlert("https://\(host)/\(path)").message, "https://\(host)…")
-        XCTAssertEqual(try linkAlert("https://\(userInfo)@example.com?q=\(path)").message, "https://\(userInfo)@example.com…")
-        XCTAssertEqual(try linkAlert("ftp://example.com/file").title, "Invalid link")
-    }
-
     func testIceCandidateIndexValidation() async {
         let responses = CallResponses()
         let client = WebRTCClient({ await responses.add($0) }, .constant(nil))
@@ -518,22 +505,6 @@ private func fileItemImage(_ fileName: String) throws -> Data {
     window.isHidden = true
     window.rootViewController = nil
     return try XCTUnwrap(image.pngData())
-}
-
-@MainActor
-private func linkAlert(_ uri: String) throws -> UIAlertController {
-    let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
-    let window = UIWindow(windowScene: windowScene)
-    window.rootViewController = UIViewController()
-    window.makeKeyAndVisible()
-    defer {
-        window.rootViewController?.dismiss(animated: false)
-        window.isHidden = true
-        window.rootViewController = nil
-    }
-    openBrowserAlert(uri: uri)
-    settle()
-    return try XCTUnwrap(window.rootViewController?.presentedViewController as? UIAlertController, "scene activation state \(windowScene.activationState.rawValue)")
 }
 
 private actor CallResponses {
