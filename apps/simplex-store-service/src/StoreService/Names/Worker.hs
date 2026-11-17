@@ -62,7 +62,6 @@ import StoreService.Names.Store
 import StoreService.Names.Turns (Turns, withBalanceTurn, withLabelTurn, withRegistrationTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion)
 import StoreService.Safely (safely, safelyWith)
-import StoreService.Store.Invoices (unixSeconds)
 
 data Worker = Worker
   { wkOrders :: OrdersEnv,
@@ -95,16 +94,6 @@ data StepFailure
   | SFTakenAboveDepth
   | SFGoneButAvailable
   deriving (Eq, Show)
-
-stepFailureText :: StepFailure -> Text
-stepFailureText = \case
-  SFChain e -> tshow e
-  SFSend e -> tshow e
-  SFWrite refusal -> "its write was refused: " <> tshow refusal
-  SFUnread -> "the register check's chain read failed"
-  SFAllowanceUsedUp -> "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance"
-  SFTakenAboveDepth -> "the name reads taken only above the confirmation depth, where a reorg can undo it"
-  SFGoneButAvailable -> "the dry run reverted the name as gone, but it reads available"
 
 -- | How often the stored registrations are scanned for one without a thread, such as an order just paid or requeued.
 scanInterval :: Int
@@ -172,6 +161,14 @@ follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow}} rid@(Registrat
       now <- oeNow
       let micros = max 0 $ ceiling $ min maxWait (diffUTCTime t now) * 1000000
       void $ awaitChange oePhases rid (registrationVersion oeStore rid) v micros
+    stepFailureText = \case
+      SFChain e -> tshow e
+      SFSend e -> tshow e
+      SFWrite refusal -> "its write was refused: " <> tshow refusal
+      SFUnread -> "the register check's chain read failed"
+      SFAllowanceUsedUp -> "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance"
+      SFTakenAboveDepth -> "the name reads taken only above the confirmation depth, where a reorg can undo it"
+      SFGoneButAvailable -> "the dry run reverted the name as gone, but it reads available"
 
 stepRegistration :: Worker -> RegistrationId -> IO Next
 stepRegistration w@Worker {wkOrders = OrdersEnv {oeStore, oeNow}} rid = do
@@ -199,22 +196,19 @@ commit w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistr
 -- | At the lapse second a commitment can neither register nor be committed again, so the worker waits a second past it,
 -- then commits again with the stale fields cleared.
 fromCommitment :: Worker -> UTCTime -> NameRegistration -> CommitmentAges -> ChainSeconds -> IO Next
-fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig}} now r ages t = case revealWindow ages t of
+fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig}} now r CommitmentAges {caMin, caMax} t = case (,) <$> after caMin <*> after caMax of
   Nothing -> pure $ failure r $ SFChain $ ChainUnavailable "commitments: the reveal window passes 2^64 seconds"
   Just window@(_, lapse)
     | reusable oeConfig now lapse -> toCommitted w now r window t
     | lapse >= chainSeconds now -> pure $ waitUntil r $ addUTCTime chainSecond $ chainTime lapse
     | lapsedFields r /= r -> save w now $ lapsedFields r
     | otherwise -> sendCommit w now r
-
-revealWindow :: CommitmentAges -> ChainSeconds -> Maybe (ChainSeconds, ChainSeconds)
-revealWindow CommitmentAges {caMin, caMax} t = (,) <$> after caMin <*> after caMax
   where
     after age = if age <= maxBound - t then Just (t + age) else Nothing
 
 -- | A live commitment, or a stored intent, is reused while revealMargin is left before its end, time for the page's reveal and the register to mine.
 reusable :: NamesConfig -> UTCTime -> ChainSeconds -> Bool
-reusable NamesConfig {nRevealMarginSeconds} now end = toInteger end - unixSeconds now >= toInteger nRevealMarginSeconds
+reusable NamesConfig {nRevealMarginSeconds} now end = end >= chainSeconds now + fromIntegral nRevealMarginSeconds
 
 -- | The old commitment's transactions and reveal times; the reveal stays for the next commitment.
 lapsedFields :: NameRegistration -> NameRegistration
