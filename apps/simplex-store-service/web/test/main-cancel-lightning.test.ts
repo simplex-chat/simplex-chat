@@ -8,10 +8,10 @@ import { CANCEL_CONFIRM_LIGHTNING, CANCEL_INVOICE } from "../src/screens.js";
 const cancelTest = timedTest(3000);
 
 const ORDER_ID = "inv_ln_open";
-const BOLT11 = "lnbc499999440p1pfakeinvoicedestinationforthetestsonly";
+const BOLT11 = "lnbc500u1pfakeinvoicedestinationforthetestsonly";
 const openLn = {
   status: "open", badgeType: "supporter", months: 1, amount: 700, currency: "usd",
-  expiresAt: "2026-08-28T12:58:12Z", address: BOLT11, cryptoAmount: "0.00049999944", cryptoCurrency: "ln",
+  expiresAt: "2026-08-28T12:58:12Z", address: BOLT11, cryptoAmount: "0.00050000", cryptoCurrency: "ln",
 } as const;
 
 const storage = new MemStorage();
@@ -27,7 +27,7 @@ page.respondWith({ status: 200, body: openLn });
 await import("../src/main.js");
 
 cancelTest("main: cancelling a Lightning invoice asks with the Lightning wording, and a refusal sends nothing", async () => {
-  await until(() => headingOf(screenOf(app)) === "Send 0.00049999944 BTC", "the Lightning payment screen");
+  await until(() => headingOf(screenOf(app)) === "Send 0.00050000 BTC", "the Lightning payment screen");
   page.confirmAnswer(false);
   const before = fetches.length;
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();

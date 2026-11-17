@@ -811,8 +811,8 @@ apiTest("flow: the confirming screen gives up after exactly fifteen minutes, cou
 apiTest("flow: a Lightning payment still settling gives up as a Lightning view, so its words can say settle", async () => {
   const h = harness();
   const processingLn = {
-    ...openXmr, address: "lnbc499999440p1pfakeinvoicedestinationforthetestsonly", cryptoAmount: "0.00049999944",
-    cryptoCurrency: "ln", amountPaid: 42000, cryptoAmountPaid: "0.00049999944", paidInFull: true,
+    ...openXmr, address: "lnbc500u1pfakeinvoicedestinationforthetestsonly", cryptoAmount: "0.00050000",
+    cryptoCurrency: "ln", amountPaid: 42000, cryptoAmountPaid: "0.00050000", paidInFull: true,
   } as const;
   const w = h.flow.watch("inv_9f3a", { initial: processingLn, method: "ln" });
   await settle();

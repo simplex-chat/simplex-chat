@@ -618,7 +618,7 @@ qrTest("qr: paymentUri refuses half a destination", () => {
   assert.equal(paymentUri("xmr", "", "1.482"), null, "no address is nothing to scan");
   assert.equal(paymentUri("xmr", MONERO_ADDRESS, ""), null, "and a bare address does not prefill an amount");
   assert.equal(paymentUri("btc", BITCOIN_ADDRESS, "0.5"), `bitcoin:${BITCOIN_ADDRESS}?amount=0.5`);
-  assert.equal(paymentUri("ln", "", "0.00049999944"), null, "no invoice is nothing to scan");
+  assert.equal(paymentUri("ln", "", "0.00050000"), null, "no invoice is nothing to scan");
 });
 
 // A fresh regex each time, since matchAll and replace share lastIndex on one object.

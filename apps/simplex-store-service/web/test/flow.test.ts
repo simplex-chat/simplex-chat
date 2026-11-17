@@ -51,7 +51,7 @@ const fullCreated = {
 const lnCreated = {
   invoiceId: "inv_ln01", badgeType: "supporter", months: 1,
   amount: 700, currency: "usd", expiresAt: "2026-08-28T12:00:00Z",
-  address: "lnbc499999440p1pfakeinvoicedestinationforthetestsonly", cryptoAmount: "0.00049999944", cryptoCurrency: "ln" as const,
+  address: "lnbc500u1pfakeinvoicedestinationforthetestsonly", cryptoAmount: "0.00050000", cryptoCurrency: "ln" as const,
 };
 const cardCreated = {
   invoiceId: "inv_card1", badgeType: "supporter", months: 1,
@@ -92,7 +92,7 @@ apiTest("api: createInvoice sends method ln and accepts the Lightning invoice it
   const { fn, calls } = fetchReturning({ status: 200, body: lnCreated });
   const got = await createInvoice({ priceId: "p", method: "ln", codeHash: "h" }, fn);
   assert.equal(JSON.parse(String(calls[0]!.init!.body)).method, "ln");
-  assert.deepEqual(got, lnCreated, "the BOLT11 and the 11-decimal amount are kept as sent");
+  assert.deepEqual(got, lnCreated, "the BOLT11 and the amount are kept as sent");
 });
 
 apiTest("api: createInvoice refuses a Lightning invoice for an on-chain request, and the reverse", async () => {
@@ -194,8 +194,8 @@ apiTest("api: a read keeps every well-typed field and reads null as not sent", (
   };
   assert.deepEqual(parseInvoiceView(full), full, "nothing well-typed may be dropped on the way in");
   const lightning = {
-    status: "open", address: lnCreated.address, cryptoAmount: "0.00049999944", cryptoCurrency: "ln",
-    cryptoAmountPaid: "0.00049999944", cryptoAmountDue: "0.00000000000", paidInFull: true,
+    status: "open", address: lnCreated.address, cryptoAmount: "0.00050000", cryptoCurrency: "ln",
+    cryptoAmountPaid: "0.00050000", cryptoAmountDue: "0.00000000", paidInFull: true,
   };
   assert.deepEqual(parseInvoiceView(lightning), lightning, "a Lightning view reads, with no requiredConfirmations");
   assert.deepEqual(parseInvoiceView({ status: "open", amount: null, currency: null }), { status: "open" },

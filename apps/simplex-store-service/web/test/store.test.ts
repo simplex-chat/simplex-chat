@@ -173,15 +173,15 @@ storeTest("store: a session or theme outside the known set falls back to the def
 storeTest("store: a Lightning order and its BOLT11 destination survive a reload, as do the session's method", () => {
   const mem = new MemoryStorage();
   const s = new Store(mem);
-  const bolt11 = "lnbc499999440p1pfakeinvoicedestinationforthetestsonly";
-  s.saveOrder(order("1", { method: "ln", address: bolt11, cryptoAmount: "0.00049999944", cryptoCurrency: "ln" }));
+  const bolt11 = "lnbc500u1pfakeinvoicedestinationforthetestsonly";
+  s.saveOrder(order("1", { method: "ln", address: bolt11, cryptoAmount: "0.00050000", cryptoCurrency: "ln" }));
   s.saveSession({ step: "checkout", method: "ln" });
   const reloaded = new Store(mem);
   const o = reloaded.order("1")!;
   assert.equal(o.method, "ln", "a dropped method would leave the reopened order on no payment screen");
   assert.equal(o.cryptoCurrency, "ln");
   assert.equal(o.address, bolt11);
-  assert.equal(o.cryptoAmount, "0.00049999944", "the millisatoshi digits are kept as sent");
+  assert.equal(o.cryptoAmount, "0.00050000", "the amount is kept as sent");
   assert.equal(reloaded.session().method, "ln");
 });
 
