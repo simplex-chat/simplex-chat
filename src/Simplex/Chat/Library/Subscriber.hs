@@ -1790,10 +1790,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         _ -> pure ()
 
     continueSending :: ConnectionEntity -> Connection -> CM Bool
-    continueSending connEntity conn =
+    continueSending connEntity conn@Connection {quotaErrCounter} = do
+      when (quotaErrCounter > 0) $ withStore' $ \db -> setQuotaErrCounter db user conn 0
       if connInactive conn
         then do
-          withStore' $ \db -> setQuotaErrCounter db user conn 0
           toView $ CEvtConnectionInactive connEntity False
           pure True
         else pure False
