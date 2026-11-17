@@ -1779,7 +1779,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var history: GroupPreference
     public var support: GroupPreference
     public var signMessages: GroupPreference
-    public var msgPriority: RoleGroupPreference
+    public var msgPriority: RoleGroupPreference?
     public var commands: [ChatBotCommand]
 
     public init(
@@ -1794,7 +1794,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         history: GroupPreference,
         support: GroupPreference,
         signMessages: GroupPreference,
-        msgPriority: RoleGroupPreference = RoleGroupPreference(enable: .on, role: .admin),
+        msgPriority: RoleGroupPreference? = nil,
         commands: [ChatBotCommand]
     ) {
         self.timedMessages = timedMessages

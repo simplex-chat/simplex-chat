@@ -224,7 +224,8 @@ CIMeta                 priority: Int? = null; highPriority: priority >= 1
                        K model/ChatModel.kt:3907; I SimpleXChat/ChatTypes.swift:4272
 ChatStats              unreadHighPriority: Int = 0
                        K model/ChatModel.kt:1502; I SimpleXChat/ChatTypes.swift:2423, also a parameter of init
-group preference       msgPriority: RoleGroupPreference in FullGroupPreferences; optional in GroupPreferences; copied by toGroupPreferences
+group preference       msgPriority in FullGroupPreferences, decoded also when absent: K RoleGroupPreference with the default on for admins, I RoleGroupPreference?;
+                       optional in GroupPreferences; copied by toGroupPreferences
                        K model/SimpleXAPI.kt:6369, :6418, :6383; I SimpleXChat/ChatTypes.swift:1658, :1716, :1773
                        returned unchanged when the other preferences are saved (K views/chat/group/GroupPreferences.kt:48; I Shared/Views/Chat/Group/GroupChatInfoView.swift:1142)
                          by the unchanged preference screens; GroupFeature is unchanged
