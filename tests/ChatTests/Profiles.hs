@@ -118,6 +118,7 @@ chatProfileTests = do
     it "duplicate contact request from connected contact" testDuplicateContactRequestConnected
     it "contact requests with invalid or unsupported messages" testContactRequestsInvalidMessages
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
+    it "reject contact and notify the sender" testRejectContactNotifySender
     it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
     it "auto-reply message" testAutoReplyMessage
@@ -185,14 +186,16 @@ chatProfileTests = do
     it "should share contact address via chat" testShareAddressViaChat
     it "should join group" testShortLinkJoinGroup
     describe "should validate link type" $ do
-      it "group link as address" $ testGroupLinkAsType "/a#"
-      it "group link as channel" $ testGroupLinkAsType "/c#"
+      it "group link as address" $ testGroupLinkAsType "/a#" "connect/group-link-as-address"
+      it "group link as channel" $ testGroupLinkAsType "/c#" "connect/group-link-as-channel"
       it "group link as relay address" testGroupLinkAsRelay
+      it "relay address as address, address as relay address" testRelayAddressLinkTypes
       it "address as group link and channel" testAddressAsGroupLink
       it "group link as address in contact profile" testGroupLinkInContactProfile
       it "contact data in group link" testContactDataInGroupLink
       it "channel data in invitation" testChannelDataInInvitation
       it "invitation, address and group link with their data" testLinksWithTheirData
+      it "invitation and channel link without data" testLinksWithoutData
   describe "short links with attached data" shortLinkTests
   describe "client services" $ do
     it "should create user as a service, disable and re-enable" testClientService
@@ -1922,6 +1925,26 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
 
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+
+testRejectContactNotifySender :: HasCallStack => TestParams -> IO ()
+testRejectContactNotifySender =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (shortLink, fullLink) <- getContactLinks alice True
+    bob ##> ("/_connect plan 1 " <> shortLink)
+    bob <## "contact address: ok to connect"
+    contactSLinkData <- getTermLine bob
+    bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+    bob <## "alice: contact is prepared"
+    bob ##> "/_connect contact @2"
+    bob <## "alice: connection started"
+    alice <## "bob (Bob) wants to connect to you!"
+    alice <## "to accept: /ac bob"
+    alice <## "to reject: /rc bob (the sender will NOT be notified)"
+    alice ##> "/rc bob notify"
+    alice <## "bob: contact request rejected"
+    bob <## "alice: contact request rejected"
+    apiFixture "connect/request-rejected" bob [] FixtureRequests {frMarkdown = [""], frUris = [], frCommands = ["/_get chats 1 pcc=on"]}
 
 testKeepConnectionRequests :: HasCallStack => TestParams -> IO ()
 testKeepConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
@@ -4288,12 +4311,13 @@ testShortLinkJoinGroup =
             cc <## "#team: you joined the group"
         ]
 
-testGroupLinkAsType :: HasCallStack => T.Text -> TestParams -> IO ()
-testGroupLinkAsType linkType =
+testGroupLinkAsType :: HasCallStack => T.Text -> String -> TestParams -> IO ()
+testGroupLinkAsType linkType fixture =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     link <- setLinkType "/g#" linkType <$> createGroupWithLink alice
     bob ##> ("/_connect plan 1 " <> link)
     invalidLink bob
+    apiFixture fixture bob [(link, "GROUP_LINK")] FixtureRequests {frMarkdown = [link], frUris = [], frCommands = ["/_connect plan 1 " <> link]}
     bob ##> ("/c " <> link)
     invalidLink bob
 
@@ -4303,6 +4327,20 @@ testGroupLinkAsRelay =
     link <- setLinkType "/g#" "/r#" <$> createGroupWithLink alice
     bob ##> ("/relay test " <> link)
     bob <## "relay test failed at RTSGetLink, error: ChatError {errorType = CEInvalidConnReq}"
+
+testRelayAddressLinkTypes :: HasCallStack => TestParams -> IO ()
+testRelayAddressLinkTypes ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (relayAddress, _) <- getContactLinks bob True
+        cath ##> "/ad"
+        (address, _) <- getContactLinks cath True
+        alice ##> ("/relay test " <> setLinkType "/r#" "/a#" relayAddress)
+        alice <## "relay test passed, profile: bob (Bob)"
+        alice ##> ("/relay test " <> setLinkType "/a#" "/r#" address)
+        alice <##. "relay test failed at RTSDecodeLink, error: "
 
 testAddressAsGroupLink :: HasCallStack => TestParams -> IO ()
 testAddressAsGroupLink =
@@ -4367,6 +4405,20 @@ testLinksWithTheirData =
     bob ##> ("/_connect plan 1 " <> link)
     bob <## "group link: ok to connect directly"
     void $ getTermLine bob
+
+testLinksWithoutData :: HasCallStack => TestParams -> IO ()
+testLinksWithoutData =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/_connect 1"
+    (invitation, _) <- getInvitations alice
+    setTestInvLinkData alice J.Null
+    bob ##> ("/_connect plan 1 " <> invitation)
+    bob <## "invitation link: ok to connect"
+    _ <- getTermLine bob
+    link <- createGroupWithLink alice
+    setTestGroupLinkData alice $ UserLinkData ""
+    bob ##> ("/_connect plan 1 " <> setLinkType "/g#" "/c#" link)
+    invalidLink bob
 
 createGroupWithLink :: HasCallStack => TestCC -> IO String
 createGroupWithLink cc = do
