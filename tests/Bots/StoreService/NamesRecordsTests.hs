@@ -39,7 +39,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), signRecoverable)
-import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
+import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import StoreService.Config (ChainConfig (..))
@@ -710,11 +710,11 @@ testBadRowSkipped g = withSetup g $ \s@Setup {store, clock} -> do
     DB.execute
       db
       "INSERT INTO sx_badge_service_name_record_edits (label_hash, owner, nonce, body_hash, state, created_at) VALUES (?,?,5,?,'pending',?)"
-      (Binary $ unLabel alice, Binary $ unAddress viemAddress, Binary $ B.replicate 32 0, now)
+      (alice, viemAddress, Binary $ B.replicate 32 0, now)
     DB.execute
       db
       "INSERT INTO sx_badge_service_name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) SELECT name_record_edit_id, 5, 'simplex.channel', NULL, ?, ? FROM sx_badge_service_name_record_edits WHERE nonce = 5"
-      (deadline, Binary $ serializeSignature viemSetSignature)
+      (deadline, viemSetSignature)
   req <- ownerEdit s viemChannelLink
   saveUnsent s req
   s' <- restart s
