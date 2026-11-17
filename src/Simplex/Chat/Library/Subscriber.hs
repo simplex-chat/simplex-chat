@@ -2049,8 +2049,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             _ -> pure ()
           -- the file may already be accepted, so it is reset to an invitation the apps refuse by its prohibition
           Just prohibited -> do
-            withStore' $ \db -> setFileProhibited db user fileId prohibited
-            upd_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+            upd_ <- withStore $ \db -> updateFileChatItem db cxt user fileId $ do
+              setFileProhibited db user fileId prohibited
+              resetRcvFile db user fileId CIFSRcvInvitation
             forM_ upd_ $ toView . CEvtChatItemUpdated user
 
     descrBadgeStatus :: Maybe ByteString -> Integer -> RcvFileDescr -> Maybe UTCTime -> BadgeProof -> CM BadgeStatus

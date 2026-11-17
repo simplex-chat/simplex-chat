@@ -912,10 +912,13 @@ getNetworkConfig = withAgent' $ liftIO . getFastNetworkConfig
 resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItemUpdate)
 resetRcvCIFileStatus user fileId ciFileStatus = do
   cxt <- chatStoreCxt
-  withStore $ \db -> updateFileChatItem db cxt user fileId $ do
-    updateCIFileStatus db user fileId ciFileStatus
-    updateRcvFileStatus db fileId FSNew
-    updateRcvFileAgentId db fileId Nothing
+  withStore $ \db -> updateFileChatItem db cxt user fileId $ resetRcvFile db user fileId ciFileStatus
+
+resetRcvFile :: DB.Connection -> User -> FileTransferId -> CIFileStatus 'MDRcv -> IO ()
+resetRcvFile db user fileId ciFileStatus = do
+  updateCIFileStatus db user fileId ciFileStatus
+  updateRcvFileStatus db fileId FSNew
+  updateRcvFileAgentId db fileId Nothing
 
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
