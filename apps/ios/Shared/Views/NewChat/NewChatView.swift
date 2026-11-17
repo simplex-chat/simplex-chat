@@ -1125,8 +1125,8 @@ private func showPrepareContactAlert(
                     }
                 } catch let error {
                     logger.error("showPrepareContactAlert apiPrepareContact error: \(error.localizedDescription)")
-                    showAlert(NSLocalizedString("Error opening chat", comment: ""), message: responseError(error))
                     await MainActor.run {
+                        showAlert(NSLocalizedString("Error opening chat", comment: ""), message: responseError(error))
                         cleanup?()
                     }
                 }
@@ -1188,8 +1188,8 @@ private func showPrepareGroupAlert(
                     }
                 } catch let error {
                     logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
-                    showAlert(NSLocalizedString(isChannel ? "Error opening channel" : "Error opening group", comment: "alert title"), message: responseError(error))
                     await MainActor.run {
+                        showAlert(NSLocalizedString(isChannel ? "Error opening channel" : "Error opening group", comment: "alert title"), message: responseError(error))
                         cleanup?()
                     }
                 }

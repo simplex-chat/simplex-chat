@@ -16,6 +16,13 @@ class AChatItem(TypedDict):
     chatInfo: "ChatInfo"
     chatItem: "ChatItem"
 
+# Updated message, with the message before the update.
+
+class AChatItemUpdate(TypedDict):
+    chatInfo: "ChatInfo"
+    chatItem: "ChatItem"
+    prevChatItem: "ChatItem"
+
 class AddRelayResult(TypedDict):
     relay: "UserChatRelay"
     relayError: NotRequired["ChatError"]

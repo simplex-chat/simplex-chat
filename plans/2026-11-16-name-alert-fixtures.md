@@ -68,8 +68,8 @@ A function of the app that calls the core is a `var`; tests set it to a responde
 
 | Fixture | Core test |
 |---|---|
-| names/plan-known-expired, plan-known | known chat, resolved on every call |
-| names/plan-own-expired | own name, expired |
+| names/plan-known-expired, plan-known-expired-no-grace, plan-known | known chat, resolved on every call |
+| names/plan-own-expired, plan-own-expired-no-grace | own name, expired |
 | names/plan-known-available | known chat, name now available |
 | names/plan-own-available | own name, now available |
 | names/plan-known-reserved | known chat and own name, name without link or reserved |
@@ -78,6 +78,8 @@ A function of the app that calls the core is a `var`; tests set it to a responde
 | names/plan-moved-business, event-name-moved | known chat, name moved to a known business chat |
 | names/plan-other-kind | bare name, the other kind's chat moved, offered |
 | names/plan-channel-no-relays | no local chat, the channel has no relays |
+| names/plan-own-channel-expired, plan-channel-moved, plan-old-channel | channel name moved |
+| names/plan-known-failed | verify channel name, fail on re-point |
 | names/search-team, plan-own-channel | local chats, before and after the name expired |
 | names/error-available | connect by unregistered name reports it is available |
 | names/error-not-registered | reserved for another reason |
@@ -90,22 +92,29 @@ Each test sets the hooks to the fixture and the current user, runs the app's flo
 | Test | Flow | Checked | Apps |
 |---|---|---|---|
 | plan alerts | `planAndConnect` of the name | texts of the alert, the plan's chats in the chat list and passed to `showLocalChats` | both |
+| lapsed own channel, moved channel name | `planAndConnect` | the owner's alert with its chat; the new channel with the moved one listed | both |
+| moved and failed verification | `planAndConnect` of the channel's link | the known channel's alert and its decoded verification | both |
 | Renew, Register, Re-register | a press of the button | the alert to open https://simplex.domains/#testing | both |
-| Open chat | a press of the button | the chat's load requested; iOS: the chat opened | both |
+| Open chat | a press of the button | the chat's load requested; iOS: the chat opened and `onOpen` called | both |
+| Open new chat | a press of the button | the prepare command with the name's domain | both |
+| OK | a press of the button | the alert closed and the cleanup called | Kotlin |
 | Connect to SimpleX team | a press of the button | Kotlin: the plan of the team address requested; iOS: the team address opened | both |
 | other kind | a press of "Connect to @team.simplex" | the plan of the other kind and its alert, or the alert of its error | both |
 | own channel, contact via address | `planAndConnect` | the alert of the known chat | both |
-| moved event | `processReceivedMsg` of the recorded event | the contact and group marked moved | both |
-| search | "team.simplex" typed in the chat list search | the chats found by the local lookups listed | Kotlin: `ChatListView`; iOS: `ChatListSearchBar` |
-| connect by name | a press of `ConnectByNameRow` | the alert and the chats passed to `showLocalChats` | Kotlin |
-| name view | `SimplexNameView` of each verification | a press copies a verified name and verifies a failed, moved or unchecked one | Kotlin |
+| moved event | `processReceivedMsg` of the recorded event | the contact and group marked moved, its terminal label and details | both |
+| search | "team.simplex" typed in the chat list search | the chats found by the local lookups listed, the connect row kept | Kotlin: `ChatListView`; iOS: `ChatListSearchBar` |
+| connect by name | a press of `ConnectByNameRow` | the alert, the chats passed to `showLocalChats`, the search kept until a chat opens | Kotlin |
+| name view | `SimplexNameView` of each verification | a press copies a verified name and verifies a failed, moved or unchecked one; a failed manual verification shows its reason | Kotlin |
 
 A request without a recorded response fails the test, unless the test expects it.
 iOS compares the texts of an alert without their order, because the order of two buttons depends on their widths.
 
 Known gaps:
-- an expired name without a grace date.
 - iOS `SimplexNameView` and `ConnectByNameRow`: a SwiftUI tap is not reachable from a unit test.
+- the chats of a pending connection (`connectingProhibit`): no core test plans one.
+- the other kind's button in the ask, own-link and update-required alerts, and a price with cents: no core test records them.
+- the connect row on Android mobile: not reachable from the desktop tests.
+- colours and icons of `SimplexNameView`.
 
 ## iOS
 
