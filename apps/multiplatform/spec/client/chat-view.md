@@ -271,10 +271,12 @@ The pictures that messages contain as base64 are drawn by `rememberBase64ImagePa
 previews of images, videos and links, quoted pictures, profile pictures and the pictures of chat links. A picture in
 the cache of decoded pictures is drawn at once, and so is the error picture of a picture whose header cannot be read
 or exceeds the size limits. For any other picture, the size of the decoded picture is read from its header
-(`base64BitmapSize`), the view has that size and stays empty, and the picture is decoded on one background thread
-(`base64ImageDecoder`). A picture whose view leaves the composition before its decoding starts is not decoded.
-Pictures are decoded with the subsampling of `imageSampleSize(width, height, 512)`, at most about one megapixel. The
-cache holds up to 200 decoded pictures and 64 MB, and keeps the error picture of a picture that cannot be decoded.
+(`base64BitmapSize`), the picture's area has that size and is blank, and the picture is decoded on one background
+thread (`base64ImageDecoder`); the other parts of the item, such as file status icons, are drawn meanwhile. A picture
+whose view leaves the composition before its decoding starts is not decoded. A picture whose header is readable keeps
+the header's size: when its decoding fails, the error picture is drawn at that size. Pictures are decoded with the
+subsampling of `imageSampleSize(width, height, 512)`, at most about one megapixel. The cache holds up to 1000 entries
+and 64 MB of pixels and keys, and keeps the error picture of a picture that cannot be decoded.
 
 Notifications of contact requests and incoming calls decode the contact's picture with `base64ToBitmap` where they are
 created. The Android call service shows the app icon until the picture is decoded on the background thread. The
