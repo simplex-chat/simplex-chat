@@ -56,6 +56,8 @@ interface PlatformInterface {
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
   @Composable fun desktopShowAppUpdateNotice() {}
   fun desktopSetupUpdateChecker() {}
+  fun desktopRunningUiUpdate(): Boolean = false
+  fun desktopUseInstalledUi() {}
 }
 /**
  * Multiplatform project has separate directories per platform + common directory that contains directories per platform + common for all of them.

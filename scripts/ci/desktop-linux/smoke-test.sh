@@ -482,9 +482,32 @@ ui_update_confirmed() {
   return 1
 }
 
+ui_update_removed() {
+  for _ in $(seq 30); do
+    [ -e "$ui_updates/$1" ] || return 0
+    sleep 1
+  done
+  return 1
+}
+
 start_app() {
+  local lines
+  lines=$(update_check_lines)
   "$ui" start "$app_dir"
   "$ui" wait "Search or paste SimpleX link" 60 || fail "no chat list after the app started"
+  end_update_check "$lines" || true
+}
+
+use_installed_ui() {
+  open_app_version
+  "$ui" click-text "Developer tools" 10
+  "$ui" wait "Show developer options" 10
+  scroll_to "Use the installed UI" || fail "no \"Use the installed UI\" in Developer tools"
+  "$ui" click-text "Use the installed UI" 10
+  "$ui" wait "Please restart the app" 10 || fail "no restart alert after \"Use the installed UI\""
+  "$ui" shot use-installed-ui
+  "$ui" key Return
+  back_to_chat_list || fail "no chat list after \"Use the installed UI\""
 }
 
 app_build() {
@@ -497,14 +520,14 @@ app_build() {
 }
 
 check_ui_updates() {
-  local code
+  local code lines
   code=$(sed -n 's/^desktop.version_code=//p' "$gradle_properties")
   "$ui" stop
-  sed -i 's/^AppUpdateChannel=.*/AppUpdateChannel=DISABLED/' "$settings"
+  sed -i -e 's/^AppUpdateChannel=.*/AppUpdateChannel=INTERNAL/' -e 's/^AllowInternalBuilds=.*/AllowInternalBuilds=true/' "$settings"
   stage_ui_update $((code + 1))
   start_app
   check "the UI update of build $((code + 1)) runs after a restart" app_build $((code + 1))
-  check "the UI update $((code + 1)) is confirmed after its window was shown" ui_update_confirmed $((code + 1))
+  check "the UI update $((code + 1)) is confirmed after the chat started" ui_update_confirmed $((code + 1))
   "$ui" stop
   stage_ui_update $((code + 2)) --without chat/simplex/desktop/MainKt.class
   start_app
@@ -523,6 +546,34 @@ check_ui_updates() {
   start_app
   check "the UI update $((code + 1)) with a changed jar is removed" [ ! -e "$ui_updates/$((code + 1))" ]
   check "the installed UI of build $code runs after the UI updates failed" app_build "$code"
+  "$ui" stop
+  stage_ui_update $((code + 4))
+  start_app
+  check "the UI update $((code + 4)) is confirmed after the chat started" ui_update_confirmed $((code + 4))
+  check "the older UI update $((code + 2)) stays until $((code + 4)) is confirmed at a second start" [ -e "$ui_updates/$((code + 2))" ]
+  "$ui" stop
+  start_app
+  check "the older UI updates are removed once $((code + 4)) is confirmed at a second start" ui_update_removed $((code + 2))
+  use_installed_ui
+  check "\"Use the installed UI\" marks the running UI update $((code + 4)) failed" ui_update_state $((code + 4)) FAILED
+  "$ui" stop
+  start_app
+  check "the installed UI of build $code runs after \"Use the installed UI\"" app_build "$code"
+  "$ui" stop
+  stage_ui_update $((code + 5))
+  start_app
+  check "the UI update $((code + 5)) is confirmed after the chat started" ui_update_confirmed $((code + 5))
+  open_app_version
+  lines=$(update_check_lines)
+  switch_internal_builds off
+  check "the update check started by leaving Internal logs its end or offers an update, closed with Remind later" end_update_check "$lines"
+  check "leaving Internal marks the running UI update $((code + 5)) removed" ui_update_state $((code + 5)) REMOVED
+  check "leaving Internal deletes the UI update $((code + 4))" [ ! -e "$ui_updates/$((code + 4))" ]
+  back_to_chat_list || fail "no chat list after leaving Internal"
+  "$ui" stop
+  start_app
+  check "the removed UI update $((code + 5)) is deleted at the next start" [ ! -e "$ui_updates/$((code + 5))" ]
+  check "the installed UI of build $code runs after leaving Internal" app_build "$code"
 }
 
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP

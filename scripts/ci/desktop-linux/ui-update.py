@@ -9,9 +9,15 @@ import subprocess
 import zipfile
 from pathlib import Path
 
-OWN_CLASSES = ("chat/simplex/desktop/MainKt.class", "chat/simplex/common/BuildConfigCommon.class")
+OWN_CLASSES = (
+    "chat/simplex/desktop/MainKt.class",
+    "chat/simplex/common/BuildConfigCommon.class",
+    "org/nanohttpd/protocols/http/NanoHTTPD.class",
+)
 JAR_CONTENT_HASH = re.compile(r"(-[0-9a-f]{16,32})?\.jar$")
 CLASSPATH_ENTRY = re.compile(r"app\.classpath=\$APPDIR[/\\]+(.+)")
+JAVA_OPTION = "java-options="
+APP_VERSION_OPTION = "-Djpackage.app-version="
 
 
 def own(jar: Path) -> bool:
@@ -24,8 +30,15 @@ def base(app: Path) -> str:
     core_hash = (jars / "resources/core-hash").read_text().strip()
     cfg = next(jars.glob("*.cfg")).read_text().splitlines()
     classpath = [jars.joinpath(*re.split(r"[/\\]+", m[1])) for line in cfg if (m := CLASSPATH_ENTRY.fullmatch(line))]
-    dependencies = sorted(JAR_CONTENT_HASH.sub("", jar.name) for jar in classpath if not own(jar))
-    return hashlib.sha256("".join(f"{line}\n" for line in [core_hash, *dependencies]).encode()).hexdigest()
+    runtime = [line for line in (app / "lib/runtime/release").read_text().splitlines() if line.strip()]
+    options = [line.removeprefix(JAVA_OPTION) for line in cfg if line.startswith(JAVA_OPTION)]
+    lines = [
+        f"core {core_hash}",
+        *sorted(f"jar {JAR_CONTENT_HASH.sub('', jar.name)}" for jar in classpath if not own(jar)),
+        *(f"runtime {line}" for line in runtime),
+        *(f"option {option}" for option in options if not option.startswith(APP_VERSION_OPTION)),
+    ]
+    return hashlib.sha256("".join(f"{line}\n" for line in lines).encode()).hexdigest()
 
 
 def copy_jar(jar: Path, target: Path, without: str | None) -> None:

@@ -22,6 +22,7 @@ import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import java.awt.Frame
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
@@ -34,6 +35,7 @@ fun showApp() {
   // Probe SystemTray off the EDT — the lazy's first read would otherwise block the
   // EDT during composition; JDK-8322750's GNOME detection forks a subprocess.
   trayIsAvailable
+  var crashes = 0
   while (true) {
     val closedByError = mutableStateOf(false)
     application(exitProcessOnExit = false) {
@@ -46,6 +48,7 @@ fun showApp() {
               shareText = true
             )
             Log.e(TAG, "App crashed, thread name: " + Thread.currentThread().name + ", exception: " + e.stackTraceToString())
+            if (++crashes > 1) failRunningUiUpdate()
             // Must precede dispatchEvent — handleCloseRequest reads this flag.
             closedByError.value = true
             window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
@@ -204,6 +207,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
         })
       }
       LaunchedEffect(Unit) {
+        snapshotFlow { chatModel.chatRunning.value }.first { it == true }
         delay(UI_UPDATE_CONFIRM_DELAY)
         confirmUiUpdate()
       }

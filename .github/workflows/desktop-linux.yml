@@ -299,9 +299,9 @@ jobs:
         working-directory: apps/multiplatform
         run: |
           code=$(sed -n 's/^desktop.version_code=//p' gradle.properties)
-          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g -Pdesktop.ui_update_key="$UI_UPDATE_KEY" -Pdesktop.version_code=$((code + 1)) :common:desktopJar :desktop:jvmJar
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g -Pdesktop.ui_update_key="$UI_UPDATE_KEY" -Pdesktop.version_code=$((code + 1)) :common:desktopJar :desktop:jvmJar :external:nanohttpd:jar
           mkdir -p "$RUNNER_TEMP/ui-update-jars"
-          cp common/build/libs/common-desktop-*.jar desktop/build/libs/desktop-jvm-*.jar "$RUNNER_TEMP/ui-update-jars"
+          cp common/build/libs/common-desktop-*.jar desktop/build/libs/desktop-jvm-*.jar external/nanohttpd/build/libs/nanohttpd-*.jar "$RUNNER_TEMP/ui-update-jars"
           ls -la "$RUNNER_TEMP/ui-update-jars"
 
       - name: Run smoke test

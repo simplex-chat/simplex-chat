@@ -1,6 +1,7 @@
 package chat.simplex.app
 
 import chat.simplex.common.views.helpers.*
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
 import java.security.KeyPairGenerator
@@ -10,6 +11,7 @@ import java.security.Signature
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -62,20 +64,20 @@ class AppUpdaterTest {
 
   private val keys = KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
   private val otherKeys = KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
-  private val base = uiBase("core-1", listOf("a-2.jar"))
-  private val otherBase = uiBase("core-2", listOf("a-2.jar"))
+  private val base = uiBase("core-1", listOf("a-2.jar"), listOf("JAVA_VERSION=\"17\""), emptyList())
+  private val otherBase = uiBase("core-2", listOf("a-2.jar"), listOf("JAVA_VERSION=\"17\""), emptyList())
   private val jar = byteArrayOf(1, 2, 3)
 
   private fun sha256(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
-  private fun bundle(code: Int, signedBase: String = base, key: PrivateKey = keys.private): Map<String, ByteArray> {
-    val manifest = """{"version_code":$code,"base":"$signedBase","jars":{"ui-1.jar":"${sha256(jar)}"}}""".toByteArray()
+  private fun bundle(code: Int, signedBase: String = base, key: PrivateKey = keys.private, jarName: String = "ui-1.jar"): Map<String, ByteArray> {
+    val manifest = """{"version_code":$code,"base":"$signedBase","jars":{"$jarName":"${sha256(jar)}"}}""".toByteArray()
     val signature = Signature.getInstance("Ed25519").run {
       initSign(key)
       update(manifest)
       sign()
     }
-    return mapOf("ui.json" to manifest, "ui.json.sig" to signature, "ui-1.jar" to jar)
+    return mapOf("ui.json" to manifest, "ui.json.sig" to signature, jarName to jar)
   }
 
   private fun bundleDir(code: Int, signedBase: String = base): File {
@@ -100,7 +102,17 @@ class AppUpdaterTest {
   @Test
   fun testUiBase() {
     val jars = listOf("c-3-1234567890abcdef.jar", "b-1.0-0123456789abcdef0123456789abcdef.jar", "a-2.jar")
-    assertEquals("edccfa7920449a4d5a3cac37746f82d760a61616c2f034fac4c93d1b63a7e45c", uiBase("core-1", jars))
+    val runtime = listOf("JAVA_VERSION=\"17.0.13\"", "MODULES=\"java.base\"")
+    val options = listOf("-Djpackage.app-version=7.1.4", "-Dcompose.application.resources.dir=\$APPDIR/resources")
+    assertEquals("920b1c4905c17ebda03c93a8f659b3ef21d7041f7a0149250da18ae328ad01f6", uiBase("core-1", jars, runtime, options))
+  }
+
+  @Test
+  fun testCopyLimited() {
+    val out = ByteArrayOutputStream()
+    assertEquals(sha256(jar), copyLimited(jar.inputStream(), out, 3))
+    assertContentEquals(jar, out.toByteArray())
+    assertNull(copyLimited(jar.inputStream(), ByteArrayOutputStream(), 2))
   }
 
   @Test
@@ -135,18 +147,30 @@ class AppUpdaterTest {
     val superseded = bundleDir(178)
     assertNull(startableUiUpdate(superseded, keys.public, base, 178))
     assertFalse(superseded.exists())
+
+    val removed = bundleDir(179)
+    setUiUpdateState(removed, UiUpdateState.REMOVED)
+    assertNull(startableUiUpdate(removed, keys.public, base, 175))
+    assertFalse(removed.exists())
   }
 
   @Test
   fun testStageUiUpdate() {
     val root = Files.createTempDirectory("ui-updates").toFile()
-    val files = bundle(176) + mapOf("state" to "CONFIRMED".toByteArray(), "../ui-2.jar" to jar, "lib/ui-3.jar" to jar)
+    val files = bundle(176) + mapOf("state" to "CONFIRMED".toByteArray(), "ui-2.jar" to jar, "lib/ui-3.jar" to jar)
     assertTrue(stageUiUpdate(bundleZip(root, files), root, keys.public, base, 175))
     val dir = root.resolve("176")
     assertEquals(setOf("ui.json", "ui.json.sig", "ui-1.jar"), dir.list()!!.toSet())
     assertEquals(UiUpdateState.STAGED, uiUpdateState(dir))
-    assertFalse(root.resolve("staging").exists())
-    assertFalse(root.resolve("ui-2.jar").exists())
+    assertEquals(setOf("ui.zip", "176"), root.list()!!.toSet())
+
+    val traversal = Files.createTempDirectory("ui-updates").toFile()
+    assertFalse(stageUiUpdate(bundleZip(traversal, bundle(176, jarName = "../ui-2.jar")), traversal, keys.public, base, 175))
+    assertEquals(setOf("ui.zip"), traversal.list()!!.toSet())
+
+    val changed = Files.createTempDirectory("ui-updates").toFile()
+    assertFalse(stageUiUpdate(bundleZip(changed, bundle(176) + mapOf("ui-1.jar" to byteArrayOf(4))), changed, keys.public, base, 175))
+    assertEquals(setOf("ui.zip"), changed.list()!!.toSet())
 
     val other = Files.createTempDirectory("ui-updates").toFile()
     assertFalse(stageUiUpdate(bundleZip(other, bundle(176, key = otherKeys.private)), other, keys.public, base, 175))
