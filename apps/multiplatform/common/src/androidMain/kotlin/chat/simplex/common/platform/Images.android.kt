@@ -25,6 +25,7 @@ import kotlin.math.min
 private const val MAX_IMAGE_DIMENSION = 4320
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
+  base64BitmapCache[base64ImageString]?.let { return it }
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
@@ -35,7 +36,9 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
     if (options.outWidth <= 0 || options.outHeight <= 0 || options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION || options.outHeight > options.outWidth * 256) {
       return errorBitmap.asImageBitmap()
     }
-    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap()
+    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap().also {
+      base64BitmapCache[base64ImageString] = it
+    }
   } catch (e: Exception) {
     Log.e(TAG, "base64ToBitmap error: $e")
     errorBitmap.asImageBitmap()

@@ -14,6 +14,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
 import java.util.Base64
+import java.util.Collections
 
 expect fun base64ToBitmap(base64ImageString: String): ImageBitmap
 expect fun decodeBase64Image(base64: String, width: Int): ImageBitmap?
@@ -74,6 +75,22 @@ fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long
   stream.write(Base64.getDecoder().decode(str))
   return stream
 }
+
+internal val base64BitmapCache = Collections.synchronizedMap(object : LinkedHashMap<String, ImageBitmap>(200, 0.75f, true) {
+  override fun removeEldestEntry(eldest: Map.Entry<String, ImageBitmap>): Boolean {
+    var bytes = values.sumOf { it.bytes() }
+    val bitmaps = values.iterator()
+    while (size > 1 && (size > 200 || bytes > MAX_BASE64_BITMAP_CACHE_BYTES)) {
+      bytes -= bitmaps.next().bytes()
+      bitmaps.remove()
+    }
+    return false
+  }
+})
+
+private fun ImageBitmap.bytes(): Long = width.toLong() * height * 4
+
+private const val MAX_BASE64_BITMAP_CACHE_BYTES = 64L * 1024 * 1024
 
 @Composable
 fun Base64AsyncImage(

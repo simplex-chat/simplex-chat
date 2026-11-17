@@ -23,21 +23,6 @@ import javax.imageio.stream.MemoryCacheImageOutputStream
 private fun errorBitmap(): ImageBitmap =
   ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="))).toComposeImageBitmap()
 
-private val base64BitmapCache = Collections.synchronizedMap(object : LinkedHashMap<String, ImageBitmap>(200, 0.75f, true) {
-  override fun removeEldestEntry(eldest: Map.Entry<String, ImageBitmap>): Boolean {
-    var bytes = values.sumOf { it.bytes() }
-    val bitmaps = values.iterator()
-    while (size > 1 && (size > 200 || bytes > MAX_BASE64_BITMAP_CACHE_BYTES)) {
-      bytes -= bitmaps.next().bytes()
-      bitmaps.remove()
-    }
-    return false
-  }
-})
-
-private fun ImageBitmap.bytes(): Long = width.toLong() * height * 4
-
-private const val MAX_BASE64_BITMAP_CACHE_BYTES = 64L * 1024 * 1024
 private const val MAX_IMAGE_DIMENSION = 4320
 private const val MAX_PREVIEW_DIMENSION = 512
 private const val MAX_PROGRESSIVE_PASSES = 16
