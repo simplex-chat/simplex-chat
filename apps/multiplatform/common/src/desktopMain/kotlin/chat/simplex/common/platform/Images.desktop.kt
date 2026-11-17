@@ -69,7 +69,7 @@ private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: 
     .removePrefix("data:image/jpg;base64,")
   val bytes = Base64.getMimeDecoder().decode(imageString)
   if (ImageFileType.GIF.matches(bytes) && !gifMetadataWithinLimits(bytes)) return null
-  MemoryCacheImageInputStream(ByteArrayInputStream(bytes)).use { stream ->
+  return MemoryCacheImageInputStream(ByteArrayInputStream(bytes)).use { stream ->
     val reader = receivedImageReader(stream)
     try {
       reader.setInput(stream)
@@ -77,7 +77,7 @@ private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: 
       val height = reader.getHeight(0)
       if (width <= 0 || height <= 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || height > width * 256) return null
       val sampleSize = imageSampleSize(width, height, MAX_PREVIEW_DIMENSION)
-      return read(reader, sampleSize, IntSize((width + sampleSize - 1) / sampleSize, (height + sampleSize - 1) / sampleSize))
+      read(reader, sampleSize, IntSize((width + sampleSize - 1) / sampleSize, (height + sampleSize - 1) / sampleSize))
     } finally {
       reader.dispose()
     }
