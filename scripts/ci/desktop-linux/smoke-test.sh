@@ -589,6 +589,39 @@ check_ui_updates() {
   check "the installed UI of build $code runs after leaving Internal" app_build "$code"
 }
 
+reload_ui() {
+  local x y
+  open_app_version
+  "$ui" click-text "Developer tools" 10
+  "$ui" wait "Show developer options" 10
+  scroll_to "Reload UI" || fail "no \"Reload UI\" in Developer tools"
+  read -r x y < <(left_pane_position "Reload UI") || fail "no \"Reload UI\" in Developer tools"
+  "$ui" shot "reload-ui-$1"
+  "$ui" click "$x" "$y"
+  "$ui" wait "Search or paste SimpleX link" 60 || fail "no chat list after the UI reload"
+}
+
+ui_reloads() {
+  grep -c "I: UI reload" "$UI_OUT/app.log" || true
+}
+
+check_ui_reload() {
+  local code next running
+  code=$(sed -n 's/^desktop.version_code=//p' "$gradle_properties")
+  next=$((code + 4))
+  running=$(grep -c "startChat: running" "$UI_OUT/app.log" || true)
+  stage_ui_update $next
+  reload_ui first
+  check "the UI reloads from the UI update $next without a restart" app_build $next
+  check "the reloaded UI finds the chat running" [ "$(grep -c "startChat: running" "$UI_OUT/app.log" || true)" -gt "$running" ]
+  check "the reloaded UI lists \"$local_chat\"" on_screen "$local_chat"
+  check "the UI update $next is confirmed after the reload" ui_update_confirmed $next
+  reload_ui second
+  check "the UI reloads again from the UI update $next" app_build $next
+  check "the app logs both reloads" [ "$(ui_reloads)" -eq 2 ]
+  grep "I: UI reload" "$UI_OUT/app.log"
+}
+
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
@@ -650,6 +683,7 @@ check_layout top
 send_images
 if [ -n "${UI_UPDATE_JARS:-}" ]; then
   check_ui_updates
+  check_ui_reload
 fi
 
 if grep -q '^FAIL' "$checks"; then

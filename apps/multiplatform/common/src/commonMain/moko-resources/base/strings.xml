@@ -1200,6 +1200,7 @@
   <string name="show_slow_api_calls">Show slow API calls</string>
   <string name="allow_internal_builds">Allow internal builds</string>
   <string name="use_installed_ui">Use the installed UI</string>
+  <string name="reload_ui">Reload UI</string>
   <string name="storage">Storage</string>
   <string name="storage_total">Total</string>
   <string name="shutdown_alert_question">Shutdown?</string>

@@ -70,6 +70,7 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
               }
             })
           }
+          SettingsActionItem(painterResource(MR.images.ic_refresh), stringResource(MR.strings.reload_ui), { platform.desktopReloadUi() })
         }
         SettingsPreferenceItem(painterResource(MR.images.ic_report), stringResource(MR.strings.show_internal_errors), appPreferences.showInternalErrors)
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)

@@ -161,6 +161,7 @@ fun showAppUpdateNotice() {
 }
 
 private var updateCheckerJob: Job = Job()
+fun stopUpdateChecker() = updateCheckerJob.cancel()
 fun setupUpdateChecker() = withLongRunningApi {
   updateCheckerJob.cancel()
   if (appPrefs.appUpdateChannel.get() != AppUpdatesChannel.INTERNAL) {

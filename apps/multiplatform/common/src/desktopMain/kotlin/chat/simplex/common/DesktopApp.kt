@@ -83,10 +83,22 @@ fun showApp() {
         SimplexTray()
         AppWindow(closedByError)
       }
+      val reloading = simplexWindowState.reloading.value
+      LaunchedEffect(reloading) {
+        if (reloading) exitApplication()
+      }
     }
     if (!closedByError.value) break
   }
-  exitProcess(0)
+  if (!simplexWindowState.reloading.value) exitProcess(0)
+}
+
+fun reloadUi() {
+  if (chatModel.activeCall.value != null) return
+  stopUpdateChecker()
+  chatModel.controller.handOffForReload()
+  releaseSingleInstance()
+  simplexWindowState.reloading.value = true
 }
 
 @Composable
@@ -289,6 +301,7 @@ class SimplexWindowState {
   var windowFocused = mutableStateOf(true)
   val windowVisible = mutableStateOf(true)
   var window: ComposeWindow? = null
+  val reloading = mutableStateOf(false)
 }
 
 data class DialogParams(

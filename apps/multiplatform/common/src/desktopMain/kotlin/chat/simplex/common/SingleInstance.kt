@@ -66,6 +66,14 @@ fun acquireSingleInstance(link: String?): Boolean {
   }
 }
 
+fun releaseSingleInstance() {
+  lockHandle?.channel()?.close()
+  lockHandle = null
+  watcher?.close()
+  watcher = null
+  singleInstanceLock = false
+}
+
 fun otherInstanceRunning(): Boolean =
   when (val result = tryAcquireLock()) {
     is LockResult.Acquired -> {

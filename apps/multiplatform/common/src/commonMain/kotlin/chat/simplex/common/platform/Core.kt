@@ -1,3 +1,5 @@
+@file:JvmName("CoreInit")
+
 package chat.simplex.common.platform
 
 import chat.simplex.common.model.*
@@ -12,39 +14,6 @@ import chat.simplex.res.*
 import kotlinx.coroutines.*
 import java.io.File
 import java.nio.ByteBuffer
-
-// ghc's rts
-// Spec: spec/architecture.md#initHS
-external fun initHS()
-// android-support
-external fun pipeStdOutToSocket(socketName: String) : Int
-
-// SimpleX API
-typealias ChatCtrl = Long
-// Spec: spec/architecture.md#chatMigrateInit
-external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
-external fun chatCloseStore(ctrl: ChatCtrl): String
-external fun chatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
-external fun chatSendRemoteCmdRetry(ctrl: ChatCtrl, rhId: Int, msg: String, retryNum: Int): String
-external fun chatRecvMsg(ctrl: ChatCtrl): String
-external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
-external fun chatParseMarkdown(str: String): String
-external fun chatParseServer(str: String): String
-external fun chatParseUri(str: String, safe: Int): String
-external fun chatPasswordHash(pwd: String, salt: String): String
-external fun chatValidName(name: String): String
-external fun chatParseBadgeCode(code: String): String
-external fun chatJsonLength(str: String): Int
-external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String
-external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
-external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
-external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
-external fun chatResizeImageUri(buffer: ByteBuffer, maxSize: Int): String
-external fun chatResizeImage(buffer: ByteBuffer, maxSize: Int, png: Int): String
-external fun chatResizeImageFileUri(path: String, maxSize: Int): String
-external fun chatResizeImageFile(path: String, maxSize: Int, png: Int): String
-external fun chatResizeImageFdUri(fd: Int, maxSize: Int): String
-external fun chatResizeImageFd(fd: Int, maxSize: Int, png: Int): String
 
 // the code in core's canonical form (prefix and 20 characters, no separators), or null when core rejects it.
 // The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.
@@ -90,7 +59,11 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
-    var migrated: Array<Any> = if (databaseBackend == "postgres") {
+    val reloaded = reloadedChatCtrl
+    reloadedChatCtrl = null
+    var migrated: Array<Any> = if (reloaded != null) {
+      arrayOf<Any>(json.encodeToString(DBMigrationResult.serializer(), DBMigrationResult.OK), reloaded)
+    } else if (databaseBackend == "postgres") {
       chatMigrateInit("simplex_v1", "postgresql://simplex@/simplex_v1", MigrationConfirmation.Error.value)
     } else {
       chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)

@@ -58,6 +58,7 @@ interface PlatformInterface {
   fun desktopSetupUpdateChecker() {}
   fun desktopRunningUiUpdate(): Boolean = false
   fun desktopUseInstalledUi(): Boolean = false
+  fun desktopReloadUi() {}
 }
 /**
  * Multiplatform project has separate directories per platform + common directory that contains directories per platform + common for all of them.

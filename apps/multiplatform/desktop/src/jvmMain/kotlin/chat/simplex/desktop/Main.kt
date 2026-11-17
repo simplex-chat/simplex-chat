@@ -11,6 +11,7 @@ import androidx.compose.ui.input.pointer.*
 import chat.simplex.common.acquireSingleInstance
 import chat.simplex.common.installOpenUriHandler
 import chat.simplex.common.linkFromArgs
+import chat.simplex.common.reloadUi
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.size
 import chat.simplex.common.platform.*
@@ -25,7 +26,12 @@ import java.io.File
 import java.lang.invoke.MethodHandles
 
 fun main(args: Array<String>) {
-  if (startUiUpdate(MethodHandles.lookup().lookupClass().name, args)) return
+  val mainClass = MethodHandles.lookup().lookupClass().name
+  if (!startUiUpdate(mainClass, args)) startUi(args)
+  runReloadedUis(mainClass, args)
+}
+
+private fun startUi(args: Array<String>) {
   try {
     val link = linkFromArgs(args)
     if (!acquireSingleInstance(link)) return
@@ -49,7 +55,7 @@ fun main(args: Array<String>) {
     // installOpenUriHandler and showApp stay inside the try: whichever touches AWT first makes the process's
     // first AWT init, a known startup failure cause (#4146); later crashes go to showApp's WindowExceptionHandler.
     if (desktopPlatform.isMac()) installOpenUriHandler()
-    return showApp()
+    showApp()
   } catch (e: Throwable) {
     showStartupError(e) // the jpackage launcher otherwise hides the error behind "Failed to launch JVM" (#4146)
     throw e
@@ -57,14 +63,13 @@ fun main(args: Array<String>) {
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
-@Suppress("UnsafeDynamicallyLoadedCode")
 private fun initHaskell() {
   val resourcesDir = File(System.getProperty("compose.application.resources.dir"))
   val vlcDir = File(resourcesDir.absolutePath + File.separator + "vlc")
   if (desktopPlatform == DesktopPlatform.WINDOWS_X86_64) {
     windowsLoadRequiredLibs(resourcesDir, vlcDir)
   } else {
-    System.load(File(resourcesDir, "libapp-lib.${desktopPlatform.libExtension}").absolutePath)
+    loadCoreLibrary(File(resourcesDir, "libapp-lib.${desktopPlatform.libExtension}").absolutePath)
   }
   // No picture without preloading it, only sound. However, with libs from AppImage it works without preloading
   //val libXcb = "libvlc_xcb_events.so.0.0.0"
@@ -107,7 +112,11 @@ private fun initHaskell() {
 
     override fun desktopUseInstalledUi(): Boolean {
       useInstalledUi()
-      return false
+      return reloadUi()
+    }
+
+    override fun desktopReloadUi() {
+      reloadUi()
     }
   }
 }
@@ -119,7 +128,7 @@ private fun windowsLoadRequiredLibs(libsTmpDir: File, vlcDir: File) {
     "libapp-lib.dll"
   )
   mainLibs.forEach {
-    System.load(File(libsTmpDir, it).absolutePath)
+    loadCoreLibrary(File(libsTmpDir, it).absolutePath)
   }
   val vlcLibs = arrayOf(
     "libvlccore.dll",
@@ -128,6 +137,6 @@ private fun windowsLoadRequiredLibs(libsTmpDir: File, vlcDir: File) {
     "npvlc.dll"
   )
   vlcLibs.forEach {
-    System.load(File(vlcDir, it).absolutePath)
+    loadCoreLibrary(File(vlcDir, it).absolutePath)
   }
 }

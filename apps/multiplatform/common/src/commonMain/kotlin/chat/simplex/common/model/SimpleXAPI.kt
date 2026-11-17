@@ -63,6 +63,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.CountDownLatch
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
@@ -554,6 +555,7 @@ object ChatController {
 
   val chatModel = ChatModel
   private var receiverJob: Job? = null
+  private var receiverStopped: CountDownLatch? = null
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
     private set
 
@@ -566,6 +568,13 @@ object ChatController {
     stopReceiver()
     chatCtrl = ctrl
     if (wasRunning && ctrl != null) startReceiver()
+  }
+
+  fun handOffForReload() {
+    receiverStopped = receiverJob?.let { CountDownLatch(1) }
+    reloadedReceiverStopped = receiverStopped
+    reloadedChatCtrl = chatCtrl
+    setChatCtrl(null)
   }
 
   suspend fun getAgentSubsTotal(rh: Long?): Pair<SMPServerSubs, Boolean>? {
@@ -738,6 +747,7 @@ object ChatController {
           val chats = apiGetChats(null)
           chatModel.chatsContext.updateChats(chats)
         }
+        startReceiver()
         Log.d(TAG, "startChat: running")
       }
       apiStartChat()
@@ -838,6 +848,7 @@ object ChatController {
     Log.d(TAG, "ChatController startReceiver")
     if (receiverJob != null || chatCtrl == null) return
     receiverJob = CoroutineScope(Dispatchers.IO).launch {
+      reloadedReceiverStopped?.await()
       var releaseLock: (() -> Unit) = {}
       while (isActive) {
         /** Global [ctrl] can be null. It's needed for having the same [ChatModel] that already made in [ChatController] without the need
@@ -857,7 +868,12 @@ object ChatController {
             delay(30000)
             release()
           }
-          val msg = recvMsg(ctrl)
+          val rStr = reloadedChatEvents.poll() ?: chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
+          if (receiverStopped != null && !isActive) {
+            if (rStr != "") reloadedChatEvents.add(rStr)
+            break
+          }
+          val msg = parseRecvMsg(rStr)
           releaseLock = getWakeLock(timeout = 60000)
           if (msg != null) {
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
@@ -882,6 +898,7 @@ object ChatController {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
         }
       }
+      receiverStopped?.countDown()
     }
   }
 
@@ -1013,8 +1030,9 @@ object ChatController {
   }
 
   // Spec: spec/api.md#recvMsg
-  fun recvMsg(ctrl: ChatCtrl): API? {
-    val rStr = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
+  fun recvMsg(ctrl: ChatCtrl): API? = parseRecvMsg(chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT))
+
+  private fun parseRecvMsg(rStr: String): API? {
     return if (rStr == "") {
       null
     } else {
