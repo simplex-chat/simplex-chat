@@ -495,22 +495,22 @@ testFeeAboveCap = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   void $ steps w r >>= awaiting
   nrPhase <$> stored ctx r `shouldReturn` OCommitting
 
-sentCommits :: Ctx -> NameRegistration -> TxStatus -> [Word8] -> IO ()
-sentCommits Ctx {cStore} NameRegistration {nrId} status nonces = withTransaction cStore $ \db -> forM_ nonces $ \n -> do
+sentCommits :: Ctx -> NameRegistration -> TxSettlement -> [Word8] -> IO ()
+sentCommits Ctx {cStore} NameRegistration {nrId} settlement nonces = withTransaction cStore $ \db -> forM_ nonces $ \n -> do
   let h = TxHash $ digestFixture n
   void $ insertTransaction db (TxRegistration RTCommit nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
-  recordTransactionOutcome db h TSPending status (Just 120) `shouldReturn` True
+  recordTransactionOutcome db h TSPending settlement `shouldReturn` True
 
 testMinedCommitsUncounted :: IO ()
 testMinedCommitsUncounted = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
   r <- paidIn ctx aliceOrder id
-  sentCommits ctx r TSMined [1 .. fromIntegral maxSendsPerKind]
+  sentCommits ctx r (TSMinedAt 120) [1 .. fromIntegral maxSendsPerKind]
   sendsUsedUp cOrders r `shouldReturn` True
   answerCommitment w r 0
   void $ steps w r >>= awaiting
   nrPhase <$> stored ctx r `shouldReturn` OCommitting
   r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} id
-  sentCommits ctx r2 TSReverted [11 .. 10 + fromIntegral maxSendsPerKind]
+  sentCommits ctx r2 (TSRevertedAt 120) [11 .. 10 + fromIntegral maxSendsPerKind]
   answerCommitment w r2 0
   steps w r2 >>= done
   now <- nowOf ctx
@@ -749,7 +749,7 @@ testSendsCapped = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   answerAvailable w True
   answerUnowned ctx "alicebakery"
-  mapM_ (\n -> sentRegister ctx r n TSReverted) [1 .. fromIntegral maxSendsPerKind]
+  mapM_ (\n -> sentRegister ctx r n $ TSRevertedAt 120) [1 .. fromIntegral maxSendsPerKind]
   steps w r >>= done
   now <- nowOf ctx
   x <- stored ctx r
@@ -1096,7 +1096,7 @@ committedByUs w@W {wCtx = ctx} r = do
 failedAfterRegister :: W -> NameRegistration -> IO NameRegistration
 failedAfterRegister W {wCtx = ctx} r = do
   rv <- signedReveal ctx keyA reveal {rvDeadline = fromJust $ nrRevealBefore r} r
-  h <- sentRegister ctx r 2 TSReverted
+  h <- sentRegister ctx r 2 $ TSRevertedAt 120
   rewrite ctx r $ \o -> (failedPhase o) {nrReveal = Just rv, nrRegisterTx = Just h, nrRegisterBlock = Just 120}
 
 testRetryNotFailed :: IO ()
@@ -1122,7 +1122,7 @@ testRetryLanded :: IO ()
 testRetryLanded = withWorker $ \W {wCtx = ctx} -> do
   -- redeemed since its register mined: the name left the owner, and the register consumed its commitment
   (redeemed, code) <- codeIn ctx 8 aliceOrder failedPhase
-  TxHash minedHash <- sentRegister ctx redeemed 1 TSMined
+  TxHash minedHash <- sentRegister ctx redeemed 1 $ TSMinedAt 120
   answerExpiry ctx "alicebakery" expiry
   v <- retried ctx redeemed
   (field "phase" v, field "registerTx" v, field "expiresAt" v, field "error" v) `shouldBe` (Just "registered", Just (J.String $ hex minedHash), Just (J.toJSON expiry), Just J.Null)
@@ -1186,7 +1186,7 @@ testRetryReleasedCode = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
 testRetryRequeue :: IO ()
 testRetryRequeue = withWorker $ \w@W {wCtx = ctx} -> do
   committed <- paidIn ctx aliceOrder openPhase
-  h <- sentRegister ctx committed 1 TSReverted
+  h <- sentRegister ctx committed 1 $ TSRevertedAt 120
   r <- rewrite ctx committed $ \o -> (failedPhase o) {nrRegisterTx = Just h, nrRegisterBlock = Just 120}
   v <- published w r $ retried ctx r
   (field "phase" v, field "registerTx" v, field "error" v, field "version" v) `shouldBe` (Just "queued", Just J.Null, Just J.Null, Just (J.toJSON $ nrVersion r + 1))
@@ -1422,7 +1422,7 @@ testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
   minedOrder <- paidIn ctx dynamisOrder failedPhase
   answerUnowned ctx "dynamis"
   answerExpiry ctx "dynamis" expiry
-  minedHash <- sentRegister ctx minedOrder 1 TSMined
+  minedHash <- sentRegister ctx minedOrder 1 $ TSMinedAt 120
   closeOf ctx minedOrder `shouldReturn` CLRegistered (nrId minedOrder)
   y <- stored ctx minedOrder
   (nrPhase y, nrRegisterTx y) `shouldBe` (ORegistered expiry now, Just minedHash)

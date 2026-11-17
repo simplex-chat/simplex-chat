@@ -177,11 +177,11 @@ answerExpiry :: Ctx -> Text -> Word64 -> IO ()
 answerExpiry Ctx {cNode} label expiry = answerCall cNode (registrarOf cNode) (nameExpiresSelector <> labelBytes label) $ Returns $ uint256 expiry
 
 -- | A register transaction of the order as the sender saves it, then moved to this outcome.
-sentRegister :: Ctx -> NameRegistration -> Word8 -> TxStatus -> IO TxHash
-sentRegister Ctx {cStore} NameRegistration {nrId} n status = withTransaction cStore $ \db -> do
+sentRegister :: Ctx -> NameRegistration -> Word8 -> TxSettlement -> IO TxHash
+sentRegister Ctx {cStore} NameRegistration {nrId} n settlement = withTransaction cStore $ \db -> do
   let h = TxHash $ digestFixture n
   void $ insertTransaction db (TxRegistration RTRegister nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
-  recordTransactionOutcome db h TSPending status (Just 120) `shouldReturn` True
+  recordTransactionOutcome db h TSPending settlement `shouldReturn` True
   pure h
 
 -- | The chain answers the name as available and held by nobody.
@@ -593,9 +593,9 @@ testMoveLanded = withOwner $ \ctx -> do
   notLanded <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} failedPhase
   let expiry = seconds orderTime + 2 * 31536000
   forM_ ["alicebakery", "dynamis"] $ \label -> answerExpiry ctx label expiry
-  TxHash minedHash <- sentRegister ctx minedOrder 1 TSMined
+  TxHash minedHash <- sentRegister ctx minedOrder 1 $ TSMinedAt 120
   answerOwner ctx "dynamis" (nrOwner ownedOrder)
-  void $ sentRegister ctx notLanded 2 TSReverted
+  void $ sentRegister ctx notLanded 2 $ TSRevertedAt 120
   answerOwner ctx "alicebakery" (nrOwner minedOrder)
   forM_ [(minedOrder, Just minedHash), (ownedOrder, Nothing)] $ \(r, hash) -> do
     poll <- held ctx r

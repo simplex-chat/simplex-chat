@@ -725,11 +725,11 @@ testTransactions = withServiceStore $ \st -> do
   map (\NameTransaction {ntFor, ntNonce, ntStatus} -> (ntFor, ntNonce, ntStatus)) unsettled
     `shouldBe` [(TxEdit editId, 1, TSPending), (TxRegistration RTCommit r1, 2, TSPending), (TxRegistration RTRegister r1, 3, TSPending)]
   map ntRaw unsettled `shouldBe` map (\n -> digestFixture (n + 100)) [1, 2, 3]
-  let outcome n from status block = withTransaction st $ \db -> recordTransactionOutcome db (TxHash $ digestFixture n) from status block
-  outcome 2 TSPending TSMined (Just 77) `shouldReturn` True
-  outcome 1 TSPending TSReverted (Just 78) `shouldReturn` True
-  outcome 50 TSPending TSMined (Just 79) `shouldReturn` False
-  outcome 3 TSMined TSPending Nothing `shouldReturn` False
+  let outcome n from settlement = withTransaction st $ \db -> recordTransactionOutcome db (TxHash $ digestFixture n) from settlement
+  outcome 2 TSPending (TSMinedAt 77) `shouldReturn` True
+  outcome 1 TSPending (TSRevertedAt 78) `shouldReturn` True
+  outcome 50 TSPending (TSMinedAt 79) `shouldReturn` False
+  outcome 3 TSMined TSDroppedTx `shouldReturn` False
   map ntFor <$> withTransaction st pendingTransactions `shouldReturn` [TxRegistration RTRegister r1]
   ofRegistration <- withTransaction st $ \db -> registrationTransactions db r1
   map (\NameTransaction {ntId, ntFor, ntMinedBlock, ntStatus, ntSentAt} -> (ntId, ntFor, ntMinedBlock, ntStatus, ntSentAt)) ofRegistration
@@ -742,14 +742,14 @@ testTransactionFromStatus :: IO ()
 testTransactionFromStatus = withServiceStore $ \st -> do
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-  let outcome from status block = withTransaction st $ \db -> recordTransactionOutcome db (TxHash $ digestFixture 2) from status block
+  let outcome from settlement = withTransaction st $ \db -> recordTransactionOutcome db (TxHash $ digestFixture 2) from settlement
       current = withTransaction st $ \db -> map (\NameTransaction {ntStatus, ntMinedBlock} -> (ntStatus, ntMinedBlock)) <$> registrationTransactions db (RegistrationId "r1")
   void $ withTransaction st $ \db -> insertTransaction db (TxRegistration RTCommit $ RegistrationId "r1") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ digestFixture 2, ntxNonce = 0} t0
-  outcome TSPending TSMined (Just 77) `shouldReturn` True
-  outcome TSPending TSDropped Nothing `shouldReturn` False
+  outcome TSPending (TSMinedAt 77) `shouldReturn` True
+  outcome TSPending TSDroppedTx `shouldReturn` False
   current `shouldReturn` [(TSMined, Just 77)]
-  outcome TSMined TSPending Nothing `shouldReturn` True
-  current `shouldReturn` [(TSPending, Nothing)]
+  outcome TSMined TSDroppedTx `shouldReturn` True
+  current `shouldReturn` [(TSDropped, Nothing)]
 
 testEditNonceUnique :: IO ()
 testEditNonceUnique = withServiceStore $ \st -> do

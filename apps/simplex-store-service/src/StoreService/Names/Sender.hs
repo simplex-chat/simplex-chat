@@ -53,7 +53,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain
-import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
+import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxSettlement (..), TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
 import StoreService.Names.View (addressText)
 import StoreService.Safely (safely)
 import StoreService.Store.Invoices (StoreDecodeError (..))
@@ -306,12 +306,10 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
     oldMax = toInteger txMaxFeePerGas
     (cap, bounded) = feeCap c txGasLimit
 
-data TxSettlement = TSMinedAt Word64 | TSRevertedAt Word64 | TSDroppedTx
-
 -- | The confirmed hash gets its receipt's status; every other hash of the nonce can no longer be mined.
 settle :: Sender -> Word64 -> InFlight -> TxOutcome -> IO ()
 settle Sender {snStore, snInFlight} nonce InFlight {ifHashes, ifOutcome} outcome = do
-  unrecorded <- withTransaction snStore $ \db -> filterM (fmap not . record db) $ L.toList ifHashes
+  unrecorded <- withTransaction snStore $ \db -> filterM (\h -> not <$> recordTransactionOutcome db h TSPending (settlement h)) $ L.toList ifHashes
   forM_ unrecorded $ \(TxHash h) -> logError $ "names sender: nonce " <> tshow nonce <> ": transaction " <> hex h <> " was not pending when it settled"
   when (outcome == TONonceUsed) $
     logWarn $ "names sender: nonce " <> tshow nonce <> " used with no receipt for its transactions; its owner judges it from chain state"
@@ -319,10 +317,6 @@ settle Sender {snStore, snInFlight} nonce InFlight {ifHashes, ifOutcome} outcome
     modifyTVar' snInFlight $ M.delete nonce
     putTMVar ifOutcome outcome
   where
-    record db h = uncurry (recordTransactionOutcome db h TSPending) $ case settlement h of
-      TSMinedAt block -> (TSMined, Just block)
-      TSRevertedAt block -> (TSReverted, Just block)
-      TSDroppedTx -> (TSDropped, Nothing)
     settlement h = case outcome of
       TOConfirmed mined Receipt {receiptSuccess, receiptBlock}
         | mined == h -> if receiptSuccess then TSMinedAt receiptBlock else TSRevertedAt receiptBlock

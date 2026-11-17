@@ -36,7 +36,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (commitCalldata)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Sender
-import StoreService.Names.Store (NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), pendingTransactions, recordTransactionOutcome, registrationTransactions)
+import StoreService.Names.Store (NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxStatus (..), pendingTransactions, recordTransactionOutcome, registrationTransactions)
 import StoreService.Names.View (addressText)
 import System.Timeout (timeout)
 import Test.Hspec
@@ -181,7 +181,7 @@ testSettledNotPending g = withSetup g $ \s@Setup {node, store} -> do
   let TxHash h = ptHash p
   _ <- mine node [(h, True)]
   _ <- mine node []
-  withTransaction store (\db -> recordTransactionOutcome db (ptHash p) TSPending TSDropped Nothing) `shouldReturn` True
+  withTransaction store (\db -> recordTransactionOutcome db (ptHash p) TSPending TSDroppedTx) `shouldReturn` True
   logged <- capturingStderr $ followTransactions sender
   logged `shouldSatisfy` T.isInfixOf ("transaction " <> hex h <> " was not pending when it settled")
   statuses store r1 `shouldReturn` [(ptHash p, TSDropped, Nothing)]

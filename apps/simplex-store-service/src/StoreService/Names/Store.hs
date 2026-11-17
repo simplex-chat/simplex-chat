@@ -53,6 +53,7 @@ module StoreService.Names.Store
     TxFor (..),
     RegistrationTx (..),
     TxStatus (..),
+    TxSettlement (..),
     NameTransaction (..),
     NewTransaction (..),
     RecordChange (..),
@@ -559,6 +560,8 @@ instance TextEncoding RegistrationTx where
 -- | A dropped transaction has no receipt and its registrar nonce is used.
 data TxStatus = TSPending | TSMined | TSReverted | TSDropped
   deriving (Eq, Show, Enum, Bounded)
+
+data TxSettlement = TSMinedAt Word64 | TSRevertedAt Word64 | TSDroppedTx
 
 instance TextEncoding TxStatus where
   textEncode = \case
@@ -1574,13 +1577,18 @@ insertTransaction db for NewTransaction {ntxRaw, ntxHash, ntxNonce} now = do
   insertedRowId db
 
 -- | Moves a transaction on from the status the caller read, so an outcome is never overwritten unseen; False when it is not in that status.
-recordTransactionOutcome :: DB.Connection -> TxHash -> TxStatus -> TxStatus -> Maybe Word64 -> IO Bool
-recordTransactionOutcome db hash from status block =
+recordTransactionOutcome :: DB.Connection -> TxHash -> TxStatus -> TxSettlement -> IO Bool
+recordTransactionOutcome db hash from settlement =
   (> 0)
     <$> executeChanging
       db
       (mkQuery "UPDATE @name_transactions SET status = ?, mined_block = ? WHERE tx_hash = ? AND status = ?")
       (status, int64 <$> block, hash, from)
+  where
+    (status, block) = case settlement of
+      TSMinedAt b -> (TSMined, Just b)
+      TSRevertedAt b -> (TSReverted, Just b)
+      TSDroppedTx -> (TSDropped, Nothing)
 
 transactionColumns :: Query
 transactionColumns =
