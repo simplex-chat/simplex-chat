@@ -12,7 +12,7 @@ import Control.Concurrent.Async (async, mapConcurrently, wait)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
-import Data.Aeson ((.:), (.=))
+import Data.Aeson ((.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
@@ -64,11 +64,15 @@ data ResolverRecords
   = RROwn {contact :: Text, channel :: Text, nonce :: Word64, edits :: EditsLeft}
   | RROther
 
+data TermsText = TermsText {link :: Text, text :: Text}
+
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "RR") ''ResolverRecords)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "NF") ''NameFound)
 
 $(JQ.deriveToJSON defaultJSON ''SearchAnswer)
+
+$(JQ.deriveToJSON defaultJSON ''TermsText)
 
 -- | The chain reads of one search share one deadline, so a node that answers slowly fails the search once.
 -- Only they hold a search slot: the profile reads after them have their own bound.
@@ -154,5 +158,5 @@ termsHandler ct hashText _ respond = case strDecode $ encodeUtf8 hashText of
         Nothing -> respond notFound
         Just t@Terms {tmLink} ->
           termsText ct t >>= \case
-            Right text -> respond $ jsonResponse status200 $ J.object ["link" .= tmLink, "text" .= text]
+            Right text -> respond $ jsonResponse status200 TermsText {link = tmLink, text}
             Left (TRWait seconds) -> respond $ termsUnavailable seconds
