@@ -12,6 +12,7 @@ module StoreService.Web.Names.Orders
     spendHandler,
     nameInvoiceView,
     orderRefusalResponse,
+    paymentMethod,
   )
 where
 

@@ -10,9 +10,8 @@ import Control.Concurrent.Async (async, mapConcurrently, wait)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
-import Data.Aeson ((.=))
+import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
 import Data.List (find)
 import Data.Maybe (catMaybes, mapMaybe)
@@ -126,8 +125,8 @@ maxEntitiesPerKey = 5
 previewHandler :: Profiles -> Request -> Respond -> IO ResponseReceived
 previewHandler ps req respond =
   readBoundedBody maxBodyBytes req >>= \case
-    Just body | Just (J.Object o) <- J.decode body -> case KM.lookup "link" o of
-      Just (J.String link) | Just (kind, sl) <- nameLink link -> respond . jsonResponse status200 . J.toJSON =<< linkPreview ps kind sl
+    Just body | Just (J.Object o) <- J.decode body -> case JT.parseEither (.: "link") o of
+      Right link | Just (kind, sl) <- nameLink link -> respond . jsonResponse status200 . J.toJSON =<< linkPreview ps kind sl
       _ -> respond invalidLink
     _ -> respond badRequest
 
