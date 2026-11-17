@@ -146,6 +146,8 @@ class Base64ImagePainterTest {
 
   @Test
   fun testReceivedPicturesAreReadWithoutTemporaryFiles() = withTempDir { dir ->
+    val data = png(47, 39)
+    val picture = Base64.getEncoder().encodeToString(data)
     val cacheDirectory = ImageIO.getCacheDirectory()
     val useCache = ImageIO.getUseCache()
     try {
@@ -153,12 +155,11 @@ class Base64ImagePainterTest {
       ImageIO.setCacheDirectory(dir.toFile())
       dir.fileSystem.newWatchService().use { watcher ->
         dir.register(watcher, StandardWatchEventKinds.ENTRY_CREATE)
-        val picture = base64Png(47, 39)
         assertEquals(IntSize(47, 39), base64BitmapSize(picture))
         assertEquals(47, base64ToBitmap(picture).width)
-        assertEquals(47, decodeBoundedBufferedImage(png(47, 39), 1000).width)
+        assertEquals(47, decodeBoundedBufferedImage(data, 1000).width)
         assertNull(watcher.poll(1, TimeUnit.SECONDS))
-        ImageIO.createImageInputStream(ByteArrayInputStream(png(1, 1))).close()
+        ImageIO.createImageInputStream(ByteArrayInputStream(data)).close()
         assertNotNull(watcher.poll(10, TimeUnit.SECONDS))
       }
     } finally {
