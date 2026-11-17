@@ -108,6 +108,11 @@ private const val MAX_BASE64_BITMAP_CACHE_BYTES = 64L * 1024 * 1024
 @OptIn(ExperimentalCoroutinesApi::class)
 internal val base64ImageDecoder = Dispatchers.IO.limitedParallelism(1)
 
+fun cachedBase64Bitmap(base64ImageString: String): ImageBitmap? = base64BitmapCache[base64ImageString]
+
+suspend fun base64ToBitmapInBackground(base64ImageString: String): ImageBitmap =
+  withContext(base64ImageDecoder) { base64ToBitmap(base64ImageString) }
+
 @Stable
 class Base64ImagePainter private constructor(private val placeholderSize: IntSize, bitmap: ImageBitmap?) : Painter() {
   internal constructor(bitmap: ImageBitmap) : this(IntSize(bitmap.width, bitmap.height), bitmap)
@@ -127,12 +132,12 @@ class Base64ImagePainter private constructor(private val placeholderSize: IntSiz
 @Composable
 fun rememberBase64ImagePainter(base64ImageString: String): Base64ImagePainter {
   val painter = remember(base64ImageString) {
-    base64BitmapCache[base64ImageString]?.let { Base64ImagePainter(it) }
+    cachedBase64Bitmap(base64ImageString)?.let { Base64ImagePainter(it) }
       ?: base64BitmapSize(base64ImageString)?.let { Base64ImagePainter(it) }
       ?: Base64ImagePainter(errorImageBitmap)
   }
   LaunchedEffect(painter) {
-    if (painter.bitmap == null) painter.bitmap = withContext(base64ImageDecoder) { base64ToBitmap(base64ImageString) }
+    if (painter.bitmap == null) painter.bitmap = base64ToBitmapInBackground(base64ImageString)
   }
   return painter
 }
