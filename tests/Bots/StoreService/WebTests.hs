@@ -38,6 +38,8 @@ module Bots.StoreService.WebTests
     supporterPriceId,
     codeHashText,
     sampleCode,
+    sampleInvoice,
+    seedBadgePrice,
   )
 where
 

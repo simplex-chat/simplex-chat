@@ -77,7 +77,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Either (isLeft, isRight)
+import Data.Either (isRight)
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (sort)
 import qualified Data.Map.Strict as M
@@ -119,7 +119,7 @@ import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
+import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), OverdueInvoice (..), createInvoiceRows, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Limit (..), codeLimit, invoicesLimit, takeToken)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -1574,13 +1574,8 @@ testProviderRefs = withServiceStore $ \st -> do
           Just InvoiceRow {irInvoiceId, irProduct} -> (irInvoiceId, irProduct) `shouldBe` (InvoiceId "inv-r1", IPName (RegistrationId "r1"))
           Nothing -> expectationFailure "the name invoice was not found by its ref"
   found
-  badgeInvoice <-
-    E.try $ withConnection st $ \db ->
-      DB.execute
-        db
-        "INSERT INTO sx_badge_service_invoices (invoice_id, provider, provider_ref, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
-        ("badge-1" :: Text, "crypto" :: Text, "ref-inv-r1" :: Text, 500 :: Int, 500 :: Int, "usd" :: Text, t0, "open" :: Text, t0, t0)
-  (badgeInvoice :: Either E.SomeException ()) `shouldSatisfy` isLeft
+  seedBadgePrice st "price1"
+  createInvoiceRows st sampleInvoice {niInvoiceId = InvoiceId "badge-1", niProviderRef = "ref-inv-r1"} `shouldReturn` Left CERefConflict
   found
 
 testPollerQueries :: IO ()

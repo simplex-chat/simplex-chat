@@ -6,7 +6,7 @@
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.FakeEthNode (agreed, plainTerms)
-import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
+import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, sampleInvoice, seedBadgePrice, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM, forM_, void)
 import Data.List (sort)
@@ -31,6 +31,7 @@ import StoreService.Names.Registration (TermsAcceptance (..))
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), communityTermsPrefix, parseAnyCaseAddress, parseSignature)
 import StoreService.Names.Store
 import StoreService.Store (RevokeResult (..))
+import StoreService.Store.Invoices (InvoiceRow (..), NewInvoice (..), createInvoiceRows, getInvoiceByProviderRef)
 import Test.Hspec
 
 #if defined(dbPostgres)
@@ -190,6 +191,9 @@ testNamesDownUp = withServiceStore $ \st -> do
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
   map name names `shouldBe` ["20261013_names"]
   badgeBefore <- badgeColumns
+  seedBadgePrice st "price1"
+  createInvoiceRows st sampleInvoice `shouldReturn` Right ()
+  let NewInvoice {niInvoiceId = InvoiceId badgeInvoice, niProviderRef = badgeRef} = sampleInvoice
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   placePaid st "r2" ownerB (order "bobsbakery" 2) (at 60) `shouldReturn` Right ()
@@ -200,9 +204,11 @@ testNamesDownUp = withServiceStore $ \st -> do
   mapM (columnsOf st) namesTables `shouldReturn` map (const []) namesTables
   mapM (invoiceCount st) ["inv-r2", "inv-r3"] `shouldReturn` [0, 1]
   badgeColumns `shouldReturn` zipWith beforeNames badgeTables badgeBefore
+  withTransaction st (\db -> DB.query db "SELECT provider_ref FROM sx_badge_service_badge_code_invoices WHERE invoice_id = ?" (Only badgeInvoice)) `shouldReturn` [Only badgeRef]
   runMigrations st $ MTRUp names
   mapM (fmap null . columnsOf st) namesTables `shouldReturn` map (const False) namesTables
   badgeColumns `shouldReturn` badgeBefore
+  (fmap irInvoiceId <$> getInvoiceByProviderRef st badgeRef) `shouldReturn` Just (InvoiceId badgeInvoice)
   where
     beforeNames table columns
       | table == "sx_badge_service_invoices" = filter (/= "provider_ref") columns
