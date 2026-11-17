@@ -20,7 +20,6 @@ import chat.simplex.common.singleInstanceLock
 import chat.simplex.common.startShowFileWatcher
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import java.io.File
 import java.lang.invoke.MethodHandles
@@ -106,9 +105,9 @@ private fun initHaskell() {
 
     override fun desktopRunningUiUpdate(): Boolean = runningUiUpdateDir() != null
 
-    override fun desktopUseInstalledUi() {
+    override fun desktopUseInstalledUi(): Boolean {
       useInstalledUi()
-      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.use_installed_ui), generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc))
+      return false
     }
   }
 }

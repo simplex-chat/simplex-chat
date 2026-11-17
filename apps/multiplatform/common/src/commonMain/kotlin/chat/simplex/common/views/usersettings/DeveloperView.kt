@@ -64,7 +64,11 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
             }
           }
           if (remember { platform.desktopRunningUiUpdate() }) {
-            SettingsActionItem(painterResource(MR.images.ic_history), stringResource(MR.strings.use_installed_ui), { platform.desktopUseInstalledUi() })
+            SettingsActionItem(painterResource(MR.images.ic_history), stringResource(MR.strings.use_installed_ui), {
+              if (!platform.desktopUseInstalledUi()) {
+                AlertManager.shared.showAlertMsg(generalGetString(MR.strings.use_installed_ui), generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc))
+              }
+            })
           }
         }
         SettingsPreferenceItem(painterResource(MR.images.ic_report), stringResource(MR.strings.show_internal_errors), appPreferences.showInternalErrors)
