@@ -45,6 +45,26 @@ final class ReceivedPicturesTests: XCTestCase {
         XCTAssertEqual(downsampleImage(at: url, to: 100)?.size, CGSize(width: 100, height: 75))
     }
 
+    func testReceivedImagesAreDecodedWithinLimits() throws {
+        XCTAssertEqual(imageFromBase64("data:image/png;base64," + pngData(400, 300).base64EncodedString())?.size, CGSize(width: 400, height: 300))
+        XCTAssertEqual(imageFromBase64("data:image/png;base64," + pngData(1000, 600).base64EncodedString())?.size, CGSize(width: 1000, height: 600))
+        XCTAssertEqual(imageFromBase64("data:image/png;base64," + pngData(2048, 1024).base64EncodedString())?.size, CGSize(width: 1024, height: 512))
+        XCTAssertNil(imageFromBase64("data:image/png;base64," + pngData(4321, 1).base64EncodedString()))
+        XCTAssertEqual(try loadedImage(pngData(1000, 10))?.size, CGSize(width: 1000, height: 10))
+        XCTAssertEqual(try loadedImage(pngData(8640, 20))?.size, CGSize(width: 4320, height: 10))
+        XCTAssertNil(try loadedImage(pngData(16385, 1)))
+        XCTAssertNil(try loadedImage(grayPngData(16384, 4097)))
+    }
+
+    func testImportedWallpaperKeepsItsSize() throws {
+        try FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
+        let imported = ThemeWallpaper(image: "data:image/png;base64," + pngData(1500, 1000).base64EncodedString()).importFromString()
+        let fileName = try XCTUnwrap(imported.imageFile)
+        defer { removeWallpaperFile(fileName: fileName) }
+        XCTAssertEqual(UIImage(contentsOfFile: getWallpaperFilePath(fileName).path)?.size, CGSize(width: 1500, height: 1000))
+        XCTAssertEqual(ThemeWallpaper(image: "data:image/png;base64,AAAA").importFromString(), ThemeWallpaper())
+    }
+
     private func receivedPicture() async throws -> CIFile {
         let commands = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(contentsOf: fixtureURL("api/files/received-image.json"))) as? [String: [String: Any]])["commands"] ?? [:]
         sendSimpleXCmdStr = { [unowned self] cmd, _, _ in
@@ -79,6 +99,20 @@ final class ReceivedPicturesTests: XCTestCase {
         defer { lock.unlock() }
         return unrecorded
     }
+}
+
+private func pngData(_ width: Int, _ height: Int) -> Data {
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = 1
+    return UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format).pngData { _ in }
+}
+
+private func loadedImage(_ data: Data) throws -> UIImage? {
+    let fileName = "received-image-test.png"
+    try FileManager.default.createDirectory(at: getAppFilesDirectory(), withIntermediateDirectories: true)
+    try data.write(to: getAppFilePath(fileName))
+    defer { try? FileManager.default.removeItem(at: getAppFilePath(fileName)) }
+    return getLoadedImage(CIFile.getSample(fileName: fileName, filePath: fileName))
 }
 
 private func base64Png(_ width: Int, _ height: Int) throws -> String {
