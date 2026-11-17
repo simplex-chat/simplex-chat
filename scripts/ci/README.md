@@ -231,7 +231,7 @@ An agent that runs these workflows in a fork follows [app-tests-agent.md](app-te
 |---|---|---|---|
 | Scripted test, builds reused | about 25 min, plus the wait for a macOS runner, which the team's builds share (minutes to an hour) | about 10 min | about 15 min |
 | The core rebuilt, after Haskell changes | 30–45 min more | about 25 min more | about 27 min more |
-| With the test backend | 20–45 min more when it is rebuilt, then about 10 min to start | about 30 min more when it is rebuilt, then a few minutes to start | as desktop, whose backend it shares |
+| With the test backend | 25–45 min more when it is rebuilt, then about 12 min to start | about 40 min more when it is rebuilt, then about 4 min to start | as desktop, whose backend it shares |
 | With Claude on the smoke plan | 10–15 min more | about 4 min more | about 5 min more |
 
 ## The Claude job

@@ -16,7 +16,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 | `core` | `scripts/desktop/build-lib-linux.sh` via `build-core.sh` | skipped when reused, about 24 min not |
 | `app` | the app (`:desktop:createDistributable`), desktopTest with the snapshots, `smoke-test.sh` | about 12 min: build 4.5, desktopTest 0.7, smoke test 3.5 |
 | `claude` (opt-in) | after `app` passed: its distributable at the first screen, then Claude Code drives it | about 4 min, Claude 3 |
-| `backend` (opt-in) | `build-backend.sh`: `simplex-chat`, `simplex-directory-service`, `simplex-store-service`, `smp-server` from the simplexmq commit `cabal.project` pins, and the names chain's folder (`scripts/ci/names-chain/build.sh`) | about 30 min, skipped when reused |
+| `backend` (opt-in) | `build-backend.sh`: `simplex-chat`, `simplex-directory-service`, `simplex-store-service`, `smp-server` from the simplexmq commit `cabal.project` pins, and the names chain's folder (`scripts/ci/names-chain/build.sh`) | about 40 min, skipped when reused |
 | `release` (opt-in) | the latest release's .deb for this Ubuntu, onboarding only, to tell a branch's failure from the runner's | 1.5 min |
 
 Queueing for a runner adds from under a minute to 20 minutes. Results are artifacts: `desktop-smoke-test` (numbered screenshots, the text OCR read from each, `steps.log`, `checks.txt`, `app.log`), `desktop-test-report`, `desktop-snapshots` (below), `desktop-claude-test`, and the backend's logs; `desktop-app`, the distributable for manual tests and the Claude job, is kept 14 days. The job summaries list the checks, the desktopTest results and the Claude usage.
