@@ -50,7 +50,7 @@ import Simplex.Chat.Badges (BadgeProof (..), BadgeProofKind (..), BadgeStatus (.
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
-import Simplex.Chat.Files (getChatTempDirectory, mediaFileName, safeFileNameStr)
+import Simplex.Chat.Files (getChatTempDirectory, mediaFileName, mediaFileNameMatches, safeFileNameStr)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Markdown (ParsedMarkdown (..))
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
@@ -2117,8 +2117,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         updateRcvChatItem = do
           cci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case cci of
-            CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemForwarded, itemLive}, content = CIRcvMsgContent oldMC}
-              | isNothing itemForwarded -> do
+            CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemForwarded, itemLive}, content = CIRcvMsgContent oldMC, file}
+              | isNothing itemForwarded && mediaFileNameMatches mc file -> do
                   let changed = mc /= oldMC
                   if changed || fromMaybe False itemLive
                     then do
@@ -2374,6 +2374,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   Nothing -> getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
             (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
           case cci of
+            CChatItem SMDRcv ChatItem {file}
+              | not (mediaFileNameMatches mc file) -> messageError "x.msg.update: invalid message update" $> Nothing
             CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
               | isSender m' -> requireVerifiedEdit (CDGroupRcv gInfo scopeInfo m') itemVerified $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing

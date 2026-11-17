@@ -7,6 +7,7 @@ module ChatTests.Files where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Groups (agentSendBody, contactConnId, itemSharedMsgId, relayConnIdToMember)
 import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBadgeType, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
@@ -31,7 +32,7 @@ import Simplex.Chat.Messages (AChat (..), AChatItem (..), CChatItem (..), CIQuot
 import Simplex.Chat.Messages.CIContent (ciMsgContent)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Protocol (MsgContent (MCImage, MCText))
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XMsgUpdate), MsgContent (MCFile, MCImage, MCText), chatMsgToBody, supportedChatVRange)
 import Simplex.Chat.Types (ImageData (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, bbsKeyGen)
@@ -55,6 +56,8 @@ chatFileTests = do
     it "image reply to voice message has quote parsed from its full text" testImageReplyToVoiceMessage
     it "send and receive image to group" testGroupSendImage
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
+    it "ignore update of a file message to an image of another file type" testUpdateFileToImage
+    it "ignore update of a group file message to an image of another file type" testGroupUpdateFileToImage
   describe "batch send messages with files" $ do
     it "with files folder: send multiple files to contact" testSendMultiFilesDirect
     it "with files folder: send multiple files to group" testSendMultiFilesGroup
@@ -257,6 +260,45 @@ testFilesFoldersSendImage =
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
         alice <## "bob (Bob) deleted contact with you"
+
+testUpdateFileToImage :: HasCallStack => TestParams -> IO ()
+testUpdateFileToImage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> withXFTPServer alice $ do
+      connectUsers alice bob
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for bob"
+      connId <- contactConnId alice "bob"
+      sendUpdate <- updateSender alice connId
+      sendUpdate $ MCImage "image" (ImageData "")
+      bob <## "error: x.msg.update: contact attempted invalid message update"
+      sendUpdate $ MCFile "file"
+      bob <# "alice> [edited] file"
+
+testGroupUpdateFileToImage :: HasCallStack => TestParams -> IO ()
+testGroupUpdateFileToImage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> withXFTPServer alice $ do
+      createGroup2 "team" alice bob
+      alice #> "/f #team ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for #team"
+      connId <- relayConnIdToMember alice "bob"
+      sendUpdate <- updateSender alice connId
+      sendUpdate $ MCImage "image" (ImageData "")
+      bob <## "error: x.msg.update: invalid message update"
+      sendUpdate $ MCFile "file"
+      bob <# "#team alice> [edited] file"
+
+updateSender :: TestCC -> B.ByteString -> IO (MsgContent -> IO ())
+updateSender cc connId = do
+  sharedId <- itemSharedMsgId cc
+  pure $ \mc -> agentSendBody cc connId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XMsgUpdate sharedId mc mempty Nothing Nothing Nothing Nothing)
 
 testFilesFoldersImageSndDelete :: HasCallStack => TestParams -> IO ()
 testFilesFoldersImageSndDelete =

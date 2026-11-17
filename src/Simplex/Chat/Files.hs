@@ -5,6 +5,7 @@ module Simplex.Chat.Files where
 
 import Data.Char (isControl, toLower)
 import Simplex.Chat.Controller
+import Simplex.Chat.Messages (CIFile (..))
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Messaging.Util (ifM)
 import System.FilePath (combine, makeValid, splitExtensions, takeExtension, takeFileName, (<.>))
@@ -28,6 +29,9 @@ mediaFileName mc name = case mc of
     withExtension exts ext
       | map toLower (takeExtension name) `elem` exts = name
       | otherwise = name <.> ext
+
+mediaFileNameMatches :: MsgContent -> Maybe (CIFile d) -> Bool
+mediaFileNameMatches mc = all $ \CIFile {fileName = name} -> mediaFileName mc name == name
 
 imageExtensions :: [String]
 imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
