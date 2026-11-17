@@ -278,6 +278,7 @@ chatGroupTests = do
     it "raise priority of live message" testGroupRaisePriorityLive
     it "raise priority below role and in support chat is ignored" testGroupRaisePriorityIgnored
     it "update with priority of deleted item creates normal item" testGroupRaisePriorityDeletedItem
+    it "silent, high priority and raised messages recorded for the apps" testGroupPriorityRecordings
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
@@ -6499,6 +6500,49 @@ testGroupRaisePriorityDeletedItem =
       bob <# "#team alice!!> done"
       cath <# "#team alice> done"
       itemPriority cath "/_get chat #1 count=1" `shouldReturn` Nothing
+
+testGroupPriorityRecordings :: HasCallStack => TestParams -> IO ()
+testGroupPriorityRecordings ps = do
+  events <- newTVarIO []
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just $ \_ evt -> evt <$ recordItemEvent events evt}} testOpts {markRead = False} "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      bob ##> "/_create tag {\"text\":\"work\"}"
+      bob <## "[{\"chatTagId\":1,\"chatTagText\":\"work\"}]"
+      bob ##> "/_tags #1 1"
+      bob <## "chat tags updated"
+      eventsFixture "priority/silent" events $ do
+        sendWithPriority alice "working" (-1)
+        alice <# "#team working"
+        bob <# "#team alice> working"
+        sendWithPriority alice "testing" (-1)
+        alice <# "#team testing"
+        bob <# "#team alice> testing"
+      apiFixture "priority/chats-silent" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chats 1 pcc=on", "/users"]}
+      eventsFixture "priority/high" events $ do
+        alice #> "#team hello"
+        bob <# "#team alice> hello"
+        sendWithPriority alice "done" 1
+        alice <# "#team !! done"
+        bob <# "#team alice!!> done"
+      eventsFixture "priority/raise" events $ do
+        alice #> "#team almost there"
+        bob <# "#team alice> almost there"
+        almostId <- lastItemId alice
+        raise alice almostId "almost there"
+        alice <# "#team !! almost there"
+        bob <# "#team alice!!> almost there"
+        sendWithPriority alice "compiling" (-1)
+        alice <# "#team compiling"
+        bob <# "#team alice> compiling"
+        compilingId <- lastItemId alice
+        raise alice compilingId "compiled"
+        alice <# "#team !! [edited] compiled"
+        bob <# "#team alice!!> [edited] compiled"
+  where
+    sendWithPriority cc t p = cc ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"priority\": " <> show (p :: Int) <> "}]")
+    raise cc ciId t = cc ##> ("/_update item #1 " <> ciId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> t <> "\"}, \"mentions\": {}, \"priority\": 1}")
 
 testGroupMsgForwardReaction :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReaction =
