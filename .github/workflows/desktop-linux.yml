@@ -242,14 +242,23 @@ jobs:
           distribution: corretto
           java-version: ${{ env.JAVA_VER }}
 
+      - name: UI update key
+        if: ${{ !cancelled() && steps.core.outcome == 'success' }}
+        run: |
+          openssl genpkey -algorithm ed25519 -out "$RUNNER_TEMP/ui-update-key.pem"
+          echo "UI_UPDATE_KEY=$(openssl pkey -in "$RUNNER_TEMP/ui-update-key.pem" -pubout -outform DER | base64 -w 0)" >> "$GITHUB_ENV"
+
       # the Kotlin compiler daemon otherwise gets gradle.properties' 2 GB, which compiling :common runs out of
       - name: Build app
         id: build
         if: ${{ !cancelled() && steps.core.outcome == 'success' }}
         working-directory: apps/multiplatform
+        env:
+          CORE: ${{ needs.plan.outputs.core }}
         run: |
-          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :desktop:createDistributable
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g -Pdesktop.ui_update_key="$UI_UPDATE_KEY" :desktop:createDistributable
           app=release/main/app/simplex
+          echo "$CORE" > "$app/lib/app/resources/core-hash"
           ls -la "$app/bin" "$app/lib/app/resources"
           du -sh "$app"
           LD_LIBRARY_PATH="$app/lib/app/resources" ldd "$app/lib/app/resources/libapp-lib.so"
@@ -274,7 +283,7 @@ jobs:
         working-directory: apps/multiplatform
         env:
           SNAPSHOT_DIR: ${{ runner.temp }}/snapshots
-        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :common:desktopTest
+        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g -Pdesktop.ui_update_key="$UI_UPDATE_KEY" :common:desktopTest
 
       - name: Report desktop tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
@@ -284,10 +293,23 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 scripts/ci/snapshots-compare.py apps/multiplatform/common/src/desktopTest/snapshots "$RUNNER_TEMP/snapshots" "$RUNNER_TEMP/snapshots-diff"
 
+      - name: Build UI update
+        id: ui-update
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: apps/multiplatform
+        run: |
+          code=$(sed -n 's/^desktop.version_code=//p' gradle.properties)
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g -Pdesktop.ui_update_key="$UI_UPDATE_KEY" -Pdesktop.version_code=$((code + 1)) :common:desktopJar :desktop:jvmJar
+          mkdir -p "$RUNNER_TEMP/ui-update-jars"
+          cp common/build/libs/common-desktop-*.jar desktop/build/libs/desktop-jvm-*.jar "$RUNNER_TEMP/ui-update-jars"
+          ls -la "$RUNNER_TEMP/ui-update-jars"
+
       - name: Run smoke test
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome != 'failure' }}
         env:
           BACKEND: ${{ steps.backend.outcome }}
+          UI_UPDATE_JARS: ${{ steps.ui-update.outcome == 'success' && format('{0}/ui-update-jars', runner.temp) || '' }}
+          UI_UPDATE_KEY_FILE: ${{ runner.temp }}/ui-update-key.pem
         run: |
           if [ "$BACKEND" = success ]; then
             export NAMES_SERVER=$(cat "$RUNNER_TEMP/backend/names-server")

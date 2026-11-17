@@ -66,6 +66,16 @@ fun acquireSingleInstance(link: String?): Boolean {
   }
 }
 
+fun otherInstanceRunning(): Boolean =
+  when (val result = tryAcquireLock()) {
+    is LockResult.Acquired -> {
+      result.lock.channel().close()
+      false
+    }
+    LockResult.Taken -> true
+    LockResult.Failed -> false
+  }
+
 private fun tryAcquireLock(): LockResult {
   val channel = try {
     FileChannel.open(lockPath, READ, WRITE, CREATE)

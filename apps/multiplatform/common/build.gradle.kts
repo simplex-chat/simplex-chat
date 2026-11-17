@@ -178,6 +178,7 @@ buildConfig {
     buildConfigField("int", "ANDROID_VERSION_CODE", "${extra["android.version_code"]}")
     buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
     buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
+    buildConfigField("String", "DESKTOP_UI_UPDATE_KEY", "\"${extra["desktop.ui_update_key"]}\"")
     buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
     buildConfigField("Boolean", "SIMPLEX_ASSETS", "$hasSimplexAssets")
   }

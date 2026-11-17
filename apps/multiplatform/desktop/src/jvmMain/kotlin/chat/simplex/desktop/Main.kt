@@ -22,8 +22,10 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.*
 import java.io.File
+import java.lang.invoke.MethodHandles
 
 fun main(args: Array<String>) {
+  if (startUiUpdate(MethodHandles.lookup().lookupClass().name, args)) return
   try {
     val link = linkFromArgs(args)
     if (!acquireSingleInstance(link)) return

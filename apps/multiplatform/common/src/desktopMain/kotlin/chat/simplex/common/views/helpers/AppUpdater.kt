@@ -12,6 +12,7 @@ import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.json
+import chat.simplex.common.otherInstanceRunning
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.onboarding.ReadMoreButton
@@ -20,14 +21,33 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.Closeable
 import java.io.File
+import java.io.IOException
+import java.io.OutputStream
+import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Method
 import java.net.InetSocketAddress
+import java.net.JarURLConnection
 import java.net.Proxy
+import java.net.URL
+import java.net.URLClassLoader
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.security.DigestInputStream
+import java.security.KeyFactory
+import java.security.MessageDigest
+import java.security.PublicKey
+import java.security.Signature
+import java.security.spec.X509EncodedKeySpec
+import java.util.Base64
+import java.util.Collections
+import java.util.Enumeration
+import java.util.jar.JarFile
+import java.util.zip.ZipFile
 import kotlin.math.min
 import kotlin.system.exitProcess
 
@@ -110,6 +130,9 @@ data class GitHubRelease(
 ) {
   @Transient
   val semVer: SemVer? = SemVer.from(tagName)
+
+  @Transient
+  val buildNumber: Int? = tagName.substringAfterLast('-', "").toIntOrNull()
 
   val isConsideredBeta: Boolean = preRelease || semVer == null || semVer.isNotStable
 }
@@ -194,6 +217,15 @@ fun checkForUpdate() {
       Log.d(TAG, "Skipping update because of the same version or skipped version")
       return
     }
+    if (uiUpdateStaged(release)) {
+      if (appPrefs.appUpdateChannel.get() == channel) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
+          text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc)
+        )
+      }
+      return
+    }
     val assets = chooseGitHubReleaseAssets(release)
     // No need to show an alert if no suitable packages were found. But for Flatpak users it's useful to see release notes anyway
     if (assets.isEmpty() && !isRunningFromFlatpak()) {
@@ -273,7 +305,7 @@ internal fun chooseBetaRelease(installed: SemVer, releases: List<GitHubRelease>)
 
 internal fun chooseInternalRelease(installedCode: Int, releases: List<GitHubRelease>): GitHubRelease? =
   releases
-    .mapNotNull { r -> r.tagName.substringAfterLast('-', "").toIntOrNull()?.let { code -> r to code } }
+    .mapNotNull { r -> r.buildNumber?.let { code -> r to code } }
     .filter { (_, code) -> code > installedCode }
     .maxByOrNull { (_, code) -> code }
     ?.first
@@ -519,4 +551,218 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
     }
   }
   Unit
+}
+
+const val UI_UPDATE_CONFIRM_DELAY = 10_000L
+
+private const val UI_UPDATE_ASSET_PREFIX = "simplex-desktop-ui-"
+private const val UI_UPDATE_MANIFEST = "ui.json"
+private const val UI_UPDATE_SIGNATURE = "ui.json.sig"
+private const val UI_UPDATE_STATE = "state"
+private const val UI_UPDATE_STAGING = "staging"
+private const val CORE_HASH = "core-hash"
+private val INSTALLED_UI_CLASSES = listOf("chat/simplex/desktop/MainKt.class", "chat/simplex/common/BuildConfigCommon.class")
+private val UI_UPDATE_JAR = Regex("[A-Za-z0-9_][A-Za-z0-9._-]*\\.jar")
+private val JAR_CONTENT_HASH = Regex("(-[0-9a-f]{16,32})?\\.jar$")
+private val uiUpdateJson = Json { ignoreUnknownKeys = true }
+private val uiUpdatesDir = File(dataDir, "ui_updates")
+
+@Serializable
+private class UiUpdateManifest(
+  @SerialName("version_code") val versionCode: Int,
+  val base: String,
+  val jars: Map<String, String>
+)
+
+class UiUpdate(val versionCode: Int, val jars: List<File>)
+
+enum class UiUpdateState { STAGED, STARTED, CONFIRMED, FAILED }
+
+fun startUiUpdate(mainClass: String, args: Array<String>): Boolean {
+  val main = try {
+    uiUpdateMain(mainClass)
+  } catch (e: Exception) {
+    println("E: UI update not started: ${e.stackTraceToString()}")
+    null
+  } ?: return false
+  Thread.currentThread().contextClassLoader = main.declaringClass.classLoader
+  try {
+    main.invoke(null, args)
+  } catch (e: InvocationTargetException) {
+    throw e.targetException
+  }
+  return true
+}
+
+fun confirmUiUpdate() {
+  val dir = runningUiUpdateDir() ?: return
+  setUiUpdateState(dir, UiUpdateState.CONFIRMED)
+  uiUpdateDirs().filter { it.name.toInt() < dir.name.toInt() }.forEach { it.deleteRecursively() }
+}
+
+private fun uiUpdateMain(mainClass: String): Method? {
+  if (runningUiUpdate) return null
+  val key = uiUpdateKey() ?: return null
+  val dirs = uiUpdateDirs()
+  if (dirs.isEmpty() || otherInstanceRunning()) return null
+  val installedUi = installedUiJars() ?: return null
+  val base = installedUiBase(installedUi) ?: return null
+  val libraries = InstalledLibraries(installedUi.map(::JarFile))
+  for (dir in dirs) {
+    val update = startableUiUpdate(dir, key, base, BuildConfigCommon.DESKTOP_VERSION_CODE) ?: continue
+    try {
+      val loader = URLClassLoader(update.jars.map { it.toURI().toURL() }.toTypedArray(), libraries)
+      return Class.forName(mainClass, true, loader).getMethod("main", Array<String>::class.java)
+    } catch (e: Throwable) {
+      println("E: UI update ${dir.name} failed to load: $e")
+      setUiUpdateState(dir, UiUpdateState.FAILED)
+    }
+  }
+  return null
+}
+
+internal fun startableUiUpdate(dir: File, key: PublicKey, base: String, installedCode: Int): UiUpdate? {
+  val state = uiUpdateState(dir)
+  when (state) {
+    UiUpdateState.FAILED -> return null
+    UiUpdateState.STARTED -> {
+      setUiUpdateState(dir, UiUpdateState.FAILED)
+      return null
+    }
+    UiUpdateState.STAGED, UiUpdateState.CONFIRMED -> {}
+  }
+  val update = verifiedUiUpdate(dir, key, base, installedCode)
+  if (update == null) {
+    dir.deleteRecursively()
+  } else if (state == UiUpdateState.STAGED) {
+    setUiUpdateState(dir, UiUpdateState.STARTED)
+  }
+  return update
+}
+
+internal fun verifiedUiUpdate(dir: File, key: PublicKey, base: String, installedCode: Int): UiUpdate? =
+  try {
+    val manifest = File(dir, UI_UPDATE_MANIFEST).readBytes()
+    val signature = Signature.getInstance("Ed25519")
+    signature.initVerify(key)
+    signature.update(manifest)
+    if (signature.verify(File(dir, UI_UPDATE_SIGNATURE).readBytes())) {
+      uiUpdateJson.decodeFromString<UiUpdateManifest>(manifest.decodeToString())
+        .takeIf { m -> m.base == base && m.versionCode > installedCode && m.jars.isNotEmpty() && m.jars.all { (name, digest) -> UI_UPDATE_JAR.matches(name) && sha256Hex(File(dir, name)) == digest } }
+        ?.let { m -> UiUpdate(m.versionCode, m.jars.keys.map { File(dir, it) }) }
+    } else {
+      null
+    }
+  } catch (e: Exception) {
+    println("E: UI update ${dir.name} not verified: $e")
+    null
+  }
+
+internal fun stageUiUpdate(zip: File, root: File, key: PublicKey, base: String, installedCode: Int): Boolean {
+  val staging = File(root, UI_UPDATE_STAGING)
+  staging.deleteRecursively()
+  staging.mkdirs()
+  ZipFile(zip).use { z ->
+    for (entry in z.entries()) {
+      if (entry.name == UI_UPDATE_MANIFEST || entry.name == UI_UPDATE_SIGNATURE || UI_UPDATE_JAR.matches(entry.name)) {
+        z.getInputStream(entry).use { input -> File(staging, entry.name).outputStream().use { input.copyTo(it) } }
+      }
+    }
+  }
+  val update = verifiedUiUpdate(staging, key, base, installedCode)
+  if (update == null) {
+    staging.deleteRecursively()
+    return false
+  }
+  Files.move(staging.toPath(), File(root, "${update.versionCode}").toPath(), StandardCopyOption.ATOMIC_MOVE)
+  return true
+}
+
+internal fun uiUpdateState(dir: File): UiUpdateState {
+  val state = File(dir, UI_UPDATE_STATE)
+  if (!state.exists()) return UiUpdateState.STAGED
+  val name = state.readText()
+  return UiUpdateState.entries.firstOrNull { it.name == name } ?: UiUpdateState.FAILED
+}
+
+internal fun setUiUpdateState(dir: File, state: UiUpdateState) {
+  File(dir, UI_UPDATE_STATE).writeText(state.name)
+}
+
+internal fun uiBase(coreHash: String, dependencies: List<String>): String =
+  sha256Hex((listOf(coreHash) + dependencies.map { it.replace(JAR_CONTENT_HASH, "") }.sorted()).joinToString("") { "$it\n" }.toByteArray())
+
+private fun uiUpdateStaged(release: GitHubRelease): Boolean {
+  val key = uiUpdateKey() ?: return false
+  val base = installedUiJars()?.let(::installedUiBase) ?: return false
+  val asset = release.assets.firstOrNull { it.name == "$UI_UPDATE_ASSET_PREFIX$base.zip" } ?: return false
+  val dir = File(uiUpdatesDir, "${release.buildNumber ?: return false}")
+  if (dir.exists()) return uiUpdateState(dir) != UiUpdateState.FAILED
+  val zip = File(tmpDir, asset.name)
+  try {
+    val request = Request.Builder().url(asset.browserDownloadUrl).addHeader("User-agent", "curl").build()
+    setupHttpClient().newCall(request).execute().use { response ->
+      if (!response.isSuccessful) throw IOException("UI update download: HTTP ${response.code}")
+      zip.outputStream().use { response.body!!.byteStream().copyTo(it) }
+    }
+    return stageUiUpdate(zip, uiUpdatesDir, key, base, BuildConfigCommon.DESKTOP_VERSION_CODE)
+  } finally {
+    zip.delete()
+  }
+}
+
+private val runningUiUpdate: Boolean
+  get() = UiUpdate::class.java.classLoader !== ClassLoader.getSystemClassLoader()
+
+private fun runningUiUpdateDir(): File? =
+  if (runningUiUpdate) File(UiUpdate::class.java.protectionDomain.codeSource.location.toURI()).parentFile else null
+
+private fun uiUpdateDirs(): List<File> =
+  uiUpdatesDir.listFiles { f -> f.isDirectory && f.name.toIntOrNull() != null }.orEmpty().sortedByDescending { it.name.toInt() }
+
+private fun uiUpdateKey(): PublicKey? =
+  BuildConfigCommon.DESKTOP_UI_UPDATE_KEY.takeIf { it.isNotEmpty() }?.let { key ->
+    try {
+      KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(Base64.getDecoder().decode(key)))
+    } catch (e: Exception) {
+      println("E: UI update key: $e")
+      null
+    }
+  }
+
+private fun installedUiJars(): List<File>? =
+  INSTALLED_UI_CLASSES.map { name ->
+    (ClassLoader.getSystemResource(name)?.openConnection() as? JarURLConnection)?.jarFileURL?.toURI()?.let(::File) ?: return null
+  }
+
+private fun installedUiBase(installedUi: List<File>): String? {
+  val coreHash = System.getProperty("compose.application.resources.dir")?.let { File(it, CORE_HASH) }?.takeIf { it.isFile }?.readText()?.trim() ?: return null
+  val ui = installedUi.map { it.name }.toSet()
+  val dependencies = System.getProperty("java.class.path").split(File.pathSeparator).map { File(it).name }.filter { it !in ui }
+  return uiBase(coreHash, dependencies)
+}
+
+private fun sha256Hex(file: File): String =
+  DigestInputStream(file.inputStream(), MessageDigest.getInstance("SHA-256")).use { input ->
+    input.copyTo(OutputStream.nullOutputStream())
+    input.messageDigest.digest().toHex()
+  }
+
+private fun sha256Hex(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).toHex()
+
+private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
+
+private class InstalledLibraries(private val hidden: List<JarFile>) : ClassLoader(null) {
+  private val system = ClassLoader.getSystemClassLoader()
+  private val hiddenNames = hidden.map { File(it.name).name }
+
+  private fun hides(name: String) = hidden.any { it.getEntry(name) != null }
+
+  override fun loadClass(name: String, resolve: Boolean): Class<*> =
+    if (hides(name.replace('.', '/') + ".class")) throw ClassNotFoundException(name) else system.loadClass(name)
+
+  override fun getResource(name: String): URL? = if (hides(name)) null else system.getResource(name)
+
+  override fun getResources(name: String): Enumeration<URL> =
+    Collections.enumeration(system.getResources(name).toList().filterNot { url -> hiddenNames.any { url.path.endsWith("$it!/$name") } })
 }

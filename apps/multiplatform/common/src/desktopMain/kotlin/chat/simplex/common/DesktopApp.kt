@@ -203,6 +203,10 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
           }
         })
       }
+      LaunchedEffect(Unit) {
+        delay(UI_UPDATE_CONFIRM_DELAY)
+        confirmUiUpdate()
+      }
     }
   }
   // Reload all strings in all @Composable's after language change at runtime
