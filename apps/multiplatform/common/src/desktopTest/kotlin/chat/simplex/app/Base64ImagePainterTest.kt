@@ -12,7 +12,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
@@ -31,14 +34,18 @@ import chat.simplex.common.platform.base64ToBitmap
 import chat.simplex.common.platform.errorImageBitmap
 import chat.simplex.common.platform.rememberBase64ImagePainter
 import chat.simplex.common.simplexWindowState
+import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.chat.item.FramedItemView
 import chat.simplex.common.views.chat.item.ImageFullScreenView
 import chat.simplex.common.views.chat.item.ImageGalleryProvider
+import chat.simplex.common.views.chatlist.ChatPreviewView
+import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
 import java.awt.Color
@@ -119,6 +126,39 @@ class Base64ImagePainterTest {
       scene { Image(rememberBase64ImagePainter(picture).also { painter = it }, null, Modifier.fillMaxSize()) }.use { scene ->
         scene.render()
         assertSame(errorImageBitmap, painter.bitmap)
+        assertEquals(Size(31f, 29f), painter.intrinsicSize)
+      }
+    }
+  }
+
+  @Test
+  fun testPictureThatFailsToDecodeKeepsTheSizeOfItsHeader() {
+    val picture = Base64.getEncoder().encodeToString(png(37, 23).copyOf(33))
+    lateinit var painter: Base64ImagePainter
+    whileDecoderIsBusy { release ->
+      scene { Image(rememberBase64ImagePainter(picture).also { painter = it }, null, Modifier.fillMaxSize()) }.use { scene ->
+        scene.render()
+        assertNull(painter.bitmap)
+        assertEquals(Size(37f, 23f), painter.intrinsicSize)
+        release()
+        awaitDecodedPictures()
+        scene.render()
+        assertSame(errorImageBitmap, painter.bitmap)
+        assertEquals(Size(37f, 23f), painter.intrinsicSize)
+      }
+    }
+  }
+
+  @Test
+  fun testCachedPicturesOutnumberingTwoHundredAreShownWithoutWaitingForTheDecoder() {
+    val pictures = (0 until 300).map { base64Png(1 + it % 20, 100 + it / 20) }
+    val first = base64ToBitmap(pictures.first())
+    pictures.drop(1).forEach { base64ToBitmap(it) }
+    lateinit var painter: Base64ImagePainter
+    whileDecoderIsBusy {
+      scene { Image(rememberBase64ImagePainter(pictures.first()).also { painter = it }, null, Modifier.fillMaxSize()) }.use { scene ->
+        scene.render()
+        assertSame(first, painter.bitmap)
       }
     }
   }
@@ -241,6 +281,79 @@ class Base64ImagePainterTest {
   }
 
   @Test
+  fun testVideoItemReceivesItsFileWhenTappedWhileItsPreviewIsDecoded() {
+    val picture = base64Png(317, 183)
+    val file = CIFile.getSample(fileId = 7, fileName = "video.mp4", fileStatus = CIFileStatus.RcvInvitation)
+    val received = mutableListOf<Long>()
+    val placed = mutableMapOf<String, Placed>()
+    withMediaBlurRadius(0) {
+      whileDecoderIsBusy {
+        scene(ROW_WIDTH, ROW_HEIGHT) {
+          Box(Modifier.record(placed, "item")) { ReceivedItem(MsgContent.MCVideo("", picture, 10), file) { received += it } }
+        }.use { scene ->
+          scene.render()
+          val item = placed.getValue("item")
+          val center = Offset(item.x + item.width / 2f, item.y + item.height / 2f)
+          scene.sendPointerEvent(PointerEventType.Press, center, type = PointerType.Touch)
+          scene.sendPointerEvent(PointerEventType.Release, center, type = PointerType.Touch)
+          scene.render()
+          assertEquals(listOf(7L), received)
+        }
+      }
+    }
+  }
+
+  @Test
+  fun testBlurredQuoteShowsItsBlurredPictureOnceDecoded() {
+    val picture = base64Png(319, 181)
+    val quote = CIQuote(chatDir = CIDirection.DirectSnd(), sentAt = Clock.System.now(), content = MsgContent.MCImage("", picture))
+    withMediaBlurRadius(50) {
+      whileDecoderIsBusy { release ->
+        scene(ROW_WIDTH, ROW_HEIGHT) { ReceivedItem(MsgContent.MCText("reply"), quote = quote) }.use { scene ->
+          assertFalse(scene.render().hasRedIn(0 until 150))
+          release()
+          awaitDecodedPictures()
+          assertTrue(scene.renderUntil { it.hasRedIn(0 until 150) })
+        }
+      }
+    }
+  }
+
+  @Test
+  fun testChatListLinkPreviewIsShownOnceDecoded() {
+    val picture = base64Png(321, 179)
+    val link = MsgContent.MCLink("https://simplex.chat", LinkPreview("https://simplex.chat", "SimpleX Chat", "", picture))
+    val chat = Chat.sampleData.copy(chatItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectRcv(), text = link.text).copy(content = CIContent.RcvMsgContent(link))))
+    withMediaBlurRadius(0) {
+      whileDecoderIsBusy { release ->
+        scene(ROW_WIDTH, 150) {
+          SimpleXTheme {
+            ChatPreviewView(chat, true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+          }
+        }.use { scene ->
+          assertFalse(scene.render().hasRedIn(0 until 150))
+          release()
+          awaitDecodedPictures()
+          assertTrue(scene.renderUntil { it.hasRedIn(0 until 150) })
+        }
+      }
+    }
+  }
+
+  @Test
+  fun testProfilePictureIsShownOnceDecoded() {
+    val picture = base64Png(323, 177)
+    whileDecoderIsBusy { release ->
+      scene { ProfileImage(SCENE_SIZE.dp, picture) }.use { scene ->
+        assertFalse(scene.render().hasRedIn(0 until SCENE_SIZE))
+        release()
+        awaitDecodedPictures()
+        assertTrue(scene.renderUntil { it.hasRedIn(0 until SCENE_SIZE) })
+      }
+    }
+  }
+
+  @Test
   fun testVideoIsNotPlayedWhileItsPreviewIsDecoded() {
     val picture = base64Png(309, 191)
     val name = "received-video-test-${UUID.randomUUID()}.mp4"
@@ -319,12 +432,12 @@ class Base64ImagePainterTest {
   }
 
   @Composable
-  private fun ReceivedItem(content: MsgContent, file: CIFile? = null) {
+  private fun ReceivedItem(content: MsgContent, file: CIFile? = null, quote: CIQuote? = null, receiveFile: (Long) -> Unit = {}) {
     FramedItemView(
       ChatModel.ChatsContext(secondaryContextFilter = null), Chat.sampleData,
-      ChatItem.getSampleData(1, CIDirection.DirectRcv(), text = content.text, file = file).copy(content = CIContent.RcvMsgContent(content)),
+      ChatItem.getSampleData(1, CIDirection.DirectRcv(), text = content.text, quotedItem = quote, file = file).copy(content = CIContent.RcvMsgContent(content)),
       imageProvider = { error("not opened") }, linkMode = SimplexLinkMode.DESCRIPTION, showViaProxy = false,
-      showMenu = mutableStateOf(false), showTimestamp = true, receiveFile = {}, scrollToItemId = mutableStateOf(null)
+      showMenu = mutableStateOf(false), showTimestamp = true, receiveFile = receiveFile, scrollToItemId = mutableStateOf(null)
     )
   }
 
@@ -348,7 +461,9 @@ class Base64ImagePainterTest {
 
   private fun Image.isRedAt(x: Int, y: Int): Boolean = Bitmap.makeFromImage(this).getColor(x, y) == Color.RED.rgb
 
-  private fun Image.hasRedOnRow(y: Int): Boolean = hasPixelIn(y..y) { it.red > 204 && it.green < 51 && it.blue < 51 && it.alpha > 204 }
+  private fun Image.hasRedOnRow(y: Int): Boolean = hasRedIn(y..y)
+
+  private fun Image.hasRedIn(rows: IntRange): Boolean = hasPixelIn(rows) { it.red > 204 && it.green < 51 && it.blue < 51 && it.alpha > 204 }
 
   private fun Image.hasWhiteIn(rows: IntRange): Boolean = hasPixelIn(rows) { it.red > 230 && it.green > 230 && it.blue > 230 && it.alpha > 230 }
 
