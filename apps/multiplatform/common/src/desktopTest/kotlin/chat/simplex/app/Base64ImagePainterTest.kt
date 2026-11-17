@@ -14,6 +14,7 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.unit.Density
@@ -31,6 +32,7 @@ import chat.simplex.common.platform.base64BitmapCache
 import chat.simplex.common.platform.base64BitmapSize
 import chat.simplex.common.platform.base64ImageDecoder
 import chat.simplex.common.platform.base64ToBitmap
+import chat.simplex.common.platform.byteCount
 import chat.simplex.common.platform.errorImageBitmap
 import chat.simplex.common.platform.rememberBase64ImagePainter
 import chat.simplex.common.simplexWindowState
@@ -160,6 +162,14 @@ class Base64ImagePainterTest {
         scene.render()
         assertSame(first, painter.bitmap)
       }
+    }
+  }
+
+  @Test
+  fun testCachedPicturesAreCountedByTheirBitmapMemory() {
+    for (bitmap in listOf(base64ToBitmap(base64Png(53, 29)), errorImageBitmap)) {
+      val pixels = bitmap.asSkiaBitmap()
+      assertEquals(pixels.rowBytes.toLong() * pixels.height, bitmap.byteCount())
     }
   }
 

@@ -170,7 +170,9 @@ private fun spannableStringToAnnotatedString(
 actual fun getAppFileUri(fileName: String): URI =
   FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", if (File(fileName).isAbsolute) File(fileName) else File(getAppFilePath(fileName))).toURI()
 
-actual fun clearImageCaches() {}
+actual fun clearImageCaches() {
+  base64BitmapCache.clear()
+}
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
 actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {

@@ -158,6 +158,8 @@ actual fun ImageBitmap.hasAlpha(): Boolean {
   return false
 }
 
+actual fun ImageBitmap.byteCount(): Long = width.toLong() * height * 4
+
 actual fun ImageBitmap.addLogo(size: Float): ImageBitmap {
   val radius = (width * size).toInt()
   val logoSize = (width * size * 1.5).toInt()

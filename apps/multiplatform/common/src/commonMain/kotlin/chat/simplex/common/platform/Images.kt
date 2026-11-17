@@ -37,6 +37,7 @@ expect fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOut
 expect fun GrayU8.toImageBitmap(): ImageBitmap
 
 expect fun ImageBitmap.hasAlpha(): Boolean
+expect fun ImageBitmap.byteCount(): Long
 expect fun ImageBitmap.addLogo(size: Float): ImageBitmap
 expect fun ImageBitmap.scale(width: Int, height: Int): ImageBitmap
 
@@ -101,7 +102,7 @@ internal val base64BitmapCache = Collections.synchronizedMap(object : LinkedHash
   }
 })
 
-private fun Map.Entry<String, ImageBitmap>.bytes(): Long = key.length + value.width.toLong() * value.height * 4
+private fun Map.Entry<String, ImageBitmap>.bytes(): Long = key.length + value.byteCount()
 
 private const val MAX_BASE64_BITMAP_CACHE_COUNT = 1000
 private const val MAX_BASE64_BITMAP_CACHE_BYTES = 64L * 1024 * 1024

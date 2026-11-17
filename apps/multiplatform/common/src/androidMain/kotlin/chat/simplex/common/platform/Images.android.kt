@@ -103,6 +103,8 @@ actual fun GrayU8.toImageBitmap(): ImageBitmap = ConvertBitmap.grayToBitmap(this
 
 actual fun ImageBitmap.hasAlpha(): Boolean = hasAlpha
 
+actual fun ImageBitmap.byteCount(): Long = asAndroidBitmap().allocationByteCount.toLong()
+
 actual fun ImageBitmap.addLogo(size: Float): ImageBitmap = asAndroidBitmap().applyCanvas {
   val radius = (width * size) / 2
   val paint = android.graphics.Paint()
