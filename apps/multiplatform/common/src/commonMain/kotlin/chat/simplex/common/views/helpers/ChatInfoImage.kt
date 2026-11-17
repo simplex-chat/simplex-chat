@@ -16,6 +16,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
@@ -310,6 +313,32 @@ private fun Modifier.insetTo(ratio: Float): Modifier = layout { measurable, cons
   layout(constraints.maxWidth, constraints.maxHeight) {
     placeable.place(inset, inset)
   }
+}
+
+@Composable
+fun profileImageShape(image: String?, size: Dp): Shape {
+  val percent = remember { appPreferences.profileImageCornerRadius.state }
+  val r = max(0f, percent.value)
+  return when {
+    image == null || r >= 50 -> CircleShape
+    r <= 0 -> InsetSquareShape(squareToCircleRatio, 0.dp)
+    else -> {
+      val ratio = squareToCircleRatio + r * radiusFactor
+      InsetSquareShape(ratio, size * ratio * r / 100)
+    }
+  }
+}
+
+private class InsetSquareShape(private val ratio: Float, private val radius: Dp) : Shape {
+  override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+    val inset = ((size.width - size.width * ratio) / 2).roundToInt().toFloat()
+    return Outline.Rounded(RoundRect(inset, inset, size.width - inset, size.height - inset, CornerRadius(with(density) { radius.toPx() })))
+  }
+}
+
+@Composable
+fun AvatarClickArea(image: String?, size: Dp, modifier: Modifier, onClick: () -> Unit) {
+  Box(modifier.clip(profileImageShape(image, size)).clickable(onClick = onClick))
 }
 
 @Preview
