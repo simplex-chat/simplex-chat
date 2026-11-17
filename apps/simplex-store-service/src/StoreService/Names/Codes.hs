@@ -26,14 +26,14 @@ import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, nameLengthInt, namePrepaidCodeHash, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, minNameYears, nameLengthInt, namePrepaidCodeHash, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
-import StoreService.Group.Command (CmdSource)
+import StoreService.Group.Command (CmdSource, maxNameYears)
 import StoreService.Names.Registration (RegistrationId)
 import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), enumTextDecode, getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
@@ -145,7 +145,9 @@ afterWrite turns st codeId change write = do
 -- | The code table keeps only the hash, so the caller must deliver the code. A code whose hash is taken is logged and drawn again,
 -- up to 3 times.
 issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)
-issueNameCode cc issuer len years paymentStatus = issue (3 :: Int)
+issueNameCode cc issuer len years paymentStatus
+  | years < minNameYears || years > maxNameYears = pure $ Left $ "name code years " <> show years <> " is outside " <> show minNameYears <> "-" <> show maxNameYears
+  | otherwise = issue (3 :: Int)
   where
     issue retries = do
       code <- randomNamePrepaidCode (random cc) len
