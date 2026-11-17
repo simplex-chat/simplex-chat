@@ -94,7 +94,7 @@ fun showApp() {
 }
 
 fun reloadUi() {
-  if (chatModel.activeCall.value != null) return
+  if (chatModel.activeCall.value != null || !chatModel.controller.hasChatCtrl()) return
   stopUpdateChecker()
   chatModel.controller.handOffForReload()
   releaseSingleInstance()

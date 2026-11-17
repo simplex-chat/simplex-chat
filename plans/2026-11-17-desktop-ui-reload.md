@@ -79,7 +79,7 @@ sequenceDiagram
 ## What breaks
 
 - The UI state in memory: the open chat, scroll positions, drafts, modals; the new UI opens on the chat list.
-- A reload is refused during a call.
+- A reload is refused during a call, and while the database is not open.
 - The new receiver reads the core once the old one returns, after the next event or 300 s (MESSAGE_TIMEOUT).
 - Jobs and threads of the old UI run until they end; its commands fail without the controller.
 - Each reload keeps the old UI's classes while a thread, a listener or Compose's global state references them; the log has the heap after each reload.
