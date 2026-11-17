@@ -15,7 +15,7 @@ scripts/nix/sha256map.nix changes once the commit is in simplex-chat/simplexmq; 
 
 A1-21: the registration, record edit and change rows of Names/Store.hs hold Address, LabelHash and RecoverableSignature; decodeAddress and decodeSignature go.
 
-A1-17: label turns keyed by LabelHash; withLabelTurns compares the hashes.
+A1-17: label turns keyed by LabelHash, code turns by CodeHash; withLabelTurns compares the hashes.
 
 A4-22: `nCommunity :: Map LabelHash Text`, filled by labelHash; communityFor and logNamePolicy look it up by the LabelHash.
 
