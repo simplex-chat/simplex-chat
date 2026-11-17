@@ -3408,7 +3408,7 @@ processChatCommand cxt nm = \case
       g@(GIK gInfo _) <- getAdminGroup user
       (g,) <$> withFastStore (\db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId mRole subMode))
       `onChatError` deleteAgentConnectionAsync connId
-    gLink' <- if groupProfile' == groupProfile then pure gLink else fromMaybe gLink <$> setGroupLinkData' nm user g
+    gLink' <- if groupProfile' == groupProfile then pure gLink else fromMaybe gLink <$> (setGroupLinkData' nm user g `catchAllErrors` \e -> eToView e $> Nothing)
     pure $ CRGroupLinkCreated user gInfo gLink'
     where
       getAdminGroup user = do
