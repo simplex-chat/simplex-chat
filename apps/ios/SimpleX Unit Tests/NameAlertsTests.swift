@@ -350,7 +350,7 @@ private struct SearchHost: View {
     }
 }
 
-private func singleFieldJSON(_ value: Any) -> Any {
+func singleFieldJSON(_ value: Any) -> Any {
     if let object = value as? [String: Any] {
         var fields = object.mapValues(singleFieldJSON)
         guard let tag = object["type"] as? String else { return fields }
