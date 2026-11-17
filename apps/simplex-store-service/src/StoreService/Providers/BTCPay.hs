@@ -452,8 +452,8 @@ invoiceSignal now ref status additional policy ms = do
       confirming = settlesOnReceipt cc || maybe False (`elem` map speedPolicyName confirmingPolicies) policy
       shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
       received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmAmount gpmDue gpmPayments
-      -- BTCPay never settles an invoice it has closed, so only its additional status tells that the whole amount reached it.
-      -- Its paid amount counts unconfirmed on-chain payments too, so on chain a due at 0 or less does not.
+      -- BTCPay never settles an invoice it has closed. On chain only its additional status tells that the whole amount reached it, as its paid amount counts unconfirmed payments too.
+      -- A Lightning payment is recorded only once settled, so there a due at 0 or less tells it.
       settledInFull = settlesOnReceipt cc && maybe False ((<= 0) . wnValue) gpmDue
       fundedIf inFull = if inFull then PaidInFull else PaidInPart
       closedFunded = fundedIf (maybe False (`elem` closedInFullStatuses) additional || settledInFull)
