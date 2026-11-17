@@ -466,32 +466,35 @@ export class ChatApi {
 
   /**
    * Send text message.
+   * `priority`: -1 silent, 0 normal, 1 high (groups only, for roles allowed by the group preference).
    * Network usage: background.
    */
-  async apiSendTextMessage(chat: [T.ChatType, number] | T.ChatRef | T.ChatInfo, text: string, inReplyTo?: number): Promise<T.AChatItem[]> {
-    return this.apiSendMessages(chat, [{msgContent: {type: "text", text}, mentions: {}, quotedItemId: inReplyTo}])
+  async apiSendTextMessage(chat: [T.ChatType, number] | T.ChatRef | T.ChatInfo, text: string, inReplyTo?: number, priority?: number): Promise<T.AChatItem[]> {
+    return this.apiSendMessages(chat, [{msgContent: {type: "text", text}, mentions: {}, quotedItemId: inReplyTo, priority}])
   }
 
   /**
    * Send text message in reply to received message.
+   * `priority`: -1 silent, 0 normal, 1 high (groups only, for roles allowed by the group preference).
    * Network usage: background.
    */
-  async apiSendTextReply(chatItem: T.AChatItem, text: string): Promise<T.AChatItem[]> {
-    return this.apiSendTextMessage(chatItem.chatInfo, text, chatItem.chatItem.meta.itemId)
+  async apiSendTextReply(chatItem: T.AChatItem, text: string, priority?: number): Promise<T.AChatItem[]> {
+    return this.apiSendTextMessage(chatItem.chatInfo, text, chatItem.chatItem.meta.itemId, priority)
   }
 
   /**
    * Update message.
    * A live message stays live with `liveMessage = true` and is finalized with `liveMessage = false`.
+   * `priority = 1` raises the message to high priority (groups only, for roles allowed by the group preference).
    * Network usage: background.
    */
-  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage = false): Promise<T.ChatItem> {
+  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage = false, priority?: number): Promise<T.ChatItem> {
     const r = await this.sendChatCmd(
       CC.APIUpdateChatItem.cmdString({
         chatRef: {chatType, chatId},
         chatItemId,
         liveMessage,
-        updatedMessage: {msgContent, mentions: {}},
+        updatedMessage: {msgContent, mentions: {}, priority},
       })
     )
     if (r.type === "chatItemUpdated" || r.type === "chatItemNotChanged") return r.chatItem.chatItem

@@ -1258,7 +1258,7 @@ struct ChatView: View {
                             circleButton {
                                 unreadCountText(model.unreadAbove)
                                     .font(.callout)
-                                    .foregroundColor(theme.colors.primary)
+                                    .foregroundColor(onlySilentUnread ? theme.colors.secondary : theme.colors.primary)
                             }
                             .onTapGesture {
                                 if loadingTopItems {
@@ -1289,7 +1289,7 @@ struct ChatView: View {
                                     if model.unreadBelow > 0 {
                                         unreadCountText(model.unreadBelow)
                                             .font(.callout)
-                                            .foregroundColor(theme.colors.primary)
+                                            .foregroundColor(onlySilentUnread ? theme.colors.secondary : theme.colors.primary)
                                     } else {
                                         Image(systemName: "chevron.down").foregroundColor(theme.colors.primary)
                                     }
@@ -1353,6 +1353,10 @@ struct ChatView: View {
                 await scrollView.scrollToItemAnimated(0, top: false)
                 await MainActor.run { animatedScrollingInProgress = false }
             }
+        }
+
+        private var onlySilentUnread: Bool {
+            chat.chatStats.allUnreadSilent
         }
 
         private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
@@ -1848,15 +1852,15 @@ struct ChatView: View {
                     markedRead = true
                 }
                 if let range {
-                    let (itemIds, unreadMentions) = unreadItemIds(range)
+                    let (itemIds, unreadMentions, unreadSilent, unreadHighPriority) = unreadItemIds(range)
                     if !itemIds.isEmpty {
                         waitToMarkRead {
-                            await apiMarkChatItemsRead(im, chat.chatInfo, itemIds, mentionsRead: unreadMentions)
+                            await apiMarkChatItemsRead(im, chat.chatInfo, itemIds, mentionsRead: unreadMentions, silentRead: unreadSilent, highPriorityRead: unreadHighPriority)
                         }
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
-                        await apiMarkChatItemsRead(im, chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0)
+                        await apiMarkChatItemsRead(im, chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0, silentRead: chatItem.meta.silent ? 1 : 0, highPriorityRead: chatItem.meta.highPriority ? 1 : 0)
                     }
                 }
             }
@@ -1877,9 +1881,11 @@ struct ChatView: View {
             }
         }
 
-        private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], Int) {
+        private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], Int, Int, Int) {
             var unreadItems: [ChatItem.ID] = []
             var unreadMentions: Int = 0
+            var unreadSilent: Int = 0
+            var unreadHighPriority: Int = 0
 
             for i in range {
                 if i < 0 || i >= im.reversedChatItems.count {
@@ -1891,10 +1897,16 @@ struct ChatView: View {
                     if ci.meta.userMention {
                         unreadMentions += 1
                     }
+                    if ci.meta.silent {
+                        unreadSilent += 1
+                    }
+                    if ci.meta.highPriority {
+                        unreadHighPriority += 1
+                    }
                 }
             }
 
-            return (unreadItems, unreadMentions)
+            return (unreadItems, unreadMentions, unreadSilent, unreadHighPriority)
         }
 
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {

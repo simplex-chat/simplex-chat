@@ -175,18 +175,15 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
 chatEventNotification :: ChatTerminal -> ChatController -> ChatEvent -> IO ()
 chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   -- At the moment of writing received items are created one at a time
-  CEvtNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) : _) ->
-    when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ do
+  CEvtNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = CIMeta {priority}}) : _) ->
+    when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
-      case (cInfo, chatDir) of
-        (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
-        (GroupChat g scopeInfo, CIGroupRcv m) -> sendNtf (fromGroup_ g scopeInfo (Just m), text)
-        (GroupChat g scopeInfo, CIChannelRcv) -> sendNtf (fromGroup_ g scopeInfo Nothing, text)
-        _ -> pure ()
-    where
-      text = msgText mc formattedText
-  CEvtChatItemUpdated u (AChatItemUpdate _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _} _) ->
-    whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ setActiveChat t cInfo
+      msgNtf cInfo chatDir $ msgText mc formattedText
+  CEvtChatItemUpdated u (AChatItemUpdate _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText, meta = meta@CIMeta {priority}} ChatItem {meta = prevMeta}) ->
+    when (chatDirNtf u cInfo chatDir (isUserMention ci) && all (>= 0) priority) $ do
+      whenCurrUser cc u $ setActiveChat t cInfo
+      when (highPriority meta && not (highPriority prevMeta)) $
+        msgNtf cInfo chatDir $ msgText mc formattedText
   CEvtContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")
@@ -217,6 +214,12 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   _ -> pure ()
   where
     sendNtf = maybe (\_ -> pure ()) (. uncurry Notification) sendNotification
+    msgNtf :: ChatInfo c -> CIDirection c d -> Text -> IO ()
+    msgNtf cInfo chatDir text = case (cInfo, chatDir) of
+      (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
+      (GroupChat g scopeInfo, CIGroupRcv m) -> sendNtf (fromGroup_ g scopeInfo (Just m), text)
+      (GroupChat g scopeInfo, CIChannelRcv) -> sendNtf (fromGroup_ g scopeInfo Nothing, text)
+      _ -> pure ()
 
 chatResponseNotification :: ChatTerminal -> Either ChatError ChatResponse -> IO ()
 chatResponseNotification ChatTerminal {sendNotification} = \case

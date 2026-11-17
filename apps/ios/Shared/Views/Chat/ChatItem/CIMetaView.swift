@@ -132,6 +132,9 @@ func ciMetaText(
         }
     }
     let resolved = colorMode.resolve(color)
+    if meta.highPriority {
+        r = r + statusIconText("bell.fill", colorMode.resolve(primaryColor)) + joiner
+    }
     if showEdited, meta.itemEdited {
         r = r + statusIconText("pencil", resolved) + joiner
     }
