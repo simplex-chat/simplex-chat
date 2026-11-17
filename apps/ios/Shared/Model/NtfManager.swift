@@ -269,11 +269,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         ntfBadgeCountGroupDefault.set(count)
     }
 
-    // Spec: spec/services/notifications.md#changeNtfBadgeCount
-    func changeNtfBadgeCount(by count: Int = 1) {
-        setNtfBadgeCount(max(0, UIApplication.shared.applicationIconBadgeNumber + count))
-    }
-
     func addNotification(_ content: UNMutableNotificationContent) {
         if !granted { return }
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: ntfTimeInterval, repeats: false)

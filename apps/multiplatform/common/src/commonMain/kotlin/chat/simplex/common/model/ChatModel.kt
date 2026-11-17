@@ -395,6 +395,7 @@ object ChatModel {
   fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.value.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
   fun getGroupChat(groupId: Long): Chat? = chats.value.firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
+  val activeUserUnreadCount: Int get() = chats.value.sumOf { it.userUnreadCount }
 
   fun populateGroupMembersIndexes() {
     groupMembersIndexes.value = emptyMap()
@@ -618,7 +619,7 @@ object ChatModel {
             else -> cItem
           }
           chats[i] = chat.copy(chatItems = arrayListOf(newPreviewItem))
-          changeChatStats(rhId, i, cInfo, null, cItem)
+          changeChatStats(i,cInfo, null, cItem)
         }
         // pop chat
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
@@ -681,7 +682,7 @@ object ChatModel {
     suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem) {
       val i = getChatIndex(rhId, cInfo.id)
       if (i >= 0) {
-        changeChatStats(rhId, i, cInfo, prevItem, cItem)
+        changeChatStats(i,cInfo, prevItem, cItem)
       }
       replaceChatItem(rhId, cInfo, cItem)
     }
@@ -721,7 +722,7 @@ object ChatModel {
         val i = getChatIndex(rhId, cInfo.id)
         val chat: Chat
         if (i >= 0) {
-          changeChatStats(rhId, i, cInfo, cItem, null)
+          changeChatStats(i,cInfo, cItem, null)
           chat = chats[i]
           val pItem = chat.chatItems.lastOrNull()
           if (pItem?.id == cItem.id) {
@@ -769,7 +770,7 @@ object ChatModel {
           for (item in chatItems.value) {
             if (isRemovedMemberItem(item)) {
               if (i >= 0) {
-                changeChatStats(rhId, i, cInfo, item, null)
+                changeChatStats(i,cInfo, item, null)
               }
               if (item.isActiveReport) {
                 decreaseGroupReportsCounter(rhId, groupInfo.id)
@@ -814,7 +815,6 @@ object ChatModel {
       // clear preview
       val i = getChatIndex(rhId, cInfo.id)
       if (i >= 0) {
-        decreaseUnreadCounter(rhId, currentUser.value!!, chats[i].chatStats.unreadCount)
         val chatBefore = chats[i]
         chats[i] = chats[i].copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats(), chatInfo = cInfo)
         markChatTagRead(chatBefore)
@@ -887,7 +887,6 @@ object ChatModel {
           val wasUnread = chat.unreadTag
           val unreadCount = if (itemIds != null) maxOf(0, chat.chatStats.unreadCount - markedRead) else 0
           val unreadMentions = if (itemIds != null) maxOf(0, chat.chatStats.unreadMentions - mentionsMarkedRead) else 0
-          decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
           chats[chatIdx] = chat.copy(
             chatStats = chat.chatStats.copy(unreadCount = unreadCount, unreadMentions = unreadMentions)
           )
@@ -932,12 +931,11 @@ object ChatModel {
       return markedRead to mentionsMarkedRead
     }
 
-    private fun changeChatStats(rhId: Long?, i: Int, cInfo: ChatInfo, prevItem: ChatItem?, cItem: ChatItem?) {
+    private fun changeChatStats(i: Int, cInfo: ChatInfo, prevItem: ChatItem?, cItem: ChatItem?) {
       if (secondaryContextFilter != null || cInfo.groupChatScope() != null) return
       val chat = chats[i]
       val wasUnread = chat.unreadTag
       chats[i] = chat.copy(chatStats = chat.chatStats.withItemChange(prevItem, cItem))
-      changeUnreadCounterInPrimaryContext(rhId, currentUser.value!!, chats[i].chatStats.unreadCount - chat.chatStats.unreadCount)
       updateChatTagReadInPrimaryContext(chats[i], wasUnread)
     }
 
@@ -1464,6 +1462,12 @@ data class Chat(
     else -> chatStats.unreadChat
   }
 
+  val userUnreadCount: Int get() = when (chatInfo.chatSettings?.enableNtfs) {
+    All -> chatStats.unreadCount
+    Mentions -> chatStats.unreadMentions
+    else -> 0
+  }
+
   val id: String get() = chatInfo.id
 
   val supportUnreadCount: Int get() = when (chatInfo) {
@@ -1794,6 +1798,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   fun ntfsEnabled(ci: ChatItem): Boolean =
     ntfsEnabled(ci.meta.userMention)
+
+  fun countsInUserUnread(ci: ChatItem): Boolean =
+    ci.isRcvNew && groupChatScope() == null && ntfsEnabled(ci)
 
   fun ntfsEnabled(userMention: Boolean): Boolean =
     when (chatSettings?.enableNtfs) {

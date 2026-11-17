@@ -614,6 +614,9 @@ final class ChatModel: ObservableObject {
         }
         ChatTagsModel.shared.addPresetChatTags(chat.chatInfo, chat.chatStats)
         ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: false)
+        if chat.userUnreadCount > 0 {
+            updateNtfBadgeCount()
+        }
         popChatCollector.throttlePopChat(chat.chatInfo.id, currentPosition: 0)
     }
 
@@ -625,6 +628,7 @@ final class ChatModel: ObservableObject {
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
             let wasUnread = chats[i].unreadTag
+            let wasUserUnreadCount = chats[i].userUnreadCount
             if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
                 chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: nil)
             } else {
@@ -632,6 +636,9 @@ final class ChatModel: ObservableObject {
             }
             chats[i].created = Date.now
             ChatTagsModel.shared.updateChatTagRead(chats[i], wasUnread: wasUnread)
+            if chats[i].userUnreadCount != wasUserUnreadCount {
+                updateNtfBadgeCount()
+            }
         }
     }
 
@@ -1006,10 +1013,10 @@ final class ChatModel: ObservableObject {
     func markAllChatItemsRead(_ chatIM: ItemsModel, _ cInfo: ChatInfo) {
         // update preview
         _updateChat(cInfo.id) { chat in
-            self.decreaseUnreadCounter(user: self.currentUser!, chat: chat)
             ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
         }
+        updateNtfBadgeCount()
         // update current chat
         if chatId == cInfo.id {
             var i = 0
@@ -1031,11 +1038,11 @@ final class ChatModel: ObservableObject {
     func clearChat(_ cInfo: ChatInfo) {
         // clear preview
         if let chat = getChat(cInfo.id) {
-            self.decreaseUnreadCounter(user: self.currentUser!, chat: chat)
             chat.chatItems = []
             ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
             chat.chatInfo = cInfo
+            updateNtfBadgeCount()
         }
         // clear current chat
         if chatId == cInfo.id {
@@ -1173,18 +1180,11 @@ final class ChatModel: ObservableObject {
         chats[chatIndex].chatStats.unreadCount = max(0, stats.unreadCount + count)
         chats[chatIndex].chatStats.unreadMentions = max(0, stats.unreadMentions + unreadMentions)
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
-        changeUnreadCounter(user: currentUser!, by: chats[chatIndex].chatStats.unreadCount - stats.unreadCount)
+        updateNtfBadgeCount()
     }
 
     func increaseUnreadCounter(user: any UserLike) {
         changeUnreadCounter(user: user, by: 1)
-    }
-
-    func decreaseUnreadCounter(user: any UserLike, chat: Chat) {
-        let by = chat.chatInfo.chatSettings?.enableNtfs == .mentions
-                ? chat.chatStats.unreadMentions
-                : chat.chatStats.unreadCount
-        decreaseUnreadCounter(user: user, by: by)
     }
 
     func decreaseUnreadCounter(user: any UserLike, by: Int = 1) {
@@ -1195,18 +1195,18 @@ final class ChatModel: ObservableObject {
         if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
             users[i].unreadCount += by
         }
-        NtfManager.shared.changeNtfBadgeCount(by: by)
+        updateNtfBadgeCount()
+    }
+
+    func updateNtfBadgeCount() {
+        NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
     }
 
     // Spec: spec/state.md#totalUnreadCountForAllUsers
     func totalUnreadCountForAllUsers() -> Int {
         var unread: Int = 0
         for chat in chats {
-            switch chat.chatInfo.chatSettings?.enableNtfs {
-            case .all: unread += chat.chatStats.unreadCount
-            case .mentions: unread += chat.chatStats.unreadMentions
-            default: ()
-            }
+            unread += chat.userUnreadCount
         }
         for u in users {
             if !u.user.activeUser {
@@ -1340,6 +1340,9 @@ final class ChatModel: ObservableObject {
                 groupId = removed.chatInfo.groupInfo?.groupId
                 ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
                 removeWallpaperFilesFromChat(removed)
+                if removed.userUnreadCount > 0 {
+                    updateNtfBadgeCount()
+                }
             }
         }
         if chatId == id {
@@ -1454,6 +1457,14 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
         case .all: chatStats.unreadChat || chatStats.unreadCount > 0
         case .mentions: chatStats.unreadChat || chatStats.unreadMentions > 0
         default: chatStats.unreadChat
+        }
+    }
+
+    var userUnreadCount: Int {
+        switch chatInfo.chatSettings?.enableNtfs {
+        case .all: chatStats.unreadCount
+        case .mentions: chatStats.unreadMentions
+        default: 0
         }
     }
 

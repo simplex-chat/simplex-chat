@@ -2729,7 +2729,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
-                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
+                } else if cInfo.countsInUserUnread(cItem) {
                     m.increaseUnreadCounter(user: user)
                 }
             }
@@ -2775,7 +2775,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if !active(user) {
             for item in items {
                 let d = item.deletedChatItem
-                if item.toChatItem == nil && d.chatItem.isRcvNew && d.chatInfo.ntfsEnabled(chatItem: d.chatItem) {
+                if item.toChatItem == nil && d.chatInfo.countsInUserUnread(d.chatItem) {
                     await MainActor.run {
                         m.decreaseUnreadCounter(user: user)
                     }
@@ -3242,7 +3242,7 @@ func chatItemUpdate(_ user: any UserLike, _ update: AChatItemUpdate) async {
     if active(user) {
         await MainActor.run { m.applyChatItemUpdate(cInfo, cItem, prevItem) }
     } else {
-        let change = unreadCountChange(prevItem, cItem) { $0.isRcvNew && cInfo.ntfsEnabled(chatItem: $0) }
+        let change = unreadCountChange(prevItem, cItem) { cInfo.countsInUserUnread($0) }
         if change > 0 {
             await MainActor.run { m.increaseUnreadCounter(user: user) }
         } else if change < 0 {
