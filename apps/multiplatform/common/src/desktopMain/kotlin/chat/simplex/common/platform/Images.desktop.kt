@@ -45,15 +45,20 @@ internal fun receivedImageReadParam(reader: ImageReader, sampleSize: Int): Image
 internal fun ByteArray.byteAt(pos: Int): Int = if (pos < size) this[pos].toInt() and 0xFF else 0
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap =
-  base64BitmapCache.getOrPut(base64ImageString) {
-    try {
-      readBase64Image(base64ImageString) { reader, sampleSize, _ ->
-        reader.read(0, receivedImageReadParam(reader, sampleSize)).toComposeImageBitmap()
-      } ?: errorImageBitmap
-    } catch (e: Throwable) {
-      Log.e(TAG, "base64ToBitmap error: $e")
-      errorImageBitmap
+  try {
+    base64BitmapCache.getOrPut(base64ImageString) {
+      try {
+        readBase64Image(base64ImageString) { reader, sampleSize, _ ->
+          reader.read(0, receivedImageReadParam(reader, sampleSize)).toComposeImageBitmap()
+        } ?: errorImageBitmap
+      } catch (e: Exception) {
+        Log.e(TAG, "base64ToBitmap error: $e")
+        errorImageBitmap
+      }
     }
+  } catch (e: Error) {
+    Log.e(TAG, "base64ToBitmap error: $e")
+    errorImageBitmap
   }
 
 actual fun base64BitmapSize(base64ImageString: String): IntSize? =
