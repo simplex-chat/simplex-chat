@@ -14,7 +14,7 @@ module ChatTests.Groups where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Profiles (addTestBadge, futureDate, invalidLink, issueTestBadge, setLinkType, testBadgeKeys)
+import ChatTests.Profiles (addTestBadge, futureDate, invalidLink, issueTestBadge, setLinkType, setTestGroupLinkData, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -46,7 +46,7 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Chat.Types.UITheme (ChatLayout (..))
 import Simplex.Messaging.Agent (createConnection, joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SConnectionMode (..))
+import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SConnectionMode (..), UserLinkData (..))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
@@ -322,8 +322,10 @@ chatGroupTests = do
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should keep channel profile from link data when joining" testChannelJoinKeepsLinkProfile
       it "should apply channel profile from link data when joining" testChannelJoinAppliesLinkProfile
+      it "should apply channel profile from link data to known channel in plan" testChannelPlanAppliesLinkProfile
       it "should check entity ID of channel link on refresh" testChannelLinkDataOtherChannel
       it "should validate type of channel link" testChannelLinkAsOtherTypes
+      it "relay link checks should skip invalid channel link data" testRelayLinkChecksInvalidData
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
@@ -10862,6 +10864,42 @@ testChannelLinkAsOtherTypes ps =
           invalidLink cath
         cath ##> ("/relay test " <> setLinkType "/c#" "/r#" shortLink)
         cath <## "relay test failed at RTSGetLink, error: ChatError {errorType = CEInvalidConnReq}"
+
+testChannelPlanAppliesLinkProfile :: HasCallStack => TestParams -> IO ()
+testChannelPlanAppliesLinkProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        withCCTransaction cath $ \db ->
+          DB.execute_ db "UPDATE group_profiles SET short_descr = 'local copy'"
+        cath ##> ("/_connect plan 1 " <> shortLink <> " resolve=allGroups")
+        cath <## "group link: known group #team"
+        cath <## "use #team <message> to send messages"
+        withCCTransaction cath (\db -> DB.query_ db "SELECT short_descr FROM group_profiles" :: IO [Only (Maybe T.Text)])
+          `shouldReturn` [Only Nothing]
+
+testRelayLinkChecksInvalidData :: HasCallStack => TestParams -> IO ()
+testRelayLinkChecksInvalidData ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps testCfg {relayChecksInterval = 3} relayTestOpts "bob" bobProfile $ \bob -> do
+      _ <- prepareChannel1Relay "team" alice bob
+      relayOwnStatus bob "active"
+      setTestGroupLinkData alice $ UserLinkData ""
+      invalidLink bob
+      relayOwnStatus bob "active"
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+  where
+    relayOwnStatus :: HasCallStack => TestCC -> T.Text -> IO ()
+    relayOwnStatus cc status = go (100 :: Int)
+      where
+        go n = do
+          [Only s] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT relay_own_status FROM groups" :: IO [Only T.Text]
+          if s == status || n == 0
+            then s `shouldBe` status
+            else threadDelay 100000 >> go (n - 1)
 
 testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdatePrefsSigned ps =
