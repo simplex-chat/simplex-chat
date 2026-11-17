@@ -649,9 +649,12 @@ eventPriority = \case
   XMsgNew MsgContainer {priority = Just p} -> limitPriority p
   _ -> 0
 
+requestsHighPriority :: Maybe Int -> Bool
+requestsHighPriority = maybe False (>= 1)
+
 raisesPriority :: ChatMsgEvent e -> Bool
 raisesPriority = \case
-  XMsgUpdate {priority = Just p} -> p >= 1
+  XMsgUpdate {priority} -> requestsHighPriority priority
   _ -> False
 
 cmPriority :: AChatMsgEvent -> Int

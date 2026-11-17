@@ -2395,11 +2395,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     Nothing -> createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs) $> Nothing
               | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatDirection 'CTGroup 'MDRcv -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
-        updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {priority = itemPriority_, itemDeleted}} scopeInfo oldMC itemLive memberId = do
+        updateCI showGroupAsSender cd ci@ChatItem {meta = meta@CIMeta {itemDeleted}} scopeInfo oldMC itemLive memberId = do
           let changed = mc /= oldMC
-              requested = maybe False (>= 1) priority_
-              itemPriority = fromMaybe 0 itemPriority_
-              raise = requested && itemPriority < 1 && isNothing scopeInfo && isNothing itemDeleted && rcvPriorityAllowed cd
+              requested = requestsHighPriority priority_
+              raise = requested && not (highPriority meta) && isNothing scopeInfo && isNothing itemDeleted && rcvPriorityAllowed cd
               ciRaised = if raise then ci {meta = meta {priority = Just 1, userMention = True}} else ci
           if changed || fromMaybe False itemLive || requested
             then do
