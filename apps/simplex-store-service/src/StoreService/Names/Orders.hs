@@ -177,7 +177,7 @@ hexHash :: J.Value -> JT.Parser ByteString
 hexHash = textWith $ maybe (Left "not a 32-byte hash in lowercase hex") Right . bytes32FromHex
 
 hexSignature :: J.Value -> JT.Parser RecoverableSignature
-hexSignature = textWith $ first show . parseSignature
+hexSignature = textWith parseSignature
 
 parseBody :: Text -> JT.Parser a -> Either OrderRefusal a
 parseBody what = first (\e -> ORBadRequest $ "a malformed " <> what <> ": " <> T.pack e) . JT.parseEither id

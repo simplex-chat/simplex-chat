@@ -8,12 +8,13 @@ import Control.Monad (forM_)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.Either (isLeft)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
-import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), SignatureError (..))
+import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (SimplexTLD (..), labelHash)
@@ -81,12 +82,13 @@ namesSignatureTests = describe "StoreService names: signatures" $ do
   describe "signature format" $ do
     it "refuses a high s, though recovery accepts it" testHighS
     it "refuses v other than 27 or 28" $
-      forM_ ["00", "01", "1d"] $ \v -> parseSignature (T.dropEnd 2 orderSignature <> v) `shouldBe` Left SERecoveryId
+      forM_ ["00", "01", "1d"] $ \v -> parseSignature (T.dropEnd 2 orderSignature <> v) `shouldBe` Left "Failed reading: signature: expected r, s and v of 27 or 28"
     it "refuses uppercase hex, no 0x and a wrong length" $ do
-      parseSignature ("0x" <> T.toUpper (T.drop 2 orderSignature)) `shouldBe` Left SEFormat
-      parseSignature (T.drop 2 orderSignature) `shouldBe` Left SEFormat
-      parseSignature (T.dropEnd 2 orderSignature) `shouldBe` Left SEFormat
-      parseSignature (orderSignature <> "00") `shouldBe` Left SEFormat
+      let badForm = Left "Failed reading: signature: expected 0x and 130 lowercase hex digits"
+      parseSignature ("0x" <> T.toUpper (T.drop 2 orderSignature)) `shouldBe` badForm
+      parseSignature (T.drop 2 orderSignature) `shouldSatisfy` isLeft
+      parseSignature (T.dropEnd 2 orderSignature) `shouldBe` badForm
+      parseSignature (orderSignature <> "00") `shouldBe` badForm
   describe "addresses" $ do
     it "accepts the EIP-55 form in orders" $
       parseChecksumAddress ownerText `shouldBe` Right owner
@@ -134,7 +136,7 @@ testMessage msg expected digest signature = do
 
 testHighS :: IO ()
 testHighS = do
-  parseSignature highS `shouldBe` Left SEHighS
+  parseSignature highS `shouldBe` Left "Failed reading: signature: s is not in the lower half of the group order"
   let (rsR, (rsS, v)) = B.splitAt 32 <$> B.splitAt 32 (hx highS)
   recoverAddress RecoverableSignature {rsR, rsS, rsRecId = B.head v - 27} (personalDigest $ orderMessage termsOrder termsTimestamp)
     `shouldReturn` Right owner

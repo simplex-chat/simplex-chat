@@ -78,9 +78,9 @@ import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..))
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
-import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature, SignatureError, signatureFromHex)
+import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
-import Simplex.Messaging.Eth.Address (Address, anyCaseAddressP, checksumAddressP, recoverAddress, unAddress)
+import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexDomain (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
@@ -359,8 +359,8 @@ instance ToField AgreedTerms where toField = toField . textEncode
 communityTermsPrefix :: Text
 communityTermsPrefix = "community/"
 
-parseSignature :: Text -> Either SignatureError RecoverableSignature
-parseSignature = signatureFromHex . encodeUtf8
+parseSignature :: Text -> Either String RecoverableSignature
+parseSignature = strDecode . encodeUtf8
 
 -- | EIP-191 @personal_sign@ digest.
 personalDigest :: ByteString -> ByteString
@@ -387,7 +387,12 @@ orderWords OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofComm
   [hex lh, tshow (nameLengthInt ofLength), tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed, textEncode ofAgreedTerms]
 
 parseChecksumAddress :: Text -> Either AddressError Address
-parseChecksumAddress t = parseAnyCaseAddress t >> first (const ADChecksum) (parseText checksumAddressP t)
+parseChecksumAddress t = do
+  a <- parseAnyCaseAddress t
+  unless (decodeLatin1 (strEncode a) == t) $ Left ADChecksum
+  pure a
 
 parseAnyCaseAddress :: Text -> Either AddressError Address
-parseAnyCaseAddress = first (const ADFormat) . parseText anyCaseAddressP
+parseAnyCaseAddress t
+  | "0x" `T.isPrefixOf` t = first (const ADFormat) $ strDecode $ encodeUtf8 $ T.toLower t
+  | otherwise = Left ADFormat
