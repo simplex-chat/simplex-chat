@@ -560,7 +560,7 @@ instance FromJSON SignedNameOrder where
       <*> o .: "timestamp"
       <*> o .: "signature"
 
-signedOrderPairs :: SignedNameOrder -> [J.Pair]
+signedOrderPairs :: SignedNameOrder -> [JT.Pair]
 signedOrderPairs SignedNameOrder {labelHash, labelLength, duration, commitment, sealed, terms, timestamp, signature} =
   [ "labelHash" .= labelHash,
     "length" .= labelLength,
