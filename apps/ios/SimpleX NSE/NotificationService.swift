@@ -1055,18 +1055,14 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
             return nil
         }
     case let .chatItemUpdated(user, update):
-        if update.chatItem.isRaised(from: update.prevChatItem) {
-            let cInfo = update.chatInfo
-            let cItem = update.chatItem
-            let ntf: NSENotificationData = if cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification {
-                .messageReceived(user, cInfo, cItem)
-            } else {
-                .noNtf
-            }
-            return (itemNtfEntityId(cInfo, cItem), ntf)
+        let cInfo = update.chatInfo
+        let cItem = update.chatItem
+        let ntf: NSENotificationData = if cItem.isRaised(from: update.prevChatItem) && cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification {
+            .messageReceived(user, cInfo, cItem)
         } else {
-            return nil
+            .noNtf
         }
+        return (itemNtfEntityId(cInfo, cItem), ntf)
     case let .duplicateGroupMessage(_, member):
         return (member.id, .noNtf)
     case let .rcvFileSndCancelled(_, aChatItem, _):
