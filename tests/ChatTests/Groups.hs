@@ -6173,6 +6173,7 @@ testGroupRedeliveredForwardedMessage ps = do
         cath ##> "/_start"
         cath <### ["chat started", StartsWith "subscribed "]
         alice #> "#team hey"
+        bob <# "#team alice> hey"
         cath <# "#team alice> hey"
         cath #$> ("/_get chat #1 count=2", chat, [(0, "hi there"), (0, "hey")])
 
