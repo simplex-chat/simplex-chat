@@ -80,7 +80,7 @@ jobs:
         id: names
         run: |
           echo "core=ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-core.sh') }}" >> "$GITHUB_OUTPUT"
-          echo "backend=ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "backend=ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'apps/simplex-store-service/Main.hs', 'apps/simplex-store-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh', 'scripts/ci/names-chain/build.sh') }}-$(git rev-parse HEAD:apps/simplex-domains)" >> "$GITHUB_OUTPUT"
 
       - name: Find core library
         id: core
@@ -159,6 +159,12 @@ jobs:
         run: |
           scripts/ci/ios-sim/prepare-libs.sh
           scripts/ios/update-pbxproj.sh
+
+      - name: Setup Node.js
+        if: env.START_BACKEND == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
 
       - name: Build backend
         if: env.BUILD_BACKEND == 'true'
@@ -297,6 +303,12 @@ jobs:
           path: ~/Downloads
           run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
           github-token: ${{ github.token }}
+
+      - name: Setup Node.js
+        if: needs.plan.outputs.claude-backend == 'yes'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
 
       - name: Start test backend
         id: backend
