@@ -54,7 +54,7 @@ export function historyRows(entries: readonly OrderRecord[]): HistoryRow[] {
       case "paid":
         return e.code !== undefined ? { kind: "paid" as const, order, code: e.code } : { kind: "paidNoCode" as const, order };
       case "expired":
-        return e.canceled === true ? { kind: "canceled" as const, order } : { kind: "expired" as const, order };
+        return e.canceled === true && !receivedMoney(e) ? { kind: "canceled" as const, order } : { kind: "expired" as const, order };
       case "processing":
         return { kind: "processing" as const, order };
       case "partPaid":
@@ -64,6 +64,9 @@ export function historyRows(entries: readonly OrderRecord[]): HistoryRow[] {
     }
   });
 }
+
+const receivedMoney = (e: OrderRecord): boolean =>
+  e.paidInFull === true || e.cryptoAmountPaid !== undefined || (e.amountPaid ?? 0) > 0;
 
 export function recordFromView(orderId: string, view: InvoiceView, nowMs: number): OrderRecord {
   return {

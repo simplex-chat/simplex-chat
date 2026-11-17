@@ -418,8 +418,9 @@ export function paymentUri(method: Chain, address: string, amount: string): stri
   return `${scheme}:${destination}?${parameter}=${encodeURIComponent(amount)}`;
 }
 
-export function paymentQrPayload(method: Chain, address: string, uri: string): string {
-  return method === "ln" ? address.toUpperCase() : uri;
+export function paymentQr(method: Chain, address: string, amount: string): string | null {
+  if (method === "ln") return address === "" ? null : address.toUpperCase();
+  return paymentUri(method, address, amount);
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";

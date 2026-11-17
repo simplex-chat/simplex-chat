@@ -625,13 +625,30 @@ domTest("screens: cancelling a Lightning invoice warns that its BOLT11 stays pay
   }
 });
 
-domTest("screens: an expired Lightning order says the invoice can no longer be paid", () => {
-  const nothing = render(screens.windowClosed({ onNewInvoice: noop,
+domTest("screens: a closed Lightning order says the invoice can no longer be paid only once it has expired", () => {
+  const past = new Date(NOW - 60_000).toISOString();
+  const future = new Date(NOW + 60_000).toISOString();
+  const nothing = render(screens.windowClosed({ onNewInvoice: noop, now: () => NOW,
     order: unpaidRecord({ status: "expired", method: "ln" }),
-    invoice: { status: "expired", amount: 700, currency: "usd" },
+    invoice: { status: "expired", amount: 700, currency: "usd", expiresAt: past },
   }));
   assert.ok(nothing.textContent.includes("Nothing was received, and nothing was charged."), nothing.textContent);
   assert.ok(nothing.textContent.includes(screens.LIGHTNING_EXPIRED), "read from the order, since a closed view drops the destination");
+  assert.ok(!nothing.textContent.includes(screens.LIGHTNING_STILL_PAYABLE), nothing.textContent);
+
+  const closedEarly = render(screens.windowClosed({ onNewInvoice: noop, now: () => NOW,
+    order: unpaidRecord({ status: "expired", method: "ln" }),
+    invoice: { status: "expired", amount: 700, currency: "usd", expiresAt: future },
+  }));
+  assert.ok(closedEarly.textContent.includes(screens.LIGHTNING_STILL_PAYABLE), `a cancel seen from another browser: ${closedEarly.textContent}`);
+  assert.ok(!closedEarly.textContent.includes(screens.LIGHTNING_EXPIRED), closedEarly.textContent);
+
+  const canceled = render(screens.windowClosed({ onNewInvoice: noop, now: () => NOW, canceled: true,
+    order: unpaidRecord({ status: "expired", method: "ln" }),
+    invoice: { status: "expired", amount: 700, currency: "usd", expiresAt: future },
+  }));
+  assert.ok(canceled.textContent.includes("You canceled this invoice. Nothing was charged."), canceled.textContent);
+  assert.ok(canceled.textContent.includes(screens.LIGHTNING_STILL_PAYABLE), canceled.textContent);
 
   const onChain = render(screens.windowClosed({ onNewInvoice: noop,
     order: unpaidRecord({ status: "expired", method: "btc" }),
@@ -1019,6 +1036,17 @@ domTest("screens: the four the history list states are told apart by their own g
     ["paid", "paid, and the code was not saved here", "waiting for payment", "this invoice expired"]);
   assert.deepEqual(drawn.map((_, i) => status(i).getAttribute("class")),
     ["status settled", "status lost", "status pending", "status lost"]);
+});
+
+domTest("screens: a canceled order that money reached afterwards is listed as expired with its Open link, an empty one as canceled", () => {
+  const rows = historyRows([
+    record({ orderId: "paid_after_cancel", status: "expired", method: "ln", canceled: true, amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true }),
+    record({ orderId: "empty_cancel", status: "expired", method: "ln", canceled: true }),
+  ]);
+  assert.deepEqual(rows.map((r) => r.kind), ["expired", "canceled"]);
+  const drawn = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows, onOpen: noop, onStart: noop })).all("li.entry");
+  assert.equal(drawn[0]!.all("a").filter((a) => a.textContent === "Open").length, 1, "the funded row opens the screen that names the payment");
+  assert.equal(drawn[1]!.all("a").filter((a) => a.textContent === "Open").length, 0);
 });
 
 domTest("screens: a row missing the method or the price shows what it has", () => {

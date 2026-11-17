@@ -12,7 +12,7 @@ installDocument();
 const qr = await import("../src/qr.js");
 const {
   alignmentPositions, capacity, dataCodewords, eccOf, encodeQr, formatBits, generatorPoly, interleave,
-  numDataCodewords, paymentQrPayload, paymentUri, qrSvg, rawDataModules, segmentOf, versionBits,
+  numDataCodewords, paymentQr, paymentUri, qrSvg, rawDataModules, segmentOf, versionBits,
 } = qr;
 type QrSymbol = import("../src/qr.js").QrSymbol;
 
@@ -557,8 +557,9 @@ qrTest("qr: a 400-character BOLT11 is scanned as the bare invoice in upper case,
   assert.equal(BOLT11_400.length, 400);
   const uri = paymentUri("ln", BOLT11_400, "0.00050000")!;
   assert.equal(uri, `lightning:${BOLT11_400}`, "the amount is inside the invoice, so the URI carries none");
-  const payload = paymentQrPayload("ln", BOLT11_400, uri);
+  const payload = paymentQr("ln", BOLT11_400, "0.00050000")!;
   assert.equal(payload, BOLT11_400.toUpperCase());
+  assert.equal(paymentQr("ln", "", "0.00050000"), null, "no invoice is nothing to scan");
   const decoded = roundTrip(payload, "the Lightning invoice");
   assert.equal(decoded.mode, "alphanumeric");
   assert.ok(decoded.version <= 12, `version ${decoded.version}`);
@@ -567,11 +568,12 @@ qrTest("qr: a 400-character BOLT11 is scanned as the bare invoice in upper case,
 });
 
 qrTest("qr: the Bitcoin and Monero symbols stay in byte mode, identical to the byte-only encoder's", () => {
-  for (const [uri, version, mask, expected] of [
-    [paymentUri("btc", BITCOIN_ADDRESS, "0.00412")!, 5, 3, "5ebf3ac8877a9b59d79ea81e578e9998ec0414ffa84a2bb51d8bb9cf81bb6f99"],
-    [paymentUri("xmr", MONERO_ADDRESS, "1.482")!, 7, 2, "f6a16bbcbdab85e399203c989f00b01198e5c17c4a3ef23611df5d6c898dbaf7"],
+  for (const [method, address, amount, version, mask, expected] of [
+    ["btc", BITCOIN_ADDRESS, "0.00412", 5, 3, "5ebf3ac8877a9b59d79ea81e578e9998ec0414ffa84a2bb51d8bb9cf81bb6f99"],
+    ["xmr", MONERO_ADDRESS, "1.482", 7, 2, "f6a16bbcbdab85e399203c989f00b01198e5c17c4a3ef23611df5d6c898dbaf7"],
   ] as const) {
-    assert.equal(paymentQrPayload(uri.startsWith("bitcoin:") ? "btc" : "xmr", "", uri), uri, "the on-chain payload is the link itself");
+    const uri = paymentUri(method, address, amount)!;
+    assert.equal(paymentQr(method, address, amount), uri, "the on-chain payload is the link itself");
     assert.equal(segmentOf(uri).mode, "byte", `${uri} carries lower case`);
     const symbol = symbolOf(uri);
     assert.equal(symbol.version, version);

@@ -1,6 +1,6 @@
 import { money, countdown, outstanding, startedAgo, type Outstanding } from "./format.js";
 import { badgeIcon, chevronLeft, hamburger, hasBadgeArt, methodMark, wefunderMark } from "./icons.js";
-import { paymentQrPayload, paymentUri, qrSvg } from "./qr.js";
+import { paymentQr, paymentUri, qrSvg } from "./qr.js";
 import type { HistoryRow, UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
 import { THEMES, type App, type Chain, type Method, type Theme } from "./domain.js";
@@ -55,6 +55,7 @@ export class CancelRefused extends Error {}
 
 export const PAID_IN_FULL_TITLE = "The full amount has arrived";
 export const LIGHTNING_EXPIRED = "The Lightning invoice expired with the order, so a wallet can no longer pay it.";
+export const LIGHTNING_STILL_PAYABLE = "Its Lightning invoice can still be paid until it expires: don't pay it.";
 export const CANCEL_NOT_OPEN = "This invoice is no longer open, so there is nothing to cancel.";
 export const CANCEL_HAS_FUNDS = "This invoice has a payment on it, so it cannot be cancelled.";
 export const CANCEL_STILL_OPEN = "This invoice was cancelled, but the service still shows it open. Do not send anything more to the address.";
@@ -639,7 +640,8 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
         : warning(seen, "Send the rest to the same address below. The invoice stays open until it is paid in full."));
   }
   const uri = owed === undefined ? null : paymentUri(o.method, o.invoice.address ?? "", owed);
-  const qr = uri === null ? null : qrFigure(paymentQrPayload(o.method, o.invoice.address ?? "", uri), `${CRYPTO_NAMES[o.method]} payment code`);
+  const qrPayload = owed === undefined ? null : paymentQr(o.method, o.invoice.address ?? "", owed);
+  const qr = uri === null || qrPayload === null ? null : qrFigure(qrPayload, `${CRYPTO_NAMES[o.method]} payment code`);
   if (qr !== null && uri !== null) {
     const open = el("a", { class: "secondary inline wallet-link", href: uri }, "Open in wallet");
     // This uses .wallet-line rather than .copy-line, which is absolutely positioned inside
@@ -749,6 +751,7 @@ export interface WindowClosedOptions {
   invoice: InvoiceView | undefined;
   offline?: boolean;
   canceled?: boolean;
+  now?: () => number;
   onNewInvoice: () => void;
 }
 
@@ -764,10 +767,15 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
   // A payment can land after the window closes, so this screen must count any crypto figure as money
   // and not tell the buyer nothing arrived.
   const funded = o.invoice?.paidInFull === true || o.invoice?.cryptoAmountPaid !== undefined || (paid !== undefined && paid > 0);
+  const expiresAt = o.invoice?.expiresAt;
+  const lightningNote = (o.invoice?.cryptoCurrency ?? o.order.method) !== "ln" ? []
+    : [el("p", { class: "muted" },
+      expiresAt !== undefined && Date.parse(expiresAt) <= (o.now ?? Date.now)() ? LIGHTNING_EXPIRED : LIGHTNING_STILL_PAYABLE)];
   if (o.canceled === true && !funded) {
     return panel(
       el("h1", { class: "tight" }, "Invoice canceled"),
       el("p", { class: "lede" }, "You canceled this invoice. Nothing was charged."),
+      ...lightningNote,
       reference(o.order.orderId),
       buyNewCode,
     );
@@ -789,8 +797,7 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
       "Quote the reference below and we will sort it out."));
     p.append(reference(o.order.orderId));
   } else {
-    p.append(el("p", { class: "lede" }, "Nothing was received, and nothing was charged."));
-    if ((o.invoice?.cryptoCurrency ?? o.order.method) === "ln") p.append(el("p", { class: "muted" }, LIGHTNING_EXPIRED));
+    p.append(el("p", { class: "lede" }, "Nothing was received, and nothing was charged."), ...lightningNote);
   }
   if (o.offline === true) p.append(offlineNote());
   p.append(buyNewCode);
