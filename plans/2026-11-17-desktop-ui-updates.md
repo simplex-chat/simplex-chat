@@ -93,9 +93,13 @@ stateDiagram-v2
   STARTED --> FAILED: main class not loaded
   STARTED --> FAILED: next start, not confirmed
   STARTED --> FAILED: second crash in a session
-  CONFIRMED --> CONFIRMED: start, valid
+  CONFIRMED --> RESTARTED: start, valid
+  RESTARTED --> CONFIRMED: chat running for 10 s, older ones deleted
+  RESTARTED --> FAILED: next start, not confirmed
+  RESTARTED --> FAILED: second crash in a session
   CONFIRMED --> FAILED: second crash in a session
   STARTED --> FAILED: Use the installed UI
+  RESTARTED --> FAILED: Use the installed UI
   CONFIRMED --> FAILED: Use the installed UI
   STAGED --> [*]: start, not valid
   CONFIRMED --> [*]: start, not valid
@@ -104,11 +108,12 @@ stateDiagram-v2
   STAGED --> [*]: Internal left
   FAILED --> [*]: Internal left
   STARTED --> REMOVED: Internal left, running
+  RESTARTED --> REMOVED: Internal left, running
   CONFIRMED --> REMOVED: Internal left, running
   REMOVED --> [*]: next start
 ```
 
-- A UI confirms once per run: from STARTED it becomes CONFIRMED; from CONFIRMED the older UI updates are deleted.
+- Each start of a UI update is a trial: STARTED for its first, RESTARTED for a later one, until the chat has run for 10 s.
 - Removing writes REMOVED for a running UI update and for a folder that cannot be deleted.
 
 ## Start
@@ -123,10 +128,10 @@ flowchart TD
   D --> S{state}
   S -->|FAILED| D
   S -->|REMOVED| X
-  S -->|STARTED| F[FAILED] --> D
+  S -->|STARTED or RESTARTED| F[FAILED] --> D
   S -->|STAGED or CONFIRMED| V{valid}
   V -->|no| X[deleted] --> D
-  V -->|yes| L{main class loads}
+  V -->|yes| T[STARTED or RESTARTED] --> L{main class loads}
   L -->|no| F
   L -->|yes| P[simplex.ui_update = its directory] --> U[main of the UI update]
   D -->|none left| A

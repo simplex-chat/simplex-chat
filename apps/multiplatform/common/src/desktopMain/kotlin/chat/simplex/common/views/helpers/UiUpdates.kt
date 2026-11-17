@@ -48,7 +48,6 @@ private val UI_UPDATE_JAR = Regex("[A-Za-z0-9_][A-Za-z0-9._-]*\\.jar")
 private val JAR_CONTENT_HASH = Regex("(-[0-9a-f]{16,32})?\\.jar$")
 private val uiUpdateJson = Json { ignoreUnknownKeys = true }
 private val uiUpdatesDir = File(dataDir, "ui_updates")
-private var uiUpdateConfirmed = false
 
 @Serializable
 private class UiUpdateManifest(
@@ -59,7 +58,7 @@ private class UiUpdateManifest(
 
 class UiUpdate(val versionCode: Int, val jars: List<File>)
 
-enum class UiUpdateState { STAGED, STARTED, CONFIRMED, FAILED, REMOVED }
+enum class UiUpdateState { STAGED, STARTED, CONFIRMED, RESTARTED, FAILED, REMOVED }
 
 fun startUiUpdate(mainClass: String, args: Array<String>): Boolean {
   val main = uiUpdateMain(mainClass) ?: return false
@@ -76,11 +75,12 @@ fun runningUiUpdateDir(): File? = System.getProperty(UI_UPDATE_PROPERTY)?.let(::
 
 fun confirmUiUpdate() {
   val dir = runningUiUpdateDir() ?: return
-  if (uiUpdateConfirmed) return
-  uiUpdateConfirmed = true
   when (uiUpdateState(dir)) {
     UiUpdateState.STARTED -> setUiUpdateState(dir, UiUpdateState.CONFIRMED)
-    UiUpdateState.CONFIRMED -> uiUpdateDirs().filter { it.name.toInt() < dir.name.toInt() }.forEach { it.deleteRecursively() }
+    UiUpdateState.RESTARTED -> {
+      setUiUpdateState(dir, UiUpdateState.CONFIRMED)
+      uiUpdateDirs().filter { it.name.toInt() < dir.name.toInt() }.forEach { it.deleteRecursively() }
+    }
     else -> {}
   }
 }
@@ -143,7 +143,7 @@ internal fun startableUiUpdate(dir: File, key: PublicKey, base: String, installe
   val state = uiUpdateState(dir)
   when (state) {
     UiUpdateState.FAILED -> return null
-    UiUpdateState.STARTED -> {
+    UiUpdateState.STARTED, UiUpdateState.RESTARTED -> {
       setUiUpdateState(dir, UiUpdateState.FAILED)
       return null
     }
@@ -156,8 +156,8 @@ internal fun startableUiUpdate(dir: File, key: PublicKey, base: String, installe
   val update = verifiedUiUpdate(dir, key, base, installedCode)
   if (update == null) {
     dir.deleteRecursively()
-  } else if (state == UiUpdateState.STAGED) {
-    setUiUpdateState(dir, UiUpdateState.STARTED)
+  } else {
+    setUiUpdateState(dir, if (state == UiUpdateState.STAGED) UiUpdateState.STARTED else UiUpdateState.RESTARTED)
   }
   return update
 }

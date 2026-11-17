@@ -533,6 +533,7 @@ check_ui_updates() {
   start_app
   check "the UI update $((code + 2)) without its main class is marked failed" ui_update_state $((code + 2)) FAILED
   check "the UI update $((code + 1)) runs after $((code + 2)) failed to load" app_build $((code + 1))
+  check "the restarted UI update $((code + 1)) is confirmed again" ui_update_confirmed $((code + 1))
   "$ui" stop
   stage_ui_update $((code + 3))
   "$ui" start "$app_dir"
@@ -541,6 +542,7 @@ check_ui_updates() {
   start_app
   check "the UI update $((code + 3)) is marked failed at the next start" ui_update_state $((code + 3)) FAILED
   check "the UI update $((code + 1)) runs after $((code + 3)) failed to start" app_build $((code + 1))
+  check "the restarted UI update $((code + 1)) is confirmed again" ui_update_confirmed $((code + 1))
   "$ui" stop
   printf x >> "$(ls "$ui_updates/$((code + 1))"/common-desktop-*.jar)"
   start_app
@@ -563,16 +565,27 @@ check_ui_updates() {
   stage_ui_update $((code + 5))
   start_app
   check "the UI update $((code + 5)) is confirmed after the chat started" ui_update_confirmed $((code + 5))
+  "$ui" stop
+  "$ui" start "$app_dir"
+  "$ui" stop
+  check "the confirmed UI update $((code + 5)) is on trial when the app stops before its confirmation" ui_update_state $((code + 5)) RESTARTED
+  start_app
+  check "the confirmed UI update $((code + 5)) is marked failed at the next start" ui_update_state $((code + 5)) FAILED
+  check "the installed UI of build $code runs after $((code + 5)) failed to start" app_build "$code"
+  "$ui" stop
+  stage_ui_update $((code + 6))
+  start_app
+  check "the UI update $((code + 6)) is confirmed after the chat started" ui_update_confirmed $((code + 6))
   open_app_version
   lines=$(update_check_lines)
   switch_internal_builds off
   check "the update check started by leaving Internal logs its end or offers an update, closed with Remind later" end_update_check "$lines"
-  check "leaving Internal marks the running UI update $((code + 5)) removed" ui_update_state $((code + 5)) REMOVED
-  check "leaving Internal deletes the UI update $((code + 4))" [ ! -e "$ui_updates/$((code + 4))" ]
+  check "leaving Internal marks the running UI update $((code + 6)) removed" ui_update_state $((code + 6)) REMOVED
+  check "leaving Internal deletes the UI update $((code + 5))" [ ! -e "$ui_updates/$((code + 5))" ]
   back_to_chat_list || fail "no chat list after leaving Internal"
   "$ui" stop
   start_app
-  check "the removed UI update $((code + 5)) is deleted at the next start" [ ! -e "$ui_updates/$((code + 5))" ]
+  check "the removed UI update $((code + 6)) is deleted at the next start" [ ! -e "$ui_updates/$((code + 6))" ]
   check "the installed UI of build $code runs after leaving Internal" app_build "$code"
 }
 

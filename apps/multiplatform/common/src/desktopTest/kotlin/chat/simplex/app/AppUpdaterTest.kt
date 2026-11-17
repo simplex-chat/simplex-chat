@@ -141,8 +141,11 @@ class AppUpdaterTest {
     val confirmed = bundleDir(177)
     setUiUpdateState(confirmed, UiUpdateState.CONFIRMED)
     assertNotNull(startableUiUpdate(confirmed, keys.public, base, 175))
+    assertEquals(UiUpdateState.RESTARTED, uiUpdateState(confirmed))
+    setUiUpdateState(confirmed, UiUpdateState.CONFIRMED)
     assertNotNull(startableUiUpdate(confirmed, keys.public, base, 175))
-    assertEquals(UiUpdateState.CONFIRMED, uiUpdateState(confirmed))
+    assertNull(startableUiUpdate(confirmed, keys.public, base, 175))
+    assertEquals(UiUpdateState.FAILED, uiUpdateState(confirmed))
 
     val superseded = bundleDir(178)
     assertNull(startableUiUpdate(superseded, keys.public, base, 178))
