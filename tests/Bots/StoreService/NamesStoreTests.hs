@@ -6,7 +6,7 @@
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, invoiceStatus, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.FakeEthNode (agreed, plainTerms)
-import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
+import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, sampleInvoice, seedBadgePrice, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM, forM_, void)
 import Data.List (sort)
@@ -25,12 +25,14 @@ import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationsToRun (..
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (labelHash)
+import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (LinkKind (..), TermsAcceptance (..))
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), communityTermsPrefix, parseAnyCaseAddress, parseSignature)
 import StoreService.Names.Store
 import StoreService.Store (RevokeResult (..))
+import StoreService.Store.Invoices (InvoiceRow (..), NewInvoice (..), createInvoiceRows, getInvoiceByProviderRef)
 import Test.Hspec
 
 #if defined(dbPostgres)
@@ -72,6 +74,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "lists code orders failed before the cutoff that still hold their code" testFailedCodeOrders
   describe "prepaid codes" $ do
     it "issues one code per hash" testIssueCode
+    it "stores a code's origin as issued_in_group, counting a group code written before as the group's" testIssuerStored
     it "reserves only an unused code, releases and spends it only for its holder" testReserveReleaseSpend
     it "refuses an unpaid, revoked or expired code" testReserveRefused
     it "lets a registration hold one code" testOneCodePerRegistration
@@ -129,7 +132,7 @@ price :: Int
 price = 20000
 
 paidOrder :: Text -> PaidOrder
-paidOrder invId = PaidOrder {poMethod = btc, poPrice = price, poInvoiceId = InvoiceId invId, poProviderRef = "ref-" <> invId}
+paidOrder invId = PaidOrder {poMethod = btc, poPrice = price, poInvoiceId = InvoiceId invId}
 
 insertInvoiceRow :: DB.Connection -> Text -> UTCTime -> Text -> IO ()
 insertInvoiceRow db = insertProviderInvoice db "crypto"
@@ -138,8 +141,8 @@ insertProviderInvoice :: DB.Connection -> Text -> Text -> UTCTime -> Text -> IO 
 insertProviderInvoice db provider invId expiresAt status =
   DB.execute
     db
-    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
-    ((invId, provider, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
+    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, provider_ref, price, amount, currency, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    ((invId, provider, "ref-" <> invId, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
 
 -- | A paid order whose invoice, named after the registration, expires at the given time.
 placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either BalanceInsertRefused ())
@@ -160,7 +163,7 @@ issue st n c = withTransaction st $ \db -> do
   getPrepaidCodeById db codeId
 
 usable :: NewPrepaidCode
-usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
+usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = FromConsole}
 
 placeCode :: DBStore -> Text -> Address -> OrderFields -> PrepaidCode -> IO (Either CodeInsertRefused ())
 placeCode st rid owner o code = withTransaction st $ \db -> insertOrRollBack db $ createCodeRegistration db (codeReg rid owner o code) code t0
@@ -190,6 +193,9 @@ testNamesDownUp = withServiceStore $ \st -> do
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
   map name names `shouldBe` ["20261013_names"]
   badgeBefore <- badgeColumns
+  seedBadgePrice st "price1"
+  createInvoiceRows st sampleInvoice `shouldReturn` Right ()
+  let NewInvoice {niInvoiceId = InvoiceId badgeInvoice, niProviderRef = badgeRef} = sampleInvoice
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   placePaid st "r2" ownerB (order "bobsbakery" 2) (at 60) `shouldReturn` Right ()
@@ -199,10 +205,17 @@ testNamesDownUp = withServiceStore $ \st -> do
   runMigrations st $ MTRDown (mapMaybe toDownMigration names)
   mapM (columnsOf st) namesTables `shouldReturn` map (const []) namesTables
   mapM (invoiceCount st) ["inv-r2", "inv-r3"] `shouldReturn` [0, 1]
-  badgeColumns `shouldReturn` map (filter (`notElem` balancePaymentColumns)) badgeBefore
+  badgeColumns `shouldReturn` zipWith beforeNames badgeTables badgeBefore
+  withTransaction st (\db -> DB.query db "SELECT provider_ref FROM sx_badge_service_badge_code_invoices WHERE invoice_id = ?" (Only badgeInvoice)) `shouldReturn` [Only badgeRef]
   runMigrations st $ MTRUp names
   mapM (fmap null . columnsOf st) namesTables `shouldReturn` map (const False) namesTables
   badgeColumns `shouldReturn` badgeBefore
+  (fmap irInvoiceId <$> getInvoiceByProviderRef st badgeRef) `shouldReturn` Just (InvoiceId badgeInvoice)
+  where
+    beforeNames table columns
+      | table == "sx_badge_service_invoices" = filter (/= "provider_ref") columns
+      | table == "sx_badge_service_badge_code_invoices" = sort ("provider_ref" : columns)
+      | otherwise = filter (`notElem` balancePaymentColumns) columns
 
 testPartialAcceptance :: IO ()
 testPartialAcceptance = withServiceStore $ \st -> do
@@ -614,6 +627,18 @@ testIssueCode = withServiceStore $ \st -> do
   (pcMinLength code, pcYears code, pcPaymentStatus code, pcExpiresAt code, pcCreatedAt code) `shouldBe` (6, 5, CPSFree, Just (at 100), t0)
   withTransaction st (\db -> insertPrepaidCode db usable {npcCodeHash = digestFixture 1} t0) `shouldReturn` Left CodeHashTaken
   withTransaction st (\db -> getPrepaidCode db (digestFixture 1)) `shouldReturn` Just code
+
+testIssuerStored :: IO ()
+testIssuerStored = withServiceStore $ \st -> do
+  withTransaction st $ \db ->
+    DB.execute
+      db
+      "INSERT INTO sx_badge_service_name_prepaid_codes (code_hash, min_length, years, code_payment_status, created_at, issued_in_group) VALUES (?,?,?,?,?,1)"
+      (DB.Binary (digestFixture 1), 8 :: Int, twoYears, CPSPaid, t0)
+  void $ issue st 2 usable {npcIssuer = FromGroup}
+  void $ issue st 3 usable
+  withTransaction st (\db -> DB.query_ db "SELECT issued_in_group FROM sx_badge_service_name_prepaid_codes ORDER BY name_prepaid_code_id") `shouldReturn` [Only (1 :: Int), Only 1, Only 0]
+  withTransaction st (`groupNameCodesIssuedSince` t0) `shouldReturn` 2
 
 testReserveReleaseSpend :: IO ()
 testReserveReleaseSpend = withServiceStore $ \st -> do

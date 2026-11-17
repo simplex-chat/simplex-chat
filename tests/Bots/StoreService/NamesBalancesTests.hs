@@ -114,8 +114,8 @@ invoiceRow :: DB.Connection -> Text -> Bool -> Int -> UTCTime -> IO ()
 invoiceRow db invId card cents expiresAt =
   DB.execute
     db
-    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, payment_url, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
-    ((invId, provider, cents, cents, "usd" :: Text, url, address, currency, cryptoAmount, expiresAt) :. ("open" :: Text, t0, t0))
+    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, provider_ref, price, amount, currency, payment_url, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    ((invId, provider, "ref-" <> invId, cents, cents, "usd" :: Text, url, address, currency, cryptoAmount) :. (expiresAt, "open" :: Text, t0, t0))
   where
     destination :: (Text, Maybe Text, Maybe Text, Maybe Text, Maybe Text)
     destination
@@ -510,7 +510,7 @@ testClosesRelease = withServiceStore $ \st -> do
   cancelOpenInvoice st waiters Nothing (InvoiceId "inv-h-cancel") (at 2) `shouldReturn` True
   swept <- overdueOf st (InvoiceId "inv-h-sweep")
   expireOverdue st waiters Nothing (at 61) (at 61) [swept] `shouldReturn` [InvoiceId "inv-h-sweep"]
-  settleOrder st waiters Nothing (InvoiceId "inv-h-settled") (SigClosed (rcv 0 Nothing) PaidInPart) (at 2) `shouldReturn` Right ISExpired
+  settleOrder st waiters Nothing (InvoiceId "inv-h-settled") (SigClosed (rcv 0 Nothing) PaidInPart) (at 2) `shouldReturn` ISExpired
   next <- reg st "h-next"
   withTransaction st (\db -> closeOverdue db next (at 61)) `shouldReturn` Just (nrVersion next + 1)
   forM_ closes $ \c -> do

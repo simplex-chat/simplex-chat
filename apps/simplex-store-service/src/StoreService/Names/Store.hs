@@ -48,7 +48,6 @@ module StoreService.Names.Store
     BrokenInvariant (..),
     PrepaidCode (..),
     NewPrepaidCode (..),
-    CodeIssuer (..),
     CodeHashTaken (..),
     TxFor (..),
     TxStatus (..),
@@ -148,6 +147,7 @@ import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
+import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
@@ -323,8 +323,7 @@ data NewRegistration = NewRegistration
 data PaidOrder = PaidOrder
   { poMethod :: ServicePaymentMethod,
     poPrice :: Int,
-    poInvoiceId :: InvoiceId,
-    poProviderRef :: Text
+    poInvoiceId :: InvoiceId
   }
 
 data CodeInsertRefused = CIRLiveOrder | CIRCodeNotReservable
@@ -533,11 +532,8 @@ data NewPrepaidCode = NewPrepaidCode
     npcYears :: Int,
     npcPaymentStatus :: BadgeCodePaymentStatus,
     npcExpiresAt :: Maybe UTCTime,
-    npcIssuer :: CodeIssuer
+    npcIssuer :: CmdSource
   }
-
-data CodeIssuer = IssuedInGroup | IssuedInConsole
-  deriving (Eq, Show)
 
 data CodeHashTaken = CodeHashTaken
   deriving (Eq, Show)
@@ -658,7 +654,7 @@ newRegistrationId = (\(InvoiceId t) -> RegistrationId t) <$> newInvoiceId
 -- | A difference order holds all of the balance seen while its invoice is open. The hold is written after the registration,
 -- so the registration's row is locked before the balance's. A refusal leaves its writes for the caller to roll back.
 createPaidRegistration :: DB.Connection -> NewRegistration -> Maybe BalanceUse -> PaidOrder -> UTCTime -> IO (Either BalanceInsertRefused ())
-createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid)} held PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId, poProviderRef} now' = do
+createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid)} held PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId} now' = do
   let now = truncateToSecond now'
   inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held now
   if not inserted
@@ -666,8 +662,8 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
     else do
       DB.execute
         db
-        (mkQuery "INSERT INTO @name_invoices (invoice_id, registration_id, provider_ref, created_at) VALUES (?,?,?,?)")
-        (invId, rid, poProviderRef, now)
+        (mkQuery "INSERT INTO @name_invoices (invoice_id, registration_id, created_at) VALUES (?,?,?)")
+        (invId, rid, now)
       held' <- maybe (pure True) (\BalanceUse {buSource, buUsed} -> holdBalance db buSource buUsed regId now) held
       pure $ if held' then Right () else Left BIRBalanceChanged
 
@@ -1008,7 +1004,7 @@ unpaidCleanupCandidates db expiredBefore =
       db
       ( prefixQuery
           [sql|
-        SELECT r.registration_id, ni.invoice_id, ni.provider_ref
+        SELECT r.registration_id, ni.invoice_id, i.provider_ref
         FROM @name_registrations r
         JOIN @name_invoices ni ON ni.registration_id = r.registration_id
         JOIN @invoices i ON i.invoice_id = ni.invoice_id
@@ -1140,7 +1136,7 @@ invoiceAmount db (InvoiceId invId) =
 
 providerRef :: DB.Connection -> InvoiceId -> IO (Maybe Text)
 providerRef db (InvoiceId invId) =
-  maybeFirstRow fromOnly $ DB.query db (mkQuery "SELECT provider_ref FROM @name_invoices WHERE invoice_id = ?") (Only invId)
+  maybeFirstRow fromOnly $ DB.query db (mkQuery "SELECT provider_ref FROM @invoices WHERE invoice_id = ?") (Only invId)
 
 lateCredits :: DB.Connection -> InvoiceId -> IO [LateCredit]
 lateCredits db (InvoiceId invId) =
@@ -1383,7 +1379,7 @@ uncreditedLateInvoices db = (<>) <$> uncredited closedUnpaid uncreditedMoney <*>
       map (\(invId, ref) -> (InvoiceId invId, ref))
         <$> DB.query
           db
-          ("SELECT ni.invoice_id, ni.provider_ref" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
+          ("SELECT ni.invoice_id, i.provider_ref" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
           (PUnpaid, LSRateFloor)
 
 -- | Pending money of closed orders, then of overpaid invoices, whose payment row was created before the cutoff, never alerted, or alerted
@@ -1399,7 +1395,7 @@ lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid pendingCase <*> alertsD
             <> pending
             <> ","
             <> receivedFigure
-            <> ", ni.late_alerted_at, ni.late_alerted_units, ni.provider_ref"
+            <> ", ni.late_alerted_at, ni.late_alerted_units, i.provider_ref"
             <> lateFrom
             <> " WHERE"
             <> order
@@ -1449,7 +1445,7 @@ insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPay
         ON CONFLICT DO NOTHING
       |]
       )
-      (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now, BI (npcIssuer == IssuedInGroup))
+      (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now, BI (npcIssuer == FromGroup))
   if inserted > 0 then Right <$> insertedRowId db else pure $ Left CodeHashTaken
 
 prepaidCodeColumns :: Query

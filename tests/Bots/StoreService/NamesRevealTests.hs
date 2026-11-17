@@ -161,7 +161,7 @@ committed ctx o = do
 paidOrder :: Ctx -> Order -> IO NameRegistration
 paidOrder ctx o = do
   (inv, _) <- placed ctx o
-  settleNow ctx inv settled `shouldReturn` Right ISPaid
+  settleNow ctx inv settled `shouldReturn` ISPaid
   invoiceRegistration ctx inv
 
 signIntent :: Ctx -> Secp256k1PrivateKey -> Registration -> Word64 -> Word64 -> IO RecoverableSignature

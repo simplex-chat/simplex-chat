@@ -3,7 +3,7 @@
 
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
-import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, withIni)
+import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, unknownIn)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, answerListing, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeGeneralTerms, fakeGeneralTermsText, fakeNamePolicy, fakeTermsLink, fetchedTexts, setCommunityTerms, setGeneralTerms, nextBlock)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
@@ -11,7 +11,6 @@ import Bots.StoreService.WebTests (capturingStderr)
 import Control.Concurrent.STM (TVar)
 import Control.Monad (forM_, void)
 import Crypto.Random (ChaChaDRG)
-import Data.Ini (readIniFile)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust)
 import Data.Text (Text)
@@ -20,7 +19,7 @@ import Data.Text.Encoding (encodeUtf8)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
-import StoreService.Config (NamesConfig (..), unknownKeys)
+import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector)
 import StoreService.Names.Community (communityFor, termsFor)
 import StoreService.Names.Contracts (Terms (..))
@@ -78,16 +77,16 @@ testCommunityWithoutNames =
 testRepeatedHeader :: IO ()
 testRepeatedHeader = do
   refusedCommunity ["bakers = " <> bakersText, "[community]", "florists = florists in Lisbon"]
-    `shouldReturn` "[community] is written twice, and only the last of them would be read"
-  namesRefusal (namesSection <> chainSection <> namesSection) [] `shouldReturn` "[names] is written twice, and only the last of them would be read"
-  namesRefusal namesSection (chainSection <> ["[legacy]", "a = 1", " [ legacy ] "]) `shouldReturn` "[legacy] is written twice, and only the last of them would be read"
+    `shouldReturn` "[community] is written twice"
+  namesRefusal (namesSection <> chainSection <> namesSection) [] `shouldReturn` "[names] is written twice"
+  namesRefusal namesSection (chainSection <> ["[legacy]", "a = 1", " [ legacy ] "]) `shouldReturn` "[legacy] is written twice"
 
 testRepeatedKey :: IO ()
 testRepeatedKey = do
   refusedCommunity ["bakers = " <> bakersText, "florists = florists in Lisbon", "bakers = bakers of Porto"]
-    `shouldReturn` "community.bakers is written twice, and only the first of them would be read"
+    `shouldReturn` "community.bakers is written twice"
   namesRefusal (namesSection <> ["tld = simplex"]) chainSection
-    `shouldReturn` "names.tld is written twice, and only the first of them would be read"
+    `shouldReturn` "names.tld is written twice"
 
 testBadLabel :: IO ()
 testBadLabel = do
@@ -112,9 +111,7 @@ testBadText = do
 
 testNoUnknownKeys :: IO ()
 testNoUnknownKeys =
-  withIni (namesIni namesSection (chainSection <> communityLines ["bakers = " <> bakersText, "florists = florists in Lisbon"])) $ \p -> do
-    Right ini <- readIniFile p
-    unknownKeys ini `shouldBe` []
+  unknownIn (namesIni namesSection (chainSection <> communityLines ["bakers = " <> bakersText, "florists = florists in Lisbon"])) `shouldBe` []
 
 testLoadedCount :: IO ()
 testLoadedCount = do

@@ -54,6 +54,8 @@ simplex-store-service --help
   below: it starts no web listener and no poller, and serves no group commands, whatever
   `--service-config` says. It still updates a code's group message when the code is redeemed or
   revoked. `[apple]`, `[google]`, `[dev]` and `[log]` apply to it.
+- `--execute COMMAND` (`-e`): `--run-cli` without a terminal, for one command: it runs `COMMAND`,
+  such as `//issue name 6`, prints its answer and exits.
 - `--no-address`: skip address creation on start-up (for operators who provision the address themselves).
 The service cannot sign credentials without an issuer key and refuses to start without one:
 
@@ -153,9 +155,9 @@ answer. `[chain] confirmations` (default 3) is how deep a
 transaction's receipt must be before the service settles it and reads the chain's state, counting
 the receipt's own block, so it must be at least 1. An optional `[community]` section gives what each
 community name is for (see [Terms and community names](#terms-and-community-names)). Write every setting as
-`key = value`. A `key: value` line, which the parser would read with the first character of its
-value dropped, a key written twice in one section, a section header written twice, or a `[names]` or
-`[chain]` setting nothing reads, stops the service at startup.
+`key = value`. A line other than a `[section]` header, a setting, a `;` or `#` comment or a blank
+line, `key: value` among them, a key written twice in one section, a section header written twice,
+or a `[names]` or `[chain]` setting nothing reads, stops the service at startup.
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 
@@ -534,8 +536,8 @@ A purchase the store itself calls a test, an App Store Sandbox purchase (which T
 buy in) or a Play licence tester's, is refused `test_purchase` by default, which is terminal, so it
 can never be credited. With this on, the service credits it as a real one, one-time purchases and
 subscriptions alike. It applies beside a real `[apple]` or `[google]` section, which still verifies
-every receipt, and changes nothing beside `accept_unverified_store_receipts`, whose mock reports
-no test purchase. The service logs a warning at every start while it is on, and at every test
+every receipt, and the service refuses to start with it on beside `accept_unverified_store_receipts = on`,
+whose mock reports no test purchase. The service logs a warning at every start while it is on, and at every test
 purchase and test subscription it takes as paid. Off by default, and only `on`/`off` parse.
 
 Beside `[apple]` the service starts with it on only when `[apple]` sets the server API key with
@@ -719,15 +721,15 @@ each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. 
   on its first start. Its state is kept in `./data/chain`, so restarts keep the contracts, balances
   and registered names. Its keys are anvil's public test keys, so never use it beside a real chain.
 - `postgres`: PostgreSQL 17 on `127.0.0.1:5433`, user `simplex`, database `store_service`, without a
-  password, kept in `./data/postgres`. The service uses it in place of `BADGE_DB_CONN`.
+  password, kept in `./data/postgres`. `BADGE_DB_CONN` in `.env` points the service at it.
 
 From a fresh clone:
 
 ```
 git clone https://github.com/simplex-chat/simplex-chat && cd simplex-chat
-git checkout names && git submodule update --init apps/simplex-domains
+git submodule update --init apps/simplex-domains
 cd scripts/store-service
-echo "COMPOSE_FILE=compose.yml:compose.dev.yml" > .env
+printf '%s\n' COMPOSE_FILE=compose.yml:compose.dev.yml BADGE_DB_CONN=postgresql://simplex@127.0.0.1:5433/store_service > .env
 install -d webapps
 docker compose up -d --build
 ```
@@ -1055,8 +1057,8 @@ without a text, and the service warns at startup, when it reads the policy, for 
 name the policy does not list, which is sold as a plain name. Each label must be a valid name in lower case and listed once; each text is
 1 to 200 characters with no control, format or line separator characters, and should not end with a
 full stop, since the page adds one. The service refuses to start, naming the setting, on any other
-entry, on `[community]` without `[names]`, on a key written twice in a section (only the first would
-be read) and on a section header written twice in the file (only the last would be read). It logs
+entry, on `[community]` without `[names]`, on a key written twice in a section and on a section
+header written twice in the file. It logs
 how many community names it loaded.
 
 The `[community]` texts are read only at startup, so an edit applies after a restart; the policy's
@@ -1505,10 +1507,17 @@ touches the service's database.
 The command is sent to the running service in `--run-cli` mode, not a way to start it:
 
 ```
-//issue <badge_type> [months] [paid|unpaid|free]
-//issue supporter 12
+//issue <badge_type> [months <M>] [paid|unpaid|free]
+//issue supporter months 12
 //issue name <length> [years <Y>] [paid|free]
 //issue name 7 years 5
+```
+
+A script passes one command with `--execute`, with the service stopped, and reads the `Code: ...`
+line it prints:
+
+```
+simplex-store-service -d <database> --service-config store_service.ini --execute "//issue name 7"
 ```
 
 `months` defaults to 1 and must be between 1 and 12; the status defaults to `free` and records
@@ -1518,7 +1527,13 @@ code row when the invoice is created, and settlement is what marks it paid.
 
 `//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
 `<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2), or 2 for a community name. Its status is
-`paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused.
+`paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused. Without `[names]`,
+`//issue name` is answered that names are not enabled, and issues nothing.
+
+The console reads the commands by the group's grammar (see [From the group](#from-the-group)), with
+a payment status in place of `uses` and without `/bulk`. A malformed command is answered with its
+usage, which for `//issue` also lists each kind's bounds and an example of each; an unknown one with
+the usage of every command.
 
 The code is printed once and only its `SHA-256` is stored, so a code that is not copied when it is
 shown cannot be recovered.
@@ -1529,6 +1544,7 @@ A code that leaked, or that was refunded, is withdrawn the same way, badge and n
 //revoke <code>
 ```
 
+The answer names the code, as `/revoke`'s does: `<code>: Revoked.`
 A revoked code answers redemption with `code_invalid`, as if it had never existed, so its holder
 learns nothing from trying. A client that redeemed it before the revoke still gets its own badge
 back when it asks again. Revoking it again answers "already revoked" and fixes its group
@@ -1797,8 +1813,8 @@ payment against this service in Chromium, as they run against the webapp's mock.
    `BADGES_PORT`, and signing with the test suite's
    public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
    `[issuer] dev_keys`. That secret is public: never use it outside this script;
-4. starts the service once to make its database, stops it, and issues the prepaid codes the cases
-   need with `//issue name` in `--run-cli`;
+4. issues the prepaid codes the cases need with `//issue name`, one `--execute` run each, the first of
+   which makes the database;
 5. starts the service on 8180 (the names site) and 8181 (the badges site) and a code server on 8199,
    and runs the cases with `BASE_URL` at the names site and `MOCK_URL` at the code server.
 
@@ -1809,7 +1825,7 @@ The code server answers the cases' `POST /control/code` with the issued codes, t
 
 It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_SERVICE_BIN`),
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
-`dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
+`dev/start.sh` does), `jq` and `curl`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
 `ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
 (brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links

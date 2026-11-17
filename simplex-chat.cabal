@@ -522,7 +522,6 @@ executable simplex-store-service
     , http-client ==0.7.*
     , http-client-tls ==0.3.*
     , http-types ==0.12.*
-    , ini ==0.4.1
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network ==3.1.*
@@ -931,7 +930,6 @@ test-suite simplex-chat-test
     , http-client ==0.7.*
     , http-client-tls ==0.3.*
     , http-types ==0.12.*
-    , ini ==0.4.1
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network ==3.1.*

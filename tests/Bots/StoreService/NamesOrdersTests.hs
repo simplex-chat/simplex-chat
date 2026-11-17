@@ -104,6 +104,7 @@ import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
+import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
 import StoreService.Names.Codes (CodeRefusal (..))
@@ -119,7 +120,7 @@ import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), ProviderRefConflict (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
+import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), OverdueInvoice (..), createInvoiceRows, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Limit (..), codeLimit, invoicesLimit, takeToken)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -201,7 +202,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers a name invoice 403 codes_only before reading the order, reaching no provider and writing nothing" testInvoiceCodesOnly
     it "sells a badge as before" testBadgeCodesOnly
   describe "invoice side" $ do
-    it "finds an invoice by provider ref in either table, refusing a ref both hold" testProviderRefs
+    it "finds an invoice by its provider ref, which one invoice holds, badge or name" testProviderRefs
     it "reads and sweeps name invoices with the badge ones" testPollerQueries
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
@@ -477,7 +478,7 @@ invoiceRegistration Ctx {cStore} invId =
     Just InvoiceRow {irProduct = IPName rid} -> withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
     other -> error $ "not a name invoice: " <> show other
 
-settleNow :: Ctx -> InvoiceId -> PaymentSignal -> IO (Either Text InvoiceStatus)
+settleNow :: Ctx -> InvoiceId -> PaymentSignal -> IO InvoiceStatus
 settleNow Ctx {cStore, cWeb, cOrders, cClock} invId signal = readIORef cClock >>= settleOrder cStore (weWaiters cWeb) (Just $ oePhases cOrders) invId signal
 
 settled :: PaymentSignal
@@ -553,7 +554,7 @@ testExactResend = withOrders $ \ctx -> do
 testResendPastUnpaid :: IO ()
 testResendPastUnpaid = withOrders $ \ctx -> do
   (invId, _) <- placed ctx aliceOrder
-  settleNow ctx invId settled `shouldReturn` Right ISPaid
+  settleNow ctx invId settled `shouldReturn` ISPaid
   setFault (cNode ctx) "eth_call" HttpFailure
   (status, v) <- placeOrder ctx aliceOrder {oTimestamp = seconds orderTime + 1}
   status `shouldBe` 200
@@ -571,7 +572,7 @@ testResendReadsTime = do
     fmap irStatus <$> getInvoice (cStore ctx) invId `shouldReturn` Just ISOpen
   withOrders $ \ctx@Ctx {cStore, cClock} -> do
     (invId, _) <- placed ctx aliceOrder
-    settleNow ctx invId settled `shouldReturn` Right ISPaid
+    settleNow ctx invId settled `shouldReturn` ISPaid
     r <- invoiceRegistration ctx invId
     now <- readIORef cClock
     let lapse = seconds now + 600
@@ -945,7 +946,7 @@ testTermsCheckOrder = withOrders $ \ctx@Ctx {cNode = node} -> do
 issueCode :: Ctx -> Int -> Int -> (NewPrepaidCode -> NewPrepaidCode) -> IO (Text, PrepaidCode)
 issueCode Ctx {cStore, cRandom} len years change = do
   code <- randomNamePrepaidCode cRandom (fromJust $ nameLength len)
-  let new = change NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
+  let new = change NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = FromConsole}
   stored <- withTransaction cStore $ \db ->
     insertPrepaidCode db new orderTime >>= \case
       Right codeId -> getPrepaidCodeById db codeId
@@ -1277,12 +1278,12 @@ testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
   closed <- invoiceRegistration ctx oldInv
   nrPhase closed `shouldBe` OUnpaid False
   Just InvoiceRow {irProviderRef} <- getInvoice (cStore ctx) oldInv
-  logs <- capturingStderr $ settleNow ctx oldInv settled `shouldReturn` Right ISPaid
+  logs <- capturingStderr $ settleNow ctx oldInv settled `shouldReturn` ISPaid
   logs `shouldSatisfy` T.isInfixOf ("invoice " <> irProviderRef <> " received money after its order closed; it stays unpaid, and its money is credited to the order's balance")
   invoiceRegistration ctx oldInv `shouldReturn` closed
   new <- invoiceRegistration ctx newInv
   (nrPhase new, nrVersion new) `shouldBe` (OUnpaid True, 1)
-  settleNow ctx newInv settled `shouldReturn` Right ISPaid
+  settleNow ctx newInv settled `shouldReturn` ISPaid
   (nrPhase <$> invoiceRegistration ctx newInv) `shouldReturn` OQueued
 
 -- | Paid in full at minute 44 of 45 and confirming after; a second tab's order at minute 46 must not refund it.
@@ -1290,7 +1291,7 @@ testFundedOverdueKept :: IO ()
 testFundedOverdueKept = withOrders $ \ctx -> do
   (inv, _) <- placed ctx aliceOrder
   advance ctx (44 * 60)
-  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` Right ISOpen
+  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` ISOpen
   advance ctx (2 * 60)
   now <- readIORef (cClock ctx)
   placeOrder ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now} `shouldReturn` refusedWith 409 "order_exists"
@@ -1298,7 +1299,7 @@ testFundedOverdueKept = withOrders $ \ctx -> do
   nrPhase r `shouldBe` OUnpaid True
   withTransaction (cStore ctx) (\db -> closeOverdue db r now) `shouldReturn` Nothing
   (irStatus <$>) <$> getInvoice (cStore ctx) inv `shouldReturn` Just ISOpen
-  settleNow ctx inv settled `shouldReturn` Right ISPaid
+  settleNow ctx inv settled `shouldReturn` ISPaid
   nrPhase <$> invoiceRegistration ctx inv `shouldReturn` OQueued
 
 -- | The real BTCPay adapter against the fake: a payment into an expired invoice reads Expired with PaidLate,
@@ -1357,7 +1358,7 @@ testCancelAnswers :: IO ()
 testCancelAnswers = withOrders $ \ctx -> do
   let cancel = cancelAt ctx
   (funded, _) <- placed ctx aliceOrder
-  settleNow ctx funded (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` Right ISOpen
+  settleNow ctx funded (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` ISOpen
   cancel funded `shouldReturn` refusedWith 409 "funded"
   (other, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
   fst <$> cancel other `shouldReturn` 200
@@ -1387,7 +1388,7 @@ testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx
     (status, v) <- post ctx ("/api/invoice/" <> T.unpack (invoiceText invId) <> "/cancel") ""
     (status, field "status" =<< v, field "cryptoAmountPaid" =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
   length (T.breakOnAll alert logs) `shouldBe` 1
-  capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` Right ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf alert)
+  capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf alert)
   nrPhase <$> invoiceRegistration ctx invId `shouldReturn` OUnpaid False
   where
     paid = rcv 5000 (Just "0.00078")
@@ -1448,7 +1449,7 @@ testSettlementQueues = withOrders $ \ctx -> do
   -- the version read is pinned, so only a publish can wake the waiter
   waiter <- async $ awaitChange (oePhases $ cOrders ctx) nrId (putMVar parked () >> pure 1) 1 10000000
   takeMVar parked
-  settleNow ctx invId settled `shouldReturn` Right ISPaid
+  settleNow ctx invId settled `shouldReturn` ISPaid
   timeout 2000000 (wait waiter) `shouldReturn` Just True
   r <- invoiceRegistration ctx invId
   (nrPhase r, nrVersion r) `shouldBe` (OQueued, 2)
@@ -1458,7 +1459,7 @@ testSettlementLocksInvoice :: IO ()
 testSettlementLocksInvoice = withOrders $ \ctx -> do
   (inv@(InvoiceId t), _) <- placed ctx aliceOrder
   advance ctx 60
-  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` Right ISOpen
+  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` ISOpen
   now <- readIORef (cClock ctx)
   withConnection (cStore ctx) (\db -> DB.query db "SELECT updated_at, status FROM sx_badge_service_invoices WHERE invoice_id = ?" [t])
     `shouldReturn` [(now, "open" :: Text)]
@@ -1512,7 +1513,7 @@ testCleanupIn ctx@Ctx {cStore = st} = do
       place rid n = placePaid st rid ownerA (order (T.pack ("alicebakery" <> show n)) n) expired `shouldReturn` Right ()
   mapM_ (uncurry place) [("gone", 1), ("funded", 2), ("late", 3), ("unread", 4)]
   placePaid st "recent" ownerA (order "alicebakery5" 5) (addUTCTime 3600 due) `shouldReturn` Right ()
-  settleOrder st (weWaiters $ cWeb ctx) Nothing (InvoiceId "inv-funded") (SigFunded (rcv 100 (Just "0.00001")) PaidInPart) t0 `shouldReturn` Right ISOpen
+  settleOrder st (weWaiters $ cWeb ctx) Nothing (InvoiceId "inv-funded") (SigFunded (rcv 100 (Just "0.00001")) PaidInPart) t0 `shouldReturn` ISOpen
   setSignals (cStub ctx) [(ref "late", SigClosed (rcv 5000 (Just "0.00078")) PaidInPart)]
   failing <- newIORef False
   let reading p = p {pReadInvoice = \r -> readIORef failing >>= \f -> if f && r == ref "unread" then pure (Left $ ProviderError "down") else pReadInvoice p r}
@@ -1569,24 +1570,19 @@ testCleanupReadFails = withOrders $ \ctx@Ctx {cStore = st} -> do
 testProviderRefs :: IO ()
 testProviderRefs = withServiceStore $ \st -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
-  getInvoiceByProviderRef st "ref-inv-r1" >>= \case
-    Just InvoiceRow {irInvoiceId, irProduct} -> (irInvoiceId, irProduct) `shouldBe` (InvoiceId "inv-r1", IPName (RegistrationId "r1"))
-    Nothing -> expectationFailure "the name invoice was not found by its ref"
-  withConnection st $ \db ->
-    DB.execute
-      db
-      "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-      ("badge-1" :: Text, "crypto" :: Text, 500 :: Int, 500 :: Int, "usd" :: Text, t0, "open" :: Text, t0, t0)
-  withConnection st $ \db -> do
-    DB.execute db "INSERT INTO sx_badge_service_badge_codes (code_hash, badge_type, months, code_payment_status, created_at) VALUES (?,?,?,?,?)" (DB.Binary ("hash" :: ByteString), "supporter" :: Text, 1 :: Int, "unpaid" :: Text, t0)
-    DB.execute db "INSERT INTO sx_badge_service_badge_prices (price_id, badge_type, month_price, currency, status, created_at) VALUES (?,?,?,?,?,?)" ("p1" :: Text, "supporter" :: Text, 500 :: Int, "usd" :: Text, "active" :: Text, t0)
-    DB.execute db "INSERT INTO sx_badge_service_badge_code_invoices (invoice_id, badge_code_id, price_id, provider_ref, created_at) VALUES (?, (SELECT badge_code_id FROM sx_badge_service_badge_codes), ?, ?, ?)" ("badge-1" :: Text, "p1" :: Text, "ref-inv-r1" :: Text, t0)
-  E.try (getInvoiceByProviderRef st "ref-inv-r1") `shouldReturn` Left (ProviderRefConflict "ref-inv-r1")
+  let found =
+        getInvoiceByProviderRef st "ref-inv-r1" >>= \case
+          Just InvoiceRow {irInvoiceId, irProduct} -> (irInvoiceId, irProduct) `shouldBe` (InvoiceId "inv-r1", IPName (RegistrationId "r1"))
+          Nothing -> expectationFailure "the name invoice was not found by its ref"
+  found
+  seedBadgePrice st "price1"
+  createInvoiceRows st sampleInvoice {niInvoiceId = InvoiceId "badge-1", niProviderRef = "ref-inv-r1"} `shouldReturn` Left CERefConflict
+  found
 
 testPollerQueries :: IO ()
 testPollerQueries = withServiceStore $ \st -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
-  unpaidRefs st (addUTCTime (-60) t0) `shouldReturn` [("crypto", "ref-inv-r1")]
+  unpaidRefs st (addUTCTime (-60) t0) `shouldReturn` ([], [(PPCrypto, "ref-inv-r1")])
   map oiProviderRef <$> overdueInvoices st (addUTCTime 7200 t0) `shouldReturn` ["ref-inv-r1"]
   overdueInvoices st t0 `shouldReturn` []
 

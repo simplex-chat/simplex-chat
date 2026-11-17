@@ -14,9 +14,6 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
-import Data.Bits (toIntegralSized)
-import qualified Data.ByteString.Char8 as B
-import Data.Char (isDigit)
 import Data.List (find)
 import Data.Maybe (mapMaybe)
 import Data.Text (Text)
@@ -24,12 +21,13 @@ import Data.Time.Clock (UTCTime)
 import qualified Data.Text as T
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
-import Simplex.Chat.Badges.Code (nameLength, nameLengthInt)
+import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import StoreService.Config (ChainConfig (..), NamesConfig (..))
+import StoreService.Config (ChainConfig (..), NamesConfig (..), boundedDecimal)
 import StoreService.Names.Abi (bytes32FromHex)
 import StoreService.Names.Community (communityJSON, kindTerms, readableTerms, termsJSON, yearsFor)
 import StoreService.Names.Contracts
@@ -42,7 +40,6 @@ import StoreService.Store.Invoices (unixSeconds)
 import StoreService.Web.Http (HttpEnv, Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, rateLimited, readBoundedBody, searchSlot, termsUnavailable)
 import StoreService.Web.Names.Records (editsLeftJSON)
 import System.Timeout (timeout)
-import Text.Read (readMaybe)
 
 data Found
   = FAvailable Int (Maybe Terms)
@@ -80,12 +77,7 @@ searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond 
 
 -- | Nothing unless @length@ is a decimal integer in the label's bounds.
 queryLength :: Request -> Maybe Int
-queryLength req = case join $ lookup "length" $ queryString req of
-  Just s | not (B.null s) && B.all isDigit s -> readMaybe (B.unpack s) >>= inBounds
-  _ -> Nothing
-  where
-    inBounds :: Integer -> Maybe Int
-    inBounds n = nameLengthInt <$> (nameLength =<< toIntegralSized n)
+queryLength req = join (lookup "length" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal minNameLength maxNameLength)
 
 searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash -> Bool -> Found -> IO Response
 searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nRecordEditsPerYear, nChain = ChainConfig {cChainId, cResolver, cSponsor}} st ps clock lh listed = \case

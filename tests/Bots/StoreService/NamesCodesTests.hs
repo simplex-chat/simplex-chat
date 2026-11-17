@@ -106,7 +106,7 @@ testCodeStates = do
 -- The route as namesRoutes registers it, since a NamesEnv needs a running chat controller.
 withCodeCheck :: (DBStore -> Client -> IO a) -> IO a
 withCodeCheck action = withServiceStore $ \st -> do
-  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = "", lServeWebapp = False, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesPort = Nothing, lMetricsPort = Nothing}
+  http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesSite = Nothing, lTrustForwardedFor = False, lNamesSite = Nothing, lMetricsPort = Nothing}
   let routes = \case
         ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler st}
         _ -> Nothing
@@ -300,10 +300,10 @@ testReleaseSpend = withOrders $ \turns st -> do
 testGroupNameCommands :: IO ()
 testGroupNameCommands = do
   let p = groupCmdAction GRAdmin
-  p "/issue name 8" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2)
-  p "/issue name 63" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 2)
-  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 2)
-  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 10)
+  p "/issue name 8" `shouldBe` RunCmd (GCIssueName (lengthOf 8) 2 CPSFree)
+  p "/issue name 63" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 2 CPSFree)
+  p "/issue name 6 years 2" `shouldBe` RunCmd (GCIssueName (lengthOf 6) 2 CPSFree)
+  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName (lengthOf 63) 10 CPSFree)
   map p ["/bulk name 7 count 3", "/bulk name 12 years 2 count 100", "/bulk name 6 count 1"] `shouldBe` replicate 3 bulkUsage
   groupCmdAction GRMember "/issue name 8" `shouldBe` IgnoreMsg
 

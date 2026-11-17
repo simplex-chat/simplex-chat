@@ -567,7 +567,7 @@ private func badgeReceiptRefused(_ error: Error) -> Bool {
     return code == .receiptInvalid || code == .receiptUsed || code == .testPurchase || code == .transferLimited
 }
 
-private func badgeServiceErrorCode(_ error: Error) -> BadgeServiceErrorCode? {
+private func badgeServiceErrorCode(_ error: Error) -> StoreServiceErrorCode? {
     if case let .error(.badgeRedeemError(.serviceError(code))) = error as? ChatError { return code }
     return nil
 }

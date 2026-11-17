@@ -33,8 +33,9 @@ import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import StoreService.Group.Command (CmdSource)
 import StoreService.Names.Phases (RegistrationId)
-import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, CodeIssuer, NewPrepaidCode (..), PrepaidCode (..), enumTextDecode, getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), enumTextDecode, getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))
 
@@ -143,7 +144,7 @@ afterWrite turns st codeId change write = do
 
 -- | The code table keeps only the hash, so the caller must deliver the code. A code whose hash is taken is logged and drawn again,
 -- up to 3 times.
-issueNameCode :: ChatController -> CodeIssuer -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)
+issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)
 issueNameCode cc issuer len years paymentStatus = issue (3 :: Int)
   where
     issue retries = do

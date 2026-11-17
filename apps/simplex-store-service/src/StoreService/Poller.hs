@@ -125,8 +125,8 @@ data PollerEnv = PollerEnv
     pePoll :: PollConfig,
     peSkipped :: TVar (Map Text UTCTime),
     peListedAt :: TVar (Maybe UTCTime),
-    -- | When each provider's list last succeeded, by its text encoding.
-    peListedOk :: TVar (Map Text UTCTime),
+    -- | When each provider's list last succeeded.
+    peListedOk :: TVar (Map PaymentProvider UTCTime),
     peStrayEvery :: NominalDiffTime,
     -- When the cancel first failed, for orders older than 72 hours.
     peCancelFailed :: TVar (Map Text UTCTime),
@@ -136,7 +136,7 @@ data PollerEnv = PollerEnv
     peCleanupLeft :: TVar [(RegistrationId, InvoiceId, Text)],
     peCreditedAt :: TVar (Maybe UTCTime),
     -- | The rates read in this pass or hinted read, by provider and coin.
-    peRates :: TVar (Map (Text, Text) (Either ProviderError Rate))
+    peRates :: TVar (Map (PaymentProvider, CryptoCurrency) (Either ProviderError Rate))
   }
 
 newPollerEnv :: DBStore -> Waiters -> Maybe Phases -> ReadHints -> [Provider] -> PollConfig -> IO PollerEnv
@@ -164,7 +164,8 @@ runPass :: PollerEnv -> IO ()
 runPass env@PollerEnv {peStore, peProviders} = do
   now <- getCurrentTime
   forgetRates env
-  rows <- unpaidRefs peStore (addUTCTime (negate settleWindow) now)
+  (unknown, rows) <- unpaidRefs peStore (addUTCTime (negate settleWindow) now)
+  mapM_ (uncurry $ warnNoProvider env now) unknown
   let bulk = length rows > readsPerPass
   listNow <- listDue env now bulk
   missed <-
@@ -213,23 +214,25 @@ listDue PollerEnv {peListedAt, peStrayEvery} now forced = atomically $ do
 readsPerPass :: Int
 readsPerPass = 25
 
-coveringProvider :: PollerEnv -> UTCTime -> (Text, Text) -> IO (Maybe Provider)
+coveringProvider :: PollerEnv -> UTCTime -> (PaymentProvider, Text) -> IO (Maybe Provider)
 coveringProvider env@PollerEnv {peProviders} now (provider, ref) =
-  case find ((== provider) . textEncode . pProvider) peProviders of
+  case find ((== provider) . pProvider) peProviders of
     Just p -> pure (Just p)
-    Nothing -> do
-      due <- dueToWarn env now ("no provider for " <> provider)
-      when due $ logError ("badge poller: invoice " <> ref <> " names provider " <> provider <> ", which this build has none of")
-      pure Nothing
+    Nothing -> Nothing <$ warnNoProvider env now (textEncode provider) ref
 
-rowIsCovered :: PollerEnv -> UTCTime -> (Text, Text) -> IO Bool
+warnNoProvider :: PollerEnv -> UTCTime -> Text -> Text -> IO ()
+warnNoProvider env now provider ref = do
+  due <- dueToWarn env now ("no provider for " <> provider)
+  when due $ logError ("badge poller: invoice " <> ref <> " names provider " <> provider <> ", which this build has none of")
+
+rowIsCovered :: PollerEnv -> UTCTime -> (PaymentProvider, Text) -> IO Bool
 rowIsCovered env now row = isJust <$> coveringProvider env now row
 
-readRows :: PollerEnv -> UTCTime -> [(Text, Text)] -> IO (Set Text)
+readRows :: PollerEnv -> UTCTime -> [(PaymentProvider, Text)] -> IO (Set Text)
 readRows env now rows =
   S.fromList . map snd <$> filterM (\r -> not <$> (readRow r `catchOwn'` \e -> False <$ logError (readWhat r <> " failed; it waits for the next pass: " <> tshow e))) rows
   where
-    readWhat (provider, ref) = "badge poller: reading " <> provider <> " invoice " <> ref
+    readWhat (provider, ref) = "badge poller: reading " <> textEncode provider <> " invoice " <> ref
     readRow row@(_, ref) = coveringProvider env now row >>= maybe (pure False) (`readOne` ref)
     readOne p ref =
       pReadInvoice p ref >>= \case
@@ -250,7 +253,7 @@ listPass env@PollerEnv {peListedOk} now p =
       when due $ logWarn ("badge poller: " <> tshow (pProvider p) <> " list failed; every invoice waits for the next pass: " <> providerErrorText e)
       pure Nothing
     Right ListPass {lpMoved, lpSkipped} -> do
-      atomically $ modifyTVar' peListedOk $ M.insert (textEncode $ pProvider p) now
+      atomically $ modifyTVar' peListedOk $ M.insert (pProvider p) now
       owners <- mapM (\s -> reportSkip env (pProvider p) now s `catchOwn'` \e -> SkipUnaccounted <$ logError (skipWhat s <> " failed; it waits for the next pass: " <> tshow e)) lpSkipped
       reportStrangers env (pProvider p) now [reason | (SkipStranger, (_, reason)) <- zip owners lpSkipped]
       unsettled <- filterM (\m -> (False <$ settleMoved env (pProvider p) now m) `catchOwn'` \e -> True <$ logError (settleWhat m <> " failed; it waits for the next pass: " <> tshow e)) lpMoved
@@ -283,16 +286,14 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
     Just row@InvoiceRow {irInvoiceId, irStatus, irProvider, irProduct} | irProvider == provider -> do
       when (irStatus == ISPaid) $ moneyAfterPaid env now row signal
       when (isJust (decide irStatus signal)) $
-        settleOrder peStore peWaiters pePhases irInvoiceId signal now >>= \case
-          Left e -> logError ("badge poller: settling order " <> ref <> " failed: " <> e)
-          Right status -> do
-            reportSettled irProduct irStatus status
-            case (irProduct, find ((== provider) . pProvider) peProviders) of
-              (IPName _, Just p) ->
-                creditLate env p now irInvoiceId ref >>= \case
-                  CONothingDue -> pendingLate env irInvoiceId ref
-                  _ -> pure ()
-              _ -> pure ()
+        settleOrder peStore peWaiters pePhases irInvoiceId signal now >>= \status -> do
+          reportSettled irProduct irStatus status
+          case (irProduct, find ((== provider) . pProvider) peProviders) of
+            (IPName _, Just p) ->
+              creditLate env p now irInvoiceId ref >>= \case
+                CONothingDue -> pendingLate env irInvoiceId ref
+                _ -> pure ()
+            _ -> pure ()
     _ -> pure ()
   where
     reportSettled sold before after
@@ -337,12 +338,12 @@ sweepExpired env@PollerEnv {peStore, peWaiters, pePhases, peCancelFailed} now mi
 sweepRead :: PollerEnv -> UTCTime -> IO ()
 sweepRead env@PollerEnv {peStore} now = do
   (reading, rest) <- splitAt readsPerPass <$> overdueInvoices peStore (addUTCTime (negate expiryGrace) now)
-  failed <- readRows env now [(textEncode oiProvider, oiProviderRef) | OverdueInvoice {oiProvider, oiProviderRef} <- reading]
+  failed <- readRows env now [(oiProvider, oiProviderRef) | OverdueInvoice {oiProvider, oiProviderRef} <- reading]
   sweepExpired env now $ failed <> S.fromList (map oiProviderRef rest)
 
-data ProviderReads = ProviderReads {prDown :: Set Text, prUp :: Set Text}
+data ProviderReads = ProviderReads {prDown :: Set PaymentProvider, prUp :: Set PaymentProvider}
 
-readsBy :: [(Text, Text)] -> Set Text -> ProviderReads
+readsBy :: [(PaymentProvider, Text)] -> Set Text -> ProviderReads
 readsBy rows missed = ProviderReads {prDown = providers failed S.\\ up, prUp = up}
   where
     (failed, read') = partition ((`S.member` missed) . snd) rows
@@ -373,16 +374,14 @@ sweepPastWindow env@PollerEnv {peStore, peProviders, peReadFailed} now providerR
     isPastWindow OverdueInvoice {oiProvider, oiProviderRef, oiCreatedAt} =
       expiresItself oiProvider && any ((== oiProvider) . pProvider) peProviders && diffUTCTime now oiCreatedAt > settleWindow && S.notMember oiProviderRef missed
     readPastWindow (seen@ProviderReads {prDown, prUp}, failed, skipped) oi@OverdueInvoice {oiProvider, oiProviderRef}
-      | provider `S.member` prDown = pure (seen, failed, oi : skipped)
+      | oiProvider `S.member` prDown = pure (seen, failed, oi : skipped)
       | otherwise =
-          readRows env now [(provider, oiProviderRef)] >>= \unread ->
+          readRows env now [(oiProvider, oiProviderRef)] >>= \unread ->
             pure $
               if S.null unread
-                then (seen {prUp = S.insert provider prUp}, failed, skipped)
-                else (seen {prDown = if provider `S.member` prUp then prDown else S.insert provider prDown}, oi : failed, skipped)
-      where
-        provider = textEncode oiProvider
-    answeredBy up OverdueInvoice {oiProvider} = textEncode oiProvider `S.member` up
+                then (seen {prUp = S.insert oiProvider prUp}, failed, skipped)
+                else (seen {prDown = if oiProvider `S.member` prUp then prDown else S.insert oiProvider prDown}, oi : failed, skipped)
+    answeredBy up OverdueInvoice {oiProvider} = oiProvider `S.member` up
     gaveUp readFailures up oi@OverdueInvoice {oiProviderRef} =
       answeredBy up oi && maybe False (\at -> diffUTCTime now at >= readGiveUpDelay) (rfAnswered =<< M.lookup oiProviderRef readFailures)
     refs = S.fromList . map oiProviderRef
@@ -458,7 +457,7 @@ cachedRate PollerEnv {peRates} Provider {pProvider, pCurrentRate} coin =
       rate <- maybe (pure $ Left $ ProviderError $ textEncode pProvider <> " offers no rates") ($ coin) pCurrentRate
       rate <$ atomically (modifyTVar' peRates (M.insert key rate))
   where
-    key = (textEncode pProvider, textEncode coin)
+    key = (pProvider, coin)
 
 -- | Each pass and hinted read reads the rates again.
 forgetRates :: PollerEnv -> IO ()

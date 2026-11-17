@@ -17,16 +17,16 @@ import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
-import StoreService.Names.Store (CodeIssuer (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
+import StoreService.Names.Store (FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice)
-import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, redactPassword, requireDevKeys, storeService, trustDevKeys)
+import StoreService.Service (ServiceState (..), checkNodeChain, checkUnverifiedReceipts, newServiceState, requireDevKeys, serviceRequest, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
-import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
+import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, consoleIssueUsage, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeNamed, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
@@ -92,6 +92,7 @@ import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
 import System.Timeout (timeout)
 #if defined(dbPostgres)
+import Simplex.Chat.Options.DB (ChatDbOpts (..), dbString)
 import qualified Database.PostgreSQL.Simple as PSQL
 import Database.PostgreSQL.Simple (FromRow, Only (..), ToRow)
 #else
@@ -163,7 +164,9 @@ namesBootTests :: SpecWith TestParams
 namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
   it "refuses a node serving another chain than chain_id, and dev_keys unless the node answers, only warning without them" testNodeChain
-  it "masks the database password in the start line, in a URI or as a keyword" testRedactPassword
+#if defined(dbPostgres)
+  it "masks the database password in the start line, in a URI's user info, a '?' in it included, or parameters, an encoded name included, or as a keyword" testRedactPassword
+#endif
   it "refuses unverified store receipts with an issuer key clients trust, and takes them with a dev key" testUnverifiedReceiptsKey
   it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
   it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
@@ -239,12 +242,20 @@ testUnverifiedReceiptsKey _ = do
   checkUnverifiedReceipts unverified cfg BadgeIssuerKey {keyIdx = 9, secretKey = sk} `shouldBe` Right ()
   checkUnverifiedReceipts (Just withDev) cfg BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk} `shouldBe` Right ()
 
+#if defined(dbPostgres)
 testRedactPassword :: HasCallStack => TestParams -> IO ()
 testRedactPassword _ = do
-  redactPassword "postgresql://simplex:s3cr@t:x@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex:***@127.0.0.1:5432/badge_service"
-  redactPassword "postgresql://simplex@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex@127.0.0.1:5432/badge_service"
-  redactPassword "host=127.0.0.1 user=simplex password=s3cret dbname=badge_service" `shouldBe` "host=127.0.0.1 user=simplex password=*** dbname=badge_service"
-  redactPassword "/var/opt/simplex_badge_service" `shouldBe` "/var/opt/simplex_badge_service"
+  let shown s = dbString ChatDbOpts {dbConnstr = s, dbSchemaPrefix = "", dbPoolSize = 1, dbCreateSchema = False}
+  shown "postgresql://simplex:s3cr@t:x@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex:***@127.0.0.1:5432/badge_service"
+  shown "postgresql://simplex@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex@127.0.0.1:5432/badge_service"
+  shown "postgres://simplex@127.0.0.1/badge_service?sslmode=require&password=s3cret" `shouldBe` "postgres://simplex@127.0.0.1/badge_service?sslmode=require&password=***"
+  shown "postgresql://u:pa?ss@h/db" `shouldBe` "postgresql://u:***@h/db"
+  shown "postgresql://u:pa?ss@h:5432/db?sslmode=require&password=x" `shouldBe` "postgresql://u:***@h:5432/db?sslmode=require&password=***"
+  shown "postgresql://h/db?pass%77ord=s3cret" `shouldBe` "postgresql://h/db?password=***"
+  shown "host=127.0.0.1 user=simplex password=s3cret dbname=badge_service" `shouldBe` "host=127.0.0.1 user=simplex password=*** dbname=badge_service"
+  shown " host=127.0.0.1  password = 's3 \\'cret' dbname = badge_service" `shouldBe` "host=127.0.0.1 password=*** dbname = badge_service"
+  shown "host=127.0.0.1 password" `shouldBe` "(unreadable connection string)"
+#endif
 
 testNodeChain :: HasCallStack => TestParams -> IO ()
 testNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
@@ -458,16 +469,16 @@ testOperatorNameCodes ps = do
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis", "name 6 unpaid"] $ \args ->
-      (args,) <$> issueRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+      (args,) <$> issueRaw cc args `shouldReturn` (args, Left consoleIssueUsage)
     countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)
     let check code = checkPrepaid port (formatNameCode code)
         coverage :: Int -> Int -> Text -> (Int, Maybe J.Value)
         coverage minLength years state = (200, Just $ J.object ["minLength" J..= minLength, "years" J..= years, "state" J..= state])
-        revoke = revokeRaw cc . formatNameCode
+        revoke = revokeNamed cc . formatNameCode
     check paid `shouldReturn` coverage 7 3 "unused"
-    revokeRaw cc (formatNameCode paid <> " junk") `shouldReturn` Left badgeCmdUsage
+    revokeRaw cc (formatNameCode paid <> " junk") `shouldReturn` Left "Usage: //revoke <code>"
     revoke paid `shouldReturn` Right "Revoked."
     revoke paid `shouldReturn` Right "Already revoked."
     check paid `shouldReturn` coverage 7 3 "revoked"
@@ -518,7 +529,7 @@ namesRefundChatTests = describe "StoreService names: operator refund" $ do
   it "refuses a balance held by an open order, naming it and its expiry, and records it once that order's invoice is cancelled" testRefundOpenHolder
   it "answers an owner's /balance, /record_refund and /close in the group, worded for the group, refusing as the console does" testGroupMoneyCmds
   it "closes a failed paid order by its invoice id, recording the refund of its price, and refuses an unknown reference and an order no longer failed" testCloseRecorded
-  it "refuses //close without [names], and answers the usage to a malformed one" testCloseNamesOff
+  it "refuses //close and //issue name without [names], and answers the usage to a malformed //close" testCloseNamesOff
 
 balanceRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
 balanceRaw cc args = operatorCmd cc ("//balance " <> args)
@@ -589,7 +600,8 @@ testCloseNamesOff :: HasCallStack => TestParams -> IO ()
 testCloseNamesOff ps = withStoreService ps $ \_ _ cc -> do
   Balances.source (chatStore cc) "s" 10000
   closeRaw cc "s" `shouldReturn` Left "Names are not enabled on this service."
-  forM_ ["", "s junk"] $ \args -> (args,) <$> closeRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  issueRaw cc "name 6" `shouldReturn` Left "Names are not enabled on this service, so name codes cannot be issued."
+  forM_ ["", "s junk"] $ \args -> (args,) <$> closeRaw cc args `shouldReturn` (args, Left "Usage: //close <reference>")
   Balances.figures (chatStore cc) "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
 minuteText :: UTCTime -> Text
@@ -621,8 +633,8 @@ testRefundRefusals ps = withStoreService ps $ \_ _ cc -> do
   recordRefundRaw cc "s 9000" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $90.00."
   recordRefundRaw cc "s 10001" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $100.01."
   forM_ ["", "s", "s 0", "s -5", "s 100.00", "s 10000 junk", "s 99999999999999999999"] $ \args ->
-    (args,) <$> recordRefundRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
-  forM_ ["", "s 10000"] $ \args -> (args,) <$> balanceRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+    (args,) <$> recordRefundRaw cc args `shouldReturn` (args, Left "Usage: //record_refund <reference> <cents>")
+  forM_ ["", "s 10000"] $ \args -> (args,) <$> balanceRaw cc args `shouldReturn` (args, Left "Usage: //balance <reference>")
   operatorCmd cc "//refund s 10000" `shouldReturn` Left badgeCmdUsage
   Balances.figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
@@ -1680,13 +1692,13 @@ testServiceRevokeRetiresTracker ps =
     (trackerItemId, _, code) <- issueTracked cc alice "supporter" 2
     redeemOk gsKey cc env code
     void $ waitItemText cc trackerItemId "1 of 2 uses remaining"
-    revokeRaw cc code `shouldReturn` Right "Revoked."
+    revokeRaw cc code `shouldReturn` Right (revokeReply code "Revoked.")
     readItemText cc trackerItemId `shouldReturn` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
-    revokeRaw cc code `shouldReturn` Right "Already revoked."
+    revokeRaw cc code `shouldReturn` Right (revokeReply code "Already revoked.")
     revokedTrackerCount cc `shouldReturn` 1
     single <- extractCode <$> replyTo cc alice "/issue legend"
-    revokeRaw cc single `shouldReturn` Right "Revoked."
+    revokeRaw cc single `shouldReturn` Right (revokeReply single "Revoked.")
     revokedTrackerCount cc `shouldReturn` 1
 
 testServiceRevokeRepairsTracker :: HasCallStack => TestParams -> IO ()
@@ -1696,7 +1708,7 @@ testServiceRevokeRepairsTracker ps =
     (trackerItemId, tracker0, code) <- issueTracked cc alice "supporter" 2
     revokeInStore cc 2
     readItemText cc trackerItemId `shouldReturn` tracker0
-    revokeRaw cc code `shouldReturn` Right "Already revoked."
+    revokeRaw cc code `shouldReturn` Right (revokeReply code "Already revoked.")
     readItemText cc trackerItemId `shouldReturn` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
     awaitTrackerOnConsole alice (retiredText code)
@@ -1722,7 +1734,7 @@ queueRedemption cc env codeText = do
   user <- readTVarIO (currentUser cc) >>= maybe (error "no current user") pure
   (purchaseKey, masterKey) <- newPurchaseKeys
   let request = requestObject purchaseKey STCRedeemBadgeCode {masterKey, code = codeText}
-  atomically $ writeTQueue (serviceRequestQ env) (user, AgentInvId "test-request", Just purchaseKey, request)
+  atomically $ writeTQueue (serviceRequestQ env) (user, AgentInvId "test-request", serviceRequest (Just purchaseKey) request)
 
 redeemLosingRefresh :: HasCallStack => BadgeIssuerKey -> ChatController -> Text -> IO ()
 redeemLosingRefresh key cc codeText = newTQueueIO >>= \q -> redeemOkWith key cc (Just q) codeText

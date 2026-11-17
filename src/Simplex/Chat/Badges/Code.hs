@@ -40,6 +40,7 @@ module Simplex.Chat.Badges.Code
     namePrepaidCodeLength,
     minNameLength,
     maxNameLength,
+    minNameYears,
   )
 where
 
@@ -150,6 +151,10 @@ minNameLength = 6
 
 maxNameLength :: Int
 maxNameLength = 63
+
+-- | The controller refuses a registration under 730 days.
+minNameYears :: Int
+minNameYears = 2
 
 newtype NameLength = NameLength Int
   deriving (Eq, Ord, Show)

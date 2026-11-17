@@ -21,8 +21,6 @@ import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import qualified Data.ByteString.Char8 as B
-import Data.Char (isDigit)
 import Data.Int (Int64)
 import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
@@ -30,7 +28,9 @@ import Data.Time.Clock (UTCTime, diffUTCTime)
 import Network.HTTP.Types (status200, status409)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import StoreService.Config (boundedDecimal)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (RegisterIntent (..))
@@ -41,7 +41,6 @@ import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
 import StoreService.Web.Http (HttpEnv, Respond, badRequest, holdsFull, invalidLink, jsonResponse, maxBodyBytes, notFound, providerUnavailable, readBoundedBody, withHoldSlot)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
-import Text.Read (readMaybe)
 
 -- | GET /api/registration/:id, held while its version is seenVersion.
 registrationHandler :: OrdersEnv -> HttpEnv -> Int -> RegistrationId -> Request -> Respond -> IO ResponseReceived
@@ -163,9 +162,4 @@ heldFor hold now moments = fromInteger $ minimum $ toInteger hold : [ceiling (di
 
 -- | Nothing unless seenVersion is a decimal version, so any other value answers at once.
 versionParam :: Request -> Maybe Int64
-versionParam req = case join $ lookup "seenVersion" $ queryString req of
-  Just s | not (B.null s) && B.all isDigit s -> readMaybe (B.unpack s) >>= inRange
-  _ -> Nothing
-  where
-    inRange :: Integer -> Maybe Int64
-    inRange v = if v <= toInteger (maxBound :: Int64) then Just (fromInteger v) else Nothing
+versionParam req = join (lookup "seenVersion" $ queryString req) >>= eitherToMaybe . parseAll (boundedDecimal 0 maxBound)

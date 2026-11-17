@@ -166,7 +166,7 @@ settledPaid = "0.00156"
 testEachChangeWakes :: IO ()
 testEachChangeWakes = bounded "each change wakes" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
   (inv, _) <- placed ctx aliceOrder
-  settleNow ctx inv settled `shouldReturn` Right ISPaid
+  settleNow ctx inv settled `shouldReturn` ISPaid
   NameRegistration {nrId} <- invoiceRegistration ctx inv
   let changes :: [(String, NameRegistration -> NameRegistration, Text, J.Value)]
       changes =
@@ -184,7 +184,7 @@ testEachChangeWakes = bounded "each change wakes" $ withPolls holdMicros $ \Poll
 testPaidHoldsOnVersion :: IO ()
 testPaidHoldsOnVersion = bounded "paid holds on version" $ withPolls holdMicros $ \Polls {pCtx = ctx@Ctx {cWeb}} -> do
   (inv, _) <- placed ctx aliceOrder
-  settleNow ctx inv settled `shouldReturn` Right ISPaid
+  settleNow ctx inv settled `shouldReturn` ISPaid
   NameRegistration {nrId, nrVersion} <- invoiceRegistration ctx inv
   -- without a version there is nothing a paid invoice could wait for
   forM_ [Nothing, Just "two"] $ \version ->
@@ -203,7 +203,7 @@ testLatePaidAnswersAtOnce :: IO ()
 testLatePaidAnswersAtOnce = bounded "late paid" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
   (inv, _) <- placed ctx aliceOrder
   fst <$> post ctx (invoicePath inv <> "/cancel") "" `shouldReturn` 200
-  settleNow ctx inv settled `shouldReturn` Right ISPaid
+  settleNow ctx inv settled `shouldReturn` ISPaid
   NameRegistration {nrVersion} <- invoiceRegistration ctx inv
   (status, o) <- answeredAtOnce ctx $ invoicePath inv <> following ISPaid nrVersion settledPaid True
   (status, key "status" o, key "phase" (registrationOf o)) `shouldBe` (200, Just "paid", Just "unpaid")
@@ -220,7 +220,7 @@ testOpenWakesOnVersion = bounded "open wakes on version" $ withPolls holdMicros 
   (key "status" o, key "version" (registrationOf o)) `shouldBe` (Just "open", Just (J.toJSON v'))
   -- a seenVersion that is no version leaves the hold on the status and payment alone
   byStatus <- held ctx (1, 0) $ invoicePath inv <> followingAs ISOpen (Just "two") "" False
-  settleNow ctx inv (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` Right ISOpen
+  settleNow ctx inv (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` ISOpen
   (_, paidInPart) <- woken "open invoice poll without a version" byStatus
   (key "status" paidInPart, key "cryptoAmountPaid" paidInPart) `shouldBe` (Just "open", Just "0.00078")
 
@@ -241,7 +241,7 @@ testExpiryWakes = bounded "expiry wakes" $ withPolls holdMicros $ \Polls {pCtx =
 testFundedStaysOpen :: IO ()
 testFundedStaysOpen = bounded "funded stays open" $ withPolls holdMicros $ \Polls {pCtx = ctx, pSetNow} -> do
   (inv, _) <- placed ctx aliceOrder
-  settleNow ctx inv (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` Right ISOpen
+  settleNow ctx inv (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` ISOpen
   Just InvoiceRow {irExpiresAt} <- getInvoice (cStore ctx) inv
   NameRegistration {nrVersion} <- invoiceRegistration ctx inv
   pSetNow $ addUTCTime 60 irExpiresAt
@@ -253,7 +253,7 @@ testFundedStaysOpen = bounded "funded stays open" $ withPolls holdMicros $ \Poll
 testLapseReadsFailed :: IO ()
 testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = ctx@Ctx {cOrders}, pSetNow} -> do
   (inv, _) <- placed ctx aliceOrder
-  settleNow ctx inv settled `shouldReturn` Right ISPaid
+  settleNow ctx inv settled `shouldReturn` ISPaid
   NameRegistration {nrId} <- invoiceRegistration ctx inv
   now <- oeNow cOrders
   let revealBefore = seconds now + 600
