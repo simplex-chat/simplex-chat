@@ -1454,8 +1454,8 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
 
     var unreadTag: Bool {
         switch chatInfo.chatSettings?.enableNtfs {
-        case .all: unreadStats.unreadChat || unreadStats.unreadCount > 0
-        case .mentions: unreadStats.unreadChat || unreadStats.unreadMentions > 0
+        case .all: unreadStats.unreadChat || unreadStats.unreadCount > 0 || supportUnreadCount > 0
+        case .mentions: unreadStats.unreadChat || unreadStats.unreadMentions > 0 || supportUnreadCount > 0
         default: unreadStats.unreadChat
         }
     }

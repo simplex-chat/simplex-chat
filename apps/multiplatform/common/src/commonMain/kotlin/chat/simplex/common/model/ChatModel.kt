@@ -1456,8 +1456,8 @@ data class Chat(
     }
 
   val unreadTag: Boolean get() = when (chatInfo.chatSettings?.enableNtfs) {
-    All -> unreadStats.unreadChat || unreadStats.unreadCount > 0
-    Mentions -> unreadStats.unreadChat || unreadStats.unreadMentions > 0
+    All -> unreadStats.unreadChat || unreadStats.unreadCount > 0 || supportUnreadCount > 0
+    Mentions -> unreadStats.unreadChat || unreadStats.unreadMentions > 0 || supportUnreadCount > 0
     else -> unreadStats.unreadChat
   }
 
