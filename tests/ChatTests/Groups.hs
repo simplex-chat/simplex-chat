@@ -9489,7 +9489,7 @@ testUnreadCountsPendingMember ps = do
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChatCfgOpts ps (itemEventsCfg events) testOpts {markRead = False} "cath" cathProfile $ \cath -> do
-        createGroup2 "team" alice bob
+        createGroup2' "team" alice (bob, GRMember) True
         alice ##> "/set delete #team on"
         alice <## "updated group preferences:"
         alice <## "Full deletion: on"
