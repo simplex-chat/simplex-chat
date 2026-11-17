@@ -63,11 +63,11 @@ final class ChatItemUpdateTests: XCTestCase {
         let events = try recordedEvents("updates/group-mention")
         try listChat(events[0])
         await processReceivedMsg(events[0])
-        try await assertCounts(1, 0, 1)
+        try await assertCounts(1, 0, 0)
         await processReceivedMsg(events[1])
         try await assertCounts(1, 1, 1)
         await processReceivedMsg(events[2])
-        try await assertCounts(1, 0, 1)
+        try await assertCounts(1, 0, 0)
     }
 
     @MainActor
@@ -83,11 +83,11 @@ final class ChatItemUpdateTests: XCTestCase {
     }
 
     @MainActor
-    func testUpdateOfChatNotListedAddsItAndNotifies() async throws {
+    func testUpdateOfChatNotListedAddsNothing() async throws {
         let events = try recordedEvents("updates/direct-edit")
         await processReceivedMsg(events[1])
-        XCTAssertEqual(previewText(), "hello there")
-        XCTAssertEqual(notified, ["hello there"])
+        XCTAssertEqual(ChatModel.shared.chats.count, 0)
+        XCTAssertEqual(notified, [])
     }
 
     @MainActor
@@ -190,7 +190,7 @@ final class ChatItemUpdateTests: XCTestCase {
     private func assertCounts(_ unread: Int, _ mentions: Int, _ userUnread: Int, file: StaticString = #filePath, line: UInt = #line) async throws {
         func counts() -> [Int] {
             let stats = ChatModel.shared.chats.first?.chatStats
-            return [stats?.unreadCount ?? -1, stats?.unreadMentions ?? -1, ChatModel.shared.users.first?.unreadCount ?? -1]
+            return [stats?.unreadCount ?? -1, stats?.unreadMentions ?? -1, ChatModel.shared.totalUnreadCountForAllUsers()]
         }
         try? await waitFor { counts() == [unread, mentions, userUnread] }
         XCTAssertEqual(counts(), [unread, mentions, userUnread], file: file, line: line)
