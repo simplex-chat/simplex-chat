@@ -97,7 +97,7 @@ class Base64ImagePainterTest {
         assertEquals(Size(751f, 501f), painter.intrinsicSize)
         release()
         awaitDecodedPictures()
-        assertTrue(scene.render().isRedAt(SCENE_SIZE / 2, SCENE_SIZE / 2))
+        assertTrue(scene.renderUntil { it.isRedAt(SCENE_SIZE / 2, SCENE_SIZE / 2) })
         assertEquals(IntSize(751, 501), assertNotNull(painter.bitmap).run { IntSize(width, height) })
       }
     }
@@ -144,7 +144,7 @@ class Base64ImagePainterTest {
         assertEquals(Size(37f, 23f), painter.intrinsicSize)
         release()
         awaitDecodedPictures()
-        scene.render()
+        assertTrue(scene.renderUntil { painter.bitmap != null })
         assertSame(errorImageBitmap, painter.bitmap)
         assertEquals(Size(37f, 23f), painter.intrinsicSize)
       }
