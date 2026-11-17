@@ -124,6 +124,7 @@ struct ChatListNavLink: View {
                     label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
                 )
                 .frameCompat(height: dynamicRowHeight)
+                .modifier(contactContextMenu(contact))
                 .if(!contact.nextAcceptContactRequest) { v in
                     v.swipeActions(edge: .leading, allowsFullSwipe: true) {
                         markReadButton()
@@ -259,6 +260,7 @@ struct ChatListNavLink: View {
                 disabled: !groupInfo.ready
             )
             .frameCompat(height: dynamicRowHeight)
+            .modifier(groupContextMenu(groupInfo))
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 markReadButton()
                 toggleFavoriteButton()
@@ -307,6 +309,7 @@ struct ChatListNavLink: View {
             disabled: !noteFolder.ready
         )
         .frameCompat(height: dynamicRowHeight)
+        .modifier(noteFolderContextMenu(noteFolder))
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
         }
@@ -489,6 +492,116 @@ struct ChatListNavLink: View {
             deleteLabel
         }
         .tint(.red)
+    }
+
+    // Spec: spec/client/chat-list.md#contactContextMenu
+    private func contactContextMenu(_ contact: Contact) -> ChatContextMenuModifier {
+        ChatContextMenuModifier(
+            chat: chat,
+            theme: theme,
+            onCommit: { ItemsModel.shared.loadOpenChat(chat.chatInfo.id) },
+            onMarkRead: {
+                if chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat {
+                    Task { await markChatRead(ItemsModel.shared, chat) }
+                } else {
+                    Task { await markChatUnread(chat) }
+                }
+            },
+            onToggleMute: chat.chatInfo.nextNtfMode != nil ? {
+                if let nextMode = chat.chatInfo.nextNtfMode {
+                    toggleNotifications(chat, enableNtfs: nextMode)
+                }
+            } : nil,
+            onToggleFavorite: {
+                let isFav = chat.chatInfo.chatSettings?.favorite == true
+                toggleChatFavorite(chat, favorite: !isFav)
+            },
+            onClearChat: !chat.chatItems.isEmpty ? {
+                AlertManager.shared.showAlert(clearChatAlert())
+            } : nil,
+            onDelete: {
+                deleteContactDialog(
+                    chat,
+                    contact,
+                    dismissToChatList: false,
+                    showAlert: { alert = $0 },
+                    showActionSheet: { actionSheet = $0 },
+                    showSheetContent: { sheet = $0 }
+                )
+            },
+            deleteTitle: NSLocalizedString("Delete chat", comment: "menu action"),
+            deleteIsLeave: false,
+            disabled: contact.nextAcceptContactRequest
+        )
+    }
+
+    // Spec: spec/client/chat-list.md#groupContextMenu
+    private func groupContextMenu(_ groupInfo: GroupInfo) -> ChatContextMenuModifier {
+        let showLeaveGroup = groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)
+        let showDeleteGroup = groupInfo.canDelete
+        let deleteAction: (() -> Void)? = if showLeaveGroup {
+            { AlertManager.shared.showAlert(leaveGroupAlert(groupInfo)) }
+        } else if showDeleteGroup {
+            { AlertManager.shared.showAlert(deleteGroupAlert(groupInfo)) }
+        } else {
+            nil
+        }
+        let deleteTitle = if showLeaveGroup {
+            groupInfo.useRelays ? NSLocalizedString("Leave channel", comment: "menu action") : NSLocalizedString("Leave group", comment: "menu action")
+        } else if showDeleteGroup {
+            groupInfo.useRelays ? NSLocalizedString("Delete channel", comment: "menu action") : NSLocalizedString("Delete group", comment: "menu action")
+        } else {
+            ""
+        }
+
+        return ChatContextMenuModifier(
+            chat: chat,
+            theme: theme,
+            onCommit: { ItemsModel.shared.loadOpenChat(chat.chatInfo.id) },
+            onMarkRead: {
+                if chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat {
+                    Task { await markChatRead(ItemsModel.shared, chat) }
+                } else {
+                    Task { await markChatUnread(chat) }
+                }
+            },
+            onToggleMute: chat.chatInfo.nextNtfMode != nil ? {
+                if let nextMode = chat.chatInfo.nextNtfMode {
+                    toggleNotifications(chat, enableNtfs: nextMode)
+                }
+            } : nil,
+            onToggleFavorite: {
+                let isFav = chat.chatInfo.chatSettings?.favorite == true
+                toggleChatFavorite(chat, favorite: !isFav)
+            },
+            onClearChat: !chat.chatItems.isEmpty ? {
+                AlertManager.shared.showAlert(clearChatAlert())
+            } : nil,
+            onDelete: deleteAction,
+            deleteTitle: deleteTitle,
+            deleteIsLeave: showLeaveGroup,
+            disabled: !groupInfo.ready
+        )
+    }
+
+    // Spec: spec/client/chat-list.md#noteFolderContextMenu
+    private func noteFolderContextMenu(_ noteFolder: NoteFolder) -> ChatContextMenuModifier {
+        ChatContextMenuModifier(
+            chat: chat,
+            theme: theme,
+            onCommit: { ItemsModel.shared.loadOpenChat(chat.chatInfo.id) },
+            onMarkRead: {
+                if chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat {
+                    Task { await markChatRead(ItemsModel.shared, chat) }
+                } else {
+                    Task { await markChatUnread(chat) }
+                }
+            },
+            onClearChat: !chat.chatItems.isEmpty ? {
+                AlertManager.shared.showAlert(clearNoteFolderAlert())
+            } : nil,
+            disabled: !noteFolder.ready
+        )
     }
 
     // Spec: spec/client/chat-list.md#contactRequestNavLink
