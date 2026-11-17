@@ -48,7 +48,6 @@ module StoreService.Names.Store
     BrokenInvariant (..),
     PrepaidCode (..),
     NewPrepaidCode (..),
-    CodeIssuer (..),
     CodeHashTaken (..),
     TxFor (..),
     TxStatus (..),
@@ -147,6 +146,7 @@ import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
+import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
@@ -531,11 +531,8 @@ data NewPrepaidCode = NewPrepaidCode
     npcYears :: Int,
     npcPaymentStatus :: BadgeCodePaymentStatus,
     npcExpiresAt :: Maybe UTCTime,
-    npcIssuer :: CodeIssuer
+    npcIssuer :: CmdSource
   }
-
-data CodeIssuer = IssuedInGroup | IssuedInConsole
-  deriving (Eq, Show)
 
 data CodeHashTaken = CodeHashTaken
   deriving (Eq, Show)
@@ -1440,7 +1437,7 @@ insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPay
         ON CONFLICT DO NOTHING
       |]
       )
-      (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now, BI (npcIssuer == IssuedInGroup))
+      (Binary npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now, BI (npcIssuer == FromGroup))
   if inserted > 0 then Right <$> insertedRowId db else pure $ Left CodeHashTaken
 
 prepaidCodeColumns :: Query

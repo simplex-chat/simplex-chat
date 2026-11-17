@@ -25,6 +25,7 @@ import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationsToRun (..
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (labelHash)
+import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (TermsAcceptance (..))
@@ -73,6 +74,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "lists code orders failed before the cutoff that still hold their code" testFailedCodeOrders
   describe "prepaid codes" $ do
     it "issues one code per hash" testIssueCode
+    it "stores a code's origin as issued_in_group, counting a group code written before as the group's" testIssuerStored
     it "reserves only an unused code, releases and spends it only for its holder" testReserveReleaseSpend
     it "refuses an unpaid, revoked or expired code" testReserveRefused
     it "lets a registration hold one code" testOneCodePerRegistration
@@ -161,7 +163,7 @@ issue st n c = withTransaction st $ \db -> do
   getPrepaidCodeById db codeId
 
 usable :: NewPrepaidCode
-usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
+usable = NewPrepaidCode {npcCodeHash = "", npcMinLength = 8, npcYears = twoYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = FromConsole}
 
 placeCode :: DBStore -> Text -> Address -> OrderFields -> PrepaidCode -> IO (Either CodeInsertRefused ())
 placeCode st rid owner o code = withTransaction st $ \db -> insertOrRollBack db $ createCodeRegistration db (codeReg rid owner o code) code t0
@@ -625,6 +627,18 @@ testIssueCode = withServiceStore $ \st -> do
   (pcMinLength code, pcYears code, pcPaymentStatus code, pcExpiresAt code, pcCreatedAt code) `shouldBe` (6, 5, CPSFree, Just (at 100), t0)
   withTransaction st (\db -> insertPrepaidCode db usable {npcCodeHash = digestFixture 1} t0) `shouldReturn` Left CodeHashTaken
   withTransaction st (\db -> getPrepaidCode db (digestFixture 1)) `shouldReturn` Just code
+
+testIssuerStored :: IO ()
+testIssuerStored = withServiceStore $ \st -> do
+  withTransaction st $ \db ->
+    DB.execute
+      db
+      "INSERT INTO sx_badge_service_name_prepaid_codes (code_hash, min_length, years, code_payment_status, created_at, issued_in_group) VALUES (?,?,?,?,?,1)"
+      (DB.Binary (digestFixture 1), 8 :: Int, twoYears, CPSPaid, t0)
+  void $ issue st 2 usable {npcIssuer = FromGroup}
+  void $ issue st 3 usable
+  withTransaction st (\db -> DB.query_ db "SELECT issued_in_group FROM sx_badge_service_name_prepaid_codes ORDER BY name_prepaid_code_id") `shouldReturn` [Only (1 :: Int), Only 1, Only 0]
+  withTransaction st (`groupNameCodesIssuedSince` t0) `shouldReturn` 2
 
 testReserveReleaseSpend :: IO ()
 testReserveReleaseSpend = withServiceStore $ \st -> do

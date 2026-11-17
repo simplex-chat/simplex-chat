@@ -6,6 +6,7 @@
 module StoreService.Group.Command
   ( GroupCmd (..),
     MoneyCmd (..),
+    CmdSource (..),
     spelledCmd,
     CmdAction (..),
     groupCmdAction,
@@ -31,7 +32,6 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (boundedDecimal)
-import StoreService.Names.Store (CodeIssuer (..))
 
 maxBulk, maxUses, maxMonths, maxNameYears :: Int
 maxBulk = 100
@@ -51,10 +51,13 @@ data GroupCmd
 data MoneyCmd = MCBalance Text | MCRecordRefund Text Int | MCClose Text
   deriving (Eq, Show)
 
-spelledCmd :: CodeIssuer -> Text -> Text
+data CmdSource = FromConsole | FromGroup
+  deriving (Eq, Show)
+
+spelledCmd :: CmdSource -> Text -> Text
 spelledCmd = \case
-  IssuedInConsole -> ("//" <>)
-  IssuedInGroup -> ("/" <>)
+  FromConsole -> ("//" <>)
+  FromGroup -> ("/" <>)
 
 data CmdAction
   = RunCmd GroupCmd
@@ -63,33 +66,33 @@ data CmdAction
   deriving (Eq, Show)
 
 groupCmdAction :: GroupMemberRole -> Text -> CmdAction
-groupCmdAction role t = case parsedCmd IssuedInGroup t of
+groupCmdAction role t = case parsedCmd FromGroup t of
   Right (tag, r)
     | role >= cmdMinRole tag -> either ReplyText RunCmd r
     | Right _ <- r, Just refusal <- cmdRefusal tag -> ReplyText refusal
   _ -> IgnoreMsg
 
 consoleCmd :: Text -> Either Text GroupCmd
-consoleCmd t = either (const $ Left usage) snd $ parsedCmd IssuedInConsole t
+consoleCmd t = either (const $ Left usage) snd $ parsedCmd FromConsole t
   where
-    usage = T.intercalate "\n" $ "Usage:" : map (\tag -> cmdText IssuedInConsole tag (cmdParams IssuedInConsole tag)) (sourceTags IssuedInConsole)
+    usage = T.intercalate "\n" $ "Usage:" : map (\tag -> cmdText FromConsole tag (cmdParams FromConsole tag)) (sourceTags FromConsole)
 
-parsedCmd :: CodeIssuer -> Text -> Either String (CmdTag, Either Text GroupCmd)
+parsedCmd :: CmdSource -> Text -> Either String (CmdTag, Either Text GroupCmd)
 parsedCmd source = A.parseOnly (cmdActionP source) . encodeUtf8 . T.strip
 
 -- | Left is the usage reply for an advertised command whose arguments do not parse.
-cmdActionP :: CodeIssuer -> A.Parser (CmdTag, Either Text GroupCmd)
+cmdActionP :: CmdSource -> A.Parser (CmdTag, Either Text GroupCmd)
 cmdActionP source = A.choice (map cmdP (sourceTags source))
   where
     cmdP tag = (tag,) <$> (A.string (encodeUtf8 (cmdPrefix <> cmdName tag)) *> (Right <$> fullArgsP tag <|> Left (cmdUsage source tag) <$ usageEndP))
     cmdPrefix = case source of
-      IssuedInConsole -> ""
-      IssuedInGroup -> "/"
+      FromConsole -> ""
+      FromGroup -> "/"
     fullArgsP tag = A.char ' ' *> cmdArgsP source tag <* A.endOfInput
     -- Without the space check "/issued" would get a usage reply.
     usageEndP = void A.space <|> A.endOfInput
 
-cmdArgsP :: CodeIssuer -> CmdTag -> A.Parser GroupCmd
+cmdArgsP :: CmdSource -> CmdTag -> A.Parser GroupCmd
 cmdArgsP source = \case
   CTIssue ->
     uncurry GCIssueName <$> nameCodeP <*> statusP (nameStatuses source)
@@ -103,18 +106,18 @@ cmdArgsP source = \case
     countP = A.space *> optValueP countOpt
     statusP statuses = A.option CPSFree (A.space *> mfilter (`elem` statuses) textTokenP)
 
-issueUses :: CodeIssuer -> Maybe CmdOpt
+issueUses :: CmdSource -> Maybe CmdOpt
 issueUses = \case
-  IssuedInConsole -> Nothing
-  IssuedInGroup -> Just usesOpt
+  FromConsole -> Nothing
+  FromGroup -> Just usesOpt
 
-badgeStatuses :: CodeIssuer -> [BadgeCodePaymentStatus]
+badgeStatuses :: CmdSource -> [BadgeCodePaymentStatus]
 badgeStatuses = \case
-  IssuedInConsole -> [CPSPaid, CPSUnpaid, CPSFree]
-  IssuedInGroup -> []
+  FromConsole -> [CPSPaid, CPSUnpaid, CPSFree]
+  FromGroup -> []
 
 -- | Nothing marks a name code paid later, so an unpaid one would be refused for good.
-nameStatuses :: CodeIssuer -> [BadgeCodePaymentStatus]
+nameStatuses :: CmdSource -> [BadgeCodePaymentStatus]
 nameStatuses = filter (/= CPSUnpaid) . badgeStatuses
 
 -- | An option's keyword, its placeholder in the usage reply and its bounds; an omitted option takes the lowest value.
@@ -148,7 +151,7 @@ nameLengthP =
 groupCommands :: [ChatBotCommand]
 groupCommands = map command [minBound .. maxBound]
   where
-    command tag = CBCCommand (cmdName tag) (cmdLabel tag) (Just (cmdParams IssuedInGroup tag))
+    command tag = CBCCommand (cmdName tag) (cmdLabel tag) (Just (cmdParams FromGroup tag))
 
 codeP :: A.Parser BadgeCode
 codeP = A.takeWhile1 (not . isSpace) >>= maybe (fail "not a badge code") pure . parseBadgeCode . safeDecodeUtf8
@@ -189,10 +192,10 @@ textTokenP = do
 data CmdTag = CTIssue | CTBulk | CTRevoke | CTBalance | CTRecordRefund | CTClose
   deriving (Bounded, Enum)
 
-sourceTags :: CodeIssuer -> [CmdTag]
+sourceTags :: CmdSource -> [CmdTag]
 sourceTags = \case
-  IssuedInConsole -> [CTIssue, CTRevoke, CTBalance, CTRecordRefund, CTClose]
-  IssuedInGroup -> [minBound .. maxBound]
+  FromConsole -> [CTIssue, CTRevoke, CTBalance, CTRecordRefund, CTClose]
+  FromGroup -> [minBound .. maxBound]
 
 cmdName :: CmdTag -> Text
 cmdName = \case
@@ -213,7 +216,7 @@ cmdLabel = \case
   CTClose -> "Close a failed order"
 
 -- The menu hints and the usage replies are built from the same kinds, options and bounds, so they cannot drift apart.
-cmdParams :: CodeIssuer -> CmdTag -> Text
+cmdParams :: CmdSource -> CmdTag -> Text
 cmdParams source = \case
   CTIssue -> kindParams (nameArg : badgeKinds) [yearsOpt, monthsOpt] <> issueExtraArgs source
   CTBulk -> kindParams badgeKinds [monthsOpt] <> " " <> optArg countOpt
@@ -225,7 +228,7 @@ cmdParams source = \case
     referenceArg = "<reference>"
     kindParams kinds opts = "<" <> T.intercalate "|" kinds <> "> [" <> T.intercalate "|" (map optKey opts) <> " <N>]"
 
-cmdUsage :: CodeIssuer -> CmdTag -> Text
+cmdUsage :: CmdSource -> CmdTag -> Text
 cmdUsage source = \case
   CTIssue ->
     kindUsage
@@ -243,7 +246,7 @@ cmdUsage source = \case
     plainUsage tag = "Usage: " <> cmdText source tag (cmdParams source tag)
     badgeKindsText = T.intercalate ", " badgeKinds
 
-kindUsage :: CodeIssuer -> CmdTag -> Text -> [(Text, [CmdOpt], [BadgeCodePaymentStatus])] -> [Text] -> Text
+kindUsage :: CmdSource -> CmdTag -> Text -> [(Text, [CmdOpt], [BadgeCodePaymentStatus])] -> [Text] -> Text
 kindUsage source tag kindArgs kinds examples =
   T.intercalate "\n" $
     ["Usage: " <> cmdText source tag ("<kind> " <> kindArgs)]
@@ -252,7 +255,7 @@ kindUsage source tag kindArgs kinds examples =
   where
     optBounds CmdOpt {optKey, optMin, optMax} = optKey <> " " <> tshow optMin <> "–" <> tshow optMax
 
-issueExtraArgs :: CodeIssuer -> Text
+issueExtraArgs :: CmdSource -> Text
 issueExtraArgs source = T.concat [" [" <> arg <> "]" | arg <- map optArg (maybeToList $ issueUses source) <> [statusesText statuses | not (null statuses)]]
   where
     statuses = badgeStatuses source
@@ -263,7 +266,7 @@ statusesText = T.intercalate "|" . map textEncode
 optArg :: CmdOpt -> Text
 optArg opt = optKey opt <> " " <> optVar opt
 
-cmdText :: CodeIssuer -> CmdTag -> Text -> Text
+cmdText :: CmdSource -> CmdTag -> Text -> Text
 cmdText source tag args = spelledCmd source (cmdName tag) <> " " <> args
 
 nameArg :: Text

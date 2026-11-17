@@ -104,6 +104,7 @@ import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
+import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
 import StoreService.Names.Codes (CodeRefusal (..))
@@ -945,7 +946,7 @@ testTermsCheckOrder = withOrders $ \ctx@Ctx {cNode = node} -> do
 issueCode :: Ctx -> Int -> Int -> (NewPrepaidCode -> NewPrepaidCode) -> IO (Text, PrepaidCode)
 issueCode Ctx {cStore, cRandom} len years change = do
   code <- randomNamePrepaidCode cRandom (fromJust $ nameLength len)
-  let new = change NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = IssuedInConsole}
+  let new = change NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = FromConsole}
   stored <- withTransaction cStore $ \db ->
     insertPrepaidCode db new orderTime >>= \case
       Right codeId -> getPrepaidCodeById db codeId

@@ -29,9 +29,9 @@ where
 
 import StoreService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singleUse)
 import StoreService.Config (GroupConfig (..))
-import StoreService.Group.Command (CmdAction (..), GroupCmd (..), MoneyCmd, groupCmdAction, groupCommands)
+import StoreService.Group.Command (CmdAction (..), CmdSource (..), GroupCmd (..), MoneyCmd, groupCmdAction, groupCommands)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Store (CodeIssuer (..), groupNameCodesIssuedSince)
+import StoreService.Names.Store (groupNameCodesIssuedSince)
 import StoreService.Names.Turns (Turns)
 import StoreService.Store (CodeTracker (..), ManagedGroup (..), RevokeResult (..), clearCodeGroupItems, getCodeTracker, getEditableTrackers, getManagedGroup, insertManagedGroup, markOwnerBootstrapped, setCodeGroupItem)
 import StoreService.Store.Invoices (truncateToSecond)
@@ -311,7 +311,7 @@ runGroupCmd cc turns nameCodesPerDay_ runMoney groupId = \case
   cmd@GCMoney {} -> answer cmd >>= void . sendGroupText cc groupId "money reply, /balance shows what was recorded"
   cmd -> answer cmd >>= reply
   where
-    answer = fmap (either id id) . runCmd IssuedInGroup cc turns (isJust nameCodesPerDay_) runMoney
+    answer = fmap (either id id) . runCmd FromGroup cc turns (isJust nameCodesPerDay_) runMoney
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"
     withinNameCodes nameCodesPerDay issue = do
       since <- addUTCTime (negate nominalDay) <$> getCurrentTime
@@ -323,7 +323,7 @@ runGroupCmd cc turns nameCodesPerDay_ runMoney groupId = \case
 
 type NamesOn = Bool
 
-runCmd :: CodeIssuer -> ChatController -> Turns -> NamesOn -> (MoneyCmd -> IO (Either Text Text)) -> GroupCmd -> IO (Either Text Text)
+runCmd :: CmdSource -> ChatController -> Turns -> NamesOn -> (MoneyCmd -> IO (Either Text Text)) -> GroupCmd -> IO (Either Text Text)
 runCmd source cc turns namesOn runMoney = \case
   GCIssue bt months uses status -> codeReply formatBadgeCode . fmap fst <$> issueOneCode cc bt months status uses
   GCBulk bt months count -> Right <$> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
