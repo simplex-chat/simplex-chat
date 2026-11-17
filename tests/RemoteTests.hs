@@ -20,13 +20,15 @@ import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
 import Data.Word (Word32)
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
-import Simplex.Chat.Files (safeFileNameStr)
+import Simplex.Chat.Files (mediaFileName, safeFileNameStr)
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
+import Simplex.Chat.Protocol (MsgContent (MCFile, MCImage, MCVideo, MCVoice))
 import Simplex.Chat.Remote (remoteFilesFolder, validRemoteFileName)
 import Simplex.Chat.Remote.Protocol (encryptEncodeHTTP2Body, parseDecryptHTTP2Body, remoteStoreFile)
 import Simplex.Chat.Remote.Types
+import Simplex.Chat.Types (ImageData (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding (smpEncode)
@@ -64,6 +66,21 @@ remoteTests = describe "Remote" $ do
     it "replaces control and text direction characters" $ \_ ->
       map safeFileNameStr ["a\nx.txt", "a\r\nx.txt", "a\x85x.txt", "a\x2028x.txt", "a\x202Ex.txt", "a\x2067x\x2069.txt", "a\x1F468\x200D\x1F469.txt"]
         `shouldBe` ["a_x.txt", "a__x.txt", "a_x.txt", "a_x.txt", "a_x.txt", "a_x_.txt", "a\x1F468\x200D\x1F469.txt"]
+    it "gives media files the extension of their content type" $ \_ ->
+      map
+        (uncurry mediaFileName)
+        [ (image, "IMG_1.jpg"),
+          (image, "IMG_1.WEBP"),
+          (image, "test.pdf"),
+          (image, "test"),
+          (video, "video_1.3gp"),
+          (video, "video_1.mkv"),
+          (video, "test.txt"),
+          (voice, "voice_1.m4a"),
+          (voice, "test.pdf"),
+          (MCFile "", "test.pdf")
+        ]
+        `shouldBe` ["IMG_1.jpg", "IMG_1.WEBP", "test.pdf.jpg", "test.jpg", "video_1.3gp", "video_1.mkv", "test.txt.mp4", "voice_1.m4a", "test.pdf.m4a", "test.pdf"]
   describe "skipped keys" $ do
     it "keeps the most recent skipped keys" $ \_ -> do
       (_, pk) <- atomically . C.generateKeyPair =<< C.newRandom
@@ -108,6 +125,9 @@ remoteTests = describe "Remote" $ do
     fileNames = ["", ".", "..", "...", "../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "test.pdf", ".hidden", "a b.tar.gz"]
     sanitized n = let n' = safeFileNameStr n in n' /= "" && n' /= "." && n' /= ".."
     bareName n = let n' = safeFileNameStr n in n' == takeFileName n'
+    image = MCImage "" (ImageData "")
+    video = MCVideo "" (ImageData "") 10
+    voice = MCVoice "" 10
 
 runRemoteTests :: SpecWith ((Bool, Bool), TestParams)
 runRemoteTests = do

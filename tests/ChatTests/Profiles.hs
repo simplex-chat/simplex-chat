@@ -3357,15 +3357,15 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob <# "/f @alice test.txt"
     bob <## "use /fc 1 to cancel sending"
     alice <# "bob> voice message (00:10)"
-    alice <# "bob> sends file test.txt (11 bytes / 11 bytes)"
+    alice <# "bob> sends file test.txt.m4a (11 bytes / 11 bytes)"
     alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
     bob <## "completed uploading file 1 (test.txt) for alice"
     alice ##> "/fr 1"
     alice
-      <### [ "saving file 1 from bob to test_1.txt",
-             "started receiving file 1 (test.txt) from bob"
+      <### [ "saving file 1 from bob to test.txt.m4a",
+             "started receiving file 1 (test.txt.m4a) from bob"
            ]
-    alice <## "completed receiving file 1 (test.txt) from bob"
+    alice <## "completed receiving file 1 (test.txt.m4a) from bob"
     (bob </)
 
     -- alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"

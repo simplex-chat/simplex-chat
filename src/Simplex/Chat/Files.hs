@@ -3,10 +3,11 @@
 
 module Simplex.Chat.Files where
 
-import Data.Char (isControl)
+import Data.Char (isControl, toLower)
 import Simplex.Chat.Controller
+import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Messaging.Util (ifM)
-import System.FilePath (combine, makeValid, splitExtensions, takeFileName)
+import System.FilePath (combine, makeValid, splitExtensions, takeExtension, takeFileName, (<.>))
 import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getHomeDirectory, getTemporaryDirectory)
 
 safeFileNameStr :: String -> String
@@ -16,6 +17,28 @@ safeFileNameStr = notDots . map safeChar . makeValid . takeFileName
     safeChar c
       | isControl c || (c >= '\x2028' && c <= '\x202E') || (c >= '\x2066' && c <= '\x2069') = '_'
       | otherwise = c
+
+mediaFileName :: MsgContent -> String -> String
+mediaFileName mc name = case mc of
+  MCImage {} -> withExtension imageExtensions "jpg"
+  MCVideo {} -> withExtension videoExtensions "mp4"
+  MCVoice {} -> withExtension [".m4a"] "m4a"
+  _ -> name
+  where
+    withExtension exts ext
+      | map toLower (takeExtension name) `elem` exts = name
+      | otherwise = name <.> ext
+
+imageExtensions :: [String]
+imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+
+videoExtensions :: [String]
+videoExtensions =
+  [ ".3g2", ".3gp", ".3gp2", ".3gpp", ".3gpp2", ".asf", ".avi", ".axv", ".dif", ".dl", ".dv", ".f4v",
+    ".fli", ".flv", ".gl", ".lsf", ".m1v", ".m2t", ".m2ts", ".m2v", ".m4v", ".mkv", ".mng", ".mov",
+    ".movie", ".mp1v", ".mp2v", ".mp4", ".mp4v", ".mpe", ".mpeg", ".mpeg1", ".mpeg2", ".mpeg4", ".mpg", ".mpv",
+    ".mpv1", ".mpv2", ".mts", ".ogv", ".qt", ".ts", ".webm", ".wm", ".wmv", ".wrf", ".yt"
+  ]
 
 -- | The file name is sanitized, so the combined path cannot escape the folder.
 uniqueCombine :: FilePath -> String -> IO FilePath
