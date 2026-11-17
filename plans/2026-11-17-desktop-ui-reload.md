@@ -70,7 +70,7 @@ sequenceDiagram
   F->>N: main(args)
   N->>N: single-instance lock, platform, update checker
   N->>C: initChatController with the handed-off ctrl: no migration
-  N->>C: startChat: running, chats loaded, receiver started
+  N->>C: startChat: the core running, the new model loaded as at a start, receiver started
   C-->>O: the next event to the old receiver
   O->>N: the event in reloadedChatEvents, latch counted down
   N->>C: the receiver reads the core
@@ -98,7 +98,7 @@ The fixed part's interface is `CoreBindings.kt`; its hash joins the core hash (`
 |---|---|
 | CoreBindings.kt | JNI declarations from Core.kt, loadCoreLibrary, the hand-off |
 | Core.kt | JVM class CoreInit; initChatController takes the handed-off ctrl |
-| SimpleXAPI.kt | handOffForReload; the receiver waits for the old one, hands off and takes over its event; startChat starts the receiver of a running core |
+| SimpleXAPI.kt | handOffForReload; the receiver waits for the old one, hands off and takes over its event; startChat loads a model that is not running, also when the core runs |
 | DesktopApp.kt | reloadUi; showApp returns on a reload |
 | SingleInstance.kt | releaseSingleInstance |
 | AppUpdater.kt | runReloadedUis, uiMain, runUi; CoreKt visible to UI class loaders |

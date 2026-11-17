@@ -730,7 +730,7 @@ object ChatController {
       val users = listUsers(null)
       chatModel.users.clear()
       chatModel.users.addAll(users)
-      if (!chatRunning) {
+      if (!chatRunning || chatModel.chatRunning.value != true) {
         chatModel.currentUser.value = user
         chatModel.localUserCreated.value = true
         getUserChatData(null)
@@ -747,7 +747,6 @@ object ChatController {
           val chats = apiGetChats(null)
           chatModel.chatsContext.updateChats(chats)
         }
-        startReceiver()
         Log.d(TAG, "startChat: running")
       }
       apiStartChat()

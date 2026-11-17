@@ -605,15 +605,19 @@ ui_reloads() {
   grep -c "I: UI reload" "$UI_OUT/app.log" || true
 }
 
+chat_running_responses() {
+  grep -c "response type chatRunning" "$UI_OUT/app.log" || true
+}
+
 check_ui_reload() {
   local code next running
   code=$(sed -n 's/^desktop.version_code=//p' "$gradle_properties")
   next=$((code + 4))
-  running=$(grep -c "startChat: running" "$UI_OUT/app.log" || true)
+  running=$(chat_running_responses)
   stage_ui_update $next
   reload_ui first
   check "the UI reloads from the UI update $next without a restart" app_build $next
-  check "the reloaded UI finds the chat running" [ "$(grep -c "startChat: running" "$UI_OUT/app.log" || true)" -gt "$running" ]
+  check "the reloaded UI finds the chat running" [ "$(chat_running_responses)" -gt "$running" ]
   check "the reloaded UI lists \"$local_chat\"" on_screen "$local_chat"
   check "the UI update $next is confirmed after the reload" ui_update_confirmed $next
   reload_ui second
