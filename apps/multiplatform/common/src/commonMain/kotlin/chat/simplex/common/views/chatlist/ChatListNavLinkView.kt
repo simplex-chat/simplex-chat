@@ -667,7 +667,6 @@ fun markChatRead(c: Chat) {
       if (success) {
         withContext(Dispatchers.Main) {
           chatModel.chatsContext.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
-          chatModel.chatsContext.markChatTagRead(chat)
         }
       }
     }
@@ -679,7 +678,6 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
   if (chat.chatStats.unreadChat) return
 
   withApi {
-    val wasUnread = chat.unreadTag
     val success = chatModel.controller.apiChatUnread(
       chat.remoteHostId,
       chat.chatInfo.chatType,
@@ -689,7 +687,6 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     if (success) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
-        chatModel.chatsContext.updateChatTagReadInPrimaryContext(chat, wasUnread)
       }
     }
   }

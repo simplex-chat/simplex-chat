@@ -553,7 +553,9 @@ object ChatModel {
     suspend fun replaceChat(rhId: Long?, id: String, chat: Chat) {
       val i = getChatIndex(rhId, id)
       if (i >= 0) {
+        val wasUnread = chats[i].unreadTag
         chats[i] = chat
+        updateChatTagReadInPrimaryContext(chat, wasUnread)
       } else {
         // invalid state, correcting
         addChat(chat)

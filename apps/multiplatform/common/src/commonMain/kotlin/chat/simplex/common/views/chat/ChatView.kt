@@ -3541,7 +3541,6 @@ private fun markUnreadChatAsRead(chatId: String) {
     if (success) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
-        chatModel.chatsContext.markChatTagRead(chat)
       }
     }
   }
