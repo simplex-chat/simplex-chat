@@ -210,12 +210,12 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
             db
             [sql|
               SELECT COALESCE(SUM(CASE WHEN g.enable_ntfs = 2 THEN mu.support_chat_items_mentions ELSE mu.support_chat_items_unread END), 0)
-              FROM groups g
-              JOIN group_members mu ON mu.user_id = g.user_id AND mu.group_id = g.group_id
-              WHERE g.user_id = ? AND mu.contact_id = ? AND mu.member_status IN (?,?)
+              FROM group_members mu
+              JOIN groups g ON g.group_id = mu.group_id
+              WHERE mu.contact_id = ? AND mu.member_status IN (?,?)
                 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR g.enable_ntfs = 2)
             |]
-            (userId, userContactId, GSMemPendingApproval, GSMemPendingReview)
+            (userContactId, GSMemPendingApproval, GSMemPendingReview)
       pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount + fromMaybe 0 pendingCount}
 
 getUsers :: DB.Connection -> IO [User]
