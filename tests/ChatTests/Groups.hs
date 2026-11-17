@@ -12466,21 +12466,21 @@ testChannelRosterMultiRelayMultipart ps =
 
 testChannelPartialRosterReset :: HasCallStack => TestParams -> IO ()
 testChannelPartialRosterReset =
-  withPartialRoster $ \_ bob dan smId blob -> do
-    withRelayMember bob "dan" $ \u g m -> sendInlineBlobChunks u g [m] smId blob
-    rosterMembers dan `shouldEventuallyReturn` 1
+  testPartialRoster $ \_ bob dan smId blob -> do
+    sendFromRelay bob "dan" $ \u g m -> sendInlineBlobChunks u g [m] smId blob
+    memberRoleCount dan `shouldEventuallyReturn` 1
     rosterFiles dan `shouldEventuallyReturn` []
 
 testChannelPartialRosterCancel :: HasCallStack => TestParams -> IO ()
 testChannelPartialRosterCancel =
-  withPartialRoster $ \_ bob dan smId _ -> do
-    withRelayMember bob "dan" $ \u g m -> void $ sendGroupMessage' u g [m] (BFileChunk smId FileChunkCancel)
+  testPartialRoster $ \_ bob dan smId _ -> do
+    sendFromRelay bob "dan" $ \u g m -> void $ sendGroupMessage' u g [m] (BFileChunk smId FileChunkCancel)
     rosterFiles dan `shouldEventuallyReturn` []
-    rosterMembers dan `shouldReturn` 0
+    memberRoleCount dan `shouldReturn` 0
 
 testChannelPartialRosterDeleted :: HasCallStack => TestParams -> IO ()
 testChannelPartialRosterDeleted =
-  withPartialRoster $ \alice bob dan _ _ -> do
+  testPartialRoster $ \alice bob dan _ _ -> do
     dan ##> "/l team"
     concurrentlyN_
       [ do
@@ -12493,8 +12493,8 @@ testChannelPartialRosterDeleted =
     dan <## "#team: you deleted your local copy of the group"
     rosterFiles dan `shouldReturn` []
 
-withPartialRoster :: HasCallStack => (TestCC -> TestCC -> TestCC -> SharedMsgId -> ByteString -> IO ()) -> TestParams -> IO ()
-withPartialRoster test ps =
+testPartialRoster :: HasCallStack => (TestCC -> TestCC -> TestCC -> SharedMsgId -> ByteString -> IO ()) -> TestParams -> IO ()
+testPartialRoster test ps =
   withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
     withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChatCfgOpts ps cfg testOpts "cath" cathProfile $ \cath ->
@@ -12523,15 +12523,15 @@ storedRoster cc = do
 setStoredRoster :: TestCC -> ByteString -> IO ()
 setStoredRoster cc blob = withCCTransaction cc $ \db -> DB.execute db "UPDATE groups SET roster_blob = ? WHERE roster_blob IS NOT NULL" (Only (Binary blob))
 
-withRelayMember :: HasCallStack => TestCC -> ContactName -> (User -> GroupInfoKeys -> GroupMember -> CM ()) -> IO ()
-withRelayMember relay mName sendToMember = do
+sendFromRelay :: HasCallStack => TestCC -> ContactName -> (User -> GroupInfoKeys -> GroupMember -> CM ()) -> IO ()
+sendFromRelay relay mName sendToMember = do
   m@GroupMember {groupId = gId} <- getTestMember relay "team" mName
   withCCUser relay $ \u -> do
     g <- withCCTransaction relay $ \db -> runExceptT (getGroupInfoKeys db (storeCxt $ chatController relay) u gId) >>= either (fail . show) pure
     runExceptT (sendToMember u g m) `runReaderT` chatController relay >>= either (fail . show) pure
 
-rosterMembers :: TestCC -> IO Int
-rosterMembers cc = do
+memberRoleCount :: TestCC -> IO Int
+memberRoleCount cc = do
   [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM group_members WHERE member_role = 'member'"
   pure n
 
