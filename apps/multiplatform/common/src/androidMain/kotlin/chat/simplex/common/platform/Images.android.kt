@@ -18,18 +18,20 @@ import chat.simplex.common.helpers.toUri
 import chat.simplex.common.views.helpers.decodeSampledBitmapFromByteArray
 import chat.simplex.common.views.helpers.errorBitmap
 import chat.simplex.common.views.helpers.getFileName
+import chat.simplex.common.views.helpers.imageSampleSize
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
 import kotlin.math.min
 
 private const val MAX_IMAGE_DIMENSION = 4320
+private const val MAX_PREVIEW_DIMENSION = 512
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   base64BitmapCache[base64ImageString]?.let { return it }
   return try {
-    readBase64Image(base64ImageString) { imageBytes, _ ->
-      BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap().also {
+    readBase64Image(base64ImageString) { imageBytes, options, _ ->
+      BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options).asImageBitmap().also {
         base64BitmapCache[base64ImageString] = it
       }
     } ?: errorBitmap.asImageBitmap()
@@ -41,12 +43,12 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
 
 actual fun base64BitmapSize(base64ImageString: String): IntSize =
   try {
-    readBase64Image(base64ImageString) { _, options -> IntSize(options.outWidth, options.outHeight) }
+    readBase64Image(base64ImageString) { _, _, size -> size }
   } catch (e: Exception) {
     null
   } ?: IntSize(errorBitmap.width, errorBitmap.height)
 
-private fun <T : Any> readBase64Image(base64ImageString: String, read: (imageBytes: ByteArray, options: BitmapFactory.Options) -> T): T? {
+private fun <T : Any> readBase64Image(base64ImageString: String, read: (imageBytes: ByteArray, options: BitmapFactory.Options, size: IntSize) -> T): T? {
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
@@ -54,7 +56,9 @@ private fun <T : Any> readBase64Image(base64ImageString: String, read: (imageByt
   val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
   BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
   if (options.outWidth <= 0 || options.outHeight <= 0 || options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION || options.outHeight > options.outWidth * 256) return null
-  return read(imageBytes, options)
+  options.inJustDecodeBounds = false
+  options.inSampleSize = imageSampleSize(options.outWidth, options.outHeight, MAX_PREVIEW_DIMENSION)
+  return read(imageBytes, options, IntSize(options.outWidth / options.inSampleSize, options.outHeight / options.inSampleSize))
 }
 
 actual fun decodeBase64Image(base64: String, width: Int): ImageBitmap? =

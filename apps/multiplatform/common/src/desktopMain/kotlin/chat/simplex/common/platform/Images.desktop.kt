@@ -46,7 +46,7 @@ internal fun ByteArray.byteAt(pos: Int): Int = if (pos < size) this[pos].toInt()
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   base64BitmapCache[base64ImageString]?.let { return it }
   return try {
-    readBase64Image(base64ImageString) { reader, sampleSize ->
+    readBase64Image(base64ImageString) { reader, sampleSize, _ ->
       reader.read(0, receivedImageReadParam(reader, sampleSize)).toComposeImageBitmap().also {
         base64BitmapCache[base64ImageString] = it
       }
@@ -59,14 +59,12 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
 
 actual fun base64BitmapSize(base64ImageString: String): IntSize =
   try {
-    readBase64Image(base64ImageString) { reader, sampleSize ->
-      IntSize((reader.getWidth(0) + sampleSize - 1) / sampleSize, (reader.getHeight(0) + sampleSize - 1) / sampleSize)
-    }
+    readBase64Image(base64ImageString) { _, _, size -> size }
   } catch (e: Throwable) {
     null
   } ?: errorBitmap().run { IntSize(width, height) }
 
-private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: ImageReader, sampleSize: Int) -> T): T? {
+private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: ImageReader, sampleSize: Int, size: IntSize) -> T): T? {
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
@@ -79,7 +77,8 @@ private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: 
     val width = reader.getWidth(0)
     val height = reader.getHeight(0)
     if (width <= 0 || height <= 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || height > width * 256) return null
-    return read(reader, imageSampleSize(width, height, MAX_PREVIEW_DIMENSION))
+    val sampleSize = imageSampleSize(width, height, MAX_PREVIEW_DIMENSION)
+    return read(reader, sampleSize, IntSize((width + sampleSize - 1) / sampleSize, (height + sampleSize - 1) / sampleSize))
   } finally {
     reader.dispose()
   }

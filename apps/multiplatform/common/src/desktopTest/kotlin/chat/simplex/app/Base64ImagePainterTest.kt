@@ -35,8 +35,10 @@ import org.jetbrains.skia.Image
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
 import java.util.Base64
 import java.util.concurrent.CountDownLatch
+import java.util.zip.CRC32
 import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -100,6 +102,14 @@ class Base64ImagePainterTest {
   fun testPictureSizeIsReadFromItsHeaderAlone() {
     val header = png(1501, 1001).copyOf(33)
     assertEquals(IntSize(751, 501), base64BitmapSize(Base64.getEncoder().encodeToString(header)))
+  }
+
+  @Test
+  fun testPicturesAtTheSizeLimitAreDecodedAtPreviewSize() {
+    assertEquals(IntSize(540, 540), base64BitmapSize(base64PngHeader(4320, 4320)))
+    assertEquals(IntSize(1080, 256), base64BitmapSize(base64PngHeader(4320, 1023)))
+    assertEquals(IntSize(4320, 17), base64BitmapSize(base64PngHeader(4320, 17)))
+    assertEquals(IntSize(1025, 1024), base64BitmapSize(base64PngHeader(2049, 2047)))
   }
 
   @Test
@@ -219,6 +229,13 @@ class Base64ImagePainterTest {
   }
 
   private fun png(width: Int, height: Int): ByteArray = encodeImage(width, height, "png")
+
+  private fun base64PngHeader(width: Int, height: Int): String {
+    val ihdr = ByteBuffer.allocate(17).put("IHDR".toByteArray()).putInt(width).putInt(height).put(byteArrayOf(8, 2, 0, 0, 0)).array()
+    val crc = CRC32().apply { update(ihdr) }.value.toInt()
+    val header = ByteBuffer.allocate(33).put(png(1, 1).copyOf(8)).putInt(13).put(ihdr).putInt(crc).array()
+    return Base64.getEncoder().encodeToString(header)
+  }
 
   private fun encodeImage(width: Int, height: Int, format: String): ByteArray {
     val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
