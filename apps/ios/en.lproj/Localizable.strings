@@ -24,3 +24,21 @@
 
 /* No comment provided by engineer. */
 "No group!" = "Group not found!";
+
+/* Text formatting menu */
+"Format" = "Format";
+
+/* Bold text format action */
+"Bold" = "Bold";
+
+/* Italic text format action */
+"Italic" = "Italic";
+
+/* Strikethrough text format action */
+"Strikethrough" = "Strikethrough";
+
+/* Monospace text format action */
+"Monospace" = "Monospace";
+
+/* Spoiler text format action */
+"Spoiler" = "Spoiler";

@@ -184,45 +184,161 @@ class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     func textView(_ textView: UITextView, editMenuForTextIn range: NSRange, suggestedActions: [UIMenuElement]) -> UIMenu? {
-        if !UIPasteboard.general.hasImages { return UIMenu(children: suggestedActions)}
-        return UIMenu(children: suggestedActions.map { elem in
-            if let elem = elem as? UIMenu {
-                var actions = elem.children
-                // Replacing Paste action since it allows to paste animated images too
-                let pasteIndex = elem.children.firstIndex { elem in elem.debugDescription.contains("Action: paste:")}
-                if let pasteIndex = pasteIndex {
-                    let paste = actions[pasteIndex]
-                    actions.remove(at: pasteIndex)
-                    let newPaste = UIAction(title: paste.title, image: paste.image) { action in
-                        var images: [UploadContent] = []
-                        var totalImages = 0
-                        var processed = 0
-                        UIPasteboard.general.itemProviders.forEach { p in
-                            if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
-                                totalImages += 1
-                                p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
-                                    processed += 1
-                                    if let url = url, let image = UploadContent.loadFromURL(url: url) {
-                                        images.append(image)
-                                        DispatchQueue.main.sync {
-                                            self.onTextChanged(textView.text, images)
+        var actions = suggestedActions
+
+        if UIPasteboard.general.hasImages {
+            actions = actions.map { elem in
+                if let elem = elem as? UIMenu {
+                    var menuActions = elem.children
+                    // Replacing Paste action since it allows to paste animated images too
+                    let pasteIndex = elem.children.firstIndex { elem in elem.debugDescription.contains("Action: paste:")}
+                    if let pasteIndex = pasteIndex {
+                        let paste = menuActions[pasteIndex]
+                        menuActions.remove(at: pasteIndex)
+                        let newPaste = UIAction(title: paste.title, image: paste.image) { action in
+                            var images: [UploadContent] = []
+                            var totalImages = 0
+                            var processed = 0
+                            UIPasteboard.general.itemProviders.forEach { p in
+                                if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
+                                    totalImages += 1
+                                    p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
+                                        processed += 1
+                                        if let url = url, let image = UploadContent.loadFromURL(url: url) {
+                                            images.append(image)
+                                            DispatchQueue.main.sync {
+                                                self.onTextChanged(textView.text, images)
+                                            }
                                         }
-                                    }
-                                    // No images were added, just paste a text then
-                                    if processed == totalImages && images.isEmpty {
-                                        textView.paste(UIPasteboard.general.string)
+                                        // No images were added, just paste a text then
+                                        if processed == totalImages && images.isEmpty {
+                                            textView.paste(UIPasteboard.general.string)
+                                        }
                                     }
                                 }
                             }
                         }
+                        menuActions.insert(newPaste, at: 0)
                     }
-                    actions.insert(newPaste, at: 0)
+                    return UIMenu(title: elem.title, subtitle: elem.subtitle, image: elem.image, identifier: elem.identifier, options: elem.options, children: menuActions)
+                } else {
+                    return elem
                 }
-                return UIMenu(title: elem.title, subtitle: elem.subtitle, image: elem.image, identifier: elem.identifier, options: elem.options, children: actions)
-            } else {
+            }
+        }
+
+        if range.length > 0 {
+            let menu = formatMenu(for: range, in: textView)
+            var inserted = false
+
+            actions = actions.map { elem in
+                guard !inserted, let subMenu = elem as? UIMenu else { return elem }
+                var subActions = subMenu.children
+                if let targetIndex = subActions.lastIndex(where: { $0.debugDescription.contains("paste:") || $0.debugDescription.contains("copy:") }) {
+                    subActions.insert(menu, at: targetIndex + 1)
+                    inserted = true
+                    return UIMenu(title: subMenu.title, subtitle: subMenu.subtitle, image: subMenu.image, identifier: subMenu.identifier, options: subMenu.options, children: subActions)
+                }
                 return elem
             }
-        })
+
+            if !inserted {
+                if let targetIndex = actions.lastIndex(where: { $0.debugDescription.contains("paste:") || $0.debugDescription.contains("copy:") }) {
+                    actions.insert(menu, at: targetIndex + 1)
+                } else {
+                    actions.append(menu)
+                }
+            }
+        }
+
+        return UIMenu(children: actions)
+    }
+
+    private func formatMenu(for range: NSRange, in textView: UITextView) -> UIMenu {
+        let boldAction = UIAction(
+            title: NSLocalizedString("Bold", comment: "Text formatting bold"),
+            image: UIImage(systemName: "bold")
+        ) { [weak self, weak textView] _ in
+            guard let self, let textView else { return }
+            self.applyFormatting(prefix: "**", suffix: "**", range: range, in: textView)
+        }
+
+        let italicAction = UIAction(
+            title: NSLocalizedString("Italic", comment: "Text formatting italic"),
+            image: UIImage(systemName: "italic")
+        ) { [weak self, weak textView] _ in
+            guard let self, let textView else { return }
+            self.applyFormatting(prefix: "_", suffix: "_", range: range, in: textView)
+        }
+
+        let strikethroughAction = UIAction(
+            title: NSLocalizedString("Strikethrough", comment: "Text formatting strikethrough"),
+            image: UIImage(systemName: "strikethrough")
+        ) { [weak self, weak textView] _ in
+            guard let self, let textView else { return }
+            self.applyFormatting(prefix: "~", suffix: "~", range: range, in: textView)
+        }
+
+        let codeAction = UIAction(
+            title: NSLocalizedString("Monospace", comment: "Text formatting monospace code"),
+            image: UIImage(systemName: "curlybraces")
+        ) { [weak self, weak textView] _ in
+            guard let self, let textView else { return }
+            self.applyFormatting(prefix: "`", suffix: "`", range: range, in: textView)
+        }
+
+        let spoilerAction = UIAction(
+            title: NSLocalizedString("Spoiler", comment: "Text formatting secret spoiler"),
+            image: UIImage(systemName: "eye.slash")
+        ) { [weak self, weak textView] _ in
+            guard let self, let textView else { return }
+            self.applyFormatting(prefix: "#", suffix: "#", range: range, in: textView)
+        }
+
+        return UIMenu(
+            title: NSLocalizedString("Format", comment: "Text formatting menu title"),
+            image: UIImage(systemName: "textformat"),
+            children: [boldAction, italicAction, strikethroughAction, codeAction, spoilerAction]
+        )
+    }
+
+    private func applyFormatting(prefix: String, suffix: String, range: NSRange, in textView: UITextView) {
+        let currentText = textView.text as NSString
+        let targetRange = (textView.selectedRange.length > 0 && textView.selectedRange.location != NSNotFound) ? textView.selectedRange : range
+        guard targetRange.location != NSNotFound,
+              targetRange.location + targetRange.length <= currentText.length else { return }
+
+        let fullString = textView.text ?? ""
+        guard let textRange = Range(targetRange, in: fullString) else { return }
+
+        let selectedSubstring = fullString[textRange]
+        let trimmedLeading = selectedSubstring.prefix(while: { $0.isWhitespace || $0.isNewline })
+        let rest = selectedSubstring.dropFirst(trimmedLeading.count)
+        let trimmedTrailing = rest.suffix(while: { $0.isWhitespace || $0.isNewline })
+        let core = rest.dropLast(trimmedTrailing.count)
+
+        guard !core.isEmpty else { return }
+
+        let formattedCore = "\(prefix)\(core)\(suffix)"
+        let replacement = "\(trimmedLeading)\(formattedCore)\(trimmedTrailing)"
+
+        if let startPos = textView.position(from: textView.beginningOfDocument, offset: targetRange.location),
+           let endPos = textView.position(from: startPos, offset: targetRange.length),
+           let inputSelectedRange = textView.textRange(from: startPos, to: endPos) {
+            textView.replace(inputSelectedRange, withText: replacement)
+        } else {
+            textView.text = currentText.replacingCharacters(in: targetRange, with: replacement)
+        }
+
+        let newCursorLocation = targetRange.location + replacement.utf16.count
+        let newRange = NSRange(location: newCursorLocation, length: 0)
+        textView.selectedRange = newRange
+        if parent?.selectedRange != newRange {
+            parent?.selectedRange = newRange
+        }
+
+        textViewDidChange(textView)
+        updateHeight()
     }
 
     func textViewDidChange(_ textView: UITextView) {
