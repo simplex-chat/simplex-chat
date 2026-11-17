@@ -5,7 +5,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, coveredSpend, credit, creditLate, fieldsN, figures, holdPrice, holder, invariantHolds, lateCredit, payment, placeOrderRow, settleHolder, source) where
+module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, coveredSpend, credit, creditLate, figures, holdPrice, holder, invariantHolds, lateCredit, payment, placeOrderRow, settleHolder, source) where
 
 import Bots.StoreService.FakeEthNode (agreed, plainTerms)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders)
