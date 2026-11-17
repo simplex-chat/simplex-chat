@@ -72,8 +72,8 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
-import StoreService.Names.Community (communityJSON, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
+import StoreService.Names.Community (communityJSON, nameTerms, readableTerms, termsFor, yearsFor)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), Terms, chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Chain (TxHash, bytes32FromHex, hex)
@@ -113,8 +113,8 @@ data OrderRefusal
   | ORCode CodeRefusal
   | ORPriceTooHigh USDCents
   | ORBalanceChanged (Maybe Balance)
-  | -- | the current terms and the name's community entry, as the answer carries them
-    ORTermsChanged J.Value J.Value
+  | -- | the current terms and the name's community entry
+    ORTermsChanged Terms J.Value
   | ORTermsUnavailable (Maybe Int)
   | ORCodesOnly
   deriving (Eq, Show)
@@ -288,7 +288,7 @@ checkTerms cfg ct OrderFields {ofLabelHash, ofAgreedTerms} =
     Right (community, terms) ->
       readableTerms ct terms <&> \case
         Left wait -> Left $ ORTermsUnavailable wait
-        Right t -> unless (ofAgreedTerms == termsFor community t) $ Left $ ORTermsChanged (termsJSON $ Just t) (communityJSON cfg ofLabelHash community)
+        Right t -> unless (ofAgreedTerms == termsFor community t) $ Left $ ORTermsChanged t (communityJSON cfg ofLabelHash community)
 
 -- | A name being registered here searches as available, so it is checked here too.
 checkNameFree :: Contracts -> DBStore -> LabelHash -> IO (Either OrderRefusal ())
