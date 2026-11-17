@@ -795,7 +795,7 @@ selectRegistrations = registrationColumns <> registrationFrom
 
 type RegistrationRow =
   (Text, Int64, LabelHash, Int, Int64, Address, Binary ByteString, Text, NamePhase, Int)
-    :. (USDCents, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
+    :. (USDCents, Maybe ServicePaymentMethod, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
     :. (Maybe UTCTime, Maybe FailReason, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, USDCents)
     :. (AgreedTerms, Maybe (Binary ByteString), Maybe Int64, Maybe RecoverableSignature)
@@ -832,11 +832,10 @@ toRegistration
       PRegistered -> note ("name_registrations registered: " <> rid) $ ORegistered commitStep ((\tx -> (tx, word64 <$> registerBlock)) <$> registerTx) . word64 <$> expiresAt <*> registeredAt
       PTaken -> Right $ OTaken commitStep registerTx
       PFailed -> note ("name_registrations failed: " <> rid) $ OFailed commitStep registerTx <$> failedAt <*> failReason
-    let methodOf m = note ("name_registrations.method: " <> m) (textDecode m)
-        balanceUse source = BalanceUse {buSource = RegistrationId source, buUsed = used}
+    let balanceUse source = BalanceUse {buSource = RegistrationId source, buUsed = used}
     nrPayment <- case (method_, invoiceId_, codeId_, source_) of
-      (Just m, Just invId, Nothing, Nothing) -> (`OPInvoice` InvoiceId invId) <$> methodOf m
-      (Just m, Just invId, Nothing, Just source) -> (\method -> OPDifference (balanceUse source) method (InvoiceId invId)) <$> methodOf m
+      (Just m, Just invId, Nothing, Nothing) -> Right $ OPInvoice m (InvoiceId invId)
+      (Just m, Just invId, Nothing, Just source) -> Right $ OPDifference (balanceUse source) m (InvoiceId invId)
       (Nothing, Nothing, Just codeId, Nothing) -> Right $ OPCode codeId
       (Nothing, Nothing, Nothing, Just source) -> Right $ OPBalance $ balanceUse source
       _ -> Left $ "name_registrations payment: " <> rid
@@ -1376,7 +1375,7 @@ lateColumns =
     <> creditedTotal "cents"
     <> mkQuery ", (SELECT COUNT(*) FROM @name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at, i.amount, p.invoiced_units"
 
-type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, USDCents, USDCents, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, USDCents, Int, UTCTime, USDCents, Maybe Int64)
+type LateRow = (Text, Text, NamePhase, BoolInt, Maybe CryptoCurrency, Maybe LateSupport, USDCents, USDCents, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, USDCents, Int, UTCTime, USDCents, Maybe Int64)
 
 toLateState :: LateRow -> Either Text LateCreditState
 toLateState
@@ -1385,7 +1384,7 @@ toLateState
     ) = do
     lsFigures <- case coin_ of
       Nothing -> Right LFCard {lfConfirmedCents = confirmedCents}
-      Just c -> (\lfCoin -> LFCrypto {lfCoin, lfReceivedUnits, lfConfirmedUnits, lfInvoicedUnits, lfInvoiceRate, lfCreditedUnits}) <$> note ("invoices.payment_crypto_currency: " <> c) (textDecode c)
+      Just lfCoin -> Right LFCrypto {lfCoin, lfReceivedUnits, lfConfirmedUnits, lfInvoicedUnits, lfInvoiceRate, lfCreditedUnits}
     pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsLive, lsSupport, lsReceivedCents, lsFigures, lsInvoiceAmount, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
 
 -- | Nothing without a payment row.
