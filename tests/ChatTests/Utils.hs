@@ -30,7 +30,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtNameMoved), storeCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Mobile (chatParseMarkdown, chatParseUri, chatSendCmd, eitherToResult)
@@ -1063,6 +1063,20 @@ nameMovedFixture fixture cc contacts groups = withCCUser cc $ \user -> do
     Right (contactIds, groupIds) -> writeFixture ("names/" <> fixture) $ stableJSON $ J.toJSON (eitherToResult Nothing (Right $ CEvtNameMoved user contactIds groupIds :: Either ChatError ChatEvent))
     Left e -> error $ show e
 
+recordItemEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
+recordItemEvent events evt = case evt of
+  Right CEvtNewChatItems {} -> record
+  Right CEvtChatItemUpdated {} -> record
+  _ -> pure ()
+  where
+    record = atomically $ modifyTVar' events (<> [J.toJSON $ eitherToResult Nothing evt])
+
+eventsFixture :: String -> TVar [J.Value] -> IO () -> IO ()
+eventsFixture fixture events steps = do
+  atomically $ writeTVar events []
+  steps
+  readTVarIO events >>= writeFixture fixture . stableJSON . J.toJSON
+
 writeFixture :: String -> J.Value -> IO ()
 writeFixture fixture = testGenerate ("tests/fixtures/api/" <> fixture <> ".json") . prettyJSON
   where
@@ -1082,10 +1096,10 @@ stableJSON value = stable value
       J.Array a -> J.Array $ fmap stable a
       v -> v
     stableField k v
-      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt"] = J.String "1970-01-01T00:00:00Z"
+      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs"] = J.String "1970-01-01T00:00:00Z"
       | k `elem` ["expiresAt", "blockedUntil"], J.String _ <- v = J.String "2099-01-01T12:00:00Z"
       | k `elem` memberIdKeys, J.String s <- v = J.String $ maybe (JK.toText k) (\i -> "memberId" <> T.pack (show i)) (elemIndex s memberIds)
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberPubKey", "publicGroupId", "groupLinkId", "relayLink"], J.String _ <- v = J.String $ JK.toText k
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberPubKey", "publicGroupId", "groupLinkId", "relayLink", "itemSharedMsgId"], J.String _ <- v = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stable v
     memberIdKeys = ["memberId", "businessId", "customerId"]

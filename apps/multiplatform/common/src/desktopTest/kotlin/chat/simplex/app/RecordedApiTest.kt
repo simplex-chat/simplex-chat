@@ -148,6 +148,6 @@ abstract class RecordedApiTest {
   protected fun chatIds(): List<String> = ChatModel.chatsContext.chats.value.map { it.id }
 
   protected fun chatInfo(id: String): ChatInfo = ChatModel.chatsContext.chats.value.first { it.id == id }.chatInfo
-
-  protected fun fixtureText(name: String): String = File("../../../tests/fixtures/api/$name.json").readText()
 }
+
+internal fun fixtureText(name: String): String = File("../../../tests/fixtures/api/$name.json").readText()
