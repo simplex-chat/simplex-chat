@@ -521,7 +521,7 @@ struct ChatView: View {
             .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                 ChatInfoView(
                     chat: chat,
-                    initialContact: contact,
+                    contact: contact,
                     localAlias: chat.chatInfo.localAlias,
                     onSearch: { focusSearch() }
                 )

@@ -95,7 +95,7 @@ struct ChatInfoView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    var initialContact: Contact
+    @State var contact: Contact
     @State var localAlias: String
     var onSearch: () -> Void
     @State private var connectionStats: ConnectionStats? = nil
@@ -392,7 +392,7 @@ struct ChatInfoView: View {
                     .lineLimit(3)
                     .padding(.bottom, 2)
             }
-            contactSimplexNameView(contact)
+            contactSimplexNameView(contact) { contact = $0 }
             ProfileDescriptionView(shortDescr: cInfo.shortDescr, description: cInfo.profileDescription)
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -457,11 +457,10 @@ struct ChatInfoView: View {
                 verify: { code in
                     if let r = apiVerifyContact(chat.chatInfo.apiId, connectionCode: code) {
                         let (verified, existingCode) = r
-                        var ct = contact
-                        ct.activeConn?.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
+                        contact.activeConn?.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
                         connectionCode = existingCode
                         DispatchQueue.main.async {
-                            chat.chatInfo = .direct(contact: ct)
+                            chat.chatInfo = .direct(contact: contact)
                         }
                         return r
                     }
@@ -482,12 +481,9 @@ struct ChatInfoView: View {
     private func contactPreferencesButton() -> some View {
         NavigationLink {
             ContactPreferencesView(
-                contact: contact,
-                featuresAllowed: Binding(
-                    get: { featuresAllowed },
-                    set: { editedPreferences = (savedPreferences: contact.mergedPreferences, featuresAllowed: $0) }
-                ),
-                currentFeaturesAllowed: currentFeaturesAllowed,
+                contact: .constant(chatContact),
+                featuresAllowed: Binding(get: { featuresAllowed }, set: { editedPreferences = (savedPreferences: chatContact.mergedPreferences, featuresAllowed: $0) }),
+                currentFeaturesAllowed: .constant(currentFeaturesAllowed),
                 savePreferences: savePreferences
             )
             .navigationBarTitle("Contact preferences")
@@ -621,16 +617,16 @@ struct ChatInfoView: View {
         }
     }
 
-    private var contact: Contact {
-        chat.chatInfo.contact ?? initialContact
+    private var chatContact: Contact {
+        chat.chatInfo.contact ?? contact
     }
 
     private var currentFeaturesAllowed: ContactFeaturesAllowed {
-        contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
+        contactUserPrefsToFeaturesAllowed(chatContact.mergedPreferences)
     }
 
     private var featuresAllowed: ContactFeaturesAllowed {
-        if let edited = editedPreferences, edited.savedPreferences == contact.mergedPreferences {
+        if let edited = editedPreferences, edited.savedPreferences == chatContact.mergedPreferences {
             edited.featuresAllowed
         } else {
             currentFeaturesAllowed
@@ -643,6 +639,7 @@ struct ChatInfoView: View {
                 let prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
                 if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
                     await MainActor.run {
+                        contact = toContact
                         chatModel.updateContact(toContact)
                         editedPreferences = nil
                     }
@@ -1540,7 +1537,7 @@ struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         ChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
-            initialContact: Contact.sampleData,
+            contact: Contact.sampleData,
             localAlias: "",
              onSearch: {}
         )
