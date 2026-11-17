@@ -75,7 +75,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
-import Simplex.Chat.Badges.Code (nameLength)
+import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..))
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
@@ -342,7 +342,7 @@ data AddressError
 -- | The fields an owner signs in an order and in another name for it, with the terms the owner agreed to for that name.
 data OrderFields = OrderFields
   { ofLabelHash :: LabelHash,
-    ofLength :: Int,
+    ofLength :: NameLength,
     ofDuration :: Word64,
     ofCommitment :: Commitment,
     ofSealed :: Text,
@@ -398,7 +398,7 @@ message = encodeUtf8 . T.unwords . ("simplex.domains" :)
 
 orderWords :: OrderFields -> [Text]
 orderWords OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} =
-  [hex lh, tshow ofLength, tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed, textEncode ofAgreedTerms]
+  [hex lh, tshow (nameLengthInt ofLength), tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed, textEncode ofAgreedTerms]
 
 parseChecksumAddress :: Text -> Either AddressError Address
 parseChecksumAddress t = parseAnyCaseAddress t >> first (const ADChecksum) (parseText checksumAddressP t)

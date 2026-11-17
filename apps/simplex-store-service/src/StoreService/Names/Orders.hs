@@ -24,9 +24,7 @@ module StoreService.Names.Orders
     hexHash,
     hexSignature,
     boundedInteger,
-    checkLength,
     checkSigner,
-    checkOrderSigner,
     existingOrder,
     placeOrder,
     placeCodeOrder,
@@ -57,13 +55,13 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
-import Data.Maybe (catMaybes, isJust, isNothing)
+import Data.Maybe (catMaybes, isJust)
 import Data.Scientific (toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Word (Word64)
-import Simplex.Chat.Badges.Code (nameLength)
+import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
@@ -79,7 +77,7 @@ import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Chain (TxHash, bytes32FromHex, hex)
-import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
+import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), parseChecksumAddress, parseSignature, personalDigest)
 import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
@@ -154,24 +152,26 @@ signedRequestSeconds = 600
 -- | The signed fields of an order, or of another name for one, with their timestamp and signature.
 type SignedOrderFields = (OrderFields, Word64, RecoverableSignature)
 
--- | Every format check; the length's range is checkLength's, after the formats a kind of order adds.
-parseOrderRequest :: J.Object -> JT.Parser OrderRequest
+-- | Every format check; the length's range refuses after the formats a kind of order adds.
+parseOrderRequest :: J.Object -> JT.Parser (Either OrderRefusal OrderRequest)
 parseOrderRequest o = do
   orOwner <- jsonField o "owner" $ textWith $ first show . parseChecksumAddress
-  (orFields, orTimestamp, orSignature) <- parseOrderFields o
-  pure OrderRequest {orOwner, orFields, orTimestamp, orSignature}
+  signed <- parseOrderFields o
+  pure $ (\(orFields, orTimestamp, orSignature) -> OrderRequest {orOwner, orFields, orTimestamp, orSignature}) <$> signed
 
-parseOrderFields :: J.Object -> JT.Parser SignedOrderFields
+parseOrderFields :: J.Object -> JT.Parser (Either OrderRefusal SignedOrderFields)
 parseOrderFields o = do
   ofLabelHash <- LabelHash <$> jsonField o "labelHash" hexHash
-  ofLength <- jsonField o "length" boundedInteger
+  len <- jsonField o "length" boundedInteger
   ofDuration <- jsonField o "duration" boundedInteger
   ofCommitment <- jsonField o "commitment" hexHash
   ofSealed <- jsonField o "sealed" $ textWith $ \t -> if T.length t <= maxSealedChars then Right t else Left "longer than its limit"
   ofAgreedTerms <- jsonField o "terms" $ textWith $ maybe (Left "not agreed terms") Right . textDecode
   timestamp <- jsonField o "timestamp" boundedInteger
   signature <- jsonField o "signature" hexSignature
-  pure (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
+  pure $ case nameLength len of
+    Just ofLength -> Right (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
+    Nothing -> Left ORInvalidName
 
 hexHash :: J.Value -> JT.Parser ByteString
 hexHash = textWith $ maybe (Left "not a 32-byte hash in lowercase hex") Right . bytes32FromHex
@@ -192,19 +192,12 @@ textWith f = J.withText "string" $ either fail pure . f
 boundedInteger :: (Integral a, Bounded a) => J.Value -> JT.Parser a
 boundedInteger = J.withScientific "integer" $ maybe (fail "not an integer in its range") pure . toBoundedInteger
 
-checkLength :: OrderFields -> Either OrderRefusal ()
-checkLength OrderFields {ofLength} =
-  when (isNothing $ nameLength ofLength) $ Left ORInvalidName
-
 -- | The owner's EIP-191 signature over the message.
 checkSigner :: Address -> ByteString -> RecoverableSignature -> IO (Either OrderRefusal ())
 checkSigner owner msg signature =
   recoverAddress signature (personalDigest msg) >>= \case
     Right signer | signer == owner -> pure $ Right ()
     _ -> pure $ Left $ ORBadRequest "the signature is not the owner's"
-
-checkOrderSigner :: OrderRequest -> IO (Either OrderRefusal ())
-checkOrderSigner OrderRequest {orOwner, orFields, orTimestamp, orSignature} = checkSigner orOwner (orderMessage orFields orTimestamp) orSignature
 
 existingOrder :: DB.Connection -> OrderRequest -> OrderHash -> UTCTime -> IO ExistingOrder
 existingOrder db req hash now =
@@ -308,7 +301,7 @@ checkNameFree ct st lh =
     Right _ -> pure $ Left ORNameTaken
 
 -- | The chain price for the length and years, which must be the price the order saw.
-checkPrice :: Contracts -> Int -> Int -> USDCents -> IO (Either OrderRefusal ())
+checkPrice :: Contracts -> NameLength -> Int -> USDCents -> IO (Either OrderRefusal ())
 checkPrice ct len years price =
   chainPriceCents ct len years >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's price read failed: " <> tshow e)
@@ -334,7 +327,7 @@ checkMoveMeets st NameRegistration {nrId = rid, nrOwner} OrderFields {ofLabelHas
   pure $ if any ((/= rid) . nrId . loRegistration) orders then Left OROrderExists else Right ()
 
 -- | The new name's chain price for its years, at most what the order is worth, becomes its price.
-checkMovePrice :: Contracts -> NameRegistration -> Int -> Int -> IO (Either OrderRefusal USDCents)
+checkMovePrice :: Contracts -> NameRegistration -> NameLength -> Int -> IO (Either OrderRefusal USDCents)
 checkMovePrice ct NameRegistration {nrPrice} len years =
   chainPriceCents ct len years >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a move's price read failed: " <> tshow e)

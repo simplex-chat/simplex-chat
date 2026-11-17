@@ -478,15 +478,15 @@ testLaunchPrices g = withContracts g $ \node ct -> do
   answerCall node fakeController (rentPriceCall 6) $ Returns $ unhex "000000000000000000000000000000000000000000000015af1d78b58c4000000000000000000000000000000000000000000000000000000000000000000000"
   answerCall node fakeController (rentPriceCall 7) $ Returns $ rentPriceAnswer 20000
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
-  mapM (\len -> chainPriceCents ct len 2) [6, 7, 12] `shouldReturn` [Right 40000, Right 20000, Right 10000]
+  mapM (\len -> chainPriceCents ct (lengthOf len) 2) [6, 7, 12] `shouldReturn` [Right 40000, Right 20000, Right 10000]
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 9999
-  chainPriceCents ct 12 2 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 9999 cents for 2 years, under names.min_price_cents_per_year")
+  chainPriceCents ct (lengthOf 12) 2 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 9999 cents for 2 years, under names.min_price_cents_per_year")
   answerCall node fakeController (rentPriceCall 11) $ Returns $ rentPriceAnswer 0
-  chainPriceCents ct 11 2 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 0 cents for 2 years, under names.min_price_cents_per_year")
+  chainPriceCents ct (lengthOf 11) 2 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 0 cents for 2 years, under names.min_price_cents_per_year")
   answerCall node fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 15000
-  chainPriceCents ct 11 3 `shouldReturn` Right 15000
+  chainPriceCents ct (lengthOf 11) 3 `shouldReturn` Right 15000
   answerCall node fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 14999
-  chainPriceCents ct 11 3 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 14999 cents for 3 years, under names.min_price_cents_per_year")
+  chainPriceCents ct (lengthOf 11) 3 `shouldReturn` Left (ChainUnavailable "rentPriceUSD answered 14999 cents for 3 years, under names.min_price_cents_per_year")
 
 testNonces :: TVar ChaChaDRG -> IO ()
 testNonces g = withContracts g $ \node ct -> do

@@ -3,6 +3,7 @@
 
 module Bots.StoreService.NamesSignatureTests (namesSignatureTests) where
 
+import Bots.StoreService.FakeEthNode (lengthOf)
 import Control.Monad (forM_)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
@@ -161,7 +162,7 @@ termsOrder :: OrderFields
 termsOrder =
   OrderFields
     { ofLabelHash = labelHash "alicebakery",
-      ofLength = 11,
+      ofLength = lengthOf 11,
       ofDuration = 69292800,
       ofCommitment = hx "0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5",
       ofSealed = "AAAAAAAAAAAAAAAACWgxqMk-UKfpra_Zh6vc4KNBR6SX1WYpGb4COoWCCbM0bisYCH14WLzghp8hqi_-KyXSi4qf_DAdP_M4bFetD0s",

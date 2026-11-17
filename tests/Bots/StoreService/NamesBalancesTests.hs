@@ -7,7 +7,7 @@
 
 module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, coveredSpend, credit, creditLate, figures, holdPrice, holder, invariantHolds, lateCredit, payment, placeOrderRow, settleHolder, source) where
 
-import Bots.StoreService.FakeEthNode (agreed, plainTerms)
+import Bots.StoreService.FakeEthNode (agreed, lengthOf, plainTerms)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders)
 import Bots.StoreService.NamesStoreTests (at, btc, insertOrRollBack, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
 import Bots.StoreService.WebTests (capturingStderr, invoiceStatus, overdueOf, rcv, withServiceStore, withServiceStores)
@@ -102,7 +102,7 @@ fieldsN :: Text -> OrderFields
 fieldsN label =
   OrderFields
     { ofLabelHash = labelHash label,
-      ofLength = T.length label,
+      ofLength = lengthOf 6,
       ofDuration = 69292800,
       ofCommitment = C.sha256Hash $ encodeUtf8 label,
       ofSealed = "sealed-" <> label,
@@ -468,7 +468,7 @@ testBalanceOrderHash = withServiceStore $ \st -> do
       base = orderHash ownerA o terms
       variants =
         [ ("labelHash" :: Text, orderHash ownerA o {ofLabelHash = labelHash "hh"} terms),
-          ("length", orderHash ownerA o {ofLength = 2} terms),
+          ("length", orderHash ownerA o {ofLength = lengthOf 7} terms),
           ("duration", orderHash ownerA o {ofDuration = 69292801} terms),
           ("owner", orderHash ownerB o terms),
           ("commitment", orderHash ownerA o {ofCommitment = C.sha256Hash "another"} terms),

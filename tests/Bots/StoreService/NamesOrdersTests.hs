@@ -90,7 +90,7 @@ import Network.HTTP.Client (defaultManagerSettings, newManager, responseHeaders)
 import Network.HTTP.Types (hContentType, status404)
 import Network.Wai (Application, requestHeaders)
 import qualified Network.Wai.Handler.Warp as Warp
-import Simplex.Chat.Badges.Code (formatNameCode, nameLength, namePrepaidCodeHash, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (formatNameCode, nameLength, nameLengthInt, namePrepaidCodeHash, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
@@ -290,7 +290,7 @@ commitmentOf n = C.sha256Hash $ BC.pack $ "commitment " <> show n
 
 fieldsOf :: Order -> OrderFields
 fieldsOf Order {oLabel, oCommitment, oSealed, oDuration, oTerms} =
-  OrderFields {ofLabelHash = labelHash oLabel, ofLength = T.length oLabel, ofDuration = oDuration, ofCommitment = oCommitment, ofSealed = oSealed, ofAgreedTerms = agreed oTerms}
+  OrderFields {ofLabelHash = labelHash oLabel, ofLength = lengthOf (T.length oLabel), ofDuration = oDuration, ofCommitment = oCommitment, ofSealed = oSealed, ofAgreedTerms = agreed oTerms}
 
 signedBody :: TVar ChaChaDRG -> Order -> IO J.Object
 signedBody g o@Order {oKey, oTimestamp} = do
@@ -302,7 +302,7 @@ unsignedBody o@Order {oOwner, oMethod, oPrice, oTimestamp} =
   KM.fromList
     [ ("kind", "name"),
       ("labelHash", J.String $ hex lh),
-      ("length", J.toJSON ofLength),
+      ("length", J.toJSON (nameLengthInt ofLength)),
       ("duration", J.toJSON ofDuration),
       ("owner", J.String oOwner),
       ("commitment", J.String $ hex ofCommitment),
@@ -1195,7 +1195,7 @@ testCodeNotReservable = withOrders $ \ctx@Ctx {cStore} -> do
   placeCode cStore "outsider" ownerB (order "holderone" 1) reservedLate `shouldReturn` Right ()
   (_, revokedLate) <- issueCode ctx 8 2 id
   withTransaction cStore $ \db -> void $ revokePrepaidCode db (pcCodeHash revokedLate) orderTime
-  req <- either error id . JT.parseEither Orders.parseOrderRequest <$> signedBody (cRandom ctx) aliceOrder
+  req <- either error (either (error . show) id) . JT.parseEither Orders.parseOrderRequest <$> signedBody (cRandom ctx) aliceOrder
   forM_ [(reservedLate, CRReserved), (revokedLate, CRInvalid)] $ \(stale, refusal) -> do
     let new = codeReg "late" ownerA (fieldsOf aliceOrder) stale
     placedOrder <- Orders.placeOrder (cOrders ctx) req [] (Orders.codeOrderInsert new stale)

@@ -5,7 +5,7 @@
 
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
-import Bots.StoreService.FakeEthNode (address, agreed, plainTerms)
+import Bots.StoreService.FakeEthNode (address, agreed, lengthOf, plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, invoiceStatus, runMigrations, sampleInvoice, seedBadgePrice, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM, forM_, void)
@@ -50,6 +50,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
     it "refuses a stored reveal whose acceptance columns are unset or set only in part" testPartialAcceptance
     it "refuses a stored commitment, secret or accepted terms hash that is not 32 bytes" testShortHashes
+    it "refuses a stored length outside the name lengths" testStoredLength
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -114,7 +115,7 @@ order :: Text -> Word8 -> OrderFields
 order label n =
   OrderFields
     { ofLabelHash = labelHash label,
-      ofLength = T.length label,
+      ofLength = lengthOf (T.length label),
       ofDuration = 69292800,
       ofCommitment = digestFixture n,
       ofSealed = "sealed-" <> label <> "-" <> T.pack (show n),
@@ -234,6 +235,12 @@ testShortHashes = forM_ ["commitment", "secret", "accept_terms"] $ \column -> wi
   withTransaction st $ \db -> DB.execute db (fromString $ "UPDATE sx_badge_service_name_registrations SET " <> column <> " = ? WHERE registration_id = 'r1'") (Only $ DB.Binary $ B.take 31 $ digestFixture 1)
   reg st "r1" `shouldThrow` anyException
 
+testStoredLength :: IO ()
+testStoredLength = forM_ [5, 64 :: Int] $ \len -> withServiceStore $ \st -> do
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET length = ? WHERE registration_id = 'r1'" (Only len)
+  reg st "r1" `shouldThrow` anyException
+
 testOrderHashFields :: IO ()
 testOrderHashFields = do
   let o = order "alicebakery" 1
@@ -241,7 +248,7 @@ testOrderHashFields = do
       base = orderHash ownerA o paid
       variants =
         [ ("labelHash" :: Text, orderHash ownerA o {ofLabelHash = labelHash "alicebakers"} paid),
-          ("length", orderHash ownerA o {ofLength = 12} paid),
+          ("length", orderHash ownerA o {ofLength = lengthOf 12} paid),
           ("duration", orderHash ownerA o {ofDuration = 69292801} paid),
           ("owner", orderHash ownerB o paid),
           ("commitment", orderHash ownerA o {ofCommitment = digestFixture 2} paid),
@@ -272,7 +279,7 @@ testCreatePaid = withServiceStore $ \st -> do
       { nrId = RegistrationId "r1",
         nrVersion = 1,
         nrLabelHash = ofLabelHash o,
-        nrLength = 11,
+        nrLength = lengthOf 11,
         nrDuration = 69292800,
         nrOwner = ownerA,
         nrCommitment = ofCommitment o,

@@ -48,6 +48,7 @@ module Bots.StoreService.FakeEthNode
     fakeTermsHash,
     plainTerms,
     agreed,
+    lengthOf,
     fakeGeneralTerms,
     fakeGeneralTermsText,
     fakeNewGeneralTermsText,
@@ -94,6 +95,7 @@ import Network.HTTP.Types (ResponseHeaders, Status, badGateway502, badRequest400
 import Network.Wai (Application, rawPathInfo, requestMethod, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Numeric (readHex, showHex)
+import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strDecode, textDecode)
@@ -205,6 +207,9 @@ plainTerms = T.drop 2 $ hex fakeGeneralTerms
 
 agreed :: Text -> AgreedTerms
 agreed t = fromMaybe (error $ "agreed terms: " <> T.unpack t) $ textDecode t
+
+lengthOf :: Int -> NameLength
+lengthOf n = fromMaybe (error $ "name length " <> show n) $ nameLength n
 
 -- | The policy lists the name as a community name.
 listCommunityName :: FakeEthNode -> LabelHash -> IO ()

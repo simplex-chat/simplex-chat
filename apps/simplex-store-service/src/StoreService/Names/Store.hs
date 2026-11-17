@@ -138,6 +138,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
+import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod)
 import Simplex.Chat.Store.Shared (insertedRowId)
@@ -287,7 +288,7 @@ data NameRegistration = NameRegistration
   { nrId :: RegistrationId,
     nrVersion :: Int64,
     nrLabelHash :: LabelHash,
-    nrLength :: Int,
+    nrLength :: NameLength,
     nrDuration :: Word64,
     nrOwner :: Address,
     nrCommitment :: Commitment,
@@ -654,7 +655,7 @@ initialVersion = 1
 -- | No two different orders encode the same.
 orderHash :: Address -> OrderFields -> OrderTerms -> OrderHash
 orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} terms =
-  sha256Hash $ smpEncode (tag, lh, num ofLength, int64 ofDuration, unAddress owner, ofCommitment, Large $ encodeUtf8 ofSealed, textEncode ofAgreedTerms) <> payment
+  sha256Hash $ smpEncode (tag, lh, num (nameLengthInt ofLength), int64 ofDuration, unAddress owner, ofCommitment, Large $ encodeUtf8 ofSealed, textEncode ofAgreedTerms) <> payment
   where
     (tag, payment) = case terms of
       OTInvoice method price -> ("name-invoice" :: ByteString, smpEncode (textEncode method, num price))
@@ -723,7 +724,7 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
         ON CONFLICT DO NOTHING
       |]
       )
-      ( (rid, initialVersion, ofLabelHash, ofLength, int64 ofDuration, nrgOwner, Binary ofCommitment, ofSealed, phase, nrgYears)
+      ( (rid, initialVersion, ofLabelHash, nameLengthInt ofLength, int64 ofDuration, nrgOwner, Binary ofCommitment, ofSealed, phase, nrgYears)
           :. (price, method, codeId, BI True, Binary nrgOrderHash, 0 :: Int, now, now, (\BalanceUse {buSource = RegistrationId s} -> s) <$> fromBalance, maybe 0 buUsed fromBalance)
           :. Only ofAgreedTerms
       )
@@ -761,12 +762,13 @@ type RegistrationRow =
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
-  ( (rid, nrVersion, nrLabelHash, nrLength, duration, nrOwner, Binary commitment, nrSealed, phase, nrYears)
+  ( (rid, nrVersion, nrLabelHash, len, duration, nrOwner, Binary commitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, nrCommitTx, commitBlock, nrRegisterTx, registerBlock, revealAfter, revealBefore, expiresAt, registeredAt)
       :. (failedAt, failReason, BI live, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
       :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
     ) = do
+    nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
     nrCommitment <- bytes32 "commitment" commitment
     nrPhase <- case phase of
       PUnpaid -> Right $ OUnpaid live
@@ -924,7 +926,7 @@ updateRegistration db r now = do
           )))
       |]
       )
-      ( (nrLabelHash, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
+      ( (nrLabelHash, nameLengthInt nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, rvSignature <$> nrReveal)
           :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
           :. (nrCommitTx, int64 <$> nrCommitBlock, nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> expiresAt)

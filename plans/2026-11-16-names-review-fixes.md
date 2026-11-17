@@ -108,7 +108,7 @@ A1-8: `data ProviderError = ProviderError Text | ProviderTimeout Text`; isTimeou
 
 A1-9: aeson parsers (`jsonField` over `explicitParseField`) run by `parseBody`, `JT.parseEither` with the refusal naming the failing field, for the order, invoice order, code order, spend, move and find bodies; `type SignedOrderFields = (OrderFields, Word64, RecoverableSignature)`.
 
-A1-10, A1-11 (core): `newtype NameLength` with `nameLength :: Int -> Maybe NameLength` in Badges/Code.hs, in NamePrepaidCode, randomNamePrepaidCode, the console parser and issueNameCode; StrEncoding for NamePrepaidCode with an attoparsec grammar that reads the canonical and the shown form; prepaidCodeP is strP; parseNameCode removes separators and case before it; the range checks go to `nameLength`. OrderFields.ofLength and chainPriceCents stay Int: an order's length outside the range answers invalid_name after the formats.
+A1-10, A1-11 (core): `newtype NameLength` with `nameLength :: Int -> Maybe NameLength` in Badges/Code.hs, in NamePrepaidCode, randomNamePrepaidCode, the console parser and issueNameCode; StrEncoding for NamePrepaidCode with an attoparsec grammar that reads the canonical and the shown form; prepaidCodeP is strP; parseNameCode removes separators and case before it; the range checks go to `nameLength`. OrderFields.ofLength, NameRegistration.nrLength, chainPriceCents and the search's length are NameLength; an order's length outside the range answers invalid_name after the formats.
 
 A1-12: synonyms CodeId, RecordEditId, Commitment, OrderHash, CodeHash, BodyHash, TermsHash; setTermsText takes the text as Text.
 

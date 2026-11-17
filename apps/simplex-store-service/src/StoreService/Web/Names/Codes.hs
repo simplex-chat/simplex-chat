@@ -4,11 +4,13 @@
 
 module StoreService.Web.Names.Codes (codeCheckHandler, codeRefusalResponse) where
 
-import Data.Aeson ((.=))
+import Control.Logger.Simple (logNote)
+import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Lazy as LB
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Network.HTTP.Types (status200, status400, status409)
 import Network.Wai (Request, Response, ResponseReceived)
@@ -23,17 +25,17 @@ import StoreService.Web.Http (Respond, badRequest, jsonError, jsonResponse, maxB
 codeCheckHandler :: DBStore -> Request -> Respond -> IO ResponseReceived
 codeCheckHandler st req respond =
   readBoundedBody maxBodyBytes req >>= \case
-    Just body | Just text <- codeField body -> case parseNameCode text of
-      Just code -> do
-        now <- getCurrentTime
-        readPrepaidCode st code >>= respond . maybe (codeRefusalResponse CRInvalid) (codeAnswer now)
-      Nothing -> respond $ codeRefusalResponse CRInvalid
-    _ -> respond badRequest
+    Just body -> case codeField body of
+      Right text -> case parseNameCode text of
+        Just code -> do
+          now <- getCurrentTime
+          readPrepaidCode st code >>= respond . maybe (codeRefusalResponse CRInvalid) (codeAnswer now)
+        Nothing -> respond $ codeRefusalResponse CRInvalid
+      Left e -> logNote ("POST /api/code/check refused: a malformed code check: " <> T.pack e) >> respond badRequest
+    Nothing -> respond badRequest
 
-codeField :: LB.ByteString -> Maybe Text
-codeField body = case J.decode body of
-  Just (J.Object o) | Just (J.String t) <- KM.lookup "code" o -> Just t
-  _ -> Nothing
+codeField :: LB.ByteString -> Either String Text
+codeField body = J.eitherDecode body >>= JT.parseEither (J.withObject "code check" (.: "code"))
 
 codeAnswer :: UTCTime -> PrepaidCode -> Response
 codeAnswer now code@PrepaidCode {pcMinLength, pcYears} =
