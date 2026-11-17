@@ -1,6 +1,6 @@
 import { money, countdown, outstanding, startedAgo, type Outstanding } from "./format.js";
 import { badgeIcon, chevronLeft, hamburger, hasBadgeArt, methodMark, wefunderMark } from "./icons.js";
-import { paymentCode, qrSvg } from "./qr.js";
+import { paymentUri, qrSvg } from "./qr.js";
 import { type HistoryRow, receivedMoney, type UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
 import { THEMES, type App, type Chain, type Method, type Theme } from "./domain.js";
@@ -638,10 +638,10 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
         ? warning(seen, "Nothing more is owed. The invoice stays open until the payment confirms.")
         : warning(seen, "Send the rest to the same address below. The invoice stays open until it is paid in full."));
   }
-  const code = owed === undefined ? null : paymentCode(o.method, o.invoice.address ?? "", owed);
-  const qr = code === null ? null : qrFigure(code.qr, `${CRYPTO_NAMES[o.method]} payment code`);
-  if (qr !== null && code !== null) {
-    const open = el("a", { class: "secondary inline wallet-link", href: code.link }, "Open in wallet");
+  const uri = owed === undefined ? null : paymentUri(o.method, o.invoice.address ?? "", owed);
+  const qr = uri === null ? null : qrFigure(uri, `${CRYPTO_NAMES[o.method]} payment code`);
+  if (qr !== null && uri !== null) {
+    const open = el("a", { class: "secondary inline wallet-link", href: uri }, "Open in wallet");
     // This uses .wallet-line rather than .copy-line, which is absolutely positioned inside
     // .field.copyable and here would anchor to the page under the header's menu button.
     qr.append(el("p", { class: "wallet-line" }, open));

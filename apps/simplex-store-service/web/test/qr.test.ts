@@ -1,6 +1,5 @@
 import { timedTest } from "./boot.js";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 
 const qrTest = timedTest(20000);
 
@@ -11,11 +10,9 @@ installDocument();
 
 const qr = await import("../src/qr.js");
 const {
-  alignmentPositions, capacity, dataCodewords, eccOf, encodeQr, formatBits, generatorPoly, interleave,
-  numDataCodewords, paymentCode, qrSvg, rawDataModules, segmentOf, versionBits,
+  alignmentPositions, byteCapacity, dataCodewords, eccOf, encodeQr, formatBits,
+  generatorPoly, interleave, numDataCodewords, paymentUri, qrSvg, rawDataModules, versionBits,
 } = qr;
-const linkOf = (method: "btc" | "ln" | "xmr", address: string, amount: string): string | null =>
-  paymentCode(method, address, amount)?.link ?? null;
 type QrSymbol = import("../src/qr.js").QrSymbol;
 
 const screens = await import("../src/screens.js");
@@ -28,14 +25,6 @@ const PUBLISHED_BYTE_CAPACITY_M: readonly number[] = [
   711, 779, 857, 911, 997, 1059, 1125, 1190, 1264, 1370,
   1452, 1538, 1628, 1722, 1809, 1911, 1989, 2099, 2213, 2331,
 ];
-
-const PUBLISHED_ALPHANUMERIC_CAPACITY_M: readonly number[] = [
-  20, 38, 61, 90, 122, 154, 178, 221, 262, 311,
-  366, 419, 483, 528, 600, 656, 734, 816, 909, 970,
-  1035, 1134, 1248, 1326, 1451, 1542, 1637, 1732, 1839, 1994,
-  2113, 2238, 2369, 2506, 2632, 2780, 2894, 3054, 3220, 3391,
-];
-const ALPHANUMERIC_SET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
 
 // Table 9 gives the error-correction block count per version at level M.
 const PUBLISHED_BLOCKS_M: readonly number[] = [
@@ -188,7 +177,6 @@ function readBits(modules: boolean[][], at: ReadonlyArray<readonly [number, numb
 
 interface Decoded {
   version: number;
-  mode: "byte" | "alphanumeric";
   mask: number;
   eclBits: number;
   payload: string;
@@ -297,46 +285,18 @@ function decodeQr(modules: boolean[][]): Decoded {
     for (let i = 0; i < n; i++) v = (v << 1) | dataBits.shift()!;
     return v;
   };
-  const band = version < 10 ? 0 : version < 27 ? 1 : 2;
-  const indicator = take(4);
-  if (indicator === 0b0010) {
-    const length = take([9, 11, 13][band]!);
-    let text = "";
-    for (let i = 0; i + 1 < length; i += 2) {
-      const pair = take(11);
-      assert.ok(pair < 45 * 45, `${pair} is not a pair of alphanumeric characters`);
-      text += ALPHANUMERIC_SET[Math.floor(pair / 45)]! + ALPHANUMERIC_SET[pair % 45]!;
-    }
-    if (length % 2 === 1) text += ALPHANUMERIC_SET[take(6)]!;
-    return { version, mode: "alphanumeric", mask, eclBits, payload: text, order };
-  }
-  assert.equal(indicator, 0b0100, "byte mode, the only other mode this page writes");
-  const length = take([8, 16, 16][band]!);
+  assert.equal(take(4), 0b0100, "byte mode");
+  const length = take(version < 10 ? 8 : 16);
   const bytes = new Uint8Array(length);
   for (let i = 0; i < length; i++) bytes[i] = take(8);
-  return { version, mode: "byte", mask, eclBits, payload: new TextDecoder().decode(bytes), order };
+  return { version, mask, eclBits, payload: new TextDecoder().decode(bytes), order };
 }
 
 
 qrTest("qr: every version's byte capacity at level M is the published one (Table 7)", () => {
   for (let version = 1; version <= 40; version++) {
-    assert.equal(capacity("byte", version), PUBLISHED_BYTE_CAPACITY_M[version - 1],
+    assert.equal(byteCapacity(version), PUBLISHED_BYTE_CAPACITY_M[version - 1],
       `version ${version} holds ${PUBLISHED_BYTE_CAPACITY_M[version - 1]} bytes at level M`);
-  }
-});
-
-qrTest("qr: every version's alphanumeric capacity at level M is the published one (Table 7)", () => {
-  for (let version = 1; version <= 40; version++) {
-    assert.equal(capacity("alphanumeric", version), PUBLISHED_ALPHANUMERIC_CAPACITY_M[version - 1],
-      `version ${version} holds ${PUBLISHED_ALPHANUMERIC_CAPACITY_M[version - 1]} alphanumeric characters at level M`);
-  }
-});
-
-qrTest("qr: alphanumeric mode is chosen only when every character is in its set", () => {
-  assert.equal(segmentOf(ALPHANUMERIC_SET).mode, "alphanumeric", "all forty-five characters");
-  assert.equal(segmentOf("").mode, "alphanumeric");
-  for (const payload of ["lightning:LNBC1", "LNBC1?", "LNBC1#", "LNBC1_", "LNBC1é", "LNBC1\n", "SB-YDC8a"]) {
-    assert.equal(segmentOf(payload).mode, "byte", `${JSON.stringify(payload)} has a character outside the set`);
   }
 });
 
@@ -411,40 +371,17 @@ qrTest("qr: the remainder bits per version are the published counts", () => {
 });
 
 qrTest("qr: the bit stream is mode, count, payload, terminator and the alternating pad", () => {
-  const codewords = dataCodewords(segmentOf("sb"), 1);
+  const bytes = new TextEncoder().encode("SB");
+  const codewords = dataCodewords(bytes, 1);
   assert.equal(codewords.length, numDataCodewords(1), "a version is filled, not partly written");
-  // 0100, then the length 00000010, then 's' (0x73) and 'b' (0x62) packed across the nibble boundary.
+  // 0100, then the length 00000010, then 'S' and 'B' packed across the nibble boundary.
   assert.equal(codewords[0], 0b01000000);
-  assert.equal(codewords[1], 0b00100111, "the length nibble carries into the first payload byte");
-  assert.equal(codewords[2], 0b00110110, "the low nibble of 's' and the high nibble of 'b'");
-  assert.equal(codewords[3], 0b00100000, "the terminator follows the last byte");
+  assert.equal(codewords[1], 0b00100101, "the length nibble carries into the first payload byte");
+  assert.equal(codewords[2], 0b00110100, "the low nibble of 'S' and the high nibble of 'B'");
+  assert.equal(codewords[3], (("B".charCodeAt(0) & 0x0f) << 4) | 0b0000, "the terminator follows the last byte");
   for (let i = 4; i < codewords.length; i++) {
     assert.equal(codewords[i], i % 2 === 0 ? 0xec : 0x11, "the pad alternates 11101100 00010001");
   }
-});
-
-const HELLO_WORLD_DATA = [32, 91, 11, 120, 209, 114, 220, 77, 67, 64, 236, 17, 236, 17, 236, 17];
-const HELLO_WORLD_ECC = [196, 35, 39, 119, 235, 215, 231, 226, 93, 23];
-
-qrTest("qr: the alphanumeric bit stream is the published HELLO WORLD one, with its EC codewords", () => {
-  const codewords = dataCodewords(segmentOf("HELLO WORLD"), 1);
-  assert.deepEqual(codewords, HELLO_WORLD_DATA);
-  assert.deepEqual(eccOf(codewords, 10), HELLO_WORLD_ECC);
-  const decoded = roundTrip("HELLO WORLD", "HELLO WORLD");
-  assert.equal(decoded.mode, "alphanumeric");
-  assert.equal(decoded.version, 1);
-});
-
-qrTest("qr: the alphanumeric version is chosen by length, across both count-width boundaries", () => {
-  for (const [length, version] of [
-    [20, 1], [21, 2], [262, 9], [263, 10], [1542, 26], [1543, 27], [3391, 40],
-  ] as const) {
-    const decoded = roundTrip("9".repeat(length), `${length} alphanumeric characters`);
-    assert.equal(decoded.version, version, `${length} characters take version ${version}`);
-    assert.equal(decoded.mode, "alphanumeric");
-  }
-  assert.equal(encodeQr("9".repeat(3392)), null, "and one character more has no symbol at all");
-  assert.equal(roundTrip("A".repeat(37), "an odd alphanumeric count").payload.length, 37);
 });
 
 qrTest("qr: the version is chosen by payload length, at every boundary that moves", () => {
@@ -491,7 +428,7 @@ qrTest("qr: the function patterns are where a scanner looks for them", () => {
 qrTest("qr: the first codeword starts at the bottom-right corner and runs upward", () => {
   const payload = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
   const symbol = symbolOf(payload);
-  const codewords = interleave(dataCodewords(segmentOf(payload), symbol.version), symbol.version);
+  const codewords = interleave(dataCodewords(new TextEncoder().encode(payload), symbol.version), symbol.version);
   const rule = MASK_RULES[symbol.mask]!;
   const unmasked = (x: number, y: number): number =>
     (symbol.modules[y]![x]! !== rule(x, y)) ? 1 : 0;
@@ -517,7 +454,6 @@ const MONERO_ADDRESS = "48HqK2XmVexampleAddress9fRtWcExampleAddress2nQyVXaLbEEXa
 const MONERO_INTEGRATED = "4LEXampleIntegratedAddress9fRtWcExampleAddress2nQyVXaLbEEXampleAddr9SDFGHJK9fRtWcQ8Uv7VJj3mExampleAddr9fRt";
 const BITCOIN_ADDRESS = "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq";
 const BADGE_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
-const BOLT11_400 = "lnbc499999440p1" + "qpzry9x8gf2tvdw0s3jn54khce6mua7l".repeat(13).slice(0, 385);
 
 function roundTrip(payload: string, what: string): Decoded {
   const symbol = symbolOf(payload);
@@ -529,7 +465,7 @@ function roundTrip(payload: string, what: string): Decoded {
 
 qrTest("qr: a Monero payment URI with a 95-character address round-trips", () => {
   assert.equal(MONERO_ADDRESS.length, 95, "a standard Monero address is 95 characters");
-  const uri = linkOf("xmr", MONERO_ADDRESS, "1.482")!;
+  const uri = paymentUri("xmr", MONERO_ADDRESS, "1.482")!;
   const decoded = roundTrip(uri, "the Monero URI");
   assert.equal(decoded.payload, `monero:${MONERO_ADDRESS}?tx_amount=1.482`);
   assert.ok(decoded.version >= 7, `${uri.length} bytes needs more than version 6, not version ${decoded.version}`);
@@ -537,7 +473,7 @@ qrTest("qr: a Monero payment URI with a 95-character address round-trips", () =>
 
 qrTest("qr: a Monero integrated address, 106 characters, round-trips — and needs version 8", () => {
   assert.equal(MONERO_INTEGRATED.length, 106, "an integrated address is 106 characters");
-  const uri = linkOf("xmr", MONERO_INTEGRATED, "1.482")!;
+  const uri = paymentUri("xmr", MONERO_INTEGRATED, "1.482")!;
   assert.equal(uri.length, 129);
   const decoded = roundTrip(uri, "the integrated-address URI");
   // 124 bytes does not fit version 7's 122, so a hardcoded version would truncate here.
@@ -545,53 +481,27 @@ qrTest("qr: a Monero integrated address, 106 characters, round-trips — and nee
 });
 
 qrTest("qr: a Bitcoin BIP-21 URI round-trips", () => {
-  const uri = linkOf("btc", BITCOIN_ADDRESS, "0.00412")!;
+  const uri = paymentUri("btc", BITCOIN_ADDRESS, "0.00412")!;
   assert.equal(uri, `bitcoin:${BITCOIN_ADDRESS}?amount=0.00412`);
   roundTrip(uri, "the Bitcoin URI");
 });
 
-function fingerprint(symbol: QrSymbol): string {
-  const rows = symbol.modules.map((row) => row.map((dark) => (dark ? "1" : "0")).join(""));
-  return createHash("sha256").update(rows.join("\n")).digest("hex");
-}
-
-qrTest("qr: a 400-character BOLT11 is scanned as the bare invoice in upper case, in alphanumeric mode, at version 12", () => {
-  assert.equal(BOLT11_400.length, 400);
-  const { link: uri, qr: payload } = paymentCode("ln", BOLT11_400, "0.00050000")!;
-  assert.equal(uri, `lightning:${BOLT11_400}`, "the amount is inside the invoice, so the URI carries none");
-  assert.equal(payload, BOLT11_400.toUpperCase());
-  const decoded = roundTrip(payload, "the Lightning invoice");
-  assert.equal(decoded.mode, "alphanumeric");
-  assert.ok(decoded.version <= 12, `version ${decoded.version}`);
-  assert.equal(segmentOf(uri).mode, "byte", "the lower-case link would have needed version 15");
-  assert.equal(symbolOf(uri).version, 15);
-});
-
-qrTest("qr: the Bitcoin and Monero symbols stay in byte mode, identical to the byte-only encoder's", () => {
-  for (const [method, address, amount, version, mask, expected] of [
-    ["btc", BITCOIN_ADDRESS, "0.00412", 5, 3, "5ebf3ac8877a9b59d79ea81e578e9998ec0414ffa84a2bb51d8bb9cf81bb6f99"],
-    ["xmr", MONERO_ADDRESS, "1.482", 7, 2, "f6a16bbcbdab85e399203c989f00b01198e5c17c4a3ef23611df5d6c898dbaf7"],
-  ] as const) {
-    const { link: uri, qr: payload } = paymentCode(method, address, amount)!;
-    assert.equal(payload, uri, "the on-chain payload is the link itself");
-    assert.equal(segmentOf(uri).mode, "byte", `${uri} carries lower case`);
-    const symbol = symbolOf(uri);
-    assert.equal(symbol.version, version);
-    assert.equal(symbol.mask, mask);
-    assert.equal(fingerprint(symbol), expected, `${uri} no longer draws the symbol it drew before`);
-  }
+qrTest("qr: a 400-character BOLT11 is scanned as its lightning: link, which a camera hands to a wallet", () => {
+  const bolt11 = `lnbc500u1${"qpzry9x8gf2tvdw0s3jn54khce6mua7l".repeat(13)}`.slice(0, 400);
+  const uri = paymentUri("ln", bolt11, "0.00050000")!;
+  assert.equal(uri, `lightning:${bolt11}`, "the amount is inside the invoice, so the link carries none");
+  assert.equal(roundTrip(uri, "the Lightning link").version, 15);
 });
 
 qrTest("qr: a badge code round-trips exactly, hyphens and all", () => {
   const decoded = roundTrip(BADGE_CODE, "the badge code");
   assert.equal(BADGE_CODE.length, 26);
-  assert.equal(decoded.mode, "alphanumeric", "the code is upper case, digits and hyphens");
-  assert.equal(decoded.version, 2, "twenty-six characters is more than version 1's twenty");
+  assert.equal(decoded.version, 2, "twenty-six characters is exactly version 2's capacity");
 });
 
 qrTest("qr: payloads on both sides of a version boundary round-trip", () => {
   for (const length of [14, 15, 122, 123, 180, 181, 213, 214]) {
-    const payload = "z".repeat(length);
+    const payload = "9".repeat(length);
     const decoded = roundTrip(payload, `${length} bytes`);
     assert.equal(decoded.payload.length, length);
   }
@@ -599,7 +509,7 @@ qrTest("qr: payloads on both sides of a version boundary round-trip", () => {
 
 qrTest("qr: a representative version from every table breakpoint round-trips", () => {
   for (const version of [1, 2, 6, 7, 9, 10, 13, 14, 26, 32, 40]) {
-    const payload = "z".repeat(PUBLISHED_BYTE_CAPACITY_M[version - 1]!);
+    const payload = "Z".repeat(PUBLISHED_BYTE_CAPACITY_M[version - 1]!);
     const symbol = symbolOf(payload);
     assert.equal(symbol.version, version, `a full version ${version} payload must take version ${version}`);
     const decoded = decodeQr(symbol.modules);
@@ -614,12 +524,12 @@ qrTest("qr: a multi-byte payload is encoded as UTF-8 bytes, not as characters", 
   assert.ok(new TextEncoder().encode(payload).length > payload.length, "this payload is longer in bytes than in characters");
 });
 
-qrTest("qr: paymentCode refuses half a destination", () => {
-  assert.equal(paymentCode("xmr", "", "1.482"), null, "no address is nothing to scan");
-  assert.equal(paymentCode("xmr", MONERO_ADDRESS, ""), null, "and a bare address does not prefill an amount");
-  assert.equal(linkOf("btc", BITCOIN_ADDRESS, "0.5"), `bitcoin:${BITCOIN_ADDRESS}?amount=0.5`);
-  assert.equal(paymentCode("ln", "", "0.00050000"), null, "no invoice is nothing to scan");
-  assert.equal(paymentCode("ln", BOLT11_400, ""), null, "nor an invoice without the amount owed");
+qrTest("qr: paymentUri refuses half a destination", () => {
+  assert.equal(paymentUri("xmr", "", "1.482"), null, "no address is nothing to scan");
+  assert.equal(paymentUri("xmr", MONERO_ADDRESS, ""), null, "and a bare address does not prefill an amount");
+  assert.equal(paymentUri("btc", BITCOIN_ADDRESS, "0.5"), `bitcoin:${BITCOIN_ADDRESS}?amount=0.5`);
+  assert.equal(paymentUri("ln", "", "0.00050000"), null, "no invoice is nothing to scan");
+  assert.equal(paymentUri("ln", "lnbc500u1p", ""), null, "nor an invoice without the amount owed");
 });
 
 // A fresh regex each time, since matchAll and replace share lastIndex on one object.
@@ -663,7 +573,7 @@ qrTest("svg: the elements are in the SVG namespace, which is what makes them ren
 });
 
 qrTest("svg: the drawn modules ARE the symbol, quiet zone included", () => {
-  const payload = linkOf("xmr", MONERO_INTEGRATED, "1.482")!;
+  const payload = paymentUri("xmr", MONERO_INTEGRATED, "1.482")!;
   const svg = qrSvg(payload, "Monero payment code") as unknown as StubElement;
   const symbol = symbolOf(payload);
   const drawn = modulesOfSvg(svg);
@@ -714,7 +624,7 @@ const xmrInvoice: View = {
   address: MONERO_ADDRESS, cryptoAmount: "1.482", cryptoCurrency: "xmr",
 };
 
-function awaitingPayment(invoice: View = xmrInvoice, method: import("../src/domain.js").Chain = "xmr"): StubElement {
+function awaitingPayment(invoice: View = xmrInvoice, method: "btc" | "xmr" = "xmr"): StubElement {
   const built = screens.awaitingPayment({
     order: record({ code: BADGE_CODE }), invoice, method, nowMs: NOW,
     resumed: false, onCancel: noopAsync,
@@ -738,20 +648,6 @@ qrTest("the payment screen: Bitcoin gets BIP-21 with `amount`, Monero `tx_amount
   const btc = awaitingPayment({ ...xmrInvoice, address: BITCOIN_ADDRESS, cryptoAmount: "0.00412", cryptoCurrency: "btc" }, "btc");
   const decoded = decodeQr(modulesOfSvg(btc.querySelector("svg.qr")!));
   assert.equal(decoded.payload, `bitcoin:${BITCOIN_ADDRESS}?amount=0.00412`);
-});
-
-qrTest("the payment screen: Lightning scans the upper-case BOLT11, and links the lower-case one", () => {
-  const ln = awaitingPayment({ ...xmrInvoice, address: BOLT11_400, cryptoAmount: "0.00050000", cryptoCurrency: "ln" }, "ln");
-  const decoded = decodeQr(modulesOfSvg(ln.querySelector("svg.qr")!));
-  assert.equal(decoded.payload, BOLT11_400.toUpperCase(),
-    "a wallet reading anything else pays nothing, or the wrong invoice");
-  assert.equal(decoded.mode, "alphanumeric");
-  assert.ok(decoded.version <= 12, `version ${decoded.version}`);
-  assert.equal(ln.all("a.wallet-link")[0]!.getAttribute("href"), `lightning:${BOLT11_400}`,
-    "the link keeps the invoice as the service sent it");
-  assert.equal(`lightning:${decoded.payload.toLowerCase()}`, ln.all("a.wallet-link")[0]!.getAttribute("href"),
-    "and both name the same invoice");
-  assert.equal(ln.querySelector("svg.qr")!.getAttribute("aria-label"), "Lightning payment code");
 });
 
 qrTest("the payment screen: with no address there is no QR, and the screen keeps its text", () => {
@@ -809,10 +705,10 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
 
 qrTest("qr: an address carrying URI syntax cannot add parameters of its own", () => {
   // A ? or & in an address could inject a second amount that wallets read first, and # swallows everything after it.
-  const withQuery = linkOf("btc", "bc1q?amount=99&x=1", "0.5")!;
+  const withQuery = paymentUri("btc", "bc1q?amount=99&x=1", "0.5")!;
   assert.ok(!withQuery.includes("amount=99"), `the address must not carry parameters: ${withQuery}`);
   assert.ok(withQuery.endsWith("?amount=0.5"), `ours is the only one: ${withQuery}`);
-  const withFragment = linkOf("xmr", "4A#frag", "0.5")!;
+  const withFragment = paymentUri("xmr", "4A#frag", "0.5")!;
   assert.ok(!withFragment.includes("#"), `a fragment would swallow the amount: ${withFragment}`);
-  assert.equal(linkOf("xmr", MONERO_ADDRESS, "1.482"), `monero:${MONERO_ADDRESS}?tx_amount=1.482`);
+  assert.equal(paymentUri("xmr", MONERO_ADDRESS, "1.482"), `monero:${MONERO_ADDRESS}?tx_amount=1.482`);
 });

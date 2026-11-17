@@ -1,16 +1,4 @@
-import type { Chain } from "./domain.js";
-
-type Mode = "byte" | "alphanumeric";
-const MODE_INDICATORS: Readonly<Record<Mode, number>> = { byte: 0b0100, alphanumeric: 0b0010 };
-const COUNT_BITS: Readonly<Record<Mode, readonly [number, number, number]>> = {
-  byte: [8, 16, 16],
-  alphanumeric: [9, 11, 13],
-};
-const ALPHANUMERIC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
-const BYTE_BITS = 8;
-const ALPHANUMERIC_PAIR_BITS = 11;
-const ALPHANUMERIC_SINGLE_BITS = 6;
-const MODE_INDICATOR_BITS = 4;
+const MODE_BYTE = 0b0100;
 const ECC_LEVEL_M_BITS = 0b00;
 const MIN_VERSION = 1;
 const MAX_VERSION = 40;
@@ -95,42 +83,17 @@ export function numDataCodewords(version: number): number {
   return totalCodewords(version) - ECC_PER_BLOCK_M[version]! * NUM_BLOCKS_M[version]!;
 }
 
-function charCountBits(mode: Mode, version: number): number {
-  return COUNT_BITS[mode][version < 10 ? 0 : version < 27 ? 1 : 2];
+function charCountBits(version: number): number {
+  return version < 10 ? 8 : 16;
 }
 
-export function capacity(mode: Mode, version: number): number {
-  const room = numDataCodewords(version) * 8 - MODE_INDICATOR_BITS - charCountBits(mode, version);
-  if (mode === "byte") return Math.floor(room / BYTE_BITS);
-  const pairs = Math.floor(room / ALPHANUMERIC_PAIR_BITS);
-  return 2 * pairs + (room - pairs * ALPHANUMERIC_PAIR_BITS >= ALPHANUMERIC_SINGLE_BITS ? 1 : 0);
+export function byteCapacity(version: number): number {
+  return Math.floor((numDataCodewords(version) * 8 - 4 - charCountBits(version)) / 8);
 }
 
-export interface Segment {
-  mode: Mode;
-  count: number;
-  chunks: ReadonlyArray<readonly [value: number, width: number]>;
-}
-
-export function segmentOf(payload: string): Segment {
-  const values = Array.from(payload, (c) => ALPHANUMERIC.indexOf(c));
-  if (values.every((v) => v >= 0)) {
-    const chunks: Array<readonly [number, number]> = [];
-    for (let i = 0; i < values.length; i += 2) {
-      const second = values[i + 1];
-      chunks.push(second === undefined
-        ? [values[i]!, ALPHANUMERIC_SINGLE_BITS]
-        : [values[i]! * ALPHANUMERIC.length + second, ALPHANUMERIC_PAIR_BITS]);
-    }
-    return { mode: "alphanumeric", count: values.length, chunks };
-  }
-  const bytes = new TextEncoder().encode(payload);
-  return { mode: "byte", count: bytes.length, chunks: Array.from(bytes, (b) => [b, BYTE_BITS] as const) };
-}
-
-function versionFor(segment: Segment): number | null {
+function versionFor(byteLength: number): number | null {
   for (let version = MIN_VERSION; version <= MAX_VERSION; version++) {
-    if (segment.count <= capacity(segment.mode, version)) return version;
+    if (byteLength <= byteCapacity(version)) return version;
   }
   return null;
 }
@@ -145,15 +108,15 @@ export function alignmentPositions(version: number): number[] {
   return positions;
 }
 
-export function dataCodewords(segment: Segment, version: number): number[] {
+export function dataCodewords(bytes: Uint8Array, version: number): number[] {
   const capacity = numDataCodewords(version);
   const bits: number[] = [];
   const push = (value: number, width: number): void => {
     for (let i = width - 1; i >= 0; i--) bits.push((value >>> i) & 1);
   };
-  push(MODE_INDICATORS[segment.mode], MODE_INDICATOR_BITS);
-  push(segment.count, charCountBits(segment.mode, version));
-  for (const [value, width] of segment.chunks) push(value, width);
+  push(MODE_BYTE, 4);
+  push(bytes.length, charCountBits(version));
+  for (const byte of bytes) push(byte, 8);
   for (let i = 0; i < 4 && bits.length < capacity * 8; i++) bits.push(0);
   while (bits.length % 8 !== 0) bits.push(0);
   const codewords: number[] = [];
@@ -384,12 +347,12 @@ class Matrix {
 }
 
 export function encodeQr(payload: string): QrSymbol | null {
-  const segment = segmentOf(payload);
-  const version = versionFor(segment);
+  const bytes = new TextEncoder().encode(payload);
+  const version = versionFor(bytes.length);
   if (version === null) return null;
   const matrix = new Matrix(version);
   matrix.drawFunctionPatterns();
-  matrix.drawCodewords(interleave(dataCodewords(segment, version), version));
+  matrix.drawCodewords(interleave(dataCodewords(bytes, version), version));
 
   let best = -1;
   let bestPenalty = Infinity;
@@ -408,20 +371,13 @@ export function encodeQr(payload: string): QrSymbol | null {
   return { version, size: matrix.size, mask: best, modules: matrix.modules };
 }
 
-export interface PaymentCode {
-  link: string;
-  qr: string;
-}
-
-export function paymentCode(method: Chain, address: string, amount: string): PaymentCode | null {
+export function paymentUri(method: "btc" | "ln" | "xmr", address: string, amount: string): string | null {
   if (address === "" || amount === "") return null;
-  // The address is percent-encoded so that a `?`, `&`, or `#` in it cannot add its own parameters to the URI.
-  const destination = encodeURIComponent(address);
-  if (method === "ln") return { link: `lightning:${destination}`, qr: address.toUpperCase() };
+  if (method === "ln") return `lightning:${encodeURIComponent(address)}`;
   const scheme = method === "btc" ? "bitcoin" : "monero";
   const parameter = method === "btc" ? "amount" : "tx_amount";
-  const link = `${scheme}:${destination}?${parameter}=${encodeURIComponent(amount)}`;
-  return { link, qr: link };
+  // The address is percent-encoded so that a `?`, `&`, or `#` in it cannot add its own parameters to the URI.
+  return `${scheme}:${encodeURIComponent(address)}?${parameter}=${encodeURIComponent(amount)}`;
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
