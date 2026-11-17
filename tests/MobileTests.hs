@@ -78,6 +78,7 @@ mobileTests = do
       setForeignEncoding utf8
     it "start new chat without user" testChatApiNoUser
     it "start new chat with existing user" testChatApi
+    it "should report membership left in the event and the response of leaving a group" testChatApiLeaveGroup
     it "should set queue size via C API" testChatMigrateInitQueueCApi
     it "should encrypt/decrypt WebRTC frames" testMediaApi
     it "should encrypt/decrypt WebRTC frames via C API" testMediaCApi
@@ -186,6 +187,21 @@ testChatApi ps = do
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
+
+testChatApiLeaveGroup :: TestParams -> IO ()
+testChatApiLeaveGroup ps = do
+  Right cc <- chatMigrateInit (tmpPath ps </> "1") "" "yesUp"
+  chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUser
+  chatSendCmd cc "/_start" `shouldReturn` chatStarted
+  chatSendCmd cc "/g team" >>= (`shouldSatisfy` hasText "groupCreated")
+  chatSendCmd cc "/leave #team" >>= (`shouldSatisfy` hasText memberLeft)
+  userLeftEvent cc >>= (`shouldSatisfy` hasText memberLeft)
+  where
+    memberLeft = "\"memberStatus\":\"left\""
+    hasText s = B.isInfixOf s . LB.toStrict
+    userLeftEvent cc = do
+      event <- chatRecvMsgWait cc 5000000
+      if LB.null event || hasText "userLeft" event then pure event else userLeftEvent cc
 
 testChatMigrateInitQueueCApi :: TestParams -> IO ()
 testChatMigrateInitQueueCApi ps = do
