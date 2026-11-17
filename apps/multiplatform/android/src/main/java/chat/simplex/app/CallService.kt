@@ -17,6 +17,7 @@ import chat.simplex.common.model.NotificationPreviewMode
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -27,6 +28,7 @@ class CallService: Service() {
   private var notificationManager: NotificationManager? = null
   private var serviceNotification: Notification? = null
   private val pictureScope = MainScope()
+  private var pictureJob: Job? = null
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     Log.d(TAG, "onStartCommand startId: $startId")
@@ -92,8 +94,8 @@ class CallService: Service() {
     val text = generalGetString(if (call?.hasVideo == true) MR.strings.call_service_notification_video_call else MR.strings.call_service_notification_audio_call)
     val image = call?.contact?.image?.takeIf { previewMode != NotificationPreviewMode.HIDDEN.name }
     val picture = image?.let(::cachedBase64Bitmap)
-    if (image != null && picture == null) {
-      pictureScope.launch {
+    if (image != null && picture == null && pictureJob?.isActive != true) {
+      pictureJob = pictureScope.launch {
         base64ToBitmapInBackground(image)
         updateNotification()
       }
