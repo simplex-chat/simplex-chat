@@ -2,21 +2,33 @@ package chat.simplex.common.platform
 
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.toSize
 import boofcv.struct.image.GrayU8
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
 import java.util.Base64
 import java.util.Collections
+import kotlin.math.roundToInt
 
 expect fun base64ToBitmap(base64ImageString: String): ImageBitmap
+expect fun base64BitmapSize(base64ImageString: String): IntSize
 expect fun decodeBase64Image(base64: String, width: Int): ImageBitmap?
 expect fun cropToSquare(image: ImageBitmap): ImageBitmap
 expect fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOutputStream
@@ -92,6 +104,34 @@ private fun ImageBitmap.bytes(): Long = width.toLong() * height * 4
 
 private const val MAX_BASE64_BITMAP_CACHE_BYTES = 64L * 1024 * 1024
 
+@OptIn(ExperimentalCoroutinesApi::class)
+internal val base64ImageDecoder = Dispatchers.IO.limitedParallelism(1)
+
+@Stable
+class Base64ImagePainter internal constructor(private val placeholderSize: IntSize, bitmap: ImageBitmap?) : Painter() {
+  var bitmap: ImageBitmap? by mutableStateOf(bitmap)
+    internal set
+
+  override val intrinsicSize: Size
+    get() = (bitmap?.let { IntSize(it.width, it.height) } ?: placeholderSize).toSize()
+
+  override fun DrawScope.onDraw() {
+    bitmap?.let { drawImage(it, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt())) }
+  }
+}
+
+@Composable
+fun rememberBase64ImagePainter(base64ImageString: String): Base64ImagePainter {
+  val painter = remember(base64ImageString) {
+    val cached = base64BitmapCache[base64ImageString]
+    Base64ImagePainter(cached?.let { IntSize(it.width, it.height) } ?: base64BitmapSize(base64ImageString), cached)
+  }
+  LaunchedEffect(painter) {
+    if (painter.bitmap == null) painter.bitmap = withContext(base64ImageDecoder) { base64ToBitmap(base64ImageString) }
+  }
+  return painter
+}
+
 @Composable
 fun Base64AsyncImage(
   base64ImageString: String,
@@ -99,15 +139,10 @@ fun Base64AsyncImage(
   contentScale: ContentScale,
   modifier: Modifier = Modifier
 ) {
-  val imageBitmap by produceState<ImageBitmap?>(initialValue = null, base64ImageString) {
-    value = withContext(Dispatchers.IO) { base64ToBitmap(base64ImageString) }
-  }
-  imageBitmap?.let {
-    Image(
-      bitmap = it,
-      contentDescription = contentDescription,
-      contentScale = contentScale,
-      modifier = modifier
-    )
-  }
+  Image(
+    painter = rememberBase64ImagePainter(base64ImageString),
+    contentDescription = contentDescription,
+    contentScale = contentScale,
+    modifier = modifier
+  )
 }

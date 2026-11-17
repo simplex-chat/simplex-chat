@@ -69,14 +69,14 @@ fun blurHidesMedia(enabled: Boolean, blurred: State<Boolean>): Boolean =
 @Composable
 fun Modifier.privacyBlur(
   fullSize: Boolean,
-  preview: ImageBitmap,
+  preview: ImageBitmap?,
   blurred: MutableState<Boolean> = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) },
   scrollState: State<Boolean>,
   onLongClick: () -> Unit = {}
 ): Modifier {
   val blurRadius = remember { appPrefs.privacyMediaBlurRadius.state }
   return if (blurHidesMedia(true, blurred)) {
-    this then (if (fullSize) {
+    this then (if (preview == null) Modifier.drawWithContent {} else if (fullSize) {
       val blurredPreview = remember(preview, blurRadius.value) { preview.blurredBy(blurRadius.value) }
       Modifier.drawWithContent { drawImage(blurredPreview, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt())) }
     } else Modifier.drawWithCache {

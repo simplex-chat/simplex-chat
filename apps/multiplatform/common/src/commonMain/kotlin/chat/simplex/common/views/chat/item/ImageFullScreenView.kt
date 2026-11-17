@@ -158,7 +158,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           val (data: ByteArray, imageBitmap: ImageBitmap) = media
           FullScreenImageView(modifier, data, imageBitmap)
         } else if (media is ProviderMedia.Video) {
-          val preview = remember(media.uri.path) { base64ToBitmap(media.preview) }
+          val preview = rememberBase64ImagePainter(media.preview).bitmap ?: return@Column
           val uriDecrypted = remember(media.uri.path) { mutableStateOf(if (media.fileSource?.cryptoArgs == null) media.uri else media.fileSource.decryptedGet()) }
           val decrypted = uriDecrypted.value
           if (decrypted != null) {

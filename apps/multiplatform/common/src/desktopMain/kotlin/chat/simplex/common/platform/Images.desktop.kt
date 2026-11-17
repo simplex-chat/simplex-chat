@@ -43,28 +43,42 @@ internal fun ByteArray.byteAt(pos: Int): Int = if (pos < size) this[pos].toInt()
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   base64BitmapCache[base64ImageString]?.let { return it }
-  val imageString = base64ImageString
-    .removePrefix("data:image/png;base64,")
-    .removePrefix("data:image/jpg;base64,")
   return try {
-    val bytes = Base64.getMimeDecoder().decode(imageString)
-    val stream = ImageIO.createImageInputStream(ByteArrayInputStream(bytes))
-    val reader = receivedImageReader(stream)
-    reader.setInput(stream)
-    val width = reader.getWidth(0)
-    val height = reader.getHeight(0)
-    if (width <= 0 || height <= 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || height > width * 256) {
-      reader.dispose()
-      return errorBitmap()
-    }
-    val image = reader.read(0, receivedImageReadParam(reader, imageSampleSize(width, height, MAX_PREVIEW_DIMENSION)))
-    reader.dispose()
-    image.toComposeImageBitmap().also {
-      base64BitmapCache[base64ImageString] = it
-    }
+    readBase64Image(base64ImageString) { reader, sampleSize ->
+      reader.read(0, receivedImageReadParam(reader, sampleSize)).toComposeImageBitmap().also {
+        base64BitmapCache[base64ImageString] = it
+      }
+    } ?: errorBitmap()
   } catch (e: Throwable) {
     Log.e(TAG, "base64ToBitmap error: $e")
     errorBitmap()
+  }
+}
+
+actual fun base64BitmapSize(base64ImageString: String): IntSize =
+  try {
+    readBase64Image(base64ImageString) { reader, sampleSize ->
+      IntSize((reader.getWidth(0) + sampleSize - 1) / sampleSize, (reader.getHeight(0) + sampleSize - 1) / sampleSize)
+    }
+  } catch (e: Throwable) {
+    null
+  } ?: errorBitmap().run { IntSize(width, height) }
+
+private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: ImageReader, sampleSize: Int) -> T): T? {
+  val imageString = base64ImageString
+    .removePrefix("data:image/png;base64,")
+    .removePrefix("data:image/jpg;base64,")
+  val bytes = Base64.getMimeDecoder().decode(imageString)
+  val stream = ImageIO.createImageInputStream(ByteArrayInputStream(bytes))
+  val reader = receivedImageReader(stream)
+  try {
+    reader.setInput(stream)
+    val width = reader.getWidth(0)
+    val height = reader.getHeight(0)
+    if (width <= 0 || height <= 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || height > width * 256) return null
+    return read(reader, imageSampleSize(width, height, MAX_PREVIEW_DIMENSION))
+  } finally {
+    reader.dispose()
   }
 }
 

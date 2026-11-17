@@ -38,19 +38,19 @@ fun CIVideoView(
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
-  val preview = remember(image) { base64ToBitmap(image) }
+  val previewPainter = rememberBase64ImagePainter(image)
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
       .then(
         if (!smallView) {
-          val tall = isTallMedia(preview.width, preview.height)
+          val tall = isTallMedia(previewPainter.intrinsicSize.width, previewPainter.intrinsicSize.height)
           val fixed = fixedMediaWidth(tall)
           val w = fixed ?: DEFAULT_MAX_IMAGE_WIDTH
           // Size the media box from the preview aspect ratio (as CIImageView does), else the unprepared player surface
           // expands to PriorityLayout's max height and shows as a black strip; height tracks the clamped width (#7223).
           Modifier.mediaWidth(fixed, tall).layout { measurable, constraints ->
             val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
-            val height = (width * (preview.height.toFloat() / preview.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
+            val height = (width * (previewPainter.intrinsicSize.height / previewPainter.intrinsicSize.width).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
             val placeable = measurable.measure(Constraints.fixed(width, height))
             layout(width, height) { placeable.place(0, 0) }
           }
@@ -74,6 +74,7 @@ fun CIVideoView(
     val f = filePath.value
     val autoPlay = remember { mutableStateOf(false) }
     if (file != null) OpenWhenReceivedEffect(file, smallView) { autoPlay.value = true }
+    val preview = previewPainter.bitmap ?: return@Box
     if (file != null && f != null) {
       val view = LocalMultiplatformView()
       val openFullscreen = {

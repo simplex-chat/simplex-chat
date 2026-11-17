@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.Base64
 import android.webkit.MimeTypeMap
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.unit.IntSize
 import androidx.core.graphics.applyCanvas
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.scale
@@ -26,23 +27,34 @@ private const val MAX_IMAGE_DIMENSION = 4320
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   base64BitmapCache[base64ImageString]?.let { return it }
-  val imageString = base64ImageString
-    .removePrefix("data:image/png;base64,")
-    .removePrefix("data:image/jpg;base64,")
   return try {
-    val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
-    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
-    if (options.outWidth <= 0 || options.outHeight <= 0 || options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION || options.outHeight > options.outWidth * 256) {
-      return errorBitmap.asImageBitmap()
-    }
-    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap().also {
-      base64BitmapCache[base64ImageString] = it
-    }
+    readBase64Image(base64ImageString) { imageBytes, _ ->
+      BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap().also {
+        base64BitmapCache[base64ImageString] = it
+      }
+    } ?: errorBitmap.asImageBitmap()
   } catch (e: Exception) {
     Log.e(TAG, "base64ToBitmap error: $e")
     errorBitmap.asImageBitmap()
   }
+}
+
+actual fun base64BitmapSize(base64ImageString: String): IntSize =
+  try {
+    readBase64Image(base64ImageString) { _, options -> IntSize(options.outWidth, options.outHeight) }
+  } catch (e: Exception) {
+    null
+  } ?: IntSize(errorBitmap.width, errorBitmap.height)
+
+private fun <T : Any> readBase64Image(base64ImageString: String, read: (imageBytes: ByteArray, options: BitmapFactory.Options) -> T): T? {
+  val imageString = base64ImageString
+    .removePrefix("data:image/png;base64,")
+    .removePrefix("data:image/jpg;base64,")
+  val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
+  val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+  BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
+  if (options.outWidth <= 0 || options.outHeight <= 0 || options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION || options.outHeight > options.outWidth * 256) return null
+  return read(imageBytes, options)
 }
 
 actual fun decodeBase64Image(base64: String, width: Int): ImageBitmap? =
