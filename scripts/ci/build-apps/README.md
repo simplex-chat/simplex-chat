@@ -1,6 +1,6 @@
 # App builds for signing
 
-`.github/workflows/build-apps.yml` builds the Android and iOS apps of a commit without signing them and uploads them as artifacts, to be signed outside CI or by `internal-release.yml` ([internal releases](../README.md#internal-releases)). With the input `sign`, which only `internal-release.yml` passes, the macOS jobs on master sign and notarize the desktop apps with the Developer ID.
+`.github/workflows/build-apps.yml` builds the Android and iOS apps of a commit without signing them and uploads them as artifacts, to be signed outside CI or by `internal-release.yml` ([internal releases](../README.md#internal-releases)). With the input `internal-release`, which only `internal-release.yml` passes, the macOS jobs on master sign and notarize the desktop apps with the Developer ID, and the msi version ends with `desktop.version_code`.
 
 Each job runs `scripts/simplex-chat-build.py build` (its code is the `scripts/simplex_build` package, tested with `python3 -m unittest discover -s scripts/simplex_build -t scripts`), the script that also reproduces releases ([docs/REPRODUCE.md](../../../docs/REPRODUCE.md)), so a reproduce run rebuilds an APK exactly as this workflow built it. The same commands build locally: `build apk <arch> --out <dir>`, `build aab --libs <dir> --out <dir>` with Docker, and `build xcarchive --art <simplex-chat-art> --out <dir>` on a Mac with Xcode and Nix.
 

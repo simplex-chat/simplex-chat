@@ -259,7 +259,7 @@ flowchart LR
 | Workflow | Starts on | Does |
 |---|---|---|
 | `daily-bump.yml` | 04:17 UTC<br>a manual run, input `branch`, default master | when the branch has commits after the last change of a build number: commits + 1 to `android.version_code` and `desktop.version_code` (apps/multiplatform/gradle.properties) and to every `CURRENT_PROJECT_VERSION` (apps/ios/SimpleX.xcodeproj/project.pbxproj), pushes with GITHUB_TOKEN, then starts `internal-release.yml` on the branch, as GitHub starts no workflow for that push |
-| `internal-release.yml` | a push to master that raises the three build numbers and keeps `android.version_name`, `desktop.version_name` and `MARKETING_VERSION`<br>a manual run | builds the commit with `build-apps.yml` (input `sign`), then signs and uploads the apps |
+| `internal-release.yml` | a push to master that raises the three build numbers and keeps `android.version_name`, `desktop.version_name` and `MARKETING_VERSION`<br>a manual run | builds the commit with `build-apps.yml` (input `internal-release`), then signs and uploads the apps |
 
 GitHub runs a scheduled workflow only from the default branch, stable, and starts a manual run only of a workflow on the default branch or of one that has run before. So both workflow files are committed to stable too, when they are merged into master and at each change: the schedule runs stable's `daily-bump.yml`, which raises the build numbers of master with master's scripts.
 
@@ -278,7 +278,7 @@ On master, the macOS jobs of `build-apps.yml` sign and notarize the apps with th
 
 A step without its secrets skips with a notice, so that the workflow runs in a fork without keys. The `ios` job is skipped with a notice while `MARKETING_VERSION` is not above the version in the App Store, whose TestFlight train is closed.
 
-The msi version of every Windows build, internal and public, is `<major>.<minor>.<desktop.version_code>` (apps/multiplatform/desktop/build.gradle.kts), so that internal and public msi files share one increasing sequence. jpackage derives the msi's product code from its version, and Windows Installer refuses an msi whose product is installed from another msi. jpackage's msi removes an installed build of any other version, higher or lower.
+The msi version of an internal release is `<major>.<minor>.<desktop.version_code>` (`SIMPLEX_INTERNAL_RELEASE` in apps/multiplatform/desktop/build.gradle.kts); public releases keep `<major>.<minor>.<patch>`. jpackage derives the msi's product code from its version, and Windows Installer refuses an msi whose product is installed from another msi. jpackage's msi removes an installed build of any other version, higher or lower, so a public msi replaces an internal one.
 
 ### Setup
 

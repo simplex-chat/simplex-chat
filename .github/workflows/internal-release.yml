@@ -55,7 +55,7 @@ jobs:
     if: needs.start.outputs.release == 'true'
     uses: ./.github/workflows/build-apps.yml
     with:
-      sign: true
+      internal-release: true
     secrets: inherit
 
   ios:
