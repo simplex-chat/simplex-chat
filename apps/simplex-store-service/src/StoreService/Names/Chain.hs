@@ -81,7 +81,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
-import Data.Char (digitToInt, isDigit, isHexDigit)
+import Data.Char (isDigit, isHexDigit)
 import Data.List (foldl', mapAccumL, sort)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -178,9 +178,9 @@ revertMessage = "execution reverted"
 underfundedMessage :: Text
 underfundedMessage = "insufficient funds"
 
--- | The hex digits of a 256-bit quantity.
-maxQuantityDigits :: Int
-maxQuantityDigits = 64
+-- | 0x and the hex digits of a 256-bit quantity.
+maxQuantityLength :: Int
+maxQuantityLength = 66
 
 chainTime :: ChainSeconds -> UTCTime
 chainTime = posixSecondsToUTCTime . fromIntegral
@@ -366,8 +366,8 @@ quantity =
     if n <= toInteger (maxBound :: a) then pure $ fromInteger n else fail "not a quantity"
 
 natural :: J.Value -> JT.Parser Integer
-natural = nodeHex "quantity" "not a quantity" $ A.takeWhile1 isHexDigit >>= \h ->
-  if B.length h <= maxQuantityDigits then pure $ BC.foldl' (\n d -> 16 * n + toInteger (digitToInt d)) 0 h else fail "over 256 bits"
+natural = J.withText "quantity" $ \t ->
+  if T.length t > maxQuantityLength then fail "over 256 bits" else either (const $ fail "not a quantity") pure $ parseText (A.string "0x" *> A.hexadecimal) t
 
 bytes :: J.Value -> JT.Parser ByteString
 bytes = nodeHex "data" "not hex data" $ A.takeWhile isHexDigit >>= either fail pure . convertFromBase Base16

@@ -34,7 +34,7 @@ namesChainTests = describe "StoreService names: chain" $ do
     it "gives up on a node that does not answer within the call's timeout" $ testTimeout g
     it "reads a refused connection as unavailable, without the URL" $ testRefused g
     it "refuses an answer over the size bound" $ testOversized g
-    it "refuses a quantity over 256 bits, and a long one within the call's timeout" $ testLongQuantity g
+    it "reads a quantity's digits in either case, refuses one over 256 bits and one not in hex, each by its reason, and a long one within the call's timeout" $ testLongQuantity g
     it "keeps an HTTP failure's detail for the log, with the URL's host, path and query redacted" testFailureDetail
   describe "reads" $ do
     it "reads a block by its number, and one the node does not have as a failed read" $ testBlockAt g
@@ -167,11 +167,13 @@ testRecentTip g = withChain g $ \node c -> do
 testLongQuantity :: TVar ChaChaDRG -> IO ()
 testLongQuantity g = withChain g $ \node c -> do
   let fee digits = setFault node "eth_getTransactionCount" (Answers $ J.String $ "0x" <> digits) >> transactionCount c {ccTimeout = 2000000} (ccRegistrar c) Latest
-      notQuantity = Left (ChainUnavailable "eth_getTransactionCount: not a JSON-RPC response: Error in $: not a quantity")
+      refused reason = Left (ChainUnavailable $ "eth_getTransactionCount: not a JSON-RPC response: Error in $: " <> reason)
   fee (T.replicate 63 "0" <> "7") `shouldReturn` Right 7
-  fee (T.replicate 64 "0" <> "7") `shouldReturn` notQuantity
+  fee "1F" `shouldReturn` Right 31
+  fee (T.replicate 64 "0" <> "7") `shouldReturn` refused "over 256 bits"
+  fee "7z" `shouldReturn` refused "not a quantity"
   start <- getCurrentTime
-  fee (T.replicate 1000000 "f") `shouldReturn` notQuantity
+  fee (T.replicate 1000000 "f") `shouldReturn` refused "over 256 bits"
   elapsed <- (`diffUTCTime` start) <$> getCurrentTime
   elapsed `shouldSatisfy` (< 3)
 

@@ -117,6 +117,7 @@ A2-36: namehash uses simplexmq's labelHash; `tldLabel` serves labelNode and the 
   - The retry logs why it clears a stored reveal: the intent's check, the reveal margin or a moved sponsor nonce.
 - A2-15: toRegistration checks the 32-byte columns; verifyRegisterIntent's length check goes.
 - A2-16: `hexP` and `lowerHexP` in Abi read every 0x hash, the secret, the signature, the service key, the terms digest and AgreedTerms; Orders' `hexHash` and `hexSignature` serve the order, the reveal and the find. The node's JSON-RPC data and quantities keep their any-case rule.
+  - A quantity is one parse, `0x` and attoparsec's `hexadecimal`, after a length check: over 66 characters is refused as "over 256 bits", any other failure as "not a quantity".
 - A2-17: simplexmq exports `addressFromBytes`, `anyCaseAddressP`, `checksumAddressP` and `lowS`. parseAnyCaseAddress and parseChecksumAddress call the two parsers, their failures mapped to ADFormat and ADChecksum; parseSignature reads with deserializeSignature and lowS. SignatureError and AddressError stay.
 - A2-12: a reveal that does not decode is logged with aeson's error.
 - A2-11: `withRegistrationTurn` and `withRegistrationTurns` in Turns read the order again in its name's turn; `type Moved = ()`. The reveal, Try again, the close and the move use them.
@@ -174,7 +175,6 @@ graph LR
 ## Gaps recorded after the review
 
 - No test fails eth_chainId for a loopback terms link (review 9).
-- natural reads the quantity's digits by a fold of its own, and its "over 256 bits" text is not shown (review 18).
 - nameRecords reads the records and the nonce at latest, not at one block (review 23).
 - termsLinks reads, compares and writes its cache in separate steps, so concurrent reads at a changed link can each log it (review 30).
 - No test pins nameStatus's reservedNames read at the block (review 24).
