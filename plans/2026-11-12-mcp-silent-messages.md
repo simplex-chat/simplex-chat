@@ -367,3 +367,33 @@ This changes the approved text of section 6 and closes its open question 1.
 ### 11.7 Estimate
 
 About 30 agent hours: core 14 (protocol and types 1, preference and CLI 2, send, update and receive with the raise 3, counts and index 2, terminal 1, libraries, generated types and docs 1, tests 4); Kotlin 6; iOS with the NSE 6; CI runs, renders of the bell, the page and review fixes 4.
+
+### 11.8 App tests on recorded core responses
+
+```mermaid
+flowchart LR
+  CT["core test<br>silent, high priority and raised messages recorded for the apps"] -->|"recordItemEvent, apiFixture"| F["tests/fixtures/api/priority"]
+  F --> KT["MessagePriorityTest<br>desktop"]
+  F --> IT["MessagePriorityTests<br>iOS"]
+  KT -->|"processReceivedMsg, apiGetChats"| M["chat stats, unread tag, list labels,<br>profile totals, notifications"]
+  IT -->|"processReceivedMsg, apiGetChats"| M
+```
+
+The recipient bob has `markRead = False`, mode "All", and the group `#team` in the list "work" (tag 1).
+
+| Fixture | Recorded |
+|---|---|
+| priority/silent | new silent "working", new silent "testing" |
+| priority/chats-silent | responses to `/_get chats 1 pcc=on` and `/users` after them: the group with 2 unread, all silent; the profile's unread 1 |
+| priority/high | new normal "hello", new high priority "done" |
+| priority/raise | new normal "almost there", its raise; new silent "compiling", its raise with the text "compiled" |
+
+| Test | Fixture | Checked |
+|---|---|---|
+| silent messages do not notify and are left out of totals | silent | no notification; unread 2, silent 2, profile 0; unread tag Silent; `allUnreadSilent` (gray badge and scroll button); list label ○ |
+| chat list with only silent unread | chats-silent | the group's tag Silent and `allUnreadSilent`; list label ○; profile unread 1; iOS: app badge total 1 |
+| high priority message notifies with bell | high | notifications of both; unread 2, mentions 1, high priority 1, profile 2; unread tag HighPriority; the item's bell; list label bell |
+| raise notifies and moves counters | raise | notification of each raise; counters after each event; the raised silent item leaves the gray tier |
+| raise in another profile notifies and counts for it | raise | notifications of the new item and both raises; the other profile's unread 2 |
+
+`ChatStats.allUnreadSilent` is the rule of the gray outline badge and the gray scroll button count, used by both views and the tests.
