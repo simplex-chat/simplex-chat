@@ -2024,7 +2024,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         _ -> messageError "x.msg.file.descr: invalid file description part" $> Nothing
 
     processFDMessage :: Maybe ByteString -> FileTransferId -> AChatItem -> FileDescr -> Maybe UTCTime -> Maybe BadgeProof -> CM ()
-    processFDMessage binding_ fileId aci fileDescr fileExpires fileBadge = do
+    processFDMessage binding_ fileId aci fileDescr fileExpires fileBadge = withFileLock "processFDMessage" fileId $ do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless (rcvFileCompleteOrCancelled ft) $ do
         (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs, fileProhibited, fileInvitation = FileInvitation {fileSize}}) <- withStore $ \db -> do
