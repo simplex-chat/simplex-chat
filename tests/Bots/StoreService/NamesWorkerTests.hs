@@ -12,7 +12,7 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
-import Bots.StoreService.WebTests (capturingStderr, digestFixture, fieldOf, jsonObject, refusedWith, statusOf, stubCalls, webGet, withApp)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, fieldOf, jsonObject, refusedWith, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -32,7 +32,6 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word8, Word64)
-import Network.HTTP.Client (responseBody)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -330,7 +329,7 @@ testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}}
   placeOrder ctx aliceOrder `shouldReturn` refusedWith 403 "codes_only"
   r <- registrationById ctx =<< registered ctx text aliceOrder
   commitWaitRegister w (r, code)
-  (status', view) <- (statusOf &&& J.decode . responseBody) <$> webGet cClient (registrationPath $ nrId r)
+  (status', view) <- answerOf <$> webGet cClient (registrationPath $ nrId r)
   (status', (`fieldOf` "phase") =<< view) `shouldBe` (200, Just "registered")
   stubCalls (cStub ctx) `shouldReturn` []
 

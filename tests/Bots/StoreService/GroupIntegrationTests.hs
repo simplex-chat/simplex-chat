@@ -30,7 +30,7 @@ import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, ba
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, refusedWith)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, reg, t0, usable, write)
@@ -274,34 +274,33 @@ testNamesBoot ps = do
     pollUntilTrue (listening port)
     mgr <- newManager defaultManagerSettings
     let request path = parseRequest $ "http://127.0.0.1:" <> show port <> path
-        answer req = (\r -> (statusCode $ responseStatus r, J.decode $ responseBody r)) <$> httpLbs req mgr
-        refused tag = (400, Just $ J.object ["error" J..= (tag :: Text)])
+        answer req = answerOf <$> httpLbs req mgr
     unknown <- request "/api/names/unknown"
     statusCode . responseStatus <$> httpLbs unknown mgr `shouldReturn` 404
     records <- request "/api/name/records"
-    answer records {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
+    answer records {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
     register <- request "/api/name/register"
-    answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
+    answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
     search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
-    answer search `shouldReturn` refused "invalid_name"
+    answer search `shouldReturn` refusedWith 400 "invalid_name"
     terms <- request "/api/terms/0x12"
-    answer terms `shouldReturn` refused "bad_request"
+    answer terms `shouldReturn` refusedWith 400 "bad_request"
     termsPosted <- httpLbs terms {method = "POST"} mgr
     (statusCode $ responseStatus termsPosted, lookup "Allow" $ responseHeaders termsPosted) `shouldBe` (405, Just "GET")
     registration <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g"
-    answer registration `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    answer registration `shouldReturn` refusedWith 404 "not_found"
     posted <- httpLbs registration {method = "POST"} mgr
     (statusCode $ responseStatus posted, lookup "Allow" $ responseHeaders posted) `shouldBe` (405, Just "GET")
     found <- request "/api/registration/find"
-    answer found {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
+    answer found {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
     foundByGet <- httpLbs found mgr
     (statusCode $ responseStatus foundByGet, lookup "Allow" $ responseHeaders foundByGet) `shouldBe` (405, Just "POST")
     owned <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/name"
-    answer owned {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
+    answer owned {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
     coded <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/code"
-    answer coded {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    answer coded {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 404 "not_found"
     revealed <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/reveal"
-    answer revealed {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    answer revealed {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 404 "not_found"
     revealedByGet <- httpLbs revealed mgr
     (statusCode $ responseStatus revealedByGet, lookup "Allow" $ responseHeaders revealedByGet) `shouldBe` (405, Just "POST")
     spent <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend"
@@ -319,11 +318,11 @@ testNamesBoot ps = do
               "timestamp" J..= (1792574100 :: Int),
               "signature" J..= ("0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b")
             ]
-    answer spent {method = "POST", requestBody = RequestBodyLBS $ J.encode spendBody} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    answer spent {method = "POST", requestBody = RequestBodyLBS $ J.encode spendBody} `shouldReturn` refusedWith 404 "not_found"
     spentByGet <- httpLbs spent mgr
     (statusCode $ responseStatus spentByGet, lookup "Allow" $ responseHeaders spentByGet) `shouldBe` (405, Just "POST")
     retried <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/retry"
-    answer retried {method = "POST"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    answer retried {method = "POST"} `shouldReturn` refusedWith 404 "not_found"
     retriedByGet <- httpLbs retried mgr
     (statusCode $ responseStatus retriedByGet, lookup "Allow" $ responseHeaders retriedByGet) `shouldBe` (405, Just "POST")
     -- each limit's routes share one client's minute, whatever they answer; a client of its own per limit
@@ -357,17 +356,15 @@ testNamesBootCodesOnly ps = do
     mgr <- newManager defaultManagerSettings
     let posted path body = do
           req <- parseRequest $ "http://127.0.0.1:" <> show port <> path
-          r <- httpLbs req {method = "POST", requestBody = RequestBodyLBS body} mgr
-          pure (statusCode $ responseStatus r, J.decode $ responseBody r :: Maybe J.Value)
-        answered tag status = (status, Just $ J.object ["error" J..= (tag :: Text)])
-    posted "/api/invoice" "{\"kind\":\"name\"}" `shouldReturn` answered "codes_only" 403
-    posted "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend" "{}" `shouldReturn` answered "codes_only" 403
-    posted "/api/name/register" "{}" `shouldReturn` answered "bad_request" 400
-    posted "/api/code/check" "{}" `shouldReturn` answered "bad_request" 400
+          answerOf <$> httpLbs req {method = "POST", requestBody = RequestBodyLBS body} mgr
+    posted "/api/invoice" "{\"kind\":\"name\"}" `shouldReturn` refusedWith 403 "codes_only"
+    posted "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend" "{}" `shouldReturn` refusedWith 403 "codes_only"
+    posted "/api/name/register" "{}" `shouldReturn` refusedWith 400 "bad_request"
+    posted "/api/code/check" "{}" `shouldReturn` refusedWith 400 "bad_request"
     badgesShell <- parseRequest ("http://127.0.0.1:" <> show port <> "/") >>= (`httpLbs` mgr)
     (statusCode $ responseStatus badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)
     config <- parseRequest ("http://127.0.0.1:" <> show port <> "/api/config") >>= (`httpLbs` mgr)
-    (statusCode $ responseStatus config, J.decode $ responseBody config) `shouldBe` (200, Just $ J.object ["mode" J..= ("codes" :: Text), "stripePublishableKey" J..= J.Null])
+    answerOf config `shouldBe` (200, Just $ J.object ["mode" J..= ("codes" :: Text), "stripePublishableKey" J..= J.Null])
     poll t >>= (`shouldSatisfy` isNothing)
 
 testNamesBootPriceFloor :: HasCallStack => TestParams -> IO ()

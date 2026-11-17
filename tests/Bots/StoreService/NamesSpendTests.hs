@@ -15,7 +15,7 @@ import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesPhasesTests (registrationPath, seenVersion, woken)
 import qualified Bots.StoreService.NamesPhasesTests as Phases
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, write)
-import Bots.StoreService.WebTests (StubCall (..), bounded, capturingStderr, StubState (..), fieldOf, jsonObject, rcv, refusedWith, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores, withApp)
+import Bots.StoreService.WebTests (StubCall (..), answerOf, bounded, capturingStderr, StubState (..), fieldOf, jsonObject, rcv, refusedWith, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores, withApp)
 import ChatTests.DBUtils (TestParams)
 import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -33,7 +33,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
-import Network.HTTP.Client (responseBody)
 import Network.HTTP.Types (hContentType)
 import Network.Wai (Application)
 import qualified Network.Wai as Wai
@@ -294,7 +293,7 @@ testDifferenceLimitedPerNetwork = withSpend $ \ctx@Ctx {cClient, cWeb, cStub} ->
   replicateM_ (lmPerMinute checkoutLimit) $ limitedCheckout http (fromNetwork "203.0.113.7") (SPMCrypto CCBtc) (const $ pure ()) (pure ())
   signed <- spendBody ctx src (difference 6000)
   r <- webRequestBody cClient "POST" "/api/registration/src/spend" [(hContentType, "application/json"), ("X-Forwarded-For", "203.0.113.9")] (J.encode signed)
-  (statusOf r, J.decode (responseBody r)) `shouldBe` refusedWith 429 "rate_limited"
+  answerOf r `shouldBe` refusedWith 429 "rate_limited"
   stubCalls cStub `shouldReturn` []
   fst <$> spend ctx src (difference 6000) `shouldReturn` 200
 
