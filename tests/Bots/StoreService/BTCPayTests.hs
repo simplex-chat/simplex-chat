@@ -112,6 +112,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "creates a monero invoice and reads back where to pay" testFakeCreatesXmr
     it "creates a Lightning invoice and reads back its BOLT11" testFakeCreatesLn
     it "sends the api key as `token <key>` on every call it makes" testFakeSendsApiKey
+    it "reads the store's payment methods with BTCPay's onlyEnabled, so a disabled method is reported" testFakeAsksEnabledMethods
     it "is refused when the api key is wrong, rather than passing silently" testFakeWrongApiKey
     it "sends the documented create body, and no redirectURL" testFakeCreateBody
     it "walks New to Processing to Settled, two calls per read" testFakeLifecycle
@@ -786,6 +787,10 @@ testFakeSendsApiKey = withProvider $ \fake p -> do
   length rs `shouldBe` 4
   map (lookup hAuthorization . frHeaders) rs
     `shouldBe` replicate 4 (Just ("token " <> TE.encodeUtf8 fakeApiKey))
+
+testFakeAsksEnabledMethods :: IO ()
+testFakeAsksEnabledMethods = withProvider $ \fake _ ->
+  map (lookup "onlyEnabled" . frQuery) <$> apiRequests fake "GET" ["payment-methods"] `shouldReturn` [Just (Just "true")]
 
 testFakeWrongApiKey :: IO ()
 testFakeWrongApiKey = withProviderConfigured (\c -> c {bApiKey = "not-the-api-key"}) $ \fake p -> do

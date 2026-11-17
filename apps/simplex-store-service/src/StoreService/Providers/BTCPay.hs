@@ -287,10 +287,10 @@ btcpayProvider cfg = do
         pVerifyWebhook = const (verifyBTCPaySig (bWebhookSecret cfg))
       }
 
--- enabledOnly returns only enabled methods, so the boot log shows what the store can actually use.
+-- onlyEnabled returns only enabled methods, so the boot log shows what the store can actually use.
 logStoreMethods :: BTCPayEnv -> IO ()
 logStoreMethods env@BTCPayEnv {beCfg} = do
-  r <- greenfield env what methodGet ["payment-methods"] [("enabledOnly", Just "true")] Nothing
+  r <- greenfield env what methodGet ["payment-methods"] [("onlyEnabled", Just "true")] Nothing
   case r >>= decodeGreenfield what of
     Left (ProviderError e) -> do
       logWarn ("btcpay: could not read the payment methods of store " <> bStoreId beCfg <> ": " <> e)
