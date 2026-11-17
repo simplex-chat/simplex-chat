@@ -3952,6 +3952,12 @@ public struct AChatItem: Decodable, Hashable {
     public var chatItem: ChatItem
 }
 
+public struct AChatItemUpdate: Decodable, Hashable {
+    public var chatInfo: ChatInfo
+    public var chatItem: ChatItem
+    public var prevChatItem: ChatItem
+}
+
 public struct CIMentionMember: Decodable, Hashable {
     public var groupMemberId: Int64
     public var displayName: String
@@ -4709,6 +4715,10 @@ public enum CIStatus: Decodable, Hashable {
         default: return false
         }
     }
+}
+
+public func unreadCountChange(_ prevItem: ChatItem, _ cItem: ChatItem, _ counted: (ChatItem) -> Bool) -> Int {
+    (counted(cItem) ? 1 : 0) - (counted(prevItem) ? 1 : 0)
 }
 
 public func shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus) -> Bool {
