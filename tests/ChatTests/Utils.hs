@@ -30,7 +30,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems), storeCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtChatItemsDeleted, CEvtChatItemsStatusesUpdated, CEvtNameMoved, CEvtNewChatItems), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Mobile (chatParseMarkdown, chatParseUri, chatSendCmd, eitherToResult)
@@ -806,6 +806,13 @@ lastItemId cc = do
   cc ##> "/last_item_id"
   getTermLine' (Just "last item id") cc
 
+itemIdByText :: HasCallStack => TestCC -> String -> IO String
+itemIdByText cc text = do
+  itemIds <- withCCTransaction cc $ \db -> DB.query db "SELECT chat_item_id FROM chat_items WHERE item_text = ?" (Only text)
+  case itemIds of
+    [Only itemId] -> pure $ show (itemId :: Int)
+    _ -> error $ "item " <> show text <> ": " <> show (length itemIds) <> " items"
+
 showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
   cc <## ("user profile: " <> name)
@@ -1027,6 +1034,8 @@ recordItemEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
 recordItemEvent events evt = case evt of
   Right CEvtNewChatItems {} -> record
   Right CEvtChatItemUpdated {} -> record
+  Right CEvtChatItemsDeleted {} -> record
+  Right CEvtChatItemsStatusesUpdated {} -> record
   _ -> pure ()
   where
     record = atomically $ modifyTVar' events (<> [J.toJSON $ eitherToResult Nothing evt])
