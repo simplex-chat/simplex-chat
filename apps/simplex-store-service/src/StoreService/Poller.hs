@@ -546,7 +546,7 @@ lateAlertText LateAlert {laProviderRef, laState = s@LateCreditState {lsCoin, lsR
     amounts unit received confirmed credited =
       tshow received <> " " <> unit <> " received, " <> tshow confirmed <> " " <> unit <> " confirmed, " <> tshow credited <> " " <> unit <> " credited"
 
--- | Cancel the order at the provider first, so the buyer can no longer pay it.
+-- | Close the order at the provider first; a payment it records afterwards is still read by the poller.
 closedAtProvider :: PollerEnv -> UTCTime -> OverdueInvoice -> IO Bool
 closedAtProvider env@PollerEnv {peProviders} now oi@OverdueInvoice {oiProvider, oiProviderRef = ref} =
   safelyWith ("badge poller: cancelling " <> tshow oiProvider <> " invoice " <> ref) False $

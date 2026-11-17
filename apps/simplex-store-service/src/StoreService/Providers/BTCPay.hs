@@ -357,8 +357,8 @@ cancelInvoice env ref =
   fmap (fmap (const ())) $ greenfield env what methodPost ["invoices", ref, "status"] [] (Just body)
   where
     what = "cancel invoice"
-    -- Invalid, not Archive: archiving only hides the invoice, and BTCPay keeps crediting
-    -- payments to it
+    -- Invalid, not Archive: archiving only hides the invoice. Invalid closes it, though BTCPay still records
+    -- a payment to it, and a Lightning invoice stays payable at the node until it expires
     body = J.object ["status" J..= ("Invalid" :: Text)]
 
 readInvoice :: BTCPayEnv -> Text -> IO (Either ProviderError (Maybe PaymentSignal))

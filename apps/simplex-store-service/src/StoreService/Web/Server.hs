@@ -282,7 +282,7 @@ paymentMark :: InvoiceRow -> (Text, Bool)
 paymentMark InvoiceRow {irPayment} =
   (maybe "" (fromMaybe "" . ipCryptoPaid) irPayment, maybe False ipPaidInFull irPayment)
 
--- | The provider is cancelled first, because cancelling our record first would leave an address the buyer can still pay into with nothing watching it.
+-- | The provider is cancelled first, so an order it already counts as paid stays open here; a payment it records after the cancel is still read by the poller.
 cancelInvoiceHandler :: WebEnv -> InvoiceId -> Respond -> IO ResponseReceived
 cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId respond =
   getInvoice weStore invId >>= \case
