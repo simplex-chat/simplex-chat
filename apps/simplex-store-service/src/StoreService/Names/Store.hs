@@ -218,7 +218,8 @@ type Live = Bool
 data Commit = Commit
   { cmTx :: Maybe (TxHash, Word64),
     cmRevealAfter :: ChainSeconds,
-    cmRevealBefore :: ChainSeconds
+    cmRevealBefore :: ChainSeconds,
+    cmLinksRefusedAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -347,7 +348,6 @@ data NameRegistration = NameRegistration
     nrReveal :: Maybe NameReveal,
     nrOrderHash :: OrderHash,
     nrMoves :: Int,
-    nrLinksRefusedAt :: Maybe UTCTime,
     nrCreatedAt :: UTCTime,
     nrUpdatedAt :: UTCTime
   }
@@ -805,16 +805,16 @@ toRegistration
   ( (rid, nrVersion, nrLabelHash, len, duration, nrOwner, Binary commitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, registerBlock, revealAfter, revealBefore, expiresAt, registeredAt)
-      :. (failedAt, failReason, BI live, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
+      :. (failedAt, failReason, BI live, Binary nrOrderHash, nrMoves, linksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
       :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
     nrCommitment <- bytes32 "commitment" commitment
-    commitStep <- case (commitTx, commitBlock, revealAfter, revealBefore) of
-      (Nothing, Nothing, Nothing, Nothing) -> Right Nothing
-      (Just tx, Nothing, Nothing, Nothing) -> Right $ Just $ CSSent tx
-      (Just tx, Just block, Just after, Just before) -> Right $ Just $ CSCommitted Commit {cmTx = Just (tx, word64 block), cmRevealAfter = word64 after, cmRevealBefore = word64 before}
-      (Nothing, Nothing, Just after, Just before) -> Right $ Just $ CSCommitted Commit {cmTx = Nothing, cmRevealAfter = word64 after, cmRevealBefore = word64 before}
+    commitStep <- case (commitTx, commitBlock, revealAfter, revealBefore, linksRefusedAt) of
+      (Nothing, Nothing, Nothing, Nothing, Nothing) -> Right Nothing
+      (Just tx, Nothing, Nothing, Nothing, Nothing) -> Right $ Just $ CSSent tx
+      (Just tx, Just block, Just after, Just before, _) -> Right $ Just $ CSCommitted Commit {cmTx = Just (tx, word64 block), cmRevealAfter = word64 after, cmRevealBefore = word64 before, cmLinksRefusedAt = linksRefusedAt}
+      (Nothing, Nothing, Just after, Just before, _) -> Right $ Just $ CSCommitted Commit {cmTx = Nothing, cmRevealAfter = word64 after, cmRevealBefore = word64 before, cmLinksRefusedAt = linksRefusedAt}
       _ -> Left $ "name_registrations commit: " <> rid
     nrPhase <- case phase of
       PUnpaid -> Right $ OUnpaid live
@@ -867,7 +867,6 @@ toRegistration
           nrReveal,
           nrOrderHash,
           nrMoves,
-          nrLinksRefusedAt,
           nrCreatedAt,
           nrUpdatedAt
         }
@@ -977,17 +976,17 @@ updateRegistration db r now = do
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, rvSignature <$> nrReveal)
           :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
           :. (commitTx, int64 <$> commitBlock, phaseRegisterTx nrPhase, int64 <$> registerBlock, int64 <$> revealAfter, int64 <$> revealBefore, int64 <$> expiresAt)
-          :. (truncateToSecond <$> registeredAt, truncateToSecond <$> failedAt, failReason, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
+          :. (truncateToSecond <$> registeredAt, truncateToSecond <$> failedAt, failReason, BI live, nrMoves, truncateToSecond <$> linksRefusedAt, truncateToSecond now)
           :. (rid, nrVersion, BI live, rid, Binary nrCommitment, nrOwner, nrLabelHash)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
-    NameRegistration {nrMoves, nrLinksRefusedAt} = r
-    (commitTx, commitBlock, revealAfter, revealBefore) = case phaseCommit nrPhase of
-      Nothing -> (Nothing, Nothing, Nothing, Nothing)
-      Just (CSSent tx) -> (Just tx, Nothing, Nothing, Nothing)
-      Just (CSCommitted Commit {cmTx, cmRevealAfter, cmRevealBefore}) -> (fst <$> cmTx, snd <$> cmTx, Just cmRevealAfter, Just cmRevealBefore)
+    NameRegistration {nrMoves} = r
+    (commitTx, commitBlock, revealAfter, revealBefore, linksRefusedAt) = case phaseCommit nrPhase of
+      Nothing -> (Nothing, Nothing, Nothing, Nothing, Nothing)
+      Just (CSSent tx) -> (Just tx, Nothing, Nothing, Nothing, Nothing)
+      Just (CSCommitted Commit {cmTx, cmRevealAfter, cmRevealBefore, cmLinksRefusedAt}) -> (fst <$> cmTx, snd <$> cmTx, Just cmRevealAfter, Just cmRevealBefore, cmLinksRefusedAt)
     (expiresAt, registeredAt, registerBlock, failedAt, failReason) = case nrPhase of
       ORegistered _ tx expiry at -> (Just expiry, Just at, snd =<< tx, Nothing, Nothing)
       OFailed _ _ at reason -> (Nothing, Nothing, Nothing, Just at, Just reason)
@@ -1015,8 +1014,7 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrPrice = price,
         nrPhase = OQueued Nothing,
         nrMoves = nrMoves r + 1,
-        nrReveal = Nothing,
-        nrLinksRefusedAt = Nothing
+        nrReveal = Nothing
       }
 
 -- | Newest first: findLimit of them, then every older one holding a balance above 0, since a balance never expires.

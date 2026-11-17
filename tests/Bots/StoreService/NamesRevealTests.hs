@@ -11,7 +11,7 @@ import Bots.StoreService.NamesContractsTests (noncesCall)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, communityTerms, invoiceRegistration, keyA, orderSeconds, orderTime, placed, post, registrationOf, settleNow, settled, withOrders)
 import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
-import Bots.StoreService.NamesStoreTests (ownerA)
+import Bots.StoreService.NamesStoreTests (linksRefusedAt, ownerA)
 import Bots.StoreService.WebTests (bounded, digestFixture, fieldOf, jsonObject, refusedWith, statusOf, webGet, webRequestBody)
 import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -114,7 +114,7 @@ revealAfter = orderSeconds - 60
 revealBefore = orderSeconds + 86400
 
 openWindow :: Commit
-openWindow = Commit {cmTx = Nothing, cmRevealAfter = revealAfter, cmRevealBefore = revealBefore}
+openWindow = Commit {cmTx = Nothing, cmRevealAfter = revealAfter, cmRevealBefore = revealBefore, cmLinksRefusedAt = Nothing}
 
 contactLink, channelLink :: Text
 contactLink = "https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA"
@@ -308,7 +308,7 @@ testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> 
 
 -- | The fields a refused reveal must leave as they were.
 unwritten :: NameRegistration -> (Int64, Maybe NameReveal, Bool)
-unwritten NameRegistration {nrVersion, nrReveal, nrLinksRefusedAt} = (nrVersion, nrReveal, isJust nrLinksRefusedAt)
+unwritten r@NameRegistration {nrVersion, nrReveal} = (nrVersion, nrReveal, isJust $ linksRefusedAt r)
 
 -- | The same signature with s mirrored to n - s, which recovers the same signer.
 highS :: RecoverableSignature -> RecoverableSignature
@@ -331,8 +331,8 @@ testWithLinks = bounded "with links" $ withReveals $ \Fx {fCtx = ctx} -> do
   sig <- signIntent ctx keyA alice 0 revealBefore
   acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
-  NameRegistration {nrVersion, nrPhase, nrReveal, nrLinksRefusedAt} <- stored ctx rid
-  (nrVersion, nrPhase, nrLinksRefusedAt) `shouldBe` (v + 1, OCommitted openWindow, Nothing)
+  NameRegistration {nrVersion, nrPhase, nrReveal} <- stored ctx rid
+  (nrVersion, nrPhase) `shouldBe` (v + 1, OCommitted openWindow)
   nrReveal
     `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig, rvAcceptance = acceptance}
   (status, view) <- woken "registration poll" poll
@@ -514,8 +514,8 @@ testLinksRefused = bounded "links refused" $ withReveals $ \Fx {fCtx = ctx@Ctx {
   reveal ctx rid body `shouldReturn` refusedWith 400 "invalid_link"
   (status, view) <- woken "registration poll" poll
   (status, fieldOf view "version", fieldOf view "linksRefused", fieldOf view "label") `shouldBe` (200, Just (J.toJSON $ v + 1), Just (J.Bool True), Just J.Null)
-  NameRegistration {nrVersion, nrReveal, nrLinksRefusedAt} <- stored ctx rid
-  (nrVersion, nrReveal, nrLinksRefusedAt) `shouldBe` (v + 1, Nothing, Just orderTime)
+  x@NameRegistration {nrVersion, nrReveal} <- stored ctx rid
+  (nrVersion, nrReveal, linksRefusedAt x) `shouldBe` (v + 1, Nothing, Just orderTime)
   -- another browser, holding only the order link
   r <- webGet cClient (registrationPath rid)
   other <- jsonObject r
@@ -537,7 +537,7 @@ testNoRefusalRecorded = withReveals $ \Fx {fCtx = ctx} -> do
   reveal ctx committedBad (withAcceptance acceptance $ bodyOf other overBound 0 revealBefore) `shouldReturn` badRequest
   unwritten <$> stored ctx committedBad `shouldReturn` badBefore
   ownerReveal ctx committedBad overBound `shouldReturn` refusedWith 400 "invalid_link"
-  isJust . nrLinksRefusedAt <$> stored ctx committedBad `shouldReturn` True
+  isJust . linksRefusedAt <$> stored ctx committedBad `shouldReturn` True
 
 -- | A writer that takes no turn, as the worker re-committing, moves the version while the reveal reads the nonce.
 testLostRace :: IO ()
@@ -586,5 +586,5 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
       LabelHash dynamit = labelHash "dynamit"
   (status, (`fieldOf` "error") =<< answer, fieldOf view "version", fieldOf view "phase", fieldOf view "labelHash", fieldOf view "moves")
     `shouldBe` (409, Just "registration_changed", fieldOf movedView "version", Just "queued", Just (J.String $ hex dynamit), Just (J.Number 1))
-  NameRegistration {nrLabelHash = movedHash, nrReveal = movedReveal, nrLinksRefusedAt} <- stored ctx refusedRid
-  (movedHash, movedReveal, nrLinksRefusedAt) `shouldBe` (labelHash "dynamit", Nothing, Nothing)
+  movedOrder@NameRegistration {nrLabelHash = movedHash, nrReveal = movedReveal} <- stored ctx refusedRid
+  (movedHash, movedReveal, linksRefusedAt movedOrder) `shouldBe` (labelHash "dynamit", Nothing, Nothing)

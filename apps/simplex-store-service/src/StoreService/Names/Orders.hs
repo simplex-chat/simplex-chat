@@ -78,7 +78,7 @@ import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Chain (TxHash, bytes32FromHex, hex)
 import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, phaseCommit, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), Commit (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, phaseCommit, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
 
@@ -311,9 +311,9 @@ checkPrice ct len years price =
 
 -- | A failed order, and one whose reveal was refused for its links, can move to another name.
 movable :: NameRegistration -> Bool
-movable NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
+movable NameRegistration {nrPhase} = case nrPhase of
   OFailed {} -> True
-  OCommitted _ -> isJust nrLinksRefusedAt
+  OCommitted Commit {cmLinksRefusedAt} -> isJust cmLinksRefusedAt
   _ -> False
 
 orderFieldsOf :: NameRegistration -> OrderFields

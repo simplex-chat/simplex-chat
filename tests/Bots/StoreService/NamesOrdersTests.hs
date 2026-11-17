@@ -570,7 +570,7 @@ testResendReadsTime = do
     r <- invoiceRegistration ctx invId
     now <- readIORef cClock
     let lapse = seconds now + 600
-        lapsing = OCommitted Commit {cmTx = Nothing, cmRevealAfter = lapse - 3600, cmRevealBefore = lapse}
+        lapsing = OCommitted Commit {cmTx = Nothing, cmRevealAfter = lapse - 3600, cmRevealBefore = lapse, cmLinksRefusedAt = Nothing}
     Written version <- withTransaction cStore $ \db ->
       updateRegistration db r {nrPhase = lapsing} now
     let resend = (\(status, v) -> (status, (`fieldOf` "status") =<< v, ((`fieldOf` "phase") &&& (`fieldOf` "error")) . registrationOf <$> v)) <$> placeOrder ctx aliceOrder
@@ -1657,7 +1657,7 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         Written _ <- withTransaction st $ \db -> getRegistration db rid >>= \r -> updateRegistration db (change $ fromJust r) t0
         withTransaction st $ \db -> fromJust <$> getRegistration db rid
       viewOf r = J.toJSON <$> registrationView st (testNamesConfig node) ct t0 r
-      onChain = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = 1792574160, cmRevealBefore = 1792660500}
+      onChain = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = 1792574160, cmRevealBefore = 1792660500, cmLinksRefusedAt = Nothing}
   failed <-
     written $ \r ->
       r

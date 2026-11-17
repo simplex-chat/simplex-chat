@@ -253,7 +253,7 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   let revealBefore = seconds now + 600
       lapsedAt = posixSecondsToUTCTime (fromIntegral revealBefore)
   pSetNow $ addUTCTime (negate shortOfMoment) lapsedAt
-  let committed = OCommitted Commit {cmTx = Nothing, cmRevealAfter = revealBefore - 3600, cmRevealBefore = revealBefore}
+  let committed = OCommitted Commit {cmTx = Nothing, cmRevealAfter = revealBefore - 3600, cmRevealBefore = revealBefore, cmLinksRefusedAt = Nothing}
   v <- change ctx nrId $ \r -> r {nrPhase = committed}
   (_, r) <- get ctx (registrationPath nrId)
   fieldOf r "phase" `shouldBe` Just "committed"
