@@ -17,7 +17,7 @@ trap 'rm -rf "$tmp"' EXIT
 
 # The linker resolves symbols by name only, so the stub signatures are not checked.
 sed -n 's/^extern [^(]*[ *]\([a-z_]*\)(.*/\1/p' "$IOS_DIR/SimpleXChat/SimpleX.h" "$IOS_DIR/SimpleXChat/hs_init.c" \
-    | sort -u | sed 's/.*/void &(void) {}/' > "$tmp/stubs.c"
+    | sort -u | sed -E -e 's/^(chat_migrate_init|chat_migrate_init_key)$/void *calloc(unsigned long, unsigned long); char *\1(void) { return calloc(1, 1); }/' -e t -e 's/.*/void &(void) {}/' > "$tmp/stubs.c"
 
 if [ ! -s "$tmp/stubs.c" ]; then
     echo "Error: no extern functions found in SimpleX.h and hs_init.c" >&2
