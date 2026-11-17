@@ -14,8 +14,10 @@ import Control.Concurrent (threadDelay)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
+import Data.Tuple (swap)
 import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
@@ -316,6 +318,10 @@ testShareChannelDirect ps =
       alice #> "#news hello"
       relay <# "#news> hello"
       [bob, cath] *<# "#news> hello [>>]"
+      let sigFields = fromMaybe (error "bad sig") (J.decode (LB.pack cSig)) :: M.Map String String
+          placeholders = (shortLink, "CHANNEL_LINK") : map swap (M.toList sigFields)
+      apiFixture "chat-links/channel-card-sent" alice placeholders FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat @2 count=1"]}
+      apiFixture "chat-links/channel-card-received" bob placeholders FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat @2 count=1"]}
 
 testShareChannelGroup :: HasCallStack => TestParams -> IO ()
 testShareChannelGroup ps =

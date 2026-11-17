@@ -255,6 +255,7 @@ chatGroupTests = do
     it "message updates of blocked member are marked blocked" testBlockedMemberUpdatesMarkedBlocked
     it "mentions in message updates of blocked member are ignored" testBlockedMemberUpdateMentionsIgnored
     it "message updates of member blocked by admin are ignored" testBlockedByAdminUpdatesIgnored
+    it "images of blocked members are marked blocked" testBlockedMemberImages
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -8056,6 +8057,47 @@ testBlockedByAdminUpdatesIgnored =
 
       alice #$> ("/_get chat #1 count=3", chat, [(0, "hello"), (1, "blocked bob (signed)"), (0, "blocked [blocked by admin]")])
       cath #$> ("/_get chat #1 count=3", chat, [(0, "hello"), (0, "blocked bob (signed)"), (0, "blocked [blocked by admin]")])
+
+testBlockedMemberImages :: HasCallStack => TestParams -> IO ()
+testBlockedMemberImages =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer alice $ do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      cath ##> "/_member settings #1 3 {\"showMessages\": false}"
+      cath <## "ok"
+
+      sendImage bob 1
+      alice <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      cath <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes) [blocked] <muted>"
+      cath <## "use /fr 1 [<dir>/ | <path>] to receive it [blocked] <muted>"
+
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob (signed)"
+      cath <## "#team: alice blocked bob (signed)"
+      bob <// 50000
+
+      sendImage bob 2
+      forM_ [alice, cath] $ \cc -> do
+        cc <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes) [blocked by admin] <muted>"
+        cc <## "use /fr 2 [<dir>/ | <path>] to receive it [blocked by admin] <muted>"
+
+      sendImage alice 3
+      forM_ [bob, cath] $ \cc -> do
+        cc <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+        cc <## "use /fr 3 [<dir>/ | <path>] to receive it"
+
+      apiFixture "files/images-of-blocked-members" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=4"]}
+  where
+    sendImage :: HasCallStack => TestCC -> Int -> IO ()
+    sendImage cc fileId = do
+      cc ##> "/_send #1 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
+      cc <# "/f #team ./tests/fixtures/test.jpg"
+      cc <## ("use /fc " <> show fileId <> " to cancel sending")
+      cc <## ("completed uploading file " <> show fileId <> " (test.jpg) for #team")
 
 testBlockForAllFullDelete :: HasCallStack => TestParams -> IO ()
 testBlockForAllFullDelete =
