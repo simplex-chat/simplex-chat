@@ -3389,7 +3389,7 @@ processChatCommand cxt nm = \case
           when domainChanged $ do
             NameRecord {nrSimplexChannel} <- resolveNameRecord user nm newDomain
             unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomainNotReady newDomain SDENoValidLink
-        runUpdateGroupProfile user gId $ \GroupInfo {groupProfile = p@GroupProfile {publicGroup = publicGroup'}} -> case publicGroup' of
+        runUpdateGroupProfile user gId $ \GroupInfo {groupProfile = p@GroupProfile {publicGroup = pg_}} -> case pg_ of
           Just pg@PublicGroupProfile {groupLink = groupLink'} ->
             pure (p {publicGroup = Just pg {publicGroupAccess = Just access}}, isJust newClaim && domainChanged && groupLink' == groupLink)
           Nothing -> throwChatError $ CECommandError "not a public group"
@@ -4247,10 +4247,10 @@ processChatCommand cxt nm = \case
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> GroupId -> (GroupInfo -> CM (GroupProfile, Bool)) -> CM ChatResponse
-    runUpdateGroupProfile user groupId updateProfile = do
+    runUpdateGroupProfile user groupId newGroupProfile = do
       (gInfo@GroupInfo {businessChat, groupProfile = p}, gks, p', gInfo') <- withGroupLock "updateGroupProfile" groupId $ do
         GIK gInfo@GroupInfo {groupProfile = GroupProfile {displayName = n}} gks <- withStore $ \db -> getGroupInfoKeys db cxt user groupId
-        (p'@GroupProfile {displayName = n', image = img', memberAdmission = ma'}, domainVerified) <- updateProfile gInfo
+        (p'@GroupProfile {displayName = n', image = img', memberAdmission = ma'}, domainVerified) <- newGroupProfile gInfo
         assertUserGroupRole gInfo GROwner
         when (n /= n') $ checkValidName n'
         checkProfileImageSize img'
