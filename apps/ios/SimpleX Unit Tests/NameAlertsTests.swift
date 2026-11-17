@@ -350,9 +350,9 @@ private struct SearchHost: View {
     }
 }
 
-private func singleFieldJSON(_ value: Any) -> Any {
+func singleFieldJSON(_ value: Any) -> Any {
     if let object = value as? [String: Any] {
-        var fields = object.mapValues(singleFieldJSON)
+        var fields = jsonFields(object)
         guard let tag = object["type"] as? String else { return fields }
         fields["type"] = nil
         return ["_owsf": true, tag: fields]
@@ -360,5 +360,17 @@ private func singleFieldJSON(_ value: Any) -> Any {
         return array.map(singleFieldJSON)
     } else {
         return value
+    }
+}
+
+private let taggedObjectKeys: Set = ["msgContent", "chatLink"]
+
+private func jsonFields(_ object: [String: Any]) -> [String: Any] {
+    object.reduce(into: [:]) { fields, field in
+        if taggedObjectKeys.contains(field.key), let tagged = field.value as? [String: Any] {
+            fields[field.key] = jsonFields(tagged)
+        } else {
+            fields[field.key] = singleFieldJSON(field.value)
+        }
     }
 }
