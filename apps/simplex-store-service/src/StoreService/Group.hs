@@ -29,7 +29,7 @@ where
 
 import StoreService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singleUse)
 import StoreService.Config (GroupConfig (..))
-import StoreService.Group.Command (CmdAction (..), CmdSource (..), GroupCmd (..), MoneyCmd, groupCmdAction, groupCommands)
+import StoreService.Group.Command (CmdAction (..), GroupCmd (..), MoneyCmd, groupCmdAction, groupCommands)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Store (CodeIssuer (..), groupNameCodesIssuedSince)
 import StoreService.Names.Turns (Turns)
@@ -311,7 +311,7 @@ runGroupCmd cc turns nameCodesPerDay_ runMoney groupId = \case
   cmd@GCMoney {} -> answer cmd >>= void . sendGroupText cc groupId "money reply, /balance shows what was recorded"
   cmd -> answer cmd >>= reply
   where
-    answer = fmap (either id id) . runCmd FromGroup cc turns (isJust nameCodesPerDay_) runMoney
+    answer = fmap (either id id) . runCmd IssuedInGroup cc turns (isJust nameCodesPerDay_) runMoney
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"
     withinNameCodes nameCodesPerDay issue = do
       since <- addUTCTime (negate nominalDay) <$> getCurrentTime
@@ -321,12 +321,12 @@ runGroupCmd cc turns nameCodesPerDay_ runMoney groupId = \case
           | otherwise -> reply $ "At most " <> tshow nameCodesPerDay <> " name codes are issued in a day, " <> tshow issued <> " so far. Issue more with //issue name in --run-cli."
         Left _ -> reply issueFailedText
 
-runCmd :: CmdSource -> ChatController -> Turns -> Bool -> (MoneyCmd -> IO (Either Text Text)) -> GroupCmd -> IO (Either Text Text)
+runCmd :: CodeIssuer -> ChatController -> Turns -> Bool -> (MoneyCmd -> IO (Either Text Text)) -> GroupCmd -> IO (Either Text Text)
 runCmd source cc turns namesOn runMoney = \case
   GCIssue bt months uses status -> issued formatBadgeCode . fmap fst <$> issueOneCode cc bt months status uses
   GCBulk bt months count -> Right <$> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
   GCIssueName {} | not namesOn -> pure $ Left namesOffText
-  GCIssueName len years status -> issued formatNameCode <$> issueNameCode cc issuer len years status
+  GCIssueName len years status -> issued formatNameCode <$> issueNameCode cc source len years status
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> named (formatBadgeCode code) <$> revokeWithTracker cc code
   GCRevokeName code -> named (formatNameCode code) <$> revokeNameCode turns cc code
@@ -334,9 +334,6 @@ runCmd source cc turns namesOn runMoney = \case
   where
     issued format = bimap (const issueFailedText) (("Code: " <>) . format)
     named shown = let prefixed = ((shown <> ": ") <>) in bimap prefixed prefixed
-    issuer = case source of
-      FromConsole -> IssuedInConsole
-      FromGroup -> IssuedInGroup
     issueMany count issueOne = do
       (errs, codes) <- partitionEithers <$> replicateM count issueOne
       pure . T.intercalate "\n" $ case errs of

@@ -37,7 +37,6 @@ module StoreService.Service
     NotGranted (..),
     shownServiceRequest,
     survive,
-    CmdSource (..),
     heldText,
     chainText,
   )
@@ -46,7 +45,7 @@ where
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), GroupConfig (..), ListenerConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, runCmd, runGroupLane)
-import StoreService.Group.Command (CmdSource (..), MoneyCmd (..), consoleCmd, spelledCmd)
+import StoreService.Group.Command (MoneyCmd (..), consoleCmd, spelledCmd)
 import StoreService.Metrics (MetricsEnv (..), NamesSource (..), runMetrics)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
@@ -57,7 +56,7 @@ import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (checkPendingSignatures, runSender)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), BrokenInvariant (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, creditCents)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), BrokenInvariant (..), CodeIssuer (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, creditCents)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runWorkers)
@@ -282,7 +281,7 @@ storeService opts serviceCfg baseCfg env = do
       startLanes cc = do
         lanes <- maybe (pure []) (serviceLanes waiters turns cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
-        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns (gNameCodesPerDay gc <$ consoleChain) (runMoneyCmd FromGroup turns consoleChain cc) (groupEventQ env) <$> ensureManagedGroup cc gc
+        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns (gNameCodesPerDay gc <$ consoleChain) (runMoneyCmd IssuedInGroup turns consoleChain cc) (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
       chatHooks =
         defaultChatHooks
@@ -405,21 +404,21 @@ badgeCmdHook turns chain_ cc = \case
 
 runBadgeCmd :: Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
 runBadgeCmd turns chain_ cc cmd = case consoleCmd (safeDecodeUtf8 cmd) of
-  Right c -> textReply <$> runCmd FromConsole cc turns (isJust chain_) (runMoneyCmd FromConsole turns chain_ cc) c
+  Right c -> textReply <$> runCmd IssuedInConsole cc turns (isJust chain_) (runMoneyCmd IssuedInConsole turns chain_ cc) c
   Left usage -> pure $ chatCmdError $ T.unpack usage
   where
     textReply = \case
       Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
       Left e -> chatCmdError (T.unpack e)
 
-runMoneyCmd :: CmdSource -> Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> MoneyCmd -> IO (Either T.Text T.Text)
+runMoneyCmd :: CodeIssuer -> Turns -> Maybe (SimplexTLD, Int, ChainClient) -> ChatController -> MoneyCmd -> IO (Either T.Text T.Text)
 runMoneyCmd source turns chain_ cc = \case
   MCBalance ref -> showRefund source cc ref
   MCRecordRefund ref cents -> refundBalanceCmd source turns cc ref cents
   MCClose ref -> maybe (pure $ Left "Names are not enabled on this service.") (\chain -> closeOrderCmd source turns chain cc ref) chain_
 
 -- | Left is a refusal or a failure; both sides are the text to show the operator.
-showRefund :: CmdSource -> ChatController -> T.Text -> IO (Either T.Text T.Text)
+showRefund :: CodeIssuer -> ChatController -> T.Text -> IO (Either T.Text T.Text)
 showRefund source cc ref = do
   now <- getCurrentTime
   withDB' "showRefund" cc (\db -> balanceByReference db ref now >>= mapM (withChain db)) <&> \case
@@ -439,7 +438,7 @@ showRefund source cc ref = do
         | otherwise -> "Nothing to refund."
 
 -- | The refund is recorded before support pays it, so the balance cannot be spent meanwhile.
-refundBalanceCmd :: CmdSource -> Turns -> ChatController -> T.Text -> Int -> IO (Either T.Text T.Text)
+refundBalanceCmd :: CodeIssuer -> Turns -> ChatController -> T.Text -> Int -> IO (Either T.Text T.Text)
 refundBalanceCmd source turns ChatController {chatStore} ref cents = do
   now <- getCurrentTime
   ((Right <$> recordRefund turns chatStore ref cents now) `catchOwn` (pure . Left)) >>= \case
@@ -461,7 +460,7 @@ newConsoleChain NamesConfig {nTLD, nMinPriceCentsPerYear, nChain} = do
   chain <- C.newRandom >>= (`newChainClient` nChain)
   pure (nTLD, nMinPriceCentsPerYear, chain)
 
-closeOrderCmd :: CmdSource -> Turns -> (SimplexTLD, Int, ChainClient) -> ChatController -> T.Text -> IO (Either T.Text T.Text)
+closeOrderCmd :: CodeIssuer -> Turns -> (SimplexTLD, Int, ChainClient) -> ChatController -> T.Text -> IO (Either T.Text T.Text)
 closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {chatStore} ref = do
   ct <- newContracts chatStore tld minPriceCentsPerYear chain
   ((Right <$> closeRegistration chatStore ct turns getCurrentTime ref) `catchOwn` (pure . Left)) >>= \case
@@ -485,7 +484,7 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
       CFBalanceChanged -> "the balance of the order of " <> ref <> " changed meanwhile; " <> again
     again = "run " <> spelledCmd source "close" <> " again"
 
-heldText :: CmdSource -> BalanceHold -> T.Text
+heldText :: CodeIssuer -> BalanceHold -> T.Text
 heldText source BalanceHold {bhHolder = RegistrationId holder, bhState} = case bhState of
   HSOverdue t -> heldBy <> "its invoice expired at " <> fmtTime t <> "; " <> closedByPoller
   HSFunded -> heldBy <> "whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
@@ -493,8 +492,8 @@ heldText source BalanceHold {bhHolder = RegistrationId holder, bhState} = case b
   where
     heldBy = "held by order " <> holder <> ", "
     closedByPoller = case source of
-      FromConsole -> "start the service so the poller closes that order, " <> afterGrace <> ", then stop it and run the command again"
-      FromGroup -> "the poller closes that order " <> afterGrace <> "; run the command again then"
+      IssuedInConsole -> "start the service so the poller closes that order, " <> afterGrace <> ", then stop it and run the command again"
+      IssuedInGroup -> "the poller closes that order " <> afterGrace <> "; run the command again then"
     afterGrace = tshow graceMinutes <> " minutes after the expiry at the earliest"
     graceMinutes = round (expiryGrace / minute) :: Int
     minute = 60 :: NominalDiffTime
