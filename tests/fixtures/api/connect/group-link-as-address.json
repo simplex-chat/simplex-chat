@@ -1,0 +1,30 @@
+{
+  "commands": {
+    "/_connect plan 1 GROUP_LINK": {
+      "error": {
+        "errorType": {
+          "type": "invalidConnReq"
+        },
+        "type": "error"
+      }
+    }
+  },
+  "markdown": {
+    "GROUP_LINK": {
+      "formattedText": [
+        {
+          "format": {
+            "linkType": "contact",
+            "simplexUri": "simplexUri",
+            "smpHosts": [
+              "localhost"
+            ],
+            "type": "simplexLink"
+          },
+          "text": "GROUP_LINK"
+        }
+      ]
+    }
+  },
+  "uris": {}
+}
