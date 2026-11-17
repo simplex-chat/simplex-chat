@@ -204,7 +204,7 @@ storeServiceTests = do
     describe "the store lane" $ do
       it "should answer other requests while a Play receipt is with the store, and credit it once Play answers" testPlayHoldsNoOtherRequest
       it "should route each request to its lane, judging a minute ahead" testStoreRouting
-      it "should check the store at every request only with check_store_during_coverage beside the mock or credit_test_purchases, and credit test purchases only from a real store" testStoreChecksConfigured
+      it "should take the store checks from the config, beside the mock or a real store, and credit test purchases only from a real store" testStoreChecksConfigured
       it "should answer other requests while a renewal check is with the store, and the renewal once the store answers" testRenewalHoldsNoOtherRequest
       it "should answer a renewal check while a Play purchase is with the store" testPurchaseHoldsNoRenewal
       it "should answer other requests while an App Store subscription is with the store, and credit it once the store answers" testAppleSubscriptionHoldsNoOtherRequest

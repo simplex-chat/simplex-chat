@@ -536,8 +536,8 @@ A purchase the store itself calls a test, an App Store Sandbox purchase (which T
 buy in) or a Play licence tester's, is refused `test_purchase` by default, which is terminal, so it
 can never be credited. With this on, the service credits it as a real one, one-time purchases and
 subscriptions alike. It applies beside a real `[apple]` or `[google]` section, which still verifies
-every receipt, and changes nothing beside `accept_unverified_store_receipts`, whose mock reports
-no test purchase. The service logs a warning at every start while it is on, and at every test
+every receipt, and the service refuses to start with it on beside `accept_unverified_store_receipts = on`,
+whose mock reports no test purchase. The service logs a warning at every start while it is on, and at every test
 purchase and test subscription it takes as paid. Off by default, and only `on`/`off` parse.
 
 Beside `[apple]` the service starts with it on only when `[apple]` sets the server API key with

@@ -218,8 +218,7 @@ readConfigOrExit path =
     Right sc -> pure sc
 
 -- | Only one of the mock and the real verifiers applies: the config refuses
--- accept_unverified_store_receipts beside [apple] or [google]. The other two dev settings,
--- credit_test_purchases and check_store_during_coverage, are meant to sit beside a real verifier.
+-- accept_unverified_store_receipts beside [apple] or [google].
 configureStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
 configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v} = case serviceCfg of
   Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True, devStoreChecks} -> do
