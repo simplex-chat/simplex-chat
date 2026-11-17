@@ -69,6 +69,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransa
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import StoreService.Names.Chain (unixSeconds)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Providers (Confirmed (..), CryptoReceived (..), Received (..), receivedAmount, receivedConfirmed)
 
@@ -161,9 +162,6 @@ instance Exception StoreDecodeError
 -- | SQLite stores timestamps as text, so `expires_at < ?` compares as strings and only sorts chronologically when every value has the same width.
 truncateToSecond :: UTCTime -> UTCTime
 truncateToSecond = posixSecondsToUTCTime . fromInteger . truncate . utcTimeToPOSIXSeconds
-
-unixSeconds :: UTCTime -> Integer
-unixSeconds = floor . utcTimeToPOSIXSeconds
 
 #if defined(dbPostgres)
 mkQuery :: Text -> Query

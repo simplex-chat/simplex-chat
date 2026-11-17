@@ -154,7 +154,7 @@ A2-27, A2-28: Census.hs goes; its code is in Contracts.
 A2-29: after the other areas merge, Abi and Revert move into Chain, and Signatures with RegistrationId into Registration.
 
 - ChainConfig is defined in Chain; Config re-exports it.
-- chainSeconds is `floor . utcTimeToPOSIXSeconds`.
+- unixSeconds is defined in Chain, and Store.Invoices re-exports it; chainSeconds is `fromInteger . unixSeconds`.
 - Chain imports no service module.
 - RegistrationId is imported from Registration; Phases does not export it.
 - Abi.hs, Revert.hs and Signatures.hs are out of the cabal module lists; their deletion waits for the user, as Census.hs.
@@ -166,6 +166,7 @@ graph LR
   Registration --> Chain
   Phases --> Registration
   Invoices[Store.Invoices] --> Registration
+  Invoices --> Chain
   Store[Names.Store] --> Registration
   Store --> Chain
   Contracts --> Chain

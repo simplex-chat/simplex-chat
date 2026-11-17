@@ -14,6 +14,7 @@ module StoreService.Names.Chain
     ChainSeconds,
     chainTime,
     chainSeconds,
+    unixSeconds,
     Receipt (..),
     BlockTag (..),
     newChainClient,
@@ -186,7 +187,10 @@ chainTime :: ChainSeconds -> UTCTime
 chainTime = posixSecondsToUTCTime . fromIntegral
 
 chainSeconds :: UTCTime -> ChainSeconds
-chainSeconds = floor . utcTimeToPOSIXSeconds
+chainSeconds = fromInteger . unixSeconds
+
+unixSeconds :: UTCTime -> Integer
+unixSeconds = floor . utcTimeToPOSIXSeconds
 
 newChainClient :: TVar ChaChaDRG -> ChainConfig -> IO ChainClient
 newChainClient g ccConfig@ChainConfig {cServiceKey} = do
