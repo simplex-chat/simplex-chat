@@ -18,6 +18,8 @@ import androidx.compose.ui.window.WindowState
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.Base64ImagePainter
+import chat.simplex.common.platform.VideoPlayerHolder
+import chat.simplex.common.platform.appFilesDir
 import chat.simplex.common.platform.base64BitmapCache
 import chat.simplex.common.platform.base64BitmapSize
 import chat.simplex.common.platform.base64ImageDecoder
@@ -25,7 +27,10 @@ import chat.simplex.common.platform.base64ToBitmap
 import chat.simplex.common.platform.errorImageBitmap
 import chat.simplex.common.platform.rememberBase64ImagePainter
 import chat.simplex.common.simplexWindowState
+import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.chat.item.FramedItemView
+import chat.simplex.common.views.chat.item.ImageFullScreenView
+import chat.simplex.common.views.chat.item.ImageGalleryProvider
 import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,11 +41,14 @@ import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.nio.ByteBuffer
 import java.nio.file.StandardWatchEventKinds
 import java.util.Base64
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.CRC32
 import javax.imageio.ImageIO
 import kotlin.test.Test
@@ -183,12 +191,77 @@ class Base64ImagePainterTest {
     assertItemKeepsItsSizeWhenDecoded(picture, MsgContent.MCLink("https://simplex.chat", LinkPreview("https://simplex.chat", "SimpleX Chat", "", picture)))
   }
 
+  @Test
+  fun testVideoItemShowsItsStatusWhileItsPreviewIsDecoded() {
+    val picture = base64Png(307, 193)
+    val file = CIFile.getSample(fileName = "video.mp4", fileStatus = CIFileStatus.RcvInvitation)
+    withMediaBlurRadius(0) {
+      whileDecoderIsBusy { release ->
+        scene(ROW_WIDTH, ROW_HEIGHT) { ReceivedItem(MsgContent.MCVideo("", picture, 10), file) }.use { scene ->
+          val pending = scene.render()
+          assertTrue(pending.hasWhiteIn(0 until 60))
+          assertFalse(pending.hasRedOnRow(20))
+          release()
+          awaitDecodedPictures()
+          assertTrue(scene.renderUntil { it.hasRedOnRow(20) })
+        }
+      }
+    }
+  }
+
+  @Test
+  fun testVideoIsNotPlayedWhileItsPreviewIsDecoded() {
+    val picture = base64Png(309, 191)
+    val name = "received-video-test-${UUID.randomUUID()}.mp4"
+    val video = File(appFilesDir, name)
+    try {
+      appFilesDir.mkdirs()
+      video.writeBytes(ByteArray(100))
+      val file = CIFile.getSample(fileName = name, fileSize = 100, filePath = name)
+      withMediaBlurRadius(0) {
+        whileDecoderIsBusy {
+          scene(ROW_WIDTH, ROW_HEIGHT) { ReceivedItem(MsgContent.MCVideo("", picture, 10), file) }.use { scene ->
+            repeat(3) { scene.render() }
+            assertTrue(VideoPlayerHolder.players.isEmpty())
+          }
+        }
+      }
+    } finally {
+      video.delete()
+    }
+  }
+
+  @Test
+  fun testFullScreenVideoIsNotPlayedWhileItsPreviewIsDecoded() {
+    simplexWindowState.windowState = WindowState(size = DpSize(SCENE_SIZE.dp, SCENE_SIZE.dp))
+    val video = ProviderMedia.Video(File(appFilesDir, "received-video-test.mp4").toURI(), null, base64Png(311, 189))
+    val loaded = AtomicBoolean(false)
+    val provider = object : ImageGalleryProvider {
+      override val initialIndex = 5000
+      override val totalMediaSize = mutableStateOf(10000)
+      override fun getMedia(index: Int): ProviderMedia {
+        loaded.set(true)
+        return video
+      }
+      override fun currentPageChanged(index: Int) {}
+      override fun scrollToStart() {}
+      override fun onDismiss(index: Int) {}
+    }
+    whileDecoderIsBusy {
+      scene { ImageFullScreenView({ provider }, close = {}) }.use { scene ->
+        assertTrue(scene.renderUntil { loaded.get() })
+        repeat(3) {
+          Snapshot.sendApplyNotifications()
+          scene.render()
+        }
+        assertTrue(VideoPlayerHolder.players.isEmpty())
+      }
+    }
+  }
+
   private fun assertItemKeepsItsSizeWhenDecoded(picture: String, content: MsgContent) {
     val placed = mutableMapOf<String, Placed>()
-    val blurRadius = appPrefs.privacyMediaBlurRadius.get()
-    try {
-      appPrefs.privacyMediaBlurRadius.set(0)
-      simplexWindowState.windowState = WindowState(size = DpSize(ROW_WIDTH.dp, ROW_HEIGHT.dp))
+    withMediaBlurRadius(0) {
       whileDecoderIsBusy { release ->
         scene(ROW_WIDTH, ROW_HEIGHT) { Box(Modifier.record(placed, "item")) { ReceivedItem(content) } }.use { scene ->
           assertFalse(scene.render().hasRedOnRow(20))
@@ -200,16 +273,25 @@ class Base64ImagePainterTest {
           assertEquals(pending, placed.getValue("item"))
         }
       }
+    }
+  }
+
+  private fun <T> withMediaBlurRadius(radius: Int, block: () -> T): T {
+    val blurRadius = appPrefs.privacyMediaBlurRadius.get()
+    try {
+      appPrefs.privacyMediaBlurRadius.set(radius)
+      simplexWindowState.windowState = WindowState(size = DpSize(ROW_WIDTH.dp, ROW_HEIGHT.dp))
+      return block()
     } finally {
       appPrefs.privacyMediaBlurRadius.set(blurRadius)
     }
   }
 
   @Composable
-  private fun ReceivedItem(content: MsgContent) {
+  private fun ReceivedItem(content: MsgContent, file: CIFile? = null) {
     FramedItemView(
       ChatModel.ChatsContext(secondaryContextFilter = null), Chat.sampleData,
-      ChatItem.getSampleData(1, CIDirection.DirectRcv(), text = content.text).copy(content = CIContent.RcvMsgContent(content)),
+      ChatItem.getSampleData(1, CIDirection.DirectRcv(), text = content.text, file = file).copy(content = CIContent.RcvMsgContent(content)),
       imageProvider = { error("not opened") }, linkMode = SimplexLinkMode.DESCRIPTION, showViaProxy = false,
       showMenu = mutableStateOf(false), showTimestamp = true, receiveFile = {}, scrollToItemId = mutableStateOf(null)
     )
@@ -235,9 +317,13 @@ class Base64ImagePainterTest {
 
   private fun Image.isRedAt(x: Int, y: Int): Boolean = Bitmap.makeFromImage(this).getColor(x, y) == Color.RED.rgb
 
-  private fun Image.hasRedOnRow(y: Int): Boolean {
+  private fun Image.hasRedOnRow(y: Int): Boolean = hasPixelIn(y..y) { it.red > 204 && it.green < 51 && it.blue < 51 && it.alpha > 204 }
+
+  private fun Image.hasWhiteIn(rows: IntRange): Boolean = hasPixelIn(rows) { it.red > 230 && it.green > 230 && it.blue > 230 && it.alpha > 230 }
+
+  private fun Image.hasPixelIn(rows: IntRange, matches: (Color) -> Boolean): Boolean {
     val bitmap = Bitmap.makeFromImage(this)
-    return (0 until width).any { x -> Color(bitmap.getColor(x, y), true).let { it.red > 204 && it.green < 51 && it.blue < 51 && it.alpha > 204 } }
+    return rows.any { y -> (0 until width).any { x -> matches(Color(bitmap.getColor(x, y), true)) } }
   }
 
   private fun ImageComposeScene.renderUntil(rendered: (Image) -> Boolean): Boolean {

@@ -74,8 +74,8 @@ fun CIVideoView(
     val f = filePath.value
     val autoPlay = remember { mutableStateOf(false) }
     if (file != null) OpenWhenReceivedEffect(file, smallView) { autoPlay.value = true }
-    val preview = previewPainter.bitmap ?: return@Box
-    if (file != null && f != null) {
+    val preview = previewPainter.bitmap
+    if (preview != null && file != null && f != null) {
       val view = LocalMultiplatformView()
       val openFullscreen = {
         hideKeyboard(view)
@@ -96,7 +96,7 @@ fun CIVideoView(
       } else {
         VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
       }
-    } else {
+    } else if (preview != null) {
       Box {
         VideoPreviewImageView(preview, blurred = blurred, onClick = {
           if (file != null) {
