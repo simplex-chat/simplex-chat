@@ -36,6 +36,7 @@ import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Key as JK
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
@@ -265,16 +266,21 @@ recordsOf :: Text -> Text -> J.Value
 recordsOf contact channel = J.object ["contact" .= contact, "channel" .= channel]
 
 -- | A preview's fields, and with the link and its deep link a search answer's entity.
-chat :: Text -> Text -> Text -> Maybe Text -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
-chat t displayName fullName image kind =
-  ["type" .= t, "profile" .= str "ok", "displayName" .= displayName, "fullName" .= fullName, "image" .= image] <> kind
+chat :: Text -> J.Value -> [(J.Key, J.Value)]
+chat kind linkData = ["kind" .= kind, "profile" .= J.object ["type" .= str "ok", "linkData" .= J.object ["type" .= kind, kind' .= linkData]]]
+  where
+    kind' = JK.fromText kind
+
+contactChat :: Text -> Text -> Maybe Text -> [(J.Key, J.Value)] -> Bool -> [(J.Key, J.Value)]
+contactChat displayName fullName image peer business =
+  chat "contact" $ J.object ["profile" .= J.object (["displayName" .= displayName, "fullName" .= fullName] <> maybe [] (\i -> ["image" .= i]) image <> peer), "business" .= business]
 
 bakeryChat, newsChat :: [(J.Key, J.Value)]
-bakeryChat = chat "address" "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just jpeg) ["peerType" .= J.Null, "business" .= False]
-newsChat = chat "channel" "Bakery news" "Daily bakes and opening hours" Nothing ["groupType" .= J.Null, "publicMemberCount" .= (1204 :: Int)]
+bakeryChat = contactChat "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just jpeg) [] False
+newsChat = chat "channel" $ J.object ["groupProfile" .= J.object ["displayName" .= str "Bakery news", "fullName" .= str "Daily bakes and opening hours"], "publicGroupData" .= J.object ["publicMemberCount" .= (1204 :: Int)]]
 
 entity :: [(J.Key, J.Value)] -> Text -> Text -> J.Value
-entity fields l deepLink = J.object $ fields <> ["link" .= l, "deepLink" .= deepLink]
+entity fields l deepLink = J.object ["preview" .= J.object fields, "link" .= l, "deepLink" .= deepLink]
 
 fullLink :: Text
 fullLink = "https://simplex.chat/contact#/?v=2&smp=smp%3A%2F%2Fabc"
@@ -533,8 +539,8 @@ testPreviewKinds g = withSearch g id id $ \s -> do
   previewOf s bakeryLink `shouldReturn` ok bakeryChat
   previewOf s newsLink `shouldReturn` ok newsChat
   previewOf s "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im" `shouldReturn` ok newsChat
-  previewOf s (taggedLink "smp8.simplex.im" 'a' "Bot") `shouldReturn` ok (chat "address" "helper" "" Nothing ["peerType" .= str "bot", "business" .= False])
-  previewOf s (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (chat "address" "helper" "" Nothing ["peerType" .= J.Null, "business" .= True])
+  previewOf s (taggedLink "smp8.simplex.im" 'a' "Bot") `shouldReturn` ok (contactChat "helper" "" Nothing ["peerType" .= str "bot"] False)
+  previewOf s (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (contactChat "helper" "" Nothing [] True)
 
 testPreviewInvalid :: TVar ChaChaDRG -> IO ()
 testPreviewInvalid g = withSearch g id id $ \s -> do

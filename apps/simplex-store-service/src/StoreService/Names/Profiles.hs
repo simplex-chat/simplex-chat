@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 -- | The chat core reads a link of an unknown server through an SMP proxy, so the service opens no connection to a link's host.
 -- The host rule refuses internal addresses as a backstop to that; the chat core resolves a name again when it connects.
@@ -41,9 +42,7 @@ import Control.Logger.Simple (logWarn)
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
-import Data.Aeson ((.=))
-import qualified Data.Aeson as J
-import qualified Data.Aeson.Types as JT
+import qualified Data.Aeson.TH as JQ
 import Data.Bits (shiftL, shiftR, (.|.))
 import Data.Bool (bool)
 import Data.ByteString (ByteString)
@@ -54,24 +53,23 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
-import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Word (Word32, Word64, Word8)
 import GHC.Clock (getMonotonicTimeNSec)
 import Network.Socket (AddrInfo (..), HostName, SocketType (..), defaultHints, getAddrInfo)
 import Simplex.Chat.Controller (ChatController, ChatError (..))
 import Simplex.Chat.Library.Internal (decodeLinkUserData, getShortLinkConnReq')
-import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
-import Simplex.Chat.Types (GroupProfile (..), ImageData (..), Profile (..), PublicGroupProfile (..), User)
+import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..))
+import Simplex.Chat.Types (User)
 import Simplex.Messaging.Agent.Client (temporaryOrHostError)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), simplexShortLink)
 import Simplex.Messaging.Client (pattern NRMInteractive)
 import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (safeDecodeUtf8, tryAllErrors', tshow)
+import Simplex.Messaging.Util (tryAllErrors', tshow)
 import StoreService.Names.Registration (LinkKind (..))
 import StoreService.Web.Http (sockHost)
 import System.Timeout (timeout)
@@ -187,55 +185,32 @@ insertBounded maxSize now k entry m = Map.insert k entry room
            in if Map.size live < maxSize then live else maybe live (`Map.delete` live) (soonestExpiry live)
     soonestExpiry = fmap fst . Map.foldrWithKey (\k' (e, _) acc -> if maybe True ((e <) . snd) acc then Just (k', e) else acc) Nothing
 
-data LinkData = LDContact ContactShortLinkData | LDChannel GroupShortLinkData
+data LinkData = LDContact {contact :: ContactShortLinkData} | LDChannel {channel :: GroupShortLinkData}
   deriving (Eq, Show)
 
-data ProfileRead = ProfileOk LinkData | ProfileUnread | ProfileUnavailable
+data ProfileRead = ProfileOk {linkData :: LinkData} | ProfileUnread | ProfileUnavailable
   deriving (Eq, Show)
 
-data Preview = Preview {previewType :: LinkKind, previewProfile :: ProfileRead}
+data Preview = Preview {kind :: LinkKind, profile :: ProfileRead}
   deriving (Eq, Show)
 
-data Entity = Entity {entityPreview :: Preview, link :: ConnShortLink 'CMContact}
+data Entity = Entity {preview :: Preview, link :: ConnShortLink 'CMContact, deepLink :: ConnShortLink 'CMContact}
   deriving (Eq, Show)
 
-instance J.ToJSON Preview where
-  toJSON = J.object . previewPairs
+$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "LD") ''LinkData)
 
-instance J.ToJSON Entity where
-  toJSON Entity {entityPreview, link} = J.object $ previewPairs entityPreview <> ["link" .= linkText link, "deepLink" .= linkText (simplexShortLink link)]
-    where
-      linkText = safeDecodeUtf8 . strEncode
+$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "Profile") ''ProfileRead)
 
-previewPairs :: Preview -> [JT.Pair]
-previewPairs (Preview t r) =
-  ("type" .= linkKindText t) : case r of
-    ProfileOk d -> ("profile" .= ("ok" :: Text)) : linkDataPairs d
-    ProfileUnread -> ["profile" .= ("unread" :: Text)]
-    ProfileUnavailable -> ["profile" .= ("unavailable" :: Text)]
-  where
-    linkDataPairs = \case
-      LDContact ContactShortLinkData {profile = Profile {displayName, fullName, image, peerType}, business} ->
-        profilePairs displayName fullName image <> ["peerType" .= peerType, "business" .= business]
-      LDChannel GroupShortLinkData {groupProfile = GroupProfile {displayName, fullName, image, publicGroup}, publicGroupData} ->
-        profilePairs displayName fullName image
-          <> [ "groupType" .= ((\PublicGroupProfile {groupType} -> groupType) <$> publicGroup),
-               "publicMemberCount" .= ((\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData)
-             ]
-    profilePairs name full image' = ["displayName" .= name, "fullName" .= full, "image" .= (image' >>= imageURI)]
+$(JQ.deriveToJSON defaultJSON ''Preview)
 
--- | The record the link came from, as the contract names it: @simplex.contact@ holds an address.
-linkKindText :: LinkKind -> Text
-linkKindText = \case
-  LKContact -> "address"
-  LKChannel -> "channel"
+$(JQ.deriveToJSON defaultJSON ''Entity)
 
 -- | A search answer's entity, within the search bound. Every server host of the link must pass the host rule.
 -- The deep link is the link's @simplex:/@ form, with its server.
 linkEntity :: Profiles -> LinkKind -> ConnShortLink 'CMContact -> IO Entity
 linkEntity ps@Profiles {searchSlots} t link = do
   r <- boundedProfile ps searchSlots [] t link
-  pure Entity {entityPreview = Preview t r, link}
+  pure Entity {preview = Preview t r, link, deepLink = simplexShortLink link}
 
 -- | A link preview, within the preview bound.
 linkPreview :: Profiles -> LinkKind -> ConnShortLink 'CMContact -> IO Preview
@@ -276,12 +251,6 @@ chatProfile cc user t sl = runReaderT (tryAllErrors' $ getShortLinkConnReq' NRMI
     linkData (_, cData, _) = case t of
       LKContact -> fmap LDContact <$> decodeLinkUserData cData
       LKChannel -> fmap LDChannel <$> decodeLinkUserData cData
-
--- | A profile image the page can show as it is.
-imageURI :: ImageData -> Maybe Text
-imageURI (ImageData uri)
-  | "data:image/" `T.isPrefixOf` uri = Just uri
-  | otherwise = Nothing
 
 data HostCheck = HostPublic | HostRefused | HostUnanswered
   deriving (Eq, Show)

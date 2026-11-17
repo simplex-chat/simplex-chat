@@ -39,7 +39,7 @@ import Simplex.Messaging.Agent.Protocol (AgentErrorType (BROKER, SMP), ConnShort
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
 import Simplex.Messaging.Protocol (BrokerErrorType (TIMEOUT), ErrorType (AUTH), SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import StoreService.Names.Profiles
+import StoreService.Names.Profiles hiding (preview)
 import StoreService.Names.Registration (LinkKind (..))
 import Test.Hspec
 
@@ -50,8 +50,8 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
   describe "JSON" $ do
     it "encodes a contact entity with its profile, peer type and business flag" testEntityContactJSON
     it "encodes a channel entity with its group type, subscribers and a simplex:/ deep link" testEntityChannelJSON
-    it "encodes previews without a profile as their type and read state alone" testPreviewEmptyJSON
-    it "drops an image that is not a data:image URI" testImageJSON
+    it "encodes previews without a profile as their kind and read state alone" testPreviewEmptyJSON
+    it "drops an image that is not a JPEG or PNG data URI, as the chat core encodes one" testImageJSON
     it "gives a deep link that parses back in the core with the link's server" testDeepLinkParses
   describe "bounds and cache" $ do
     it "answers a link again from the cache, in either spelling, and fetches it again once the cache expires" testCacheExpiry
@@ -101,7 +101,7 @@ linkDataProfile displayName fullName image =
   Profile {displayName, fullName, shortDescr = Nothing, description = Nothing, image, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, contactDomain = Nothing}
 
 jpeg :: Text
-jpeg = "data:image/jpeg;base64,/9j/4AAQSkZJRg=="
+jpeg = "data:image/jpg;base64,/9j/4AAQSkZJRg=="
 
 testReadOutcome :: IO ()
 testReadOutcome =
@@ -141,28 +141,38 @@ testEntityContactJSON = do
   ps <- quietProfiles (const $ pure $ Right $ Just $ contactData False alice) publicResolver
   e <- linkEntity ps LKContact (parsed bakeryLink)
   e
-    `shouldEncodeAs` "{\"type\": \"address\", \"profile\": \"ok\", \"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\",\
-                     \ \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg==\", \"peerType\": null, \"business\": false,\
+    `shouldEncodeAs` "{\"preview\": {\"kind\": \"contact\", \"profile\": {\"type\": \"ok\", \"linkData\": {\"type\": \"contact\", \"contact\": {\"profile\":\
+                     \ {\"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\", \"image\": \"data:image/jpg;base64,/9j/4AAQSkZJRg==\"},\
+                     \ \"business\": false}}}},\
                      \ \"link\": \"https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA\", \"deepLink\": \"simplex:/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA?h=smp8.simplex.im\"}"
   Preview LKContact (ProfileOk $ contactData True alice {peerType = Just CPTBot})
-    `shouldEncodeAs` "{\"type\": \"address\", \"profile\": \"ok\", \"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\",\
-                     \ \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg==\", \"peerType\": \"bot\", \"business\": true}"
+    `shouldEncodeAs` "{\"kind\": \"contact\", \"profile\": {\"type\": \"ok\", \"linkData\": {\"type\": \"contact\", \"contact\": {\"profile\":\
+                     \ {\"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\", \"image\": \"data:image/jpg;base64,/9j/4AAQSkZJRg==\", \"peerType\": \"bot\"},\
+                     \ \"business\": true}}}}"
 
 testEntityChannelJSON :: IO ()
 testEntityChannelJSON = do
-  ps <- quietProfiles (const $ pure $ Right $ Just $ channelData (Just channel) (Just 1204)) publicResolver
+  let news = channelData (Just channel) (Just 1204)
+  ps <- quietProfiles (const $ pure $ Right $ Just news) publicResolver
   e <- linkEntity ps LKChannel (parsed newsLink)
-  e
-    `shouldEncodeAs` "{\"type\": \"channel\", \"profile\": \"ok\", \"displayName\": \"Bakery news\", \"fullName\": \"Daily bakes and opening hours\",\
-                     \ \"image\": null, \"groupType\": \"channel\", \"publicMemberCount\": 1204,\
-                     \ \"link\": \"https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA\", \"deepLink\": \"simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im\"}"
+  Just (J.toJSON e)
+    `shouldBe` Just
+      ( J.object
+          [ "preview" J..= okPreview "channel" news,
+            "link" J..= ("https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA" :: Text),
+            "deepLink" J..= ("simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im" :: Text)
+          ]
+      )
   Preview LKChannel (ProfileOk $ channelData Nothing Nothing)
-    `shouldEncodeAs` "{\"type\": \"channel\", \"profile\": \"ok\", \"displayName\": \"Bakery news\", \"fullName\": \"Daily bakes and opening hours\",\
-                     \ \"image\": null, \"groupType\": null, \"publicMemberCount\": null}"
+    `shouldEncodeAs` "{\"kind\": \"channel\", \"profile\": {\"type\": \"ok\", \"linkData\": {\"type\": \"channel\", \"channel\":\
+                     \ {\"groupProfile\": {\"displayName\": \"Bakery news\", \"fullName\": \"Daily bakes and opening hours\"}}}}}"
   let simplexLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im"
   linksOf <$> linkEntity ps LKChannel (parsed simplexLink) `shouldReturn` Just (simplexLink, simplexLink)
   where
     channel = PublicGroupProfile {groupType = GTChannel, groupLink = parsed newsLink, publicGroupId = B64UrlByteString "news", publicGroupAccess = Nothing}
+
+okPreview :: Text -> LinkData -> J.Value
+okPreview kind d = J.object ["kind" J..= kind, "profile" J..= J.object ["type" J..= ("ok" :: Text), "linkData" J..= d]]
 
 testDeepLinkParses :: IO ()
 testDeepLinkParses = do
@@ -184,16 +194,19 @@ testDeepLinkParses = do
 
 testPreviewEmptyJSON :: IO ()
 testPreviewEmptyJSON = do
-  Preview LKChannel ProfileUnread `shouldEncodeAs` "{\"type\": \"channel\", \"profile\": \"unread\"}"
-  Preview LKContact ProfileUnavailable `shouldEncodeAs` "{\"type\": \"address\", \"profile\": \"unavailable\"}"
+  Preview LKChannel ProfileUnread `shouldEncodeAs` "{\"kind\": \"channel\", \"profile\": {\"type\": \"unread\"}}"
+  Preview LKContact ProfileUnavailable `shouldEncodeAs` "{\"kind\": \"contact\", \"profile\": {\"type\": \"unavailable\"}}"
 
 testImageJSON :: IO ()
 testImageJSON = do
-  let imageOf :: Profile -> Maybe (Maybe Text)
-      imageOf p = JT.parseMaybe (J.withObject "preview" (J..: "image")) $ J.toJSON $ Preview LKContact $ ProfileOk $ contactData False p
-  imageOf (bakeryWith (Just (ImageData "javascript:alert(1)"))) `shouldBe` Just Nothing
-  imageOf (bakeryWith (Just (ImageData "https://example.com/a.png"))) `shouldBe` Just Nothing
-  imageOf alice `shouldBe` Just (Just jpeg)
+  let imageOf :: Profile -> IO (Maybe (Maybe Text))
+      imageOf p = do
+        ps <- quietProfiles (const $ pure $ Right $ Just $ contactData False p) publicResolver
+        JT.parseMaybe imageField . J.toJSON <$> linkPreview ps LKContact (parsed bakeryLink)
+      imageField = J.withObject "preview" $ \o -> o J..: "profile" >>= (J..: "linkData") >>= (J..: "contact") >>= (J..: "profile") >>= (J..:? "image")
+  imageOf (bakeryWith (Just (ImageData "javascript:alert(1)"))) `shouldReturn` Just (Just "")
+  imageOf (bakeryWith (Just (ImageData "https://example.com/a.png"))) `shouldReturn` Just (Just "")
+  imageOf alice `shouldReturn` Just (Just jpeg)
 
 -- Bounds and cache
 
@@ -244,7 +257,7 @@ preview :: Fake -> Text -> IO ProfileRead
 preview Fake {profiles} l = (\(Preview _ r) -> r) <$> linkPreview profiles LKContact (parsed l)
 
 search :: Fake -> Text -> IO ProfileRead
-search Fake {profiles} l = (\Entity {entityPreview = Preview _ r} -> r) <$> linkEntity profiles LKContact (parsed l)
+search Fake {profiles} l = (\(Entity (Preview _ r) _ _) -> r) <$> linkEntity profiles LKContact (parsed l)
 
 testCacheExpiry :: IO ()
 testCacheExpiry = do
@@ -422,7 +435,7 @@ testRefusedNotFetched = do
   fake@Fake {profiles} <- newFake testLimits answerAll (stubResolver asked)
   let l = addressLink 1
   (\(Preview _ r) -> r) <$> linkPreview profiles LKContact (parsed $ l <> "?h=private.test") `shouldReturn` ProfileUnavailable
-  (\Entity {entityPreview = Preview _ r} -> r) <$> linkEntity profiles LKContact (parsed $ addressLinkAt "127.0.0.1" 1) `shouldReturn` ProfileUnavailable
+  (\(Entity (Preview _ r) _ _) -> r) <$> linkEntity profiles LKContact (parsed $ addressLinkAt "127.0.0.1" 1) `shouldReturn` ProfileUnavailable
   fetchCount fake `shouldReturn` 0
   (\(Preview _ r) -> r) <$> linkPreview profiles LKContact (parsed l) `shouldReturn` ProfileOk (profileFor l)
   fetchCount fake `shouldReturn` 1
