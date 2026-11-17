@@ -292,6 +292,7 @@ chatGroupTests = do
     it "should remove support chat with member when member leaves" testScopedSupportMemberLeaves
     it "should respect support preference in group" testSupportPreferenceGroup
     it "should respect support preference in channel" testSupportPreferenceChannel
+    it "should not accept reports of member blocked by admin when support is off" testSupportPreferenceBlockedReport
   -- TODO [relays] add tests for channels
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - connect plans for relay groups
@@ -10000,6 +10001,38 @@ testSupportPreferenceChannel ps =
             [ relay <# "#team (support: bob) alice> yes",
               bob <# "#team (support) alice> yes [>>]"
             ]
+
+testSupportPreferenceBlockedReport :: HasCallStack => TestParams -> IO ()
+testSupportPreferenceBlockedReport =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+
+    threadDelay 1000000
+
+    alice ##> "/block for all #team cath"
+    alice <## "#team: you blocked cath (signed)"
+    bob <## "#team: alice blocked cath (signed)"
+    cath <// 50000
+
+    alice ##> "/set support #team off"
+    alice <## "updated group preferences:"
+    alice <## "Chat with admins: off"
+    concurrentlyN_
+      [ do
+          bob <## "alice updated group #team: (signed)"
+          bob <## "updated group preferences:"
+          bob <## "Chat with admins: off",
+        do
+          cath <## "alice updated group #team: (signed)"
+          cath <## "updated group preferences:"
+          cath <## "Chat with admins: off"
+      ]
+
+    GroupMember {groupId, activeConn = Just conn} <- getTestMember cath "team" "alice"
+    runExceptT (sendDirectMemberMessage conn (XMsgNew $ mcSimple $ MCReport "report content" RRContent) groupId) `runReaderT` chatController cath
+      >>= either (fail . show) (\_ -> pure ())
+    alice <## "error: x.msg.new: feature not allowed Chat with admins"
+    alice #$> ("/_get chat #1 content=report count=100", chat, [])
 
 testConnectChannelCLI :: HasCallStack => TestParams -> IO ()
 testConnectChannelCLI ps =
