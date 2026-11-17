@@ -44,7 +44,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Chat.Types.UITheme (ChatLayout (..))
-import Simplex.Chat.Protocol (ChatMsgEvent (XGrpDirectInv, XGrpInv, XGrpLinkAcpt, XGrpLinkInv, XGrpLinkReject, XGrpMemRestrict), MsgScope (MSMember))
+import Simplex.Chat.Protocol (ChatMsgEvent (XGrpDirectInv, XGrpInv, XGrpLinkAcpt, XGrpLinkInv, XGrpLinkReject, XGrpMemRestrict, XGrpMemRole), MsgScope (MSMember))
 import Simplex.Chat.Store.Groups (getMemberInvitation)
 import Simplex.Messaging.Agent (createConnection, joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
@@ -198,6 +198,9 @@ chatGroupTests = do
     it "restrict members only by moderators" testRestrictUnknownMemberByMemberRejected
     it "moderate own messages only by moderators" testModerateOwnMessageByMemberRejected
     it "announce members in channels only by relays" testChannelMemberAnnouncedBySubscriberRejected
+    it "accept support chat edits only in own or moderated support chats" testSupportScopeEditNonParticipantRejected
+    it "accept forwarded support chat messages only in own or moderated support chats" testSupportScopeForwardNonParticipantRejected
+    it "record unknown member roles for app tests" testUnknownMemberRolesFixture
   describe "invite member via group" $ do
     it "invite member of another group" testInviteMemberViaGroup
     it "auto-accept invitation from member of another group" testInviteMemberViaGroupAutoAccept
@@ -2035,6 +2038,45 @@ testChannelMemberAnnouncedBySubscriberRejected ps =
           bob <# "#team> hi"
           [cath, dan] *<# "#team> hi [>>]"
           forM_ [alice, bob, cath, dan] $ \cc -> checkMemberRow cc "announced" Nothing
+
+testSupportScopeEditNonParticipantRejected :: HasCallStack => TestParams -> IO ()
+testSupportScopeEditNonParticipantRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRObserver) (cath, GRMember)
+      bobMemId <- memberIdByName bob "bob"
+      connId <- relayConnIdToMember bob "cath"
+      agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XMsgUpdate (SharedMsgId "scoped_msg") (MCText "hello") M.empty Nothing Nothing (Just $ MSMember bobMemId) Nothing)
+      cath <## "error: member is not allowed to send to this support chat"
+
+testSupportScopeForwardNonParticipantRejected :: HasCallStack => TestParams -> IO ()
+testSupportScopeForwardNonParticipantRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRObserver) (cath, GRMember)
+      bobMemId <- memberIdByName bob "bob"
+      connId <- relayConnIdToMember alice "cath"
+      ts <- getCurrentTime
+      let forwardFromBob msgId event =
+            agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned $ ChatMessage chatInitialVRange (Just $ SharedMsgId msgId) event)]
+      forwardFromBob "scoped_msg" $ XMsgNew (mcSimple (MCText "hello")) {scope = Just (MSMember bobMemId)}
+      cath <## "error: member is not allowed to send to this support chat"
+      forwardFromBob "scoped_edit" $ XMsgUpdate (SharedMsgId "scoped_msg") (MCText "hello!") M.empty Nothing Nothing (Just $ MSMember bobMemId) Nothing
+      cath <## "error: member is not allowed to send to this support chat"
+
+testUnknownMemberRolesFixture :: HasCallStack => TestParams -> IO ()
+testUnknownMemberRolesFixture =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      cathMemId <- memberIdByName bob "cath"
+      bobMemId <- memberIdByName bob "bob"
+      connId <- relayConnIdToMember alice "bob"
+      forM_ [cathMemId, bobMemId] $ \memId ->
+        agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemRole memId (GRUnknown "vip") Nothing Nothing)
+      bob <## "#team: alice changed the role of cath from member to vip"
+      bob <## "#team: alice changed your role from member to vip"
+      apiFixture "members/unknown-roles" bob [] FixtureRequests {frMarkdown = [""], frUris = [], frCommands = ["/_get chats 1 pcc=on", "/_get chat #1 count=2", "/_members #1"]}
 
 newAgentInvitation :: TestCC -> IO ConnReqInvitation
 newAgentInvitation cc = do
