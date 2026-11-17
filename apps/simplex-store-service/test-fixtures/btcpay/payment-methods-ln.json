@@ -1,26 +1,26 @@
 {
-  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- InvoicePaymentMethodDataModel[] for BTC-LN, from the documented shape and BTCPay v2.4.4 Payments/Lightning/LightningLikePaymentHandler.cs (amounts to 11 decimals, the BOLT11 as destination). NOT captured from a live instance; replace `response` with a recorded body and rewrite this line. The amount is not a whole number of satoshi, so a reader counting satoshi cannot pass. `totalPaid` is deliberately NOT equal to `paymentMethodPaid`. `paymentMethodFee` is non-zero only so that it differs from `due`.",
+  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- InvoicePaymentMethodDataModel[] for BTC-LN, from the documented shape and BTCPay v2.4.4: the method's amounts are rounded up to 8 decimals (Payments/Lightning/LightningLikePaymentHandler.cs sets RateDivisibility = 8, which Services/Invoices/InvoiceEntity.cs Calculate uses), a payment's value has 11 (the millisatoshi the node received, Payments/Lightning/LightningListener.cs), and the BOLT11 is the destination. NOT captured from a live instance; replace `response` with a recorded body and rewrite this line. `totalPaid` is deliberately NOT equal to `paymentMethodPaid`. `paymentMethodFee` is non-zero only so that it differs from `due`.",
   "response": [
     {
       "paymentMethodId": "BTC-LN",
       "currency": "BTC",
-      "destination": "lnbc499999440p1pfakeinvoicedestinationforthetestsonly",
-      "paymentLink": "lightning:lnbc499999440p1pfakeinvoicedestinationforthetestsonly",
+      "destination": "lnbc500u1pfakeinvoicedestinationforthetestsonly",
+      "paymentLink": "lightning:lnbc500u1pfakeinvoicedestinationforthetestsonly",
       "rate": "108000.12",
-      "paymentMethodPaid": "0.00049999944",
+      "paymentMethodPaid": "0.00050000",
       "totalPaid": "9.99999999",
-      "due": "0.00000000000",
-      "amount": "0.00049999944",
-      "paymentMethodFee": "0.00000000100",
+      "due": "0.00000000",
+      "amount": "0.00050000",
+      "paymentMethodFee": "0.00000001",
       "activated": true,
       "payments": [
         {
           "id": "7a1c2b3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9",
           "receivedDate": 1700003600,
-          "value": "0.00049999944",
-          "fee": "0.00000000000",
+          "value": "0.00050000000",
+          "fee": "0.00000000",
           "status": "Settled",
-          "destination": "lnbc499999440p1pfakeinvoicedestinationforthetestsonly"
+          "destination": "lnbc500u1pfakeinvoicedestinationforthetestsonly"
         }
       ],
       "additionalData": {

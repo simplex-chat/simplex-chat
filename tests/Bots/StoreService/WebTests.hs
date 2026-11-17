@@ -4209,8 +4209,8 @@ testViewOmitsConfirmationsWithoutBTCPay = bounded "no confirmations" $ withWebAp
 
 testViewShowsALightningInvoice :: IO ()
 testViewShowsALightningInvoice = bounded "lightning invoice" $ withCheckout $ \_ env client -> do
-  let bolt11 = "lnbc499999440p1pfakeinvoicedestinationforthetestsonly"
-      inv = sampleInvoice {niDestination = SPDCrypto CCLn bolt11 "0.00049999944"}
+  let bolt11 = "lnbc500u1pfakeinvoicedestinationforthetestsonly"
+      inv = sampleInvoice {niDestination = SPDCrypto CCLn bolt11 "0.00050000"}
   seedBadgePrice (weStore env) "price1"
   createInvoiceRows (weStore env) inv `shouldReturn` Right ()
   r <- webGet client (invoicePath (niInvoiceId inv))
@@ -4218,7 +4218,7 @@ testViewShowsALightningInvoice = bounded "lightning invoice" $ withCheckout $ \_
   o <- jsonObject r
   fieldOf o "cryptoCurrency" `shouldBe` Just (J.String "ln")
   fieldOf o "address" `shouldBe` Just (J.String bolt11)
-  fieldOf o "cryptoAmount" `shouldBe` Just (J.String "0.00049999944")
+  fieldOf o "cryptoAmount" `shouldBe` Just (J.String "0.00050000")
   fieldOf o "requiredConfirmations" `shouldBe` Nothing
 
 testHeldWaitWakesOnAPaymentThatDoesNotSettle :: IO ()

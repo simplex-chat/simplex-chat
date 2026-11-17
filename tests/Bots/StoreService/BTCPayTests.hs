@@ -62,6 +62,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "funds on Processing" testProcessing
     it "closes on Expired and on Invalid" testClosed
     it "reports a closed invoice paid in full only on PaidLate or PaidOver, whatever its due" testClosedPaidInFull
+    it "reports a closed Lightning invoice paid in full once its due is at 0 or less, its payments settled when recorded" testLnClosedPaidInFull
     it "reads an overpaid invoice's negative due as 0" testOverpaidDueIsZero
     it "funds on New with something received" testNewWithPayment
     it "funds on New with a payment worth less than a minor unit" testNewWithDust
@@ -205,45 +206,55 @@ testXmrConfirmations = do
   settledWith Nothing `shouldBe` settled xmrReceived
   mapM_ (\n -> settledWith (Just n) `shouldBe` settled xmrConfirmed) [1, 10]
 
-lnPaid :: Text -> [J.Value] -> J.Value
-lnPaid paid payments =
+lnPaid :: Text -> Text -> [J.Value] -> J.Value
+lnPaid paid due payments =
   J.object
     [ "paymentMethodId" .= lnMethodId,
       "destination" .= lnInvoice,
-      "amount" .= ("0.00049999944" :: Text),
+      "amount" .= ("0.00050000" :: Text),
       "rate" .= ("108000.12" :: Text),
       "paymentMethodPaid" .= paid,
-      "due" .= ("0.00000000000" :: Text),
+      "due" .= due,
       "payments" .= payments
     ]
 
 lnInvoice :: Text
-lnInvoice = "lnbc499999440p1pfakeinvoicedestinationforthetestsonly"
+lnInvoice = "lnbc500u1pfakeinvoicedestinationforthetestsonly"
 
--- | 0.00049999944 BTC is 49999944 millisatoshi, 53.9999995 dollars at the rate the bodies carry.
 lnReceived :: Received
 lnReceived =
   Received
     { rcvAmount = CurrencyAmount 5400,
-      rcvCrypto = Just "0.00049999944",
-      rcvDue = Just "0.00000000000",
-      rcvUnits = Just 49999944,
-      rcvInvoicedUnits = Just 49999944,
+      rcvCrypto = Just "0.00050000",
+      rcvDue = Just "0.00000000",
+      rcvUnits = Just 50000000,
+      rcvInvoicedUnits = Just 50000000,
       rcvRate = Just "108000.12",
-      rcvConfirmed = Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just 49999944},
+      rcvConfirmed = Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just 50000000},
       rcvUncreditable = Nothing
     }
 
 testLnConfirmedUnderEveryPolicy :: IO ()
 testLnConfirmedUnderEveryPolicy =
   forM_ [Just "HighSpeed", Just "MediumSpeed", Just "LowSpeed", Nothing] $ \policy ->
-    (policy, signalUnder policy "Settled" [lnPaid "0.00049999944" [paymentOf "Settled" "0.00049999944"]])
+    (policy, signalUnder policy "Settled" [lnPaid "0.00050000" "0.00000000" [paymentOf "Settled" "0.00050000000"]])
       `shouldBe` (policy, Right (Just (SigSettled lnReceived (posixSecondsToUTCTime 1700000000))))
 
 testLnUnsettledConfirmsNothing :: IO ()
 testLnUnsettledConfirmsNothing =
-  signalUnder (Just "HighSpeed") "Processing" [lnPaid "0.00049999944" [paymentOf "Processing" "0.00049999944"]]
+  signalUnder (Just "HighSpeed") "Processing" [lnPaid "0.00050000" "0.00000000" [paymentOf "Processing" "0.00050000000"]]
     `shouldBe` Right (Just (SigFunded lnReceived {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}} PaidInFull))
+
+testLnClosedPaidInFull :: IO ()
+testLnClosedPaidInFull =
+  forM_ ["Invalid", "Expired"] $ \status -> do
+    let closedWith paid due = signalWith "Marked" status [lnPaid paid due [paymentOf "Settled" (paid <> "000") | paid /= "0.00000000"]]
+        fundedOf = \case
+          Just (SigClosed _ f) -> Just f
+          _ -> Nothing
+    (status, closedWith "0.00050000" "0.00000000") `shouldBe` (status, Right (Just (SigClosed lnReceived PaidInFull)))
+    (status, fundedOf <$> closedWith "0.00060000" "-0.00010000") `shouldBe` (status, Right (Just PaidInFull))
+    (status, fundedOf <$> closedWith "0.00030000" "0.00020000") `shouldBe` (status, Right (Just PaidInPart))
 
 testHighSpeedConfirmsNothing :: IO ()
 testHighSpeedConfirmsNothing = do
@@ -763,7 +774,7 @@ testFakeCreatesXmr = withProvider $ \fake p -> do
 testFakeCreatesLn :: IO ()
 testFakeCreatesLn = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef, piDestination} <- createdInvoice p (SPMCrypto CCLn)
-  piDestination `shouldBe` SPDCrypto CCLn lnInvoice "0.00049999944"
+  piDestination `shouldBe` SPDCrypto CCLn lnInvoice "0.00050000"
   posts <- apiRequests fake "POST" ["invoices"]
   case posts of
     [created] -> chosenPaymentMethods (frBody created) `shouldBe` Just ["BTC-LN"]

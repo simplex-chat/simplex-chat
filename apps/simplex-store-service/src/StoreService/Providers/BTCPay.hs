@@ -95,9 +95,7 @@ import System.Timeout (timeout)
 --   additionalData (Payments/MoneroLikeOnChainPaymentMethodDetails.cs, camel-cased by Data/BlobSerializer.cs) carries the invoice's
 --   invoiceSettledConfirmationThreshold, so a Settled XMR payment shows a confirmation only when it is at least 1;
 -- - the store's rates, GET stores/{storeId}/rates?currencyPair=BTC_USD: Controllers/GreenField/GreenfieldStoreRatesController.cs and
---   Models/StoreRateResult.cs, a list of {currencyPair, errors, rate}, rate null when errors is not empty; it needs canviewstoresettings;
--- - a Lightning method, BTC-LN: Payments/Lightning/LightningLikePaymentHandler.cs, its amounts in BTC to 11 decimals (millisatoshi),
---   its destination the BOLT11 invoice, which expires with the BTCPay invoice.
+--   Models/StoreRateResult.cs, a list of {currencyPair, errors, rate}, rate null when errors is not empty; it needs canviewstoresettings.
 btcMethodId, xmrMethodId, lnMethodId :: Text
 btcMethodId = "BTC-CHAIN"
 xmrMethodId = "XMR-CHAIN"
@@ -450,13 +448,15 @@ invoiceSignal now ref status additional policy ms = do
   rate <- priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
   let decimals = unitDecimals cc
-      -- a settled Lightning payment is final, so the speed policy does not apply to it
       confirming = cc == CCLn || maybe False (`elem` map speedPolicyName confirmingPolicies) policy
       shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
       received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmAmount gpmDue gpmPayments
       -- BTCPay never settles an invoice it has closed, so only its additional status tells that the whole amount reached it.
-      -- Its paid amount counts unconfirmed payments too, so a due at 0 or less does not.
-      closedFunded = if maybe False (`elem` closedInFullStatuses) additional then PaidInFull else PaidInPart
+      -- Its paid amount counts unconfirmed on-chain payments too, so on chain a due at 0 or less does not.
+      closedFunded
+        | maybe False (`elem` closedInFullStatuses) additional = PaidInFull
+        | cc == CCLn && maybe False ((<= 0) . wnValue) gpmDue = PaidInFull
+        | otherwise = PaidInPart
   case status of
     "Settled" -> Right (Just (SigSettled received (fromMaybe now (latestSettledAt m))))
     "Processing" -> Right (Just (SigFunded received PaidInFull))

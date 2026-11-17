@@ -452,7 +452,6 @@ destinationPairs confirmations = \case
       "cryptoAmount" .= cryptoAmount,
       "cryptoCurrency" .= cryptoCurrencyText currency
     ]
-      -- a Lightning payment is final once paid, with no confirmations to wait for
       <> [("requiredConfirmations" .= n) | Just n <- [confirmations], currency /= CCLn]
 
 amountJSON :: CurrencyAmount -> J.Value
