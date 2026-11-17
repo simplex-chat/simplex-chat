@@ -313,6 +313,7 @@ start() {
   search_by_message
   start_names_server
   seed_name
+  "$here/../names-chain/backend.sh" start "$bin" "$work" 127.0.0.1
 }
 
 stop() {
@@ -331,6 +332,7 @@ stop() {
     cat "$work/$p.log" 2> /dev/null || true
     echo "::endgroup::"
   done
+  "$here/../names-chain/backend.sh" stop "$work"
 }
 
 case "${1:-}" in
