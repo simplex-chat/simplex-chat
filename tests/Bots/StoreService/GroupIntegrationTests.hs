@@ -12,8 +12,8 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 
 import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cChainId, cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, joinerAcceptance)
-import StoreService.Group.Command (maxUses)
-import StoreService.Names.Codes (reserveCode, revokeNameCode)
+import StoreService.Group.Command (CmdSource (..), maxUses)
+import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), addressWord, newChainClient, selector, signTransaction, uint256)
 import StoreService.Names.Store (FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
@@ -47,7 +47,7 @@ import qualified Data.Aeson as J
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
-import Data.Either (isRight)
+import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
 import Data.List (isInfixOf)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -466,6 +466,8 @@ testOperatorNameCodes ps = do
     pollUntilTrue (listening port)
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis", "name 6 unpaid"] $ \args ->
       (args,) <$> issueRaw cc args `shouldReturn` (args, Left consoleIssueUsage)
+    forM_ [1, 11] $ \years ->
+      (years,) . isLeft <$> issueNameCode cc FromConsole (fromJust $ nameLength 7) years CPSFree `shouldReturn` (years, True)
     countRows cc "sx_badge_service_name_prepaid_codes" () `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
     prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)

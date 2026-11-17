@@ -12,6 +12,7 @@ module StoreService.Group.Command
     groupCmdAction,
     consoleCmd,
     groupCommands,
+    maxNameYears,
     maxUses,
   )
 where

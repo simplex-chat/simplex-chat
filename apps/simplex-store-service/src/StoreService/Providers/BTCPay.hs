@@ -19,7 +19,7 @@ module StoreService.Providers.BTCPay
 where
 
 import StoreService.Catalog (catalogCurrency)
-import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), speedPolicyName)
+import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..))
 import StoreService.Providers
   ( Confirmation (..),
     CryptoReceived (..),
@@ -76,6 +76,7 @@ import Simplex.Chat.PaymentService.Types
     ServicePaymentDestination (..),
     ServicePaymentMethod (..),
   )
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 
 -- Shapes cited from BTCPay Server v2.4.5 (https://github.com/btcpayserver/btcpayserver/tree/v2.4.5):
@@ -224,11 +225,8 @@ instance J.FromJSON GInvoice where
       <$> o J..: "id"
       <*> o J..: "status"
       <*> o J..:? "additionalStatus"
-      <*> ((>>= speedPolicyOf) <$> (maybe (pure Nothing) (J..:? "speedPolicy") =<< o J..:? "checkout"))
+      <*> ((>>= textDecode) <$> (maybe (pure Nothing) (J..:? "speedPolicy") =<< o J..:? "checkout"))
       <*> o J..:? "paymentMethods"
-    where
-      speedPolicyOf :: Text -> Maybe SpeedPolicy
-      speedPolicyOf t = find ((== t) . speedPolicyName) [minBound .. maxBound]
 
 -- totalPaid is not decoded because it counts every method's payment in this currency, so it is non-zero
 -- even when this method got nothing.
@@ -366,7 +364,7 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
             J..= J.object
               [ -- the listener derives the row's expires_at from this same key
                 "expirationMinutes" J..= bExpiryMinutes beCfg,
-                "speedPolicy" J..= speedPolicyName (bSpeedPolicy beCfg),
+                "speedPolicy" J..= textEncode (bSpeedPolicy beCfg),
                 "paymentTolerance" J..= bPaymentTolerance beCfg,
                 "paymentMethods" J..= [methodId]
               ]
