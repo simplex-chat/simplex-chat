@@ -20,11 +20,12 @@ import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
 import Data.Word (Word32)
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
-import Simplex.Chat.Files (mediaFileName, safeFileNameStr)
+import Simplex.Chat.Files (allowedContentUpdate, mediaFileName, safeFileNameStr)
+import Simplex.Chat.Messages (CIFile (..), CIFileStatus (..), FileProtocol (..))
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
-import Simplex.Chat.Protocol (MsgContent (MCFile, MCImage, MCVideo, MCVoice))
+import Simplex.Chat.Protocol (MsgContent (MCFile, MCImage, MCText, MCVideo, MCVoice))
 import Simplex.Chat.Remote (remoteFilesFolder, validRemoteFileName)
 import Simplex.Chat.Remote.Protocol (encryptEncodeHTTP2Body, parseDecryptHTTP2Body, remoteStoreFile)
 import Simplex.Chat.Remote.Types
@@ -89,6 +90,19 @@ remoteTests = describe "Remote" $ do
           (MCFile "", "test.pdf")
         ]
         `shouldBe` ["IMG_1.jpg", "IMG_1.WEBP", "IMG_1.heic", "test.pdf.jpg", "test.pdf.jpg", "test.jpg", "video_1.3gp", "video_1.mkv", "video_1.divx", "test.txt.mp4", "test.txt.mp4", "VIDEO_1.MP4", "test.dif.mp4", "voice_1.m4a", "test.pdf.m4a", "test.pdf.m4a", "test.pdf..jpg", "test.pdf"]
+    it "accepts media file extensions in ASCII only" $ \_ ->
+      map (uncurry mediaFileName) [(video, "test.m\x212Av"), (image, "test.g\x130\&f")]
+        `shouldBe` ["test.m\x212Av.mp4", "test.g\x130\&f.jpg"]
+    it "allows content type changes only to a type that the file name fits" $ \_ ->
+      map
+        (\(oldMC, mc, name) -> allowedContentUpdate oldMC mc (Just $ rcvFile name))
+        [ (image, MCImage "edited" (ImageData ""), "test.pdf"),
+          (MCFile "", image, "test.pdf"),
+          (MCFile "", image, "test.jpg"),
+          (image, MCText "edited", "test.pdf"),
+          (video, voice, "video_1.mp4")
+        ]
+        `shouldBe` [True, False, True, True, False]
   describe "skipped keys" $ do
     it "keeps the most recent skipped keys" $ \_ -> do
       (_, pk) <- atomically . C.generateKeyPair =<< C.newRandom
@@ -136,6 +150,7 @@ remoteTests = describe "Remote" $ do
     image = MCImage "" (ImageData "")
     video = MCVideo "" (ImageData "") 10
     voice = MCVoice "" 10
+    rcvFile n = CIFile {fileId = 1, fileName = n, fileSize = 1, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol = FPXFTP, fileExpires = Nothing, fileProhibited = Nothing}
 
 runRemoteTests :: SpecWith ((Bool, Bool), TestParams)
 runRemoteTests = do

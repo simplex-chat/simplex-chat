@@ -7,7 +7,7 @@ module ChatTests.Files where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Groups (agentSendBody, contactConnId, itemSharedMsgId, relayConnIdToMember)
+import ChatTests.Groups (agentSendBody, contactAgentConnId, itemSharedMsgId, relayConnIdToMember)
 import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBadgeType, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
@@ -272,7 +272,10 @@ testUpdateFileToImage =
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       alice <## "completed uploading file 1 (test.pdf) for bob"
-      connId <- contactConnId alice "bob"
+      fileItemId <- lastItemId alice
+      alice ##> ("/_update item @2 " <> fileItemId <> " json {\"msgContent\": {\"type\": \"image\", \"text\": \"image\", \"image\": \"\"}, \"mentions\": {}}")
+      alice <## "cannot update this item"
+      connId <- contactAgentConnId alice "bob"
       sendUpdate <- updateSender alice connId
       sendUpdate $ MCImage "image" (ImageData "")
       bob <## "error: x.msg.update: contact attempted invalid message update"
@@ -290,6 +293,9 @@ testGroupUpdateFileToImage =
       bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       alice <## "completed uploading file 1 (test.pdf) for #team"
+      fileItemId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> fileItemId <> " json {\"msgContent\": {\"type\": \"image\", \"text\": \"image\", \"image\": \"\"}, \"mentions\": {}}")
+      alice <## "cannot update this item"
       connId <- relayConnIdToMember alice "bob"
       sendUpdate <- updateSender alice connId
       sendUpdate $ MCImage "image" (ImageData "")
