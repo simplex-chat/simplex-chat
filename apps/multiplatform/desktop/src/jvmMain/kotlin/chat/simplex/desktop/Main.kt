@@ -12,6 +12,7 @@ import chat.simplex.common.acquireSingleInstance
 import chat.simplex.common.installOpenUriHandler
 import chat.simplex.common.linkFromArgs
 import chat.simplex.common.reloadUi
+import chat.simplex.common.reloadUiOrAlert
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.size
 import chat.simplex.common.platform.*
@@ -116,7 +117,7 @@ private fun initHaskell() {
     }
 
     override fun desktopReloadUi() {
-      reloadUi()
+      reloadUiOrAlert()
     }
   }
 }

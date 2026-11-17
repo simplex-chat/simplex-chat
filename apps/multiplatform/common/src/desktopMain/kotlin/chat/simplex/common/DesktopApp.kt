@@ -19,6 +19,7 @@ import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
@@ -93,11 +94,21 @@ fun showApp() {
   if (!simplexWindowState.reloading.value) exitProcess(0)
 }
 
+fun uiReloadRefusal(): StringResource? = when {
+  chatModel.activeCall.value != null -> MR.strings.reload_ui_refused_call
+  !chatModel.controller.hasChatCtrl() || chatModel.chatRunning.value != true -> MR.strings.reload_ui_refused_chat_stopped
+  DatabaseUtils.ksSelfDestructPassword.get() != null -> MR.strings.reload_ui_refused_self_destruct
+  !uiReloadable() -> MR.strings.reload_ui_refused_no_installed_ui
+  else -> null
+}
+
+fun reloadUiOrAlert() {
+  val refusal = uiReloadRefusal()
+  if (refusal != null) AlertManager.shared.showAlertMsg(MR.strings.reload_ui_refused_title, refusal) else reloadUi()
+}
+
 fun reloadUi(): Boolean {
-  if (
-    chatModel.activeCall.value != null || !chatModel.controller.hasChatCtrl() || chatModel.chatRunning.value != true ||
-    DatabaseUtils.ksSelfDestructPassword.get() != null || !uiReloadable()
-  ) return false
+  if (uiReloadRefusal() != null) return false
   stopUpdateChecker()
   AudioPlayer.stop()
   VideoPlayerHolder.stopAll()

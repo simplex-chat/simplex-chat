@@ -1202,6 +1202,11 @@
   <string name="allow_internal_builds">Allow internal builds</string>
   <string name="use_installed_ui">Use the installed UI</string>
   <string name="reload_ui">Reload UI</string>
+  <string name="reload_ui_refused_title">UI not reloaded</string>
+  <string name="reload_ui_refused_call">Reload the UI after the call ends.</string>
+  <string name="reload_ui_refused_chat_stopped">Reload the UI while the chat is running.</string>
+  <string name="reload_ui_refused_self_destruct">The UI is not reloaded while a self-destruct passcode is set. Restart the app instead.</string>
+  <string name="reload_ui_refused_no_installed_ui">The app\'s own files are not found. Restart the app instead.</string>
   <string name="storage">Storage</string>
   <string name="storage_total">Total</string>
   <string name="shutdown_alert_question">Shutdown?</string>
