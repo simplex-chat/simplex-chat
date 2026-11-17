@@ -202,6 +202,7 @@ chatGroupTests = do
     it "accept forwarded support chat messages only in own or moderated support chats" testSupportScopeForwardNonParticipantRejected
     it "record unknown member roles for app tests" testUnknownMemberRolesFixture
     it "reject repeated invitation via group to joined group" testGroupInvitationViaGroupRepeatJoinedRejected
+    it "accept business chat in reply to prepared contact request via address" testBusinessAddressPreparedContactAccepted
   describe "invite member via group" $ do
     it "invite member of another group" testInviteMemberViaGroup
     it "auto-accept invitation from member of another group" testInviteMemberViaGroupAutoAccept
@@ -2098,6 +2099,29 @@ testGroupInvitationViaGroupRepeatJoinedRejected =
       agentSendBody alice connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpInv inv)
       bob <## "you already joined this group"
       memberRoles bob "bob" `shouldReturn` ["admin", "member"]
+
+testBusinessAddressPreparedContactAccepted :: HasCallStack => TestParams -> IO ()
+testBusinessAddressPreparedContactAccepted =
+  testChat2 businessProfile bobProfile $
+    \biz bob -> do
+      biz ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks biz True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "biz: contact is prepared"
+      biz ##> "/auto_accept on business"
+      biz <## "auto_accept on, business"
+      bob ##> "/_connect contact @2"
+      bob <## "biz: connection started"
+      biz <## "#bob (Bob): accepting business address request..."
+      bob <## "#biz: joining the group..."
+      concurrently_
+        (biz <## "#bob: bob_1 joined the group")
+        (bob <## "#biz: you joined the group")
+      bob #> "#biz hello"
+      biz <# "#bob bob_1> hello"
 
 newAgentInvitation :: TestCC -> IO ConnReqInvitation
 newAgentInvitation cc = do
