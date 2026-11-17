@@ -768,9 +768,8 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
   // and not tell the buyer nothing arrived.
   const funded = o.invoice?.paidInFull === true || o.invoice?.cryptoAmountPaid !== undefined || (paid !== undefined && paid > 0);
   const expiresAt = o.invoice?.expiresAt;
-  const lightningNote = (o.invoice?.cryptoCurrency ?? o.order.method) !== "ln" ? []
-    : [el("p", { class: "muted" },
-      expiresAt !== undefined && Date.parse(expiresAt) <= (o.now ?? Date.now)() ? LIGHTNING_EXPIRED : LIGHTNING_STILL_PAYABLE)];
+  const lightningNote = (o.invoice?.cryptoCurrency ?? o.order.method) !== "ln" || expiresAt === undefined ? []
+    : [el("p", { class: "muted" }, Date.parse(expiresAt) <= (o.now ?? Date.now)() ? LIGHTNING_EXPIRED : LIGHTNING_STILL_PAYABLE)];
   if (o.canceled === true && !funded) {
     return panel(
       el("h1", { class: "tight" }, "Invoice canceled"),

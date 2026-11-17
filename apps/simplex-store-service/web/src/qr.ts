@@ -1,6 +1,6 @@
 import type { Chain } from "./domain.js";
 
-export type Mode = "byte" | "alphanumeric";
+type Mode ="byte" | "alphanumeric";
 const MODE_INDICATORS: Readonly<Record<Mode, number>> = { byte: 0b0100, alphanumeric: 0b0010 };
 const COUNT_BITS: Readonly<Record<Mode, readonly [number, number, number]>> = {
   byte: [8, 16, 16],
