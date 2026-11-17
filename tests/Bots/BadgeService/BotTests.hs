@@ -3135,19 +3135,18 @@ testRestoreOnOtherProfile ps =
 
 testRestoreMovesBack :: HasCallStack => TestParams -> IO ()
 testRestoreMovesBack ps =
-  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} -> do
-    bobClock <- newTestClock
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
-      withNewTestChatCfg ps bsClientCfg {badgeCurrentTime = testClockTime bobClock} "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
         firstStart <- addUTCTime (-3600) <$> serviceNow env
         storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
         alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
         waitShownBadge (chatController alice) (Just 1)
         (renewalAt, firstExpiry) <- renewalMoments <$> ledgerRows (chatController alice) "badge_ledger"
         nextClaimCheck env
-        testClockTime bsClock >>= setClockAt bobClock
         bob `send` restoredCmd 1 subscriptionPlay
         waitShownBadge (chatController bob) (Just 1)
+        waitWakeArmed (chatController bob)
         setClockAt bsClock renewalAt
         alice `send` "/_app activate"
         waitShownBadge (chatController alice) Nothing
@@ -3158,7 +3157,6 @@ testRestoreMovesBack ps =
         waitShownBadge (chatController alice) (Just 2)
         purchaseReceiptLinks (chatController alice) `shouldReturn` [(1, False), (1, True)]
         storeReceiptHolds (chatController alice) `shouldReturn` [(1, "purchase")]
-        testClockTime bsClock >>= setClockAt bobClock
         bob `send` "/_app activate"
         waitShownBadge (chatController bob) Nothing
         mapM_ dropOutput [alice, bob]
