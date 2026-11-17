@@ -26,11 +26,11 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Code (BadgeCode, NameLength, NamePrepaidCode, maxNameLength, minNameLength, minNameYears, nameLength, parseBadgeCode)
+import Simplex.Chat.Badges.Code (BadgeCode, NameLength, NamePrepaidCode, maxNameLength, minNameLength, minNameYears, nameLength, parseBadgeCode, parseNameCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
-import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (boundedDecimal)
@@ -159,7 +159,7 @@ codeP :: A.Parser BadgeCode
 codeP = A.takeWhile1 (not . isSpace) >>= maybe (fail "not a badge code") pure . parseBadgeCode . safeDecodeUtf8
 
 prepaidCodeP :: A.Parser NamePrepaidCode
-prepaidCodeP = strP
+prepaidCodeP = A.takeWhile1 (not . isSpace) >>= maybe (fail "not a name code") pure . parseNameCode . safeDecodeUtf8
 
 balanceArgsP, recordRefundArgsP, closeArgsP :: A.Parser MoneyCmd
 balanceArgsP = MCBalance <$> referenceP

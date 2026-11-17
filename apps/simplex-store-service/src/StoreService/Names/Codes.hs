@@ -25,6 +25,7 @@ import Control.Logger.Simple (logError, logWarn)
 import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, minNameYears, nameLengthInt, namePrepaidCodeHash, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
@@ -146,9 +147,10 @@ afterWrite turns st codeId change write = do
 -- up to 3 times.
 issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)
 issueNameCode cc issuer len years paymentStatus
-  | years < minNameYears || years > maxNameYears = pure $ Left $ "name code years " <> show years <> " is outside " <> show minNameYears <> "-" <> show maxNameYears
+  | years < minNameYears || years > maxNameYears = Left outside <$ logError ("names: " <> T.pack outside)
   | otherwise = issue (3 :: Int)
   where
+    outside = "name code years " <> show years <> " is outside " <> show minNameYears <> "-" <> show maxNameYears
     issue retries = do
       code <- randomNamePrepaidCode (random cc) len
       now <- getCurrentTime
