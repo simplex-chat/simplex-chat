@@ -87,22 +87,24 @@ remoteTests = describe "Remote" $ do
           (voice, "test.pdf"),
           (voice, "test.pdf.m4a"),
           (image, "test.pdf."),
+          (image, safeFileNameStr "x/"),
           (MCFile "", "test.pdf")
         ]
-        `shouldBe` ["IMG_1.jpg", "IMG_1.WEBP", "IMG_1.heic", "test.pdf.jpg", "test.pdf.jpg", "test.jpg", "video_1.3gp", "video_1.mkv", "video_1.divx", "test.txt.mp4", "test.txt.mp4", "VIDEO_1.MP4", "test.dif.mp4", "voice_1.m4a", "test.pdf.m4a", "test.pdf.m4a", "test.pdf..jpg", "test.pdf"]
+        `shouldBe` ["IMG_1.jpg", "IMG_1.WEBP", "IMG_1.heic", "test.pdf.jpg", "test.pdf.jpg", "test.jpg", "video_1.3gp", "video_1.mkv", "video_1.divx", "test.txt.mp4", "test.txt.mp4", "VIDEO_1.MP4", "test.dif.mp4", "voice_1.m4a", "test.pdf.m4a", "test.pdf.m4a", "test.pdf..jpg", "_.jpg", "test.pdf"]
     it "accepts media file extensions in ASCII only" $ \_ ->
       map (uncurry mediaFileName) [(video, "test.m\x212Av"), (image, "test.g\x130\&f")]
         `shouldBe` ["test.m\x212Av.mp4", "test.g\x130\&f.jpg"]
-    it "allows content type changes only to a type that the file name fits" $ \_ ->
+    it "allows items with files to change content type only to a type without media" $ \_ -> do
       map
-        (\(oldMC, mc, name) -> allowedContentUpdate oldMC mc (Just $ rcvFile name))
-        [ (image, MCImage "edited" (ImageData ""), "test.pdf"),
-          (MCFile "", image, "test.pdf"),
-          (MCFile "", image, "test.jpg"),
-          (image, MCText "edited", "test.pdf"),
-          (video, voice, "video_1.mp4")
+        (\(oldMC, mc) -> allowedContentUpdate oldMC mc (Just $ rcvFile "test.jpg"))
+        [ (image, MCImage "edited" (ImageData "")),
+          (MCFile "", image),
+          (image, MCText "edited"),
+          (image, MCFile "edited"),
+          (video, voice)
         ]
         `shouldBe` [True, False, True, True, False]
+      allowedContentUpdate (MCText "") image Nothing `shouldBe` True
   describe "skipped keys" $ do
     it "keeps the most recent skipped keys" $ \_ -> do
       (_, pk) <- atomically . C.generateKeyPair =<< C.newRandom

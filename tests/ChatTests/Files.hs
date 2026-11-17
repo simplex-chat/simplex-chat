@@ -56,6 +56,7 @@ chatFileTests = do
     it "image reply to voice message has quote parsed from its full text" testImageReplyToVoiceMessage
     it "send and receive image to group" testGroupSendImage
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
+    it "image of another file type in group gets the image extension" testGroupImageOfOtherFileType
     it "ignore update of a file message to an image of another file type" testUpdateFileToImage
     it "ignore update of a group file message to an image of another file type" testGroupUpdateFileToImage
   describe "batch send messages with files" $ do
@@ -261,6 +262,18 @@ testFilesFoldersSendImage =
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
         alice <## "bob (Bob) deleted contact with you"
+
+testGroupImageOfOtherFileType :: HasCallStack => TestParams -> IO ()
+testGroupImageOfOtherFileType =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> withXFTPServer alice $ do
+      createGroup2 "team" alice bob
+      alice ##> "/_send #1 json [{\"filePath\": \"./tests/fixtures/test.pdf\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
+      alice <# "/f #team ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "#team alice> sends file test.pdf.jpg (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for #team"
 
 testUpdateFileToImage :: HasCallStack => TestParams -> IO ()
 testUpdateFileToImage =
