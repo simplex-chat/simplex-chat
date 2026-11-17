@@ -1,4 +1,6 @@
 import XCTest
+import SwiftUI
+import UIKit
 @testable import SimpleX
 @testable import SimpleXChat
 
@@ -52,6 +54,18 @@ final class ChatItemsTests: XCTestCase {
         XCTAssertEqual(cards.map(\.chatLinkSigned), [true])
     }
 
+    @MainActor
+    func testReceivedChannelCardShownNotFromOwner() throws {
+        let cards = try recordedChat("chat-links/channel-card-received", "/_get chat @2 count=1").chat.chatItems
+        XCTAssertEqual(try cards.map { try ownerSigShown($0) }, [false])
+    }
+
+    @MainActor
+    func testSentChannelCardShownFromOwner() throws {
+        let cards = try recordedChat("chat-links/channel-card-sent", "/_get chat @2 count=1").chat.chatItems
+        XCTAssertEqual(try cards.map { try ownerSigShown($0) }, [true])
+    }
+
     private func recordedChat(_ fixture: String, _ command: String) throws -> (user: UserRef, chat: ChatData) {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../../tests/fixtures/api/\(fixture).json")
         let responses = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: [String: Any]])
@@ -63,6 +77,33 @@ final class ChatItemsTests: XCTestCase {
 
     private func ownerSigned(_ item: ChatItem) -> Bool {
         if case let .chat(_, _, ownerSig) = item.content.msgContent { ownerSig != nil } else { false }
+    }
+
+    @MainActor
+    private func ownerSigShown(_ item: ChatItem) throws -> Bool? {
+        guard case let .chat(text, chatLink, _?) = item.content.msgContent else { return nil }
+        let unsignedContent = MsgContent.chat(text: text, chatLink: chatLink, ownerSig: nil)
+        var unsigned = item
+        unsigned.content = item.chatDir.sent ? .sndMsgContent(msgContent: unsignedContent) : .rcvMsgContent(msgContent: unsignedContent)
+        let hasText = text != chatLink.connLinkStr
+        return try viewImage(CIChatLinkHeader(chatItem: item, chatLink: chatLink, hasText: hasText))
+            != viewImage(CIChatLinkHeader(chatItem: unsigned, chatLink: chatLink, hasText: hasText))
+    }
+
+    @MainActor
+    private func viewImage(_ view: some View) throws -> Data {
+        let window = UIWindow(windowScene: try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first))
+        window.overrideUserInterfaceStyle = .light
+        window.rootViewController = UIHostingController(rootView: view.environmentObject(CurrentColors.toAppTheme()))
+        window.frame = CGRect(x: 0, y: 0, width: 300, height: 200)
+        window.isHidden = false
+        RunLoop.main.run(until: Date().addingTimeInterval(0.6))
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+            _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        window.isHidden = true
+        window.rootViewController = nil
+        return try XCTUnwrap(image.pngData())
     }
 
     private func unrecordedRequest(_ request: String) {
