@@ -4062,7 +4062,7 @@ processChatCommand cxt nm = \case
             Just Connection {connStatus}
               | connStatus /= ConnPrepared && connStatus /= ConnDeleted && not (isConnFailed connStatus) -> pure $ pure ()
             _ -> void <$> prepareConnectViaContact user (Just $ PCEGroup g m {memberId = relayMemberId}) (incognitoMembership gInfo) relayLinkToConnect Nothing Nothing
-      relayMember' <- withFastStore $ \db -> getGroupMember db cxt user groupId (groupMemberId' relayMember)
+      relayMember' <- withFastStore' $ \db -> fromRight relayMember <$> runExceptT (getGroupMember db cxt user groupId (groupMemberId' relayMember))
       pure (relayLink, relayMember', r)
     syncSubscriberRelays :: User -> GroupInfo -> [ShortLinkContact] -> CM ()
     syncSubscriberRelays user gInfo currentRelayLinks = void . tryAllErrors $ do
