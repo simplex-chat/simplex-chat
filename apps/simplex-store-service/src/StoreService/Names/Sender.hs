@@ -39,7 +39,6 @@ import Data.ByteString (ByteString)
 import Data.List (find)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
@@ -49,6 +48,8 @@ import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
+import Simplex.Messaging.TMap (TMap)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Names.Chain
 import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxSettlement (..), TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
@@ -64,7 +65,7 @@ data Sender = Sender
     snQueue :: MVar (),
     -- | Above every nonce this sender saved.
     snNextNonce :: TVar Word64,
-    snInFlight :: TVar (Map Word64 InFlight)
+    snInFlight :: TMap Word64 InFlight
   }
 
 -- | The signatures for one registrar nonce: the first, then each fee-bumped replacement.
@@ -206,8 +207,7 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar, ccConfig = Cha
       outcome <- newEmptyTMVarIO
       atomically $ do
         writeTVar snNextNonce $ nonce + 1
-        modifyTVar' snInFlight $
-          M.insert nonce InFlight {ifFor = for, ifRequest = request, ifRaw = stRaw, ifHashes = stHash :| [], ifReplaceAt = addUTCTime replaceAfter now, ifUsedSince = Nothing, ifLastWarning = Nothing, ifOutcome = outcome}
+        TM.insert nonce InFlight {ifFor = for, ifRequest = request, ifRaw = stRaw, ifHashes = stHash :| [], ifReplaceAt = addUTCTime replaceAfter now, ifUsedSince = Nothing, ifLastWarning = Nothing, ifOutcome = outcome} snInFlight
       broadcast s nonce stRaw
       pure PendingTx {ptHash = stHash, ptNonce = nonce, ptOutcome = outcome}
   where
@@ -310,7 +310,7 @@ settle Sender {snStore, snInFlight} nonce InFlight {ifHashes, ifOutcome} outcome
   when (outcome == TONonceUsed) $
     logWarn $ "names sender: nonce " <> tshow nonce <> " used with no receipt for its transactions; its owner judges it from chain state"
   atomically $ do
-    modifyTVar' snInFlight $ M.delete nonce
+    TM.delete nonce snInFlight
     putTMVar ifOutcome outcome
   where
     settlement h = case outcome of
@@ -319,7 +319,7 @@ settle Sender {snStore, snInFlight} nonce InFlight {ifHashes, ifOutcome} outcome
       _ -> TSDroppedTx
 
 update :: Sender -> Word64 -> (InFlight -> InFlight) -> IO ()
-update Sender {snInFlight} nonce f = atomically $ modifyTVar' snInFlight $ M.adjust f nonce
+update Sender {snInFlight} nonce f = atomically $ TM.adjust f nonce snInFlight
 
 -- | The recent blocks' median tip, at least minTip, and the latest base fee, as Integer so that no fee arithmetic wraps.
 marketFees :: ChainClient -> IO (Either ChainError (Integer, Integer))
@@ -363,11 +363,10 @@ broadcast s@Sender {snChain} nonce raw =
 -- | Logged when it differs from the nonce's last warning.
 warnNonce :: Sender -> Word64 -> (Text -> IO ()) -> Text -> IO ()
 warnNonce Sender {snInFlight} nonce logAt warning = do
-  changed <- atomically $ do
-    inFlight <- readTVar snInFlight
-    case M.lookup nonce inFlight of
+  changed <- atomically $
+    TM.lookup nonce snInFlight >>= \case
       Just tx@InFlight {ifLastWarning}
         | ifLastWarning == Just warning -> pure False
-        | otherwise -> True <$ writeTVar snInFlight (M.insert nonce tx {ifLastWarning = Just warning} inFlight)
+        | otherwise -> True <$ TM.insert nonce tx {ifLastWarning = Just warning} snInFlight
       Nothing -> pure True
   when changed $ logAt $ "names sender: nonce " <> tshow nonce <> ": " <> warning

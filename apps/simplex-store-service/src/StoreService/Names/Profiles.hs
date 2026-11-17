@@ -68,6 +68,8 @@ import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..)
 import Simplex.Messaging.Client (pattern NRMInteractive)
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
+import Simplex.Messaging.TMap (TMap)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tryAllErrors', tshow)
 import StoreService.Names.Registration (LinkKind (..))
@@ -118,9 +120,9 @@ data Profiles = Profiles
     previewSlots :: TVar Int,
     lookupSlots :: TVar Int,
     previewLookups :: TVar Int,
-    cache :: TVar (Map ByteString (Word64, LinkData)),
-    refusedHosts :: TVar (Map HostName (Word64, ())),
-    runningLookups :: TVar (Map HostName (Deadline, TMVar Bool))
+    cache :: TMap ByteString (Word64, LinkData),
+    refusedHosts :: TMap HostName (Word64, ()),
+    runningLookups :: TMap HostName (Deadline, TMVar Bool)
   }
 
 newProfiles :: ProfileLimits -> IO Word64 -> ProfileFetcher -> HostResolver -> IO Profiles
@@ -129,9 +131,9 @@ newProfiles limits@ProfileLimits {searchFetchSlots, previewFetchSlots, hostLooku
   previewSlots <- newTVarIO previewFetchSlots
   lookupSlots <- newTVarIO hostLookupSlots
   previewLookups <- newTVarIO previewLookupSlots
-  cache <- newTVarIO Map.empty
-  refusedHosts <- newTVarIO Map.empty
-  runningLookups <- newTVarIO Map.empty
+  cache <- TM.emptyIO
+  refusedHosts <- TM.emptyIO
+  runningLookups <- TM.emptyIO
   pure Profiles {limits, clock, fetchLink, resolveHost, searchSlots, previewSlots, lookupSlots, previewLookups, cache, refusedHosts, runningLookups}
 
 monotonicSeconds :: IO Word64
@@ -169,8 +171,8 @@ withSlot deadline slots act =
     Nothing -> pure Nothing
     Just () -> remainingMicros deadline >>= (`timeout` act)
 
-freshEntry :: Ord k => Word64 -> k -> Map k (Word64, v) -> Maybe v
-freshEntry now k m = case Map.lookup k m of
+freshEntry :: Word64 -> Maybe (Word64, v) -> Maybe v
+freshEntry now = \case
   Just (expiry, v) | expiry > now -> Just v
   _ -> Nothing
 
@@ -252,7 +254,7 @@ boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, 
         HostPublic -> fromMaybe ProfileUnread <$> withSlot deadline slots (fetchLink t sl >>= profileRead)
   where
     key = strEncode $ simplexShortLink sl
-    cached = clock >>= \now -> freshEntry now key <$> readTVarIO cache
+    cached = clock >>= \now -> freshEntry now <$> TM.lookupIO key cache
     remember p = do
       now <- clock
       p <$ atomically (modifyTVar' cache $ insertBounded maxCachedProfiles now key (now + cacheSeconds, p))
@@ -312,7 +314,7 @@ checkHostsIn ps pools deadline = checkAll . L.toList
 lookupHost :: Profiles -> [TVar Int] -> Deadline -> HostName -> IO HostCheck
 lookupHost Profiles {limits = ProfileLimits {fetchTimeout, refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, refusedHosts, runningLookups} pools deadline name = do
   now <- clock
-  cachedRefusal <- isJust . freshEntry now name <$> readTVarIO refusedHosts
+  cachedRefusal <- isJust . freshEntry now <$> TM.lookupIO name refusedHosts
   if cachedRefusal
     then pure HostRefused
     else do
@@ -323,16 +325,16 @@ lookupHost Profiles {limits = ProfileLimits {fetchTimeout, refusedHostSeconds, m
         Just (lookupDeadline, answer) -> maybe HostUnanswered (bool HostRefused HostPublic) <$> waitUntil (min deadline lookupDeadline) (readTMVar answer)
   where
     runningOrStarted lookup' =
-      Map.lookup name <$> readTVar runningLookups >>= \case
+      TM.lookup name runningLookups >>= \case
         Just running -> pure $ Just running
-        Nothing -> Nothing <$ (mapM_ takeSlot slots >> modifyTVar' runningLookups (Map.insert name lookup'))
+        Nothing -> Nothing <$ (mapM_ takeSlot slots >> TM.insert name lookup' runningLookups)
     started lookup'@(_, answer) = maybe (lookup' <$ forkIOWithUnmask (\unmask -> try (unmask $ resolveHost name) >>= finish answer)) pure
     finish answer resolved = do
       let public = either (\(_ :: SomeException) -> True) (all publicAddress) resolved
       now <- clock
       atomically $ do
         unless public $ modifyTVar' refusedHosts $ insertBounded maxRefusedHosts now name (now + refusedHostSeconds, ())
-        modifyTVar' runningLookups $ Map.delete name
+        TM.delete name runningLookups
         putTMVar answer public
         mapM_ releaseSlot slots
     slots = lookupSlots : pools

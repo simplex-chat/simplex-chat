@@ -38,7 +38,6 @@ import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -46,6 +45,8 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.TMap (TMap)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
@@ -65,7 +66,7 @@ data Worker = Worker
   { wkOrders :: OrdersEnv,
     wkSender :: Sender,
     -- | the thread following each registration, kept by the scan
-    wkThreads :: TVar (Map RegistrationId (Async ()))
+    wkThreads :: TMap RegistrationId (Async ())
   }
 
 -- | What a step leaves to the next one.
@@ -120,7 +121,7 @@ sweepInterval :: Int
 sweepInterval = 86400 * 1000000
 
 newWorker :: OrdersEnv -> Sender -> IO Worker
-newWorker wkOrders wkSender = Worker wkOrders wkSender <$> newTVarIO M.empty
+newWorker wkOrders wkSender = Worker wkOrders wkSender <$> TM.emptyIO
 
 -- | A thread for each registration in the worker's phases, started by a scan every scanInterval; they stop with it.
 runWorkers :: Worker -> IO ()
@@ -134,7 +135,7 @@ startWorkers w@Worker {wkOrders = OrdersEnv {oeStore}, wkThreads} = do
   atomically $ writeTVar wkThreads running
   active <- withTransaction oeStore activeRegistrations
   forM_ (filter (`M.notMember` running) active) $ \rid ->
-    mask_ $ asyncWithUnmask (\unmask -> unmask $ work w rid) >>= atomically . modifyTVar' wkThreads . M.insert rid
+    mask_ $ asyncWithUnmask (\unmask -> unmask $ work w rid) >>= \a -> atomically $ TM.insert rid a wkThreads
 
 work :: Worker -> RegistrationId -> IO ()
 work w rid@(RegistrationId ridText) = follow w rid Nothing `catchOwn'` \e -> logError ("names worker: registration " <> ridText <> " failed; the next scan starts it again: " <> tshow e)

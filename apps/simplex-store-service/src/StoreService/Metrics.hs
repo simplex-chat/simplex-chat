@@ -42,6 +42,7 @@ import Simplex.Chat.Badges.Types (BadgePurchaseStatus (..), SubscriptionState (.
 import Simplex.Chat.PaymentService.Types (PaymentProvider)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
+import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Util (catchOwn', raceAny_, tshow)
 import StoreService.Config (ListenerConfig)
 import StoreService.Names.Chain (Block (..), latestBlock)
@@ -56,8 +57,8 @@ import StoreService.Web.Server (webSettings)
 data MetricsEnv = MetricsEnv
   { meStore :: DBStore,
     meProviders :: [PaymentProvider],
-    meListedOk :: TVar (Map PaymentProvider UTCTime),
-    meWebhookAt :: TVar (Map PaymentProvider UTCTime),
+    meListedOk :: TMap PaymentProvider UTCTime,
+    meWebhookAt :: TMap PaymentProvider UTCTime,
     -- | @Nothing@ when the ini has no @[names]@ section.
     meNames :: Maybe Contracts
   }

@@ -60,6 +60,8 @@ import Numeric.Natural (Natural)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
+import Simplex.Messaging.TMap (TMap)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', stateTVar', tshow)
 
 -- | Allows for our clock running ahead of the provider's; an expired invoice can still be marked paid.
@@ -127,30 +129,30 @@ data PollerEnv = PollerEnv
     peSkipped :: TVar (Map Text UTCTime),
     peListedAt :: TVar (Maybe UTCTime),
     -- | When each provider's list last succeeded.
-    peListedOk :: TVar (Map PaymentProvider UTCTime),
+    peListedOk :: TMap PaymentProvider UTCTime,
     peStrayEvery :: NominalDiffTime,
     -- When the cancel first failed, for orders older than 72 hours.
     peCancelFailed :: TVar (Map Text UTCTime),
-    peReadFailed :: TVar (Map Text ReadFailure),
+    peReadFailed :: TMap Text ReadFailure,
     peCleanedAt :: TVar (Maybe UTCTime),
     -- | The orders of the day's cleanup not read yet.
     peCleanupLeft :: TVar [(RegistrationId, InvoiceId, Text)],
     peCreditedAt :: TVar (Maybe UTCTime),
     -- | The rates read in this pass or hinted read, by provider and coin.
-    peRates :: TVar (Map (PaymentProvider, CryptoCurrency) (Either ProviderError Rate))
+    peRates :: TMap (PaymentProvider, CryptoCurrency) (Either ProviderError Rate)
   }
 
 newPollerEnv :: DBStore -> Waiters -> Maybe Phases -> ReadHints -> [Provider] -> PollConfig -> IO PollerEnv
 newPollerEnv peStore peWaiters pePhases peHints peProviders pePoll = do
   peSkipped <- newTVarIO M.empty
   peListedAt <- newTVarIO Nothing
-  peListedOk <- newTVarIO M.empty
+  peListedOk <- TM.emptyIO
   peCancelFailed <- newTVarIO M.empty
-  peReadFailed <- newTVarIO M.empty
+  peReadFailed <- TM.emptyIO
   peCleanedAt <- newTVarIO Nothing
   peCleanupLeft <- newTVarIO []
   peCreditedAt <- newTVarIO Nothing
-  peRates <- newTVarIO M.empty
+  peRates <- TM.emptyIO
   pure PollerEnv {peStore, peWaiters, pePhases, peHints, peProviders, pePoll, peSkipped, peListedAt, peListedOk, peStrayEvery = strayListInterval, peCancelFailed, peReadFailed, peCleanedAt, peCleanupLeft, peCreditedAt, peRates}
 
 -- | Read providers before the sweep, and leave out of the sweep every invoice whose read or settlement failed,
@@ -254,7 +256,7 @@ listPass env@PollerEnv {peListedOk} now p =
       when due $ logWarn ("badge poller: " <> tshow (pProvider p) <> " list failed; every invoice waits for the next pass: " <> providerErrorText e)
       pure Nothing
     Right ListPass {lpMoved, lpSkipped} -> do
-      atomically $ modifyTVar' peListedOk $ M.insert (pProvider p) now
+      atomically $ TM.insert (pProvider p) now peListedOk
       owners <- mapM (\s -> reportSkip env (pProvider p) now s `catchOwn'` \e -> SkipUnaccounted <$ logError (skipWhat s <> " failed; it waits for the next pass: " <> tshow e)) lpSkipped
       reportStrangers env (pProvider p) now [reason | (SkipStranger, (_, reason)) <- zip owners lpSkipped]
       unsettled <- filterM (\m -> (False <$ settleMoved env (pProvider p) now m) `catchOwn'` \e -> True <$ logError (settleWhat m <> " failed; it waits for the next pass: " <> tshow e)) lpMoved
@@ -452,17 +454,17 @@ creditPass env@PollerEnv {peStore, peProviders} now = do
 -- | The pass's rate of a coin at a provider, read at most once.
 cachedRate :: PollerEnv -> Provider -> CryptoCurrency -> IO (Either ProviderError Rate)
 cachedRate PollerEnv {peRates} Provider {pProvider, pCurrentRate} coin =
-  M.lookup key <$> readTVarIO peRates >>= \case
+  TM.lookupIO key peRates >>= \case
     Just rate -> pure rate
     Nothing -> do
       rate <- maybe (pure $ Left $ ProviderError $ textEncode pProvider <> " offers no rates") ($ coin) pCurrentRate
-      rate <$ atomically (modifyTVar' peRates (M.insert key rate))
+      rate <$ atomically (TM.insert key rate peRates)
   where
     key = (pProvider, coin)
 
 -- | Each pass and hinted read reads the rates again.
 forgetRates :: PollerEnv -> IO ()
-forgetRates PollerEnv {peRates} = atomically $ writeTVar peRates M.empty
+forgetRates PollerEnv {peRates} = atomically $ TM.clear peRates
 
 creditLate :: PollerEnv -> Provider -> UTCTime -> InvoiceId -> Text -> IO CreditOutcome
 creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) ref = do

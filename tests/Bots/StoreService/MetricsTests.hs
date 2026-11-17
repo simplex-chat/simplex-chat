@@ -39,6 +39,7 @@ import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ListenerConfig (..))
 import StoreService.Metrics
@@ -63,8 +64,8 @@ storeMetricsTests = describe "StoreService: metrics" $ do
 
 testPortTaken :: IO ()
 testPortTaken = withServiceStore $ \st -> Warp.testWithApplication (pure $ \_ respond -> respond $ responseLBS status404 [] "") $ \port -> do
-  listedOk <- newTVarIO M.empty
-  webhookAt <- newTVarIO M.empty
+  listedOk <- TM.emptyIO
+  webhookAt <- TM.emptyIO
   let env = MetricsEnv {meStore = st, meProviders = [], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}
       lc = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesSite = Nothing, lTrustForwardedFor = False, lNamesSite = Nothing, lMetricsPort = Just port}
   ended <- timeout 5000000 (try (runMetrics lc port env) :: IO (Either SomeException ()))
@@ -313,8 +314,8 @@ testChainRead g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 testScrape :: TVar ChaChaDRG -> IO ()
 testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
-  listedOk <- newTVarIO M.empty
-  webhookAt <- newTVarIO M.empty
+  listedOk <- TM.emptyIO
+  webhookAt <- TM.emptyIO
   v <- newTVarIO noChainRead
   census <- newTVarIO noCensusRead
   let badgesOnly = MetricsEnv {meStore = st, meProviders = [PPCrypto], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}

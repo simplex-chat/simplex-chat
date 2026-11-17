@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -7,21 +8,20 @@ module StoreService.Names.Turns (Turns, Moved, newTurns, withLabelTurn, withLabe
 
 import Control.Concurrent.STM
 import Control.Exception (bracket)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Simplex.Messaging.Agent.Lock (Lock, createLock, withLock')
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.SimplexName (LabelHash)
+import Simplex.Messaging.TMap (TMap)
+import qualified Simplex.Messaging.TMap as TM
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (CodeHash, NameRegistration (..), getRegistration)
 
 -- | Each lock counts the requests holding or waiting for it, and its entry goes when none are left.
-type TurnLocks k = TVar (Map k (Lock, Int))
-
-data Turns = Turns {labelTurns :: TurnLocks LabelHash, codeTurns :: TurnLocks CodeHash, balanceTurns :: TurnLocks RegistrationId}
+data Turns = Turns {labelTurns :: TMap LabelHash (Lock, Int), codeTurns :: TMap CodeHash (Lock, Int), balanceTurns :: TMap RegistrationId (Lock, Int)}
 
 newTurns :: IO Turns
-newTurns = Turns <$> newTVarIO Map.empty <*> newTVarIO Map.empty <*> newTVarIO Map.empty
+newTurns = Turns <$> TM.emptyIO <*> TM.emptyIO <*> TM.emptyIO
 
 withLabelTurn :: Turns -> LabelHash -> IO a -> IO a
 withLabelTurn Turns {labelTurns} = withTurn labelTurns
@@ -72,18 +72,17 @@ withBalanceTurn Turns {balanceTurns} = withTurn balanceTurns
 balanceTurnCount :: Turns -> RegistrationId -> STM Int
 balanceTurnCount Turns {balanceTurns} = turnRequests balanceTurns
 
-turnRequests :: Ord k => TurnLocks k -> k -> STM Int
-turnRequests locks key = maybe 0 snd . Map.lookup key <$> readTVar locks
+turnRequests :: Ord k => TMap k (Lock, Int) -> k -> STM Int
+turnRequests locks key = maybe 0 snd <$> TM.lookup key locks
 
-withTurn :: Ord k => TurnLocks k -> k -> IO a -> IO a
+withTurn :: Ord k => TMap k (Lock, Int) -> k -> IO a -> IO a
 withTurn locks key action =
   bracket (atomically enter) (const $ atomically leave) $ \lock -> withLock' lock "turn" action
   where
-    enter = do
-      held <- readTVar locks
-      case Map.lookup key held of
-        Just (lock, n) -> lock <$ writeTVar locks (Map.insert key (lock, n + 1) held)
+    enter =
+      TM.lookup key locks >>= \case
+        Just (lock, n) -> lock <$ TM.insert key (lock, n + 1) locks
         Nothing -> do
           lock <- createLock
-          lock <$ writeTVar locks (Map.insert key (lock, 1) held)
-    leave = modifyTVar' locks (Map.update (\(lock, n) -> if n <= 1 then Nothing else Just (lock, n - 1)) key)
+          lock <$ TM.insert key (lock, 1) locks
+    leave = TM.update (\(lock, n) -> if n <= 1 then Nothing else Just (lock, n - 1)) key locks

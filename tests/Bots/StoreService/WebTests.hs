@@ -121,6 +121,7 @@ import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSignature (..))
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Directory (createDirectoryIfMissing, createFileLink, doesFileExist, listDirectory)
 import System.FilePath ((</>))
@@ -3450,7 +3451,7 @@ testSweepGivesUpAnUnreadableInvoice = bounded "sweep gives up an unreadable invo
   logged <- capturingStderr (runOnePass poller)
   mapM (invoiceStatus (weStore env)) [bad, newer] `shouldReturn` [ISExpired, ISExpired]
   loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
-  Map.member "p-bad" <$> readTVarIO (peReadFailed poller) `shouldReturn` False
+  TM.memberIO "p-bad" (peReadFailed poller) `shouldReturn` False
 
 testSweepCountsAnsweredFailures :: IO ()
 testSweepCountsAnsweredFailures = bounded "sweep counts answered failures" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
@@ -3465,7 +3466,7 @@ testSweepCountsAnsweredFailures = bounded "sweep counts answered failures" $ wit
   readFailedAt poller "p-bad" ReadFailure {rfLast = longAgo, rfAnswered = Nothing}
   runOnePass poller
   mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISExpired]
-  isJust . (rfAnswered =<<) . Map.lookup "p-bad" <$> readTVarIO (peReadFailed poller) `shouldReturn` True
+  isJust . (rfAnswered =<<) <$> TM.lookupIO "p-bad" (peReadFailed poller) `shouldReturn` True
 
 testSweepReadsOldestFailureFirst :: IO ()
 testSweepReadsOldestFailureFirst = bounded "sweep reads the oldest failure first" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
@@ -3486,7 +3487,7 @@ unreadableBad ref = stub {pReadInvoice = \r -> if r == "p-bad" then pure (Left (
     stub = stubProvider ref
 
 readFailedAt :: PollerEnv -> Text -> ReadFailure -> IO ()
-readFailedAt PollerEnv {peReadFailed} providerRef failure = atomically $ modifyTVar' peReadFailed (Map.insert providerRef failure)
+readFailedAt PollerEnv {peReadFailed} providerRef failure = atomically $ TM.insert providerRef failure peReadFailed
 
 testSweepSkipsAnUnknownProvider :: IO ()
 testSweepSkipsAnUnknownProvider = bounded "sweep around an unknown provider" $ withStubPoller raceHold $ \_ poller env _ -> do

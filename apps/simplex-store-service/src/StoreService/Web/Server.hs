@@ -34,7 +34,7 @@ import StoreService.Web.Names (namesApp, namesRoutes)
 import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, paymentMethod)
 import StoreService.Web.Names.Registration (heldFor, registrationChangedResponse, versionParam)
 import Control.Concurrent.Async (race)
-import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO)
+import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (filterM, void, when)
@@ -47,8 +47,6 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
 import Data.Functor ((<&>))
 import Data.List (isPrefixOf)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
@@ -64,6 +62,8 @@ import Simplex.Chat.Badges.Types (BadgeOfferId (..), BadgePriceId (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
+import Simplex.Messaging.TMap (TMap)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', raceAny_, tshow)
 import System.Directory (canonicalizePath, doesDirectoryExist, doesFileExist)
 import System.FilePath (pathSeparator, takeExtension, (</>))
@@ -81,13 +81,13 @@ data WebEnv = WebEnv
     -- | The name orders' part of weNames, which tests set without a chat controller.
     weOrders :: Maybe OrdersEnv,
     -- | When each provider last delivered a webhook that verified.
-    weWebhookAt :: TVar (Map PaymentProvider UTCTime)
+    weWebhookAt :: TMap PaymentProvider UTCTime
   }
 
 newWebEnv :: DBStore -> ServiceConfig -> Waiters -> ReadHints -> [Provider] -> Maybe NamesEnv -> IO WebEnv
 newWebEnv weStore weConfig weWaiters weHints weProviders weNames = do
   weHttp <- newHttpEnv lc
-  weWebhookAt <- newTVarIO M.empty
+  weWebhookAt <- TM.emptyIO
   pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weNames, weOrders = ordersEnv <$> weNames, weWebhookAt}
   where
     lc = listener weConfig
@@ -436,7 +436,7 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
               Left (WebhookError e) -> refuse e
               Left (WebhookStale e) -> logRefusal logWarn (route <> " refused: " <> e) >> respond webhookRefused
               Right ref_ -> do
-                atomically $ modifyTVar' (weWebhookAt env) $ M.insert provider now
+                atomically $ TM.insert provider now (weWebhookAt env)
                 maybe (ignore body "nothing this service acts on") (resolve body) ref_
     refuse :: Text -> IO ResponseReceived
     refuse why = logRefusal logNote (route <> " refused: " <> why) >> respond webhookRefused
