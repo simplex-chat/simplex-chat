@@ -179,7 +179,8 @@ ChatTagsModel (singleton -- filter state)
 | `replaceChat(_ id:, _ chat:)` | Replace chat in list | [L608](../Shared/Model/ChatModel.swift#L608) |
 | `removeChat(_ id:)` | Remove chat from list | [L1217](../Shared/Model/ChatModel.swift#L1217) |
 | `popChat(_ id:)` | Move chat to top of list | [L1193](../Shared/Model/ChatModel.swift#L1193) |
-| `totalUnreadCountForAllUsers()` | Sum unread across all users | [L1093](../Shared/Model/ChatModel.swift#L1093) |
+| `totalUnreadCountForAllUsers()` | Sum of the active profile's rows (`Chat.userUnreadCount`) and of the other profiles' unread counts | [L1093](../Shared/Model/ChatModel.swift#L1093) |
+| `updateNtfBadgeCount()` | Sets the icon badge to `totalUnreadCountForAllUsers()` after a change of a row, of the list or of another profile's count | |
 
 ---
 
@@ -329,7 +330,9 @@ struct ChatStats: Decodable, Hashable {
 |----------|-------------|------|
 | `id` | Chat ID from `chatInfo.id` | [L1336](../Shared/Model/ChatModel.swift#L1336) |
 | `viewId` | Unique view identity including creation time | [L1338](../Shared/Model/ChatModel.swift#L1338) |
-| `unreadTag` | Whether chat counts as "unread" based on notification settings | [L1328](../Shared/Model/ChatModel.swift#L1328) |
+| `unreadTag` | Whether chat counts as "unread" for the Unread filter and tag dots: `unreadStats` by notification settings, `unreadChat`, or `supportUnreadCount > 0` unless notifications are off | [L1328](../Shared/Model/ChatModel.swift#L1328) |
+| `unreadStats` | `chatStats` plus, for a member pending admission, `membership.supportChat` unread and mentions: the row's counters | |
+| `userUnreadCount` | The chat's part of the profile count: `unreadStats` unread (notifications on), mentions (mentions only) or 0 (off) | |
 | `supportUnreadCount` | Unread count for group support scope | [L1340](../Shared/Model/ChatModel.swift#L1340) |
 
 ---
@@ -438,8 +441,10 @@ Haskell core generates ChatEvent.newChatItems
     → ChatModel updates:
         1. Insert new Chat items into ChatModel.chats (preview)
         2. If chat is open: insert into ItemsModel.reversedChatItems
-        3. Update ChatStats (unread counts)
-        4. Update ChatTagsModel (tag unread counts)
+        3. Update ChatStats (unread counts) for an unread item of the main chat;
+           a chat missing from the list is added with the item counted;
+           support chat counters come from the core in the event's chat info
+        4. Update ChatTagsModel (tag unread counts) and the icon badge
     → SwiftUI re-renders affected views via @Published observation
 ```
 

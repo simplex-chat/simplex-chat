@@ -206,6 +206,7 @@ The secondary context is used for:
 - `reorderChat(chat, toIndex)` -- reorders chat list (e.g., when a chat receives a new message)
 - `updateChatInfo(rhId, cInfo)` -- updates chat metadata while preserving connection stats
 - `applyChatItemUpdate(rhId, cInfo, cItem, prevItem)` -- applies the `chatItemUpdated` event. The item is replaced if it is loaded and the preview if it is the last item; it is not inserted into the loaded items, and a chat that is not in the list is not added. The counters change by the difference between `prevItem` and `cItem` (unread: `isRcvNew`; mentions: `isRcvNew` and `userMention`). An update of a locally deleted message creates it again, and the core sends it in `newChatItems`.
+- Row counters (`chatStats.unreadCount`, `unreadMentions`) change only by unread items of the main chat: +1 for a new item, the difference between the previous and the new item for an update or a deletion mark, -1 for a removal, and the items read. They are kept at 0 or above. Support chat counters come from the core in the chat info of events.
 - `replaceChatItem(rhId, cInfo, cItem)` -- applies item statuses, file events, archived reports and the user's edits. The item is replaced if it is loaded and the preview if it is the last item; it is not inserted, and a chat that is not in the list is not added. A deletion that marks an item is applied by `applyChatItemUpdate` with the deleted item as `prevItem`.
 - `hasChat(rhId, id)` / `getChat(id)` -- lookup methods
 
@@ -283,7 +284,9 @@ data class ChatStats(
 | Property | Line | Purpose |
 |---|---|---|
 | `id` | 1349 | Chat ID derived from `chatInfo.id` |
-| `unreadTag` | 1343 | Whether chat counts as "unread" for tag filtering (considers notification settings) |
+| `unreadTag` | 1343 | Whether chat counts as "unread" for the Unread filter and tag dots: `unreadStats` by notification settings, `unreadChat`, or `supportUnreadCount > 0` unless notifications are off |
+| `unreadStats` | - | `chatStats` plus, for a member pending admission, `membership.supportChat` unread and mentions: the row's counters |
+| `userUnreadCount` | - | The chat's part of the profile count: `unreadStats` unread (notifications on), mentions (mentions only) or 0 (off); summed by `ChatModel.activeUserUnreadCount` for the desktop tray |
 | `supportUnreadCount` | 1351 | Unread count in support/moderation context |
 | `nextSendGrpInv` | 1337 | Whether next message should send group invitation |
 
