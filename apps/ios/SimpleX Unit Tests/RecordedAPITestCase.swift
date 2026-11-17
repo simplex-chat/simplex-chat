@@ -103,6 +103,7 @@ class RecordedAPITestCase: XCTestCase {
 
     @MainActor
     func press(_ title: String, file: StaticString = #filePath, line: UInt = #line) async throws {
+        try? await waitFor { self.presented() != nil }
         let shown = try XCTUnwrap(presented(), file: file, line: line)
         if let alert = shown as? UIAlertController {
             let action = try XCTUnwrap(alert.actions.first { $0.title == title }, file: file, line: line)

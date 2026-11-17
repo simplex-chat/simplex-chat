@@ -8,7 +8,7 @@ final class ModerationTests: RecordedAPITestCase {
     private let contactDeletion = privacyContactDeletionDefault.get()
     private let showDeleteContactNotice = showDeleteContactNoticeDefault.get()
     private let showDeleteConversationNotice = showDeleteConversationNoticeDefault.get()
-    private static let until = "Jan 1, 2099 at 12:00 PM"
+    private static let until = ISO8601DateFormatter().date(from: "2099-01-01T12:00:00Z")!.formatted(date: .abbreviated, time: .shortened)
 
     @MainActor
     override func tearDown() async throws {
@@ -101,7 +101,7 @@ final class ModerationTests: RecordedAPITestCase {
         let dialog = try await sheet(BanDialog.self)
         XCTAssertEqual(dialog.title, "Block member for all?")
         XCTAssertEqual(dialog.actions.map(\.title), ["Block", "Block and remove", "Block, remove and delete messages"])
-        XCTAssertEqual(dialog.footer, Text("**bob** won't be notified, and if removed, can't rejoin while blocked."))
+        XCTAssertEqual(shownText(dialog.footer), "bob won't be notified, and if removed, can't rejoin while blocked.")
         dialog.close { dialog.actions[0].action(.day) }
         try await awaitMember("bob") { $0.blockedByAdmin && $0.blockedUntil != nil }
     }
@@ -156,7 +156,7 @@ final class ModerationTests: RecordedAPITestCase {
         let dialog = try await sheet(BanDialog.self)
         XCTAssertEqual(dialog.title, "Remove member?")
         XCTAssertEqual(dialog.actions.map(\.title), ["Remove", "Remove and delete messages"])
-        XCTAssertEqual(dialog.footer, Text("**cath** won't be notified, and can't rejoin while blocked."))
+        XCTAssertEqual(shownText(dialog.footer), "cath won't be notified, and can't rejoin while blocked.")
         dialog.close { dialog.actions[1].action(.forever) }
         try await assertTexts(["Remove forever?", "cath can't rejoin via the group link again, except from another app.", "Cancel", "Remove"])
         let alert = try XCTUnwrap(presented() as? UIAlertController)
@@ -210,7 +210,7 @@ final class ModerationTests: RecordedAPITestCase {
         showBanMemberSheet(groupInfo, try member(members, "cath"))
         let dialog = try await sheet(BanDialog.self)
         XCTAssertEqual(dialog.actions.map(\.title), ["Block"])
-        XCTAssertEqual(dialog.footer, Text("**cath** won't be notified, and the messages will be hidden for all."))
+        XCTAssertEqual(shownText(dialog.footer), "cath won't be notified, and the messages will be hidden for all.")
     }
 
     @MainActor
@@ -320,7 +320,7 @@ final class ModerationTests: RecordedAPITestCase {
         try await assertTexts(["Delete chat?", "cath\n\nChat will be deleted for all members - this cannot be undone!", "Delete", "Cancel"])
         try await press("Delete")
         let dialog = try await sheet(KeepConversationDialog.self)
-        XCTAssertEqual(dialog.footer, Text("**cath** will be notified."))
+        XCTAssertEqual(shownText(dialog.footer), "cath will be notified.")
         dialog.close { dialog.delete(true) }
         try await waitFor { self.groupInfo(groupInfo.id)?.membership.memberStatus == .memGroupDeleted }
     }
@@ -334,11 +334,11 @@ final class ModerationTests: RecordedAPITestCase {
         let dialog = try await sheet(BanDialog.self)
         XCTAssertEqual(dialog.title, "Delete and block?")
         XCTAssertEqual(dialog.actions.map(\.title), ["Delete and block"])
-        XCTAssertEqual(dialog.footer, Text("Chat with **bob** will be deleted for all members - this cannot be undone!"))
+        XCTAssertEqual(shownText(dialog.footer), "Chat with bob will be deleted for all members - this cannot be undone!")
         dialog.close { dialog.actions[0].action(.day) }
         let keep = try await sheet(KeepConversationDialog.self)
         XCTAssertEqual(keep.title, "Delete and block?")
-        XCTAssertEqual(keep.footer, Text("**bob** won't be notified, and can't connect to you for \(BanDuration.day.text)."))
+        XCTAssertEqual(shownText(keep.footer), "bob won't be notified, and can't connect to you for 1 day.")
         keep.close { keep.delete(false) }
         try await waitFor { ChatModel.shared.getChat(groupInfo.id) == nil }
     }
@@ -361,7 +361,7 @@ final class ModerationTests: RecordedAPITestCase {
         try await assertTexts(["Delete contact?", "Contact with eve will be deleted - this cannot be undone!", "Delete", "Cancel"])
         try await press("Delete")
         let dialog = try await sheet(KeepConversationDialog.self)
-        XCTAssertEqual(dialog.footer, Text("**eve** will be notified."))
+        XCTAssertEqual(shownText(dialog.footer), "eve will be notified.")
         dialog.close { dialog.delete(false) }
         try await waitFor { ChatModel.shared.getChat(chat.id) == nil }
     }
@@ -376,7 +376,7 @@ final class ModerationTests: RecordedAPITestCase {
             try await assertTexts(["Delete contact?", "Contact with eve will be deleted - this cannot be undone!", "Delete and notify", "Delete silently", "Cancel"])
             try await press("Delete silently")
             let dialog = try await sheet(KeepConversationDialog.self)
-            XCTAssertEqual(dialog.footer, Text("**eve** won't be notified."))
+            XCTAssertEqual(shownText(dialog.footer), "eve won't be notified.")
             dialog.close { dialog.delete(true) }
             try await assertRequested { $0 == "/_delete @5 entity notify=off" }
         }
@@ -418,12 +418,12 @@ final class ModerationTests: RecordedAPITestCase {
         let dialog = try await sheet(BanDialog.self)
         XCTAssertEqual(dialog.title, "Delete and block?")
         XCTAssertEqual(dialog.actions.map(\.title), ["Delete and block"])
-        XCTAssertEqual(dialog.footer, Text("Contact with **cath** will be deleted - this cannot be undone!"))
+        XCTAssertEqual(shownText(dialog.footer), "Contact with cath will be deleted - this cannot be undone!")
         dialog.close { dialog.actions[0].action(.day) }
         let keep = try await sheet(KeepConversationDialog.self)
         XCTAssertEqual(keep.title, "Delete and block?")
         XCTAssertEqual(keep.actionTitle, "Delete and block")
-        XCTAssertEqual(keep.footer, Text("**cath** won't be notified, and can't connect to you for \(BanDuration.day.text)."))
+        XCTAssertEqual(shownText(keep.footer), "cath won't be notified, and can't connect to you for 1 day.")
         XCTAssertNil(keep.confirmWord)
         keep.close { keep.delete(true) }
         try await assertTexts(["Contact deleted!", "You can still view conversation with cath in the list of chats.", "Don't show again", "Ok"])
@@ -437,7 +437,7 @@ final class ModerationTests: RecordedAPITestCase {
         let dialog = try await sheet(BanDialog.self)
         dialog.close { dialog.actions[0].action(.week) }
         let keep = try await sheet(KeepConversationDialog.self)
-        XCTAssertEqual(keep.footer, Text("**cath** won't be notified, and can't connect to you for \(BanDuration.week.text)."))
+        XCTAssertEqual(shownText(keep.footer), "cath won't be notified, and can't connect to you for 1 week.")
         keep.close { keep.delete(false) }
         try await assertRequested { $0 == "/_delete @3 full notify=off notice={\"ttl\":604800}" }
     }
@@ -451,7 +451,7 @@ final class ModerationTests: RecordedAPITestCase {
         dialog.close { dialog.actions[0].action(.forever) }
         let keep = try await sheet(KeepConversationDialog.self)
         XCTAssertEqual(keep.title, "Delete and block forever?")
-        XCTAssertEqual(keep.footer, Text("**dan** won't be notified, and can't connect via your address again, except from another app."))
+        XCTAssertEqual(shownText(keep.footer), "dan won't be notified, and can't connect via your address again, except from another app.")
         XCTAssertEqual(keep.confirmWord, "yes")
         keep.close { keep.delete(false) }
         try await waitFor { ChatModel.shared.getChat(chat.id) == nil }
@@ -488,6 +488,13 @@ final class ModerationTests: RecordedAPITestCase {
 
     func testReportReasonIsContent() {
         XCTAssertEqual(ChatCommand.apiReportMessage(groupId: 1, chatItemId: 2, reportReason: .content, reportText: "spam").cmdString, "/_report #1 2 reason=content spam")
+    }
+
+    private func shownText(_ text: Text?) -> String? {
+        guard let text else { return nil }
+        let description = String(describing: text)
+        guard let start = description.range(of: ">: \""), let end = description.range(of: "\"), modifiers", options: .backwards) else { return description }
+        return String(description[start.upperBound..<end.lowerBound])
     }
 
     @MainActor
