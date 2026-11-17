@@ -62,6 +62,11 @@ chatFileTests = do
   describe "inline file transfer" $ do
     it "received file is closed between chunks sent without acceptance" testInlineFileSentChunks
     it "received file is closed between chunks after acceptance" testInlineFileAcceptedChunks
+    it "received file is encrypted after its last chunk" testInlineFileEncryptedChunks
+    it "sender cancelling the file keeps its received part" testInlineFileSenderCancel
+    it "recipient cancelling the file keeps its received part" testInlineFileRecipientCancel
+    it "deleting the message removes its partly received file" testInlineFileMessageDeleted
+    it "file is completed after the chat restarts between chunks" testInlineFileChatRestart
   describe "file transfer over XFTP" $ do
     it "round file description count" $ const testXFTPRoundFDCount
     it "send and receive file" testXFTPFileTransfer
@@ -719,27 +724,86 @@ testSendMultiFilesGroup =
 testInlineFileSentChunks :: HasCallStack => TestParams -> IO ()
 testInlineFileSentChunks =
   testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      alice #$> ("/_files_folder " <> tmpFile alice "alice_app_files", id, "ok")
-      smId <- sendInlineVoice bob IFMSent
-      alice <# "bob> voice message (00:01)"
-      alice <# "bob> sends file voice.m4a (40 bytes / 40 bytes)"
-      receiveInlineChunks alice bob smId
+    \alice bob -> receiveVoiceInvitation alice bob IFMSent >>= receiveInlineChunks alice bob
 
 testInlineFileAcceptedChunks :: HasCallStack => TestParams -> IO ()
 testInlineFileAcceptedChunks =
   testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
     \alice bob -> do
-      connectUsers alice bob
-      alice #$> ("/_files_folder " <> tmpFile alice "alice_app_files", id, "ok")
-      smId <- sendInlineVoice bob IFMOffer
-      alice <# "bob> voice message (00:01)"
-      alice <# "bob> sends file voice.m4a (40 bytes / 40 bytes)"
+      smId <- receiveVoiceInvitation alice bob IFMOffer
       alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
       alice ##> "/fr 1"
       alice <## "saving file 1 from bob to voice.m4a"
       receiveInlineChunks alice bob smId
+
+testInlineFileEncryptedChunks :: HasCallStack => TestParams -> IO ()
+testInlineFileEncryptedChunks =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMOffer
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice #$> ("/_temp_folder " <> tmpFile alice "alice_temp", id, "ok")
+      alice ##> "/fr 1 encrypt=on"
+      alice <## "saving file 1 from bob to voice.m4a"
+      receiveFirstChunk alice bob smId
+      sendFileChunk bob smId $ FileChunk 2 voiceChunk2
+      alice <## "completed receiving file 1 (voice.m4a) from bob"
+      Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine alice
+      chatReadFile (voiceFile alice) (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict voiceBytes)
+
+testInlineFileSenderCancel :: HasCallStack => TestParams -> IO ()
+testInlineFileSenderCancel =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMSent
+      receiveFirstChunk alice bob smId
+      sendFileChunk bob smId FileChunkCancel
+      alice <## "bob cancelled sending file 1 (voice.m4a)"
+      sendIgnoredChunk alice bob smId
+      B.readFile (voiceFile alice) `shouldReturn` voiceChunk1
+
+testInlineFileRecipientCancel :: HasCallStack => TestParams -> IO ()
+testInlineFileRecipientCancel =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMSent
+      receiveFirstChunk alice bob smId
+      alice ##> "/fc 1"
+      alice <## "cancelled receiving file 1 (voice.m4a) from bob"
+      sendIgnoredChunk alice bob smId
+      B.readFile (voiceFile alice) `shouldReturn` voiceChunk1
+
+testInlineFileMessageDeleted :: HasCallStack => TestParams -> IO ()
+testInlineFileMessageDeleted =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMSent
+      receiveFirstChunk alice bob smId
+      alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
+      doesFileExist (voiceFile alice) `shouldReturn` False
+      sendIgnoredChunk alice bob smId
+      doesFileExist (voiceFile alice) `shouldReturn` False
+
+testInlineFileChatRestart :: HasCallStack => TestParams -> IO ()
+testInlineFileChatRestart =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMSent
+      receiveFirstChunk alice bob smId
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> "/_start"
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
+      receiveLastChunk alice bob smId
+
+receiveVoiceInvitation :: HasCallStack => TestCC -> TestCC -> InlineFileMode -> IO SharedMsgId
+receiveVoiceInvitation alice bob fileMode = do
+  connectUsers alice bob
+  alice #$> ("/_files_folder " <> tmpFile alice "alice_app_files", id, "ok")
+  smId <- sendInlineVoice bob fileMode
+  alice <# "bob> voice message (00:01)"
+  alice <# "bob> sends file voice.m4a (40 bytes / 40 bytes)"
+  pure smId
 
 sendInlineVoice :: TestCC -> InlineFileMode -> IO SharedMsgId
 sendInlineVoice cc fileMode = do
@@ -761,17 +825,36 @@ sendFileChunk cc smId chunk = do
 
 receiveInlineChunks :: HasCallStack => TestCC -> TestCC -> SharedMsgId -> IO ()
 receiveInlineChunks alice bob smId = do
-  let voicePath = tmpFile alice "alice_app_files" </> "voice.m4a"
-      (chunk1, chunk2) = B.splitAt 30 $ B.replicate 40 'v'
-  B.readFile voicePath `shouldReturn` ""
-  sendFileChunk bob smId $ FileChunk 1 chunk1
+  B.readFile (voiceFile alice) `shouldReturn` ""
+  receiveFirstChunk alice bob smId
+  receiveLastChunk alice bob smId
+
+receiveFirstChunk :: HasCallStack => TestCC -> TestCC -> SharedMsgId -> IO ()
+receiveFirstChunk alice bob smId = do
+  sendFileChunk bob smId $ FileChunk 1 voiceChunk1
   alice <## "started receiving file 1 (voice.m4a) from bob"
   bob #> "@alice hi"
   alice <# "bob> hi"
-  B.readFile voicePath `shouldReturn` chunk1
-  sendFileChunk bob smId $ FileChunk 2 chunk2
+  B.readFile (voiceFile alice) `shouldReturn` voiceChunk1
+
+receiveLastChunk :: HasCallStack => TestCC -> TestCC -> SharedMsgId -> IO ()
+receiveLastChunk alice bob smId = do
+  sendFileChunk bob smId $ FileChunk 2 voiceChunk2
   alice <## "completed receiving file 1 (voice.m4a) from bob"
-  B.readFile voicePath `shouldReturn` (chunk1 <> chunk2)
+  B.readFile (voiceFile alice) `shouldReturn` voiceBytes
+
+sendIgnoredChunk :: HasCallStack => TestCC -> TestCC -> SharedMsgId -> IO ()
+sendIgnoredChunk alice bob smId = do
+  sendFileChunk bob smId $ FileChunk 2 voiceChunk2
+  bob #> "@alice hi"
+  alice <# "bob> hi"
+
+voiceFile :: TestCC -> FilePath
+voiceFile alice = tmpFile alice "alice_app_files" </> "voice.m4a"
+
+voiceBytes, voiceChunk1, voiceChunk2 :: B.ByteString
+voiceBytes = B.replicate 40 'v'
+(voiceChunk1, voiceChunk2) = B.splitAt 30 voiceBytes
 
 testXFTPRoundFDCount :: Expectation
 testXFTPRoundFDCount = do
