@@ -6,7 +6,7 @@
 
 The workflow runs only when started by hand, on any branch, from the Actions tab or with `gh workflow run`: [CI on GitHub's runners](../README.md) says how and lists the inputs.
 
-Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days): for the core `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md` and the build scripts, for the backend `src/**`, the CLI's and the directory's sources, `cabal.project`, `simplex-chat.cabal` and its build script. So a branch that changes core and app code together tests both. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`.
+Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days): for the core `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md` and the build scripts, for the backend `src/**`, the CLI's, the directory's and the store service's sources, `cabal.project`, `simplex-chat.cabal`, its build script and `scripts/ci/names-chain/build.sh`, with the commit of the `apps/simplex-domains` submodule added to the name. So a branch that changes core and app code together tests both. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`.
 
 ## Jobs
 
@@ -16,7 +16,7 @@ Every run builds the core library, and the backend when it's asked for, from the
 | `core` | `scripts/desktop/build-lib-linux.sh` via `build-core.sh` | skipped when reused, about 24 min not |
 | `app` | the app (`:desktop:createDistributable`), desktopTest with the snapshots, `smoke-test.sh` | about 12 min: build 4.5, desktopTest 0.7, smoke test 3.5 |
 | `claude` (opt-in) | after `app` passed: its distributable at the first screen, then Claude Code drives it | about 4 min, Claude 3 |
-| `backend` (opt-in) | `build-backend.sh`: `simplex-chat`, `simplex-directory-service`, and `smp-server` from the simplexmq commit `cabal.project` pins | about 30 min, skipped when reused |
+| `backend` (opt-in) | `build-backend.sh`: `simplex-chat`, `simplex-directory-service`, `simplex-store-service`, `smp-server` from the simplexmq commit `cabal.project` pins, and the names chain's folder (`scripts/ci/names-chain/build.sh`) | about 40 min, skipped when reused |
 | `release` (opt-in) | the latest release's .deb for this Ubuntu, onboarding only, to tell a branch's failure from the runner's | 1.5 min |
 
 Queueing for a runner adds from under a minute to 20 minutes. Results are artifacts: `desktop-smoke-test` (numbered screenshots, the text OCR read from each, `steps.log`, `checks.txt`, `app.log`), `desktop-test-report`, `desktop-snapshots` (below), `desktop-claude-test`, and the backend's logs; `desktop-app`, the distributable for manual tests and the Claude job, is kept 14 days. The job summaries list the checks, the desktopTest results and the Claude usage.
@@ -47,7 +47,8 @@ The images go to `SNAPSHOT_DIR`, otherwise to `apps/multiplatform/common/build/s
 
 - a chat relay (`--relay --headless`) and a directory service on the preset servers;
 - a group `ci_group` and a channel `ci_channel` with letter avatars as large as the apps make them (`avatar`), registered and approved by the admin `ci_admin`, and found by a new user who sends the directory "ci seed";
-- an SMP server on 127.0.0.1:5223 whose `[NAMES]` section asks `names-resolver.py`, and a contact `ci_contact` whose address it resolves as `seeded.testing`, checked with a connect plan from another client.
+- an SMP server on 127.0.0.1:5223 whose `[NAMES]` section asks `names-resolver.py`, and a contact `ci_contact` whose address it resolves as `seeded.testing`, checked with a connect plan from another client;
+- last, `.simplex` names on a local chain with a second SMP server on 127.0.0.1:5224, whose address goes to `<dir>/names-chain-server`, and the store service: [names-chain](../names-chain/README.md) says what it starts, checks and writes.
 
 It writes the directory's address to `<dir>/directory-link` and the SMP server's to `<dir>/names-server`. The app reaches the names server only with private routing set to unknown servers (`ui start … NetworkSMPProxyMode=Unknown`), since the preset proxies can't reach 127.0.0.1, and with the test server's receiving role off: a directory can't answer requests whose reply queue is on it.
 

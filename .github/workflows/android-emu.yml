@@ -93,7 +93,7 @@ jobs:
         id: names
         run: |
           echo "core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/ci/android/build-core.sh') }}" >> "$GITHUB_OUTPUT"
-          echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'apps/simplex-store-service/Main.hs', 'apps/simplex-store-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh', 'scripts/ci/names-chain/build.sh') }}-$(git rev-parse HEAD:apps/simplex-domains)" >> "$GITHUB_OUTPUT"
 
       - name: Find core library
         id: core
@@ -135,6 +135,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
 
       - name: Build backend
         run: scripts/ci/desktop-linux/build-backend.sh ~/backend/${{ env.BACKEND_PKG }}
@@ -252,6 +257,12 @@ jobs:
           path: ~/backend
           run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
           github-token: ${{ github.token }}
+
+      - name: Setup Node.js
+        if: needs.plan.outputs.run-backend == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
 
       - name: Start test backend
         id: backend
@@ -396,6 +407,12 @@ jobs:
           path: ~/backend
           run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
           github-token: ${{ github.token }}
+
+      - name: Setup Node.js
+        if: needs.plan.outputs.claude-backend == 'yes'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
 
       - name: Start test backend
         id: backend

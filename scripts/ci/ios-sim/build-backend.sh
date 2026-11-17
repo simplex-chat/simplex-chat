@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Builds the CLI, the directory service and the SMP server (for SimpleX names) that the app job runs as its test backend.
+# Builds the CLI, the directory service, the store service and the SMP server (for SimpleX names) that the app job runs as its test backend.
 # Usage: scripts/ci/ios-sim/build-backend.sh <output zip>
 # They need the server-capable configuration (no client_library), as build.yml's macOS job builds the CLI.
 
@@ -26,7 +26,7 @@ package direct-sqlcipher
     extra-lib-dirs: $openssl_dir/lib
 EOF
 
-targets="exe:simplex-chat exe:simplex-directory-service"
+targets="exe:simplex-chat exe:simplex-directory-service exe:simplex-store-service"
 cabal build -j $targets
 
 # simplexmq's sdist leaves out apps/common/Web/static/.well-known, which smp-server embeds, so it is built from a clone
@@ -46,7 +46,8 @@ done
 # in the clone, list-bin first prints git's output from syncing the source packages
 cp "$(cd "$simplexmq" && cabal list-bin exe:smp-server | tail -n 1)" "$pkg"
 otool -L "$pkg"/*
+scripts/ci/names-chain/build.sh "$pkg" "$simplexmq"
 
 rm -f "$out"
-(cd "$pkg" && zip -9 "$out" *)
+(cd "$pkg" && zip -9 -q -r -y "$out" *)
 ls -la "$out"

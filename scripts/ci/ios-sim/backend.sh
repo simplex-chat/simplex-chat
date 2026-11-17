@@ -430,6 +430,7 @@ start() {
   seed_names
   probe_search
   probe_names
+  "$(dirname "$0")/../names-chain/backend.sh" start "$bin" "$work" localhost
   write_seed
 }
 
@@ -449,6 +450,7 @@ stop() {
     cat "$work/$p.log" 2> /dev/null || true
     echo "::endgroup::"
   done
+  "$(dirname "$0")/../names-chain/backend.sh" stop "$work"
 }
 
 case "${1:-}" in
