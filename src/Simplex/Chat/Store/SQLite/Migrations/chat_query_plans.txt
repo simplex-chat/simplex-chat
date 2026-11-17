@@ -6957,6 +6957,18 @@ Query: DELETE FROM chat_item_versions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
 
+Query: DELETE FROM chat_items WHERE item_content LIKE '%rcvIntegrityError%'
+Plan:
+SCAN chat_items
+SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
+SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
+SEARCH calls USING COVERING INDEX idx_calls_chat_item_id (chat_item_id=?)
+SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_2 (chat_item_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_chat_item_id (fwd_from_chat_item_id=?)
+SEARCH files USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
+SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
+
 Query: DELETE FROM chat_items WHERE item_text = 'hello'
 Plan:
 SCAN chat_items
@@ -7655,12 +7667,6 @@ SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
 SEARCH group_relays USING COVERING INDEX idx_group_relays_chat_relay_id (chat_relay_id=?)
 
-Query: SELECT EXISTS (SELECT 1 FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ? AND delivery_status = ?)
-Plan:
-SCAN CONSTANT ROW
-SCALAR SUBQUERY 1
-SEARCH msg_deliveries USING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
-
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:
 SEARCH operator_usage_conditions USING INDEX idx_operator_usage_conditions_conditions_commit (conditions_commit=? AND server_operator_id=?)
@@ -7898,6 +7904,10 @@ SCAN badge_store_receipts
 Query: SELECT current_badge_type FROM badge_purchases ORDER BY badge_purchase_id
 Plan:
 SCAN badge_purchases
+
+Query: SELECT delivery_status FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ? LIMIT 1
+Plan:
+SEARCH msg_deliveries USING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
 
 Query: SELECT entry_id FROM badge_ledger WHERE badge_purchase_id = ? AND entry_uuid = ?
 Plan:
