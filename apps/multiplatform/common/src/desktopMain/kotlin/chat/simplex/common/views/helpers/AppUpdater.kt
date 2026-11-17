@@ -13,6 +13,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.json
 import chat.simplex.common.platform.*
+import chat.simplex.common.reloadUi
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.onboarding.ReadMoreButton
 import chat.simplex.res.*
@@ -207,9 +208,12 @@ fun checkForUpdate() {
     }
     if (channel == AppUpdatesChannel.INTERNAL && uiUpdateStaged(release)) {
       if (appPrefs.appUpdateChannel.get() == channel) {
-        AlertManager.shared.showAlertMsg(
+        AlertManager.shared.showAlertDialog(
           title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
-          text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc)
+          text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc),
+          confirmText = generalGetString(MR.strings.app_check_for_updates_button_reload),
+          onConfirm = { reloadUi() },
+          dismissText = generalGetString(MR.strings.ok)
         )
       }
       return

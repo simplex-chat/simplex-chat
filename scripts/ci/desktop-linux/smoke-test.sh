@@ -503,11 +503,9 @@ use_installed_ui() {
   "$ui" click-text "Developer tools" 10
   "$ui" wait "Show developer options" 10
   scroll_to "Use the installed UI" || fail "no \"Use the installed UI\" in Developer tools"
-  "$ui" click-text "Use the installed UI" 10
-  "$ui" wait "Please restart the app" 10 || fail "no restart alert after \"Use the installed UI\""
   "$ui" shot use-installed-ui
-  "$ui" key Return
-  back_to_chat_list || fail "no chat list after \"Use the installed UI\""
+  "$ui" click-text "Use the installed UI" 10
+  "$ui" wait "Search or paste SimpleX link" 60 || fail "no chat list after \"Use the installed UI\" reloaded the UI"
 }
 
 app_build() {
@@ -610,9 +608,13 @@ chat_running_responses() {
 }
 
 check_ui_reload() {
-  local code next running
+  local code next reloads running
   code=$(sed -n 's/^desktop.version_code=//p' "$gradle_properties")
-  next=$((code + 4))
+  next=$((code + 6))
+  "$ui" stop
+  sed -i -e 's/^AppUpdateChannel=.*/AppUpdateChannel=INTERNAL/' -e 's/^AllowInternalBuilds=.*/AllowInternalBuilds=true/' "$settings"
+  start_app
+  reloads=$(ui_reloads)
   running=$(chat_running_responses)
   stage_ui_update $next
   reload_ui first
@@ -622,7 +624,12 @@ check_ui_reload() {
   check "the UI update $next is confirmed after the reload" ui_update_confirmed $next
   reload_ui second
   check "the UI reloads again from the UI update $next" app_build $((code + 1))
-  check "the app logs both reloads" [ "$(ui_reloads)" -eq 2 ]
+  use_installed_ui
+  check "\"Use the installed UI\" marks the UI update $next failed" ui_update_state $next FAILED
+  check "\"Use the installed UI\" reloads the installed UI of build $code" app_build "$code"
+  sleep 15
+  check "the installed UI in a class loader of its own writes no state file into the app" [ ! -e "$app_dir/lib/app/state" ]
+  check "the app logs the three reloads" [ "$(ui_reloads)" -eq $((reloads + 3)) ]
   grep "I: UI reload" "$UI_OUT/app.log"
 }
 

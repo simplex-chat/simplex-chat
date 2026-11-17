@@ -21,15 +21,15 @@ The prototype is A.
 flowchart LR
   subgraph Fixed[system class loader, kept]
     J[installed jars:<br>Compose, Skiko, Kotlin, JNA, VLC bindings]
-    K[CoreKt: JNI bindings,<br>loadCoreLibrary, hand-off]
+    K[CoreKt: JNI bindings, loadCoreLibrary,<br>core event reader, hand-off]
     N[libapp-lib, libsimplex,<br>GHC runtime]
     L[main: runReloadedUis]
   end
   subgraph UI1[UI class loader 1]
-    U1[common and desktop jars:<br>ChatModel, ChatController, views]
+    U1[common, desktop and nanohttpd jars:<br>ChatModel, ChatController, views]
   end
   subgraph UI2[UI class loader 2]
-    U2[common and desktop jars<br>of the newest UI update]
+    U2[the same jars<br>of the newest UI update]
   end
   U1 --> K
   U2 --> K
@@ -38,70 +38,91 @@ flowchart LR
   L --> UI2
 ```
 
-- `CoreBindings.kt` (JVM class `CoreKt`): the `external fun`s, `loadCoreLibrary`, the hand-off.
-- `Core.kt` (JVM class `CoreInit`): the rest, unchanged.
-- InstalledLibraries hides the installed UI jars from the UI class loaders, except `CoreKt`.
+- `CoreBindings.kt` (JVM class `CoreKt`): the `external fun`s, `loadCoreLibrary`, the core event reader, the hand-off.
+- `Core.kt` (JVM class `CoreInit`): the rest.
+- InstalledLibraries hides the installed own jars from the UI class loaders, except `CoreKt`; it reads their entry names once and closes them.
 - `loadCoreLibrary` calls `System.load` from `CoreKt`, so the native libraries belong to the system class loader; a second call is ignored, and so is a second `initHS`.
+- The fixed part is CoreBindings.kt and UiUpdates.kt; both are in the core hash, so a UI update has the fixed part of the installed app.
+
+## Core events
+
+```mermaid
+sequenceDiagram
+  participant R as reader thread in CoreKt
+  participant Q as queue in CoreKt
+  participant U as receiver of the running UI
+  R->>R: chatRecvMsgWait(ctrl)
+  R->>Q: event
+  U->>Q: takeChatEvent, interruptible
+  Q-->>U: event
+```
+
+- One reader thread per controller; a new controller clears the queue and starts a new reader, and the old one ends after its wait.
+- The desktop receiver takes events with `runInterruptible`, so cancelling it ends the wait; Android reads the core as before.
+- Events that arrive during a reload wait in the queue for the next UI.
 
 ## Hand-off in CoreKt
 
 | Field | Type | Set by | Read by |
 |---|---|---|---|
-| reloadedChatCtrl | ChatCtrl? | the old UI | the new UI's initChatController, which clears it; the fixed loop |
-| reloadedChatEvents | ConcurrentLinkedQueue&lt;String&gt; | the old receiver, for the event it got after its stop | the new receiver, before the core |
-| reloadedReceiverStopped | CountDownLatch? | the old UI | the new receiver, which waits for it |
+| reloadedChatCtrl | ChatCtrl? | the old UI | the new UI's initChatController, which clears it |
+| reloadedChatDbEncrypted | Boolean? | the old UI | the new UI's initChatController |
+| reloadedInstanceLock | FileLock? | the old UI | the new UI's acquireSingleInstance, which clears it; the fixed loop, which then skips the check for another instance |
+| uiReloadRequested | Boolean | the old UI | the fixed loop, which clears it before each UI |
 
 ## Reload
 
 ```mermaid
 sequenceDiagram
-  participant D as Developer tools
+  participant D as Developer tools or the update alert
   participant O as old UI
   participant F as fixed loop
-  participant C as core
   participant N as new UI
-  D->>O: Reload UI
-  O->>O: update checker stopped
-  O->>O: hand-off: ctrl, latch; controller removed, receiver cancelled
-  O->>O: single-instance lock and watcher released
+  D->>O: Reload
+  O->>O: refused during a call, while the chat is not running, or without installed jars
+  O->>O: update checker, audio and video stopped
+  O->>O: hand-off: ctrl, encryption; controller removed, receiver cancelled
+  O->>O: single-instance lock handed off, watcher closed
   O->>O: windows closed, showApp returns
   O-->>F: main returns
-  F->>F: newest valid UI update, else the installed UI jars, in a new class loader
+  F->>F: newest valid UI update, else the installed own jars, in a new class loader
   F->>N: main(args)
-  N->>N: single-instance lock, platform, update checker
-  N->>C: initChatController with the handed-off ctrl: no migration
-  N->>C: startChat: the core running, the new model loaded as at a start, receiver started
-  C-->>O: the next event to the old receiver
-  O->>N: the event in reloadedChatEvents, latch counted down
-  N->>C: the receiver reads the core
+  N->>N: single-instance lock taken over, watcher, platform, update checker
+  N->>N: initChatController with the handed-off ctrl: no migration
+  N->>N: startChat: the core running, the model loaded as at a start, receiver started
 ```
+
+- The loop runs only in the system class loader, and only while the UI that returned asked for a reload.
+- `simplex.ui_update` names the running UI update's directory; the installed own jars run with the property cleared, so they confirm and fail nothing.
+- "Use the installed UI" marks the running UI update failed and reloads; the update alert offers "Reload now".
+
+## Rule for UI code
+
+UI code loads classes and resources through its own classes, never through the thread's context class loader: the event dispatch thread keeps the first UI's, and the coroutine threads the system class loader's.
 
 ## What breaks
 
 - The UI state in memory: the open chat, scroll positions, drafts, modals; the new UI opens on the chat list.
-- A reload is refused during a call, and while the database is not open.
-- The new receiver reads the core once the old one returns, after the next event or 300 s (MESSAGE_TIMEOUT).
+- An event that the old receiver took before its cancellation is processed by the old UI only.
 - Jobs and threads of the old UI run until they end; its commands fail without the controller.
 - Each reload keeps the old UI's classes while a thread, a listener or Compose's global state references them; the log has the heap after each reload.
 - The old UI's system notifications stay, with its actions.
-- A reload within 10 s of an unconfirmed UI update marks the update failed.
+- A reload before a UI update's confirmation marks the update failed.
 - The launch arguments, a link among them, are handled again by each UI.
+- The UI's temporary folder is emptied at each reload.
 - spec/*.md reference Core.kt for the JNI declarations.
-
-## Base
-
-The fixed part's interface is `CoreBindings.kt`; its hash joins the core hash (`--core-hash` in build-apps.yml), so that a UI update needs the same bindings.
 
 ## Changes
 
 | File | Change |
 |---|---|
-| CoreBindings.kt | JNI declarations from Core.kt, loadCoreLibrary, the hand-off |
-| Core.kt | JVM class CoreInit; initChatController takes the handed-off ctrl |
-| SimpleXAPI.kt | handOffForReload; the receiver waits for the old one, hands off and takes over its event; startChat loads a model that is not running, also when the core runs |
+| CoreBindings.kt | JNI declarations from Core.kt, loadCoreLibrary, the core event reader, the hand-off |
+| Core.kt | JVM class CoreInit; initChatController takes the handed-off ctrl and encryption |
+| SimpleXAPI.kt | handOffForReload; the desktop receiver takes events from CoreKt; startChat loads a model that is not running, also when the core runs |
 | DesktopApp.kt | reloadUi; showApp returns on a reload |
-| SingleInstance.kt | releaseSingleInstance |
-| AppUpdater.kt | runReloadedUis, uiMain, runUi; CoreKt visible to UI class loaders |
-| Main.kt | startUi; runReloadedUis after it; loadCoreLibrary |
-| DeveloperView.kt, Platform.kt, strings.xml | "Reload UI" in the desktop developer options |
-| smoke-test.sh | two reloads, from a UI update, with the chat running |
+| SingleInstance.kt | the lock handed off and taken over |
+| UiUpdates.kt | runReloadedUis, runUi, installedUiMain, uiMain; CoreKt visible to UI class loaders |
+| AppUpdater.kt | "Reload now" for a staged UI update |
+| Main.kt | startUi; runReloadedUis after it; loadCoreLibrary; "Use the installed UI" reloads |
+| DeveloperView.kt, Platform.kt, strings.xml | "Reload UI" in the desktop developer options; "Reload now" |
+| smoke-test.sh | reloads from the installed UI to a UI update, between UI updates, and to the installed own jars |

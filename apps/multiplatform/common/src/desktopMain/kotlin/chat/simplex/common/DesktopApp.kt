@@ -93,12 +93,16 @@ fun showApp() {
   if (!simplexWindowState.reloading.value) exitProcess(0)
 }
 
-fun reloadUi() {
-  if (chatModel.activeCall.value != null || !chatModel.controller.hasChatCtrl()) return
+fun reloadUi(): Boolean {
+  if (chatModel.activeCall.value != null || !chatModel.controller.hasChatCtrl() || chatModel.chatRunning.value != true || !uiReloadable()) return false
   stopUpdateChecker()
+  AudioPlayer.stop()
+  VideoPlayerHolder.stopAll()
   chatModel.controller.handOffForReload()
-  releaseSingleInstance()
+  handOffSingleInstance()
+  uiReloadRequested = true
   simplexWindowState.reloading.value = true
+  return true
 }
 
 @Composable

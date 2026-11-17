@@ -3,6 +3,8 @@ package chat.simplex.common.views.helpers
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.otherInstanceRunning
 import chat.simplex.common.platform.dataDir
+import chat.simplex.common.platform.reloadedInstanceLock
+import chat.simplex.common.platform.uiReloadRequested
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -39,6 +41,7 @@ private const val UI_UPDATE_STAGING = "staging"
 private const val CORE_HASH = "core-hash"
 private const val JAVA_OPTION = "java-options="
 private const val APP_VERSION_OPTION = "-Djpackage.app-version="
+private const val CORE_BINDINGS = "chat/simplex/common/platform/CoreKt.class"
 private val UI_JAR_CLASSES = listOf(
   "chat/simplex/desktop/MainKt.class",
   "chat/simplex/common/BuildConfigCommon.class",
@@ -62,13 +65,41 @@ enum class UiUpdateState { STAGED, STARTED, CONFIRMED, RESTARTED, FAILED, REMOVE
 
 fun startUiUpdate(mainClass: String, args: Array<String>): Boolean {
   val main = uiUpdateMain(mainClass) ?: return false
+  runUi(main, args)
+  return true
+}
+
+fun uiReloadable(): Boolean = installedUiJars() != null
+
+fun runReloadedUis(mainClass: String, args: Array<String>) {
+  if (UiUpdate::class.java.classLoader !== ClassLoader.getSystemClassLoader()) return
+  while (uiReloadRequested) {
+    uiReloadRequested = false
+    val runtime = Runtime.getRuntime()
+    System.gc()
+    println("I: UI reload, heap used ${(runtime.totalMemory() - runtime.freeMemory()) shr 20} MB")
+    runUi(uiUpdateMain(mainClass) ?: installedUiMain(mainClass) ?: return, args)
+  }
+}
+
+private fun runUi(main: Method, args: Array<String>) {
   Thread.currentThread().contextClassLoader = main.declaringClass.classLoader
   try {
     main.invoke(null, args)
   } catch (e: InvocationTargetException) {
     throw e.targetException
   }
-  return true
+}
+
+private fun installedUiMain(mainClass: String): Method? {
+  val installedUi = installedUiJars() ?: return null
+  System.clearProperty(UI_UPDATE_PROPERTY)
+  return uiMain(installedUi, installedUi, mainClass)
+}
+
+private fun uiMain(jars: List<File>, installedUi: List<File>, mainClass: String): Method {
+  val loader = URLClassLoader(jars.map { it.toURI().toURL() }.toTypedArray(), InstalledLibraries(installedUi))
+  return Class.forName(mainClass, true, loader).getMethod("main", Array<String>::class.java)
 }
 
 fun runningUiUpdateDir(): File? = System.getProperty(UI_UPDATE_PROPERTY)?.let(::File)
@@ -117,15 +148,13 @@ private fun uiUpdateMain(mainClass: String): Method? {
     if (UiUpdate::class.java.classLoader !== ClassLoader.getSystemClassLoader()) return null
     val key = uiUpdateKey() ?: return null
     val dirs = uiUpdateDirs()
-    if (dirs.isEmpty() || otherInstanceRunning()) return null
+    if (dirs.isEmpty() || (reloadedInstanceLock == null && otherInstanceRunning())) return null
     val installedUi = installedUiJars() ?: return null
     val base = installedUiBase(installedUi) ?: return null
-    val libraries = InstalledLibraries(installedUi.map(::JarFile))
     for (dir in dirs) {
       val update = startableUiUpdate(dir, key, base, BuildConfigCommon.DESKTOP_VERSION_CODE) ?: continue
       try {
-        val loader = URLClassLoader(update.jars.map { it.toURI().toURL() }.toTypedArray(), libraries)
-        val main = Class.forName(mainClass, true, loader).getMethod("main", Array<String>::class.java)
+        val main = uiMain(update.jars, installedUi, mainClass)
         System.setProperty(UI_UPDATE_PROPERTY, dir.path)
         return main
       } catch (e: Throwable) {
@@ -274,11 +303,12 @@ private fun installedUiBase(installedUi: List<File>): String? {
 
 private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
-private class InstalledLibraries(private val hidden: List<JarFile>) : ClassLoader(null) {
+private class InstalledLibraries(jars: List<File>) : ClassLoader(null) {
   private val system = ClassLoader.getSystemClassLoader()
-  private val hiddenNames = hidden.map { File(it.name).name }
+  private val hiddenNames = jars.map { it.name }
+  private val hidden = jars.flatMapTo(HashSet()) { jar -> JarFile(jar).use { j -> j.entries().toList().map { it.name } } } - CORE_BINDINGS
 
-  private fun hides(name: String) = hidden.any { it.getEntry(name) != null }
+  private fun hides(name: String) = name in hidden
 
   override fun loadClass(name: String, resolve: Boolean): Class<*> =
     if (hides(name.replace('.', '/') + ".class")) throw ClassNotFoundException(name) else system.loadClass(name)

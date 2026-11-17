@@ -3,8 +3,9 @@
 package chat.simplex.common.platform
 
 import java.nio.ByteBuffer
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.CountDownLatch
+import java.nio.channels.FileLock
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 // ghc's rts
 // Spec: spec/architecture.md#initHS
@@ -43,5 +44,27 @@ external fun chatResizeImageFd(fd: Int, maxSize: Int, png: Int): String
 fun loadCoreLibrary(path: String) = System.load(path)
 
 var reloadedChatCtrl: ChatCtrl? = null
-val reloadedChatEvents = ConcurrentLinkedQueue<String>()
-var reloadedReceiverStopped: CountDownLatch? = null
+var reloadedChatDbEncrypted: Boolean? = null
+var reloadedInstanceLock: FileLock? = null
+var uiReloadRequested = false
+
+private val chatEvents = LinkedBlockingQueue<String>()
+@Volatile private var chatEventsCtrl: ChatCtrl? = null
+
+fun takeChatEvent(ctrl: ChatCtrl, timeout: Int): String {
+  synchronized(chatEvents) {
+    if (chatEventsCtrl != ctrl) {
+      chatEventsCtrl = ctrl
+      chatEvents.clear()
+      val reader = Thread({
+        while (chatEventsCtrl == ctrl) {
+          val event = chatRecvMsgWait(ctrl, timeout)
+          if (event != "" && chatEventsCtrl == ctrl) chatEvents.put(event)
+        }
+      }, "simplex-core-events")
+      reader.isDaemon = true
+      reader.start()
+    }
+  }
+  return chatEvents.poll(timeout.toLong(), TimeUnit.MICROSECONDS) ?: ""
+}

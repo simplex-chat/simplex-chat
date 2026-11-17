@@ -57,10 +57,10 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     if (!appPrefs.storeDBPassphrase.get() && !appPrefs.initialRandomDBPassphrase.get()) {
       ksDatabasePassword.remove()
     }
-    val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
-    val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
     val reloaded = reloadedChatCtrl
     reloadedChatCtrl = null
+    val dbKey = if (reloaded != null) "" else useKey ?: DatabaseUtils.useDatabaseKey()
+    val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
     var migrated: Array<Any> = if (reloaded != null) {
       arrayOf<Any>(json.encodeToString(DBMigrationResult.serializer(), DBMigrationResult.OK), reloaded)
     } else if (databaseBackend == "postgres") {
@@ -92,7 +92,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       migrated[1] as Long
     } else null
     chatController.setChatCtrl(ctrl)
-    chatModel.chatDbEncrypted.value = dbKey != ""
+    chatModel.chatDbEncrypted.value = if (reloaded != null) reloadedChatDbEncrypted else dbKey != ""
     chatModel.chatDbStatus.value = res
     if (res != DBMigrationResult.OK) {
       Log.d(TAG, "Unable to migrate successfully: $res")

@@ -4,6 +4,7 @@ import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.dataDir
 import chat.simplex.common.platform.desktopPlatform
+import chat.simplex.common.platform.reloadedInstanceLock
 import chat.simplex.res.*
 import com.sun.jna.NativeLibrary
 import java.io.IOException
@@ -47,6 +48,12 @@ private sealed interface LockResult {
 }
 
 fun acquireSingleInstance(link: String?): Boolean {
+  reloadedInstanceLock?.let { lock ->
+    reloadedInstanceLock = null
+    lockHandle = lock
+    singleInstanceLock = true
+    return true
+  }
   dataDir.mkdirs()
   val lockAttemptTime = FileTime.from(Instant.now())
   when (val result = tryAcquireLock()) {
@@ -66,8 +73,8 @@ fun acquireSingleInstance(link: String?): Boolean {
   }
 }
 
-fun releaseSingleInstance() {
-  lockHandle?.channel()?.close()
+fun handOffSingleInstance() {
+  reloadedInstanceLock = lockHandle
   lockHandle = null
   watcher?.close()
   watcher = null
