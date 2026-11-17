@@ -197,7 +197,7 @@ def runnable_cli(binary: Path, work: Path) -> Path:
 
 def test_cli(binary: Path, out: Path, database: Path | None = None) -> None:
     """The CLI starts and prints its version, and opens the previous release's database when it is given."""
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         work = Path(tmp)
         runnable = runnable_cli(binary, work)
         version = run([runnable, "--version"], capture=True).stdout
@@ -422,7 +422,7 @@ def test_desktop(package: Path, out: Path, database: Path | None = None, cli: Pa
     previous release's database and the new CLI, the app must open and migrate that database."""
     if bool(database) != bool(cli):
         raise BuildError("the old database test needs both the database and the CLI that checks it")
-    with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp, contextlib.ExitStack() as stack:
         work = Path(tmp).resolve()
         prefix = None
         if database:
@@ -447,7 +447,7 @@ def test_desktop_upgrade(package: Path, out: Path, cli: Path | None) -> None:
         raise BuildError("the upgrade test needs the CLI that checks the database")
     if package.name not in OLD_RELEASE_DESKTOP_SHA256:
         raise BuildError(f"no {OLD_RELEASE} package is pinned for {package.name}")
-    with tempfile.TemporaryDirectory() as tmp, desktop_data() as (config, data), contextlib.ExitStack() as stack:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp, desktop_data() as (config, data), contextlib.ExitStack() as stack:
         work = Path(tmp).resolve()
         (work / OLD_RELEASE).mkdir()
         old_url = release_url(OLD_RELEASE, package.name)
