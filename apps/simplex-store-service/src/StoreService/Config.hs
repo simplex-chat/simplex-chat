@@ -64,7 +64,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import StoreService.Names.Chain (ChainConfig (..), hexP, parseText)
+import StoreService.Names.Chain (ChainConfig (..), Hex32 (..))
 import StoreService.Names.Registration (LabelError (..), validLabel)
 import StoreService.StoreReceipts (StoreChecks (..))
 import System.IO.Error (ioeGetErrorString)
@@ -327,9 +327,6 @@ exportRemoved k = "listener." <> T.unpack k <> " is removed: the service writes 
 -- | The [listener] keys only the names site reads.
 namesListenerKeys :: [Text]
 namesListenerKeys = ["names_static_dir", "names_port"]
-
-serviceKeyBytes :: Int
-serviceKeyBytes = 32
 
 -- | Well below 100, where BTCPay settles an invoice for one satoshi.
 maxTolerance :: Double
@@ -690,6 +687,6 @@ parseConfig ini = do
     serviceKey = do
       v <- required "chain" "service_key"
       let bad = Left "chain.service_key must be 0x and 64 lowercase hex digits of a valid secp256k1 key"
-      case parseText (hexP serviceKeyBytes) v of
-        Right bytes -> either (const bad) Right (mkPrivateKey (BA.convert bytes))
+      case strDecode (encodeUtf8 v) of
+        Right (Hex32 bytes) -> either (const bad) Right (mkPrivateKey (BA.convert bytes))
         Left _ -> bad

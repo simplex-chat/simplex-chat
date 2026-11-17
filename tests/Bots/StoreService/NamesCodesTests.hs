@@ -21,7 +21,7 @@ import Data.Text (Text)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
 import Network.HTTP.Client (Manager, Response, RequestBody (..), httpLbs, method, parseRequest, requestBody)
-import Simplex.Chat.Badges.Code (NamePrepaidCode, formatNameCode, namePrepaidCodeHash, parseNameCode, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (NamePrepaidCode, formatNameCode, parseNameCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -30,6 +30,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import StoreService.Config (ListenerConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction)
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Codes
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, insertPrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
@@ -72,7 +73,7 @@ baseCode :: PrepaidCode
 baseCode =
   PrepaidCode
     { pcId = 1,
-      pcCodeHash = "",
+      pcCodeHash = Hex32 "",
       pcMinLength = 8,
       pcYears = 2,
       pcPaymentStatus = CPSPaid,
@@ -134,8 +135,8 @@ newCode len = C.newRandom >>= (`randomNamePrepaidCode` lengthOf len)
 
 issueAs :: DBStore -> NamePrepaidCode -> NewPrepaidCode -> IO PrepaidCode
 issueAs st code new = withTransaction st $ \db -> do
-  Right _ <- insertPrepaidCode db new {npcCodeHash = namePrepaidCodeHash code} tNow
-  fromJust <$> getPrepaidCode db (namePrepaidCodeHash code)
+  Right _ <- insertPrepaidCode db new {npcCodeHash = prepaidCodeHash code} tNow
+  fromJust <$> getPrepaidCode db (prepaidCodeHash code)
 
 readCode :: DBStore -> PrepaidCode -> IO (Maybe PrepaidCode)
 readCode st PrepaidCode {pcCodeHash} = withTransaction st (`getPrepaidCode` pcCodeHash)
@@ -215,7 +216,7 @@ testReserveRefusals = withOrders $ \turns st -> do
   reserve (pcCodeHash revokedRow) 8 `shouldReturn` Left CRInvalid
   reserve (pcCodeHash expiredRow) 8 `shouldReturn` Left CRExpired
   reserve (pcCodeHash unpaidRow) 8 `shouldReturn` Left CRPaymentPending
-  reserve (namePrepaidCodeHash unknown) 8 `shouldReturn` Left CRInvalid
+  reserve (prepaidCodeHash unknown) 8 `shouldReturn` Left CRInvalid
   reserve (pcCodeHash shortRow) 7 `shouldReturn` Left CRNotCovering
   reserve (pcCodeHash revokedRow) 7 `shouldReturn` Left CRInvalid
   readIORef wrote `shouldReturn` False

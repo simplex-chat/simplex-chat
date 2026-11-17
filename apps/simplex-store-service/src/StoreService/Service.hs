@@ -49,7 +49,7 @@ import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, 
 import StoreService.Group.Command (CmdSource (..), MoneyCmd (..), consoleCmd, spelledCmd)
 import StoreService.Metrics (MetricsEnv (..), runMetrics)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
-import StoreService.Names.Chain (ChainClient, hex, newChainClient, nodeChainId)
+import StoreService.Names.Chain (ChainClient, newChainClient, nodeChainId)
 import StoreService.Names.Contracts (Contracts, Terms (..), communityName, namePolicy, newContracts, runTermsFetch, termsLinks)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
@@ -341,7 +341,7 @@ logNamePolicy NamesConfig {nCommunity} ct =
   where
     logTerms what sold = \case
       Nothing -> logWarn $ "names: the name policy has no " <> what <> " the service takes, so " <> sold <> " cannot be ordered until the owner sets them"
-      Just Terms {tmLink, tmHash} -> logNote $ "names: " <> what <> " " <> tmLink <> ", hash " <> hex tmHash
+      Just Terms {tmLink, tmHash} -> logNote $ "names: " <> what <> " " <> tmLink <> ", hash " <> safeDecodeUtf8 (strEncode tmHash)
 
 -- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
 -- terms fetch at the start and then hourly.

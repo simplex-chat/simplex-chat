@@ -1,3 +1,7 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,6 +12,7 @@ module StoreService.Names.Chain
   ( ChainConfig (..),
     ChainClient (..),
     ChainError (..),
+    Hex32 (..),
     TxHash (..),
     SignedTx (..),
     Block (..),
@@ -45,10 +50,8 @@ module StoreService.Names.Chain
     addressWord,
     selector,
     hex,
-    hexP,
     lowerHexP,
     parseText,
-    bytes32FromHex,
     decodeUint256,
     decodeWord64,
     decodeAddress,
@@ -102,10 +105,11 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), FromField (..), ToField (.
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey)
 import Simplex.Messaging.Encoding (Encoding (..))
+import Simplex.Messaging.Encoding.String (StrEncoding (..), StrJSON (..))
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), decodeEip1559Tx, eip1559SigningHash, signEip1559Tx)
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import Simplex.Messaging.Util (tshow)
 import System.Timeout (timeout)
 
 data ChainConfig = ChainConfig
@@ -143,12 +147,27 @@ data ChainError
   | ChainGasAboveCap Word64
   deriving (Eq, Show)
 
-newtype TxHash = TxHash ByteString
+-- | A 32-byte value whose text form is 0x and 64 lowercase hex digits, stored as its bytes.
+newtype Hex32 = Hex32 {unHex32 :: ByteString}
+  deriving (Eq, Ord, Show)
+  deriving (J.ToJSON, J.FromJSON) via (StrJSON "Hex32" Hex32)
+
+instance StrEncoding Hex32 where
+  strEncode (Hex32 b) = "0x" <> convertToBase Base16 b
+  strP = Hex32 <$> (A.string "0x" *> lowerHexP abiWordSize)
+
+instance FromField Hex32 where fromField = blobFieldDecoder hex32
+
+instance ToField Hex32 where toField (Hex32 b) = toField (Binary b)
+
+hex32 :: ByteString -> Either String Hex32
+hex32 b
+  | B.length b == abiWordSize = Right $ Hex32 b
+  | otherwise = Left "not 32 bytes"
+
+newtype TxHash = TxHash Hex32
   deriving (Eq, Show)
-
-instance FromField TxHash where fromField = blobFieldDecoder (Right . TxHash)
-
-instance ToField TxHash where toField (TxHash h) = toField (Binary h)
+  deriving newtype (StrEncoding, J.ToJSON, J.FromJSON, FromField, ToField)
 
 data SignedTx = SignedTx {stRaw :: ByteString, stHash :: TxHash}
   deriving (Eq, Show)
@@ -223,8 +242,8 @@ blockByNumber c tag =
 
 -- | Nothing while the transaction is not mined, or after the node pruned its receipt.
 transactionReceipt :: ChainClient -> TxHash -> IO (Either ChainError (Maybe Receipt))
-transactionReceipt c (TxHash h) =
-  rpc c "eth_getTransactionReceipt" [J.String $ hex h] $ nullable $ J.withObject "receipt" $ \r ->
+transactionReceipt c h =
+  rpc c "eth_getTransactionReceipt" [J.toJSON h] $ nullable $ J.withObject "receipt" $ \r ->
     Receipt <$> (status =<< r .: "status") <*> (quantity =<< r .: "blockNumber")
   where
     status =
@@ -235,8 +254,8 @@ transactionReceipt c (TxHash h) =
 
 -- | Whether the node knows the transaction, pending or mined.
 transactionKnown :: ChainClient -> TxHash -> IO (Either ChainError Bool)
-transactionKnown c (TxHash h) =
-  rpc c "eth_getTransactionByHash" [J.String $ hex h] $ fmap isJust . nullable (J.withObject "transaction" $ \_ -> pure ())
+transactionKnown c h =
+  rpc c "eth_getTransactionByHash" [J.toJSON h] $ fmap isJust . nullable (J.withObject "transaction" $ \_ -> pure ())
 
 transactionCount :: ChainClient -> Address -> BlockTag -> IO (Either ChainError Word64)
 transactionCount c a tag = rpc c "eth_getTransactionCount" [J.toJSON a, blockTagParam tag] quantity
@@ -276,7 +295,7 @@ recentTip c = rpc c "eth_feeHistory" [J.String tipBlocks, blockTagParam Latest, 
 signTransaction :: TVar ChaChaDRG -> ChainClient -> Eip1559Tx -> IO (Either String SignedTx)
 signTransaction g ChainClient {ccConfig = ChainConfig {cServiceKey}} tx = fmap signed <$> signEip1559Tx g cServiceKey tx
   where
-    signed raw = SignedTx {stRaw = raw, stHash = TxHash $ keccak256 raw}
+    signed raw = SignedTx {stRaw = raw, stHash = TxHash $ Hex32 $ keccak256 raw}
 
 decodeSignedTx :: ByteString -> Either String Eip1559Tx
 decodeSignedTx = fmap fst . decodeEip1559Tx
@@ -287,7 +306,7 @@ transactionSigner raw = case decodeEip1559Tx raw of
   Left e -> pure $ Left e
 
 sendRawTransaction :: ChainClient -> ByteString -> IO (Either ChainError TxHash)
-sendRawTransaction c raw = rpc c "eth_sendRawTransaction" [J.String $ hex raw] (fmap TxHash . bytes)
+sendRawTransaction c raw = rpc c "eth_sendRawTransaction" [J.String $ hex raw] J.parseJSON
 
 -- | The answer is parsed within the timeout, so a slow parse is bounded too.
 rpc :: ChainClient -> Text -> [J.Value] -> (J.Value -> JT.Parser a) -> IO (Either ChainError a)
@@ -420,11 +439,9 @@ addressWord a = B.replicate addressPadding 0 <> unAddress a
 selector :: ByteString -> ByteString
 selector = B.take 4 . keccak256
 
+-- | Data of any length as JSON-RPC takes it.
 hex :: ByteString -> Text
 hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
-
-hexP :: Int -> A.Parser ByteString
-hexP n = A.string "0x" *> lowerHexP n
 
 lowerHexP :: Int -> A.Parser ByteString
 lowerHexP n = A.count (2 * n) (A.satisfy lowerHexDigit) >>= either fail pure . convertFromBase Base16 . BC.pack
@@ -433,9 +450,6 @@ lowerHexP n = A.count (2 * n) (A.satisfy lowerHexDigit) >>= either fail pure . c
 
 parseText :: A.Parser a -> Text -> Either String a
 parseText p = parseAll p . encodeUtf8
-
-bytes32FromHex :: Text -> Maybe ByteString
-bytes32FromHex = eitherToMaybe . parseText (hexP abiWordSize)
 
 decodeUint256 :: ByteString -> Either AbiError Integer
 decodeUint256 = uintAt 0

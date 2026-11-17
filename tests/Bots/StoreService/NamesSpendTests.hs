@@ -48,7 +48,7 @@ import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
 import StoreService.Names.Balances (RefundRefusal (..), recordRefund)
-import StoreService.Names.Chain (hex, uint256)
+import StoreService.Names.Chain (Hex32 (..), hex, uint256)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), personalDigest, spendMessage)
 import StoreService.Names.Store
@@ -153,7 +153,7 @@ onCreate hook act = writeIORef hook (writeIORef hook (pure ()) >> act)
 -- | A taken paid order of owner A with a balance of the cents.
 sourceOf :: Ctx -> Text -> USDCents -> IO RegistrationId
 sourceOf Ctx {cStore} rid cents = do
-  placePaid cStore rid ownerA (order ("source-" <> rid) 1) {ofCommitment = C.sha256Hash $ encodeUtf8 rid} (at 60) `shouldReturn` Right ()
+  placePaid cStore rid ownerA (order ("source-" <> rid) 1) {ofCommitment = Hex32 $ C.sha256Hash $ encodeUtf8 rid} (at 60) `shouldReturn` Right ()
   taken <- reg cStore rid
   write cStore taken {nrPhase = OTaken Nothing Nothing} `shouldReturn` Written 2
   credit cStore rid cents
@@ -195,7 +195,7 @@ spendBody Ctx {cRandom} source SpendBody {sbOrder = o@Order {oKey, oPrice, oTime
       [ ("labelHash", J.String $ hex lh),
         ("length", J.toJSON (nameLengthInt ofLength)),
         ("duration", J.toJSON ofDuration),
-        ("commitment", J.String $ hex ofCommitment),
+        ("commitment", J.toJSON ofCommitment),
         ("sealed", J.String ofSealed),
         ("price", J.toJSON oPrice),
         ("balance", J.toJSON sbBalance),
@@ -278,7 +278,7 @@ testDifferenceSpend = withSpend $ \ctx -> do
   ((`fieldOf` "phase") =<< r, (`fieldOf` "price") =<< r, (`fieldOf` "fromBalance") =<< r) `shouldBe` (Just "unpaid", Just (J.Number 10000), Just (J.Number 6000))
   let invId = invoiceIdOf v
   holder <- invoiceRegistration ctx invId
-  stubCalls (cStub ctx) `shouldReturn` [StubCreate btc OrderDraft {odAmount = CurrencyAmount 4000, odCurrency = "usd", odReference = "name:" <> hex (nrOrderHash holder)}]
+  stubCalls (cStub ctx) `shouldReturn` [StubCreate btc OrderDraft {odAmount = CurrencyAmount 4000, odCurrency = "usd", odReference = "name:" <> hex (unHex32 $ nrOrderHash holder)}]
   (nrPhase holder, nrPrice holder, nrPayment holder) `shouldBe` (OUnpaid True, 10000, OPDifference BalanceUse {buSource = src, buUsed = 6000} btc invId)
   nrOrderHash holder `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance Spend {spSource = src, spPrice = 10000, spBalance = 6000, spMethod = Just btc})
   nrAgreedTerms holder `shouldBe` agreed (oTerms aliceOrder)

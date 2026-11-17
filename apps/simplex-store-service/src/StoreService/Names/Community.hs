@@ -24,7 +24,7 @@ import Data.Word (Word64)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Chain (ChainError (..), hex)
+import StoreService.Names.Chain (ChainError (..))
 import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, concurrent, kindTerms, namePolicy, policyNonce, termsLinks, termsText, together)
 import StoreService.Names.Registration (AgreedTerms (..), CommunityName, TermsHash)
 
@@ -46,7 +46,7 @@ yearsFor :: CommunityName -> Int -> Int
 yearsFor community years = if community then communityYears else years
 
 termsJSON :: Maybe Terms -> J.Value
-termsJSON = maybe J.Null $ \Terms {tmLink, tmHash} -> J.object ["hash" .= hex tmHash, "link" .= tmLink]
+termsJSON = maybe J.Null $ \Terms {tmLink, tmHash} -> J.object ["hash" .= tmHash, "link" .= tmLink]
 
 -- | Whether the policy lists the name, and the terms it is sold under: the community terms for a listed name, else the
 -- general terms.

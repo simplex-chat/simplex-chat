@@ -85,12 +85,12 @@ testCommitThenRegister g = withFakeEthNode $ \node -> do
   let registration = knownRegistration {rOwner = ewAddress w}
       commitCall = commitCalldata $ makeCommitment registration
   commitTx <- expectedTransaction g 0 fakeController commitCall
-  send g c fakeController commitCall `shouldReturn` SignedTx commitTx (TxHash $ C.keccak256 commitTx)
+  send g c fakeController commitCall `shouldReturn` SignedTx commitTx (TxHash $ Hex32 $ C.keccak256 commitTx)
   intent <- signRegisterIntent g domain w registration deadline
   verifyRegisterIntent domain deadline intent `shouldReturn` Right ()
   let registerCall = registerWithCreditCalldata intent
   registerTx <- expectedTransaction g 1 fakeSponsor registerCall
-  send g c fakeSponsor registerCall `shouldReturn` SignedTx registerTx (TxHash $ C.keccak256 registerTx)
+  send g c fakeSponsor registerCall `shouldReturn` SignedTx registerTx (TxHash $ Hex32 $ C.keccak256 registerTx)
   sentTransactions node `shouldReturn` [commitTx, registerTx]
 
 -- | The dry run, the registrar's next nonce and the fees, then the signed transaction sent and its hash checked.
@@ -116,7 +116,7 @@ knownRegistration =
       rTLD = TLDSimplex,
       rOwner = address "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
       rDuration = 63072000,
-      rSecret = B.replicate 32 0x11,
+      rSecret = Hex32 $ B.replicate 32 0x11,
       rResolver = address "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6",
       rContactLink = Just "https://smp.simplex.im/a#contact",
       rChannelLink = Just "https://smp1.simplex.im/c#one"
@@ -157,9 +157,9 @@ acceptanceDomain :: Eip712Domain
 acceptanceDomain = policyDomain fakeChainId fakeNamePolicy
 
 -- viem: keccak256(toHex("SimpleX community terms v1")) and keccak256(toHex("alicebakery commitment"))
-acceptedHash, acceptedCommitment :: ByteString
-acceptedHash = unhex "eed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac"
-acceptedCommitment = unhex "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d"
+acceptedHash, acceptedCommitment :: Hex32
+acceptedHash = Hex32 $ unhex "eed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac"
+acceptedCommitment = Hex32 $ unhex "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d"
 
 acceptanceDeadline :: Word64
 acceptanceDeadline = 1767315600

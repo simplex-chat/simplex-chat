@@ -18,7 +18,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (SimplexTLD (..), labelHash)
-import StoreService.Names.Chain (AbiError (..), AbiValue (..), abiBytes, abiTuple, decodeAddress, decodeBool, decodeBytes, decodeBytes32, decodeLabels, decodeString, decodeUint256, uint256)
+import StoreService.Names.Chain (AbiError (..), AbiValue (..), Hex32 (..), abiBytes, abiTuple, decodeAddress, decodeBool, decodeBytes, decodeBytes32, decodeLabels, decodeString, decodeUint256, uint256)
 import StoreService.Names.Registration
 import Test.Hspec
 
@@ -153,7 +153,7 @@ dynamis =
       rTLD = TLDSimplex,
       rOwner = owner,
       rDuration = duration,
-      rSecret = B.replicate 32 0x11,
+      rSecret = Hex32 $ B.replicate 32 0x11,
       rResolver = resolver,
       rContactLink = Just "https://smp8.simplex.im/a#contact",
       rChannelLink = Nothing
@@ -166,16 +166,16 @@ termsOrder =
     { ofLabelHash = labelHash "alicebakery",
       ofLength = lengthOf 11,
       ofDuration = 69292800,
-      ofCommitment = hx "0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5",
+      ofCommitment = h32 "0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5",
       ofSealed = "AAAAAAAAAAAAAAAACWgxqMk-UKfpra_Zh6vc4KNBR6SX1WYpGb4COoWCCbM0bisYCH14WLzghp8hqi_-KyXSi4qf_DAdP_M4bFetD0s",
-      ofAgreedTerms = AgreedTerms {atCommunityName = False, atTermsHash = hx "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"}
+      ofAgreedTerms = AgreedTerms {atCommunityName = False, atTermsHash = h32 "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"}
     }
 
 communityOrder :: OrderFields
-communityOrder = termsOrder {ofAgreedTerms = AgreedTerms {atCommunityName = True, atTermsHash = hx "0xbbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d"}}
+communityOrder = termsOrder {ofAgreedTerms = AgreedTerms {atCommunityName = True, atTermsHash = h32 "0xbbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d"}}
 
-commitment :: ByteString
-commitment = hx "0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1"
+commitment :: Commitment
+commitment = h32 "0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1"
 
 node :: ByteString
 node = hx "0x833cc73a7eae1ddee67ec8845ec3d39799406c7bc87fab7c504a7e0ab5cb89bb"
@@ -218,3 +218,6 @@ chainId = 31337
 
 hx :: Text -> ByteString
 hx t = either error id $ convertFromBase Base16 $ encodeUtf8 $ fromMaybe t $ T.stripPrefix "0x" t
+
+h32 :: Text -> Hex32
+h32 = either error id . strDecode . encodeUtf8

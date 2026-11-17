@@ -11,6 +11,7 @@ module StoreService.Names.Codes
     codeRefusalTag,
     reserveRefusal,
     readPrepaidCode,
+    prepaidCodeHash,
     reserveCode,
     releaseCode,
     spendLandedCode,
@@ -35,6 +36,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import StoreService.Group.Command (CmdSource, maxNameYears)
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Registration (RegistrationId)
 import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), enumTextDecode, getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
@@ -101,7 +103,10 @@ reserveRefusal :: DB.Connection -> UTCTime -> CodeHash -> RegistrationId -> Name
 reserveRefusal db now codeHash rid len = maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid len) <$> getPrepaidCode db codeHash
 
 readPrepaidCode :: DBStore -> NamePrepaidCode -> IO (Maybe PrepaidCode)
-readPrepaidCode st code = withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
+readPrepaidCode st code = withTransaction st (`getPrepaidCode` prepaidCodeHash code)
+
+prepaidCodeHash :: NamePrepaidCode -> CodeHash
+prepaidCodeHash = Hex32 . namePrepaidCodeHash
 
 newtype ReservationRefused = ReservationRefused CodeRefusal
   deriving (Show)
@@ -154,7 +159,7 @@ issueNameCode cc issuer len years paymentStatus
     issue retries = do
       code <- randomNamePrepaidCode (random cc) len
       now <- getCurrentTime
-      let new = NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = nameLengthInt len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Nothing, npcIssuer = issuer}
+      let new = NewPrepaidCode {npcCodeHash = prepaidCodeHash code, npcMinLength = nameLengthInt len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Nothing, npcIssuer = issuer}
       withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) >>= \case
         Right (Right _) -> pure $ Right code
         Right (Left CodeHashTaken)
@@ -174,4 +179,4 @@ revokeNameCode turns cc code = withCodeTurn turns codeHash $ do
     Right (NoSuchCode, _) -> Left "No such code."
     Left _ -> Left "The code could not be revoked."
   where
-    codeHash = namePrepaidCodeHash code
+    codeHash = prepaidCodeHash code

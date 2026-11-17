@@ -46,11 +46,12 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (catchOwn', tshow)
+import Simplex.Messaging.Util (catchOwn', safeDecodeUtf8, tshow)
 import StoreService.Names.Chain
 import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxSettlement (..), TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
 import StoreService.Names.View (addressText)
@@ -306,7 +307,7 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
 settle :: Sender -> Word64 -> InFlight -> TxOutcome -> IO ()
 settle Sender {snStore, snInFlight} nonce InFlight {ifHashes, ifOutcome} outcome = do
   unrecorded <- withTransaction snStore $ \db -> filterM (\h -> not <$> recordTransactionOutcome db h TSPending (settlement h)) $ L.toList ifHashes
-  forM_ unrecorded $ \(TxHash h) -> logError $ "names sender: nonce " <> tshow nonce <> ": transaction " <> hex h <> " was not pending when it settled"
+  forM_ unrecorded $ \h -> logError $ "names sender: nonce " <> tshow nonce <> ": transaction " <> safeDecodeUtf8 (strEncode h) <> " was not pending when it settled"
   when (outcome == TONonceUsed) $
     logWarn $ "names sender: nonce " <> tshow nonce <> " used with no receipt for its transactions; its owner judges it from chain state"
   atomically $ do

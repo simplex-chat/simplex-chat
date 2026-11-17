@@ -51,7 +51,7 @@ import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Records
 import StoreService.Names.Registration (LinkKind (..), Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, linkMaxBytes, multicallCalldata, nodeBytes, parseSignature, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Sender (Sender, followTransactions, newSender)
-import StoreService.Names.Store (EditOutcome (..), EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
+import StoreService.Names.Store (BodyHash, EditOutcome (..), EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
 import StoreService.Names.Turns (newTurns)
 import StoreService.Web.Http (maxBodyBytes)
 import StoreService.Web.Names.Records (EditInvalid (..), editRequest, editResponse, recordsHandler)
@@ -218,7 +218,7 @@ mineSent s@Setup {node, sender, records} n ok = do
   _ <- mine node []
   followTransactions sender
   recordsRound records
-  pure $ TxHash h
+  pure $ TxHash $ Hex32 h
 
 -- | The transactions sent, once the request that sent the n-th has let go of its edit, since until then a round skips the edit.
 sentBy :: Setup -> Int -> IO [ByteString]
@@ -239,9 +239,9 @@ editRows Setup {store} = withTransaction store $ \db -> do
   pure n
 
 -- | As the relay keys a sent request: each signed digest and its signature, in order.
-bodyHashOf :: EditRequest -> ByteString
+bodyHashOf :: EditRequest -> BodyHash
 bodyHashOf EditRequest {erChanges} =
-  C.sha256Hash $ B.concat [digestOf scChange scNonce scDeadline <> smpEncode scSignature | SignedChange {scChange, scNonce, scDeadline, scSignature} <- L.toList erChanges]
+  Hex32 $ C.sha256Hash $ B.concat [digestOf scChange scNonce scDeadline <> smpEncode scSignature | SignedChange {scChange, scNonce, scDeadline, scSignature} <- L.toList erChanges]
 
 -- | Saves an edit as a request does before it joins the sender, as if the service stopped right after.
 saveUnsent :: Setup -> EditRequest -> IO ()
@@ -701,7 +701,7 @@ testResume g = withSetup g $ \s@Setup {node, owner} -> do
   (!! 2) <$> sentTransactions node `shouldReturn` raw
   h' <- mineSent s'' 3 True
   stateOf s sent `shouldReturn` Just (ESSettled $ EOApplied $ Just h')
-  TxHash (C.keccak256 raw) `shouldBe` h'
+  TxHash (Hex32 $ C.keccak256 raw) `shouldBe` h'
 
 testBadRowSkipped :: TVar ChaChaDRG -> IO ()
 testBadRowSkipped g = withSetup g $ \s@Setup {store, clock} -> do
@@ -894,7 +894,7 @@ testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post 
   post (J.encode overCap) `shouldReturn` (refusedWith 400 "bad_request", Nothing)
   editRows s `shouldReturn` 0
   answer <- async $ post $ editBody viemChannelLink
-  TxHash h <- mineSent s 1 True
+  TxHash (Hex32 h) <- mineSent s 1 True
   bounded "the edit's answer" (wait answer) `shouldReturn` ((200, Just $ KM.fromList ["tx" .= hex h]), Nothing)
   setNonce s 1
   next <- async . post . J.encode . editJson =<< signEdit s (owner s) (channel "https://smp9.simplex.im/c#next") 1 deadline
@@ -926,7 +926,7 @@ testHttpTwoLongLinks g = withSetup g $ \s@Setup {records} -> withRecordsApp reco
   let longLink prefix = prefix <> T.replicate (linkMaxBytes - T.length prefix) "A"
   body <- J.encode . editJson <$> ownerTwo s 0 (longLink "https://smp8.simplex.im/a#") (longLink "https://smp8.simplex.im/c#")
   answer <- async $ post body
-  TxHash h <- mineSent s 1 True
+  TxHash (Hex32 h) <- mineSent s 1 True
   bounded "the edit's answer" (wait answer) `shouldReturn` ((200, Just $ KM.fromList ["tx" .= hex h]), Nothing)
 
 -- | Posts a body to the records handler, answering the status, the JSON body and Retry-After.

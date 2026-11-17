@@ -28,8 +28,8 @@ import Bots.StoreService.NamesContractsTests
   )
 import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, testNamesConfig, threeYears)
 import Bots.StoreService.NamesProfilesTests (bakeryLink, channelData, contactData, jpeg, linkDataProfile, newsLink, parsed)
-import Bots.StoreService.NamesStoreTests (atNonce, commitFixture, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
-import Bots.StoreService.WebTests (answerOf, digestFixture, refusedWith, withServiceStore, withApp)
+import Bots.StoreService.NamesStoreTests (atNonce, commitFixture, hashFixture, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
+import Bots.StoreService.WebTests (answerOf, refusedWith, withServiceStore, withApp)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Monad (forM_)
@@ -320,7 +320,7 @@ testRegistering g = withSearch g id id $ \s@Search {node, store} -> do
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-  setPhase store $ ORegistering commitFixture $ TxHash $ digestFixture 9
+  setPhase store $ ORegistering commitFixture $ TxHash $ hashFixture 9
   -- no price is answered, so reading one would fail the search
   searchAlice s 12 `shouldReturn` registeringAnswer
   setPhase store $ ORegistered Nothing Nothing 1861833600 t0
@@ -360,7 +360,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-  setPhase store $ ORegistering commitFixture $ TxHash $ digestFixture 9
+  setPhase store $ ORegistering commitFixture $ TxHash $ hashFixture 9
   searchAlice s 12 `shouldReturn` listed registeringAnswer
   registeredWith node fullLink ""
   let registered = registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))

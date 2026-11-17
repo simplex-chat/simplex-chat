@@ -6,8 +6,8 @@
 module Bots.StoreService.NamesSenderTests (namesSenderTests) where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, t0, usable)
-import Bots.StoreService.WebTests (capturingStderr, digestFixture, withServiceStore)
+import Bots.StoreService.NamesStoreTests (hashFixture, issue, order, ownerA, placeCode, t0, usable)
+import Bots.StoreService.WebTests (capturingStderr, withServiceStore)
 import Control.Concurrent.Async (concurrently)
 import Control.Concurrent.STM
 import Control.Monad (forM_, replicateM_)
@@ -157,7 +157,7 @@ testConfirmationDepth g = withSetup g $ \s@Setup {node, store} -> do
   Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   -- a wait for an outcome not reached yet ends at its bound
   timeout 5000000 (awaitOutcome 300000 p) `shouldReturn` Just Nothing
-  let TxHash h = ptHash p
+  let TxHash (Hex32 h) = ptHash p
   block <- mine node [(h, False)]
   followTransactions sender
   settled sender (TxRegistration RTCommit r1) `shouldReturn` False
@@ -171,7 +171,7 @@ testSettledNotPending :: TVar ChaChaDRG -> IO ()
 testSettledNotPending g = withSetup g $ \s@Setup {node, store} -> do
   sender <- start s
   Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
-  let TxHash h = ptHash p
+  let TxHash (Hex32 h) = ptHash p
   _ <- mine node [(h, True)]
   _ <- mine node []
   withTransaction store (\db -> recordTransactionOutcome db (ptHash p) TSPending TSDroppedTx) `shouldReturn` True
@@ -210,7 +210,7 @@ testFeeBump g = withSetup g $ \s@Setup {node, store} -> do
   passTime s replaceAfter
   followTransactions sender
   [_, bumpedRaw] <- sentTransactions node
-  let bumpedHash = TxHash $ C.keccak256 bumpedRaw
+  let bumpedHash = TxHash $ Hex32 $ C.keccak256 bumpedRaw
   decodeSignedTx bumpedRaw `shouldBe` Right first {txMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, txMaxFeePerGas = 4 * fakeBaseFee + fakeTip}
   known s (ptHash p) `shouldReturn` False
   known s bumpedHash `shouldReturn` True
@@ -227,7 +227,7 @@ testRestartRebroadcast g = withSetup g $ \s@Setup {node, store} -> do
   crashed <- start s
   Right p <- submitTransaction crashed (TxRegistration RTCommit r1) fakeController (commit 1)
   [raw] <- sentTransactions node
-  let TxHash h = ptHash p
+  let TxHash (Hex32 h) = ptHash p
   dropTransaction node h
   restarted <- start s
   Just resumed <- inFlightTransaction restarted (TxRegistration RTCommit r1)
@@ -271,7 +271,7 @@ testDroppedNonceUsed g =
     withSetup g $ \s@Setup {node, store} -> do
       sender <- start s
       Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
-      let TxHash h = ptHash p
+      let TxHash (Hex32 h) = ptHash p
       lose node h
       followTransactions sender
       settled sender (TxRegistration RTCommit r1) `shouldReturn` False
@@ -367,7 +367,7 @@ testFeeCapReplace g = withCapSetup cap g $ \s@Setup {node} -> do
   dropTransaction node bumpedHash
   followTransactions sender
   sentTransactions node `shouldReturn` [firstRaw, bumpedRaw, bumpedRaw]
-  (fmap ptHash <$> inFlightTransaction sender (TxRegistration RTCommit r1)) `shouldReturn` Just (TxHash bumpedHash)
+  (fmap ptHash <$> inFlightTransaction sender (TxRegistration RTCommit r1)) `shouldReturn` Just (TxHash $ Hex32 bumpedHash)
   ptNonce p `shouldBe` 0
   where
     -- above the first max fee and its bump, below the market's headroom fee and a second bump
@@ -408,14 +408,14 @@ r1 = RegistrationId "r1"
 r2 = RegistrationId "r2"
 
 commit :: Word8 -> ByteString
-commit = commitCalldata . digestFixture
+commit = commitCalldata . hashFixture
 
 -- | viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
 insufficientAllowance :: ByteString
 insufficientAllowance = unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
 
 mineHash :: FakeEthNode -> TxHash -> IO ()
-mineHash node (TxHash h) = () <$ mine node [(h, True)]
+mineHash node (TxHash (Hex32 h)) = () <$ mine node [(h, True)]
 
 fees :: Eip1559Tx -> (Integer, Integer)
 fees Eip1559Tx {txMaxPriorityFeePerGas, txMaxFeePerGas} = (toInteger txMaxPriorityFeePerGas, toInteger txMaxFeePerGas)

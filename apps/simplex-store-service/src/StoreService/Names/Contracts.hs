@@ -91,8 +91,8 @@ import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (catchOwn', eitherToMaybe, toChunks, tshow)
 import StoreService.Config (ChainConfig (..), boundedDecimal, localChainId)
-import StoreService.Names.Chain (AbiError (..), AbiValue (..), Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, RevertReason (..), abiBytes, abiTuple, abiWordSize, addressWord, confirmedNumber, decodeAddress, decodeBool, decodeBytes32, decodeLabels, decodeString, decodeUint256, decodeWord64, ethCallAt, httpFailure, latestBlock, lowerHexP, nodeChainId, parseText, registrarBalance, selector, uint256)
-import StoreService.Names.Registration (CommunityName, LinkKind (..), TermsHash, childNode, labelNode, nodeBytes, recordKey, termsKindText)
+import StoreService.Names.Chain (AbiError (..), AbiValue (..), Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, Hex32 (..), RevertReason (..), abiBytes, abiTuple, abiWordSize, addressWord, confirmedNumber, decodeAddress, decodeBool, decodeBytes32, decodeLabels, decodeString, decodeUint256, decodeWord64, ethCallAt, httpFailure, latestBlock, lowerHexP, nodeChainId, parseText, registrarBalance, selector, uint256)
+import StoreService.Names.Registration (Commitment, CommunityName, LinkKind (..), TermsHash, childNode, labelNode, nodeBytes, recordKey, termsKindText)
 import StoreService.Names.Store (getTermsText, setTermsText)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
@@ -105,7 +105,7 @@ data Contracts = Contracts
     ctRegistrar :: IORef (Int, Maybe RegistrarConstants),
     ctCommitmentAges :: IORef (Int, Maybe CommitmentAges),
     ctNamePolicy :: IORef (Int, Maybe Address),
-    ctTermsTexts :: IORef (Map ByteString Text),
+    ctTermsTexts :: IORef (Map TermsHash Text),
     -- | the terms links as read at a block, which each search for an available name would read again
     ctTermsLinks :: IORef (Maybe (Word64, ((Text, Maybe Terms), (Text, Maybe Terms)))),
     ctFetchAfter :: IORef UTCTime,
@@ -316,7 +316,7 @@ termsOf Contracts {ctChain = c@ChainClient {ccConfig = ChainConfig {cChainId}}} 
       | cChainId == localChainId -> fmap (\chainId -> if chainId == localChainId then Just fetch else Nothing) <$> nodeChainId c
     _ -> pure $ Right Nothing
   where
-    terms = fmap $ \tmFetch -> Terms {tmLink = link, tmHash = keccak256 $ encodeUtf8 link, tmFetch}
+    terms = fmap $ \tmFetch -> Terms {tmLink = link, tmHash = Hex32 $ keccak256 $ encodeUtf8 link, tmFetch}
     linkP = do
       (url, loopback) <- A.match $ False <$ (commitP forgejoPrefix <|> commitP githubPrefix) <|> True <$ loopbackP
       digest <- optional $ A.string "#sha256=" *> lowerHexP abiWordSize
@@ -413,8 +413,8 @@ policyNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 policyNonce ct owner = policyCall ct Latest ("nonces(address)", addressWord owner) decodeWord64
 
 -- | The terms hash the owner accepted for the commitment, all zeros when none.
-acceptedTerms :: Contracts -> ByteString -> Address -> IO (Either ChainError ByteString)
-acceptedTerms ct commitment owner = policyCall ct Latest ("acceptedTerms(bytes32,address)", commitment <> addressWord owner) decodeBytes32
+acceptedTerms :: Contracts -> Commitment -> Address -> IO (Either ChainError TermsHash)
+acceptedTerms ct (Hex32 commitment) owner = policyCall ct Latest ("acceptedTerms(bytes32,address)", commitment <> addressWord owner) (fmap Hex32 . decodeBytes32)
 
 policyCall :: Contracts -> BlockTag -> (ByteString, ByteString) -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
 policyCall ct tag args decode = runExceptT $ do
@@ -437,8 +437,8 @@ nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError Chain
 nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeWord64
 
 -- | The block time of the commitment, Nothing when the controller holds none.
-commitmentTime :: Contracts -> ByteString -> IO (Either ChainError (Maybe ChainSeconds))
-commitmentTime ct commitment = fmap nonZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeWord64
+commitmentTime :: Contracts -> Commitment -> IO (Either ChainError (Maybe ChainSeconds))
+commitmentTime ct (Hex32 commitment) = fmap nonZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeWord64
   where
     nonZero t = if t == 0 then Nothing else Just t
 

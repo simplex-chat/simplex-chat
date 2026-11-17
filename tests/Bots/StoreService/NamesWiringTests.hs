@@ -20,6 +20,7 @@ import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Types (Method, hCacheControl, hContentType, status200)
 import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Config (ListenerConfig (..))
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Phases
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Turns
@@ -165,7 +166,7 @@ testOneLabelSerialized :: IO ()
 testOneLabelSerialized = do
   turns <- newTurns
   let inTurns :: [IO () -> IO ()]
-      inTurns = [withLabelTurn turns (labelHash "alice1"), withCodeTurn turns (BC.replicate 32 'c')]
+      inTurns = [withLabelTurn turns (labelHash "alice1"), withCodeTurn turns (Hex32 $ BC.replicate 32 'c')]
   forM_ inTurns $ \inOneTurn -> do
     r <- timeout (5 * prompt) $ mostInside 8 $ \inTurn -> inOneTurn (inTurn (threadDelay 20000))
     r `shouldBe` Just 1
@@ -224,7 +225,7 @@ testTurnsDropIdleLocks :: IO ()
 testTurnsDropIdleLocks = do
   turns <- newTurns
   let a = labelHash "alice1"
-  withLabelTurns turns a (labelHash "bobby2") $ withCodeTurn turns (BC.replicate 32 'c') $ turnsCount turns `shouldReturn` 3
+  withLabelTurns turns a (labelHash "bobby2") $ withCodeTurn turns (Hex32 $ BC.replicate 32 'c') $ turnsCount turns `shouldReturn` 3
   E.handle (\Boom -> pure ()) $ withLabelTurn turns a (E.throwIO Boom)
   -- the waiter is cancelled by the timeout while the holder keeps the turn
   withLabelTurn turns a $ timeout parkDelay (withLabelTurn turns a (pure ())) `shouldReturn` Nothing

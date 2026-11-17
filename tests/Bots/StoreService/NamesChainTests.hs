@@ -203,10 +203,10 @@ testBlockAt g = withChain g $ \node c -> do
 
 testFollowTransaction :: TVar ChaChaDRG -> IO ()
 testFollowTransaction g = withChain g $ \node c@ChainClient {ccRegistrar} -> do
-  let unknown = TxHash $ B.replicate 32 0xee
+  let unknown = TxHash $ Hex32 $ B.replicate 32 0xee
   transactionKnown c unknown `shouldReturn` Right False
   transactionReceipt c unknown `shouldReturn` Right Nothing
-  SignedTx {stRaw, stHash = hash@(TxHash h)} <- signed g c 0
+  SignedTx {stRaw, stHash = hash@(TxHash (Hex32 h))} <- signed g c 0
   sendRawTransaction c stRaw `shouldReturn` Right hash
   transactionKnown c hash `shouldReturn` Right True
   transactionReceipt c hash `shouldReturn` Right Nothing
@@ -220,7 +220,7 @@ testFollowTransaction g = withChain g $ \node c@ChainClient {ccRegistrar} -> do
 testSignedHash :: TVar ChaChaDRG -> IO ()
 testSignedHash g = withChain g $ \node c -> do
   SignedTx {stRaw, stHash} <- signed g c 7
-  stHash `shouldBe` TxHash (C.keccak256 stRaw)
+  stHash `shouldBe` TxHash (Hex32 $ C.keccak256 stRaw)
   sendRawTransaction c stRaw `shouldReturn` Right stHash
   sentTransactions node `shouldReturn` [stRaw]
 

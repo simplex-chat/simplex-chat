@@ -12,15 +12,14 @@ import Control.Concurrent.STM (TVar)
 import Control.Monad (forM_, void)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Chain (AbiValue (..), abiBytes, abiTuple, addressWord, bytes32FromHex, hex, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), Hex32 (..), abiBytes, abiTuple, addressWord, hex, selector, uint256)
 import StoreService.Names.Community (communityFor, termsFor)
 import StoreService.Names.Contracts (Terms (..))
 import StoreService.Names.Registration (AgreedTerms (..))
@@ -58,7 +57,7 @@ refusedCommunity entries = namesRefusal namesSection (chainSection <> communityL
 
 -- viem: keccak256 of "alicebakery", as the page sends it
 aliceHash :: LabelHash
-aliceHash = LabelHash $ fromJust $ bytes32FromHex aliceHex
+aliceHash = LabelHash $ unHex32 $ either error id $ strDecode $ encodeUtf8 aliceHex
 
 testCommunityParsed :: IO ()
 testCommunityParsed = do
@@ -121,7 +120,7 @@ testLoadedCount = do
 testTermsFor :: IO ()
 testTermsFor = do
   let hexDigits = "e2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"
-      h = fromJust $ bytes32FromHex $ "0x" <> hexDigits
+      h = either error id $ strDecode $ encodeUtf8 $ "0x" <> hexDigits
       terms = Terms {tmLink = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/terms.md#sha256=" <> hexDigits, tmHash = h, tmFetch = ("", Nothing)}
       listed = "community/" <> hexDigits
   textEncode (termsFor False terms) `shouldBe` hexDigits

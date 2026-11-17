@@ -13,12 +13,13 @@ import Data.List (nub)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
 import Network.HTTP.Types (status200, status409, status429, status504)
 import Network.Wai (Request, Response, ResponseReceived)
-import Simplex.Messaging.Encoding.String (textDecode)
+import Simplex.Messaging.Encoding.String (strDecode, textDecode)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import StoreService.Names.Chain (TxHash (..), bytes32FromHex, hex)
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), EditsLeft (..), Records, relayEdit)
 import StoreService.Names.Registration (LinkKind, nameLink, parseSignature)
 import StoreService.Names.Store (EditOutcome (..), RecordChange (..), SignedChange (..))
@@ -52,7 +53,7 @@ maxEdits = 2
 editRequest :: J.Object -> Either EditInvalid EditRequest
 editRequest o = do
   (labelHash, edits) <- maybe (Left EIBadRequest) Right $ JT.parseMaybe fields o
-  erLabelHash <- maybe (Left EIBadRequest) (Right . LabelHash) $ bytes32FromHex labelHash
+  erLabelHash <- either (const $ Left EIBadRequest) (Right . LabelHash . unHex32) $ strDecode $ encodeUtf8 labelHash
   sent <- maybe (Left EIBadRequest) Right $ L.nonEmpty edits
   unless (length edits <= maxEdits && keysOnce edits && clearAlone edits && consecutive edits) $ Left EIBadRequest
   forM_ (mapMaybe seChange edits) $ \(kind, value) -> unless (value == "" || (fst <$> nameLink value) == Just kind) $ Left EIInvalidLink
@@ -74,7 +75,7 @@ editRequest o = do
 
 editResponse :: EditAnswer -> Response
 editResponse = \case
-  EASettled (EOApplied tx) -> jsonResponse status200 $ J.object ["tx" .= ((\(TxHash h) -> hex h) <$> tx)]
+  EASettled (EOApplied tx) -> jsonResponse status200 $ J.object ["tx" .= tx]
   EASettled (EOReverted revert) -> jsonResponse status409 $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= revert]
   EAPending -> jsonError status504 "edit_pending"
   EARefused _ -> badRequest

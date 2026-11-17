@@ -20,7 +20,6 @@ import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
 import Data.Aeson ((.:))
 import qualified Data.Aeson as J
 import Data.Bifunctor (first)
-import Data.ByteString (ByteString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
@@ -30,10 +29,10 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
-import StoreService.Names.Chain (ChainSeconds, chainSeconds)
+import StoreService.Names.Chain (ChainSeconds, Hex32, chainSeconds)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
-import StoreService.Names.Orders (boundedInteger, hexHash, hexSignature, jsonField)
+import StoreService.Names.Orders (boundedInteger, hexSignature, jsonField)
 import StoreService.Names.Registration (LinkKind (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, validLabel, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
 
@@ -44,7 +43,7 @@ data RevealRefusal = RVBadRequest Text | RVInvalidLink | RVChainUnavailable
 data RevealRequest = RevealRequest
   { rqLabel :: Text,
     rqSignature :: RecoverableSignature,
-    rqSecret :: ByteString,
+    rqSecret :: Hex32,
     rqContactLinks :: [Text],
     rqChannelLinks :: [Text],
     rqNonce :: Word64,
@@ -56,14 +55,14 @@ instance J.FromJSON RevealRequest where
   parseJSON = J.withObject "reveal" $ \o -> do
     rqLabel <- o .: "label"
     rqSignature <- jsonField o "signature" hexSignature
-    rqSecret <- jsonField o "secret" hexHash
+    rqSecret <- o .: "secret"
     records <- o .: "records"
     rqContactLinks <- records .: "contact"
     rqChannelLinks <- records .: "channel"
     rqNonce <- jsonField o "nonce" boundedInteger
     rqDeadline <- jsonField o "deadline" boundedInteger
     rqAcceptance <- jsonField o "acceptance" $ J.withObject "acceptance" $ \a -> do
-      taTermsHash <- jsonField a "termsHash" hexHash
+      taTermsHash <- a .: "termsHash"
       taNonce <- jsonField a "nonce" boundedInteger
       taSignature <- jsonField a "signature" hexSignature
       pure TermsAcceptance {taTermsHash, taNonce, taSignature}

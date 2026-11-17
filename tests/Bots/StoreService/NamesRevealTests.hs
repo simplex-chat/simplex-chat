@@ -11,8 +11,8 @@ import Bots.StoreService.NamesContractsTests (noncesCall)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, communityTerms, invoiceRegistration, keyA, orderSeconds, orderTime, placed, post, registrationOf, settleNow, settled, withOrders)
 import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
-import Bots.StoreService.NamesStoreTests (linksRefusedAt, ownerA)
-import Bots.StoreService.WebTests (bounded, digestFixture, fieldOf, jsonObject, refusedWith, statusOf, webGet, webRequestBody)
+import Bots.StoreService.NamesStoreTests (hashFixture, linksRefusedAt, ownerA)
+import Bots.StoreService.WebTests (bounded, fieldOf, jsonObject, refusedWith, statusOf, webGet, webRequestBody)
 import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM
@@ -42,7 +42,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
-import StoreService.Names.Chain (TxHash (..), hex, uint256)
+import StoreService.Names.Chain (Hex32 (..), TxHash (..), hex, uint256)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Registration (Registration (..), RegistrationId (..), TermsAcceptance (..), acceptanceDigest, linkMaxBytes, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (RevealRequest (..))
@@ -133,7 +133,7 @@ alice =
       rTLD = TLDSimplex,
       rOwner = ownerA,
       rDuration = oDuration aliceOrder,
-      rSecret = B.replicate 32 0x5a,
+      rSecret = Hex32 $ B.replicate 32 0x5a,
       rResolver = fakeResolver,
       rContactLink = Just contactLink,
       rChannelLink = Just channelLink
@@ -168,7 +168,7 @@ bodyOf :: RecoverableSignature -> Registration -> Word64 -> Word64 -> J.Object
 bodyOf sig Registration {rLabel, rSecret, rContactLink, rChannelLink} nonce deadline =
   KM.fromList
     [ ("label", J.String rLabel),
-      ("secret", J.String $ hex rSecret),
+      ("secret", J.String $ hex $ unHex32 rSecret),
       ("records", J.object ["contact" .= maybeToList rContactLink, "channel" .= maybeToList rChannelLink]),
       ("nonce", J.toJSON nonce),
       ("deadline", J.toJSON deadline),
@@ -221,12 +221,12 @@ signAcceptance ctx key community terms nonce = acceptanceOf ctx key alice commun
 -- | The acceptance signed with the given deadline, which must be the intent's.
 acceptanceOf :: Ctx -> Secp256k1PrivateKey -> Registration -> Bool -> B.ByteString -> Word64 -> Word64 -> IO TermsAcceptance
 acceptanceOf Ctx {cRandom} key r community terms nonce deadline = do
-  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (termsKind community) (makeCommitment r) terms nonce deadline)
-  pure TermsAcceptance {taTermsHash = terms, taNonce = nonce, taSignature = sig}
+  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (termsKind community) (makeCommitment r) (Hex32 terms) nonce deadline)
+  pure TermsAcceptance {taTermsHash = Hex32 terms, taNonce = nonce, taSignature = sig}
 
 withAcceptance :: TermsAcceptance -> J.Object -> J.Object
 withAcceptance TermsAcceptance {taTermsHash, taNonce, taSignature} =
-  KM.insert "acceptance" $ J.object ["termsHash" .= hex taTermsHash, "nonce" .= taNonce, "signature" .= hex (smpEncode taSignature)]
+  KM.insert "acceptance" $ J.object ["termsHash" .= hex (unHex32 taTermsHash), "nonce" .= taNonce, "signature" .= hex (smpEncode taSignature)]
 
 testAcceptanceStored :: IO ()
 testAcceptanceStored = withListedReveals $ \Fx {fCtx = ctx} -> do
@@ -275,7 +275,7 @@ testAcceptanceFields = do
   let fields = KM.fromList ["termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int), "signature" .= hex (smpEncode sig)]
       replaced k v = J.Object $ KM.insert k v fields
       acceptanceRead a = rqAcceptance <$> JT.parseMaybe J.parseJSON (J.Object $ KM.insert "acceptance" a $ bodyOf sig alice 0 revealBefore)
-  acceptanceRead (J.Object fields) `shouldBe` Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 2, taSignature = sig}
+  acceptanceRead (J.Object fields) `shouldBe` Just TermsAcceptance {taTermsHash = Hex32 fakeCommunityTerms, taNonce = 2, taSignature = sig}
   forM_
     [ J.String "acceptance",
       replaced "termsHash" $ J.String $ "0x" <> T.toUpper (T.drop 2 $ hex fakeCommunityTerms),
@@ -349,7 +349,7 @@ testWithoutLinks = withReveals $ \Fx {fCtx = ctx} -> do
 -- | The webapp's dynamis order (NamesSignatureTests), revealed with viem 2.57.5's signTypedData by the webapp's wallet, account 0.
 testViemReveal :: IO ()
 testViemReveal = withReveals $ \Fx {fCtx = ctx} -> do
-  let page = dynamis {rSecret = B.replicate 32 0x11, rContactLink = Just "https://smp8.simplex.im/a#contact", rChannelLink = Nothing}
+  let page = dynamis {rSecret = Hex32 $ B.replicate 32 0x11, rContactLink = Just "https://smp8.simplex.im/a#contact", rChannelLink = Nothing}
       viemSignature = "0xed92eb1e37a191cb270651b57fd132eb652357a90aa602e8c29ed1dfabe0a14738f0bfe38fc2d9687ad5e0820cad2f5af386f00087cb91b4eb6577c2ec2869641c"
       viemAcceptance = "0x7c7dc4d7631f5325eddf2af595b524b6f7aaad7854aac7aaf748d6f116b56ad961c97acd616fcb60e0f43545ea2fa5f7bb7f96235f476c6abcc68295f93e36071c"
       body =
@@ -362,7 +362,7 @@ testViemReveal = withReveals $ \Fx {fCtx = ctx} -> do
             ("signature", J.String viemSignature),
             ("acceptance", J.object ["termsHash" .= hex fakeGeneralTerms, "nonce" .= (0 :: Int), "signature" .= (viemAcceptance :: Text)])
           ]
-  hex (makeCommitment page) `shouldBe` "0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1"
+  hex (unHex32 $ makeCommitment page) `shouldBe` "0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1"
   ownerBody ctx page `shouldReturn` body
   rid <- committed ctx (orderOf page)
   reveal ctx rid body `shouldReturn` refusedWith 400 "invalid_link"
@@ -380,7 +380,7 @@ testRepeats = withReveals $ \Fx {fCtx = ctx} -> do
   rid <- committed ctx (orderOf alice)
   body <- ownerBody ctx alice
   reveal ctx rid body `shouldReturn` accepted
-  v <- change ctx rid $ \r -> r {nrPhase = ORegistering openWindow $ TxHash $ digestFixture 9}
+  v <- change ctx rid $ \r -> r {nrPhase = ORegistering openWindow $ TxHash $ hashFixture 9}
   reveal ctx rid body `shouldReturn` accepted
   resigned <- (\sig -> KM.insert "acceptance" (fromJust $ KM.lookup "acceptance" body) $ bodyOf sig alice 0 revealBefore) <$> signIntent ctx keyA alice 1 revealBefore
   reveal ctx rid resigned `shouldReturn` badRequest
@@ -430,7 +430,7 @@ testCommitmentRefusals = withReveals $ \Fx {fCtx = ctx} -> do
   forM_
     [ ("a label of another hash", alice {rLabel = "alicebakerz"}),
       ("a label in upper case", alice {rLabel = "Alicebakery"}),
-      ("another secret", alice {rSecret = B.replicate 32 0x5b}),
+      ("another secret", alice {rSecret = Hex32 $ B.replicate 32 0x5b}),
       ("another contact link", alice {rContactLink = Just "https://smp8.simplex.im/a#other"}),
       ("no channel link", alice {rChannelLink = Nothing})
     ]

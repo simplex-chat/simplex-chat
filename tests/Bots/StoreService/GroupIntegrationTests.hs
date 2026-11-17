@@ -13,7 +13,7 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cChainId, cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, joinerAcceptance)
 import StoreService.Group.Command (CmdSource (..), maxUses)
-import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
+import StoreService.Names.Codes (issueNameCode, prepaidCodeHash, reserveCode, revokeNameCode)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), addressWord, newChainClient, selector, signTransaction, uint256)
 import StoreService.Names.Store (FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
@@ -64,7 +64,7 @@ import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, m
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
 import Network.Wai.Handler.Warp (openFreePort)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Code (NamePrepaidCode, formatBadgeCode, formatNameCode, nameLength, nameLengthInt, namePrepaidCodeHash, namePrepaidCodeLength, parseBadgeCode, parseNameCode, randomBadgeCode, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (NamePrepaidCode, formatBadgeCode, formatNameCode, nameLength, nameLengthInt, namePrepaidCodeLength, parseBadgeCode, parseNameCode, randomBadgeCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.StoreService
 import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem, APIGroupInfo), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted, CRCustomChatResponse, CRGroupCreated, CRGroupInfo))
@@ -421,7 +421,7 @@ testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     pollUntilTrue (listening port)
     let st = chatStore cc
     code <- issueNameRaw cc "name 8"
-    row <- fromMaybe (error "no prepaid code row") <$> withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
+    row <- fromMaybe (error "no prepaid code row") <$> withTransaction st (`getPrepaidCode` prepaidCodeHash code)
     placeCode st "r1" ownerA (order "alicebakery" 1) row `shouldReturn` Right ()
     timeout waitLimit (awaitSent node 1) >>= (`shouldSatisfy` isJust)
     pollUntilTrue $ (== 2) <$> countRows cc "sx_badge_service_name_terms" ()
@@ -485,7 +485,7 @@ testOperatorNameCodes ps = do
     held <- issueNameRaw cc "name 8"
     spent <- issueNameRaw cc "name 8"
     let st = chatStore cc
-        rowOf code = fromMaybe (error "no prepaid code row") <$> withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
+        rowOf code = fromMaybe (error "no prepaid code row") <$> withTransaction st (`getPrepaidCode` prepaidCodeHash code)
     rowOf held >>= placeCode st "r1" ownerA (order "alicebakery" 1) >>= (`shouldBe` Right ())
     rowOf spent >>= placeCode st "r2" ownerA (order "bobsbakery" 2) >>= (`shouldBe` Right ())
     spentAt <- getCurrentTime
@@ -505,18 +505,18 @@ testRevokeTakesCodeTurn ps = do
     let st = chatStore cc
         revokeAfter code release = do
           revoking <- async $ revokeNameCode turns cc code
-          timeout 5000000 (atomically $ codeTurnCount turns (namePrepaidCodeHash code) >>= guard . (== 2)) `shouldReturn` Just ()
+          timeout 5000000 (atomically $ codeTurnCount turns (prepaidCodeHash code) >>= guard . (== 2)) `shouldReturn` Just ()
           poll revoking >>= (`shouldSatisfy` isNothing)
           release
           finished revoking
     held <- issueNameRaw cc "name 8"
-    holder <- holdTurn $ \body -> withCodeTurn turns (namePrepaidCodeHash held) body
+    holder <- holdTurn $ \body -> withCodeTurn turns (prepaidCodeHash held) body
     revokeAfter held (releaseTurn holder) `shouldReturn` Right "Revoked."
     finished (thAction holder) `shouldReturn` ()
     now <- getCurrentTime
     placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 now) `shouldReturn` Right ()
     reserved <- issueNameRaw cc "name 8"
-    reserving <- holdTurn $ \body -> reserveCode turns st now (namePrepaidCodeHash reserved) (RegistrationId "r1") (fromJust $ nameLength 8) (\_ -> Right <$> body :: IO (Either Text ()))
+    reserving <- holdTurn $ \body -> reserveCode turns st now (prepaidCodeHash reserved) (RegistrationId "r1") (fromJust $ nameLength 8) (\_ -> Right <$> body :: IO (Either Text ()))
     revokeAfter reserved (releaseTurn reserving) `shouldReturn` Right "Revoked. The order holding it keeps it."
     finished (thAction reserving) `shouldReturn` Right (Right ())
 
@@ -692,7 +692,7 @@ prepaidIn t = case parseNameCode =<< t of
 prepaidTerms :: ChatController -> NamePrepaidCode -> IO (Maybe (Int, Int, BadgeCodePaymentStatus))
 prepaidTerms cc code =
   fmap (\PrepaidCode {pcMinLength, pcYears, pcPaymentStatus} -> (pcMinLength, pcYears, pcPaymentStatus))
-    <$> withTransaction (chatStore cc) (`getPrepaidCode` namePrepaidCodeHash code)
+    <$> withTransaction (chatStore cc) (`getPrepaidCode` prepaidCodeHash code)
 
 checkPrepaid :: Int -> Text -> IO (Int, Maybe J.Value)
 checkPrepaid port code = do

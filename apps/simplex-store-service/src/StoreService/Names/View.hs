@@ -36,7 +36,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
-import StoreService.Names.Chain (ChainError, ChainSeconds, TxHash (..), chainTime, hex)
+import StoreService.Names.Chain (ChainError, ChainSeconds, Hex32 (..), TxHash (..), chainTime)
 import StoreService.Names.Community (AcceptanceAsked (..), communityJSON, currentAcceptance)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
@@ -59,10 +59,10 @@ data RegistrationView = RegistrationView
     vwMoves :: Int,
     vwLinksRefused :: Bool,
     vwPhase :: Text,
-    vwLabelHash :: Text,
+    vwLabelHash :: Hex32,
     vwLabel :: Maybe Text,
     vwOwner :: Address,
-    vwCommitment :: Text,
+    vwCommitment :: Hex32,
     vwSealed :: Text,
     vwResolver :: Address,
     vwSponsor :: Address,
@@ -74,8 +74,8 @@ data RegistrationView = RegistrationView
     vwFromBalance :: USDCents,
     vwBalance :: Maybe J.Value,
     vwLatePayment :: Maybe J.Value,
-    vwCommitTx :: Maybe Text,
-    vwRegisterTx :: Maybe Text,
+    vwCommitTx :: Maybe TxHash,
+    vwRegisterTx :: Maybe TxHash,
     vwRevealAfter :: Maybe ChainSeconds,
     vwRevealBefore :: Maybe ChainSeconds,
     vwIntentNonce :: Maybe Word64,
@@ -123,10 +123,10 @@ toRegistrationView cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResol
       vwMoves = nrMoves,
       vwLinksRefused = isJust (cmLinksRefusedAt =<< commit),
       vwPhase = textEncode (namePhase nrPhase),
-      vwLabelHash = hex lh,
+      vwLabelHash = Hex32 lh,
       vwLabel = rvLabel <$> nrReveal,
       vwOwner = nrOwner,
-      vwCommitment = hex nrCommitment,
+      vwCommitment = nrCommitment,
       vwSealed = nrSealed,
       vwResolver = cResolver,
       vwSponsor = cSponsor,
@@ -138,8 +138,8 @@ toRegistrationView cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResol
       vwFromBalance = maybe 0 buUsed (paymentBalance nrPayment),
       vwBalance = balanceJSON <$> balance,
       vwLatePayment = (\w -> J.object ["waiting" .= w]) <$> late,
-      vwCommitTx = txText <$> (commitTxOf =<< commitStep),
-      vwRegisterTx = txText <$> phaseRegisterTx nrPhase,
+      vwCommitTx = commitTxOf =<< commitStep,
+      vwRegisterTx = phaseRegisterTx nrPhase,
       vwRevealAfter = cmRevealAfter <$> commit,
       vwRevealBefore = cmRevealBefore <$> commit,
       vwIntentNonce = readValue vrIntentNonce,
@@ -161,7 +161,6 @@ toRegistrationView cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResol
       ORegistered _ _ expiry _ -> (Just expiry, Nothing)
       OFailed _ _ _ reason -> (Nothing, Just reason)
       _ -> (Nothing, Nothing)
-    txText (TxHash h) = hex h
     readValue = \case
       VRRead a -> Just a
       _ -> Nothing
@@ -169,7 +168,7 @@ toRegistrationView cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResol
       VRUnread -> True
       _ -> False
     acceptanceJSON AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce} =
-      J.object ["kind" .= termsKindText acCommunity, "policy" .= acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce]
+      J.object ["kind" .= termsKindText acCommunity, "policy" .= acPolicy, "termsHash" .= acTermsHash, "nonce" .= acNonce]
 
 -- | The holder is not named, so an order's link discloses no other order. A funded hold has no end time.
 balanceJSON :: Balance -> J.Value

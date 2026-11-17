@@ -32,6 +32,7 @@ import StoreService.Config (ServiceConfig (..))
 import StoreService.Names.Balances
 import StoreService.Names.Orders (ClosedOrder (..), OrderRefusal (..), OrderRequest (..), OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (balanceTurnCount, newTurns, turnsCount, withBalanceTurn, withLabelTurn)
@@ -104,7 +105,7 @@ fieldsN label =
     { ofLabelHash = labelHash label,
       ofLength = lengthOf 6,
       ofDuration = 69292800,
-      ofCommitment = C.sha256Hash $ encodeUtf8 label,
+      ofCommitment = Hex32 $ C.sha256Hash $ encodeUtf8 label,
       ofSealed = "sealed-" <> label,
       ofAgreedTerms = agreed plainTerms
     }
@@ -471,7 +472,7 @@ testBalanceOrderHash = withServiceStore $ \st -> do
           ("length", orderHash ownerA o {ofLength = lengthOf 7} terms),
           ("duration", orderHash ownerA o {ofDuration = 69292801} terms),
           ("owner", orderHash ownerB o terms),
-          ("commitment", orderHash ownerA o {ofCommitment = C.sha256Hash "another"} terms),
+          ("commitment", orderHash ownerA o {ofCommitment = Hex32 $ C.sha256Hash "another"} terms),
           ("sealed", orderHash ownerA o {ofSealed = ofSealed o <> "x"} terms),
           ("paying order", orderHash ownerA o (OTBalance $ spendOf "t" holdPrice 15000 (Just btc))),
           ("price", orderHash ownerA o (OTBalance $ spendOf "s" (holdPrice + 1) 15000 (Just btc))),

@@ -168,7 +168,7 @@ relayEdit rs@Records {rsPendingAfter, rsEditsPerYear, rsNow} req@EditRequest {er
   where
     signed = L.map (\change -> (changeDigest rs erLabelHash change, change)) erChanges
     -- one change hashes as edits stored before requests took two, so their repeats still match
-    bodyHash = sha256Hash $ B.concat [digest <> smpEncode scSignature | (digest, SignedChange {scSignature}) <- L.toList signed]
+    bodyHash = Hex32 $ sha256Hash $ B.concat [digest <> smpEncode scSignature | (digest, SignedChange {scSignature}) <- L.toList signed]
 
 newEdit :: Records -> TVar Bool -> EditRequest -> Address -> BodyHash -> IO EditAnswer
 newEdit rs timer req signer bodyHash =

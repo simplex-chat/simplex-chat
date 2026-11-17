@@ -5,7 +5,7 @@ module Bots.StoreService.MetricsTests (storeMetricsTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (minPriceCentsPerYear)
-import Bots.StoreService.NamesStoreTests (at, commitFixture, insertInvoiceRow, insertProviderInvoice, newEdit, newReg, order, ownerA, ownerB, paidOrder, price, reveal, setChannel, t0)
+import Bots.StoreService.NamesStoreTests (at, commitFixture, hashFixture, insertInvoiceRow, insertProviderInvoice, newEdit, newReg, order, ownerA, ownerB, paidOrder, price, reveal, setChannel, t0)
 import Bots.StoreService.WebTests (digestFixture, statusOf, webGet, webRequestBody, withApp, withServiceStore)
 import Control.Concurrent.Async (cancel)
 import Control.Concurrent.STM (TVar, newTVarIO, readTVarIO)
@@ -244,7 +244,7 @@ testNamesCounts = withServiceStore $ \st -> do
   moved "f" 1 $ \r -> r {nrPhase = OFailed Nothing Nothing (at 1) FRNotRegistered}
   moved "c1" 2 $ \r -> r {nrPhase = OCommitted commitFixture}
   moved "c2" 3 $ \r -> r {nrPhase = OCommitted commitFixture, nrReveal = Just reveal}
-  moved "rg" 4 $ \r -> r {nrPhase = ORegistering commitFixture $ TxHash $ digestFixture 9}
+  moved "rg" 4 $ \r -> r {nrPhase = ORegistering commitFixture $ TxHash $ hashFixture 9}
   moved "q" 5 $ \r -> r {nrPhase = OQueued Nothing}
   withTransaction st $ \db -> do
     creditBalance db (RegistrationId "src") 6000 t0
@@ -253,8 +253,8 @@ testNamesCounts = withServiceStore $ \st -> do
   placedAs "open" "h" 8 (Just BalanceUse {buSource = RegistrationId "src", buUsed = 6000})
   withTransaction st $ \db -> do
     forM_ [(40, 0, 6), (41, 1, 7), (42, 1, 8), (43, 2, 9)] $ \(n, nonce, minute) ->
-      insertTransaction db (TxRegistration RTCommit $ RegistrationId "q") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ digestFixture n, ntxNonce = nonce} (at minute)
-    recordTransactionOutcome db (TxHash $ digestFixture 40) TSPending (TSMinedAt 120) `shouldReturn` True
+      insertTransaction db (TxRegistration RTCommit $ RegistrationId "q") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ hashFixture n, ntxNonce = nonce} (at minute)
+    recordTransactionOutcome db (TxHash $ hashFixture 40) TSPending (TSMinedAt 120) `shouldReturn` True
     Just mined <- insertRecordEdit db (newEdit ownerA 1 setChannel) (at 8)
     insertRecordEdit db (newEdit ownerB 3 setChannel) (at 9) >>= (`shouldSatisfy` isJust)
     settleRecordEdit db mined (EOApplied Nothing) `shouldReturn` True

@@ -36,13 +36,12 @@ import Simplex.Chat.Badges.Code (parseNameCode)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Encoding.String (textDecode)
+import Simplex.Messaging.Encoding.String (strEncode, textDecode)
 import Simplex.Messaging.Names.Record (USDCents)
-import Simplex.Messaging.Util (isAsyncCancellation, tshow)
+import Simplex.Messaging.Util (isAsyncCancellation, safeDecodeUtf8, tshow)
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
 import StoreService.Names.Balances (Spend (..), checkSpendBalance, coveredOrderInsert, differenceOrderInsert)
-import StoreService.Names.Chain (hex)
 import StoreService.Names.Codes (CodeRefusal (..), readPrepaidCode)
 import StoreService.Names.Community (termsJSON)
 import StoreService.Names.Orders
@@ -137,7 +136,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg provid
       invId <- newInvoiceId
       now <- truncateToSecond <$> oeNow
       let amount = CurrencyAmount $ fromIntegral ivAmount
-      pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> hex ivOrderHash} >>= \case
+      pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> safeDecodeUtf8 (strEncode ivOrderHash)} >>= \case
         Left e -> do
           logError (what <> " failed at the provider: " <> providerErrorText e)
           pure $ answerNow providerUnavailable

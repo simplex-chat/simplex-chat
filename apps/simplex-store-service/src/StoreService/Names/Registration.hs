@@ -85,7 +85,7 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexDomain (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import StoreService.Names.Chain (AbiValue (..), ChainSeconds, abiArray, abiBytes, abiTuple, abiWordSize, addressWord, hex, lowerHexP, parseText, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), ChainSeconds, Hex32 (..), abiArray, abiBytes, abiTuple, abiWordSize, addressWord, hex, lowerHexP, parseText, selector, uint256)
 
 newtype RegistrationId = RegistrationId Text
   deriving (Eq, Ord, Show)
@@ -95,15 +95,15 @@ data Registration = Registration
     rTLD :: SimplexTLD,
     rOwner :: Address,
     rDuration :: Word64,
-    rSecret :: ByteString,
+    rSecret :: Hex32,
     rResolver :: Address,
     rContactLink :: Maybe Text,
     rChannelLink :: Maybe Text
   }
 
-type Commitment = ByteString
+type Commitment = Hex32
 
-type TermsHash = ByteString
+type TermsHash = Hex32
 
 -- | Only built by 'labelNode', so it always holds 32 bytes.
 newtype Node = Node ByteString
@@ -191,11 +191,11 @@ termsKind community
           tkRelayFunction = "commitUnderGeneralTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
         }
 
-makeCommitment :: Registration -> ByteString
-makeCommitment r = keccak256 $ abiTuple [Dynamic $ registrationTuple r]
+makeCommitment :: Registration -> Commitment
+makeCommitment r = Hex32 $ keccak256 $ abiTuple [Dynamic $ registrationTuple r]
 
-commitCalldata :: ByteString -> ByteString
-commitCalldata commitment = selector "commit(bytes32)" <> commitment
+commitCalldata :: Commitment -> ByteString
+commitCalldata (Hex32 commitment) = selector "commit(bytes32)" <> commitment
 
 registerWithCreditCalldata :: RegisterIntent -> ByteString
 registerWithCreditCalldata RegisterIntent {riRegistration, riNonce, riDeadline, riSignature} =
@@ -227,24 +227,24 @@ verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration 
   signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
 
-acceptanceDigest :: Eip712Domain -> TermsKind -> ByteString -> ByteString -> Word64 -> ChainSeconds -> ByteString
-acceptanceDigest domain TermsKind {tkAcceptType} commitment termsHash nonce deadline =
+acceptanceDigest :: Eip712Domain -> TermsKind -> Commitment -> TermsHash -> Word64 -> ChainSeconds -> ByteString
+acceptanceDigest domain TermsKind {tkAcceptType} (Hex32 commitment) (Hex32 termsHash) nonce deadline =
   hashTypedData
     domain
     tkAcceptType
     [bytes32 commitment, bytes32 termsHash, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-verifyAcceptance :: Eip712Domain -> TermsKind -> Address -> ByteString -> ChainSeconds -> TermsAcceptance -> IO (Either String ())
+verifyAcceptance :: Eip712Domain -> TermsKind -> Address -> Commitment -> ChainSeconds -> TermsAcceptance -> IO (Either String ())
 verifyAcceptance domain kind owner commitment deadline TermsAcceptance {taTermsHash, taNonce, taSignature} = runExceptT $ do
   signer <- ExceptT $ recoverAddress taSignature $ acceptanceDigest domain kind commitment taTermsHash taNonce deadline
   unless (signer == owner) $ throwError "acceptance is not signed by the owner"
 
-acceptCalldata :: TermsKind -> ByteString -> Address -> ChainSeconds -> TermsAcceptance -> ByteString
-acceptCalldata TermsKind {tkRelayFunction} commitment owner deadline TermsAcceptance {taTermsHash, taNonce, taSignature} =
+acceptCalldata :: TermsKind -> Commitment -> Address -> ChainSeconds -> TermsAcceptance -> ByteString
+acceptCalldata TermsKind {tkRelayFunction} (Hex32 commitment) owner deadline TermsAcceptance {taTermsHash = Hex32 termsHash, taNonce, taSignature} =
   selector tkRelayFunction
     <> abiTuple
       [ Static commitment,
-        Static taTermsHash,
+        Static termsHash,
         Static $ addressWord owner,
         Static $ uint256 taNonce,
         Static $ uint256 deadline,
@@ -290,7 +290,7 @@ bytes32 :: ByteString -> Eip712Value
 bytes32 b = VUint $ fromInteger $ os2ip b
 
 registrationTuple :: Registration -> ByteString
-registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver} =
+registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret = Hex32 rSecret, rResolver} =
   abiTuple
     [ Dynamic $ abiBytes $ encodeUtf8 rLabel,
       Static $ addressWord rOwner,
@@ -350,8 +350,8 @@ data AgreedTerms = AgreedTerms {atCommunityName :: CommunityName, atTermsHash ::
 
 -- | As the order signs it: the hash in 64 lowercase hex digits, after communityTermsPrefix for the community terms.
 instance TextEncoding AgreedTerms where
-  textEncode AgreedTerms {atCommunityName, atTermsHash} = (if atCommunityName then communityTermsPrefix else "") <> T.drop 2 (hex atTermsHash)
-  textDecode = eitherToMaybe . parseText (AgreedTerms <$> (True <$ A.string (encodeUtf8 communityTermsPrefix) <|> pure False) <*> lowerHexP abiWordSize)
+  textEncode AgreedTerms {atCommunityName, atTermsHash} = (if atCommunityName then communityTermsPrefix else "") <> T.drop 2 (decodeLatin1 $ strEncode atTermsHash)
+  textDecode = eitherToMaybe . parseText (AgreedTerms <$> (True <$ A.string (encodeUtf8 communityTermsPrefix) <|> pure False) <*> (Hex32 <$> lowerHexP abiWordSize))
 
 instance FromField AgreedTerms where fromField = fromTextField_ textDecode
 
@@ -385,7 +385,9 @@ message = encodeUtf8 . T.unwords . ("simplex.domains" :)
 
 orderWords :: OrderFields -> [Text]
 orderWords OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} =
-  [hex lh, tshow (nameLengthInt ofLength), tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed, textEncode ofAgreedTerms]
+  [hexText $ Hex32 lh, tshow (nameLengthInt ofLength), tshow ofDuration, hexText ofCommitment, hexText $ Hex32 $ sha256Hash $ encodeUtf8 ofSealed, textEncode ofAgreedTerms]
+  where
+    hexText = decodeLatin1 . strEncode
 
 parseChecksumAddress :: Text -> Either AddressError Address
 parseChecksumAddress t = do

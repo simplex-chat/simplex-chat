@@ -21,7 +21,6 @@ module StoreService.Names.Orders
     parseBody,
     jsonField,
     textWith,
-    hexHash,
     hexSignature,
     boundedInteger,
     checkSigner,
@@ -49,6 +48,7 @@ import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM, unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
+import Data.Aeson ((.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
@@ -65,18 +65,18 @@ import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
-import Simplex.Messaging.Encoding.String (TextEncoding (..))
+import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (communityJSON, nameTerms, readableTerms, termsFor, yearsFor)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), Terms, chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
-import StoreService.Names.Chain (TxHash, bytes32FromHex, hex)
+import StoreService.Names.Chain (Hex32 (..), TxHash)
 import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), parseChecksumAddress, parseSignature, personalDigest)
 import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), Commit (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, phaseCommit, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
@@ -161,10 +161,10 @@ parseOrderRequest o = do
 
 parseOrderFields :: J.Object -> JT.Parser (Either OrderRefusal SignedOrderFields)
 parseOrderFields o = do
-  ofLabelHash <- LabelHash <$> jsonField o "labelHash" hexHash
+  ofLabelHash <- LabelHash . unHex32 <$> o .: "labelHash"
   len <- jsonField o "length" boundedInteger
   ofDuration <- jsonField o "duration" boundedInteger
-  ofCommitment <- jsonField o "commitment" hexHash
+  ofCommitment <- o .: "commitment"
   ofSealed <- jsonField o "sealed" $ textWith $ \t -> if T.length t <= maxSealedChars then Right t else Left "longer than its limit"
   ofAgreedTerms <- jsonField o "terms" $ textWith $ maybe (Left "not agreed terms") Right . textDecode
   timestamp <- jsonField o "timestamp" boundedInteger
@@ -172,9 +172,6 @@ parseOrderFields o = do
   pure $ case nameLength len of
     Just ofLength -> Right (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
     Nothing -> Left ORInvalidName
-
-hexHash :: J.Value -> JT.Parser ByteString
-hexHash = textWith $ maybe (Left "not a 32-byte hash in lowercase hex") Right . bytes32FromHex
 
 hexSignature :: J.Value -> JT.Parser RecoverableSignature
 hexSignature = textWith parseSignature
@@ -401,7 +398,7 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
       unless spent $ do
         PrepaidCode {pcCodeHash} <- withTransaction st (`getPrepaidCodeById` codeId)
         logError $
-          "names: registration " <> ridText nrId <> " turned out registered with prepaid code " <> hex pcCodeHash
+          "names: registration " <> ridText nrId <> " turned out registered with prepaid code " <> safeDecodeUtf8 (strEncode pcCodeHash)
             <> ", which was released and then spent, revoked or expired: the name was paid with it"
       pure v
     ridText (RegistrationId t) = t

@@ -32,9 +32,9 @@ where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rentPriceCall, threeYearsOf11)
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
+import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.NamesPhasesTests (held, registrationPath, seenVersion, woken)
-import Bots.StoreService.WebTests (bounded, capturingStderr, digestFixture, fieldOf, jsonObject, refusedWith, webGet, withApp)
+import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, refusedWith, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent.Async (async, wait)
@@ -64,7 +64,7 @@ import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Chain (TxHash (..), addressWord, hex, uint256)
+import StoreService.Names.Chain (Hex32 (..), TxHash (..), addressWord, hex, uint256)
 import StoreService.Names.Orders (OrdersEnv (..), movable, signedRequestSeconds)
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage)
 import StoreService.Names.Store hiding (findLimit)
@@ -172,7 +172,7 @@ answerExpiry Ctx {cNode} label expiry = answerCall cNode (registrarOf cNode) (na
 -- | A register transaction of the order as the sender saves it, then moved to this outcome.
 sentRegister :: Ctx -> NameRegistration -> Word8 -> TxSettlement -> IO TxHash
 sentRegister Ctx {cStore} NameRegistration {nrId} n settlement = withTransaction cStore $ \db -> do
-  let h = TxHash $ digestFixture n
+  let h = TxHash $ hashFixture n
   void $ insertTransaction db (TxRegistration RTRegister nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
   recordTransactionOutcome db h TSPending settlement `shouldReturn` True
   pure h
@@ -227,7 +227,7 @@ committedPhase r = r {nrPhase = OCommitted committedCommit}
 linksRefusedPhase r = r {nrPhase = OCommitted committedCommit {cmLinksRefusedAt = Just orderTime}}
 
 committedCommit :: Commit
-committedCommit = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = seconds orderTime + 60, cmRevealBefore = seconds orderTime + 86400, cmLinksRefusedAt = Nothing}
+committedCommit = Commit {cmTx = Just (TxHash $ hashFixture 8, 100), cmRevealAfter = seconds orderTime + 60, cmRevealBefore = seconds orderTime + 86400, cmLinksRefusedAt = Nothing}
 
 -- | Another name's fields, with the page's duration for 2 years at the service's clock.
 moveTo :: Ctx -> Text -> Int -> IO OrderFields
@@ -246,7 +246,7 @@ moveBodyAt ctx key rid fields@OrderFields {ofLabelHash = LabelHash lh, ofLength,
       [ ("labelHash", J.String $ hex lh),
         ("length", J.toJSON (nameLengthInt ofLength)),
         ("duration", J.toJSON ofDuration),
-        ("commitment", J.String $ hex ofCommitment),
+        ("commitment", J.toJSON ofCommitment),
         ("sealed", J.String ofSealed),
         ("terms", J.String $ textEncode ofAgreedTerms),
         ("timestamp", J.toJSON timestamp),
@@ -373,7 +373,7 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder registeredPhase
   move ctx keyA r to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
-  let phases refused = [OUnpaid True, OQueued Nothing, OCommitting Nothing, OCommitted committedCommit {cmLinksRefusedAt = refused}, ORegistering committedCommit (TxHash $ digestFixture 9), nrPhase r, OTaken Nothing Nothing, nrPhase (failedPhase r)]
+  let phases refused = [OUnpaid True, OQueued Nothing, OCommitting Nothing, OCommitted committedCommit {cmLinksRefusedAt = refused}, ORegistering committedCommit (TxHash $ hashFixture 9), nrPhase r, OTaken Nothing Nothing, nrPhase (failedPhase r)]
       movableWith refused = [namePhase p | p <- phases refused, movable r {nrPhase = p}]
   movableWith Nothing `shouldBe` [PFailed]
   movableWith (Just orderTime) `shouldBe` [PCommitted, PFailed]
@@ -387,7 +387,7 @@ testMoveAccepted = withOwner $ \ctx -> do
   fieldsIn v
     [ ("phase", "queued"),
       ("labelHash", labelHashText "alicebakers"),
-      ("commitment", J.String $ hex $ ofCommitment to),
+      ("commitment", J.toJSON $ ofCommitment to),
       ("sealed", J.String $ ofSealed to),
       ("duration", J.toJSON $ ofDuration to),
       ("price", J.Number 10000),
@@ -564,7 +564,7 @@ testMoveLanded = withOwner $ \ctx -> do
   notLanded <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} failedPhase
   let expiry = seconds orderTime + 2 * 31536000
   forM_ ["alicebakery", "dynamis"] $ \label -> answerExpiry ctx label expiry
-  TxHash minedHash <- sentRegister ctx minedOrder 1 $ TSMinedAt 120
+  TxHash (Hex32 minedHash) <- sentRegister ctx minedOrder 1 $ TSMinedAt 120
   answerOwner ctx "dynamis" (nrOwner ownedOrder)
   void $ sentRegister ctx notLanded 2 $ TSRevertedAt 120
   answerOwner ctx "alicebakery" (nrOwner minedOrder)
@@ -607,7 +607,7 @@ testMoveLandedReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   to' <- moveTo ctx "alicebakers" 11
   logs <- capturingStderr $ fst <$> move ctx keyA spentElsewhere to' `shouldReturn` 409
   namePhase . nrPhase <$> stored ctx spentElsewhere `shouldReturn` PRegistered
-  length (filter (\l -> "[ERROR " `T.isInfixOf` l && hex (pcCodeHash spentCode) `T.isInfixOf` l && idText (nrId spentElsewhere) `T.isInfixOf` l) $ T.lines logs) `shouldBe` 1
+  length (filter (\l -> "[ERROR " `T.isInfixOf` l && hex (unHex32 $ pcCodeHash spentCode) `T.isInfixOf` l && idText (nrId spentElsewhere) `T.isInfixOf` l) $ T.lines logs) `shouldBe` 1
   codeRow ctx spentCode `shouldReturn` spentBefore
   stored ctx spender `shouldReturn` spenderBefore
   where

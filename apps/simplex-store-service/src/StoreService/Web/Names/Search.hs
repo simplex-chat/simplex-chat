@@ -16,6 +16,7 @@ import qualified Data.Aeson.Types as JT
 import Data.List (find)
 import Data.Maybe (catMaybes, mapMaybe)
 import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import qualified Data.Text as T
 import Network.HTTP.Types (status200)
@@ -23,12 +24,13 @@ import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), boundedDecimal)
-import StoreService.Names.Chain (bytes32FromHex)
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Community (communityJSON, readableTerms, termsJSON, yearsFor)
 import StoreService.Names.Contracts
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
@@ -50,9 +52,9 @@ data Found
 -- | The chain reads of one search share one deadline, so a node that answers slowly fails the search once.
 -- Only they hold a search slot: the profile reads after them have their own bound.
 searchHandler :: NamesConfig -> HttpEnv -> DBStore -> Contracts -> Profiles -> IO UTCTime -> Text -> Request -> Respond -> IO ResponseReceived
-searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond = case LabelHash <$> bytes32FromHex hashText of
-  Nothing -> respond badRequest
-  Just lh -> case queryLength req of
+searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond = case LabelHash . unHex32 <$> strDecode (encodeUtf8 hashText) of
+  Left _ -> respond badRequest
+  Right lh -> case queryLength req of
     Nothing -> respond invalidName
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
@@ -132,9 +134,9 @@ previewHandler ps req respond =
 
 -- | The text of either current set of terms, by its hash, with its link; any other hash answers not_found.
 termsHandler :: Contracts -> Text -> Request -> Respond -> IO ResponseReceived
-termsHandler ct hashText _ respond = case bytes32FromHex hashText of
-  Nothing -> respond badRequest
-  Just h ->
+termsHandler ct hashText _ respond = case strDecode $ encodeUtf8 hashText of
+  Left _ -> respond badRequest
+  Right h ->
     termsLinks ct >>= \case
       Left e -> logWarn ("GET /api/terms: a chain read failed: " <> tshow e) >> respond providerUnavailable
       Right (general, community) -> case find ((h ==) . tmHash) $ catMaybes [general, community] of

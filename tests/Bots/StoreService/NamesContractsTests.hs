@@ -145,8 +145,8 @@ testNamePolicy g = withContracts g $ \node ct -> do
   termsLinkTexts ct `shouldReturn` Right (fakeTermsLink fakeGeneralTermsText, fakeTermsLink fakeCommunityTermsText)
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (5 :: Int)
   policyNonce ct owner `shouldReturn` Right 5
-  answerCall node fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> commitment <> addressWord owner) $ Returns fakeCommunityTerms
-  acceptedTerms ct commitment owner `shouldReturn` Right fakeCommunityTerms
+  answerCall node fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 commitment <> addressWord owner) $ Returns fakeCommunityTerms
+  acceptedTerms ct commitment owner `shouldReturn` Right (Hex32 fakeCommunityTerms)
   answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord newPolicy
   namePolicy ct `shouldReturn` Right fakeNamePolicy
   forgetNamePolicy ct
@@ -174,7 +174,7 @@ testTermsLinks g = withContracts g $ \node ct -> do
   termsLinkTexts ct `shouldReturn` Right ("", fakeTermsLink fakeNewCommunityTermsText)
   termsOf ct "" `shouldReturn` Right Nothing
   termsOf ct viemLink
-    `shouldReturn` Right (Just Terms {tmLink = viemLink, tmHash = unhex "c2ff2149afa84a77e3a041b2925ebd08a22c1e91a74abd8b82fd17e45c15cb7f", tmFetch = (T.unpack viemUrl, Just $ unhex $ encodeUtf8 viemDigest)})
+    `shouldReturn` Right (Just Terms {tmLink = viemLink, tmHash = Hex32 $ unhex "c2ff2149afa84a77e3a041b2925ebd08a22c1e91a74abd8b82fd17e45c15cb7f", tmFetch = (T.unpack viemUrl, Just $ unhex $ encodeUtf8 viemDigest)})
   where
     viemUrl = "https://git.simplex.chat/simplex-chat/simplex-chat/raw/commit/4cb24444a1f2e3d4c5b6a7980716253443526170/docs/general-terms.md"
     viemDigest = "0b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff001"
@@ -663,8 +663,8 @@ alice = labelHash "alicebakery"
 aliceNode :: ByteString
 aliceNode = unhex "0f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a"
 
-commitment :: ByteString
-commitment = unhex "f8096c3f3cfbadc9f3a108d2c586ccc816c0510711c8d6228aa4fa507324d30c"
+commitment :: Hex32
+commitment = Hex32 $ unhex "f8096c3f3cfbadc9f3a108d2c586ccc816c0510711c8d6228aa4fa507324d30c"
 
 owner, registry, otherResolver, newPolicy :: Address
 owner = address "0x014f9c09cceedef1b713110d04d3a07d5b5d9b73"

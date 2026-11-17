@@ -58,7 +58,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeB
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.FakeHttp (nextFakeId)
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, minPriceCentsPerYear, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.NamesStoreTests (btc, codeReg, commitFixture, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
+import Bots.StoreService.NamesStoreTests (btc, codeReg, commitFixture, hashFixture, insertInvoiceRow, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, reveal, t0)
 import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently, wait)
@@ -90,7 +90,7 @@ import Network.HTTP.Client (defaultManagerSettings, newManager, responseHeaders)
 import Network.HTTP.Types (hContentType, status404)
 import Network.Wai (Application, requestHeaders)
 import qualified Network.Wai.Handler.Warp as Warp
-import Simplex.Chat.Badges.Code (formatNameCode, nameLength, nameLengthInt, namePrepaidCodeHash, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (formatNameCode, nameLength, nameLengthInt, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
@@ -105,9 +105,9 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
 import StoreService.Group.Command (CmdSource (..))
-import StoreService.Names.Chain (AbiValue (..), TxHash (..), abiBytes, abiTuple, hex, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), Hex32 (..), TxHash (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
-import StoreService.Names.Codes (CodeRefusal (..))
+import StoreService.Names.Codes (CodeRefusal (..), prepaidCodeHash)
 import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
@@ -257,7 +257,7 @@ data Order = Order
   { oLabel :: Text,
     oOwner :: Text,
     oKey :: Secp256k1PrivateKey,
-    oCommitment :: ByteString,
+    oCommitment :: Hex32,
     oSealed :: Text,
     oDuration :: Word64,
     oMethod :: Text,
@@ -285,8 +285,8 @@ aliceOrder =
 alicePrice :: USDCents
 alicePrice = 10000
 
-commitmentOf :: Int -> ByteString
-commitmentOf n = C.sha256Hash $ BC.pack $ "commitment " <> show n
+commitmentOf :: Int -> Hex32
+commitmentOf n = Hex32 $ C.sha256Hash $ BC.pack $ "commitment " <> show n
 
 fieldsOf :: Order -> OrderFields
 fieldsOf Order {oLabel, oCommitment, oSealed, oDuration, oTerms} =
@@ -305,7 +305,7 @@ unsignedBody o@Order {oOwner, oMethod, oPrice, oTimestamp} =
       ("length", J.toJSON (nameLengthInt ofLength)),
       ("duration", J.toJSON ofDuration),
       ("owner", J.String oOwner),
-      ("commitment", J.String $ hex ofCommitment),
+      ("commitment", J.toJSON ofCommitment),
       ("sealed", J.String ofSealed),
       ("method", J.String oMethod),
       ("price", J.toJSON oPrice),
@@ -508,7 +508,7 @@ testPaidOrder = withOrders $ \ctx -> do
   fieldOf r "price" `shouldBe` Just (J.Number 10000)
   fieldOf r "duration" `shouldBe` Just (J.toJSON $ durationAt orderTime)
   fieldOf r "terms" `shouldBe` Just (J.String plainTerms)
-  let reference = "name:" <> hex (orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000))
+  let reference = "name:" <> hex (unHex32 $ orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000))
   stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference}]
   reg <- invoiceRegistration ctx invId
   (nrPhase reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (OUnpaid True, 1, 2, 10000, OPInvoice (SPMCrypto CCBtc) invId)
@@ -519,7 +519,7 @@ testPaidOrder = withOrders $ \ctx -> do
 vectorOrder :: Order
 vectorOrder =
   aliceOrder
-    { oCommitment = unhex "5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5",
+    { oCommitment = Hex32 $ unhex "5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5",
       oSealed = "AAAAAAAAAAAAAAAACWgxqMk-UKfpra_Zh6vc4KNBR6SX1WYpGb4COoWCCbM0bisYCH14WLzghp8hqi_-KyXSi4qf_DAdP_M4bFetD0s",
       oDuration = 69292800,
       oTimestamp = 1792828800
@@ -699,7 +699,7 @@ testNameTaken = withOrders $ \ctx@Ctx {cNode = node} -> do
   -- another wallet's order of the name being registered here
   Right () <- placePaid (cStore ctx) "other" ownerB (order "alicebakery" 9) (addUTCTime 3600 t0)
   other <- withTransaction (cStore ctx) $ \db -> fromJust <$> getRegistration db (RegistrationId "other")
-  Written _ <- withTransaction (cStore ctx) $ \db -> updateRegistration db other {nrPhase = ORegistering commitFixture $ TxHash $ digestFixture 9} t0
+  Written _ <- withTransaction (cStore ctx) $ \db -> updateRegistration db other {nrPhase = ORegistering commitFixture $ TxHash $ hashFixture 9} t0
   placeOrder ctx aliceOrder `shouldReturn` refusedWith 409 "name_taken"
   stubCalls (cStub ctx) `shouldReturn` []
   where
@@ -939,7 +939,7 @@ testTermsCheckOrder = withOrders $ \ctx@Ctx {cNode = node} -> do
 issueCode :: Ctx -> Int -> Int -> (NewPrepaidCode -> NewPrepaidCode) -> IO (Text, PrepaidCode)
 issueCode Ctx {cStore, cRandom} len years change = do
   code <- randomNamePrepaidCode cRandom (fromJust $ nameLength len)
-  let new = change NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = FromConsole}
+  let new = change NewPrepaidCode {npcCodeHash = prepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing, npcIssuer = FromConsole}
   stored <- withTransaction cStore $ \db ->
     insertPrepaidCode db new orderTime >>= \case
       Right codeId -> getPrepaidCodeById db codeId
@@ -1613,10 +1613,10 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwMoves = 0,
         vwLinksRefused = False,
         vwPhase = "unpaid",
-        vwLabelHash = hex $ (\(LabelHash h) -> h) alice,
+        vwLabelHash = Hex32 $ (\(LabelHash h) -> h) alice,
         vwLabel = Nothing,
         vwOwner = ownerA,
-        vwCommitment = hex $ digestFixture 1,
+        vwCommitment = hashFixture 1,
         vwSealed = "sealed-alicebakery-1",
         vwResolver = fakeResolver,
         vwSponsor = fakeSponsor,
@@ -1641,7 +1641,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwTerms = plainTerms
       }
   map (\w -> vwLatePayment $ viewWith (Just w) notAsked) [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]
-  let acceptance community h = AcceptanceAsked {acCommunity = community, acPolicy = fakeNamePolicy, acTermsHash = h, acNonce = 2}
+  let acceptance community h = AcceptanceAsked {acCommunity = community, acPolicy = fakeNamePolicy, acTermsHash = Hex32 h, acNonce = 2}
       acceptanceOf a = vwAcceptance $ viewWith Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRRead a}
       acceptanceJSON :: Text -> ByteString -> Maybe J.Value
       acceptanceJSON kind h = Just (J.object ["kind" .= kind, "policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex h, "nonce" .= (2 :: Int)])
@@ -1657,11 +1657,11 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         Written _ <- withTransaction st $ \db -> getRegistration db rid >>= \r -> updateRegistration db (change $ fromJust r) t0
         withTransaction st $ \db -> fromJust <$> getRegistration db rid
       viewOf r = J.toJSON <$> registrationView st (testNamesConfig node) ct t0 r
-      onChain = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = 1792574160, cmRevealBefore = 1792660500, cmLinksRefusedAt = Nothing}
+      onChain = Commit {cmTx = Just (TxHash $ hashFixture 8, 100), cmRevealAfter = 1792574160, cmRevealBefore = 1792660500, cmLinksRefusedAt = Nothing}
   failed <-
     written $ \r ->
       r
-        { nrPhase = OFailed (Just $ CSCommitted onChain) (Just $ TxHash $ digestFixture 9) t0 FRNotRegistered,
+        { nrPhase = OFailed (Just $ CSCommitted onChain) (Just $ TxHash $ hashFixture 9) t0 FRNotRegistered,
           nrReveal = Just reveal
         }
   viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", "failed"), ("registerTx", txText 9), ("error", "The name could not be registered"), ("balance", J.Null)]
@@ -1684,7 +1684,7 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
               ("labelHash", J.String $ hex $ (\(LabelHash h) -> h) $ ofLabelHash o),
               ("label", "alicebakery"),
               ("owner", J.String ownerAText),
-              ("commitment", J.String $ hex $ ofCommitment o),
+              ("commitment", J.String $ hex $ unHex32 $ ofCommitment o),
               ("sealed", "sealed-alicebakery-1"),
               ("resolver", J.String $ safeDecodeUtf8 $ strEncode fakeResolver),
               ("sponsor", J.String $ safeDecodeUtf8 $ strEncode fakeSponsor),
@@ -1724,10 +1724,10 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   committed <- inPhase $ OCommitted commitFixture
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
-  readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) (VRRead AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = fakeGeneralTerms, acNonce = 2})
+  readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) (VRRead AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeGeneralTerms, acNonce = 2})
   -- the policy lists the name: the page signs the community terms' acceptance with the policy's nonce, until a reveal is stored
   listCommunityName node $ labelHash "alicebakery"
-  readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) (VRRead AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
+  readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) (VRRead AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeCommunityTerms, acNonce = 2})
   -- before the policy has terms of the name's kind there are none to sign, so the page waits
   setCommunityTerms node ""
   readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) VRUnread

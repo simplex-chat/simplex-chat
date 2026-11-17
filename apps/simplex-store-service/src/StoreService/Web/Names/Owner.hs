@@ -25,7 +25,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Chain (hex)
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Orders
 import StoreService.Names.Phases (publish)
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, retargetMessage)
@@ -76,7 +76,7 @@ foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCre
       "invoiceId" .= paymentInvoice nrPayment,
       "phase" .= (textEncode (namePhase nrPhase) :: Text),
       "createdAt" .= nrCreatedAt,
-      "labelHash" .= hex lh,
+      "labelHash" .= Hex32 lh,
       "sealed" .= nrSealed,
       "balanceSource" .= (idText . buSource <$> paymentBalance nrPayment),
       "heldBy" .= (idText <$> holder)

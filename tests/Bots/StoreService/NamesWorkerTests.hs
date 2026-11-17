@@ -11,8 +11,8 @@ import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCal
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
-import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
-import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, fieldOf, jsonObject, refusedWith, statusOf, stubCalls, webGet, withApp)
+import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, ownerA, paidOrder, reveal)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, refusedWith, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -44,7 +44,7 @@ import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
-import StoreService.Names.Chain (AbiValue (..), Block (..), ChainClient, TxHash (..), abiBytes, abiTuple, addressWord, blockAt, decodeSignedTx, hex, newChainClient, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), Block (..), ChainClient, Hex32 (..), TxHash (..), abiBytes, abiTuple, addressWord, blockAt, decodeSignedTx, hex, newChainClient, selector, uint256)
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (awaitChange)
@@ -206,7 +206,7 @@ openPhase :: NameRegistration -> NameRegistration
 openPhase r = r {nrPhase = OCommitted openCommit}
 
 openCommit :: Commit
-openCommit = Commit {cmTx = Just (TxHash $ digestFixture 8, 100), cmRevealAfter = orderSeconds - minAge, cmRevealBefore = orderSeconds - minAge + maxAge, cmLinksRefusedAt = Nothing}
+openCommit = Commit {cmTx = Just (TxHash $ hashFixture 8, 100), cmRevealAfter = orderSeconds - minAge, cmRevealBefore = orderSeconds - minAge + maxAge, cmLinksRefusedAt = Nothing}
 
 commitAt :: Word64 -> Maybe (TxHash, Word64) -> Commit
 commitAt t tx = Commit {cmTx = tx, cmRevealAfter = t + minAge, cmRevealBefore = t + maxAge, cmLinksRefusedAt = Nothing}
@@ -221,7 +221,7 @@ signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> 
 signedReveal Ctx {cRandom, cOrders, cNode} key rv r@NameRegistration {nrCommitment, nrOwner} = do
   let RegisterIntent {riRegistration} = intentOf (oeConfig cOrders) r rv
   sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration (rvNonce rv) (rvDeadline rv))
-  answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment <> addressWord nrOwner) $ Returns $ taTermsHash $ rvAcceptance rv
+  answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 nrCommitment <> addressWord nrOwner) $ Returns $ unHex32 $ taTermsHash $ rvAcceptance rv
   pure rv {rvSignature = sig}
 
 -- | The registration with the page's reveal of the label accepted.
@@ -277,12 +277,12 @@ sent :: W -> IO [ByteString]
 sent W {wCtx = Ctx {cNode}} = sentTransactions cNode
 
 newestHash :: W -> IO TxHash
-newestHash w = TxHash . keccak256 . last <$> sent w
+newestHash w = TxHash . Hex32 . keccak256 . last <$> sent w
 
 -- | Mines the newest transaction sent, with this status, and the blocks after it that settle it; the receipt's block.
 mineNewest :: W -> Bool -> IO Word64
 mineNewest w@W {wCtx = Ctx {cNode}, wSender} ok = do
-  TxHash h <- newestHash w
+  TxHash (Hex32 h) <- newestHash w
   block <- mine cNode [(h, ok)]
   replicateM_ 2 $ mine cNode []
   followTransactions wSender
@@ -292,7 +292,7 @@ blockTime :: W -> Word64 -> IO Word64
 blockTime W {wChain} n = either (error . show) blockTimestamp <$> blockAt wChain n
 
 commitmentsCall :: NameRegistration -> ByteString
-commitmentsCall NameRegistration {nrCommitment} = selector "commitments(bytes32)" <> nrCommitment
+commitmentsCall NameRegistration {nrCommitment} = selector "commitments(bytes32)" <> unHex32 nrCommitment
 
 -- | The commitment's time on chain, 0 for none.
 answerCommitment :: W -> NameRegistration -> Word64 -> IO ()
@@ -353,9 +353,9 @@ commitWaitRegister w@W {wCtx = ctx} (r, code) = do
   void $ published w r $ steps w r >>= awaiting
   [commitRaw] <- sent w
   committing <- stored ctx r
-  (nrPhase committing, nrVersion committing) `shouldBe` (OCommitting $ Just $ TxHash $ keccak256 commitRaw, nrVersion r + 1)
+  (nrPhase committing, nrVersion committing) `shouldBe` (OCommitting $ Just $ TxHash $ Hex32 $ keccak256 commitRaw, nrVersion r + 1)
   -- the commit in flight is waited for
-  steps w r >>= awaiting >>= (`shouldBe` TxHash (keccak256 commitRaw)) . ptHash
+  steps w r >>= awaiting >>= (`shouldBe` TxHash (Hex32 $ keccak256 commitRaw)) . ptHash
   length <$> sent w `shouldReturn` 1
   commitBlock <- mineNewest w True
   t <- blockTime w commitBlock
@@ -363,7 +363,7 @@ commitWaitRegister w@W {wCtx = ctx} (r, code) = do
   -- committed, waiting for the reveal until the lapse
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (t + maxAge + 1)
   committed <- stored ctx r
-  let onChain = commitAt t $ Just (TxHash $ keccak256 commitRaw, commitBlock)
+  let onChain = commitAt t $ Just (TxHash $ Hex32 $ keccak256 commitRaw, commitBlock)
   nrPhase committed `shouldBe` OCommitted onChain
   -- the page reveals before revealAfter
   void $ revealed ctx keyA "alicebakery" r
@@ -407,7 +407,7 @@ testUnexpiredCommitment = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   let t = orderSeconds - 600
   answerCommitment w r t
   answerCallOnce cNode fakeController (commitmentsCall r) $ Returns $ uint256 (0 :: Int)
-  dryRunsRevert w "UnexpiredCommitmentExists(bytes32)" (nrCommitment r)
+  dryRunsRevert w "UnexpiredCommitmentExists(bytes32)" (unHex32 $ nrCommitment r)
   steps w r >>= retrying
   sent w `shouldReturn` []
   stored ctx r `shouldReturn` r
@@ -461,7 +461,7 @@ testLapseSecond = withWorker $ \w@W {wCtx = ctx} -> do
   stored ctx r `shouldReturn` r
   advance ctx 1
   -- the node's latest block is still at the lapse second
-  dryRunsRevert w "UnexpiredCommitmentExists(bytes32)" (nrCommitment r)
+  dryRunsRevert w "UnexpiredCommitmentExists(bytes32)" (unHex32 $ nrCommitment r)
   steps w r >>= retrying
   sent w `shouldReturn` []
   stored ctx r `shouldReturn` r
@@ -482,7 +482,7 @@ testIntentAcrossCommits = withWorker $ \w@W {wCtx = ctx} -> do
   (nrPhase x, nrReveal x, nrVersion x) `shouldBe` (OCommitting $ Just commitTx, Just reveal, nrVersion r + 2)
   -- requeued with its intent while a third party's commit of the commitment is live: not ours, so only our commit goes
   r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} $ \o -> o {nrPhase = OQueued $ Just $ CSCommitted openCommit, nrReveal = Just reveal}
-  answerAccepted w r2 $ Returns $ taTermsHash $ rvAcceptance reveal
+  answerAccepted w r2 $ Returns $ unHex32 $ taTermsHash $ rvAcceptance reveal
   answerCommitment w r2 (orderSeconds - 30)
   steps w r2 >>= waitingUntil >>= (`shouldBe` at (orderSeconds - 30 + minAge))
   x2 <- stored ctx r2
@@ -503,7 +503,7 @@ testFeeAboveCap = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
 
 sentCommits :: Ctx -> NameRegistration -> TxSettlement -> [Word8] -> IO ()
 sentCommits Ctx {cStore} NameRegistration {nrId} settlement nonces = withTransaction cStore $ \db -> forM_ nonces $ \n -> do
-  let h = TxHash $ digestFixture n
+  let h = TxHash $ hashFixture n
   void $ insertTransaction db (TxRegistration RTCommit nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
   recordTransactionOutcome db h TSPending settlement `shouldReturn` True
 
@@ -790,13 +790,13 @@ acceptedReveal = acceptedRevealFor fakeNamePolicy False fakeGeneralTerms
 acceptedRevealFor :: Address -> Bool -> ByteString -> Ctx -> NameRegistration -> IO NameRegistration
 acceptedRevealFor policy community terms ctx@Ctx {cRandom} r = do
   rv <- signedReveal ctx keyA reveal {rvLabel = "alicebakery"} r
-  sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId policy) (termsKind community) (nrCommitment r) terms 0 (rvDeadline rv))
-  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = TermsAcceptance {taTermsHash = terms, taNonce = 0, taSignature = sig}}})
+  sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId policy) (termsKind community) (nrCommitment r) (Hex32 terms) 0 (rvDeadline rv))
+  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = TermsAcceptance {taTermsHash = Hex32 terms, taNonce = 0, taSignature = sig}}})
 
 -- | The terms hash the policy holds as accepted for the registration's commitment by its owner.
 answerAccepted :: W -> NameRegistration -> CallAnswer -> IO ()
 answerAccepted W {wCtx = Ctx {cNode}} NameRegistration {nrCommitment, nrOwner} =
-  answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment <> addressWord nrOwner)
+  answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 nrCommitment <> addressWord nrOwner)
 
 testAcceptanceRelayed :: IO ()
 testAcceptanceRelayed = forM_ [(False, fakeGeneralTerms, plainTerms), (True, fakeCommunityTerms, communityTerms)] $ \(community, terms, signed) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
@@ -839,7 +839,7 @@ testAcceptanceSentFirst :: IO ()
 testAcceptanceSentFirst = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
   answerAccepted w r $ Returns fakeGeneralTerms
-  answerCallOnce cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment r <> addressWord (nrOwner r)) $ Returns $ uint256 (0 :: Int)
+  answerCallOnce cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> unHex32 (nrCommitment r) <> addressWord (nrOwner r)) $ Returns $ uint256 (0 :: Int)
   revertDryRun cNode (acceptCalldata (termsKind False) (nrCommitment r) (nrOwner r) rvDeadline acceptance) $ Just $ selector "InvalidNonce()"
   void $ steps w r >>= awaiting
   [registerRaw] <- sent w
@@ -912,7 +912,7 @@ testCommitmentTooNew = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   answerAvailable w True
   -- the node's latest block still before revealAfter
-  dryRunsRevert w "CommitmentTooNew(bytes32,uint256,uint256)" $ nrCommitment r <> uint256 (orderSeconds - minAge) <> uint256 orderSeconds
+  dryRunsRevert w "CommitmentTooNew(bytes32,uint256,uint256)" $ unHex32 (nrCommitment r) <> uint256 (orderSeconds - minAge) <> uint256 orderSeconds
   steps w r >>= waitingUntil >>= (`shouldBe` addUTCTime 1 orderTime)
   stored ctx r `shouldReturn` r
   sent w `shouldReturn` []
@@ -1085,7 +1085,7 @@ answerNonce :: W -> Word64 -> IO ()
 answerNonce W {wCtx = Ctx {cNode}} n = answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 n
 
 txJSON :: Maybe TxHash -> Maybe J.Value
-txJSON = Just . maybe J.Null (\(TxHash h) -> J.String $ hex h)
+txJSON = Just . maybe J.Null (\(TxHash (Hex32 h)) -> J.String $ hex h)
 
 -- | Committed by the worker's own commit; its block's time.
 committedByUs :: W -> NameRegistration -> IO (NameRegistration, Word64)
@@ -1127,7 +1127,7 @@ testRetryLanded :: IO ()
 testRetryLanded = withWorker $ \W {wCtx = ctx} -> do
   -- redeemed since its register mined: the name left the owner, and the register consumed its commitment
   (redeemed, code) <- codeIn ctx 8 aliceOrder failedPhase
-  TxHash minedHash <- sentRegister ctx redeemed 1 $ TSMinedAt 120
+  TxHash (Hex32 minedHash) <- sentRegister ctx redeemed 1 $ TSMinedAt 120
   answerExpiry ctx "alicebakery" expiry
   v <- retried ctx redeemed
   (fieldOf v "phase", fieldOf v "registerTx", fieldOf v "expiresAt", fieldOf v "error") `shouldBe` (Just "registered", Just (J.String $ hex minedHash), Just (J.toJSON expiry), Just J.Null)
@@ -1164,8 +1164,8 @@ testRetryReleasedCode = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
       refusals :: [(Text, PrepaidCode -> DB.Connection -> IO (), (Int, Maybe J.Object))]
       refusals =
         [("expired", \PrepaidCode {pcCodeHash} db -> expire db pcCodeHash, refusedWith 409 "code_expired")]
-      expire :: DB.Connection -> ByteString -> IO ()
-      expire db codeHash = DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary codeHash)
+      expire :: DB.Connection -> CodeHash -> IO ()
+      expire db codeHash = DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, codeHash)
   forM_ (zip [1 :: Int ..] refusals) $ \(n, (what, change, refusal)) -> do
     (r, code) <- codeOrder n failedPhase >>= released
     withTransaction cStore $ change code
