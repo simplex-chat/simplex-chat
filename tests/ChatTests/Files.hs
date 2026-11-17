@@ -273,6 +273,10 @@ testGroupImageOfOtherFileType =
       bob <# "#team alice> sends file test.pdf.jpg (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       alice <## "completed uploading file 1 (test.pdf) for #team"
+      imageItemId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> imageItemId <> " json {\"msgContent\": {\"type\": \"image\", \"text\": \"caption\", \"image\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}, \"mentions\": {}}")
+      alice <# "#team [edited] caption"
+      bob <# "#team alice> [edited] caption"
 
 testUpdateFileToImage :: HasCallStack => TestParams -> IO ()
 testUpdateFileToImage =
