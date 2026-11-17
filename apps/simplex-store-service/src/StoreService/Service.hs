@@ -1066,6 +1066,16 @@ responseName = \case
     "badge issued" <> maybe "" (\s -> ", subscription " <> tshow s) subscription
   STPBadgeCredential {credential = Nothing} -> "no month to issue"
   STPError {code} -> "error " <> tshow code
+  STPNameCatalog {} -> "name catalog"
+  STPNameTerms {} -> "name terms"
+  STPNameCode {} -> "name code"
+  STPNameOrderPlaced {} -> "name order placed"
+  STPNamePurchase {} -> "name purchase"
+  STPNameRegistration {} -> "name registration"
+  STPNameRevealed -> "name revealed"
+  STPNameOrders {} -> "name orders"
+  STPNameMove {} -> "name move"
+  STPNameRefused {} -> "name refused"
 
 -- | The command each request ran, so a log can be followed without the request ids. No payload:
 -- a payment holds a store receipt, and an upgrade a receipt code.
@@ -1079,6 +1089,22 @@ commandName = \case
   STCTransferBadge {payment} -> "transferBadge " <> paymentName payment
   STCIssueBadge {} -> "issueBadge"
   STCPauseBadge -> "pauseBadge"
+  STCGetNameCatalog -> "getNameCatalog"
+  STCGetNameTerms {} -> "getNameTerms"
+  STCCheckNameCode {} -> "checkNameCode"
+  STCOpenNameCode {} -> "openNameCode"
+  STCCloseNameCode {} -> "closeNameCode"
+  STCOrderName {} -> "orderName"
+  STCPurchaseName {payment} -> "purchaseName " <> paymentName payment
+  STCGetNameRegistration {} -> "getNameRegistration"
+  STCRevealName {} -> "revealName"
+  STCRetryName {} -> "retryName"
+  STCFindNameOrders {} -> "findNameOrders"
+  STCOrderAnotherName {} -> "orderAnotherName"
+  STCGetNameMove {} -> "getNameMove"
+  STCApproveNameMove {} -> "approveNameMove"
+  STCAcceptNameMoveTerms {} -> "acceptNameMoveTerms"
+  STCClaimNameMove {} -> "claimNameMove"
   where
     paymentName = \case
       SPApple {} -> "(App Store)"

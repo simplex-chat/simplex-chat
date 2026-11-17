@@ -1,6 +1,9 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -16,7 +19,31 @@ module Simplex.Chat.StoreService
     currentStoreServiceVersion,
     supportedStoreServiceVRange,
     BadgeUpgrade (..),
+    NameRegistrationId (..),
+    SignedNameOrder (..),
+    NameCodeOrder (..),
+    NamePurchaseCode (..),
+    SignedNameReveal (..),
+    NameRevealRecords (..),
+    NameRevealAcceptance (..),
+    NameMove (..),
     StoreServiceResponse (..),
+    NameCatalog (..),
+    NameSaleState (..),
+    NameCatalogTerms (..),
+    NameTermsRef (..),
+    NameCommunity (..),
+    NameCodeInfo (..),
+    NameCodeState (..),
+    NameCodePayment (..),
+    NameOrderAnswer (..),
+    NameRegistrationView (..),
+    NameRegistrationPhase (..),
+    NameAcceptanceAsked (..),
+    NameTermsKind (..),
+    NameFoundOrder (..),
+    NameMoveReads (..),
+    NameRefusal (..),
     StoreServiceErrorCode (..),
     SubscriptionState (..),
     BadgeCatalog (..),
@@ -31,19 +58,25 @@ module Simplex.Chat.StoreService
   ) where
 
 import Control.Applicative ((<|>))
-import Data.Aeson (FromJSON (..), ToJSON (..), (.:))
+import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
+import Data.Int (Int64)
+import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
-import Data.Word (Word8, Word16, Word32)
+import Data.Word (Word8, Word16, Word32, Word64)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Types
 import Simplex.Chat.PaymentService
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
+import Simplex.Messaging.Encoding.String (TextEncoding (..), textParseJSON, textToEncoding, textToJSON)
+import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Names.Record (TermsDoc, USDCents)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, taggedObjectJSON)
+import Simplex.Messaging.SimplexName (SimplexTLD)
 import Simplex.Messaging.Version (VersionRange, VersionScope, mkVersionRange)
 import Simplex.Messaging.Version.Internal (Version (..))
 
@@ -104,6 +137,44 @@ data StoreServiceCommand
       { balance :: BadgeBalance -- no badgeRequest: the service holds the key, the tier and the expiry
       }
   | STCPauseBadge
+  | STCGetNameCatalog
+  | STCGetNameTerms {termsHash :: Text}
+  | STCCheckNameCode {code :: Text}
+  | STCOpenNameCode {code :: Text}
+  | STCCloseNameCode {code :: Text}
+  | STCOrderName {nameOrder :: NameCodeOrder}
+  | STCPurchaseName {payment :: ServicePayment, purchaseCode :: NamePurchaseCode}
+  | STCGetNameRegistration {registrationId :: NameRegistrationId}
+  | STCRevealName {registrationId :: NameRegistrationId, reveal :: SignedNameReveal}
+  | STCRetryName {registrationId :: NameRegistrationId}
+  | STCFindNameOrders
+      { owner :: Address,
+        timestamp :: Word64,
+        signature :: Text
+      }
+  | STCOrderAnotherName {registrationId :: NameRegistrationId, signedOrder :: SignedNameOrder}
+  | STCGetNameMove {nameMove :: NameMove}
+  | STCApproveNameMove
+      { nameMove :: NameMove,
+        nonce :: Word64,
+        deadline :: Word64,
+        signature :: Text
+      }
+  | STCAcceptNameMoveTerms
+      { nameMove :: NameMove,
+        moveOffer :: Word64,
+        termsHash :: Text,
+        nonce :: Word64,
+        deadline :: Word64,
+        signature :: Text
+      }
+  | STCClaimNameMove
+      { nameMove :: NameMove,
+        moveOffer :: Word64,
+        nonce :: Word64,
+        deadline :: Word64,
+        signature :: Text
+      }
 
 data BadgeUpgrade = BadgeUpgrade
   { fromPurchaseKey :: C.PublicKeyEd25519,
@@ -111,6 +182,62 @@ data BadgeUpgrade = BadgeUpgrade
     receiptSignature :: C.Signature 'C.Ed25519,
     balance :: BadgeBalance
   }
+
+newtype NameRegistrationId = NameRegistrationId Text
+  deriving newtype (Eq, Show, ToJSON, FromJSON)
+
+data SignedNameOrder = SignedNameOrder
+  { labelHash :: Text,
+    labelLength :: Int,
+    duration :: Word64,
+    commitment :: Text,
+    sealed :: Text,
+    terms :: Text,
+    timestamp :: Word64,
+    signature :: Text
+  }
+  deriving (Eq, Show)
+
+data NameCodeOrder = NameCodeOrder
+  { code :: Text,
+    owner :: Address,
+    signedOrder :: SignedNameOrder
+  }
+  deriving (Eq, Show)
+
+data NamePurchaseCode = NPCHash {codeHash :: Text} | NPCOrder {nameOrder :: NameCodeOrder}
+  deriving (Eq, Show)
+
+data SignedNameReveal = SignedNameReveal
+  { label :: Text,
+    signature :: Text,
+    secret :: Text,
+    nonce :: Word64,
+    deadline :: Word64,
+    records :: NameRevealRecords,
+    acceptance :: NameRevealAcceptance
+  }
+  deriving (Eq, Show)
+
+data NameRevealRecords = NameRevealRecords
+  { contact :: [Text],
+    channel :: [Text]
+  }
+  deriving (Eq, Show)
+
+data NameRevealAcceptance = NameRevealAcceptance
+  { termsHash :: Text,
+    nonce :: Word64,
+    signature :: Text
+  }
+  deriving (Eq, Show)
+
+data NameMove = NameMove
+  { labelHash :: Text,
+    holder :: Address,
+    recipient :: Address
+  }
+  deriving (Eq, Show)
 
 data StoreServiceResponse
   = STPBadgeCatalog
@@ -133,6 +260,173 @@ data StoreServiceResponse
         message :: Maybe Text,
         retryAfter :: Maybe Word32
       }
+  | STPNameCatalog {nameCatalog :: NameCatalog}
+  | STPNameTerms {termsDoc :: TermsDoc}
+  | STPNameCode {nameCode :: NameCodeInfo}
+  | STPNameOrderPlaced {registrationId :: NameRegistrationId}
+  | STPNamePurchase {nameCode :: NameCodeInfo, orderAnswer :: Maybe NameOrderAnswer}
+  | STPNameRegistration {registration :: NameRegistrationView}
+  | STPNameRevealed
+  | STPNameOrders {registrations :: [NameFoundOrder], more :: Bool}
+  | STPNameMove {moveReads :: NameMoveReads}
+  | STPNameRefused {refusal :: NameRefusal}
+
+data NameCatalog = NameCatalog
+  { saleState :: NameSaleState,
+    years :: Int,
+    termStart :: Word64,
+    price :: Maybe USDCents,
+    invoiceWindow :: Maybe Word32,
+    tld :: SimplexTLD,
+    chainId :: Word64,
+    resolver :: Address,
+    sponsor :: Address,
+    terms :: NameCatalogTerms,
+    communityTexts :: Map Text Text,
+    products :: [Text],
+    time :: Word64
+  }
+  deriving (Eq, Show)
+
+data NameSaleState
+  = NSSOpen
+  | NSSCodesOnly
+  | NSSClosedForDay {reopensAt :: Maybe Word64}
+  | NSSUnknown {tag :: Text, json :: J.Object}
+  deriving (Eq, Show)
+
+data NameCatalogTerms = NameCatalogTerms
+  { generalTerms :: Maybe NameTermsRef,
+    communityTerms :: Maybe NameTermsRef
+  }
+  deriving (Eq, Show)
+
+data NameTermsRef = NameTermsRef
+  { termsHash :: Text,
+    termsLink :: Text
+  }
+  deriving (Eq, Show)
+
+data NameCommunity = NameCommunity
+  { communityFor :: Maybe Text,
+    communityYears :: Int
+  }
+  deriving (Eq, Show)
+
+data NameCodeInfo = NameCodeInfo
+  { minLength :: Int,
+    years :: Int,
+    state :: NameCodeState,
+    browserPayment :: Maybe NameCodePayment
+  }
+  deriving (Eq, Show)
+
+data NameCodeState = NCSUnused | NCSReserved | NCSUsed | NCSRevoked | NCSExpired | NCSUnpaid | NCSConfirming | NCSUnknown Text
+  deriving (Eq, Show)
+
+data NameCodePayment = NameCodePayment
+  { payUntil :: UTCTime,
+    invoicePayableUntil :: Maybe UTCTime,
+    moneyOnClosedInvoice :: Bool,
+    moneyBeyondPrice :: Bool
+  }
+  deriving (Eq, Show)
+
+data NameOrderAnswer = NOAPlaced {registrationId :: NameRegistrationId} | NOARefused {refusal :: NameRefusal}
+  deriving (Eq, Show)
+
+data NameRegistrationView = NameRegistrationView
+  { registrationId :: NameRegistrationId,
+    version :: Int64,
+    moves :: Int,
+    linksRefused :: Bool,
+    phase :: NameRegistrationPhase,
+    labelHash :: Text,
+    label :: Maybe Text,
+    owner :: Address,
+    commitment :: Text,
+    resolver :: Address,
+    sponsor :: Address,
+    chainId :: Word64,
+    tld :: SimplexTLD,
+    years :: Int,
+    duration :: Word64,
+    commitTx :: Maybe Text,
+    registerTx :: Maybe Text,
+    revealAfter :: Maybe Word64,
+    revealBefore :: Maybe Word64,
+    intentNonce :: Maybe Word64,
+    acceptance :: Maybe NameAcceptanceAsked,
+    unread :: [Text],
+    expiresAt :: Maybe Word64,
+    failure :: Maybe Text,
+    sendsUsedUp :: Bool,
+    community :: Maybe NameCommunity,
+    terms :: Maybe Text
+  }
+  deriving (Eq, Show)
+
+data NameRegistrationPhase = NRPUnpaid | NRPQueued | NRPCommitting | NRPCommitted | NRPRegistering | NRPRegistered | NRPTaken | NRPFailed | NRPUnknown Text
+  deriving (Eq, Show)
+
+data NameAcceptanceAsked = NameAcceptanceAsked
+  { kind :: NameTermsKind,
+    policy :: Address,
+    termsHash :: Text,
+    nonce :: Word64
+  }
+  deriving (Eq, Show)
+
+data NameTermsKind = NTKGeneral | NTKCommunity
+  deriving (Eq, Show)
+
+data NameFoundOrder = NameFoundOrder
+  { registrationId :: NameRegistrationId,
+    phase :: NameRegistrationPhase,
+    createdAt :: UTCTime,
+    labelHash :: Text,
+    sealed :: Text
+  }
+  deriving (Eq, Show)
+
+data NameMoveReads = NameMoveReads
+  { holderNonce :: Word64,
+    moveOffer :: Word64,
+    recipientNonce :: Word64,
+    termsNonce :: Word64,
+    policy :: Address,
+    community :: Maybe NameCommunity
+  }
+  deriving (Eq, Show)
+
+data NameRefusal
+  = NRFBadRequest
+  | NRFInvalidName
+  | NRFInvalidLink
+  | NRFNotFound
+  | NRFOrderExists
+  | NRFNameTaken
+  | NRFNameCheckUnavailable
+  | NRFProviderUnavailable
+  | NRFCodeInvalid
+  | NRFCodeUsed
+  | NRFCodeReserved
+  | NRFCodeExpired
+  | NRFCodeNotCovering
+  | NRFPaymentPending
+  | NRFPaymentReceived
+  | NRFSaleClosed {saleState :: NameSaleState}
+  | NRFTermsUnavailable {retryAfter :: Maybe Word32}
+  | NRFTermsChanged {terms :: NameTermsRef, community :: Maybe NameCommunity}
+  | NRFCommitLimit
+  | NRFSendsUsedUp
+  | NRFMoveLimit {registration :: NameRegistrationView}
+  | NRFRegistrationChanged {registration :: NameRegistrationView}
+  | NRFMovesUsedUp {nextAt :: Word64}
+  | NRFMoveReverted {revert :: Maybe Text}
+  | NRFMovePending
+  | NRFUnknown {tag :: Text, json :: J.Object}
+  deriving (Eq, Show)
 
 data BadgeCatalog = BadgeCatalog
   { prices :: [BadgePrice],
@@ -251,6 +545,51 @@ $(JQ.deriveJSON defaultJSON ''BadgeBalance)
 
 $(JQ.deriveJSON defaultJSON ''BadgeUpgrade)
 
+instance ToJSON SignedNameOrder where
+  toJSON = J.object . signedOrderPairs
+
+instance FromJSON SignedNameOrder where
+  parseJSON = J.withObject "SignedNameOrder" $ \o ->
+    SignedNameOrder
+      <$> o .: "labelHash"
+      <*> o .: "length"
+      <*> o .: "duration"
+      <*> o .: "commitment"
+      <*> o .: "sealed"
+      <*> o .: "terms"
+      <*> o .: "timestamp"
+      <*> o .: "signature"
+
+signedOrderPairs :: SignedNameOrder -> [JT.Pair]
+signedOrderPairs SignedNameOrder {labelHash, labelLength, duration, commitment, sealed, terms, timestamp, signature} =
+  [ "labelHash" .= labelHash,
+    "length" .= labelLength,
+    "duration" .= duration,
+    "commitment" .= commitment,
+    "sealed" .= sealed,
+    "terms" .= terms,
+    "timestamp" .= timestamp,
+    "signature" .= signature
+  ]
+
+instance ToJSON NameCodeOrder where
+  toJSON NameCodeOrder {code, owner, signedOrder} =
+    J.object $ ["code" .= code, "owner" .= owner] <> signedOrderPairs signedOrder
+
+instance FromJSON NameCodeOrder where
+  parseJSON = J.withObject "NameCodeOrder" $ \o ->
+    NameCodeOrder <$> o .: "code" <*> o .: "owner" <*> parseJSON (J.Object o)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "NPC") ''NamePurchaseCode)
+
+$(JQ.deriveJSON defaultJSON ''NameRevealRecords)
+
+$(JQ.deriveJSON defaultJSON ''NameRevealAcceptance)
+
+$(JQ.deriveJSON defaultJSON ''SignedNameReveal)
+
+$(JQ.deriveJSON defaultJSON ''NameMove)
+
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "STC") ''StoreServiceCommand)
 
 $(JQ.deriveJSON defaultJSON ''StoreServiceRequest)
@@ -260,5 +599,123 @@ $(JQ.deriveJSON defaultJSON ''BadgePrice)
 $(JQ.deriveJSON defaultJSON ''BadgeOffer)
 
 $(JQ.deriveJSON defaultJSON ''BadgeCatalog)
+
+$(JQ.deriveJSON defaultJSON {J.fieldLabelModifier = dropPrefix "community"} ''NameCommunity)
+
+$(JQ.deriveJSON defaultJSON {J.fieldLabelModifier = dropPrefix "terms"} ''NameTermsRef)
+
+$(JQ.deriveJSON defaultJSON ''NameCatalogTerms)
+
+instance FromJSON NameSaleState where
+  parseJSON v@(J.Object j) =
+    $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "NSS") ''NameSaleState) v
+      <|> NSSUnknown <$> j .: "type" <*> pure j
+  parseJSON invalid =
+    JT.prependFailure "bad NameSaleState, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON NameSaleState where
+  toJSON = \case
+    NSSUnknown _ j -> J.Object j
+    v -> $(JQ.mkToJSON (taggedObjectJSON $ dropPrefix "NSS") ''NameSaleState) v
+  toEncoding = \case
+    NSSUnknown _ j -> JE.value $ J.Object j
+    v -> $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "NSS") ''NameSaleState) v
+
+$(JQ.deriveJSON defaultJSON ''NameCatalog)
+
+instance TextEncoding NameCodeState where
+  textEncode = \case
+    NCSUnused -> "unused"
+    NCSReserved -> "reserved"
+    NCSUsed -> "used"
+    NCSRevoked -> "revoked"
+    NCSExpired -> "expired"
+    NCSUnpaid -> "unpaid"
+    NCSConfirming -> "confirming"
+    NCSUnknown t -> t
+  textDecode s = Just $ case s of
+    "unused" -> NCSUnused
+    "reserved" -> NCSReserved
+    "used" -> NCSUsed
+    "revoked" -> NCSRevoked
+    "expired" -> NCSExpired
+    "unpaid" -> NCSUnpaid
+    "confirming" -> NCSConfirming
+    t -> NCSUnknown t
+
+instance ToJSON NameCodeState where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
+
+instance FromJSON NameCodeState where
+  parseJSON = textParseJSON "NameCodeState"
+
+$(JQ.deriveJSON defaultJSON ''NameCodePayment)
+
+$(JQ.deriveJSON defaultJSON ''NameCodeInfo)
+
+instance TextEncoding NameRegistrationPhase where
+  textEncode = \case
+    NRPUnpaid -> "unpaid"
+    NRPQueued -> "queued"
+    NRPCommitting -> "committing"
+    NRPCommitted -> "committed"
+    NRPRegistering -> "registering"
+    NRPRegistered -> "registered"
+    NRPTaken -> "taken"
+    NRPFailed -> "failed"
+    NRPUnknown t -> t
+  textDecode s = Just $ case s of
+    "unpaid" -> NRPUnpaid
+    "queued" -> NRPQueued
+    "committing" -> NRPCommitting
+    "committed" -> NRPCommitted
+    "registering" -> NRPRegistering
+    "registered" -> NRPRegistered
+    "taken" -> NRPTaken
+    "failed" -> NRPFailed
+    t -> NRPUnknown t
+
+instance ToJSON NameRegistrationPhase where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
+
+instance FromJSON NameRegistrationPhase where
+  parseJSON = textParseJSON "NameRegistrationPhase"
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "NTK") ''NameTermsKind)
+
+$(JQ.deriveJSON defaultJSON ''NameAcceptanceAsked)
+
+$( JQ.deriveJSON
+    defaultJSON
+      { J.fieldLabelModifier = \case
+          "registrationId" -> "id"
+          "failure" -> "error"
+          f -> f
+      }
+    ''NameRegistrationView
+ )
+
+instance FromJSON NameRefusal where
+  parseJSON v@(J.Object j) =
+    $(JQ.mkParseJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NRF") {J.sumEncoding = J.TaggedObject "error" "data"} ''NameRefusal) v
+      <|> NRFUnknown <$> j .: "error" <*> pure j
+  parseJSON invalid =
+    JT.prependFailure "bad NameRefusal, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON NameRefusal where
+  toJSON = \case
+    NRFUnknown _ j -> J.Object j
+    v -> $(JQ.mkToJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NRF") {J.sumEncoding = J.TaggedObject "error" "data"} ''NameRefusal) v
+  toEncoding = \case
+    NRFUnknown _ j -> JE.value $ J.Object j
+    v -> $(JQ.mkToEncoding (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NRF") {J.sumEncoding = J.TaggedObject "error" "data"} ''NameRefusal) v
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "NOA") ''NameOrderAnswer)
+
+$(JQ.deriveJSON defaultJSON ''NameFoundOrder)
+
+$(JQ.deriveJSON defaultJSON ''NameMoveReads)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "STP") ''StoreServiceResponse)
