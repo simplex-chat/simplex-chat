@@ -86,6 +86,7 @@ A2-7, A2-8, A2-35: the terms link is parsed once, where termsLinks reads it.
 - termsOf parses the link by a local attoparsec grammar, with the loopback chain check; a failed chain id read fails the terms read.
 - `Terms {tmLink, tmHash, tmFetch :: (String, Maybe ByteString)}`; `termsOf :: Contracts -> Text -> IO (Either ChainError (Maybe Terms))`. A link the service does not fetch gives no terms, so no acceptance of it is asked; TRLink goes.
 - termsLinks returns `(Maybe Terms, Maybe Terms)`, keeps each kind's link text with its terms, parses a link only when its text differs from the one read before, and logs a link the service does not take then.
+- The cache is written by one atomicModifyIORef' that keeps an entry of the same or a newer block; only the read that writes logs, and only a link that differs from the entry it replaces.
 - termsLinkAllowed goes; fetchTerms reads tmFetch; kindTerms moves beside termsLinks.
 
 ```mermaid
@@ -175,5 +176,4 @@ graph LR
 ## Gaps recorded after the review
 
 - No test fails eth_chainId for a loopback terms link (review 9).
-- termsLinks reads, compares and writes its cache in separate steps, so concurrent reads at a changed link can each log it (review 30).
 - No test pins nameStatus's reservedNames read at the block (review 24).

@@ -58,7 +58,7 @@ import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Concurrent.STM (TVar, newTVarIO)
 import Control.Exception (try)
 import Control.Logger.Simple (logError, logWarn)
-import Control.Monad (forever, unless)
+import Control.Monad (forM_, forever, unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -69,7 +69,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Functor ((<&>))
 import Data.Functor.Compose (Compose (..))
-import Data.IORef (IORef, atomicModifyIORef', atomicWriteIORef, modifyIORef', newIORef, readIORef, writeIORef)
+import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -286,23 +286,23 @@ termsLinks ct@Contracts {ctChain, ctTermsLinks} = runExceptT $ do
     Just (at, (general, community)) | at == blockNumber -> pure (snd general, snd community)
     cached -> do
       let link signature = concurrent $ callAt ct (AtBlock blockNumber) policy (signature, "") decodeString
-          (generalBefore, communityBefore) = maybe (Nothing, Nothing) (\(_, (g, c)) -> (Just g, Just c)) cached
       (generalLink, communityLink) <- ExceptT $ together $ (,) <$> link "generalTermsLink()" <*> link "communityTermsLink()"
-      general <- ExceptT $ linkTerms False generalBefore generalLink
-      community <- ExceptT $ linkTerms True communityBefore communityLink
-      liftIO $ atomicWriteIORef ctTermsLinks $ Just (blockNumber, (general, community))
+      general <- ExceptT $ linkTerms (fst . snd <$> cached) generalLink
+      community <- ExceptT $ linkTerms (snd . snd <$> cached) communityLink
+      written <- liftIO $ atomicModifyIORef' ctTermsLinks $ \kept -> case kept of
+        Just (keptAt, _) | keptAt >= blockNumber -> (kept, Nothing)
+        _ -> (Just (blockNumber, (general, community)), Just kept)
+      liftIO $ forM_ written $ \replaced -> do
+        logRefused False (fst . snd <$> replaced) general
+        logRefused True (snd . snd <$> replaced) community
       pure (snd general, snd community)
   where
-    linkTerms community before link = case before of
+    linkTerms before link = case before of
       Just kept@(keptLink, _) | keptLink == link -> pure $ Right kept
-      _ -> do
-        r <- termsOf ct link
-        case r of
-          Right Nothing
-            | not (T.null link) ->
-                logWarn $ "names: the name policy's " <> termsKindText community <> " terms are not a link the service takes, so names under them cannot be ordered: " <> link
-          _ -> pure ()
-        pure $ (link,) <$> r
+      _ -> fmap (link,) <$> termsOf ct link
+    logRefused community before (link, terms) =
+      when (fmap fst before /= Just link && isNothing terms && not (T.null link)) $
+        logWarn $ "names: the name policy's " <> termsKindText community <> " terms are not a link the service takes, so names under them cannot be ordered: " <> link
 
 kindTerms :: CommunityName -> (Maybe Terms, Maybe Terms) -> Maybe Terms
 kindTerms community (general, communityTerms) = if community then communityTerms else general

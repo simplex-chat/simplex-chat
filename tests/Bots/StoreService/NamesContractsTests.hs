@@ -92,6 +92,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
   describe "terms" $ do
     it "reads both terms links at one block, once per block, \"\" for one not set, and hashes a set link with keccak256 as viem does" $ testTermsLinks g
     it "logs a terms link the service does not take once, when it is read, and asks no acceptance of it" $ testRefusedLinkLogged g
+    it "logs such a link once when two reads at its block overlap" $ testRefusedLinkLoggedOnce g
     it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
     it "answers a stored terms text after a restart while its host answers 404 and while fetches wait, fetching again one stored with another SHA-256 and logging it" $ testTermsTextStored g
     it "fetches both current terms texts, storing them, and logs links it cannot read" $ testCurrentTermsFetched g
@@ -191,6 +192,20 @@ testRefusedLinkLogged g = withContracts g $ \node ct -> do
   capturingStderr (fetchCurrentTerms ct) >>= (`shouldNotSatisfy` T.isInfixOf warning)
   listCommunityName node alice
   currentAcceptance ct alice owner `shouldReturn` Left (ChainUnavailable "the name policy has no terms of this kind that the service takes")
+
+testRefusedLinkLoggedOnce :: TVar ChaChaDRG -> IO ()
+testRefusedLinkLoggedOnce g = withContracts g $ \node ct -> do
+  let otherLink = "https://example.org/simplex-chat/terms.md"
+      warning = "names: the name policy's community terms are not a link the service takes, so names under them cannot be ordered: " <> otherLink
+  namePolicy ct `shouldReturn` Right fakeNamePolicy
+  answerCall node fakeNamePolicy (selector "communityTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes $ encodeUtf8 otherLink]
+  logged <- capturingStderr $ do
+    (gated, gate) <- pausedAt node "eth_call" $ termsLinks ct
+    _ <- termsLinks ct
+    releaseGate gate
+    _ <- wait gated
+    pure ()
+  T.count warning logged `shouldBe` 1
 
 termsLinkTexts :: Contracts -> IO (Either ChainError (T.Text, T.Text))
 termsLinkTexts ct = fmap (\(general, community) -> (linkText general, linkText community)) <$> termsLinks ct
