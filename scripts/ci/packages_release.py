@@ -72,8 +72,8 @@ BUILD_CHANGES = {
         ".github/actions/**",
         ".github/changelog_conf.json",
     ],
-    "kotlin": ["apps/multiplatform/**", "Dockerfile*", ".github/workflows/build.yml", ".github/actions/**"],
-    "ios": ["apps/ios/**", "scripts/ci/ios-stub-libs.sh"],
+    "kotlin": ["apps/multiplatform/**", "tests/fixtures/api/**", "Dockerfile*", ".github/workflows/build.yml", ".github/actions/**"],
+    "ios": ["apps/ios/**", "tests/fixtures/api/**", "scripts/ci/ios-stub-libs.sh"],
     "packages": [
         "packages/simplex-chat-nodejs/**",
         "packages/simplex-chat-client/types/typescript/**",
