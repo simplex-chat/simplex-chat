@@ -188,6 +188,20 @@ class ImageDecodeBoundsTest {
   }
 
   @Test
+  fun testDecodeAcceptsGifWithManyExtensionHeaders() {
+    for (extension in listOf(graphicControlExtension, plainTextExtension + byteArrayOf(0), applicationExtension + byteArrayOf(0))) {
+      assertEquals(2, decodeBoundedBufferedImage(gifWithExtensions(extension * 1025), 4320).width)
+    }
+  }
+
+  @Test
+  fun testDecodeRejectsGifWithTooManyExtensionDataBlocks() {
+    for (extension in listOf(plainTextExtension, applicationExtension)) {
+      assertFailsWith<IOException> { decodeBoundedBufferedImage(gifWithExtensions(extension + oneByteSubBlocks(1025) + byteArrayOf(0)), 4320) }
+    }
+  }
+
+  @Test
   fun testBase64ImageIsDecodedAtPreviewSize() {
     assertEquals(500, base64ToBitmap(Base64.getEncoder().encodeToString(encodePng(500, 500))).width)
     assertEquals(540, base64ToBitmap(Base64.getEncoder().encodeToString(encodePng(4320, 4320))).width)
@@ -314,13 +328,25 @@ class ImageDecodeBoundsTest {
       *segment(0xDA, scanComponents, *(1..scanComponents).flatMap { listOf(it, 0) }.toIntArray(), 0, 63, 0),
     )
 
-  private fun gifWithComment(subBlocks: Int): ByteArray {
+  private fun gifWithComment(subBlocks: Int): ByteArray =
+    gifWithExtensions(byteArrayOf(0x21, 0xFE.toByte()) + oneByteSubBlocks(subBlocks) + byteArrayOf(0))
+
+  private fun gifWithExtensions(extensions: ByteArray): ByteArray {
     val gif = encodeImage(2, 2, "gif")
     val flags = gif[10].toInt()
     val headerSize = 13 + if (flags and 0x80 != 0) 3 shl ((flags and 7) + 1) else 0
-    val comment = byteArrayOf(0x21, 0xFE.toByte()) + ByteArray(subBlocks * 2) { if (it % 2 == 0) 1 else 'x'.code.toByte() } + byteArrayOf(0)
-    return gif.copyOf(headerSize) + comment + gif.copyOfRange(headerSize, gif.size)
+    return gif.copyOf(headerSize) + extensions + gif.copyOfRange(headerSize, gif.size)
   }
+
+  private fun oneByteSubBlocks(count: Int): ByteArray = ByteArray(count * 2) { if (it % 2 == 0) 1 else 'x'.code.toByte() }
+
+  private val graphicControlExtension = byteArrayOf(0x21, 0xF9.toByte(), 4, 0, 0, 0, 0, 0)
+
+  private val plainTextExtension = byteArrayOf(0x21, 0x01, 12) + ByteArray(12)
+
+  private val applicationExtension = byteArrayOf(0x21, 0xFF.toByte(), 11) + "SIMPLEXT1.0".toByteArray()
+
+  private operator fun ByteArray.times(count: Int): ByteArray = ByteArray(size * count) { this[it % size] }
 
   private fun progressiveJpegChangedByLastScan(scansBefore: Int, changed: Boolean = true): ByteArray =
     jpeg(
