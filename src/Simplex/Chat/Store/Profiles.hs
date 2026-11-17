@@ -177,7 +177,7 @@ getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
   where
     getUserInfo :: User -> IO UserInfo
-    getUserInfo user@User {userId} = do
+    getUserInfo user@User {userId, userContactId} = do
       ctCount <-
         maybeFirstRow fromOnly $
           DB.query
@@ -204,7 +204,19 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
                 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR (g.enable_ntfs = 2 AND i.user_mention = 1))
             |]
             (userId, CISRcvNew)
-      pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount}
+      pendingCount <-
+        maybeFirstRow fromOnly $
+          DB.query
+            db
+            [sql|
+              SELECT COALESCE(SUM(CASE WHEN g.enable_ntfs = 2 THEN mu.support_chat_items_mentions ELSE mu.support_chat_items_unread END), 0)
+              FROM groups g
+              JOIN group_members mu ON mu.user_id = g.user_id AND mu.group_id = g.group_id
+              WHERE g.user_id = ? AND mu.contact_id = ? AND mu.member_status IN (?,?)
+                AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR g.enable_ntfs = 2)
+            |]
+            (userId, userContactId, GSMemPendingApproval, GSMemPendingReview)
+      pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount + fromMaybe 0 pendingCount}
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db = do
