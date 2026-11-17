@@ -517,7 +517,7 @@ object ChatModel {
 
     suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo, groupChatScope = null))
 
-    private suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
+    suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
       if (hasChat(rhId, cInfo.id)) {
         updateChatInfo(rhId, cInfo)
       } else if (addMissing) {
@@ -2173,7 +2173,7 @@ data class LocalProfile(
   val peerType: ChatPeerType? = null,
   val localBadge: LocalBadge? = null,
   val contactDomain: SimplexDomainClaim? = null,
-  val contactDomainVerified: Boolean? = null
+  val contactDomainVerified: DomainVerification? = null
 ): NamedChat {
   override val profileDescription: String? get() = description
 
@@ -2257,11 +2257,18 @@ private val ChatLayoutMode?.known: ChatLayoutMode? get() = if (this is ChatLayou
 fun profileChatLayout(user: User?): ChatLayoutMode =
   user?.uiThemes?.chatLayout.known ?: ChatController.appPrefs.chatLayout.state.value.known ?: ChatLayoutMode.Classic
 
-fun peerTypeIcon(peerType: ChatPeerType?, person: ImageResource = MR.images.ic_account_circle_filled): ImageResource =
+fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
+  when (peerType) {
+    ChatPeerType.Bot -> MR.images.ic_avatar_bot
+    ChatPeerType.Agent -> MR.images.ic_avatar_agent
+    else -> MR.images.ic_account_circle_filled
+  }
+
+fun peerTypeSmallIcon(peerType: ChatPeerType?): ImageResource =
   when (peerType) {
     ChatPeerType.Bot -> MR.images.ic_cube
     ChatPeerType.Agent -> MR.images.ic_agent
-    else -> person
+    else -> MR.images.ic_person
   }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
@@ -2606,7 +2613,7 @@ object BadgeAlertKindSerializer : KSerializer<BadgeAlertKind> {
   override fun serialize(encoder: Encoder, value: BadgeAlertKind) = encoder.encodeString(value.text)
 }
 
-private fun badgeDateText(date: Instant): String {
+fun badgeDateText(date: Instant): String {
   val ts = date.toLocalDateTime(TimeZone.currentSystemDefault())
   return ts.toJavaLocalDateTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
 }
@@ -2662,7 +2669,7 @@ data class GroupInfo (
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
-  val groupDomainVerified: Boolean? = null,
+  val groupDomainVerified: DomainVerification? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -2703,10 +2710,10 @@ data class GroupInfo (
 
   val chatIconName: ImageResource
     get() = if (useRelays) {
-      MR.images.ic_bigtop_updates_circle_filled
+      MR.images.ic_avatar_channel
     } else when (businessChat?.chatType) {
       null -> MR.images.ic_supervised_user_circle_filled
-      BusinessChatType.Business -> MR.images.ic_work_filled_padded
+      BusinessChatType.Business -> MR.images.ic_avatar_business
       BusinessChatType.Customer -> MR.images.ic_account_circle_filled
     }
 
@@ -2792,6 +2799,13 @@ data class SimplexDomainClaim(
   val proof: SimplexDomainProof? = null
 ) {
   val shortName: String get() = domain.removeSuffix(".simplex")
+}
+
+@Serializable
+enum class DomainVerification {
+  @SerialName("failed") Failed,
+  @SerialName("verified") Verified,
+  @SerialName("moved") Moved,
 }
 
 @Serializable
@@ -5268,16 +5282,16 @@ sealed class MsgChatLink {
 
   val iconRes: ImageResource
     get() = when (this) {
-      is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
-      is Contact -> if (business) MR.images.ic_work_filled_padded else peerTypeIcon(profile.peerType)
+      is Group -> if (groupProfile.isChannel) MR.images.ic_avatar_channel else MR.images.ic_supervised_user_circle_filled
+      is Contact -> if (business) MR.images.ic_avatar_business else peerTypeIcon(profile.peerType)
       is Invitation -> peerTypeIcon(profile.peerType)
     }
 
   val smallIconRes: ImageResource
     get() = when (this) {
       is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates else MR.images.ic_group
-      is Contact -> if (business) MR.images.ic_work else peerTypeIcon(profile.peerType, MR.images.ic_person)
-      is Invitation -> peerTypeIcon(profile.peerType, MR.images.ic_person)
+      is Contact -> if (business) MR.images.ic_work else peerTypeSmallIcon(profile.peerType)
+      is Invitation -> peerTypeSmallIcon(profile.peerType)
     }
 
   fun infoLine(signed: Boolean): String {

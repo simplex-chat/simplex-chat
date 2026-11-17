@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-38.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-39.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -65,6 +65,7 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 36. [The list of sessions](#36-the-list-of-sessions)
 37. [The texts of a turn](#37-the-texts-of-a-turn)
 38. [The status line command](#38-the-status-line-command)
+39. [An edit and a live message in the session group](#39-an-edit-and-a-live-message-in-the-session-group)
 
 ---
 
@@ -1017,7 +1018,8 @@ sequenceDiagram
     N->>C: apiSendMessages #35;G [{text: "!- Effort changed to LEVEL!", priority: -1}]
   end
   N->>N: claim: no text of Claude streamed the answer, as without the display hook (flow 37)
-  N->>N: parts = withLine(parts(answer), "!- Done in USAGE · 5 h: N% · week: N%!")
+  N->>N: available memory, and statfsSync of ROOT or its nearest existing parent
+  N->>N: parts = withLine(parts(answer), "!- Done in USAGE · 5 h: N% · week: N% · RAM SIZE free · disk SIZE free!")
   alt the opening message of the turn was posted
     N->>C: /_update item #35;G the opening message, the first part, live off, priority 1 when it is the only part
     N->>C: apiSendMessages #35;G the other parts, priority -1, the last priority 1
@@ -1042,7 +1044,7 @@ Notes:
 - For an answer without an earlier turn record, the hub quotes the oldest pushed prompt not quoted yet that was pushed at or after the latest answer's hook start, and marks it quoted. An older prompt that no prompt request matched belongs to an earlier turn and is not quoted. The quoted prompt stays pushed, so the hub still matches it to a prompt request handled after the Stop request, and `User` does not post it ([`Session.turnQuote`](../src/hub.ts)).
 - For an empty answer, the hub removes the turn record as for any other answer. It posts nothing, and fills the turn's opening message, when one is open, with the end line, live off and silent ([`Session.turn`, `answer`](../src/hub.ts)).
 - At a prompt that starts a turn, Claude posts the opening message: empty, live and silent. The hub keeps it before `User`'s post and sends it after that post, so a text or a step that arrives meanwhile waits for it. It replies to the member's prompt that the terminal prompt matched, when the quote fits. It is not posted for a prompt added to the running turn, a `/` command, a prompt that `User` does not post and that matched no pushed prompt, as Claude Code's own prompts, or a prompt whose hook started before the latest answer's hook. The turn's first post fills it: a text of Claude, a step's line, the answer's first part, or the end line of an empty answer, of a hook that started no earlier than the prompt's hook and before the next prompt's hook that starts a turn. When a group preference refuses that post, the text in its place fills the opening message. When the update fails for another reason, as after an admin deleted the opening message, the hub drops the opening message, logs the failure, updates it with `⏹️ Stopped`, and sends that post as a new message. That update fails without harm for a deleted message, and after a transient failure it ends the message's live state. An opening message that no post fills gets `⏹️ Stopped` at the first answer of a hook that started no earlier than the next prompt's hook that starts a turn, or than its own prompt's hook while no such prompt came, at the last detach, at the hub's stop, or 23 hours after its send by the wall clock ([`Session.openTurn`, `takeOpening`, `fill`, `closeOpenings`](../src/hub.ts)).
-- The last part of a non-empty answer ends with the end line `!- Done in USAGE!` after a line break. When the line does not fit in the last part, the last part's last N + 1 characters, N the line's length, move into a new last part before the line. A posted last part has priority 1, the turn's alert, and the other parts priority -1. A last part that fills the opening message, or completes a streamed text, is sent with `/_update item` and `priority: 1` in its `UpdatedMessage`, because `apiUpdateChatItem` takes no priority; a core without update priority ignores the key and keeps priority -1. The chat list shows the answer, not the end line. USAGE is the Stop hook's usage text, such as `2 min 51 s · 16K output tokens · 673K tokens in context`. Without it, the line has DURATION, the time from the newest turn record not added mid-turn to the Stop hook's start, as `duration` formats it, and the line is `!- Done!` without such a record. The plan's usage of the newest status line report follows, as ` · 5 h: N% · week: N%`, without a window whose reset time has passed ([flow 38](#38-the-status-line-command)) ([`Session.turn`, `answer`, `postAnswer`, `endLine`, `withLine`, `small`](../src/hub.ts), [`duration`](../src/messages.ts)).
+- The last part of a non-empty answer ends with the end line `!- Done in USAGE!` after a line break. When the line does not fit in the last part, the last part's last N + 1 characters, N the line's length, move into a new last part before the line. A posted last part has priority 1, the turn's alert, and the other parts priority -1. A last part that fills the opening message, or completes a streamed text, is sent with `/_update item` and `priority: 1` in its `UpdatedMessage`, because `apiUpdateChatItem` takes no priority; a core without update priority ignores the key and keeps priority -1. The chat list shows the answer, not the end line. USAGE is the Stop hook's usage text, such as `2 min 51 s · 16K output tokens · 673K tokens in context`. Without it, the line has DURATION, the time from the newest turn record not added mid-turn to the Stop hook's start, as `duration` formats it, and the line is `!- Done!` without such a record. The plan's usage of the newest status line report follows, as ` · 5 h: N% · week: N%`, without a window whose reset time has passed ([flow 38](#38-the-status-line-command)). Last come the free memory and the free disk of the data folder's volume on the service's machine, read when the Stop request is handled, as ` · RAM 12 GB free · disk 3.4 GB free❗️`, each followed by `❗️` below 5% of the memory or 5 GB of disk, inside the small-print span ([`Session.turn`, `answer`, `postAnswer`, `endLine`, `withLine`, `small`, `Hub.machine`](../src/hub.ts), [`machineState`, `machineParts`](../src/status-line.ts), [`duration`](../src/messages.ts)).
 - No turn record is made for a prompt request whose hook started before an answer that was already handled. So that prompt is not quoted in a later answer ([`Session.turn`](../src/hub.ts)).
 - The UserPromptSubmit hook runs for every prompt of the session that queries the model, also for Claude Code's own prompts. It marks a prompt as typed only when the prompt's record in the transcript has the origin `human`. Task notifications, messages of other sessions and channel prompts have other origins. The record is the newest one whose text is the prompt: a user entry, or a `queued_command` attachment of a prompt that Claude Code added to a running turn. It is the entry with `prompt_id` as `promptId`, or a record after the first entry with that ID, tool results included, so a long turn whose first entry is out of the tail is found by its tool results. While a `queue-operation` `enqueue` entry with the prompt's text follows the record, the hook waits: the prompt is a later one with that text, still queued. Claude Code writes the entry only after the synchronous UserPromptSubmit hooks end, such as a slow hook in the user's settings, and it creates the transcript file with the session's first entry. So the hook reads the transcript up to 600 times, 100 ms apart, and it treats a missing file as empty. Until the entry with `prompt_id` is in the tail, the hook waits for it; at the last read it takes any record with the prompt's text, and without `prompt_id` it does so at once. Claude Code runs the hook of a person's prompt when it is submitted, and of its own prompts only when they are taken. So at the last read, the hook classifies a record still followed by such an `enqueue` entry by the record, and marks a typed one mid-turn: the queued prompt is the typed prompt itself, or a later prompt with the text of Claude Code's own prompt, as a repeated monitor event. When no record is written within the reads, an `enqueue` entry with the prompt's text after the entry with `prompt_id`, or anywhere without that entry, makes the prompt typed and mid-turn. Otherwise the prompt is typed when an entry with `prompt_id` has the origin `human` ([`promptReads`, `transcriptReadMs`, `turn`, `promptKind`, `findInTranscript`, `promptRecord`, `isPrompt`, `recordText`, `recordKind`](../src/hook.ts)).
 - Claude Code adds a prompt that arrives during a turn to that turn, and gives its hook the running turn's prompt ID. The hook sends `midTurn: true` for a prompt whose record is not the entry with `prompt_id`. A mid-turn prompt ends no tool-use card. A prompt adds a turn record only when its hook started no earlier than the hook of the last answer handled (`answeredAt`), and a mid-turn prompt only when it also matched a pushed prompt. So the answer of the turn quotes the turn's prompt, or an owner's prompt added to the turn ([`Session.turn`](../src/hub.ts)).
@@ -1794,8 +1796,9 @@ sequenceDiagram
   S->>F: at each start: import of its own dist/status-line.js, through status-line.js.tmp
   Note over CC: statusLine: node "${SIMPLEX_MCP_HOME:-$HOME/.simplex-mcp}/status-line.js"
   CC->>SL: the input on stdin, after a response, a change of the effort level or the reset of a window
-  SL->>CC: Opus 5.5 · effort high · 67% context · 5 h: 34% · week: 61%
-  SL->>S: POST /turn {id, pid, at, effort, limits, statusLine: true}, waiting at most 1 s
+  SL->>SL: available memory, and statfs of ROOT or its nearest existing parent
+  SL->>CC: Opus 5.5 · effort high · 67% context · 5 h: 34% · week: 61% · RAM 12 GB free · disk 7.3 GB free
+  SL->>S: POST /turn {id, pid, at, effort, limits, statusLine: true}, waiting at most 1 s, without the memory and disk
   S->>N: turn
   N->>N: statusLineReports = true, and limits kept when at is not older than that of the limits kept
   opt a known effort level changed
@@ -1809,8 +1812,65 @@ Notes:
 
 - Claude Code passes the plan's usage only to the status line command of the person's settings, which a plugin can't set, and it refuses `${CLAUDE_PLUGIN_ROOT}` in a command that belongs to no plugin. The shell expands `${SIMPLEX_MCP_HOME:-$HOME/.simplex-mcp}` to the data folder of the machine or container, and the service of each version writes `status-line.js` there at its start, so one setting serves every container and every version ([`writeStatusLine`](../src/files.ts), [`Service.start`, `productionDeps`](../src/service.ts)).
 - The command loads only Node modules, `paths.ts` and `service-request.ts`. It prints its line first, sends nothing without an effort level and a window, starts no service and makes no retry ([`statusLine`, `runStatusLine`](../src/status-line.ts), [`postToService`](../src/service-request.ts)).
+- The line ends with the machine's available memory and the free disk of the data folder's volume, each followed by ❗️ when low: memory below 5% of the total, which a container's limit caps, or disk below 5 GB. The command does not send them: the service reads its own for the end line ([flow 21](#21-a-terminal-prompt-and-the-answer)) ([`machineState`, `machineParts`](../src/status-line.ts)).
 - The hub keeps the limits in memory. A window whose `resetsAt` has passed is left out of the end line, as Claude Code leaves it out of the input. Without the setting, the end line has no plan's usage, and an effort change shows at the next tool step or the end of the next turn ([`Session.turn`, `endLine`](../src/hub.ts), [`limitParts`](../src/status-line.ts)).
 - The hooks send the level of the turn, which is `xhigh` after `ultrathink` and can be a skill's or the prompt's own level, while the command sends the session's level. After the first request of the command, the hub takes the effort level only from the command, so the level of one turn posts no line ([`Session.turn`](../src/hub.ts)).
 - Claude Code runs `status-line.js` also when no service could start in the data folder, so that folder must be writable only by the user.
 
 Source: [`statusLine`, `limitParts`, `runStatusLine`](../src/status-line.ts), [`writeStatusLine`](../src/files.ts), [`Session.turn`, `endLine`](../src/hub.ts).
+
+---
+
+## 39. An edit and a live message in the session group
+
+```mermaid
+sequenceDiagram
+  participant O as Member
+  participant C as Core _hub
+  participant N as Session N
+  participant D as Service
+  participant S as Session process
+  participant CC as Claude Code
+  O->>C: a message typed in live mode, first fragment
+  C->>N: newChatItems, itemLive: Session.onMessage
+  N->>N: liveItems[item] = the message, nothing passed
+  O->>C: more fragments
+  C->>N: chatItemUpdated, itemLive: Session.onUpdate
+  N->>N: liveItems[item] = the message with its current text, nothing passed
+  alt the message sent
+    O->>C: the message sent
+    C->>N: chatItemUpdated, live off: Session.onUpdate
+    N->>N: liveItems -= item, pass: a new message
+  else no final version, and the member's next message
+    O->>C: the next message
+    C->>N: newChatItems: Session.onMessage
+    N->>N: passLive: liveItems -= item, pass at its current text, then the next message
+  end
+  N->>D: onLine {prompt: {text, from, item}}
+  D->>S: the line on /attach
+  S->>CC: notifications/claude/channel {content, meta: {from, item}}
+  N->>N: prompted[item] = text, the newest 100
+  O->>C: edits the message, or its final version arrives late
+  C->>N: chatItemUpdated: Session.onUpdate
+  alt a / command, the item not in prompted, or the same text
+    N->>N: nothing
+  else another text
+    N->>N: delivery = delivery then prompt: after the earlier messages of the session
+    N->>D: onLine {prompt: {text, from, item, replyTo?, edited: true}}
+    D->>S: the line on /attach
+    S->>CC: notifications/claude/channel {content, meta: {from, item, edited: "true"}}
+    N->>N: prompted[item] = new text
+  end
+  CC->>D: UserPromptSubmit hook: POST /turn {prompt}, the channel tag matched
+  N->>O: Claude: the opening message, quoting the edited message
+```
+
+Notes:
+
+- Claude gets an edit as a new prompt with the same item, `edited="true"` in the channel tag, and the new text, after the quote line of a reply. The earlier version is in Claude's context ([`Session.onUpdate`, `deliver`](../src/hub.ts), [`channelNotification`, `channelInstructions`](../src/session.ts)).
+- Only the edit of a message passed to Claude since the service started, among the newest 100, is passed, so an edit of `User`'s message or of a command passes nothing. An edit to a `/` command passes nothing, and gets no reply ([`maxPrompted`, `Session.prompted`, `onUpdate`, `bounded`](../src/hub.ts)).
+- An update with the same text, such as a file's status, passes nothing. The core marks no update of a live message as an edit, and the hub tells its final version by `liveItems` ([`Session.liveItems`, `onMessage`, `onUpdate`](../src/hub.ts)).
+- A live message that never gets its final version, as when the sender's app closes while they type, reaches Claude at its last text before that member's next message, and not before another member's. Its final version, when it arrives later, reaches Claude as an edit. The hub uses no timer ([`Session.passLive`, `keepLive`, `pass`](../src/hub.ts)).
+- A live message deleted before it is sent passes nothing, unless the member sends another message first.
+
+Source: [`Session.onMessage`, `onUpdate`, `pass`, `keepLive`, `passLive`, `replyTo`, `prompt`, `deliver`, `bounded`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).
