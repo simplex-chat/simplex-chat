@@ -1339,8 +1339,9 @@ func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(noti
         }
     } catch let error {
         logger.error("deleteContactChat apiDeleteContact error: \(responseError(error))")
+        let title: LocalizedStringKey = if case .archive = chatDeleteMode { "Error archiving contact" } else { "Error deleting chat!" }
         return mkAlert(
-            title: "Error deleting chat!",
+            title: title,
             message: "Error: \(responseError(error))"
         )
     }
@@ -2078,10 +2079,10 @@ func apiLeaveGroup(_ groupId: Int64) async throws -> GroupInfo {
 }
 
 // use ChatModel's loadGroupMembers from views
-func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
+func apiListMembers(_ groupId: Int64) async -> [GroupMember]? {
     let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiListMembers(groupId: groupId))
     if case let .result(.groupMembers(_, group)) = r { return group.members }
-    return []
+    return nil
 }
 
 func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {

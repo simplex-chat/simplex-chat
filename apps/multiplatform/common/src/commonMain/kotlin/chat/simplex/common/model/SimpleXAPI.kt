@@ -1966,7 +1966,7 @@ object ChatController {
     val contact = if (r is API.Result && r.res is CR.ContactDeleted) {
       r.res.contact
     } else {
-      val titleId = MR.strings.error_deleting_contact
+      val titleId = if (chatDeleteMode is ChatDeleteMode.Archive) MR.strings.error_archiving_contact else MR.strings.error_deleting_contact
       apiErrorAlert("apiDeleteChat", generalGetString(titleId), r)
       null
     }
@@ -2586,11 +2586,11 @@ object ChatController {
     return null
   }
 
-  suspend fun apiListMembers(rh: Long?, groupId: Long): List<GroupMember> {
+  suspend fun apiListMembers(rh: Long?, groupId: Long): List<GroupMember>? {
     val r = sendCmd(rh, CC.ApiListMembers(groupId))
     if (r is API.Result && r.res is CR.GroupMembers) return r.res.group.members
     Log.e(TAG, "apiListMembers bad response: ${r.responseType} ${r.details}")
-    return emptyList()
+    return null
   }
 
   suspend fun apiUpdateGroup(rh: Long?, groupId: Long, groupProfile: GroupProfile, isChannel: Boolean): GroupInfo? {
@@ -4340,7 +4340,7 @@ sealed class CC {
     is ApiDeleteMemberSupportChat -> "/_delete member chat #$groupId $groupMemberId"
     is ApiMembersRole -> "/_member role #$groupId ${memberIds.joinToString(",")} ${memberRole.memberRole}"
     is ApiBlockMembersForAll -> "/_block #$groupId ${memberIds.joinToString(",")} blocked=${onOff(blocked)}" + (if (ttl != null) " ttl=$ttl" else "")
-    is ApiRemoveMembers -> "/_remove #$groupId ${memberIds.joinToString(",")} messages=${onOff(withMessages)}" + (if (notice != null) " notice=${json.encodeToString(notice)}" else "")
+    is ApiRemoveMembers -> "/_remove #$groupId ${memberIds.joinToString(",")} messages=${onOff(withMessages)}" + (if (notice != null) " notice=${jsonShort.encodeToString(notice)}" else "")
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
     is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
@@ -4403,7 +4403,7 @@ sealed class CC {
     is APIConnectPreparedGroup -> "/_connect group #$groupId incognito=${onOff(incognito)}${maybeContent(msg)}"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} ${connLink.connFullLink} ${connLink.connShortLink ?: ""}"
     is ApiConnectContactViaAddress -> "/_connect contact $userId incognito=${onOff(incognito)} $contactId"
-    is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}" + (if (notice != null) " notice=${json.encodeToString(notice)}" else "")
+    is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}" + (if (notice != null) " notice=${jsonShort.encodeToString(notice)}" else "")
     is ApiClearChat -> "/_clear chat ${chatRef(type, id, scope = null)}"
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"

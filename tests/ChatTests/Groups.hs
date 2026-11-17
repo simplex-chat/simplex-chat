@@ -159,6 +159,7 @@ chatGroupTests = do
     it "removal notice expiry and replacement" testPlanGroupLinkRemovedNoticeReplaced
     it "removed member can re-join after notice expires" testPlanGroupLinkRemovedNoticeExpires
     it "removal notice applies only to the link used to join" testPlanGroupLinkRemovedNoticeOtherLinks
+    it "app fixtures: group link notice" testGroupNoticeFixtures
     it "group deletion without notice leaves notices unchanged" testPlanGroupLinkDeletedWithoutNotice
     it "rejected pending member with notice can't re-join" testPlanGroupLinkRejectedNotice
     it "removal of a moderator with notice is refused" testRemoveModeratorNoticeRefused
@@ -166,6 +167,7 @@ chatGroupTests = do
     it "removal with notice of a member on previous version is prohibited" $
       runTestCfg2 testCfg testCfgVPrev testRemoveMemberNoticePrevVersion
     it "group deleted with kept conversation" testGroupDeleteKeepConversation
+    it "app fixtures: group deletion" testGroupDeletionFixtures
 #if !defined(dbPostgres)
   -- TODO [postgres] restore from outdated db backup (same as in agent)
   describe "group message errors" $ do
@@ -273,6 +275,9 @@ chatGroupTests = do
     it "late automatic unblock doesn't cancel a newer block" testBlockForAllLateAutomaticUnblock
     it "blocked member's update leaves no rows on regular members" testBlockForAllNoRowsForMembers
     it "blocked member's edit of an earlier message is not applied for regular members" testBlockForAllEditNotApplied
+    it "app fixtures: block, unblock, remove and hide" testBlockMembersFixtures
+    it "app fixtures: members of the previous version" testBlockPreviousVersionFixtures
+    it "app fixtures: channel subscribers" testBlockChannelFixtures
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -3375,6 +3380,28 @@ testPlanGroupLinkRemovedNoticeOtherLinks =
       cath <// 1000000
       linkNoticesCount cath `shouldReturn` 0
 
+testGroupNoticeFixtures :: HasCallStack => TestParams -> IO ()
+testGroupNoticeFixtures =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      threadDelay 100000
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      (gLink, gFullLink) <- getGroupLinks alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bob <## "group link: ok to connect directly"
+      gLinkData <- getTermLine bob
+      joinTeamViaLink alice bob gFullLink "bob"
+      alice ##> "/rm team bob notice={\"ttl\":86400}"
+      silentlyRemovedFromTeam alice bob "bob" 1
+      leaveDeleteTeam bob
+      apiFixture "bans/plan-group-notice" bob [(gLink, "GROUP_LINK")] FixtureRequests {frMarkdown = [gLink], frUris = [], frCommands = ["/_connect plan 1 " <> gLink]}
+      bob ##> ("/_prepare group 1 " <> gFullLink <> " " <> gLink <> " direct=on " <> gLinkData)
+      bob <## "#team: group is prepared"
+      apiFixture "bans/connect-group-notice" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #2 count=0", "/_connect group #2 incognito=off"]}
+
 testPlanGroupLinkDeletedWithoutNotice :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkDeletedWithoutNotice =
   testChat2 aliceProfile bobProfile $
@@ -3497,6 +3524,27 @@ testGroupDeleteKeepConversation =
       alice <## "bad chat command: keeping the conversation requires an active owner"
       alice ##> "/d #team"
       alice <## "#team: you deleted your local copy of the group"
+
+testGroupDeletionFixtures :: HasCallStack => TestParams -> IO ()
+testGroupDeletionFixtures =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRMember) True
+      createGroup2' "club" alice (bob, GRMember) False
+      apiFixture
+        "bans/group-deletion"
+        alice
+        []
+        FixtureRequests
+          { frMarkdown = [],
+            frUris = [],
+            frCommands = ["/_members #1", "/_members #2", "/_delete #1 full notify=on", "/_delete #2 entity notify=on"]
+          }
+      bob <## "#team: alice deleted the group (signed)"
+      bob <## "use /d #team to delete the local copy of the group"
+      bob <## "#club: alice deleted the group (signed)"
+      bob <## "use /d #club to delete the local copy of the group"
+      apiFixture "bans/group-deletion-member" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1", "/_delete #1 full notify=on"]}
 
 createTeamLink :: HasCallStack => TestCC -> IO String
 createTeamLink alice = do
@@ -8757,6 +8805,15 @@ testBlockPendingMember =
             bob <## "#team: you joined the group, pending approval"
         ]
 
+      apiFixture
+        "bans/pending-member"
+        alice
+        []
+        FixtureRequests
+          { frMarkdown = [],
+            frUris = [],
+            frCommands = ["/_members #1", "/_block #1 2 blocked=on ttl=86400", "/_accept member #1 2 member", "/_block #1 2 blocked=off"]
+          }
       alice ##> "/block for all #team bob"
       alice <##. "#team: you blocked bob"
       bob <// 50000
@@ -8845,6 +8902,99 @@ testBlockForAllLeftRemoved =
       alice ##> "/block for all #team dan"
       alice <## "#team: you blocked dan (signed)"
       bob <## "#team: alice blocked dan (signed)"
+
+testBlockMembersFixtures :: HasCallStack => TestParams -> IO ()
+testBlockMembersFixtures =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRMember)
+      apiFixture
+        "bans/hide-messages"
+        bob
+        []
+        FixtureRequests
+          { frMarkdown = [],
+            frUris = [],
+            frCommands =
+              [ "/_members #1",
+                "/_member settings #1 3 {\"showMessages\":false}",
+                "/_member settings #1 3 {\"showMessages\":true}",
+                "/_member settings #1 3 {\n    \"showMessages\": false\n}",
+                "/_member settings #1 3 {\n    \"showMessages\": true\n}"
+              ]
+          }
+      apiFixture
+        "bans/block-members"
+        alice
+        []
+        FixtureRequests
+          { frMarkdown = [],
+            frUris = [],
+            frCommands =
+              [ "/_members #1",
+                "/_block #1 2 blocked=on ttl=86400",
+                "/_block #1 3 blocked=on ttl=604800",
+                "/_block #1 4 blocked=on",
+                "/_block #1 2 blocked=off",
+                "/_block #1 3,4 blocked=off",
+                "/_block #1 2,3 blocked=on ttl=86400",
+                "/_remove #1 2 messages=off notice={\"ttl\":86400}",
+                "/_remove #1 3 messages=on notice={}",
+                "/_remove #1 4 messages=off"
+              ]
+          }
+      dropOutputs [alice, bob, cath, dan]
+
+testBlockPreviousVersionFixtures :: HasCallStack => TestParams -> IO ()
+testBlockPreviousVersionFixtures ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps testCfgVPrev "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          createGroup4 "team" alice (bob, GRModerator) (cath, GRMember) (dan, GRMember)
+          apiFixture "bans/previous-version-moderator" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_members #1"]}
+          apiFixture
+            "bans/previous-version"
+            alice
+            []
+            FixtureRequests
+              { frMarkdown = [],
+                frUris = [],
+                frCommands =
+                  [ "/_members #1",
+                    "/_block #1 3,4 blocked=on ttl=86400",
+                    "/_remove #1 3 messages=off notice={\"ttl\":86400}",
+                    "/_remove #1 3,4 messages=off"
+                  ]
+              }
+          dropOutputs [alice, bob, cath, dan]
+
+testBlockChannelFixtures :: HasCallStack => TestParams -> IO ()
+testBlockChannelFixtures ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          threadDelay 1000000
+          apiFixture
+            "bans/channel"
+            alice
+            []
+            FixtureRequests
+              { frMarkdown = [],
+                frUris = [],
+                frCommands =
+                  [ "/_members #1",
+                    "/_block #1 3 blocked=on ttl=86400",
+                    "/_block #1 3 blocked=off",
+                    "/_remove #1 4 messages=off notice={}",
+                    "/_delete #1 entity notify=on"
+                  ]
+              }
+          dropOutputs [alice, bob, cath, dan]
 
 testGroupMemberInactive :: HasCallStack => TestParams -> IO ()
 testGroupMemberInactive ps = do
@@ -12271,12 +12421,14 @@ testChannelRemoveMemberNotice ps =
         cath <## "use #team <message> to send messages"
         cath ##> "/_connect group #1"
         bannedLine cath "connection link: "
+        apiFixture "bans/connect-channel-notice" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat #1 count=0", "/_connect group #1 incognito=off"]}
 
         cath ##> "/l #team"
         cath <## "#team: you left the group"
         cath <## "use /d #team to delete the group"
         cath ##> "/d #team"
         cath <## "#team: you deleted your local copy of the group"
+        apiFixture "bans/plan-channel-notice" cath [(shortLink, "CHANNEL_LINK")] FixtureRequests {frMarkdown = [shortLink], frUris = [], frCommands = ["/_connect plan 1 " <> shortLink]}
         cath ##> ("/_connect plan 1 " <> shortLink)
         bannedLine cath "group link: "
 

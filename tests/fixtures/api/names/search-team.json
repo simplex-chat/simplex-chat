@@ -89,7 +89,7 @@
                 }
               },
               "groupSummary": {
-                "currentMembers": 2,
+                "currentMembers": 3,
                 "publicMemberCount": 1
               },
               "localAlias": "",
@@ -107,12 +107,12 @@
                 "localDisplayName": "bob",
                 "memberCategory": "user",
                 "memberChatVRange": {
-                  "maxVersion": 22,
+                  "maxVersion": 23,
                   "minVersion": 9
                 },
                 "memberContactId": 1,
                 "memberContactProfileId": 1,
-                "memberId": "memberId",
+                "memberId": "memberId0",
                 "memberProfile": {
                   "displayName": "bob",
                   "fullName": "",
@@ -161,6 +161,7 @@
                   "connShortLink": "connShortLink"
                 }
               },
+              "rosterVersion": 0,
               "updatedAt": "1970-01-01T00:00:00Z",
               "useRelays": true,
               "userMemberProfileSentAt": "1970-01-01T00:00:00Z",
@@ -266,7 +267,7 @@
               "activeConn": {
                 "agentConnId": "agentConnId",
                 "authErrCounter": 0,
-                "connChatVersion": 22,
+                "connChatVersion": 23,
                 "connId": 1,
                 "connLevel": 0,
                 "connStatus": {
@@ -278,7 +279,7 @@
                 "entityId": 2,
                 "localAlias": "",
                 "peerChatVRange": {
-                  "maxVersion": 22,
+                  "maxVersion": 23,
                   "minVersion": 9
                 },
                 "pqEncryption": true,

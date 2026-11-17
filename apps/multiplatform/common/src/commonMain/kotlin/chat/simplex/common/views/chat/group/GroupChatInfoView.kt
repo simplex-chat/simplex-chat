@@ -318,7 +318,7 @@ fun deleteAndBanCustomerDialog(chat: Chat, groupInfo: GroupInfo, close: (() -> U
 
 fun deleteAndBanCustomer(chat: Chat, groupInfo: GroupInfo) {
   withBGApi {
-    val members = chatModel.controller.apiListMembers(chat.remoteHostId, groupInfo.groupId)
+    val members = chatModel.controller.apiListMembers(chat.remoteHostId, groupInfo.groupId) ?: return@withBGApi
     if (canDeleteAndBanCustomer(groupInfo, members)) {
       deleteAndBanCustomerDialog(chat, groupInfo)
     } else {
@@ -452,7 +452,7 @@ fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
   }
 }
 
-private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, members: List<GroupMember>, onSuccess: () -> Unit = {}) {
+internal fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, members: List<GroupMember>, onSuccess: () -> Unit = {}) {
   if (members.any { it.blockedByAdmin } && members.all { it.canBanAndRemove(groupInfo) }) {
     removeBannedMembersDialog(rhId, groupInfo, members, onSuccess = onSuccess)
     return

@@ -1,0 +1,15 @@
+{
+  "commands": {
+    "/_connect contact @5 incognito=off": {
+      "error": {
+        "errorType": {
+          "expiresAt": "2099-01-01T12:00:00Z",
+          "type": "linkNotice"
+        },
+        "type": "error"
+      }
+    }
+  },
+  "markdown": {},
+  "uris": {}
+}

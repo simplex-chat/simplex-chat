@@ -240,6 +240,7 @@
   <string name="error_rejecting_contact_request">Error rejecting contact request</string>
   <string name="sender_may_have_deleted_the_connection_request">The sender deleted the connection request.</string>
   <string name="error_deleting_contact">Error deleting contact</string>
+  <string name="error_archiving_contact">Error archiving contact</string>
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_note_folder">Error deleting private notes</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>

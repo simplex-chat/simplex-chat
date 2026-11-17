@@ -1037,6 +1037,12 @@ func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Boo
             }
         } catch let error {
             logger.error("apiBlockMembersForAll error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error blocking member for all", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
         }
     }
 }

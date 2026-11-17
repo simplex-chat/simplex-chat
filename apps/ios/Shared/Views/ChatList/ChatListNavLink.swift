@@ -352,7 +352,7 @@ struct ChatListNavLink: View {
 
     private func deleteAndBanCustomerIfAvailable(_ groupInfo: GroupInfo) {
         Task {
-            let members = await apiListMembers(groupInfo.groupId)
+            guard let members = await apiListMembers(groupInfo.groupId) else { return }
             await MainActor.run {
                 if groupInfo.canDeleteAndBanCustomer(members) {
                     deleteAndBanCustomerDialog(chat, groupInfo)
@@ -657,7 +657,7 @@ struct ChatListMoreDialog: ViewModifier {
     }
 }
 
-private func deleteAndBanUnavailableAlert(_ groupInfo: GroupInfo) -> Alert {
+func deleteAndBanUnavailableAlert(_ groupInfo: GroupInfo) -> Alert {
     Alert(
         title: Text("Can't block"),
         message: Text("**\(groupInfo.displayName)** left this chat or uses an older app version.")

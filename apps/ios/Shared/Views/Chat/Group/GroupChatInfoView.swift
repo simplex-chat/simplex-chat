@@ -1123,7 +1123,7 @@ func deleteAndBanCustomerDialog(_ chat: Chat, _ groupInfo: GroupInfo, afterDelet
 
 private func deleteGroup(_ chat: Chat, keepConversation: Bool, notice: LinkNotice? = nil, _ afterDeletion: @escaping () -> Void) {
     Task {
-        if await deleteChat(chat, chatDeleteMode: ChatDeleteMode(keepConversation: keepConversation, notify: true), notice: notice) {
+        if await deleteChat(chat, chatDeleteMode: ChatDeleteMode(keepConversation: keepConversation, notify: notice == nil), notice: notice) {
             await MainActor.run { afterDeletion() }
         }
     }

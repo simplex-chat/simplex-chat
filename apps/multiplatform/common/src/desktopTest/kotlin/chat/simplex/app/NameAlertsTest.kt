@@ -4,10 +4,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -17,9 +15,6 @@ import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.chatParseMarkdown
-import chat.simplex.common.platform.chatParseUri
-import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.SimplexNameView
 import chat.simplex.common.views.chatlist.ChatListView
@@ -28,53 +23,14 @@ import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.AnimatedViewState
 import chat.simplex.common.views.helpers.LocalAppBarHandler
 import chat.simplex.common.views.helpers.rememberAppBarHandler
-import chat.simplex.common.views.newchat.planAndConnect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import java.io.File
-import java.util.Locale
-import java.util.TimeZone
 import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
-class NameAlertsTest {
-  private val sendCmd = chatSendCmdRetry
-  private val parseMarkdown = chatParseMarkdown
-  private val parseUri = chatParseUri
-  private val locale = Locale.getDefault()
-  private val timeZone = TimeZone.getDefault()
-  private val unrecorded = mutableListOf<String>()
-  private val shownLocalChats = mutableListOf<String>()
-
-  @BeforeTest
-  fun setUp() {
-    Locale.setDefault(Locale.US)
-    TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
-    ChatModel.currentUser.value = User.sampleData
-  }
-
-  @AfterTest
-  fun tearDown() {
-    AlertManager.shared.hideAllAlerts()
-    AlertManager.privacySensitive.hideAllAlerts()
-    ChatModel.chatsContext.chats.value.clear()
-    ChatModel.chatId.value = null
-    ChatModel.chatRunning.value = null
-    ChatModel.appOpenUrlConnecting.value = false
-    ChatModel.currentUser.value = null
-    simplexWindowState.toasts.clear()
-    chatSendCmdRetry = sendCmd
-    chatParseMarkdown = parseMarkdown
-    chatParseUri = parseUri
-    TimeZone.setDefault(timeZone)
-    Locale.setDefault(locale)
-    assertEquals(listOf(), unrecorded.toList(), "requests without recorded responses")
-  }
-
+class NameAlertsTest : RecordedApiTest() {
   @Test
   fun knownNameExpired() = recordedAlerts("names/plan-known-expired") {
     connect("@alice.simplex")
@@ -333,25 +289,6 @@ class NameAlertsTest {
     waitUntil(timeoutMillis = 5_000) { verifications() == 1 }
   }
 
-  private fun recordedAlerts(fixture: String, test: ComposeUiTest.() -> Unit) = recorded(fixture) {
-    setContent {
-      AlertManager.shared.showInView()
-      AlertManager.privacySensitive.showInView()
-    }
-    test()
-  }
-
-  private fun recorded(fixture: String, test: ComposeUiTest.() -> Unit) = runComposeUiTest {
-    val responses = Json.parseToJsonElement(fixtureText(fixture)).jsonObject
-    val commands = responses["commands"]?.jsonObject
-    val markdown = responses["markdown"]?.jsonObject
-    val uris = responses["uris"]?.jsonObject
-    chatSendCmdRetry = { _, cmd, _ -> commands?.get(cmd)?.toString() ?: unrecordedRequest(cmd) }
-    chatParseMarkdown = { str -> markdown?.get(str)?.toString() ?: unrecordedRequest("markdown $str") }
-    chatParseUri = { str, safe -> uris?.get(str)?.takeIf { safe == 0 }?.toString() ?: unrecordedRequest("uri $str") }
-    test()
-  }
-
   private fun simplexName(
     verified: DomainVerification?,
     verification: Pair<DomainVerification?, String?>? = null,
@@ -371,54 +308,6 @@ class NameAlertsTest {
     }
     test({ verifications }, copied)
   }
-
-  private fun unrecordedRequest(request: String): String {
-    synchronized(unrecorded) { unrecorded += request }
-    return "{}"
-  }
-
-  private fun ComposeUiTest.connect(name: String, cleanup: (() -> Unit)? = null) {
-    runBlocking { planAndConnect(rhId = null, name, close = null, cleanup = cleanup, showLocalChats = { chats -> shownLocalChats += chats.map { it.id } }) }
-    waitForIdle()
-  }
-
-  private fun ComposeUiTest.press(text: String) {
-    onNodeWithText(text).performClick()
-    waitForIdle()
-  }
-
-  private fun ComposeUiTest.assertTexts(vararg texts: String) {
-    runCatching { waitUntil(timeoutMillis = 5_000) { shownTexts() == texts.toList() } }
-    assertEquals(texts.toList(), shownTexts())
-  }
-
-  private fun ComposeUiTest.assertRequested(request: String) = assertRequested { it == request }
-
-  private fun ComposeUiTest.assertRequested(expected: (String) -> Boolean) {
-    runCatching { waitUntil(timeoutMillis = 5_000) { synchronized(unrecorded) { unrecorded.isNotEmpty() } } }
-    synchronized(unrecorded) {
-      assertEquals(1, unrecorded.size, unrecorded.toString())
-      assertTrue(expected(unrecorded.single()), unrecorded.toString())
-      unrecorded.clear()
-    }
-    waitUntil(timeoutMillis = 5_000) { AlertManager.shared.hasAlertsShown() }
-  }
-
-  private fun ComposeUiTest.shownTexts(): List<String> =
-    onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true)
-      .fetchSemanticsNodes()
-      .flatMap { node -> node.config[SemanticsProperties.Text].map { it.text } }
-
-  private fun assertLocalChats(vararg ids: String) {
-    assertEquals(ids.toList(), shownLocalChats.toList())
-    assertTrue(chatIds().containsAll(ids.toList()))
-  }
-
-  private fun chatIds(): List<String> = ChatModel.chatsContext.chats.value.map { it.id }
-
-  private fun chatInfo(id: String): ChatInfo = ChatModel.chatsContext.chats.value.first { it.id == id }.chatInfo
-
-  private fun fixtureText(name: String): String = File("../../../tests/fixtures/api/$name.json").readText()
 
   private companion object {
     const val SIMPLEX_NAME = "@alice.simplex"

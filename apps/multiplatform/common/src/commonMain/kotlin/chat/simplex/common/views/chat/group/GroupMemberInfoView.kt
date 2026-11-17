@@ -1181,7 +1181,7 @@ fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, 
     listOf(ban)
   }
   val title = generalGetString(if (gInfo.useRelays) MR.strings.block_subscribers_for_all_question else MR.strings.block_members_for_all_question)
-  val warning = previousVersionWarningText(members, MR.strings.member_previous_version_ban_only, MR.strings.members_previous_version_ban_only)
+  val warning = if (gInfo.membership.memberRole >= GroupMemberRole.Admin) previousVersionWarningText(members, MR.strings.member_previous_version_ban_only, MR.strings.members_previous_version_ban_only) else null
   val textId = if (gInfo.useRelays) {
     if (canRemove) MR.strings.ban_subscribers_desc_ban_and_remove else MR.strings.ban_subscribers_desc
   } else {

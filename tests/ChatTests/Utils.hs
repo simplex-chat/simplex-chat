@@ -25,7 +25,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import Data.Foldable (toList)
-import Data.List (foldl', isPrefixOf, isSuffixOf)
+import Data.List (elemIndex, foldl', isPrefixOf, isSuffixOf, nub)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
@@ -1027,7 +1027,8 @@ nameFixture :: String -> TestCC -> String -> IO ()
 nameFixture fixture cc name = apiFixture ("names/" <> fixture) cc [] FixtureRequests {frMarkdown = [name], frUris = [], frCommands = ["/_connect plan 1 " <> name]}
 
 apiFixture :: String -> TestCC -> [(String, String)] -> FixtureRequests -> IO ()
-apiFixture fixture TestCC {chatController = cc} placeholders FixtureRequests {frMarkdown, frUris, frCommands} = do
+apiFixture fixture tc@TestCC {chatController = cc} placeholders FixtureRequests {frMarkdown, frUris, frCommands} = do
+  waitSettled tc
   responses <- mapM (\cmd -> (JK.fromString cmd J..=) <$> (decodeJSON =<< chatSendCmd cc (B.pack cmd))) frCommands
   parses <- mapM (\text -> (JK.fromString text J..=) <$> decodeJSON (chatParseMarkdown $ B.pack text)) frMarkdown
   uris <- mapM (\uri -> (JK.fromString uri J..=) <$> decodeJSON (chatParseUri False $ B.pack uri)) frUris
@@ -1041,6 +1042,19 @@ apiFixture fixture TestCC {chatController = cc} placeholders FixtureRequests {fr
       J.String s -> J.String $ replaced s
       v -> v
     replaced s = foldl' (\t (actual, placeholder) -> T.replace (T.pack actual) (T.pack placeholder) t) s placeholders
+
+dropOutputs :: [TestCC] -> IO ()
+dropOutputs = mapConcurrently_ dropOutput
+  where
+    dropOutput cc = timeout 2000000 (getTermLine cc) >>= mapM_ (\_ -> dropOutput cc)
+
+waitSettled :: HasCallStack => TestCC -> IO ()
+waitSettled cc =
+  withCCTransaction cc (\db -> (,) <$> DB.query_ db connecting <*> DB.query_ db rosterPending :: IO ([[Int]], [[Int]]))
+    `shouldEventuallyReturn` ([[0]], [[0]])
+  where
+    connecting = "SELECT COUNT(1) FROM connections WHERE conn_type = 'contact' AND conn_status = 'ready' AND contact_conn_initiated = 1"
+    rosterPending = "SELECT COUNT(1) FROM groups g WHERE g.use_relays = 1 AND g.roster_version IS NULL AND EXISTS (SELECT 1 FROM group_members r WHERE r.group_id = g.group_id AND r.member_role = 'relay' AND r.member_status = 'connected')"
 
 nameMovedFixture :: String -> TestCC -> [ContactName] -> [GroupName] -> IO ()
 nameMovedFixture fixture cc contacts groups = withCCUser cc $ \user -> do
@@ -1061,13 +1075,22 @@ writeFixture fixture = testGenerate ("tests/fixtures/api/" <> fixture <> ".json"
     jsonText = safeDecodeUtf8 . LB.toStrict . J.encode
 
 stableJSON :: J.Value -> J.Value
-stableJSON = \case
-  J.Object o -> J.Object $ JM.mapWithKey stableField o
-  J.Array a -> J.Array $ fmap stableJSON a
-  v -> v
+stableJSON value = stable value
   where
+    stable = \case
+      J.Object o -> J.Object $ JM.mapWithKey stableField o
+      J.Array a -> J.Array $ fmap stable a
+      v -> v
     stableField k v
       | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId"] = J.String $ JK.toText k
+      | k `elem` ["expiresAt", "blockedUntil"], J.String _ <- v = J.String "2099-01-01T12:00:00Z"
+      | k `elem` memberIdKeys, J.String s <- v = J.String $ maybe (JK.toText k) (\i -> "memberId" <> T.pack (show i)) (elemIndex s memberIds)
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberPubKey", "publicGroupId", "groupLinkId", "relayLink"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
-      | otherwise = stableJSON v
+      | otherwise = stable v
+    memberIdKeys = ["memberId", "businessId", "customerId"]
+    memberIds = nub $ memberIdValues value
+    memberIdValues = \case
+      J.Object o -> concat [if k `elem` memberIdKeys then [s | J.String s <- [v]] else memberIdValues v | (k, v) <- JM.toList o]
+      J.Array a -> concatMap memberIdValues $ toList a
+      _ -> []

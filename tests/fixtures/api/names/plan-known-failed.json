@@ -107,12 +107,12 @@
                 "localDisplayName": "bob",
                 "memberCategory": "user",
                 "memberChatVRange": {
-                  "maxVersion": 22,
+                  "maxVersion": 23,
                   "minVersion": 9
                 },
                 "memberContactId": 1,
                 "memberContactProfileId": 1,
-                "memberId": "memberId",
+                "memberId": "memberId0",
                 "memberProfile": {
                   "displayName": "bob",
                   "fullName": "",
@@ -161,6 +161,7 @@
                   "connShortLink": "connShortLink"
                 }
               },
+              "rosterVersion": 0,
               "updatedAt": "1970-01-01T00:00:00Z",
               "useRelays": true,
               "userMemberProfileSentAt": "1970-01-01T00:00:00Z",
