@@ -121,7 +121,7 @@ class FakeChatApi:
         self.sent.append((chat, text))
         return []
 
-    async def api_send_text_reply(self, chat_item, text: str, priority: int | None = None) -> list:
+    async def api_send_text_reply(self, chat_item, text: str) -> list:
         self._check("api_send_text_reply")
         self.replies.append(text)
         # Message.reply indexes items[0], so this cannot return [].

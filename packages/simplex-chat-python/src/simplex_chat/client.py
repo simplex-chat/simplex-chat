@@ -72,7 +72,8 @@ class Message(Generic[C]):
         return None
 
     async def reply(self, text: str, priority: int | None = None) -> Message[T.MsgContent]:
-        items = await self.client.api.api_send_text_reply(self.chat_item, text, priority)
+        kwargs = {} if priority is None else {"priority": priority}
+        items = await self.client.api.api_send_text_reply(self.chat_item, text, **kwargs)
         ci = items[0]
         content = ci["chatItem"]["content"]
         # content is CIContent — snd variant has msgContent; cast for type safety.
