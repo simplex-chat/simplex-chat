@@ -54,8 +54,7 @@ export const KEEPS_WAITING = "This page keeps checking. The invoice will not exp
 export class CancelRefused extends Error {}
 
 export const PAID_IN_FULL_TITLE = "The full amount has arrived";
-export const LIGHTNING_EXPIRED = "The Lightning invoice expired with the order, so a wallet can no longer pay it.";
-export const LIGHTNING_STILL_PAYABLE = "Its Lightning invoice can still be paid until it expires: don't pay it.";
+export const LIGHTNING_DO_NOT_PAY = "Don't pay its Lightning invoice: a wallet can pay it until it expires, and such a payment is refunded by hand.";
 export const CANCEL_NOT_OPEN = "This invoice is no longer open, so there is nothing to cancel.";
 export const CANCEL_HAS_FUNDS = "This invoice has a payment on it, so it cannot be cancelled.";
 export const CANCEL_STILL_OPEN = "This invoice was cancelled, but the service still shows it open. Do not send anything more to the address.";
@@ -750,7 +749,6 @@ export interface WindowClosedOptions {
   invoice: InvoiceView | undefined;
   offline?: boolean;
   canceled?: boolean;
-  now?: () => number;
   onNewInvoice: () => void;
 }
 
@@ -766,9 +764,7 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
   // A payment can land after the window closes, so this screen must count any crypto figure as money
   // and not tell the buyer nothing arrived.
   const funded = o.invoice?.paidInFull === true || o.invoice?.cryptoAmountPaid !== undefined || (paid !== undefined && paid > 0);
-  const expiresAt = o.invoice?.expiresAt;
-  const lightningNote = (o.invoice?.cryptoCurrency ?? o.order.method) !== "ln" || expiresAt === undefined ? []
-    : [el("p", { class: "muted" }, Date.parse(expiresAt) <= (o.now ?? Date.now)() ? LIGHTNING_EXPIRED : LIGHTNING_STILL_PAYABLE)];
+  const lightningNote = (o.invoice?.cryptoCurrency ?? o.order.method) === "ln" ? [el("p", { class: "muted" }, LIGHTNING_DO_NOT_PAY)] : [];
   if (o.canceled === true && !funded) {
     return panel(
       el("h1", { class: "tight" }, "Invoice canceled"),

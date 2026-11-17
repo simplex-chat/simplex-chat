@@ -625,38 +625,20 @@ domTest("screens: cancelling a Lightning invoice warns that its BOLT11 stays pay
   }
 });
 
-domTest("screens: a closed Lightning order says the invoice can no longer be paid only once it has expired", () => {
-  const past = new Date(NOW - 60_000).toISOString();
-  const future = new Date(NOW + 60_000).toISOString();
-  const nothing = render(screens.windowClosed({ onNewInvoice: noop, now: () => NOW,
-    order: unpaidRecord({ status: "expired", method: "ln" }),
-    invoice: { status: "expired", amount: 700, currency: "usd", expiresAt: past },
-  }));
-  assert.ok(nothing.textContent.includes("Nothing was received, and nothing was charged."), nothing.textContent);
-  assert.ok(nothing.textContent.includes(screens.LIGHTNING_EXPIRED), "read from the order, since a closed view drops the destination");
-  assert.ok(!nothing.textContent.includes(screens.LIGHTNING_STILL_PAYABLE), nothing.textContent);
-
-  const closedEarly = render(screens.windowClosed({ onNewInvoice: noop, now: () => NOW,
-    order: unpaidRecord({ status: "expired", method: "ln" }),
-    invoice: { status: "expired", amount: 700, currency: "usd", expiresAt: future },
-  }));
-  assert.ok(closedEarly.textContent.includes(screens.LIGHTNING_STILL_PAYABLE), `a cancel seen from another browser: ${closedEarly.textContent}`);
-  assert.ok(!closedEarly.textContent.includes(screens.LIGHTNING_EXPIRED), closedEarly.textContent);
-
-  const canceled = render(screens.windowClosed({ onNewInvoice: noop, now: () => NOW, canceled: true,
-    order: unpaidRecord({ status: "expired", method: "ln" }),
-    invoice: { status: "expired", amount: 700, currency: "usd", expiresAt: future },
-  }));
-  assert.ok(canceled.textContent.includes("You canceled this invoice. Nothing was charged."), canceled.textContent);
-  assert.ok(canceled.textContent.includes(screens.LIGHTNING_STILL_PAYABLE), canceled.textContent);
-
-  const unknownExpiry = render(screens.windowClosed({ onNewInvoice: noop, now: () => NOW,
+domTest("screens: a closed Lightning order with nothing received tells the buyer not to pay its invoice, whatever any clock says", () => {
+  const nothing = render(screens.windowClosed({ onNewInvoice: noop,
     order: unpaidRecord({ status: "expired", method: "ln" }),
     invoice: { status: "expired", amount: 700, currency: "usd" },
   }));
-  for (const note of [screens.LIGHTNING_EXPIRED, screens.LIGHTNING_STILL_PAYABLE]) {
-    assert.ok(!unknownExpiry.textContent.includes(note), `a stored record without its expiry claims neither: ${unknownExpiry.textContent}`);
-  }
+  assert.ok(nothing.textContent.includes("Nothing was received, and nothing was charged."), nothing.textContent);
+  assert.ok(nothing.textContent.includes(screens.LIGHTNING_DO_NOT_PAY), "read from the order, since a closed view drops the destination");
+
+  const canceled = render(screens.windowClosed({ onNewInvoice: noop, canceled: true,
+    order: unpaidRecord({ status: "expired", method: "ln" }),
+    invoice: { status: "expired", amount: 700, currency: "usd", expiresAt: "2026-08-28T12:58:12Z" },
+  }));
+  assert.ok(canceled.textContent.includes("You canceled this invoice. Nothing was charged."), canceled.textContent);
+  assert.ok(canceled.textContent.includes(screens.LIGHTNING_DO_NOT_PAY), canceled.textContent);
 
   const onChain = render(screens.windowClosed({ onNewInvoice: noop,
     order: unpaidRecord({ status: "expired", method: "btc" }),
@@ -669,7 +651,7 @@ domTest("screens: a closed Lightning order says the invoice can no longer be pai
     invoice: { ...openLn, status: "expired", amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true },
   }));
   assert.ok(funded.textContent.includes("0.00050000 BTC arrived after the window closed"), funded.textContent);
-  for (const leak of ["not the full amount", "shortfall", "settled", screens.LIGHTNING_EXPIRED]) {
+  for (const leak of ["not the full amount", "shortfall", "settled", screens.LIGHTNING_DO_NOT_PAY]) {
     assert.ok(!funded.textContent.includes(leak), `a whole Lightning payment that settled after the close: "${leak}"`);
   }
   assert.ok(funded.textContent.includes("inv_9f3a"), "and the reference support works from");
