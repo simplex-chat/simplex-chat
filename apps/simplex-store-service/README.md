@@ -244,16 +244,16 @@ keeps the threshold it was made with, so raising it later credits nothing alread
 
 **Lightning** is BTCPay's `BTC-LN` method: the buyer pays a BOLT11 invoice made by the store's
 Lightning node, for the whole amount or not at all. Enable it on the store with the node BTCPay
-runs; at startup the service logs one error naming each of `BTC-CHAIN`, `XMR-CHAIN` and `BTC-LN`
-that the store has not enabled, since BTCPay refuses every checkout on it. BTCPay records a
-Lightning payment only once the node reports it settled, so the service credits it whatever
-`speed_policy` says, the invoice view carries no `requiredConfirmations` for it, and a closed
-invoice whose due is 0 or less reads as paid in full. BTCPay gives the method's amounts in whole
-satoshi; the logs count Lightning in millisatoshi. The BOLT11 invoice expires with the order. A
-cancel does not stop it: BTCPay 2.4.4 marks the invoice `Invalid` but leaves the BOLT11 payable at
-the node until it expires. While BTCPay keeps running, it records a payment to that BOLT11: the
-service credits it to a name order's balance as late money, and for a badge order it logs the error
-that asks for a refund. After a restart BTCPay watches only open invoices, so such a
+runs; at startup the service names, in one logged error, each of `BTC-CHAIN`, `XMR-CHAIN` and
+`BTC-LN` that the store has not enabled, since BTCPay refuses every checkout on it. BTCPay records a
+Lightning payment only once the node reports it settled, so the service credits it under every
+`speed_policy`, `requiredConfirmations` is omitted from its invoice view, and a closed invoice with
+a due of 0 or less is read as paid in full. BTCPay gives the method's amounts in whole satoshi; in
+the logs Lightning is counted in millisatoshi. The BOLT11 invoice expires with the order.
+Cancellation leaves it payable: BTCPay 2.4.4 marks the invoice `Invalid` but leaves the BOLT11
+payable at the node until it expires. While BTCPay keeps running, it records a payment to that
+BOLT11: the service credits it to a name order's balance as late money, and for a badge order it
+logs an error, and support refunds the payment by hand. After a restart BTCPay watches only open invoices, so such a
 payment is recorded by the node alone; support finds it among the node's settled invoices by the
 BOLT11. The node needs inbound channel capacity of at least the largest order: without it the
 buyer's wallet finds no route and the payment fails there.

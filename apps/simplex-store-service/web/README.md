@@ -181,8 +181,9 @@ instant `/control/settle` (or `/control/expire`, `/control/partial`) fires,
 which is what the page's own wait loop relies on — no polling on a timer.
 
 Card invoices (`"method":"card"`) get a `clientSecret` in the response
-instead of an address; BTC and XMR get `address` and `cryptoAmount`. Lightning (`"method":"ln"`)
-gets a made-up BOLT11 as `address`, its BTC amount in whole satoshi, and no `requiredConfirmations`.
+instead of an address; BTC and XMR get `address` and `cryptoAmount`. For Lightning (`"method":"ln"`),
+a made-up BOLT11 is given as `address`, with the BTC amount in whole satoshi and without
+`requiredConfirmations`.
 
 ### Opening the page as the app does
 

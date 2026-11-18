@@ -1,5 +1,5 @@
 {
-  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- RECORDED from BTCPay Server 2.4.4 with LND on regtest, BTC_USD fixed at 108000.12: a BTC-LN invoice paid in full by another LND node, its status Settled. The response is verbatim.",
+  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- recorded from BTCPay Server 2.4.4 with LND on regtest, BTC_USD fixed at 108000.12: a BTC-LN invoice paid in full by another LND node, its status Settled. The response is verbatim.",
   "response": [
     {
       "activated": true,

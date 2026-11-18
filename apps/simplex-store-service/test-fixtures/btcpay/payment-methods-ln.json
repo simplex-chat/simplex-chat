@@ -1,5 +1,5 @@
 {
-  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- InvoicePaymentMethodDataModel[] for BTC-LN, shaped after the bodies recorded from BTCPay 2.4.4 (payment-methods-ln-settled.json, payment-methods-ln-cancelled-paid.json), which write amounts without trailing zeros. The amounts here keep 8 and 11 decimals, which the adapter reads alike. `totalPaid` is deliberately NOT equal to `paymentMethodPaid`. `paymentMethodFee` is non-zero only so that it differs from `due`.",
+  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- InvoicePaymentMethodDataModel[] for BTC-LN, shaped after the bodies recorded from BTCPay 2.4.4 (payment-methods-ln-settled.json, payment-methods-ln-cancelled-paid.json), in which amounts have no trailing zeros. The amounts here have 8 and 11 decimals, and both forms are read alike. `totalPaid` is set unequal to `paymentMethodPaid` on purpose. `paymentMethodFee` is non-zero only so that it differs from `due`.",
   "response": [
     {
       "paymentMethodId": "BTC-LN",
