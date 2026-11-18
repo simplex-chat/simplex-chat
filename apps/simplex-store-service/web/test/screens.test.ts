@@ -758,17 +758,16 @@ domTest("screens: the code screen drops its saved-copy clause where the local wr
   assert.ok(p.textContent.includes(HELD_CODE), "the code is still shown — it exists nowhere else");
 });
 
-domTest("screens: the deletion warning and the advice are shown in the only-copy box for a code kept until idle", () => {
+domTest("screens: the deletion warning box follows the only-copy box for a code kept until idle", () => {
   const p = render(screens.codeIssued({ code: HELD_CODE, retention: "keptUntilIdle" }));
-  const warn = p.all("div.warn")[0]!;
-  assert.ok(warn.textContent.includes("This is the only copy."));
-  assert.deepEqual(warn.all("p").slice(-2).map((l) => l.textContent), [screens.CODE_DELETED_AFTER, screens.KEEP_OUTSIDE],
-    "the deletion line and the advice close the only-copy box");
+  const boxes = p.all("div.warn");
+  assert.deepEqual(boxes.map((b) => b.all("span.title")[0]!.textContent), ["This is the only copy.", screens.CAN_DELETE_CODE]);
+  assert.deepEqual(boxes[1]!.all("p").map((l) => l.textContent), [screens.DOES_SO_AFTER, screens.KEEP_OUTSIDE]);
   const kept = render(screens.codeIssued({ code: HELD_CODE, retention: "kept" }));
-  assert.ok(!kept.textContent.includes(screens.CODE_DELETED_AFTER), "the deletion warning is shown only for a code kept until idle");
+  assert.ok(!kept.textContent.includes(screens.CAN_DELETE_CODE), "the deletion warning is shown only for a code kept until idle");
   assert.ok(!kept.textContent.includes(screens.KEEP_OUTSIDE));
   const unsaved = render(screens.codeIssued({ code: HELD_CODE, retention: "notKept" }));
-  assert.ok(!unsaved.textContent.includes(screens.CODE_DELETED_AFTER), "the deletion warning is shown only for a saved code");
+  assert.ok(!unsaved.textContent.includes(screens.CAN_DELETE_CODE), "the deletion warning is shown only for a saved code");
 });
 
 domTest("screens: the deletion warning is shown above Show code on the return-to-app ending for a code kept until idle", () => {
@@ -780,7 +779,7 @@ domTest("screens: the deletion warning is shown above Show code on the return-to
   assert.ok(hidden.children.indexOf(warn) < hidden.children.indexOf(showRow), "the deletion warning is placed above Show code");
   assertNoCode(hidden, "the return-to-app ending with the deletion warning");
   const shown = render(screens.returnToApp({ onReturn: noop, code: { kind: "shown", code: HELD_CODE }, retention: "keptUntilIdle" }));
-  assert.ok(shown.textContent.includes(screens.CODE_DELETED_AFTER), "the deletion warning is shown with the revealed code");
+  assert.ok(shown.all("span.title").some((t) => t.textContent === screens.CAN_DELETE_CODE), "the deletion warning is shown with the revealed code");
   assert.ok(!shown.textContent.includes(screens.COPY_UNLESS_ADDED), "the hint to show the code is removed once the code is shown");
   const kept = render(screens.returnToApp({ onReturn: noop, code: { kind: "hidden", onShow: noop }, retention: "kept" }));
   assert.equal(kept.all("div.warn").length, 0);

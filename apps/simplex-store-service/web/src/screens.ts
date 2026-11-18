@@ -796,7 +796,6 @@ const IDLE_PERIOD = "after 7\u00a0days of browser use without a tap, click or ke
 export const CAN_DELETE_CODE = "This browser can delete the code";
 export const CAN_DELETE_CODES = "This browser can delete codes";
 export const IDLE_DELETION_CODES = `${CAN_DELETE_CODES} ${IDLE_PERIOD}`;
-export const CODE_DELETED_AFTER = `It can be deleted ${IDLE_PERIOD}`;
 export const DOES_SO_AFTER = `It does so ${IDLE_PERIOD}`;
 export const DELETED_IF_BOUGHT_HERE = `If the code was bought in this browser, it may have been deleted ${IDLE_PERIOD}`;
 export const KEEP_OUTSIDE = "Redeem it now, or copy it and keep it outside this browser.";
@@ -805,7 +804,9 @@ export const COPY_UNLESS_ADDED = "If the app does not add the badge, tap Show co
 const CODES_STORED_HERE = "Codes stored in this browser";
 const ARE_LISTED_HERE = "are listed here.";
 export const CODES_LISTED_HERE = `${CODES_STORED_HERE} ${ARE_LISTED_HERE}`;
-export const CODES_STORED_IN_BROWSER = "Codes are stored only in the browser they were bought in.";
+const CODES_STORED_ONLY = "Codes are stored only";
+const IN_BROWSER_BOUGHT_IN = "in the browser they were bought in.";
+export const CODES_STORED_IN_BROWSER = `${CODES_STORED_ONLY} ${IN_BROWSER_BOUGHT_IN}`;
 
 function codeWithCopy(code: string): HTMLElement[] {
   const copy = copyControl("Copy code", code, "primary outline");
@@ -817,8 +818,7 @@ function codeDetails(o: Omit<CodeIssuedOptions, "code">): HTMLElement {
     ? el("div", { class: "warn" },
         el("span", { class: "title" }, "This is the only copy."),
         el("p", {}, "Saved in this browser and nowhere else."),
-        el("p", {}, "Anyone using this browser can read it, and clearing the browser loses it."),
-        ...(o.retention === "keptUntilIdle" ? [el("p", {}, CODE_DELETED_AFTER), el("p", {}, KEEP_OUTSIDE)] : []))
+        el("p", {}, "Anyone using this browser can read it, and clearing the browser loses it."))
     : el("div", { class: "warn" },
         el("span", { class: "title" }, "This code could not be saved in this browser."),
         el("p", {}, "Copy it now. It is shown here and nowhere else."));
@@ -828,6 +828,7 @@ function codeDetails(o: Omit<CodeIssuedOptions, "code">): HTMLElement {
       el("div", {}, o.app === "desktop" ? REDEEM_SCREEN_OPEN : REDEEM_IN_SETTINGS),
     ),
     onlyCopy,
+    ...(o.retention === "keptUntilIdle" ? [warning(CAN_DELETE_CODE, DOES_SO_AFTER, KEEP_OUTSIDE)] : []),
   );
 }
 
@@ -1010,9 +1011,9 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
     button(FORGET_EVERYTHING, o.onForget, "link danger"));
   return withInvest(panel(
     el("h1", {}, "Your codes"),
-    el("p", { class: "lede" }, o.retention !== "notKept"
-      ? CODES_STORED_IN_BROWSER
-      : "This browser cannot save anything new right now. Copy any code you have not kept elsewhere."),
+    o.retention !== "notKept"
+      ? el("p", { class: "lede" }, el("span", { class: "half" }, CODES_STORED_ONLY), " ", el("span", { class: "half" }, IN_BROWSER_BOUGHT_IN))
+      : el("p", { class: "lede" }, "This browser cannot save anything new right now. Copy any code you have not kept elsewhere."),
     ...(o.retention === "keptUntilIdle" && o.rows.some((r) => r.kind === "paid") ? [warning(CAN_DELETE_CODES, DOES_SO_AFTER, KEEP_EACH_OUTSIDE)] : []),
     list,
     forget,

@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, primaryOf, screenOf, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
-import { CODE_DELETED_AFTER, KEEP_OUTSIDE } from "../src/screens.js";
+import { CAN_DELETE_CODE, DOES_SO_AFTER, KEEP_OUTSIDE } from "../src/screens.js";
 
 const codeTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
@@ -16,7 +16,7 @@ await import("../src/main.js");
 const heading = (): string => headingOf(screenOf(app));
 const inView = (): StubElement => inViewOf(app);
 
-codeTest("main: in Safari, the deletion warning and the advice are shown in the only-copy box", async () => {
+codeTest("main: in Safari, the deletion warning box follows the only-copy box", async () => {
   inView().all("button.choice").find((c) => c.textContent.startsWith("Supporter"))!.click();
   primaryOf(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("1 month"))!.click();
@@ -36,7 +36,7 @@ codeTest("main: in Safari, the deletion warning and the advice are shown in the 
   } }, "/api/invoice/inv_mac");
   await until(() => heading() === "Paid. Here is your code.", `the code screen, not ${heading()}`);
 
-  const warn = screenOf(app).all("div.warn")[0]!;
-  assert.ok(warn.textContent.includes(CODE_DELETED_AFTER), `the deletion warning is missing from: ${warn.textContent}`);
-  assert.ok(warn.textContent.includes(KEEP_OUTSIDE));
+  const boxes = screenOf(app).all("div.warn");
+  assert.deepEqual(boxes.map((b) => b.all("span.title")[0]!.textContent), ["This is the only copy.", CAN_DELETE_CODE]);
+  assert.deepEqual(boxes[1]!.all("p").map((l) => l.textContent), [DOES_SO_AFTER, KEEP_OUTSIDE]);
 });

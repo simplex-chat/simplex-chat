@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, primaryOf, screenOf, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
-import { CAN_DELETE_CODES, CODE_DELETED_AFTER, KEEP_OUTSIDE } from "../src/screens.js";
+import { CAN_DELETE_CODES, KEEP_OUTSIDE } from "../src/screens.js";
 
 const codeTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
@@ -36,10 +36,10 @@ codeTest("main: in Chrome, the only-copy box is shown without the deletion warni
   } }, "/api/invoice/inv_chrome");
   await until(() => heading() === "Paid. Here is your code.", `the code screen, not ${heading()}`);
 
-  const warn = screenOf(app).all("div.warn")[0]!;
-  assert.ok(warn.textContent.includes("This is the only copy."));
-  assert.ok(!warn.textContent.includes(CODE_DELETED_AFTER), `the deletion warning is shown in Chrome: ${warn.textContent}`);
-  assert.ok(!warn.textContent.includes(KEEP_OUTSIDE));
+  const boxes = screenOf(app).all("div.warn");
+  assert.deepEqual(boxes.map((b) => b.all("span.title")[0]!.textContent), ["This is the only copy."],
+    `the deletion warning is shown in Chrome: ${screenOf(app).textContent.slice(0, 400)}`);
+  assert.ok(!screenOf(app).textContent.includes(KEEP_OUTSIDE));
 });
 
 codeTest("main: in Chrome, Your codes is shown without the deletion warning", () => {
