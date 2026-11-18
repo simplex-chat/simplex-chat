@@ -3001,7 +3001,7 @@ testPassReadsWhatItAwaits = bounded "reads what it awaits" $ withStubPoller race
   b <- seedOpenRef (weStore env) 2 "p-2" someExpiry
   c <- seedOpenRef (weStore env) 3 "p-3" someExpiry
   setSignals ref [("p-1", settledSignal), ("p-2", settledSignal), ("p-3", settledSignal)]
-  passStarted <- getCurrentTime
+  passStarted <- currentSecond
   runOnePass poller
   stubCalls ref `shouldReturn` [StubRead "p-1", StubRead "p-2", StubRead "p-3", StubListOpen]
   mapM (invoiceStatus (weStore env)) [a, b, c] `shouldReturn` [ISPaid, ISPaid, ISPaid]
@@ -3488,7 +3488,7 @@ testSweepGivesUpAnUnreadableInvoice = bounded "sweep gives up an unreadable invo
   runOnePass poller
   mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISExpired]
   newer <- seedPastWindow (weStore env) 3 "p-new" PPCrypto
-  dayAgo <- addUTCTime (negate readGiveUpDelay) <$> getCurrentTime
+  dayAgo <- addUTCTime (negate readGiveUpDelay) <$> currentSecond
   readFailedAt poller "p-bad" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
   logged <- capturingStderr (runOnePass poller)
   mapM (invoiceStatus (weStore env)) [bad, newer] `shouldReturn` [ISExpired, ISExpired]
@@ -3570,7 +3570,7 @@ testSweepKeepsFailuresBeyondTheCap = bounded "sweep keeps failures past the cap"
 -- | Pretends the first cancel failure was an hour ago, so the test doesn't have to wait.
 failedAnHourAgo :: PollerEnv -> Text -> IO ()
 failedAnHourAgo PollerEnv {peCancelFailed} ref = do
-  now <- getCurrentTime
+  now <- currentSecond
   atomically $ modifyTVar' peCancelFailed (Map.insert ref (addUTCTime (negate cancelGiveUpDelay) now))
 
 testSweepWarnsOncePerOrder :: IO ()

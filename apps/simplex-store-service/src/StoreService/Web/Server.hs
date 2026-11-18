@@ -30,7 +30,7 @@ import StoreService.Names.View (lapseMoment, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), providerErrorText)
-import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), codeHashExists, createInvoiceRows, getInvoice, getInvoiceByProviderRef, newInvoiceId, paymentHolds, readCatalogRows, truncateToSecond)
+import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), codeHashExists, createInvoiceRows, currentSecond, getInvoice, getInvoiceByProviderRef, newInvoiceId, paymentHolds, readCatalogRows, truncateToSecond)
 import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
 import StoreService.Web.Names (namesApp, namesRoutes)
@@ -325,7 +325,7 @@ cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId respond =
   where
     funded InvoiceRow {irPayment} = maybe False paymentHolds irPayment
     finish = do
-      now <- getCurrentTime
+      now <- currentSecond
       E.try (cancelOpenInvoice weStore (weWaiters env) (oePhases <$> weOrders env) invId now) >>= \case
         Left (RegistrationChanged rid) -> maybe (pure providerUnavailable) (`registrationChangedResponse` rid) (weOrders env) >>= respond
         Right _ -> respondCurrent env invId respond

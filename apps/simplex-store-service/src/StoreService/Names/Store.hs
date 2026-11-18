@@ -164,7 +164,7 @@ import StoreService.Names.Chain (ChainSeconds, Hex32 (..), RevertName, TxHash (.
 import StoreService.Names.Registration (AgreedTerms, Commitment, LinkKind, OrderFields (..), RegistrationId (..), TermsAcceptance (..), TermsHash)
 import StoreService.Providers (Rate, Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
-import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, lockInvoice, mkQuery, newInvoiceId, note, prefixQuery, truncateToSecond, unfundedQuery)
+import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, lockInvoice, mkQuery, newInvoiceId, note, prefixQuery, unfundedQuery)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, ToRow, (:.) (..))
@@ -711,8 +711,7 @@ newRegistrationId = (\(InvoiceId t) -> RegistrationId t) <$> newInvoiceId
 -- | A difference order holds all of the balance seen while its invoice is open. The hold is written after the registration,
 -- so the registration's row is locked before the balance's. A refusal leaves its writes for the caller to roll back.
 createPaidRegistration :: DB.Connection -> NewRegistration -> Maybe BalanceUse -> PaidOrder -> UTCTime -> IO (Either BalanceInsertRefused ())
-createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid)} held PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId} now' = do
-  let now = truncateToSecond now'
+createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid)} held PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId} now = do
   inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held now
   if not inserted
     then pure $ Left BIRLiveOrder
@@ -727,8 +726,7 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
 -- | Reserving the code is the conditional update of the transaction that creates the registration. A refusal leaves its writes for
 -- the caller to roll back.
 createCodeRegistration :: DB.Connection -> NewRegistration -> PrepaidCode -> UTCTime -> IO (Either CodeInsertRefused ())
-createCodeRegistration db new@NewRegistration {nrgId = regId} PrepaidCode {pcId} now' = do
-  let now = truncateToSecond now'
+createCodeRegistration db new@NewRegistration {nrgId = regId} PrepaidCode {pcId} now = do
   inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) Nothing now
   if not inserted
     then pure $ Left CIRLiveOrder
@@ -740,8 +738,7 @@ createCodeRegistration db new@NewRegistration {nrgId = regId} PrepaidCode {pcId}
 -- | A queued order whose price is spent from the source's balance in the same transaction, where its amount is the one seen and nothing holds it.
 -- A refusal leaves its writes for the caller to roll back.
 createBalanceRegistration :: DB.Connection -> NewRegistration -> BalanceUse -> USDCents -> UTCTime -> IO (Either BalanceInsertRefused ())
-createBalanceRegistration db new use@BalanceUse {buSource, buUsed} seen now' = do
-  let now = truncateToSecond now'
+createBalanceRegistration db new use@BalanceUse {buSource, buUsed} seen now = do
   inserted <- insertRegistration db new PQueued buUsed Nothing Nothing (Just use) now
   if not inserted
     then pure $ Left BIRLiveOrder
@@ -907,7 +904,7 @@ getLiveOrders db commitment owner lh now =
               <> " ORDER BY c.updated_at DESC, c.registration_id DESC LIMIT 1)"
           )
     )
-    ((PUnpaid, ISPaid, truncateToSecond now, commitment, owner, lh) :. (owner, lh, PClosed))
+    ((PUnpaid, ISPaid, now, commitment, owner, lh) :. (owner, lh, PClosed))
     >>= decodeAll toLiveOrder
   where
     toLiveOrder (row :. Only (BI loOverdue)) = (\loRegistration -> LiveOrder {loRegistration, loOverdue}) <$> toRegistration row
@@ -938,7 +935,7 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
           <> unfunded
           <> " )"
       )
-      (ISExpired, truncateToSecond now, ISOpen, rid, nrVersion, truncateToSecond now)
+      (ISExpired, now, ISOpen, rid, nrVersion, now)
   if expired > 0
     then
       updateRegistration db r {nrPhase = OClosed ICExpired} now >>= \case
@@ -986,7 +983,7 @@ updateRegistration db r now = do
           :. (rvLabel <$> nrReveal, rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, rvSignature <$> nrReveal)
           :. (taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
           :. (commitTx, int64 <$> commitBlock, registerTx, int64 <$> revealAfter, int64 <$> revealBefore, int64 <$> expiresAt)
-          :. (truncateToSecond <$> registeredAt, truncateToSecond <$> failedAt, failReason, closedBy, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
+          :. (registeredAt, failedAt, failReason, closedBy, BI live, nrMoves, nrLinksRefusedAt, now)
           :. (rid, nrVersion, BI live, rid, nrCommitment, nrOwner, nrLabelHash)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
@@ -1055,7 +1052,7 @@ findRegistrations db owner now = do
         <> overdueOrder "h"
         <> "))"
         <> registrationFrom
-    holdParams = (PUnpaid, ISPaid, truncateToSecond now)
+    holdParams = (PUnpaid, ISPaid, now)
     found :: RegistrationRow :. Only (Maybe Text) -> Either Text (NameRegistration, Maybe RegistrationId)
     found (row :. Only holder) = (\r -> (r, RegistrationId <$> holder)) <$> toRegistration row
     newestFirst = " ORDER BY r.created_at DESC, r.registration_id DESC"
@@ -1094,7 +1091,7 @@ unpaidCleanupCandidates db expiredBefore =
         ORDER BY i.expires_at, r.registration_id
       |]
       )
-      (PUnpaid, PClosed, truncateToSecond expiredBefore)
+      (PUnpaid, PClosed, expiredBefore)
 
 -- | Deletes an unpaid registration and its invoice, unless a payment was recorded for it or it holds a balance.
 deleteUnpaidRegistration :: DB.Connection -> RegistrationId -> IO (Either CleanupKept ())
@@ -1139,7 +1136,7 @@ failedCodeOrdersBefore db cutoff =
         ORDER BY r.registration_id
       |]
       )
-      (PFailed, truncateToSecond cutoff, PCommitted, int64 $ chainSeconds cutoff)
+      (PFailed, cutoff, PCommitted, int64 $ chainSeconds cutoff)
 
 -- | The hold, unless it is overdue, which reads as none.
 heldBy :: Balance -> Maybe BalanceHold
@@ -1171,7 +1168,7 @@ getBalance db (RegistrationId rid) now =
             )
           <> " WHERE b.registration_id = ?"
       )
-      (PUnpaid, ISPaid, truncateToSecond now, rid)
+      (PUnpaid, ISPaid, now, rid)
 
 toBalance :: (Text, USDCents, USDCents, USDCents, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
 toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI overdue, BI funded, blRefundedAt) = do
@@ -1235,7 +1232,7 @@ lateCredits db (InvoiceId invId) =
 
 -- | Adds to the order's balance, making it on its first credit.
 creditBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO ()
-creditBalance db (RegistrationId rid) cents now' =
+creditBalance db (RegistrationId rid) cents now =
   DB.execute
     db
     ( prefixQuery
@@ -1249,8 +1246,6 @@ creditBalance db (RegistrationId rid) cents now' =
     |]
     )
     (rid, cents, cents, now, now)
-  where
-    now = truncateToSecond now'
 
 -- | The price, above 0, spent at once, where the amount is the one seen and nothing holds it.
 spendBalance :: DB.Connection -> RegistrationId -> USDCents -> USDCents -> UTCTime -> IO Bool
@@ -1277,7 +1272,7 @@ spendHeldBalance db (RegistrationId holder) used now =
     <$> executeChanging
       db
       (mkQuery "UPDATE @name_balances SET amount = amount - ?, reserved_by = NULL, updated_at = ? WHERE reserved_by = ? AND amount >= ? AND ? > 0")
-      (used, truncateToSecond now, holder, used, used)
+      (used, now, holder, used, used)
 
 releaseHeldBalance :: DB.Connection -> RegistrationId -> UTCTime -> IO Bool
 releaseHeldBalance db (RegistrationId holder) now =
@@ -1285,11 +1280,11 @@ releaseHeldBalance db (RegistrationId holder) now =
     <$> executeChanging
       db
       (mkQuery "UPDATE @name_balances SET reserved_by = NULL, updated_at = ? WHERE reserved_by = ?")
-      (truncateToSecond now, holder)
+      (now, holder)
 
 -- | All of the balance, where it is the cents given, above 0, and nothing holds it; refunded counts every refund.
 refundBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
-refundBalance db (RegistrationId rid) cents now' =
+refundBalance db (RegistrationId rid) cents now =
   (> 0)
     <$> executeChanging
       db
@@ -1300,8 +1295,6 @@ refundBalance db (RegistrationId rid) cents now' =
       |]
       )
       (cents, now, now, rid, cents)
-  where
-    now = truncateToSecond now'
 
 -- | A name invoice with its order, its invoice row and its payment row.
 lateFrom :: Query
@@ -1410,7 +1403,7 @@ lateCreditState db (InvoiceId invId) = firstDecoded toLateState $ DB.query db (l
 
 -- | Run after the invoice's lock. The order's balance is credited only when the credit's row is new, so a taken credit number changes neither.
 creditLatePayment :: DB.Connection -> LateCredit -> UTCTime -> IO Bool
-creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegistration = regId@(RegistrationId rid), lcAmount} now' = do
+creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegistration = regId@(RegistrationId rid), lcAmount} now = do
   inserted <-
     executeChanging
       db
@@ -1425,7 +1418,6 @@ creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegi
   when (inserted > 0) $ creditBalance db regId (creditCents lcAmount) now
   pure $ inserted > 0
   where
-    now = truncateToSecond now'
     (units, invoiceRate, currentRate, rateUsed) = case lcAmount of
       CACard _ -> (Nothing, Nothing, Nothing, Nothing)
       CACrypto {caUnits, caInvoiceRate, caCurrentRate, caRateUsed} -> (Just caUnits, Just caInvoiceRate, Just caCurrentRate, Just caRateUsed)
@@ -1488,7 +1480,7 @@ lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid (Only PClosed) pendingC
             <> receivedFigure
             <> " > COALESCE(ni.late_alerted_units, -1)) ORDER BY p.created_at, ni.invoice_id"
         )
-        (phases :. Only (truncateToSecond cutoff))
+        (phases :. Only cutoff)
         >>= decodeAll toAlert
     toAlert :: LateRow :. (Maybe LatePending, Maybe Int64, Maybe UTCTime, Maybe Int64, Text) -> Either Text LateAlert
     toAlert (row :. (pending_, laReceived, laAlertedAt, laAlertedReceived, laProviderRef)) = case pending_ of
@@ -1509,7 +1501,7 @@ claimLateAlert db LateAlert {laState = LateCreditState {lsInvoice = InvoiceId in
           <> notDistinctFrom
           <> "?"
       )
-      (truncateToSecond now, laReceived, support, invId, laAlertedAt, laAlertedReceived)
+      (now, laReceived, support, invId, laAlertedAt, laAlertedReceived)
 
 -- | The first reason given stays.
 setLateSupport :: DB.Connection -> InvoiceId -> LateSupport -> IO ()
@@ -1528,7 +1520,7 @@ insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPay
         ON CONFLICT DO NOTHING
       |]
       )
-      (npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, truncateToSecond <$> npcExpiresAt, truncateToSecond now, BI (npcIssuer == FromGroup))
+      (npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, npcExpiresAt, now, BI (npcIssuer == FromGroup))
   if inserted > 0 then Right <$> insertedRowId db else pure $ Left CodeHashTaken
 
 prepaidCodeColumns :: Query
@@ -1559,7 +1551,7 @@ getPrepaidCodeById db codeId =
 
 -- | Only an unused code: not reserved, spent or revoked, paid or free, and not expired.
 reservePrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> UTCTime -> IO Bool
-reservePrepaidCode db codeId (RegistrationId rid) now' =
+reservePrepaidCode db codeId (RegistrationId rid) now =
   (> 0)
     <$> executeChanging
       db
@@ -1571,8 +1563,6 @@ reservePrepaidCode db codeId (RegistrationId rid) now' =
       |]
       )
       (rid, now, codeId, CPSUnpaid, now)
-  where
-    now = truncateToSecond now'
 
 releasePrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> IO Bool
 releasePrepaidCode db codeId (RegistrationId rid) =
@@ -1589,7 +1579,7 @@ releasePrepaidCode db codeId (RegistrationId rid) =
 
 -- | For a registration whose register went through: spends the code it holds, or one released and still usable; False otherwise.
 spendLandedPrepaidCode :: DB.Connection -> CodeId -> RegistrationId -> UTCTime -> IO Bool
-spendLandedPrepaidCode db codeId (RegistrationId rid) now' =
+spendLandedPrepaidCode db codeId (RegistrationId rid) now =
   (> 0)
     <$> executeChanging
       db
@@ -1601,8 +1591,6 @@ spendLandedPrepaidCode db codeId (RegistrationId rid) now' =
       |]
       )
       (rid, now, now, codeId, rid, CPSUnpaid, now)
-  where
-    now = truncateToSecond now'
 
 -- | A reserved code can be revoked, and its order keeps it; a spent one cannot. With the code as it reads after.
 revokePrepaidCode :: DB.Connection -> CodeHash -> UTCTime -> IO (RevokeResult, Maybe PrepaidCode)
@@ -1611,7 +1599,7 @@ revokePrepaidCode db codeHash now = do
     executeChanging
       db
       (mkQuery "UPDATE @name_prepaid_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL AND spent_at IS NULL")
-      (truncateToSecond now, codeHash)
+      (now, codeHash)
   (\code -> (maybe NoSuchCode (result revoked) code, code)) <$> getPrepaidCode db codeHash
   where
     result revoked PrepaidCode {pcId, pcRevokedAt}
@@ -1650,7 +1638,7 @@ insertTransaction db for NewTransaction {ntxRaw, ntxHash, ntxNonce} now = do
       VALUES (?,?,?,?,?,?,?,?)
     |]
     )
-    (rid, editId, kind, Binary ntxRaw, ntxHash, int64 ntxNonce, truncateToSecond now, TSPending)
+    (rid, editId, kind, Binary ntxRaw, ntxHash, int64 ntxNonce, now, TSPending)
   insertedRowId db
 
 -- | Moves a transaction on from the status the caller read, so an outcome is never overwritten unseen; False when it is not in that status.
@@ -1728,7 +1716,7 @@ insertRecordEdit db NewRecordEdit {nreLabelHash, nreOwner, nreChanges, nreBodyHa
         ON CONFLICT DO NOTHING
       |]
       )
-      (nreLabelHash, nreOwner, int64 $ scNonce $ L.head nreChanges, nreBodyHash, ETPending, truncateToSecond now)
+      (nreLabelHash, nreOwner, int64 $ scNonce $ L.head nreChanges, nreBodyHash, ETPending, now)
   if inserted > 0
     then do
       editId <- insertedRowId db
@@ -1816,7 +1804,7 @@ relayedEditTimes db lh since =
     <$> DB.query
       db
       (mkQuery "SELECT created_at FROM @name_record_edits WHERE label_hash = ? AND created_at > ? ORDER BY created_at")
-      (lh, truncateToSecond since)
+      (lh, since)
 
 getTermsText :: DB.Connection -> TermsHash -> IO (Maybe ByteString)
 getTermsText db termsHash =

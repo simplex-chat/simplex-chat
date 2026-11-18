@@ -34,6 +34,7 @@ module StoreService.Store.Invoices
     readCatalogRows,
     seedCatalog,
     truncateToSecond,
+    currentSecond,
     unixSeconds,
     settlementInvoice,
     settlementCodeHash,
@@ -57,7 +58,7 @@ import Data.Maybe (catMaybes)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word8, Word32)
 import Simplex.Chat.Badges (BadgeType (..))
@@ -162,6 +163,9 @@ instance Exception StoreDecodeError
 -- | SQLite stores timestamps as text, so `expires_at < ?` compares as strings and only sorts chronologically when every value has the same width.
 truncateToSecond :: UTCTime -> UTCTime
 truncateToSecond = posixSecondsToUTCTime . fromInteger . truncate . utcTimeToPOSIXSeconds
+
+currentSecond :: IO UTCTime
+currentSecond = truncateToSecond <$> getCurrentTime
 
 #if defined(dbPostgres)
 mkQuery :: Text -> Query

@@ -42,7 +42,7 @@ import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), CreditAmount (..), LateAlert (..), LateCredit (..), LateCreditState (..), LateFigures (..), LatePending (..), LateSupport (..), claimLateAlert, creditCents, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
 import StoreService.Orders (decide, expireOverdue, publishRegistration, settleOrder, signalReceived)
 import StoreService.Providers (CryptoReceived (..), ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, paymentHolds, unpaidRefs)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, getInvoice, getInvoiceByProviderRef, overdueInvoices, paymentHolds, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
@@ -55,7 +55,7 @@ import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
-import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Numeric.Natural (Natural)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -165,7 +165,7 @@ runOnePass env@PollerEnv {peProviders} = do
 
 runPass :: PollerEnv -> IO ()
 runPass env@PollerEnv {peStore, peProviders} = do
-  now <- getCurrentTime
+  now <- currentSecond
   forgetRates env
   (unknown, rows) <- unpaidRefs peStore (addUTCTime (negate settleWindow) now)
   mapM_ (uncurry $ warnNoProvider env now) unknown
@@ -311,7 +311,7 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
 
 serveHint :: PollerEnv -> Text -> IO ()
 serveHint env ref = do
-  now <- getCurrentTime
+  now <- currentSecond
   forgetRates env
   hintSafely env now ref
 

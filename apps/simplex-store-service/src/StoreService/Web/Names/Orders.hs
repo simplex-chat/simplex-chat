@@ -53,7 +53,7 @@ import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (balanceView, registrationView)
 import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText)
-import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
+import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId)
 import StoreService.Waiters (Waiters, publish)
 import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, badRequest, checkoutClient, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, limitedCheckout, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody, termsUnavailable)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
@@ -121,7 +121,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore} http client cfg providers waiters bod
               Left BIRBalanceChanged -> E.throwIO $ BrokenInvariant "an order holding no balance was refused at a balance"
       runExceptT (mapM_ ExceptT checks) >>= \case
         Left refusal -> refuse refusal
-        Right () -> createAtProvider env http client cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = hash, ivHolders = [], ivMethod = method, ivPrice = price, ivAmount = price, ivInsert = insert}
+        Right () -> createAtProvider env http client cfg providers waiters what now InvoicedOrder {ivRequest = req, ivOrderHash = hash, ivHolders = [], ivMethod = method, ivPrice = price, ivAmount = price, ivInsert = insert}
 
 -- | An order paid by invoice: its order hash, the holders its transaction closes, the order's price, what its invoice asks
 -- (less than the price when a balance paid the rest), and its insert after the invoice row's.
@@ -136,15 +136,14 @@ data InvoicedOrder = InvoicedOrder
   }
 
 -- | The invoice is made at the provider first, then the order is written with its invoice row; an order not written has its invoice cancelled there.
-createAtProvider :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> Text -> InvoicedOrder -> IO Answer
-createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg providers waiters what InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivOrderHash, ivHolders, ivMethod, ivPrice, ivAmount, ivInsert} =
+createAtProvider :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> Text -> UTCTime -> InvoicedOrder -> IO Answer
+createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers waiters what now InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivOrderHash, ivHolders, ivMethod, ivPrice, ivAmount, ivInsert} =
   case providerFor providers ivMethod of
     Nothing -> do
       logNote (what <> " refused: no provider configured for " <> tshow ivMethod)
       pure $ answerNow providerUnavailable
     Just provider -> limitedCheckout http client ivMethod (pure . answerNow) $ do
       invId <- newInvoiceId
-      now <- truncateToSecond <$> oeNow
       let amount = CurrencyAmount $ fromIntegral ivAmount
       pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> safeDecodeUtf8 (strEncode ivOrderHash)} >>= \case
         Left e -> do
@@ -155,7 +154,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg provid
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
               registration replaced = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash, nrgReplaces = replaced}
               paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId}
-          placeOrder env req ivHolders (\replaced db at -> insertNameInvoice db invoice >> ivInsert (registration replaced) paid db at)
+          placeOrder env now req ivHolders (\replaced db at -> insertNameInvoice db invoice >> ivInsert (registration replaced) paid db at)
             `E.catch` strandedBy provider piProviderRef
             >>= \case
             Left refusal -> do
@@ -266,7 +265,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers w
         Just NameRegistration {nrOwner} -> do
           let order = OrderRequest {orOwner = nrOwner, orFields = fields, orTimestamp = timestamp, orSignature = signature}
           answerOrder env what order (OTBalance spend) (resentOrder env cfg) $ \hash now ->
-            runExceptT (checked now order spend) >>= either refuse (place order hash spend)
+            runExceptT (checked now order spend) >>= either refuse (place now order hash spend)
     checked now OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} spend@Spend {spPrice} = do
       let years = orderYears fields $ nYears oeConfig
       liftEither $ checkTimestamp now orTimestamp
@@ -276,17 +275,17 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers w
       ExceptT $ checkNameFree oeContracts oeStore ofLabelHash
       ExceptT $ checkPrice oeContracts ofLength years spPrice
       pure holder
-    place order@OrderRequest {orOwner, orFields} hash spend@Spend {spPrice, spBalance, spMethod} holder = case spMethod of
+    place now order@OrderRequest {orOwner, orFields} hash spend@Spend {spPrice, spBalance, spMethod} holder = case spMethod of
       Nothing -> do
         rid <- newRegistrationId
         let new replaced = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = hash, nrgReplaces = replaced}
-        placeOrder env order (maybeToList holder) (coveredOrderInsert spend . new) >>= \case
+        placeOrder env now order (maybeToList holder) (coveredOrderInsert spend . new) >>= \case
           Left refusal -> refuse refusal
           Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
       Just (SPMCard _)
         | spPrice - spBalance < minCardChargeCents -> refuse $ ORBadRequest "a card difference under the card minimum"
       Just method ->
-        createAtProvider env http (checkoutClient http req) cfg providers waiters what $
+        createAtProvider env http (checkoutClient http req) cfg providers waiters what now $
           InvoicedOrder {ivRequest = order, ivOrderHash = hash, ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = spPrice - spBalance, ivInsert = differenceOrderInsert spend}
 
 -- | Stripe refuses a USD charge under 50 cents, so the page offers only crypto for a smaller difference.

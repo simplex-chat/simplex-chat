@@ -528,11 +528,11 @@ testOverdueHolderClosed = withOrders $ \Ctx {cStore = st, cOrders} -> do
   (blHold balance, heldBy balance) `shouldBe` (Just $ hold "h" (at 60) True, Nothing)
   Right (Just h) <- checkSpendBalance st Spend {spSource = RegistrationId "s", spPrice = 6000, spBalance = 10000, spMethod = Nothing} now
   nrId h `shouldBe` RegistrationId "h"
-  closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (\_ _ _ -> pure $ Left $ ORBadRequest "refused") `shouldReturn` Left (ORBadRequest "refused")
+  closedIds <$> Orders.placeOrder cOrders now (orderRequest "c") [h] (\_ _ _ -> pure $ Left $ ORBadRequest "refused") `shouldReturn` Left (ORBadRequest "refused")
   invoiceStatus st (InvoiceId "inv-h") `shouldReturn` ISOpen
   orderLive <$> reg st "h" `shouldReturn` True
   figures st "s" now `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" (at 60) True)
-  closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (spendInsert "c" "s" 6000 10000) `shouldReturn` Right [(RegistrationId "h", nrVersion h + 1)]
+  closedIds <$> Orders.placeOrder cOrders now (orderRequest "c") [h] (spendInsert "c" "s" 6000 10000) `shouldReturn` Right [(RegistrationId "h", nrVersion h + 1)]
   invoiceStatus st (InvoiceId "inv-h") `shouldReturn` ISExpired
   orderLive <$> reg st "h" `shouldReturn` False
   figures st "s" now `shouldReturn` Just (4000, 10000, 0, Nothing)
@@ -545,7 +545,7 @@ testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
   holder st "h1" "s1" 10000 (at 60) `shouldReturn` Right ()
   h1 <- reg st "h1"
   cancelOpenInvoice st (weWaiters cWeb) Nothing (InvoiceId "inv-h1") now `shouldReturn` True
-  closedIds <$> Orders.placeOrder cOrders (orderRequest "c1") [h1] (spendInsert "c1" "s1" 6000 10000) `shouldReturn` Right []
+  closedIds <$> Orders.placeOrder cOrders now (orderRequest "c1") [h1] (spendInsert "c1" "s1" 6000 10000) `shouldReturn` Right []
   figures st "s1" now `shouldReturn` Just (4000, 10000, 0, Nothing)
   forM_ [("2", at 60, True), ("3", addUTCTime 600 now, False)] $ \(n, expiry, funded) -> do
     let (s, h, c) = ("s" <> n, "h" <> n, "c" <> n)
@@ -556,7 +556,7 @@ testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
     when funded $ payment st ("inv-" <> h) (cardPaid 100 0) (at 61)
     Just balance <- withTransaction st $ \db -> getBalance db (RegistrationId s) now
     blHold balance `shouldBe` Just held
-    closedIds <$> Orders.placeOrder cOrders (orderRequest c) [hr] (spendInsert c s 6000 10000) `shouldReturn` Left (ORBalanceChanged $ Just balance)
+    closedIds <$> Orders.placeOrder cOrders now (orderRequest c) [hr] (spendInsert c s 6000 10000) `shouldReturn` Left (ORBalanceChanged $ Just balance)
     absent st c
     orderLive <$> reg st h `shouldReturn` True
     invoiceStatus st (InvoiceId $ "inv-" <> h) `shouldReturn` ISOpen

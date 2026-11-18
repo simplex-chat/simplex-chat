@@ -1222,7 +1222,7 @@ testCodeNotReservable = withOrders $ \ctx@Ctx {cStore} -> do
   req <- either (error . show) id . (\body -> Orders.parseBody "order" (fromMaybe J.Null $ KM.lookup "order" body) >>= Orders.orderRequest) <$> signedBody (cRandom ctx) aliceOrder
   forM_ [(reservedLate, CRReserved), (revokedLate, CRInvalid)] $ \(stale, refusal) -> do
     let new = codeReg "late" ownerA (fieldsOf aliceOrder) stale
-    placedOrder <- Orders.placeOrder (cOrders ctx) req [] (const $ Orders.codeOrderInsert new stale)
+    placedOrder <- Orders.placeOrder (cOrders ctx) orderTime req [] (const $ Orders.codeOrderInsert new stale)
     either Just (const Nothing) placedOrder `shouldBe` Just (Orders.ORCode refusal)
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 

@@ -66,7 +66,7 @@ import StoreService.Providers (Provider (pProvider), minorDecimal)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store
-import StoreService.Store.Invoices (seedCatalog, truncateToSecond)
+import StoreService.Store.Invoices (currentSecond, seedCatalog, truncateToSecond)
 import StoreService.Store.Migrate (runStoreServiceMigrations)
 import StoreService.StoreReceipts
 import StoreService.StoreReceipts.Apple (appleSubscriptionChecker, readAppleRoot, verifyAppleTransaction)
@@ -417,7 +417,7 @@ runMoneyCmd source turns chain_ cc = \case
 -- | Left is a refusal or a failure; both sides are the text to show the operator.
 showRefund :: CmdSource -> ChatController -> T.Text -> IO (Either T.Text T.Text)
 showRefund source cc ref = do
-  now <- getCurrentTime
+  now <- currentSecond
   withDB' "showRefund" cc (\db -> balanceByReference db ref now >>= mapM (withChain db)) <&> \case
     Right Nothing -> Left $ "No order has the reference " <> ref <> "."
     Right (Just (RegistrationId rid, Nothing)) -> Left $ "Order " <> rid <> " has no balance."
@@ -437,7 +437,7 @@ showRefund source cc ref = do
 -- | The refund is recorded before support pays it, so the balance cannot be spent meanwhile.
 refundBalanceCmd :: CmdSource -> Turns -> ChatController -> T.Text -> USDCents -> IO (Either T.Text T.Text)
 refundBalanceCmd source turns ChatController {chatStore} ref cents = do
-  now <- getCurrentTime
+  now <- currentSecond
   ((Right <$> recordRefund turns chatStore ref cents now) `catchOwn` (pure . Left)) >>= \case
     Right (Right RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
       -- The registration id, not the reference, since an invoice id is kept out of the logs.
@@ -460,7 +460,7 @@ newConsoleChain NamesConfig {nTLD, nMinPriceCentsPerYear, nChain} = do
 closeOrderCmd :: CmdSource -> Turns -> (SimplexTLD, Int, ChainClient) -> ChatController -> T.Text -> IO (Either T.Text T.Text)
 closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {chatStore} ref = do
   ct <- newContracts chatStore tld minPriceCentsPerYear chain
-  ((Right <$> closeRegistration chatStore ct turns getCurrentTime ref) `catchOwn` (pure . Left)) >>= \case
+  ((Right <$> closeRegistration chatStore ct turns currentSecond ref) `catchOwn` (pure . Left)) >>= \case
     Right (CLRefunded endedAt RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
       logNote $ "names: closed order " <> rid <> " and recorded a refund of " <> tshow (toInteger rdCents) <> " cents"
       pure $ Right $

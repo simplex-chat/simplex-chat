@@ -62,7 +62,7 @@ import Data.Maybe (catMaybes, isJust, listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -85,7 +85,7 @@ import StoreService.Names.Registration (AgreedTerms (..), Commitment, OrderField
 import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Names.View (lapsedAt)
-import StoreService.Store.Invoices (unixSeconds)
+import StoreService.Store.Invoices (currentSecond, unixSeconds)
 
 data OrdersEnv = OrdersEnv
   { oeStore :: DBStore,
@@ -98,7 +98,7 @@ data OrdersEnv = OrdersEnv
 
 ordersEnv :: NamesEnv -> OrdersEnv
 ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases} =
-  OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = getCurrentTime}
+  OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = currentSecond}
 
 -- | The fields both kinds of order carry, with the owner's signature over them.
 data OrderRequest = OrderRequest
@@ -229,24 +229,23 @@ overdueOrdersMet db OrderRequest {orOwner, orFields = OrderFields {ofLabelHash, 
 -- | In one transaction, the overdue orders the request meets and the balance holders the caller names are closed, then the order is inserted.
 -- A named holder no longer live is skipped, and one still live that cannot be closed refuses with the balance it holds.
 -- Refused, changing nothing, when it meets an order it cannot close, or the insert refuses.
-placeOrder :: OrdersEnv -> OrderRequest -> [NameRegistration] -> (Maybe RegistrationId -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
-placeOrder OrdersEnv {oeStore, oeNow} req holders insert = do
-  now <- oeNow
-  first (\(OrderRefused refusal) -> refusal) <$> E.try (withTransaction oeStore $ \db -> transaction db now)
+placeOrder :: OrdersEnv -> UTCTime -> OrderRequest -> [NameRegistration] -> (Maybe RegistrationId -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
+placeOrder OrdersEnv {oeStore} now req holders insert =
+  first (\(OrderRefused refusal) -> refusal) <$> E.try (withTransaction oeStore $ \db -> transaction db)
   where
-    transaction db now =
+    transaction db =
       overdueOrdersMet db req now >>= \case
         Just (overdue, replaced) -> do
-          closed <- mapM (close db now) overdue
-          closedHolders <- catMaybes <$> mapM (closeHolder db now) holders
+          closed <- mapM (close db) overdue
+          closedHolders <- catMaybes <$> mapM (closeHolder db) holders
           insert replaced db now >>= either (E.throwIO . OrderRefused) (const $ pure $ closed <> closedHolders)
         Nothing -> E.throwIO $ OrderRefused OROrderExists
-    close db now r =
+    close db r =
       closeOverdue db r now >>= \case
         Just v -> pure ClosedOrder {coRegistration = r, coVersion = v}
         Nothing -> E.throwIO $ OrderRefused OROrderExists
     -- read again here, since another order of its own name may have closed it meanwhile
-    closeHolder db now NameRegistration {nrId} =
+    closeHolder db NameRegistration {nrId} =
       getRegistration db nrId >>= \case
         Just holder@NameRegistration {nrPayment}
           | orderLive holder ->
@@ -264,7 +263,7 @@ placeCodeOrder env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orOwner
       Nothing -> pure $ Left $ ORCode CRInvalid
       Just code
         | Just refusal <- codeRefusal now rid ofLength code -> pure $ Left $ ORCode refusal
-        | otherwise -> placeOrder env req [] $ \replaced -> codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = fields, nrgYears = pcYears, nrgOrderHash = hash, nrgReplaces = replaced} code
+        | otherwise -> placeOrder env now req [] $ \replaced -> codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = fields, nrgYears = pcYears, nrgOrderHash = hash, nrgReplaces = replaced} code
 
 -- | The code was checked in its turn, so only a writer outside this process can make its reservation fail.
 codeOrderInsert :: NewRegistration -> PrepaidCode -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())

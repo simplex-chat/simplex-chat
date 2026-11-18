@@ -27,7 +27,7 @@ import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, minNameYears, nameLengthInt, namePrepaidCodeHash, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
@@ -41,6 +41,7 @@ import StoreService.Names.Registration (RegistrationId)
 import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), enumTextDecode, getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))
+import StoreService.Store.Invoices (currentSecond)
 
 data CodeState = CSUnused | CSReserved | CSUsed | CSRevoked | CSExpired | CSUnpaid
   deriving (Eq, Show, Enum, Bounded)
@@ -158,7 +159,7 @@ issueNameCode cc issuer len years paymentStatus
     outside = "name code years " <> show years <> " is outside " <> show minNameYears <> "-" <> show maxNameYears
     issue retries = do
       code <- randomNamePrepaidCode (random cc) len
-      now <- getCurrentTime
+      now <- currentSecond
       let new = NewPrepaidCode {npcCodeHash = prepaidCodeHash code, npcMinLength = nameLengthInt len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Nothing, npcIssuer = issuer}
       withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) >>= \case
         Right (Right _) -> pure $ Right code
@@ -170,7 +171,7 @@ issueNameCode cc issuer len years paymentStatus
 -- | Left is a refusal or a failure; both sides are the text to show the operator.
 revokeNameCode :: Turns -> ChatController -> NamePrepaidCode -> IO (Either Text Text)
 revokeNameCode turns cc code = withCodeTurn turns codeHash $ do
-  now <- getCurrentTime
+  now <- currentSecond
   withDB' "revokeNameCode" cc (\db -> revokePrepaidCode db codeHash now) <&> \case
     Right (Revoked _, Just PrepaidCode {pcReservedBy = Just _}) -> Right "Revoked. The order holding it keeps it."
     Right (Revoked _, _) -> Right "Revoked."
