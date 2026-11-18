@@ -11,9 +11,9 @@
   - Your codes
 
 ```
-notKept         localStorage refuses writes at page load, or this code was not written
-kept            localStorage accepts writes, in a browser other than WebKit
-keptUntilIdle   localStorage accepts writes, in WebKit
+notKept         a write to localStorage fails at page load, or this code was not written
+kept            a write to localStorage succeeds at page load, in a browser other than WebKit
+keptUntilIdle   a write to localStorage succeeds at page load, in WebKit
 ```
 
 - The period on the screens is 7 days, with U+00A0 between "7" and "days".
@@ -35,37 +35,55 @@ keptUntilIdle   localStorage accepts writes, in WebKit
 
 ## Where the warning is shown
 
+The period text: "after 7 days of browser use without a tap, click or key press on this site."
+
 | Screen | Box | Title | Lines |
 |---|---|---|---|
-| Paid, code shown | "This is the only copy." | unchanged | It can be deleted after 7 days of browser use without a tap or click on this site. Redeem it now, or copy it and keep it outside this browser. |
-| Paid, opened from the app, code hidden | warning above "Show code" | This browser can delete the code | It can be deleted after 7 days of browser use without a tap or click on this site. If the app does not show the badge, show the code, copy it and keep it outside this browser. |
-| Your codes, with a paid code | warning above the list | This browser can delete codes | They can be deleted after 7 days of browser use without a tap or click on this site. Copy each code you have not redeemed and keep it outside this browser. |
-| Your codes, empty | grey line under the lede | | This browser can delete codes after 7 days of browser use without a tap or click on this site. |
-| Paid order opened without its code | notice | unchanged | If the code was bought in this browser, the browser may have deleted it after 7 days of browser use without a tap or click on this site. |
+| Paid, code shown | "This is the only copy." | unchanged | It can be deleted after the period. Redeem it now, or copy it and keep it outside this browser. |
+| Paid, opened from the app, code hidden | warning above "Show code" | This browser can delete the code | It does so after the period. If the app does not add the badge, tap Show code and keep a copy of the code outside this browser. |
+| Your codes, with a paid code | warning above the list | This browser can delete codes | It does so after the period. Copy each code you have not redeemed and keep it outside this browser. |
+| Your codes, without a paid code | | | |
+| Your codes, empty | grey line under the lede | | This browser can delete codes after the period. |
+| Paid order opened without its code | notice | unchanged | If the code was bought in this browser, it may have been deleted after the period. |
 
 ```mermaid
 flowchart LR
-  load[page load] --> w0{localStorage accepts writes}
+  load[page load] --> w0{write to localStorage succeeds}
   w0 -->|no| nk[notKept]
   w0 -->|yes| d{browserDeletesIdle of navigator.userAgent}
   d -->|false| k[kept]
   d -->|true| u[keptUntilIdle]
-  u --> s{code screen or return-to-app screen}
-  s -->|no| warn[deletion warning]
-  s -->|yes| c{this code written to localStorage}
-  c -->|yes| warn
+  u --> s{screen}
+  s -->|code or return-to-app| c{this code written to localStorage}
+  c -->|yes| box[warning]
   c -->|no| nk
+  s -->|paid-no-code| notice[line in the notice]
+  s -->|Your codes, empty| grey[grey line]
+  s -->|Your codes, with a paid code| box
+  s -->|Your codes, without a paid code| plain[list only]
 ```
 
 ## Tests
 
-- `test/store.test.ts`, user agents:
-  - Safari on macOS and iPhone
-  - Chrome, Firefox and Edge on iPhone
-  - an iPhone web view
-  - GNOME Web
-  - Chrome, Edge, Chromium, Samsung Internet and Firefox on desktop and Android
+- `test/store.test.ts`, user agents of WebKit:
+  - Safari on macOS and on iPad in desktop mode
+  - Safari on iPhone
+  - Chrome on iPhone
+  - Firefox on iPhone
+  - Edge on iPhone
+  - an in-app web view on iPhone
+  - GNOME Web on Linux
+- `test/store.test.ts`, other user agents:
+  - Chrome on Windows
+  - Chrome on macOS
+  - Chromium on Linux
+  - Edge on Windows
+  - Chrome on Android
   - an Android web view
+  - Samsung Internet
+  - Firefox on Windows
+  - Firefox on Android
+  - an empty user agent
 - `test/screens.test.ts`: the five screens with and without the deletion warning, and the title and lines of each warning box.
 - `test/main-app-safari.test.ts`: the paid ending opened from the app, and Your codes, in Safari on iPhone.
 - `test/main-safari-code.test.ts`: the code screen in Safari on macOS.
