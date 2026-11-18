@@ -41,9 +41,7 @@ module StoreService.Names.Registration
     verifyAcceptance,
     acceptCalldata,
     setTextDigest,
-    clearRecordsDigest,
     setTextWithSigCalldata,
-    clearRecordsWithSigCalldata,
     multicallCalldata,
     AddressError (..),
     OrderFields (..),
@@ -261,13 +259,6 @@ setTextDigest domain node kind value nonce deadline =
     "SetText(bytes32 node,string key,string value,uint256 nonce,uint256 deadline)"
     [bytes32 $ nodeBytes node, VBytes $ recordKey kind, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-clearRecordsDigest :: Eip712Domain -> Node -> Word64 -> ChainSeconds -> ByteString
-clearRecordsDigest domain node nonce deadline =
-  hashTypedData
-    domain
-    "ClearRecords(bytes32 node,uint256 nonce,uint256 deadline)"
-    [bytes32 $ nodeBytes node, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
-
 setTextWithSigCalldata :: Node -> LinkKind -> Text -> Word64 -> ChainSeconds -> RecoverableSignature -> ByteString
 setTextWithSigCalldata (Node node) kind value nonce deadline sig =
   selector "setTextWithSig(bytes32,string,string,uint256,uint256,bytes)"
@@ -279,11 +270,6 @@ setTextWithSigCalldata (Node node) kind value nonce deadline sig =
         Static $ uint256 deadline,
         Dynamic $ abiBytes $ smpEncode sig
       ]
-
-clearRecordsWithSigCalldata :: Node -> Word64 -> ChainSeconds -> RecoverableSignature -> ByteString
-clearRecordsWithSigCalldata (Node node) nonce deadline sig =
-  selector "clearRecordsWithSig(bytes32,uint256,uint256,bytes)"
-    <> abiTuple [Static node, Static $ uint256 nonce, Static $ uint256 deadline, Dynamic $ abiBytes $ smpEncode sig]
 
 -- | The resolver runs each call on itself in order, and reverts all of them when one fails.
 multicallCalldata :: [ByteString] -> ByteString

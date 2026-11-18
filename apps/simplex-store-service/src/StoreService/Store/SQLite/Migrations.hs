@@ -452,8 +452,8 @@ CREATE INDEX @idx_name_record_edits_label_created ON @name_record_edits(label_ha
 CREATE TABLE @name_record_changes(
   name_record_edit_id INTEGER NOT NULL REFERENCES @name_record_edits ON DELETE CASCADE,
   nonce INTEGER NOT NULL,
-  record_key TEXT,
-  record_value TEXT,
+  record_key TEXT NOT NULL,
+  record_value TEXT NOT NULL,
   deadline INTEGER NOT NULL,
   signature BLOB NOT NULL,
   PRIMARY KEY (name_record_edit_id, nonce)

@@ -48,7 +48,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Records
-import StoreService.Names.Registration (LinkKind (..), Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, linkMaxBytes, multicallCalldata, nodeBytes, parseSignature, resolverDomain, setTextDigest, setTextWithSigCalldata)
+import StoreService.Names.Registration (LinkKind (..), Node, labelNode, linkMaxBytes, multicallCalldata, nodeBytes, parseSignature, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Sender (Sender, followTransactions, newSender)
 import StoreService.Names.Store (BodyHash, EditOutcome (..), EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
 import StoreService.Names.Turns (newTurns)
@@ -68,7 +68,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
   -- with the SimplexResolver ABI of ens-contracts PR #36 at 23892cc
   g <- runIO C.newRandom
   describe "requests" $ do
-    it "signs and encodes SetText and ClearRecords edits as viem does" $ testViemVectors g
+    it "signs and encodes SetText edits as viem does" $ testViemVectors g
     it "encodes two edits as one multicall as viem does" $ testViemMulticall g
     it "reads a request's formats, then its link, then its signature" testRequestOrder
     it "takes one or two edits of distinct keys with consecutive nonces, and a clear only alone" testRequestEdits
@@ -97,8 +97,6 @@ namesRecordsTests = describe "StoreService names: records" $ do
   describe "outcomes" $ do
     it "answers a revert of an edit another relayer applied, InvalidNonce or SignatureExpired past the deadline, as mined with no hash, its repeat too, and record_reverted InvalidNonce when another body used the nonce" $ testAppliedByAnother g
     it "answers a dry run's InvalidNonce revert of an edit another relayer applied as applied with no hash, storing nothing" $ testDryRunAppliedByAnother g
-    it "relays a clear edit with viem's calldata, applied by another relayer when both records read empty" $ testClearApplied g
-    it "answers a clear edit record_reverted InvalidNonce when either record holds a value after the nonce moved" $ testClearNonceTaken g
     it "frees a reverted edit's nonce for a new body, and answers the reverted edit's repeat while the new one is pending" $ testRevertFreesNonce g
     it "keeps an edit pending when the re-read after a mined revert fails, and settles it in a later round" $ testFailedReRead g
   describe "restarts" $ do
@@ -262,9 +260,6 @@ testViemVectors g = withSetup g $ \s@Setup {owner = EphemeralWallet {ewAddress}}
   setSig `shouldBe` viemSetSignature
   recoverAddress setSig (digestOf (channel viemChannelLink) 0 deadline) `shouldReturn` Right viemAddress
   setTextWithSigCalldata aliceNode LKChannel viemChannelLink 0 deadline setSig `shouldBe` viemSetCall
-  SignedChange {scSignature = clearSig} <- signChange s (owner s) RCClear 1 deadline
-  clearSig `shouldBe` viemClearSignature
-  clearRecordsWithSigCalldata aliceNode 1 deadline clearSig `shouldBe` viemClearCall
 
 testViemMulticall :: TVar ChaChaDRG -> IO ()
 testViemMulticall g = withSetup g $ \s -> do
@@ -282,7 +277,7 @@ testRequestOrder = do
   let valid = editFields [("key", J.String channelKey), ("value", J.String viemChannelLink)]
       request = editRequest . requestOf . (: [])
   changesOf (request valid) `shouldBe` Right [channel viemChannelLink]
-  changesOf (request $ editFields [("clear", J.Bool True)]) `shouldBe` Right [RCClear]
+  request (editFields [("clear", J.Bool True)]) `shouldBe` Left EIBadRequest
   changesOf (request $ editFields [("key", J.String contactKey), ("value", "")]) `shouldBe` Right [contact ""]
   -- formats first: a bad label hash or key is bad_request even with a bad link
   editRequest (KM.insert "labelHash" (J.String $ "0x" <> T.toUpper (T.drop 2 aliceHashText)) $ requestOf [withLink "https://x/a"]) `shouldBe` Left EIBadRequest
@@ -311,8 +306,8 @@ testRequestEdits = do
     [ ("no edit", []),
       ("three edits", [contactAt 4, channelAt 5, edit channelKey "" 6]),
       ("one key twice", [channelAt 4, edit channelKey "" 5]),
+      ("a clear", [clearAt 4]),
       ("a clear after a set", [contactAt 4, clearAt 5]),
-      ("a clear before a set", [clearAt 4, contactAt 5]),
       ("a nonce skipped", [contactAt 4, channelAt 6]),
       ("nonces reversed", [contactAt 5, channelAt 4]),
       ("one nonce twice", [contactAt 4, channelAt 4])
@@ -623,34 +618,6 @@ testDryRunAppliedByAnother g = withSetup g $ \s@Setup {node, records} -> do
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
 
-testClearApplied :: TVar ChaChaDRG -> IO ()
-testClearApplied g = withSetup g $ \s -> do
-  setRecord s contactKey "https://smp8.simplex.im/a#Y8m3"
-  setRecord s channelKey viemChannelLink
-  r <- relayClear s
-  setRecord s contactKey ""
-  setRecord s channelKey ""
-  _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EASettled (EOApplied Nothing)
-
-testClearNonceTaken :: TVar ChaChaDRG -> IO ()
-testClearNonceTaken g = forM_ [contactKey, channelKey] $ \held -> withSetup g $ \s -> do
-  r <- relayClear s
-  setRecord s held "https://smp9.simplex.im/c#held"
-  _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EASettled (EOReverted $ Just "InvalidNonce")
-
--- | viem's clear edit, with nonce 1, sent; then the owner's nonce moves past it.
-relayClear :: Setup -> IO (Async EditAnswer)
-relayClear s@Setup {owner} = do
-  setNonce s 1
-  req <- signEdit s owner RCClear 1 deadline
-  r <- relay s req
-  [raw] <- sentBy s 1
-  fmap txData (decodeSignedTx raw) `shouldBe` Right viemClearCall
-  setNonce s 2
-  pure r
-
 testRevertFreesNonce :: TVar ChaChaDRG -> IO ()
 testRevertFreesNonce g = withSetup g $ \s@Setup {records} -> do
   first <- ownerEdit s viemChannelLink
@@ -705,7 +672,7 @@ testResume g = withSetup g $ \s@Setup {node, owner} -> do
 testBadRowSkipped :: TVar ChaChaDRG -> IO ()
 testBadRowSkipped g = withSetup g $ \s@Setup {store, clock} -> do
   now <- readTVarIO clock
-  -- a text record with a key and no value, which no edit can be
+  -- a text record of a key no edit can have
   withTransaction store $ \db -> do
     DB.execute
       db
@@ -713,7 +680,7 @@ testBadRowSkipped g = withSetup g $ \s@Setup {store, clock} -> do
       (alice, viemAddress, Binary $ B.replicate 32 0, now)
     DB.execute
       db
-      "INSERT INTO sx_badge_service_name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) SELECT name_record_edit_id, 5, 'simplex.channel', NULL, ?, ? FROM sx_badge_service_name_record_edits WHERE nonce = 5"
+      "INSERT INTO sx_badge_service_name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) SELECT name_record_edit_id, 5, 'simplex.other', '', ?, ? FROM sx_badge_service_name_record_edits WHERE nonce = 5"
       (deadline, viemSetSignature)
   req <- ownerEdit s viemChannelLink
   saveUnsent s req
@@ -942,15 +909,14 @@ editJson :: EditRequest -> J.Object
 editJson EditRequest {erChanges} = requestOf $ map changeJson $ L.toList erChanges
 
 changeJson :: SignedChange -> J.Object
-changeJson SignedChange {scChange, scNonce, scDeadline, scSignature} =
-  KM.fromList $
+changeJson SignedChange {scChange = RCSetText key value, scNonce, scDeadline, scSignature} =
+  KM.fromList
     [ ("nonce", J.toJSON scNonce),
       ("deadline", J.toJSON scDeadline),
-      ("signature", J.String $ hex $ smpEncode scSignature)
+      ("signature", J.String $ hex $ smpEncode scSignature),
+      ("key", J.String $ textEncode key),
+      ("value", J.String value)
     ]
-      <> case scChange of
-        RCSetText key value -> [("key", J.String $ textEncode key), ("value", J.String value)]
-        RCClear -> [("clear", J.Bool True)]
 
 -- | The body of a request with these edits for alicebakery.
 requestOf :: [J.Object] -> J.Object
@@ -972,9 +938,7 @@ viemChange :: SignedChange
 viemChange = SignedChange {scChange = channel viemChannelLink, scNonce = 0, scDeadline = deadline, scSignature = viemSetSignature}
 
 digestOf :: RecordChange -> Word64 -> Word64 -> ByteString
-digestOf change nonce dl = case change of
-  RCSetText key value -> setTextDigest resolverDomain' aliceNode key value nonce dl
-  RCClear -> clearRecordsDigest resolverDomain' aliceNode nonce dl
+digestOf (RCSetText key value) nonce dl = setTextDigest resolverDomain' aliceNode key value nonce dl
 
 resolverDomain' :: Eip712Domain
 resolverDomain' = resolverDomain fakeChainId fakeResolver
@@ -1017,10 +981,6 @@ viemChannelLink = "https://smp8.simplex.im/c#Y8m3"
 viemSetSignature :: RecoverableSignature
 viemSetSignature = either (error . show) id $ parseSignature "0xfce4c6865591609c07ef3d94f376187d8a20cd9d94b4affcb60b55e999038fbd4e45c42b5fafe66a8d4f756e99398602eacef777b4dce4afd0a767cddadf3ca91c"
 
--- | viem: ClearRecords(alicebakery.simplex, 1, deadline)
-viemClearSignature :: RecoverableSignature
-viemClearSignature = either (error . show) id $ parseSignature "0x0565f7e5a591c200fcc358c1d9e9293721d0b99f0285b589211203e311e8e6167ee822d664048870bdd8552263d25bbf45e7f4985fd3b8c3a19cfced44ef9d561c"
-
 viemContactLink :: Text
 viemContactLink = "https://smp8.simplex.im/a#Y8m3"
 
@@ -1036,6 +996,5 @@ viemChannelSignature = either (error . show) id $ parseSignature "0xaecc4fa43c13
 viemMulticall :: ByteString
 viemMulticall = unhex "ac9650d8000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000001c471a218a70f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006955c7100000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e636f6e746163740000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e68747470733a2f2f736d70382e73696d706c65782e696d2f612359386d33000000000000000000000000000000000000000000000000000000000000000000412154ef3fbd7244fe34a2c9b2850d44eda1181d1e234900e8419518cab458848f08b5033fd3cd37e7be2346d81266684b4ced6275e84d22829fd0aaa836fae8261c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c471a218a70f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000006955c7100000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e6368616e6e656c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e68747470733a2f2f736d70382e73696d706c65782e696d2f632359386d3300000000000000000000000000000000000000000000000000000000000000000041aecc4fa43c1387e50594ceb43365fe9028a546c63f2ebc3d9d266f992d0b493808009060f7b6831a97b81453ccfb71413e608d48d8eddc7be3c086887b0b46481b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 
-viemSetCall, viemClearCall :: ByteString
+viemSetCall :: ByteString
 viemSetCall = unhex "71a218a70f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006955c7100000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000f73696d706c65782e6368616e6e656c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e68747470733a2f2f736d70382e73696d706c65782e696d2f632359386d3300000000000000000000000000000000000000000000000000000000000000000041fce4c6865591609c07ef3d94f376187d8a20cd9d94b4affcb60b55e999038fbd4e45c42b5fafe66a8d4f756e99398602eacef777b4dce4afd0a767cddadf3ca91c00000000000000000000000000000000000000000000000000000000000000"
-viemClearCall = unhex "6463e6140f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54ec1a0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000006955c710000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000410565f7e5a591c200fcc358c1d9e9293721d0b99f0285b589211203e311e8e6167ee822d664048870bdd8552263d25bbf45e7f4985fd3b8c3a19cfced44ef9d561c00000000000000000000000000000000000000000000000000000000000000"

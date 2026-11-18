@@ -769,11 +769,11 @@ testEditNonceUnique :: IO ()
 testEditNonceUnique = withServiceStore $ \st -> do
   let run action = withTransaction st action
   Just first <- run $ \db -> insertRecordEdit db (newEdit ownerA 1 setChannel) t0
-  run (\db -> insertRecordEdit db (newEdit ownerA 2 RCClear) t0) `shouldReturn` Nothing
+  run (\db -> insertRecordEdit db (newEdit ownerA 2 setContact) t0) `shouldReturn` Nothing
   Just other <- run $ \db -> insertRecordEdit db (newEdit ownerB 3 setChannel) t0
   other `shouldNotBe` first
   run (\db -> settleRecordEdit db first (EOReverted $ Just "SignatureExpired")) `shouldReturn` True
-  Just second <- run $ \db -> insertRecordEdit db (newEdit ownerA 2 RCClear) (at 1)
+  Just second <- run $ \db -> insertRecordEdit db (newEdit ownerA 2 setContact) (at 1)
   fmap reState <$> run (\db -> getRecordEditByBody db (hashFixture 1)) `shouldReturn` Just (ESSettled (EOReverted $ Just "SignatureExpired"))
   run (\db -> settleRecordEdit db second (EOApplied Nothing)) `shouldReturn` True
   run (\db -> insertRecordEdit db (newEdit ownerA 5 setChannel) (at 2)) `shouldReturn` Nothing

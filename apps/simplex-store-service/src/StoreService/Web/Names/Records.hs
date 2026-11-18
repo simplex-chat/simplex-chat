@@ -6,12 +6,11 @@ module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editReq
 
 import Control.Logger.Simple (logNote)
 import Control.Monad (forM_, unless)
-import Data.Aeson ((.:), (.:?), (.=))
+import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import Data.List (nub)
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
@@ -43,7 +42,7 @@ recordsHandler rs req respond =
       _ -> pure ()
 
 -- | An edit as sent, before its link and signature are checked.
-data SentEdit = SentEdit {seChange :: Maybe (LinkKind, Text), seNonce :: Word64, seDeadline :: Word64, seSignature :: Text}
+data SentEdit = SentEdit {seKind :: LinkKind, seValue :: Text, seNonce :: Word64, seDeadline :: Word64, seSignature :: Text}
 
 -- | One link of each kind, so a Save of both links is the most one request carries.
 maxEdits :: Int
@@ -55,23 +54,19 @@ editRequest o = do
   (labelHash, edits) <- maybe (Left EIBadRequest) Right $ JT.parseMaybe fields o
   erLabelHash <- either (const $ Left EIBadRequest) (Right . LabelHash . unHex32) $ strDecode $ encodeUtf8 labelHash
   sent <- maybe (Left EIBadRequest) Right $ L.nonEmpty edits
-  unless (length edits <= maxEdits && keysOnce edits && clearAlone edits && consecutive edits) $ Left EIBadRequest
-  forM_ (mapMaybe seChange edits) $ \(kind, value) -> unless (value == "" || (fst <$> nameLink value) == Just kind) $ Left EIInvalidLink
+  unless (length edits <= maxEdits && keysOnce edits && consecutive edits) $ Left EIBadRequest
+  forM_ edits $ \SentEdit {seKind, seValue} -> unless (seValue == "" || (fst <$> nameLink seValue) == Just seKind) $ Left EIInvalidLink
   erChanges <- mapM signedChange sent
   pure EditRequest {erLabelHash, erChanges}
   where
     fields v = (,) <$> v .: "labelHash" <*> (v .: "edits" >>= mapM (J.withObject "edit" sentEdit))
-    sentEdit v = do
-      clear <- v .:? "clear"
-      seChange <- if clear == Just True then pure Nothing else Just <$> ((,) <$> (v .: "key" >>= recordKind) <*> v .: "value")
-      SentEdit seChange <$> v .: "nonce" <*> v .: "deadline" <*> v .: "signature"
+    sentEdit v = SentEdit <$> (v .: "key" >>= recordKind) <*> v .: "value" <*> v .: "nonce" <*> v .: "deadline" <*> v .: "signature"
     recordKind = maybe (fail "an unknown record key") pure . textDecode
-    keysOnce edits = let keys = [k | SentEdit {seChange = Just (k, _)} <- edits] in length keys == length (nub keys)
-    clearAlone edits = length edits == 1 || all (isJust . seChange) edits
+    keysOnce edits = let keys = map seKind edits in length keys == length (nub keys)
     consecutive edits = and $ zipWith (\a b -> seNonce b == seNonce a + 1) edits (drop 1 edits)
-    signedChange SentEdit {seChange, seNonce, seDeadline, seSignature} = do
+    signedChange SentEdit {seKind, seValue, seNonce, seDeadline, seSignature} = do
       scSignature <- either (const $ Left EIBadRequest) Right $ parseSignature seSignature
-      pure SignedChange {scChange = maybe RCClear (uncurry RCSetText) seChange, scNonce = seNonce, scDeadline = seDeadline, scSignature}
+      pure SignedChange {scChange = RCSetText seKind seValue, scNonce = seNonce, scDeadline = seDeadline, scSignature}
 
 editResponse :: EditAnswer -> Response
 editResponse = \case

@@ -50,7 +50,7 @@ import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
 import Simplex.Messaging.Util (catchOwn', tshow)
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
-import StoreService.Names.Registration (LinkKind (..), Node, clearRecordsDigest, clearRecordsWithSigCalldata, labelNode, multicallCalldata, recordKey, resolverDomain, setTextDigest, setTextWithSigCalldata)
+import StoreService.Names.Registration (Node, labelNode, multicallCalldata, recordKey, resolverDomain, setTextDigest, setTextWithSigCalldata)
 import StoreService.Names.Sender (SendError (..), Sender, submitTransaction)
 import StoreService.Names.Store
 import StoreService.Names.Turns (Turns, withLabelTurn)
@@ -350,11 +350,8 @@ judge rs@Records {rsContracts} RecordEdit {reId, reLabelHash, reOwner, reChanges
             holds <- and <$> mapM (holdsChange . scChange) reChanges
             pure $ if holds then Applied Nothing else NonceTaken
   where
-    holdsChange = \case
-      RCSetText key value -> (== value) <$> record (recordKey key)
-      RCClear -> (&&) <$> (unset <$> record (recordKey LKContact)) <*> (unset <$> record (recordKey LKChannel))
+    holdsChange (RCSetText key value) = (== value) <$> record (recordKey key)
     record = ExceptT . textRecord rsContracts reLabelHash
-    unset = (== "")
 
 judgmentOutcome :: Judgment -> Maybe EditOutcome
 judgmentOutcome = \case
@@ -397,11 +394,8 @@ release :: Records -> RecordEditId -> IO ()
 release Records {rsClaimed} editId = atomically $ modifyTVar' rsClaimed $ S.delete editId
 
 changeDigest :: Records -> LabelHash -> SignedChange -> ByteString
-changeDigest rs lh SignedChange {scChange, scNonce, scDeadline} = case scChange of
-  RCSetText key value -> setTextDigest (domain rs) node key value scNonce scDeadline
-  RCClear -> clearRecordsDigest (domain rs) node scNonce scDeadline
-  where
-    node = nodeOf rs lh
+changeDigest rs lh SignedChange {scChange = RCSetText key value, scNonce, scDeadline} =
+  setTextDigest (domain rs) (nodeOf rs lh) key value scNonce scDeadline
 
 -- | One change is sent as its own call, which keeps the revert's name; two go in one multicall.
 editCalldata :: Records -> RecordEdit -> ByteString
@@ -410,9 +404,8 @@ editCalldata rs RecordEdit {reLabelHash, reChanges} = case reChanges of
   _ -> multicallCalldata $ map changeCalldata $ L.toList reChanges
   where
     node = nodeOf rs reLabelHash
-    changeCalldata SignedChange {scChange, scNonce, scDeadline, scSignature} = case scChange of
-      RCSetText key value -> setTextWithSigCalldata node key value scNonce scDeadline scSignature
-      RCClear -> clearRecordsWithSigCalldata node scNonce scDeadline scSignature
+    changeCalldata SignedChange {scChange = RCSetText key value, scNonce, scDeadline, scSignature} =
+      setTextWithSigCalldata node key value scNonce scDeadline scSignature
 
 firstNonce, lastNonce :: NonEmpty SignedChange -> Word64
 firstNonce = scNonce . L.head

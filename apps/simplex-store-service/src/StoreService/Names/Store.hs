@@ -630,8 +630,8 @@ data NewTransaction = NewTransaction
     ntxNonce :: Word64
   }
 
--- | A text record set to a value, "" removing it, or every record cleared.
-data RecordChange = RCSetText LinkKind Text | RCClear
+-- | A text record set to a value, "" removing it.
+data RecordChange = RCSetText LinkKind Text
   deriving (Eq, Show)
 
 data EditOutcome
@@ -1708,15 +1708,11 @@ insertRecordEdit db NewRecordEdit {nreLabelHash, nreOwner, nreChanges, nreBodyHa
       pure $ Just editId
     else pure Nothing
   where
-    insertChange editId SignedChange {scChange, scNonce, scDeadline, scSignature} =
+    insertChange editId SignedChange {scChange = RCSetText key value, scNonce, scDeadline, scSignature} =
       DB.execute
         db
         (mkQuery "INSERT INTO @name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) VALUES (?,?,?,?,?,?)")
-        (editId, int64 scNonce, key, value, int64 scDeadline, scSignature)
-      where
-        (key, value) = case scChange of
-          RCSetText k v -> (Just $ textEncode k, Just v)
-          RCClear -> (Nothing, Nothing)
+        (editId, int64 scNonce, textEncode key, value, int64 scDeadline, scSignature)
 
 recordEditColumns :: Query
 recordEditColumns =
@@ -1728,7 +1724,7 @@ recordEditColumns =
 
 type RecordEditRow = (Int64, LabelHash, Address, BodyHash, EditTag, Maybe Text, Maybe TxHash, UTCTime)
 
-type ChangeRow = (Int64, Maybe Text, Maybe Text, Int64, RecoverableSignature)
+type ChangeRow = (Int64, Text, Text, Int64, RecoverableSignature)
 
 -- | An edit's row with its changes, in nonce order.
 readRecordEdit :: DB.Connection -> RecordEditRow -> IO RecordEdit
@@ -1745,12 +1741,9 @@ toRecordEdit (reId, reLabelHash, reOwner, reBodyHash, state, revert, minedTx, re
         ETReverted -> ESSettled $ EOReverted revert
   pure RecordEdit {reId, reLabelHash, reOwner, reChanges, reBodyHash, reState, reCreatedAt}
   where
-    toChange (nonce, key_, value_, deadline, scSignature) = do
-      scChange <- case (key_, value_) of
-        (Just key, Just value) | Just kind <- textDecode key -> Right $ RCSetText kind value
-        (Nothing, Nothing) -> Right RCClear
-        _ -> Left $ "name_record_changes record: " <> tshow reId
-      pure SignedChange {scChange, scNonce = word64 nonce, scDeadline = word64 deadline, scSignature}
+    toChange (nonce, key, value, deadline, scSignature) = do
+      kind <- note ("name_record_changes record: " <> tshow reId) $ textDecode key
+      pure SignedChange {scChange = RCSetText kind value, scNonce = word64 nonce, scDeadline = word64 deadline, scSignature}
 
 firstRecordEdit :: DB.Connection -> IO [RecordEditRow] -> IO (Maybe RecordEdit)
 firstRecordEdit db rows = rows >>= mapM (readRecordEdit db) . listToMaybe

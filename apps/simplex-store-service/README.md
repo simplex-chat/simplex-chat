@@ -1126,7 +1126,7 @@ cost more on chain. To lower prices on chain below the floor, lower the setting 
 ### Link edits
 
 Each "Edit links" save is one request, relayed by the service as one transaction whose gas it pays
-(see [The gas key](#the-gas-key)): one changed link as `setTextWithSig` (or `clearRecordsWithSig`),
+(see [The gas key](#the-gas-key)): one changed link as `setTextWithSig`,
 both links as the resolver's `multicall` of two `setTextWithSig` calls, which lands both or neither.
 
 A request whose earliest signed deadline is within 10 minutes of the latest block's time is refused
@@ -1138,7 +1138,7 @@ names page signs a deadline one hour ahead.
 any 365 days:
 
 - each accepted request counts once, from when it is stored to be sent, whether it changes one link
-  or both, or clears them;
+  or both;
 - links set at registration ride on the register transaction and count nothing;
 - an edit that reverts on chain (or expires) counts as well, since its transaction may have paid
   gas, so the limit bounds repeats of failing edits too;
@@ -1156,7 +1156,7 @@ relayed requests per name still applies.
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
 transaction, `commit` to the controller, each name's terms acceptance (`commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor, and the owners' record
-edits (`setTextWithSig`, `clearRecordsWithSig`, or a `multicall` of two) to the resolver. It pays
+edits (`setTextWithSig`, or a `multicall` of two) to the resolver. It pays
 only their gas, in ETH. The names' rent is spent from its allowance on the sponsor, in USD, which the
 guardian sets. It holds no names.
 
@@ -1294,7 +1294,6 @@ reads, clears and logs its acceptance, as a community name's did:
 | `setTextWithSig`, a new link | 3,026,449 | 3,026,449 | 0.01 ETH |
 | `setTextWithSig`, a link replacing one | 462,289 | 462,289 | 0.0023 ETH |
 | `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0035 ETH |
-| `clearRecordsWithSig` | 80,312 | 80,312 | 0.0004 ETH |
 | `multicall`, two new links | 6,054,042 | 6,008,868 | 0.01 ETH |
 
 - The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,

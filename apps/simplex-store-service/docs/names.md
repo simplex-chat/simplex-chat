@@ -566,13 +566,13 @@ sequenceDiagram
   participant E as Ethereum node
   participant S as Sender
   participant R as Record edits lane
-  P->>P: owner signs SetText per changed link, or ClearRecords (EIP-712)
+  P->>P: owner signs SetText per changed link (EIP-712)
   P->>W: POST /api/name/records: labelHash, 1 or 2 signed edits
   W->>W: keys, links and signatures checked, one signer
   W->>D: identical body found, else yearly limit checked
   W->>E: latest block, owner and resolver, resolver nonce
   W->>D: under the name's lock: limits again, edit inserted
-  W->>S: setTextWithSig, clearRecordsWithSig or multicall, to the resolver
+  W->>S: setTextWithSig or multicall, to the resolver
   S->>E: dry run, nonce, fees, signed, saved, broadcast
   S->>D: receipt at the depth: transaction mined or reverted
   R->>D: every 4 s, pending edits settled from their transactions
@@ -582,7 +582,7 @@ sequenceDiagram
 
 Notes:
 
-- `SetText` and `ClearRecords` are signed in the EIP-712 domain `SimplexResolver`; the signer must be the registry's owner of a name on the default resolver, and the first nonce the owner's current resolver nonce, which the search answers as `recordsNonce`; another first nonce is answered `409 stale_nonce`, and any other refusal `400 bad_request` ([`Names/Registration.hs:83-84`](../src/StoreService/Names/Registration.hs#L83-L84), [`Names/Records.hs:185-199`](../src/StoreService/Names/Records.hs#L185-L199), [`Web/Names/Search.hs:105`](../src/StoreService/Web/Names/Search.hs#L105)).
+- `SetText` is signed in the EIP-712 domain `SimplexResolver`; the signer must be the registry's owner of a name on the default resolver, and the first nonce the owner's current resolver nonce, which the search answers as `recordsNonce`; another first nonce is answered `409 stale_nonce`, and any other refusal `400 bad_request` ([`Names/Registration.hs:83-84`](../src/StoreService/Names/Registration.hs#L83-L84), [`Names/Records.hs:185-199`](../src/StoreService/Names/Records.hs#L185-L199), [`Web/Names/Search.hs:105`](../src/StoreService/Web/Names/Search.hs#L105)).
 - Edits relayed per name are bounded by `record_edits_per_year` (default 3, from 1 to 100) in any 365 days, and every stored edit is counted, a reverted one too; at most 10 are relayed per name an hour, and 10 requests are accepted a minute per client ([`Names/Records.hs:112-151`](../src/StoreService/Names/Records.hs#L112-L151), [`Config.hs:286-289`](../src/StoreService/Config.hs#L286-L289), [`Web/Http.hs:149`](../src/StoreService/Web/Http.hs#L149)).
 - The earliest deadline must be more than 600 s past the latest block's time ([`Names/Records.hs:126-129`](../src/StoreService/Names/Records.hs#L126-L129), [`Names/Records.hs:185-199`](../src/StoreService/Names/Records.hs#L185-L199)).
 - Two changes are sent in one `multicall`, and both or neither are applied ([`Names/Registration.hs:205-207`](../src/StoreService/Names/Registration.hs#L205-L207), [`Names/Records.hs:399-408`](../src/StoreService/Names/Records.hs#L399-L408)).
