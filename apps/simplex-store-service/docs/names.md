@@ -18,7 +18,7 @@
    3. [A prepaid name code issued and spent](#33-a-prepaid-name-code-issued-and-spent)
    4. [A name searched, and a link previewed](#34-a-name-searched-and-a-link-previewed)
    5. [A register transaction that fails](#35-a-register-transaction-that-fails)
-   6. [A failed order queued again or moved](#36-a-failed-order-queued-again-or-moved)
+   6. [A lapsed order queued again, or an order moved](#36-a-lapsed-order-queued-again-or-an-order-moved)
    7. [An owner's orders found](#37-an-owners-orders-found)
    8. [A balance spent on another name](#38-a-balance-spent-on-another-name)
    9. [Late crypto credited](#39-late-crypto-credited)
@@ -95,7 +95,7 @@ How a request flows:
 | Startup | `store_service.ini` is parsed, the database lock taken, and the node's chain id and the issuer key checked; then the chat core is started. In its callback the providers, the names environment and the web environment are built, the managed group resolved, and all lanes started together. Without `--service-config` only the chat side and the badge request lanes run. | [`Main.hs:16-29`](../Main.hs#L16-L29), [`Service.hs:259-347`](../src/StoreService/Service.hs#L259-L347) |
 | Web API | Warp listeners on `[listener] host`: `badges_port` (8080) always, `names_port` (8081) with `[names]` and `serve_webapp = on`; with `metrics_port`, a listener on `127.0.0.1` for `/metrics` alone. `/api/*` and both webhooks are answered on every port but the metrics one. Per-client limits a minute: read 60, search 30, preview 20, code 10, records 10, create 5, find 5. Checkouts that reach a provider: 5 a minute per IPv4 /24 or IPv6 /48, and 60 card and 30 BTCPay a minute for all clients together. At most 500 long polls are held at once, each up to 30 s. | [`Web/Server.hs:121-151`](../src/StoreService/Web/Server.hs#L121-L151), [`Web/Server.hs:563-586`](../src/StoreService/Web/Server.hs#L563-L586), [`Config.hs:511-520`](../src/StoreService/Config.hs#L511-L520), [`Web/Names.hs:28-51`](../src/StoreService/Web/Names.hs#L28-L51), [`Web/Http.hs:111-161`](../src/StoreService/Web/Http.hs#L111-L161), [`Web/Http.hs:227-230`](../src/StoreService/Web/Http.hs#L227-L230) |
 | Order handlers | An order is placed in one of three ways: a paid invoice, a prepaid code, a spend of another order's balance. The owner's signature, the timestamp, the duration, the terms and an available name are checked, then the chain price for a paid or spent order and the balance for a spend. The order is written in one transaction, in which the same wallet's overdue orders for that name are closed. | [`Web/Names/Orders.hs:86-306`](../src/StoreService/Web/Names/Orders.hs#L86-L306), [`Names/Orders.hs:201-310`](../src/StoreService/Names/Orders.hs#L201-L310), [`Names/Balances.hs:79-106`](../src/StoreService/Names/Balances.hs#L79-L106) |
-| Registration and owner handlers | The registration view, held on its version; the reveal; Try again; find by the owner's signature; a move to another name. | [`Web/Names/Registration.hs:45-140`](../src/StoreService/Web/Names/Registration.hs#L45-L140), [`Web/Names/Owner.hs:44-152`](../src/StoreService/Web/Names/Owner.hs#L44-L152), [`Names/Reveal.hs:103-145`](../src/StoreService/Names/Reveal.hs#L103-L145), [`Names/View.hs:81-176`](../src/StoreService/Names/View.hs#L81-L176) |
+| Registration and owner handlers | The registration view, held on its version; the reveal; `/retry`; find by the owner's signature; a move to another name. | [`Web/Names/Registration.hs:45-140`](../src/StoreService/Web/Names/Registration.hs#L45-L140), [`Web/Names/Owner.hs:44-152`](../src/StoreService/Web/Names/Owner.hs#L44-L152), [`Names/Reveal.hs:103-145`](../src/StoreService/Names/Reveal.hs#L103-L145), [`Names/View.hs:81-176`](../src/StoreService/Names/View.hs#L81-L176) |
 | Search handlers | Name status, price, terms, and records with link profiles; the terms text; the link preview. These handlers only read, except that a terms text fetched for the first time is stored. | [`Web/Names/Search.hs:53-154`](../src/StoreService/Web/Names/Search.hs#L53-L154), [`Names/Profiles.hs:231-276`](../src/StoreService/Names/Profiles.hs#L231-L276) |
 | Poller | One loop. A pass is run every `waiting_seconds` (3) while a page holds an invoice poll, else every `idle_seconds` (60), and webhook read hints are served between passes. Invoices are settled, overdue ones expired 10 minutes past their window, late money credited, and unpaid orders deleted daily, 30 days after their invoice expired. | [`Poller.hs:62-76`](../src/StoreService/Poller.hs#L62-L76), [`Poller.hs:148-168`](../src/StoreService/Poller.hs#L148-L168), [`Poller.hs:559-598`](../src/StoreService/Poller.hs#L559-L598), [`Orders.hs:95-275`](../src/StoreService/Orders.hs#L95-L275), [`Names/LateCredits.hs:50-72`](../src/StoreService/Names/LateCredits.hs#L50-L72) |
 | Names worker | A thread is started by a scan every 5 s for each order in `queued`, `committing`, `committed` or `registering`: commit, wait for the reveal, terms acceptance relay, register, and the outcome judged from chain state. A daily sweep releases the codes of code orders failed for 30 days. | [`Names/Worker.hs:115-401`](../src/StoreService/Names/Worker.hs#L115-L401), [`Names/Worker.hs:503-522`](../src/StoreService/Names/Worker.hs#L503-L522) |
@@ -237,7 +237,7 @@ Notes:
 - A reveal whose link is not a short link of its record's kind is answered `400 invalid_link`, and the order is marked `linksRefused`. The links are part of the commitment, so only a move (3.6) continues the order ([`Web/Names/Registration.hs:95-109`](../src/StoreService/Web/Names/Registration.hs#L95-L109), [`Names/Orders.hs:315-320`](../src/StoreService/Names/Orders.hs#L315-L320)).
 - The acceptance relay is `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`. It is sent as soon as the reveal is stored, without waiting for `revealAfter`, while `revealBefore` has not passed, unless the policy already holds that acceptance. The register is sent after the relay settles and `revealAfter` has passed ([`Names/Worker.hs:254-272`](../src/StoreService/Names/Worker.hs#L254-L272)).
 - The links are set by `setText` calls for `simplex.contact` and `simplex.channel` in the register's data ([`Names/Registration.hs:212-235`](../src/StoreService/Names/Registration.hs#L212-L235)).
-- Without a reveal by `revealBefore` the order is set `failed` with the reason `notSignedInTime` ([`Names/Worker.hs:251-253`](../src/StoreService/Names/Worker.hs#L251-L253), [`Names/View.hs:202-205`](../src/StoreService/Names/View.hs#L202-L205)).
+- Without a reveal by `revealBefore` the order waits, and its view's signature reads `lapsed`; the page with the code then sends `POST /api/registration/ID/retry`, which queues it to be committed again (3.6). One whose links were refused is set `failed` with the reason `linksRefused` at the lapse ([`Names/Worker.hs:255-264`](../src/StoreService/Names/Worker.hs#L255-L264), [`Names/View.hs:127-143`](../src/StoreService/Names/View.hs#L127-L143)).
 - After a restart every phase is resumed from the stored order and the sender's saved transactions ([`Names/Sender.hs:123-131`](../src/StoreService/Names/Sender.hs#L123-L131), [`Names/Worker.hs:6-8`](../src/StoreService/Names/Worker.hs#L6-L8)).
 
 ---
@@ -280,7 +280,7 @@ Notes:
 - Only the code's SHA-256 is stored, so a code not copied when shown cannot be recovered ([`Names/Codes.hs:147-159`](../src/StoreService/Names/Codes.hs#L147-L159)). `unpaid` name codes are refused in the console, and name codes without `[names]` in the console and the group ([`Group/Command.hs:116-118`](../src/StoreService/Group/Command.hs#L116-L118), [`Group.hs:326-330`](../src/StoreService/Group.hs#L326-L330)).
 - In the group, `/issue` is taken from moderators and above, a name code too, for 2 to 10 years. A name code command is refused once the name codes the group issued in the last 24 hours would pass 10; the console has no cap ([`Group/Command.hs:65-118`](../src/StoreService/Group/Command.hs#L65-L118), [`Group.hs:300-322`](../src/StoreService/Group.hs#L300-L322)).
 - A code order is checked for the timestamp, the duration, the terms and an available name; its years are the code's, 2 for a community name ([`Web/Names/Orders.hs:216-222`](../src/StoreService/Web/Names/Orders.hs#L216-L222), [`Names/Community.hs:54-59`](../src/StoreService/Names/Community.hs#L54-L59)).
-- The code is spent when the name is registered, released when the order is set `taken`, and kept for 30 days with a failed order for Try again, then released by the daily sweep ([`Names/Orders.hs:397-400`](../src/StoreService/Names/Orders.hs#L397-L400), [`Names/Worker.hs:361-365`](../src/StoreService/Names/Worker.hs#L361-L365), [`Names/Worker.hs:503-522`](../src/StoreService/Names/Worker.hs#L503-L522)).
+- The code is spent when the name is registered, released when the order is set `taken`, and kept for 30 days with a failed order for a move, or with a lapsed unsigned one for `/retry` or a move, then released by the daily sweep, which closes the order `taken` in the same write ([`Names/Orders.hs:397-400`](../src/StoreService/Names/Orders.hs#L397-L400), [`Names/Worker.hs:393-400`](../src/StoreService/Names/Worker.hs#L393-L400), [`Names/Worker.hs:544-572`](../src/StoreService/Names/Worker.hs#L544-L572)).
 - A name code is withdrawn by `//revoke` unless it is spent; a code an order already holds stays usable by that order ([`Names/Codes.hs:162-173`](../src/StoreService/Names/Codes.hs#L162-L173), [`Names/Codes.hs:78-88`](../src/StoreService/Names/Codes.hs#L78-L88)).
 - Under `codes_only = on` the names site's `index.html` is served with `content="codes"`, and paid orders and spends are answered `403 codes_only` ([`Web/Server.hs:168-174`](../src/StoreService/Web/Server.hs#L168-L174), [`Web/Names/Orders.hs:88`](../src/StoreService/Web/Names/Orders.hs#L88), [`Web/Names/Orders.hs:240`](../src/StoreService/Web/Names/Orders.hs#L240)).
 
@@ -334,7 +334,7 @@ Notes:
 
 ### 3.5 A register transaction that fails
 
-After a register transaction reverts, the order is judged from chain state: its reveal is cleared for the page to sign again, it waits, it is committed again with its reveal, it is set `taken` with its price kept as a balance, or it is set `failed`.
+After a register transaction reverts, the order is judged from chain state: its reveal is cleared for the page to sign again, it waits, its register is sent again, it is committed again with its reveal, it is set `taken` with its price kept as a balance, or, once its commitment lapsed, it is set `failed`.
 
 ```mermaid
 sequenceDiagram
@@ -353,24 +353,28 @@ sequenceDiagram
     K->>D: phase committing, reveal kept, then committed again and registered with it
   else name taken at the latest block and at the confirmation depth
     K->>D: phase taken, a paid order's price kept as its balance
-  else name available
-    K->>D: phase failed, reason notRegistered
+  else name available, register mined with status 0
+    K->>D: phase committed with its reveal, the register sent again
+  else name available, dry run reverted, commitment live
+    K->>K: error logged once, retried every 15 s
+  else name available, dry run reverted, commitment lapsed
+    K->>D: phase failed, reason registryRefused
   end
 ```
 
 Notes:
 
 - Whether the name was registered after all is checked first: on a register mined with status 1, or with the name held by the owner at the confirmation depth, the order is set `registered` ([`Names/Orders.hs:365-400`](../src/StoreService/Names/Orders.hs#L365-L400), [`Names/Worker.hs:329-336`](../src/StoreService/Names/Worker.hs#L329-L336)).
-- An `InsufficientAllowance` revert waits for the registrar key's allowance on the sponsor to be raised outside the service, also past the commitment's lapse, as the sponsor checks the allowance before the commitment. The order fails once its intent's deadline passes ([`Names/Worker.hs:351`](../src/StoreService/Names/Worker.hs#L351), [`Names/Worker.hs:303-318`](../src/StoreService/Names/Worker.hs#L303-L318)).
+- An `InsufficientAllowance` revert waits for the registrar key's allowance on the sponsor to be raised outside the service, also past the commitment's lapse, as the sponsor checks the allowance before the commitment. The reveal is cleared once its intent's deadline passes, and the page signs again ([`Names/Worker.hs:359`](../src/StoreService/Names/Worker.hs#L359), [`Names/Worker.hs:307-321`](../src/StoreService/Names/Worker.hs#L307-L321)).
 - `CommitmentTooOld` is reverted only after the intent's and the allowance's checks. The order is set `committing` with its reveal kept, or, while `revealBefore` has not passed by the service's clock, the dry run is tried again a second later; the commit is sent again, and the register follows once it has aged, with no new signature. The names page signs the intent and the acceptance with a deadline a week ahead, never before `revealBefore` ([`Names/Worker.hs:348-350`](../src/StoreService/Names/Worker.hs#L348-L350), [`Names/Worker.hs:201-212`](../src/StoreService/Names/Worker.hs#L201-L212)).
 - On `CommitmentTooNew` the register is retried 1 s later. While the name is taken only above the confirmation depth, or is reported gone by the dry run while `available(label)` is true, the order is retried every 15 s ([`Names/Worker.hs:340-352`](../src/StoreService/Names/Worker.hs#L340-L352)).
 - A code order set `taken` has its code released instead of a balance credited ([`Names/Worker.hs:361-368`](../src/StoreService/Names/Worker.hs#L361-L368)).
 
 ---
 
-### 3.6 A failed order queued again or moved
+### 3.6 A lapsed order queued again, or an order moved
 
-A failed order is queued again by Try again, or moved to another name; both first check whether its name was registered after all.
+An order whose commitment lapsed unsigned is queued again by `/retry`; it, and a failed order, can move to another name. A failed order's move first checks whether its name was registered after all.
 
 ```mermaid
 sequenceDiagram
@@ -378,11 +382,10 @@ sequenceDiagram
   participant W as Web API
   participant E as Ethereum node
   participant D as PostgreSQL
-  alt Try again
+  alt a lapsed unsigned order, the page with its code
     P->>W: POST /api/registration/ID/retry
-    W->>E: registered after all? reveal valid for the nonce and deadline?
-    W->>D: phase queued, failure cleared, reveal kept or cleared
-    W-->>P: 200 the order's view: queued, or registered after all
+    W->>D: phase queued, commit's history cleared
+    W-->>P: 200 the order's view: queued
   else another name
     P->>W: POST /api/registration/ID/name, signed new name
     W->>E: registered after all? refused after 5 sends of a kind
@@ -395,8 +398,8 @@ sequenceDiagram
 
 Notes:
 
-- Try again is sent with the registration id alone. It is refused for an order whose links were refused, one with 5 sends of a kind, and a code order whose code no longer pays. The reveal is kept while the sponsor nonce is unchanged and the intent's deadline is `reveal_margin_seconds` (default 900) or more away ([`Web/Names/Registration.hs:116-140`](../src/StoreService/Web/Names/Registration.hs#L116-L140), [`Names/Worker.hs:424-508`](../src/StoreService/Names/Worker.hs#L424-L508), [`Config.hs:673`](../src/StoreService/Config.hs#L673)). At the next scan a commitment with that margin left is reused; otherwise a new commit is sent, a second past the old commitment's lapse when one is on chain, and a kept reveal registers after it ([`Names/Worker.hs:171-212`](../src/StoreService/Names/Worker.hs#L171-L212)).
-- A move is accepted for a failed order, or for one whose links were refused, up to `max_order_moves` (default 3). For a failed order the service checks first whether its name was registered after all, then refuses a move after 5 sends of a kind ([`Web/Names/Owner.hs:113-126`](../src/StoreService/Web/Names/Owner.hs#L113-L126), [`Config.hs:655`](../src/StoreService/Config.hs#L655)).
+- `/retry` is sent with the registration id alone. It is refused with `400 bad_request` for any order but one whose commitment lapsed with no reveal stored, and for such an order whose links were refused. A lapsed order keeps its payment and its code, so `/retry` reads no chain and checks no code ([`Web/Names/Registration.hs:111-132`](../src/StoreService/Web/Names/Registration.hs#L111-L132), [`Names/Worker.hs:434-454`](../src/StoreService/Names/Worker.hs#L434-L454)). At the next scan a new commit is sent, a second past the old commitment's lapse ([`Names/Worker.hs:174-215`](../src/StoreService/Names/Worker.hs#L174-L215)).
+- A move is accepted for a failed order, for one whose links were refused, and for one whose commitment lapsed unsigned, up to `max_order_moves` (default 3). For a failed order the service checks first whether its name was registered after all, then refuses a move after 5 sends of a kind ([`Web/Names/Owner.hs:113-126`](../src/StoreService/Web/Names/Owner.hs#L113-L126), [`Config.hs:655`](../src/StoreService/Config.hs#L655)).
 - Both names' locks are taken in hash order, and the first order's hash is kept. A paid order moved to a cheaper name is credited the difference; a code order is moved at price 0, its code reserved again ([`Names/Turns.hs:27-32`](../src/StoreService/Names/Turns.hs#L27-L32), [`Web/Names/Owner.hs:128-135`](../src/StoreService/Web/Names/Owner.hs#L128-L135), [`Names/Orders.hs:340-356`](../src/StoreService/Names/Orders.hs#L340-L356), [`Names/Store.hs:787-813`](../src/StoreService/Names/Store.hs#L787-L813)).
 - A paid order's move reads the new name's price as an order does: a price under `min_price_cents_per_year` times the paid years is answered `503 name_check_unavailable`, and nothing is credited ([`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)).
 
@@ -404,7 +407,7 @@ Notes:
 
 ### 3.7 An owner's orders found
 
-An owner without an order's link finds their orders by signing with their wallet; the ids found are used for Try again, a move, a spend or a refund.
+An owner without an order's link finds their orders by signing with their wallet; the ids found are used for `/retry`, a move, a spend or a refund.
 
 ```mermaid
 sequenceDiagram
@@ -525,7 +528,7 @@ Notes:
 - The console starts only while the service is stopped, as the database lock is held by one process ([`Store/Migrate.hs:46-54`](../src/StoreService/Store/Migrate.hs#L46-L54)).
 - While the service runs, a group owner sends the same commands with one slash, `/balance`, `/record_refund` and `/close`. The group lane runs the console's handlers in the service's per-name and per-balance locks and answers in the group; the answers name the one-slash commands, and a held balance's answer names the running poller ([`Service.hs:414-418`](../src/StoreService/Service.hs#L414-L418), [`Group.hs:311`](../src/StoreService/Group.hs#L311)).
 
-A failed paid order has no balance until it is closed. Support closes it with `//close`, which checks the chain first and records the refund in the same transaction that ends the order.
+A failed paid order, and one whose commitment lapsed unsigned, has no balance until it is closed. Support closes it with `//close`, which checks the chain first and records the refund in the same transaction that ends the order.
 
 ```mermaid
 sequenceDiagram
@@ -543,14 +546,14 @@ sequenceDiagram
     C->>D: order set registered
     C-->>O: Nothing refunded: the register of order ID went through
   else not registered
-    C->>D: under the balance's lock, one transaction: order set taken, price credited, the whole balance recorded as refunded
-    C-->>O: Closed order ID, failed at TIME ... Check at the provider ...; if not, refund it now, by: ORDERS.
+    C->>D: under the balance's lock, one transaction: order set taken, its stored reveal cleared, price credited, the whole balance recorded as refunded
+    C-->>O: Closed order ID, failed or lapsed unsigned at TIME ... Check at the provider ...; if not, refund it now, by: ORDERS.
     O--)B: money paid back by hand, unless refunded before (outside the service)
   end
 ```
 
-- Only a failed order paid by invoice or balance is closed, and a lapsed committed order reads failed. A balance an order holds refuses the close and writes nothing ([`Names/Worker.hs:515-564`](../src/StoreService/Names/Worker.hs#L515-L564), [`Names/Worker.hs:376-380`](../src/StoreService/Names/Worker.hs#L376-L380), [`Names/Orders.hs:366-412`](../src/StoreService/Names/Orders.hs#L366-L412)).
-- The answer names the failure time, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:463-485`](../src/StoreService/Service.hs#L463-L485), [`README.md:1491-1536`](../README.md#L1491-L1536)).
+- Only a failed or lapsed unsigned order paid by invoice or balance is closed. A balance an order holds refuses the close and writes nothing ([`Names/Worker.hs:502-542`](../src/StoreService/Names/Worker.hs#L502-L542), [`Names/Worker.hs:402-406`](../src/StoreService/Names/Worker.hs#L402-L406), [`Names/Orders.hs:366-412`](../src/StoreService/Names/Orders.hs#L366-L412)).
+- The answer names the time of the failure or the lapse, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:463-485`](../src/StoreService/Service.hs#L463-L485), [`README.md:1491-1536`](../README.md#L1491-L1536)).
 
 ---
 

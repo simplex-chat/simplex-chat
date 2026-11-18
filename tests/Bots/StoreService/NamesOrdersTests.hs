@@ -105,7 +105,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
 import StoreService.Group.Command (CmdSource (..))
-import StoreService.Names.Chain (AbiValue (..), Hex32 (..), TxHash (..), abiBytes, abiTuple, hex, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), Hex32 (..), TxHash (..), abiBytes, abiTuple, chainTime, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), newContracts)
 import StoreService.Names.Codes (CodeRefusal (..), prepaidCodeHash)
 import StoreService.Names.Community (AcceptanceAsked (..))
@@ -115,7 +115,7 @@ import StoreService.Names.Phases (awaitChange, newPhases)
 import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), orderMessage, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
-import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCommitted, PVFailed, PVRegistered, PVTaken, PVUnpaid), RegistrationView (..), Signing (SAwaiting, SSigned), ToSign (TSRead, TSUnread), phaseView, readToSign, registrationView, toRegistrationView)
+import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCommitted, PVFailed, PVRegistered, PVTaken, PVUnpaid), RegistrationView (..), Signing (SAwaiting, SLapsed, SSigned), ToSign (TSRead, TSUnread), phaseView, readToSign, registrationView, toRegistrationView)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
@@ -138,7 +138,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "places an order as an unpaid live registration and answers the name invoice view" testPaidOrder
     it "answers an exact resend with its invoice, also with a new timestamp and signature, and after the timestamp window" testExactResend
     it "answers an exact resend after its order went past unpaid, before any chain read" testResendPastUnpaid
-    it "reads an exact resend's unpaid invoice past its expiry as expired, and its lapsed commitment as failed, writing neither" testResendReadsTime
+    it "reads an exact resend's unpaid invoice past its expiry as expired, and its lapsed commitment as lapsed, writing neither" testResendReadsTime
     it "refuses a resend differing in any one field, or a new commitment, with a bare order_exists" testOneFieldDiffers
     it "refuses an order carrying another wallet's commitment without disclosing anything" testForeignCommitment
     it "refuses a bad signature, or another signer's" testBadSignature
@@ -586,10 +586,13 @@ testResendReadsTime = do
         lapsing = OCommitted Commit {cmTx = Nothing, cmRevealAfter = lapse - 3600, cmRevealBefore = lapse}
     Written version <- withTransaction cStore $ \db ->
       updateRegistration db r {nrPhase = lapsing} now
-    let resend = (\(status, v) -> (status, (`fieldOf` "status") =<< v, (phaseOf &&& (`phaseFieldOf` "reason")) . registrationOf <$> v)) <$> placeOrder ctx aliceOrder
-    resend `shouldReturn` (200, Just "paid", Just (Just "committed", Nothing))
+    let signingOf v = case phaseFieldOf v "signature" of
+          Just (J.Object s) -> fieldOf s "type"
+          _ -> Nothing
+        resend = (\(status, v) -> (status, (`fieldOf` "status") =<< v, (phaseOf &&& signingOf) . registrationOf <$> v)) <$> placeOrder ctx aliceOrder
+    resend `shouldReturn` (200, Just "paid", Just (Just "committed", Just "awaiting"))
     advance ctx 601
-    resend `shouldReturn` (200, Just "paid", Just (Just "failed", Just "notSignedInTime"))
+    resend `shouldReturn` (200, Just "paid", Just (Just "committed", Just "lapsed"))
     (nrPhase &&& nrVersion) <$> invoiceRegistration ctx invId `shouldReturn` (lapsing, version)
 
 testOneFieldDiffers :: IO ()
@@ -1660,13 +1663,15 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           ]
   J.toJSON (awaiting $ acceptance False fakeGeneralTerms) `shouldBe` phaseJSON False fakeGeneralTerms
   J.toJSON (awaiting $ acceptance True fakeCommunityTerms) `shouldBe` phaseJSON True fakeCommunityTerms
-  map J.toJSON [PVCommitted 1 2 (SAwaiting TSUnread), PVCommitted 1 2 SSigned, PVClosed ICCancelled, PVRegistered 3, PVFailed FRNotSignedInTime]
+  map J.toJSON [PVCommitted 1 2 (SAwaiting TSUnread), PVCommitted 1 2 SSigned, PVCommitted 1 2 SLapsed, PVClosed ICCancelled, PVRegistered 3, PVFailed FRRegistryRefused]
     `shouldBe` [ J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("awaiting" :: Text), "toSign" .= J.object ["type" .= ("unread" :: Text)]]],
                  J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("signed" :: Text)]],
+                 J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("lapsed" :: Text)]],
                  J.object ["type" .= ("closed" :: Text), "closedBy" .= ("cancelled" :: Text)],
                  J.object ["type" .= ("registered" :: Text), "expiresAt" .= (3 :: Int)],
-                 J.object ["type" .= ("failed" :: Text), "reason" .= ("notSignedInTime" :: Text)]
+                 J.object ["type" .= ("failed" :: Text), "reason" .= ("registryRefused" :: Text)]
                ]
+  map J.toJSON [FRSendsUsedUp, FRLinksRefused] `shouldBe` ["sendsUsedUp", "linksRefused"]
 
 testViewStates :: IO ()
 testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1680,11 +1685,11 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   failed <-
     written $ \r ->
       r
-        { nrPhase = OFailed t0 FRNotRegistered,
+        { nrPhase = OFailed t0 FRSendsUsedUp,
           nrReveal = Just reveal,
           nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
         }
-  viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("notRegistered" :: Text)]), ("registerTx", txText 9), ("balance", J.Null)]
+  viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("sendsUsedUp" :: Text)]), ("registerTx", txText 9), ("balance", J.Null)]
   requeued <- written $ \r -> r {nrPhase = OQueued, nrHistory = (nrHistory r) {thRegisterTx = Nothing}}
   viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null)]
   taken <- written $ \r -> r {nrPhase = OTaken}
@@ -1735,7 +1740,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   committed <- inPhase $ OCommitted commitFixture
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
   let awaiting = PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) . SAwaiting
-  phaseView ct committed `shouldReturn` awaiting (TSRead 4 AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeGeneralTerms, acNonce = 2})
+  phaseView ct t0 committed `shouldReturn` awaiting (TSRead 4 AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeGeneralTerms, acNonce = 2})
   -- the policy lists the name: the page signs the community terms' acceptance with the policy's nonce
   listCommunityName node $ labelHash "alicebakery"
   readToSign ct committed `shouldReturn` TSRead 4 AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeCommunityTerms, acNonce = 2}
@@ -1745,9 +1750,10 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   setCommunityTerms node fakeCommunityTermsText
   taken <- inPhase OTaken
   setFault node "eth_call" HttpFailure
-  phaseView ct committed {nrReveal = Just reveal} `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SSigned
-  phaseView ct taken `shouldReturn` PVTaken
-  phaseView ct committed `shouldReturn` awaiting TSUnread
+  phaseView ct t0 committed {nrReveal = Just reveal} `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SSigned
+  phaseView ct (addUTCTime 1 $ chainTime $ cmRevealBefore commitFixture) committed `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SLapsed
+  phaseView ct t0 taken `shouldReturn` PVTaken
+  phaseView ct t0 committed `shouldReturn` awaiting TSUnread
 
 testViewReadsBounded :: IO ()
 testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do

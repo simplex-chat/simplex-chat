@@ -552,23 +552,23 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     now <- getCurrentTime
     Balances.placeOrderRow st "f" False 10000 (addUTCTime 3600 now)
     unpaid <- reg st "f"
-    write st unpaid {nrPhase = OFailed t0 FRNotRegistered} `shouldReturn` Written 2
+    write st unpaid {nrPhase = OFailed t0 FRRegistryRefused} `shouldReturn` Written 2
     answerCall node registrar (ownerOfSelector <> labelBytes "f") $ Reverts ""
     closeRaw cc "nothing" `shouldReturn` Left "Nothing recorded: no order has the reference nothing."
     logs <- capturingStderr $
       closeRaw cc "inv-f"
         `shouldReturn` Right
-          ( "Closed order f, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: "
+          ( "Closed order f, failed or lapsed unsigned at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: "
               <> paidBy
               <> "."
           )
     logs `shouldSatisfy` T.isInfixOf "names: closed order f and recorded a refund of 10000 cents"
-    closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed order paid by invoice or balance."
+    closeRaw cc "f" `shouldReturn` Left "Nothing recorded: the order of f is not a failed or lapsed unsigned order paid by invoice or balance."
     Balances.figures st "f" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
     balanceRaw cc "f" `shouldReturn` Right ("Order f: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
     Balances.placeOrderRow st "g" False 10000 (addUTCTime 3600 now)
     unpaidG <- reg st "g"
-    write st unpaidG {nrPhase = OFailed t0 FRNotRegistered} `shouldReturn` Written 2
+    write st unpaidG {nrPhase = OFailed t0 FRRegistryRefused} `shouldReturn` Written 2
     answerCall node registrar (ownerOfSelector <> labelBytes "g") $ Returns $ addressWord ownerA
     answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "g") $ Returns $ uint256 (2000000000 :: Int)
     registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
@@ -584,11 +584,11 @@ testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     now <- getCurrentTime
     Balances.placeOrderRow st "s" False 10000 (addUTCTime 3600 now)
     unpaid <- reg st "s"
-    write st unpaid {nrPhase = OFailed t0 FRNotRegistered} `shouldReturn` Written 2
+    write st unpaid {nrPhase = OFailed t0 FRRegistryRefused} `shouldReturn` Written 2
     answerCall node registrar (ownerOfSelector <> labelBytes "s") $ Reverts ""
     replyTo cc alice "/close nothing" `shouldReturn` "Nothing recorded: no order has the reference nothing."
     replyTo cc alice "/close inv-s"
-      `shouldReturn` ("Closed order s, failed at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> paidByBtc "s" <> ".")
+      `shouldReturn` ("Closed order s, failed or lapsed unsigned at " <> minuteText t0 <> ", as taken and recorded a refund of $100.00. Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> paidByBtc "s" <> ".")
     Balances.credit st "s" 2505
     replyTo cc alice "/balance s"
       `shouldReturn` ("Order s: balance $25.05 (credited $125.05, refunded $100.00). Paid by: " <> paidByBtc "s" <> ". To record its refund: /record_refund s 2505")

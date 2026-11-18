@@ -256,8 +256,8 @@ testStoredPhase = forM_ unfit $ \columns -> withServiceStore $ \st -> do
         "phase = 'committed', reveal_after = 1",
         "phase = 'committed', reveal_after = 1, reveal_before = 2, commit_block = 100",
         "phase = 'registered', expires_at = 1",
-        "phase = 'failed', fail_reason = 'not_registered'",
-        "phase = 'failed', failed_at = created_at, fail_reason = 'not_registered', closed_by = 'expired'"
+        "phase = 'failed', fail_reason = 'registry_refused'",
+        "phase = 'failed', failed_at = created_at, fail_reason = 'registry_refused', closed_by = 'expired'"
       ]
 
 testOrderHashFields :: IO ()
@@ -433,7 +433,7 @@ testVersionBumps = withServiceStore $ \st -> do
   r3 <- reg st "r1"
   write st r3 {nrReveal = Just reveal} `shouldReturn` Written 4
   write st r3 {nrLinksRefusedAt = Just (at 5)} `shouldReturn` VersionChanged
-  write st r1 {nrPhase = OFailed (at 5) FRNotRegistered} `shouldReturn` VersionChanged
+  write st r1 {nrPhase = OFailed (at 5) FRRegistryRefused} `shouldReturn` VersionChanged
   r4 <- reg st "r1"
   (nrVersion r4, nrPhase r4, nrReveal r4) `shouldBe` (4, OCommitted commitFixture, Just reveal)
 
@@ -444,7 +444,7 @@ testRoundTrip = withServiceStore $ \st -> do
   r <- reg st "r1"
   let changed =
         r
-          { nrPhase = OFailed (at 2) FRNotSignedInTime,
+          { nrPhase = OFailed (at 2) FRSendsUsedUp,
             nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = TermsAcceptance {taTermsHash = hashFixture 10, taNonce = 4, taSignature = signature}},
             nrLinksRefusedAt = Just (at 4),
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9},
@@ -468,7 +468,7 @@ testLiveFollowsPhase = withServiceStore $ \st -> do
         r <- reg st rid
         write st r {nrPhase = phase} `shouldReturn` Written (nrVersion r + 1)
         (nrPhase &&& orderLive) <$> reg st rid `shouldReturn` (phase, expected)
-      failedPhase = OFailed (at 1) FRNotRegistered
+      failedPhase = OFailed (at 1) FRRegistryRefused
   step "r1" OQueued True
   step "r1" failedPhase True
   step "r1" OTaken False
@@ -488,7 +488,7 @@ testOrderLive = withServiceStore $ \st -> do
   let code = paid {nrPayment = OPCode 1}
       liveIn r phase = (namePhase phase, orderLive r {nrPhase = phase})
       registered = ORegistered 1861833600 (at 3)
-      failed = OFailed (at 2) FRNotRegistered
+      failed = OFailed (at 2) FRRegistryRefused
       taken = OTaken
   map (liveIn paid) [OUnpaid (InvoiceId "inv-r1"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), registered, taken, failed]
     `shouldBe` [(PUnpaid, True), (PClosed, False), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True)]
@@ -517,7 +517,7 @@ testWriteMeetsLiveOrder = withServiceStore $ \st -> do
   placePaid st "r2" ownerA held (at 60) `shouldReturn` Right ()
   placePaid st "r3" ownerB (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
   r1 <- reg st "r1"
-  write st r1 {nrPhase = OFailed (at 1) FRNotRegistered} `shouldReturn` Written 2
+  write st r1 {nrPhase = OFailed (at 1) FRRegistryRefused} `shouldReturn` Written 2
   failed <- reg st "r1"
   let retarget o = withTransaction st $ \db -> retargetRegistration db failed o 10000 (at 6)
   retarget held {ofCommitment = hashFixture 4} `shouldReturn` LiveOrderExists
@@ -534,7 +534,7 @@ testRetarget = withServiceStore $ \st -> do
   r <- reg st "r1"
   let failed =
         r
-          { nrPhase = OFailed (at 5) FRNotRegistered,
+          { nrPhase = OFailed (at 5) FRRegistryRefused,
             nrReveal = Just reveal,
             nrLinksRefusedAt = Just (at 4),
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
@@ -589,7 +589,7 @@ testLabelRegistering = withServiceStore $ \st -> do
 
 testActive :: IO ()
 testActive = withServiceStore $ \st -> do
-  let phases = [OUnpaid (InvoiceId "inv-r1"), OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), ORegistered 1861833600 (at 3), OTaken, OFailed (at 2) FRNotRegistered, OClosed ICExpired]
+  let phases = [OUnpaid (InvoiceId "inv-r1"), OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), ORegistered 1861833600 (at 3), OTaken, OFailed (at 2) FRRegistryRefused, OClosed ICExpired]
   forM_ (zip [1 ..] phases) $ \(i, phase) -> do
     let rid = "r" <> T.pack (show i)
     placePaid st rid ownerA (order ("alicebakery" <> T.pack (show i)) i) (at 60) `shouldReturn` Right ()
@@ -634,7 +634,7 @@ testFailedCodeOrders = withServiceStore $ \st -> do
   codes@[oldCode, _, releasedCode, _] <- mapM (\n -> issue st n usable) [1, 2, 3, 4]
   forM_ (zip3 ["old", "recent", "released", "queued"] [1 ..] codes) $ \(rid, n, code) ->
     placeCode st rid ownerA (order ("alicebakery" <> rid) n) code `shouldReturn` Right ()
-  let failAt rid t = reg st rid >>= \r -> void (write st r {nrPhase = OFailed t FRNotRegistered})
+  let failAt rid t = reg st rid >>= \r -> void (write st r {nrPhase = OFailed t FRRegistryRefused})
   failAt "old" (at 1)
   failAt "recent" (at 30)
   failAt "released" (at 1)

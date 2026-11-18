@@ -17,7 +17,7 @@ module StoreService.Names.View
     balanceView,
     phaseText,
     addressText,
-    registrationAt,
+    lapsedAt,
     lapseMoment,
     registrationVersion,
   )
@@ -46,7 +46,7 @@ import StoreService.Names.Community (AcceptanceAsked, Community, communityOf, cu
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (AgreedTerms (..), RegistrationId (..))
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason (..), HoldState, InvoiceClose, LateWait, NamePhase (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, heldBy, lateWait, namePhase, paymentInvoice)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NamePhase (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, heldBy, lateWait, namePhase, paymentInvoice)
 
 data PaidWith
   = PWInvoice {method :: Text}
@@ -71,7 +71,7 @@ data PhaseView
   | PVFailed {reason :: FailReason}
   deriving (Eq, Show)
 
-data Signing = SAwaiting {toSign :: ToSign} | SSigned
+data Signing = SAwaiting {toSign :: ToSign} | SSigned | SLapsed
   deriving (Eq, Show)
 
 -- | What the owner signs with the reveal; unread when either chain read failed.
@@ -121,21 +121,25 @@ registrationView st cfg ct now r = do
     balance <- getBalance db (nrId r) now
     late <- maybe (pure Nothing) (lateWait db) (paymentInvoice $ nrPayment r)
     pure (balance, late)
-  toRegistrationView cfg r balance late <$> phaseView ct r
+  toRegistrationView cfg r balance late <$> phaseView ct now r
 
 -- | The chain is read only while a committed order awaits its owner's signature.
-phaseView :: Contracts -> NameRegistration -> IO PhaseView
-phaseView ct r@NameRegistration {nrPhase, nrReveal} = case nrPhase of
+phaseView :: Contracts -> UTCTime -> NameRegistration -> IO PhaseView
+phaseView ct now r@NameRegistration {nrPhase, nrReveal} = case nrPhase of
   OUnpaid _ -> pure PVUnpaid
   OClosed by -> pure PVClosed {closedBy = by}
   OQueued -> pure PVQueued
   OCommitting _ -> pure PVCommitting
-  OCommitted Commit {cmRevealAfter, cmRevealBefore} ->
-    PVCommitted cmRevealAfter cmRevealBefore <$> maybe (SAwaiting <$> readToSign ct r) (const $ pure SSigned) nrReveal
+  OCommitted Commit {cmRevealAfter, cmRevealBefore} -> PVCommitted cmRevealAfter cmRevealBefore <$> signing
   ORegistering {} -> pure PVRegistering
   ORegistered expiry _ -> pure PVRegistered {expiresAt = expiry}
   OTaken -> pure PVTaken
   OFailed _ why -> pure PVFailed {reason = why}
+  where
+    signing
+      | isJust nrReveal = pure SSigned
+      | lapsedAt now r = pure SLapsed
+      | otherwise = SAwaiting <$> readToSign ct r
 
 readToSign :: Contracts -> NameRegistration -> IO ToSign
 readToSign ct NameRegistration {nrId = RegistrationId rid, nrOwner, nrLabelHash} = do
@@ -198,11 +202,9 @@ addressText = safeDecodeUtf8 . strEncode
 registrationVersion :: DBStore -> RegistrationId -> IO Int64
 registrationVersion st rid = maybe 0 nrVersion <$> withTransaction st (`getRegistration` rid)
 
--- | Past revealBefore with no reveal, the commitment can no longer register, so it reads failed.
-registrationAt :: UTCTime -> NameRegistration -> NameRegistration
-registrationAt now r = case lapseMoment r of
-  Just lapse | now > lapse -> r {nrPhase = OFailed lapse FRNotSignedInTime}
-  _ -> r
+-- | Past revealBefore with no reveal, the commitment can no longer register.
+lapsedAt :: UTCTime -> NameRegistration -> Bool
+lapsedAt now = maybe False (now >) . lapseMoment
 
 lapseMoment :: NameRegistration -> Maybe UTCTime
 lapseMoment = \case

@@ -343,7 +343,7 @@ an invoice, which is why the code, which lets them take the badge, is never prin
 service says the invoice is paid. The service keeps it out of its own logs: a line about an invoice
 names the provider's reference (the BTCPay invoice id or the Stripe PaymentIntent id), which opens
 nothing in this service's API. A line about a name order without its invoice, from the worker or
-`//record_refund`, names the registration id, which reads the order and asks Try again, so keep the logs to
+`//record_refund`, names the registration id, which reads the order and asks for a lapsed commitment to be sent again, so keep the logs to
 the service's operators.
 
 | Route | Answers |
@@ -1102,7 +1102,7 @@ who hold them before anyone can pay. It is `off` by default. While it is on:
 - `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
   `403 {"error": "codes_only"}`, before they read the order, so no order takes money for a name;
 - search, link previews, code checks, code orders (`POST /api/name/register`), the registration
-  view, `find`, the reveal, Try again, another name and record edits work as before. Webhooks and the
+  view, `find`, the reveal, `/retry`, another name and record edits work as before. Webhooks and the
   poller still settle the invoices already open, and badges sell as before.
 
 The setting is read at startup, so switching it is an edit of the ini and a restart, with the same
@@ -1365,10 +1365,10 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
   with `InsufficientAllowance`. The order keeps its phase and its register's dry run is tried again
   every 15 seconds, also past its commitment's lapse, so a top-up registers it with no restart, the
   commitment sent again first when it lapsed. The line is logged once per order. An order whose
-  signature expires first, a week after the page signed it, fails, and the buyer can Try again.
-  This holds when the register's dry run is refused. A register that passes its dry run and reverts
-  once mined, as two registers sent while the allowance covers one can, fails its order with no
-  such line; the next order's dry run logs it, and the buyer can Try again.
+  signature expires first, a week after the page signed it, has its reveal cleared, and its page
+  signs again. This holds when the register's dry run is refused. A register that passes its dry run
+  and reverts once mined, as two registers sent while the allowance covers one can, is sent again,
+  and its dry run logs the line.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above the fee cap <cap>;
   the transaction waits` when fees are above the fee cap, `max_fee_per_gas` or 0.01 ETH over the gas
   limit. Nothing is signed until they fall.
@@ -1381,12 +1381,19 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
 service's gas. The service's own commits after a lapse, which wait for it, count against that only when
-they revert, so a signature kept for its week registers over several commitment windows; Try again and
-a move count every commit. Past that the order fails, Try again and a move answer `400 bad_request`, and support closes it
+they revert, so a signature kept for its week registers over several commitment windows; a move
+counts every commit. Past that the order fails with the reason `sendsUsedUp`, a move answers `400 bad_request`, and support closes it
 with `//close` (see [Closing a failed order](#closing-a-failed-order)).
 The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
 
-Try again or a move of a failed order, and the worker's judgment of a register that did not go
+Any other revert of a register while the name is available is retried every 15 seconds while the
+commitment is live, logged once per order at error as `names worker: registration <id> waits: the
+register reverts while the name is available, …`; one still there after the commitment lapsed fails
+the order with the reason `registryRefused`. An order whose commitment lapses before its page signed
+it waits, and its page asks for a new commitment with `POST /api/registration/:id/retry`; one whose
+links were refused fails at the lapse with the reason `linksRefused`.
+
+A move or a close of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
 depth shows the order's owner holding the name, even if this order's register never landed: an
 owner who got the name another way counts as served, and a code order spends its code.
@@ -1493,8 +1500,8 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "UPDATE simplex_v1_c
 
 The sender no longer follows them, and at the next start each order is judged from the chain, as
 after a nonce taken by another transaction: a commit or terms acceptance not on chain is sent again
-from the new key, an order whose register did not land fails as after a reverted register and its
-buyer can Try again, and a link edit not applied is sent again before its deadline. The marked
+from the new key, a register that did not land is sent again as after a reverted register, and a
+link edit not applied is sent again before its deadline. The marked
 transactions stay signed and valid: while the old address holds enough ETH, its commits, terms
 acceptances and link edits can still be mined, and its registers revert.
 
@@ -1730,9 +1737,11 @@ Your names; a later late payment credits it again, and a second refund adds to `
 
 ## Closing a failed order
 
-A failed paid order stays live and keeps its money uncredited, so its wallet cannot order the name
-again. When Try again cannot register it, as after 5 sends of a kind or refused links, support closes
-it in `--run-cli` mode with the service stopped, or with `/close` in the group while it runs:
+A failed paid order, after 5 sends of a kind, refused links or a register the registry refused past
+its commitment's lapse, stays live and keeps its money uncredited, so its wallet cannot order the
+name again. So does a paid order whose commitment lapsed before its page signed it, until the page
+asks for a new commitment. Support closes either in `--run-cli` mode with the service stopped, or with
+`/close` in the group while it runs:
 
 ```
 //close <reference>
@@ -1742,14 +1751,14 @@ The reference is the order's invoice id, or its registration id. The command rea
 needs `[names]` and `[chain]` in `store_service.ini`; without `[names]` it answers that names are not
 enabled. It:
 
-1. checks the chain first, as Try again does: when a register of the order mined, or its owner holds
+1. checks the chain first, as a move does: when a register of the order mined, or its owner holds
    the name at the confirmation depth, the order is set `registered`, nothing is refunded, and the
    change is logged at note with its registration id;
-2. otherwise, in one transaction, sets the order `taken`, credits its price to its balance, which may
-   already hold a move's difference or an overpayment, and records all of that balance as refunded,
-   as `//record_refund` does.
+2. otherwise, in one transaction, sets the order `taken`, clears its stored signatures, credits its
+   price to its balance, which may already hold a move's difference or an overpayment, and records all
+   of that balance as refunded, as `//record_refund` does.
 
-The answer, `Closed order <id>, failed at <time>, as taken and recorded a refund of $100.00. Check at
+The answer, `Closed order <id>, failed or lapsed unsigned at <time>, as taken and recorded a refund of $100.00. Check at
 the provider that it was not refunded by hand before; if not, refund it now, by: …`, lists what paid
 for the order, as the answer of `//record_refund` does. Before this command existed, support refunded failed
 orders at the provider by hand, so look for a refund of that payment after the failure time first, and
@@ -1757,7 +1766,7 @@ pay the amount back by those methods only if none is found. The service logs eac
 note with its registration id and the cents.
 
 Before the first version with `//close` is deployed, list the failed paid orders, with the committed
-ones past their signing deadline, which read failed and can be closed too, and find at the provider,
+ones past their signing deadline, which can be closed too, and find at the provider,
 by the provider reference listed, each one already refunded by hand. An order paid from a balance
 also lists the order whose balance paid it, and one paid wholly from it lists no invoice. After the deploy, close
 the orders refunded by hand with `//close` and pay nothing, so that their records match the money:
@@ -1766,11 +1775,12 @@ the orders refunded by hand with `//close` and pay nothing, so that their record
 psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.reveal_before, ni.invoice_id, ni.provider_ref, r.balance_source FROM simplex_v1_chat_schema.sx_badge_service_name_registrations r LEFT JOIN simplex_v1_chat_schema.sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id WHERE r.name_prepaid_code_id IS NULL AND (r.phase = 'failed' OR (r.phase = 'committed' AND r.label IS NULL AND r.reveal_before < EXTRACT(EPOCH FROM now()))) ORDER BY r.created_at"
 ```
 
-A closed order reads `taken` in Your names, with its refund. Try again and a move answer
+A closed order reads `taken` in Your names, with its refund. `/retry` and a move answer
 `400 bad_request`, `//balance` finds nothing to refund, and the wallet can order the name again.
 
-The command records nothing for an order that is not failed or was paid with a prepaid code, whose
-code is released 30 days after the order failed; for a failed chain read; for a balance an order
+The command records nothing for an order that is neither failed nor lapsed unsigned, or was paid with
+a prepaid code, whose code is released and the order closed `taken` 30 days after the order failed or
+lapsed; for a failed chain read; for a balance an order
 holds, worded as for `//record_refund`; and for an order or a balance that changed meanwhile. Run the
 command again after the last three.
 

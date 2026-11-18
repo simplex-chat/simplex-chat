@@ -82,6 +82,7 @@ import StoreService.Names.Chain (Hex32 (..), TxHash)
 import StoreService.Names.Registration (AgreedTerms (..), Commitment, OrderFields (..), RegistrationId (..), parseChecksumAddress, personalDigest)
 import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
+import StoreService.Names.View (lapsedAt)
 import StoreService.Store.Invoices (unixSeconds)
 
 data OrdersEnv = OrdersEnv
@@ -137,7 +138,7 @@ data ClosedOrder = ClosedOrder {coRegistration :: NameRegistration, coVersion ::
 data WriteRefusal = WRChanged | WRRefused OrderRefusal
   deriving (Eq, Show)
 
--- | What /retry's first check found on the order's current name: no register through, the order registered at a new version,
+-- | What the register check found on the order's current name: no register through, the order registered at a new version,
 -- the order changed since it was read, or a failed chain read.
 data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
   deriving (Eq, Show)
@@ -315,11 +316,11 @@ checkPrice ct len years price =
       | chainPrice /= price -> pure $ Left $ ORCatalogChanged chainPrice
       | otherwise -> pure $ Right ()
 
--- | A failed order, and one whose reveal was refused for its links, can move to another name.
-movable :: NameRegistration -> Bool
-movable NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
+-- | A failed order, one whose reveal was refused for its links, and one whose commitment lapsed unsigned can move to another name.
+movable :: UTCTime -> NameRegistration -> Bool
+movable now r@NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
   OFailed {} -> True
-  OCommitted _ -> isJust nrLinksRefusedAt
+  OCommitted _ -> isJust nrLinksRefusedAt || lapsedAt now r
   _ -> False
 
 orderFieldsOf :: NameRegistration -> OrderFields
@@ -372,9 +373,9 @@ versionWritten = \case
 confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
 
--- | /retry's first check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
+-- | The register check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
--- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
+-- The caller holds the turn of the order's label hash.
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
 checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory} = do
   txs <- withTransaction st (`registrationTransactions` nrId)

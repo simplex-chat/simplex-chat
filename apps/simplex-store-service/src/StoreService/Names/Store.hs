@@ -160,7 +160,7 @@ import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Group.Command (CmdSource (..))
-import StoreService.Names.Chain (ChainSeconds, Hex32 (..), TxHash (..))
+import StoreService.Names.Chain (ChainSeconds, Hex32 (..), TxHash (..), chainSeconds)
 import StoreService.Names.Registration (AgreedTerms, Commitment, LinkKind, OrderFields (..), RegistrationId (..), TermsAcceptance (..), TermsHash)
 import StoreService.Providers (Rate, Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
@@ -275,13 +275,14 @@ data TxHistory = TxHistory {thCommitTx :: Maybe TxHash, thRegisterTx :: Maybe Tx
 noHistory :: TxHistory
 noHistory = TxHistory {thCommitTx = Nothing, thRegisterTx = Nothing}
 
-data FailReason = FRNotSignedInTime | FRNotRegistered
+data FailReason = FRSendsUsedUp | FRLinksRefused | FRRegistryRefused
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding FailReason where
   textEncode = \case
-    FRNotSignedInTime -> "not_signed_in_time"
-    FRNotRegistered -> "not_registered"
+    FRSendsUsedUp -> "sends_used_up"
+    FRLinksRefused -> "links_refused"
+    FRRegistryRefused -> "registry_refused"
   textDecode = enumTextDecode
 
 instance FromField FailReason where fromField = fromTextField_ textDecode
@@ -1111,7 +1112,7 @@ deleteUnpaidRegistration db (RegistrationId rid) =
             then Right () <$ mapM_ (DB.execute db (mkQuery "DELETE FROM @invoices WHERE invoice_id = ?") . Only) [invId | Only (Just invId) <- invoiceIds :: [Only (Maybe Text)]]
             else pure $ Left CKPaid
 
--- | Code orders failed before the cutoff that still hold their unspent code.
+-- | Code orders failed, or whose commitment lapsed unsigned, before the cutoff that still hold their unspent code.
 failedCodeOrdersBefore :: DB.Connection -> UTCTime -> IO [(RegistrationId, CodeId)]
 failedCodeOrdersBefore db cutoff =
   map (\(rid, codeId) -> (RegistrationId rid, codeId))
@@ -1122,11 +1123,11 @@ failedCodeOrdersBefore db cutoff =
         SELECT r.registration_id, c.name_prepaid_code_id
         FROM @name_registrations r
         JOIN @name_prepaid_codes c ON c.reserved_by = r.registration_id
-        WHERE r.phase = ? AND r.failed_at < ? AND c.spent_at IS NULL
-        ORDER BY r.failed_at, r.registration_id
+        WHERE c.spent_at IS NULL AND ((r.phase = ? AND r.failed_at < ?) OR (r.phase = ? AND r.label IS NULL AND r.reveal_before < ?))
+        ORDER BY r.registration_id
       |]
       )
-      (PFailed, truncateToSecond cutoff)
+      (PFailed, truncateToSecond cutoff, PCommitted, int64 $ chainSeconds cutoff)
 
 -- | The hold, unless it is overdue, which reads as none.
 heldBy :: Balance -> Maybe BalanceHold

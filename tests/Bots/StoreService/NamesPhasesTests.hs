@@ -51,7 +51,7 @@ namesPhasesTests = describe "StoreService names: phases" $ do
   describe "time" $ do
     it "wakes an unpaid invoice held on its status at its expiry, reading it expired" testExpiryWakes
     it "reads a funded open invoice past its expiry as open, and holds it" testFundedStaysOpen
-    it "reads a committed registration with no reveal past revealBefore as failed, waking held registration and invoice polls" testLapseReadsFailed
+    it "reads a committed registration with no reveal past revealBefore as lapsed, waking held registration and invoice polls" testLapseReadsFailed
   describe "registration poll" $ do
     it "answers at once without seenVersion, with another version, or with one that is not a number" testAnswersAtOnce
     it "answers unchanged after the hold" testHoldTimesOut
@@ -261,9 +261,10 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
   poll <- held ctx (0, 1) $ registrationPath nrId <> seenVersion v
   (status, lapsed) <- woken "registration poll at the lapse" poll
-  (status, fieldOf lapsed "phase", fieldOf lapsed "version") `shouldBe` (200, Just $ phaseValue "failed" ["reason" J..= ("notSignedInTime" :: Text)], Just (J.toJSON v))
+  let lapsedPhase = phaseValue "committed" ["revealAfter" J..= (revealBefore - 3600), "revealBefore" J..= revealBefore, "signature" J..= J.object ["type" J..= ("lapsed" :: Text)]]
+  (status, fieldOf lapsed "phase", fieldOf lapsed "version") `shouldBe` (200, Just lapsedPhase, Just (J.toJSON v))
   (_, o) <- woken "invoice poll at the lapse" invoicePoll
-  (fieldOf o "status", fieldOf (registrationOf o) "phase") `shouldBe` (Just "paid", Just $ phaseValue "failed" ["reason" J..= ("notSignedInTime" :: Text)])
+  (fieldOf o "status", fieldOf (registrationOf o) "phase") `shouldBe` (Just "paid", Just lapsedPhase)
   (nrPhase <$> invoiceRegistration ctx inv) `shouldReturn` committed
   -- one with a reveal set stays committed past revealBefore
   revealed <- change ctx nrId $ \r' -> r' {nrReveal = Just reveal}

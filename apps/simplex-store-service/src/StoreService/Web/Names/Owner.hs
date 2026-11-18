@@ -28,7 +28,7 @@ import StoreService.Names.Phases (publish)
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, retargetMessage)
 import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
-import StoreService.Names.View (phaseText, registrationAt, registrationView)
+import StoreService.Names.View (phaseText, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
 import StoreService.Names.Worker (Retried (..), checkFailedOrder)
 import StoreService.Web.Names.Orders (Answer (..), answerNow, refused, sendAnswer)
@@ -57,7 +57,7 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
         Left refusal -> refuse refusal
         Right () -> do
           rs <- withTransaction oeStore (\db -> findRegistrations db frOwner now)
-          pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (\(r, holder) -> foundJSON (registrationAt now r) holder) rs]
+          pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (uncurry foundJSON) rs]
     refuse = refused "POST /api/registration/find"
 
 -- | balanceSource: the order whose balance paid this one; heldBy: the order whose invoice holds this one's balance.
@@ -95,11 +95,11 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
                 >>= maybe (pure $ answerNow notFound) (either (const changed) pure)
     inTurns fields timestamp stored = do
       now <- oeNow
-      moveTo now (registrationAt now stored) fields timestamp
+      moveTo now stored fields timestamp
     moveTo now r@NameRegistration {nrPhase} fields timestamp
       | orderFieldsOf r == fields = answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
-      | not (movable r) = refuse $ ORBadRequest "the order is not movable"
+      | not (movable now r) = refuse $ ORBadRequest "the order is not movable"
       | namePhase nrPhase == PFailed =
           checkFailedOrder env r >>= \case
             Right () -> moveChecked now r fields
@@ -122,7 +122,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
         Left (WRRefused refusal) -> refuse refusal
     movedAnswer now v =
       withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just r -> written env rid v . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now (registrationAt now r)
+        Just r -> written env rid v . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
         Nothing -> answerNow internalError <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
     changed = answerNow <$> registrationChangedResponse env rid
     what = "POST /api/registration/:id/name"

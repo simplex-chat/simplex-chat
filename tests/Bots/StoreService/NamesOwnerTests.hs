@@ -16,6 +16,7 @@ module Bots.StoreService.NamesOwnerTests
     failedPhase,
     findBody,
     labelBytes,
+    linksRefusedPhase,
     move,
     moveBody,
     moveTo,
@@ -78,7 +79,7 @@ import Test.Hspec
 namesOwnerTests :: Spec
 namesOwnerTests = describe "StoreService names: owner" $ do
   describe "find" $ do
-    it "lists the owner's orders newest first, a moved, an unpaid and a lapsed one read failed included, at most 50, and none for an owner of none" testFind
+    it "lists the owner's orders newest first, a moved, an unpaid and a lapsed one included, at most 50, and none for an owner of none" testFind
     it "refuses another signer's signature, a stale timestamp and a malformed body" testFindRefused
   describe "another name" $ do
     it "refuses a move from registered, queued, taken, and committed without a refused reveal" testMoveRefusedPhases
@@ -88,10 +89,10 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "answers terms_changed for an old version, other terms or the other kind, listed or not, a body differing only in terms included, and moves under the community terms, storing them" testMoveTermsChanged
     it "checks a code order moved to a community name for 2 years, and moved on to another name for its code's years again" testMoveCommunityYears
     it "prices a paid order moved to a community name for 2 years, whatever years it paid for" testMoveCommunityPaidYears
-    it "checks the terms after the timestamp, /retry's first check, the existing orders and the duration, before the chain, answering terms_unavailable while they are not set" testMoveTermsCheckOrder
+    it "checks the terms after the timestamp, the register check, the existing orders and the duration, before the chain, answering terms_unavailable while they are not set" testMoveTermsCheckOrder
     it "answers the fourth move move_limit with the current view, changing nothing" testMoveLimit
     it "refuses a move meeting another live order of the wallet's or the commitment with a bare order_exists, before the price" testMoveMeetsOrder
-    it "runs the order checks on the new fields: invalid_name, the duration, name_taken, name_check_unavailable, after /retry's first check, answered provider_unavailable as /retry answers it" testMoveOrderChecks
+    it "runs the order checks on the new fields: invalid_name, the duration, name_taken, name_check_unavailable, after the register check, answered provider_unavailable when it fails" testMoveOrderChecks
     it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code" testMoveLanded
     it "spends a released code still unused when its failed order turns out registered, and alerts once when it was spent elsewhere meanwhile" testMoveLandedReleasedCode
     it "answers a dearer name price_too_high with its price, one priced under the floor name_check_unavailable crediting nothing, and moves to a cheaper one at its price, crediting the difference to its balance" testMovePrice
@@ -219,7 +220,7 @@ stored :: Ctx -> NameRegistration -> IO NameRegistration
 stored ctx = registrationById ctx . nrId
 
 failedPhase, registeredPhase, committedPhase, linksRefusedPhase :: NameRegistration -> NameRegistration
-failedPhase r = r {nrPhase = OFailed orderTime FRNotRegistered}
+failedPhase r = r {nrPhase = OFailed orderTime FRRegistryRefused}
 registeredPhase r = r {nrPhase = ORegistered (seconds orderTime + 3 * 31536000) orderTime}
 committedPhase r = r {nrPhase = OCommitted committedCommit}
 linksRefusedPhase r = r {nrPhase = OCommitted committedCommit, nrLinksRefusedAt = Just orderTime}
@@ -307,7 +308,7 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
       map (`fieldOf` "registrationId") entries `shouldBe` map (Just . idText) (nrId lapsed : nrId paid : [oldOrder i | i <- [50, 49 .. 3]])
       case entries of
         lapsedEntry : unpaidEntry : moveEntry : _ -> do
-          (fieldOf lapsedEntry "phase", namePhase $ nrPhase lapsed) `shouldBe` (Just "failed", PCommitted)
+          (fieldOf lapsedEntry "phase", namePhase $ nrPhase lapsed) `shouldBe` (Just "committed", PCommitted)
           sort (KM.keys unpaidEntry) `shouldBe` sort ["registrationId", "invoiceId", "phase", "createdAt", "labelHash", "sealed", "balanceSource", "heldBy"]
           unpaidEntry
             `shouldBe` KM.fromList
@@ -364,9 +365,10 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
   move ctx keyA r to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   let phases = [OUnpaid (InvoiceId "inv"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted committedCommit, ORegistering committedCommit (TxHash $ hashFixture 9), nrPhase r, OTaken, nrPhase (failedPhase r)]
-      movableWith refused = [namePhase p | p <- phases, movable r {nrPhase = p, nrLinksRefusedAt = refused}]
-  movableWith Nothing `shouldBe` [PFailed]
-  movableWith (Just orderTime) `shouldBe` [PCommitted, PFailed]
+      movableWith at refused = [namePhase p | p <- phases, movable at r {nrPhase = p, nrLinksRefusedAt = refused}]
+  movableWith orderTime Nothing `shouldBe` [PFailed]
+  movableWith orderTime (Just orderTime) `shouldBe` [PCommitted, PFailed]
+  movableWith (addUTCTime (86400 + 1) orderTime) Nothing `shouldBe` [PCommitted, PFailed]
 
 testMoveAccepted :: IO ()
 testMoveAccepted = withOwner $ \ctx -> do

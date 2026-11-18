@@ -461,10 +461,10 @@ closeOrderCmd :: CmdSource -> Turns -> (SimplexTLD, Int, ChainClient) -> ChatCon
 closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {chatStore} ref = do
   ct <- newContracts chatStore tld minPriceCentsPerYear chain
   ((Right <$> closeRegistration chatStore ct turns getCurrentTime ref) `catchOwn` (pure . Left)) >>= \case
-    Right (CLRefunded failedAt RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
+    Right (CLRefunded endedAt RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
       logNote $ "names: closed order " <> rid <> " and recorded a refund of " <> tshow (toInteger rdCents) <> " cents"
       pure $ Right $
-        "Closed order " <> rid <> ", failed at " <> fmtTime failedAt <> ", as taken and recorded a refund of " <> dollars rdCents
+        "Closed order " <> rid <> ", failed or lapsed unsigned at " <> fmtTime endedAt <> ", as taken and recorded a refund of " <> dollars rdCents
           <> ". Check at the provider that it was not refunded by hand before; if not, refund it now, by: " <> chainText rdChain <> "."
     Right (CLRegistered (RegistrationId rid)) -> do
       logNote $ "names: order " <> rid <> " set registered by " <> spelledCmd source "close" <> ", as its register went through"
@@ -474,7 +474,7 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
   where
     refusalText = \case
       CFNoOrder -> "no order has the reference " <> ref
-      CFNotFailedPaid -> "the order of " <> ref <> " is not a failed order paid by invoice or balance"
+      CFNotFailedPaid -> "the order of " <> ref <> " is not a failed or lapsed unsigned order paid by invoice or balance"
       CFUnread -> "the chain could not be read; " <> again
       CFChanged -> "the order of " <> ref <> " changed meanwhile; " <> again
       CFHeld hold -> heldText source hold

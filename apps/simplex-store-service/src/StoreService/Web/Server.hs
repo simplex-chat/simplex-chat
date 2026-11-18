@@ -26,7 +26,7 @@ import StoreService.Names.Orders (OrdersEnv (..), jsonField, ordersEnv, textWith
 import StoreService.Names.Phases (awaitChange)
 import StoreService.Names.Registration (RegistrationId, tldLabel)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
-import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion)
+import StoreService.Names.View (lapseMoment, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), providerErrorText)
@@ -261,7 +261,7 @@ readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@Or
 readName :: OrdersEnv -> InvoiceRow -> RegistrationId -> IO (Maybe (UTCTime, InvoiceRow, NameRegistration))
 readName OrdersEnv {oeStore, oeNow} row rid = do
   now <- oeNow
-  fmap (\r -> (now, invoiceAt now row, registrationAt now r)) <$> withTransaction oeStore (`getRegistration` rid)
+  fmap (\r -> (now, invoiceAt now row, r)) <$> withTransaction oeStore (`getRegistration` rid)
 
 -- | The counter a hold watches starts at zero, so a payment recorded before this request arrived cannot wake it.
 samePayment :: Request -> InvoiceRow -> Bool
