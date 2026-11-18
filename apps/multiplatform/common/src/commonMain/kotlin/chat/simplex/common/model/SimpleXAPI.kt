@@ -2680,7 +2680,7 @@ object ChatController {
   }
 
   suspend fun allowFeatureToContact(rh: Long?, contact: Contact, feature: ChatFeature, param: Int? = null) {
-    val prefs = contact.mergedPreferences.toPreferences().setAllowed(feature, param = param)
+    val prefs = contact.userPreferences.setAllowed(feature, param = param)
     val toContact = apiSetContactPrefs(rh, contact.contactId, prefs)
     if (toContact != null) {
       withContext(Dispatchers.Main) {
@@ -5242,7 +5242,7 @@ data class ProtocolTestFailure(
       testError is AgentErrorType.BROKER && testError.brokerErr is BrokerErrorType.NETWORK && testError.brokerErr.networkError is NetworkError.UnknownCAError ->
         err + " " + generalGetString(MR.strings.error_smp_test_certificate)
       else ->
-        err + " " + String.format(generalGetString(MR.strings.error_with_info), testError.toString())
+        err + " " + String.format(generalGetString(MR.strings.error_with_info), testError.string)
     }
   }
 }
@@ -5938,16 +5938,6 @@ data class ContactUserPreferences(
   val calls: ContactUserPreference,
   val commands: List<ChatBotCommand>?,
 ) {
-  fun toPreferences(): ChatPreferences = ChatPreferences(
-    timedMessages = timedMessages.userPreference.pref,
-    fullDelete = fullDelete.userPreference.pref,
-    reactions = reactions.userPreference.pref,
-    voice = voice.userPreference.pref,
-    files = files.userPreference.pref,
-    calls = calls.userPreference.pref,
-    commands = commands,
-  )
-
   companion object {
     val sampleData = ContactUserPreferences(
       timedMessages = ContactUserPreferenceTimed(

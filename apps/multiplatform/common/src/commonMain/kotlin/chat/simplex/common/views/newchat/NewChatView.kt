@@ -458,8 +458,9 @@ fun ActiveProfilePicker(
           }
         }
       },
-      image = { ProfileImage(size = 42.dp, image = user.image) },
-      badge = user.profile.localBadge
+        image = { ProfileImage(size = 35.dp, image = user.image, modifier = Modifier.centeredIn(42.dp)) },
+        badge = user.profile.localBadge
+
     )
   }
 
@@ -660,45 +661,29 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
         color = cardBg,
         elevation = 0.dp
       ) {
-        SectionItemView(
-          padding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-          click = {
-            ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
-              val search = rememberSaveable { mutableStateOf("") }
-              ModalView(
-                { close() },
-                showSearch = true,
-                searchAlwaysVisible = true,
-                onSearchValueChanged = { search.value = it },
-                content = {
-                  ActiveProfilePicker(
-                    search = search,
-                    close = close,
-                    rhId = rhId,
-                    contactConnection = contactConnection.value
-                  )
-                }
-              )
-            }
-          }
-        ) {
-          if (incognito) {
-            Spacer(Modifier.width(8.dp))
-            Icon(
-              painterResource(MR.images.ic_theater_comedy_filled),
-              contentDescription = stringResource(MR.strings.incognito),
-              tint = Indigo,
-              modifier = Modifier.size(32.dp)
-            )
-            Spacer(Modifier.width(2.dp))
-          } else {
-            ProfileImage(size = 42.dp, image = currentUser.image)
-          }
-          TextIconSpaced(false)
-          Text(
-            text = if (incognito) stringResource(MR.strings.incognito) else currentUser.chatViewName,
-            color = MaterialTheme.colors.onSurface,
-            fontWeight = FontWeight.Medium
+        if (incognito) {
+          Spacer(Modifier.width(8.dp))
+          Icon(
+            painterResource(MR.images.ic_theater_comedy_filled),
+            contentDescription = stringResource(MR.strings.incognito),
+            tint = Indigo,
+            modifier = Modifier.size(32.dp)
+          )
+          Spacer(Modifier.width(2.dp))
+        } else {
+          ProfileImage(size = 35.dp, image = currentUser.image, modifier = Modifier.centeredIn(42.dp))
+        }
+        TextIconSpaced(false)
+        Text(
+          text = if (incognito) stringResource(MR.strings.incognito) else currentUser.chatViewName,
+          color = MaterialTheme.colors.onBackground
+        )
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+          Icon(
+            painter = painterResource(MR.images.ic_arrow_forward_ios),
+            contentDescription = stringResource(MR.strings.new_chat_share_profile),
+            tint = MaterialTheme.colors.secondary,
+
           )
           Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
             Icon(

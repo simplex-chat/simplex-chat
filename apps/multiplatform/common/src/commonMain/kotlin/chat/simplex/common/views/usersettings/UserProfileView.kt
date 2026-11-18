@@ -174,33 +174,68 @@ fun UserProfileLayout(
         Column(
           Modifier.fillMaxWidth()
         ) {
-         // В UserProfileView.kt вокруг аватарки профиля:
-Box(
-  Modifier
-    .fillMaxWidth()
-    .padding(bottom = 18.dp),
-  contentAlignment = Alignment.Center
-) {
-  Box(contentAlignment = Alignment.TopEnd) {
-    Box(contentAlignment = Alignment.Center) {
-      // story-контейнер для собственного профиля (contactId = null)
-      StoryAvatarContainer(
-        contactId = null,
-        avatarSize = 108.dp
-      ) {
-        ProfileImage(108.dp, profileImage.value, color = MaterialTheme.colors.secondary.copy(alpha = 0.1f))
-      }
-      EditImageButton { scope.launch { bottomSheetModalState.show() } }
-    }
-    if (profileImage.value != null) {
-      DeleteImageButton { profileImage.value = null }
-    }
-  }
-}
-          // =====================================================================
-          // 2. РАЗДЕЛ TEMPORARY CONTENT (ФОТО И ВИДЕО СТОРИС 1h..24h)
-          // =====================================================================
-          TemporaryContentProfileSection()
+          AppBarTitle(stringResource(MR.strings.your_current_profile), withPadding = false)
+          ReadableText(generalGetString(MR.strings.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it), TextAlign.Center)
+          Column(
+            Modifier
+              .fillMaxWidth()
+          ) {
+            Box(
+              Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+              contentAlignment = Alignment.Center
+            ) {
+              Box(contentAlignment = Alignment.TopEnd) {
+                Box(contentAlignment = Alignment.Center) {
+                  // story-контейнер для собственного профиля (contactId = null)
+                  StoryAvatarContainer(
+                    contactId = null,
+                    avatarSize = 108.dp
+                  ) {
+                    ProfileImage(
+                      90.dp,
+                      profileImage.value,
+                      color = MaterialTheme.colors.secondary.copy(alpha = 0.1f),
+                      modifier = Modifier.centeredIn(108.dp)
+                    )
+                  }
+                  EditImageButton { scope.launch { bottomSheetModalState.show() } }
+                }
+                if (profileImage.value != null) {
+                  DeleteImageButton { profileImage.value = null }
+                }
+              }
+            }
+
+            // =====================================================================
+            // 2. РАЗДЕЛ TEMPORARY CONTENT (ФОТО И ВИДЕО СТОРИС 1h..24h)
+            // =====================================================================
+            TemporaryContentProfileSection()
+            Spacer(Modifier.height(DEFAULT_PADDING))
+
+            Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+              Text(
+                stringResource(MR.strings.display_name__field),
+                fontSize = 16.sp
+              )
+              if (!isValidNewProfileName(displayName.value, profile)) {
+                Spacer(Modifier.width(DEFAULT_PADDING_HALF))
+                IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
+                  Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+                }
+              }
+            }
+            ProfileNameField(displayName, "", { isValidNewProfileName(it, profile) }, focusRequester)
+            if (showFullName(profile)) {
+              Spacer(Modifier.height(DEFAULT_PADDING))
+              Text(
+                stringResource(MR.strings.full_name__field),
+                fontSize = 16.sp,
+                modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+              )
+              ProfileNameField(fullName)
+            }
 
           Spacer(Modifier.height(18.dp))
 

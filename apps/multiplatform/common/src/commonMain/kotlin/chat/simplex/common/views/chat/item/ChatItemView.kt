@@ -64,7 +64,8 @@ fun chatEventText(eventText: String, ts: AnnotatedString): AnnotatedString =
 data class ChatItemReactionMenuItem (
   val name: String,
   val image: String?,
-  val onClick: (() -> Unit)?
+  val onClick: (() -> Unit)?,
+  val icon: ImageResource = MR.images.ic_account_circle_filled
 )
 
 private val REACTION_SPACING = 5.dp
@@ -113,7 +114,6 @@ fun ChatItemView(
   reveal: (Boolean) -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit,
-  developerTools: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
   itemSeparation: ItemSeparation,
@@ -187,7 +187,7 @@ fun ChatItemView(
                         reactionMenuItems.value = members.map {
                           val enabled = cInfo.groupInfo.membership.groupMemberId != it.groupMember.groupMemberId
                           val click = if (enabled) ({ showMemberInfo(cInfo.groupInfo, it.groupMember) }) else null
-                          ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, click)
+                          ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, click, peerTypeIcon(it.groupMember.memberProfile.peerType))
                         }
                       }
                     } catch (e: Exception) {
@@ -201,7 +201,7 @@ fun ChatItemView(
 
                   if (!r.userReacted || r.totalReacted > 1) {
                     val contact = cInfo.contact
-                    reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, showChatInfo))
+                    reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, showChatInfo, contact.chatIconName))
                   }
 
                   if (r.userReacted) {
@@ -238,7 +238,7 @@ fun ChatItemView(
               reactionMenuItems.value.forEach { m ->
                 ItemAction(
                   text = m.name,
-                  composable = { ProfileImage(44.dp, m.image) },
+                  composable = { ProfileImage(37.dp, m.image, m.icon, modifier = Modifier.centeredIn(44.dp)) },
                   onClick = {
                     val click = m.onClick
                     if (click != null) {
@@ -793,22 +793,46 @@ fun ChatItemView(
                 e2eeInfoText(if (e2EEInfo.public == true) MR.strings.e2ee_info_no_e2ee else MR.strings.e2ee_info_no_pq)
               }
 
-              if (markedDeleted) {
-                MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-                MarkedDeletedItemDropdownMenu()
-              } else {
-                when (val c = cItem.content) {
-                  is CIContent.SndMsgContent -> ContentItem()
-                  is CIContent.RcvMsgContent -> ContentItem()
-                  is CIContent.SndDeleted -> LegacyDeletedItem()
-                  is CIContent.RcvDeleted -> LegacyDeletedItem()
-                  is CIContent.SndCall -> CallItem(c.status, c.duration)
-                  is CIContent.RcvCall -> CallItem(c.status, c.duration)
-                  is CIContent.RcvIntegrityError -> if (developerTools) {
-                    IntegrityErrorItemView(c.msgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
-                    DeleteItemMenu()
-                  } else {
-                    Box(Modifier.size(0.dp)) {}
+            if (markedDeleted) {
+              MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+              MarkedDeletedItemDropdownMenu()
+            } else {
+              when (val c = cItem.content) {
+                is CIContent.SndMsgContent -> ContentItem()
+                is CIContent.RcvMsgContent -> ContentItem()
+                is CIContent.SndDeleted -> LegacyDeletedItem()
+                is CIContent.RcvDeleted -> LegacyDeletedItem()
+                is CIContent.SndCall -> CallItem(c.status, c.duration)
+                is CIContent.RcvCall -> CallItem(c.status, c.duration)
+                is CIContent.RcvIntegrityError -> {
+                  IntegrityErrorItemView(c.msgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
+                  DeleteItemMenu()
+                }
+                is CIContent.RcvMsgErrorContent -> {
+                  RcvMsgErrorItemView(c.rcvMsgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
+                }
+                is CIContent.RcvDecryptionError -> {
+                  CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember)
+                  DeleteItemMenu()
+                }
+                is CIContent.RcvGroupInvitation -> {
+                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, groupChat = cInfo is ChatInfo.Group, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
+                  DeleteItemMenu()
+                }
+                is CIContent.SndGroupInvitation -> {
+                  CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito, groupChat = cInfo is ChatInfo.Group, showTimestamp = showTimestamp, timedMessagesTTL = cInfo.timedMessagesTTL)
+                  DeleteItemMenu()
+                }
+                is CIContent.RcvDirectEventContent -> {
+                  EventItemView()
+                  MsgContentItemDropdownMenu()
+                }
+                is CIContent.RcvGroupEventContent -> {
+                  when (c.rcvGroupEvent) {
+                    is RcvGroupEvent.MemberCreatedContact -> CIMemberCreatedContactView(cItem, openDirectChat)
+                    is RcvGroupEvent.NewMemberPendingReview -> PendingReviewEventItemView()
+                    else -> EventItemView()
+
                   }
                   is CIContent.RcvMsgErrorContent -> {
                     RcvMsgErrorItemView(c.rcvMsgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
@@ -1350,6 +1374,9 @@ fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = fal
   }
 }
 
+@Composable
+fun terminalCardShape(): Shape = RoundedCornerShape(msgRectMaxRadius * remember { appPreferences.chatItemRoundness.state }.value.coerceIn(0f, 1f))
+
 private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, _ ->
   val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()) }
   val width = size.width
@@ -1640,7 +1667,6 @@ fun PreviewChatItemView(
     reveal = {},
     showMemberInfo = { _, _ ->},
     showChatInfo = {},
-    developerTools = false,
     showViaProxy = false,
     showTimestamp = true,
     preview = true,
@@ -1729,7 +1755,6 @@ fun PreviewChatItemViewDeletedContent() = BubblePreview {
       reveal = {},
       showMemberInfo = { _, _ ->},
       showChatInfo = {},
-      developerTools = false,
       showViaProxy = false,
       preview = true,
       showTimestamp = true,
