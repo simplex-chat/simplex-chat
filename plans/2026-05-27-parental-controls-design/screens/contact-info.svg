@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="850" viewBox="0 0 820 850" font-family="-apple-system, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000">
+  <title>A contact's page with Always allowed</title>
+  <defs>
+    <g id="i-search" fill="none" stroke-width="1.8"><circle cx="-1.5" cy="-1.5" r="5.8"/><path d="M2.8,2.8 L8,8"/></g>
+    <g id="i-phone"><path d="M-7,-8 L-3.5,-8 L-1.5,-3.5 L-4,-1.5 C-2.5,1.5 -0.5,3.5 2,4.5 L4,2 L8.5,4 L8.5,7.5 C8.5,8.5 7.5,9 6.5,9 C-2,8 -8.5,1.5 -9,-6.5 C-9,-7.5 -8,-8 -7,-8 Z"/></g>
+    <g id="i-video"><rect x="-9" y="-5.5" width="12" height="11" rx="2.5"/><path d="M3,-1.5 L9,-5 V5 L3,1.5 Z"/></g>
+    <g id="i-bell" fill="none" stroke-width="1.6"><path d="M-6,4 V-1 C-6,-5 -3,-7.5 0,-7.5 C3,-7.5 6,-5 6,-1 V4 L8,6 H-8 Z M-2,8 C-1.5,9.5 1.5,9.5 2,8"/><path d="M-8,-8 L8,8"/></g>
+    <g id="i-switch" fill="none" stroke="#0088ff" stroke-width="1.6"><rect x="-9" y="-8" width="18" height="7" rx="3.5"/><circle cx="5.5" cy="-4.5" r="2"/><rect x="-9" y="1" width="18" height="7" rx="3.5"/><circle cx="-5.5" cy="4.5" r="2"/></g>
+    <g id="i-check" fill="none" stroke="#0088ff" stroke-width="1.6"><path d="M-9,-7 H9 V5 H-2 L-6,9 V5 H-9 Z"/><path d="M-4,-1 L-1,2 L4,-3.5"/></g>
+    <g id="i-photo" fill="none" stroke="#0088ff" stroke-width="1.6"><rect x="-9" y="-7" width="18" height="14" rx="2.5"/><path d="M-7,5 L-2,0 L2,3.5 L4.5,1 L7.5,4.5"/><circle cx="3.5" cy="-2.5" r="1.4"/></g>
+    <g id="i-hand" fill="none" stroke="#0088ff" stroke-width="1.5" stroke-linejoin="round"><path d="M-6,3 L-6,-5 A1.5,1.5 0 0 1 -3,-5 L-3,-1 L-3,-8 A1.5,1.5 0 0 1 0,-8 L0,-1 L0,-7 A1.5,1.5 0 0 1 3,-7 L3,-1 L3,-4.5 A1.5,1.5 0 0 1 6,-4.5 L6,3 C6,7.5 3,10 -0.5,10 C-3.5,10 -5.5,8.5 -7,6.5 L-9.5,3 A1.4,1.4 0 0 1 -7.2,1.4 Z"/></g>
+    <g id="t-on"><rect width="51" height="31" rx="15.5" fill="#34c759"/><circle cx="35.5" cy="15.5" r="13.5" fill="#ffffff"/></g>
+    <g id="t-off"><rect width="51" height="31" rx="15.5" fill="#e9e9eb"/><circle cx="15.5" cy="15.5" r="13.5" fill="#ffffff" stroke="#d1d1d6" stroke-width="0.5"/></g>
+  </defs>
+  <rect width="820" height="850" fill="#ffffff"/>
+
+  <text x="0" y="22" font-size="15" font-weight="600" fill="#162120">Not always allowed; calls off</text>
+  <text x="430" y="22" font-size="15" font-weight="600" fill="#162120">Always allowed, after the PIN</text>
+
+  <g transform="translate(0,36)">
+    <rect width="390" height="780" rx="24" fill="#f2f2f7" stroke="#d0d5d4"/>
+    <circle cx="195" cy="124" r="96" fill="#e5e5ea"/><text x="195" y="150" font-size="72" fill="#ffffff" text-anchor="middle" font-weight="600">A</text>
+    <text x="195" y="270" font-size="34" text-anchor="middle">Alice</text>
+    <text x="195" y="302" font-size="17" fill="#c7c7cc" text-anchor="middle">Set contact name…</text>
+    <rect x="16" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-search" x="57" y="344" stroke="#0088ff"/><text x="57" y="372" font-size="12" fill="#0088ff" text-anchor="middle">search</text>
+    <rect x="106" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-phone" x="147" y="344" fill="#c7c7cc"/><text x="147" y="372" font-size="12" fill="#c7c7cc" text-anchor="middle">call</text>
+    <rect x="196" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-video" x="237" y="344" fill="#c7c7cc"/><text x="237" y="372" font-size="12" fill="#c7c7cc" text-anchor="middle">video</text>
+    <rect x="286" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-bell" x="327" y="344" stroke="#0088ff"/><text x="327" y="372" font-size="12" fill="#0088ff" text-anchor="middle">mute</text>
+    <rect x="102" y="318" width="180" height="68" rx="12" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+
+    <rect x="16" y="406" width="358" height="132" rx="10" fill="#ffffff"/>
+    <use href="#i-switch" x="46" y="428"/><text x="72" y="433" font-size="17">Contact preferences</text><text x="362" y="433" font-size="17" fill="#c7c7cc">›</text>
+    <path d="M72,450 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-check" x="46" y="472"/><text x="72" y="477" font-size="17">Send receipts</text><text x="358" y="477" font-size="17" fill="#8a8a8e" text-anchor="end">Default (yes)</text>
+    <path d="M72,494 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-photo" x="46" y="516"/><text x="72" y="521" font-size="17">Chat theme</text><text x="362" y="521" font-size="17" fill="#c7c7cc">›</text>
+
+    <rect x="16" y="562" width="358" height="44" rx="10" fill="#ffffff"/>
+    <use href="#i-hand" x="46" y="584"/><text x="72" y="589" font-size="17">Always allowed</text><use href="#t-off" x="313" y="568"/>
+    <text x="36" y="626" font-size="13" fill="#8a8a8e">Calls, files, voice and media with Alice work</text>
+    <text x="36" y="644" font-size="13" fill="#8a8a8e">while parental controls are on. Changing this</text>
+    <text x="36" y="662" font-size="13" fill="#8a8a8e">asks for the parent PIN.</text>
+    <rect x="12" y="558" width="366" height="112" rx="12" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+
+    <rect x="16" y="690" width="358" height="44" rx="10" fill="#ffffff"/>
+    <text x="36" y="717" font-size="17">Delete messages after</text><path d="M358.5,710 L362,706.5 L365.5,710 M358.5,714 L362,717.5 L365.5,714" fill="none" stroke="#8a8a8e" stroke-width="1.5"/>
+    <text x="36" y="754" font-size="13" fill="#8a8a8e">Delete chat messages from your device.</text>
+  </g>
+
+  <g transform="translate(430,36)">
+    <rect width="390" height="780" rx="24" fill="#f2f2f7" stroke="#d0d5d4"/>
+    <circle cx="195" cy="124" r="96" fill="#e5e5ea"/><text x="195" y="150" font-size="72" fill="#ffffff" text-anchor="middle" font-weight="600">M</text>
+    <text x="195" y="270" font-size="34" text-anchor="middle">Mum</text>
+    <text x="195" y="302" font-size="17" fill="#c7c7cc" text-anchor="middle">Set contact name…</text>
+    <rect x="16" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-search" x="57" y="344" stroke="#0088ff"/><text x="57" y="372" font-size="12" fill="#0088ff" text-anchor="middle">search</text>
+    <rect x="106" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-phone" x="147" y="344" fill="#0088ff"/><text x="147" y="372" font-size="12" fill="#0088ff" text-anchor="middle">call</text>
+    <rect x="196" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-video" x="237" y="344" fill="#0088ff"/><text x="237" y="372" font-size="12" fill="#0088ff" text-anchor="middle">video</text>
+    <rect x="286" y="322" width="82" height="60" rx="10" fill="#ffffff"/><use href="#i-bell" x="327" y="344" stroke="#0088ff"/><text x="327" y="372" font-size="12" fill="#0088ff" text-anchor="middle">mute</text>
+
+    <rect x="16" y="406" width="358" height="132" rx="10" fill="#ffffff"/>
+    <use href="#i-switch" x="46" y="428"/><text x="72" y="433" font-size="17">Contact preferences</text><text x="362" y="433" font-size="17" fill="#c7c7cc">›</text>
+    <path d="M72,450 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-check" x="46" y="472"/><text x="72" y="477" font-size="17">Send receipts</text><text x="358" y="477" font-size="17" fill="#8a8a8e" text-anchor="end">Default (yes)</text>
+    <path d="M72,494 H374" stroke="#c6c6c8" stroke-width="0.5"/>
+    <use href="#i-photo" x="46" y="516"/><text x="72" y="521" font-size="17">Chat theme</text><text x="362" y="521" font-size="17" fill="#c7c7cc">›</text>
+
+    <rect x="16" y="562" width="358" height="44" rx="10" fill="#ffffff"/>
+    <use href="#i-hand" x="46" y="584"/><text x="72" y="589" font-size="17">Always allowed</text><use href="#t-on" x="313" y="568"/>
+    <text x="36" y="626" font-size="13" fill="#8a8a8e">Calls, files, voice and media with Mum work</text>
+    <text x="36" y="644" font-size="13" fill="#8a8a8e">while parental controls are on. Changing this</text>
+    <text x="36" y="662" font-size="13" fill="#8a8a8e">asks for the parent PIN.</text>
+    <rect x="12" y="558" width="366" height="112" rx="12" fill="none" stroke="#17708a" stroke-width="1.4" stroke-dasharray="5 3"/>
+
+    <rect x="16" y="690" width="358" height="44" rx="10" fill="#ffffff"/>
+    <text x="36" y="717" font-size="17">Delete messages after</text><path d="M358.5,710 L362,706.5 L365.5,710 M358.5,714 L362,717.5 L365.5,714" fill="none" stroke="#8a8a8e" stroke-width="1.5"/>
+    <text x="36" y="754" font-size="13" fill="#8a8a8e">Delete chat messages from your device.</text>
+  </g>
+
+  <text x="0" y="838" font-size="12" fill="#56625f">From ChatInfoView.swift at 85ba221d7; dashed: new, shown while calls, files, voice or media is off.</text>
+</svg>
