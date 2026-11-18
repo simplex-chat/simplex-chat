@@ -56,7 +56,7 @@ function memoryOver(real: StorageLike | undefined): StorageLike {
 }
 
 const store = pageStore();
-const deletesIdle = browserDeletesIdle(navigator.userAgent);
+const deletesIdle = store.durable && browserDeletesIdle(navigator.userAgent);
 
 const flow = new Flow({
   store,

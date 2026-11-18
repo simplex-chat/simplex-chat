@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { mediaFor, ruleFor, sheet } from "./css.js";
 import { forgetControl, headingOf, installPage, inViewOf, primaryOf, screenOf, settle, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
+import { CODES_LISTED_HERE } from "../src/screens.js";
 
 const mainTest = timedTest(2000);
 
@@ -338,7 +339,7 @@ mainTest("main: [ Forget everything ] removes the key and returns to the landing
   const landing = screenOf(app);
   assert.ok(landing.textContent.includes("Support SimpleX"), landing.textContent);
   assert.ok(landing.textContent.includes("Choose your badge"));
-  assert.ok(!landing.textContent.includes("Codes bought in this browser are listed here."));
+  assert.ok(!landing.textContent.includes(CODES_LISTED_HERE));
 });
 
 mainTest("main: the provider-unavailable screen notice does not outlive the checkout it belongs to", async () => {

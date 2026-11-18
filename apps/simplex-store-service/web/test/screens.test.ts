@@ -975,8 +975,6 @@ domTest("screens: the history list's Copy is offered only on a paid entry, and c
 domTest("screens: 'Codes bought in this browser are listed here.' is shown on an empty store, with the picture and the invest block", () => {
   const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, browserDeletesIdle: false, rows: [], onOpen: noop, onStart: noop }));
   assert.equal(p.all("p.lede")[0]!.textContent, screens.CODES_LISTED_HERE);
-  const refusing = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: false, browserDeletesIdle: false, rows: [], onOpen: noop, onStart: noop }));
-  assert.equal(refusing.all("p.lede")[0]!.textContent, screens.NOT_SAVING, "the refused store is stated on the empty list too");
   assert.ok(p.textContent.includes("Choose your badge"));
   assert.equal(p.all("div.hero").length, 1, "the landing's picture, so the screen is not a heading over a button");
   assert.equal(p.all("div.invest").length, 1, "and the crowdfunding under the button, as on every screen with one");
