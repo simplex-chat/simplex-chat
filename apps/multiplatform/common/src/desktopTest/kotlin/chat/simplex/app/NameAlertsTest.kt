@@ -2,6 +2,7 @@ package chat.simplex.app
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -22,6 +23,7 @@ import chat.simplex.common.platform.chatParseUri
 import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.chat.SimplexNameView
+import chat.simplex.common.views.chat.simplexNameCrossColor
 import chat.simplex.common.views.chatlist.ChatListView
 import chat.simplex.common.views.chatlist.ConnectByNameRow
 import chat.simplex.common.views.helpers.AlertManager
@@ -389,6 +391,12 @@ class NameAlertsTest {
   fun movedNameIsVerifiedAgain() = simplexName(DomainVerification.Moved) { verifications, _ ->
     onNodeWithText(SIMPLEX_NAME).performClick()
     waitUntil(timeoutMillis = 5_000) { verifications() == 1 }
+  }
+
+  @Test
+  fun crossColorOfNameState() {
+    assertEquals(Color.Red, simplexNameCrossColor(DomainVerification.Failed, Color.Gray))
+    assertEquals(Color.Gray, simplexNameCrossColor(DomainVerification.Moved, Color.Gray))
   }
 
   @Test
