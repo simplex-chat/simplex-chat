@@ -22,7 +22,6 @@ module StoreService.Names.Store
     TxHistory (..),
     noHistory,
     FailReason (..),
-    enumTextDecode,
     OrderPayment (..),
     BalanceUse (..),
     paymentInvoice,
@@ -209,10 +208,17 @@ instance TextEncoding NamePhase where
     PRegistered -> "registered"
     PTaken -> "taken"
     PFailed -> "failed"
-  textDecode = enumTextDecode
-
-enumTextDecode :: (Bounded a, Enum a, TextEncoding a) => Text -> Maybe a
-enumTextDecode t = lookup t [(textEncode v, v) | v <- [minBound .. maxBound]]
+  textDecode = \case
+    "unpaid" -> Just PUnpaid
+    "closed" -> Just PClosed
+    "queued" -> Just PQueued
+    "committing" -> Just PCommitting
+    "committed" -> Just PCommitted
+    "registering" -> Just PRegistering
+    "registered" -> Just PRegistered
+    "taken" -> Just PTaken
+    "failed" -> Just PFailed
+    _ -> Nothing
 
 instance FromField NamePhase where fromField = fromTextField_ textDecode
 
@@ -235,7 +241,10 @@ instance TextEncoding InvoiceClose where
   textEncode = \case
     ICExpired -> "expired"
     ICCancelled -> "cancelled"
-  textDecode = enumTextDecode
+  textDecode = \case
+    "expired" -> Just ICExpired
+    "cancelled" -> Just ICCancelled
+    _ -> Nothing
 
 instance FromField InvoiceClose where fromField = fromTextField_ textDecode
 
@@ -285,7 +294,11 @@ instance TextEncoding FailReason where
     FRSendsUsedUp -> "sends_used_up"
     FRLinksRefused -> "links_refused"
     FRRegistryRefused -> "registry_refused"
-  textDecode = enumTextDecode
+  textDecode = \case
+    "sends_used_up" -> Just FRSendsUsedUp
+    "links_refused" -> Just FRLinksRefused
+    "registry_refused" -> Just FRRegistryRefused
+    _ -> Nothing
 
 instance FromField FailReason where fromField = fromTextField_ textDecode
 
@@ -502,7 +515,12 @@ instance TextEncoding LatePending where
     LPUncredited -> "uncredited"
     LPUnconfirmed -> "unconfirmed"
     LPUncounted -> "uncounted"
-  textDecode = enumTextDecode
+  textDecode = \case
+    "confirming" -> Just LPConfirming
+    "uncredited" -> Just LPUncredited
+    "unconfirmed" -> Just LPUnconfirmed
+    "uncounted" -> Just LPUncounted
+    _ -> Nothing
 
 instance FromField LatePending where fromField = fromTextField_ textDecode
 
@@ -515,7 +533,11 @@ instance TextEncoding LateWait where
     LWConfirming -> "confirming"
     LWCrediting -> "crediting"
     LWSupport -> "support"
-  textDecode = enumTextDecode
+  textDecode = \case
+    "confirming" -> Just LWConfirming
+    "crediting" -> Just LWCrediting
+    "support" -> Just LWSupport
+    _ -> Nothing
 
 instance ToJSON LateWait where toJSON = textToJSON
 
@@ -601,7 +623,11 @@ instance TextEncoding RegistrationTx where
     RTCommit -> "commit"
     RTAccept -> "accept"
     RTRegister -> "register"
-  textDecode = enumTextDecode
+  textDecode = \case
+    "commit" -> Just RTCommit
+    "accept" -> Just RTAccept
+    "register" -> Just RTRegister
+    _ -> Nothing
 
 -- | A dropped transaction has no receipt and its registrar nonce is used.
 data TxStatus = TSPending | TSMined | TSReverted | TSDropped
@@ -619,7 +645,12 @@ instance TextEncoding TxStatus where
     TSMined -> "mined"
     TSReverted -> "reverted"
     TSDropped -> "dropped"
-  textDecode = enumTextDecode
+  textDecode = \case
+    "pending" -> Just TSPending
+    "mined" -> Just TSMined
+    "reverted" -> Just TSReverted
+    "dropped" -> Just TSDropped
+    _ -> Nothing
 
 instance FromField TxStatus where fromField = fromTextField_ textDecode
 
@@ -1625,7 +1656,9 @@ instance TextEncoding TxKind where
   textEncode = \case
     TKRegistration step -> textEncode step
     TKEdit -> "edit"
-  textDecode t = lookup t [(textEncode k, k) | k <- TKEdit : map TKRegistration [minBound .. maxBound]]
+  textDecode = \case
+    "edit" -> Just TKEdit
+    t -> TKRegistration <$> textDecode t
 
 instance FromField TxKind where fromField = fromTextField_ textDecode
 
@@ -1714,7 +1747,11 @@ instance TextEncoding EditTag where
     ETPending -> "pending"
     ETMined -> "mined"
     ETReverted -> "reverted"
-  textDecode = enumTextDecode
+  textDecode = \case
+    "pending" -> Just ETPending
+    "mined" -> Just ETMined
+    "reverted" -> Just ETReverted
+    _ -> Nothing
 
 instance FromField EditTag where fromField = fromTextField_ textDecode
 

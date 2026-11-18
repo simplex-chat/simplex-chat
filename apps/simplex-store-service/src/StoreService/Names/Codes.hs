@@ -38,7 +38,7 @@ import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import StoreService.Group.Command (CmdSource, maxNameYears)
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Registration (RegistrationId)
-import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), enumTextDecode, getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
+import StoreService.Names.Store (CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (currentSecond)
@@ -64,7 +64,14 @@ instance TextEncoding CodeState where
     CSRevoked -> "revoked"
     CSExpired -> "expired"
     CSUnpaid -> "unpaid"
-  textDecode = enumTextDecode
+  textDecode = \case
+    "unused" -> Just CSUnused
+    "reserved" -> Just CSReserved
+    "used" -> Just CSUsed
+    "revoked" -> Just CSRevoked
+    "expired" -> Just CSExpired
+    "unpaid" -> Just CSUnpaid
+    _ -> Nothing
 
 data CodeRefusal = CRInvalid | CRUsed | CRReserved | CRExpired | CRPaymentPending | CRNotCovering
   deriving (Eq, Show)

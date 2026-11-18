@@ -69,7 +69,6 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
-import Data.List (find)
 import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -130,7 +129,10 @@ instance TextEncoding LinkKind where
   textEncode = \case
     LKContact -> "simplex.contact"
     LKChannel -> "simplex.channel"
-  textDecode t = find ((t ==) . textEncode) [LKContact, LKChannel]
+  textDecode = \case
+    "simplex.contact" -> Just LKContact
+    "simplex.channel" -> Just LKChannel
+    _ -> Nothing
 
 recordKey :: LinkKind -> ByteString
 recordKey = encodeUtf8 . textEncode

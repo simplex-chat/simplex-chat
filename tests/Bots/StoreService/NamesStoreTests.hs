@@ -25,6 +25,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationsToRun (..), toDownMigration)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
@@ -32,6 +33,7 @@ import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Chain (Hex32 (..), RevertName (..), TxHash (..))
 import StoreService.Names.Registration (AgreedTerms (..), LinkKind (..), OrderFields (..), RegistrationId (..), TermsAcceptance (..), communityTermsPrefix, parseSignature)
 import StoreService.Names.Store
+import StoreService.Providers (Uncreditable (..))
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (InvoiceRow (..), NewInvoice (..), createInvoiceRows, getInvoiceByProviderRef)
 import Test.Hspec
@@ -52,6 +54,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "refuses a stored commitment, secret or accepted terms hash that is not 32 bytes" testShortHashes
     it "refuses a stored length outside the name lengths" testStoredLength
     it "refuses a stored phase whose columns fit none of its cases" testStoredPhase
+    it "reads back every stored tag it writes, and no other" testStoredTags
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -241,6 +244,23 @@ testStoredLength = forM_ [5, 64 :: Int] $ \len -> withServiceStore $ \st -> do
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET length = ? WHERE registration_id = 'r1'" (Only len)
   reg st "r1" `shouldThrow` anyException
+
+testStoredTags :: IO ()
+testStoredTags = do
+  roundTrip [minBound .. maxBound :: NamePhase]
+  roundTrip [minBound .. maxBound :: InvoiceClose]
+  roundTrip [minBound .. maxBound :: FailReason]
+  roundTrip [minBound .. maxBound :: LatePending]
+  roundTrip [minBound .. maxBound :: LateWait]
+  roundTrip [LSUncreditable UCHighSpeed, LSUncreditable UCUncounted, LSUncreditable UCNoConfirmationShown, LSRateFloor, LSUnconfirmed]
+  roundTrip [minBound .. maxBound :: RegistrationTx]
+  roundTrip [minBound .. maxBound :: TxStatus]
+  roundTrip [LKContact, LKChannel]
+  where
+    roundTrip :: (Eq a, Show a, TextEncoding a) => [a] -> Expectation
+    roundTrip vs = do
+      map (textDecode . textEncode) vs `shouldBe` map Just vs
+      (textDecode "unknown" `asTypeOf` Just (head vs)) `shouldBe` Nothing
 
 testStoredPhase :: IO ()
 testStoredPhase = forM_ unfit $ \columns -> withServiceStore $ \st -> do
