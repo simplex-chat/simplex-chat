@@ -1249,8 +1249,7 @@ p.row-line { margin: 16px 0 0; }
   .row.total { font-size: 1.125rem; }
 
   /* the history list's rows: the type scale steps down, and the art keeps the 44 it has at
-     every width. The paid-no-code screen's summary carries the same title and steps with it.
-     The code row narrows, so a code and "Copied" share one line at 360. */
+     every width. The paid-no-code screen's summary carries the same title and steps with it. */
   .entry { padding: 14px 16px 16px; }
   .entry .name, .rows.field > .name { font-size: 1rem; }
   .entry .code-row { gap: 6px; padding-right: 8px; }

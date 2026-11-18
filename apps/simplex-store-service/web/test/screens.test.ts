@@ -775,7 +775,7 @@ domTest("screens: the deletion warning is shown above Show code on the return-to
   const hidden = render(screens.returnToApp({ onReturn: noop, code: { kind: "hidden", onShow: noop }, retention: "keptUntilIdle" }));
   const warn = hidden.all("div.warn")[0]!;
   assert.equal(warn.all("span.title")[0]!.textContent, screens.CAN_DELETE_CODE);
-  assert.deepEqual(warn.all("p").map((l) => l.textContent), [screens.CODE_DELETED_AFTER, screens.COPY_UNLESS_ADDED]);
+  assert.deepEqual(warn.all("p").map((l) => l.textContent), [screens.DOES_SO_AFTER, screens.COPY_UNLESS_ADDED]);
   const showRow = hidden.children.find((c) => c instanceof StubElement && c.all("button").some((b) => b.textContent === screens.SHOW_CODE))!;
   assert.ok(hidden.children.indexOf(warn) < hidden.children.indexOf(showRow), "the deletion warning is placed above Show code");
   assertNoCode(hidden, "the return-to-app ending with the deletion warning");
@@ -791,7 +791,7 @@ domTest("screens: the deletion warning is shown on Your codes for codes kept unt
   const listed = render(screens.purchaseHistory({ onForget: noop, retention: "keptUntilIdle", rows, onOpen: noop, onStart: noop }));
   const warn = listed.all("div.warn")[0]!;
   assert.equal(warn.all("span.title")[0]!.textContent, screens.CAN_DELETE_CODES);
-  assert.deepEqual(warn.all("p").map((l) => l.textContent), [screens.CODES_DELETED_AFTER, screens.KEEP_EACH_OUTSIDE]);
+  assert.deepEqual(warn.all("p").map((l) => l.textContent), [screens.DOES_SO_AFTER, screens.KEEP_EACH_OUTSIDE]);
   const empty = render(screens.purchaseHistory({ onForget: noop, retention: "keptUntilIdle", rows: [], onOpen: noop, onStart: noop }));
   assert.equal(empty.all("p.muted")[0]!.textContent, screens.IDLE_DELETION_CODES, "the deletion line is shown on the empty list");
   const unpaid = render(screens.purchaseHistory({ onForget: noop, retention: "keptUntilIdle",
