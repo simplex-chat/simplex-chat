@@ -107,8 +107,9 @@ flowchart LR
   - The stored count of the active profile is not changed.
 - Other profiles: the core's count, changed per event by + item - prev with `isRcvNew`, `inMainChatList` and `ntfsEnabled`.
 - `unreadTag`: row counters by notifications, `unreadChat`, or the support flag (`supportUnreadCount > 0`) unless notifications are off (P13, Q3).
-- Unread tag counts are changed by `unreadTag` before and after each row change, `updateChatInfo`, `addChat` and Kotlin `replaceChat` included; they are no longer changed in `updateChatSettings` (both apps) and in Kotlin "mark unread" and "mark read".
+- Unread tag counts are changed by `unreadTag` before and after each row change: `updateChatInfo`, `addChat`, `replaceChat`, `clearChat` and iOS `markAllChatItemsRead` included (both apps). They are no longer changed in `updateChatSettings` (both apps) and in Kotlin "mark unread" and "mark read".
 - `removeChat` lowers the unread tag counts of an unread chat (both apps).
+- iOS `replaceChat` sets the icon badge when the chat's part of the profile count changes.
 - Desktop `SnapshotTest` previews call stubs of `chatSendCmdRetry` and `chatParseMarkdown`, so compose tests of later classes start without their errors.
 - iOS: the chat list is published when a row's `unreadTag` changes, so the Unread filter is updated.
 - With "Mark read" on a pending member's group, the chat with admins is read too (`apiSupportChatRead`, the user's scope) (Q2).
@@ -126,6 +127,18 @@ flowchart LR
   - groups: unread items of the main chat joined through each group, by `enable_ntfs` (P5, P11);
   - pending memberships, found by the user's contact: `support_chat_items_unread`, or `support_chat_items_mentions` for mentions-only (Q2).
 - The update event of a received edit has the group info with the support chat counters after the edit; `updateGroupCIUserMention` returns it.
+
+Query plans: `EXPLAIN QUERY PLAN` with sqlite3 3.45.1 on the branch's chat_schema.sql.
+
+| Count | Plan |
+|---|---|
+| contacts | `SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)`<br>`SEARCH i USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=?)` |
+| groups | `SEARCH g USING INDEX sqlite_autoindex_groups_2 (user_id=?)`<br>`SEARCH i USING COVERING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)` |
+| pending memberships | `SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)`<br>`SEARCH g USING INTEGER PRIMARY KEY (rowid=?)` |
+
+Measurement: #7969, "Alternatives", counting through the profile's contacts and groups (`CROSS JOIN`): 0.014 s warm, 1.9 s cold, against 0.52 s warm and 19.7 s cold for master's counts. Fixture: 2,998 contacts, 1,000 groups, 2,000,000 messages, 10,000 unread; the time grows with the number of chats.
+
+chat_query_plans.txt is written by "Save query plans", which runs only locally with the whole suite (tests/Test.hs:120, tests/ChatTests/Utils.hs:121-127); it is updated by that run.
 
 ```mermaid
 flowchart LR
@@ -146,6 +159,7 @@ flowchart LR
 | P5 | Support chat messages are counted in the profile count after a restart, not during a session. | They are counted only in a pending member's row (Q1, Q2). |
 | P6 | A chat outside the loaded list has no badge after a new message. | Messages received since are counted; older unread ones are counted at the next list load. |
 | P7 | The main chat's count is shown in reports and "Chat with admins". | Their own count is shown (Q4). |
+| P7, Kotlin main chat | The scroll buttons of an open chat show its row count. | They show the open chat's count, as on iOS: the core's count at opening, changed by the loaded items; a deleted unread message that is not loaded stays counted until the chat is reopened (Q4). |
 | P11 | Profile switch time grows with the number of messages. | Only unread items are read (Q6). |
 | P13 | Groups with the support flag are not in the Unread filter. | They are listed unless notifications are off (Q3). |
 | P17 | Admins' edits and deletions are not shown in a pending member's row; the badge of a deleted message is kept; the badge is lost after a restart. | The row is updated from the chat with admins, and its badge is kept after a restart (Q2). |
