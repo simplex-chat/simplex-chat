@@ -780,7 +780,7 @@ domTest("screens: the deletion warning is shown above Show code on the return-to
   assertNoCode(hidden, "the return-to-app ending with the deletion warning");
   const shown = render(screens.returnToApp({ onReturn: noop, code: { kind: "shown", code: HELD_CODE }, retention: "keptUntilIdle" }));
   assert.ok(shown.all("span.title").some((t) => t.textContent === screens.CAN_DELETE_CODE), "the deletion warning is shown with the revealed code");
-  assert.ok(!shown.textContent.includes(screens.COPY_UNLESS_ADDED), "the line to show the code is absent once the code is shown");
+  assert.ok(!shown.textContent.includes(screens.COPY_UNLESS_ADDED), "the line to show the code is shown only while the code is hidden");
   const kept = render(screens.returnToApp({ onReturn: noop, code: { kind: "hidden", onShow: noop }, retention: "kept" }));
   assert.equal(kept.all("div.warn").length, 0);
 });

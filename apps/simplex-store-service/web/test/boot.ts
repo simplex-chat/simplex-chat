@@ -5,6 +5,7 @@ import {
   MemStorage, StubHistory, installDocument, locationOf,
   type Clipboard, type Connectivity, type ServiceWorkers, type StubDocument, type StubElement,
 } from "./stub-dom.js";
+import { FORGET_EVERYTHING } from "../src/screens.js";
 
 export interface Reply {
   status: number;
@@ -194,10 +195,8 @@ export function primaryOf(p: StubElement): StubElement | undefined {
   return p.all("button.primary").find((b) => !b.hasAttribute("disabled"));
 }
 
-const FORGET_LABEL = "Forget everything in this browser";
-
 export function forgetControl(page: Page): StubElement | undefined {
   page.chrome.all("button.menu-button")[0]!.click();
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
-  return page.app.all("button.danger").find((b) => b.textContent === FORGET_LABEL);
+  return page.app.all("button.danger").find((b) => b.textContent === FORGET_EVERYTHING);
 }

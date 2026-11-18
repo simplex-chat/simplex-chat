@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, primaryOf, screenOf, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
-import { CAN_DELETE_CODES, COPY_UNLESS_ADDED, MAY_DO_SO_AFTER } from "../src/screens.js";
+import { CAN_DELETE_CODE, CAN_DELETE_CODES, COPY_UNLESS_ADDED, MAY_DO_SO_AFTER, SHOW_CODE } from "../src/screens.js";
 
 const safariTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
@@ -39,6 +39,10 @@ safariTest("main: in Safari opened from the app, the deletion warning and the li
   const ending = inView();
   assert.ok(ending.textContent.includes(COPY_UNLESS_ADDED), `the line to show the code is missing from: ${ending.textContent.slice(0, 300)}`);
   assert.ok(ending.textContent.includes(MAY_DO_SO_AFTER), `the deletion warning is missing from: ${ending.textContent.slice(0, 300)}`);
+
+  ending.all("button").find((b) => b.textContent === SHOW_CODE)!.click();
+  assert.deepEqual(inView().all("div.warn").map((b) => b.all("span.title")[0]!.textContent), ["This is the only copy.", CAN_DELETE_CODE],
+    "the only-copy box and the deletion warning follow the shown code");
 });
 
 safariTest("main: in Safari, the deletion warning is shown on Your codes", () => {
