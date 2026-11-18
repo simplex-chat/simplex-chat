@@ -303,10 +303,10 @@ follow rs Block {blockTimestamp} Block {blockTimestamp = deepTime} edit@RecordEd
   case txs of
     [] -> if ahead then sendUnsent else forget rs reId
     _
-      | mined : _ <- [ntHash | NameTransaction {ntHash, ntStatus = TSMined} <- txs] -> settle rs reId $ EOApplied $ Just mined
-      | any ((== TSPending) . ntStatus) txs -> if deepTime > reDeadline then expire else unstall rs reId
+      | mined : _ <- [ntHash | NameTransaction {ntHash, ntState = TxSettled TSMinedAt {}} <- txs] -> settle rs reId $ EOApplied $ Just mined
+      | any ((== TxPending) . ntState) txs -> if deepTime > reDeadline then expire else unstall rs reId
       -- a mined revert carries no data: past the deadline it is SignatureExpired, else unnamed
-      | block : _ <- [b | NameTransaction {ntStatus = TSReverted, ntMinedBlock = Just b} <- txs] ->
+      | block : _ <- [b | NameTransaction {ntState = TxSettled (TSRevertedAt b)} <- txs] ->
           blockAt (rsChain rs) block >>= \case
             Left e -> stall rs reId e
             Right Block {blockTimestamp = minedTime} -> judged rs edit $ settle rs reId $ EOReverted $ if minedTime > reDeadline then signatureExpired else Nothing

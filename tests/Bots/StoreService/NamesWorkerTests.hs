@@ -1006,8 +1006,12 @@ testRestart = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}, wSender} -> do
   steps w4 r >>= done
   namePhase . nrPhase <$> stored ctx r `shouldReturn` PRegistered
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
-  map ntStatus <$> withTransaction cStore (`registrationTransactions` nrId r) `shouldReturn` [TSMined, TSMined]
+  map (mined . ntState) <$> withTransaction cStore (`registrationTransactions` nrId r) `shouldReturn` [True, True]
   length <$> sent w `shouldReturn` 2
+  where
+    mined = \case
+      TxSettled TSMinedAt {} -> True
+      _ -> False
 
 testRestartRegisterSaved :: IO ()
 testRestartRegisterSaved = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender} -> do

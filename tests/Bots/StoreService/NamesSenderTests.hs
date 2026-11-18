@@ -30,7 +30,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Names.Chain
 import StoreService.Names.Registration (RegistrationId (..), commitCalldata)
 import StoreService.Names.Sender
-import StoreService.Names.Store (NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxStatus (..), pendingTransactions, recordTransactionOutcome, registrationTransactions)
+import StoreService.Names.Store (NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), TxStatus (..), pendingTransactions, recordTransactionOutcome, registrationTransactions)
 import StoreService.Names.View (addressText)
 import System.Timeout (timeout)
 import Test.Hspec
@@ -165,7 +165,7 @@ testConfirmationDepth g = withSetup g $ \s@Setup {node, store} -> do
   followTransactions sender
   outcomeOf p `shouldReturn` TOConfirmed (ptHash p) Receipt {receiptSuccess = False, receiptBlock = block}
   settled sender (TxRegistration RTCommit r1) `shouldReturn` True
-  statuses store r1 `shouldReturn` [(ptHash p, TSReverted, Just block)]
+  statuses store r1 `shouldReturn` [(ptHash p, TxSettled $ TSRevertedAt block)]
 
 testSettledNotPending :: TVar ChaChaDRG -> IO ()
 testSettledNotPending g = withSetup g $ \s@Setup {node, store} -> do
@@ -177,7 +177,7 @@ testSettledNotPending g = withSetup g $ \s@Setup {node, store} -> do
   withTransaction store (\db -> recordTransactionOutcome db (ptHash p) TSPending TSDroppedTx) `shouldReturn` True
   logged <- capturingStderr $ followTransactions sender
   logged `shouldSatisfy` T.isInfixOf ("transaction " <> hex h <> " was not pending when it settled")
-  statuses store r1 `shouldReturn` [(ptHash p, TSDropped, Nothing)]
+  statuses store r1 `shouldReturn` [(ptHash p, TxSettled TSDroppedTx)]
 
 testFailedSend :: TVar ChaChaDRG -> IO ()
 testFailedSend g = withSetup g $ \s@Setup {node, store} -> do
@@ -214,13 +214,13 @@ testFeeBump g = withSetup g $ \s@Setup {node, store} -> do
   decodeSignedTx bumpedRaw `shouldBe` Right first {txMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, txMaxFeePerGas = 4 * fakeBaseFee + fakeTip}
   known s (ptHash p) `shouldReturn` False
   known s bumpedHash `shouldReturn` True
-  map (\(h, status, _) -> (h, status)) <$> statuses store r1 `shouldReturn` [(ptHash p, TSPending), (bumpedHash, TSPending)]
+  statuses store r1 `shouldReturn` [(ptHash p, TxPending), (bumpedHash, TxPending)]
   mineHash node bumpedHash
   _ <- mine node []
   followTransactions sender
   TOConfirmed minedHash Receipt {receiptSuccess = True, receiptBlock} <- outcomeOf p
   minedHash `shouldBe` bumpedHash
-  statuses store r1 `shouldReturn` [(ptHash p, TSDropped, Nothing), (bumpedHash, TSMined, Just receiptBlock)]
+  statuses store r1 `shouldReturn` [(ptHash p, TxSettled TSDroppedTx), (bumpedHash, TxSettled $ TSMinedAt receiptBlock)]
 
 testRestartRebroadcast :: TVar ChaChaDRG -> IO ()
 testRestartRebroadcast g = withSetup g $ \s@Setup {node, store} -> do
@@ -242,7 +242,7 @@ testRestartRebroadcast g = withSetup g $ \s@Setup {node, store} -> do
   _ <- mine node []
   followTransactions restarted
   outcomeOf resumed >>= (`shouldSatisfy` confirmedAs (ptHash p))
-  map (\(_, status, _) -> status) <$> statuses store r1 `shouldReturn` [TSMined]
+  map (minedTx . snd) <$> statuses store r1 `shouldReturn` [True]
 
 testRotatedKeyStart :: TVar ChaChaDRG -> IO ()
 testRotatedKeyStart g = withSetup g $ \s@Setup {node, store, chain = oldChain} -> do
@@ -278,7 +278,7 @@ testDroppedNonceUsed g =
       _ <- mine node []
       followTransactions sender
       outcomeOf p `shouldReturn` TONonceUsed
-      statuses store r1 `shouldReturn` [(ptHash p, TSDropped, Nothing)]
+      statuses store r1 `shouldReturn` [(ptHash p, TxSettled TSDroppedTx)]
       length <$> sentTransactions node `shouldReturn` 1
       Right again <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
       ptNonce again `shouldBe` 1
@@ -296,7 +296,7 @@ testFailedRound g = withSetup g $ \s@Setup {node, store} -> do
   renameTransactions store "name_transactions_away" "sx_badge_service_name_transactions"
   senderRound sender
   outcomeOf p >>= (`shouldSatisfy` confirmedAs (ptHash p))
-  map (\(_, status, _) -> status) <$> statuses store r1 `shouldReturn` [TSMined]
+  map (minedTx . snd) <$> statuses store r1 `shouldReturn` [True]
   where
     renameTransactions store from to = withTransaction store $ \db -> DB.execute_ db $ fromString $ "ALTER TABLE " <> from <> " RENAME TO " <> to
 
@@ -431,8 +431,13 @@ outcomeOf p = awaitOutcome 2000000 p >>= maybe (fail "the transaction is not set
 settled :: Sender -> TxFor -> IO Bool
 settled sender for = null <$> inFlightTransaction sender for
 
-statuses :: DBStore -> RegistrationId -> IO [(TxHash, TxStatus, Maybe Word64)]
-statuses store rid = withTransaction store $ \db -> map (\NameTransaction {ntHash, ntStatus, ntMinedBlock} -> (ntHash, ntStatus, ntMinedBlock)) <$> registrationTransactions db rid
+minedTx :: TxState -> Bool
+minedTx = \case
+  TxSettled TSMinedAt {} -> True
+  _ -> False
+
+statuses :: DBStore -> RegistrationId -> IO [(TxHash, TxState)]
+statuses store rid = withTransaction store $ \db -> map (\NameTransaction {ntHash, ntState} -> (ntHash, ntState)) <$> registrationTransactions db rid
 
 known :: Setup -> TxHash -> IO Bool
 known Setup {chain} h = either (error . show) id <$> transactionKnown chain h

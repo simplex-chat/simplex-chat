@@ -232,7 +232,7 @@ ourCommit Worker {wkOrders = OrdersEnv {oeStore, oeContracts}} NameRegistration 
   txs <- withTransaction oeStore (`registrationTransactions` nrId)
   let commits = [tx | tx@NameTransaction {ntFor = TxRegistration RTCommit _} <- txs]
       lastSent = [ntNonce | NameTransaction {ntNonce} <- take 1 $ reverse commits]
-  case [TxRef ntHash block | NameTransaction {ntHash, ntNonce, ntStatus = TSMined, ntMinedBlock = Just block} <- commits, ntNonce `elem` lastSent] of
+  case [TxRef ntHash block | NameTransaction {ntHash, ntNonce, ntState = TxSettled (TSMinedAt block)} <- commits, ntNonce `elem` lastSent] of
     ref@TxRef {txBlock} : _ -> fmap (\Block {blockTimestamp} -> if blockTimestamp == t then Just ref else Nothing) <$> blockAt (ctChain oeContracts) txBlock
     [] -> pure $ Right Nothing
 
@@ -470,7 +470,7 @@ maxSendsPerKind = 5
 withinSends :: Worker -> UTCTime -> NameRegistration -> RegistrationTx -> IO Next -> IO Next
 withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId rid} step send = do
   txs <- orderTransactions wkOrders r
-  let minedCommits = [ntNonce | NameTransaction {ntFor = TxRegistration RTCommit _, ntNonce, ntStatus = TSMined} <- txs]
+  let minedCommits = [ntNonce | NameTransaction {ntFor = TxRegistration RTCommit _, ntNonce, ntState = TxSettled TSMinedAt {}} <- txs]
       sent = sendCount step [tx | tx@NameTransaction {ntNonce} <- txs, ntNonce `notElem` minedCommits]
   if sent < maxSendsPerKind
     then send

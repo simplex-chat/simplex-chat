@@ -59,6 +59,7 @@ module StoreService.Names.Store
     RegistrationTx (..),
     TxStatus (..),
     TxSettlement (..),
+    TxState (..),
     NameTransaction (..),
     NewTransaction (..),
     RecordChange (..),
@@ -601,6 +602,10 @@ data TxStatus = TSPending | TSMined | TSReverted | TSDropped
   deriving (Eq, Show, Enum, Bounded)
 
 data TxSettlement = TSMinedAt Word64 | TSRevertedAt Word64 | TSDroppedTx
+  deriving (Eq, Show)
+
+data TxState = TxPending | TxSettled TxSettlement
+  deriving (Eq, Show)
 
 instance TextEncoding TxStatus where
   textEncode = \case
@@ -621,8 +626,7 @@ data NameTransaction = NameTransaction
     ntHash :: TxHash,
     ntNonce :: Word64,
     ntSentAt :: UTCTime,
-    ntMinedBlock :: Maybe Word64,
-    ntStatus :: TxStatus
+    ntState :: TxState
   }
   deriving (Eq, Show)
 
@@ -1666,12 +1670,18 @@ transactionColumns =
 type TransactionRow = (Int64, TxKind, Maybe Text, Maybe Int64, Binary ByteString, TxHash, Int64, UTCTime, Maybe Int64, TxStatus)
 
 toTransaction :: TransactionRow -> Either Text NameTransaction
-toTransaction (ntId, kind, rid_, editId_, Binary ntRaw, ntHash, nonce, ntSentAt, block, ntStatus) = do
+toTransaction (ntId, kind, rid_, editId_, Binary ntRaw, ntHash, nonce, ntSentAt, block, status) = do
   ntFor <- case (kind, rid_, editId_) of
     (TKRegistration step, Just rid, Nothing) -> Right $ TxRegistration step $ RegistrationId rid
     (TKEdit, Nothing, Just editId) -> Right $ TxEdit editId
     _ -> Left $ "name_transactions.kind: " <> textEncode kind
-  pure NameTransaction {ntId, ntFor, ntRaw, ntHash, ntNonce = word64 nonce, ntSentAt, ntMinedBlock = word64 <$> block, ntStatus}
+  ntState <- case (status, word64 <$> block) of
+    (TSPending, Nothing) -> Right TxPending
+    (TSMined, Just b) -> Right $ TxSettled $ TSMinedAt b
+    (TSReverted, Just b) -> Right $ TxSettled $ TSRevertedAt b
+    (TSDropped, Nothing) -> Right $ TxSettled TSDroppedTx
+    _ -> Left $ "name_transactions status and mined_block: " <> tshow ntId
+  pure NameTransaction {ntId, ntFor, ntRaw, ntHash, ntNonce = word64 nonce, ntSentAt, ntState}
 
 -- | Those without a receipt, in nonce order, for the sender to resume.
 pendingTransactions :: DB.Connection -> IO [NameTransaction]
