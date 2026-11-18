@@ -47,24 +47,26 @@ The period text: "after 7 days of browser use without a tap, click or key press 
 | Paid order opened without its code | notice | unchanged | If the code was bought in this browser, it may have been deleted after the period. |
 
 ```mermaid
-flowchart LR
+flowchart TD
   load[page load] --> w0{value written to localStorage is read back}
   w0 -->|no| nk[notKept]
   w0 -->|yes| d{browserDeletesIdle of navigator.userAgent}
   d -->|false| k[kept]
   d -->|true| u[keptUntilIdle]
-  k --> ck{code or return-to-app: this code written to localStorage}
-  ck -->|no| nk
-  ck -->|yes| none[only-copy box]
-  u --> s{screen}
-  s -->|code or return-to-app| c{this code written to localStorage}
-  c -->|yes| box[warning]
-  c -->|no| nk
-  s -->|paid-no-code| notice[line in the notice]
-  s -->|Your codes, empty| grey[grey line]
-  s -->|Your codes, without a paid code| grey
-  s -->|Your codes, with a paid code| box
+  k --> cw{code screens: this code written to localStorage}
+  u --> cw
+  cw -->|no| nk
 ```
+
+| Screen | `notKept` | `kept` | `keptUntilIdle` |
+|---|---|---|---|
+| Code screen | "This code could not be saved in this browser." box | only-copy box | only-copy box, then the "This browser can delete the code" box |
+| Return-to-app, code hidden | code shown at once, as on the code screen | no box | "This browser can delete the code" box above "Show code" |
+| Return-to-app, code shown | | only-copy box | only-copy box, then the "This browser can delete the code" box |
+| Your codes, with a paid code | "This browser cannot save anything new right now." lede | lede | lede, then the "This browser can delete codes" box |
+| Your codes, without a paid code | "This browser cannot save anything new right now." lede | lede | lede, then the grey line |
+| Your codes, empty | lede | lede | lede, then the grey line |
+| Paid-no-code | notice | notice | notice with the deletion line |
 
 ## Tests
 
