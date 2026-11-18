@@ -36,9 +36,9 @@ fun ItemTextCard(ci: ChatItem, firstLineFontSize: TextUnit, inlineMeta: (@Compos
   val color = if (ci.chatDir.sent) MaterialTheme.appColors.sentMessage else MaterialTheme.appColors.receivedMessage
   if (inlineMeta != null) {
     Surface(modifier, color = color, contentColor = LocalContentColor.current) {
-      Row(Modifier.bubbleTextPadding(firstLineFontSize)) {
+      Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
         text()
-        Box(bubbleMetaOnBaseline()) {
+        Box {
           inlineMeta()
         }
       }

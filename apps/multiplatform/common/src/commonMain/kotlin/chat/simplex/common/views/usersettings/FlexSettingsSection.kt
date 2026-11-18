@@ -6,21 +6,26 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.HapticPattern
 import chat.simplex.common.platform.RichHaptics
 import chat.simplex.common.platform.UsbPanicDetector
 import chat.simplex.res.MR
+import chat.simplex.res.*
 
 // =====================================================================
 // 1. ENTRY TILE FOR SETTINGS MENU
@@ -48,7 +53,7 @@ fun FlexSettingsEntryTile(onClick: () -> Unit) {
     ) {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
-          painter = painterResource(MR.images.ic_security),
+          painter = rememberVectorPainter(Icons.Default.Lock),
           contentDescription = null,
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.size(24.dp)
@@ -69,7 +74,7 @@ fun FlexSettingsEntryTile(onClick: () -> Unit) {
         }
       }
       Icon(
-        painter = painterResource(MR.images.ic_arrow_forward),
+        painter = rememberVectorPainter(Icons.Default.ChevronRight),
         contentDescription = null,
         tint = MaterialTheme.colors.onSurface.copy(alpha = 0.4f),
         modifier = Modifier.size(18.dp)
@@ -115,7 +120,7 @@ fun FlexSettingsView(chatModel: ChatModel? = null) {
       FlexToggleItem(
         title = "USB Panic",
         subtitle = "Purge cache, clipboard and kill app on USB plug",
-        icon = painterResource(MR.images.ic_security),
+        icon = rememberVectorPainter(Icons.Default.Lock),
         iconTint = if (usbPanicEnabled) Color.Red else MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
         checked = usbPanicEnabled,
         activeTrackColor = Color.Red,
@@ -138,7 +143,7 @@ fun FlexSettingsView(chatModel: ChatModel? = null) {
       FlexToggleItem(
         title = "Advanced Haptics",
         subtitle = "Tactile vibration and feedback across UI",
-        icon = painterResource(MR.images.ic_notifications),
+        icon = rememberVectorPainter(Icons.Default.Notifications),
         iconTint = if (advancedHapticsEnabled) Color(0xFFFFA000) else MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
         checked = advancedHapticsEnabled,
         onCheckedChange = { enabled ->

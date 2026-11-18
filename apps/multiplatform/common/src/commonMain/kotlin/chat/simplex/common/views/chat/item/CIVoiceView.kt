@@ -48,7 +48,8 @@ fun CIVoiceView(
   val padding = when {
     smallView -> PaddingValues()
     classicWithText -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
-    LocalTerminalLayout.current -> PaddingValues(start = CHAT_ITEM_TEXT_PADDING, top = terminalCardTop(ci).toDp())
+    // Заменили CHAT_ITEM_TEXT_PADDING на 8.dp
+    LocalTerminalLayout.current -> PaddingValues(start = 8.dp, top = terminalCardTop(ci).toDp())
     else -> PaddingValues(top = 4.sp.toDp() * sizeMultiplier, bottom = 6.sp.toDp() * sizeMultiplier)
   }
   Row(
@@ -103,7 +104,7 @@ fun CIVoiceView(
     } else {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, 1f, {}, {}, longClick, receiveFile)
       val metaReserve = if (edited)
-        "                     "
+        "                      "
       else
         "                 "
       Text(metaReserve)
@@ -190,7 +191,6 @@ private fun VoiceLayout(
           }
         }
       }
-}
     classicWithText -> {
       val sentColor = MaterialTheme.appColors.sentMessage
       val receivedColor = MaterialTheme.appColors.receivedMessage
@@ -223,8 +223,6 @@ private fun VoiceLayout(
         }
           }
         }
-      }
-}
     else -> {
       @Composable
       fun VoiceRow(inlineMeta: (@Composable () -> Unit)?) {

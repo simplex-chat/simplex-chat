@@ -125,10 +125,11 @@ fun SettingsLayout(
       is BadgeType.Legend -> MR.strings.badges_your_legend_badge to MR.strings.badges_legend_benefits
       is BadgeType.Supporter, is BadgeType.Investor, is BadgeType.Unknown -> MR.strings.badges_your_badge to MR.strings.badges_supporter_benefits
     }
-    SectionView {
-      // Direct showModal (no settings / cardScreen flags) — settings-style card chrome would render
-      // a gray top bar / back button that badges views don't want (they have their own inline titles).
-      SectionItemView(click = { ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) } }) {
+   SectionView {
+      SectionItemView(click = {
+        RichHaptics.perform(HapticPattern.CLICK)
+        ModalManager.start.showCustomModal(id = ModalViewId.BADGES) { close -> BadgesView(ModalManager.start, close) }
+      }) {
         val badgeType = chatModel.currentUser.value?.profile?.localBadge?.badge?.badgeType ?: BadgeType.Supporter
         Image(painterResource(badgeImage(badgeType)), stringResource(badgeLabel), Modifier.size(24.dp))
         TextIconSpaced()
@@ -324,13 +325,19 @@ fun ChatLockItem(
 }
 
 @Composable fun TerminalAlwaysVisibleItem(pref: SharedPreference<Boolean>, onChange: (Boolean) -> Unit) {
-  SettingsActionItemWithContent(painterResource(MR.images.ic_engineering), stringResource(MR.strings.terminal_always_visible)) {
+  val state = remember { pref.state }
+  SettingsActionItemWithContent(
+    icon = painterResource(MR.images.ic_engineering),
+    text = stringResource(MR.strings.terminal_always_visible),
+    click = {
+      val next = !state.value
+      RichHaptics.perform(if (next) HapticPattern.TOGGLE_ON else HapticPattern.TOGGLE_OFF)
+      onChange(next)
+    }
+  ) {
     DefaultSwitch(
-      checked = remember { pref.state }.value,
-      onCheckedChange = {
-        RichHaptics.perform(if (it) HapticPattern.TOGGLE_ON else HapticPattern.TOGGLE_OFF)
-        onChange(it)
-      },
+      checked = state.value,
+      onCheckedChange = onChange,
     )
   }
 }
@@ -349,6 +356,7 @@ fun ChatLockItem(
     icon = painterResource(MR.images.ic_lightbulb),
     text = generalGetString(MR.strings.reset_all_hints),
     click = {
+      RichHaptics.perform(HapticPattern.SUCCESS)
       resetHintPreferences()
       unchangedHints.value = true
     },
@@ -531,13 +539,21 @@ fun PreferenceToggle(
   checked: Boolean,
   onChange: (Boolean) -> Unit = {},
 ) {
-  SettingsActionItemWithContent(null, text, disabled = disabled) {
+  SettingsActionItemWithContent(
+    icon = null,
+    text = text,
+    click = if (disabled) null else {
+      {
+        val next = !checked
+        RichHaptics.perform(if (next) HapticPattern.TOGGLE_ON else HapticPattern.TOGGLE_OFF)
+        onChange(next)
+      }
+    },
+    disabled = disabled
+  ) {
     DefaultSwitch(
       checked = checked,
-      onCheckedChange = {
-        RichHaptics.perform(if (it) HapticPattern.TOGGLE_ON else HapticPattern.TOGGLE_OFF)
-        onChange(it)
-      },
+      onCheckedChange = onChange,
       enabled = !disabled
     )
   }
@@ -556,15 +572,20 @@ fun PreferenceToggleWithIcon(
   SettingsActionItemWithContent(
     icon = icon,
     text = text,
+    click = if (disabled) null else {
+      {
+        val next = !checked
+        RichHaptics.perform(if (next) HapticPattern.TOGGLE_ON else HapticPattern.TOGGLE_OFF)
+        onChange(next)
+      }
+    },
     iconColor = iconColor ?: MaterialTheme.colors.primary.copy(alpha = 0.85f),
+    disabled = disabled,
     extraPadding = extraPadding
   ) {
     DefaultSwitch(
       checked = checked,
-      onCheckedChange = {
-        RichHaptics.perform(if (it) HapticPattern.TOGGLE_ON else HapticPattern.TOGGLE_OFF)
-        onChange(it)
-      },
+      onCheckedChange = onChange,
       enabled = !disabled
     )
   }
@@ -671,9 +692,18 @@ object FlexLocalPrefs {
 
 @Composable
 fun FlexSettingsView() {
-    // ТЕПЕРЬ НАСТРОЙКА БЕРЕТСЯ ИЗ НАШЕГО НОВОГО ДЕТЕКТОРА
     val usbPanicEnabled = rememberSaveable { mutableStateOf(chat.simplex.common.platform.UsbPanicDetector.isEnabled()) }
     val advancedHapticsEnabled = rememberSaveable { mutableStateOf(chat.simplex.common.platform.RichHaptics.isEnabled()) }
+
+    fun toggleUsbPanic(newVal: Boolean) {
+        usbPanicEnabled.value = newVal
+        runCatching { chat.simplex.common.platform.UsbPanicDetector.setEnabled(newVal) }
+    }
+
+    fun toggleAdvancedHaptics(newVal: Boolean) {
+        advancedHapticsEnabled.value = newVal
+        runCatching { chat.simplex.common.platform.RichHaptics.setEnabled(newVal) }
+    }
 
     ColumnWithScrollBar {
         AppBarTitle("FLEX Settings")
@@ -682,16 +712,16 @@ fun FlexSettingsView() {
             SettingsActionItemWithContent(
                 icon = painterResource(MR.images.ic_security),
                 text = "USB Panic",
+                click = {
+                    val next = !usbPanicEnabled.value
+                    toggleUsbPanic(next)
+                    runCatching { RichHaptics.perform(if (next) HapticPattern.TOGGLE_ON else HapticPattern.TOGGLE_OFF) }
+                },
                 iconColor = MaterialTheme.colors.primary.copy(alpha = 0.85f)
             ) {
                 DefaultSwitch(
                     checked = usbPanicEnabled.value,
-                    onCheckedChange = { newVal ->
-                        usbPanicEnabled.value = newVal
-                        // Мгновенное сохранение и активация щита!
-                        runCatching { chat.simplex.common.platform.UsbPanicDetector.setEnabled(newVal) }
-                        runCatching { chat.simplex.common.platform.RichHaptics.perform(if (newVal) chat.simplex.common.platform.HapticPattern.TOGGLE_ON else chat.simplex.common.platform.HapticPattern.TOGGLE_OFF) }
-                    }
+                    onCheckedChange = { newVal -> toggleUsbPanic(newVal) }
                 )
             }
         }
@@ -702,15 +732,16 @@ fun FlexSettingsView() {
             SettingsActionItemWithContent(
                 icon = painterResource(MR.images.ic_notifications),
                 text = "Advanced Haptics",
+                click = {
+                    val next = !advancedHapticsEnabled.value
+                    toggleAdvancedHaptics(next)
+                    runCatching { RichHaptics.perform(if (next) HapticPattern.TOGGLE_ON else HapticPattern.TOGGLE_OFF) }
+                },
                 iconColor = WarningOrange
             ) {
                 DefaultSwitch(
                     checked = advancedHapticsEnabled.value,
-                    onCheckedChange = { newVal ->
-                        advancedHapticsEnabled.value = newVal
-                        runCatching { chat.simplex.common.platform.RichHaptics.setEnabled(newVal) }
-                        runCatching { chat.simplex.common.platform.RichHaptics.perform(if (newVal) chat.simplex.common.platform.HapticPattern.TOGGLE_ON else chat.simplex.common.platform.HapticPattern.TOGGLE_OFF) }
-                    }
+                    onCheckedChange = { newVal -> toggleAdvancedHaptics(newVal) }
                 )
             }
         }

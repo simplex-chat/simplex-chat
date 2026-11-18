@@ -17,7 +17,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.item.CenteredRowLayout
 import chat.simplex.res.*
 import kotlin.math.absoluteValue
 
@@ -299,7 +298,11 @@ private fun AppBarCenterAligned(
   navigationIcon: @Composable (RowScope.() -> Unit)? = null,
   buttons: @Composable RowScope.() -> Unit,
 ) {
-  CenteredRowLayout(modifier) {
+  Row(
+    modifier = modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
     if (navigationIcon != null) {
       Row(
         Modifier.padding(end = AppBarHorizontalPadding),

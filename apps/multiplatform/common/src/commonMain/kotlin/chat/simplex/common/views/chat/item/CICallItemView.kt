@@ -28,7 +28,8 @@ fun CICallItemView(
   ItemWithMeta(meta = { CIMetaView(cItem, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
     Column(
       Modifier
-        .padding(horizontal = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 4.dp)
+        // Заменили CHAT_ITEM_TEXT_PADDING на 4.dp
+        .padding(horizontal = 4.dp)
         .padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
       @Composable fun ConnectingCallIcon() = Icon(painterResource(MR.images.ic_settings_phone), stringResource(MR.strings.icon_descr_call_connecting), tint = SimplexGreen)
       when (status) {
@@ -61,99 +62,4 @@ fun AcceptCallButton(cInfo: ChatInfo, acceptCall: (Contact) -> Unit) {
   } else {
     Icon(painterResource(MR.images.ic_ring_volume), stringResource(MR.strings.answer_call), tint = MaterialTheme.colors.secondary)
   }
-//    if case let .direct(contact) = chatInfo {
-//      Button {
-//        if let invitation = m.callInvitations.removeValue(forKey: contact.id) {
-//        m.activeCallInvitation = nil
-//        m.activeCall = Call(
-//          contact: contact,
-//          callState: .invitationReceived,
-//        localMedia: invitation.peerMedia,
-//        sharedKey: invitation.sharedKey
-//        )
-//        m.showCallView = true
-//        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey: true)
-//      } else {
-//        AlertManager.shared.showAlertMsg(title: "Call already ended!")
-//      }
-//      } label: {
-//        Label("Answer call", systemImage: "phone.arrow.down.left")
-//      }
-//    } else {
-//      Image(systemName: "phone.arrow.down.left").foregroundColor(.secondary)
-//    }
-
 }
-
-//struct CICallItemView: View {
-//  @EnvironmentObject var m: ChatModel
-//  var chatInfo: ChatInfo
-//  var chatItem: ChatItem
-//  var status: CICallStatus
-//  var duration: Int
-//
-//  var body: some View {
-//    switch status {
-//      case .pending:
-//      if sent {
-//        Image(systemName: "phone.arrow.up.right").foregroundColor(.secondary)
-//      } else {
-//        acceptCallButton()
-//      }
-//      case .missed: missedCallIcon(sent).foregroundColor(.red)
-//      case .rejected: Image(systemName: "phone.down").foregroundColor(.secondary)
-//      case .accepted: connectingCallIcon()
-//      case .negotiated: connectingCallIcon()
-//      case .progress: Image(systemName: "phone.and.waveform.fill").foregroundColor(.green)
-//      case .ended: endedCallIcon(sent)
-//      case .error: missedCallIcon(sent).foregroundColor(.orange)
-//    }
-//
-//    chatItem.timestampText
-//      .font(.caption)
-//    .foregroundColor(.secondary)
-//    .padding(.bottom, 8)
-//    .padding(.horizontal, 12)
-//  }
-//  }
-//
-//  private func missedCallIcon(_ sent: Bool) -> some View {
-//    Image(systemName: sent ? "phone.arrow.up.right" : "phone.arrow.down.left")
-//  }
-//
-//  private func connectingCallIcon() -> some View {
-//    Image(systemName: "phone.connection").foregroundColor(.green)
-//  }
-//
-//  @ViewBuilder private func endedCallIcon(_ sent: Bool) -> some View {
-//    HStack {
-//      Image(systemName: "phone.down")
-//      Text(CICallStatus.durationText(duration)).foregroundColor(.secondary)
-//    }
-//  }
-//
-//
-//  @ViewBuilder private func acceptCallButton() -> some View {
-//    if case let .direct(contact) = chatInfo {
-//      Button {
-//        if let invitation = m.callInvitations.removeValue(forKey: contact.id) {
-//        m.activeCallInvitation = nil
-//        m.activeCall = Call(
-//          contact: contact,
-//          callState: .invitationReceived,
-//        localMedia: invitation.peerMedia,
-//        sharedKey: invitation.sharedKey
-//        )
-//        m.showCallView = true
-//        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey: true)
-//      } else {
-//        AlertManager.shared.showAlertMsg(title: "Call already ended!")
-//      }
-//      } label: {
-//        Label("Answer call", systemImage: "phone.arrow.down.left")
-//      }
-//    } else {
-//      Image(systemName: "phone.arrow.down.left").foregroundColor(.secondary)
-//    }
-//  }
-//}

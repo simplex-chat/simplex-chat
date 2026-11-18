@@ -23,8 +23,8 @@ fun chatEventTextStyle(base: TextStyle = LocalTextStyle.current): TextStyle =
 
 @Composable
 fun chatEventPadding(): PaddingValues =
-  if (LocalTerminalLayout.current) PaddingValues(horizontal = CHAT_ITEM_TEXT_PADDING)
-  else PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+  // Заменили CHAT_ITEM_TEXT_PADDING на 6.dp
+  PaddingValues(horizontal = 6.dp, vertical = 6.dp)
 
 @Composable
 fun ChatEventWithMeta(ci: ChatItem, content: @Composable (separator: AnnotatedString, ts: AnnotatedString) -> Unit) {

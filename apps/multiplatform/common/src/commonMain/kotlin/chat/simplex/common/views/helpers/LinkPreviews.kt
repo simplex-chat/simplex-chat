@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layoutId
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -21,7 +20,6 @@ import chat.simplex.common.model.NetworkProxyAuth
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
-import chat.simplex.common.views.chat.item.CHAT_IMAGE_LAYOUT_ID
 import chat.simplex.common.views.chat.item.imageViewFullWidth
 import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
@@ -150,7 +148,7 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
 fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancelEnabled: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   Row(
-    Modifier.fillMaxWidth().padding(top = 8.dp).background(sentColor),
+    Modifier.fillMaxWidth().padding(vertical = 4.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (linkPreview == null) {
@@ -202,7 +200,6 @@ fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongC
   val image = remember(linkPreview.image) { base64ToBitmap(linkPreview.image) }
   Column(
     Modifier
-    .layoutId(CHAT_IMAGE_LAYOUT_ID)
     .width(if (image.width * 0.97 <= image.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
   ) {
     val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
@@ -238,30 +235,7 @@ private fun normalizeImageUri(u: URL, imageUri: String) = when {
   else -> imageUri
 }
 
-/*fun normalizeImageUriTest() {
-  val expect = mapOf<Pair<URL, String>, String>(
-    URL("https://example.com") to "icon.png" to "https://example.com/icon.png",
-    URL("https://example.com/") to "icon.png" to "https://example.com/icon.png",
-    URL("https://example.com/") to "/icon.png" to "https://example.com/icon.png",
-    URL("https://example.com") to "assets/images/favicon.png" to "https://example.com/assets/images/favicon.png",
-    URL("https://example.com/") to "assets/images/favicon.png" to "https://example.com/assets/images/favicon.png",
-    URL("https://example.com/dir") to "/favicon.png" to "https://example.com/favicon.png",
-    URL("https://example.com/dir/") to "favicon.png" to "https://example.com/dir/favicon.png",
-    URL("https://example.com/dir/") to "/favicon.png" to "https://example.com/favicon.png",
-    URL("https://example.com/dir/page") to "favicon.png" to "https://example.com/dir/favicon.png",
-    URL("https://example.com/abcde.gif") to "https://example.com/abcde.gif" to "https://example.com/abcde.gif",
-    URL("https://example.com/abcde.gif?a=b") to "https://example.com/abcde.gif?a=b" to "https://example.com/abcde.gif?a=b",
-  )
-  expect.forEach {
-    Log.d(TAG, "Image URI ${normalizeImageUri(it.key.first, it.key.second)} == ${normalizeImageUri(it.key.first, it.key.second) == it.value}")
-  }
-}*/
-
-@Preview/*(
-  uiMode = Configuration.UI_MODE_NIGHT_YES,
-  showBackground = true,
-  name = "ChatItemLinkView (Dark Mode)"
-)*/
+@Preview
 @Composable
 fun PreviewChatItemLinkView() {
   SimpleXTheme {
@@ -269,11 +243,7 @@ fun PreviewChatItemLinkView() {
   }
 }
 
-@Preview/*(
-  uiMode = Configuration.UI_MODE_NIGHT_YES,
-  showBackground = true,
-  name = "ComposeLinkView (Dark Mode)"
-)*/
+@Preview
 @Composable
 fun PreviewComposeLinkView() {
   SimpleXTheme {

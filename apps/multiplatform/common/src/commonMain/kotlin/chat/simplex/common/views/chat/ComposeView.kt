@@ -442,6 +442,8 @@ fun ComposeView(
   val saveLastDraft = chatModel.controller.appPrefs.privacySaveLastDraft.get()
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
+  val sanitizeLinksEnabled = remember { chatModel.controller.appPrefs.privacySanitizeLinks.state }
+  val linkPreviewsEnabled = remember { chatModel.controller.appPrefs.privacyLinkPreviews.state }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
   val emojiPickerShown = rememberSaveable { mutableStateOf(false) }
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
@@ -1027,9 +1029,16 @@ fun ComposeView(
     return Triple(updatedMsg, updatedParsedMsg, sanitizedPos)
   }
 
-  fun onMessageChange(s: ComposeMessage) {
+ fun onMessageChange(s: ComposeMessage) {
+    val prevText = composeState.value.message.text
+    // Мгновенное обновление при нажатии Enter или пробела без повторного парсинга
+    if (s.text.trim() == prevText.trim() && s.text.isNotEmpty()) {
+      composeState.value = composeState.value.copy(message = s)
+      return
+    }
+
     var parsedMessage = parseToMarkdown(s.text)
-    if (chatModel.controller.appPrefs.privacySanitizeLinks.get() && parsedMessage != null) {
+    if (sanitizeLinksEnabled.value && parsedMessage != null) {
       val (updatedMsg, updatedParsedMsg, sanitizedPos) = sanitizeMessage(parsedMessage)
       if (sanitizedPos == null) {
         composeState.value = composeState.value.copy(message = s, parsedMessage = parsedMessage)
@@ -1046,7 +1055,7 @@ fun ComposeView(
       textStyle.value = if (s.text.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
     } else {
       textStyle.value = smallFont
-      if (composeState.value.linkPreviewAllowed && chatModel.controller.appPrefs.privacyLinkPreviews.get()) {
+      if (composeState.value.linkPreviewAllowed && linkPreviewsEnabled.value) {
         if (s.text.isNotEmpty()) {
           showLinkPreview(parsedMessage)
         } else {
@@ -1205,11 +1214,15 @@ fun ComposeView(
 
   @Composable
   fun MsgNotAllowedView(reason: String, icon: Painter) {
-    val color = MaterialTheme.appColors.receivedQuote
-    Row(Modifier.fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 14.dp, vertical = 8.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
       Icon(icon, null, tint = MaterialTheme.colors.secondary)
-      Spacer(Modifier.width(DEFAULT_PADDING_HALF))
-      Text(reason, fontStyle = FontStyle.Italic)
+      Spacer(Modifier.width(8.dp))
+      Text(reason, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)
     }
   }
 
@@ -1225,9 +1238,25 @@ fun ComposeView(
     }
 
     if (reportText != null) {
-      val color = MaterialTheme.appColors.receivedQuote
-      Row(Modifier.fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
-        Text(reportText, fontStyle = FontStyle.Italic, fontSize = 12.sp)
+      val tonalBg = if (MaterialTheme.colors.isLight) {
+        androidx.compose.ui.graphics.lerp(MaterialTheme.colors.surface, MaterialTheme.colors.primary, 0.07f)
+      } else {
+        androidx.compose.ui.graphics.lerp(MaterialTheme.colors.surface, MaterialTheme.colors.primary, 0.11f)
+      }
+      Surface(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 8.dp, vertical = 3.dp)
+          .clip(RoundedCornerShape(18.dp)),
+        color = tonalBg,
+        elevation = 0.dp
+      ) {
+        Row(
+          Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(reportText, fontStyle = FontStyle.Italic, fontSize = 12.sp, color = MaterialTheme.colors.secondary)
+        }
       }
     }
   }

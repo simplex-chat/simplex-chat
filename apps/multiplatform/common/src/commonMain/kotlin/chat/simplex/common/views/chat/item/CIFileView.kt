@@ -213,7 +213,8 @@ fun CIFileView(
         when {
           smallView -> Modifier
           terminal -> Modifier.padding(top = terminalTop, start = 6.sp.toDp(), end = 12.sp.toDp()).messageCard()
-          else -> Modifier.padding(top = 4.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp()).paddingFromBaseline(bottom = BUBBLE_TEXT_INSET)
+          // Заменили BUBBLE_TEXT_INSET на 10.dp
+          else -> Modifier.padding(top = 4.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp()).paddingFromBaseline(bottom = 10.dp)
         }
       ),
     verticalAlignment = Alignment.Bottom,
@@ -381,44 +382,3 @@ object CIFileViewScope {
     }
   }
 }
-
-/*
-class ChatItemProvider: PreviewParameterProvider<ChatItem> {
-  private val sentFile = ChatItem(
-    chatDir = CIDirection.DirectSnd(),
-    meta = CIMeta.getSample(1, Clock.System.now(), "", CIStatus.SndSent(), itemEdited = true),
-    content = CIContent.SndMsgContent(msgContent = MsgContent.MCFile("")),
-    quotedItem = null,
-    reactions = listOf(),
-    file = CIFile.getSample(fileStatus = CIFileStatus.SndComplete)
-  )
-  private val fileChatItemWtFile = ChatItem(
-    chatDir = CIDirection.DirectRcv(),
-    meta = CIMeta.getSample(1, Clock.System.now(), "", CIStatus.RcvRead(), ),
-    content = CIContent.RcvMsgContent(msgContent = MsgContent.MCFile("")),
-    quotedItem = null,
-    reactions = listOf(),
-    file = null
-  )
-  override val values = listOf(
-    sentFile,
-    ChatItem.getFileMsgContentSample(),
-    ChatItem.getFileMsgContentSample(fileName = "some_long_file_name_here", fileStatus = CIFileStatus.RcvInvitation),
-    ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvAccepted),
-    ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10)),
-    ChatItem.getFileMsgContentSample(fileStatus = CIFileStatus.RcvCancelled),
-    ChatItem.getFileMsgContentSample(fileSize = 1_000_000_000, fileStatus = CIFileStatus.RcvInvitation),
-    ChatItem.getFileMsgContentSample(text = "Hello there", fileStatus = CIFileStatus.RcvInvitation),
-    ChatItem.getFileMsgContentSample(text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus = CIFileStatus.RcvInvitation),
-    fileChatItemWtFile
-  ).asSequence()
-}
-
-@Preview
-@Composable
-fun PreviewCIFileFramedItemView(@PreviewParameter(ChatItemProvider::class) chatItem: ChatItem) {
-  val showMenu = remember { mutableStateOf(false) }
-  SimpleXTheme {
-    FramedItemView(ChatInfo.Direct.sampleData, chatItem, linkMode = SimplexLinkMode.DESCRIPTION, showMenu = showMenu, receiveFile = {})
-  }
-}*/

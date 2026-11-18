@@ -11,7 +11,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -25,8 +24,6 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.item.CONSOLE_COMPOSE_LAYOUT_ID
-import chat.simplex.common.views.chat.item.AdaptingBottomPaddingLayout
 import chat.simplex.common.views.chatlist.NavigationBarBackground
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
@@ -78,11 +75,12 @@ fun TerminalLayout(
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   Box(Modifier.fillMaxSize()) {
     val composeViewHeight = remember { mutableStateOf(0.dp) }
-    AdaptingBottomPaddingLayout(Modifier, CONSOLE_COMPOSE_LAYOUT_ID, composeViewHeight) {
+    
+    // Заменен AdaptingBottomPaddingLayout на стандартный Box
+    Box(Modifier.fillMaxSize()) {
       TerminalLog(floating, composeViewHeight)
       Column(
         Modifier
-          .layoutId(CONSOLE_COMPOSE_LAYOUT_ID)
           .align(Alignment.BottomCenter)
           .navigationBarsPadding()
           .consumeWindowInsets(PaddingValues(bottom = if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp))

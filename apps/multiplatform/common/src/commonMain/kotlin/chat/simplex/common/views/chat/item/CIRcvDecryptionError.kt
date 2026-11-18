@@ -201,10 +201,12 @@ private fun DecryptionErrorCard(onClick: () -> Unit, inlineMeta: (@Composable ()
   if (inlineMeta != null) {
     Surface(Modifier.clickable(onClick = onClick), color = receivedColor, contentColor = LocalContentColor.current) {
       Box(contentAlignment = Alignment.BottomEnd) {
-        Box(Modifier.bubbleTextPadding(16.sp)) {
+        // Убрали вызов bubbleTextPadding и заменили на обычный padding
+        Box(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
           content()
         }
-        Box(Modifier.padding(end = BUBBLE_SIDE_INSET).bubbleMeta()) {
+        // Убрали BUBBLE_SIDE_INSET и вызов bubbleMeta
+        Box(Modifier.padding(end = 12.dp)) {
           inlineMeta()
         }
       }

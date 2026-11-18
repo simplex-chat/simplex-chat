@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="chat.simplex.app">
 
-<uses-feature
+  <uses-feature
       android:name="android.hardware.camera.any"
       android:required="false" />
 
@@ -46,14 +46,14 @@
       android:icon="@mipmap/icon"
       android:label="SimpleX FLEX"
       android:largeHeap="true"
-      android:extractNativeLibs="${extract_native_libs}"
+      android:extractNativeLibs="true"
       android:supportsRtl="true"
       android:enableOnBackInvokedCallback="false"
       android:theme="@style/Theme.SimpleX"
+      tools:replace="android:extractNativeLibs"
       tools:ignore="UnusedAttribute">
-    <!--      android:localeConfig="@xml/locales_config"-->
 
-    <!-- Main activity -->
+    <!-- Главная активность приложения -->
     <activity
         android:name=".MainActivity"
         android:launchMode="singleTask"
@@ -63,65 +63,28 @@
         android:windowSoftInputMode="adjustResize"
         android:configChanges="uiMode"
         android:theme="@style/Theme.SimpleX">
-      <intent-filter>
-        <category android:name="android.intent.category.LAUNCHER" />
-      </intent-filter>
 
       <!-- open simplex:/ connection URI -->
       <intent-filter>
         <action android:name="android.intent.action.VIEW" />
-
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
-
         <data android:scheme="simplex" />
       </intent-filter>
+
       <!-- open simplexchat:/ app URI -->
       <intent-filter>
         <action android:name="android.intent.action.VIEW" />
-
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
-
         <data android:scheme="simplexchat" />
       </intent-filter>
+
       <intent-filter android:autoVerify="true">
         <action android:name="android.intent.action.VIEW" />
-
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
 
-        <!-- Активность встроенной камеры (CameraX) -->
-        <activity
-            android:name=".CameraActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.SimpleX" />
-
-        <!-- Главная активность приложения -->
-        <activity
-            android:name=".MainActivity"
-            android:launchMode="singleTask"
-            android:colorMode="wideColorGamut"
-            android:exported="true"
-            android:label="SimpleX FLEX"
-            android:windowSoftInputMode="adjustResize"
-            android:configChanges="uiMode"
-            android:theme="@style/Theme.SimpleX">
-            <!-- Блок с MAIN и LAUNCHER удален, теперь запуск идет строго через aliases -->
-            <!-- open simplex:/ connection URI -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="simplex" />
-            </intent-filter>
-
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                
         <data android:scheme="http" />
         <data android:scheme="https" />
         <data android:host="simplex.chat" />
@@ -159,6 +122,7 @@
         <data android:pathPrefix="/g/" />
         <data android:pathPrefix="/i/" />
       </intent-filter>
+
       <!-- Receive files from other apps -->
       <intent-filter>
         <action android:name="android.intent.action.SEND" />
@@ -171,6 +135,13 @@
         <data android:mimeType="image/*" />
       </intent-filter>
     </activity>
+
+    <!-- Активность встроенной камеры (CameraX) -->
+    <activity
+        android:name=".CameraActivity"
+        android:exported="false"
+        android:screenOrientation="portrait"
+        android:theme="@style/Theme.SimpleX" />
 
     <activity-alias
         android:name=".MainActivity_default"
@@ -196,13 +167,14 @@
       </intent-filter>
     </activity-alias>
 
-    <activity android:name=".views.call.CallActivity"
+    <activity
+        android:name=".views.call.CallActivity"
         android:showOnLockScreen="true"
         android:exported="false"
         android:launchMode="singleInstance"
         android:supportsPictureInPicture="true"
         android:autoRemoveFromRecents="true"
-        android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"/>
+        android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation" />
 
     <provider
         android:name="androidx.core.content.FileProvider"
@@ -226,18 +198,14 @@
         android:enabled="true"
         android:exported="false"
         android:stopWithTask="false"
-        android:foregroundServiceType="remoteMessaging"
-    />
-
-    <!-- SimplexService restart on reboot -->
+        android:foregroundServiceType="remoteMessaging" />
 
     <service
         android:name=".CallService"
         android:enabled="true"
         android:exported="false"
         android:stopWithTask="false"
-        android:foregroundServiceType="mediaPlayback|microphone|camera|remoteMessaging"
-    />
+        android:foregroundServiceType="mediaPlayback|microphone|camera|remoteMessaging" />
 
     <receiver
         android:name=".CallService$CallActionReceiver"

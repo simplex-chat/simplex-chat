@@ -63,6 +63,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.LocalIndication
 
 // Векторная иконка щита в щите с молнией (кэшируется в памяти)
 val ShieldIcon: ImageVector by lazy {
@@ -764,7 +767,13 @@ private fun ChatListToolbar(
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .then(if (canScrollToZero.value) Modifier.clickable { scrollToBottom(scope, listState) } else Modifier),
+         .then(
+         if (canScrollToZero.value) {
+           Modifier.expressiveClickable(haptic = HapticPattern.TICK, targetScale = 0.97f) {
+             scrollToBottom(scope, listState)
+           }
+         } else Modifier
+       ),
         contentAlignment = Alignment.Center
       ) {
         if (!shouldShowOnboarding()) {
@@ -813,50 +822,69 @@ private fun ChatListToolbar(
         verticalAlignment = Alignment.CenterVertically
       ) {
         val isVpnActive = ByeDpiBridge.isRunning.value
-        val vpnTint by animateColorAsState(
-          targetValue = if (isVpnActive) {
-            MaterialTheme.colors.primary
-          } else {
-            MaterialTheme.colors.onSurface.copy(alpha = 0.65f)
-          },
-          animationSpec = tween(durationMillis = 250)
-        )
+     val vpnTint by animateColorAsState(
+       targetValue = if (isVpnActive) {
+         MaterialTheme.colors.primary
+       } else {
+         MaterialTheme.colors.onSurface.copy(alpha = 0.65f)
+       },
+       animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f)
+     )
+     val vpnScale by animateFloatAsState(
+       targetValue = if (isVpnActive) 1.12f else 1f,
+       animationSpec = ExpressiveSprings.Bouncy
+     )
+     val vpnInteraction = remember { MutableInteractionSource() }
 
-        IconButton(
-          onClick = {
-            ByeDpiBridge.showDialog?.invoke()
-          }
-        ) {
-          Icon(
-            imageVector = ShieldIcon,
-            contentDescription = "VLESS Proxy Settings",
-            tint = vpnTint
-          )
-        }
+     IconButton(
+       onClick = {
+         RichHaptics.perform(if (isVpnActive) HapticPattern.TICK else HapticPattern.CLICK)
+         ByeDpiBridge.showDialog?.invoke()
+       },
+       interactionSource = vpnInteraction,
+       modifier = Modifier.expressivePress(vpnInteraction, targetScale = 0.88f)
+     ) {
+       Icon(
+         imageVector = ShieldIcon,
+         contentDescription = "VLESS Proxy Settings",
+         tint = vpnTint,
+         modifier = Modifier.graphicsLayer {
+           scaleX = vpnScale
+           scaleY = vpnScale
+         }
+       )
+     }
 
-        // =====================================================================
-        // КНОПКА TEMPORARY CONTENT (STORIES FEED)
-        // =====================================================================
-        val allStories by TemporaryContentManager.items.collectAsState()
-        val hasActiveStories = allStories.isNotEmpty()
+     val allStories by TemporaryContentManager.items.collectAsState()
+     val hasActiveStories = allStories.isNotEmpty()
+     val storiesScale by animateFloatAsState(
+       targetValue = if (hasActiveStories) 1.08f else 1f,
+       animationSpec = ExpressiveSprings.Bouncy
+     )
+     val storiesInteraction = remember { MutableInteractionSource() }
 
-        IconButton(
-          onClick = {
-            RichHaptics.perform(HapticPattern.CLICK)
-            ModalManager.start.showModal {
-              AllStoriesFeedView(close = { ModalManager.start.closeModal() })
-            }
-          }
-        ) {
-          Icon(
-            painter = painterResource(MR.images.ic_timer),
-            contentDescription = "Temporary Content",
-            tint = if (hasActiveStories) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface.copy(alpha = 0.65f)
-          )
-        }
-        // =====================================================================
+     IconButton(
+       onClick = {
+         RichHaptics.perform(HapticPattern.CLICK)
+         ModalManager.start.showModal {
+           AllStoriesFeedView(close = { ModalManager.start.closeModal() })
+         }
+       },
+       interactionSource = storiesInteraction,
+       modifier = Modifier.expressivePress(storiesInteraction, targetScale = 0.88f)
+     ) {
+       Icon(
+         painter = painterResource(MR.images.ic_timer),
+         contentDescription = "Temporary Content",
+         tint = if (hasActiveStories) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface.copy(alpha = 0.65f),
+         modifier = Modifier.graphicsLayer {
+           scaleX = storiesScale
+           scaleY = storiesScale
+         }
+       )
+     }
 
-        barButtons.forEach { it() }
+     barButtons.forEach { it() }
       }
     }
   }
@@ -901,6 +929,7 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
 @Composable
 fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
   Row(verticalAlignment = Alignment.CenterVertically) {
+    RichHaptics.perform(HapticPattern.CLICK)
     IconButton(onClick = onButtonClicked) {
       Box {
         ProfileImage(
@@ -945,6 +974,7 @@ private fun ToggleFilterEnabledButton() {
   val showUnread = remember { chatModel.activeChatTagFilter }.value == ActiveFilter.Unread
 
   IconButton(onClick = {
+    RichHaptics.perform(HapticPattern.SELECTION_CHANGE)
     if (showUnread) {
       chatModel.activeChatTagFilter.value = null
     } else {
@@ -1049,8 +1079,10 @@ private fun ChatListSearchBar(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
       ) {
-        val focusRequester = remember { FocusRequester() }
+        // Убран лишний var focusRequester - он создавал путаницу
         var focused by remember { mutableStateOf(false) }
+        val focusManager = LocalFocusManager.current
+        
         Icon(
           painterResource(MR.images.ic_search),
           contentDescription = null,
@@ -1058,7 +1090,7 @@ private fun ChatListSearchBar(
           tint = MaterialTheme.colors.primary.copy(alpha = 0.8f)
         )
         SearchTextField(
-          Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+          Modifier.weight(1f).onFocusChanged { focused = it.hasFocus },
           placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
           alwaysVisible = true,
           searchText = searchText,
@@ -1082,15 +1114,17 @@ private fun ChatListSearchBar(
           }
           Spacer(Modifier.width(padding))
         }
-        val focusManager = LocalFocusManager.current
+        
         val keyboardState = getKeyboardState()
         LaunchedEffect(keyboardState.value) {
           if (keyboardState.value == KeyboardState.Closed && focused) {
             focusManager.clearFocus()
           }
         }
-}
+      }
       val view = LocalMultiplatformView()
+      
+      // ИСПРАВЛЕНО: закрывающие и открывающие скобки выровнены и восстановлены 
       LaunchedEffect(Unit) {
         snapshotFlow { searchText.value.text }
           .distinctUntilChanged()
@@ -1124,36 +1158,20 @@ private fun ChatListSearchBar(
                 if (ids.size == targets.size) connectNameCandidate.value = null
               } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
                 if (it.isNotEmpty()) {
-                  focusRequester.requestFocus()
+                  // do nothing here, let the user type
                 } else {
                   if (!chatModel.appOpenUrlConnecting.value) {
                     connectProgressManager.cancelConnectProgress()
                   }
+                  if (listState.layoutInfo.totalItemsCount > 0) {
+                    listState.scrollToItem(0)
+                  }
                 }
+                searchShowingSimplexLink.value = false
+                searchChatFilteredBySimplexLink.value = emptySet()
               }
             }
           }
-      }
-                  }
-                  searchChatFilteredBySimplexLink.value = ids.toSet()
-                  if (ids.size == targets.size) connectNameCandidate.value = null
-                } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
-                  if (it.isNotEmpty()) {
-                    focusRequester.requestFocus()
-                  } else {
-                    if (!chatModel.appOpenUrlConnecting.value) {
-                      connectProgressManager.cancelConnectProgress()
-                    }
-                    if (listState.layoutInfo.totalItemsCount > 0) {
-                      listState.scrollToItem(0)
-                    }
-                  }
-                  searchShowingSimplexLink.value = false
-                  searchChatFilteredBySimplexLink.value = emptySet()
-                }
-              }
-            }
-        }
       }
     }
   }
@@ -1692,23 +1710,46 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
   }
   val (icon, menuIcon, text) = presetTagLabel(tag, active)
   val isLight = MaterialTheme.colors.isLight
-  val chipBg = if (active) {
-    lerp(MaterialTheme.colors.surface, MaterialTheme.colors.primary, if (isLight) 0.18f else 0.25f)
-  } else {
-    lerp(MaterialTheme.colors.surface, MaterialTheme.colors.primary, if (isLight) 0.06f else 0.10f)
-  }
-  val contentColor = if (active) {
-    MaterialTheme.colors.primary
-  } else {
-    lerp(MaterialTheme.colors.onSurface, MaterialTheme.colors.primary, 0.15f).copy(alpha = 0.8f)
-  }
+
+  val chipBg by animateColorAsState(
+    targetValue = if (active) {
+      lerp(MaterialTheme.colors.surface, MaterialTheme.colors.primary, if (isLight) 0.18f else 0.25f)
+    } else {
+      lerp(MaterialTheme.colors.surface, MaterialTheme.colors.primary, if (isLight) 0.06f else 0.10f)
+    },
+    animationSpec = spring(dampingRatio = 0.85f, stiffness = 450f)
+  )
+  val contentColor by animateColorAsState(
+    targetValue = if (active) {
+      MaterialTheme.colors.primary
+    } else {
+      lerp(MaterialTheme.colors.onSurface, MaterialTheme.colors.primary, 0.15f).copy(alpha = 0.8f)
+    },
+    animationSpec = spring(dampingRatio = 0.85f, stiffness = 450f)
+  )
+  val iconScale by animateFloatAsState(
+    targetValue = if (active) 1.1f else 1f,
+    animationSpec = ExpressiveSprings.Bouncy
+  )
+
+  val interactionSource = remember { MutableInteractionSource() }
 
   Row(
     modifier = Modifier
       .sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
+      .expressivePress(
+        interactionSource = interactionSource,
+        targetScale = 0.93f,
+        hapticOnPress = HapticPattern.TICK
+      )
       .clip(shape = RoundedCornerShape(percent = 50))
       .background(chipBg)
-      .clickable {
+      .expressiveContainerSize()
+      .clickable(
+        interactionSource = interactionSource,
+        indication = LocalIndication.current
+      ) {
+        RichHaptics.perform(HapticPattern.SELECTION_CHANGE)
         if (activeFilter.value == ActiveFilter.PresetTag(tag)) {
           chatModel.activeChatTagFilter.value = null
         } else {
@@ -1722,7 +1763,12 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
     Icon(
       painterResource(menuIcon ?: icon),
       stringResource(text),
-      Modifier.size(18.sp.toDp()),
+      Modifier
+        .size(18.sp.toDp())
+        .graphicsLayer {
+          scaleX = iconScale
+          scaleY = iconScale
+        },
       tint = contentColor
     )
     Spacer(Modifier.width(4.dp))

@@ -391,7 +391,7 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
 
 @Composable
 fun terminalGutter(chatInfo: ChatInfo): Dp =
-  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + CHAT_ITEM_TEXT_PADDING else 0.dp
+  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + 8.dp else 0.dp
 
 @Composable
 fun TerminalChatItemRow(
@@ -410,7 +410,7 @@ fun TerminalChatItemRow(
       Box {
         if (sender != null) {
           ProvideTextStyle(LocalTextStyle.current.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize))) {
-            SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING))
+            SenderNameAndRole(sender, Modifier.padding(start = 8.dp))
           }
         }
       }
@@ -430,7 +430,7 @@ fun TerminalChatItemRow(
     val message = measurables[2].measure(messageConstraints)
     val messageTop = name.height + if (sender != null && message[CardTop] == 0) cardGap.roundToPx() else 0
     layout(constraints.maxWidth, max(messageTop + message.height, avatar.height)) {
-      avatar.placeRelative(CHAT_ITEM_TEXT_PADDING.roundToPx(), 0)
+      avatar.placeRelative(8.dp.roundToPx(), 0)
       name.placeRelative(messageStart, 0)
       message.placeRelative(messageStart, messageTop)
     }

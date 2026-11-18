@@ -6,12 +6,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -20,10 +25,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.HapticPattern
 import chat.simplex.common.platform.RichHaptics
 import chat.simplex.res.MR
+import chat.simplex.res.*
 
 private val SecurityGreen = Color(0xFF2E7D32)
 private val SecurityGreenLight = Color(0xFFE8F5E9)
@@ -74,7 +79,7 @@ fun ExpressiveVerificationQRCodeCard(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
         Icon(
-          painter = painterResource(MR.images.ic_security),
+          painter = rememberVectorPainter(Icons.Default.Lock),
           contentDescription = null,
           tint = badgeContentColor,
           modifier = Modifier.size(16.dp)
@@ -161,7 +166,7 @@ fun ExpressiveVerificationQRCodeCard(
             elevation = null
           ) {
             Icon(
-              painter = painterResource(MR.images.ic_check),
+              painter = rememberVectorPainter(Icons.Default.CheckCircle),
               contentDescription = null,
               modifier = Modifier.size(18.dp)
             )
@@ -193,7 +198,7 @@ fun ExpressiveVerificationQRCodeCard(
             )
           ) {
             Icon(
-              painter = painterResource(MR.images.ic_qr_code),
+              painter = rememberVectorPainter(Icons.Default.QrCode),
               contentDescription = null,
               modifier = Modifier.size(18.dp)
             )
@@ -225,7 +230,7 @@ fun ExpressiveVerificationQRCodeCard(
             )
           ) {
             Icon(
-              painter = painterResource(MR.images.ic_shield),
+              painter = rememberVectorPainter(Icons.Default.Lock),
               contentDescription = null,
               tint = MaterialTheme.colors.error,
               modifier = Modifier.size(18.dp)

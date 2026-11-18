@@ -9,17 +9,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
-import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import androidx.compose.ui.text.font.FontWeight
+import chat.simplex.common.platform.HapticPattern
+import chat.simplex.common.platform.RichHaptics
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.platform.windowWidth
 import chat.simplex.common.ui.theme.*
@@ -27,6 +28,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.SelectableCard
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.*
+import dev.icerock.moko.resources.compose.painterResource
 
 val SectionCardShape = RoundedCornerShape(16.dp)
 val CARD_PADDING = 18.dp
@@ -53,6 +55,7 @@ private fun CardColumnLayout(
       .fillMaxWidth()
       .clip(cardShape)
       .background(sectionCardColor())
+      .expressiveContainerSize()
       .padding(contentPadding)
       .drawBehind {
         for (i in 0 until childBottoms.size - 1) {
@@ -87,18 +90,36 @@ private fun CardColumn(
   if (LocalCardScreen.current) {
     CardColumnLayout(contentPadding, cardShape, content)
   } else {
-    Column(Modifier.padding(contentPadding).fillMaxWidth()) { content() }
+    Column(
+      Modifier
+        .expressiveContainerSize()
+        .padding(contentPadding)
+        .fillMaxWidth()
+    ) {
+      content()
+    }
   }
 }
 
 @Composable
-fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, cardShape: Shape = SectionCardShape, content: (@Composable ColumnScope.() -> Unit)) {
+fun SectionView(
+  title: String? = null,
+  contentPadding: PaddingValues = PaddingValues(),
+  headerBottomPadding: Dp = DEFAULT_PADDING,
+  cardShape: Shape = SectionCardShape,
+  content: (@Composable ColumnScope.() -> Unit)
+) {
   val card = LocalCardScreen.current
   Column {
     if (title != null) {
       Text(
-        title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
-        modifier = Modifier.padding(start = if (card) DEFAULT_PADDING + DEFAULT_PADDING_HALF else DEFAULT_PADDING, bottom = if (card) 8.dp else headerBottomPadding),
+        title,
+        color = MaterialTheme.colors.secondary,
+        style = MaterialTheme.typography.body2,
+        modifier = Modifier.padding(
+          start = if (card) DEFAULT_PADDING + DEFAULT_PADDING_HALF else DEFAULT_PADDING,
+          bottom = if (card) 8.dp else headerBottomPadding
+        ),
         fontSize = if (card) 14.sp else 12.sp,
         fontWeight = if (card) FontWeight.Medium else FontWeight.Normal
       )
@@ -121,8 +142,25 @@ fun SectionView(
   Column {
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     val interactionSource = remember { MutableInteractionSource() }
-    val iconClickable = if (onIconClick != null) Modifier.clickable(interactionSource = interactionSource, indication = ripple(bounded = false, radius = iconSize * 0.75f), onClick = onIconClick) else Modifier
-    Row(Modifier.padding(start = if (card) DEFAULT_PADDING + DEFAULT_PADDING_HALF else DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+    val iconClickable = if (onIconClick != null) {
+      Modifier
+        .expressivePress(interactionSource = interactionSource, targetScale = 0.88f)
+        .clickable(
+          interactionSource = interactionSource,
+          indication = ripple(bounded = false, radius = iconSize * 0.75f),
+          onClick = {
+            RichHaptics.perform(HapticPattern.TICK)
+            onIconClick()
+          }
+        )
+    } else Modifier
+    Row(
+      Modifier.padding(
+        start = if (card) DEFAULT_PADDING + DEFAULT_PADDING_HALF else DEFAULT_PADDING,
+        bottom = 5.dp
+      ),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
       if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize).then(iconClickable), tint = iconTint)
       Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = if (card) 14.sp else 12.sp, fontWeight = if (card) FontWeight.Medium else FontWeight.Normal)
       if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize).then(iconClickable), tint = iconTint)
@@ -132,12 +170,22 @@ fun SectionView(
 }
 
 @Composable
-fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () -> Unit)?, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, content: (@Composable ColumnScope.() -> Unit)) {
+fun SectionViewWithButton(
+  title: String? = null,
+  titleButton: (@Composable () -> Unit)?,
+  contentPadding: PaddingValues = PaddingValues(),
+  headerBottomPadding: Dp = DEFAULT_PADDING,
+  content: (@Composable ColumnScope.() -> Unit)
+) {
   val card = LocalCardScreen.current
   Column {
     if (title != null || titleButton != null) {
       val hPadding = if (card) DEFAULT_PADDING + DEFAULT_PADDING_HALF else DEFAULT_PADDING
-      Row(modifier = Modifier.padding(start = hPadding, end = hPadding, bottom = if (card) 8.dp else headerBottomPadding).fillMaxWidth()) {
+      Row(
+        modifier = Modifier
+          .padding(start = hPadding, end = hPadding, bottom = if (card) 8.dp else headerBottomPadding)
+          .fillMaxWidth()
+      ) {
         if (title != null) {
           Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = if (card) 14.sp else 12.sp, fontWeight = if (card) FontWeight.Medium else FontWeight.Normal)
         }
@@ -161,7 +209,14 @@ fun <T> SectionViewSelectable(
   SectionView(title) {
     Column {
       values.forEach { item ->
-        SectionItemViewSpaceBetween({ onSelected(item.value) }) {
+        SectionItemViewSpaceBetween({
+          if (currentValue.value != item.value) {
+            RichHaptics.perform(HapticPattern.SELECTION_CHANGE)
+          } else {
+            RichHaptics.perform(HapticPattern.TICK)
+          }
+          onSelected(item.value)
+        }) {
           Text(item.title)
           if (currentValue.value == item.value) {
             Icon(painterResource(MR.images.ic_check), item.title, tint = MaterialTheme.colors.primary)
@@ -188,7 +243,10 @@ fun <T> SectionViewSelectableCards(
         Spacer(Modifier.height(DEFAULT_PADDING * 2f))
       }
       values.forEach { item ->
-        SelectableCard(currentValue, item.value, item.title, item.description, onSelected)
+        SelectableCard(currentValue, item.value, item.title, item.description) { selected ->
+          RichHaptics.perform(HapticPattern.SELECTION_CHANGE)
+          onSelected(selected)
+        }
       }
     }
   }
@@ -206,11 +264,27 @@ fun SectionItemView(
     PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
   content: (@Composable RowScope.() -> Unit)
 ) {
+  val interactionSource = remember { MutableInteractionSource() }
+  val isInteractive = click != null && !disabled
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .expressivePress(
+      interactionSource = interactionSource,
+      targetScale = if (isInteractive) 0.985f else 1f
+    )
   Row(
-    if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
+    if (!isInteractive) {
+      modifier.padding(padding)
+    } else {
+      modifier
+        .clickable(
+          interactionSource = interactionSource,
+          indication = LocalIndication.current,
+          onClick = click!!
+        )
+        .padding(padding)
+    },
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
@@ -245,14 +319,36 @@ fun SectionItemViewLongClickable(
     PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
   content: (@Composable RowScope.() -> Unit)
 ) {
+  val interactionSource = remember { MutableInteractionSource() }
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .expressivePress(
+      interactionSource = interactionSource,
+      targetScale = if (!disabled) 0.985f else 1f
+    )
   Row(
     if (disabled) {
       modifier.padding(padding)
     } else {
-      modifier.combinedClickable(onClick = click, onLongClick = longClick).onRightClick(longClick).padding(padding)
+      modifier
+        .combinedClickable(
+          interactionSource = interactionSource,
+          indication = LocalIndication.current,
+          onClick = {
+            RichHaptics.perform(HapticPattern.CLICK)
+            click()
+          },
+          onLongClick = {
+            RichHaptics.perform(HapticPattern.HEAVY_CLICK)
+            longClick()
+          }
+        )
+        .onRightClick {
+          RichHaptics.perform(HapticPattern.HEAVY_CLICK)
+          longClick()
+        }
+        .padding(padding)
     },
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -269,13 +365,39 @@ fun SectionItemViewSpaceBetween(
   disabled: Boolean = false,
   content: (@Composable RowScope.() -> Unit)
 ) {
+  val interactionSource = remember { MutableInteractionSource() }
+  val isInteractive = click != null && !disabled
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .expressivePress(
+      interactionSource = interactionSource,
+      targetScale = if (isInteractive) 0.985f else 1f
+    )
   Row(
-    if (click == null || disabled) modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL) else modifier
-      .combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding)
-      .onRightClick { onLongClick?.invoke() },
+    if (!isInteractive) {
+      modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+    } else {
+      modifier
+        .combinedClickable(
+          interactionSource = interactionSource,
+          indication = LocalIndication.current,
+          onClick = click!!,
+          onLongClick = onLongClick?.let { lc ->
+            {
+              RichHaptics.perform(HapticPattern.HEAVY_CLICK)
+              lc()
+            }
+          }
+        )
+        .padding(padding)
+        .onRightClick {
+          if (onLongClick != null) {
+            RichHaptics.perform(HapticPattern.HEAVY_CLICK)
+            onLongClick()
+          }
+        }
+    },
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -346,7 +468,8 @@ fun SectionDividerSpaced(maxTopPadding: Boolean = false, maxBottomPadding: Boole
         start = DEFAULT_PADDING_HALF,
         top = if (maxTopPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp,
         end = DEFAULT_PADDING_HALF,
-        bottom = if (maxBottomPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp)
+        bottom = if (maxBottomPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp
+      )
     )
   }
 }
@@ -431,7 +554,6 @@ fun InfoRowTwoValues(
     }
   }
 }
-
 
 @Composable
 fun InfoRowEllipsis(title: String, value: String, onClick: () -> Unit) {

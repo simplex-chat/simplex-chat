@@ -13,7 +13,6 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -183,7 +182,8 @@ fun CIImageView(
     }
   }
   Box(
-    Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
+    // Удален .layoutId(CHAT_IMAGE_LAYOUT_ID)
+    Modifier
       .then(
         if (!smallView) {
           val w = if (previewBitmap.width * 0.97 <= previewBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH

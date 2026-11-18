@@ -32,7 +32,6 @@ import chat.simplex.common.views.badges.BadgeStoreError
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
-import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.database.deleteDatabaseBackups
 import chat.simplex.common.views.migration.MigrationFileLinkData
@@ -1223,8 +1222,8 @@ object ChatController {
     if (r is API.Result && r.res is CR.ApiChat) return if (rh == null) r.res.chat to r.res.navInfo else r.res.chat.copy(remoteHostId = rh) to r.res.navInfo
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
     val e = (r as? API.Error)?.err
-    if (pagination is ChatPagination.Around && e is ChatError.ChatErrorStore && e.storeError is StoreError.ChatItemNotFound) {
-      showQuotedItemDoesNotExistAlert()
+   if (pagination is ChatPagination.Around && e is ChatError.ChatErrorStore && e.storeError is StoreError.ChatItemNotFound) {
+      // showQuotedItemDoesNotExistAlert()
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
     }

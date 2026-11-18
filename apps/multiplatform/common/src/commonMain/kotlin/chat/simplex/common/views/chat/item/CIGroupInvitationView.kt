@@ -158,12 +158,14 @@ fun CIGroupInvitationView(
             }
           }
         }
-
-        if (inlineMeta != null) {
+        
+        // Закомментирован MetaOnLastBaseline, так как он был удален из ядра.
+        // Вызываем invitationCard() напрямую.
+        /*if (inlineMeta != null) {
           MetaOnLastBaseline(inlineMeta) { invitationCard() }
-        } else {
+        } else {*/
           invitationCard()
-        }
+        //}
       }
     }
   }

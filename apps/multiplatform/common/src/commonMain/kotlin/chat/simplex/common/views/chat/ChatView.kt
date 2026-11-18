@@ -17,7 +17,6 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
-import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -326,68 +325,68 @@ fun ChatView(
                 }
               } else {
                FlexSelectedItemsButtonsToolbar(
-                  chatsCtx = chatsCtx,
-                  selectedChatItems = selectedChatItems,
-                  chatInfo = chatInfo,
-                  deleteItems = { canDeleteForAll: Boolean ->
-                    val itemIds = selectedChatItems.value
-                    val questionText =
-                      if (!canDeleteForAll || fullDeleteAllowed || chatInfo is ChatInfo.Local)
-                        generalGetString(MR.strings.delete_messages_cannot_be_undone_warning)
-                      else
-                        generalGetString(MR.strings.delete_messages_mark_deleted_warning)
-                    if (itemIds != null) {
-                      deleteMessagesAlertDialog(
-                        itemIds.sorted(),
-                        questionText = questionText,
-                        forAll = canDeleteForAll,
-                        editorial = publicGroupEditor(chatInfo),
-                        deleteMessages = { ids, forAll ->
-                          deleteMessages(chatRh, chatInfo, ids, forAll, moderate = false) {
-                            selectedChatItems.value = null
-                          }
-                        }
-                      )
-                    }
-                  },
-                  archiveItems = { archiveItems(chatRh, chatInfo, selectedChatItems) },
-                  moderateItems = {
-                    if (chatInfo is ChatInfo.Group) {
-                      val itemIds = selectedChatItems.value
-                      if (itemIds != null) {
-                        moderateMessagesAlertDialog(itemIds.sorted(), moderateMessageQuestionText(chatInfo.featureEnabled(ChatFeature.FullDelete), itemIds.size), deleteMessages = { ids ->
-                          deleteMessages(chatRh, chatInfo, ids, true, moderate = true) {
-                            selectedChatItems.value = null
-                          }
-                        })
-                      }
-                    }
-                  },
-                  forwardItems = {
-                    val itemIds = selectedChatItems.value
+                 chatsCtx = chatsCtx,
+                 selectedChatItems = selectedChatItems,
+                 chatInfo = chatInfo,
+                 deleteItems = { canDeleteForAll: Boolean ->
+                   val itemIds = selectedChatItems.value
+                   val questionText =
+                     if (!canDeleteForAll || fullDeleteAllowed || chatInfo is ChatInfo.Local)
+                       generalGetString(MR.strings.delete_messages_cannot_be_undone_warning)
+                     else
+                       generalGetString(MR.strings.delete_messages_mark_deleted_warning)
+                   if (itemIds != null) {
+                     deleteMessagesAlertDialog(
+                       itemIds.sorted(),
+                       questionText = questionText,
+                       forAll = canDeleteForAll,
+                       editorial = publicGroupEditor(chatInfo),
+                       deleteMessages = { ids, forAll ->
+                         deleteMessages(chatRh, chatInfo, ids, forAll, moderate = false) {
+                           selectedChatItems.value = null
+                         }
+                       }
+                     )
+                   }
+                 },
+                 archiveItems = { archiveItems(chatRh, chatInfo, selectedChatItems) },
+                 moderateItems = {
+                   if (chatInfo is ChatInfo.Group) {
+                     val itemIds = selectedChatItems.value
+                     if (itemIds != null) {
+                       moderateMessagesAlertDialog(itemIds.sorted(), moderateMessageQuestionText(chatInfo.featureEnabled(ChatFeature.FullDelete), itemIds.size), deleteMessages = { ids ->
+                         deleteMessages(chatRh, chatInfo, ids, true, moderate = true) {
+                           selectedChatItems.value = null
+                         }
+                       })
+                     }
+                   }
+                 },
+                 forwardItems = {
+                   val itemIds = selectedChatItems.value
 
-                    if (itemIds != null) {
-                      withBGApi {
-                        val chatItemIds = itemIds.toList()
-                        val forwardPlan = controller.apiPlanForwardChatItems(
-                          rh = chatRh,
-                          fromChatType = chatInfo.chatType,
-                          fromChatId = chatInfo.apiId,
-                          fromScope = chatInfo.groupChatScope(),
-                          chatItemIds = chatItemIds
-                        )
+                   if (itemIds != null) {
+                     withBGApi {
+                       val chatItemIds = itemIds.toList()
+                       val forwardPlan = controller.apiPlanForwardChatItems(
+                         rh = chatRh,
+                         fromChatType = chatInfo.chatType,
+                         fromChatId = chatInfo.apiId,
+                         fromScope = chatInfo.groupChatScope(),
+                         chatItemIds = chatItemIds
+                       )
 
-                        if (forwardPlan != null) {
-                          if (forwardPlan.chatItemIds.count() < chatItemIds.count() || forwardPlan.forwardConfirmation != null) {
-                            handleForwardConfirmation(chatRh, forwardPlan, chatInfo)
-                          } else {
-                            forwardContent(forwardPlan.chatItemIds, chatInfo)
-                          }
-                        }
-                      }
-                    }
-                  },
-                )
+                       if (forwardPlan != null) {
+                         if (forwardPlan.chatItemIds.count() < chatItemIds.count() || forwardPlan.forwardConfirmation != null) {
+                           handleForwardConfirmation(chatRh, forwardPlan, chatInfo)
+                         } else {
+                           forwardContent(forwardPlan.chatItemIds, chatInfo)
+                         }
+                       }
+                     }
+                   }
+                 },
+               )
               }
             },
             scrollToItemId,
@@ -1027,7 +1026,9 @@ val chatInfo = remember(chat) { derivedStateOf<ChatInfo?> { chat.value?.chatInfo
         val oneHandUI = remember { appPrefs.oneHandUI.state }
         val chatBottomBar = remember { appPrefs.chatBottomBar.state }
         val composeViewFocusRequester = remember { if (appPlatform.isDesktop) FocusRequester() else null }
-        AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
+        
+        // --- ZAMENA AdaptingBottomPaddingLayout НА Box ---
+        Box(Modifier.fillMaxSize()) {
           if (chat != null) {
             val selectionManager = LocalSelectionManager.current
             if (selectionManager != null) {
@@ -1083,7 +1084,6 @@ val chatInfo = remember(chat) { derivedStateOf<ChatInfo?> { chat.value?.chatInfo
           if (chatsCtx.contentTag == MsgContentTag.Report) {
             Column(
               Modifier
-                .layoutId(CHAT_COMPOSE_LAYOUT_ID)
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .imePadding()
@@ -1116,11 +1116,17 @@ val chatInfo = remember(chat) { derivedStateOf<ChatInfo?> { chat.value?.chatInfo
                 Box(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
               }
             }
-          } else {
+        } else {
+            val density = LocalDensity.current
             Box(
               Modifier
-                .layoutId(CHAT_COMPOSE_LAYOUT_ID)
                 .align(Alignment.BottomCenter)
+              .onSizeChanged {
+  val newHeight = with(density) { it.height.toDp() }
+  if (composeViewHeight.value != newHeight) {
+    composeViewHeight.value = newHeight
+  }
+}
                 .imePadding()
                 .navigationBarsPadding()
                 .then(if (oneHandUI.value && chatBottomBar.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier)
@@ -2177,7 +2183,7 @@ val searchValueIsEmpty = remember(searchValue) { derivedStateOf<Boolean> { searc
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
         )
         val sent = cItem.chatDir.sent
-        val itemTopGap = (if (previousItemSeparationLargeGap) BUBBLE_FAR_GAP else BUBBLE_CLOSE_GAP).toDp() / 2
+        val itemTopGap = (if (previousItemSeparationLargeGap) 8.dp else 2.dp)
 
         @Composable
         fun ChatItemBox(modifier: Modifier = Modifier, top: Dp = itemTopGap, bottom: Dp? = null, content: @Composable () -> Unit = { }) {
@@ -2187,9 +2193,9 @@ val searchValueIsEmpty = remember(searchValue) { derivedStateOf<Boolean> { searc
                 if (itemAtZeroIndexInWholeList) {
                   8.dp
                 } else {
-                  bottom ?: BUBBLE_FAR_GAP.toDp() / 2
+                  bottom ?: 4.dp
                 }
-              } else bottom ?: BUBBLE_CLOSE_GAP.toDp() / 2, top = top
+              } else bottom ?: 2.dp, top = top
             ),
             contentAlignment = Alignment.CenterStart
           ) {
@@ -2302,7 +2308,7 @@ val terminal = LocalTerminalLayout.current
 
                  @Composable
                   fun Item() {
-                    ChatItemBox(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID)) { // <-- Обязательно должна быть открывающая скобка!
+                    ChatItemBox(Modifier) { 
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
                         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
@@ -2315,7 +2321,7 @@ val terminal = LocalTerminalLayout.current
                     }
                   }
                   if (cItem.content.showMemberName) {
-                    DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
+                    Column(Modifier) {
                       MemberNameAndRole(range)
                       Item()
                     }
@@ -2376,7 +2382,7 @@ val terminal = LocalTerminalLayout.current
 
                   @Composable
                   fun Item() {
-                    ChatItemBox(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID)) {
+                    ChatItemBox(Modifier) {
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         Box(Modifier.clickable { showChatInfo() }) {
                           ProfileImage(
@@ -2393,7 +2399,7 @@ val terminal = LocalTerminalLayout.current
                     }
                   }
                   if (cItem.content.showMemberName) {
-                    DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
+                    Column(Modifier) {
                       ChannelNameAndRole()
                       Item()
                     }
@@ -2412,7 +2418,7 @@ val terminal = LocalTerminalLayout.current
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(swipeableOrSelectionModifier)
                   ) {
-                    ChatItemViewShortHand(cItem, itemSeparation, range)
+                    ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value)
                   }
                 }
               }
@@ -2869,10 +2875,10 @@ fun BoxScope.FloatingButtons(
       allowToShowBottomWithCounter.value = shouldShow
       shouldShow && allow
   } }
-  val allowToShowBottomWithArrow = remember { mutableStateOf(true) }
+val allowToShowBottomWithArrow = remember { mutableStateOf(true) }
   val showBottomButtonWithArrow = remember { derivedStateOf {
     val allow = allowToShowBottomWithArrow.value
-    val shouldShow = !showBottomButtonWithCounter.value && listState.value.firstVisibleItemIndex != 0
+    val shouldShow = listState.value.firstVisibleItemIndex != 0
     allowToShowBottomWithArrow.value = shouldShow
     shouldShow && allow
   } }
@@ -2887,7 +2893,15 @@ fun BoxScope.FloatingButtons(
     requestedBottomScroll,
     animatedScrollingInProgress,
     composeViewHeight,
-    onClick = {
+    onClickArrow = {
+      if (loadingBottomItems.value || !lastItemsLoaded(chatsCtx)) {
+        requestedTopScroll.value = false
+        requestedBottomScroll.value = true
+      } else {
+        scrollToBottom()
+      }
+    },
+    onClickCounter = {
       if (loadingBottomItems.value || !lastItemsLoaded(chatsCtx)) {
         requestedTopScroll.value = false
         requestedBottomScroll.value = true
@@ -3460,7 +3474,7 @@ private fun findQuotedItemFromItem(
           scrollToItem(item.quotedItem.itemId)
         }
       } else {
-        showQuotedItemDoesNotExistAlert()
+        // showQuotedItemDoesNotExistAlert()
       }
     }
   }
@@ -3498,7 +3512,8 @@ private fun BoxScope.BottomEndFloatingButton(
   requestedBottomScroll: State<Boolean>,
   animatedScrollingInProgress: State<Boolean>,
   composeViewHeight: State<Dp>,
-  onClick: () -> Unit
+  onClickArrow: () -> Unit,
+  onClickCounter: () -> Unit = onClickArrow
 ) {
   val fabBgColor = if (MaterialTheme.colors.isLight) {
     androidx.compose.ui.graphics.lerp(MaterialTheme.colors.surface, MaterialTheme.colors.primary, 0.07f)
@@ -3506,47 +3521,64 @@ private fun BoxScope.BottomEndFloatingButton(
     androidx.compose.ui.graphics.lerp(MaterialTheme.colors.surface, MaterialTheme.colors.primary, 0.11f)
   }
 
-  when {
-    showButtonWithCounter.value && !animatedScrollingInProgress.value -> {
-      FloatingActionButton(
-        onClick = onClick,
-        elevation = FloatingActionButtonDefaults.elevation(1.dp, 2.dp, 0.dp, 0.dp),
-        modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
-        backgroundColor = fabBgColor,
-        shape = RoundedCornerShape(percent = 50)
-      ) {
-        if (requestedBottomScroll.value) {
-          LoadingProgressIndicator()
-        } else {
-          Text(
-            unreadCountStr(unreadCount.value),
-            color = MaterialTheme.colors.primary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold
-          )
+  val showCounter = showButtonWithCounter.value && !animatedScrollingInProgress.value
+  val showArrow = showButtonWithArrow.value && !animatedScrollingInProgress.value
+
+  if (showCounter || showArrow) {
+    // composeViewHeight уже содержит полную высоту нижней панели, поэтому добавляем только 8.dp зазора над ней
+    Row(
+      modifier = Modifier
+        .padding(
+          end = DEFAULT_PADDING,
+          bottom = composeViewHeight.value + 8.dp
+        )
+        .align(Alignment.BottomEnd),
+      horizontalArrangement = Arrangement.spacedBy(10.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      // 1. Кнопка нового сообщения (левее стрелки, или на её месте если стрелки нет)
+      if (showCounter) {
+        FloatingActionButton(
+          onClick = onClickCounter,
+          elevation = FloatingActionButtonDefaults.elevation(1.dp, 2.dp, 0.dp, 0.dp),
+          modifier = Modifier.size(48.dp),
+          backgroundColor = fabBgColor,
+          shape = RoundedCornerShape(percent = 50)
+        ) {
+          if (requestedBottomScroll.value && !showArrow) {
+            LoadingProgressIndicator()
+          } else {
+            Text(
+              unreadCountStr(unreadCount.value),
+              color = MaterialTheme.colors.primary,
+              fontSize = 15.5.sp,
+              fontWeight = FontWeight.SemiBold
+            )
+          }
+        }
+      }
+
+      // 2. Кнопка прокрутки вниз (стрелка)
+      if (showArrow) {
+        FloatingActionButton(
+          onClick = onClickArrow,
+          elevation = FloatingActionButtonDefaults.elevation(1.dp, 2.dp, 0.dp, 0.dp),
+          modifier = Modifier.size(48.dp),
+          backgroundColor = fabBgColor,
+          shape = RoundedCornerShape(percent = 50)
+        ) {
+          if (requestedBottomScroll.value) {
+            LoadingProgressIndicator()
+          } else {
+            Icon(
+              painter = painterResource(MR.images.ic_keyboard_arrow_down),
+              contentDescription = null,
+              tint = MaterialTheme.colors.primary
+            )
+          }
         }
       }
     }
-    showButtonWithArrow.value && !animatedScrollingInProgress.value -> {
-      FloatingActionButton(
-        onClick = onClick,
-        elevation = FloatingActionButtonDefaults.elevation(1.dp, 2.dp, 0.dp, 0.dp),
-        modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
-        backgroundColor = fabBgColor,
-        shape = RoundedCornerShape(percent = 50)
-      ) {
-        if (requestedBottomScroll.value) {
-          LoadingProgressIndicator()
-        } else {
-          Icon(
-            painter = painterResource(MR.images.ic_keyboard_arrow_down),
-            contentDescription = null,
-            tint = MaterialTheme.colors.primary
-          )
-        }
-      }
-    }
-    else -> {}
   }
 }
 

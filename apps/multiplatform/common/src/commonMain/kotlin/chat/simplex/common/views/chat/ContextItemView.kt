@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chat
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.ui.graphics.painter.Painter
@@ -15,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
@@ -31,12 +31,9 @@ fun ContextItemView(
   contextIcon: Painter,
   showSender: Boolean = true,
   chatInfo: ChatInfo,
-  contextIconColor: Color = MaterialTheme.colors.secondary,
+  contextIconColor: Color = MaterialTheme.colors.primary,
   cancelContextItem: () -> Unit,
 ) {
-  val sentColor = MaterialTheme.appColors.sentMessage
-  val receivedColor = MaterialTheme.appColors.receivedMessage
-
   @Composable
   fun MessageText(contextItem: ChatItem, attachment: ImageResource?, lines: Int, prefix: AnnotatedString? = null, stripLink: String? = null) {
     val inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = if (attachment != null) {
@@ -80,7 +77,7 @@ fun ContextItemView(
     return when (mc) {
       is MsgContent.MCFile -> if (fileIsLoaded) MR.images.ic_draft_filled else null
       is MsgContent.MCImage -> MR.images.ic_image
-      is MsgContent.MCVoice ->  if (fileIsLoaded) MR.images.ic_play_arrow_filled else null
+      is MsgContent.MCVoice -> if (fileIsLoaded) MR.images.ic_play_arrow_filled else null
       is MsgContent.MCChat -> mc.chatLink.smallIconRes
       else -> null
     }
@@ -98,16 +95,15 @@ fun ContextItemView(
     }
   }
 
-  val sent = contextItems[0].chatDir.sent
-
   Row(
     Modifier
-      .background(if (sent) sentColor else receivedColor),
+      .fillMaxWidth()
+      .padding(start = 6.dp, end = 4.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
       Modifier
-        .padding(vertical = 12.dp)
+        .padding(vertical = 10.dp)
         .fillMaxWidth()
         .weight(1F),
       verticalAlignment = Alignment.CenterVertically
@@ -120,7 +116,7 @@ fun ContextItemView(
           .width(20.dp),
         contentDescription = stringResource(MR.strings.icon_descr_context),
         tint = contextIconColor,
-        )
+      )
 
       if (contextItems.count() == 1) {
         val contextItem = contextItems[0]
@@ -129,11 +125,15 @@ fun ContextItemView(
         if (showSender && sender != null) {
           Column(
             horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
           ) {
             Text(
               sender,
-              style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+              style = TextStyle(
+                fontSize = 13.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colors.primary
+              )
             )
             ContextMsgPreview(contextItem, lines = 2)
           }
@@ -141,7 +141,14 @@ fun ContextItemView(
           ContextMsgPreview(contextItem, lines = 3)
         }
       } else if (contextItems.isNotEmpty()) {
-        Text(String.format(generalGetString(if (chatInfo.chatType == ChatType.Local) MR.strings.compose_save_messages_n else MR.strings.compose_forward_messages_n), contextItems.count()), fontStyle = FontStyle.Italic)
+        Text(
+          String.format(
+            generalGetString(if (chatInfo.chatType == ChatType.Local) MR.strings.compose_save_messages_n else MR.strings.compose_forward_messages_n),
+            contextItems.count()
+          ),
+          fontStyle = FontStyle.Italic,
+          color = MaterialTheme.colors.onSurface
+        )
       }
     }
     IconButton(onClick = cancelContextItem) {

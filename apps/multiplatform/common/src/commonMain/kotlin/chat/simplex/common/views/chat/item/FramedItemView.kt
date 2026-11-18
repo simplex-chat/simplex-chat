@@ -1,964 +1,365 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.foundation.*
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.layout.*
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
-import dev.icerock.moko.resources.compose.painterResource
-import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.text.*
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.chatlist.openChat
-import chat.simplex.common.views.newchat.planAndConnect
-import chat.simplex.res.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlin.math.ceil
 
 @Composable
 fun FramedItemView(
   chatsCtx: ChatModel.ChatsContext,
   chat: Chat,
   ci: ChatItem,
-  uriHandler: UriHandler? = null,
+  uriHandler: UriHandler = LocalUriHandler.current,
   imageProvider: (() -> ImageGalleryProvider)? = null,
   linkMode: SimplexLinkMode,
-  showViaProxy: Boolean,
+  showViaProxy: Boolean = false,
   showMenu: MutableState<Boolean>,
-  showTimestamp: Boolean,
+  showTimestamp: Boolean = true,
   tailVisible: Boolean = false,
   receiveFile: (Long) -> Unit,
-  onLinkLongClick: (link: String) -> Unit = {},
+  onLinkLongClick: (String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
-  scrollToItemId: MutableState<Long?>,
+  scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) },
   scrollToQuotedItemFromItem: (Long) -> Unit = {},
-  endButton: (@Composable () -> Unit)? = null,
 ) {
-  val chatInfo = chat.chatInfo
-  val sent = ci.chatDir.sent
-  val chatTTL = chatInfo.timedMessagesTTL
+  val mc = ci.content.msgContent
+  val cInfo = chat.chatInfo
   val terminal = LocalTerminalLayout.current
-  val cardTop = terminalCardTop(ci).toDp()
-  val mediaModifier = if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = cardTop, end = CHAT_ITEM_TEXT_PADDING).messageCard().clipChatItem(ci, revealed = true) else Modifier
-  val quoteColor = if (sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote
-  val cardModifier = mediaModifier.background(quoteColor)
-  val thumbnailInset = if (terminal) Modifier.padding(end = CHAT_ITEM_TEXT_PADDING) else Modifier
-  val thumbnailClip = if (terminal) Modifier.clipChatItem(ci, revealed = true) else Modifier
-  val quoteBaseStyle = MaterialTheme.typography.body1
+  val sent = ci.chatDir.sent
 
-  fun membership(): GroupMember? {
-    return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
+  // Увеличенный на 10% размер шрифта (16.sp * 1.1 = 17.6.sp) с учётом системного множителя
+  val msgFontSize = 17.6.sp * fontSizeMultiplier
+
+  // M3 Expressive цвет пузыря сообщения
+  val isLight = MaterialTheme.colors.isLight
+  val bubbleBgColor = if (terminal) {
+    Color.Transparent
+  } else if (sent) {
+    lerp(MaterialTheme.appColors.sentMessage, MaterialTheme.colors.primary, if (isLight) 0.08f else 0.14f)
+  } else {
+    lerp(MaterialTheme.appColors.receivedMessage, MaterialTheme.colors.primary, if (isLight) 0.04f else 0.07f)
   }
 
   @Composable
-  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int, showTimestamp: Boolean, stripLink: String? = null, prefix: AnnotatedString? = null) {
-    val color = if (terminal) MaterialTheme.colors.onSurface.copy(alpha = 0.7f) else MaterialTheme.colors.onSurface
-    MarkdownText(
-      qi.text,
-      qi.formattedText,
-      qi.markdownBlocks,
-      toggleSecrets = true,
-      maxLines = lines,
-      overflow = TextOverflow.Ellipsis,
-      style = quoteBaseStyle.copy(fontSize = 15.sp, color = color).merge(chatTextStyle(15.sp, color)),
-      linkMode = linkMode,
-      uriHandler = if (appPlatform.isDesktop) uriHandler else null,
-      showTimestamp = showTimestamp,
-      prefix = prefix,
-      stripLink = stripLink,
-    )
+  fun BubbleSurface(transparent: Boolean = false, content: @Composable () -> Unit) {
+    if (terminal || transparent) {
+      content()
+    } else {
+      Surface(
+        color = bubbleBgColor,
+        contentColor = MaterialTheme.colors.onSurface,
+        elevation = 0.dp
+      ) {
+        content()
+      }
+    }
   }
 
-  @Composable
-  fun ciQuotedMsgView(qi: CIQuote, stripLink: String? = null, prefix: AnnotatedString? = null) {
-    val sender = qi.sender(membership())
-    Box(
-      Modifier
-        // this width limitation prevents crash on calculating constraints that may happen if you post veeeery long message and then quote it.
-        // Top level layout wants `IntrinsicWidth.Max` and very long layout makes the crash in this case
-        .widthIn(max = 50000.dp)
-        .then(if (terminal) Modifier.padding(end = 12.dp) else Modifier.bubbleTextPadding(if (sender != null) 13.5.sp else 15.sp)),
-      contentAlignment = Alignment.TopStart
-    ) {
-      if (sender != null) {
+  when (mc) {
+    is MsgContent.MCFile -> {
+      BubbleSurface {
+        CIFileView(
+          ci.file,
+          ci.meta,
+          cInfo.timedMessagesTTL,
+          showViaProxy = showViaProxy,
+          showTimestamp = showTimestamp,
+          showMenu = showMenu,
+          receiveFile = receiveFile
+        )
+      }
+    }
+    is MsgContent.MCImage -> {
+      val hasCaption = mc.text.isNotEmpty()
+      BubbleSurface(transparent = !hasCaption) {
+        Column(modifier = Modifier.width(IntrinsicSize.Min)) {
+          CIImageView(
+            mc.image,
+            ci.file,
+            imageProvider ?: { providerForGallery(emptyList(), ci.id) {} },
+            showMenu,
+            smallView = false,
+            receiveFile = receiveFile
+          )
+          if (hasCaption) {
+            ItemWithMeta(meta = { CIMetaView(ci, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
+              Column(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalAlignment = Alignment.Start
+              ) {
+                SelectionContainer {
+                  Text(
+                    text = mc.text,
+                    fontSize = msgFontSize,
+                    textAlign = TextAlign.Start,
+                    style = chatTextStyle(msgFontSize, MaterialTheme.colors.onSurface),
+                    color = MaterialTheme.colors.onSurface
+                  )
+                }
+                if (inlineMeta != null) {
+                  Spacer(Modifier.height(4.dp))
+                  Box(Modifier.align(Alignment.End)) {
+                    inlineMeta()
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    is MsgContent.MCVideo -> {
+      val hasCaption = mc.text.isNotEmpty()
+      BubbleSurface(transparent = !hasCaption) {
+        Column(modifier = Modifier.width(IntrinsicSize.Min)) {
+          CIVideoView(
+            mc.image,
+            mc.duration,
+            ci.file,
+            imageProvider ?: { providerForGallery(emptyList(), ci.id) {} },
+            showMenu,
+            smallView = false,
+            receiveFile = receiveFile
+          )
+          if (hasCaption) {
+            ItemWithMeta(meta = { CIMetaView(ci, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
+              Column(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalAlignment = Alignment.Start
+              ) {
+                SelectionContainer {
+                  Text(
+                    text = mc.text,
+                    fontSize = msgFontSize,
+                    textAlign = TextAlign.Start,
+                    style = chatTextStyle(msgFontSize, MaterialTheme.colors.onSurface),
+                    color = MaterialTheme.colors.onSurface
+                  )
+                }
+                if (inlineMeta != null) {
+                  Spacer(Modifier.height(4.dp))
+                  Box(Modifier.align(Alignment.End)) {
+                    inlineMeta()
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    is MsgContent.MCVoice -> {
+      BubbleSurface {
+        ItemWithMeta(meta = { CIMetaView(ci, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
+          Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.Start
+          ) {
+            CIVoiceView(
+              mc.duration,
+              ci.file,
+              ci.meta.itemEdited,
+              ci.chatDir.sent,
+              hasText = mc.text.isNotEmpty(),
+              ci,
+              cInfo.timedMessagesTTL,
+              showViaProxy = showViaProxy,
+              showTimestamp = showTimestamp,
+              longClick = { onLinkLongClick("") },
+              receiveFile = receiveFile
+            )
+            if (mc.text.isNotEmpty()) {
+              Spacer(Modifier.height(6.dp))
+              SelectionContainer {
+                Text(
+                  text = mc.text,
+                  fontSize = msgFontSize,
+                  textAlign = TextAlign.Start,
+                  style = chatTextStyle(msgFontSize, MaterialTheme.colors.onSurface),
+                  color = MaterialTheme.colors.onSurface
+                )
+              }
+            }
+            if (inlineMeta != null) {
+              Spacer(Modifier.height(4.dp))
+              Box(Modifier.align(Alignment.End)) {
+                inlineMeta()
+              }
+            }
+          }
+        }
+      }
+    }
+    is MsgContent.MCLink -> {
+      BubbleSurface {
+        ItemWithMeta(meta = { CIMetaView(ci, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
+          Column(
+            modifier = Modifier.padding(bottom = 10.dp),
+            horizontalAlignment = Alignment.Start
+          ) {
+            ChatItemLinkView(mc.preview, showMenu, onLongClick = { onLinkLongClick("") })
+            if (mc.text.isNotEmpty()) {
+              Spacer(Modifier.height(8.dp))
+              Box(Modifier.padding(horizontal = 14.dp)) {
+                SelectionContainer {
+                  Text(
+                    text = mc.text,
+                    fontSize = msgFontSize,
+                    textAlign = TextAlign.Start,
+                    style = chatTextStyle(msgFontSize, MaterialTheme.colors.onSurface),
+                    color = MaterialTheme.colors.onSurface
+                  )
+                }
+              }
+            }
+            if (inlineMeta != null) {
+              Spacer(Modifier.height(4.dp))
+              Box(
+                modifier = Modifier
+                  .align(Alignment.End)
+                  .padding(horizontal = 14.dp)
+              ) {
+                inlineMeta()
+              }
+            }
+          }
+        }
+      }
+    }
+    is MsgContent.MCText -> {
+      if (mc.text.isNotEmpty()) {
+        if (terminal) {
+          Column(Modifier.padding(horizontal = 8.dp)) {
+            SelectionContainer {
+              Text(
+                text = mc.text,
+                fontSize = msgFontSize,
+                textAlign = TextAlign.Start,
+                style = chatTextStyle(msgFontSize, MaterialTheme.colors.onSurface),
+                color = MaterialTheme.colors.onSurface
+              )
+            }
+            if (ci.file != null && ci.file.fileStatus !is CIFileStatus.Invalid) {
+              Spacer(Modifier.height(8.dp))
+              CIFileView(ci.file, ci.meta, cInfo.timedMessagesTTL, showViaProxy, showTimestamp, showMenu, smallView = true, receiveFile = receiveFile)
+            }
+          }
+        } else {
+          val hasFile = ci.file != null && ci.file.fileStatus !is CIFileStatus.Invalid
+
+          BubbleSurface {
+            ItemWithMeta(meta = { CIMetaView(ci, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
+              Column(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalAlignment = Alignment.Start
+              ) {
+                if (hasFile) {
+                  CIFileView(ci.file, ci.meta, cInfo.timedMessagesTTL, showViaProxy, showTimestamp, showMenu, smallView = true, receiveFile = receiveFile)
+                  Spacer(Modifier.height(8.dp))
+                }
+                SelectionContainer {
+                  Text(
+                    text = mc.text,
+                    fontSize = msgFontSize,
+                    textAlign = TextAlign.Start,
+                    style = chatTextStyle(msgFontSize, MaterialTheme.colors.onSurface),
+                    color = MaterialTheme.colors.onSurface
+                  )
+                }
+                if (inlineMeta != null) {
+                  Spacer(Modifier.height(4.dp))
+                  Box(Modifier.align(Alignment.End)) {
+                    inlineMeta()
+                  }
+                }
+              }
+            }
+          }
+        }
+      } else if (ci.file != null && ci.file.fileStatus !is CIFileStatus.Invalid) {
+        BubbleSurface {
+          CIFileView(ci.file, ci.meta, cInfo.timedMessagesTTL, showViaProxy, showTimestamp, showMenu, smallView = true, receiveFile = receiveFile)
+        }
+      }
+    }
+    is MsgContent.MCReport -> {
+      val padding = if (terminal) Modifier.padding(horizontal = 8.dp) else Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+      BubbleSurface {
         Column(
+          modifier = padding,
           horizontalAlignment = Alignment.Start
         ) {
           Text(
-            sender,
-            style = quoteBaseStyle.copy(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary).merge(chatTextStyle(13.5.sp)),
-            maxLines = 1
+            text = "Report: ${mc.reason.text}",
+            fontSize = msgFontSize,
+            textAlign = TextAlign.Start,
+            style = chatTextStyle(msgFontSize, MaterialTheme.colors.error),
+            color = MaterialTheme.colors.error
           )
-          ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
-        }
-      } else {
-        ciQuotedMsgTextView(qi, lines = 3, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
-      }
-    }
-  }
-
-  @Composable
-  fun RowScope.QuotedMsgOrGap(qi: CIQuote) {
-    if (terminal && qi.text.isEmpty() && qi.sender(membership()) == null) {
-      Spacer(Modifier.width(CHAT_ITEM_TEXT_PADDING - QUOTE_BAR_GAP))
-    } else {
-      Box(if (terminal) Modifier.weight(1f, fill = false) else Modifier.fillMaxWidth().weight(1f)) {
-        ciQuotedMsgView(qi)
-      }
-    }
-  }
-
-  @Composable
-  fun HeaderText(caption: String, italic: Boolean, fontSize: TextUnit = 12.sp, modifier: Modifier = Modifier) {
-    Text(
-      modifier = modifier,
-      text = buildAnnotatedString {
-        withStyle(SpanStyle(fontSize = fontSize, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
-          append(caption)
-        }
-      },
-      style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(chatTextStyle(fontSize, MaterialTheme.colors.secondary)),
-      maxLines = 1,
-      overflow = TextOverflow.Ellipsis
-    )
-  }
-
-  @Composable
-  fun headerModifier(pad: Boolean, onClick: (() -> Unit)? = null): Modifier {
-    return Modifier
-      .then(if (terminal) Modifier else Modifier.background(quoteColor))
-      .fillMaxWidth()
-      .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-      .then(
-        if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_HEADER_TOP_GAP.toDp(), end = 12.dp, bottom = TERMINAL_HEADER_BOTTOM_GAP.toDp())
-        else Modifier.bubbleTextPadding(12.sp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) BUBBLE_TEXT_INSET else 0.dp)
-      )
-  }
-
-  @Composable
-  fun HeaderRow(modifier: Modifier, caption: String, italic: Boolean, icon: Painter?, iconColor: Color?) {
-    Row(
-      modifier,
-      horizontalArrangement = Arrangement.spacedBy(4.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      if (icon != null) {
-        Icon(
-          icon,
-          caption,
-          Modifier.inlineIcon().size(18.dp),
-          tint = iconColor ?: if (isInDarkTheme()) FileDark else FileLight
-        )
-      }
-      HeaderText(caption, italic)
-    }
-  }
-
-  @Composable
-  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false, iconColor: Color? = null) {
-    HeaderRow(headerModifier(pad), caption, italic, icon, iconColor)
-  }
-
-  @Composable
-  fun ciQuoteView(qi: CIQuote) {
-    val blurred = remember { mutableStateOf(appPreferences.privacyMediaBlurRadius.get() > 0) }
-    Row(
-      Modifier
-        .then(if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = terminalQuoteTop(ci).toDp()).messageCard().quoteBar(MaterialTheme.colors.onSurface) else Modifier.background(quoteColor))
-        .fillMaxWidth()
-    ) {
-      when (qi.content) {
-        is MsgContent.MCImage -> {
-          QuotedMsgOrGap(qi)
-          val imageBitmap = remember(qi.content.image) { base64ToBitmap(qi.content.image) }
-          Image(
-            imageBitmap,
-            contentDescription = stringResource(MR.strings.image_descr),
-            contentScale = ContentScale.Crop,
-            modifier = thumbnailInset.size(68.dp).then(thumbnailClip).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
-          )
-        }
-        is MsgContent.MCVideo -> {
-          QuotedMsgOrGap(qi)
-          val imageBitmap = remember(qi.content.image) { base64ToBitmap(qi.content.image) }
-          Image(
-            imageBitmap,
-            contentDescription = stringResource(MR.strings.video_descr),
-            contentScale = ContentScale.Crop,
-            modifier = thumbnailInset.size(68.dp).then(thumbnailClip).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
-          )
-        }
-        is MsgContent.MCFile, is MsgContent.MCVoice -> {
-          Box(Modifier.fillMaxWidth().weight(1f)) {
-            ciQuotedMsgView(qi)
+          Spacer(Modifier.height(4.dp))
+          SelectionContainer {
+            Text(
+              text = mc.text,
+              fontSize = msgFontSize,
+              textAlign = TextAlign.Start,
+              style = chatTextStyle(msgFontSize, MaterialTheme.colors.onSurface),
+              color = MaterialTheme.colors.onSurface
+            )
           }
-          Icon(
-            if (qi.content is MsgContent.MCFile) painterResource(MR.images.ic_draft_filled) else painterResource(MR.images.ic_mic_filled),
-            if (qi.content is MsgContent.MCFile) stringResource(MR.strings.icon_descr_file) else stringResource(MR.strings.voice_message),
-            Modifier
-              .padding(top = if (terminal) 0.dp else 6.dp, end = 4.dp)
-              .size(22.dp),
-            tint = if (isInDarkTheme()) FileDark else FileLight
-          )
         }
-        is MsgContent.MCChat -> {
-          val prefix = buildAnnotatedString {
-            append(qi.content.chatLink.displayName + if (qi.content.text != qi.content.chatLink.connLinkStr) " - " else "")
-          }
-          Box(Modifier.fillMaxWidth().weight(1f)) {
-            ciQuotedMsgView(qi, stripLink = qi.content.chatLink.connLinkStr, prefix = prefix)
-          }
-          Icon(
-            painterResource(qi.content.chatLink.smallIconRes),
-            null,
-            Modifier.padding(top = if (terminal) 0.dp else 6.dp, end = 4.dp).size(22.dp),
-            tint = if (isInDarkTheme()) FileDark else FileLight
-          )
-        }
-        else -> ciQuotedMsgView(qi)
       }
     }
-  }
-
-  @Composable
-  fun ciFileView(ci: ChatItem, text: String) {
-    CIFileView(ci.file, ci.meta, chatTTL, showViaProxy, showTimestamp, showMenu, false, cardTop, receiveFile)
-    if (text != "" || ci.meta.isLive) {
-      CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp)
-    }
-  }
-
-  val captionlessMedia = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
-      !ci.meta.isLive && ci.content.text.isEmpty()
-  val transparentBackground = captionlessMedia && ci.quotedItem == null && ci.meta.itemForwarded == null
-
-  val sentColor = MaterialTheme.appColors.sentMessage
-  val receivedColor = MaterialTheme.appColors.receivedMessage
-  val metaReserved = when (val mc = ci.content.msgContent) {
-    is MsgContent.MCVoice -> mc.text != ""
-    is MsgContent.MCChat -> mc.text != mc.chatLink.connLinkStr
-    else -> !captionlessMedia
-  }
-  Box(Modifier
-    .then(
-      when {
-        !terminal -> Modifier.clipChatItem(ci, tailVisible, revealed = true)
-        else -> Modifier
-      }
-    )
-    .background(
-      when {
-        transparentBackground || terminal -> Color.Transparent
-        sent -> sentColor
-        else -> receivedColor
-      }
-    )) {
-    var metaColor = MaterialTheme.colors.secondary
-    ItemWithMeta(
-      meta = { CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp) },
-      overlayMeta = if (captionlessMedia) { { Box(Modifier.padding(end = CHAT_ITEM_TEXT_PADDING)) { CIMetaView(ci, chatTTL, Color.White, showViaProxy = showViaProxy, showTimestamp = showTimestamp, lineHeightColor = messageTextColor()) } } } else null,
-      metaReserved = metaReserved,
-      gapBelowCard = terminalReactionsGap(ci).toDp(),
-      endButton = endButton
-    ) { inlineMeta ->
-      Box(contentAlignment = Alignment.BottomEnd) {
-        val tailRendered = chatItemTailRendered(ci, tailVisible, revealed = true)
+    else -> {
+      val padding = if (terminal) Modifier.padding(horizontal = 8.dp) else Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+      BubbleSurface {
         Column(
-          Modifier
-            .width(IntrinsicSize.Max)
-            .padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
+          modifier = padding,
+          horizontalAlignment = Alignment.Start
         ) {
-          PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID, limitToPriorityWidth = !terminal || captionlessMedia) {
-            @Composable
-            fun Header() {
-              if (ci.isReport) {
-                if (ci.meta.itemDeleted == null) {
-                  FramedItemHeader(
-                    stringResource(if (ci.chatDir.sent) MR.strings.report_item_visibility_submitter else MR.strings.report_item_visibility_moderators),
-                    true,
-                    painterResource(MR.images.ic_flag),
-                    iconColor = Color.Red
-                  )
-                } else {
-                  val text = if (ci.meta.itemDeleted is CIDeleted.Moderated && ci.meta.itemDeleted.byGroupMember.groupMemberId != (chatInfo as ChatInfo.Group?)?.groupInfo?.membership?.groupMemberId) {
-                    stringResource(MR.strings.report_item_archived_by).format(ci.meta.itemDeleted.byGroupMember.displayName)
-                  } else {
-                    stringResource(MR.strings.report_item_archived)
-                  }
-                  FramedItemHeader(text, true, painterResource(MR.images.ic_flag))
-                }
-              } else if (ci.meta.itemDeleted != null) {
-                when (ci.meta.itemDeleted) {
-                  is CIDeleted.Moderated -> {
-                    FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
-                  }
-                  is CIDeleted.Blocked -> {
-                    FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
-                  }
-                  is CIDeleted.BlockedByAdmin -> {
-                    FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand))
-                  }
-                  is CIDeleted.Deleted -> {
-                    FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
-                  }
-                }
-              } else if (ci.meta.isLive) {
-                FramedItemHeader(stringResource(MR.strings.live), false)
-              }
-            }
-            if (ci.quotedItem != null) {
-              Column(
-                Modifier
-                  .combinedClickable(
-                    onLongClick = { showMenu.value = true },
-                    onClick = {
-                      if (ci.quotedItem.itemId != null) {
-                        if (ci.isReport && chatsCtx.secondaryContextFilter != null) {
-                          scrollToItemId.value = ci.quotedItem.itemId
-                        } else {
-                          scrollToItem(ci.quotedItem.itemId)
-                        }
-                      } else {
-                        scrollToQuotedItemFromItem(ci.id)
-                      }
-                    }
-                  )
-                  .onRightClick { showMenu.value = true }
-              ) {
-                Header()
-                ciQuoteView(ci.quotedItem)
-              }
-            } else {
-              Header()
-              val forwarded = ci.meta.itemForwarded
-              if (forwarded != null) {
-                val twoRowHeader = if (chatInfo.chatType == ChatType.Local) {
-                  forwarded.chatTypeApiIdMsgId != null || forwarded.sourceGroupLink != null
-                } else {
-                  when (forwarded) {
-                    is CIForwardedFrom.Group -> forwarded.groupType != null
-                    is CIForwardedFrom.GroupLink -> true
-                    else -> false
-                  }
-                }
-                if (twoRowHeader) {
-                  val caption = stringResource(if (chatInfo.chatType == ChatType.Local) MR.strings.saved_from else MR.strings.forwarded_from)
-                  Column(
-                    headerModifier(pad = true, onClick = {
-                      val target = forwarded.chatTypeApiIdMsgId
-                      val link = forwarded.sourceGroupLink
-                      if (target != null) {
-                        val (chatType, apiId, itemId) = target
-                        withBGApi { openChat(secondaryChatsCtx = null, chat.remoteHostId, chatType, apiId, itemId) }
-                      } else if (link != null) {
-                        withBGApi { planAndConnect(chat.remoteHostId, link, close = null) }
-                      }
-                    }),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                  ) {
-                    HeaderRow(Modifier, caption, true, painterResource(MR.images.ic_forward), null)
-                    HeaderText(forwarded.chatName, italic = false, fontSize = 15.sp, modifier = Modifier.offset(y = (-2).dp))
-                  }
-                } else {
-                  FramedItemHeader(forwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
-                }
-              }
-is MsgContent.MCVoice -> {
-                Column(
-                  horizontalAlignment = if (ci.chatDir.sent) Alignment.End else Alignment.Start
-                ) {
-                  CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
-                  if (mc.text != "") {
-                    CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-                  }
-                  LocalVoiceTranscriptionWidget.current(ci)
-                }
-              }
-              
-              if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
-                Box(if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = cardTop, end = CHAT_ITEM_TEXT_PADDING).messageCard() else Modifier.padding(bubbleTextBoxPadding())) {
-                  Column(
-                    if (terminal) Modifier.messageLastLine() else Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                  ) {
-                    EmojiText(ci.content.text)
-                    if (!terminal) {
-                      Text(
-                        metaReserveCopy(ci.meta, chatTTL, encrypted = null, signedFileVerified = null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp),
-                        color = Color.Transparent,
-                        style = MaterialTheme.typography.body1.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize))
-                      )
-                    }
-                }
-              }
-            } else {
-              when (val mc = ci.content.msgContent) {
-                is MsgContent.MCImage -> {
-                  val provider = imageProvider ?: return@PriorityLayout
-                  Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(mediaModifier)) {
-                    CIImageView(image = mc.image, file = ci.file, provider, showMenu, false, receiveFile)
-                  }
-                  if (mc.text == "" && !ci.meta.isLive) {
-                    if (!terminal) metaColor = Color.White
-                  } else {
-                    CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-                  }
-                }
-                is MsgContent.MCVideo -> {
-                  val provider = imageProvider ?: return@PriorityLayout
-                  Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(mediaModifier)) {
-                    CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, showMenu, smallView = false, receiveFile = receiveFile)
-                  }
-                  if (mc.text == "" && !ci.meta.isLive) {
-                    if (!terminal) metaColor = Color.White
-                  } else {
-                    CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-                  }
-                }
-                is MsgContent.MCVoice -> {
-                  CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
-                  if (mc.text != "") {
-                    CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-                  }
-                }
-                is MsgContent.MCFile -> ciFileView(ci, mc.text)
-                is MsgContent.MCUnknown ->
-                  if (ci.file == null) {
-                    CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-                  } else {
-                    ciFileView(ci, mc.text)
-                  }
-                is MsgContent.MCLink -> {
-                  Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(if (terminal) cardModifier.padding(bottom = 8.dp) else Modifier)) {
-                    ChatItemLinkView(mc.preview, showMenu, onLongClick = { showMenu.value = true })
-                  }
-                  Box(if (terminal) Modifier else Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
-                    CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-                  }
-                }
-                is MsgContent.MCChat -> {
-                  val hasText = mc.text != mc.chatLink.connLinkStr
-                  Box(
-                    Modifier.then(if (terminal) cardModifier.width(IntrinsicSize.Max) else Modifier).combinedClickable(
-                      onClick = {
-                        withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) }
-                      },
-                      onLongClick = { showMenu.value = true }
-                    )
-                  ) {
-                    CIChatLinkHeader(chatLink = mc.chatLink, ownerSig = mc.ownerSig, hasText = hasText)
-                  }
-                  if (hasText) {
-                    CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, stripLink = mc.chatLink.connLinkStr)
-                  }
-                }
-                is MsgContent.MCReport -> {
-                  val prefix = buildAnnotatedString {
-                    withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
-                      append(itemPrefixText(ci))
-                    }
-                  }
-                  CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix)
-                }
-                else -> CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-              }
-            }
-          }
-        }
-        if (inlineMeta != null) {
-          Box(
-            Modifier
-              .padding(
-                end = BUBBLE_SIDE_INSET + if (tailRendered && sent) msgTailWidthDp else 0.dp,
-              )
-              .bubbleMeta()
-          ) {
-            inlineMeta()
-          }
+          Text(
+            text = ci.content.text.ifEmpty { "Unsupported message" },
+            fontSize = msgFontSize,
+            textAlign = TextAlign.Start,
+            style = chatTextStyle(msgFontSize, MaterialTheme.colors.secondary),
+            color = MaterialTheme.colors.secondary
+          )
         }
       }
     }
   }
 }
 
-@Composable
-fun CIMarkdownText(
-  chatsCtx: ChatModel.ChatsContext,
-  ci: ChatItem,
-  chat: Chat,
-  chatTTL: Int?,
-  linkMode: SimplexLinkMode,
-  uriHandler: UriHandler?,
-  onLinkLongClick: (link: String) -> Unit = {},
-  showViaProxy: Boolean,
-  showTimestamp: Boolean,
-  prefix: AnnotatedString? = null,
-  stripLink: String? = null
-) {
-  val chatInfo = chat.chatInfo
-  val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
-  val bases = remember(ci, linkMode) { itemDisplay(ci, linkMode)?.bases ?: listOf(0) }
-  val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true, bases)
-  val terminal = LocalTerminalLayout.current
-
-  Box(
-    Modifier
-      .padding(
-        if (terminal) PaddingValues(start = CHAT_ITEM_TEXT_PADDING, top = terminalTextTop(ci).toDp(), end = CHAT_ITEM_TEXT_PADDING)
-        else bubbleTextBoxPadding()
-      )
-  ) {
-    MarkdownText(
-      text, if (text.isEmpty()) emptyList() else ci.formattedText, if (text.isEmpty()) null else ci.markdownBlocks, toggleSecrets = true,
-      sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
-      meta = ci.meta, chatTTL = chatTTL, encrypted = ci.encryptedFile, signedFileVerified = ci.file?.loaded, linkMode = linkMode,
-      style = MaterialTheme.typography.body1.copy(color = messageTextColor(), lineHeight = 22.sp).merge(chatTextStyle(MaterialTheme.typography.body1.fontSize)),
-      mentions = ci.mentions, userMemberId = when {
-        chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
-        else -> null
-      },
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
-      stripLink = stripLink,
-      selection = selection,
-      blockLayout = true,
-      cardColor = if (ci.chatDir.sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote
-    )
-  }
-}
-
-fun sendCommandMsg(chatsCtx: ChatModel.ChatsContext, chat: Chat, msg: String) {
-  if (chat.chatInfo.sndReady) {
-    withLongRunningApi(slow = 60_000) {
-      val cInfo = chat.chatInfo
-      val chatItems =
-        chatModel.controller.apiSendMessages(
-          rh = chat.remoteHostId,
-          type = cInfo.chatType,
-          id = cInfo.apiId,
-          scope = cInfo.groupChatScope(),
-          composedMessages = listOf(ComposedMessage(fileSource = null, quotedItemId = null, msgContent = MsgContent.MCText(msg), mentions = emptyMap()))
-        )
-      if (!chatItems.isNullOrEmpty()) {
-        chatItems.forEach { aChatItem ->
-          withContext(Dispatchers.Main) {
-            chatModel.addSentChatItem(chatsCtx, chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
-          }
-        }
-      }
-    }
-  } else {
-    AlertManager.shared.showAlertMsg(MR.strings.cant_send_message_alert_title, MR.strings.cant_send_commands_alert_text)
-  }
-}
-
-
-const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
-const val CHAT_BUBBLE_LAYOUT_ID = "chatBubble"
-const val CHAT_COMPOSE_LAYOUT_ID = "chatCompose"
-const val CONSOLE_COMPOSE_LAYOUT_ID = "consoleCompose"
-val CHAT_ITEM_TEXT_PADDING = 12.dp
-val BUBBLE_SIDE_INSET = 14.dp
-val BUBBLE_TEXT_INSET = 11.dp
-val BUBBLE_LINE_ABOVE_CAPS = 6.sp
-val BUBBLE_LINE_BELOW_BASELINE = 4.375.sp
-val BUBBLE_CLOSE_GAP = 2.sp
-val BUBBLE_FAR_GAP = 8.sp
-
-@Composable
-fun Modifier.bubbleTextPadding(firstLineFontSize: TextUnit, bottom: Dp = BUBBLE_TEXT_INSET): Modifier =
-  padding(horizontal = BUBBLE_SIDE_INSET).paddingFromBaseline(top = BUBBLE_TEXT_INSET + (firstLineFontSize * INTER_CAP_HEIGHT).toDp(), bottom = bottom)
-
-@Composable
-fun bubbleTextBoxPadding(): PaddingValues =
-  PaddingValues(
-    start = BUBBLE_SIDE_INSET,
-    top = (BUBBLE_TEXT_INSET - BUBBLE_LINE_ABOVE_CAPS.toDp()).coerceAtLeast(0.dp),
-    end = BUBBLE_SIDE_INSET,
-    bottom = (BUBBLE_TEXT_INSET - BUBBLE_LINE_BELOW_BASELINE.toDp()).coerceAtLeast(0.dp)
-  )
-
-fun Modifier.bubbleMeta(): Modifier =
-  layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints)
-    layout(placeable.width, metaBaseline(placeable) + BUBBLE_TEXT_INSET.roundToPx()) { placeable.placeRelative(0, 0) }
-  }
-
-@Composable
-fun RowScope.bubbleMetaOnBaseline(): Modifier {
-  val density = LocalDensity.current
-  return Modifier.alignBy { with(density) { metaBaseline(it) } }
-}
-
-@Composable
-fun MetaOnLastBaseline(meta: @Composable () -> Unit, content: @Composable () -> Unit) {
-  Layout({ content(); meta() }) { measurables, constraints ->
-    val contentPlaceable = measurables[0].measure(constraints)
-    val metaPlaceable = measurables[1].measure(constraints)
-    val lastBaseline = contentPlaceable[LastBaseline].takeIf { it != AlignmentLine.Unspecified } ?: contentPlaceable.height
-    val metaTop = lastBaseline - metaBaseline(metaPlaceable)
-    layout(contentPlaceable.width, maxOf(contentPlaceable.height, metaTop + metaPlaceable.height)) {
-      contentPlaceable.placeRelative(0, 0)
-      metaPlaceable.placeRelative(contentPlaceable.width - metaPlaceable.width, metaTop)
-    }
-  }
-}
-
-/**
- * Compose shows "Can't represent a width of ... and height ... in Constraints" even when using built-in method for measuring max
- * available size. It seems like padding around such layout prevents showing them in parent layout when such child layouts are placed.
- * So calculating the expected padding here based on the values Compose printed in the exception (removing some pixels from
- * [Constraints.fitPrioritizingHeight] result makes it working well)
-*/
-private fun horizontalPaddingAroundCustomLayouts(density: Float): Int =
-  // currently, it's 18. Doubling it just to cover possible changes in the future
-  36 * ceil(density).toInt()
-
-@Composable
-fun PriorityLayout(
-  modifier: Modifier = Modifier,
-  priorityLayoutId: String,
-  limitToPriorityWidth: Boolean = true,
-  content: @Composable () -> Unit
-) {
-  Layout(
-    content = content,
-    modifier = modifier
-  ) { measureable, constraints ->
-    // Find important element which should tell what max width other elements can use
-    // Expecting only one such element. Can be less than one but not more
-    // Max image height for chat item display, taller images are cropped
-    val maxImageHeight = (constraints.maxWidth * 2.33f).toInt().coerceAtMost(constraints.maxHeight)
-    val imageConstraints = constraints.copy(maxHeight = maxImageHeight)
-    val imagePlaceable = measureable.firstOrNull { it.layoutId == priorityLayoutId }?.measure(imageConstraints)
-    val placeables: List<Placeable> = measureable.map {
-      if (it.layoutId == priorityLayoutId)
-        imagePlaceable!!
-      else
-        it.measure(constraints.copy(maxWidth = if (limitToPriorityWidth) imagePlaceable?.width ?: constraints.maxWidth else constraints.maxWidth)) }
-    // Limit width for every other element to width of important element and height for a sum of all elements.
-    val width = if (limitToPriorityWidth) imagePlaceable?.measuredWidth ?: placeables.maxOf { it.width } else placeables.maxOf { it.width }
-    val height = placeables.sumOf { it.height }
-    val adjustedConstraints = Constraints.fitPrioritizingHeight(constraints.minWidth, width, constraints.minHeight, height)
-    layout(
-      if (width > adjustedConstraints.maxWidth) adjustedConstraints.maxWidth - horizontalPaddingAroundCustomLayouts(density) else adjustedConstraints.maxWidth,
-      adjustedConstraints.maxHeight
-    ) {
-      var y = 0
-      placeables.forEach {
-        if (limitToPriorityWidth) it.place(0, y) else it.placeRelative(0, y)
-        y += it.measuredHeight
-      }
-    }
-  }
-}
-
-@Composable
-fun DependentLayout(
-  modifier: Modifier = Modifier,
-  mainLayoutId: String,
-  content: @Composable () -> Unit
-) {
-  Layout(
-    content = content,
-    modifier = modifier
-  ) { measureable, constraints ->
-    // Find important element which should tell what min width it needs to draw itself.
-    // Expecting only one such element. Can be less than one but not more
-    val mainPlaceable = measureable.firstOrNull { it.layoutId == mainLayoutId }?.measure(constraints)
-    val placeables: List<Placeable> = measureable.map {
-      if (it.layoutId == mainLayoutId)
-        mainPlaceable!!
-      else
-        it.measure(constraints.copy(minWidth = mainPlaceable?.width ?: 0, maxWidth = constraints.maxWidth)) }
-    val width = mainPlaceable?.measuredWidth ?: placeables.maxOf { it.width }
-    val height = placeables.sumOf { it.height }
-    val adjustedConstraints = Constraints.fitPrioritizingHeight(constraints.minWidth, width, constraints.minHeight, height)
-    layout(
-      if (width > adjustedConstraints.maxWidth) adjustedConstraints.maxWidth - horizontalPaddingAroundCustomLayouts(density) else adjustedConstraints.maxWidth,
-      adjustedConstraints.maxHeight
-    ) {
-      var y = 0
-      placeables.forEach {
-        it.place(0, y)
-        y += it.measuredHeight
-      }
-    }
-  }
-}
-
-// The purpose of this layout is to make measuring of bottom compose view and adapt top lazy column to its size in the same frame (not on the next frame as you would expect).
-// So, steps are:
-// - measuring the layout: measured height of compose view before this step is 0, it's added to content padding of lazy column (so it's == 0)
-// - measured the layout: measured height of compose view now is correct, but it's not yet applied to lazy column content padding (so it's == 0) and lazy column is placed higher than compose view in view with respect to compose view's height
-// - on next frame measured height is correct and content padding is the same, lazy column placed to occupy all parent view's size
-// - every added/removed line in compose view goes through the same process.
-@Composable
-fun AdaptingBottomPaddingLayout(
-  modifier: Modifier = Modifier,
-  mainLayoutId: String,
-  expectedHeight: MutableState<Dp>,
-  content: @Composable () -> Unit
-) {
-  val expected = with(LocalDensity.current) { expectedHeight.value.roundToPx() }
-  Layout(
-    content = content,
-    modifier = modifier
-  ) { measureable, constraints ->
-    require(measureable.size <= 2) { "Should be exactly one or two elements in this layout, you have ${measureable.size}" }
-    val mainPlaceable = measureable.firstOrNull { it.layoutId == mainLayoutId }!!.measure(constraints)
-    val placeables: List<Placeable> = measureable.map {
-      if (it.layoutId == mainLayoutId)
-        mainPlaceable
-      else
-        it.measure(constraints.copy(maxHeight = if (expected != mainPlaceable.measuredHeight) constraints.maxHeight - mainPlaceable.measuredHeight + expected else constraints.maxHeight)) }
-    expectedHeight.value = mainPlaceable.measuredHeight.toDp()
-    layout(constraints.maxWidth, constraints.maxHeight) {
-      var y = 0
-      placeables.forEach {
-        if (it !== mainPlaceable) {
-          it.place(0, y)
-          y += it.measuredHeight
-        } else {
-          it.place(0, constraints.maxHeight - mainPlaceable.measuredHeight)
-          y += it.measuredHeight
-        }
-      }
-    }
-  }
-}
-
-@Composable
-fun CenteredRowLayout(
-  modifier: Modifier = Modifier,
-  content: @Composable () -> Unit
-) {
-  Layout(
-    content = content,
-    modifier = modifier
-  ) { measureable, constraints ->
-    require(measureable.size == 3) { "Should be exactly three elements in this layout, you have ${measureable.size}" }
-    val first = measureable[0].measure(constraints.copy(minWidth = 0, minHeight = 0))
-    val third = measureable[2].measure(constraints.copy(minWidth = first.measuredWidth, minHeight = 0))
-    val second = measureable[1].measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = (constraints.maxWidth - first.measuredWidth - third.measuredWidth).coerceAtLeast(0)))
-    // Limit width for every other element to width of important element and height for a sum of all elements.
-    layout(constraints.maxWidth, constraints.maxHeight) {
-      first.place(0, ((constraints.maxHeight - first.measuredHeight) / 2).coerceAtLeast(0))
-      second.place((constraints.maxWidth - second.measuredWidth) / 2, ((constraints.maxHeight - second.measuredHeight) / 2).coerceAtLeast(0))
-      third.place(constraints.maxWidth - third.measuredWidth, ((constraints.maxHeight - third.measuredHeight) / 2).coerceAtLeast(0))
-    }
-  }
-}
-
-fun showQuotedItemDoesNotExistAlert() {
-  AlertManager.shared.showAlertMsg(
-    title = generalGetString(MR.strings.message_deleted_or_not_received_error_title),
-    text = generalGetString(MR.strings.message_deleted_or_not_received_error_desc)
-  )
-}
-
-/*
-
-class EditedProvider: PreviewParameterProvider<Boolean> {
-  override val values = listOf(false, true).asSequence()
-}
-
 @Preview
 @Composable
-fun PreviewTextItemViewSnd(@PreviewParameter(EditedProvider::class) edited: Boolean) {
-  val showMenu = remember { mutableStateOf(false) }
+fun PreviewFramedItemView() {
   SimpleXTheme {
+    val showMenu = remember { mutableStateOf(false) }
     FramedItemView(
-      ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(), Clock.System.now(), "hello", itemEdited = edited,
-      ),
+      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
+      chat = Chat.sampleData,
+      ci = ChatItem.getSampleData(1, CIDirection.DirectRcv(), previewDate, "Hello world"),
       linkMode = SimplexLinkMode.DESCRIPTION,
       showMenu = showMenu,
       receiveFile = {}
     )
   }
 }
-
-@Preview
-@Composable
-fun PreviewTextItemViewRcv(@PreviewParameter(EditedProvider::class) edited: Boolean) {
-  val showMenu = remember { mutableStateOf(false) }
-  SimpleXTheme {
-    FramedItemView(
-      ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1, CIDirection.DirectRcv(), Clock.System.now(), "hello", itemEdited = edited
-      ),
-      linkMode = SimplexLinkMode.DESCRIPTION,
-      showMenu = showMenu,
-      receiveFile = {}
-    )
-  }
-}
-
-@Preview
-@Composable
-fun PreviewTextItemViewLong(@PreviewParameter(EditedProvider::class) edited: Boolean) {
-  val showMenu = remember { mutableStateOf(false) }
-  SimpleXTheme {
-    FramedItemView(
-      ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1,
-        CIDirection.DirectSnd(),
-        Clock.System.now(),
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-        itemEdited = edited
-      ),
-      linkMode = SimplexLinkMode.DESCRIPTION,
-      showMenu = showMenu,
-      receiveFile = {}
-    )
-  }
-}
-
-@Preview
-@Composable
-fun PreviewTextItemViewQuote(@PreviewParameter(EditedProvider::class) edited: Boolean) {
-  val showMenu = remember { mutableStateOf(false) }
-  SimpleXTheme {
-    FramedItemView(
-      ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(),
-        Clock.System.now(),
-        "https://simplex.chat",
-        CIStatus.SndSent(),
-        quotedItem = CIQuote.getSample(1, Clock.System.now(), "hi", chatDir = CIDirection.DirectRcv()),
-        itemEdited = edited
-      ),
-      linkMode = SimplexLinkMode.DESCRIPTION,
-      showMenu = showMenu,
-      receiveFile = {}
-    )
-  }
-}
-
-@Preview
-@Composable
-fun PreviewTextItemViewEmoji(@PreviewParameter(EditedProvider::class) edited: Boolean) {
-  val showMenu = remember { mutableStateOf(false) }
-  SimpleXTheme {
-    FramedItemView(
-      ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(),
-        Clock.System.now(),
-        "👍",
-        CIStatus.SndSent(),
-        quotedItem = CIQuote.getSample(1, Clock.System.now(), "Lorem ipsum dolor sit amet", chatDir = CIDirection.DirectRcv()),
-        itemEdited = edited
-      ),
-      linkMode = SimplexLinkMode.DESCRIPTION,
-      showMenu = showMenu,
-      receiveFile = {}
-    )
-  }
-}
-
-@Preview
-@Composable
-fun PreviewQuoteWithTextAndImage(@PreviewParameter(EditedProvider::class) edited: Boolean) {
-  val ciQuote = CIQuote(
-    chatDir = CIDirection.DirectRcv(), itemId = 1, sentAt = Clock.System.now(),
-    content = MsgContent.MCImage(
-      text = "Hello there",
-      image = "data:image/jpg;base64,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"
-    )
-  )
-  val showMenu = remember { mutableStateOf(false) }
-  SimpleXTheme {
-    FramedItemView(
-      ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(),
-        Clock.System.now(),
-        "Hello there",
-        CIStatus.SndSent(),
-        quotedItem = ciQuote,
-        itemEdited = edited
-      ),
-      linkMode = SimplexLinkMode.DESCRIPTION,
-      showMenu = showMenu,
-      receiveFile = {}
-    )
-  }
-}
-
-@Preview
-@Composable
-fun PreviewQuoteWithLongTextAndImage(@PreviewParameter(EditedProvider::class) edited: Boolean) {
-  val ciQuote = CIQuote(
-    chatDir = CIDirection.DirectRcv(), itemId = 1, sentAt = Clock.System.now(),
-    content = MsgContent.MCImage(
-      text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-      image = "data:image/jpg;base64,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"
-    )
-  )
-  val showMenu = remember { mutableStateOf(false) }
-  SimpleXTheme {
-    FramedItemView(
-      ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(),
-        Clock.System.now(),
-        "Hello there",
-        CIStatus.SndSent(),
-        quotedItem = ciQuote,
-        itemEdited = edited
-      ),
-      linkMode = SimplexLinkMode.DESCRIPTION,
-      showMenu = showMenu,
-      receiveFile = {}
-    )
-  }
-}
-
-@Preview
-@Composable
-fun PreviewQuoteWithLongTextAndFile(@PreviewParameter(EditedProvider::class) edited: Boolean) {
-  val ciQuote = CIQuote(
-    chatDir = CIDirection.DirectRcv(), itemId = 1, sentAt = Clock.System.now(),
-    content = MsgContent.MCFile(
-      text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-    )
-  )
-  val showMenu = remember { mutableStateOf(false) }
-  SimpleXTheme {
-    FramedItemView(
-      ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(),
-        Clock.System.now(),
-        "Hello there",
-        CIStatus.SndSent(),
-        quotedItem = ciQuote,
-        itemEdited = edited
-      ),
-      linkMode = SimplexLinkMode.DESCRIPTION,
-      showMenu = showMenu,
-      receiveFile = {}
-    )
-  }
-}
-*/

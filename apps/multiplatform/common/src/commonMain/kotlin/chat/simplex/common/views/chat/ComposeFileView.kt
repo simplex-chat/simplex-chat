@@ -1,13 +1,13 @@
 package chat.simplex.common.views.chat
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
@@ -16,24 +16,29 @@ import chat.simplex.res.*
 
 @Composable
 fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boolean) {
-  val sentColor = MaterialTheme.appColors.sentMessage
   Row(
     Modifier
-      .height(60.dp)
+      .height(52.dp)
       .fillMaxWidth()
-      .padding(top = 8.dp)
-      .background(sentColor),
+      .padding(start = 12.dp, end = 4.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
       painterResource(MR.images.ic_draft_filled),
       stringResource(MR.strings.icon_descr_file),
       Modifier
-        .padding(start = 4.dp, end = 2.dp)
-        .size(36.dp),
+        .padding(end = 10.dp)
+        .size(32.dp),
       tint = if (isInDarkTheme()) FileDark else FileLight
     )
-    Text(fileName, maxLines = 1, modifier = Modifier.weight(1f))
+    Text(
+      fileName,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+      fontWeight = FontWeight.Medium,
+      color = MaterialTheme.colors.onSurface,
+      modifier = Modifier.weight(1f)
+    )
     if (cancelEnabled) {
       IconButton(onClick = cancelFile, modifier = Modifier.padding(0.dp)) {
         Icon(

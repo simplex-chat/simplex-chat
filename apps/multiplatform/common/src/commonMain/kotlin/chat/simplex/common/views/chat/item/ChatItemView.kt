@@ -123,7 +123,7 @@ fun ChatItemView(
 ) {
   val cInfo = chat.chatInfo
   
-  // Стало (скрывает XFTP-сообщения сторис):
+  // Скрывает XFTP-сообщения сторис:
   val rawText = cItem.content.text.trim()
   if (rawText.startsWith(StorySyncManager.STORY_TAG_PREFIX)) {
     Box(Modifier.size(0.dp)) {}
@@ -159,7 +159,8 @@ fun ChatItemView(
 
     @Composable
     fun ChatItemReactions() {
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true).padding(start = if (terminal) CHAT_ITEM_TEXT_PADDING - REACTION_SPACING - REACTION_PADDING else 0.dp)) {
+      // Заменили CHAT_ITEM_TEXT_PADDING на 8.dp
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true).padding(start = if (terminal) 8.dp - REACTION_SPACING - REACTION_PADDING else 0.dp)) {
         cItem.reactions.forEach { r ->
           val showReactionMenu = remember { mutableStateOf(false) }
           val reactionMenuItems = remember { mutableStateOf(emptyList<ChatItemReactionMenuItem>()) }
@@ -407,7 +408,6 @@ fun ChatItemView(
                   }
                 }
                 if (rs.isNotEmpty()) {
-                  // M3 DESIGN: SpaceEvenly для аккуратного распределения эмодзи
                   Row(
                     modifier = Modifier
                       .fillMaxWidth()
@@ -447,7 +447,6 @@ fun ChatItemView(
               fun MsgContentItemDropdownMenu() {
                 val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
                 
-                // M3 DESIGN: Настраиваем плавающий и закругленный вид меню
                 val menuContainerColor = if (MaterialTheme.colors.isLight) {
                   androidx.compose.ui.graphics.lerp(MaterialTheme.colors.surface, MaterialTheme.colors.primary, 0.08f)
                 } else {
@@ -472,13 +471,11 @@ fun ChatItemView(
                     cItem.content.msgContent != null && cItem.id >= 0 && !cItem.isReport -> {
                       DefaultDropdownMenu(showMenu, modifier = Modifier.widthIn(min = 230.dp)) {
                         
-                        // ПАНЕЛЬ ЭМОДЗИ РЕАКЦИЙ
                         if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
                           MsgReactionsMenu()
                           Divider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), color = MaterialTheme.colors.onSurface.copy(alpha = 0.1f))
                         }
                         
-                        // Reply
                         if (cItem.meta.itemDeleted == null && !live && !cItem.localNote && cInfo.sendMsgEnabled) {
                           ItemAction(stringResource(MR.strings.reply_verb), painterResource(MR.images.ic_reply), onClick = {
                             RichHaptics.perform(HapticPattern.CLICK)
@@ -491,7 +488,6 @@ fun ChatItemView(
                           })
                         }
                         
-                        // Share & Copy
                         val clipboard = LocalClipboardManager.current
                         val cachedRemoteReqs = remember { CIFile.cachedRemoteFileRequests }
                         val copyAndShareAllowed = when {
@@ -529,10 +525,9 @@ fun ChatItemView(
                           })
                         }
                         
-                        // Files / Edits
                         if (cItem.file != null && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded))) {
                           SaveContentItemAction(cItem, saveFileLauncher, showMenu)
-                        } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file, ciSenderProfile(cItem, chat.chatInfo))) {
+                        } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file)) {
                           ItemAction(stringResource(MR.strings.download_file), painterResource(MR.images.ic_arrow_downward), onClick = {
                             RichHaptics.perform(HapticPattern.CLICK)
                             withBGApi {
@@ -553,7 +548,6 @@ fun ChatItemView(
                           })
                         }
                         
-                        // Forward
                         if (cItem.meta.itemDeleted == null &&
                           (cItem.file == null || cItem.file.forwardingAllowed()) &&
                           !cItem.isLiveDummy && !live
@@ -565,7 +559,6 @@ fun ChatItemView(
                           })
                         }
                         
-                        // Info (Details)
                         ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                         
                         if (revealed.value) {
@@ -576,12 +569,10 @@ fun ChatItemView(
                           CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
                         }
                         
-                        // DELETE BUTTON (Highlighted Red)
                         if (!(live && cItem.meta.isLive) && !preview) {
                           DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                         }
                         
-                        // Moderate / Report
                         if (cItem.chatDir !is CIDirection.GroupSnd) {
                           val groupInfo = cItem.memberToModerate(cInfo)?.first
                           if (groupInfo != null) {
@@ -591,7 +582,6 @@ fun ChatItemView(
                           }
                         }
                         
-                        // Select Action
                         if (cItem.canBeDeletedForSelf) {
                           Divider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), color = MaterialTheme.colors.onSurface.copy(alpha = 0.1f))
                           SelectItemAction(showMenu, selectChatItem)

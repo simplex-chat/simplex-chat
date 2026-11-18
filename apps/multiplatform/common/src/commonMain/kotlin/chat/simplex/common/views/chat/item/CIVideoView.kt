@@ -40,7 +40,8 @@ fun CIVideoView(
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
   val preview = remember(image) { base64ToBitmap(image) }
   Box(
-    Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
+    // Удален .layoutId(CHAT_IMAGE_LAYOUT_ID)
+    Modifier
       .then(
         if (!smallView) {
           val w = if (preview.width * 0.97 <= preview.height) videoViewFullWidth(LocalWindowWidth()) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH

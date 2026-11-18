@@ -7,6 +7,9 @@ import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.runtime.mutableStateOf
+import chat.simplex.common.platform.HapticPattern
+import chat.simplex.common.platform.RichHaptics
 import chat.simplex.common.views.chatlist.ByeDpiBridge
 import org.json.JSONArray
 import org.json.JSONObject
@@ -72,9 +75,28 @@ object SingBoxService {
   var isRunning = false
     private set
 
+  // Реактивные состояния для плавного UI в стиле Material 3 Expressive
+  val isConnectingState = mutableStateOf(false)
+  val statusDetailState = mutableStateOf("")
+
+  private fun updateUiState(
+    running: Boolean? = null,
+    connecting: Boolean? = null,
+    detail: String? = null,
+    haptic: HapticPattern? = null
+  ) {
+    Handler(Looper.getMainLooper()).post {
+      if (running != null) ByeDpiBridge.isRunning.value = running
+      if (connecting != null) isConnectingState.value = connecting
+      if (detail != null) statusDetailState.value = detail
+      if (haptic != null) RichHaptics.perform(haptic)
+    }
+  }
+
   fun toggle(context: Context) {
     if (isRunning) {
       stop()
+      RichHaptics.perform(HapticPattern.TOGGLE_OFF)
       showToast(context, "Proxy disconnected")
     } else {
       start(context)
@@ -83,6 +105,7 @@ object SingBoxService {
 
   fun restart(context: Context) {
     stop()
+    updateUiState(connecting = true, detail = "Restarting tunnel...")
     thread(name = "SingBoxRestarter") {
       Thread.sleep(600)
       start(context)
@@ -92,12 +115,20 @@ object SingBoxService {
   fun start(context: Context) {
     if (isRunning) return
 
+    updateUiState(connecting = true, detail = "Preparing config...")
+
     thread(name = "SingBoxStarter") {
       try {
         val configFile = prepareConfig(context)
         val binaryFile = File(context.applicationInfo.nativeLibraryDir, "libsingbox.so")
 
         if (!binaryFile.exists()) {
+          updateUiState(
+            running = false,
+            connecting = false,
+            detail = "Error: libsingbox.so not found",
+            haptic = HapticPattern.ERROR
+          )
           showToast(context, "Error: libsingbox.so not found")
           return@thread
         }
@@ -105,6 +136,8 @@ object SingBoxService {
         try {
           binaryFile.setExecutable(true)
         } catch (_: Exception) {}
+
+        updateUiState(detail = "Starting core...")
 
         val pb = ProcessBuilder(
           binaryFile.absolutePath,
@@ -152,9 +185,7 @@ object SingBoxService {
 
         if (portOpen) {
           isRunning = true
-          Handler(Looper.getMainLooper()).post {
-            ByeDpiBridge.isRunning.value = true
-          }
+          updateUiState(running = true, detail = "Verifying route...")
 
           // Проверка реального прохождения трафика через SOCKS5
           var verified = false
@@ -181,9 +212,21 @@ object SingBoxService {
           }
 
           if (verified) {
+            updateUiState(
+              running = true,
+              connecting = false,
+              detail = "Verified • SOCKS5 :$LOCAL_PORT",
+              haptic = HapticPattern.SUCCESS
+            )
             showToast(context, "Proxy connected & verified ($LOCAL_PORT)")
           } else {
             val logNote = if (lastLog.isNotBlank()) " | Log: $lastLog" else ""
+            updateUiState(
+              running = true,
+              connecting = false,
+              detail = "Open :$LOCAL_PORT (check: $testError)",
+              haptic = HapticPattern.WARNING
+            )
             showToast(context, "Proxy open, but test failed: $testError$logNote")
           }
         } else {
@@ -195,10 +238,22 @@ object SingBoxService {
             "port $LOCAL_PORT timeout"
           }
           stop()
+          updateUiState(
+            running = false,
+            connecting = false,
+            detail = "Error: $errorDetail",
+            haptic = HapticPattern.ERROR
+          )
           showToast(context, "Error: $errorDetail")
         }
       } catch (e: Exception) {
         stop()
+        updateUiState(
+          running = false,
+          connecting = false,
+          detail = "Failure: ${e.message}",
+          haptic = HapticPattern.ERROR
+        )
         showToast(context, "Failure: ${e.message}")
       }
     }
@@ -210,9 +265,7 @@ object SingBoxService {
       process = null
     } catch (_: Exception) {}
     isRunning = false
-    Handler(Looper.getMainLooper()).post {
-      ByeDpiBridge.isRunning.value = false
-    }
+    updateUiState(running = false, connecting = false, detail = "")
   }
 
   private fun prepareConfig(context: Context): File {
@@ -283,7 +336,6 @@ object SingBoxService {
 
     root.put("outbounds", cleanOutbounds)
 
-    // Прямой DNS без круговых зависимостей (detour: direct)
     val dns = JSONObject().apply {
       val servers = JSONArray().apply {
         put(JSONObject().apply {
@@ -426,27 +478,23 @@ object SingBoxService {
     return results
   }
 
- private fun decodeBase64Safely(rawInput: String): String {
-    // 1. Очищаем от BOM и внешних пробелов
+  private fun decodeBase64Safely(rawInput: String): String {
     var input = rawInput.trim().removePrefix("\uFEFF")
 
-    // Если это уже явная ссылка vless:// или готовый JSON — декодирование не требуется
-    if (input.startsWith("vless://", ignoreCase = true) || 
-        (input.startsWith("{") && input.contains("\"outbounds\""))) {
+    if (input.startsWith("vless://", ignoreCase = true) ||
+      (input.startsWith("{") && input.contains("\"outbounds\""))
+    ) {
       return input
     }
 
-    // 2. Убираем все пробельные символы, переносы \r и \n внутри строки
     var clean = input.replace("\\s".toRegex(), "")
 
-    // 3. Восстанавливаем недостающий padding '=' до кратности 4
     val remainder = clean.length % 4
     if (remainder != 0) {
       clean += "=".repeat(4 - remainder)
     }
 
     return try {
-      // Поддерживаем как стандартный Base64, так и URL_SAFE (где '-' и '_' вместо '+' и '/')
       val decodedBytes = Base64.decode(clean, Base64.DEFAULT or Base64.URL_SAFE)
       val decoded = String(decodedBytes, StandardCharsets.UTF_8).trim().removePrefix("\uFEFF")
 

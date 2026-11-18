@@ -23,7 +23,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.chat.group.*
-import chat.simplex.common.views.chat.item.sendCommandMsg
 import chat.simplex.common.views.helpers.commandMenuAnimSpec
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -156,7 +155,7 @@ fun CommandsMenuView(
                 composeState.value = ComposeState(message = ComposeMessage(msg, TextRange(msg.length)), useLinkPreviews = true)
               } else {
                 composeState.value = ComposeState(message = ComposeMessage(), useLinkPreviews = true)
-                sendCommandMsg(chatsCtx, chat,"/${cmd.keyword}")
+                // sendCommandMsg(chatsCtx, chat,"/${cmd.keyword}")
               }
               scope.launch { closeCommandsMenu() }
             },

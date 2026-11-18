@@ -26,12 +26,16 @@ import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.RichHaptics
 import chat.simplex.common.platform.getAppFilePath
 import chat.simplex.common.views.helpers.AlertManager
-import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.io.File
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 
 private const val MAX_FEEDS_PER_GROUP = 4
 
@@ -199,7 +203,7 @@ fun GroupFeedsSheet(
           ) {
             IconButton(onClick = close) {
               Icon(
-                painterResource(MR.images.ic_close),
+                painter = rememberVectorPainter(Icons.Default.Close),
                 contentDescription = "Close",
                 tint = MaterialTheme.colors.onSurface,
                 modifier = Modifier.size(24.dp)
@@ -221,7 +225,7 @@ fun GroupFeedsSheet(
         ) {
           Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
-              painterResource(MR.images.ic_wifi_tethering),
+              painter = rememberVectorPainter(Icons.Default.Refresh),
               contentDescription = null,
               tint = MaterialTheme.colors.primary.copy(alpha = 0.5f),
               modifier = Modifier.size(72.dp)
@@ -301,7 +305,7 @@ fun GroupFeedsSheet(
           horizontalArrangement = Arrangement.Center
         ) {
           Icon(
-            painterResource(MR.images.ic_add),
+            painter = rememberVectorPainter(Icons.Default.Add),
             contentDescription = "Add feed",
             tint = if (isLimitReached) MaterialTheme.colors.onSurface.copy(alpha = 0.38f) else MaterialTheme.colors.onPrimary,
             modifier = Modifier.size(24.dp)
@@ -379,7 +383,7 @@ private fun FeedItemCard(
           modifier = Modifier.size(52.dp)
         ) {
           Icon(
-            painterResource(if (sub.type == FeedType.RSS_ATOM) MR.images.ic_wifi_tethering else MR.images.ic_tag),
+            painter = rememberVectorPainter(if (sub.type == FeedType.RSS_ATOM) Icons.Default.Refresh else Icons.Default.Add),
             contentDescription = null,
             tint = MaterialTheme.colors.primary,
             modifier = Modifier
@@ -446,7 +450,7 @@ private fun FeedItemCard(
             verticalAlignment = Alignment.CenterVertically
           ) {
             Icon(
-              painterResource(MR.images.ic_refresh),
+              painter = rememberVectorPainter(Icons.Default.Refresh),
               contentDescription = "Sync",
               tint = MaterialTheme.colors.primary,
               modifier = Modifier.size(18.dp)
@@ -471,7 +475,7 @@ private fun FeedItemCard(
             verticalAlignment = Alignment.CenterVertically
           ) {
             Icon(
-              painterResource(MR.images.ic_delete),
+              painter = rememberVectorPainter(Icons.Default.Delete),
               contentDescription = "Delete",
               tint = MaterialTheme.colors.error,
               modifier = Modifier.size(18.dp)

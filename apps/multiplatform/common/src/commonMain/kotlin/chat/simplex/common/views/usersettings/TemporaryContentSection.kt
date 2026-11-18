@@ -13,7 +13,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +32,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
@@ -32,10 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
@@ -119,7 +128,7 @@ fun TemporaryContentProfileSection() {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(MR.images.ic_timer),
+                            painter = rememberVectorPainter(Icons.Default.Schedule),
                             contentDescription = null,
                             tint = primary,
                             modifier = Modifier.size(20.dp)
@@ -153,7 +162,7 @@ fun TemporaryContentProfileSection() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            painter = painterResource(MR.images.ic_add),
+                            painter = rememberVectorPainter(Icons.Default.Add),
                             contentDescription = "Add Temporary Content",
                             tint = MaterialTheme.colors.onPrimary,
                             modifier = Modifier.size(16.dp)
@@ -246,7 +255,7 @@ private fun AddStoryCardTile(onClick: () -> Unit) {
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        painter = painterResource(MR.images.ic_add),
+        painter = rememberVectorPainter(Icons.Default.Add),
         contentDescription = null,
         tint = primary,
         modifier = Modifier.size(28.dp)
@@ -301,8 +310,8 @@ private fun TemporaryStoryTile(
         )
       } else {
         Icon(
-          painter = painterResource(
-            if (item.mediaType == TemporaryMediaType.VIDEO) MR.images.ic_videocam else MR.images.ic_image
+          painter = rememberVectorPainter(
+            if (item.mediaType == TemporaryMediaType.VIDEO) Icons.Default.Mic else Icons.Default.Image
           ),
           contentDescription = null,
           tint = Color.White.copy(alpha = 0.85f),
@@ -321,7 +330,7 @@ private fun TemporaryStoryTile(
           contentAlignment = Alignment.Center
         ) {
           Icon(
-            painter = painterResource(MR.images.ic_play_arrow_filled),
+            painter = rememberVectorPainter(Icons.Default.PlayArrow),
             contentDescription = null,
             tint = Color.White,
             modifier = Modifier.size(12.dp)
@@ -419,8 +428,8 @@ private fun AddTemporaryContentDialog(
                 verticalAlignment = Alignment.CenterVertically
               ) {
                 Icon(
-                  painter = painterResource(
-                    if (type == TemporaryMediaType.PHOTO) MR.images.ic_image else MR.images.ic_videocam
+                  painter = rememberVectorPainter(
+                    if (type == TemporaryMediaType.PHOTO) Icons.Default.Image else Icons.Default.Mic
                   ),
                   contentDescription = null,
                   tint = if (isSelected) MaterialTheme.colors.onPrimary else primary,
@@ -462,7 +471,7 @@ private fun AddTemporaryContentDialog(
             horizontalArrangement = Arrangement.Center
           ) {
             Icon(
-              painter = painterResource(if (selectedFilePath != null) MR.images.ic_check_filled else MR.images.ic_upload_file),
+              painter = rememberVectorPainter(if (selectedFilePath != null) Icons.Default.Check else Icons.Default.Image),
               contentDescription = null,
               tint = primary,
               modifier = Modifier.size(22.dp)
@@ -794,7 +803,7 @@ fun TemporaryContentStoryViewer(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
-                            Icon(painterResource(MR.images.ic_timer), null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(rememberVectorPainter(Icons.Default.Schedule), null, tint = Color.White, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
                             val authorLabel = currentItem.authorDisplayName ?: "Contact"
                             Text("$authorLabel • ${currentItem.remainingTimeText(now)}", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
@@ -815,7 +824,7 @@ fun TemporaryContentStoryViewer(
                                     if (items.size <= 1) onDismiss()
                                 }
                             ) {
-                                Icon(painterResource(MR.images.ic_delete), null, tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp))
+                                Icon(rememberVectorPainter(Icons.Default.Delete), null, tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp))
                             }
                         }
 
@@ -825,7 +834,7 @@ fun TemporaryContentStoryViewer(
                             modifier = Modifier.size(36.dp)
                         ) {
                             IconButton(onClick = onDismiss) {
-                                Icon(painterResource(MR.images.ic_close), null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                Icon(rememberVectorPainter(Icons.Default.Close), null, tint = Color.White, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
@@ -990,7 +999,7 @@ fun AllStoriesFeedView(close: () -> Unit) {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(if (myStories.isNotEmpty()) MR.images.ic_play_arrow_filled else MR.images.ic_add),
+                            painter = rememberVectorPainter(if (myStories.isNotEmpty()) Icons.Default.PlayArrow else Icons.Default.Add),
                             contentDescription = null,
                             tint = if (myStories.isNotEmpty()) Color.White else primary,
                             modifier = Modifier.size(24.dp)
@@ -1015,7 +1024,7 @@ fun AllStoriesFeedView(close: () -> Unit) {
                             onClick = handleAddClick,
                             modifier = Modifier.background(primary.copy(alpha = 0.1f), CircleShape)
                         ) {
-                            Icon(painterResource(MR.images.ic_add), null, tint = primary)
+                            Icon(rememberVectorPainter(Icons.Default.Add), null, tint = primary)
                         }
                     }
                 }
@@ -1076,7 +1085,7 @@ fun AllStoriesFeedView(close: () -> Unit) {
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(MR.images.ic_person),
+                                painter = rememberVectorPainter(Icons.Default.Person),
                                 contentDescription = null,
                                 tint = Color.White.copy(alpha = 0.7f),
                                 modifier = Modifier.size(28.dp)
