@@ -35,6 +35,7 @@ keptUntilIdle   a write succeeds, in WebKit
 - For `keptUntilIdle`, deletion after 7 days of browsing without a tap or click on the site is stated on the screens.
 - On Your codes, in every browser, "Codes stored in this browser are listed here." is shown when the list is empty, and "Codes are stored only in the browser they were bought in." when codes are listed.
 - "This code is not in this browser" and "Forget everything in this browser" replace "This code is not on this device" and "Forget everything on this device".
+- At phone width the code in the Your codes list is set at `.75rem`, so the 26 characters fit one line in a 360 px screen.
 
 ## Where the warning is shown
 
