@@ -291,7 +291,7 @@ testNamesBoot ps = do
     records <- request "/api/name/records"
     answer records {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` nameRefusedWith 400 "bad_request"
     register <- request "/api/name/register"
-    answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
+    answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` nameRefusedWith 400 "bad_request"
     search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
     answer search `shouldReturn` nameRefusedWith 400 "invalid_name"
     terms <- request "/api/terms/0x12"
@@ -299,19 +299,19 @@ testNamesBoot ps = do
     termsPosted <- httpLbs terms {method = "POST"} mgr
     (statusOf termsPosted, lookup "Allow" $ responseHeaders termsPosted) `shouldBe` (405, Just "GET")
     registration <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g"
-    answer registration `shouldReturn` refusedWith 404 "not_found"
+    answer registration `shouldReturn` nameRefusedWith 404 "not_found"
     posted <- httpLbs registration {method = "POST"} mgr
     (statusOf posted, lookup "Allow" $ responseHeaders posted) `shouldBe` (405, Just "GET")
     found <- request "/api/registration/find"
-    answer found {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
+    answer found {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` nameRefusedWith 400 "bad_request"
     foundByGet <- httpLbs found mgr
     (statusOf foundByGet, lookup "Allow" $ responseHeaders foundByGet) `shouldBe` (405, Just "POST")
     owned <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/name"
-    answer owned {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
+    answer owned {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` nameRefusedWith 400 "bad_request"
     coded <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/code"
     answer coded {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 404 "not_found"
     revealed <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/reveal"
-    answer revealed {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 404 "not_found"
+    answer revealed {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` nameRefusedWith 404 "not_found"
     revealedByGet <- httpLbs revealed mgr
     (statusOf revealedByGet, lookup "Allow" $ responseHeaders revealedByGet) `shouldBe` (405, Just "POST")
     spent <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend"
@@ -331,11 +331,11 @@ testNamesBoot ps = do
               "price" J..= (10000 :: Int),
               "balance" J..= (10000 :: Int)
             ]
-    answer spent {method = "POST", requestBody = RequestBodyLBS $ J.encode spendBody} `shouldReturn` refusedWith 404 "not_found"
+    answer spent {method = "POST", requestBody = RequestBodyLBS $ J.encode spendBody} `shouldReturn` nameRefusedWith 404 "not_found"
     spentByGet <- httpLbs spent mgr
     (statusOf spentByGet, lookup "Allow" $ responseHeaders spentByGet) `shouldBe` (405, Just "POST")
     retried <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/retry"
-    answer retried {method = "POST"} `shouldReturn` refusedWith 404 "not_found"
+    answer retried {method = "POST"} `shouldReturn` nameRefusedWith 404 "not_found"
     retriedByGet <- httpLbs retried mgr
     (statusOf retriedByGet, lookup "Allow" $ responseHeaders retriedByGet) `shouldBe` (405, Just "POST")
     -- each limit's routes share one client's minute, whatever they answer; a client of its own per limit
@@ -371,8 +371,8 @@ testNamesBootCodesOnly ps = do
           req <- parseRequest $ "http://127.0.0.1:" <> show port <> path
           answerOf <$> httpLbs req {method = "POST", requestBody = RequestBodyLBS body} mgr
     posted "/api/invoice" "{\"kind\":\"name\"}" `shouldReturn` refusedWith 403 "codes_only"
-    posted "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend" "{}" `shouldReturn` refusedWith 403 "codes_only"
-    posted "/api/name/register" "{}" `shouldReturn` refusedWith 400 "bad_request"
+    posted "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend" "{}" `shouldReturn` nameRefusedWith 403 "codes_only"
+    posted "/api/name/register" "{}" `shouldReturn` nameRefusedWith 400 "bad_request"
     posted "/api/code/check" "{}" `shouldReturn` nameRefusedWith 400 "bad_request"
     badgesShell <- parseRequest ("http://127.0.0.1:" <> show port <> "/") >>= (`httpLbs` mgr)
     (statusOf badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)

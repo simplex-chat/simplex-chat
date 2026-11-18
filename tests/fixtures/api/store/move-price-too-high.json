@@ -1,0 +1,7 @@
+{
+  "body": {
+    "price": 20000,
+    "type": "price_too_high"
+  },
+  "status": 409
+}

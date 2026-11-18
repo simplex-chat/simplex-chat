@@ -23,7 +23,8 @@ import StoreService.Names.Chain (Hex32 (..), revertText)
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), Records, relayEdit)
 import StoreService.Names.Registration (LinkKind, nameLink, parseSignature)
 import StoreService.Names.Store (EditOutcome (..), RecordChange (..), SignedChange (..))
-import StoreService.Web.Http (NameRefusal (..), Respond, jsonResponse, maxBodyBytes, readBoundedBody, refusalResponse)
+import StoreService.Names.View (NameRefusal (..), refusalResponse)
+import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, readBoundedBody)
 
 data EditInvalid = EIBadRequest | EIInvalidLink
   deriving (Eq, Show)

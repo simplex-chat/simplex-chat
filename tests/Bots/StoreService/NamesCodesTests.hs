@@ -32,6 +32,7 @@ import StoreService.Config (ListenerConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction)
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Codes
+import StoreService.Names.Orders (OrderRefusal (..))
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, insertPrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, newTurns)
@@ -39,6 +40,7 @@ import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (codeLimit, newHttpEnv, notFound)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Codes (codeCheckHandler)
+import StoreService.Web.Names.Orders (orderRefusal)
 import Test.Hspec
 
 namesCodesTests :: Spec
@@ -225,8 +227,8 @@ testReserveRefusals = withOrders $ \turns st -> do
   reserve (pcCodeHash revokedRow) 7 `shouldReturn` Left CRInvalid
   readIORef wrote `shouldReturn` False
   mapM (readCode st) rows `shouldReturn` rowsBefore
-  map codeRefusalTag [CRInvalid, CRUsed, CRReserved, CRExpired, CRPaymentPending, CRNotCovering]
-    `shouldBe` ["code_invalid", "code_used", "code_reserved", "code_expired", "payment_pending", "code_not_covering"]
+  map (J.toJSON . orderRefusal . ORCode) [CRInvalid, CRUsed, CRReserved, CRExpired, CRPaymentPending, CRNotCovering]
+    `shouldBe` map (\t -> J.object ["type" J..= (t :: Text)]) ["code_invalid", "code_used", "code_reserved", "code_expired", "payment_pending", "code_not_covering"]
 
 testReserveHeld :: IO ()
 testReserveHeld = withOrders $ \turns st -> do

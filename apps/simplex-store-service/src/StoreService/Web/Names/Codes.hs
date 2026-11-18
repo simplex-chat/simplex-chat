@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module StoreService.Web.Names.Codes (codeCheckHandler, codeRefusalResponse) where
+module StoreService.Web.Names.Codes (codeCheckHandler) where
 
 import Control.Logger.Simple (logNote)
 import Data.Aeson ((.:), (.=))
@@ -12,14 +12,15 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Network.HTTP.Types (status200, status400, status409)
+import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Chat.Badges.Code (parseNameCode)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import Simplex.Messaging.Encoding.String (textEncode)
-import StoreService.Names.Codes (CodeRefusal (..), codeRefusalTag, codeState, readPrepaidCode)
+import StoreService.Names.Codes (codeState, readPrepaidCode)
 import StoreService.Names.Store (PrepaidCode (..))
-import StoreService.Web.Http (NameRefusal (..), Respond, jsonError, jsonResponse, maxBodyBytes, readBoundedBody, refusalResponse)
+import StoreService.Names.View (NameRefusal (..), refusalResponse)
+import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, readBoundedBody)
 
 -- | It names no registration, even for a reserved code: holding a code proves nothing about an order.
 codeCheckHandler :: DBStore -> Request -> Respond -> IO ResponseReceived
@@ -40,11 +41,3 @@ codeField body = J.eitherDecode body >>= JT.parseEither (J.withObject "code chec
 codeAnswer :: UTCTime -> PrepaidCode -> Response
 codeAnswer now code@PrepaidCode {pcMinLength, pcYears} =
   jsonResponse status200 $ J.object ["minLength" .= pcMinLength, "years" .= pcYears, "state" .= (textEncode (codeState now code) :: Text)]
-
--- | Not 404 for an unknown code, which the page reads as not_found whatever the body.
-codeRefusalResponse :: CodeRefusal -> Response
-codeRefusalResponse refusal = jsonError status (codeRefusalTag refusal)
-  where
-    status = case refusal of
-      CRInvalid -> status400
-      _ -> status409

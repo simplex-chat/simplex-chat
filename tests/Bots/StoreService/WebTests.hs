@@ -41,6 +41,7 @@ module Bots.StoreService.WebTests
     nameRefusedWith,
     storeFixture,
     responseFixture,
+    answerFixture,
     siteConfigJson,
     rcv,
     bounded,
@@ -1570,6 +1571,13 @@ storeFixture name status body retryAfter =
 
 responseFixture :: String -> Response LB.ByteString -> IO ()
 responseFixture name r = storeFixture name (statusOf r) (J.decode $ responseBody r) (headerOf r "Retry-After")
+
+answerFixture :: String -> (Int, Maybe J.Object) -> IO ()
+answerFixture name (status, body) = storeFixture name status (J.Object . KM.mapWithKey stableId <$> body) Nothing
+  where
+    stableId k = \case
+      J.Object v | k == "registration" -> J.Object $ KM.insert "id" "registration" v
+      v -> v
 
 timedGet :: WebClient -> String -> IO (NominalDiffTime, Response LB.ByteString)
 timedGet client target = do

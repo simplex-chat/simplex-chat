@@ -355,9 +355,9 @@ the service's operators.
 | `POST /webhooks/btcpay` | Verifies `BTCPay-Sig` over the bytes as received and queues a read. A hint only: the poller is what carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
 | `POST /webhooks/stripe` | Verifies `Stripe-Signature` over the bytes as received and queues a read. The card lane's equivalent of the row above, and a hint just the same: the poller carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
 
-Every refusal of these routes is `{"error": "<code>"}`; the names routes of search, link preview,
-terms, code check and link edits, and the rate limit of every names route, answer
-`{"type": "<code>", …}` instead. Besides the codes above, any of them can answer
+Every refusal of these routes is `{"error": "<code>"}`; every route only the names page calls
+answers `{"type": "<code>", …}` instead, with its data beside the code, such as
+`{"type": "catalog_changed", "price": 1500}`. Besides the codes above, any of them can answer
 `internal`, an unknown id answers `not_found`, and a wrong verb answers `method_not_allowed` —
 ten codes in all, which is what the browser's `WIRE_ERROR_CODES` lists. The two webhook routes are
 the exception: each answers 200, 400 or 413 with an empty body, because its provider is the only
@@ -1111,8 +1111,9 @@ who hold them before anyone can pay. It is `off` by default. While it is on:
 
 - `GET /api/config` answers `"mode": "codes"` in place of `"open"`, and the names page then offers
   only codes. The badges site ignores the mode;
-- `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
-  `403 {"error": "codes_only"}`, before they read the order, so no order takes money for a name;
+- `POST /api/invoice` for a name answers `403 {"error": "codes_only"}` and
+  `POST /api/registration/:id/spend` answers `403 {"type": "codes_only"}`, before they read the order,
+  so no order takes money for a name;
 - search, link previews, code checks, code orders (`POST /api/name/register`), the registration
   view, `find`, the reveal, `/retry`, another name and record edits work as before. Webhooks and the
   poller still settle the invoices already open, and badges sell as before.

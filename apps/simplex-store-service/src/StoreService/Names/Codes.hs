@@ -8,7 +8,6 @@ module StoreService.Names.Codes
     codeState,
     CodeRefusal (..),
     codeRefusal,
-    codeRefusalTag,
     reserveRefusal,
     readPrepaidCode,
     prepaidCodeHash,
@@ -75,15 +74,6 @@ instance TextEncoding CodeState where
 
 data CodeRefusal = CRInvalid | CRUsed | CRReserved | CRExpired | CRPaymentPending | CRNotCovering
   deriving (Eq, Show)
-
-codeRefusalTag :: CodeRefusal -> Text
-codeRefusalTag = \case
-  CRInvalid -> "code_invalid"
-  CRUsed -> "code_used"
-  CRReserved -> "code_reserved"
-  CRExpired -> "code_expired"
-  CRPaymentPending -> "payment_pending"
-  CRNotCovering -> "code_not_covering"
 
 -- | Why the code cannot pay for the registration's name of this length. A code the registration
 -- already holds stays good for it until spent, even if revoked or expired since.

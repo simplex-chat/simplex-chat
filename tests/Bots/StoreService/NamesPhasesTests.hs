@@ -296,7 +296,7 @@ testHoldTimesOut = bounded "hold times out" $ withPolls shortHold $ \Polls {pCtx
 testUnknownRegistration :: IO ()
 testUnknownRegistration = bounded "unknown" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
   (status, o) <- answeredAtOnce ctx (registrationPath (RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g") <> seenVersion 1)
-  (status, o) `shouldBe` (404, KM.fromList [("error", "not_found")])
+  (status, o) `shouldBe` (404, KM.fromList [("type", "not_found")])
 
 testCleanupWakes :: IO ()
 testCleanupWakes = bounded "cleanup wakes" $ withPolls holdMicros $ \Polls {pCtx = ctx@Ctx {cStore, cWeb, cOrders}} -> do
@@ -305,4 +305,4 @@ testCleanupWakes = bounded "cleanup wakes" $ withPolls holdMicros $ \Polls {pCtx
   deleted <- held ctx (0, 1) $ registrationPath (RegistrationId "gone") <> seenVersion nrVersion
   poller <- newPollerEnv cStore (weWaiters cWeb) (Just $ oePhases cOrders) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
   void $ capturingStderr $ cleanupUnpaid poller $ addUTCTime (unpaidRetention + 1) t0
-  woken "the deleted order's poll" deleted `shouldReturn` (404, KM.fromList [("error", "not_found")])
+  woken "the deleted order's poll" deleted `shouldReturn` (404, KM.fromList [("type", "not_found")])

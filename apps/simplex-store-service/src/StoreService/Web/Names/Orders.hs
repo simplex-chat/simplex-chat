@@ -7,13 +7,14 @@
 module StoreService.Web.Names.Orders
   ( Answer (..),
     answerNow,
+    refusalAnswer,
     sendAnswer,
     refused,
     nameInvoiceHandler,
     codeOrderHandler,
     spendHandler,
     nameInvoiceView,
-    orderRefusalResponse,
+    orderRefusal,
     paymentMethod,
   )
 where
@@ -31,7 +32,7 @@ import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
-import Network.HTTP.Types (status200, status403, status409, status503)
+import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Chat.Badges.Code (parseNameCode)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
@@ -50,13 +51,12 @@ import StoreService.Names.Orders
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), orderMessage, spendMessage)
 import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
-import StoreService.Names.View (balanceView, registrationView)
+import StoreService.Names.View (NameRefusal (..), balanceView, legacyRefusalResponse, refusalResponse, registrationView)
 import StoreService.Orders (cancelNameInvoices, publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId)
 import StoreService.Waiters (Waiters, publish)
-import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, badRequest, checkoutClient, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, limitedCheckout, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody, termsUnavailable)
-import StoreService.Web.Names.Codes (codeRefusalResponse)
+import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, checkoutClient, confirmationsFor, invoiceAt, invoicePairs, invoiceWindow, jsonResponse, limitedCheckout, nameBodyBytes, providerFor, providerNamed, readBoundedBody)
 
 data InvoiceOrder = InvoiceOrder
   { ioOrder :: SentOrder,
@@ -85,19 +85,25 @@ paymentMethod :: J.Value -> JT.Parser ServicePaymentMethod
 paymentMethod = textWith $ maybe (Left "not a payment method") Right . textDecode
 
 -- | An order's answer and the work its commit leaves, both done after the name's turn, so a slow client holds no turn.
-data Answer = Answer {aResponse :: Response, aAfter :: IO ()}
+data Answer = Answer {aResponse :: Either NameRefusal Response, aAfter :: IO ()}
 
 answerNow :: Response -> Answer
-answerNow aResponse = Answer {aResponse, aAfter = pure ()}
+answerNow r = Answer {aResponse = Right r, aAfter = pure ()}
+
+refusalAnswer :: NameRefusal -> Answer
+refusalAnswer r = Answer {aResponse = Left r, aAfter = pure ()}
 
 sendAnswer :: Respond -> Answer -> IO ResponseReceived
-sendAnswer respond Answer {aResponse, aAfter} = aAfter >> respond aResponse
+sendAnswer = sendAnswerWith refusalResponse
+
+sendAnswerWith :: (NameRefusal -> Response) -> Respond -> Answer -> IO ResponseReceived
+sendAnswerWith refusal respond Answer {aResponse, aAfter} = aAfter >> respond (either refusal id aResponse)
 
 -- | POST /api/invoice for a name, its body already read and its kind checked.
 nameInvoiceHandler :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
 nameInvoiceHandler env@OrdersEnv {oeStore} http client cfg providers waiters body respond
-  | nCodesOnly (oeConfig env) = sendAnswer respond =<< refuse ORCodesOnly
-  | otherwise = sendAnswer respond =<< case parseBody "order" (J.Object body) >>= invoiceOrder of
+  | nCodesOnly (oeConfig env) = sendAnswerWith legacyRefusalResponse respond =<< refuse ORCodesOnly
+  | otherwise = sendAnswerWith legacyRefusalResponse respond =<< case parseBody "order" (J.Object body) >>= invoiceOrder of
     Left refusal -> refuse refusal
     Right (req, method, price) ->
       answerOrder env what req (OTInvoice method price) (resentOrder env cfg) (newOrder req method price)
@@ -141,14 +147,14 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
   case providerFor providers ivMethod of
     Nothing -> do
       logNote (what <> " refused: no provider configured for " <> tshow ivMethod)
-      pure $ answerNow providerUnavailable
-    Just provider -> limitedCheckout http client ivMethod (pure . answerNow) $ do
+      pure $ refusalAnswer NRProviderUnavailable
+    Just provider -> limitedCheckout http client ivMethod (pure . refusalAnswer . NRRateLimited) $ do
       invId <- newInvoiceId
       let amount = CurrencyAmount $ fromIntegral ivAmount
       pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency, odReference = "name:" <> safeDecodeUtf8 (strEncode ivOrderHash)} >>= \case
         Left e -> do
           logError (what <> " failed at the provider: " <> providerErrorText e)
-          pure $ answerNow providerUnavailable
+          pure $ refusalAnswer NRProviderUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
@@ -164,8 +170,8 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
               row_ <- getInvoice oeStore invId
               registration_ <- withTransaction oeStore (`getRegistration` rid)
               response <- case (row_, registration_) of
-                (Just row, Just r) -> invoiceViewResponse env cfg r row
-                _ -> internalError <$ logError (what <> ": the order of invoice " <> piProviderRef <> " is not readable after its commit")
+                (Just row, Just r) -> Right <$> invoiceViewResponse env cfg r row
+                _ -> Left NRInternal <$ logError (what <> ": the order of invoice " <> piProviderRef <> " is not readable after its commit")
               pure Answer {aResponse = response, aAfter = announceClosed env providers waiters closed}
   where
     -- An invoice created at the provider for an order that was not written would stay payable with nothing watching it.
@@ -194,7 +200,7 @@ registrationAnswer :: RegistrationId -> Response
 registrationAnswer (RegistrationId rid) = jsonResponse status200 $ J.object ["registrationId" .= rid]
 
 refused :: Text -> OrderRefusal -> IO Answer
-refused what refusal = answerNow (orderRefusalResponse refusal) <$ logNote (what <> " refused: " <> tshow refusal)
+refused what refusal = refusalAnswer (orderRefusal refusal) <$ logNote (what <> " refused: " <> tshow refusal)
 
 notObject :: Text
 notObject = "a body that is not a JSON object within its size limit"
@@ -245,7 +251,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} providers waiter
           rid <- newRegistrationId
           placeCodeOrder env order hash rid code >>= \case
             Left refusal -> refuse refusal
-            Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
+            Right closed -> pure Answer {aResponse = Right $ registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
 
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
 -- under the new name's turn and then the balance's.
@@ -261,7 +267,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers w
       _ -> refuse $ ORBadRequest notObject
     paying ((fields, timestamp, signature), spend) =
       withTransaction oeStore (`getRegistration` source) >>= \case
-        Nothing -> pure $ answerNow notFound
+        Nothing -> pure $ refusalAnswer NRNotFound
         Just NameRegistration {nrOwner} -> do
           let order = OrderRequest {orOwner = nrOwner, orFields = fields, orTimestamp = timestamp, orSignature = signature}
           answerOrder env what order (OTBalance spend) (resentOrder env cfg) $ \hash now ->
@@ -281,7 +287,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers w
         let new replaced = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = hash, nrgReplaces = replaced}
         placeOrder env now order (maybeToList holder) (coveredOrderInsert spend . new) >>= \case
           Left refusal -> refuse refusal
-          Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
+          Right closed -> pure Answer {aResponse = Right $ registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
       Just (SPMCard _)
         | spPrice - spBalance < minCardChargeCents -> refuse $ ORBadRequest "a card difference under the card minimum"
       Just method ->
@@ -327,17 +333,23 @@ nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} confirmations 
   view <- registrationView oeStore oeConfig oeContracts now r
   pure $ J.object $ ["invoiceId" .= invId, "kind" .= ("name" :: Text), "registration" .= view] <> invoicePairs confirmations row
 
-orderRefusalResponse :: OrderRefusal -> Response
-orderRefusalResponse = \case
-  ORBadRequest _ -> badRequest
-  ORInvalidName -> invalidName
-  OROrderExists -> jsonError status409 "order_exists"
-  ORNameTaken -> jsonError status409 "name_taken"
-  ORNameCheckUnavailable -> jsonError status503 "name_check_unavailable"
-  ORCatalogChanged price -> jsonResponse status409 $ J.object ["error" .= ("catalog_changed" :: Text), "price" .= price]
-  ORCode refusal -> codeRefusalResponse refusal
-  ORPriceTooHigh price -> jsonResponse status409 $ J.object ["error" .= ("price_too_high" :: Text), "price" .= price]
-  ORBalanceChanged balance -> jsonResponse status409 $ J.object ["error" .= ("balance_changed" :: Text), "balance" .= (balanceView <$> balance)]
-  ORTermsChanged terms community -> jsonResponse status409 $ J.object ["error" .= ("terms_changed" :: Text), "terms" .= termsLink terms, "community" .= community]
-  ORTermsUnavailable wait -> maybe (jsonError status503 "terms_unavailable") termsUnavailable wait
-  ORCodesOnly -> jsonError status403 "codes_only"
+orderRefusal :: OrderRefusal -> NameRefusal
+orderRefusal = \case
+  ORBadRequest _ -> NRBadRequest
+  ORInvalidName -> NRInvalidName
+  OROrderExists -> NROrderExists
+  ORNameTaken -> NRNameTaken
+  ORNameCheckUnavailable -> NRNameCheckUnavailable
+  ORCatalogChanged price -> NRCatalogChanged price
+  ORCode refusal -> case refusal of
+    CRInvalid -> NRCodeInvalid
+    CRUsed -> NRCodeUsed
+    CRReserved -> NRCodeReserved
+    CRExpired -> NRCodeExpired
+    CRPaymentPending -> NRPaymentPending
+    CRNotCovering -> NRCodeNotCovering
+  ORPriceTooHigh price -> NRPriceTooHigh price
+  ORBalanceChanged balance -> NRBalanceChanged $ balanceView <$> balance
+  ORTermsChanged terms community -> NRTermsChanged (termsLink terms) community
+  ORTermsUnavailable wait -> NRTermsUnavailable wait
+  ORCodesOnly -> NRCodesOnly

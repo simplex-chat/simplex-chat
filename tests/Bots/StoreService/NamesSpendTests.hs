@@ -10,12 +10,12 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates,
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (credit)
 import Bots.StoreService.NamesContractsTests (rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, fieldsJSON, fieldsOf, inObject, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, registrationById, registrationOf, registrationsOf, seconds, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, fieldsJSON, fieldsOf, inObject, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, registrationById, registrationOf, registrationsOf, seconds, settleNow, nameTermsChanged, threeYears, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesPhasesTests (registrationPath, seenVersion, woken)
 import qualified Bots.StoreService.NamesPhasesTests as Phases
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, write)
-import Bots.StoreService.WebTests (StubCall (..), answerOf, bounded, capturingStderr, StubState (..), fieldOf, jsonObject, phaseOf, rcv, refusedWith, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores, withApp)
+import Bots.StoreService.WebTests (StubCall (..), answerFixture, answerOf, bounded, capturingStderr, StubState (..), fieldOf, jsonObject, nameRefusedWith, phaseOf, rcv, refusedWith, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores, withApp)
 import ChatTests.DBUtils (TestParams)
 import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -24,6 +24,7 @@ import Control.Monad (forM_, join, replicateM_, void, when)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
@@ -33,6 +34,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
+import Network.HTTP.Client (responseHeaders)
 import Network.HTTP.Types (hContentType)
 import Network.Wai (Application)
 import qualified Network.Wai as Wai
@@ -108,10 +110,10 @@ testSpendCodesOnly :: IO ()
 testSpendCodesOnly = withSpend $ \open -> do
   source <- sourceOf open "s" 10000
   serveSpend (configured codesOnly open) $ \ctx -> do
-    spend ctx source (covered 10000) `shouldReturn` refusedWith 403 "codes_only"
-    spend ctx source (dynamis 10000 $ Just "btc") `shouldReturn` refusedWith 403 "codes_only"
-    postSpend ctx source KM.empty `shouldReturn` refusedWith 403 "codes_only"
-    postSpend ctx (RegistrationId "unknown") KM.empty `shouldReturn` refusedWith 403 "codes_only"
+    spend ctx source (covered 10000) `shouldReturn` nameRefusedWith 403 "codes_only"
+    spend ctx source (dynamis 10000 $ Just "btc") `shouldReturn` nameRefusedWith 403 "codes_only"
+    postSpend ctx source KM.empty `shouldReturn` nameRefusedWith 403 "codes_only"
+    postSpend ctx (RegistrationId "unknown") KM.empty `shouldReturn` nameRefusedWith 403 "codes_only"
     amountOf ctx source `shouldReturn` Just 10000
     paidFrom ctx source `shouldReturn` []
     stubCalls (cStub ctx) `shouldReturn` []
@@ -228,7 +230,7 @@ amountOf :: Ctx -> RegistrationId -> IO (Maybe USDCents)
 amountOf ctx rid = fmap blAmount <$> balanceOf ctx rid
 
 balanceChanged :: Maybe Balance -> (Int, Maybe J.Object)
-balanceChanged b = (409, Just $ KM.fromList [("error", "balance_changed"), ("balance", maybe J.Null (J.toJSON . View.balanceView) b)])
+balanceChanged b = (409, Just $ KM.fromList [("type", "balance_changed"), ("balance", maybe J.Null (J.toJSON . View.balanceView) b)])
 
 -- | The orders a balance paid.
 paidFrom :: Ctx -> RegistrationId -> IO [NameRegistration]
@@ -288,7 +290,8 @@ testDifferenceLimitedPerNetwork = withSpend $ \ctx@Ctx {cClient, cWeb, cStub} ->
   replicateM_ (lmPerMinute checkoutLimit) $ limitedCheckout http (fromNetwork "203.0.113.7") (SPMCrypto CCBtc) (const $ pure ()) (pure ())
   signed <- spendBody ctx src (difference 6000)
   r <- webRequestBody cClient "POST" "/api/registration/src/spend" [(hContentType, "application/json"), ("X-Forwarded-For", "203.0.113.9")] (J.encode signed)
-  answerOf r `shouldBe` refusedWith 429 "rate_limited"
+  let seconds' = maybe 0 (read . B.unpack) $ lookup "Retry-After" (responseHeaders r) :: Int
+  (seconds' > 0, answerOf r) `shouldBe` (True, (429, Just $ KM.fromList [("type", "rate_limited"), ("retryAfter", J.toJSON seconds')]))
   stubCalls cStub `shouldReturn` []
   fst <$> spend ctx src (difference 6000) `shouldReturn` 200
 
@@ -326,7 +329,7 @@ testInvoiceBodyApart = withSpend $ \ctx -> do
   placeOrder ctx aliceOrder `shouldReturn` refusedWith 409 "order_exists"
   fst <$> placeOrder ctx dynamisOrder `shouldReturn` 200
   other <- sourceOf ctx "other" 30000
-  spend ctx other (dynamis 30000 Nothing) `shouldReturn` refusedWith 409 "order_exists"
+  spend ctx other (dynamis 30000 Nothing) `shouldReturn` nameRefusedWith 409 "order_exists"
   amountOf ctx other `shouldReturn` Just 30000
 
 testBalanceChanged :: IO ()
@@ -339,7 +342,9 @@ testBalanceChanged = withSpend $ \ctx -> do
   fst <$> spend ctx held (dynamis 6000 (Just "btc")) `shouldReturn` 200
   holding <- balanceOf ctx held
   bhState <$> (blHold =<< holding) `shouldBe` Just (HSOpen (addUTCTime (45 * 60) orderTime))
-  spend ctx held (difference 6000) `shouldReturn` balanceChanged holding
+  heldAnswer <- spend ctx held (difference 6000)
+  heldAnswer `shouldBe` balanceChanged holding
+  answerFixture "spend-balance-changed" heldAnswer
   placePaid (cStore ctx) "none" ownerA (order "source-none" 3) (at 60) `shouldReturn` Right ()
   spend ctx (RegistrationId "none") (covered 10000) `shouldReturn` balanceChanged Nothing
   length <$> stubCalls (cStub ctx) `shouldReturn` 1
@@ -352,7 +357,7 @@ testMethodRule = withSpend $ \ctx -> do
   let with :: J.Key -> J.Value -> J.Object
       with k v = KM.insert k v good
   mapM_
-    (\body -> postSpend ctx src body `shouldReturn` refusedWith 400 "bad_request")
+    (\body -> postSpend ctx src body `shouldReturn` nameRefusedWith 400 "bad_request")
     [ KM.delete "method" good,
       with "method" "eth",
       with "method" J.Null,
@@ -362,9 +367,9 @@ testMethodRule = withSpend $ \ctx -> do
       with "balance" (J.Number (-1)),
       KM.delete "balance" good
     ]
-  spend ctx src (covered 6000) {sbOrder = aliceOrder {oPrice = 6000}, sbMethod = Just "btc"} `shouldReturn` refusedWith 400 "bad_request"
-  spend ctx src (difference 6000) {sbMethod = Nothing} `shouldReturn` refusedWith 400 "bad_request"
-  mapM_ (\len -> postSpend ctx src (inSignedFields (KM.insert "length" (J.Number len)) good) `shouldReturn` refusedWith 400 "invalid_name") [5, 64]
+  spend ctx src (covered 6000) {sbOrder = aliceOrder {oPrice = 6000}, sbMethod = Just "btc"} `shouldReturn` nameRefusedWith 400 "bad_request"
+  spend ctx src (difference 6000) {sbMethod = Nothing} `shouldReturn` nameRefusedWith 400 "bad_request"
+  mapM_ (\len -> postSpend ctx src (inSignedFields (KM.insert "length" (J.Number len)) good) `shouldReturn` nameRefusedWith 400 "invalid_name") [5, 64]
   stubCalls (cStub ctx) `shouldReturn` []
   amountOf ctx src `shouldReturn` Just 6000
 
@@ -372,16 +377,16 @@ testOrderChecks :: IO ()
 testOrderChecks = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   src <- sourceOf ctx "src" 30000
   setFault node "eth_getBlockByNumber" HttpFailure
-  spend ctx src (covered 30000) `shouldReturn` refusedWith 503 "name_check_unavailable"
+  spend ctx src (covered 30000) `shouldReturn` nameRefusedWith 503 "name_check_unavailable"
   clearFault node "eth_getBlockByNumber"
   answerCallOnce node fakeController (rentPriceCall 11) $ Returns $ rentPriceAnswer 9999
-  spend ctx src (covered 30000) {sbOrder = aliceOrder {oPrice = 9999}} `shouldReturn` refusedWith 503 "name_check_unavailable"
+  spend ctx src (covered 30000) {sbOrder = aliceOrder {oPrice = 9999}} `shouldReturn` nameRefusedWith 503 "name_check_unavailable"
   low <- sourceOf ctx "low" 6000
   modifyIORef' cStub $ \s -> s {ssCreateResult = Left (ProviderError "down")}
-  spend ctx low (difference 6000) `shouldReturn` refusedWith 503 "provider_unavailable"
+  spend ctx low (difference 6000) `shouldReturn` nameRefusedWith 503 "provider_unavailable"
   modifyIORef' cStub $ \s -> s {ssCreateResult = Right sampleProviderInvoice}
   fst <$> placeOrder ctx aliceOrder `shouldReturn` 200
-  spend ctx src (covered 30000) {sbOrder = aliceOrder {oCommitment = commitmentOf 3}} `shouldReturn` refusedWith 409 "order_exists"
+  spend ctx src (covered 30000) {sbOrder = aliceOrder {oCommitment = commitmentOf 3}} `shouldReturn` nameRefusedWith 409 "order_exists"
   mapM (amountOf ctx) [src, low] `shouldReturn` [Just 30000, Just 6000]
   mapM (paidFrom ctx) [src, low] `shouldReturn` [[], []]
 
@@ -392,28 +397,30 @@ testCheckOrder = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   low <- sourceOf ctx "low" 6000
   let unknown = RegistrationId "unknown"
   unsealed <- inSignedFields (KM.delete "sealed") <$> spendBody ctx unknown (covered 30000)
-  postSpend ctx unknown unsealed `shouldReturn` refusedWith 400 "bad_request"
-  spend ctx unknown (covered 30000) {sbOrder = aliceOrder {oKey = keyB}} `shouldReturn` refusedWith 404 "not_found"
+  postSpend ctx unknown unsealed `shouldReturn` nameRefusedWith 400 "bad_request"
+  spend ctx unknown (covered 30000) {sbOrder = aliceOrder {oKey = keyB}} `shouldReturn` nameRefusedWith 404 "not_found"
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
-  spend ctx src (covered 31000) {sbOrder = aliceOrder {oTimestamp = seconds orderTime + 601}} `shouldReturn` refusedWith 400 "bad_request"
+  spend ctx src (covered 31000) {sbOrder = aliceOrder {oTimestamp = seconds orderTime + 601}} `shouldReturn` nameRefusedWith 400 "bad_request"
   stale <- balanceOf ctx src
   spend ctx src (covered 31000) `shouldReturn` balanceChanged stale
-  spend ctx src (covered 30000) {sbOrder = aliceOrder {oPrice = 9000}} `shouldReturn` refusedWith 409 "name_taken"
+  spend ctx src (covered 30000) {sbOrder = aliceOrder {oPrice = 9000}} `shouldReturn` nameRefusedWith 409 "name_taken"
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   modifyIORef' cStub $ \s -> s {ssCreateResult = Left (ProviderError "down")}
-  spend ctx low (difference 6000) {sbOrder = aliceOrder {oPrice = 9000}} `shouldReturn` (409, Just $ KM.fromList [("error", "catalog_changed"), ("price", J.Number 10000)])
+  catalogAnswer <- spend ctx low (difference 6000) {sbOrder = aliceOrder {oPrice = 9000}}
+  catalogAnswer `shouldBe` (409, Just $ KM.fromList [("type", "catalog_changed"), ("price", J.Number 10000)])
+  answerFixture "spend-catalog-changed" catalogAnswer
   modifyIORef' cStub $ \s -> s {ssCreateResult = Right sampleProviderInvoice}
   fst <$> spend ctx src (covered 30000) `shouldReturn` 200
-  spend ctx src (covered 30000) {sbOrder = aliceOrder {oKey = keyB}} `shouldReturn` refusedWith 400 "bad_request"
-  spend ctx src (covered 31000) {sbOrder = aliceOrder {oCommitment = commitmentOf 3}} `shouldReturn` refusedWith 409 "order_exists"
+  spend ctx src (covered 30000) {sbOrder = aliceOrder {oKey = keyB}} `shouldReturn` nameRefusedWith 400 "bad_request"
+  spend ctx src (covered 31000) {sbOrder = aliceOrder {oCommitment = commitmentOf 3}} `shouldReturn` nameRefusedWith 409 "order_exists"
   amountOf ctx src `shouldReturn` Just 20000
 
 testSpendTermsChanged :: IO ()
 testSpendTermsChanged = withSpend $ \ctx0 -> serveSpend (configured (listName "dynamis") ctx0) $ \ctx -> do
   listOnChain ctx "dynamis"
   src <- sourceOf ctx "src" 30000
-  spend ctx src (covered 30000) {sbOrder = aliceOrder {oTerms = olderTerms}} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
-  spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = plainTerms}} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
+  spend ctx src (covered 30000) {sbOrder = aliceOrder {oTerms = olderTerms}} `shouldReturn` nameTermsChanged fakeGeneralTermsText Nothing
+  spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = plainTerms}} `shouldReturn` nameTermsChanged fakeCommunityTermsText (Just bakers)
   amountOf ctx src `shouldReturn` Just 30000
   rid <- registrationAnswer . snd <$> spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = communityTerms}}
   nrAgreedTerms <$> registrationById ctx rid `shouldReturn` agreed communityTerms
@@ -429,7 +436,7 @@ testSpendCommunityYears = withSpend $ \ctx0 -> serveSpend (configured (threeYear
   listOnChain ctx "dynamis"
   src <- sourceOf ctx "src" 30000
   let community = dynamisOrder {oTerms = communityTerms}
-  spend ctx src (dynamis 30000 Nothing) {sbOrder = community {oDuration = yearsDuration 3 orderTime}} `shouldReturn` refusedWith 400 "bad_request"
+  spend ctx src (dynamis 30000 Nothing) {sbOrder = community {oDuration = yearsDuration 3 orderTime}} `shouldReturn` nameRefusedWith 400 "bad_request"
   rid <- registrationAnswer . snd <$> spend ctx src (dynamis 30000 Nothing) {sbOrder = community}
   nrYears <$> registrationById ctx rid `shouldReturn` 3
 
@@ -451,24 +458,24 @@ testSpendTermsCheckOrder :: IO ()
 testSpendTermsCheckOrder = withSpend $ \ctx@Ctx {cNode = node} -> do
   src <- sourceOf ctx "src" 15000
   let old = aliceOrder {oTerms = olderTerms}
-  spend ctx src (covered 15000) {sbOrder = old {oTimestamp = seconds orderTime + 601}} `shouldReturn` refusedWith 400 "bad_request"
-  spend ctx src (covered 15000) {sbOrder = old {oDuration = oDuration old + 3601}} `shouldReturn` refusedWith 400 "bad_request"
-  spend ctx src (covered 14000) {sbOrder = old} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  spend ctx src (covered 15000) {sbOrder = old {oTimestamp = seconds orderTime + 601}} `shouldReturn` nameRefusedWith 400 "bad_request"
+  spend ctx src (covered 15000) {sbOrder = old {oDuration = oDuration old + 3601}} `shouldReturn` nameRefusedWith 400 "bad_request"
+  spend ctx src (covered 14000) {sbOrder = old} `shouldReturn` nameTermsChanged fakeGeneralTermsText Nothing
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
-  spend ctx src (covered 15000) {sbOrder = old {oPrice = 9000}} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  spend ctx src (covered 15000) {sbOrder = old {oPrice = 9000}} `shouldReturn` nameTermsChanged fakeGeneralTermsText Nothing
   setGeneralTerms node ""
-  spend ctx src (covered 14000) {sbOrder = old {oPrice = 9000}} `shouldReturn` refusedWith 503 "terms_unavailable"
+  spend ctx src (covered 14000) {sbOrder = old {oPrice = 9000}} `shouldReturn` (503, Just $ KM.fromList [("type", "terms_unavailable"), ("wait", J.Null)])
   setGeneralTerms node fakeGeneralTermsText
   setFault node "eth_call" HttpFailure
-  spend ctx src (covered 15000) {sbOrder = old} `shouldReturn` refusedWith 503 "name_check_unavailable"
+  spend ctx src (covered 15000) {sbOrder = old} `shouldReturn` nameRefusedWith 503 "name_check_unavailable"
   amountOf ctx src `shouldReturn` Just 15000
   paidFrom ctx src `shouldReturn` []
 
 testCardMinimum :: IO ()
 testCardMinimum = withSpend $ \ctx -> do
   small <- sourceOf ctx "small" 9951
-  spend ctx small (difference 9951) {sbOrder = aliceOrder {oPrice = 9990}, sbMethod = Just "card"} `shouldReturn` (409, Just $ KM.fromList [("error", "catalog_changed"), ("price", J.Number 10000)])
-  spend ctx small (difference 9951) {sbMethod = Just "card"} `shouldReturn` refusedWith 400 "bad_request"
+  spend ctx small (difference 9951) {sbOrder = aliceOrder {oPrice = 9990}, sbMethod = Just "card"} `shouldReturn` (409, Just $ KM.fromList [("type", "catalog_changed"), ("price", J.Number 10000)])
+  spend ctx small (difference 9951) {sbMethod = Just "card"} `shouldReturn` nameRefusedWith 400 "bad_request"
   stubCalls (cStub ctx) `shouldReturn` []
   amountOf ctx small `shouldReturn` Just 9951
   fst <$> spend ctx small (difference 9951) `shouldReturn` 200
@@ -481,9 +488,9 @@ testSpendSizes :: IO ()
 testSpendSizes = withSpend $ \ctx -> do
   src <- sourceOf ctx "src" 15000
   missing <- inSignedFields (KM.delete "sealed") <$> spendBody ctx src (covered 15000)
-  postSpend ctx src missing `shouldReturn` refusedWith 400 "bad_request"
+  postSpend ctx src missing `shouldReturn` nameRefusedWith 400 "bad_request"
   padded <- KM.insert "padding" (J.String $ T.replicate 16384 "a") <$> spendBody ctx src (covered 15000)
-  postSpend ctx src padded `shouldReturn` refusedWith 400 "bad_request"
+  postSpend ctx src padded `shouldReturn` nameRefusedWith 400 "bad_request"
   longest <- spendBody ctx src (covered 15000) {sbOrder = aliceOrder {oSealed = T.replicate 11095 "a"}}
   LB.length (J.encode longest) `shouldSatisfy` (< 16384)
   fst <$> postSpend ctx src longest `shouldReturn` 200

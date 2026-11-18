@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module StoreService.Web.Http
   ( HttpEnv (..),
@@ -14,6 +13,7 @@ module StoreService.Web.Http
     limited,
     limitedWith,
     only,
+    onlyWith,
     CheckoutClient,
     checkoutClient,
     sockHost,
@@ -34,20 +34,17 @@ module StoreService.Web.Http
     maxSearches,
     searchSlot,
     holdsFull,
+    holdsFullSeconds,
     jsonResponse,
     jsonError,
     notFound,
     badRequest,
-    invalidName,
-    invalidLink,
     codeConflict,
     providerUnavailable,
-    termsUnavailable,
     rateLimited,
     methodNotAllowed,
     internalError,
-    NameRefusal (..),
-    refusalResponse,
+    apiHeaders,
     readBoundedBody,
     maxBodyBytes,
     nameBodyBytes,
@@ -69,7 +66,6 @@ import Control.Exception (bracket)
 import Control.Monad (foldM, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.TH as JQ
 import Data.Aeson.Types (Pair)
 import Data.Bits (shiftR, (.&.))
 import Data.ByteString (ByteString)
@@ -85,13 +81,12 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word8)
-import Network.HTTP.Types (Header, Method, Status, hCacheControl, hContentType, status400, status404, status405, status409, status429, status500, status503, status504)
+import Network.HTTP.Types (Header, Method, Status, hCacheControl, hContentType, status400, status404, status405, status409, status429, status500, status503)
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Network.Wai
 import Numeric (showHex)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
-import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, stateTVar', tshow)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
@@ -236,14 +231,17 @@ limitedWith refuse env limit req respond action =
     Just seconds -> respond (refuse seconds)
 
 -- | The client network's limit and the one every client shares, taken just before the provider is asked, so refused requests do not use them.
-limitedCheckout :: HttpEnv -> CheckoutClient -> ServicePaymentMethod -> (Response -> IO a) -> IO a -> IO a
+limitedCheckout :: HttpEnv -> CheckoutClient -> ServicePaymentMethod -> (Int -> IO a) -> IO a -> IO a
 limitedCheckout env (CheckoutClient client) method refuse action =
-  takeTokens env [(checkoutLimit, client), (invoicesLimit method, "")] >>= maybe action (refuse . rateLimited)
+  takeTokens env [(checkoutLimit, client), (invoicesLimit method, "")] >>= maybe action refuse
 
 only :: Method -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
-only method req respond action
+only = onlyWith methodNotAllowed
+
+onlyWith :: (Method -> Response) -> Method -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
+onlyWith refuse method req respond action
   | requestMethod req == method = action
-  | otherwise = respond (methodNotAllowed method)
+  | otherwise = respond (refuse method)
 
 data KeyPrefix = KeyPrefix {kpOctets :: Int, kpGroups :: Int}
 
@@ -313,20 +311,11 @@ notFound = jsonError status404 "not_found"
 badRequest :: Response
 badRequest = jsonError status400 "bad_request"
 
-invalidName :: Response
-invalidName = jsonError status400 "invalid_name"
-
-invalidLink :: Response
-invalidLink = jsonError status400 "invalid_link"
-
 codeConflict :: Response
 codeConflict = jsonError status409 "code_conflict"
 
 providerUnavailable :: Response
 providerUnavailable = jsonError status503 "provider_unavailable"
-
-termsUnavailable :: Int -> Response
-termsUnavailable = retryAfterError status503 "terms_unavailable"
 
 rateLimited :: Int -> Response
 rateLimited = retryAfterError status429 "rate_limited"
@@ -446,41 +435,3 @@ providerOf :: ServicePaymentMethod -> PaymentProvider
 providerOf = \case
   SPMCard CPStripe -> PPStripe
   SPMCrypto _ -> PPCrypto
-
-data NameRefusal
-  = NRBadRequest
-  | NRInvalidName
-  | NRInvalidLink
-  | NRNotFound
-  | NRCodeInvalid
-  | NRStaleNonce
-  | NRRecordReverted
-  | NREditLimit {nextAt :: UTCTime}
-  | NRRateLimited {retryAfter :: Int}
-  | NRProviderUnavailable
-  | NRTermsUnavailable {retryAfter :: Int}
-  | NREditPending
-  deriving (Eq, Show)
-
-$(JQ.deriveToJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NR") ''NameRefusal)
-
-refusalResponse :: NameRefusal -> Response
-refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encode r)
-  where
-    status = case r of
-      NRBadRequest -> status400
-      NRInvalidName -> status400
-      NRInvalidLink -> status400
-      NRNotFound -> status404
-      NRCodeInvalid -> status400
-      NRStaleNonce -> status409
-      NRRecordReverted -> status409
-      NREditLimit {} -> status409
-      NRRateLimited {} -> status429
-      NRProviderUnavailable -> status503
-      NRTermsUnavailable {} -> status503
-      NREditPending -> status504
-    retryAfterHeader = case r of
-      NRRateLimited {retryAfter} -> [("Retry-After", B.pack $ show retryAfter)]
-      NRTermsUnavailable {retryAfter} -> [("Retry-After", B.pack $ show retryAfter)]
-      _ -> []

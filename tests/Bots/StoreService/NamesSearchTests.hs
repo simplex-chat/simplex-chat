@@ -408,7 +408,7 @@ testTerms g = withSearch g id id $ \s@Search {node} -> do
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status429 [("Retry-After", "60")] ""
   r <- terms (hex fakeNewGeneralTerms)
   responseFixture "terms-unavailable" r
-  (answerOf r, lookup "Retry-After" (responseHeaders r)) `shouldBe` (withField "retryAfter" (J.Number 60) (nameRefusedWith 503 "terms_unavailable"), Just "60")
+  (answerOf r, lookup "Retry-After" (responseHeaders r)) `shouldBe` (withField "wait" (J.Number 60) (nameRefusedWith 503 "terms_unavailable"), Just "60")
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status404 [] ""
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` termsAnswer fakeNewCommunityTermsText
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""

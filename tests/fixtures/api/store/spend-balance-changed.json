@@ -1,0 +1,14 @@
+{
+  "body": {
+    "balance": {
+      "amount": 6000,
+      "hold": {
+        "heldUntil": "2026-10-21T10:00:00Z",
+        "type": "open"
+      },
+      "refunded": 0
+    },
+    "type": "balance_changed"
+  },
+  "status": 409
+}

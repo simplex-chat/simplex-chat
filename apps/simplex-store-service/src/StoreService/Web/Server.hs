@@ -26,7 +26,7 @@ import StoreService.Names.Orders (OrdersEnv (..), jsonField, ordersEnv, textWith
 import StoreService.Names.Phases (awaitChange)
 import StoreService.Names.Registration (RegistrationId, tldLabel)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
-import StoreService.Names.View (lapseMoment, registrationVersion)
+import StoreService.Names.View (lapseMoment, legacyRefusalResponse, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), providerErrorText)
@@ -35,7 +35,7 @@ import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
 import StoreService.Web.Names (namesApp, namesRoutes)
 import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, paymentMethod)
-import StoreService.Web.Names.Registration (heldFor, registrationChangedResponse, versionParam)
+import StoreService.Web.Names.Registration (heldFor, registrationChanged, versionParam)
 import Control.Concurrent.Async (race)
 import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
@@ -327,7 +327,7 @@ cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId respond =
     finish = do
       now <- currentSecond
       E.try (cancelOpenInvoice weStore (weWaiters env) (oePhases <$> weOrders env) invId now) >>= \case
-        Left (RegistrationChanged rid) -> maybe (pure providerUnavailable) (`registrationChangedResponse` rid) (weOrders env) >>= respond
+        Left (RegistrationChanged rid) -> maybe (pure providerUnavailable) (fmap legacyRefusalResponse . (`registrationChanged` rid)) (weOrders env) >>= respond
         Right _ -> respondCurrent env invId respond
 
 paidParam :: Request -> Maybe (Text, Bool)
@@ -384,7 +384,7 @@ createInvoiceHandler env@WebEnv {weStore, weConfig, weProviders, weWaiters} req 
 -- | Once the provider call succeeds an invoice exists at BTCPay, and any path below that does not write our rows leaves it stranded.
 createAtProvider :: WebEnv -> CheckoutClient -> Provider -> CreateRequest -> PricedOffer -> Respond -> IO ResponseReceived
 createAtProvider WebEnv {weStore, weConfig, weHttp} client provider CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash} priced respond =
-  limitedCheckout weHttp client crMethod respond $ do
+  limitedCheckout weHttp client crMethod (respond . rateLimited) $ do
       invId@(InvoiceId orderId) <- newInvoiceId
       -- truncate once, so the response, the row and the provider get the same value
       now <- truncateToSecond <$> getCurrentTime

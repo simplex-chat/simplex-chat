@@ -42,7 +42,8 @@ import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (EditsLeft, nameEditsLeft)
 import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink)
 import StoreService.Names.Store (labelHolder)
-import StoreService.Web.Http (HttpEnv, NameRefusal (..), Respond, jsonResponse, maxBodyBytes, readBoundedBody, refusalResponse, searchSlot)
+import StoreService.Names.View (NameRefusal (..), refusalResponse)
+import StoreService.Web.Http (HttpEnv, Respond, jsonResponse, maxBodyBytes, readBoundedBody, searchSlot)
 import System.Timeout (timeout)
 
 data Found
@@ -158,4 +159,4 @@ termsHandler ct hashText _ respond = case strDecode $ encodeUtf8 hashText of
         Just t@Terms {tmLink} ->
           termsText ct t >>= \case
             Right text -> respond $ jsonResponse status200 TermsText {link = tmLink, text}
-            Left (TRWait seconds) -> respond $ refusalResponse $ NRTermsUnavailable seconds
+            Left (TRWait seconds) -> respond $ refusalResponse $ NRTermsUnavailable $ Just seconds

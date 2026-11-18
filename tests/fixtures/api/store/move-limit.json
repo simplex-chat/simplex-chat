@@ -1,0 +1,38 @@
+{
+  "body": {
+    "registration": {
+      "balance": null,
+      "commitTx": null,
+      "commitment": "0x2d0fc4ba00829c6450ce3a89b70b361b09cb7bdd0977240a7f9330afd7a22d9e",
+      "community": null,
+      "duration": 69259500,
+      "id": "registration",
+      "label": null,
+      "labelHash": "0x31435c2a8c42d425eccac7b91f2674de61efc6d2ef7476e131c0f9ad5ed9ce5b",
+      "latePayment": null,
+      "linksRefused": false,
+      "moves": 3,
+      "owner": "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73",
+      "payment": {
+        "method": "btc",
+        "type": "invoice"
+      },
+      "phase": {
+        "reason": "registryRefused",
+        "type": "failed"
+      },
+      "price": 10000,
+      "registerTx": null,
+      "replacedBy": null,
+      "sealed": "sealed-alicebakers-13",
+      "terms": {
+        "communityName": false,
+        "termsHash": "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"
+      },
+      "version": 9,
+      "years": 2
+    },
+    "type": "move_limit"
+  },
+  "status": 409
+}

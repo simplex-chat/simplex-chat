@@ -18,7 +18,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
 import Network.HTTP.Types (status200)
-import Network.Wai (Request, Response, ResponseReceived)
+import Network.Wai (Request, ResponseReceived)
 import Simplex.Chat.PaymentService.Types (InvoiceId)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
@@ -33,11 +33,11 @@ import StoreService.Names.Phases (publish)
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, retargetMessage)
 import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
-import StoreService.Names.View (registrationView)
-import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
+import StoreService.Names.View (NameRefusal (..), registrationView)
+import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, nameBodyBytes, readBoundedBody)
 import StoreService.Names.Worker (Retried (..), checkFailedOrder)
-import StoreService.Web.Names.Orders (Answer (..), answerNow, refused, sendAnswer)
-import StoreService.Web.Names.Registration (registrationChangedResponse, registrationRefusalResponse, retryRefusalResponse)
+import StoreService.Web.Names.Orders (Answer (..), answerNow, refusalAnswer, refused, sendAnswer)
+import StoreService.Web.Names.Registration (registrationChanged, registrationRefusal, retryRefusal)
 
 data FindRequest = FindRequest
   { frOwner :: Address,
@@ -108,13 +108,13 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
       _ -> refuse $ ORBadRequest "a malformed move"
     signed (fields, timestamp, signature) =
       withTransaction oeStore (`getRegistration` rid) >>= \case
-        Nothing -> pure $ answerNow notFound
+        Nothing -> pure $ refusalAnswer NRNotFound
         Just r@NameRegistration {nrOwner} ->
           checkSigner nrOwner (retargetMessage rid fields timestamp) signature >>= \case
             Left refusal -> refuse refusal
             Right () ->
               withRegistrationTurns oeStore oeTurns r (ofLabelHash fields) (inTurns fields timestamp)
-                >>= maybe (pure $ answerNow notFound) (either (const changed) pure)
+                >>= maybe (pure $ refusalAnswer NRNotFound) (either (const changed) pure)
     inTurns fields timestamp stored = do
       now <- oeNow
       moveTo now stored fields timestamp
@@ -125,12 +125,12 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
       | namePhase nrPhase == PFailed =
           checkFailedOrder env r >>= \case
             Right () -> moveChecked now r fields
-            Left (RTWritten v) -> written env rid v <$> registrationChangedResponse env rid
+            Left (RTWritten v) -> written env rid v . refusalAnswer <$> registrationChanged env rid
             Left RTChanged -> changed
-            Left (RTRefused refusal) -> answerNow (retryRefusalResponse refusal) <$ logNote (what <> " refused: " <> tshow refusal)
+            Left (RTRefused refusal) -> refusalAnswer (retryRefusal refusal) <$ logNote (what <> " refused: " <> tshow refusal)
       | otherwise = moveChecked now r fields
     moveChecked now r@NameRegistration {nrMoves, nrYears} fields@OrderFields {ofLabelHash, ofDuration}
-      | nrMoves >= nMaxOrderMoves oeConfig = answerNow <$> registrationRefusalResponse env "move_limit" rid
+      | nrMoves >= nMaxOrderMoves oeConfig = refusalAnswer <$> registrationRefusal env NRMoveLimit rid
       | otherwise =
           runExceptT (mapM_ ExceptT [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore (Just rid) ofLabelHash]) >>= \case
             Left refusal -> refuse refusal
@@ -144,13 +144,13 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
         Left (WRRefused refusal) -> refuse refusal
     movedAnswer now v =
       withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just r -> written env rid v . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
-        Nothing -> answerNow internalError <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
-    changed = answerNow <$> registrationChangedResponse env rid
+        Just r -> written env rid v . answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
+        Nothing -> refusalAnswer NRInternal <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
+    changed = refusalAnswer <$> registrationChanged env rid
     what = "POST /api/registration/:id/name"
     refuse = refused what
 
 -- | Published after the turn, as the answer is sent.
-written :: OrdersEnv -> RegistrationId -> Int64 -> Response -> Answer
-written OrdersEnv {oePhases} rid v aResponse = Answer {aResponse, aAfter = atomically $ publish oePhases rid v}
+written :: OrdersEnv -> RegistrationId -> Int64 -> Answer -> Answer
+written OrdersEnv {oePhases} rid v a = a {aAfter = atomically $ publish oePhases rid v}
 
