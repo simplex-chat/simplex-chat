@@ -99,7 +99,9 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 #### badge-web
 
-- Globs: apps/simplex-store-service/web/**. These paths are also in the core globs (apps/simplex-store-service/**), and web/src/catalog.ts is read by core tests (tests/Bots/StoreService/CatalogTests.hs, WebTests.hs).
+- Globs:
+  - apps/simplex-store-service/web/**, also in the core globs (apps/simplex-store-service/**); web/src/catalog.ts is read by core tests (tests/Bots/StoreService/CatalogTests.hs, WebTests.hs);
+  - tests/fixtures/api/store/**: the badge page's test/service-refusals.test.ts reads the refusals that WebTests.hs records there.
 - CI, in build-linux: core build and tests, then `scope-tests.sh badge-web` (step "Test changed scopes").
 - Selected core tests: `/SimpleX store service/`, which includes `/SimpleX store service e2e/`.
 - Local:

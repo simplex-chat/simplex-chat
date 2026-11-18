@@ -303,7 +303,7 @@ jsonResponse :: J.ToJSON a => Status -> a -> Response
 jsonResponse st = responseLBS st apiHeaders . J.encode
 
 jsonError :: Status -> Text -> Response
-jsonError st code = jsonResponse st (J.object ["error" .= code])
+jsonError st code = jsonResponse st (J.object ["type" .= code])
 
 notFound :: Response
 notFound = jsonError status404 "not_found"
@@ -325,10 +325,10 @@ retryAfterError st code seconds =
   responseLBS
     st
     (("Retry-After", B.pack (show seconds)) : apiHeaders)
-    (J.encode (J.object ["error" .= code]))
+    (J.encode (J.object ["type" .= code]))
 
 methodNotAllowed :: Method -> Response
-methodNotAllowed allow = responseLBS status405 (("Allow", allow) : apiHeaders) (J.encode (J.object ["error" .= ("method_not_allowed" :: Text)]))
+methodNotAllowed allow = responseLBS status405 (("Allow", allow) : apiHeaders) (J.encode (J.object ["type" .= ("method_not_allowed" :: Text)]))
 
 internalError :: Response
 internalError = jsonError status500 "internal"

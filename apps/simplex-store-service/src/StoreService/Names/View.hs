@@ -13,7 +13,6 @@ module StoreService.Names.View
     Successor (..),
     NameRefusal (..),
     refusalResponse,
-    legacyRefusalResponse,
     registrationView,
     phaseView,
     readToSign,
@@ -29,7 +28,6 @@ where
 import Control.Concurrent.Async (concurrently)
 import Control.Logger.Simple (logWarn)
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
@@ -164,15 +162,7 @@ data NameRefusal
 $(JQ.deriveToJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NR") {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "rf"} ''NameRefusal)
 
 refusalResponse :: NameRefusal -> Response
-refusalResponse = refusalWith J.toJSON
-
-legacyRefusalResponse :: NameRefusal -> Response
-legacyRefusalResponse = refusalWith $ \r -> case J.toJSON r of
-  J.Object o -> J.Object $ maybe id (KM.insert "error") (KM.lookup "type" o) $ foldr KM.delete o ["type", "retryAfter", "wait"]
-  v -> v
-
-refusalWith :: (NameRefusal -> J.Value) -> NameRefusal -> Response
-refusalWith body r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encode $ body r)
+refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encode r)
   where
     status = case r of
       NRBadRequest -> status400

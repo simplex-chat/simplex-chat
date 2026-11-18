@@ -12,7 +12,7 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, linksRefusedPhase, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, ownerA, paidOrder, reveal)
-import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, nameRefusedWith, phaseOf, phaseValue, refusedWith, statusOf, stubCalls, webGet, withApp)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, phaseOf, phaseValue, refusedWith, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -937,7 +937,7 @@ testSignatureUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSend
   failedOrder <- stored ctx r
   forM_ (zip ["alicebakers", "alicebakery"] [20, 21]) $ \(label, n) -> do
     to <- moveTo ctx label n
-    move ctx keyA failedOrder to `shouldReturn` nameRefusedWith 400 "bad_request"
+    move ctx keyA failedOrder to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` failedOrder
 
 testFailedOnlySettled :: IO ()
@@ -1184,15 +1184,15 @@ testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
   signed <- paidIn ctx (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 6} $ \o -> (committedPhase o) {nrReveal = Just reveal}
   advance ctx $ day + 1
   forM_ [queued, live, registeredOrder, taken, failed, signed] $ \r -> do
-    (nrPhase r,) <$> retryOf ctx r `shouldReturn` (nrPhase r, nameRefusedWith 400 "bad_request")
+    (nrPhase r,) <$> retryOf ctx r `shouldReturn` (nrPhase r, refusedWith 400 "bad_request")
     stored ctx r `shouldReturn` r
-  retryOf ctx queued {nrId = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"} `shouldReturn` nameRefusedWith 404 "not_found"
+  retryOf ctx queued {nrId = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"} `shouldReturn` refusedWith 404 "not_found"
 
 testRetryLinksRefused :: IO ()
 testRetryLinksRefused = withWorker $ \W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder linksRefusedPhase
   advance ctx $ day + 1
-  retryOf ctx r `shouldReturn` nameRefusedWith 400 "bad_request"
+  retryOf ctx r `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
 
 testRetryLapsed :: IO ()
@@ -1269,10 +1269,10 @@ testCloseFailed = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}} -> do
   figuresOf ctx r `shouldReturn` Just (0, price, price, Nothing)
   turnsCount (oeTurns cOrders) `shouldReturn` 0
   recordRefund (oeTurns cOrders) cStore rid price orderTime `shouldReturn` Left (RefundAmount 0)
-  retryOf ctx x `shouldReturn` nameRefusedWith 400 "bad_request"
+  retryOf ctx x `shouldReturn` refusedWith 400 "bad_request"
   answerFree ctx "alicebakers"
   to <- moveTo ctx "alicebakers" 10
-  move ctx keyA x to `shouldReturn` nameRefusedWith 400 "bad_request"
+  move ctx keyA x to `shouldReturn` refusedWith 400 "bad_request"
   closeOf ctx x `shouldReturn` CLRefused CFNotFailedPaid
   stored ctx r `shouldReturn` x
   figuresOf ctx r `shouldReturn` Just (0, price, price, Nothing)

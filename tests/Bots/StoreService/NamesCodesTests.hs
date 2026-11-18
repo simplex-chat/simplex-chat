@@ -7,7 +7,7 @@ module Bots.StoreService.NamesCodesTests (namesCodesTests) where
 
 import Bots.StoreService.FakeEthNode (lengthOf)
 import Bots.StoreService.NamesStoreTests (order, ownerA, ownerB, placeCode, placePaid, usable)
-import Bots.StoreService.WebTests (answerOf, nameRefusedWith, responseFixture, withServiceStore, withApp)
+import Bots.StoreService.WebTests (answerOf, refusedWith, responseFixture, withServiceStore, withApp)
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently)
@@ -157,7 +157,7 @@ testCheckFolded = withCodeCheck $ \st client -> do
 testCheckInvalid :: IO ()
 testCheckInvalid = withCodeCheck $ \_ client -> do
   unknown <- newCode 8
-  let invalid = nameRefusedWith 400 "code_invalid"
+  let invalid = refusedWith 400 "code_invalid"
   refused <- checkCode client unknown
   responseFixture "code-invalid" refused
   answerOf refused `shouldBe` invalid
@@ -169,7 +169,7 @@ testCheckInvalid = withCodeCheck $ \_ client -> do
 
 testCheckBadBody :: IO ()
 testCheckBadBody = withCodeCheck $ \_ client -> do
-  let badRequest = nameRefusedWith 400 "bad_request"
+  let badRequest = refusedWith 400 "bad_request"
   forM_ ["", "not json", "[\"SN7-BJTBP-29596-R3HJ8-25YM7\"]", "{}", "{\"code\": 7}", "{\"code\": null}"] $ \body ->
     (body,) . answerOf <$> postCheck client body `shouldReturn` (body, badRequest)
   let overCap = "{\"code\": \"SN7-BJTBP-29596-R3HJ8-25YM7\", \"pad\": \"" <> LB.replicate 8192 'x' <> "\"}"

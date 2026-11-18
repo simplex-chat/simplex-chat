@@ -26,7 +26,7 @@ import StoreService.Names.Orders (OrdersEnv (..), jsonField, noteRead, ordersEnv
 import StoreService.Names.Phases (awaitChange)
 import StoreService.Names.Registration (RegistrationId, tldLabel)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
-import StoreService.Names.View (lapseMoment, legacyRefusalResponse, registrationVersion)
+import StoreService.Names.View (lapseMoment, refusalResponse, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), providerErrorText)
@@ -327,7 +327,7 @@ cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId respond =
     finish = do
       now <- currentSecond
       E.try (cancelOpenInvoice weStore (weWaiters env) (oePhases <$> weOrders env) invId now) >>= \case
-        Left (RegistrationChanged rid) -> maybe (pure providerUnavailable) (fmap legacyRefusalResponse . (`registrationChanged` rid)) (weOrders env) >>= respond
+        Left (RegistrationChanged rid) -> maybe (pure providerUnavailable) (fmap refusalResponse . (`registrationChanged` rid)) (weOrders env) >>= respond
         Right _ -> respondCurrent env invId respond
 
 paidParam :: Request -> Maybe (Text, Bool)

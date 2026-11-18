@@ -3,7 +3,7 @@
 
 module Bots.StoreService.NamesWiringTests (namesWiringTests) where
 
-import Bots.StoreService.WebTests (answerOf, nameRefusedWith, refusedWith, statusOf, withApp)
+import Bots.StoreService.WebTests (answerOf, refusedWith, statusOf, withApp)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently_, replicateConcurrently_, wait)
 import qualified Control.Concurrent.Async as Async
@@ -135,7 +135,7 @@ testWrongMethod :: IO ()
 testWrongMethod = withProbeRouter $ \client -> do
   replicateM_ 2 $ do
     r <- send client "POST" "/api/probe/x"
-    answerOf r `shouldBe` nameRefusedWith 405 "method_not_allowed"
+    answerOf r `shouldBe` refusedWith 405 "method_not_allowed"
     lookup "Allow" (responseHeaders r) `shouldBe` Just "GET"
     lookup hContentType (responseHeaders r) `shouldBe` Just "application/json"
     lookup hCacheControl (responseHeaders r) `shouldBe` Just "no-store"

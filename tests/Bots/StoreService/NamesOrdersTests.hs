@@ -49,7 +49,6 @@ module Bots.StoreService.NamesOrdersTests
     communityTerms,
     communityTermsOf,
     termsChanged,
-    nameTermsChanged,
     communityEntry,
     termsEntry,
     otherCommunityTerms,
@@ -73,7 +72,6 @@ import Control.Monad (forM_, replicateM_, void)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
@@ -695,7 +693,7 @@ testDurationSlack = withFakeEthNode $ \node -> do
 
 testCatalogChanged :: IO ()
 testCatalogChanged = withOrders $ \ctx -> do
-  placeOrder ctx aliceOrder {oPrice = 9000} `shouldReturn` (409, Just $ KM.fromList [("error", "catalog_changed"), ("price", J.Number 10000)])
+  placeOrder ctx aliceOrder {oPrice = 9000} `shouldReturn` (409, Just $ KM.fromList [("type", "catalog_changed"), ("price", J.Number 10000)])
   stubCalls (cStub ctx) `shouldReturn` []
 
 testOrdersLimitForAll :: IO ()
@@ -704,7 +702,8 @@ testOrdersLimitForAll = withOrders $ \ctx -> do
   void $ placed ctx aliceOrder
   replicateM_ (lmPerMinute btcpayLimit - 1) $ takeToken (weHttp $ cWeb ctx) btcpayLimit ""
   let dynamis = aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
-  placeOrder ctx dynamis `shouldReturn` refusedWith 429 "rate_limited"
+  limitedAnswer <- placeOrder ctx dynamis
+  fmap (KM.delete "retryAfter") <$> limitedAnswer `shouldBe` refusedWith 429 "rate_limited"
   void $ placed ctx dynamis {oMethod = "card"}
   length <$> stubCalls (cStub ctx) `shouldReturn` 2
   where
@@ -821,17 +820,11 @@ communityTermsOf h = "community/" <> T.drop 2 (hex h)
 
 -- | terms_changed with the current terms of the name's kind and its community entry.
 termsChanged :: ByteString -> Maybe Text -> (Int, Maybe J.Object)
-termsChanged = termsChangedAt "error"
-
-nameTermsChanged :: ByteString -> Maybe Text -> (Int, Maybe J.Object)
-nameTermsChanged = termsChangedAt "type"
-
-termsChangedAt :: K.Key -> ByteString -> Maybe Text -> (Int, Maybe J.Object)
-termsChangedAt key text community =
+termsChanged text community =
   ( 409,
     Just $
       KM.fromList
-        [ (key, "terms_changed"),
+        [ ("type", "terms_changed"),
           ("terms", termsEntry text),
           ("community", maybe J.Null (communityEntry . Just) community)
         ]
@@ -895,19 +888,19 @@ testTermsUnavailable = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   listOnChain ctx "dynamis"
   (code, issued) <- issueCode ctx 8 2 id
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms}
-      unavailable = refusedWith 503 "terms_unavailable"
+      unavailable = (503, Just $ KM.fromList [("type", "terms_unavailable"), ("wait", J.Null)])
   setCommunityTerms node ""
   placeOrder ctx dynamis `shouldReturn` unavailable
   setGeneralTerms node ""
   placeOrder ctx aliceOrder `shouldReturn` unavailable
   termsUnset <- register ctx code aliceOrder
-  termsUnset `shouldBe` (503, Just $ KM.fromList [("type", "terms_unavailable"), ("wait", J.Null)])
+  termsUnset `shouldBe` unavailable
   answerFixture "register-terms-unavailable" termsUnset
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ abiTuple [Dynamic $ abiBytes "https://example.org/terms.md"]
   placeOrder ctx aliceOrder `shouldReturn` unavailable
   setGeneralTerms node fakeNewGeneralTermsText
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status404 [] ""
-  placeOrder ctx aliceOrder {oTerms = newerTerms} `shouldReturn` unavailable
+  placeOrder ctx aliceOrder {oTerms = newerTerms} `shouldReturn` (503, Just $ KM.fromList [("type", "terms_unavailable"), ("wait", J.Number 30)])
   r <- signedBody (cRandom ctx) aliceOrder {oTerms = newerTerms} >>= webRequestBody (cClient ctx) "POST" "/api/invoice" [(hContentType, "application/json")] . J.encode
   (statusOf r, lookup "Retry-After" $ responseHeaders r) `shouldSatisfy` \(status, retryAfter) -> status == 503 && maybe False (> "0") retryAfter
   stubCalls (cStub ctx) `shouldReturn` []
@@ -1032,7 +1025,7 @@ testCodeResend = withOrders $ \ctx -> do
   register ctx code aliceOrder {oTimestamp = seconds orderTime + 60} `shouldReturn` registrationAnswer rid
   setGeneralTerms (cNode ctx) fakeNewGeneralTermsText
   register ctx code aliceOrder `shouldReturn` registrationAnswer rid
-  register ctx code aliceOrder {oTerms = newerTerms, oTimestamp = seconds orderTime + 60} `shouldReturn` nameRefusedWith 409 "order_exists"
+  register ctx code aliceOrder {oTerms = newerTerms, oTimestamp = seconds orderTime + 60} `shouldReturn` refusedWith 409 "order_exists"
   r <- registrationById ctx rid
   now <- readIORef (cClock ctx)
   withTransaction (cStore ctx) $ \db -> do
@@ -1049,9 +1042,9 @@ testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   listOnChain ctx "dynamis"
   (code, issued) <- issueCode ctx 7 2 id
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2}
-  register ctx code aliceOrder {oTerms = olderTerms} `shouldReturn` nameTermsChanged fakeGeneralTermsText Nothing
+  register ctx code aliceOrder {oTerms = olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   communityChanged <- register ctx code dynamis {oTerms = plainTerms}
-  communityChanged `shouldBe` nameTermsChanged fakeCommunityTermsText (Just bakers)
+  communityChanged `shouldBe` termsChanged fakeCommunityTermsText (Just bakers)
   answerFixture "register-terms-changed" communityChanged
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   rid <- registered ctx code dynamis {oTerms = communityTerms}
@@ -1070,17 +1063,17 @@ testCodeTermsCheckOrder :: IO ()
 testCodeTermsCheckOrder = withOrders $ \ctx@Ctx {cStore, cNode = node} -> do
   let old = aliceOrder {oTerms = olderTerms}
   (code, _) <- issueCode ctx 8 2 id
-  register ctx code old {oTimestamp = seconds orderTime + 601} `shouldReturn` nameRefusedWith 400 "bad_request"
-  register ctx code old {oDuration = oDuration old + fromIntegral slackSeconds + 1} `shouldReturn` nameRefusedWith 400 "bad_request"
+  register ctx code old {oTimestamp = seconds orderTime + 601} `shouldReturn` refusedWith 400 "bad_request"
+  register ctx code old {oDuration = oDuration old + fromIntegral slackSeconds + 1} `shouldReturn` refusedWith 400 "bad_request"
   (reserved, reservedCode) <- issueCode ctx 8 2 id
   placeCode cStore "holder" ownerB (order "holderone" 1) reservedCode `shouldReturn` Right ()
   (long, _) <- issueCode ctx 12 2 id
   (unpaid, _) <- issueCode ctx 8 2 $ \c -> c {npcPaymentStatus = CPSUnpaid}
-  forM_ [reserved, long, unpaid] $ \c -> register ctx c old `shouldReturn` nameTermsChanged fakeGeneralTermsText Nothing
+  forM_ [reserved, long, unpaid] $ \c -> register ctx c old `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
-  register ctx code old `shouldReturn` nameTermsChanged fakeGeneralTermsText Nothing
+  register ctx code old `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   setFault node "eth_call" HttpFailure
-  register ctx code old `shouldReturn` nameRefusedWith 503 "name_check_unavailable"
+  register ctx code old `shouldReturn` refusedWith 503 "name_check_unavailable"
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
 testCodeOneFieldDiffers :: IO ()
@@ -1093,7 +1086,7 @@ testCodeOneFieldDiffers = withOrders $ \ctx -> do
           (code, aliceOrder {oCommitment = commitmentOf 2}),
           (other, aliceOrder)
         ]
-  forM_ variants $ \(c, o) -> register ctx c o `shouldReturn` nameRefusedWith 409 "order_exists"
+  forM_ variants $ \(c, o) -> register ctx c o `shouldReturn` refusedWith 409 "order_exists"
   -- the same fields as a paid order are another order
   placeOrder ctx aliceOrder `shouldReturn` refusedWith 409 "order_exists"
   pcReservedBy <$> readCode ctx otherCode `shouldReturn` Nothing
@@ -1102,11 +1095,11 @@ testCodeOneFieldDiffers = withOrders $ \ctx -> do
 testCodeBadSignature :: IO ()
 testCodeBadSignature = withOrders $ \ctx -> do
   (code, issued) <- issueCode ctx 8 2 id
-  register ctx code aliceOrder {oKey = keyB} `shouldReturn` nameRefusedWith 400 "bad_request"
+  register ctx code aliceOrder {oKey = keyB} `shouldReturn` refusedWith 400 "bad_request"
   good <- signedCodeBody ctx code aliceOrder
-  postRegister ctx (inOrder (KM.delete "signature") good) `shouldReturn` nameRefusedWith 400 "bad_request"
+  postRegister ctx (inOrder (KM.delete "signature") good) `shouldReturn` refusedWith 400 "bad_request"
   unknown <- unissuedCode ctx 8
-  register ctx unknown aliceOrder {oKey = keyB} `shouldReturn` nameRefusedWith 400 "code_invalid"
+  register ctx unknown aliceOrder {oKey = keyB} `shouldReturn` refusedWith 400 "code_invalid"
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
@@ -1114,10 +1107,10 @@ testCodeMeetsInvoice :: IO ()
 testCodeMeetsInvoice = withOrders $ \ctx -> do
   (code, issued) <- issueCode ctx 8 2 id
   void $ placed ctx aliceOrder
-  register ctx code aliceOrder `shouldReturn` nameRefusedWith 409 "order_exists"
-  register ctx code aliceOrder {oCommitment = commitmentOf 2} `shouldReturn` nameRefusedWith 409 "order_exists"
+  register ctx code aliceOrder `shouldReturn` refusedWith 409 "order_exists"
+  register ctx code aliceOrder {oCommitment = commitmentOf 2} `shouldReturn` refusedWith 409 "order_exists"
   -- another wallet sending the open order's commitment
-  register ctx code aliceOrder {oOwner = ownerBText, oKey = keyB} `shouldReturn` nameRefusedWith 409 "order_exists"
+  register ctx code aliceOrder {oOwner = ownerBText, oKey = keyB} `shouldReturn` refusedWith 409 "order_exists"
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   length <$> registrationsOf ctx ownerA `shouldReturn` 1
   length <$> registrationsOf ctx ownerB `shouldReturn` 0
@@ -1131,7 +1124,7 @@ testCodeClosesOverdue = withOrders $ \ctx -> do
   advance ctx (61 * 60)
   now <- readIORef (cClock ctx)
   let next = aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now}
-  register ctx short next `shouldReturn` nameRefusedWith 409 "code_not_covering"
+  register ctx short next `shouldReturn` refusedWith 409 "code_not_covering"
   orderLive <$> invoiceRegistration ctx oldInv `shouldReturn` True
   rid <- registered ctx code next
   Just oldRow <- getInvoice (cStore ctx) oldInv
@@ -1147,22 +1140,22 @@ testCodeRefusals = withOrders $ \ctx@Ctx {cStore} -> do
   unknown <- unissuedCode ctx 8
   let typo = T.init unknown <> (if T.last unknown == '0' then "1" else "0")
       ownerCode = "SN-DWPHS-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5"
-  forM_ [unknown, typo, ownerCode, "not a code"] $ \c -> register ctx c aliceOrder `shouldReturn` nameRefusedWith 400 "code_invalid"
+  forM_ [unknown, typo, ownerCode, "not a code"] $ \c -> register ctx c aliceOrder `shouldReturn` refusedWith 400 "code_invalid"
   (reserved, reservedCode) <- issueCode ctx 8 2 id
   placeCode cStore "holder" ownerB (order "holderone" 1) reservedCode `shouldReturn` Right ()
   reservedAnswer <- register ctx reserved aliceOrder
-  reservedAnswer `shouldBe` nameRefusedWith 409 "code_reserved"
+  reservedAnswer `shouldBe` refusedWith 409 "code_reserved"
   answerFixture "register-code-reserved" reservedAnswer
   (expired, _) <- issueCode ctx 8 2 $ \c -> c {npcExpiresAt = Just orderTime}
-  register ctx expired aliceOrder `shouldReturn` nameRefusedWith 409 "code_expired"
+  register ctx expired aliceOrder `shouldReturn` refusedWith 409 "code_expired"
   (unpaid, _) <- issueCode ctx 8 2 $ \c -> c {npcPaymentStatus = CPSUnpaid}
-  register ctx unpaid aliceOrder `shouldReturn` nameRefusedWith 409 "payment_pending"
+  register ctx unpaid aliceOrder `shouldReturn` refusedWith 409 "payment_pending"
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
 testCodeYears :: IO ()
 testCodeYears = withOrders $ \ctx -> do
   (code, _) <- issueCode ctx 8 5 id
-  register ctx code aliceOrder `shouldReturn` nameRefusedWith 400 "bad_request"
+  register ctx code aliceOrder `shouldReturn` refusedWith 400 "bad_request"
   rid <- registered ctx code aliceOrder {oDuration = yearsDuration 5 orderTime}
   (nrYears &&& nrDuration) <$> registrationById ctx rid `shouldReturn` (5, yearsDuration 5 orderTime)
 
@@ -1171,7 +1164,7 @@ testCommunityCodeYears = withOrders $ \ctx0 -> withSettings (listName "dynamis")
   listOnChain ctx "dynamis"
   (code, _) <- issueCode ctx 7 5 id
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oTerms = communityTerms}
-  register ctx code dynamis {oDuration = yearsDuration 5 orderTime} `shouldReturn` nameRefusedWith 400 "bad_request"
+  register ctx code dynamis {oDuration = yearsDuration 5 orderTime} `shouldReturn` refusedWith 400 "bad_request"
   rid <- registered ctx code dynamis
   (nrYears &&& nrDuration) <$> registrationById ctx rid `shouldReturn` (5, yearsDuration 2 orderTime)
 
@@ -1182,14 +1175,14 @@ testCodeNameChecks = withOrders $ \ctx@Ctx {cNode = node} -> do
   let unreserved = pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
   taken <- register ctx code aliceOrder
-  taken `shouldBe` nameRefusedWith 409 "name_taken"
+  taken `shouldBe` refusedWith 409 "name_taken"
   answerFixture "register-name-taken" taken
-  register ctx long aliceOrder `shouldReturn` nameRefusedWith 409 "name_taken"
+  register ctx long aliceOrder `shouldReturn` refusedWith 409 "name_taken"
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   unreserved
   setFault node "eth_call" HttpFailure
-  register ctx code aliceOrder `shouldReturn` nameRefusedWith 503 "name_check_unavailable"
-  register ctx long aliceOrder `shouldReturn` nameRefusedWith 503 "name_check_unavailable"
+  register ctx code aliceOrder `shouldReturn` refusedWith 503 "name_check_unavailable"
+  register ctx long aliceOrder `shouldReturn` refusedWith 503 "name_check_unavailable"
   unreserved
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
   clearFault node "eth_call"
@@ -1199,15 +1192,15 @@ testCodeSizes :: IO ()
 testCodeSizes = withOrders $ \ctx -> do
   (code, _) <- issueCode ctx 8 2 id
   padded <- KM.insert "padding" (J.String $ T.replicate 16384 "a") <$> signedCodeBody ctx code aliceOrder
-  postRegister ctx padded `shouldReturn` nameRefusedWith 400 "bad_request"
+  postRegister ctx padded `shouldReturn` refusedWith 400 "bad_request"
   good <- signedCodeBody ctx code aliceOrder
   let with k v = KM.insert k v good
       withField k v = inFields (KM.insert k v) good
   forM_ [KM.delete "code" good, with "code" (J.Number 8), withField "labelHash" (J.String "0x1234")] $ \body ->
-    postRegister ctx body `shouldReturn` nameRefusedWith 400 "bad_request"
-  forM_ ["[]", "{"] $ \body -> post ctx "/api/name/register" body `shouldReturn` nameRefusedWith 400 "bad_request"
+    postRegister ctx body `shouldReturn` refusedWith 400 "bad_request"
+  forM_ ["[]", "{"] $ \body -> post ctx "/api/name/register" body `shouldReturn` refusedWith 400 "bad_request"
   -- the formats and the length come before the code
-  forM_ [5, 64] $ \len -> postRegister ctx (KM.insert "code" "not a code" $ withField "length" (J.Number len)) `shouldReturn` nameRefusedWith 400 "invalid_name"
+  forM_ [5, 64] $ \len -> postRegister ctx (KM.insert "code" "not a code" $ withField "length" (J.Number len)) `shouldReturn` refusedWith 400 "invalid_name"
   longest <- signedCodeBody ctx code aliceOrder {oSealed = T.replicate 11095 "a"}
   LB.length (J.encode longest) `shouldSatisfy` (< 16384)
   fst <$> postRegister ctx longest `shouldReturn` 200
@@ -1227,7 +1220,7 @@ testConcurrentCodeOrders = withOrders $ \ctx -> do
   wait holder
   (a, b) <- wait orders
   sort [fst a, fst b] `shouldBe` [200, 409]
-  filter ((== 409) . fst) [a, b] `shouldBe` [nameRefusedWith 409 "code_reserved"]
+  filter ((== 409) . fst) [a, b] `shouldBe` [refusedWith 409 "code_reserved"]
   [(_, winner)] <- pure $ filter ((== 200) . fst) [a, b]
   pcReservedBy <$> readCode ctx issued `shouldReturn` Just (RegistrationId $ textOf "registrationId" winner)
   length <$> registrationsOf ctx ownerA `shouldReturn` 1

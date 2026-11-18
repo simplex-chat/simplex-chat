@@ -82,7 +82,7 @@ BUILD_CHANGES = {
     ],
 }
 SCOPE_CHANGES = {
-    "badge-web": ["apps/simplex-store-service/web/**"],
+    "badge-web": ["apps/simplex-store-service/web/**", "tests/fixtures/api/store/**"],
     "ci-scripts": ["scripts/ci/packages_release.py", "scripts/ci/test_packages_release.py"],
     "website": ["website/src/js/simplex-lib.jsc", "website/test/**", "website/package.json"],
     "mcp": ["packages/simplex-chat-mcp/**"],

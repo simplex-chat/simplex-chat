@@ -38,7 +38,6 @@ module Bots.StoreService.WebTests
     phaseValue,
     answerOf,
     refusedWith,
-    nameRefusedWith,
     storeFixture,
     responseFixture,
     answerFixture,
@@ -1256,7 +1255,7 @@ buildHash :: FilePath
 buildHash = "d95503da54ee228f"
 
 notFoundBody :: LB.ByteString
-notFoundBody = "{\"error\":\"not_found\"}"
+notFoundBody = "{\"type\":\"not_found\"}"
 
 prepareStaticDir :: FilePath -> IO FilePath
 prepareStaticDir root = do
@@ -1560,10 +1559,7 @@ answerOf :: J.FromJSON a => Response LB.ByteString -> (Int, Maybe a)
 answerOf r = (statusOf r, J.decode (responseBody r))
 
 refusedWith :: Int -> Text -> (Int, Maybe J.Object)
-refusedWith status tag = (status, Just $ KM.fromList [("error", J.String tag)])
-
-nameRefusedWith :: Int -> Text -> (Int, Maybe J.Object)
-nameRefusedWith status tag = (status, Just $ KM.fromList [("type", J.String tag)])
+refusedWith status tag = (status, Just $ KM.fromList [("type", J.String tag)])
 
 storeFixture :: String -> Int -> Maybe J.Value -> Maybe ByteString -> IO ()
 storeFixture name status body retryAfter =
@@ -1873,7 +1869,7 @@ testReadRateLimit = bounded "read rate limit" $ withWebApp $ \_ client -> do
   allowed `shouldSatisfy` all (== 404)
   refused <- webGet client target
   statusOf refused `shouldBe` 429
-  responseBody refused `shouldBe` "{\"error\":\"rate_limited\"}"
+  responseBody refused `shouldBe` "{\"type\":\"rate_limited\"}"
   case headerOf refused "Retry-After" >>= (readMaybe . BC.unpack) of
     Just seconds -> seconds `shouldSatisfy` \s -> s >= (1 :: Int) && s <= 60
     Nothing -> expectationFailure ("Retry-After is " <> show (headerOf refused "Retry-After"))
@@ -2077,7 +2073,7 @@ testHandlerExceptionIsContained = bounded "handler exception" $ withWebAppExpect
   breakStore (weStore env)
   r <- webGet client (invoicePath iid)
   statusOf r `shouldBe` 500
-  responseBody r `shouldBe` "{\"error\":\"internal\"}"
+  responseBody r `shouldBe` "{\"type\":\"internal\"}"
   headerOf r hCacheControl `shouldBe` Just "no-store"
   shell <- webGet client "/"
   statusOf shell `shouldBe` 200
@@ -2194,7 +2190,7 @@ stringField o k = case fieldOf o k of
   other -> failWith (T.unpack k <> " is " <> show other)
 
 errorBody :: Text -> LB.ByteString
-errorBody code = "{\"error\":\"" <> LB.pack (T.unpack code) <> "\"}"
+errorBody code = "{\"type\":\"" <> LB.pack (T.unpack code) <> "\"}"
 
 testCreateInvoice :: IO ()
 testCreateInvoice = bounded "create invoice" $ withCheckout $ \ref env client -> do
@@ -2295,6 +2291,7 @@ testCatalogRefusalCostsNothing = bounded "catalog refusals" $ withCheckout $ \re
         r <- postCreateAs client i (createBody priceId offerId "btc" (codeHashText sampleCode))
         (label, statusOf r) `shouldBe` (label, 400)
         (label, responseBody r) `shouldBe` (label, errorBody "catalog_changed")
+        when (i == 30) $ responseFixture "invoice-catalog-changed" r
     )
     (zip [30 ..] cases)
   stubCalls ref `shouldReturn` []
@@ -2309,6 +2306,7 @@ testCodeConflictCostsNothing = bounded "code conflict" $ withCheckout $ \ref env
   again <- postCreateAs client 2 (createBody supporterPriceId Nothing "btc" (codeHashText sampleCode))
   statusOf again `shouldBe` 409
   responseBody again `shouldBe` errorBody "code_conflict"
+  responseFixture "invoice-code-conflict" again
   stubCalls ref `shouldReturn` sold
   invoiceCount (weStore env) `shouldReturn` 1
 
@@ -2345,6 +2343,7 @@ testStoreLostAfterTheProviderCreated = bounded "orphan at the provider" $ do
     r <- postCreateAs client 1 (createBody supporterPriceId Nothing "btc" (codeHashText sampleCode))
     statusOf r `shouldBe` 500
     responseBody r `shouldBe` errorBody "internal"
+    responseFixture "invoice-internal" r
     headerOf r hCacheControl `shouldBe` Just "no-store"
     length <$> stubCalls ref `shouldReturn` 1
     invoiceCount (weStore env) `shouldReturn` 0
@@ -2394,6 +2393,7 @@ testOversizedBodyCostsNothing = bounded "oversized body" $ withCheckout $ \ref e
   r <- postCreateAs client 1 padded
   statusOf r `shouldBe` 400
   responseBody r `shouldBe` errorBody "bad_request"
+  responseFixture "invoice-bad-request" r
   stubCalls ref `shouldReturn` []
   invoiceCount (weStore env) `shouldReturn` 0
   small <- postCreateAs client 2 (J.encode (J.object ["priceId" .= supporterPriceId, "method" .= ("btc" :: Text), "codeHash" .= codeHashText sampleCode, "padding" .= T.replicate 16 "x"]))
@@ -2404,6 +2404,7 @@ testCardUnconfigured503 = bounded "card is unavailable" $ withCheckout $ \ref en
   r <- postCreateAs client 1 (createBody supporterPriceId Nothing "card" (codeHashText sampleCode))
   statusOf r `shouldBe` 503
   responseBody r `shouldBe` errorBody "provider_unavailable"
+  responseFixture "invoice-provider-unavailable" r
   stubCalls ref `shouldReturn` []
   invoiceCount (weStore env) `shouldReturn` 0
 
@@ -2536,6 +2537,7 @@ testCreateRateLimit = bounded "create rate limit" $ withCheckoutProvider distinc
   refused <- attempt (createsPerMinute + 1)
   statusOf refused `shouldBe` 429
   responseBody refused `shouldBe` errorBody "rate_limited"
+  storeFixture "invoice-rate-limited" (statusOf refused) (J.decode $ responseBody refused) Nothing
   headerOf refused hCacheControl `shouldBe` Just "no-store"
   case headerOf refused "Retry-After" >>= (readMaybe . BC.unpack) of
     Just seconds -> seconds `shouldSatisfy` \s -> s >= (1 :: Int) && s <= 60
@@ -4216,6 +4218,7 @@ testCancelIsRefusedOnceItIsNotOpen = bounded "cancel not open" $ withCancel $ \r
   r <- webPost client (cancelPath iid)
   statusOf r `shouldBe` 409
   responseBody r `shouldBe` errorBody "not_open"
+  responseFixture "cancel-not-open" r
   stubCalls ref `shouldReturn` []
   reread <- webGet client (invoicePath iid)
   ao <- jsonObject reread
@@ -4236,6 +4239,7 @@ testCancelIsOpaqueForAnUnknownInvoice = bounded "cancel unknown" $ withCancel $ 
   r <- webPost client "/api/invoice/no-such-invoice/cancel"
   statusOf r `shouldBe` 404
   responseBody r `shouldBe` notFoundBody
+  responseFixture "cancel-not-found" r
   stubCalls ref `shouldReturn` []
 
 testCancelRefusesOtherMethods :: IO ()
@@ -4243,6 +4247,7 @@ testCancelRefusesOtherMethods = bounded "cancel verb" $ withCancel $ \_ _ client
   r <- webGet client (cancelPath (niInvoiceId sampleInvoice))
   statusOf r `shouldBe` 405
   headerOf r "Allow" `shouldBe` Just "POST"
+  responseFixture "cancel-method-not-allowed" r
 
 testExpireOverdueSparesAFundedInvoice :: IO ()
 testExpireOverdueSparesAFundedInvoice = withServiceStore $ \st -> do
@@ -4279,6 +4284,7 @@ testCancelIsRefusedOnceItIsFunded = bounded "cancel funded" $ withCancel $ \ref 
   r <- webPost client (cancelPath iid)
   statusOf r `shouldBe` 409
   responseBody r `shouldBe` errorBody "funded"
+  responseFixture "cancel-funded" r
   stubCalls ref `shouldReturn` []
   reread <- webGet client (invoicePath iid)
   ao <- jsonObject reread

@@ -51,7 +51,7 @@ import StoreService.Names.Orders
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), orderMessage, spendMessage)
 import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
-import StoreService.Names.View (NameRefusal (..), balanceView, legacyRefusalResponse, refusalResponse, registrationView)
+import StoreService.Names.View (NameRefusal (..), balanceView, refusalResponse, registrationView)
 import StoreService.Orders (cancelNameInvoices, publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId)
@@ -94,16 +94,13 @@ refusalAnswer :: NameRefusal -> Answer
 refusalAnswer r = Answer {aResponse = Left r, aAfter = pure ()}
 
 sendAnswer :: Respond -> Answer -> IO ResponseReceived
-sendAnswer = sendAnswerWith refusalResponse
-
-sendAnswerWith :: (NameRefusal -> Response) -> Respond -> Answer -> IO ResponseReceived
-sendAnswerWith refusal respond Answer {aResponse, aAfter} = aAfter >> respond (either refusal id aResponse)
+sendAnswer respond Answer {aResponse, aAfter} = aAfter >> respond (either refusalResponse id aResponse)
 
 -- | POST /api/invoice for a name, its body already read and its kind checked.
 nameInvoiceHandler :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
 nameInvoiceHandler env@OrdersEnv {oeStore} http client cfg providers waiters body respond
-  | nCodesOnly (oeConfig env) = sendAnswerWith legacyRefusalResponse respond =<< refuse ORCodesOnly
-  | otherwise = sendAnswerWith legacyRefusalResponse respond =<< case parseBody "order" (J.Object body) >>= invoiceOrder of
+  | nCodesOnly (oeConfig env) = sendAnswer respond =<< refuse ORCodesOnly
+  | otherwise = sendAnswer respond =<< case parseBody "order" (J.Object body) >>= invoiceOrder of
     Left refusal -> refuse refusal
     Right (req, method, price) ->
       answerOrder env what req (OTInvoice method price) (resentOrder env cfg) (newOrder req method price)

@@ -12,7 +12,7 @@ import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, com
 import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, ownerA)
-import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, nameRefusedWith, phaseFieldOf, phaseOf, statusOf, webGet, webRequestBody)
+import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, refusedWith, phaseFieldOf, phaseOf, statusOf, webGet, webRequestBody)
 import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM
@@ -196,7 +196,7 @@ accepted :: (Int, Maybe J.Object)
 accepted = (200, Just KM.empty)
 
 badRequest :: (Int, Maybe J.Object)
-badRequest = nameRefusedWith 400 "bad_request"
+badRequest = refusedWith 400 "bad_request"
 
 stored :: Ctx -> RegistrationId -> IO NameRegistration
 stored Ctx {cStore} rid = withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
@@ -289,7 +289,7 @@ testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> 
   acceptance <- signAcceptance ctx keyA True fakeCommunityTerms 2
   let body = withAcceptance acceptance $ bodyOf sig alice 0 revealBefore
       unavailable = do
-        reveal ctx rid body `shouldReturn` nameRefusedWith 503 "provider_unavailable"
+        reveal ctx rid body `shouldReturn` refusedWith 503 "provider_unavailable"
         nrReveal <$> stored ctx rid `shouldReturn` Nothing
   answerCall cNode fakeNamePolicy noncesCall $ Reverts ""
   unavailable
@@ -466,7 +466,7 @@ testSecondLink = withReveals $ \Fx {fCtx = ctx} -> do
 testStateAndFormat :: IO ()
 testStateAndFormat = withReveals $ \Fx {fCtx = ctx@Ctx {cClock}} -> do
   body <- ownerBody ctx alice
-  reveal ctx (RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g") body `shouldReturn` nameRefusedWith 404 "not_found"
+  reveal ctx (RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g") body `shouldReturn` refusedWith 404 "not_found"
   NameRegistration {nrId = rid} <- paidOrder ctx (orderOf alice)
   reveal ctx rid body `shouldReturn` badRequest
   _ <- change ctx rid $ \r -> r {nrPhase = OCommitted openWindow}
@@ -507,7 +507,7 @@ testNonceUnavailable = withReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
   unchanged <- unwritten <$> stored ctx rid
   body <- ownerBody ctx alice
   setFault cNode "eth_call" HttpFailure
-  reveal ctx rid body `shouldReturn` nameRefusedWith 503 "provider_unavailable"
+  reveal ctx rid body `shouldReturn` refusedWith 503 "provider_unavailable"
   clearFault cNode "eth_call"
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   reveal ctx rid body `shouldReturn` accepted

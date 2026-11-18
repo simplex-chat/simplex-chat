@@ -8,7 +8,7 @@ module Bots.StoreService.NamesRecordsTests (namesRecordsTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (alice, gracePeriod, minPriceCentsPerYear, otherResolver, registry)
 import Bots.StoreService.NamesStoreTests (t0)
-import Bots.StoreService.WebTests (bounded, nameRefusedWith, storeFixture, withServiceStore)
+import Bots.StoreService.WebTests (bounded, refusedWith, storeFixture, withServiceStore)
 import qualified Bots.StoreService.WebTests as WT
 import Bots.StoreService.WebUIMock (EphemeralWallet (..), newEphemeralWallet, walletFromCode)
 import Control.Concurrent.Async (Async, async, concurrently, wait)
@@ -853,10 +853,10 @@ yearSeconds = 365 * 86400
 testHttp :: TVar ChaChaDRG -> IO ()
 testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
   let editBody value = J.encode $ requestOf [editFields [("key", J.String channelKind), ("value", J.String value)]]
-  post "[]" `shouldReturn` (nameRefusedWith 400 "bad_request", Nothing)
+  post "[]" `shouldReturn` (refusedWith 400 "bad_request", Nothing)
   post (editBody "https://x/a") `shouldReturn` ((400, Just $ KM.fromList [("type", "invalid_link"), ("kind", J.Null)]), Nothing)
   let overCap = KM.insert "pad" (J.String $ T.replicate maxBodyBytes "a") $ requestOf [editFields [("key", J.String channelKind), ("value", J.String viemChannelLink)]]
-  post (J.encode overCap) `shouldReturn` (nameRefusedWith 400 "bad_request", Nothing)
+  post (J.encode overCap) `shouldReturn` (refusedWith 400 "bad_request", Nothing)
   editRows s `shouldReturn` 0
   answer <- async $ post $ editBody viemChannelLink
   TxHash (Hex32 h) <- mineSent s 1 True
@@ -864,7 +864,7 @@ testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post 
   setNonce s 1
   next <- async . post . J.encode . editJson =<< signEdit s (owner s) (channel "https://smp9.simplex.im/c#next") 1 deadline
   _ <- mineSent s 2 False
-  bounded "the edit's answer" (wait next) `shouldReturn` (nameRefusedWith 409 "record_reverted", Nothing)
+  bounded "the edit's answer" (wait next) `shouldReturn` (refusedWith 409 "record_reverted", Nothing)
 
 testEditResponses :: IO ()
 testEditResponses = do
@@ -883,13 +883,13 @@ testEditResponses = do
   forM_ (zip answers parts) $ \((name, _), ((status, body), retryAfter)) -> storeFixture name status (J.Object <$> body) retryAfter
   parts
     `shouldBe` [ ((200, Just $ KM.fromList ["tx" .= tx]), Nothing),
-                 (nameRefusedWith 409 "record_reverted", Nothing),
-                 (nameRefusedWith 504 "edit_pending", Nothing),
-                 (nameRefusedWith 503 "provider_unavailable", Nothing),
+                 (refusedWith 409 "record_reverted", Nothing),
+                 (refusedWith 504 "edit_pending", Nothing),
+                 (refusedWith 503 "provider_unavailable", Nothing),
                  ((429, Just $ KM.fromList ["type" .= ("rate_limited" :: Text), "retryAfter" .= (3600 :: Int)]), Just "3600"),
                  ((409, Just $ KM.fromList ["type" .= ("edit_limit" :: Text), "nextAt" .= addUTCTime (fromIntegral yearSeconds) t0]), Nothing),
-                 (nameRefusedWith 400 "bad_request", Nothing),
-                 (nameRefusedWith 409 "stale_nonce", Nothing)
+                 (refusedWith 400 "bad_request", Nothing),
+                 (refusedWith 409 "stale_nonce", Nothing)
                ]
 
 -- | A response's status, JSON body and Retry-After, as withRecordsApp reads them over HTTP.

@@ -19,7 +19,7 @@ payTest("main: a repaint while the checkout is on the wire does not arm a second
   assert.equal(headingOf(inView()), "Check your order");
 
   const before = fetches.length;
-  page.respondWith({ status: 500, body: { error: "internal" } });
+  page.respondWith({ status: 500, body: { type: "internal" } });
   inView().all("button.primary")[0]!.click();
 
   // No await here, so the POST stays on the wire while Back and Continue rebuild the Pay button without its disabled attribute.
