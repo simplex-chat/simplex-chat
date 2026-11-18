@@ -205,6 +205,7 @@ chatTypesDocsData =
     ((sti @JSONCIStatus) {typeName = "CIStatus"}, STUnion, "JCIS", [], "", ""),
     (ciQuoteType, STRecord, "", [], "", ""),
     (STI "AChatItem" [RecordTypeInfo "AChatItem" [FieldInfo "chatInfo" (ti "ChatInfo"), FieldInfo "chatItem" (ti "ChatItem")]], STRecord, "", [], "", ""),
+    (STI "AChatItemUpdate" [RecordTypeInfo "AChatItemUpdate" [FieldInfo "chatInfo" (ti "ChatInfo"), FieldInfo "chatItem" (ti "ChatItem"), FieldInfo "prevChatItem" (ti "ChatItem")]], STRecord, "", [], "", "Updated message, with the message before the update."),
     (STI "ACIReaction" [RecordTypeInfo "ACIReaction" [FieldInfo "chatInfo" (ti "ChatInfo"), FieldInfo "chatReaction" (ti "CIReaction")]], STRecord, "", [], "", ""),
     -- (STI "JSONObject" [], STRecord, "", [], "Arbitrary JSON object."),
     -- (STI "UTCTime" [], STRecord, "", [], "Timestampe in ISO8601 format as string."),

@@ -707,8 +707,8 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
 
 updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
 updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
-  ci' <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
-  toView $ CEvtChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci')
+  (ci, ci') <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
+  toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect msgDir (DirectChat ct) ci' ci)
 
 callStatusItemContent :: User -> Contact -> ChatItemId -> WebRTCCallStatus -> CM (Maybe ACIContent)
 callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
@@ -849,12 +849,11 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     -- TODO re-enable redirects with relay checks
     when (isJust redirect) $ do
       cxt <- chatStoreCxt
-      aci_ <- withStore $ \db -> do
-        liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
-        lookupChatItemByFileId db cxt user fileId
-      forM_ aci_ $ \aci -> do
-        cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci
+      upd_ <- withStore $ \db ->
+        updateFileChatItem db cxt user fileId $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
+      forM_ upd_ $ \upd -> do
+        cleanupACIFile $ updatedAChatItem upd
+        toView $ CEvtChatItemUpdated user upd
       throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
@@ -884,10 +883,10 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       pure $ all (ipAddressProtected netCfg) srvs
     relaysNotApproved :: [XFTPServer] -> CM ()
     relaysNotApproved unknownSrvs = do
-      aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
-      forM_ aci_ $ \aci -> do
-        cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci
+      upd_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+      forM_ upd_ $ \upd -> do
+        cleanupACIFile $ updatedAChatItem upd
+        toView $ CEvtChatItemUpdated user upd
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 cleanupACIFile :: AChatItem -> CM ()
@@ -910,15 +909,16 @@ protoServer' ServerCfg {server} = protoServer server
 getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getFastNetworkConfig
 
-resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItem)
+resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItemUpdate)
 resetRcvCIFileStatus user fileId ciFileStatus = do
   cxt <- chatStoreCxt
-  withStore $ \db -> do
-    liftIO $ do
-      updateCIFileStatus db user fileId ciFileStatus
-      updateRcvFileStatus db fileId FSNew
-      updateRcvFileAgentId db fileId Nothing
-    lookupChatItemByFileId db cxt user fileId
+  withStore $ \db -> updateFileChatItem db cxt user fileId $ resetRcvFile db user fileId ciFileStatus
+
+resetRcvFile :: DB.Connection -> User -> FileTransferId -> CIFileStatus 'MDRcv -> IO ()
+resetRcvFile db user fileId ciFileStatus = do
+  updateCIFileStatus db user fileId ciFileStatus
+  updateRcvFileStatus db fileId FSNew
+  updateRcvFileAgentId db fileId Nothing
 
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
@@ -3102,11 +3102,10 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
       let senderBlocked = case cd of
             CDGroupRcv _g _scope m -> memberBlocked m
             _ -> False
-          userReply = not senderBlocked && case cmToQuotedMsg chatMsgEvent of
+          userReply = case cmToQuotedMsg chatMsgEvent of
             Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
             _ -> False
-          userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
-       in pure (mentions', userMention')
+       in pure (mentions', userMentioned membership senderBlocked userReply mentions')
     memberChatStats :: Bool -> Maybe (Int, MemberAttention, Int)
     memberChatStats userMention = case cd of
       CDGroupRcv _g (Just scope) m ->

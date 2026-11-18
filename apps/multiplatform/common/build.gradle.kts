@@ -149,6 +149,7 @@ kotlin {
     val desktopTest by getting {
       dependencies {
         implementation(compose.desktop.currentOs)
+        implementation("org.jetbrains.compose.ui:ui-test:${rootProject.extra["compose.version"] as String}")
       }
     }
   }
@@ -163,6 +164,10 @@ android {
   }
   testOptions.targetSdk = 36
   lint.targetSdk = 36
+}
+
+tasks.withType<Test>().configureEach {
+  testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 }
 
 multiplatformResources {

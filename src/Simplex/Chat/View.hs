@@ -454,7 +454,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
     | testView && showReceipts ->
         ttyUser u [sShow (length chatItems) <> " message statuses updated"]
     | otherwise -> []
-  CEvtChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
+  CEvtChatItemUpdated u (AChatItemUpdate _ _ chat item _) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CEvtChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CEvtChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CEvtChatItemsDeleted u deletions byUser timed -> ttyUser u $ viewChatItemsDeleted (unmuted u) deletions byUser timed ts tz testView
@@ -2855,7 +2855,6 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CESimplexDomainNotReady domain (SDENameWarning w) -> [viewNameNotConnectable domain w]
     CESimplexDomainNotReady domain domainErr ->
       let notReady reason = [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
        in case domainErr of
