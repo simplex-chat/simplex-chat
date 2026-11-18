@@ -291,20 +291,18 @@ data TxHistory = TxHistory {thCommitTx :: Maybe TxHash, thRegisterTx :: Maybe Tx
 noHistory :: TxHistory
 noHistory = TxHistory {thCommitTx = Nothing, thRegisterTx = Nothing}
 
-data FailReason = FRSendsUsedUp | FRLinksRefused | FRRegistryRefused | FRSignatureRefused | FRMonthEnded | FRUnread
+data FailReason = FRSendsUsedUp | FRRegistryRefused | FRSignatureRefused | FRMonthEnded | FRUnread
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding FailReason where
   textEncode = \case
     FRSendsUsedUp -> "sends_used_up"
-    FRLinksRefused -> "links_refused"
     FRRegistryRefused -> "registry_refused"
     FRSignatureRefused -> "signature_refused"
     FRMonthEnded -> "month_ended"
     FRUnread -> "unread"
   textDecode = \case
     "sends_used_up" -> Just FRSendsUsedUp
-    "links_refused" -> Just FRLinksRefused
     "registry_refused" -> Just FRRegistryRefused
     "signature_refused" -> Just FRSignatureRefused
     "month_ended" -> Just FRMonthEnded
@@ -370,7 +368,7 @@ data NameRegistration = NameRegistration
     nrPrice :: USDCents,
     nrPayment :: OrderPayment,
     nrReveal :: Maybe NameReveal,
-    nrLinksRefusedAt :: Maybe UTCTime,
+    nrLinksRefused :: Maybe (UTCTime, LinkKind),
     nrHistory :: TxHistory,
     nrOrderHash :: OrderHash,
     nrMoves :: Int,
@@ -831,7 +829,7 @@ registrationColumns =
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
       r.closed_by, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used, r.agreed_terms, r.accept_terms,
-      r.accept_nonce, r.accept_signature, rs.registration_id, rsi.invoice_id, r.read_at
+      r.accept_nonce, r.accept_signature, rs.registration_id, rsi.invoice_id, r.read_at, r.links_refused_kind
   |]
 
 registrationFrom :: Query
@@ -853,15 +851,15 @@ type RegistrationRow =
     :. (USDCents, Maybe ServicePaymentMethod, Maybe Text, Maybe Int64, Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe UTCTime, Maybe FailReason)
     :. (Maybe InvoiceClose, OrderHash, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, USDCents, AgreedTerms, Maybe TermsHash)
-    :. (Maybe Int64, Maybe RecoverableSignature, Maybe Text, Maybe Text, UTCTime)
+    :. (Maybe Int64, Maybe RecoverableSignature, Maybe Text, Maybe Text, UTCTime, Maybe Text)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
   ( (rid, nrVersion, nrLabelHash, len, duration, nrOwner, nrCommitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
-      :. (closedBy, nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used, nrAgreedTerms, acceptTerms_)
-      :. (acceptNonce_, acceptSignature_, successor_, successorInvoice_, nrReadAt)
+      :. (closedBy, nrOrderHash, nrMoves, linksRefusedAt_, nrCreatedAt, nrUpdatedAt, source_, used, nrAgreedTerms, acceptTerms_)
+      :. (acceptNonce_, acceptSignature_, successor_, successorInvoice_, nrReadAt, linksRefusedKind_)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
     let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = word64 after, cmRevealBefore = word64 before}
@@ -904,6 +902,10 @@ toRegistration
           _ -> Left $ "name_registrations acceptance: " <> rid
         Right $ Just NameReveal {rvLabel, rvSecret, rvContactLink = nrContactLink, rvChannelLink = nrChannelLink, rvNonce = word64 nonce, rvDeadline = word64 deadline, rvSignature, rvAcceptance}
       _ -> Left $ "name_registrations reveal: " <> rid
+    nrLinksRefused <- case (linksRefusedAt_, linksRefusedKind_) of
+      (Nothing, Nothing) -> Right Nothing
+      (Just at, Just kind) -> (\k -> Just (at, k)) <$> note ("name_registrations links_refused_kind: " <> rid) (textDecode kind)
+      _ -> Left $ "name_registrations links refused: " <> rid
     pure
       NameRegistration
         { nrId = RegistrationId rid,
@@ -920,7 +922,7 @@ toRegistration
           nrPrice,
           nrPayment,
           nrReveal,
-          nrLinksRefusedAt,
+          nrLinksRefused,
           nrHistory = TxHistory {thCommitTx = commitTx, thRegisterTx = registerTx},
           nrOrderHash,
           nrMoves,
@@ -1028,7 +1030,7 @@ updateRegistration db r now = do
         SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, agreed_terms = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
           accept_terms = ?, accept_nonce = ?, accept_signature = ?, commit_tx = ?, commit_block = ?, register_tx = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
-          registered_at = ?, failed_at = ?, fail_reason = ?, closed_by = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
+          registered_at = ?, failed_at = ?, fail_reason = ?, closed_by = ?, live = ?, moves = ?, links_refused_at = ?, links_refused_kind = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
           AND (? = 0 OR (live = 1 AND NOT EXISTS (
             SELECT 1 FROM @name_registrations o
@@ -1040,13 +1042,13 @@ updateRegistration db r now = do
           :. (rvLabel <$> nrReveal, rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, rvSignature <$> nrReveal)
           :. (taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
           :. (commitTx, int64 <$> commitBlock, registerTx, int64 <$> revealAfter, int64 <$> revealBefore, int64 <$> expiresAt)
-          :. (registeredAt, failedAt, failReason, closedBy, BI live, nrMoves, nrLinksRefusedAt, now)
+          :. (registeredAt, failedAt, failReason, closedBy, BI live, nrMoves, fst <$> nrLinksRefused, textEncode . snd <$> nrLinksRefused :: Maybe Text, now)
           :. (rid, nrVersion, BI live, rid, nrCommitment, nrOwner, nrLabelHash)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
-    NameRegistration {nrMoves, nrLinksRefusedAt, nrHistory = TxHistory {thCommitTx, thRegisterTx}} = r
+    NameRegistration {nrMoves, nrLinksRefused, nrHistory = TxHistory {thCommitTx, thRegisterTx}} = r
     (commitBlock, revealAfter, revealBefore) = case phaseCommit nrPhase of
       Just Commit {cmTx, cmRevealAfter, cmRevealBefore} -> (txBlock <$> cmTx, Just cmRevealAfter, Just cmRevealBefore)
       Nothing -> (Nothing, Nothing, Nothing)
@@ -1085,7 +1087,7 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrPhase = OQueued,
         nrMoves = nrMoves r + 1,
         nrReveal = Nothing,
-        nrLinksRefusedAt = Nothing,
+        nrLinksRefused = Nothing,
         nrHistory = noHistory
       }
 

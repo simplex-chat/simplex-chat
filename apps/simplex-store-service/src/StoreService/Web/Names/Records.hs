@@ -43,7 +43,7 @@ recordsHandler rs req respond =
   readBoundedBody maxBodyBytes req >>= \case
     Just body | Just o <- J.decode body -> case editRequest o of
       Right edit -> relayEdit rs edit >>= \answer -> logged answer >> respond (editResponse answer)
-      Left EIInvalidLink -> respond $ refusalResponse NRInvalidLink
+      Left EIInvalidLink -> respond $ refusalResponse $ NRInvalidLink Nothing
       Left EIBadRequest -> respond $ refusalResponse NRBadRequest
     _ -> respond $ refusalResponse NRBadRequest
   where

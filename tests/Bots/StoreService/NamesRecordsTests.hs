@@ -854,7 +854,7 @@ testHttp :: TVar ChaChaDRG -> IO ()
 testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
   let editBody value = J.encode $ requestOf [editFields [("key", J.String channelKind), ("value", J.String value)]]
   post "[]" `shouldReturn` (nameRefusedWith 400 "bad_request", Nothing)
-  post (editBody "https://x/a") `shouldReturn` (nameRefusedWith 400 "invalid_link", Nothing)
+  post (editBody "https://x/a") `shouldReturn` ((400, Just $ KM.fromList [("type", "invalid_link"), ("kind", J.Null)]), Nothing)
   let overCap = KM.insert "pad" (J.String $ T.replicate maxBodyBytes "a") $ requestOf [editFields [("key", J.String channelKind), ("value", J.String viemChannelLink)]]
   post (J.encode overCap) `shouldReturn` (nameRefusedWith 400 "bad_request", Nothing)
   editRows s `shouldReturn` 0

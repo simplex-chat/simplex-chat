@@ -10,7 +10,7 @@ module StoreService.Names.Reveal
     RevealRequest (..),
     isRepeat,
     checkReveal,
-    linksValid,
+    refusedLink,
     intentOf,
   )
 where
@@ -21,6 +21,7 @@ import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
+import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
@@ -38,7 +39,7 @@ import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Registration (LinkKind (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, validLabel, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
 
-data RevealRefusal = RVBadRequest Text | RVInvalidLink | RVChainUnavailable
+data RevealRefusal = RVBadRequest Text | RVInvalidLink LinkKind | RVChainUnavailable
   deriving (Eq, Show)
 
 data RevealRequest = RevealRequest
@@ -102,10 +103,9 @@ checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistratio
 signatureSeconds :: Integer
 signatureSeconds = 7 * 86400
 
-linksValid :: NameReveal -> Bool
-linksValid NameReveal {rvContactLink, rvChannelLink} = all (ofKind LKContact) rvContactLink && all (ofKind LKChannel) rvChannelLink
-  where
-    ofKind kind link = (fst <$> nameLink link) == Just kind
+refusedLink :: NameReveal -> Maybe LinkKind
+refusedLink NameReveal {rvContactLink, rvChannelLink} =
+  listToMaybe [kind | (kind, Just link) <- [(LKContact, rvContactLink), (LKChannel, rvChannelLink)], (fst <$> nameLink link) /= Just kind]
 
 intentOf :: NamesConfig -> NameRegistration -> NameReveal -> RegisterIntent
 intentOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameRegistration {nrOwner, nrDuration} NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink, rvNonce, rvDeadline, rvSignature} =

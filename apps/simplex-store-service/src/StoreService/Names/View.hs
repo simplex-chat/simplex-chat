@@ -53,7 +53,7 @@ import StoreService.Names.Chain (ChainSeconds, Hex32 (..), TxHash (..), chainTim
 import StoreService.Names.Community (AcceptanceAsked, Community, TermsLink, communityOf, currentAcceptance)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
-import StoreService.Names.Registration (AgreedTerms (..), RegistrationId (..))
+import StoreService.Names.Registration (AgreedTerms (..), LinkKind, RegistrationId (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, heldBy, lateWait, paymentInvoice)
 import StoreService.Web.Http (apiHeaders)
 
@@ -94,7 +94,7 @@ data RegistrationView = RegistrationView
   { vwId :: Text,
     vwVersion :: Int64,
     vwMoves :: Int,
-    vwLinksRefused :: Bool,
+    vwLinksRefused :: Maybe LinkKind,
     vwPhase :: PhaseView,
     vwLabelHash :: Hex32,
     vwLabel :: Maybe Text,
@@ -132,7 +132,7 @@ $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False, J.fieldLabelModifier
 data NameRefusal
   = NRBadRequest
   | NRInvalidName
-  | NRInvalidLink
+  | NRInvalidLink {rfKind :: Maybe LinkKind}
   | NRNotFound
   | NRMethodNotAllowed
   | NRInternal
@@ -177,7 +177,7 @@ refusalWith body r = responseLBS status (retryAfterHeader <> apiHeaders) (J.enco
     status = case r of
       NRBadRequest -> status400
       NRInvalidName -> status400
-      NRInvalidLink -> status400
+      NRInvalidLink {} -> status400
       NRNotFound -> status404
       NRMethodNotAllowed -> status405
       NRInternal -> status500
@@ -252,7 +252,7 @@ toRegistrationView cfg r balance late phase =
     { vwId = rid,
       vwVersion = nrVersion,
       vwMoves = nrMoves,
-      vwLinksRefused = isJust nrLinksRefusedAt,
+      vwLinksRefused = snd <$> nrLinksRefused,
       vwPhase = phase,
       vwLabelHash = Hex32 lh,
       vwLabel = rvLabel <$> nrReveal,
@@ -273,7 +273,7 @@ toRegistrationView cfg r balance late phase =
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrLinksRefusedAt, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrReplacedBy} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrLinksRefused, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrReplacedBy} = r
 
 paidWith :: OrderPayment -> PaidWith
 paidWith = \case

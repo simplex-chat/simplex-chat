@@ -144,7 +144,7 @@ previewHandler ps req respond =
   readBoundedBody maxBodyBytes req >>= \case
     Just body | Just (J.Object o) <- J.decode body -> case JT.parseEither (.: "link") o of
       Right link | Just (kind, sl) <- nameLink link -> respond . jsonResponse status200 . J.toJSON =<< linkPreview ps kind sl
-      _ -> respond $ refusalResponse NRInvalidLink
+      _ -> respond $ refusalResponse $ NRInvalidLink Nothing
     _ -> respond $ refusalResponse NRBadRequest
 
 -- | The text of either current set of terms, by its hash, with its link; any other hash answers not_found.

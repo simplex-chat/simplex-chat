@@ -1732,7 +1732,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       { vwId = "r1",
         vwVersion = 1,
         vwMoves = 0,
-        vwLinksRefused = False,
+        vwLinksRefused = Nothing,
         vwPhase = PVUnpaid,
         vwLabelHash = Hex32 $ (\(LabelHash h) -> h) alice,
         vwLabel = Nothing,
@@ -1772,7 +1772,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
                  J.object ["type" .= ("registered" :: Text), "expiresAt" .= (3 :: Int)],
                  J.object ["type" .= ("failed" :: Text), "reason" .= ("registryRefused" :: Text)]
                ]
-  map J.toJSON [FRSendsUsedUp, FRLinksRefused] `shouldBe` ["sendsUsedUp", "linksRefused"]
+  map J.toJSON [FRSendsUsedUp, FRMonthEnded, FRUnread] `shouldBe` ["sendsUsedUp", "monthEnded", "unread"]
   map J.toJSON [PUnpaid, PClosed, PRegistered] `shouldBe` ["unpaid", "closed", "registered"]
 
 testViewStates :: IO ()
@@ -1807,7 +1807,7 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           <> KM.fromList
             [ ("id", "r1"),
               ("moves", J.Number 0),
-              ("linksRefused", J.Bool False),
+              ("linksRefused", J.Null),
               ("labelHash", J.String $ hex $ (\(LabelHash h) -> h) $ ofLabelHash o),
               ("label", "alicebakery"),
               ("owner", J.String ownerAText),

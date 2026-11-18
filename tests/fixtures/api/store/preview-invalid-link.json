@@ -1,5 +1,6 @@
 {
   "body": {
+    "kind": null,
     "type": "invalid_link"
   },
   "status": 400

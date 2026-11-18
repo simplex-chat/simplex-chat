@@ -1404,7 +1404,10 @@ commitment is live, logged once per order at error as `names worker: registratio
 register reverts while the name is available, …`; one still there after the commitment lapsed fails
 the order with the reason `registryRefused`. An order whose commitment lapses before its page signed
 it waits, and its page asks for a new commitment with `POST /api/registration/:id/retry`; one whose
-links were refused fails at the lapse with the reason `linksRefused`. An order waiting for its owner
+links were refused waits for its owner to replace or remove the refused link by a move, and the
+first refusal of a link is logged at warning and posted in the managed group as
+`names: registration <id>: its simplex.contact link was refused at its reveal, so its owner is asked to replace or remove it`.
+An order waiting for its owner
 fails with the reason `unread` once its page has not read it for 3 days, logged at note as
 `names worker: registration <id> failed: it waited for its owner, and its page has not read it since <time>`;
 a read of the order or of its invoice is stored at most once an hour.

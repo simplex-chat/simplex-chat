@@ -114,7 +114,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "judges a relay past the acceptance's deadline as a register past it, retrying it while the commitment is live" testAcceptanceExpired
     it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
   describe "lapse" $ do
-    it "keeps a committed order not revealed by revealBefore waiting for /retry, keeping its code, and ends one whose links were refused failed" testLapseFailed
+    it "keeps a committed order not revealed by revealBefore waiting, for /retry, or for a move when its links were refused, keeping its code" testLapseFailed
   describe "restart" $ do
     it "resumes every phase after a restart, a commit saved but not recorded included" testRestart
     it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
@@ -537,14 +537,14 @@ testLostRace = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
 
 testInNameTurn :: IO ()
 testInNameTurn = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
-  r <- paidIn ctx aliceOrder linksRefusedPhase
-  advance ctx $ day + 1
+  r <- paidIn ctx aliceOrder committedPhase
+  advance ctx $ 3 * day + 1
   holding <- newEmptyMVar
   release <- newEmptyMVar
   withAsync (withLabelTurn (oeTurns cOrders) (nrLabelHash r) $ putMVar holding () >> takeMVar release) $ \_ -> do
     takeMVar holding
     withAsync (steps w r) $ \stepping -> do
-      -- the lapse's write waits for the turn the holder has
+      -- the unread failure's write waits for the turn the holder has
       timeout prompt (atomically $ labelTurnCount (oeTurns cOrders) (nrLabelHash r) >>= check . (== 2)) >>= maybe (fail "the worker did not queue on the turn") pure
       stored ctx r `shouldReturn` r
       putMVar release ()
@@ -974,9 +974,8 @@ testLapseFailed = withWorker $ \w@W {wCtx = ctx} -> do
   steps w r >>= waitingUntil >>= (`shouldBe` addUTCTime 60 now)
   stored ctx r `shouldReturn` r
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
-  published w refused (steps w refused) >>= done
-  x <- stored ctx refused
-  (nrPhase x, nrHistory x, orderLive x) `shouldBe` (OFailed now FRLinksRefused, nrHistory refused, True)
+  steps w refused >>= waitingUntil >>= (`shouldBe` addUTCTime 60 now)
+  stored ctx refused `shouldReturn` refused
   sent w `shouldReturn` []
 
 testRestart :: IO ()

@@ -346,7 +346,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrPrice = price,
         nrPayment = OPInvoice btc (InvoiceId "inv-r1"),
         nrReveal = Nothing,
-        nrLinksRefusedAt = Nothing,
+        nrLinksRefused = Nothing,
         nrHistory = noHistory,
         nrOrderHash = orderHash ownerA o (OTInvoice btc price),
         nrMoves = 0,
@@ -471,7 +471,7 @@ testVersionBumps = withServiceStore $ \st -> do
   write st r2 {nrPhase = OCommitted commitFixture} `shouldReturn` Written 3
   r3 <- reg st "r1"
   write st r3 {nrReveal = Just reveal} `shouldReturn` Written 4
-  write st r3 {nrLinksRefusedAt = Just (at 5)} `shouldReturn` VersionChanged
+  write st r3 {nrLinksRefused = Just (at 5, LKContact)} `shouldReturn` VersionChanged
   write st r1 {nrPhase = OFailed (at 5) FRRegistryRefused} `shouldReturn` VersionChanged
   r4 <- reg st "r1"
   (nrVersion r4, nrPhase r4, nrReveal r4) `shouldBe` (4, OCommitted commitFixture, Just reveal)
@@ -485,7 +485,7 @@ testRoundTrip = withServiceStore $ \st -> do
         r
           { nrPhase = OFailed (at 2) FRSendsUsedUp,
             nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = TermsAcceptance {taTermsHash = hashFixture 10, taNonce = 4, taSignature = signature}},
-            nrLinksRefusedAt = Just (at 4),
+            nrLinksRefused = Just (at 4, LKChannel),
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9},
             nrMoves = 2,
             nrAgreedTerms = agreed (communityTermsPrefix <> plainTerms)
@@ -575,7 +575,7 @@ testRetarget = withServiceStore $ \st -> do
         r
           { nrPhase = OFailed (at 5) FRRegistryRefused,
             nrReveal = Just reveal,
-            nrLinksRefusedAt = Just (at 4),
+            nrLinksRefused = Just (at 4, LKChannel),
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
           }
   write st failed `shouldReturn` Written 2

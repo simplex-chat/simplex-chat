@@ -340,6 +340,7 @@ CREATE TABLE @name_registrations(
   order_hash BYTEA NOT NULL,
   moves INTEGER NOT NULL DEFAULT 0,
   links_refused_at TIMESTAMPTZ,
+  links_refused_kind TEXT,
   paid_at TIMESTAMPTZ,
   unregistered_alerted_at TIMESTAMPTZ,
   read_at TIMESTAMPTZ NOT NULL,

@@ -341,6 +341,7 @@ CREATE TABLE @name_registrations(
   order_hash BLOB NOT NULL,
   moves INTEGER NOT NULL DEFAULT 0,
   links_refused_at TEXT,
+  links_refused_kind TEXT,
   paid_at TEXT,
   unregistered_alerted_at TEXT,
   read_at TEXT NOT NULL,

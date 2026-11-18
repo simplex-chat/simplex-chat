@@ -552,7 +552,7 @@ testPreviewInvalid :: TVar ChaChaDRG -> IO ()
 testPreviewInvalid g = withSearch g id id $ \s -> do
   let base = bakeryLink <> "?x="
       padded n = base <> T.replicate (n - T.length base) "a"
-      invalid = nameRefusedWith 400 "invalid_link"
+      invalid = (400, Just $ KM.fromList [("type", "invalid_link"), ("kind", J.Null)])
   fixtureOf "preview-invalid-link" (postPreview s $ J.encode $ J.object ["link" .= fullLink]) `shouldReturn` invalid
   forM_ ["hello", "", bakeryLink <> ";" <> bakeryLink, " " <> bakeryLink, taggedLink "smp8.simplex.im" 'g' "Y8m3", padded (linkMaxBytes + 1)] $ \l ->
     previewOf s l >>= \a -> (l, a) `shouldBe` (l, invalid)

@@ -41,7 +41,6 @@ import Data.Containers.ListUtils (nubOrd)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
-import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
@@ -250,7 +249,7 @@ commitSent w now r@NameRegistration {nrPhase} p
 -- | Waits for the page's reveal, past the lapse for /retry unless the links were refused, has its acceptance held by the name
 -- policy, waits for revealAfter, then registers.
 committed :: Worker -> UTCTime -> NameRegistration -> Commit -> IO Next
-committed w@Worker {wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrReveal, nrLinksRefusedAt, nrReadAt} c@Commit {cmRevealAfter} =
+committed w@Worker {wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrReveal, nrReadAt} c@Commit {cmRevealAfter} =
   inFlightTransaction wkSender (TxRegistration RTRegister regId) >>= \case
     Just p -> registerSent w now r c p
     Nothing -> case nrReveal of
@@ -260,9 +259,7 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId = regId@(Registration
             save w now r {nrPhase = OFailed now FRUnread}
         | otherwise -> case lapseMoment r of
             Just lapse | now <= lapse -> pure $ waitUntil r $ min unreadAt $ addUTCTime chainSecond lapse
-            _
-              | isJust nrLinksRefusedAt -> save w now r {nrPhase = OFailed now FRLinksRefused}
-              | otherwise -> pure $ waitUntil r $ min unreadAt $ addUTCTime maxWait now
+            _ -> pure $ waitUntil r $ min unreadAt $ addUTCTime maxWait now
       Just rv@NameReveal {rvAcceptance, rvDeadline} ->
         -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then decides
         (if unlapsed now c then relayAcceptance w now r c rvDeadline rvAcceptance else pure Nothing) >>= \case
@@ -455,11 +452,11 @@ data RetryRefusal = RFNotLapsed | RFLinksRefused | RFUnread | RFSendsUsedUp
 -- | /retry, in the caller's turn of the order's name: an order whose commitment lapsed unsigned is queued to be committed again,
 -- keeping its payment and its code.
 retryRegistration :: OrdersEnv -> NameRegistration -> IO Retried
-retryRegistration OrdersEnv {oeStore, oeNow} r@NameRegistration {nrId = RegistrationId rid, nrLinksRefusedAt} = do
+retryRegistration OrdersEnv {oeStore, oeNow} r@NameRegistration {nrId = RegistrationId rid, nrLinksRefused} = do
   now <- oeNow
   if not (lapsedAt now r)
     then pure $ RTRefused RFNotLapsed
-    else case nrLinksRefusedAt of
+    else case nrLinksRefused of
       -- its commitment fixes the refused links, so only another name can register
       Just _ -> pure $ RTRefused RFLinksRefused
       Nothing ->

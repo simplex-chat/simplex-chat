@@ -65,7 +65,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (Hex32 (..), TxHash (..), addressWord, hex, uint256)
 import StoreService.Names.Orders (OrdersEnv (..), movable, signedRequestSeconds)
-import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage)
+import StoreService.Names.Registration (LinkKind (..), OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage)
 import StoreService.Names.Store hiding (findLimit)
 import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
 import StoreService.Store (RevokeResult (..))
@@ -223,7 +223,7 @@ failedPhase, registeredPhase, committedPhase, linksRefusedPhase :: NameRegistrat
 failedPhase r = r {nrPhase = OFailed orderTime FRRegistryRefused}
 registeredPhase r = r {nrPhase = ORegistered (seconds orderTime + 3 * 31536000) orderTime}
 committedPhase r = r {nrPhase = OCommitted committedCommit}
-linksRefusedPhase r = r {nrPhase = OCommitted committedCommit, nrLinksRefusedAt = Just orderTime}
+linksRefusedPhase r = r {nrPhase = OCommitted committedCommit, nrLinksRefused = Just (orderTime, LKContact)}
 
 committedCommit :: Commit
 committedCommit = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealAfter = seconds orderTime + 60, cmRevealBefore = seconds orderTime + 86400}
@@ -379,9 +379,9 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
   move ctx keyA r to `shouldReturn` nameRefusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   let phases = [OUnpaid (InvoiceId "inv"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted committedCommit, ORegistering committedCommit (TxHash $ hashFixture 9), nrPhase r, OTaken, nrPhase (failedPhase r)]
-      movableWith at refused = [namePhase p | p <- phases, movable at r {nrPhase = p, nrLinksRefusedAt = refused}]
+      movableWith at refused = [namePhase p | p <- phases, movable at r {nrPhase = p, nrLinksRefused = refused}]
   movableWith orderTime Nothing `shouldBe` [PFailed]
-  movableWith orderTime (Just orderTime) `shouldBe` [PCommitted, PFailed]
+  movableWith orderTime (Just (orderTime, LKContact)) `shouldBe` [PCommitted, PFailed]
   movableWith (addUTCTime (86400 + 1) orderTime) Nothing `shouldBe` [PCommitted, PFailed]
 
 testMoveAccepted :: IO ()
@@ -399,7 +399,7 @@ testMoveAccepted = withOwner $ \ctx -> do
       ("price", J.Number 10000),
       ("moves", J.Number 1),
       ("version", J.toJSON $ nrVersion failedOrder + 1),
-      ("linksRefused", J.Bool False),
+      ("linksRefused", J.Null),
       ("label", J.Null),
       ("commitTx", J.Null)
     ]
@@ -409,7 +409,7 @@ testMoveAccepted = withOwner $ \ctx -> do
   refusedOrder <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} linksRefusedPhase
   sameName <- moveTo ctx "alicebakery" 11
   v2 <- moved ctx keyB refusedOrder sameName
-  fieldsIn v2 [("phase", phaseValue "queued" []), ("labelHash", labelHashText "alicebakery"), ("linksRefused", J.Bool False), ("commitTx", J.Null), ("moves", J.Number 1)]
+  fieldsIn v2 [("phase", phaseValue "queued" []), ("labelHash", labelHashText "alicebakery"), ("linksRefused", J.Null), ("commitTx", J.Null), ("moves", J.Number 1)]
   nrPhase <$> stored ctx refusedOrder `shouldReturn` OQueued
   -- a committed order with no reveal past revealBefore reads failed
   lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = seconds orderTime - 1}}

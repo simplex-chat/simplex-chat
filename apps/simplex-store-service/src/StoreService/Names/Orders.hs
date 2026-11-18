@@ -323,10 +323,10 @@ checkPrice ct len years price =
 
 -- | A failed order, one whose reveal was refused for its links, and one whose commitment lapsed unsigned can move to another name.
 movable :: UTCTime -> NameRegistration -> Bool
-movable now r@NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
+movable now r@NameRegistration {nrPhase, nrLinksRefused} = case nrPhase of
   OFailed _ FRMonthEnded -> False
   OFailed {} -> True
-  OCommitted _ -> isJust nrLinksRefusedAt || lapsedAt now r
+  OCommitted _ -> isJust nrLinksRefused || lapsedAt now r
   _ -> False
 
 readNoteSeconds :: NominalDiffTime
