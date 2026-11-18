@@ -125,7 +125,7 @@ data ChainConfig = ChainConfig
     -- | wei; no transaction is signed with a higher max fee per gas
     cMaxFeePerGas :: Word64
   }
-  deriving (Eq, Show)
+  deriving (Eq)
 
 data ChainClient = ChainClient
   { ccManager :: Manager,

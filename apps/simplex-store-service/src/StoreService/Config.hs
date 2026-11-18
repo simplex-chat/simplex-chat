@@ -188,7 +188,7 @@ data NamesConfig = NamesConfig
     nCommunity :: Map LabelHash Text,
     nChain :: ChainConfig
   }
-  deriving (Eq, Show)
+  deriving (Eq)
 
 data ServiceConfig = ServiceConfig
   { listener :: ListenerConfig,
@@ -210,7 +210,7 @@ data ServiceConfig = ServiceConfig
     -- Local testing only; credits a purchase the store itself calls a test, which no real buyer pays for.
     devCreditTestPurchases :: Bool
   }
-  deriving (Eq, Show)
+  deriving (Eq)
 
 defaultExpiryMinutes :: Int
 defaultExpiryMinutes = 60
