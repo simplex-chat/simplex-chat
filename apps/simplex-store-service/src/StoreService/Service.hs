@@ -45,7 +45,7 @@ where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), GroupConfig (..), ListenerConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
-import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, runCmd, runGroupLane)
+import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, joinerAcceptance, refreshTracker, reportToGroup, runCmd, runGroupLane)
 import StoreService.Group.Command (CmdSource (..), MoneyCmd (..), consoleCmd, spelledCmd)
 import StoreService.Metrics (MetricsEnv (..), runMetrics)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
@@ -278,7 +278,7 @@ storeService opts serviceCfg baseCfg env = do
               | isJust groupCfg -> forM_ (groupEvent ev) $ atomically . writeTQueue (groupEventQ env)
             _ -> pure ()
       startLanes cc = do
-        lanes <- maybe (pure []) (serviceLanes waiters turns cc) serviceCfg
+        lanes <- maybe (pure []) (serviceLanes waiters turns (reportToGroup trackerQ_) cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
         groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc turns (gNameCodesPerDay gc <$ names_) (runMoneyCmd FromGroup turns contracts_ cc) (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ requestEnv : maybeToList groupLane_ <> lanes
@@ -293,8 +293,8 @@ storeService opts serviceCfg baseCfg env = do
   -- The reader runs from the start and must not block, since outputQ carries every chat event and a full queue stalls the core.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
   where
-    serviceLanes :: Waiters -> Turns -> ChatController -> ServiceConfig -> IO [IO ()]
-    serviceLanes ws turns cc@ChatController {chatStore} sc = do
+    serviceLanes :: Waiters -> Turns -> (T.Text -> IO ()) -> ChatController -> ServiceConfig -> IO [IO ()]
+    serviceLanes ws turns report cc@ChatController {chatStore} sc = do
       -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
@@ -305,7 +305,7 @@ storeService opts serviceCfg baseCfg env = do
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       nameLanes <- maybe (pure []) namesLanes namesEnv
-      let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map pProvider providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = neContracts <$> namesEnv}
+      let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map pProvider providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = neContracts <$> namesEnv, meReport = report}
           metricsLane = [runMetrics (listener sc) port metricsEnv | Just port <- [lMetricsPort $ listener sc]]
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes <> metricsLane
 

@@ -8,8 +8,8 @@ import Bots.StoreService.NamesContractsTests (minPriceCentsPerYear)
 import Bots.StoreService.NamesStoreTests (at, commitFixture, hashFixture, insertInvoiceRow, insertProviderInvoice, newEdit, newReg, order, ownerA, ownerB, paidOrder, price, reveal, setChannel, t0)
 import Bots.StoreService.WebTests (digestFixture, statusOf, webGet, webRequestBody, withApp, withServiceStore)
 import Control.Concurrent.Async (cancel)
-import Control.Concurrent.STM (TVar, newTVarIO, readTVarIO)
-import Control.Exception (SomeException, finally, try)
+import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO)
+import Control.Exception (finally)
 import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
@@ -60,16 +60,18 @@ storeMetricsTests = describe "StoreService: metrics" $ do
   it "reads the registrar's funds, the latest block and which terms texts are held, and keeps each part while a read fails" $ testChainRead g
   it "answers GET /metrics with the service metrics alone without names, and with the names metrics while the node holds the chain read" $ testScrape g
   it "counts live names and owned subnames by level and records, with their label lengths, and keeps the last read while one fails" $ testRegisteredNames g
-  it "ends when its port is taken, as a web listener does" testPortTaken
+  it "runs on when its port is taken, and reports the failure once" testPortTaken
 
 testPortTaken :: IO ()
 testPortTaken = withServiceStore $ \st -> Warp.testWithApplication (pure $ \_ respond -> respond $ responseLBS status404 [] "") $ \port -> do
   listedOk <- TM.emptyIO
   webhookAt <- TM.emptyIO
-  let env = MetricsEnv {meStore = st, meProviders = [], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}
+  reports <- newTVarIO []
+  let env = MetricsEnv {meStore = st, meProviders = [], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing, meReport = \r -> atomically $ modifyTVar' reports (r :)}
       lc = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesSite = Nothing, lTrustForwardedFor = False, lNamesSite = Nothing, lMetricsPort = Just port}
-  ended <- timeout 5000000 (try (runMetrics lc port env) :: IO (Either SomeException ()))
-  either (const True) (const False) <$> ended `shouldBe` Just True
+  ended <- timeout 2000000 (runMetrics lc port env)
+  isJust ended `shouldBe` False
+  map (T.isPrefixOf $ "store metrics: the listener on port " <> tshow port <> " failed") <$> readTVarIO reports `shouldReturn` [True]
 
 testRegisteredNames :: TVar ChaChaDRG -> IO ()
 testRegisteredNames g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -319,7 +321,7 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   webhookAt <- TM.emptyIO
   v <- newTVarIO noChainRead
   census <- newTVarIO noRegisteredNamesRead
-  let badgesOnly = MetricsEnv {meStore = st, meProviders = [PPCrypto], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}
+  let badgesOnly = MetricsEnv {meStore = st, meProviders = [PPCrypto], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing, meReport = \_ -> pure ()}
   withApp (metricsApp badgesOnly v census) $ \client -> do
     r <- webGet client "/metrics"
     (statusOf r, lookup hContentType (responseHeaders r)) `shouldBe` (200, Just "text/plain; version=0.0.4; charset=utf-8")

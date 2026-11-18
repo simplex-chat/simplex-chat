@@ -15,6 +15,7 @@ module StoreService.Group
     GroupEvent (..),
     GroupAction (..),
     groupEvent,
+    reportToGroup,
     hasTracker,
     refreshTracker,
     coalesceTrackerRefreshes,
@@ -200,6 +201,7 @@ strEncodeTxt = safeDecodeUtf8 . strEncode
 data GroupEvent
   = GEInGroup GroupId GroupAction
   | GETracker Int64 BadgeCode
+  | GEReport Text
   deriving (Eq, Show)
 
 data GroupAction
@@ -245,6 +247,10 @@ handleGroupEvent cc turns nameCodesPerDay_ runMoney groupId ev = logUncaught (ha
               ReplyText txt -> void $ sendGroupText cc groupId "command reply" txt
               IgnoreMsg -> pure ()
       GETracker badgeCodeId code -> updateTracker cc groupId badgeCodeId code
+      GEReport report -> void $ sendGroupText cc groupId "report" report
+
+reportToGroup :: Maybe (TQueue GroupEvent) -> Text -> IO ()
+reportToGroup q_ report = forM_ q_ $ \q -> atomically $ writeTQueue q $ GEReport report
 
 promoteFirstOwner :: ChatController -> GroupInfo -> GroupMember -> IO ()
 promoteFirstOwner cc g@GroupInfo {groupId, groupProfile} member =

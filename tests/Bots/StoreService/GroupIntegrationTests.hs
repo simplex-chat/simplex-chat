@@ -127,6 +127,7 @@ badgeGroupIntegrationTests = do
   it "ignores a command sent in a member support scope" testSupportScopeIgnored
   it "ignores a command sent as a live message" testLiveMessageIgnored
   it "ignores an event for another group" testOtherGroupEventIgnored
+  it "posts a service report in the group" testReportPosted
   it "issues a batch of redeemable single-use codes of the asked type and months on /bulk" testBulkIssue
   it "issues an /issue code for the months the command asked for" testIssueMonths
   it "answers a failed /issue or //issue without naming what failed in the store" testIssueFailureIsOpaque
@@ -1255,6 +1256,12 @@ testOtherGroupEventIgnored ps = do
     atomically $ writeTQueue (groupEventQ env) (GEInGroup (gid + 1) (GACommand GROwner "/issue legend"))
     awaitLane cc env
     queryColumn cc "SELECT badge_type FROM sx_badge_service_badge_codes" () `shouldReturn` ["supporter" :: Text]
+
+testReportPosted :: HasCallStack => TestParams -> IO ()
+testReportPosted ps =
+  withGroupOwner ps $ \_ _ env alice -> do
+    atomically $ writeTQueue (groupEventQ env) (GEReport "store metrics: the listener on port 9300 failed")
+    awaitOnConsole alice "store metrics: the listener on port 9300 failed"
 
 testBulkIssue :: HasCallStack => TestParams -> IO ()
 testBulkIssue ps =

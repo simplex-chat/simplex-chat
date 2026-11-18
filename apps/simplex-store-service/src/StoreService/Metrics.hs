@@ -21,7 +21,7 @@ where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
-import Control.Logger.Simple (logWarn)
+import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forever, unless)
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isRight)
@@ -43,7 +43,7 @@ import Simplex.Chat.PaymentService.Types (PaymentProvider)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.TMap (TMap)
-import Simplex.Messaging.Util (raceAny_, tryOwnLogged, tshow)
+import Simplex.Messaging.Util (catchOwn', raceAny_, tryOwnLogged, tshow)
 import StoreService.Config (ListenerConfig)
 import StoreService.Names.Chain (Block (..), latestBlock)
 import StoreService.Names.Contracts (Contracts (..), NameEntry (..), RegisteredNames (..), RegistrarFunds (..), recordsLabel, registeredNames, registrarFunds, termsHeld)
@@ -60,7 +60,8 @@ data MetricsEnv = MetricsEnv
     meListedOk :: TMap PaymentProvider UTCTime,
     meWebhookAt :: TMap PaymentProvider UTCTime,
     -- | @Nothing@ when the ini has no @[names]@ section.
-    meNames :: Maybe Contracts
+    meNames :: Maybe Contracts,
+    meReport :: Text -> IO ()
   }
 
 -- | Each part keeps its last value while its read fails.
@@ -255,8 +256,12 @@ metricsApp MetricsEnv {meStore, meProviders, meListedOk, meWebhookAt, meNames} v
   _ -> respond notFound
 
 runMetrics :: ListenerConfig -> Int -> MetricsEnv -> IO ()
-runMetrics lc port env@MetricsEnv {meNames} = do
+runMetrics lc port env@MetricsEnv {meNames, meReport} = do
   v <- newTVarIO noChainRead
   registered <- newTVarIO noRegisteredNamesRead
   let serve = Warp.runSettings (Warp.setPort port . Warp.setHost (fromString metricsHost) $ webSettings lc) (metricsApp env v registered)
-  raceAny_ $ serve : concat [[runChainReads ns v, runRegisteredNames ns registered] | Just ns <- [meNames]]
+      failed e = do
+        let message = "store metrics: the listener on port " <> tshow port <> " failed, and the service runs on without it: " <> tshow e
+        logError message
+        meReport message
+  raceAny_ $ ((serve `catchOwn'` failed) >> forever (threadDelay maxBound)) : concat [[runChainReads ns v, runRegisteredNames ns registered] | Just ns <- [meNames]]
