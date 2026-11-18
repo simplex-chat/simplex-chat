@@ -374,6 +374,8 @@ mainTest("main: the provider-unavailable screen notice does not outlive the chec
   page.respondWith({ status: 503, body: { error: "provider_unavailable" } });
   primary(inView())!.click();
   await until(() => inView().textContent.includes("temporarily unavailable"), "the provider-unavailable screen again");
+  assert.ok(inView().textContent.includes("Bitcoin is temporarily unavailable"), inView().textContent);
+  assert.ok(inView().textContent.includes("with Monero"), "Bitcoin falls back to Monero, not to Lightning on the same BTCPay store");
   history.back();
   history.back();
   history.back();

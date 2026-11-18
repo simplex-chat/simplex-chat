@@ -523,7 +523,7 @@ async function pay(): Promise<void> {
     }
     case "providerUnavailable":
       unavailableMethod = outcome.method;
-      store.saveSession({ method: firstAvailable(outcome.method) });
+      store.saveSession({ method: FALLBACK_METHOD[outcome.method] });
       rebuild(CHECKOUT_INDEX);
       return;
     case "failed":
@@ -545,11 +545,9 @@ function payTotal(): string {
   return total === undefined ? "" : money(total.amount, price?.currency ?? "usd");
 }
 
-// A coin that is down falls back to the first other coin, and the card to the first coin: a buyer who
+// A coin that is down falls back to another coin, and the card to the first coin: a buyer who
 // chose a coin is not moved to a card.
-function firstAvailable(down: Method): Method {
-  return screens.METHOD_ORDER.find((m) => m !== "card" && m !== down) ?? "card";
-}
+const FALLBACK_METHOD: Readonly<Record<Method, Method>> = { card: "btc", btc: "xmr", ln: "btc", xmr: "btc" };
 
 let cancelNotice: { orderId: string; epoch: number; message: string } | undefined;
 
