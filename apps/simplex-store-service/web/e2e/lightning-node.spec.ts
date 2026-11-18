@@ -7,9 +7,17 @@ const SUCCEEDED = "SUCCEEDED";
 const PAYMENT_READ_MS = 60_000;
 const LIGHTNING_LINK = /^lightning:lnbc/;
 const BADGE_CODE = /^SB(-[0-9A-Z]{5}){4}$/;
+const LANDING = "Support SimpleX";
+const OCTET = 256;
 
 test.skip(PAYER_URL === undefined || process.env.BASE_URL === undefined,
   "needs BASE_URL, the badges site of a service with BTCPay, and LIGHTNING_PAYER_URL, a payer's Lightning node with a channel to its store");
+
+const octet = () => Math.floor(Math.random() * OCTET);
+
+test.beforeEach(async ({ page }) => {
+  await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.${octet()}.${octet()}.${octet()}` });
+});
 
 const inView = (page: Page) => page.locator("section.panel:not([inert])");
 const heading = (page: Page) => inView(page).locator("h1").first();
@@ -56,6 +64,7 @@ test("a cancelled Lightning badge order, its invoice paid at a node afterwards, 
   const { orderId, bolt11 } = await orderWithLightning(page);
   page.once("dialog", (dialog) => void dialog.accept());
   await inView(page).getByRole("button", { name: "Cancel this invoice" }).click();
+  await expect(heading(page)).toHaveText(LANDING);
   await page.goto(`/?order=${orderId}`);
   await expect(heading(page)).toHaveText("Invoice canceled");
   await expect(inView(page).getByText(/^Do not pay its Lightning invoice: /)).toBeVisible();
