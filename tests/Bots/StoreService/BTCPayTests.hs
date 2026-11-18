@@ -112,8 +112,8 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "rejects a missing, unprefixed or non-hex signature" testWebhookMalformed
   describe "against the fake Greenfield" $ do
     it "creates a bitcoin invoice and reads back where to pay" testFakeCreatesBtc
-    it "creates a monero invoice and reads back where to pay" testFakeCreatesXmr
-    it "creates a Lightning invoice and reads back its BOLT11" testFakeCreatesLn
+    it "creates a monero invoice and reads back where to pay" $ testFakeCreatesCoin CCXmr xmrAddress "0.32095000" "XMR-CHAIN"
+    it "creates a Lightning invoice and reads back its BOLT11" $ testFakeCreatesCoin CCLn lnInvoice "0.00050000" "BTC-LN"
     it "sends the api key as `token <key>` on every call it makes" testFakeSendsApiKey
     it "reads the store's payment methods with BTCPay's onlyEnabled, so a disabled method is reported" testFakeAsksEnabledMethods
     it "is refused when the api key is wrong, rather than passing silently" testFakeWrongApiKey
@@ -789,23 +789,13 @@ testFakeCreatesBtc = withProvider $ \fake p -> do
   ms <- apiRequests fake "GET" ["invoices", piProviderRef, "payment-methods"]
   length ms `shouldBe` 1
 
-testFakeCreatesXmr :: IO ()
-testFakeCreatesXmr = withProvider $ \fake p -> do
-  ProviderInvoice {piProviderRef, piDestination} <- createdInvoice p (SPMCrypto CCXmr)
-  piDestination `shouldBe` SPDCrypto CCXmr xmrAddress "0.32095000"
+testFakeCreatesCoin :: CryptoCurrency -> Text -> Text -> Text -> IO ()
+testFakeCreatesCoin coin destination amount methodId = withProvider $ \fake p -> do
+  ProviderInvoice {piProviderRef, piDestination} <- createdInvoice p (SPMCrypto coin)
+  piDestination `shouldBe` SPDCrypto coin destination amount
   posts <- apiRequests fake "POST" ["invoices"]
   case posts of
-    [created] -> chosenPaymentMethods (frBody created) `shouldBe` Just ["XMR-CHAIN"]
-    _ -> expectationFailure ("expected one create, got " <> show (length posts))
-  fakeInvoiceIds fake `shouldReturn` [piProviderRef]
-
-testFakeCreatesLn :: IO ()
-testFakeCreatesLn = withProvider $ \fake p -> do
-  ProviderInvoice {piProviderRef, piDestination} <- createdInvoice p (SPMCrypto CCLn)
-  piDestination `shouldBe` SPDCrypto CCLn lnInvoice "0.00050000"
-  posts <- apiRequests fake "POST" ["invoices"]
-  case posts of
-    [created] -> chosenPaymentMethods (frBody created) `shouldBe` Just ["BTC-LN"]
+    [created] -> chosenPaymentMethods (frBody created) `shouldBe` Just [methodId]
     _ -> expectationFailure ("expected one create, got " <> show (length posts))
   fakeInvoiceIds fake `shouldReturn` [piProviderRef]
 
