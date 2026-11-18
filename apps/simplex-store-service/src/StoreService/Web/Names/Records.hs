@@ -16,7 +16,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
-import Simplex.Messaging.Encoding.String (strDecode, textDecode)
+import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), Records, relayEdit)
@@ -60,8 +60,7 @@ editRequest o = do
   pure EditRequest {erLabelHash, erChanges}
   where
     fields v = (,) <$> v .: "labelHash" <*> (v .: "edits" >>= mapM (J.withObject "edit" sentEdit))
-    sentEdit v = SentEdit <$> (v .: "key" >>= recordKind) <*> v .: "value" <*> v .: "nonce" <*> v .: "deadline" <*> v .: "signature"
-    recordKind = maybe (fail "an unknown record key") pure . textDecode
+    sentEdit v = SentEdit <$> v .: "key" <*> v .: "value" <*> v .: "nonce" <*> v .: "deadline" <*> v .: "signature"
     keysOnce edits = let keys = map seKind edits in length keys == length (nub keys)
     consecutive edits = and $ zipWith (\a b -> seNonce b == seNonce a + 1) edits (drop 1 edits)
     signedChange SentEdit {seKind, seValue, seNonce, seDeadline, seSignature} = do

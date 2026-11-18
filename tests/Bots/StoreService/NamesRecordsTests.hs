@@ -39,7 +39,6 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), signRecoverable)
-import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
@@ -274,14 +273,15 @@ testViemMulticall g = withSetup g $ \s -> do
 
 testRequestOrder :: IO ()
 testRequestOrder = do
-  let valid = editFields [("key", J.String channelKey), ("value", J.String viemChannelLink)]
+  let valid = editFields [("key", J.String channelKind), ("value", J.String viemChannelLink)]
       request = editRequest . requestOf . (: [])
   changesOf (request valid) `shouldBe` Right [channel viemChannelLink]
   request (editFields [("clear", J.Bool True)]) `shouldBe` Left EIBadRequest
-  changesOf (request $ editFields [("key", J.String contactKey), ("value", "")]) `shouldBe` Right [contact ""]
+  changesOf (request $ editFields [("key", J.String contactKind), ("value", "")]) `shouldBe` Right [contact ""]
   -- formats first: a bad label hash or key is bad_request even with a bad link
   editRequest (KM.insert "labelHash" (J.String $ "0x" <> T.toUpper (T.drop 2 aliceHashText)) $ requestOf [withLink "https://x/a"]) `shouldBe` Left EIBadRequest
-  request (editFields [("key", "simplex.other"), ("value", J.String viemChannelLink)]) `shouldBe` Left EIBadRequest
+  request (editFields [("key", "other"), ("value", J.String viemChannelLink)]) `shouldBe` Left EIBadRequest
+  request (editFields [("key", J.String channelKey), ("value", J.String viemChannelLink)]) `shouldBe` Left EIBadRequest
   request (KM.insert "nonce" (J.Number (-1)) valid) `shouldBe` Left EIBadRequest
   request (KM.insert "deadline" (J.String "1767229200") valid) `shouldBe` Left EIBadRequest
   request (KM.delete "value" valid) `shouldBe` Left EIBadRequest
@@ -291,21 +291,21 @@ testRequestOrder = do
   request (KM.insert "signature" "0x00" $ withLink "https://x/a") `shouldBe` Left EIInvalidLink
   request (KM.insert "signature" "0x00" valid) `shouldBe` Left EIBadRequest
   where
-    withLink link = editFields [("key", J.String channelKey), ("value", J.String link)]
+    withLink link = editFields [("key", J.String channelKind), ("value", J.String link)]
 
 testRequestEdits :: IO ()
 testRequestEdits = do
   let edit key value nonce = editFields [("key", J.String key), ("value", J.String value), ("nonce", J.toJSON (nonce :: Int))]
       clearAt nonce = editFields [("clear", J.Bool True), ("nonce", J.toJSON (nonce :: Int))]
       request = editRequest . requestOf
-      contactAt = edit contactKey "https://smp8.simplex.im/a#Y8m3"
-      channelAt = edit channelKey viemChannelLink
+      contactAt = edit contactKind "https://smp8.simplex.im/a#Y8m3"
+      channelAt = edit channelKind viemChannelLink
   changesOf (request [contactAt 4, channelAt 5]) `shouldBe` Right [contact "https://smp8.simplex.im/a#Y8m3", channel viemChannelLink]
   fmap (map scNonce . L.toList . erChanges) (request [channelAt 4, contactAt 5]) `shouldBe` Right [4, 5]
   forM_
     [ ("no edit", []),
-      ("three edits", [contactAt 4, channelAt 5, edit channelKey "" 6]),
-      ("one key twice", [channelAt 4, edit channelKey "" 5]),
+      ("three edits", [contactAt 4, channelAt 5, edit channelKind "" 6]),
+      ("one key twice", [channelAt 4, edit channelKind "" 5]),
       ("a clear", [clearAt 4]),
       ("a clear after a set", [contactAt 4, clearAt 5]),
       ("a nonce skipped", [contactAt 4, channelAt 6]),
@@ -314,8 +314,8 @@ testRequestEdits = do
     ]
     $ \(what, edits) -> (what :: String, request edits) `shouldBe` (what, Left EIBadRequest)
   -- every edit's format before any link, and every link before any signature
-  request [edit contactKey "https://x/a" 4, edit "simplex.other" viemChannelLink 5] `shouldBe` Left EIBadRequest
-  request [KM.insert "signature" "0x00" $ contactAt 4, edit channelKey "https://x/c" 5] `shouldBe` Left EIInvalidLink
+  request [edit contactKind "https://x/a" 4, edit "other" viemChannelLink 5] `shouldBe` Left EIBadRequest
+  request [KM.insert "signature" "0x00" $ contactAt 4, edit channelKind "https://x/c" 5] `shouldBe` Left EIInvalidLink
 
 changesOf :: Either EditInvalid EditRequest -> Either EditInvalid [RecordChange]
 changesOf = fmap (map scChange . L.toList . erChanges)
@@ -325,10 +325,10 @@ testLinkBound = do
   let prefix = "https://smp8.simplex.im/c#"
       linkOf n = prefix <> T.replicate (n - T.length prefix) "A"
       edit key value = editRequest $ requestOf [editFields [("key", J.String key), ("value", J.String value)]]
-  fmap (L.head . L.map scChange . erChanges) (edit channelKey $ linkOf linkMaxBytes) `shouldBe` Right (channel $ linkOf linkMaxBytes)
-  edit channelKey (linkOf $ linkMaxBytes + 1) `shouldBe` Left EIInvalidLink
-  edit contactKey viemChannelLink `shouldBe` Left EIInvalidLink
-  edit channelKey "https://smp8.simplex.im/c#Y8m3;https://smp9.simplex.im/c#Z1" `shouldBe` Left EIInvalidLink
+  fmap (L.head . L.map scChange . erChanges) (edit channelKind $ linkOf linkMaxBytes) `shouldBe` Right (channel $ linkOf linkMaxBytes)
+  edit channelKind (linkOf $ linkMaxBytes + 1) `shouldBe` Left EIInvalidLink
+  edit contactKind viemChannelLink `shouldBe` Left EIInvalidLink
+  edit channelKind "https://smp8.simplex.im/c#Y8m3;https://smp9.simplex.im/c#Z1" `shouldBe` Left EIInvalidLink
 
 -- relay
 
@@ -852,10 +852,10 @@ yearSeconds = 365 * 86400
 
 testHttp :: TVar ChaChaDRG -> IO ()
 testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
-  let editBody value = J.encode $ requestOf [editFields [("key", J.String channelKey), ("value", J.String value)]]
+  let editBody value = J.encode $ requestOf [editFields [("key", J.String channelKind), ("value", J.String value)]]
   post "[]" `shouldReturn` (nameRefusedWith 400 "bad_request", Nothing)
   post (editBody "https://x/a") `shouldReturn` (nameRefusedWith 400 "invalid_link", Nothing)
-  let overCap = KM.insert "pad" (J.String $ T.replicate maxBodyBytes "a") $ requestOf [editFields [("key", J.String channelKey), ("value", J.String viemChannelLink)]]
+  let overCap = KM.insert "pad" (J.String $ T.replicate maxBodyBytes "a") $ requestOf [editFields [("key", J.String channelKind), ("value", J.String viemChannelLink)]]
   post (J.encode overCap) `shouldReturn` (nameRefusedWith 400 "bad_request", Nothing)
   editRows s `shouldReturn` 0
   answer <- async $ post $ editBody viemChannelLink
@@ -914,7 +914,7 @@ changeJson SignedChange {scChange = RCSetText key value, scNonce, scDeadline, sc
     [ ("nonce", J.toJSON scNonce),
       ("deadline", J.toJSON scDeadline),
       ("signature", J.String $ hex $ smpEncode scSignature),
-      ("key", J.String $ textEncode key),
+      ("key", J.toJSON key),
       ("value", J.String value)
     ]
 
@@ -955,6 +955,10 @@ unLabel (LabelHash h) = h
 contactKey, channelKey :: Text
 contactKey = "simplex.contact"
 channelKey = "simplex.channel"
+
+contactKind, channelKind :: Text
+contactKind = "contact"
+channelKind = "channel"
 
 -- | An hour after the fake node's first block.
 deadline :: Word64
