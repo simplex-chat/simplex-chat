@@ -27,7 +27,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import Data.IORef (writeIORef)
 import Data.Int (Int64)
-import Data.Maybe (fromJust, fromMaybe, isJust, maybeToList)
+import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
@@ -69,7 +69,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "refuses a high-s intent, a wrong signer, a stale nonce, and a deadline past or before revealBefore, writing nothing" testIntentRefusals
     it "refuses a label not of the order, another secret or other links, writing nothing" testCommitmentRefusals
     it "refuses a commitment of another duration than the order's" testWrongDuration
-    it "refuses a second link for one key with invalid_link, recording nothing" testSecondLink
+    it "refuses a list of links for a key as bad_request, recording nothing" testSecondLink
     it "refuses an unknown id, a registration not committed or lapsed, and malformed bodies" testStateAndFormat
     it "answers provider_unavailable when the nonce read fails, writing nothing" testNonceUnavailable
   describe "links refusal" $ do
@@ -169,7 +169,7 @@ bodyOf sig Registration {rLabel, rSecret, rContactLink, rChannelLink} nonce dead
   KM.fromList
     [ ("label", J.String rLabel),
       ("secret", J.String $ hex $ unHex32 rSecret),
-      ("records", J.object ["contact" .= maybeToList rContactLink, "channel" .= maybeToList rChannelLink]),
+      ("records", J.object ["contact" .= rContactLink, "channel" .= rChannelLink]),
       ("nonce", J.toJSON nonce),
       ("deadline", J.toJSON deadline),
       ("signature", J.String $ hex $ smpEncode sig)
@@ -182,9 +182,6 @@ ownerBody ctx r = do
   sig <- signIntent ctx keyA r 0 revealBefore
   acceptance <- acceptanceOf ctx keyA r False fakeGeneralTerms 0 revealBefore
   pure $ withAcceptance acceptance $ bodyOf sig r 0 revealBefore
-
-withRecords :: [Text] -> [Text] -> J.Object -> J.Object
-withRecords contact channel = KM.insert "records" $ J.object ["contact" .= contact, "channel" .= channel]
 
 ownerReveal :: Ctx -> RegistrationId -> Registration -> IO (Int, Maybe J.Object)
 ownerReveal ctx rid r = reveal ctx rid =<< ownerBody ctx r
@@ -356,7 +353,7 @@ testViemReveal = withReveals $ \Fx {fCtx = ctx} -> do
         KM.fromList
           [ ("label", "dynamis"),
             ("secret", J.String $ "0x" <> T.replicate 32 "11"),
-            ("records", J.object ["contact" .= ["https://smp8.simplex.im/a#contact" :: Text], "channel" .= ([] :: [Text])]),
+            ("records", J.object ["contact" .= ("https://smp8.simplex.im/a#contact" :: Text), "channel" .= J.Null]),
             ("nonce", J.Number 0),
             ("deadline", J.Number 1792660500),
             ("signature", J.String viemSignature),
@@ -451,8 +448,9 @@ testSecondLink = withReveals $ \Fx {fCtx = ctx} -> do
   rid <- committed ctx (orderOf alice)
   unchanged <- unwritten <$> stored ctx rid
   body <- ownerBody ctx alice
-  reveal ctx rid (withRecords [contactLink, "https://smp8.simplex.im/a#other"] [channelLink] body) `shouldReturn` refusedWith 400 "invalid_link"
-  reveal ctx rid (withRecords [contactLink] [channelLink, channelLink] body) `shouldReturn` refusedWith 400 "invalid_link"
+  let records contact channel = KM.insert "records" (J.object ["contact" .= contact, "channel" .= channel]) body
+  reveal ctx rid (records [contactLink, "https://smp8.simplex.im/a#other"] [channelLink]) `shouldReturn` badRequest
+  reveal ctx rid (records [contactLink] [channelLink]) `shouldReturn` badRequest
   unwritten <$> stored ctx rid `shouldReturn` unchanged
 
 testStateAndFormat :: IO ()
@@ -476,8 +474,8 @@ testStateAndFormat = withReveals $ \Fx {fCtx = ctx@Ctx {cClock}} -> do
       ("a nonce as text", KM.insert "nonce" (J.String "0") body),
       ("a fractional deadline", KM.insert "deadline" (J.Number 1792660500.5) body),
       ("no records", KM.delete "records" body),
-      ("records without a channel list", KM.insert "records" (J.object ["contact" .= [contactLink]]) body),
-      ("a link that is not text", KM.insert "records" (J.object ["contact" .= [J.Number 1], "channel" .= [channelLink]]) body)
+      ("records not an object", KM.insert "records" (J.toJSON [contactLink]) body),
+      ("a link that is not text", KM.insert "records" (J.object ["contact" .= J.Number 1, "channel" .= channelLink]) body)
     ]
     $ \(what, b) -> (what,) <$> reveal ctx rid b `shouldReturn` (what :: String, badRequest)
   forM_ [("not an object", "[]"), ("not JSON", "label=alicebakery"), ("over the cap", J.encode $ KM.insert "pad" (J.String $ T.replicate maxBodyBytes "a") body)] $

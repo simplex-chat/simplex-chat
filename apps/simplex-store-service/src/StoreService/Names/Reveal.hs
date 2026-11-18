@@ -17,7 +17,7 @@ where
 import Control.Logger.Simple (logWarn)
 import Control.Monad (unless)
 import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
-import Data.Aeson ((.:))
+import Data.Aeson ((.:), (.:?))
 import qualified Data.Aeson as J
 import Data.Bifunctor (first)
 import Data.Text (Text)
@@ -39,13 +39,12 @@ import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
 data RevealRefusal = RVBadRequest Text | RVInvalidLink | RVChainUnavailable
   deriving (Eq, Show)
 
--- | The links of each key as sent, however many; at most one per key is a check of its own.
 data RevealRequest = RevealRequest
   { rqLabel :: Text,
     rqSignature :: RecoverableSignature,
     rqSecret :: Hex32,
-    rqContactLinks :: [Text],
-    rqChannelLinks :: [Text],
+    rqContactLink :: Maybe Text,
+    rqChannelLink :: Maybe Text,
     rqNonce :: Word64,
     rqDeadline :: ChainSeconds,
     rqAcceptance :: TermsAcceptance
@@ -57,8 +56,8 @@ instance J.FromJSON RevealRequest where
     rqSignature <- jsonField o "signature" hexSignature
     rqSecret <- o .: "secret"
     records <- o .: "records"
-    rqContactLinks <- records .: "contact"
-    rqChannelLinks <- records .: "channel"
+    rqContactLink <- records .:? "contact"
+    rqChannelLink <- records .:? "channel"
     rqNonce <- jsonField o "nonce" boundedInteger
     rqDeadline <- jsonField o "deadline" boundedInteger
     rqAcceptance <- jsonField o "acceptance" $ J.withObject "acceptance" $ \a -> do
@@ -66,7 +65,7 @@ instance J.FromJSON RevealRequest where
       taNonce <- jsonField a "nonce" boundedInteger
       taSignature <- jsonField a "signature" hexSignature
       pure TermsAcceptance {taTermsHash, taNonce, taSignature}
-    pure RevealRequest {rqLabel, rqSignature, rqSecret, rqContactLinks, rqChannelLinks, rqNonce, rqDeadline, rqAcceptance}
+    pure RevealRequest {rqLabel, rqSignature, rqSecret, rqContactLink, rqChannelLink, rqNonce, rqDeadline, rqAcceptance}
 
 isRepeat :: RevealRequest -> NameReveal -> Bool
 isRepeat RevealRequest {rqLabel, rqSignature} NameReveal {rvLabel, rvSignature} = rqLabel == rvLabel && rqSignature == rvSignature
@@ -79,19 +78,12 @@ checkReveal cfg ct now r revealBefore request = runExceptT $ do
   pure rv
 
 committedReveal :: NamesConfig -> NameRegistration -> RevealRequest -> Either RevealRefusal NameReveal
-committedReveal cfg@NamesConfig {nTLD} r@NameRegistration {nrLabelHash, nrLength, nrCommitment} RevealRequest {rqLabel, rqSignature, rqSecret, rqContactLinks, rqChannelLinks, rqNonce, rqDeadline, rqAcceptance} = do
+committedReveal cfg@NamesConfig {nTLD} r@NameRegistration {nrLabelHash, nrLength, nrCommitment} RevealRequest {rqLabel, rqSignature, rqSecret, rqContactLink, rqChannelLink, rqNonce, rqDeadline, rqAcceptance} = do
   label <- first (RVBadRequest . ("the label is not a name: " <>) . tshow) $ validLabel nTLD rqLabel
   unless (labelHash label == nrLabelHash && T.length label == nameLengthInt nrLength) $ Left $ RVBadRequest "the label is not the order's"
-  rvContactLink <- oneLink rqContactLinks
-  rvChannelLink <- oneLink rqChannelLinks
-  let rv = NameReveal {rvLabel = label, rvSecret = rqSecret, rvContactLink, rvChannelLink, rvNonce = rqNonce, rvDeadline = rqDeadline, rvSignature = rqSignature, rvAcceptance = rqAcceptance}
+  let rv = NameReveal {rvLabel = label, rvSecret = rqSecret, rvContactLink = rqContactLink, rvChannelLink = rqChannelLink, rvNonce = rqNonce, rvDeadline = rqDeadline, rvSignature = rqSignature, rvAcceptance = rqAcceptance}
   unless (makeCommitment (riRegistration $ intentOf cfg r rv) == nrCommitment) $ Left $ RVBadRequest "the reveal is not the order's commitment"
   pure rv
-  where
-    oneLink = \case
-      [] -> Right Nothing
-      [link] -> Right $ Just link
-      _ -> Left RVInvalidLink
 
 -- | The deadline and the owner's signature first, so a request nobody signed reads nothing from the chain.
 -- A deadline before revealBefore would expire while the commitment can still register.
