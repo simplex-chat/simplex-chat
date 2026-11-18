@@ -841,7 +841,7 @@ testUnreadCountsDirect ps = do
       alice <## "ok"
       eventsFixture "counts/direct-muted" aliceEvents $ do
         eventsFixture "counts/direct-statuses" bobEvents $ do
-          bob #> "@alice hello"
+          apiFixture "counts/direct-send" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_send @2 text hello"]}
           alice <# "bob> hello <muted>"
           (length <$> readTVarIO bobEvents) `shouldEventuallyReturn` 2
         apiFixture "counts/chat-page" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat @2 initial=100"]}
