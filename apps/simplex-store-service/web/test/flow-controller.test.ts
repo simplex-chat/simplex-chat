@@ -808,7 +808,7 @@ apiTest("flow: the confirming screen gives up after exactly fifteen minutes, cou
   assert.equal(h.net.pendingCount, 0, "giving up must not leave a connection held");
 });
 
-apiTest("flow: a Lightning payment still settling gives up as a Lightning view, so its words can say settle", async () => {
+apiTest("flow: after the wait for a Lightning payment still settling, the give-up view is given the Lightning method, so it is worded with settle", async () => {
   const h = harness();
   const processingLn = {
     ...openXmr, address: "lnbc500u1pfakeinvoicedestinationforthetestsonly", cryptoAmount: "0.00050000",
@@ -822,7 +822,7 @@ apiTest("flow: a Lightning payment still settling gives up as a Lightning view, 
   const last = h.views.at(-1)!;
   assert.equal(last.screen === "awaitingConfirmation" && last.gaveUp, true);
   assert.equal(last.screen === "awaitingConfirmation" ? last.method : undefined, "ln",
-    "a give-up view without the method falls back to the wording for a confirmation");
+    "a give-up view without the method is worded for a confirmation");
 });
 
 apiTest("flow: nothing else gives up — the payment screen is still waiting an hour later", async () => {

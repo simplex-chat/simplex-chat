@@ -26,7 +26,7 @@ const { app, confirms, fetches } = page;
 page.respondWith({ status: 200, body: openLn });
 await import("../src/main.js");
 
-cancelTest("main: cancelling a Lightning invoice asks with the Lightning wording, and a refusal sends nothing", async () => {
+cancelTest("main: the buyer who cancels a Lightning invoice is asked with the Lightning wording, and nothing is sent when the buyer declines", async () => {
   await until(() => headingOf(screenOf(app)) === "Send 0.00050000 BTC", "the Lightning payment screen");
   page.confirmAnswer(false);
   const before = fetches.length;

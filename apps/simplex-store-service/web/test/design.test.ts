@@ -625,7 +625,7 @@ designTest("design: a tier with no artwork still renders, without a badge", () =
   assert.ok(p.textContent.includes("Founder"), "and the tier is still on the screen");
 });
 
-designTest("design: the order summary's method row carries all four payment marks, in order", () => {
+designTest("design: the order summary's method row has all four payment marks, in order", () => {
   const p = render(screens.orderSummary({ canKeepTheCode: true,
     badgeType: "legend", months: 12, total: "$420.00", selected: "xmr",
     onSelect: () => {}, onPay: () => {}, onBack: () => {},
@@ -644,13 +644,13 @@ designTest("design: the order summary's method row carries all four payment mark
   assert.equal(marks[1]![0]!.all("path")[0]!.getAttribute("fill"), "#F7931A");
   const bolt = marks[2]![0]!.all("path");
   assert.equal(bolt.length, 1, "the Lightning mark is one generic glyph, not a borrowed logo");
-  assert.equal(bolt[0]!.getAttribute("fill"), "#F7931A", "in Bitcoin's orange, since it pays in BTC");
+  assert.equal(bolt[0]!.getAttribute("fill"), "#F7931A", "in Bitcoin's orange, since Lightning is paid in BTC");
   assert.equal(bolt[0]!.getAttribute("fill-rule"), "evenodd", "or the bolt fills in instead of being cut out of the disc");
   assert.notEqual(bolt[0]!.getAttribute("d"), marks[1]![0]!.all("path")[0]!.getAttribute("d"), "and it is not the Bitcoin glyph again");
   assert.deepEqual(marks[3]![0]!.all("path").map((p) => p.getAttribute("fill")), ["#F60", "#4C4C4C"],
     "the Monero glyph is the official two-colour mark, as simplex.domains draws it");
   assert.deepEqual(cards.map((c) => c.textContent), ["Card", "Bitcoin", "Lightning", "Monero"],
-    "the card first, then the coins, with Lightning beside the Bitcoin it pays in");
+    "the card first, then the coins, with Lightning beside Bitcoin, in which it is paid");
 });
 
 designTest("design: no screen repeats the mark — the header carries it, and the code screen has its tick", () => {

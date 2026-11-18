@@ -178,7 +178,7 @@ storeTest("store: a Lightning order, its BOLT11 destination and the session's me
   s.saveSession({ step: "checkout", method: "ln" });
   const reloaded = new Store(mem);
   const o = reloaded.order("1")!;
-  assert.equal(o.method, "ln", "a dropped method would leave the reopened order on no payment screen");
+  assert.equal(o.method, "ln", "without the method, the reopened order is shown on no payment screen");
   assert.equal(o.cryptoCurrency, "ln");
   assert.equal(o.address, bolt11);
   assert.equal(o.cryptoAmount, "0.00050000", "the amount is kept as sent");

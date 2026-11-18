@@ -40,9 +40,11 @@ MIME = {".html": "text/html", ".css": "text/css", ".js": "text/javascript",
 # BTCPay's default speed policy asks for one confirmation.
 REQUIRED_CONFIRMATIONS = 1
 CHAINS = ("btc", "ln", "xmr")
+BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+MOCK_BOLT11_LENGTH = 360
 ADDRESSES = {
     "btc": "bc1qexampleaddress0k3jq2wvcgmqz",
-    "ln": "lnbc500u1" + ("qpzry9x8gf2tvdw0s3jn54khce6mua7l" * 12)[:351],
+    "ln": ("lnbc500u1" + BECH32_CHARSET * MOCK_BOLT11_LENGTH)[:MOCK_BOLT11_LENGTH],
     "xmr": "48HqK2XmVexampleAddress9fRtWc",
 }
 CRYPTO_AMOUNTS = {"btc": "1.482", "ln": "0.00050000", "xmr": "1.482"}

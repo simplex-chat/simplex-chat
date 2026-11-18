@@ -488,9 +488,10 @@ qrTest("qr: a Bitcoin BIP-21 URI round-trips", () => {
 
 const LONGEST_BOLT11 = 400;
 const VERSION_FOR_LONGEST_BOLT11 = 15;
+const BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
-qrTest("qr: a 400-character BOLT11 is scanned as its lightning: link, which a phone camera opens in a wallet", () => {
-  const bolt11 = `lnbc500u1${"qpzry9x8gf2tvdw0s3jn54khce6mua7l".repeat(13)}`.slice(0, LONGEST_BOLT11);
+qrTest(`qr: a ${LONGEST_BOLT11}-character BOLT11 is scanned as its lightning: link, which a phone camera opens in a wallet`, () => {
+  const bolt11 = "lnbc500u1".padEnd(LONGEST_BOLT11, BECH32_CHARSET);
   const uri = paymentUri("ln", bolt11, "0.00050000")!;
   assert.equal(uri, `lightning:${bolt11}`, "the amount is part of the invoice, so the link has none");
   assert.equal(roundTrip(uri, "the Lightning link").version, VERSION_FOR_LONGEST_BOLT11);
