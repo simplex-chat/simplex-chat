@@ -524,7 +524,7 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
   _ | lsSupport == Just LSNoConfirmation -> pure (noConfirmation, Nothing)
   _ -> pure (unconfirmed, Just LSUnconfirmed)
   where
-    unconfirmed = "refund by hand only a transaction confirmed on chain that BTCPay no longer monitors; one still Processing there waits"
+    unconfirmed = onChainRefund <> " that BTCPay no longer monitors; one still Processing there waits"
     highSpeed = "the invoice was made under HighSpeed, so its money is never credited by itself; " <> onChainRefund
     noConfirmation = "the Monero plugin shows no confirmation of this money, so it is never credited by itself; " <> onChainRefund
     rateRead = "confirmed, the credit waits on the rate read; do not refund; fix the rate read"
@@ -551,7 +551,7 @@ lateAlertText LateAlert {laProviderRef, laState = s@LateCreditState {lsCoin, lsR
     amounts unit received confirmed credited =
       tshow received <> " " <> unit <> " received, " <> tshow confirmed <> " " <> unit <> " confirmed, " <> tshow credited <> " " <> unit <> " credited"
 
--- | Close the order at the provider first; a payment it records afterwards is still read by the poller.
+-- | Cancel the order at the provider first, so the buyer can no longer pay it.
 closedAtProvider :: PollerEnv -> UTCTime -> OverdueInvoice -> IO Bool
 closedAtProvider env@PollerEnv {peProviders} now oi@OverdueInvoice {oiProvider, oiProviderRef = ref} =
   safelyWith ("badge poller: cancelling " <> tshow oiProvider <> " invoice " <> ref) False $
