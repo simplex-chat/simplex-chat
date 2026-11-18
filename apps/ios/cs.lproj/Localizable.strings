@@ -598,7 +598,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Povolit nevratné smazání odeslaných zpráv. (24 hodin)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Povolit nahlášení zpráv moderátorům.";
+"Allow to report messages to moderators." = "Povolit nahlášení zpráv moderátorům.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Povolit odesílání souborů a médii.";

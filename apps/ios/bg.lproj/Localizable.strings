@@ -561,7 +561,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Позволи необратимо изтриване на изпратените съобщения. (24 часа)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Позволи докладването на съобщения на модераторите.";
+"Allow to report messages to moderators." = "Позволи докладването на съобщения на модераторите.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Позволи изпращане на файлове и медия.";

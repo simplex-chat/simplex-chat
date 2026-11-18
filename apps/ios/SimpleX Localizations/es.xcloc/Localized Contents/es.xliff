@@ -1171,8 +1171,8 @@ swipe action</note>
         <target>Se permite la eliminación irreversible de mensajes. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
-        <source>Allow to report messsages to moderators.</source>
+      <trans-unit id="Allow to report messages to moderators." xml:space="preserve">
+        <source>Allow to report messages to moderators.</source>
         <target>Permitir informar de mensajes a los moderadores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6087,8 +6087,8 @@ This is your link for group %@!</source>
         <target>Los miembros del grupo pueden eliminar mensajes de forma irreversible. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can report messsages to moderators." xml:space="preserve">
-        <source>Members can report messsages to moderators.</source>
+      <trans-unit id="Members can report messages to moderators." xml:space="preserve">
+        <source>Members can report messages to moderators.</source>
         <target>Los miembros pueden informar de mensajes a los moderadores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -9786,8 +9786,8 @@ report reason</note>
         <target>Los suscriptores pueden eliminar mensajes de forma irreversible. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribers can report messsages to moderators." xml:space="preserve">
-        <source>Subscribers can report messsages to moderators.</source>
+      <trans-unit id="Subscribers can report messages to moderators." xml:space="preserve">
+        <source>Subscribers can report messages to moderators.</source>
         <target>Los suscriptores pueden informar de mensajes a los moderadores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
