@@ -73,7 +73,9 @@ struct ContactConnectionInfo: View {
                         oneTimeLinkLearnMoreButton()
                     }
                 } header: {
-                    if let connLinkInv = contactConnection.connLinkInv, connLinkInv.connShortLink != nil {
+                    if contactConnection.initiated,
+                       let connLinkInv = contactConnection.connLinkInv,
+                       connLinkInv.connShortLink != nil {
                         ToggleShortLinkHeader(text: Text(""), link: connLinkInv, short: $showShortLink)
                     }
                 } footer: {
