@@ -624,7 +624,7 @@ private func commandKey(_ cmd: String) -> String {
     cmd.hasPrefix("/_prepare ") ? String(cmd.prefix { $0 != "{" }).trimmingCharacters(in: .whitespaces) : cmd
 }
 
-private let msgContentTypes: Set<String> =["text", "link", "image", "video", "voice", "file", "report", "chat"]
+private let msgContentTypes: Set<String> = ["text", "link", "image", "video", "voice", "file", "report", "chat"]
 
 @MainActor
 func waitFor(_ condition: @escaping () -> Bool) async throws {
