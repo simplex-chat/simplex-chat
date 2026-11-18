@@ -89,6 +89,7 @@ flowchart LR
 - Row counters are kept at 0 or above.
 - Items of a member removed with messages are counted out by the same rule (`removeMemberItems`).
 - `upsertChatItem` is replaced by `replaceChatItem`, which inserts nothing.
+- An update of a sent item of the open chat that is not loaded is kept by item id: Kotlin `ChatsContext.sentItemUpdates`, iOS `ItemsModel.sentItemUpdates`. The send response's item is replaced by it when the ids and `createdAt` match (Kotlin `addSentChatItem`, iOS `addChatItem`). Kept updates are dropped when a chat's initial page is loaded.
 - No item is added to the open chat and no chat to the list by an update or deletion, and no notification is shown for it (Q5).
 - A missing chat is added by its new item, with the item counted (P6).
 - The preview is taken from the scope shown in the row (`inMainChatList`) in each call (P17).
@@ -188,6 +189,7 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 | counts/group-removed | the same test, with full deletion on | alice: the mention removed |
 | counts/direct-muted | Direct.hs, "unread counts of a muted chat, its statuses and its page" | alice: two messages from a muted contact |
 | counts/direct-statuses | the same test | bob, the sender: statuses of the first message |
+| counts/direct-send | the same test | bob: `/_send @2 text hello`, the first message |
 | counts/chat-page | the same test | `/_get chat @2 initial=100` between the two messages |
 | counts/moderator-support | Groups.hs, "unread counts of a moderator's support chat" | alice, the owner: a member's support message, a main chat message |
 | counts/moderator-read | the same test | `/_read chat items #1(_support:2) <id>`<br>markdown of "" for the list search |
@@ -208,6 +210,7 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 | Test | Fixture | Checked |
 |---|---|---|
 | status of an unloaded item | counts/direct-statuses | nothing inserted; the preview has the new status |
+| status before the send response | counts/direct-statuses, counts/direct-send | the response's item is shown with the earlier status "sent", in the open chat and the preview |
 | deletion mark of an unloaded item | counts/group-marked | nothing inserted; counters 2 1 2 |
 | removed unread mention | counts/group-marked, counts/group-removed | 2 1 2, then 1 0 1 |
 | new item and its removal | counts/group-marked, counts/group-removed | the removal processed right after its item: the mention absent, 0 0 0 |
@@ -219,6 +222,7 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 | pending member's badge | counts/pending-support | "1" in `ChatPreviewView` |
 | moderator's support message | counts/moderator-support, counts/moderator-read | row 0 0, profile 0; the group in `ChatListView` with the Unread filter |
 | removed chat | counts/group-marked | an unread chat with a tag: tag count 1 after `addChat`, 0 after `removeChat` |
+| cleared chat with the support flag | counts/moderator-support | tag count 1 kept after `clearChat`; 0 after the flag is cleared |
 | support chat context | counts/moderator-support | `chatState.unreadTotal` 1; its list keeps only its chat after a pop |
 | reading a support chat | counts/moderator-support, counts/moderator-read | row 1 0 kept; support flag cleared |
 | counters follow previous and new item, changed | updates/group-mention | 1 0 0, 1 1 1, 1 0 0 |
@@ -231,6 +235,7 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 | Test | Fixture | Checked |
 |---|---|---|
 | status of an unloaded item | counts/direct-statuses | nothing inserted; the preview has the new status |
+| status before the send response | counts/direct-statuses, counts/direct-send | as in Kotlin |
 | deletion mark of an unloaded item | counts/group-marked | nothing inserted; 2 1 2 |
 | removed unread mention | counts/group-marked, counts/group-removed | 2 1 2, then 1 0 1 |
 | profile count, mentions-only group | updates/group-mention | 1 0 0, 1 1 1, 1 0 0; badge 0 |
@@ -240,6 +245,8 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 | moderator's support message | counts/moderator-support | row 0 0, profile 0; `unreadTag` true |
 | reading a support chat keeps the group row | counts/moderator-support, counts/moderator-read | 1 0 1 kept |
 | removed chat | counts/group-marked | as in Kotlin |
+| read and cleared chat with the support flag | counts/moderator-support | tag count 1 kept after `markAllChatItemsRead` and after `clearChat`; 0 after the flag is cleared |
+| replaced chat | counts/group-marked | tag count 0 and badge 0 after an unread chat is replaced by a read one |
 | counters follow previous and new item, changed | updates/group-mention | 1 0 0, 1 1 1, 1 0 0 |
 | update of a chat not listed, changed | updates/direct-edit | no chat added, no notification |
 
@@ -251,7 +258,6 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 
 ## Known gaps
 
-- A status that arrives before the send response adds its item is lost; the item has the response's status until the next status.
 - Unloaded unread items of a member removed with messages stay counted until the next list load.
 - A chat added from outside the loaded list has the messages received since counted.
 - Kotlin: the scroll button's count source is tested on the support chat's `ChatsContext`; `ChatView` is not composed in tests.
