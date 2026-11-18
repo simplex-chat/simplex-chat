@@ -12,14 +12,14 @@
 
 ```
 notKept         a value written to localStorage at page load is not read back, or this code was not written
-kept            a value written to localStorage at page load is read back, with a user agent other than WebKit's
-keptUntilIdle   a value written to localStorage at page load is read back, with WebKit's user agent
+kept            a value written to localStorage at page load is read back, and browserDeletesIdle is false
+keptUntilIdle   a value written to localStorage at page load is read back, and browserDeletesIdle is true
 ```
 
 - The period on the screens is 7 days, with U+00A0 in "7 days" and in "key press".
 - On Your codes:
   - empty list, in every browser: "Codes stored in this browser are listed here."
-  - listed codes, for `kept` and `keptUntilIdle`: "Codes are stored only in the browser they were bought in."
+  - listed orders, for `kept` and `keptUntilIdle`: "Codes are stored only in the browser they were bought in."
 - "This code is not in this browser" replaces "This code is not on this device".
 - "Forget everything in this browser" replaces "Forget everything on this device".
 - At phone width, the Your codes list row:
@@ -53,9 +53,10 @@ flowchart TD
   w0 -->|yes| d{browserDeletesIdle of navigator.userAgent}
   d -->|false| k[kept]
   d -->|true| u[keptUntilIdle]
-  k --> cw{code screens: this code written to localStorage}
+  k --> cw{code screens only: this code written to localStorage}
   u --> cw
   cw -->|no| nk
+  cw -->|yes| same[kept or keptUntilIdle, unchanged]
 ```
 
 | Screen | `notKept` | `kept` | `keptUntilIdle` |
