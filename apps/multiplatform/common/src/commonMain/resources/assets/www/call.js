@@ -56,6 +56,7 @@ let notConnectedCall;
 let answerTimeout = 30000;
 let reconnectTimeout = 30000;
 let iceRestartInterval = 10000;
+let peerCloseTimeout = 5000;
 var useWorker = false;
 var isDesktop = false;
 var localizedState = "";
@@ -228,6 +229,8 @@ const processCommand = (function () {
         }
         async function connectionHandler(reconnectTimedOut = false) {
             var _a;
+            if (activeCall !== call)
+                return;
             let state = (_a = pc.connectionState) !== null && _a !== void 0 ? _a : (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
                 ? pc.iceConnectionState
                 : pc.iceConnectionState == "completed"
@@ -236,7 +239,7 @@ const processCommand = (function () {
             if (wasConnected && canReconnect) {
                 if (reconnectTimedOut) {
                     reconnectingTimeout = undefined;
-                    if (activeCall !== call || state == "connected")
+                    if (state == "connected")
                         return;
                     state = "disconnected";
                 }
@@ -272,9 +275,7 @@ const processCommand = (function () {
                 else {
                     pc.removeEventListener("iceconnectionstatechange", connectionStateChange);
                 }
-                if (activeCall) {
-                    setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
-                }
+                setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
                 endCall();
             }
             else if (state == "connected") {
@@ -632,16 +633,46 @@ const processCommand = (function () {
         return apiResp;
     }
     function endCall() {
-        var _a;
         shutdownCameraAndMic();
+        const pc = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection;
+        activeCall = undefined;
+        resetVideoElements();
+        if (pc)
+            closeAfterPeerCloses(pc);
+    }
+    function closeAfterPeerCloses(pc) {
+        if (!iceConnected(pc)) {
+            closeConnection(pc);
+            return;
+        }
+        const timeout = setTimeout(close, peerCloseTimeout);
+        pc.addEventListener("iceconnectionstatechange", closeWhenDisconnected);
         try {
-            (_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection) === null || _a === void 0 ? void 0 : _a.close();
+            pc.getTransceivers().forEach((t) => t.stop());
         }
         catch (e) {
             console.log(e);
         }
-        activeCall = undefined;
-        resetVideoElements();
+        function closeWhenDisconnected() {
+            if (!iceConnected(pc))
+                close();
+        }
+        function close() {
+            clearTimeout(timeout);
+            pc.removeEventListener("iceconnectionstatechange", closeWhenDisconnected);
+            closeConnection(pc);
+        }
+    }
+    function iceConnected(pc) {
+        return pc.iceConnectionState == "connected" || pc.iceConnectionState == "completed";
+    }
+    function closeConnection(pc) {
+        try {
+            pc.close();
+        }
+        catch (e) {
+            console.log(e);
+        }
     }
     function addIceCandidates(conn, iceCandidates) {
         for (const c of iceCandidates) {

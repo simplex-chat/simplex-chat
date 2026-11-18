@@ -241,6 +241,7 @@ struct ActiveCallView: View {
                     closeCallView(client)
                     m.activeCall = nil
                     m.activeCallViewIsCollapsed = false
+                    CallController.shared.suspendOnEndCall()
                 default: ()
                 }
             case let .error(message):

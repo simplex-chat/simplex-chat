@@ -88,6 +88,7 @@ SCOPE_CHANGES = {
     "mcp": ["packages/simplex-chat-mcp/**"],
     "support-bot": ["apps/simplex-support-bot/**"],
     "support-bot-light": ["apps/simplex-support-bot-light/**", "packages/simplex-chat-python/**"],
+    "webrtc": ["packages/simplex-chat-webrtc/**", "apps/multiplatform/common/src/commonMain/resources/assets/www/**"],
 }
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)

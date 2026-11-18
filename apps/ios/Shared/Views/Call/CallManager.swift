@@ -98,17 +98,18 @@ class CallManager {
         } else {
             logger.debug("CallManager.endCall: ending call...")
             Task {
+                do {
+                    try await apiEndCall(call.contact)
+                } catch {
+                    logger.error("CallController.provider apiEndCall error: \(responseError(error))")
+                }
                 await m.callCommand.processCommand(.end)
                 await MainActor.run {
                     m.activeCall = nil
                     m.activeCallViewIsCollapsed = false
                     m.showCallView = false
                     completed()
-                }
-                do {
-                    try await apiEndCall(call.contact)
-                } catch {
-                    logger.error("CallController.provider apiEndCall error: \(responseError(error))")
+                    CallController.shared.suspendOnEndCall()
                 }
             }
         }

@@ -159,13 +159,22 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - CI, in build-linux: `scope-tests.sh support-bot-light` (step "Test changed scopes"): the Python library of the branch and the bot installed in a virtual environment, then ruff, pyright and pytest. The tests use a fake API, without libsimplex.
 - Local: `scripts/ci/scope-tests.sh support-bot-light`.
 
+#### webrtc
+
+- Globs:
+  - packages/simplex-chat-webrtc/**
+  - apps/multiplatform/common/src/commonMain/resources/assets/www/**, the call pages built from the package
+- CI, in build-linux: `scope-tests.sh webrtc` (step "Test changed scopes"):
+  - `npm run build`, then `git diff --exit-code`: the committed call pages and their formatting must equal the build output;
+  - `npm test`: calls between two headless Chrome pages, with the test relaying signaling and media (test/harness.js). The tests of test/fullstack.test.js are skipped unless SIMPLEX_CHAT and SMP_SERVER name the chat CLI and SMP server executables.
+- Local: `scripts/ci/scope-tests.sh webrtc`; Chrome or Chromium is found as `google-chrome` on PATH or given in CHROME.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |
 |---|---|---|
 | types package | packages/simplex-chat-client/types/typescript/** | compile only |
 | ts-client | packages/simplex-chat-client/typescript/** | - |
-| webrtc | packages/simplex-chat-webrtc/** | - |
 | calculator-bot | apps/simplex-calculator-bot/** | - |
 | prices | scripts/prices/** | - |
 | nft | eth/nft/** | - |

@@ -542,6 +542,14 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("packages/simplex-chat-python/src/simplex_chat/client.py"), {"packages"})
         self.assertEqual(self.values["scopes"], "support-bot-light")
 
+    def test_webrtc_change_tests_its_scope(self):
+        self.assertEqual(self.builds("packages/simplex-chat-webrtc/src/call.ts"), set())
+        self.assertEqual(self.values["scopes"], "webrtc")
+
+    def test_call_page_change_builds_kotlin_and_tests_the_webrtc_scope(self):
+        self.assertEqual(self.builds("apps/multiplatform/common/src/commonMain/resources/assets/www/call.js"), {"kotlin"})
+        self.assertEqual(self.values["scopes"], "webrtc")
+
 
 class PackageStateTest(GitRepoTest):
     def setUp(self):

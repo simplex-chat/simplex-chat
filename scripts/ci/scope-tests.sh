@@ -34,8 +34,15 @@ case "${1:-}" in
     .venv/bin/pyright
     .venv/bin/pytest tests
     ;;
+  webrtc)
+    cd packages/simplex-chat-webrtc
+    npm install --no-audit --no-fund
+    npm run build
+    git diff --exit-code -- . ../../apps/multiplatform/common/src/commonMain/resources/assets/www
+    CHROME=${CHROME:-$(command -v google-chrome)} npm test
+    ;;
   *)
-    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light" >&2
+    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light | webrtc" >&2
     exit 1
     ;;
 esac

@@ -312,6 +312,7 @@ let notConnectedCall: NotConnectedCall | undefined
 let answerTimeout = 30_000
 let reconnectTimeout = 30_000
 let iceRestartInterval = 10_000
+let peerCloseTimeout = 5_000
 var useWorker = false
 var isDesktop = false
 var localizedState = ""
@@ -515,6 +516,7 @@ const processCommand = (function () {
     }
 
     async function connectionHandler(reconnectTimedOut = false) {
+      if (activeCall !== call) return
       let state: string =
         pc.connectionState ??
         (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
@@ -525,7 +527,7 @@ const processCommand = (function () {
       if (wasConnected && canReconnect) {
         if (reconnectTimedOut) {
           reconnectingTimeout = undefined
-          if (activeCall !== call || state == "connected") return
+          if (state == "connected") return
           state = "disconnected"
         } else if (state == "disconnected" || state == "failed") {
           if (reconnectingTimeout !== undefined) return
@@ -555,9 +557,7 @@ const processCommand = (function () {
         } else {
           pc.removeEventListener("iceconnectionstatechange", connectionStateChange)
         }
-        if (activeCall) {
-          setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
-        }
+        setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
         endCall()
       } else if (state == "connected") {
         clearConnectionTimeout()
@@ -908,13 +908,46 @@ const processCommand = (function () {
 
   function endCall() {
     shutdownCameraAndMic()
+    const pc = activeCall?.connection
+    activeCall = undefined
+    resetVideoElements()
+    if (pc) closeAfterPeerCloses(pc)
+  }
+
+  function closeAfterPeerCloses(pc: RTCPeerConnection) {
+    if (!iceConnected(pc)) {
+      closeConnection(pc)
+      return
+    }
+    const timeout = setTimeout(close, peerCloseTimeout)
+    pc.addEventListener("iceconnectionstatechange", closeWhenDisconnected)
     try {
-      activeCall?.connection?.close()
+      pc.getTransceivers().forEach((t) => t.stop())
     } catch (e) {
       console.log(e)
     }
-    activeCall = undefined
-    resetVideoElements()
+
+    function closeWhenDisconnected() {
+      if (!iceConnected(pc)) close()
+    }
+
+    function close() {
+      clearTimeout(timeout)
+      pc.removeEventListener("iceconnectionstatechange", closeWhenDisconnected)
+      closeConnection(pc)
+    }
+  }
+
+  function iceConnected(pc: RTCPeerConnection): boolean {
+    return pc.iceConnectionState == "connected" || pc.iceConnectionState == "completed"
+  }
+
+  function closeConnection(pc: RTCPeerConnection) {
+    try {
+      pc.close()
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   function addIceCandidates(conn: RTCPeerConnection, iceCandidates: RTCIceCandidateInit[]) {
