@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 const domTest = timedTest(2000);
 
 import { StubElement, installDocument } from "./stub-dom.js";
+import { BOLT11 } from "./open-order.js";
 import { historyRows, receivedMoney, withoutCode } from "../src/order.js";
 type UnpaidOrder = import("../src/order.js").UnpaidOrder;
 
@@ -48,7 +49,6 @@ const openXmr: View = {
   currency: "usd", expiresAt: "2026-08-28T12:58:12Z",
   address: "48HqK2XmVexampleAddress9fRtWc", cryptoAmount: "1.482", cryptoCurrency: "xmr",
 };
-const BOLT11 = "lnbc500u1pfakeinvoicedestinationforthetestsonly";
 const openLn: View = {
   status: "open", badgeType: "supporter", months: 1, amount: 700,
   currency: "usd", expiresAt: "2026-08-28T12:58:12Z",
@@ -639,7 +639,7 @@ domTest("screens: for a closed Lightning order with nothing received, the buyer 
   }));
   assert.ok(funded.textContent.includes("0.00050000 BTC arrived after the window closed"), funded.textContent);
   for (const leak of ["not the full amount", "shortfall", "settled", screens.LIGHTNING_DO_NOT_PAY]) {
-    assert.ok(!funded.textContent.includes(leak), `a whole Lightning payment that settled after the close: "${leak}"`);
+    assert.ok(!funded.textContent.includes(leak), `a whole Lightning payment settled after the invoice was closed: "${leak}"`);
   }
   assert.ok(funded.textContent.includes("inv_9f3a"), "and the reference support works from");
   assertNoCode(funded, "the expired Lightning order");

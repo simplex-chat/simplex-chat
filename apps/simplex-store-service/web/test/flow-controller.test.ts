@@ -7,6 +7,7 @@ import { applyView, historyRows, offlineInvoice, recordFromView, orderPhase, sel
 import { countdown, money, moneyCompact, startedAgo } from "../src/format.js";
 import { type OrderRecord } from "../src/domain.js";
 import { Store, type StorageLike } from "../src/store.js";
+import { BOLT11 } from "./open-order.js";
 
 const apiTest = timedTest(2000);
 
@@ -811,7 +812,7 @@ apiTest("flow: the confirming screen gives up after exactly fifteen minutes, cou
 apiTest("flow: after the wait for a Lightning payment still settling, the give-up view is given the Lightning method, so it is worded with settle", async () => {
   const h = harness();
   const processingLn = {
-    ...openXmr, address: "lnbc500u1pfakeinvoicedestinationforthetestsonly", cryptoAmount: "0.00050000",
+    ...openXmr, address: BOLT11, cryptoAmount: "0.00050000",
     cryptoCurrency: "ln", amountPaid: 42000, cryptoAmountPaid: "0.00050000", paidInFull: true,
   } as const;
   const w = h.flow.watch("inv_9f3a", { initial: processingLn, method: "ln" });

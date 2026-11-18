@@ -2,13 +2,12 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
 import { MemStorage } from "./stub-dom.js";
-import { NOW } from "./open-order.js";
+import { BOLT11, NOW } from "./open-order.js";
 import { CANCEL_CONFIRM_LIGHTNING, CANCEL_INVOICE } from "../src/screens.js";
 
 const cancelTest = timedTest(3000);
 
 const ORDER_ID = "inv_ln_open";
-const BOLT11 = "lnbc500u1pfakeinvoicedestinationforthetestsonly";
 const openLn = {
   status: "open", badgeType: "supporter", months: 1, amount: 700, currency: "usd",
   expiresAt: "2026-08-28T12:58:12Z", address: BOLT11, cryptoAmount: "0.00050000", cryptoCurrency: "ln",
@@ -33,5 +32,5 @@ cancelTest("main: the buyer who cancels a Lightning invoice is asked with the Li
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
   await settle();
   assert.deepEqual(confirms, [CANCEL_CONFIRM_LIGHTNING]);
-  assert.ok(!fetches.slice(before).some((f) => f.url.endsWith("/cancel")), "a declined confirm cancels nothing");
+  assert.ok(!fetches.slice(before).some((f) => f.url.endsWith("/cancel")), "after a declined confirmation, nothing is cancelled");
 });

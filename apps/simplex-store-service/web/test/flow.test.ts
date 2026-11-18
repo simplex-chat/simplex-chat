@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { createInvoice, waitForChange, inferMethod, parseInvoiceView, readInvoice, ApiError, AbortedError } from "../src/api.js";
 import { generate, display, normalise, checkChar, hash } from "../src/codes.js";
 import { Store } from "../src/store.js";
+import { BOLT11 } from "./open-order.js";
 
 const apiTest = timedTest(2000);
 
@@ -51,7 +52,7 @@ const fullCreated = {
 const lnCreated = {
   invoiceId: "inv_ln01", badgeType: "supporter", months: 1,
   amount: 700, currency: "usd", expiresAt: "2026-08-28T12:00:00Z",
-  address: "lnbc500u1pfakeinvoicedestinationforthetestsonly", cryptoAmount: "0.00050000", cryptoCurrency: "ln" as const,
+  address: BOLT11, cryptoAmount: "0.00050000", cryptoCurrency: "ln" as const,
 };
 const cardCreated = {
   invoiceId: "inv_card1", badgeType: "supporter", months: 1,

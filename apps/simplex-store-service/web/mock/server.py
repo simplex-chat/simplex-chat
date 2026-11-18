@@ -39,7 +39,7 @@ MIME = {".html": "text/html", ".css": "text/css", ".js": "text/javascript",
         ".svg": "image/svg+xml", ".json": "application/json", ".webmanifest": "application/manifest+json"}
 # BTCPay's default speed policy asks for one confirmation.
 REQUIRED_CONFIRMATIONS = 1
-CHAINS = ("btc", "ln", "xmr")
+COINS = ("btc", "ln", "xmr")
 BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 MOCK_BOLT11_LENGTH = 360
 ADDRESSES = {
@@ -212,7 +212,7 @@ class Handler(BaseHTTPRequestHandler):
             body = self._read_json()
             if not body or not isinstance(body.get("codeHash"), str) or not body["codeHash"]:
                 return self._send(400, {"error": "bad_request"})
-            if body.get("method") not in ("card", *CHAINS):
+            if body.get("method") not in ("card", *COINS):
                 return self._send(400, {"error": "bad_request"})
             with LOCK:
                 if body["codeHash"] in HASHES:
