@@ -4,7 +4,7 @@
 
 - Warnings are added on the screens below.
 - WebKit is recognised by its user agent: `AppleWebKit/` without `Chrome/` or `Android`.
-- One value, `Retention`, is passed to the screens:
+- A `Retention` value is passed to the screens:
   - the code screen, in place of `savedLocally`
   - the return-to-app screen, in place of `savedLocally`
   - the paid-no-code screen
@@ -44,7 +44,7 @@ The period text: "after 7 days of browser use without a tap, click or key press 
 | Your codes, with a paid code | warning above the list | This browser can delete codes | It may do so after the period. Copy each code you have not redeemed and keep it outside this browser. |
 | Your codes, without a paid code | grey line under the lede | | This browser can delete codes after the period. |
 | Your codes, empty | grey line under the lede | | This browser can delete codes after the period. |
-| Paid order opened without its code | notice | unchanged | If the code was bought in this browser, it may have been deleted after the period. |
+| Paid order opened without its code | notice, between its title and the reference line | unchanged | If the code was bought in this browser, it may have been deleted after the period. |
 
 ```mermaid
 flowchart TD
@@ -57,6 +57,9 @@ flowchart TD
   u --> cw
   cw -->|no| nk
   cw -->|yes| same[kept or keptUntilIdle, unchanged]
+  nk --> other[Your codes, paid-no-code: the page-load value]
+  k --> other
+  u --> other
 ```
 
 | Screen | `notKept` | `kept` | `keptUntilIdle` |
