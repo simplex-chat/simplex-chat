@@ -335,12 +335,12 @@ updateAllContactReceipts db onOff =
 updateUserContactReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
 updateUserContactReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
   DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE user_id = ?" (BI enable, userId)
-  when clearOverrides $ DB.execute_ db "UPDATE contacts SET send_rcpts = NULL"
+  when clearOverrides $ DB.execute db "UPDATE contacts SET send_rcpts = NULL WHERE user_id = ?" (Only userId)
 
 updateUserGroupReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
 updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
   DB.execute db "UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?" (BI enable, userId)
-  when clearOverrides $ DB.execute_ db "UPDATE groups SET send_rcpts = NULL"
+  when clearOverrides $ DB.execute db "UPDATE groups SET send_rcpts = NULL WHERE user_id = ?" (Only userId)
 
 updateUserAutoAcceptMemberContacts :: DB.Connection -> User -> Bool -> IO ()
 updateUserAutoAcceptMemberContacts db User {userId} autoAccept =
