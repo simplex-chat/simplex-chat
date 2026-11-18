@@ -687,10 +687,20 @@ final class ChatModel: ObservableObject {
     // Spec: spec/state.md#replaceChat
     func replaceChat(_ id: String, _ chat: Chat) {
         if let i = getChatIndex(id) {
+            let wasUnread = chats[i].unreadTag
+            let wasUserUnreadCount = chats[i].userUnreadCount
             chats[i] = chat
+            ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
+            if chat.userUnreadCount != wasUserUnreadCount {
+                updateNtfBadgeCount()
+            }
         } else {
             // invalid state, correcting
             chats.insert(chat, at: 0)
+            ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: false)
+            if chat.userUnreadCount > 0 {
+                updateNtfBadgeCount()
+            }
         }
     }
 
@@ -1016,8 +1026,9 @@ final class ChatModel: ObservableObject {
     func markAllChatItemsRead(_ chatIM: ItemsModel, _ cInfo: ChatInfo) {
         // update preview
         _updateChat(cInfo.id) { chat in
-            ChatTagsModel.shared.markChatTagRead(chat)
+            let wasUnread = chat.unreadTag
             chat.chatStats = ChatStats()
+            ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
         }
         updateNtfBadgeCount()
         // update current chat
@@ -1041,10 +1052,11 @@ final class ChatModel: ObservableObject {
     func clearChat(_ cInfo: ChatInfo) {
         // clear preview
         if let chat = getChat(cInfo.id) {
+            let wasUnread = chat.unreadTag
             chat.chatItems = []
-            ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
             chat.chatInfo = cInfo
+            ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
             updateNtfBadgeCount()
         }
         // clear current chat

@@ -815,9 +815,9 @@ object ChatModel {
       // clear preview
       val i = getChatIndex(rhId, cInfo.id)
       if (i >= 0) {
-        val chatBefore = chats[i]
+        val wasUnread = chats[i].unreadTag
         chats[i] = chats[i].copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats(), chatInfo = cInfo)
-        markChatTagRead(chatBefore)
+        updateChatTagReadInPrimaryContext(chats[i], wasUnread)
       }
       // clear current chat
       if (chatId.value == cInfo.id) {
