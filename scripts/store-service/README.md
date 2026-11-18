@@ -65,6 +65,11 @@ set -a; . scripts/store-service/dev/lightning.env; set +a
 cabal test simplex-chat-test --ghc-options=-O0 --test-option=-m --test-option='StoreService Lightning e2e'
 ```
 
+The two sites are paid through the same stack in a browser with `dev/contract-run.sh` and
+`LIGHTNING_ENV=scripts/store-service/dev/lightning.env`, as
+[apps/simplex-store-service/README.md](../../apps/simplex-store-service/README.md#running-the-webapps-cases-against-the-service)
+describes.
+
 On a second run of `dev/lightning.sh`, the channel is kept and another store is created. The stack is
 removed, from `scripts/store-service`, with `docker compose -f dev/lightning.yml down -v`.
 

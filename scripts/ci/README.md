@@ -132,8 +132,9 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 - Workflow: store-lightning-e2e.yml, job test (ubuntu-22.04 x86_64), on a dispatch only. It is not part of build.yml.
 - CI: `scripts/store-service/dev/lightning.sh` (BTCPay Server 2.4.4 on regtest with its LND node and a payer's LND node), the build-linux Docker image, a `postgres:17` container, `cabal build` with `+client_postgres`, then simplex-chat-test with `--fail-on=empty,pending -m "StoreService Lightning e2e"` and the variables of `scripts/store-service/dev/lightning.env`.
+- Then the browser cases: `scripts/store-service/dev/contract-run.sh` with `LIGHTNING_ENV`, on a local anvil chain with the contracts of simplex-namespace-contract compiled (cached by their commits), the service binary of the same build on that Postgres, the badges site built, and the names webapp checked out. In Chromium, Firefox and WebKit, and for the badges site also on an Android and an iPhone screen, each case orders with Lightning, pays the invoice the page shows at the payer's node and waits for the page's answer: the code, the name registered, or the cancelled order shown with what arrived.
 - The Docker image layers are read from the weekly registry cache that build-linux writes on master, as in test-store-postgres.
-- Dispatch: `gh workflow run store-lightning-e2e.yml --ref <branch>`.
+- Dispatch: `gh workflow run store-lightning-e2e.yml --ref <branch>`. The inputs `names_repository` and `names_ref` choose the names webapp's checkout, by default the commit of the `apps/simplex-domains` submodule.
 - Local: scripts/store-service/README.md, "Lightning end-to-end tests".
 
 #### website

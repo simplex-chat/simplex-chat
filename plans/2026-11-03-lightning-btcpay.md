@@ -111,5 +111,6 @@ Settlement rules:
 | Haskell, fake BTCPay | signals under every speed policy; New, closed and cancelled-then-paid invoices; create body; enabled methods; rate |
 | Haskell, recorded bodies | settled; cancelled then paid |
 | Haskell, BTCPay on regtest | badge paid by webhook; badge paid by poller; badge cancelled then paid; name paid; startup log |
+| Browsers, the service with BTCPay on regtest and a local chain | badge paid, its code shown; badge cancelled then paid; name paid and registered; name cancelled then paid |
 | Badges page | screens; QR; cancel; history |
 | Names page | screens; QR; BOLT11 check; browser specs |

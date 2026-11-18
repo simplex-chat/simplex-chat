@@ -1830,8 +1830,8 @@ Playwright's Chromium (`npm install`, `npx playwright install chromium`); and th
 `ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
 (brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
 as the terms, as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
-`dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
-`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8098, 8180, 8181 and 8199 must be free:
+`dev/local-chain-0.json`, so the script stops when its deployment differs from it, and writes it when
+the webapp has none. Ports 8545, 8098, 8180, 8181 and 8199 must be free:
 the script stops before starting anything when one of them answers, and stops at once when anvil,
 the terms server, the service or the code server exits before it answers.
 
@@ -1844,7 +1844,20 @@ ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contra
 - `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
 - `SERVICE_PORT`, `BADGES_PORT`, `CODES_PORT`: the service's names and badges ports and the code
   server's (8180, 8181 and 8199).
+- `STORE_DB`: a Postgres connection string, for a service built with `+client_postgres`, whose
+  database must exist (default: a SQLite database in the run's folder).
 - Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
+
+With `LIGHTNING_ENV` set to the `lightning.env` that `scripts/store-service/dev/lightning.sh` writes,
+the cases are paid ones instead, in every browser project of each site's Playwright config: the names
+webapp's `e2e/lightning-node.spec.ts`, against the names site, and `web/e2e/lightning-node.spec.ts`,
+against the badges site. Each orders with Lightning, pays the BOLT11 of the page's wallet link at the
+payer's node and waits for the page to show the name registered, the badge's code, or a cancelled
+order with what arrived. `[btcpay]` is written from that file, the service listens on 0.0.0.0, as
+BTCPay's webhook comes from its container, and the badges port defaults to
+`STORE_LIGHTNING_SERVICE_PORT`, where the webhook is sent. `BADGES_SITE` is the built badges site
+(`npm run build` in `web/`, its `dist/`), and the browsers are installed with
+`npx playwright install chromium firefox webkit`. CI runs them in store-lightning-e2e.yml.
 
 The default cases cover search answers for an available name, Check your code and its rate-limit
 countdown, code orders to `registered` with and without links, one whose register records its buyer's

@@ -9,11 +9,22 @@ shopt -s inherit_errexit
 WEBAPP_DIR="${WEBAPP_DIR:-$(cd "$(dirname "$0")/../../.." && pwd)/apps/simplex-domains/webapp}"
 : "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to the compiled ens-contracts submodule of a simplex-namespace-contract checkout, as for the webapp dev/start.sh}"
 ANVIL="${ANVIL:-anvil}"
+LIGHTNING_ENV="${LIGHTNING_ENV:-}"
+if [ -n "$LIGHTNING_ENV" ]; then
+  set -a
+  # shellcheck disable=SC1090 # the file lightning.sh writes
+  . "$LIGHTNING_ENV"
+  set +a
+fi
 SERVICE_PORT="${SERVICE_PORT:-8180}"
-BADGES_PORT="${BADGES_PORT:-8181}"
+BADGES_PORT="${BADGES_PORT:-${STORE_LIGHTNING_SERVICE_PORT:-8181}}"
 CODES_PORT="${CODES_PORT:-8199}"
 REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
 STORE_SERVICE_BIN="${STORE_SERVICE_BIN:-$(cd "$REPO" && cabal list-bin exe:simplex-store-service)}"
+BADGES_SITE="${BADGES_SITE:-}"
+if [ -n "${STORE_DB:-}" ]; then
+  DB_ARGS=(-d "$STORE_DB" --create-schema --yes-migrate)
+fi
 
 # The e2e helpers read the chain from the webapp's dev/local-chain-0.json, which slot 0 of dev/start.sh
 # writes: anvil on 8545, a 5-second commitment age, and so the same contract addresses.
@@ -68,6 +79,7 @@ CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6" "name 6" "name 6" "n
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
 INI="$RUN_DIR/store_service.ini"
 DB="$RUN_DIR/db"
+if [ -z "${DB_ARGS+set}" ]; then DB_ARGS=(-d "$DB"); fi
 
 # Only jobs still running are stopped, so a PID reused since one ended is never killed. The run's
 # folder is kept when the run fails, for its logs.
@@ -116,6 +128,7 @@ start_chain() {
   answering $! -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}' "$RPC_URL"
   (cd "$WEBAPP_DIR" && RPC_URL="$RPC_URL" LOCAL_CHAIN_OUT="$RUN_DIR/chain.json" MIN_COMMITMENT_AGE="$MIN_COMMITMENT_AGE" \
     ENS_CONTRACTS_DIR="$ENS_CONTRACTS_DIR" node dev/deploy.ts) > "$RUN_DIR/deploy.log" 2>&1
+  if [ ! -e "$WEBAPP_DIR/dev/local-chain-0.json" ]; then cp "$RUN_DIR/chain.json" "$WEBAPP_DIR/dev/local-chain-0.json"; fi
   if ! cmp -s "$RUN_DIR/chain.json" "$WEBAPP_DIR/dev/local-chain-0.json"; then
     echo "the deployment differs from $WEBAPP_DIR/dev/local-chain-0.json, which the e2e helpers read; run its dev/start.sh with SLOTS=1 MIN_COMMITMENT_AGE=$MIN_COMMITMENT_AGE once" >&2
     exit 1
@@ -131,16 +144,22 @@ build_site() {
   (cd "$WEBAPP_DIR" && npx vite build --outDir "$RUN_DIR/names" --emptyOutDir --logLevel warn) > "$RUN_DIR/build.log" 2>&1
 }
 
-# No [btcpay] and no [stripe]: these cases pay for nothing. The names site is served on the port the
-# tests open; the badges site, on its own port, is not used, so its build is an empty folder.
+# No [stripe], and [btcpay] only with LIGHTNING_ENV, whose cases pay at its Lightning node. The names
+# site is served on the port the tests open; the badges site on its own port, from BADGES_SITE or an
+# empty folder. BTCPay's webhook comes from its container, so with LIGHTNING_ENV the service listens
+# beyond loopback.
 write_ini() {
-  local chain="$RUN_DIR/chain.json"
-  mkdir -p "$RUN_DIR/badges"
+  local chain="$RUN_DIR/chain.json" host=127.0.0.1 badges="$BADGES_SITE"
+  if [ -n "$LIGHTNING_ENV" ]; then host=0.0.0.0; fi
+  if [ -z "$badges" ]; then
+    badges="$RUN_DIR/badges"
+    mkdir -p "$badges"
+  fi
   cat > "$INI" <<INI
 [listener]
-host = 127.0.0.1
+host = $host
 badges_port = $BADGES_PORT
-badges_static_dir = $RUN_DIR/badges
+badges_static_dir = $badges
 serve_webapp = on
 names_static_dir = $RUN_DIR/names
 names_port = $SERVICE_PORT
@@ -166,11 +185,21 @@ base_registrar = $(jq -r .baseRegistrar "$chain")
 resolver = $(jq -r .resolver "$chain")
 service_key = $(jq -r .registrarKey "$chain")
 INI
+  if [ -n "$LIGHTNING_ENV" ]; then
+    cat >> "$INI" <<INI
+
+[btcpay]
+host = $STORE_LIGHTNING_BTCPAY_URL
+api_key = $STORE_LIGHTNING_BTCPAY_API_KEY
+store_id = $STORE_LIGHTNING_BTCPAY_STORE_ID
+webhook_secret = $STORE_LIGHTNING_BTCPAY_WEBHOOK_SECRET
+INI
+  fi
   chmod 600 "$INI"
 }
 
 start_service() {
-  "$STORE_SERVICE_BIN" --no-address --service-config "$INI" -d "$DB" >> "$RUN_DIR/service.log" 2>&1 &
+  "$STORE_SERVICE_BIN" --no-address --service-config "$INI" "${DB_ARGS[@]}" >> "$RUN_DIR/service.log" 2>&1 &
   SERVICE_PID=$!
   answering "$SERVICE_PID" "$SERVICE_URL/"
 }
@@ -187,7 +216,7 @@ make_database() {
 # each command is typed into a pseudo-terminal, and its "Code: ..." answer read.
 issue_codes() {
   python3 -I - "$CLI_TIMEOUT_SECONDS" "$RUN_DIR/codes.json" "${CODES[@]}" -- \
-    "$STORE_SERVICE_BIN" --run-cli --no-address --service-config "$INI" -d "$DB" > "$RUN_DIR/issue.log" 2>&1 <<'PY'
+    "$STORE_SERVICE_BIN" --run-cli --no-address --service-config "$INI" "${DB_ARGS[@]}" > "$RUN_DIR/issue.log" 2>&1 <<'PY'
 import fcntl, json, os, pty, re, select, signal, struct, sys, termios, time
 
 args = sys.argv[1:]
@@ -349,13 +378,25 @@ run_cases() {
     npx playwright test --project=chromium --output "$RUN_DIR/test-results" "${filter[@]}")
 }
 
+run_lightning_cases() {
+  (cd "$WEBAPP_DIR" && BASE_URL="$SERVICE_URL" MOCK_URL="$CODES_URL" LIGHTNING_PAYER_URL="$STORE_LIGHTNING_PAYER_URL" \
+    npx playwright test e2e/lightning-node.spec.ts --output "$RUN_DIR/names-results")
+  (cd "$REPO/apps/simplex-store-service/web" && BASE_URL="$BADGES_URL" LIGHTNING_PAYER_URL="$STORE_LIGHTNING_PAYER_URL" \
+    npx playwright test --output "$RUN_DIR/badges-results")
+}
+
 refuse_taken_ports
 start_chain
 start_terms
 build_site
 write_ini
-make_database
-issue_codes
-start_service
-start_code_server
-run_cases "$@"
+if [ -n "$LIGHTNING_ENV" ]; then
+  start_service
+  run_lightning_cases
+else
+  make_database
+  issue_codes
+  start_service
+  start_code_server
+  run_cases "$@"
+fi
