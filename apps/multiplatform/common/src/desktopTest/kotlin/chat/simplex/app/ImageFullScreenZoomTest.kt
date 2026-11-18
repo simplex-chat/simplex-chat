@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
@@ -82,6 +83,15 @@ class ImageFullScreenZoomTest {
     }
   }
 
+  private fun ImageComposeScene.awaitPage() {
+    val deadline = System.nanoTime() + 30_000_000_000
+    do {
+      Snapshot.sendApplyNotifications()
+      if (shownAt(300) != Shown.BACKGROUND) return
+      Thread.sleep(20)
+    } while (System.nanoTime() < deadline)
+  }
+
   private fun ImageComposeScene.wheel(x: Float, notches: Float) {
     sendPointerEvent(PointerEventType.Scroll, Offset(x, 300f), scrollDelta = Offset(0f, notches))
     render()
@@ -112,7 +122,10 @@ class ImageFullScreenZoomTest {
     runBlocking(Dispatchers.Swing) {
       ImageComposeScene(800, 600, Density(1f), coroutineContext = Dispatchers.Unconfined) {
         wrapper { ImageFullScreenView({ provider }) { closed = true } }
-      }.use { scene -> scene.test { closed } }
+      }.use { scene ->
+        scene.awaitPage()
+        scene.test { closed }
+      }
     }
   }
 
