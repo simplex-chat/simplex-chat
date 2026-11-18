@@ -665,7 +665,7 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
     ["awaitingConfirmation", screens.awaitingConfirmation({ invoice: undefined, method: undefined, order: unpaid, gaveUp: false, onCheckAgain: noop }) as unknown as StubElement],
     ["the confirming screen gave up", screens.awaitingConfirmation({ invoice: undefined, method: undefined, order: unpaid, gaveUp: true, onCheckAgain: noop }) as unknown as StubElement],
     ["windowClosed", screens.windowClosed({ onNewInvoice: noop, order: unpaid, invoice: xmrInvoice }) as unknown as StubElement],
-    ["paidNoCode", screens.paidNoCode({ order: unpaid, settledAt: undefined }) as unknown as StubElement],
+    ["paidNoCode", screens.paidNoCode({ order: unpaid, settledAt: undefined, browserDeletesIdle: false }) as unknown as StubElement],
     ["the card form", screens.cardForm({ order: unpaid, invoice: xmrInvoice, resumed: false }) as unknown as StubElement],
   ];
   const rows = order.historyRows([record({ status: "open", code: BADGE_CODE }), record({ orderId: "inv_2", status: "expired", code: BADGE_CODE })]);

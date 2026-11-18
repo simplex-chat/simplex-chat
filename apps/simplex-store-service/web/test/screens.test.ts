@@ -763,8 +763,10 @@ domTest("screens: in a browser that deletes idle data, the code screen says so u
   const warn = p.all("div.warn")[0]!;
   assert.ok(warn.textContent.includes("This is the only copy."));
   assert.ok(warn.textContent.includes(screens.IDLE_DELETION), `the warning lacks the deletion: ${warn.textContent}`);
+  assert.ok(warn.textContent.includes(screens.KEEP_OUTSIDE), "and what to do about it");
   const kept = render(screens.codeIssued({ code: HELD_CODE, savedLocally: true, browserDeletesIdle: false }));
-  assert.ok(!kept.textContent.includes(screens.IDLE_DELETION), "Chromium and Firefox keep the code until it is cleared");
+  assert.ok(!kept.textContent.includes(screens.IDLE_DELETION), "Chromium and Firefox delete no site data on a timer");
+  assert.ok(!kept.textContent.includes(screens.KEEP_OUTSIDE));
   const unsaved = render(screens.codeIssued({ code: HELD_CODE, savedLocally: false, browserDeletesIdle: true }));
   assert.ok(!unsaved.textContent.includes(screens.IDLE_DELETION), "an unsaved code has nothing to delete");
 });
@@ -782,19 +784,36 @@ domTest("screens: the return-to-app ending warns before Show code in a browser t
   assert.equal(kept.all("div.warn").length, 0);
 });
 
-domTest("screens: Your codes says the browser deletes idle data, with codes and without", () => {
-  const listed = render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: true,
-    rows: historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE })]), onOpen: noop, onStart: noop }));
-  assert.ok(listed.textContent.includes(screens.IDLE_DELETION_ALL));
+domTest("screens: Your codes warns in a browser that deletes idle data, with codes and without", () => {
+  const rows = historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE })]);
+  const listed = render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: true, rows, onOpen: noop, onStart: noop }));
+  const warn = listed.all("div.warn")[0]!;
+  assert.equal(warn.all("span.title")[0]!.textContent, screens.COPY_UNREDEEMED);
+  assert.ok(warn.textContent.includes(screens.IDLE_DELETION_ALL));
   const empty = render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: true, rows: [], onOpen: noop, onStart: noop }));
-  assert.ok(empty.textContent.includes("Nothing bought on this device"));
-  assert.ok(empty.textContent.includes(screens.IDLE_DELETION_ALL), "an emptied list explains where the codes went");
-  const kept = render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: false, rows: [], onOpen: noop, onStart: noop }));
+  assert.equal(empty.all("p.lede")[0]!.textContent, screens.NOTHING_STORED, "the browser may have deleted codes bought on this device");
+  assert.equal(empty.all("p.muted")[0]!.textContent, screens.IDLE_DELETION_ALL, "and the emptied list says why");
+  for (const kept of [
+    render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: false, rows, onOpen: noop, onStart: noop })),
+    render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: false, rows: [], onOpen: noop, onStart: noop })),
+  ]) {
+    assert.ok(!kept.textContent.includes(screens.IDLE_DELETION_ALL));
+    assert.ok(!kept.textContent.includes(screens.NOTHING_STORED));
+  }
+});
+
+domTest("screens: the paid-no-code screen says this browser can delete codes, in a browser that does", () => {
+  const order = unpaidRecord({ status: "paid" });
+  const deleting = render(screens.paidNoCode({ order, settledAt: undefined, browserDeletesIdle: true }));
+  const notice = deleting.all("div.notice")[0]!;
+  assert.ok(notice.textContent.includes(screens.IDLE_DELETION_ALL), `the notice lacks the deletion: ${notice.textContent}`);
+  assert.ok(notice.textContent.includes("Quote the reference below and we will sort it out."));
+  const kept = render(screens.paidNoCode({ order, settledAt: undefined, browserDeletesIdle: false }));
   assert.ok(!kept.textContent.includes(screens.IDLE_DELETION_ALL));
 });
 
 domTest("screens: the paid-no-code screen names the badge and the reference, and has nothing else to offer", () => {
-  const p = render(screens.paidNoCode({ order: unpaidRecord({ status: "paid" }), settledAt: "2026-08-24T09:00:00Z" }));
+  const p = render(screens.paidNoCode({ order: unpaidRecord({ status: "paid" }), settledAt: "2026-08-24T09:00:00Z", browserDeletesIdle: false }));
   for (const line of ["This code is not on this device",
     "The code was generated in the browser it was bought in, and is not stored anywhere else.",
     "Quote the reference below and we will sort it out.", "Legend, 12 months", "inv_9f3a"]) {

@@ -8,8 +8,7 @@ import * as api from "./api.js";
 import { appCodeLink, readHash, resolveLoad } from "./routing.js";
 import * as screens from "./screens.js";
 import { appearanceFor, cardPlan, loadStripeJs, mountCard, type CardFailure, type ConfirmOutcome } from "./stripe.js";
-import { Store, type StorageLike } from "./store.js";
-import { browserDeletesIdle } from "./browser.js";
+import { Store, browserDeletesIdle, type StorageLike } from "./store.js";
 import { STEPS } from "./domain.js";
 import type { App, Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
 import { EMBED_READY, HEIGHT_MESSAGE, NAV_MESSAGE, THEME_MESSAGE, bgFromMessage, isNewPurchaseMessage, returnUrlFromMessage, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
@@ -674,7 +673,7 @@ function paint(view: PaymentView): void {
       root.replaceChildren(codeScreen(view));
       return;
     case "paidNoCode":
-      root.replaceChildren(screens.paidNoCode({ order: view.order, settledAt: view.invoice?.settledAt }));
+      root.replaceChildren(screens.paidNoCode({ order: view.order, settledAt: view.invoice?.settledAt, browserDeletesIdle: deletesIdle }));
       return;
     case "awaitingPayment": {
       const awaitingPayment = screens.awaitingPayment({

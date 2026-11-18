@@ -791,9 +791,12 @@ export interface CodeIssuedOptions {
 
 export const REDEEM_IN_SETTINGS = "Settings → Supporter perks → Redeem code";
 export const REDEEM_SCREEN_OPEN = "The Redeem code screen is already open.";
-export const IDLE_DELETION = "This browser deletes it after 7 days of use without a visit to this page.";
-export const IDLE_DELETION_ALL = "This browser deletes the codes stored here after 7 days of use without a visit to this page.";
-export const COPY_UNLESS_ADDED = "Copy the code if the app does not add it.";
+export const IDLE_DELETION = "This browser can delete it after 7 days of browsing without a tap or click on this site.";
+export const IDLE_DELETION_ALL = "This browser can delete the codes stored here after 7 days of browsing without a tap or click on this site.";
+export const KEEP_OUTSIDE = "Redeem it now, or copy it and keep it outside this browser.";
+export const COPY_UNREDEEMED = "Copy each code you have not redeemed.";
+export const COPY_UNLESS_ADDED = "Show and copy the code if the app does not add it.";
+export const NOTHING_STORED = "No codes stored in this browser";
 
 function codeWithCopy(code: string): HTMLElement[] {
   const copy = copyControl("Copy code", code, "primary outline");
@@ -806,7 +809,7 @@ function codeDetails(o: Omit<CodeIssuedOptions, "code">): HTMLElement {
         el("span", { class: "title" }, "This is the only copy."),
         el("p", {}, "Saved in this browser and nowhere else."),
         el("p", {}, "Anyone using this browser can read it, and clearing the browser loses it."),
-        ...(o.browserDeletesIdle ? [el("p", {}, IDLE_DELETION)] : []))
+        ...(o.browserDeletesIdle ? [el("p", {}, IDLE_DELETION), el("p", {}, KEEP_OUTSIDE)] : []))
     : el("div", { class: "warn" },
         el("span", { class: "title" }, "This code could not be saved in this browser."),
         el("p", {}, "Copy it now. It is shown here and nowhere else."));
@@ -902,6 +905,7 @@ function orderTitle(badgeType: string, months: number): string {
 export interface PaidNoCodeOptions {
   order: UnpaidOrder;
   settledAt: string | undefined;
+  browserDeletesIdle: boolean;
 }
 
 export function paidNoCode(o: PaidNoCodeOptions): HTMLElement {
@@ -911,6 +915,7 @@ export function paidNoCode(o: PaidNoCodeOptions): HTMLElement {
   const p = panel(
     el("h1", { class: "tight" }, "This code is not on this device"),
     notice("The code was generated in the browser it was bought in, and is not stored anywhere else.",
+      ...(o.browserDeletesIdle ? [IDLE_DELETION_ALL] : []),
       "Quote the reference below and we will sort it out."),
     summary,
   );
@@ -981,12 +986,11 @@ function entryLine(row: HistoryRow, onOpen: (orderId: string) => void): HTMLElem
 }
 
 export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
-  const idleDeletion = o.browserDeletesIdle ? [el("p", {}, IDLE_DELETION_ALL)] : [];
   if (o.rows.length === 0) {
     return withInvest(panel(
       el("h1", {}, "Your codes"),
-      el("p", { class: "lede" }, "Nothing bought on this device"),
-      ...idleDeletion,
+      el("p", { class: "lede" }, o.browserDeletesIdle ? NOTHING_STORED : "Nothing bought on this device"),
+      ...(o.browserDeletesIdle ? [el("p", { class: "muted" }, IDLE_DELETION_ALL)] : []),
       el("div", { class: "hero", role: "presentation" }),
       button("Choose your badge", o.onStart),
     ), investPanel(undefined));
@@ -1000,7 +1004,7 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
     el("p", { class: "lede" }, o.keepsNewCodes
       ? "Every code you bought is in this browser, and nowhere else."
       : "This browser cannot save anything new right now. Copy any code you have not kept elsewhere."),
-    ...idleDeletion,
+    ...(o.browserDeletesIdle ? [warning(COPY_UNREDEEMED, IDLE_DELETION_ALL)] : []),
     list,
     forget,
   ), investPanel(undefined));

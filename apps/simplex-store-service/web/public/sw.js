@@ -2,7 +2,7 @@
 // runs this exact file in a Node `vm` with a fake Cache API and reads `self.sw`.
 
 /** Rewritten by `build.js` from the bytes of the compiled modules, the stylesheet and the images. */
-const BUILD = "fffbfa49c76687db";
+const BUILD = "24a2ec8b7b37c802";
 const ASSETS = `/assets/${BUILD}/`;
 /** One cache per build, so eviction is "everything that is not this one". */
 const CACHE = `sb-${BUILD}`;
@@ -29,7 +29,6 @@ const PRECACHE = [
   `${ASSETS}Manrope-SemiBold.woff2`,
   `${ASSETS}Manrope-Bold.woff2`,
   `${ASSETS}api.js`,
-  `${ASSETS}browser.js`,
   `${ASSETS}order.js`,
   `${ASSETS}format.js`,
   `${ASSETS}domain.js`,

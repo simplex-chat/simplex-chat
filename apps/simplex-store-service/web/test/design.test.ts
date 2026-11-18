@@ -358,7 +358,7 @@ designTest("type: `Legend, 12 months` is one title, on the history list's rows a
     orderId: "inv_9f3a", badgeType: "legend", months: 12,
     createdAt: "2026-08-28T11:46:00Z", status: "open" as const,
   };
-  const paidNoCode = render(screens.paidNoCode({ order, settledAt: undefined }));
+  const paidNoCode = render(screens.paidNoCode({ order, settledAt: undefined, browserDeletesIdle: false }));
   const history = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, browserDeletesIdle: false,
     rows: [{ kind: "open" as const, order }], onOpen: () => {}, onStart: () => {},
   }));
@@ -657,7 +657,7 @@ designTest("design: no screen repeats the mark — the header carries it, and th
     ["the catalog-changed screen", screens.catalogChanged(() => {})],
     ["awaitingConfirmation", screens.awaitingConfirmation({ order, invoice: undefined, method: undefined, gaveUp: false, onCheckAgain: () => {} })],
     ["windowClosed", screens.windowClosed({ onNewInvoice: () => {}, order, invoice: { status: "expired" } })],
-    ["paidNoCode", screens.paidNoCode({ order, settledAt: undefined })],
+    ["paidNoCode", screens.paidNoCode({ order, settledAt: undefined, browserDeletesIdle: false })],
     ["unknownOrder", screens.unknownOrder(() => {})],
     ["invoiceFailure", screens.invoiceFailure({ onBack: () => {}, onRetry: () => {} })],
   ];
