@@ -27,10 +27,11 @@ package simplex-chat
     flags: +swift +client_library
     static: True
     shared: False
-    ghc-options: -threaded -DIOS
+    ghc-options: -threaded -DIOS -O1
 
 package simplexmq
     flags: +swift +client_library +commoncrypto
+    ghc-options: -O1
     extra-include-dirs: $openssl_dir/include
     extra-lib-dirs: $openssl_dir/lib
 

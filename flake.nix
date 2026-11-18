@@ -132,6 +132,10 @@
         ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
         postInstall = iosPostInstall bundleName;
       }; in
+      let mobileOptimisation = { config, ... }: let setupBuildFlags = config.setupBuildFlags ++ [ "--ghc-option=-O1" ]; in {
+        packages.simplex-chat.components.library.setupBuildFlags = setupBuildFlags;
+        packages.simplexmq.components.library.setupBuildFlags = setupBuildFlags;
+      }; in
       rec {
         packages = {
             "lib:simplex-chat" = (drv pkgs).simplex-chat.components.library;
@@ -344,7 +348,7 @@
               "armv7a-android:lib:simplex-chat" = (drv' {
                 pkgs' = android32Pkgs;
                 compiler-nix-name = "ghc8107";
-                extra-modules = [{
+                extra-modules = [ mobileOptimisation {
                   packages.direct-sqlcipher.flags.openssl = true;
                   packages.direct-sqlcipher.components.library.libs = pkgs8107.lib.mkForce [
                     (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
@@ -364,7 +368,7 @@
                 # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
                 # template haskell cross compilation. Thus we just pass them as linker options (-optl).
                 # 32-bit ARM only: processAgentMessageConn is too large for ARM's PC-relative constant-pool
-                # range at -O2; -O1 is appended after the cabal -O2 here, so it wins (aarch64 stays -O2).
+                # range at -O2; -O1 is appended after the cabal -O2 here, so it wins.
                 setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi" "-j1" "-O1"];
                 postInstall = ''
                   set -x
@@ -421,7 +425,7 @@
               };
               "aarch64-android:lib:simplex-chat" = (drv' {
                 pkgs' = androidPkgs;
-                extra-modules = [{
+                extra-modules = [ mobileOptimisation {
                   packages.text.flags.simdutf = false;
                   packages.direct-sqlcipher.flags.openssl = true;
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
@@ -555,7 +559,7 @@
               # aarch64-darwin iOS build (to be patched with mac2ios)
               "aarch64-darwin-ios:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
-                extra-modules = [{
+                extra-modules = [ mobileOptimisation {
                   packages.simplex-chat.flags.swift = true;
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
@@ -592,7 +596,7 @@
               # x86_64-darwin iOS simulator build (to be patched with mac2ios)
               "x86_64-darwin-ios:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
-                extra-modules = [{
+                extra-modules = [ mobileOptimisation {
                   packages.simplex-chat.flags.swift = true;
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
