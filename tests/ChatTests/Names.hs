@@ -799,8 +799,7 @@ testPlanKnownNameNewChatOpened = withKnownAliceName $ \reg _alice bob cath -> do
   bob <## "contact address: ok to connect"
   contactSLinkData <- getTermLine bob
   bob <## "known contact @alice"
-  bob ##> ("/_prepare contact 1 " <> cathFullLink <> " " <> cathLink <> " domain=alice.simplex " <> contactSLinkData)
-  bob <## "cath: contact is prepared"
+  apiFixture "names/plan-known-moved-prepared" bob [(cathFullLink, "connFullLink"), (cathLink, "connShortLink")] FixtureRequests {frMarkdown = ["@alice.simplex"], frUris = [], frCommands = ["/_connect plan 1 @alice.simplex", "/_prepare contact 1 " <> cathFullLink <> " " <> cathLink <> " domain=alice.simplex " <> contactSLinkData]}
   bob ##> "/_connect plan 1 @alice.simplex resolve=never"
   bob <## "contact address: known prepared contact cath"
   bob <## "SimpleX name: @alice.simplex (verified)"
