@@ -138,20 +138,60 @@ final class UnreadCountsTests: XCTestCase {
         try respond("counts/moderator-read")
         let support = try items(events[0])[0]
         await apiMarkChatItemsRead(ItemsModel.shared, support.chatInfo, [support.chatItem.id], mentionsRead: 0)
-        try await assertCounts(1, 0, 1)
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+        XCTAssertEqual(rowCounts() + [ChatModel.shared.totalUnreadCountForAllUsers()], [1, 0, 1])
         XCTAssertEqual(try XCTUnwrap(ChatModel.shared.chats.first).supportUnreadCount, 0)
     }
 
     @MainActor
     func testRemovedChatLeavesNoListTagDot() async throws {
-        let events = try recordedEvents("counts/group-marked")
-        guard case var .group(groupInfo, _) = try chatInfo(events[0]) else { return XCTFail("not a group") }
-        groupInfo.chatTags = [1]
-        let chat = Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: try items(events[0]).map(\.chatItem), chatStats: ChatStats(unreadCount: 1))
-        ChatModel.shared.addChat(chat)
+        let chat = try addTaggedGroup(try recordedEvents("counts/group-marked")[0], unread: 1)
         XCTAssertEqual(ChatTagsModel.shared.unreadTags[1], 1)
         ChatModel.shared.removeChat(chat.id)
         XCTAssertEqual(ChatTagsModel.shared.unreadTags[1], 0)
+    }
+
+    @MainActor
+    func testReadChatWithSupportFlagKeepsListTagDot() async throws {
+        let chat = try addTaggedGroup(try recordedEvents("counts/moderator-support")[0], unread: 1)
+        ChatModel.shared.markAllChatItemsRead(ItemsModel.shared, chat.chatInfo)
+        XCTAssertEqual(ChatTagsModel.shared.unreadTags[1], 1)
+        try clearSupportFlag(chat)
+        XCTAssertEqual(ChatTagsModel.shared.unreadTags[1], 0)
+    }
+
+    @MainActor
+    func testClearedChatWithSupportFlagKeepsListTagDot() async throws {
+        let chat = try addTaggedGroup(try recordedEvents("counts/moderator-support")[0], unread: 1)
+        ChatModel.shared.clearChat(chat.chatInfo)
+        XCTAssertEqual(ChatTagsModel.shared.unreadTags[1], 1)
+        try clearSupportFlag(chat)
+        XCTAssertEqual(ChatTagsModel.shared.unreadTags[1], 0)
+    }
+
+    @MainActor
+    func testReplacedChatChangesListTagDotAndBadge() async throws {
+        let chat = try addTaggedGroup(try recordedEvents("counts/group-marked")[0], unread: 1)
+        XCTAssertEqual(badges.last, 1)
+        ChatModel.shared.replaceChat(chat.id, Chat(chatInfo: chat.chatInfo, chatItems: []))
+        XCTAssertEqual(ChatTagsModel.shared.unreadTags[1], 0)
+        XCTAssertEqual(badges.last, 0)
+    }
+
+    @MainActor
+    private func addTaggedGroup(_ event: ChatEvent, unread: Int) throws -> Chat {
+        var groupInfo = try XCTUnwrap(try chatInfo(event).groupInfo)
+        groupInfo.chatTags = [1]
+        let chat = Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: [], chatStats: ChatStats(unreadCount: unread))
+        ChatModel.shared.addChat(chat)
+        return chat
+    }
+
+    @MainActor
+    private func clearSupportFlag(_ chat: Chat) throws {
+        var groupInfo = try XCTUnwrap(chat.chatInfo.groupInfo)
+        groupInfo.membersRequireAttention = 0
+        ChatModel.shared.updateChatInfo(.group(groupInfo: groupInfo, groupChatScope: nil))
     }
 
     private func recordedEvents(_ fixture: String) throws -> [ChatEvent] {

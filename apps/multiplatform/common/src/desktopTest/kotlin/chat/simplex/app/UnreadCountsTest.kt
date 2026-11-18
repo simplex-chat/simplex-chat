@@ -226,6 +226,21 @@ class UnreadCountsTest {
   }
 
   @Test
+  fun clearedChatWithSupportFlagKeepsListTagDot() = recorded("counts/moderator-support") { (support) ->
+    val group = chatInfo(support) as ChatInfo.Group
+    val tagged = group.copy(groupInfo = group.groupInfo.copy(chatTags = listOf(1L)), groupChatScope = null)
+    withContext(Dispatchers.Main) {
+      ChatModel.chatsContext.addChat(Chat(remoteHostId = null, chatInfo = tagged, chatItems = listOf(), chatStats = Chat.ChatStats(unreadCount = 1)))
+      ChatModel.chatsContext.clearChat(null, tagged)
+    }
+    assertEquals(1, ChatModel.unreadTags[1L])
+    withContext(Dispatchers.Main) {
+      ChatModel.chatsContext.updateChatInfo(null, tagged.copy(groupInfo = tagged.groupInfo.copy(membersRequireAttention = 0)))
+    }
+    assertEquals(0, ChatModel.unreadTags[1L])
+  }
+
+  @Test
   fun supportChatContextKeepsItsOwnChats() = recorded("counts/moderator-support") { (support, main) ->
     listChat(main)
     runBlocking {
