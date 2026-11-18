@@ -156,8 +156,7 @@ afterWrite turns st codeId change write = do
   PrepaidCode {pcCodeHash} <- withTransaction st (`getPrepaidCodeById` codeId)
   withCodeTurn turns pcCodeHash $ withTransaction st $ \db -> write db >>= traverse (\a -> (a,) <$> change db)
 
--- | The code table keeps only the hash, so the caller must deliver the code. A code whose hash is taken is logged and drawn again,
--- up to 3 times.
+-- | The code table keeps only the hash, so the caller must deliver the code.
 issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)
 issueNameCode cc issuer len years paymentStatus
   | years < minNameYears || years > maxNameYears = Left outside <$ logError ("names: " <> T.pack outside)

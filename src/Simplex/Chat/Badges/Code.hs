@@ -6,10 +6,6 @@
 -- A code is "SB-" and 20 Crockford base32 characters in four groups of five:
 -- 19 payload characters and a final check character.
 --
--- A prepaid name code is "SN", the shortest name length it pays for in one or two ASCII digits
--- (6 to 63, no leading zero), then 20 characters in four groups of five: 19 payload
--- characters and a check character over the length digits and the payload.
---
 -- Reading folds the characters the alphabet omits so that a code copied by hand still
 -- verifies: it is case-insensitive and maps 'I' and 'L' to '1' and 'O' to '0', except in a
 -- prepaid code's length.
@@ -152,7 +148,6 @@ minNameLength = 6
 maxNameLength :: Int
 maxNameLength = 63
 
--- | The controller refuses a registration under 730 days.
 minNameYears :: Int
 minNameYears = 2
 
@@ -165,7 +160,6 @@ nameLength n = NameLength n <$ guard (n >= minNameLength && n <= maxNameLength)
 nameLengthInt :: NameLength -> Int
 nameLengthInt (NameLength n) = n
 
--- | Read a prepaid code as typed, as 'parseBadgeCode' reads a badge code.
 parseNameCode :: Text -> Maybe NamePrepaidCode
 parseNameCode = eitherToMaybe . strDecode . encodeUtf8 . T.toUpper . T.filter isAlphaNum
 
@@ -178,7 +172,6 @@ formatNameCode (NamePrepaidCode len body) = T.intercalate "-" $ (nameCodePrefix 
 data NamePrepaidCode = NamePrepaidCode NameLength Text
   deriving (Eq, Show)
 
--- | Encoded in the canonical form; read from it or from the shown form, the 20 characters in any case.
 instance StrEncoding NamePrepaidCode where
   strEncode = encodeUtf8 . namePrepaidCodeText
   strP = A.string (encodeUtf8 nameCodePrefix) *> (codeAfter 2 <|> codeAfter 1)

@@ -56,8 +56,6 @@ signRegisterIntent g domain EphemeralWallet {ewKey} r deadline =
   where
     nonce = 0
 
--- | The names page's owner code: "SN-" and 30 Crockford base32 characters in six groups of five, the 128-bit wallet entropy
--- and the first 22 bits of its SHA-256, read as typed.
 newtype NameOwnerCode = NameOwnerCode WalletEntropy
   deriving (Eq, Show)
 

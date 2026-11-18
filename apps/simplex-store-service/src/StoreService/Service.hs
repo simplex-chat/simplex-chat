@@ -216,8 +216,6 @@ readConfigOrExit path =
     Left e -> putStrLn (path <> ": " <> e) >> exitFailure
     Right sc -> pure sc
 
--- | Only one of the mock and the real verifiers applies: the config refuses
--- accept_unverified_store_receipts beside [apple] or [google].
 configureStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
 configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v} = case serviceCfg of
   Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True, devStoreChecks} -> do
