@@ -758,59 +758,59 @@ domTest("screens: the code screen drops its saved-copy clause where the local wr
   assert.ok(p.textContent.includes(HELD_CODE), "the code is still shown — it exists nowhere else");
 });
 
-domTest("screens: in a browser that deletes idle data, the code screen says so under the only-copy warning", () => {
+domTest("screens: the deletion warning and the advice are shown in the only-copy box when browserDeletesIdle is true", () => {
   const p = render(screens.codeIssued({ code: HELD_CODE, savedLocally: true, browserDeletesIdle: true }));
   const warn = p.all("div.warn")[0]!;
   assert.ok(warn.textContent.includes("This is the only copy."));
-  assert.ok(warn.textContent.includes(screens.IDLE_DELETION), `the warning lacks the deletion: ${warn.textContent}`);
-  assert.ok(warn.textContent.includes(screens.KEEP_OUTSIDE), "and what to do about it");
+  assert.ok(warn.textContent.includes(screens.IDLE_DELETION), `the deletion warning is missing from: ${warn.textContent}`);
+  assert.ok(warn.textContent.includes(screens.KEEP_OUTSIDE), "the advice is shown with it");
   const kept = render(screens.codeIssued({ code: HELD_CODE, savedLocally: true, browserDeletesIdle: false }));
-  assert.ok(!kept.textContent.includes(screens.IDLE_DELETION), "Chromium and Firefox delete no site data on a timer");
+  assert.ok(!kept.textContent.includes(screens.IDLE_DELETION), "no deletion warning without browserDeletesIdle");
   assert.ok(!kept.textContent.includes(screens.KEEP_OUTSIDE));
   const unsaved = render(screens.codeIssued({ code: HELD_CODE, savedLocally: false, browserDeletesIdle: true }));
-  assert.ok(!unsaved.textContent.includes(screens.IDLE_DELETION), "an unsaved code has nothing to delete");
+  assert.ok(!unsaved.textContent.includes(screens.IDLE_DELETION), "no deletion warning for an unsaved code");
 });
 
-domTest("screens: the return-to-app ending warns before Show code in a browser that deletes idle data", () => {
+domTest("screens: the deletion warning is shown above Show code on the return-to-app ending when browserDeletesIdle is true", () => {
   const hidden = render(screens.returnToApp({ onReturn: noop, code: { kind: "hidden", onShow: noop }, browserDeletesIdle: true }));
   const warn = hidden.all("div.warn")[0]!;
   assert.ok(warn.textContent.includes(screens.COPY_UNLESS_ADDED));
   assert.ok(warn.textContent.includes(screens.IDLE_DELETION));
-  assertNoCode(hidden, "the warned return-to-app ending");
+  assertNoCode(hidden, "the return-to-app ending with the deletion warning");
   const shown = render(screens.returnToApp({ onReturn: noop, code: { kind: "shown", code: HELD_CODE, savedLocally: true }, browserDeletesIdle: true }));
-  assert.ok(shown.textContent.includes(screens.IDLE_DELETION), "the revealed code carries the warning too");
-  assert.ok(!shown.textContent.includes(screens.COPY_UNLESS_ADDED), "the code is on screen, so the hint to reveal it is gone");
+  assert.ok(shown.textContent.includes(screens.IDLE_DELETION), "the deletion warning is shown with the revealed code");
+  assert.ok(!shown.textContent.includes(screens.COPY_UNLESS_ADDED), "the hint to show the code is removed once the code is shown");
   const kept = render(screens.returnToApp({ onReturn: noop, code: { kind: "hidden", onShow: noop }, browserDeletesIdle: false }));
   assert.equal(kept.all("div.warn").length, 0);
 });
 
-domTest("screens: Your codes warns in a browser that deletes idle data, with codes and without", () => {
+domTest("screens: the deletion warning is shown on Your codes when browserDeletesIdle is true, with codes and without", () => {
   const rows = historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE })]);
   const listed = render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: true, rows, onOpen: noop, onStart: noop }));
   const warn = listed.all("div.warn")[0]!;
-  assert.equal(warn.all("span.title")[0]!.textContent, screens.COPY_UNREDEEMED);
-  assert.ok(warn.textContent.includes(screens.IDLE_DELETION_ALL));
+  assert.equal(warn.all("span.title")[0]!.textContent, screens.KEEP_EACH_OUTSIDE);
+  assert.ok(warn.textContent.includes(screens.IDLE_DELETION_CODES));
   const empty = render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: true, rows: [], onOpen: noop, onStart: noop }));
-  assert.equal(empty.all("p.muted")[0]!.textContent, screens.IDLE_DELETION_ALL, "an emptied list says why");
+  assert.equal(empty.all("p.muted")[0]!.textContent, screens.IDLE_DELETION_CODES, "the deletion line is shown on the empty list");
   const unpaid = render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: true,
     rows: historyRows([record({ orderId: "b", status: "open" })]), onOpen: noop, onStart: noop }));
-  assert.equal(unpaid.all("div.warn").length, 0, "a list without a code has nothing to copy");
+  assert.equal(unpaid.all("div.warn").length, 0, "no warning on a list without a paid code");
   for (const kept of [
     render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: false, rows, onOpen: noop, onStart: noop })),
     render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: false, rows: [], onOpen: noop, onStart: noop })),
   ]) {
-    assert.ok(!kept.textContent.includes(screens.IDLE_DELETION_ALL));
+    assert.ok(!kept.textContent.includes(screens.IDLE_DELETION_CODES));
   }
 });
 
-domTest("screens: the paid-no-code screen says this browser can delete codes, in a browser that does", () => {
+domTest("screens: the deletion line is shown on the paid-no-code screen when browserDeletesIdle is true", () => {
   const order = unpaidRecord({ status: "paid" });
   const deleting = render(screens.paidNoCode({ order, settledAt: undefined, browserDeletesIdle: true }));
   const notice = deleting.all("div.notice")[0]!;
-  assert.ok(notice.textContent.includes(screens.IDLE_DELETION_ALL), `the notice lacks the deletion: ${notice.textContent}`);
+  assert.ok(notice.textContent.includes(screens.IDLE_DELETION_CODES), `the deletion line is missing from: ${notice.textContent}`);
   assert.ok(notice.textContent.includes("Quote the reference below and we will sort it out."));
   const kept = render(screens.paidNoCode({ order, settledAt: undefined, browserDeletesIdle: false }));
-  assert.ok(!kept.textContent.includes(screens.IDLE_DELETION_ALL));
+  assert.ok(!kept.textContent.includes(screens.IDLE_DELETION_CODES));
 });
 
 domTest("screens: the paid-no-code screen names the badge and the reference, and has nothing else to offer", () => {
@@ -972,9 +972,9 @@ domTest("screens: the history list's Copy is offered only on a paid entry, and c
   assert.deepEqual(copied, [HELD_CODE]);
 });
 
-domTest("screens: an empty store reads 'No codes stored in this browser', with the picture and the invest block", () => {
+domTest("screens: an empty store reads 'Codes bought in this browser are listed here.', with the picture and the invest block", () => {
   const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, browserDeletesIdle: false, rows: [], onOpen: noop, onStart: noop }));
-  assert.equal(p.all("p.lede")[0]!.textContent, screens.NOTHING_STORED, "codes cleared or bought in another browser are not here either");
+  assert.equal(p.all("p.lede")[0]!.textContent, screens.CODES_LISTED_HERE, "the lede names this browser, as codes of other browsers are absent");
   assert.ok(p.textContent.includes("Choose your badge"));
   assert.equal(p.all("div.hero").length, 1, "the landing's picture, so the screen is not a heading over a button");
   assert.equal(p.all("div.invest").length, 1, "and the crowdfunding under the button, as on every screen with one");
@@ -1328,10 +1328,10 @@ domTest("screens: the provider figure decides, and zero is never a figure to sen
 domTest("screens: the history list does not promise codes are kept where nothing is kept", () => {
   const rows = historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE })]);
   const kept = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, browserDeletesIdle: false, rows, onOpen: noop, onStart: noop }));
-  assert.ok(kept.textContent.includes("in this browser, and nowhere else"));
+  assert.ok(kept.textContent.includes(screens.CODES_STORED_HERE));
 
   const losing = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: false, browserDeletesIdle: false, rows, onOpen: noop, onStart: noop }));
-  assert.ok(!losing.textContent.includes("in this browser, and nowhere else"),
+  assert.ok(!losing.textContent.includes(screens.CODES_STORED_HERE),
     `nothing is kept, so nothing may say it is: ${losing.textContent.slice(0, 160)}`);
   assert.ok(losing.textContent.includes("cannot save anything new"));
 });

@@ -347,10 +347,10 @@ const OTHERS: Readonly<Record<string, string>> = {
   "an empty user agent": "",
 };
 
-storeTest("store: WebKit browsers delete idle site data", () => {
+storeTest("store: browserDeletesIdle is true for WebKit user agents", () => {
   for (const [name, ua] of Object.entries(WEBKIT)) assert.equal(browserDeletesIdle(ua), true, name);
 });
 
-storeTest("store: Chromium, Firefox and Android browsers delete no site data on a timer", () => {
+storeTest("store: browserDeletesIdle is false for Chromium, Firefox and Android user agents", () => {
   for (const [name, ua] of Object.entries(OTHERS)) assert.equal(browserDeletesIdle(ua), false, name);
 });

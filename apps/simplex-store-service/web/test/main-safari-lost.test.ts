@@ -1,7 +1,7 @@
 import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, installPage, screenOf, timedTest, until } from "./boot.js";
-import { IDLE_DELETION_ALL } from "../src/screens.js";
+import { IDLE_DELETION_CODES } from "../src/screens.js";
 
 const lostTest = timedTest(3000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
@@ -18,7 +18,7 @@ await import("../src/main.js");
 
 const heading = (): string => headingOf(screenOf(app));
 
-lostTest("main: in Safari, a paid order opened without its code says this browser can delete codes", async () => {
+lostTest("main: in Safari, the deletion line is shown for a paid order opened without its code", async () => {
   await until(() => heading() === "This code is not on this device", `the paid-no-code screen, not ${heading()}`);
-  assert.ok(screenOf(app).textContent.includes(IDLE_DELETION_ALL), screenOf(app).textContent.slice(0, 400));
+  assert.ok(screenOf(app).textContent.includes(IDLE_DELETION_CODES), screenOf(app).textContent.slice(0, 400));
 });

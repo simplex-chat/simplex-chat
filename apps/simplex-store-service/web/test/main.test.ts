@@ -338,7 +338,7 @@ mainTest("main: [ Forget everything ] removes the key and returns to the landing
   const landing = screenOf(app);
   assert.ok(landing.textContent.includes("Support SimpleX"), landing.textContent);
   assert.ok(landing.textContent.includes("Choose your badge"));
-  assert.ok(!landing.textContent.includes("No codes stored in this browser"));
+  assert.ok(!landing.textContent.includes("Codes bought in this browser are listed here."));
 });
 
 mainTest("main: the provider-unavailable screen notice does not outlive the checkout it belongs to", async () => {

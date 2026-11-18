@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, primaryOf, screenOf, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
-import { COPY_UNLESS_ADDED, IDLE_DELETION, IDLE_DELETION_ALL } from "../src/screens.js";
+import { COPY_UNLESS_ADDED, IDLE_DELETION, IDLE_DELETION_CODES } from "../src/screens.js";
 
 const safariTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
@@ -16,7 +16,7 @@ await import("../src/main.js");
 const heading = (): string => headingOf(screenOf(app));
 const inView = (): StubElement => inViewOf(app);
 
-safariTest("main: in Safari opened from the app, the paid ending warns that the browser deletes the code", async () => {
+safariTest("main: in Safari opened from the app, the deletion warning is shown above Show code", async () => {
   inView().all("button.choice").find((c) => c.textContent.startsWith("Legend"))!.click();
   primaryOf(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("12 months"))!.click();
@@ -37,16 +37,16 @@ safariTest("main: in Safari opened from the app, the paid ending warns that the 
   await until(() => heading() === "Paid", `the return-to-app ending, not ${heading()}`);
 
   const ending = inView();
-  assert.ok(ending.textContent.includes(COPY_UNLESS_ADDED), `the ending lacks the hint: ${ending.textContent.slice(0, 300)}`);
-  assert.ok(ending.textContent.includes(IDLE_DELETION), "and the reason");
+  assert.ok(ending.textContent.includes(COPY_UNLESS_ADDED), `the hint is missing from: ${ending.textContent.slice(0, 300)}`);
+  assert.ok(ending.textContent.includes(IDLE_DELETION), "the deletion warning is shown with the hint");
 });
 
-safariTest("main: in Safari, Your codes says the browser deletes the codes stored here", () => {
+safariTest("main: in Safari, the deletion warning is shown on Your codes", () => {
   page.respondWith({ status: 200, body: {
     status: "paid", badgeType: "legend", months: 12, amount: 42000, currency: "usd",
     paidInFull: true, settledAt: "2026-08-28T12:05:00Z",
   } });
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
   assert.equal(headingOf(inView()), "Your codes");
-  assert.ok(inView().textContent.includes(IDLE_DELETION_ALL));
+  assert.ok(inView().textContent.includes(IDLE_DELETION_CODES));
 });

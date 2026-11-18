@@ -16,7 +16,7 @@ await import("../src/main.js");
 const heading = (): string => headingOf(screenOf(app));
 const inView = (): StubElement => inViewOf(app);
 
-codeTest("main: in Safari, the code screen says this browser can delete the code, and what to do", async () => {
+codeTest("main: in Safari, the deletion warning and the advice are shown in the only-copy box", async () => {
   inView().all("button.choice").find((c) => c.textContent.startsWith("Supporter"))!.click();
   primaryOf(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("1 month"))!.click();
@@ -37,6 +37,6 @@ codeTest("main: in Safari, the code screen says this browser can delete the code
   await until(() => heading() === "Paid. Here is your code.", `the code screen, not ${heading()}`);
 
   const warn = screenOf(app).all("div.warn")[0]!;
-  assert.ok(warn.textContent.includes(IDLE_DELETION), `the only-copy box lacks the deletion: ${warn.textContent}`);
+  assert.ok(warn.textContent.includes(IDLE_DELETION), `the deletion warning is missing from: ${warn.textContent}`);
   assert.ok(warn.textContent.includes(KEEP_OUTSIDE));
 });
