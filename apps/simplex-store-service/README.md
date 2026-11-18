@@ -1556,7 +1556,11 @@ code row when the invoice is created, and settlement is what marks it paid.
 `//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
 `<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2), or 2 for a community name. Its status is
 `paid` or `free`: nothing marks a name code paid later, so `unpaid` is refused. Without `[names]`,
-`//issue name` is answered that names are not enabled, and issues nothing.
+`//issue name` is answered that names are not enabled, and issues nothing. A name code reserves a
+name until 3 calendar months after its issue, and the answer says so: `Code: SN7-…. Valid until
+<time> UTC.` An order already holding the code keeps it past that time. A code order not registered a
+calendar month after its reservation fails with the reason `monthEnded`, its code released and its
+name freed.
 
 The console reads the commands by the group's grammar (see [From the group](#from-the-group)), with
 a payment status in place of `uses` and without `/bulk`. A malformed command is answered with its
@@ -1760,9 +1764,9 @@ A failed paid order, after 5 sends of a kind, refused links or a register the re
 its commitment's lapse, stays live, holds its name and keeps its money uncredited, so its wallet cannot order the
 name again. So does a paid order whose commitment lapsed before its page signed it, until the page
 asks for a new commitment. A calendar month after its payment, clipped to the last day of a shorter
-month, an order paid by invoice or balance that is still `queued`, `committed` or `failed` fails with
-the reason `monthEnded`: its price is credited to its balance, its name is released, and the order is
-final. A pass every 5 minutes does it, logging each order at note; an order sending its commit or
+month, an order that is still `queued`, `committed` or `failed` fails with the reason `monthEnded`:
+the price of an order paid by invoice or balance is credited to its balance, a code order's code is
+released, its name is released, and the order is final. A pass every 5 minutes does it, logging each order at note; an order sending its commit or
 register is ended at the first pass after that transaction settles. Support closes a failed or lapsed
 order before then in `--run-cli` mode with the service stopped, or with `/close` in the group while
 it runs; a month-ended order is refused, and its refund is recorded with `//record_refund`:
@@ -1803,8 +1807,7 @@ A closed order reads `taken` in Your names, with its refund. `/retry` and a move
 `400 bad_request`, `//balance` finds nothing to refund, and the wallet can order the name again.
 
 The command records nothing for an order that is neither failed nor lapsed unsigned, or was paid with
-a prepaid code, whose code is released and the order closed `taken` 30 days after the order failed or
-lapsed; for a failed chain read; for a balance an order
+a prepaid code, whose code is released when the month from its reservation ends; for a failed chain read; for a balance an order
 holds, worded as for `//record_refund`; and for an order or a balance that changed meanwhile. Run the
 command again after the last three.
 

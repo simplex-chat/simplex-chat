@@ -11,7 +11,7 @@
 module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesRefundChatTests, namesWorkerBootTests) where
 
 import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cChainId, cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
-import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, joinerAcceptance)
+import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, fmtTime, joinerAcceptance)
 import StoreService.Group.Command (CmdSource (..), maxUses)
 import StoreService.Names.Codes (issueNameCode, prepaidCodeHash, reserveCode, revokeNameCode)
 import StoreService.Names.Registration (RegistrationId (..))
@@ -64,6 +64,7 @@ import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, m
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
 import Network.Wai.Handler.Warp (openFreePort)
 import Simplex.Chat.Badges (BadgeType (..))
+import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.Badges.Code (NamePrepaidCode, formatBadgeCode, formatNameCode, nameLength, nameLengthInt, namePrepaidCodeLength, parseBadgeCode, parseNameCode, randomBadgeCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.StoreService
@@ -441,9 +442,12 @@ testGroupNameCodes :: HasCallStack => TestParams -> IO ()
 testGroupNameCodes ps = do
   svc <- prepareGroupService ps
   runWithOwner svc {gsIniSections = "" : codesOnlyNames <> chainSection} $ \cc _ _ alice -> do
-    one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8"
+    issued <- replyTo cc alice "/issue name 8"
+    one <- prepaidIn $ T.stripPrefix "Code: " issued
     nameLengthInt (namePrepaidCodeLength one) `shouldBe` 8
     prepaidTerms cc one `shouldReturn` Just (8, 2, CPSFree)
+    Just PrepaidCode {pcExpiresAt = Just expiry, pcCreatedAt} <- withTransaction (chatStore cc) (`getPrepaidCode` prepaidCodeHash one)
+    (expiry, issued) `shouldBe` (addMonths 3 pcCreatedAt, "Code: " <> formatNameCode one <> ". Valid until " <> fmtTime expiry <> ".")
     five <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 7 years 5"
     prepaidTerms cc five `shouldReturn` Just (7, 5, CPSFree)
     replyTo cc alice "/bulk name 6 count 3" `shouldReturn` bulkUsage
@@ -688,7 +692,7 @@ issueNameRaw cc args =
     r -> error $ "issue failed: " <> show (() <$ r)
 
 prepaidIn :: HasCallStack => Maybe Text -> IO NamePrepaidCode
-prepaidIn t = case parseNameCode =<< t of
+prepaidIn t = case parseNameCode . fst . T.breakOn ". Valid until " =<< t of
   Just code -> pure code
   Nothing -> error $ "no prepaid name code in: " <> show t
 

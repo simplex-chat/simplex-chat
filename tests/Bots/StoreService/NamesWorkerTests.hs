@@ -121,9 +121,8 @@ workerTests = describe "StoreService names: worker" $ do
   describe "lanes" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
     it "reports once each paid or code order not registered 3 hours after its payment" testUnregisteredAlert
-    it "fails each order paid by invoice or balance, queued, committed or failed, a calendar month after its payment, its price kept as its balance and its name released, once" testMonthEnds
+    it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, its name released, a paid order's price kept as its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
-    it "releases the codes of code orders failed or lapsed unsigned for 30 days, closing them taken, and no others" testCodeSweep
   describe "confirmation depth" $
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
   describe "retry" $ do
@@ -1066,23 +1065,23 @@ testMonthEnds = withWorker $ \W {wCtx = ctx@Ctx {cStore}, wWorker} -> do
   answerFree ctx "alicebakers"
   committing <- paidIn ctx aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 5} $ \o -> o {nrPhase = OCommitting $ TxHash $ hashFixture 8}
   answerFree ctx "carolbakery"
-  (code, _) <- codeIn ctx 8 (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 6} id
-  let ended = [queued, failed]
-      untouched = [committing, code]
+  (code, prepaid) <- codeIn ctx 8 (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 6} failedPhase
+  let ended = [queued, failed, code]
       holders = withTransaction cStore $ \db -> mapM (labelHolder db . nrLabelHash) ended
   advance ctx $ diffUTCTime (addMonths 1 orderTime) orderTime - 1
   endMonths wWorker
-  mapM (stored ctx) (ended <> untouched) `shouldReturn` ended <> untouched
+  mapM (stored ctx) (committing : ended) `shouldReturn` committing : ended
   holders `shouldReturn` map (Just . nrId) ended
   advance ctx 1
   now <- nowOf ctx
   endMonths wWorker
   endMonths wWorker
-  map nrPhase <$> mapM (stored ctx) ended `shouldReturn` replicate 2 (OFailed now FRMonthEnded)
-  mapM (stored ctx) untouched `shouldReturn` untouched
-  mapM (balanceFigures ctx . nrId) ended `shouldReturn` map (\r -> Just (nrPrice r, nrPrice r)) ended
-  holders `shouldReturn` [Nothing, Nothing]
-  map orderLive <$> mapM (stored ctx) ended `shouldReturn` [False, False]
+  map nrPhase <$> mapM (stored ctx) ended `shouldReturn` replicate 3 (OFailed now FRMonthEnded)
+  stored ctx committing `shouldReturn` committing
+  mapM (balanceFigures ctx . nrId) ended `shouldReturn` [Just (nrPrice queued, nrPrice queued), Just (nrPrice failed, nrPrice failed), Nothing]
+  pcReservedBy <$> codeOf ctx prepaid `shouldReturn` Nothing
+  holders `shouldReturn` [Nothing, Nothing, Nothing]
+  map orderLive <$> mapM (stored ctx) ended `shouldReturn` [False, False, False]
   closeOf ctx failed `shouldReturn` CLRefused CFMonthEnded
 
 testMonthClipped :: IO ()
@@ -1097,23 +1096,6 @@ testMonthClipped = withWorker $ \W {wCtx = ctx@Ctx {cStore, cClock}, wWorker} ->
   writeIORef cClock lastDay
   endMonths wWorker
   nrPhase <$> stored ctx r `shouldReturn` OFailed lastDay FRMonthEnded
-
-testCodeSweep :: IO ()
-testCodeSweep = withWorker $ \W {wCtx = ctx, wWorker} -> do
-  (old, oldCode) <- codeIn ctx 8 aliceOrder failedPhase
-  (recent, recentCode) <- codeIn ctx 7 dynamisOrder $ \x -> x {nrPhase = OFailed (addUTCTime (2 * day) orderTime) FRRegistryRefused}
-  -- lapsed long ago, then queued again by /retry
-  mapM_ (answerFree ctx) ["carolbakery", "dynamit"]
-  (requeued, requeuedCode) <- codeIn ctx 8 (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 2} $ \x -> x {nrPhase = OQueued}
-  (lapsed, lapsedCode) <- codeIn ctx 7 (byB dynamisOrder) {oLabel = "dynamit", oCommitment = commitmentOf 4} committedPhase
-  answerFree ctx "alicebakers"
-  (signed, signedCode) <- codeIn ctx 8 aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 5} $ \x -> (committedPhase x) {nrReveal = Just reveal}
-  advance ctx $ 32 * day
-  sweepFailedCodes wWorker
-  map pcReservedBy <$> mapM (codeOf ctx) [oldCode, recentCode, requeuedCode, lapsedCode, signedCode]
-    `shouldReturn` [Nothing, Just (nrId recent), Just (nrId requeued), Nothing, Just (nrId signed)]
-  map nrPhase <$> mapM (stored ctx) [old, lapsed] `shouldReturn` [OTaken, OTaken]
-  mapM (stored ctx) [recent, requeued, signed] `shouldReturn` [recent, requeued, signed]
 
 testLandedAtDepth :: IO ()
 testLandedAtDepth = withOrders $ \ctx@Ctx {cNode, cOrders} -> do

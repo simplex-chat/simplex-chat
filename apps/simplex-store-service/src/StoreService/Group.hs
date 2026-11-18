@@ -334,7 +334,7 @@ runCmd source cc turns namesOn runMoney = \case
   GCIssue bt months uses status -> codeReply formatBadgeCode . fmap fst <$> issueOneCode cc bt months status uses
   GCBulk bt months count -> Right <$> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
   GCIssueName {} | not namesOn -> pure $ Left namesOffText
-  GCIssueName len years status -> codeReply formatNameCode <$> issueNameCode cc source len years status
+  GCIssueName len years status -> codeReply (\(code, expiresAt) -> formatNameCode code <> ". Valid until " <> fmtTime expiresAt <> ".") <$> issueNameCode cc source len years status
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> named (formatBadgeCode code) <$> revokeWithTracker cc code
   GCRevokeName code -> named (formatNameCode code) <$> revokeNameCode turns cc code

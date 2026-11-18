@@ -79,7 +79,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "names the order holding a label from queued to registering and failed, one at a time, and none for an unpaid, taken or registered one" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
     it "lists unpaid orders whose invoice expired before the cutoff without a payment, and deletes one with its invoice, once" testUnpaidCleanup
-    it "lists code orders failed before the cutoff that still hold their code" testFailedCodeOrders
+    it "lists the live queued, committed and failed orders paid by the cutoff, a code order's from its reservation" testMonthCandidates
   describe "prepaid codes" $ do
     it "issues one code per hash" testIssueCode
     it "stores a code's origin as issued_in_group, counting a group code written before as the group's" testIssuerStored
@@ -673,17 +673,18 @@ invoiceCount st invId = withTransaction st $ \db ->
     [Only n] -> pure n
     rows -> fail $ "count: " <> show (length rows) <> " rows"
 
-testFailedCodeOrders :: IO ()
-testFailedCodeOrders = withServiceStore $ \st -> do
-  codes@[oldCode, _, releasedCode, _] <- mapM (\n -> issue st n usable) [1, 2, 3, 4]
-  forM_ (zip3 ["old", "recent", "released", "queued"] [1 ..] codes) $ \(rid, n, code) ->
+testMonthCandidates :: IO ()
+testMonthCandidates = withServiceStore $ \st -> do
+  codes <- mapM (\n -> issue st n usable) [1 .. 6]
+  forM_ (zip3 ["queued", "failed", "committing", "ended", "taken", "recent"] [1 ..] codes) $ \(rid, n, code) ->
     placeCode st rid ownerA (order ("alicebakery" <> rid) n) code `shouldReturn` Right ()
-  let failAt rid t = reg st rid >>= \r -> void (write st r {nrPhase = OFailed t FRRegistryRefused})
-  failAt "old" (at 1)
-  failAt "recent" (at 30)
-  failAt "released" (at 1)
-  withTransaction st (\db -> releasePrepaidCode db (pcId releasedCode) (RegistrationId "released")) `shouldReturn` True
-  withTransaction st (\db -> failedCodeOrdersBefore db (at 10)) `shouldReturn` [(RegistrationId "old", pcId oldCode)]
+  let phaseAs rid phase = reg st rid >>= \r -> void (write st r {nrPhase = phase})
+  phaseAs "failed" $ OFailed (at 1) FRRegistryRefused
+  phaseAs "committing" $ OCommitting $ TxHash $ hashFixture 8
+  phaseAs "ended" $ OFailed (at 2) FRMonthEnded
+  phaseAs "taken" OTaken
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET paid_at = ? WHERE registration_id = ?" (at 100, "recent" :: Text)
+  withTransaction st (\db -> monthCandidates db (at 10)) `shouldReturn` [(RegistrationId "failed", t0), (RegistrationId "queued", t0)]
 
 testIssueCode :: IO ()
 testIssueCode = withServiceStore $ \st -> do

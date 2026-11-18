@@ -92,7 +92,6 @@ module StoreService.Names.Store
     activeRegistrations,
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
-    failedCodeOrdersBefore,
     heldBy,
     getBalance,
     balanceByReference,
@@ -166,7 +165,7 @@ import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Group.Command (CmdSource (..))
-import StoreService.Names.Chain (ChainSeconds, Hex32 (..), RevertName, TxHash (..), chainSeconds)
+import StoreService.Names.Chain (ChainSeconds, Hex32 (..), RevertName, TxHash (..))
 import StoreService.Names.Registration (AgreedTerms, Commitment, LinkKind, OrderFields (..), RegistrationId (..), TermsAcceptance (..), TermsHash)
 import StoreService.Providers (Rate, Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
@@ -1133,7 +1132,7 @@ monthCandidates db cutoff =
   map (\(rid, paidAt) -> (RegistrationId rid, paidAt))
     <$> DB.query
       db
-      (mkQuery "SELECT registration_id, paid_at FROM @name_registrations WHERE live = 1 AND phase IN (?,?,?) AND name_prepaid_code_id IS NULL AND paid_at <= ? ORDER BY paid_at, registration_id")
+      (mkQuery "SELECT registration_id, paid_at FROM @name_registrations WHERE live = 1 AND phase IN (?,?,?) AND paid_at <= ? ORDER BY paid_at, registration_id")
       (PQueued, PCommitted, PFailed, cutoff)
 
 claimUnregisteredAlert :: DB.Connection -> RegistrationId -> UTCTime -> IO Bool
@@ -1213,23 +1212,6 @@ deleteUnpaidRegistration db (RegistrationId rid) =
           if deleted > 0
             then Right () <$ mapM_ (DB.execute db (mkQuery "DELETE FROM @invoices WHERE invoice_id = ?") . Only) [invId | Only (Just invId) <- invoiceIds :: [Only (Maybe Text)]]
             else pure $ Left CKPaid
-
--- | Code orders failed, or whose commitment lapsed unsigned, before the cutoff that still hold their unspent code.
-failedCodeOrdersBefore :: DB.Connection -> UTCTime -> IO [(RegistrationId, CodeId)]
-failedCodeOrdersBefore db cutoff =
-  map (\(rid, codeId) -> (RegistrationId rid, codeId))
-    <$> DB.query
-      db
-      ( prefixQuery
-          [sql|
-        SELECT r.registration_id, c.name_prepaid_code_id
-        FROM @name_registrations r
-        JOIN @name_prepaid_codes c ON c.reserved_by = r.registration_id
-        WHERE c.spent_at IS NULL AND ((r.phase = ? AND r.failed_at < ?) OR (r.phase = ? AND r.label IS NULL AND r.reveal_before < ?))
-        ORDER BY r.registration_id
-      |]
-      )
-      (PFailed, cutoff, PCommitted, int64 $ chainSeconds cutoff)
 
 -- | The hold, unless it is overdue, which reads as none.
 heldBy :: Balance -> Maybe BalanceHold

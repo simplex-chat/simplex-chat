@@ -28,6 +28,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges.Code (NameLength, NamePrepaidCode, minNameYears, nameLengthInt, namePrepaidCodeHash, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatController (..))
@@ -146,8 +147,11 @@ afterWrite turns st codeId change write = do
   PrepaidCode {pcCodeHash} <- withTransaction st (`getPrepaidCodeById` codeId)
   withCodeTurn turns pcCodeHash $ withTransaction st $ \db -> write db >>= traverse (\a -> (a,) <$> change db)
 
+codeValidMonths :: Integer
+codeValidMonths = 3
+
 -- | The code table keeps only the hash, so the caller must deliver the code.
-issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)
+issueNameCode :: ChatController -> CmdSource -> NameLength -> Int -> BadgeCodePaymentStatus -> IO (Either String (NamePrepaidCode, UTCTime))
 issueNameCode cc issuer len years paymentStatus
   | years < minNameYears || years > maxNameYears = Left outside <$ logError ("names: " <> T.pack outside)
   | otherwise = issue (3 :: Int)
@@ -156,9 +160,10 @@ issueNameCode cc issuer len years paymentStatus
     issue retries = do
       code <- randomNamePrepaidCode (random cc) len
       now <- currentSecond
-      let new = NewPrepaidCode {npcCodeHash = prepaidCodeHash code, npcMinLength = nameLengthInt len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Nothing, npcIssuer = issuer}
+      let expiresAt = addMonths codeValidMonths now
+          new = NewPrepaidCode {npcCodeHash = prepaidCodeHash code, npcMinLength = nameLengthInt len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Just expiresAt, npcIssuer = issuer}
       withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) >>= \case
-        Right (Right _) -> pure $ Right code
+        Right (Right _) -> pure $ Right (code, expiresAt)
         Right (Left CodeHashTaken)
           | retries > 0 -> logWarn "names: a new prepaid code's hash is taken, so another code is drawn" >> issue (retries - 1)
           | otherwise -> Left "prepaid code hash taken" <$ logError "names: the hashes of 4 new prepaid codes in a row are taken, so no code is issued"

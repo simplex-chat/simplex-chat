@@ -13,8 +13,6 @@ module StoreService.Names.Worker
     newWorker,
     stepRegistration,
     runWorkers,
-    sweepFailedCodes,
-    runCodeSweep,
     alertUnregisteredPaid,
     runUnregisteredAlerts,
     endMonths,
@@ -37,7 +35,7 @@ import Control.Concurrent.STM
 import Control.Exception (finally, mask_)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
-import Control.Monad (forM, forM_, forever, void, when)
+import Control.Monad (forM_, forever, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Functor ((<&>))
@@ -119,13 +117,6 @@ maxWait = 60
 -- | Block times are whole seconds.
 chainSecond :: NominalDiffTime
 chainSecond = 1
-
--- | A failed or lapsed code order keeps its code this long, for a move, or for /retry once lapsed.
-failedCodeHold :: NominalDiffTime
-failedCodeHold = 30 * 86400
-
-sweepInterval :: Int
-sweepInterval = 86400 * 1000000
 
 newWorker :: OrdersEnv -> Sender -> IO Worker
 newWorker wkOrders wkSender = Worker wkOrders wkSender <$> TM.emptyIO
@@ -403,16 +394,16 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
 -- | A paid order keeps its whole price as a balance of its own, credited in the taken write's transaction, registration before balance,
 -- in the balance's turn after the name's; a code order's code is released.
 taken :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
-taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {nrId, nrPayment} = case nrPayment of
+taken Worker {wkOrders} now r = written r <$> endOrder wkOrders now r {nrPhase = OTaken}
+
+endOrder :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either WriteRefusal Int64)
+endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment} = case nrPayment of
   OPInvoice {} -> credited
   OPDifference {} -> credited
   OPBalance _ -> credited
-  OPCode codeId -> written r . fmap fst <$> releaseCode oeTurns oeStore codeId nrId (takenWrite now r)
+  OPCode codeId -> fmap fst <$> releaseCode oeTurns oeStore codeId nrId (\db -> versionWritten <$> updateRegistration db r now)
   where
-    credited = written r <$> withBalanceTurn oeTurns nrId (withTransaction oeStore $ creditedTaken now r)
-
-takenWrite :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
-takenWrite now r db = versionWritten <$> updateRegistration db r {nrPhase = OTaken} now
+    credited = withBalanceTurn oeTurns nrId (withTransaction oeStore $ creditedWrite now r)
 
 creditedTaken :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
 creditedTaken now r = creditedWrite now r {nrPhase = OTaken}
@@ -557,36 +548,6 @@ refundTaken st turns now r@NameRegistration {nrId} =
         False -> E.throwIO $ CloseRefused CFBalanceChanged
     RegistrationId ridText = nrId
 
--- | Each code order failed, or lapsed unsigned, for failedCodeHold gives its code back and is closed as taken in the same write,
--- in its name's and its code's turns, unless it moved on meanwhile.
-sweepFailedCodes :: Worker -> IO ()
-sweepFailedCodes Worker {wkOrders = OrdersEnv {oeStore, oeTurns, oePhases, oeNow}} = do
-  now <- oeNow
-  let cutoff = addUTCTime (negate failedCodeHold) now
-  orders <- withTransaction oeStore (`failedCodeOrdersBefore` cutoff)
-  released <- forM orders $ \(rid@(RegistrationId ridText), codeId) ->
-    ( withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just NameRegistration {nrLabelHash} ->
-          withLabelTurn oeTurns nrLabelHash (releaseCode oeTurns oeStore codeId rid (closeIdle now cutoff rid)) >>= \case
-            Right (v, released) -> released <$ atomically (publish oePhases rid v)
-            Left _ -> pure False
-        Nothing -> pure False
-    )
-      `catchOwn'` \e -> False <$ logError ("names code sweep: registration " <> ridText <> " failed; the next sweep tries it again: " <> tshow e)
-  let count = length $ filter id released
-  when (count > 0) $ logNote $ "names code sweep: released the codes of " <> tshow count <> " failed or lapsed order(s) and closed them"
-  where
-    closeIdle now cutoff rid db =
-      getRegistration db rid >>= \case
-        Just r | maybe False (< cutoff) (idleSince r) -> takenWrite now r db
-        _ -> pure $ Left WRChanged
-    idleSince r = case nrPhase r of
-      OFailed failedAt _ -> Just failedAt
-      _ -> lapseMoment r
-
-runCodeSweep :: Worker -> IO ()
-runCodeSweep w = forever $ tryOwnLogged "names code sweep failed; the next pass will run: " (sweepFailedCodes w) >> threadDelay sweepInterval
-
 unregisteredAlertAge :: NominalDiffTime
 unregisteredAlertAge = 3 * 3600
 
@@ -614,23 +575,27 @@ monthCheckInterval :: Int
 monthCheckInterval = 300 * 1000000
 
 endMonths :: Worker -> IO ()
-endMonths Worker {wkOrders = OrdersEnv {oeStore, oeTurns, oePhases, oeNow}} = do
+endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow}} = do
   now <- oeNow
   due <- withTransaction oeStore (`monthCandidates` addUTCTime (negate shortestMonth) now)
   forM_ [rid | (rid, paidAt) <- due, addMonths 1 paidAt <= now] $ \rid@(RegistrationId ridText) ->
     ( withTransaction oeStore (`getRegistration` rid)
-        >>= traverse (\r -> withRegistrationTurn oeStore oeTurns r (\current -> withBalanceTurn oeTurns rid $ withTransaction oeStore $ monthEnded now current))
+        >>= traverse (\r -> withRegistrationTurn oeStore oeTurns r (monthEnded now))
         >>= \case
-          Just (Just (Right (Right v))) -> do
+          Just (Just (Right (Right (v, kept)))) -> do
             atomically $ publish oePhases rid v
-            logNote $ "names: order " <> ridText <> " was not registered within a month of its payment, so it failed, its price kept as its balance"
+            logNote $ "names: order " <> ridText <> " was not registered within a month of its payment, so it failed, " <> kept
           _ -> pure ()
     )
       `catchOwn'` \e -> logError ("names month pass: registration " <> ridText <> " failed; the next pass tries it again: " <> tshow e)
   where
-    monthEnded now r db
-      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] = creditedWrite now r {nrPhase = OFailed now FRMonthEnded} db
+    monthEnded now r@NameRegistration {nrPayment}
+      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] = fmap (,kept) <$> endOrder oe now r {nrPhase = OFailed now FRMonthEnded}
       | otherwise = pure $ Left WRChanged
+      where
+        kept = case nrPayment of
+          OPCode _ -> "its code released"
+          _ -> "its price kept as its balance"
 
 runMonthEnds :: Worker -> IO ()
 runMonthEnds w = forever $ tryOwnLogged "names month pass failed; the next pass will run: " (endMonths w) >> threadDelay monthCheckInterval
