@@ -155,7 +155,7 @@ struct MigrateToDevice: View {
                 } else if case let .downloadProgress(_, _, fileId, _, _, ctrl) = migrationState, let ctrl {
                     await stopArchiveDownloading(fileId, ctrl)
                 }
-                chatReceiver?.stopAndCleanUp()
+                await chatReceiver?.stopAndCleanUp()
                 if !backDisabled {
                     try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
                     MigrationToDeviceState.save(nil)
@@ -322,7 +322,7 @@ struct MigrateToDevice: View {
             }
         }
         .onAppear {
-            chatReceiver?.stopAndCleanUp()
+            Task { await chatReceiver?.stopAndCleanUp() }
             try? FileManager.default.removeItem(atPath: archivePath)
             MigrationToDeviceState.save(nil)
         }
@@ -339,7 +339,10 @@ struct MigrateToDevice: View {
             progressView()
         }
         .onAppear {
-            importArchive(archivePath)
+            Task {
+                await chatReceiver?.stopAndCleanUp()
+                importArchive(archivePath)
+            }
         }
     }
 
@@ -477,22 +480,24 @@ struct MigrateToDevice: View {
         startDownloading(0, link, archivePath.path)
     }
 
-    private func initTemporaryDatabase() -> (chat_ctrl, User)? {
+    private func initTemporaryDatabase() async -> (chat_ctrl, User)? {
         let (status, ctrl) = chatInitTemporaryDatabase(url: tempDatabaseUrl)
         showErrorOnMigrationIfNeeded(status, $alert)
+        guard let ctrl else { return nil }
         do {
-            if let ctrl, let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
+            if let user = try startChatWithTemporaryDatabase(ctrl: ctrl) {
                 return (ctrl, user)
             }
         } catch let error {
             logger.error("Error while starting chat in temporary database: \(error.localizedDescription)")
         }
+        await stopChatWithTemporaryDatabase(ctrl: ctrl)
         return nil
     }
 
     private func startDownloading(_ totalBytes: Int64, _ link: String, _ archivePath: String) {
         Task {
-            guard let ctrlAndUser = initTemporaryDatabase() else {
+            guard let ctrlAndUser = await initTemporaryDatabase() else {
                 return migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
             }
             let (ctrl, user) = ctrlAndUser
@@ -672,7 +677,8 @@ private struct PassphraseEnteringView: View {
                         verifyingPassphrase = true
                         hideKeyboard()
                         Task {
-                            let (status, _) = chatInitTemporaryDatabase(url: getAppDatabasePath(), key: currentKey, confirmation: .yesUp)
+                            let (status, ctrl) = chatInitTemporaryDatabase(url: getAppDatabasePath(), key: currentKey, confirmation: .yesUp)
+                            if let ctrl { await stopChatWithTemporaryDatabase(ctrl: ctrl) }
                             let success = switch status {
                             case .ok, .invalidConfirmation: true
                             default: false
@@ -788,12 +794,12 @@ private class MigrationChatReceiver {
         }
     }
 
-    func stopAndCleanUp() {
+    func stopAndCleanUp() async {
         logger.debug("MigrationChatReceiver.stop")
         receiveMessages = false
         receiveLoop?.cancel()
         receiveLoop = nil
-        chat_close_store(ctrl)
+        await stopChatWithTemporaryDatabase(ctrl: ctrl)
         try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_chat.db")
         try? FileManager.default.removeItem(atPath: "\(databaseUrl.path)_agent.db")
     }
