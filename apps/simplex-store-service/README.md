@@ -1088,10 +1088,9 @@ register refused for the acceptance (new terms, a used nonce), an acceptance of 
 terms, or one signed for the name policy before a `setNamePolicy`, clears the reveal, and the page
 signs again. A relay that reverts while the policy holds that acceptance for the commitment, as when
 another sent it first, is followed by the register. The page signs the reveal and the acceptance
-with the deadline 2^53−1, which never passes, so the service keeps them across a lapse while the
-sponsor nonce is unchanged: it commits again and registers with no new signature. The intent does not
-cover the secret and stays valid until the owner's sponsor nonce moves; the service clears the stored
-reveal at a move and at a close.
+with a deadline a week ahead, so the service keeps them across a lapse while the deadline has not
+passed and the sponsor nonce is unchanged: it commits again and registers with no new signature. The
+intent does not cover the secret; the service clears the stored reveal at a move and at a close.
 
 ### Codes-only launch
 
@@ -1365,7 +1364,9 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
   used up; the guardian raises it with setRegistrarAllowance` when the sponsor refuses a register
   with `InsufficientAllowance`. The order keeps its phase and its register's dry run is tried again
   every 15 seconds, also past its commitment's lapse, so a top-up registers it with no restart, the
-  commitment sent again first when it lapsed. The line is logged once per order. This holds when the
+  commitment sent again first when it lapsed. The line is logged once per order. An order whose
+  signature expires first, a week after the page signed it, has its reveal cleared, and its page
+  signs again. This holds when the
   register's dry run is refused. A register that passes its dry run and reverts once mined, as two
   registers sent while the allowance covers one can, is sent again, and its dry run logs the line.
 - `[WARN …] names sender: the latest block needs <wei> wei per gas, above the fee cap <cap>;
@@ -1380,7 +1381,7 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
 An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
 owner who changes their terms acceptance on chain can make each acceptance and register revert at the
 service's gas. The service's own commits after a lapse, which wait for it, count against that only when
-they revert, so a signature registers over several commitment windows; a move
+they revert, so a signature kept for its week registers over several commitment windows; a move
 counts every commit. Past that the order fails with the reason `sendsUsedUp`, a move answers `400 bad_request`, and support closes it
 with `//close` (see [Closing a failed order](#closing-a-failed-order)).
 The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
