@@ -5,7 +5,7 @@ import {CC, CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 import {Action, Actions, HostTexts, Mode, isDecided, maxPending} from "./actions"
 import {Config} from "./config"
-import {Control, canSend, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, rightsText, safeName, sessionApproverRoles} from "./control"
+import {Control, canSend, controlCommands, controlDataOf, createGroup, fullDelete, isControlEvent, isGroupMessage, parseCommand, rightsText, safeName, sessionApproverRoles} from "./control"
 import {openCore} from "./core"
 import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile} from "./files"
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
@@ -1165,7 +1165,7 @@ export class Hub implements SessionGroups {
       displayName,
       fullName: "",
       description: `The Claude Code session ${number}. Members send it prompts; admins and owners also send the group's commands and approve tool use.`,
-      groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, commands: controlCommands},
+      groupPreferences: {history: {enable: T.GroupFeatureEnabled.On}, directMessages: {enable: T.GroupFeatureEnabled.Off}, fullDelete, commands: controlCommands},
       chatLayout: T.ChatLayout.Terminal,
     }, {[sessionKey]: {session: number}})
     const user = await userContact(this.chat, this.profile.userId)
@@ -1185,6 +1185,7 @@ export class Hub implements SessionGroups {
         else sessions.find(({control}) => isGroupMessage(ci, control.groupId))?.onMessage(ci)
       }
     }
+    if (event.type === "groupUpdated") sessions.find(({control}) => control.groupId === event.toGroup.groupId)?.control.onGroupUpdated()
     if (event.type === "chatItemReaction") sessions.find(({control}) => isGroupMessage(event.reaction, control.groupId))?.onReaction(event)
     if (event.type === "chatItemUpdated") sessions.find(({control}) => isGroupMessage(event.chatItem, control.groupId))?.onUpdate(event.chatItem)
     const {file} = event.type === "rcvFileComplete" ? event.chatItem.chatItem : {}

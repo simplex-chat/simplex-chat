@@ -36,6 +36,16 @@ describe("tool registration", () => {
     expect(list.outputSchema.properties.actions.items.properties.tool).toEqual({type: "string", description: "connect, send, download or leave."})
   })
 
+  it("describes the use of a secret where the command does not print it", async () => {
+    const client = await connectedServer("requests", async () => undefined)
+    await client.initialize()
+    const {result} = await client.request("tools/list")
+    const list = result.tools.find(({name}: {name: string}) => name === "list")
+    expect(list.description.split("\n")).toContain(
+      "secrets, when present, has the folder and the names of the secrets your owners set; use a secret only inside a shell command, where the command does not print it, for example as an environment variable, a header read from the file or standard input (cat FOLDER/NAME | command), not as an argument that the command may print in an error; never print, read or send its value.",
+    )
+  })
+
   it("passes calls to the handler and returns Cancelled when it returns nothing", async () => {
     const calls: [string, unknown][] = []
     const client = await connectedServer("requests", async (name, input) => {

@@ -11,7 +11,8 @@
     ".claude-plugin",
     ".mcp.json",
     "hooks",
-    "plugin"
+    "plugin",
+    "opencode"
   ],
   "engines": {
     "node": ">=22"

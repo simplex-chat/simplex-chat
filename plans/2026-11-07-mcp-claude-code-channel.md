@@ -824,7 +824,7 @@ on a message m in group N:         one-line "/" text from a member who is neithe
                                    delivery = delivery then the reply of decision 91
                                    one-line "/" text: a command of the group, queued;
                                    from User: dropped (decision 74);
-                                   a text outside its requests: reply "Unknown command." (decisions 71, 117)
+                                   a text outside its requests: post "Unknown command." without a quote (decisions 71, 117; decision 9 of plans/2026-11-12-mcp-secrets.md)
                                    else: delivery = delivery then prompt(m) (decision 45)
 prompt(m):                         from User: nothing (decision 79)
                                    else: deliver(m), also a text that starts with "!" (decision 117)
