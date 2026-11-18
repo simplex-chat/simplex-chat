@@ -71,7 +71,7 @@ namesSearchTests = describe "StoreService names: search" $ do
   g <- runIO C.newRandom
   describe "search" $ do
     it "answers an available name with the chain's price for the paid years, the term start and the order's contracts" $ testAvailable g
-    it "answers a name the chain has available as registered while its register here is sent, without a price" $ testRegistering g
+    it "answers a name the chain has available as registering while a paid order here holds it, without a price" $ testRegistering g
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
     it "holds a search slot through the chain reads only, answering rate_limited while every slot is taken" $ testSearchSlot g
     it "answers a listed name's community entry when available, reserved, being registered here and registered, a plain answer for an ini line the policy does not list, the community terms on chain as they change, and 503 while its listing is unread" $ testCommunity g
@@ -316,6 +316,7 @@ testRegistering g = withSearch g id id $ \s@Search {node, store} -> do
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
+  searchAlice s 12 `shouldReturn` registeringAnswer
   setPhase store $ ORegistering commitFixture $ TxHash $ hashFixture 9
   -- no price is answered, so reading one would fail the search
   searchFixture "search-registering" s 12 `shouldReturn` registeringAnswer

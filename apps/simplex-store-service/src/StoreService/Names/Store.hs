@@ -83,7 +83,8 @@ module StoreService.Names.Store
     updateRegistration,
     retargetRegistration,
     findRegistrations,
-    isLabelRegistering,
+    labelHolder,
+    openInvoicesOfHeldName,
     activeRegistrations,
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
@@ -147,7 +148,7 @@ import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
-import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod)
+import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..), InvoiceStatus (..), PaymentProvider, ServicePaymentMethod)
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), FromField (..), ToField (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -1100,12 +1101,28 @@ findRegistrations db owner now = do
     newestFirst = " ORDER BY r.created_at DESC, r.registration_id DESC"
     withBalance = mkQuery " AND EXISTS (SELECT 1 FROM @name_balances b WHERE b.registration_id = r.registration_id AND b.amount > 0)"
 
-isLabelRegistering :: DB.Connection -> LabelHash -> IO Bool
-isLabelRegistering db lh =
-  not . null
-    <$> ( DB.query db (mkQuery "SELECT 1 FROM @name_registrations WHERE label_hash = ? AND phase = ? LIMIT 1") (lh, PRegistering) ::
-            IO [Only Int]
-        )
+labelHolder :: DB.Connection -> LabelHash -> IO (Maybe RegistrationId)
+labelHolder db lh =
+  maybeFirstRow (RegistrationId . fromOnly) $
+    DB.query db (mkQuery "SELECT registration_id FROM @name_registrations WHERE label_hash = ? AND phase IN (?,?,?,?) LIMIT 1") (lh, PQueued, PCommitting, PCommitted, PRegistering)
+
+openInvoicesOfHeldName :: DB.Connection -> RegistrationId -> IO [(InvoiceId, PaymentProvider, Text)]
+openInvoicesOfHeldName db (RegistrationId rid) =
+  map (\(invId, provider, ref) -> (InvoiceId invId, provider, ref))
+    <$> DB.query
+      db
+      ( prefixQuery
+          [sql|
+        SELECT i.invoice_id, i.provider, ni.provider_ref
+        FROM @name_registrations r
+        JOIN @name_registrations o ON o.label_hash = r.label_hash AND o.registration_id <> r.registration_id
+        JOIN @name_invoices ni ON ni.registration_id = o.registration_id
+        JOIN @invoices i ON i.invoice_id = ni.invoice_id
+        WHERE r.registration_id = ? AND r.phase IN (?,?,?,?) AND o.phase = ? AND i.status = ?
+        ORDER BY i.created_at, i.invoice_id
+      |]
+      )
+      (rid, PQueued, PCommitting, PCommitted, PRegistering, PUnpaid, ISOpen)
 
 -- | The registrations a worker moves on, oldest first, by id alone, so a row that does not decode stops only its own worker.
 activeRegistrations :: DB.Connection -> IO [RegistrationId]

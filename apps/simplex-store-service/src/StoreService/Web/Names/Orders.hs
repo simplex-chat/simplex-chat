@@ -51,7 +51,7 @@ import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), o
 import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (balanceView, registrationView)
-import StoreService.Orders (publishRegistration)
+import StoreService.Orders (cancelNameInvoices, publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId)
 import StoreService.Waiters (Waiters, publish)
@@ -111,7 +111,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore} http client cfg providers waiters bod
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration (oeConfig env) now years ofDuration,
               checkTerms (oeConfig env) (oeContracts env) fields,
-              checkNameFree (oeContracts env) oeStore ofLabelHash,
+              checkNameFree (oeContracts env) oeStore Nothing ofLabelHash,
               checkPrice (oeContracts env) ofLength years price
             ]
           insert new paid db at =
@@ -237,7 +237,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} providers waiter
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration oeConfig now (orderYears fields pcYears) ofDuration,
               checkTerms oeConfig oeContracts fields,
-              checkNameFree oeContracts oeStore ofLabelHash
+              checkNameFree oeContracts oeStore Nothing ofLabelHash
             ]
       runExceptT (mapM_ ExceptT checks) >>= \case
         Left refusal -> refuse refusal
@@ -245,7 +245,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} providers waiter
           rid <- newRegistrationId
           placeCodeOrder env order hash rid code >>= \case
             Left refusal -> refuse refusal
-            Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
+            Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
 
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
 -- under the new name's turn and then the balance's.
@@ -272,7 +272,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers w
       liftEither $ checkDuration oeConfig now years ofDuration
       ExceptT $ checkTerms oeConfig oeContracts fields
       holder <- ExceptT $ checkSpendBalance oeStore spend now
-      ExceptT $ checkNameFree oeContracts oeStore ofLabelHash
+      ExceptT $ checkNameFree oeContracts oeStore Nothing ofLabelHash
       ExceptT $ checkPrice oeContracts ofLength years spPrice
       pure holder
     place now order@OrderRequest {orOwner, orFields} hash spend@Spend {spPrice, spBalance, spMethod} holder = case spMethod of
@@ -281,7 +281,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers w
         let new replaced = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = hash, nrgReplaces = replaced}
         placeOrder env now order (maybeToList holder) (coveredOrderInsert spend . new) >>= \case
           Left refusal -> refuse refusal
-          Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
+          Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
       Just (SPMCard _)
         | spPrice - spBalance < minCardChargeCents -> refuse $ ORBadRequest "a card difference under the card minimum"
       Just method ->
@@ -309,6 +309,11 @@ announceClosed OrdersEnv {oeStore, oePhases} providers waiters closed = do
   forM_ closed $ \ClosedOrder {coRegistration = NameRegistration {nrPayment}} ->
     forM_ (paymentInvoice nrPayment) $ \invId ->
       getInvoice oeStore invId >>= mapM_ (\InvoiceRow {irProvider, irProviderRef} -> forM_ (providerNamed providers irProvider) $ \p -> unless (expiresItself irProvider) $ cancelAtProvider p irProviderRef)
+
+announceHeld :: OrdersEnv -> [Provider] -> Waiters -> [ClosedOrder] -> RegistrationId -> IO ()
+announceHeld env@OrdersEnv {oeStore, oePhases} providers waiters closed rid = do
+  announceClosed env providers waiters closed
+  cancelNameInvoices oeStore waiters (Just oePhases) providers rid
 
 cancelAtProvider :: Provider -> Text -> IO ()
 cancelAtProvider Provider {pCancelInvoice} ref =

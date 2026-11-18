@@ -88,7 +88,6 @@ workerTests = describe "StoreService names: worker" $ do
     it "writes nothing when the registration changed since it was read" testLostRace
     it "writes in the name's turn" testInNameTurn
   describe "register" $ do
-    it "ends the later of two wallets' paid orders for one name taken, not live, with a balance of its price" testTwoWallets
     it "ends taken on any revert while the name is not available, releasing a code and keeping no balance" testRevertTaken
     it "waits while the name reads taken only above the confirmation depth, and ends taken once it reads so at the depth" testTakenAtDepth
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
@@ -402,7 +401,7 @@ testUnexpiredCommitment = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   x <- stored ctx r
   nrPhase x `shouldBe` OCommitted (commitAt t Nothing)
   -- a commit sent, mined with status 0 after another commit of it
-  r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} id
+  r2 <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 2} id
   answerCommitment w r2 0
   void $ steps w r2 >>= awaiting
   void $ mineNewest w False
@@ -467,7 +466,7 @@ testIntentAcrossCommits = withWorker $ \w@W {wCtx = ctx} -> do
   commitTx <- newestHash w
   (nrPhase x, nrReveal x, nrVersion x) `shouldBe` (OCommitting commitTx, Just reveal, nrVersion r + 2)
   -- requeued with its intent while a third party's commit of the commitment is live: not ours, so only our commit goes
-  r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} $ \o -> o {nrPhase = OQueued, nrHistory = oldCommit, nrReveal = Just reveal}
+  r2 <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 2} $ \o -> o {nrPhase = OQueued, nrHistory = oldCommit, nrReveal = Just reveal}
   answerAccepted w r2 $ Returns $ unHex32 $ taTermsHash $ rvAcceptance reveal
   answerCommitment w r2 (orderSeconds - 30)
   steps w r2 >>= waitingUntil >>= (`shouldBe` at (orderSeconds - 30 + minAge))
@@ -503,7 +502,7 @@ testMinedCommitsUncounted = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
   answerCommitment w r 0
   void $ steps w r >>= awaiting
   namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
-  r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} id
+  r2 <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 2} id
   sentCommits ctx r2 (TSRevertedAt 120) [11 .. 10 + fromIntegral maxSendsPerKind]
   answerCommitment w r2 0
   steps w r2 >>= done
@@ -522,7 +521,7 @@ testLostRace = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
   timeout prompt (wait stepping) >>= maybe (fail "the step did not finish") (pure . shape) >>= (`shouldBe` "Again")
   stored ctx r `shouldReturn` changed
   -- held at the commitment's read, a fresh worker's first chain read
-  r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} id
+  r2 <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 2} id
   answerCommitment w r2 $ orderSeconds - 60
   W {wWorker = fresh} <- started ctx
   (stepping', gate') <- pausedAt cNode "eth_call" $ stepRegistration fresh (nrId r2)
@@ -546,25 +545,6 @@ testInNameTurn = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
       putMVar release ()
       timeout prompt (wait stepping) >>= maybe (fail "the step did not finish") done
   namePhase . nrPhase <$> stored ctx r `shouldReturn` PFailed
-
-testTwoWallets :: IO ()
-testTwoWallets = withWorker $ \w@W {wCtx = ctx} -> do
-  a <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
-  b <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} openPhase >>= revealed ctx keyB "alicebakery"
-  answerExpiry ctx "alicebakery" expiry
-  void $ steps w a >>= awaiting
-  void $ mineNewest w True
-  steps w a >>= done
-  namePhase . nrPhase <$> stored ctx a `shouldReturn` PRegistered
-  answerOwner ctx "alicebakery" (nrOwner a)
-  answerAvailable w False
-  dryRunsRevert w "NameNotAvailable(string)" $ abiTuple [Dynamic $ abiBytes "alicebakery"]
-  published w b (steps w b) >>= done
-  x <- stored ctx b
-  (namePhase $ nrPhase x, nrPrice x, nrPayment x) `shouldBe` (PTaken, nrPrice b, nrPayment b)
-  fmap (\Balance {blAmount, blCredited, blHold} -> (blAmount, blCredited, blHold)) <$> withTransaction (cStore ctx) (\db -> getBalance db (nrId b) orderTime)
-    `shouldReturn` Just (nrPrice b, nrPrice b, Nothing)
-  length <$> sent w `shouldReturn` 1
 
 -- | The order of alicebakery, by owner A, with this commitment.
 aliceFields :: Int -> OrderFields
@@ -934,7 +914,7 @@ testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
 testFailedOnlySettled :: IO ()
 testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do
   r <- paidIn ctx aliceOrder openPhase >>= \o -> signedReveal ctx keyA reveal {rvDeadline = 9007199254740991} o >>= \rv -> rewrite ctx o (\x -> x {nrReveal = Just rv})
-  r2 <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} (\o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = orderSeconds + 3 * 86400}}) >>= revealed ctx keyB "alicebakery"
+  r2 <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 2} (\o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = orderSeconds + 3 * 86400}}) >>= revealed ctx keyB "dynamis"
   answerAvailable w True
   p <- steps w r >>= awaiting
   -- past revealBefore, the register in flight can still be mined
@@ -954,8 +934,8 @@ testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> d
   steps w r2 >>= awaiting >>= (`shouldBe` ptHash p2) . ptHash
   replicateM_ 2 $ mine cNode []
   followTransactions wSender
-  answerOwner ctx "alicebakery" (nrOwner r2)
-  answerExpiry ctx "alicebakery" expiry
+  answerOwner ctx "dynamis" (nrOwner r2)
+  answerExpiry ctx "dynamis" expiry
   steps w r2 >>= done
   -- judged from chain state with no hash known to have mined: no register transaction (contract section 6)
   now <- nowOf ctx
@@ -1028,8 +1008,8 @@ testRestartRegisterSaved = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender}
 
 testRunWorkers :: IO ()
 testRunWorkers = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} -> do
-  r <- paidIn ctx aliceOrder id
   (unpaid, _) <- placed ctx (byB aliceOrder) {oCommitment = commitmentOf 2}
+  r <- paidIn ctx aliceOrder id
   answerCommitment w r 0
   withAsync (runWorkers wWorker) $ \_ -> do
     timeout prompt (awaitSent cNode 1) >>= maybe (fail "no commit was sent") (const $ pure ())
@@ -1090,9 +1070,9 @@ viewOf Ctx {cClient} NameRegistration {nrId} = webGet cClient (registrationPath 
 testRetryNotFailed :: IO ()
 testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
   queued <- paidIn ctx aliceOrder id
-  live <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} $ \o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = orderSeconds + 2 * maxAge}}
   registeredOrder <- paidIn ctx dynamisOrder $ \o -> o {nrPhase = ORegistered expiry orderTime}
   taken <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 4} $ \o -> o {nrPhase = OTaken}
+  live <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 2} $ \o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = orderSeconds + 2 * maxAge}}
   answerFree ctx "alicebakers"
   failed <- paidIn ctx aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 5} failedPhase
   signed <- paidIn ctx (byB aliceOrder) {oLabel = "alicebakers", oCommitment = commitmentOf 6} $ \o -> (committedPhase o) {nrReveal = Just reveal}
@@ -1134,24 +1114,24 @@ testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
 testRetryInNameTurn :: IO ()
 testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
   r <- paidIn ctx aliceOrder committedPhase
-  moving <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} committedPhase
+  moving <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 2} committedPhase
   advance ctx $ day + 1
   let turns = oeTurns cOrders
-      whileHeld :: IO a -> IO () -> IO a
-      whileHeld request meanwhile = do
+      whileHeld :: NameRegistration -> IO a -> IO () -> IO a
+      whileHeld NameRegistration {nrLabelHash} request meanwhile = do
         holding <- newEmptyMVar
         release <- newEmptyMVar
-        withAsync (withLabelTurn turns (nrLabelHash r) $ putMVar holding () >> takeMVar release) $ \_ -> do
+        withAsync (withLabelTurn turns nrLabelHash $ putMVar holding () >> takeMVar release) $ \_ -> do
           takeMVar holding
           withAsync request $ \requesting -> do
-            timeout prompt (atomically $ labelTurnCount turns (nrLabelHash r) >>= check . (== 2)) >>= maybe (fail "the retry did not queue on the turn") pure
+            timeout prompt (atomically $ labelTurnCount turns nrLabelHash >>= check . (== 2)) >>= maybe (fail "the retry did not queue on the turn") pure
             meanwhile
             putMVar release ()
             timeout prompt (wait requesting) >>= maybe (fail "the retry did not finish") pure
-  (status, v) <- whileHeld (retryOf ctx r) (stored ctx r `shouldReturn` r)
+  (status, v) <- whileHeld r (retryOf ctx r) (stored ctx r `shouldReturn` r)
   (status, phaseOf =<< v) `shouldBe` (200, Just "queued")
   -- moved to another name while the retry waited for the old name's turn
-  (status', v') <- whileHeld (retryOf ctx moving) (void $ rewrite ctx moving $ \o -> o {nrLabelHash = labelHash "dynamis", nrLength = lengthOf 7})
+  (status', v') <- whileHeld moving (retryOf ctx moving) (void $ rewrite ctx moving $ \o -> o {nrLabelHash = labelHash "alicebakers", nrLength = lengthOf 11})
   (status', (`fieldOf` "error") =<< v') `shouldBe` (409, Just "registration_changed")
   nrPhase <$> stored ctx moving `shouldReturn` nrPhase moving
 
@@ -1246,8 +1226,8 @@ testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
 testCloseRefused :: IO ()
 testCloseRefused = withWorker $ \W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}}} -> do
   closeRegistration oeStore oeContracts oeTurns oeNow "t2Jk8RmQ4vXw9NcP3yLb6g" `shouldReturn` CLRefused CFNoOrder
-  queued <- paidIn ctx aliceOrder id
   (failedCode, _) <- codeIn ctx 8 (byB aliceOrder) {oCommitment = commitmentOf 2} failedPhase
+  queued <- paidIn ctx aliceOrder id
   unread <- paidIn ctx dynamisOrder failedPhase
   answerCall cNode (registrarOf cNode) (ownerOfSelector <> labelBytes "dynamis") $ Reverts $ unhex "37ed32e8"
   forM_ [(queued, CFNotFailedPaid), (failedCode, CFNotFailedPaid), (unread, CFUnread)] $ \(r, refusal) -> do

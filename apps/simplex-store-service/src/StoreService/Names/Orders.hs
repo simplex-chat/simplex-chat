@@ -82,7 +82,7 @@ import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Chain (Hex32 (..), TxHash)
 import StoreService.Names.Registration (AgreedTerms (..), Commitment, OrderFields (..), RegistrationId (..), parseChecksumAddress, personalDigest)
-import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, labelHolder, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Names.View (lapsedAt)
 import StoreService.Store.Invoices (currentSecond, unixSeconds)
@@ -301,13 +301,13 @@ checkTerms cfg ct OrderFields {ofLabelHash, ofAgreedTerms} =
         Right t -> unless (ofAgreedTerms == termsFor community t) $ Left $ ORTermsChanged t (communityOf cfg ofLabelHash community)
 
 -- | A name being registered here searches as available, so it is checked here too.
-checkNameFree :: Contracts -> DBStore -> LabelHash -> IO (Either OrderRefusal ())
-checkNameFree ct st lh =
+checkNameFree :: Contracts -> DBStore -> Maybe RegistrationId -> LabelHash -> IO (Either OrderRefusal ())
+checkNameFree ct st moved lh =
   nameStatus ct lh >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's name check failed: " <> tshow e)
     Right NSAvailable -> do
-      registering <- withTransaction st (`isLabelRegistering` lh)
-      pure $ if registering then Left ORNameTaken else Right ()
+      holder <- withTransaction st (`labelHolder` lh)
+      pure $ if isJust holder && holder /= moved then Left ORNameTaken else Right ()
     Right _ -> pure $ Left ORNameTaken
 
 -- | The chain price for the length and years, which must be the price the order saw.

@@ -154,7 +154,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses a body over 16384 bytes, accepting the longest order" testSizes
     it "refuses a malformed owner, an unknown method, price or kind, and an order outside 6-63 letters" testFormats
     it "parses an order only with every field well formed, sealed of at most 11095 characters and terms of the agreed format" testOrderFormats
-    it "answers after the name's turn, so a slow reader of one answer holds no other order for the name, paid or by code" testSlowReaderHoldsNoTurn
+    it "answers after the name's turn, so a slow reader of one answer holds no other order for the name, paid or by code, answered at once" testSlowReaderHoldsNoTurn
   describe "code orders" $ do
     it "places a code order as a queued live registration holding its code, answering only its id" testCodeOrder
     it "answers an exact resend with its id in any phase, the code spent or not, also after the terms changed on chain, before any chain read" testCodeResend
@@ -192,6 +192,9 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers cancel with funded, not_open, paid when settlement won, and expired with the payment read meanwhile" testCancelAnswers
     it "alerts once when a cancel expires an invoice a payment landed on while the provider was told" testCancelAlertsFunded
     it "queues an order settled while open and publishes its version" testSettlementQueues
+    it "holds the name from payment: the name's other open invoices are cancelled at the provider and closed, and a new order of it is refused name_taken" testPaymentHoldsName
+    it "ends taken an order paid while another paid order holds its name, its price kept as its balance" testSettledWhileHeld
+    it "holds the name from a code order's placement, cancelling the name's other open invoices" testCodeOrderHoldsName
     it "takes the invoice's row before recording a payment that moves no status" testSettlementLocksInvoice
     it "sweeps each invoice on its own, skipping one whose order cannot be read" testSweepSkipsBadRow
     it "keeps out of a pass's sweep only the invoices whose read or settlement failed" testPassSweepsAroundFailures
@@ -1241,16 +1244,16 @@ testSlowReaderHoldsNoTurn = withOrders $ \ctx@Ctx {cWeb, cOrders} -> do
   Warp.testWithApplication (pure slow) $ \port -> do
     let c = ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
         slowPost path body = statusOf <$> webRequestBody (cClient c) "POST" path [(hContentType, "application/json"), (slowReader, "1")] (J.encode body)
-        whileHeld first second = do
+        whileHeld first second answered = do
           held <- async first
           takeMVar writing
-          timeout 2000000 second >>= (`shouldSatisfy` maybe False ((== 200) . fst))
+          timeout 2000000 second >>= (`shouldSatisfy` maybe False ((== answered) . fst))
           putMVar release ()
           wait held `shouldReturn` 200
         byB o = o {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 2}
-    whileHeld (signedBody (cRandom c) aliceOrder >>= slowPost "/api/invoice") (placeOrder c $ byB aliceOrder)
+    whileHeld (signedBody (cRandom c) aliceOrder >>= slowPost "/api/invoice") (placeOrder c $ byB aliceOrder) 200
     let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 3}
-    whileHeld (signedCodeBody c codeA dynamis >>= slowPost "/api/name/register") (register c codeB (byB dynamis) {oCommitment = commitmentOf 4})
+    whileHeld (signedCodeBody c codeA dynamis >>= slowPost "/api/name/register") (register c codeB (byB dynamis) {oCommitment = commitmentOf 4}) 409
   where
     slowReader = "x-slow-reader"
 
@@ -1493,6 +1496,49 @@ testSettlementQueues = withOrders $ \ctx -> do
   timeout 2000000 (wait waiter) `shouldReturn` Just True
   r <- invoiceRegistration ctx invId
   (nrPhase r, nrVersion r) `shouldBe` (OQueued, 2)
+
+bobOrder :: Int -> Order
+bobOrder n = aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf n}
+
+invoiceRef :: Ctx -> InvoiceId -> IO Text
+invoiceRef Ctx {cStore} inv = maybe (error "no invoice") irProviderRef <$> getInvoice cStore inv
+
+testPaymentHoldsName :: IO ()
+testPaymentHoldsName = withOrders $ \ctx@Ctx {cStore = st, cWeb, cStub} -> do
+  poller <- newPollerEnv st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
+  (aliceInv, _) <- placed ctx aliceOrder
+  (bobInv, _) <- placed ctx (bobOrder 2)
+  aliceRef <- invoiceRef ctx aliceInv
+  bobRef <- invoiceRef ctx bobInv
+  atomicModifyIORef' cStub $ \s -> (s {ssInvoices = M.insert aliceRef settled (ssInvoices s)}, ())
+  queueReadHint (weHints cWeb) aliceRef >> drainHints poller
+  nrPhase <$> invoiceRegistration ctx aliceInv `shouldReturn` OQueued
+  calls <- stubCalls cStub
+  [r | StubCancel r <- calls] `shouldBe` [bobRef]
+  nrPhase <$> invoiceRegistration ctx bobInv `shouldReturn` OClosed ICCancelled
+  fmap irStatus <$> getInvoice st bobInv `shouldReturn` Just ISExpired
+  placeOrder ctx (bobOrder 3) `shouldReturn` refusedWith 409 "name_taken"
+
+testSettledWhileHeld :: IO ()
+testSettledWhileHeld = withOrders $ \ctx@Ctx {cStore = st} -> do
+  (aliceInv, _) <- placed ctx aliceOrder
+  (bobInv, _) <- placed ctx (bobOrder 2)
+  settleNow ctx aliceInv settled `shouldReturn` ISPaid
+  settleNow ctx bobInv settled `shouldReturn` ISPaid
+  nrPhase <$> invoiceRegistration ctx aliceInv `shouldReturn` OQueued
+  NameRegistration {nrId, nrPhase} <- invoiceRegistration ctx bobInv
+  nrPhase `shouldBe` OTaken
+  fmap blAmount <$> withTransaction st (\db -> getBalance db nrId orderTime) `shouldReturn` Just alicePrice
+
+testCodeOrderHoldsName :: IO ()
+testCodeOrderHoldsName = withOrders $ \ctx@Ctx {cStub} -> do
+  (code, _) <- issueCode ctx 8 2 id
+  (aliceInv, _) <- placed ctx aliceOrder
+  aliceRef <- invoiceRef ctx aliceInv
+  fst <$> register ctx code (bobOrder 3) `shouldReturn` 200
+  calls <- stubCalls cStub
+  [r | StubCancel r <- calls] `shouldBe` [aliceRef]
+  nrPhase <$> invoiceRegistration ctx aliceInv `shouldReturn` OClosed ICCancelled
 
 -- | Postgres serializes the payment with a concurrent overdue close only on this row; SQLite shows that it is written.
 testSettlementLocksInvoice :: IO ()

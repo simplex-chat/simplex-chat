@@ -83,7 +83,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "refuses another signer's signature, a stale timestamp and a malformed body" testFindRefused
   describe "another name" $ do
     it "refuses a move from registered, queued, taken, and committed without a refused reveal" testMoveRefusedPhases
-    it "moves a failed order, a lapsed one, and a committed one whose links were refused, to the same name with other links too" testMoveAccepted
+    it "moves a failed order, a lapsed one, and a committed one whose links were refused, to the same name with other links too, and to no name another paid order holds" testMoveAccepted
     it "answers a body equal to the current fields with the view unchanged, counting no move, whatever its timestamp" testMoveRepeat
     it "moves an order by a body differing only in terms, storing them" testMoveTermsOnly
     it "answers terms_changed for an old version, other terms or the other kind, listed or not, a body differing only in terms included, and moves under the community terms, storing them" testMoveTermsChanged
@@ -413,9 +413,11 @@ testMoveAccepted = withOwner $ \ctx -> do
   nrPhase <$> stored ctx refusedOrder `shouldReturn` OQueued
   -- a committed order with no reveal past revealBefore reads failed
   lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = seconds orderTime - 1}}
-  back <- moveTo ctx "alicebakery" 12
-  v3 <- moved ctx keyA lapsed back
-  fieldsIn v3 [("phase", phaseValue "queued" []), ("price", J.Number 10000)]
+  heldName <- moveTo ctx "alicebakery" 12
+  move ctx keyA lapsed heldName `shouldReturn` refusedWith 409 "name_taken"
+  sameLapsed <- moveTo ctx "dynamis" 12
+  v3 <- moved ctx keyA lapsed sameLapsed
+  fieldsIn v3 [("phase", phaseValue "queued" []), ("price", J.Number 20000)]
 
 testMoveRepeat :: IO ()
 testMoveRepeat = withOwner $ \ctx -> do
@@ -589,9 +591,9 @@ testMoveLanded = withOwner $ \ctx -> do
 testMoveLandedReleasedCode :: IO ()
 testMoveLandedReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   answerFree ctx "alicebakers"
-  spender <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 20} id
   (unused, unusedCode) <- codeIn ctx 7 dynamisOrder failedPhase
   (spentElsewhere, spentCode) <- codeIn ctx 8 aliceOrder failedPhase
+  spender <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 20} id
   let expiry = seconds orderTime + 2 * 31536000
   forM_ [("dynamis", unused), ("alicebakery", spentElsewhere)] $ \(label, r) -> do
     answerExpiry ctx label expiry

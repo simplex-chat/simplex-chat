@@ -7,6 +7,7 @@ module StoreService.Orders
   ( RegistrationChanged (..),
     settleOrder,
     cancelOpenInvoice,
+    cancelNameInvoices,
     expireOverdue,
     publishRegistration,
     decide,
@@ -18,14 +19,15 @@ where
 import StoreService.Names.Phases (Phases)
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Registration (RegistrationId (..))
-import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, namePhase, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
-import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Received (..), receivedAmount, receivedConfirmed)
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
+import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
+import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), Received (..), providerErrorText, receivedAmount, receivedConfirmed)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
+import StoreService.Web.Http (providerNamed)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Exception (Exception)
 import qualified Control.Exception as E
-import Control.Logger.Simple (logError, logNote)
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM_, when)
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
@@ -91,7 +93,7 @@ data Product = PBadge (Maybe ByteString) | PName NameRegistration
 -- | A name order's change at settlement: its new version; money received after it closed, which stays unpaid and is credited to its balance;
 -- a holder queued whose held balance could not be spent (then the balance's order); or an order closed because another live order
 -- holds its commitment, or its owner and name. The text is the provider's reference of the order's invoice.
-data NameOutcome = NOWritten RegistrationId Int64 | NOLate Text | NOHoldNotSpent Text RegistrationId | NOLiveOrderExists Text
+data NameOutcome = NOWritten RegistrationId Int64 | NOLate Text | NOHoldNotSpent Text RegistrationId | NOLiveOrderExists Text | NOTaken Text
 
 data SettledMoney = SMNone | SMHeld | SMNewPayment
   deriving (Eq)
@@ -124,6 +126,7 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
       NOLate ref -> (pure (), latePayment ref)
       NOHoldNotSpent ref source -> (pure (), holdNotSpent ref source)
       NOLiveOrderExists ref -> (pure (), liveOrderExists ref)
+      NOTaken ref -> (pure (), takenAtSettlement ref)
     now = truncateToSecond now'
     at = truncateToSecond (settledInstant signal now)
     settleRow db = \case
@@ -197,14 +200,18 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
 -- BTCPay reports money paid into a closed invoice as Expired or Invalid, not Settled, so a new payment figure
 -- on a closed invoice is late too; the monotonic payment write reports each figure once.
 nameSettled :: DB.Connection -> Text -> InvoiceStatus -> Maybe InvoiceStatus -> SettledMoney -> NameRegistration -> UTCTime -> IO [NameOutcome]
-nameSettled db ref before after money r@NameRegistration {nrId, nrPhase, nrPayment} now
+nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrPhase, nrPayment, nrPrice} now
   | namePhase nrPhase `notElem` [PUnpaid, PClosed] = pure []
   | otherwise = case after of
       Just ISPaid
         | before /= ISOpen -> pure [NOLate ref]
-        | otherwise ->
-            updateRegistration db r {nrPhase = OQueued} now >>= \case
-              Written v -> (NOWritten nrId v :) <$> spendHold
+        | otherwise -> do
+            held <- isJust <$> labelHolder db nrLabelHash
+            updateRegistration db r {nrPhase = if held then OTaken else OQueued} now >>= \case
+              Written v -> do
+                spent <- spendHold
+                when held $ creditBalance db nrId nrPrice now
+                pure $ NOWritten nrId v : spent <> [NOTaken ref | held]
               NotLive -> pure [NOLate ref]
               -- an invariant broke; left live, the order would keep its hold for ever, as no sweep closes a paid invoice
               LiveOrderExists -> (<> [NOLate ref, NOLiveOrderExists ref]) <$> closed
@@ -244,6 +251,10 @@ holdNotSpent ref (RegistrationId source) =
     "names: invoice " <> ref <> " queued its order as paid, but the balance of registration " <> source
       <> " it held could not be spent; check that balance and release or spend its hold by hand"
 
+takenAtSettlement :: Text -> IO ()
+takenAtSettlement ref =
+  logNote $ "names: invoice " <> ref <> " was paid while another paid order holds its name, so its order is taken and its price kept as its balance"
+
 liveOrderExists :: Text -> IO ()
 liveOrderExists ref =
   logError $
@@ -270,6 +281,21 @@ cancelOpenInvoice st waiters phases invId now = do
     lateOf InvoiceRow {irProduct, irProviderRef, irPayment} = case irProduct of
       IPName _ | maybe False paymentHolds irPayment -> Just irProviderRef
       _ -> Nothing
+
+cancelNameInvoices :: DBStore -> Waiters -> Maybe Phases -> [Provider] -> RegistrationId -> IO ()
+cancelNameInvoices st waiters phases providers rid =
+  withTransaction st (`openInvoicesOfHeldName` rid) >>= mapM_ cancel
+  where
+    cancel (invId, provider, ref) = case providerNamed providers provider of
+      Nothing -> uncancelled ref "no provider is configured for it"
+      Just Provider {pCancelInvoice} ->
+        pCancelInvoice ref >>= \case
+          Left e -> uncancelled ref $ providerErrorText e
+          Right () -> do
+            now <- currentSecond
+            closed <- cancelOpenInvoice st waiters phases invId now `catchOwn'` \e -> False <$ logError ("names: closing invoice " <> ref <> " failed: " <> tshow e)
+            when closed $ logNote $ "names: invoice " <> ref <> " is cancelled, as another order paid for its name"
+    uncancelled ref why = logWarn $ "names: invoice " <> ref <> " of a name another order paid for is not cancelled, and expires by itself: " <> why
 
 -- | Of the given invoices, expires those still open, with no money received, and past the cutoff, closing their orders.
 -- Each in its own transaction, so an invoice that fails is logged and skipped, and the others still expire.

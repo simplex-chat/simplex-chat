@@ -353,6 +353,8 @@ CREATE UNIQUE INDEX @idx_name_registrations_live_commitment ON @name_registratio
 
 CREATE UNIQUE INDEX @idx_name_registrations_live_owner_label ON @name_registrations(owner, label_hash) WHERE live = 1;
 
+CREATE UNIQUE INDEX @idx_name_registrations_held_label ON @name_registrations(label_hash) WHERE phase IN ('queued', 'committing', 'committed', 'registering');
+
 CREATE INDEX @idx_name_registrations_label_phase ON @name_registrations(label_hash, phase);
 
 CREATE INDEX @idx_name_registrations_owner ON @name_registrations(owner, created_at);
@@ -531,6 +533,7 @@ DROP INDEX @idx_name_registrations_order_hash;
 DROP INDEX @idx_name_registrations_phase;
 DROP INDEX @idx_name_registrations_owner;
 DROP INDEX @idx_name_registrations_label_phase;
+DROP INDEX @idx_name_registrations_held_label;
 DROP INDEX @idx_name_registrations_live_owner_label;
 DROP INDEX @idx_name_registrations_live_commitment;
 DROP INDEX @idx_name_prepaid_codes_reserved_by;

@@ -17,7 +17,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import Data.List (find)
-import Data.Maybe (catMaybes, mapMaybe)
+import Data.Maybe (catMaybes, isJust, mapMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
@@ -41,14 +41,13 @@ import StoreService.Names.Contracts
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (EditsLeft, nameEditsLeft)
 import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink)
-import StoreService.Names.Store (isLabelRegistering)
+import StoreService.Names.Store (labelHolder)
 import StoreService.Web.Http (HttpEnv, NameRefusal (..), Respond, jsonResponse, maxBodyBytes, readBoundedBody, refusalResponse, searchSlot)
 import System.Timeout (timeout)
 
 data Found
   = FAvailable USDCents (Maybe Terms)
-  | -- | the chain says available while a registration here has its register sent, not mined
-    FRegistering
+  | FRegistering
   | FReserved
   | FRegistered RegisteredName (Maybe NameRecords)
 
@@ -82,7 +81,7 @@ searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond 
   Right lh -> case queryLength req of
     Nothing -> respond $ refusalResponse NRInvalidName
     Just len -> do
-      registering <- withTransaction st (`isLabelRegistering` lh)
+      registering <- isJust <$> withTransaction st (`labelHolder` lh)
       searchSlot http (timeout (ctDeadline ct) (runExceptT $ found lh len registering)) >>= \case
         Nothing -> respond $ refusalResponse $ NRRateLimited 1
         Just (Just (Right (f, community))) -> respond =<< searchAnswer cfg st ps clock lh community f

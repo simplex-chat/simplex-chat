@@ -40,7 +40,7 @@ import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), credi
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), CreditAmount (..), LateAlert (..), LateCredit (..), LateCreditState (..), LateFigures (..), LatePending (..), LateSupport (..), claimLateAlert, creditCents, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
-import StoreService.Orders (decide, expireOverdue, publishRegistration, settleOrder, signalReceived)
+import StoreService.Orders (cancelNameInvoices, decide, expireOverdue, publishRegistration, settleOrder, signalReceived)
 import StoreService.Providers (CryptoReceived (..), ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, getInvoice, getInvoiceByProviderRef, overdueInvoices, paymentHolds, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
@@ -292,6 +292,9 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
       when (isJust (decide irStatus signal)) $
         settleOrder peStore peWaiters pePhases irInvoiceId signal now >>= \status -> do
           reportSettled irProduct irStatus status
+          case irProduct of
+            IPName rid | status == ISPaid && irStatus /= ISPaid -> cancelNameInvoices peStore peWaiters pePhases peProviders rid
+            _ -> pure ()
           case (irProduct, providerNamed peProviders provider) of
             (IPName _, Just p) ->
               creditLate env p now irInvoiceId ref >>= \case
