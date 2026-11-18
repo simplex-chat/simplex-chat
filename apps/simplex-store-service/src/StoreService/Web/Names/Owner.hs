@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 -- | The requests only the owner code can sign: find and another name.
 module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
@@ -12,7 +11,7 @@ import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.TH as JQ
+import Data.Bifunctor (first)
 import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -23,14 +22,13 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Orders
 import StoreService.Names.Phases (publish)
-import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, retargetMessage)
+import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, retargetMessage)
 import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (registrationAt, registrationView)
@@ -45,7 +43,8 @@ data FindRequest = FindRequest
     frSignature :: RecoverableSignature
   }
 
-$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "fr"} ''FindRequest)
+instance J.FromJSON FindRequest where
+  parseJSON = J.withObject "find request" $ \o -> FindRequest <$> jsonField o "owner" (textWith $ first show . parseAnyCaseAddress) <*> o J..: "timestamp" <*> o J..: "signature"
 
 -- | POST /api/registration/find, the owner's orders newest first.
 findHandler :: OrdersEnv -> Request -> Respond -> IO ResponseReceived
