@@ -1457,8 +1457,8 @@ receivedFigure = " CASE WHEN" <> cardInvoice <> " THEN p.amount ELSE COALESCE(p.
 
 lateColumns :: Query
 lateColumns =
-  "SELECT ni.invoice_id, ni.registration_id, r.phase IN (" <> textLiteral PUnpaid <> ", " <> textLiteral PClosed <> "), r.phase = " <> textLiteral PClosed
-    <> ", i.payment_crypto_currency, ni.late_support, COALESCE(p.amount, 0), p.confirmed_amount,"
+  "SELECT ni.invoice_id, ni.registration_id, CASE WHEN r.phase IN (" <> textLiteral PUnpaid <> ", " <> textLiteral PClosed <> ") THEN 1 ELSE 0 END, CASE WHEN r.phase = " <> textLiteral PClosed
+    <> " THEN 1 ELSE 0 END, i.payment_crypto_currency, ni.late_support, COALESCE(p.amount, 0), p.confirmed_amount,"
     <> " p.received_units, p.confirmed_units, p.invoice_rate,"
     <> creditedTotal "units"
     <> ","
