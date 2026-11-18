@@ -50,7 +50,7 @@ namesStoreTests :: Spec
 namesStoreTests = describe "StoreService names: store" $ do
   describe "migration" $ do
     it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
-    it "names each invoice's product, badge for the existing rows and name for those a name invoice refers to, and reads a name row marked badge as no product" testInvoiceProduct
+    it "names each invoice's product, badge for the existing rows and name for those a name invoice refers to, copies each badge invoice's provider ref, and reads a name row marked badge as no product" testInvoiceProduct
     it "refuses a stored reveal whose acceptance columns are unset or set only in part" testPartialAcceptance
     it "refuses a stored commitment, secret or accepted terms hash that is not 32 bytes" testShortHashes
     it "refuses a stored length outside the name lengths" testStoredLength
@@ -137,7 +137,7 @@ price :: USDCents
 price = 20000
 
 paidOrder :: Text -> PaidOrder
-paidOrder invId = PaidOrder {poMethod = btc, poPrice = price, poInvoiceId = InvoiceId invId, poProviderRef = "ref-" <> invId}
+paidOrder invId = PaidOrder {poMethod = btc, poPrice = price, poInvoiceId = InvoiceId invId}
 
 insertInvoiceRow :: DB.Connection -> Text -> UTCTime -> Text -> IO ()
 insertInvoiceRow db = insertProviderInvoice db "crypto"
@@ -146,8 +146,8 @@ insertProviderInvoice :: DB.Connection -> Text -> Text -> UTCTime -> Text -> IO 
 insertProviderInvoice db provider invId expiresAt status =
   DB.execute
     db
-    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, product, price, amount, currency, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
-    ((invId, provider, "name" :: Text, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
+    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, provider_ref, product, price, amount, currency, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    ((invId, provider, "ref-" <> invId, "name" :: Text, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
 
 -- | A paid order whose invoice, named after the registration, expires at the given time.
 placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either BalanceInsertRefused ())
@@ -231,9 +231,10 @@ testInvoiceProduct = withServiceStore $ \st -> do
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
   runMigrations st $ MTRDown (mapMaybe toDownMigration migration)
   runMigrations st $ MTRUp migration
-  let NewInvoice {niInvoiceId = InvoiceId badgeInvoice} = sampleInvoice
+  let NewInvoice {niInvoiceId = InvoiceId badgeInvoice, niProviderRef = badgeRef} = sampleInvoice
       productOf invId = withTransaction st $ \db -> DB.query db "SELECT product FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId)
   mapM productOf [badgeInvoice, "inv-r1"] `shouldReturn` [[Only ("badge" :: Text)], [Only "name"]]
+  fmap irInvoiceId <$> getInvoiceByProviderRef st badgeRef `shouldReturn` Just (InvoiceId badgeInvoice)
   fmap irProduct <$> getInvoice st (InvoiceId "inv-r1") `shouldReturn` Just (IPName (RegistrationId "r1"))
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_invoices SET product = 'badge' WHERE invoice_id = ?" (Only ("inv-r1" :: Text))
   getInvoice st (InvoiceId "inv-r1") `shouldThrow` (\(StoreDecodeError e) -> e == "invoice product: inv-r1")

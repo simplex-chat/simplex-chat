@@ -392,7 +392,6 @@ CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by
 CREATE TABLE @name_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
   registration_id TEXT NOT NULL REFERENCES @name_registrations ON DELETE CASCADE,
-  provider_ref TEXT NOT NULL,
   late_alerted_at TEXT,
   late_alerted_units INTEGER,
   late_support TEXT,
@@ -400,8 +399,6 @@ CREATE TABLE @name_invoices(
 ) STRICT;
 
 CREATE UNIQUE INDEX @idx_name_invoices_registration ON @name_invoices(registration_id);
-
-CREATE UNIQUE INDEX @idx_name_invoices_provider_ref ON @name_invoices(provider_ref);
 
 ALTER TABLE @payments ADD COLUMN confirmed_amount INTEGER NOT NULL DEFAULT 0;
 
@@ -525,7 +522,6 @@ DELETE FROM @invoices WHERE invoice_id IN (
   SELECT ni.invoice_id FROM @name_invoices ni
   WHERE NOT EXISTS (SELECT 1 FROM @payments p WHERE p.invoice_id = ni.invoice_id)
 );
-DROP INDEX @idx_name_invoices_provider_ref;
 DROP INDEX @idx_name_invoices_registration;
 DROP TABLE @name_invoices;
 
@@ -556,7 +552,14 @@ m20261118_invoice_product =
     [sql|
 ALTER TABLE @invoices ADD COLUMN product TEXT NOT NULL DEFAULT 'badge';
 
+ALTER TABLE @invoices ADD COLUMN provider_ref TEXT NOT NULL DEFAULT '';
+
 UPDATE @invoices SET product = 'name' WHERE invoice_id IN (SELECT invoice_id FROM @name_invoices);
+
+UPDATE @invoices SET provider_ref = (SELECT ci.provider_ref FROM @badge_code_invoices ci WHERE ci.invoice_id = @invoices.invoice_id)
+WHERE invoice_id IN (SELECT invoice_id FROM @badge_code_invoices);
+
+CREATE UNIQUE INDEX @idx_invoices_provider_ref ON @invoices(provider_ref);
 |]
 
 down_m20261118_invoice_product :: Query
@@ -564,6 +567,10 @@ down_m20261118_invoice_product =
   withPrefix
     servicePrefix
     [sql|
+DROP INDEX @idx_invoices_provider_ref;
+
+ALTER TABLE @invoices DROP COLUMN provider_ref;
+
 ALTER TABLE @invoices DROP COLUMN product;
 |]
 

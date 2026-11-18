@@ -665,7 +665,8 @@ from `scripts/store-service/`. The database `badge_service`,
 
 A badge-service database upgrades in place: the store's own migrations run after every badge
 migration, `20261012_badge_subscriptions` included; `20261118_invoice_product` marks each existing
-invoice `badge`, or `name` when a name order's invoice row refers to it. A database that ran the names migrations of
+invoice `badge`, or `name` when a name order's invoice row refers to it, and copies each badge
+invoice's provider reference into the invoices table, which holds every invoice's reference from then on. A database that ran the names migrations of
 an earlier draft (`20261010_names`, or that draft's steps dated after `20261013_names`) does not start, as
 the service refuses to roll back migrations it does not list. A database that ran `20261013_names`
 before it created `sx_badge_service_name_terms` starts without that table, and every terms read
@@ -1806,7 +1807,7 @@ also lists the order whose balance paid it, and one paid wholly from it lists no
 the orders refunded by hand with `//close` and pay nothing, so that their records match the money:
 
 ```
-psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.reveal_before, ni.invoice_id, ni.provider_ref, r.balance_source FROM simplex_v1_chat_schema.sx_badge_service_name_registrations r LEFT JOIN simplex_v1_chat_schema.sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id WHERE r.name_prepaid_code_id IS NULL AND (r.phase = 'failed' OR (r.phase = 'committed' AND r.label IS NULL AND r.reveal_before < EXTRACT(EPOCH FROM now()))) ORDER BY r.created_at"
+psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.reveal_before, ni.invoice_id, i.provider_ref, r.balance_source FROM simplex_v1_chat_schema.sx_badge_service_name_registrations r LEFT JOIN simplex_v1_chat_schema.sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id LEFT JOIN simplex_v1_chat_schema.sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id WHERE r.name_prepaid_code_id IS NULL AND (r.phase = 'failed' OR (r.phase = 'committed' AND r.label IS NULL AND r.reveal_before < EXTRACT(EPOCH FROM now()))) ORDER BY r.created_at"
 ```
 
 A closed order reads `taken` in Your names, with its refund. `/retry` and a move answer

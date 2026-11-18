@@ -143,12 +143,12 @@ import UnliftIO.Temporary (withTempDirectory)
 #if defined(dbPostgres)
 import StoreService.Store.Postgres.Migrations (schemaMigrations, storeServiceSchemaMigrations)
 import ChatClient (testDBConnstr)
-import Database.PostgreSQL.Simple (Only (..))
+import Database.PostgreSQL.Simple (Only (..), (:.) (..))
 import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
 #else
 import StoreService.Store.SQLite.Migrations (schemaMigrations, storeServiceSchemaMigrations)
 import Data.String (fromString)
-import Database.SQLite.Simple (Only (..))
+import Database.SQLite.Simple (Only (..), (:.) (..))
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Messaging.Agent.Store.DB (TrackQueries (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
@@ -526,8 +526,8 @@ seedInvoice :: DBStore -> Text -> IO ()
 seedInvoice st invoiceId = withConnection st $ \db ->
   DB.execute
     db
-    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-    (invoiceId, "btcpay" :: Text, 500 :: Int, 500 :: Int, "usd" :: Text, "2030-01-01T00:00:00Z" :: Text, "open" :: Text, "2026-08-31T00:00:00Z" :: Text, "2026-08-31T00:00:00Z" :: Text)
+    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, provider_ref, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
+    ((invoiceId, "btcpay" :: Text, "ref-" <> invoiceId, 500 :: Int, 500 :: Int) :. ("usd" :: Text, "2030-01-01T00:00:00Z" :: Text, "open" :: Text, "2026-08-31T00:00:00Z" :: Text, "2026-08-31T00:00:00Z" :: Text))
 
 seedBadgePrice :: DBStore -> Text -> IO ()
 seedBadgePrice st priceId = withConnection st $ \db ->

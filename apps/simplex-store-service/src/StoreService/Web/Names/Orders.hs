@@ -154,9 +154,9 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
           pure $ refusalAnswer NRProviderUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
-          let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
+          let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
               registration replaced = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash, nrgReplaces = replaced}
-              paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId, poProviderRef = piProviderRef}
+              paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId}
           placeOrder env now req ivHolders (\replaced db at -> insertNameInvoice db invoice >> ivInsert (registration replaced) paid db at)
             `E.catch` strandedBy provider piProviderRef
             >>= \case

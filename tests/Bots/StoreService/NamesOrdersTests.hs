@@ -120,7 +120,7 @@ import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), OverdueInvoice (..), ProviderRefConflict (..), createInvoiceRows, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
+import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), OverdueInvoice (..), createInvoiceRows, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Http (Limit (..), codeLimit, invoicesLimit, takeToken)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -207,7 +207,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers a name invoice 403 codes_only before reading the order, reaching no provider and writing nothing" testInvoiceCodesOnly
     it "sells a badge as before" testBadgeCodesOnly
   describe "invoice side" $ do
-    it "finds an invoice by provider ref in either table, refusing a ref both hold" testProviderRefs
+    it "finds each product's invoice by its provider ref, and refuses a second invoice of one ref" testProviderRefs
     it "reads and sweeps name invoices with the badge ones" testPollerQueries
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
@@ -1677,14 +1677,13 @@ testCleanupReadFails = withOrders $ \ctx@Ctx {cStore = st} -> do
 testProviderRefs :: IO ()
 testProviderRefs = withServiceStore $ \st -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
-  let found =
-        getInvoiceByProviderRef st "ref-inv-r1" >>= \case
-          Just InvoiceRow {irInvoiceId, irProduct} -> (irInvoiceId, irProduct) `shouldBe` (InvoiceId "inv-r1", IPName (RegistrationId "r1"))
-          Nothing -> expectationFailure "the name invoice was not found by its ref"
-  found
   seedBadgePrice st "price1"
-  createInvoiceRows st sampleInvoice {niInvoiceId = InvoiceId "badge-1", niProviderRef = "ref-inv-r1"} `shouldReturn` Right ()
-  E.try (getInvoiceByProviderRef st "ref-inv-r1") `shouldReturn` Left (ProviderRefConflict "ref-inv-r1")
+  createInvoiceRows st sampleInvoice {niInvoiceId = InvoiceId "badge-1", niProviderRef = "ref-badge-1"} `shouldReturn` Right ()
+  let found ref = fmap (\InvoiceRow {irInvoiceId, irProduct} -> (irInvoiceId, irProduct)) <$> getInvoiceByProviderRef st ref
+  found "ref-inv-r1" `shouldReturn` Just (InvoiceId "inv-r1", IPName (RegistrationId "r1"))
+  found "ref-badge-1" `shouldReturn` Just (InvoiceId "badge-1", IPBadge (niBadgeType sampleInvoice) (niMonths sampleInvoice))
+  found "ref-none" `shouldReturn` Nothing
+  createInvoiceRows st sampleInvoice {niInvoiceId = InvoiceId "badge-2", niCodeHash = digestFixture 2, niProviderRef = "ref-inv-r1"} `shouldReturn` Left CERefConflict
 
 testPollerQueries :: IO ()
 testPollerQueries = withServiceStore $ \st -> do
