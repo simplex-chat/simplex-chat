@@ -2,12 +2,12 @@
 
 ## Problem
 
-The badges page keeps a bought code only in the browser's localStorage. WebKit, the engine of Safari and of other browsers on iPhone and iPad, deletes a site's script-written storage after a number of days of browser use without a tap, click or key press on that site. A buyer who opened the page from the app and did not add the code lost it, and saw "Nothing bought on this device".
+The badges page keeps a bought code only in the browser's localStorage. WebKit, the engine of Safari and of other browsers on iPhone and iPad, deletes a site's script-written storage after a number of days of browser use without a tap, click or key press on that site. A buyer who opened the page from the app later found no code on Your codes, which read "Nothing bought on this device".
 
 | Browser | Stored codes are deleted when |
 |---|---|
-| Safari on macOS, iOS, iPadOS | 7 days of browser use without a tap or click on the site, when a known tracker redirected to it with a decorated link; 30 days otherwise, since WebKit 274398@main (February 2024), 7 days for every site before; only while tracking prevention is on |
-| Other browsers on iOS and iPadOS | unconfirmed; they run WebKit |
+| Safari on macOS, iOS, iPadOS | 7 days of browser use without a tap or click on the site, when a page of a classified tracker linked or redirected to it with query parameters that Safari did not filter; 30 days otherwise, since WebKit 274398@main (February 2024), 7 days for every site before; only while tracking prevention is on |
+| Other browsers on iOS and iPadOS | as Safari, while the app's tracking prevention is on: WebKit enables it in all WKWebView applications since iOS 14 |
 | Chromium, Chrome, Edge | the disk is short of space, least recently used sites first; private window closed; data cleared |
 | Firefox | the disk is short of space, least recently used sites first; private window closed; data cleared |
 
@@ -15,6 +15,7 @@ Sources:
 
 - WebKit `ResourceLoadStatisticsStore.cpp`: `operatingDatesWindowShort { 7 }`, `operatingDatesWindowLong { 30 }`, `shouldRemoveAllButCookiesFor`, `logCrossSiteLoadWithLinkDecoration`
 - https://webkit.org/tracking-prevention/
+- https://webkit.org/blog/10882/app-bound-domains/
 - https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria
 
 `navigator.storage.persist()` exempts a site from the deletion when disk space is short, in Chromium and Firefox.
