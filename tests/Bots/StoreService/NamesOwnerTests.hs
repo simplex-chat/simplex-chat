@@ -102,7 +102,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testMoveSizes
     it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testMoveRefusedSigner
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testMoveLostRace
-    it "moves A to B while another order moves B to A, in the turns' hash order, without deadlock" testMovesCross
+    it "takes both turns in hash order when A moves to B while another order moves B to A, without deadlock, each refused as the other's failed order holds its name" testMovesCross
   describe "polls" $
     it "wakes a held registration poll by another name" testPollsWoken
 
@@ -569,13 +569,15 @@ testMoveLanded = withOwner $ \ctx -> do
   answerFree ctx "alicebakers"
   minedOrder <- paidIn ctx aliceOrder failedPhase
   (ownedOrder, code) <- codeIn ctx 7 dynamisOrder failedPhase
-  notLanded <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} failedPhase
+  answerFree ctx "carolbakery"
+  notLanded <- paidIn ctx (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 2} failedPhase
   let expiry = seconds orderTime + 2 * 31536000
-  forM_ ["alicebakery", "dynamis"] $ \label -> answerExpiry ctx label expiry
+  forM_ ["alicebakery", "dynamis", "carolbakery"] $ \label -> answerExpiry ctx label expiry
   TxHash (Hex32 minedHash) <- sentRegister ctx minedOrder 1 $ TSMinedAt 120
   answerOwner ctx "dynamis" (nrOwner ownedOrder)
   void $ sentRegister ctx notLanded 2 $ TSRevertedAt 120
   answerOwner ctx "alicebakery" (nrOwner minedOrder)
+  answerOwner ctx "carolbakery" (nrOwner minedOrder)
   forM_ [(minedOrder, Just minedHash), (ownedOrder, Nothing)] $ \(r, hash) -> do
     poll <- held ctx (0, 1) $ registrationPath (nrId r) <> seenVersion (nrVersion r)
     to <- moveTo ctx "alicebakers" 10
@@ -596,7 +598,8 @@ testMoveLandedReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   answerFree ctx "alicebakers"
   (unused, unusedCode) <- codeIn ctx 7 dynamisOrder failedPhase
   (spentElsewhere, spentCode) <- codeIn ctx 8 aliceOrder failedPhase
-  spender <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 20} id
+  answerFree ctx "carolbakery"
+  spender <- paidIn ctx (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 20} id
   let expiry = seconds orderTime + 2 * 31536000
   forM_ [("dynamis", unused), ("alicebakery", spentElsewhere)] $ \(label, r) -> do
     answerExpiry ctx label expiry
@@ -769,8 +772,8 @@ testMovesCross = withOwnerAs (\cfg -> cfg {nMaxOrderMoves = 100}) $ \ctx -> do
     putMVar release ()
     wait holder
     outcomes <- bounded ("round " <> show n) $ mapM wait moves
-    map fst outcomes `shouldBe` [200, 200]
-    forM_ [a, b] $ \r -> rewrite ctx r failedPhase
+    outcomes `shouldBe` replicate 2 (nameRefusedWith 409 "name_taken")
+    mapM (fmap nrLabelHash . stored ctx) [a, b] `shouldReturn` map labelHash [low, high]
   where
     hashOf label = (\(LabelHash h) -> h) (labelHash label)
 

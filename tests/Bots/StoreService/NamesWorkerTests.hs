@@ -570,7 +570,8 @@ testTakenFromBalance :: IO ()
 testTakenFromBalance = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   let price = oPrice aliceOrder
   wholly <- paidIn ctx (byB dynamisOrder) failedPhase
-  partly <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 5} failedPhase
+  answerFree ctx "carolbakery"
+  partly <- paidIn ctx (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 5} failedPhase
   withTransaction cStore $ \db -> creditBalance db (nrId wholly) 30000 orderTime >> creditBalance db (nrId partly) 4000 orderTime
   withTransaction cStore (\db -> createBalanceRegistration db (aliceRegistration "covered" 1) BalanceUse {buSource = nrId wholly, buUsed = price} 30000 orderTime) `shouldReturn` Right ()
   covered <- registrationById ctx (RegistrationId "covered") >>= \r -> rewrite ctx r openPhase >>= revealed ctx keyA "alicebakery"
@@ -1060,8 +1061,9 @@ testCodeSweep = withWorker $ \W {wCtx = ctx, wWorker} -> do
   (old, oldCode) <- codeIn ctx 8 aliceOrder failedPhase
   (recent, recentCode) <- codeIn ctx 7 dynamisOrder $ \x -> x {nrPhase = OFailed (addUTCTime (2 * day) orderTime) FRRegistryRefused}
   -- lapsed long ago, then queued again by /retry
-  (requeued, requeuedCode) <- codeIn ctx 8 (byB aliceOrder) {oCommitment = commitmentOf 2} $ \x -> x {nrPhase = OQueued}
-  (lapsed, lapsedCode) <- codeIn ctx 7 (byB dynamisOrder) {oCommitment = commitmentOf 4} committedPhase
+  mapM_ (answerFree ctx) ["carolbakery", "dynamit"]
+  (requeued, requeuedCode) <- codeIn ctx 8 (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 2} $ \x -> x {nrPhase = OQueued}
+  (lapsed, lapsedCode) <- codeIn ctx 7 (byB dynamisOrder) {oLabel = "dynamit", oCommitment = commitmentOf 4} committedPhase
   answerFree ctx "alicebakers"
   (signed, signedCode) <- codeIn ctx 8 aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 5} $ \x -> (committedPhase x) {nrReveal = Just reveal}
   advance ctx $ 32 * day
@@ -1111,7 +1113,8 @@ testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
   live <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 2} $ \o -> o {nrPhase = OCommitted openCommit {cmRevealBefore = orderSeconds + 2 * maxAge}}
   answerFree ctx "alicebakers"
   failed <- paidIn ctx aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 5} failedPhase
-  signed <- paidIn ctx (byB aliceOrder) {oLabel = "alicebakers", oCommitment = commitmentOf 6} $ \o -> (committedPhase o) {nrReveal = Just reveal}
+  answerFree ctx "carolbakery"
+  signed <- paidIn ctx (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 6} $ \o -> (committedPhase o) {nrReveal = Just reveal}
   advance ctx $ day + 1
   forM_ [queued, live, registeredOrder, taken, failed, signed] $ \r -> do
     (nrPhase r,) <$> retryOf ctx r `shouldReturn` (nrPhase r, nameRefusedWith 400 "bad_request")
@@ -1262,7 +1265,8 @@ testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
 testCloseRefused :: IO ()
 testCloseRefused = withWorker $ \W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}}} -> do
   closeRegistration oeStore oeContracts oeTurns oeNow "t2Jk8RmQ4vXw9NcP3yLb6g" `shouldReturn` CLRefused CFNoOrder
-  (failedCode, _) <- codeIn ctx 8 (byB aliceOrder) {oCommitment = commitmentOf 2} failedPhase
+  answerFree ctx "carolbakery"
+  (failedCode, _) <- codeIn ctx 8 (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 2} failedPhase
   queued <- paidIn ctx aliceOrder id
   unread <- paidIn ctx dynamisOrder failedPhase
   answerCall cNode (registrarOf cNode) (ownerOfSelector <> labelBytes "dynamis") $ Reverts $ unhex "37ed32e8"

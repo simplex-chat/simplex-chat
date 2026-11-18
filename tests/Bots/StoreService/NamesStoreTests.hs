@@ -76,7 +76,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
     it "retargets to the new fields, clearing the reveal, transactions, reveal times and refusal" testRetarget
     it "orders registrations made in the same second by their id" testSameSecondOrder
-    it "names the order holding a label from queued to registering, one at a time, and none for an unpaid, failed or registered one" testLabelRegistering
+    it "names the order holding a label from queued to registering and failed, one at a time, and none for an unpaid, taken or registered one" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
     it "lists unpaid orders whose invoice expired before the cutoff without a payment, and deletes one with its invoice, once" testUnpaidCleanup
     it "lists code orders failed before the cutoff that still hold their code" testFailedCodeOrders
@@ -620,13 +620,13 @@ testLabelRegistering = withServiceStore $ \st -> do
   code <- issue st 1 usable
   placeCode st "r1" ownerA o code `shouldReturn` Right ()
   holder `shouldReturn` Just (RegistrationId "r1")
-  forM_ [OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture $ TxHash $ hashFixture 9] $ \phase -> do
+  forM_ [OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture $ TxHash $ hashFixture 9, OFailed (at 3) FRRegistryRefused] $ \phase -> do
     r <- reg st "r1"
     void $ write st r {nrPhase = phase}
     holder `shouldReturn` Just (RegistrationId "r1")
-  r2 <- reg st "r2"
-  write st r2 {nrPhase = OQueued} `shouldThrow` anyException
-  forM_ [OFailed (at 3) FRRegistryRefused, ORegistered 1861833600 (at 4)] $ \phase -> do
+    r2 <- reg st "r2"
+    write st r2 {nrPhase = OQueued} `shouldThrow` anyException
+  forM_ [OTaken, ORegistered 1861833600 (at 4)] $ \phase -> do
     r <- reg st "r1"
     write st r {nrPhase = phase} `shouldNotReturn` VersionChanged
     holder `shouldReturn` Nothing

@@ -196,6 +196,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "queues an order settled while open and publishes its version" testSettlementQueues
     it "holds the name from payment: the name's other open invoices are cancelled at the provider and closed, and a new order of it is refused name_taken" testPaymentHoldsName
     it "ends taken an order paid while another paid order holds its name, its price kept as its balance" testSettledWhileHeld
+    it "holds the name for a failed paid order: a new order of it is refused name_taken, and a payment for it ends taken" testFailedHoldsName
     it "holds the name from a code order's placement, cancelling the name's other open invoices" testCodeOrderHoldsName
     it "takes the invoice's row before recording a payment that moves no status" testSettlementLocksInvoice
     it "sweeps each invoice on its own, skipping one whose order cannot be read" testSweepSkipsBadRow
@@ -1545,6 +1546,17 @@ testSettledWhileHeld = withOrders $ \ctx@Ctx {cStore = st} -> do
   NameRegistration {nrId, nrPhase} <- invoiceRegistration ctx bobInv
   nrPhase `shouldBe` OTaken
   fmap blAmount <$> withTransaction st (\db -> getBalance db nrId orderTime) `shouldReturn` Just alicePrice
+
+testFailedHoldsName :: IO ()
+testFailedHoldsName = withOrders $ \ctx@Ctx {cStore = st} -> do
+  (aliceInv, _) <- placed ctx aliceOrder
+  (bobInv, _) <- placed ctx (bobOrder 2)
+  settleNow ctx aliceInv settled `shouldReturn` ISPaid
+  holder <- invoiceRegistration ctx aliceInv
+  Written _ <- withTransaction st $ \db -> updateRegistration db holder {nrPhase = OFailed orderTime FRRegistryRefused} orderTime
+  settleNow ctx bobInv settled `shouldReturn` ISPaid
+  nrPhase <$> invoiceRegistration ctx bobInv `shouldReturn` OTaken
+  placeOrder ctx (bobOrder 3) `shouldReturn` refusedWith 409 "name_taken"
 
 testCodeOrderHoldsName :: IO ()
 testCodeOrderHoldsName = withOrders $ \ctx@Ctx {cStub} -> do

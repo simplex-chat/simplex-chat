@@ -1110,7 +1110,7 @@ findRegistrations db owner now = do
 labelHolder :: DB.Connection -> LabelHash -> IO (Maybe RegistrationId)
 labelHolder db lh =
   maybeFirstRow (RegistrationId . fromOnly) $
-    DB.query db (mkQuery "SELECT registration_id FROM @name_registrations WHERE label_hash = ? AND phase IN (?,?,?,?) LIMIT 1") (lh, PQueued, PCommitting, PCommitted, PRegistering)
+    DB.query db (mkQuery "SELECT registration_id FROM @name_registrations WHERE label_hash = ? AND phase IN (?,?,?,?,?) LIMIT 1") (lh, PQueued, PCommitting, PCommitted, PRegistering, PFailed)
 
 setPaidAt :: DB.Connection -> RegistrationId -> UTCTime -> IO ()
 setPaidAt db (RegistrationId rid) paidAt =
