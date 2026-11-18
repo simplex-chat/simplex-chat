@@ -945,6 +945,7 @@ object ChatModel {
         val chat = chats.removeAt(i)
         groupId = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.groupId
         removePresetChatTags(chat.chatInfo, chat.chatStats)
+        markChatTagRead(chat)
         removeWallpaperFilesFromChat(chat)
       }
       if (chatId.value == id) {
