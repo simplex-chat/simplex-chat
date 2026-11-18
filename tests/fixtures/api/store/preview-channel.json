@@ -1,0 +1,21 @@
+{
+  "body": {
+    "kind": "channel",
+    "profile": {
+      "linkData": {
+        "channel": {
+          "groupProfile": {
+            "displayName": "Bakery news",
+            "fullName": "Daily bakes and opening hours"
+          },
+          "publicGroupData": {
+            "publicMemberCount": 1204
+          }
+        },
+        "type": "channel"
+      },
+      "type": "ok"
+    }
+  },
+  "status": 200
+}

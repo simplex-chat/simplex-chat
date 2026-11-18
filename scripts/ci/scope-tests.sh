@@ -35,7 +35,11 @@ case "${1:-}" in
     .venv/bin/pytest tests
     ;;
   names-page)
-    (cd apps/simplex-domains/webapp && npm ci --no-audit --no-fund && npm test && npm run build)
+    fixtures="$PWD/tests/fixtures/api/store"
+    cd apps/simplex-domains/webapp
+    npm ci --no-audit --no-fund
+    STORE_FIXTURES="$fixtures" npm test
+    npm run build
     ;;
   *)
     echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light | names-page" >&2

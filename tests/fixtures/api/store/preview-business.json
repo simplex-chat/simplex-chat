@@ -1,0 +1,19 @@
+{
+  "body": {
+    "kind": "contact",
+    "profile": {
+      "linkData": {
+        "contact": {
+          "business": true,
+          "profile": {
+            "displayName": "helper",
+            "fullName": ""
+          }
+        },
+        "type": "contact"
+      },
+      "type": "ok"
+    }
+  },
+  "status": 200
+}

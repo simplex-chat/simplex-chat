@@ -1,0 +1,23 @@
+{
+  "body": {
+    "found": {
+      "entities": [],
+      "expiresAt": 1830297600,
+      "gracePeriod": 7776000,
+      "owner": "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73",
+      "records": {
+        "channel": "",
+        "contact": "https://simplex.chat/contact#/?v=2&smp=smp%3A%2F%2Fabc",
+        "edits": {
+          "left": 1,
+          "nextAt": "2027-10-11T00:00:00Z"
+        },
+        "nonce": 0,
+        "type": "own"
+      },
+      "resolver": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      "type": "registered"
+    }
+  },
+  "status": 200
+}

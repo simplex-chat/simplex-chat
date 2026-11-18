@@ -8,7 +8,7 @@ module Bots.StoreService.NamesRecordsTests (namesRecordsTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (alice, gracePeriod, minPriceCentsPerYear, otherResolver, registry)
 import Bots.StoreService.NamesStoreTests (t0)
-import Bots.StoreService.WebTests (bounded, nameRefusedWith, withServiceStore)
+import Bots.StoreService.WebTests (bounded, nameRefusedWith, storeFixture, withServiceStore)
 import qualified Bots.StoreService.WebTests as WT
 import Bots.StoreService.WebUIMock (EphemeralWallet (..), newEphemeralWallet, walletFromCode)
 import Control.Concurrent.Async (Async, async, concurrently, wait)
@@ -867,15 +867,30 @@ testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post 
   bounded "the edit's answer" (wait next) `shouldReturn` (nameRefusedWith 409 "record_reverted", Nothing)
 
 testEditResponses :: IO ()
-testEditResponses =
-  mapM (responseParts . editResponse) [EAPending, EAUnavailable, EACapped 3600, EALimited (addUTCTime (fromIntegral yearSeconds) t0), EARefused "the name is not registered", EAStaleNonce]
-    `shouldReturn` [ (nameRefusedWith 504 "edit_pending", Nothing),
-                     (nameRefusedWith 503 "provider_unavailable", Nothing),
-                     ((429, Just $ KM.fromList ["type" .= ("rate_limited" :: Text), "retryAfter" .= (3600 :: Int)]), Just "3600"),
-                     ((409, Just $ KM.fromList ["type" .= ("edit_limit" :: Text), "nextAt" .= addUTCTime (fromIntegral yearSeconds) t0]), Nothing),
-                     (nameRefusedWith 400 "bad_request", Nothing),
-                     (nameRefusedWith 409 "stale_nonce", Nothing)
-                   ]
+testEditResponses = do
+  let tx = TxHash $ Hex32 $ B.replicate 32 0xab
+      answers =
+        [ ("records-applied", EASettled $ EOApplied $ Just tx),
+          ("records-reverted", EASettled $ EOReverted Nothing),
+          ("records-pending", EAPending),
+          ("records-unavailable", EAUnavailable),
+          ("records-rate-limited", EACapped 3600),
+          ("records-edit-limit", EALimited (addUTCTime (fromIntegral yearSeconds) t0)),
+          ("records-bad-request", EARefused "the name is not registered"),
+          ("records-stale-nonce", EAStaleNonce)
+        ]
+  parts <- mapM (responseParts . editResponse . snd) answers
+  forM_ (zip answers parts) $ \((name, _), ((status, body), retryAfter)) -> storeFixture name status (J.Object <$> body) retryAfter
+  parts
+    `shouldBe` [ ((200, Just $ KM.fromList ["tx" .= tx]), Nothing),
+                 (nameRefusedWith 409 "record_reverted", Nothing),
+                 (nameRefusedWith 504 "edit_pending", Nothing),
+                 (nameRefusedWith 503 "provider_unavailable", Nothing),
+                 ((429, Just $ KM.fromList ["type" .= ("rate_limited" :: Text), "retryAfter" .= (3600 :: Int)]), Just "3600"),
+                 ((409, Just $ KM.fromList ["type" .= ("edit_limit" :: Text), "nextAt" .= addUTCTime (fromIntegral yearSeconds) t0]), Nothing),
+                 (nameRefusedWith 400 "bad_request", Nothing),
+                 (nameRefusedWith 409 "stale_nonce", Nothing)
+               ]
 
 -- | A response's status, JSON body and Retry-After, as withRecordsApp reads them over HTTP.
 responseParts :: W.Response -> IO ((Int, Maybe J.Object), Maybe ByteString)

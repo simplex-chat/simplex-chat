@@ -36,6 +36,8 @@ module Bots.StoreService.WebTests
     answerOf,
     refusedWith,
     nameRefusedWith,
+    storeFixture,
+    responseFixture,
     siteConfigJson,
     rcv,
     bounded,
@@ -68,6 +70,7 @@ import Bots.StoreService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalo
 import Bots.StoreService.ConfigTests (chainSection, namesSection, parsedNames, resolverAddr, sponsorAddr)
 import Bots.StoreService.FakeBTCPay
 import Bots.StoreService.FakeStripe (FakeStripe (..), fakeIntentStatus, setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
+import ChatTests.Utils (writeFixture)
 import Control.Concurrent (forkIO, forkOn, getNumCapabilities, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
@@ -1353,6 +1356,9 @@ testServesSiteConfig = bounded "site config" $ do
   answers (\cfg -> cfg {names = Just codesOnly, stripe = Just publishTestStripe}) (siteConfigJson (Just True) (Just "pk_test_injected"))
   answers (\cfg -> cfg {names = Just open, stripe = Just publishTestStripe}) (siteConfigJson (Just False) (Just "pk_test_injected"))
   answers (\cfg -> cfg {names = Nothing}) (siteConfigJson Nothing Nothing)
+  let fixture name settings = withBothSitesAs settings $ \_ namesSite -> webGet namesSite "/api/config" >>= responseFixture name
+  fixture "config" (\cfg -> cfg {names = Just open, stripe = Just publishTestStripe})
+  fixture "config-codes-only" (\cfg -> cfg {names = Just codesOnly})
 
 testServesShellsAsBuilt :: IO ()
 testServesShellsAsBuilt = bounded "shells as built" $ do
@@ -1528,6 +1534,13 @@ refusedWith status tag = (status, Just $ KM.fromList [("error", J.String tag)])
 
 nameRefusedWith :: Int -> Text -> (Int, Maybe J.Object)
 nameRefusedWith status tag = (status, Just $ KM.fromList [("type", J.String tag)])
+
+storeFixture :: String -> Int -> Maybe J.Value -> Maybe ByteString -> IO ()
+storeFixture name status body retryAfter =
+  writeFixture ("store/" <> name) . J.object $ ["status" .= status, "body" .= body] <> maybe [] (\h -> ["retryAfter" .= safeDecodeUtf8 h]) retryAfter
+
+responseFixture :: String -> Response LB.ByteString -> IO ()
+responseFixture name r = storeFixture name (statusOf r) (J.decode $ responseBody r) (headerOf r "Retry-After")
 
 timedGet :: WebClient -> String -> IO (NominalDiffTime, Response LB.ByteString)
 timedGet client target = do

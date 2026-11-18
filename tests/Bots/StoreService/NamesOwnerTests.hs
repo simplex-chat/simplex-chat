@@ -34,7 +34,7 @@ import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rent
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.NamesPhasesTests (held, registrationPath, seenVersion, woken)
-import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, refusedWith, webGet, withApp)
+import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, refusedWith, storeFixture, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent.Async (async, wait)
@@ -333,7 +333,9 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
               ]
         _ -> expectationFailure "fewer than three entries"
     other -> expectationFailure $ "find refused: " <> show other
-  (findBody ctx keyB ownerBText (seconds orderTime) >>= postFind ctx) `shouldReturn` (200, Just $ KM.fromList [("registrations", J.Array mempty)])
+  none <- findBody ctx keyB ownerBText (seconds orderTime) >>= postFind ctx
+  storeFixture "find-none" (fst none) (J.Object <$> snd none) Nothing
+  none `shouldBe` (200, Just $ KM.fromList [("registrations", J.Array mempty)])
   where
     oldOrder i = RegistrationId $ "old" <> tshow (i :: Int)
     idText (RegistrationId t) = J.String t

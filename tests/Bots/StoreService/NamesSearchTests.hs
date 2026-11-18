@@ -29,7 +29,7 @@ import Bots.StoreService.NamesContractsTests
 import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, testNamesConfig, threeYears)
 import Bots.StoreService.NamesProfilesTests (bakeryLink, channelData, contactData, jpeg, linkDataProfile, newsLink, parsed)
 import Bots.StoreService.NamesStoreTests (atNonce, commitFixture, hashFixture, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
-import Bots.StoreService.WebTests (answerOf, nameRefusedWith, withServiceStore, withApp)
+import Bots.StoreService.WebTests (answerOf, nameRefusedWith, responseFixture, withServiceStore, withApp)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Monad (forM_)
@@ -183,6 +183,12 @@ searchName s hash query = answerOf <$> send s ("/api/name/" <> T.unpack hash <> 
 searchAlice :: Search -> Int -> IO Answer
 searchAlice s len = searchName s aliceHex ("?length=" <> show len)
 
+fixtureOf :: String -> IO (HTTP.Response LB.ByteString) -> IO Answer
+fixtureOf name request = request >>= \r -> answerOf r <$ responseFixture name r
+
+searchFixture :: String -> Search -> Int -> IO Answer
+searchFixture name s len = fixtureOf name $ send s ("/api/name/" <> T.unpack aliceHex <> "?length=" <> show len) id
+
 postPreview :: Search -> LB.ByteString -> IO (HTTP.Response LB.ByteString)
 postPreview s body = send s "/api/link/preview" $ \req -> req {method = "POST", requestBody = RequestBodyLBS body}
 
@@ -302,7 +308,7 @@ testAvailable g = withSearch g id id $ \s@Search {node} -> do
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   answerCall node fakeController (rentPriceCall 6) $ Returns $ rentPriceAnswer 40000
-  searchAlice s 12 `shouldReturn` availableAnswer 10000
+  searchFixture "search-available" s 12 `shouldReturn` availableAnswer 10000
   searchAlice s 6 `shouldReturn` availableAnswer 40000
 
 testRegistering :: TVar ChaChaDRG -> IO ()
@@ -312,7 +318,7 @@ testRegistering g = withSearch g id id $ \s@Search {node, store} -> do
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   setPhase store $ ORegistering commitFixture $ TxHash $ hashFixture 9
   -- no price is answered, so reading one would fail the search
-  searchAlice s 12 `shouldReturn` registeringAnswer
+  searchFixture "search-registering" s 12 `shouldReturn` registeringAnswer
   setPhase store $ ORegistered Nothing Nothing 1861833600 t0
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   searchAlice s 12 `shouldReturn` availableAnswer 10000
@@ -320,7 +326,7 @@ testRegistering g = withSearch g id id $ \s@Search {node, store} -> do
 testRegistered :: TVar ChaChaDRG -> IO ()
 testRegistered g = withSearch g id id $ \s@Search {node} -> do
   registeredWith node bakeryLink newsLink
-  searchAlice s 12
+  searchFixture "search-registered" s 12
     `shouldReturn` registeredAnswer
       [ entity bakeryChat bakeryLink "simplex:/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA?h=smp8.simplex.im",
         entity newsChat newsLink "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im"
@@ -334,7 +340,7 @@ testSearchSlot g = withSearch g id id $ \s@Search {node, searches, searchesAtFet
   fst <$> searchAlice s 12 `shouldReturn` 200
   readTVarIO searchesAtFetch `shouldReturn` [0, 0]
   atomically $ writeTVar searches maxSearches
-  searchAlice s 12 `shouldReturn` withField "retryAfter" (J.Number 1) (nameRefusedWith 429 "rate_limited")
+  searchFixture "search-rate-limited" s 12 `shouldReturn` withField "retryAfter" (J.Number 1) (nameRefusedWith 429 "rate_limited")
 
 testCommunity :: TVar ChaChaDRG -> IO ()
 testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
@@ -343,9 +349,9 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   -- an ini line for a name the policy does not list: a plain name
   searchAlice s 12 `shouldReturn` availableAnswer 10000
   listCommunityName node alice
-  searchAlice s 12 `shouldReturn` listed (availableAnswer 10000)
+  searchFixture "search-available-community" s 12 `shouldReturn` listed (availableAnswer 10000)
   reserved node
-  searchAlice s 12 `shouldReturn` listed reservedAnswer
+  searchFixture "search-reserved-community" s 12 `shouldReturn` listed reservedAnswer
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
@@ -367,7 +373,7 @@ testTermsUnavailable g = withSearch g listAlice id $ \s@Search {node} -> do
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   setGeneralTerms node ""
-  searchAlice s 12 `shouldReturn` withTerms Nothing (availableAnswer 10000)
+  searchFixture "search-available-without-terms" s 12 `shouldReturn` withTerms Nothing (availableAnswer 10000)
   listCommunityName node alice
   searchAlice s 12 `shouldReturn` listed (availableAnswer 10000)
   setCommunityTerms node ""
@@ -385,9 +391,9 @@ testTerms g = withSearch g id id $ \s@Search {node} -> do
   let terms h = send s ("/api/terms/" <> T.unpack h) id
       termsAnswer text = ok ["link" .= fakeTermsLink text, "text" .= decodeUtf8 text]
       otherLink = "https://example.org/terms.md"
-  answerOf <$> terms (hex fakeGeneralTerms) `shouldReturn` termsAnswer fakeGeneralTermsText
+  fixtureOf "terms" (terms $ hex fakeGeneralTerms) `shouldReturn` termsAnswer fakeGeneralTermsText
   answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` termsAnswer fakeCommunityTermsText
-  answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` nameRefusedWith 404 "not_found"
+  fixtureOf "terms-not-found" (terms $ hex fakeNewCommunityTerms) `shouldReturn` nameRefusedWith 404 "not_found"
   setCommunityTerms node fakeNewCommunityTermsText
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` termsAnswer fakeNewCommunityTermsText
   answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` nameRefusedWith 404 "not_found"
@@ -400,6 +406,7 @@ testTerms g = withSearch g id id $ \s@Search {node} -> do
   setGeneralTerms node fakeNewGeneralTermsText
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status429 [("Retry-After", "60")] ""
   r <- terms (hex fakeNewGeneralTerms)
+  responseFixture "terms-unavailable" r
   (answerOf r, lookup "Retry-After" (responseHeaders r)) `shouldBe` (withField "retryAfter" (J.Number 60) (nameRefusedWith 503 "terms_unavailable"), Just "60")
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status404 [] ""
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` termsAnswer fakeNewCommunityTermsText
@@ -450,7 +457,7 @@ testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom
   withTransaction store $ \db -> do
     settleRecordEdit db minedId (EOApplied Nothing) `shouldReturn` True
     settleRecordEdit db revertedId (EOReverted Nothing) `shouldReturn` True
-  answer <- searchAlice s 12
+  answer <- searchFixture ("search-registered-edits-" <> show left) s 12
   (snd answer >>= JT.parseMaybe (\o -> o J..: "found" >>= (J..: "records") >>= (J..: "edits")))
     `shouldBe` Just (editsLeft left $ Just $ addUTCTime (365 * 86400) $ daysAgo returnsFrom)
 
@@ -458,7 +465,7 @@ testFailedReads :: TVar ChaChaDRG -> IO ()
 testFailedReads g = withSearch g id id $ \s@Search {node} -> do
   let unavailable = nameRefusedWith 503 "provider_unavailable"
   available node
-  searchAlice s 12 `shouldReturn` unavailable
+  searchFixture "search-provider-unavailable" s 12 `shouldReturn` unavailable
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 9999
   searchAlice s 12 `shouldReturn` unavailable
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
@@ -490,7 +497,7 @@ testOneDeadline g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Sea
   answer `shouldBe` nameRefusedWith 503 "provider_unavailable"
   elapsed `shouldSatisfy` (< 3)
   answerRegistered node otherResolver
-  searchAlice s 12 `shouldReturn` registeredAnswer [] otherRecords otherResolverText
+  searchFixture "search-registered-other" s 12 `shouldReturn` registeredAnswer [] otherRecords otherResolverText
   where
     deadline = 2000000
 
@@ -514,34 +521,39 @@ testBadHash g = withSearch g id id $ \s -> do
   let hexDigits = T.drop 2 aliceHex
   forM_ [T.toUpper aliceHex, "0x" <> T.toUpper hexDigits, hexDigits, "0x" <> T.drop 1 hexDigits, aliceHex <> "0", "0x" <> T.replicate 64 "g", "0X" <> hexDigits] $ \h ->
     (h, searchName s h "?length=12") `shouldReturnPair` nameRefusedWith 400 "bad_request"
-  searchName s ("0x" <> T.toUpper hexDigits) "?length=5" `shouldReturn` nameRefusedWith 400 "bad_request"
+  fixtureOf "search-bad-request" (send s ("/api/name/0x" <> T.unpack (T.toUpper hexDigits) <> "?length=5") id) `shouldReturn` nameRefusedWith 400 "bad_request"
   where
     shouldReturnPair (h, act) expected = act >>= \a -> (h, a) `shouldBe` (h, expected)
 
 testBadLength :: TVar ChaChaDRG -> IO ()
 testBadLength g = withSearch g id id $ \s@Search {node} -> do
   reserved node
-  forM_ ["?length=5", "?length=64", "", "?length=", "?length", "?length=abc", "?length=6.0", "?length=%2B7", "?length=-6", "?length=%207", "?length=0x6", "?length=18446744073709551622"] $ \q ->
+  searchFixture "search-invalid-name" s 5 `shouldReturn` nameRefusedWith 400 "invalid_name"
+  forM_ ["?length=64", "", "?length=", "?length", "?length=abc", "?length=6.0", "?length=%2B7", "?length=-6", "?length=%207", "?length=0x6", "?length=18446744073709551622"] $ \q ->
     searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, nameRefusedWith 400 "invalid_name")
-  forM_ ["?length=6", "?length=63", "?length=007"] $ \q ->
+  searchFixture "search-reserved" s 6 `shouldReturn` reservedAnswer
+  forM_ ["?length=63", "?length=007"] $ \q ->
     searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, reservedAnswer)
 
 -- link preview
 
 testPreviewKinds :: TVar ChaChaDRG -> IO ()
 testPreviewKinds g = withSearch g id id $ \s -> do
-  previewOf s bakeryLink `shouldReturn` ok bakeryChat
-  previewOf s newsLink `shouldReturn` ok newsChat
+  let previewFixture name l = fixtureOf name $ postPreview s (J.encode $ J.object ["link" .= l])
+  previewFixture "preview-contact" bakeryLink `shouldReturn` ok bakeryChat
+  previewFixture "preview-channel" newsLink `shouldReturn` ok newsChat
   previewOf s "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im" `shouldReturn` ok newsChat
-  previewOf s (taggedLink "smp8.simplex.im" 'a' "Bot") `shouldReturn` ok (contactChat "helper" "" Nothing ["peerType" .= str "bot"] False)
-  previewOf s (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (contactChat "helper" "" Nothing [] True)
+  previewFixture "preview-bot" (taggedLink "smp8.simplex.im" 'a' "Bot") `shouldReturn` ok (contactChat "helper" "" Nothing ["peerType" .= str "bot"] False)
+  previewFixture "preview-business" (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (contactChat "helper" "" Nothing [] True)
+  previewFixture "preview-unavailable" (taggedLink "smp8.simplex.im" 'a' "Gone") `shouldReturn` ok ["kind" .= str "contact", "profile" .= J.object ["type" .= str "unavailable"]]
 
 testPreviewInvalid :: TVar ChaChaDRG -> IO ()
 testPreviewInvalid g = withSearch g id id $ \s -> do
   let base = bakeryLink <> "?x="
       padded n = base <> T.replicate (n - T.length base) "a"
       invalid = nameRefusedWith 400 "invalid_link"
-  forM_ ["hello", "", fullLink, bakeryLink <> ";" <> bakeryLink, " " <> bakeryLink, taggedLink "smp8.simplex.im" 'g' "Y8m3", padded (linkMaxBytes + 1)] $ \l ->
+  fixtureOf "preview-invalid-link" (postPreview s $ J.encode $ J.object ["link" .= fullLink]) `shouldReturn` invalid
+  forM_ ["hello", "", bakeryLink <> ";" <> bakeryLink, " " <> bakeryLink, taggedLink "smp8.simplex.im" 'g' "Y8m3", padded (linkMaxBytes + 1)] $ \l ->
     previewOf s l >>= \a -> (l, a) `shouldBe` (l, invalid)
   answerOf <$> postPreview s "{}" `shouldReturn` invalid
   answerOf <$> postPreview s "{\"link\": 5}" `shouldReturn` invalid

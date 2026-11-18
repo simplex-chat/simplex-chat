@@ -1,0 +1,66 @@
+{
+  "body": {
+    "found": {
+      "entities": [
+        {
+          "deepLink": "simplex:/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA?h=smp8.simplex.im",
+          "link": "https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA",
+          "preview": {
+            "kind": "contact",
+            "profile": {
+              "linkData": {
+                "contact": {
+                  "business": false,
+                  "profile": {
+                    "displayName": "Alice's Bakery",
+                    "fullName": "Sourdough and pastries, Lisbon",
+                    "image": "data:image/jpg;base64,/9j/4AAQSkZJRg=="
+                  }
+                },
+                "type": "contact"
+              },
+              "type": "ok"
+            }
+          }
+        },
+        {
+          "deepLink": "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im",
+          "link": "https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA",
+          "preview": {
+            "kind": "channel",
+            "profile": {
+              "linkData": {
+                "channel": {
+                  "groupProfile": {
+                    "displayName": "Bakery news",
+                    "fullName": "Daily bakes and opening hours"
+                  },
+                  "publicGroupData": {
+                    "publicMemberCount": 1204
+                  }
+                },
+                "type": "channel"
+              },
+              "type": "ok"
+            }
+          }
+        }
+      ],
+      "expiresAt": 1830297600,
+      "gracePeriod": 7776000,
+      "owner": "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73",
+      "records": {
+        "channel": "https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA",
+        "contact": "https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA",
+        "edits": {
+          "left": 3
+        },
+        "nonce": 0,
+        "type": "own"
+      },
+      "resolver": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      "type": "registered"
+    }
+  },
+  "status": 200
+}
