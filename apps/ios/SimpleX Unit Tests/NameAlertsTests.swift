@@ -100,6 +100,17 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testOnOpenAfterPrepareWithoutCheckingItsJSON() async throws {
+        try recorded("names/plan-known-moved-prepared")
+        connect("@alice.simplex")
+        try await assertTexts(["cath", "@alice.simplex", "Open new chat", "Cancel"])
+        try await press("Open new chat")
+        try await waitFor { self.opened == 1 }
+        XCTAssertNotNil(ChatModel.shared.getChat("@3"))
+        try await assertRequested { $0.hasPrefix("/_get chat @3 ") }
+    }
+
+    @MainActor
     func testNameAvailable() async throws {
         try recorded("names/error-available")
         connect("@nobody.simplex")
@@ -372,13 +383,19 @@ final class NameAlertsTests: XCTestCase {
         try await waitFor { self.verifications == 1 }
     }
 
+    @MainActor
+    func testCrossColorOfNameState() {
+        XCTAssertEqual(SimplexNameView.crossColor(.failed, secondary: .gray), .red)
+        XCTAssertEqual(SimplexNameView.crossColor(.moved, secondary: .gray), .gray)
+    }
+
     private func recorded(_ fixture: String) throws {
         let responses = try XCTUnwrap(try fixtureJSON(fixture) as? [String: [String: Any]])
         let commands = responses["commands"] ?? [:]
         let markdown = responses["markdown"] ?? [:]
         let uris = responses["uris"] ?? [:]
         sendSimpleXCmdStr = { [unowned self] cmd, _, _ in
-            guard let response = commands[cmd] else { self.unrecordedRequest(cmd); return nil }
+            guard let response = commands[commandKey(cmd)] else { self.unrecordedRequest(cmd); return nil }
             return try? JSONSerialization.data(withJSONObject: singleFieldJSON(response))
         }
         parseSimpleXMarkdownText = { [unowned self] str in
@@ -603,7 +620,11 @@ func singleFieldJSON(_ value: Any) -> Any {
     }
 }
 
-private let msgContentTypes: Set<String> = ["text", "link", "image", "video", "voice", "file", "report", "chat"]
+private func commandKey(_ cmd: String) -> String {
+    cmd.hasPrefix("/_prepare ") ? String(cmd.prefix { $0 != "{" }).trimmingCharacters(in: .whitespaces) : cmd
+}
+
+private let msgContentTypes: Set<String> =["text", "link", "image", "video", "voice", "file", "report", "chat"]
 
 @MainActor
 func waitFor(_ condition: @escaping () -> Bool) async throws {
