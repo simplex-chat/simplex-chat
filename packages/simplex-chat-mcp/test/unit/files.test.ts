@@ -3,7 +3,7 @@ import * as fs from "fs"
 import {chmodSync, closeSync, existsSync, fstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
-import {LockedError, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, openLog, readServerFile, readSessionFile, releaseLock, serverToken, sessionFolder, socketPath, storedSessions, writeHeadersFile, writeServerFile, writeSessionFile} from "../../src/files"
+import {LockedError, ModelEntry, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, modelAtStart, openLog, readServerFile, readSessionFile, releaseLock, serverToken, sessionFolder, socketPath, storedSessions, writeHeadersFile, writeModelFile, writeServerFile, writeSessionFile} from "../../src/files"
 import {ExitError} from "../../src/log"
 
 const id = "34B7AEBF-E707-4D6F-ADD0-ECDFB4FFE281"
@@ -354,5 +354,51 @@ describe("service log", () => {
     chmodSync(logFile(root), 0o644)
     closeSync(openLog(root))
     expect(statSync(logFile(root)).mode & 0o777).toBe(0o600)
+  })
+})
+
+describe("model file", () => {
+  const models: ModelEntry[] = [
+    {name: "gemma", model: "llama-swap/gemma-4-26b"},
+    {name: "coder", model: "llama-swap/qwen3-coder-next"},
+  ]
+  let file: string
+
+  beforeEach(() => {
+    file = join(dir, "..", "model")
+  })
+
+  it("is written as one line readable by all, through FILE.part, and replaces a private file and a private FILE.part", () => {
+    writeModelFile(file, "llama-swap/gemma-4-26b")
+    expect(readFileSync(file, "utf8")).toBe("llama-swap/gemma-4-26b\n")
+    expect(statSync(file).mode & 0o777).toBe(0o644)
+    chmodSync(file, 0o600)
+    writeFileSync(`${file}.part`, "x", {mode: 0o600})
+    writeModelFile(file, "llama-swap/qwen3-coder-next")
+    expect(readFileSync(file, "utf8")).toBe("llama-swap/qwen3-coder-next\n")
+    expect(statSync(file).mode & 0o777).toBe(0o644)
+    expect(existsSync(`${file}.part`)).toBe(false)
+  })
+
+  it("keeps a listed model at the start and leaves the file unchanged", () => {
+    writeFileSync(file, "llama-swap/qwen3-coder-next\nchanged by hand\n")
+    const selection = modelAtStart({models, file})
+    expect(selection).toEqual({models, file, selected: models[1]})
+    expect(selection.selected).toBe(models[1])
+    expect(readFileSync(file, "utf8")).toBe("llama-swap/qwen3-coder-next\nchanged by hand\n")
+  })
+
+  it("writes the first model at the start when the file is missing or its model is not listed", () => {
+    expect(modelAtStart({models, file}).selected).toBe(models[0])
+    expect(readFileSync(file, "utf8")).toBe("llama-swap/gemma-4-26b\n")
+    for (const content of ["openai/gpt-5\n", "coder\n", " llama-swap/qwen3-coder-next\n", ""]) {
+      writeFileSync(file, content)
+      expect(modelAtStart({models, file}).selected).toBe(models[0])
+      expect(readFileSync(file, "utf8")).toBe("llama-swap/gemma-4-26b\n")
+    }
+  })
+
+  it("fails at the start when the folder of the file is missing", () => {
+    expect(() => modelAtStart({models, file: join(dir, "..", "missing", "model")})).toThrow(/ENOENT/)
   })
 })
