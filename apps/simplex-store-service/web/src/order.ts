@@ -65,8 +65,9 @@ export function historyRows(entries: readonly OrderRecord[]): HistoryRow[] {
   });
 }
 
-export const receivedMoney = (e: Partial<Pick<OrderServerState, "amountPaid" | "cryptoAmountPaid" | "paidInFull">> | undefined): boolean =>
-  e?.paidInFull === true || e?.cryptoAmountPaid !== undefined || (e?.amountPaid ?? 0) > 0;
+export function receivedMoney(e: Partial<Pick<OrderServerState, "amountPaid" | "cryptoAmountPaid" | "paidInFull">> | undefined): boolean {
+  return e?.paidInFull === true || e?.cryptoAmountPaid !== undefined || (e?.amountPaid ?? 0) > 0;
+}
 
 export function recordFromView(orderId: string, view: InvoiceView, nowMs: number): OrderRecord {
   return {

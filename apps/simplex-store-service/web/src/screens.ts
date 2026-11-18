@@ -54,13 +54,13 @@ export const KEEPS_WAITING = "This page keeps checking. The invoice will not exp
 export class CancelRefused extends Error {}
 
 export const PAID_IN_FULL_TITLE = "The full amount has arrived";
-export const LIGHTNING_DO_NOT_PAY = "Don't pay its Lightning invoice: a wallet can pay it until it expires, and such a payment is refunded by hand.";
+export const LIGHTNING_DO_NOT_PAY = "Do not pay its Lightning invoice: a wallet can pay it until it expires, and such a payment is refunded by hand.";
 export const CANCEL_NOT_OPEN = "This invoice is no longer open, so there is nothing to cancel.";
 export const CANCEL_HAS_FUNDS = "This invoice has a payment on it, so it cannot be cancelled.";
 export const CANCEL_STILL_OPEN = "This invoice was cancelled, but the service still shows it open. Do not send anything more to the address.";
 export const CANCEL_INVOICE = "Cancel this invoice";
 export const CANCEL_CONFIRM = "Cancel this invoice? The address stops accepting payment, and anything sent to it afterwards is lost.";
-export const CANCEL_CONFIRM_LIGHTNING = "Cancel this invoice? Its Lightning invoice stays payable until it expires, so do not pay it afterwards: such a payment goes through, and only support can sort it out.";
+export const CANCEL_CONFIRM_LIGHTNING = "Cancel this invoice? Its Lightning invoice stays payable until it expires. Do not pay it afterwards: such a payment is refunded by hand.";
 export const CANCEL_PENDING = "Cancelling\u2026";
 export const CANCEL_FAILED = "Could not cancel it. Check the invoice before sending anything more.";
 
@@ -563,6 +563,11 @@ function offlineNote(): HTMLElement {
 const CRYPTO_NAMES: Readonly<Record<Chain, string>> = { btc: "Bitcoin", ln: "Lightning", xmr: "Monero" };
 const CRYPTO_TICKERS: Readonly<Record<Chain, string>> = { btc: "BTC", ln: "BTC", xmr: "XMR" };
 const DESTINATIONS: Readonly<Record<Chain, string>> = { btc: "address", ln: "invoice", xmr: "address" };
+const AWAITING: Readonly<Record<Chain, string>> = {
+  btc: "Waiting for the payment to confirm",
+  ln: "Waiting for the payment",
+  xmr: "Waiting for the payment to confirm",
+};
 
 export function cancelConfirmation(method: Method): string {
   return method === "ln" ? CANCEL_CONFIRM_LIGHTNING : CANCEL_CONFIRM;
@@ -620,7 +625,6 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   const left: Outstanding = paidSoFar === undefined
     ? { kind: "owed", amount }
     : outstanding(o.invoice.cryptoAmountDue);
-  const lightning = o.method === "ln";
   const owed = left.kind === "owed" ? left.amount : undefined;
   const ticker = CRYPTO_TICKERS[o.method];
   const destination = DESTINATIONS[o.method];
@@ -660,7 +664,7 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   const partly = paidSoFar !== undefined && left.kind !== "covered";
   const waiting = el("p", { class: "awaiting", role: "status" },
     el("span", { class: "pulse", "aria-hidden": "true" }),
-    partly ? "Waiting for the rest of the payment" : lightning ? "Waiting for the payment" : "Waiting for the payment to confirm");
+    partly ? "Waiting for the rest of the payment" : AWAITING[o.method]);
   p.append(split, waiting);
   if (o.offline === true) p.append(offlineNote());
   p.append(
