@@ -55,7 +55,7 @@ import Control.Applicative (optional, (<|>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Concurrently (..), mapConcurrently)
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
-import Control.Concurrent.STM (TVar, newTVarIO)
+import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO)
 import Control.Exception (try)
 import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM_, forever, unless, when)
@@ -69,10 +69,9 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Functor ((<&>))
 import Data.Functor.Compose (Compose (..))
-import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
+import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef, writeIORef)
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isNothing)
 import Data.Text (Text)
@@ -89,6 +88,8 @@ import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
+import Simplex.Messaging.TMap (TMap)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', eitherToMaybe, toChunks, tshow)
 import StoreService.Config (ChainConfig (..), boundedDecimal, localChainId)
 import StoreService.Names.Chain (AbiError (..), AbiValue (..), Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, Hex32 (..), RevertReason (..), abiBytes, abiTuple, abiWordSize, addressWord, confirmedNumber, decodeAddress, decodeBool, decodeBytes32, decodeLabels, decodeString, decodeUint256, decodeWord64, ethCallAt, httpFailure, latestBlock, lowerHexP, nodeChainId, parseText, registrarBalance, selector, uint256)
@@ -105,7 +106,7 @@ data Contracts = Contracts
     ctRegistrar :: IORef (Int, Maybe RegistrarConstants),
     ctCommitmentAges :: IORef (Int, Maybe CommitmentAges),
     ctNamePolicy :: IORef (Int, Maybe Address),
-    ctTermsTexts :: IORef (Map TermsHash Text),
+    ctTermsTexts :: TMap TermsHash Text,
     -- | the terms links as read at a block, which each search for an available name would read again
     ctTermsLinks :: IORef (Maybe (Word64, ((Text, Maybe Terms), (Text, Maybe Terms)))),
     ctFetchAfter :: IORef UTCTime,
@@ -195,7 +196,7 @@ newContracts ctStore ctTLD ctMinPriceCentsPerYear ctChain = do
   ctRegistrar <- newIORef (0, Nothing)
   ctCommitmentAges <- newIORef (0, Nothing)
   ctNamePolicy <- newIORef (0, Nothing)
-  ctTermsTexts <- newIORef M.empty
+  ctTermsTexts <- TM.emptyIO
   ctTermsLinks <- newIORef Nothing
   ctFetchAfter <- newIORef =<< getCurrentTime
   ctFetching <- newMVar ()
@@ -339,14 +340,14 @@ termsText ct@Contracts {ctTermsTexts, ctFetching} t@Terms {tmHash} =
     Just text -> pure $ Right text
     Nothing -> withMVar ctFetching $ \_ -> kept >>= maybe (fetchTerms ct t) (pure . Right)
   where
-    kept = M.lookup tmHash <$> readIORef ctTermsTexts
+    kept = TM.lookupIO tmHash ctTermsTexts
 
 -- | Each kind of terms the name policy links, with whether its text is held; nothing is fetched.
 termsHeld :: Contracts -> IO (Either ChainError [(Text, Bool)])
 termsHeld ct@Contracts {ctTermsTexts} = termsLinks ct >>= mapM held
   where
     held (general, community) = do
-      texts <- readIORef ctTermsTexts
+      texts <- readTVarIO ctTermsTexts
       pure [(termsKindText kind, M.member tmHash texts) | (kind, Just Terms {tmHash}) <- [(False, general), (True, community)]]
 
 fetchCurrentTerms :: Contracts -> IO ()
@@ -382,7 +383,7 @@ fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBacko
               writeIORef ctFetchAfter $ addUTCTime (fromIntegral wait) failedAt
               logWarn $ "names: the terms text of " <> tmLink <> " could not be fetched, " <> reason <> "; none is fetched for " <> tshow wait <> " seconds"
               pure $ Left $ TRWait wait
-    keep text = Right text <$ modifyIORef' ctTermsTexts (M.insert tmHash text)
+    keep text = Right text <$ atomically (TM.insert tmHash text ctTermsTexts)
     store text =
       withTransaction ctStore (\db -> setTermsText db tmHash text)
         `catchOwn'` \e -> logError ("names: the terms text of " <> tmLink <> " could not be stored: " <> tshow e)
