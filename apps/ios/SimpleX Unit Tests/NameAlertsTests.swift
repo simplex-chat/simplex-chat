@@ -14,6 +14,7 @@ final class NameAlertsTests: XCTestCase {
     private var opened = 0
     private var verifications = 0
     private var windows: [UIWindow] = []
+    private var sent: [String] = []
 
     @MainActor
     override func setUp() async throws {
@@ -158,11 +159,41 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testChannelUpdateRequired() async throws {
+        try recorded("names/plan-update-required")
+        connect("team.simplex")
+        try await assertTexts(["team", "This group requires a newer version of the app. Please update the app to join.", "Connect to @team.simplex", "OK"])
+        XCTAssertEqual(shownLocalChats, [])
+        try await press("Connect to @team.simplex")
+        try await assertTexts(["alice", "@team.simplex", "Open new chat", "Cancel"])
+    }
+
+    @MainActor
     func testOwnChannel() async throws {
         try recorded("names/plan-own-channel")
         connect("#team.simplex")
         try await assertTexts(["Your channel", "This is your link for channel team (#team)!", "Open channel", "Cancel"])
         XCTAssertEqual(shownLocalChats, ["#1"])
+    }
+
+    @MainActor
+    func testOwnChannelOffersOtherKind() async throws {
+        try recorded("names/plan-own-channel-other-kind")
+        connect("team.simplex")
+        try await assertTexts(["Your channel", "This is your link for channel team (#team)!", "Open channel", "Connect to @team.simplex", "Cancel"])
+        XCTAssertEqual(shownLocalChats, ["#1"])
+        try await press("Connect to @team.simplex")
+        try await assertTexts(["Connect to yourself?\nThis is your own SimpleX address!", "Use current profile", "Use new incognito profile", "Cancel"])
+    }
+
+    @MainActor
+    func testOwnAddressOffersOtherKind() async throws {
+        try recorded("names/plan-own-address-other-kind")
+        connect("team.simplex")
+        try await assertTexts(["Connect to yourself?\nThis is your own SimpleX address!", "Use current profile", "Use new incognito profile", "Join channel #team", "Cancel"])
+        try await press("Use current profile")
+        try await waitFor { self.opened == 1 }
+        XCTAssertNotNil(ChatModel.shared.getChat(":2"))
     }
 
     @MainActor
@@ -225,6 +256,14 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testContactConnecting() async throws {
+        try recorded("names/plan-connecting-contact")
+        connect("CONTACT_LINK")
+        try await assertTexts(["alice", "Open chat", "Cancel"])
+        XCTAssertEqual(shownLocalChats, ["@2"])
+    }
+
+    @MainActor
     func testGroupLinkAsAddress() async throws {
         try recorded("connect/group-link-as-address")
         connect("GROUP_LINK")
@@ -274,6 +313,24 @@ final class NameAlertsTests: XCTestCase {
         try await waitFor { state.filtered == ["@2", "#1"] }
         XCTAssertEqual(Set(ChatModel.shared.chats.map(\.id)), ["@2", "#1"])
         XCTAssertNotNil(accessibilityElement("Connect to team.simplex"))
+    }
+
+    @MainActor
+    func testChatListRowShowsChatsOfName() async throws {
+        try recorded("names/search-moved-known")
+        let respond = sendSimpleXCmdStr
+        sendSimpleXCmdStr = { [unowned self] cmd, ctrl, retryNum in
+            self.locked { self.sent.append(cmd) }
+            return respond(cmd, ctrl, retryNum)
+        }
+        let state = SearchState()
+        try show(SearchHost(state: state))
+        try await Task.sleep(nanoseconds: 100_000_000)
+        state.searchText = "@alice.simplex"
+        try await waitFor { self.locked { self.sent.contains("/_connect plan 1 @alice.simplex resolve=never") } }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        try await tap("Connect to @alice.simplex")
+        try await waitFor { state.filtered == ["@3"] }
     }
 
     @MainActor
