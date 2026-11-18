@@ -203,7 +203,7 @@ address bar of a page that is already open does nothing. A session left over
 from an earlier purchase in the same browser has already spent its flag at
 checkout, and the ending falls back to the plain code screen.
 
-Pay with Monero or Bitcoin and settle it with `/control/settle` above — the
+Pay with Monero, Bitcoin or Lightning and settle it with `/control/settle` above — the
 card path needs a Stripe key. A code the browser could not store also falls
 back to the plain screen, so a browser that blocks `localStorage` never shows
 the `app=true` ending at all.
@@ -220,7 +220,7 @@ form.
 With no key set there is no card path at all: `cardPlan` answers
 `unconfigured`, `showCardForm` returns before it builds anything, and
 choosing Card reaches "The card form did not load". Drive a purchase with
-Monero or Bitcoin instead, or set a test key:
+Monero, Bitcoin or Lightning instead, or set a test key:
 
 ```
 STRIPE_PUBLISHABLE_KEY=pk_test_... python3 mock/server.py --port 8099

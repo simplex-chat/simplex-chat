@@ -550,7 +550,7 @@ sequenceDiagram
 ```
 
 - Only a failed order paid by invoice or balance is closed, and a lapsed committed order reads failed. A balance an order holds refuses the close and writes nothing ([`Names/Worker.hs:515-564`](../src/StoreService/Names/Worker.hs#L515-L564), [`Names/Worker.hs:376-380`](../src/StoreService/Names/Worker.hs#L376-L380), [`Names/Orders.hs:366-412`](../src/StoreService/Names/Orders.hs#L366-L412)).
-- The answer names the failure time, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:502-530`](../src/StoreService/Service.hs#L502-L530), [`README.md:1507-1552`](../README.md#L1507-L1552)).
+- The answer names the failure time, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:502-530`](../src/StoreService/Service.hs#L502-L530), [`README.md:1729-1774`](../README.md#L1729-L1774)).
 
 ---
 
