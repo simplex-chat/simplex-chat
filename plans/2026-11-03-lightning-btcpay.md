@@ -97,7 +97,7 @@ Settlement rules:
 | Page | Lightning |
 |---|---|
 | Checkout | button "Lightning" |
-| Pay screen | BOLT11 labelled "Lightning invoice"; QR and wallet button: `lightning:<bolt11>` |
+| Pay screen | BOLT11 labelled "Lightning invoice", shown as its first 14 and last 8 characters; Copy: all of it; QR and wallet button: `lightning:<bolt11>` |
 | Confirming screen | the confirmation count is omitted |
 | Cancel confirmation, badges | the BOLT11 stays payable until it expires |
 | Closed screen, badges | "Do not pay its Lightning invoice" |

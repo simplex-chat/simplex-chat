@@ -563,6 +563,13 @@ function offlineNote(): HTMLElement {
 const CRYPTO_NAMES: Readonly<Record<Chain, string>> = { btc: "Bitcoin", ln: "Lightning", xmr: "Monero" };
 const CRYPTO_TICKERS: Readonly<Record<Chain, string>> = { btc: "BTC", ln: "BTC", xmr: "XMR" };
 const DESTINATIONS: Readonly<Record<Chain, string>> = { btc: "address", ln: "invoice", xmr: "address" };
+const INVOICE_HEAD = 14;
+const INVOICE_TAIL = 8;
+
+export function shownDestination(method: Chain, address: string): string {
+  return method === "ln" ? `${address.slice(0, INVOICE_HEAD)}…${address.slice(-INVOICE_TAIL)}` : address;
+}
+
 const AWAITING: Readonly<Record<Chain, string>> = {
   btc: "Waiting for the payment to confirm",
   ln: "Waiting for the payment",
@@ -653,7 +660,7 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   const amountCopy = copyControl("Copy", owed ?? "", "secondary inline");
   const details = el("div", { class: "details" },
     ...(owed === undefined ? [] : [copyableField(`Amount in ${ticker}`, owed, amountCopy.control, amountCopy.status)]),
-    copyableField(`${CRYPTO_NAMES[o.method]} ${destination}`, o.invoice.address ?? "",
+    copyableField(`${CRYPTO_NAMES[o.method]} ${destination}`, shownDestination(o.method, o.invoice.address ?? ""),
       address.control, address.status),
     reference(o.order.orderId),
   );
@@ -710,7 +717,7 @@ const CONFIRMING: Readonly<Record<Method, { status: string; wait: string; unsett
     countsConfirmations: true,
   },
   ln: {
-    status: "Waiting for the Lightning payment to settle.",
+    status: "Waiting for the payment to settle.",
     wait: "This usually takes a few seconds. The page updates itself.",
     unsettled: "The payment has not settled.",
     countsConfirmations: false,

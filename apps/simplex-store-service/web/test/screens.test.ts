@@ -556,14 +556,23 @@ domTest("screens: on a Lightning payment screen the BOLT11 is offered as a light
   const link = p.all("a.wallet-link")[0];
   assert.ok(link !== undefined, "the Lightning payment screen has no wallet link");
   assert.equal(link.getAttribute("href"), `lightning:${BOLT11}`, "the amount is part of the invoice, so none is added to the URI");
-  for (const line of ["Send 0.00050000 BTC", "Amount in BTC", "Lightning invoice", BOLT11,
+  for (const line of ["Send 0.00050000 BTC", "Amount in BTC", "Lightning invoice", screens.shownDestination("ln", BOLT11),
     "Waiting for the payment", "Bookmark this page — the invoice and the countdown both live on this URL."]) {
     assert.ok(p.textContent.includes(line), `the Lightning payment screen is missing: ${line}`);
   }
+  assert.ok(!p.textContent.includes(BOLT11), "the BOLT11 is shown shortened; Copy, the QR code and the wallet link hold all of it");
   assert.ok(!/confirm/i.test(p.textContent), `a Lightning payment has no confirmations to wait for: ${p.textContent}`);
   assert.ok(!p.textContent.includes("Lightning address"), "a BOLT11 is an invoice, not a Lightning address");
   for (const b of p.all("button.secondary")) b.click();
   assert.deepEqual(copied, ["0.00050000", BOLT11]);
+});
+
+domTest("screens: a Lightning invoice is shown as its first 14 and last 8 characters, an on-chain address in full", () => {
+  const bolt11 = `lnbcrt1562500n1p${"q".repeat(300)}qpw0frsq`;
+  assert.equal(screens.shownDestination("ln", bolt11), "lnbcrt1562500n…qpw0frsq");
+  const address = "bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080";
+  assert.equal(screens.shownDestination("btc", address), address);
+  assert.equal(screens.shownDestination("xmr", address), address);
 });
 
 domTest("screens: on the Lightning confirming screen the buyer is told to wait for settlement, and a confirmation count is omitted even if one is sent", () => {
@@ -571,7 +580,7 @@ domTest("screens: on the Lightning confirming screen the buyer is told to wait f
   const p = render(screens.awaitingConfirmation({
     order: smuggled(), invoice: paid, method: "ln", gaveUp: false, onCheckAgain: noop,
   }));
-  for (const line of ["Payment received", "Waiting for the Lightning payment to settle.",
+  for (const line of ["Payment received", "Waiting for the payment to settle.",
     "This usually takes a few seconds. The page updates itself.", "0.00050000 BTC"]) {
     assert.ok(p.textContent.includes(line), `the Lightning confirming screen is missing: ${line}`);
   }
