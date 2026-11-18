@@ -34,8 +34,8 @@ fun ContactPreferencesView(
 ) {
   val contact = remember { derivedStateOf { (m.getContactChat(contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
   val ct = contact.value ?: return
-  var featuresAllowed by rememberSaveable(ct, user, stateSaver = serializableSaver()) { mutableStateOf(contactUserPrefsToFeaturesAllowed(ct.mergedPreferences)) }
-  var currentFeaturesAllowed by rememberSaveable(ct, user, stateSaver = serializableSaver()) { mutableStateOf(featuresAllowed) }
+  var featuresAllowed by rememberSaveable(ct.mergedPreferences, user.fullPreferences, stateSaver = serializableSaver()) { mutableStateOf(contactUserPrefsToFeaturesAllowed(ct.mergedPreferences)) }
+  var currentFeaturesAllowed by rememberSaveable(ct.mergedPreferences, user.fullPreferences, stateSaver = serializableSaver()) { mutableStateOf(featuresAllowed) }
 
   fun savePrefs(afterSave: () -> Unit = {}) {
     withBGApi {
