@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, primaryOf, screenOf, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
-import { COPY_UNLESS_ADDED, IDLE_DELETION, IDLE_DELETION_CODES } from "../src/screens.js";
+import { CAN_DELETE_CODES, CODE_DELETED_AFTER, COPY_UNLESS_ADDED } from "../src/screens.js";
 
 const safariTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
@@ -38,16 +38,12 @@ safariTest("main: in Safari opened from the app, the deletion warning and the hi
 
   const ending = inView();
   assert.ok(ending.textContent.includes(COPY_UNLESS_ADDED), `the hint is missing from: ${ending.textContent.slice(0, 300)}`);
-  assert.ok(ending.textContent.includes(IDLE_DELETION), "the deletion warning is shown with the hint");
+  assert.ok(ending.textContent.includes(CODE_DELETED_AFTER), "the deletion warning is shown with the hint");
 });
 
 safariTest("main: in Safari, the deletion warning is shown on Your codes", () => {
-  page.respondWith({ status: 200, body: {
-    status: "paid", badgeType: "legend", months: 12, amount: 42000, currency: "usd",
-    paidInFull: true, settledAt: "2026-08-28T12:05:00Z",
-  } });
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
   assert.equal(headingOf(inView()), "Your codes");
   assert.equal(inView().all("li.entry").length, 1, "the paid code is listed");
-  assert.equal(inView().all("div.warn")[0]!.all("span.title")[0]!.textContent, IDLE_DELETION_CODES);
+  assert.equal(inView().all("div.warn")[0]!.all("span.title")[0]!.textContent, CAN_DELETE_CODES);
 });

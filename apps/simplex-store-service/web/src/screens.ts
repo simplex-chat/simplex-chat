@@ -792,11 +792,16 @@ export interface CodeIssuedOptions {
 
 export const REDEEM_IN_SETTINGS = "Settings → Supporter perks → Redeem code";
 export const REDEEM_SCREEN_OPEN = "The Redeem code screen is already open.";
-export const IDLE_DELETION = "This browser can delete the code after 7 days of browsing without a tap or click on this site.";
-export const IDLE_DELETION_CODES = "This browser can delete stored codes after 7 days of browsing without a tap or click on this site.";
+const IDLE_PERIOD = "after 7 days of browsing without a tap or click on this site.";
+export const CAN_DELETE_CODE = "This browser can delete the code";
+export const CAN_DELETE_CODES = "This browser can delete stored codes";
+export const IDLE_DELETION = `${CAN_DELETE_CODE} ${IDLE_PERIOD}`;
+export const IDLE_DELETION_CODES = `${CAN_DELETE_CODES} ${IDLE_PERIOD}`;
+export const CODE_DELETED_AFTER = `It can be deleted ${IDLE_PERIOD}`;
+export const CODES_DELETED_AFTER = `They can be deleted ${IDLE_PERIOD}`;
 export const KEEP_OUTSIDE = "Redeem it now, or copy it and keep it outside this browser.";
 export const KEEP_EACH_OUTSIDE = "Copy each code you have not redeemed, and keep it outside this browser.";
-export const COPY_UNLESS_ADDED = "If the badge is not added in the app, show the code and copy it.";
+export const COPY_UNLESS_ADDED = "If the badge is not added in the app, show the code, copy it and keep it outside this browser.";
 export const CODES_LISTED_HERE = "Codes stored in this browser are listed here.";
 export const CODES_STORED_IN_BROWSER = "Codes are stored only in the browser they were bought in.";
 
@@ -865,7 +870,7 @@ export function returnToApp(o: ReturnToAppOptions): HTMLElement {
   p.classList.add("ending");
   switch (o.code.kind) {
     case "hidden":
-      if (o.retention === "keptUntilIdle") p.append(warning(IDLE_DELETION, COPY_UNLESS_ADDED));
+      if (o.retention === "keptUntilIdle") p.append(warning(CAN_DELETE_CODE, CODE_DELETED_AFTER, COPY_UNLESS_ADDED));
       p.append(el("p", { class: "row-line center" }, button(SHOW_CODE, o.code.onShow, "link")));
       return p;
     case "shown":
@@ -1006,7 +1011,7 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
     el("p", { class: "lede" }, o.retention !== "notKept"
       ? CODES_STORED_IN_BROWSER
       : "This browser cannot save anything new right now. Copy any code you have not kept elsewhere."),
-    ...(o.retention === "keptUntilIdle" && o.rows.some((r) => r.kind === "paid") ? [warning(IDLE_DELETION_CODES, KEEP_EACH_OUTSIDE)] : []),
+    ...(o.retention === "keptUntilIdle" && o.rows.some((r) => r.kind === "paid") ? [warning(CAN_DELETE_CODES, CODES_DELETED_AFTER, KEEP_EACH_OUTSIDE)] : []),
     list,
     forget,
   ), investPanel(undefined));

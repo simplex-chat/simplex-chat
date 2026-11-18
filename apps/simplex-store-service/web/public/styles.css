@@ -1012,8 +1012,7 @@ p.row-line { margin: 16px 0 0; }
   background: var(--surface);
 }
 
-/* A run to be read a character at a time, so it steps one below `.mono`'s body
-   size, the size the copy beside it is set at in both boxes. */
+/* A run to be read a character at a time, so it steps below `.mono`'s body size. */
 .entry .code-row code {
   flex: 1 1 auto;
   min-width: 0;
@@ -1253,5 +1252,7 @@ p.row-line { margin: 16px 0 0; }
      every width. The paid-no-code screen's summary carries the same title and steps with it. */
   .entry { padding: 14px 16px 16px; }
   .entry .name, .rows.field > .name { font-size: 1rem; }
+  .entry .code-row { gap: 6px; padding: 10px 8px 10px 12px; }
   .entry .code-row code { font-size: .75rem; }
+  .entry .code-row .secondary { padding: 0 8px; }
 }
