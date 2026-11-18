@@ -1,0 +1,322 @@
+{
+  "commands": {
+    "/_read chat #1(_support)": {
+      "result": {
+        "groupInfo": {
+          "chatSettings": {
+            "enableNtfs": "all",
+            "favorite": false
+          },
+          "chatTags": [],
+          "chatTs": "1970-01-01T00:00:00Z",
+          "createdAt": "1970-01-01T00:00:00Z",
+          "fullGroupPreferences": {
+            "commands": [],
+            "comments": {
+              "enable": "off"
+            },
+            "directMessages": {
+              "enable": "on"
+            },
+            "files": {
+              "enable": "on"
+            },
+            "fullDelete": {
+              "enable": "on"
+            },
+            "history": {
+              "enable": "on"
+            },
+            "reactions": {
+              "enable": "on"
+            },
+            "reports": {
+              "enable": "on"
+            },
+            "sessions": {
+              "enable": "off"
+            },
+            "signMessages": {
+              "enable": "off"
+            },
+            "simplexLinks": {
+              "enable": "on"
+            },
+            "support": {
+              "enable": "on"
+            },
+            "timedMessages": {
+              "enable": "off",
+              "ttl": 86400
+            },
+            "voice": {
+              "enable": "on"
+            }
+          },
+          "groupId": 1,
+          "groupProfile": {
+            "displayName": "team",
+            "fullName": "",
+            "groupPreferences": {
+              "commands": [],
+              "comments": {
+                "enable": "off"
+              },
+              "directMessages": {
+                "enable": "on"
+              },
+              "files": {
+                "enable": "on"
+              },
+              "fullDelete": {
+                "enable": "on"
+              },
+              "history": {
+                "enable": "on"
+              },
+              "reactions": {
+                "enable": "on"
+              },
+              "reports": {
+                "enable": "on"
+              },
+              "sessions": {
+                "enable": "off"
+              },
+              "signMessages": {
+                "enable": "off"
+              },
+              "simplexLinks": {
+                "enable": "on"
+              },
+              "support": {
+                "enable": "on"
+              },
+              "timedMessages": {
+                "enable": "off",
+                "ttl": 86400
+              },
+              "voice": {
+                "enable": "on"
+              }
+            },
+            "memberAdmission": {
+              "review": "all"
+            }
+          },
+          "groupSummary": {
+            "currentMembers": 1
+          },
+          "localAlias": "",
+          "localDisplayName": "team",
+          "membersRequireAttention": 0,
+          "membership": {
+            "blockedByAdmin": false,
+            "createdAt": "1970-01-01T00:00:00Z",
+            "groupId": 1,
+            "groupMemberId": 2,
+            "indexInGroup": 1,
+            "invitedBy": {
+              "type": "unknown"
+            },
+            "invitedByGroupMemberId": 1,
+            "localDisplayName": "cath",
+            "memberCategory": "user",
+            "memberChatVRange": {
+              "maxVersion": 22,
+              "minVersion": 9
+            },
+            "memberContactId": 1,
+            "memberContactProfileId": 1,
+            "memberId": "memberId",
+            "memberProfile": {
+              "displayName": "cath",
+              "fullName": "",
+              "localAlias": "",
+              "preferences": {
+                "calls": {
+                  "allow": "yes"
+                },
+                "commands": [],
+                "files": {
+                  "allow": "always"
+                },
+                "fullDelete": {
+                  "allow": "no"
+                },
+                "reactions": {
+                  "allow": "yes"
+                },
+                "sessions": {
+                  "allow": "no"
+                },
+                "timedMessages": {
+                  "allow": "yes"
+                },
+                "voice": {
+                  "allow": "yes"
+                }
+              },
+              "profileId": 1,
+              "shortDescr": "Catherine"
+            },
+            "memberPubKey": "memberPubKey",
+            "memberRole": "member",
+            "memberSettings": {
+              "showMessages": true
+            },
+            "memberStatus": "pending_review",
+            "supportChat": {
+              "chatTs": "1970-01-01T00:00:00Z",
+              "memberAttention": 0,
+              "mentions": 0,
+              "unread": 0
+            },
+            "updatedAt": "1970-01-01T00:00:00Z"
+          },
+          "updatedAt": "1970-01-01T00:00:00Z",
+          "useRelays": false,
+          "userMemberProfileSentAt": "1970-01-01T00:00:00Z",
+          "viaGroupLinkUri": "viaGroupLinkUri"
+        },
+        "member": {
+          "blockedByAdmin": false,
+          "createdAt": "1970-01-01T00:00:00Z",
+          "groupId": 1,
+          "groupMemberId": 2,
+          "indexInGroup": 1,
+          "invitedBy": {
+            "type": "unknown"
+          },
+          "invitedByGroupMemberId": 1,
+          "localDisplayName": "cath",
+          "memberCategory": "user",
+          "memberChatVRange": {
+            "maxVersion": 22,
+            "minVersion": 9
+          },
+          "memberContactId": 1,
+          "memberContactProfileId": 1,
+          "memberId": "memberId",
+          "memberProfile": {
+            "displayName": "cath",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Catherine"
+          },
+          "memberPubKey": "memberPubKey",
+          "memberRole": "member",
+          "memberSettings": {
+            "showMessages": true
+          },
+          "memberStatus": "pending_review",
+          "supportChat": {
+            "chatTs": "1970-01-01T00:00:00Z",
+            "memberAttention": 0,
+            "mentions": 0,
+            "unread": 0
+          },
+          "updatedAt": "1970-01-01T00:00:00Z"
+        },
+        "type": "memberSupportChatRead",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "cath",
+          "profile": {
+            "displayName": "cath",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Catherine"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    }
+  },
+  "markdown": {},
+  "uris": {}
+}
