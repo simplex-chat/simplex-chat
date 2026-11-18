@@ -174,9 +174,9 @@ class Handler(BaseHTTPRequestHandler):
                 elif action == "verdict":
                     # Monero reports the payment as paid in full while its figures are still zero.
                     inv["paidInFull"] = True
-                elif action == "partial" and inv["method"] == "ln":
-                    return self._send(400, {"error": "bad_request"})
                 elif action == "partial":
+                    if inv["method"] == "ln":
+                        return self._send(400, {"error": "bad_request"})
                     inv["amountPaid"] = inv["amount"] // 2
                     inv["paidInFull"] = False
                     if inv["method"] != "card":

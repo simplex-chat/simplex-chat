@@ -399,7 +399,7 @@ export function durations(o: DurationsOptions): HTMLElement {
 }
 
 const METHOD_NAMES: Readonly<Record<Method, string>> = { btc: "Bitcoin", ln: "Lightning", xmr: "Monero", card: "Card" };
-export const METHOD_ORDER: readonly Method[] = ["card", "btc", "ln", "xmr"];
+const METHOD_ORDER: readonly Method[] = ["card", "btc", "ln", "xmr"];
 
 export const NOT_KEPT_TITLE = "This browser will not keep your code";
 
