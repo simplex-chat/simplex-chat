@@ -2,7 +2,7 @@
 // runs this exact file in a Node `vm` with a fake Cache API and reads `self.sw`.
 
 /** Rewritten by `build.js` from the bytes of the compiled modules, the stylesheet and the images. */
-const BUILD = "01e9b7295508253a";
+const BUILD = "92f52bc327aefa34";
 const ASSETS = `/assets/${BUILD}/`;
 /** One cache per build, so eviction is "everything that is not this one". */
 const CACHE = `sb-${BUILD}`;

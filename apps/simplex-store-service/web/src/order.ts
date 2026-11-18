@@ -48,8 +48,8 @@ export type HistoryRow =
 export function historyRows(entries: readonly OrderRecord[]): HistoryRow[] {
   return entries.map((e) => {
     const order = withoutCode(e);
-    // A canceled order without money wins over the expired or open status the server left behind, but a
-    // paid order keeps its code even where a cancel lost to settlement.
+    // A canceled order without money is listed as canceled, whatever status the server returned; a paid
+    // order is listed with its code, also when it was settled before the cancel.
     switch (orderPhase(e)) {
       case "paid":
         return e.code !== undefined ? { kind: "paid" as const, order, code: e.code } : { kind: "paidNoCode" as const, order };
