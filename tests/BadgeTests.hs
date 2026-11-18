@@ -13,6 +13,7 @@ import Bots.StoreService.WebUIMock (formatNameOwnerCode, nameOwnerCodeEntropy, p
 import StoreService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, serviceRequest, shownServiceRequest, survive)
 import StoreService.StoreReceipts (StoreCharge (..), StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), toStoreReceipt)
 import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
+import ChatTests.Utils (writeFixture)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically)
@@ -79,6 +80,7 @@ badgeTests = do
     it "encodes an owner code's entropy and its checksum" testNameOwnerCodeVectors
     it "rejects an owner code with a wrong character" testNameOwnerCodeChecksum
     it "reads the webapp's prepaid codes: length, canonical form, display and hash, and refuses lengths outside 6 to 63" testNamePrepaidCodeVectors
+    it "records the name code vectors the names page's tests read" testNameCodeFixture
     it "reads random codes of both kinds back, as typed, and never a prepaid code as an owner code" testNameCodeRoundTrip
     it "refuses a prepaid code with one character changed or two adjacent swapped, except 0 and Z" testNamePrepaidCodeCheck
     it "refuses a prepaid code whose length is not plain ASCII digits" testNamePrepaidCodeLengthDigits
@@ -420,6 +422,19 @@ namePrepaidCodeVectors =
     ("SN12-N0N9J-5D292-HPSYA-R911R", 12, "SN12N0N9J5D292HPSYAR911R", "SN12-N0N9J-5D292-HPSYA-R911R", "FozeCQ3A_sUsZF9_OwQDp42kdHRMsoJazuGvOkTS-FQ"),
     ("SN63-N0N9J-5D292-HPSYA-R911D", 63, "SN63N0N9J5D292HPSYAR911D", "SN63-N0N9J-5D292-HPSYA-R911D", "U-Nh_Kw3-xDlQuFJffkuCAyolK5m9EfN3QuYiJ28A0A")
   ]
+
+testNameCodeFixture :: IO ()
+testNameCodeFixture = do
+  forM_ refused $ \typed -> (isNothing $ parseNameOwnerCode typed, isNothing $ parseNameCode typed) `shouldBe` (True, True)
+  writeFixture "store/vectors-codes" $
+    J.object
+      [ "ownerCodes" J..= [J.object ["entropy" J..= safeDecodeUtf8 entropy, "code" J..= code] | (entropy, code) <- nameOwnerCodeVectors],
+        "prepaidCodes" J..= [J.object ["typed" J..= typed, "minLength" J..= len, "canonical" J..= canonical, "display" J..= display, "hash" J..= safeDecodeUtf8 hash] | (typed, len, canonical, display, hash) <- namePrepaidCodeVectors],
+        "refused" J..= refused
+      ]
+  where
+    refused :: [T.Text]
+    refused = ["SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BV", "SN-DWPHT-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5", "SN7-4K2P7-TQ9M1-ZX3RB-8HJ5X", "SN5-N0N9J-5D292-HPSYA-R911Q", "SN64-N0N9J-5D292-HPSYA-R911C", "SN07-BJTBP-29596-R3HJ8-25YM7"]
 
 lengthOf :: Int -> NameLength
 lengthOf n = fromMaybe (error $ "name length " <> show n) $ nameLength n

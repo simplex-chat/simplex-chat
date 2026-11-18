@@ -7,8 +7,11 @@ import StoreService.Names.Chain
 import StoreService.Names.Registration
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.WebUIMock
+import ChatTests.Utils (writeFixture)
 import Control.Concurrent.STM (TVar)
 import Crypto.Random (ChaChaDRG)
+import Data.Aeson ((.=))
+import qualified Data.Aeson as J
 import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -166,8 +169,20 @@ acceptanceDeadline = 1767315600
 
 testAcceptanceDigest :: IO ()
 testAcceptanceDigest = do
-  toHex (acceptanceDigest acceptanceDomain (termsKind False) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "f486b536cdf4e28031b02fb4345f26678a088d84846a0a6c72896062af283065"
-  toHex (acceptanceDigest acceptanceDomain (termsKind True) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "6df583ad3bcbef3e4061599fa9d45174fcda5731764320cd08ade35c8324eef7"
+  toHex (digest False) `shouldBe` "f486b536cdf4e28031b02fb4345f26678a088d84846a0a6c72896062af283065"
+  toHex (digest True) `shouldBe` "6df583ad3bcbef3e4061599fa9d45174fcda5731764320cd08ade35c8324eef7"
+  writeFixture "store/vectors-acceptance" $
+    J.object
+      [ "chainId" .= fakeChainId,
+        "policy" .= fakeNamePolicy,
+        "commitment" .= acceptedCommitment,
+        "termsHash" .= acceptedHash,
+        "nonce" .= (3 :: Int),
+        "deadline" .= acceptanceDeadline,
+        "digests" .= J.object ["general" .= Hex32 (digest False), "community" .= Hex32 (digest True)]
+      ]
+  where
+    digest community = acceptanceDigest acceptanceDomain (termsKind community) acceptedCommitment acceptedHash 3 acceptanceDeadline
 
 testAcceptCalldata :: IO ()
 testAcceptCalldata = do

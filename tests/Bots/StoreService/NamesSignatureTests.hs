@@ -4,7 +4,10 @@
 module Bots.StoreService.NamesSignatureTests (namesSignatureTests) where
 
 import Bots.StoreService.FakeEthNode (lengthOf)
+import ChatTests.Utils (writeFixture)
 import Control.Monad (forM_)
+import Data.Aeson ((.=))
+import qualified Data.Aeson as J
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -12,12 +15,14 @@ import Data.Either (isLeft)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
+import Simplex.Chat.Badges.Code (nameLengthInt)
+import Simplex.Messaging.Crypto (sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
-import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
-import Simplex.Messaging.SimplexName (SimplexTLD (..), labelHash)
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import StoreService.Names.Chain (AbiError (..), AbiValue (..), Hex32 (..), abiBytes, abiTuple, decodeAddress, decodeBool, decodeBytes, decodeBytes32, decodeLabels, decodeString, decodeUint256, uint256)
 import StoreService.Names.Registration
 import Test.Hspec
@@ -34,49 +39,9 @@ namesSignatureTests = describe "StoreService names: signatures" $ do
     it "hashes SetText" $
       setTextDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") LKContact "https://x" 3 99 `shouldBe` hx "0xa62d4320889eed3713462d725dc298cd96885572b8e6b424e93a205a96b96fb5"
   describe "EIP-191 messages" $ do
-    -- the contract's Appendix C, which the webapp computed with viem and pins in test/terms-vectors.test.ts
-    it "signs an order with the general terms' hash" $
-      testMessage
-        (orderMessage termsOrder termsTimestamp)
-        "simplex.domains order 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e 1792828800"
-        "0x2687afde089cba36f420243154bfdd22fe44e8f07c8cfee652bd61cd6d9271fe"
-        "0x9fb22e344357679a4deffdd3d75d6bfb6be860e4d2d307661445812dc4e134c051b726fc8ae16aaf4df17c615b2eeac4e10953524691b186bff2e6b68268d0b31b"
-    it "signs an order with the community terms' hash" $
-      testMessage
-        (orderMessage communityOrder termsTimestamp)
-        "simplex.domains order 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/bbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d 1792828800"
-        "0x456ec129e7612ef629f004f3beaf82a58ebf01d59cc7c4e2616e01a72ca01c65"
-        "0x11ade94c79f14bdfde60b23f60f217206b7fd6b29504a2e3020eaef5dabbf24c39330b92099ce6564c36c0a2e484c91a5a9cfa341285a05a169bafbb1dfd1cb01c"
-    it "signs find with the owner in lowercase" $
-      testMessage
-        (findMessage owner timestamp)
-        "simplex.domains find 0x014f9c09cceedef1b713110d04d3a07d5b5d9b73 1792574100"
-        "0x08a989fbf0457984c062b44d7237be9c7948f2cf23d48410609777a09b515646"
-        "0xfa0908260c3f21c8e47bd37e2c3cf3bd6bc62966591ab1a2c4e31695646548f47d2e79b34413be27b4b07330682de642f48a8f5e641449d7d79728eeb4ab14da1c"
-    it "signs another name for an order with the general terms' hash" $
-      testMessage
-        (retargetMessage registrationId termsOrder termsTimestamp)
-        "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e 1792828800"
-        "0x9545b17da4a1fcc96d66f53b8358629c5987ec2a67d16e44f4e0a298194dc0e9"
-        "0xa1ae312f7178440aaf5a04789d7ed388af7215624b214ea7aa98d43209f0c98e10b64a1c553053e88c3ecd6d21769d34ff9b6a3485e04e2d23bd4b0faabb1dc01c"
-    it "signs another name for an order with the community terms' hash" $
-      testMessage
-        (retargetMessage registrationId communityOrder termsTimestamp)
-        "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/bbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d 1792828800"
-        "0x5a798c69de346efc5ede90d1b4ff30854ab0eb326539ba9b60eddea1ab08005f"
-        "0xdd8794dd1c65c8e11955127408e44cd63cfc8d4b7050d5fee05b65d5abfb8a3b62f6648c2a337183adc822d129b2aba3030c8812cf87b7e969c690fb160a805f1c"
-    it "signs a spend from an order's balance with the general terms' hash" $
-      testMessage
-        (spendMessage registrationId termsOrder termsTimestamp)
-        "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e 1792828800"
-        "0xf643f32bd75923423f92eeee3dc46c6503f4969ad37b66bddfab5587b7e7d62e"
-        "0x584dfddcbd6f5a1ccaa0dd60b8f2929f629da471aa4ecae270bd429243f2853c77eff724a4820e95765ca006302c834fdb247d3b1c69c5db4074045c89957f541c"
-    it "signs a spend from an order's balance with the community terms' hash" $
-      testMessage
-        (spendMessage registrationId communityOrder termsTimestamp)
-        "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/bbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d 1792828800"
-        "0x1c02a90eaa2073c155b816d9597ddbe694dfa5ded03caafeb88feb9ed9a077e1"
-        "0x61f25926cf4250e6924cfbc63748cc60e01486434984988e8904a655c893afd22f9efabc4587890f522ec91a124f066ba0d9b8acfbba9c836009d8a41609624a1b"
+    -- the contract's Appendix C, which the webapp computed with viem; the page's tests read them from the recorded vectors
+    forM_ messageVectors $ \(what, _, _, built, text, digest, signature) -> it ("signs " <> what) $ testMessage built text digest signature
+    it "records the vectors the names page's tests read" testVectorsFixture
   describe "signature format" $ do
     it "refuses a high s, though recovery accepts it" testHighS
     it "refuses v other than 27 or 28" $
@@ -131,6 +96,120 @@ testMessage msg expected digest signature = do
   personalDigest msg `shouldBe` hx digest
   sig <- either (fail . show) pure $ parseSignature signature
   recoverAddress sig (personalDigest msg) `shouldReturn` Right owner
+
+messageVectors :: [(String, Text, Maybe OrderFields, ByteString, ByteString, Text, Text)]
+messageVectors =
+  [ ( "an order with the general terms' hash",
+      "order",
+      Just termsOrder,
+      orderMessage termsOrder termsTimestamp,
+      "simplex.domains order 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e 1792828800",
+      "0x2687afde089cba36f420243154bfdd22fe44e8f07c8cfee652bd61cd6d9271fe",
+      "0x9fb22e344357679a4deffdd3d75d6bfb6be860e4d2d307661445812dc4e134c051b726fc8ae16aaf4df17c615b2eeac4e10953524691b186bff2e6b68268d0b31b"
+    ),
+    ( "an order with the community terms' hash",
+      "order",
+      Just communityOrder,
+      orderMessage communityOrder termsTimestamp,
+      "simplex.domains order 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/bbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d 1792828800",
+      "0x456ec129e7612ef629f004f3beaf82a58ebf01d59cc7c4e2616e01a72ca01c65",
+      "0x11ade94c79f14bdfde60b23f60f217206b7fd6b29504a2e3020eaef5dabbf24c39330b92099ce6564c36c0a2e484c91a5a9cfa341285a05a169bafbb1dfd1cb01c"
+    ),
+    ( "find with the owner in lowercase",
+      "find",
+      Nothing,
+      findMessage owner timestamp,
+      "simplex.domains find 0x014f9c09cceedef1b713110d04d3a07d5b5d9b73 1792574100",
+      "0x08a989fbf0457984c062b44d7237be9c7948f2cf23d48410609777a09b515646",
+      "0xfa0908260c3f21c8e47bd37e2c3cf3bd6bc62966591ab1a2c4e31695646548f47d2e79b34413be27b4b07330682de642f48a8f5e641449d7d79728eeb4ab14da1c"
+    ),
+    ( "another name for an order with the general terms' hash",
+      "name",
+      Just termsOrder,
+      retargetMessage registrationId termsOrder termsTimestamp,
+      "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e 1792828800",
+      "0x9545b17da4a1fcc96d66f53b8358629c5987ec2a67d16e44f4e0a298194dc0e9",
+      "0xa1ae312f7178440aaf5a04789d7ed388af7215624b214ea7aa98d43209f0c98e10b64a1c553053e88c3ecd6d21769d34ff9b6a3485e04e2d23bd4b0faabb1dc01c"
+    ),
+    ( "another name for an order with the community terms' hash",
+      "name",
+      Just communityOrder,
+      retargetMessage registrationId communityOrder termsTimestamp,
+      "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/bbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d 1792828800",
+      "0x5a798c69de346efc5ede90d1b4ff30854ab0eb326539ba9b60eddea1ab08005f",
+      "0xdd8794dd1c65c8e11955127408e44cd63cfc8d4b7050d5fee05b65d5abfb8a3b62f6648c2a337183adc822d129b2aba3030c8812cf87b7e969c690fb160a805f1c"
+    ),
+    ( "a spend from an order's balance with the general terms' hash",
+      "spend",
+      Just termsOrder,
+      spendMessage registrationId termsOrder termsTimestamp,
+      "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e 1792828800",
+      "0xf643f32bd75923423f92eeee3dc46c6503f4969ad37b66bddfab5587b7e7d62e",
+      "0x584dfddcbd6f5a1ccaa0dd60b8f2929f629da471aa4ecae270bd429243f2853c77eff724a4820e95765ca006302c834fdb247d3b1c69c5db4074045c89957f541c"
+    ),
+    ( "a spend from an order's balance with the community terms' hash",
+      "spend",
+      Just communityOrder,
+      spendMessage registrationId communityOrder termsTimestamp,
+      "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6 11 69292800 0x5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5 0x22709445157a2a1f7cb7e284e3ccf6c7ebc3b4d857002af452853c4a65907fe2 community/bbc52157d9b12f23af62ae8a7eacf2ea11e7db311fa2ed5bd48ea9ba01f77c4d 1792828800",
+      "0x1c02a90eaa2073c155b816d9597ddbe694dfa5ded03caafeb88feb9ed9a077e1",
+      "0x61f25926cf4250e6924cfbc63748cc60e01486434984988e8904a655c893afd22f9efabc4587890f522ec91a124f066ba0d9b8acfbba9c836009d8a41609624a1b"
+    )
+  ]
+
+testVectorsFixture :: IO ()
+testVectorsFixture =
+  writeFixture "store/vectors-signatures" $
+    J.object
+      [ "owner" .= ownerText,
+        "order"
+          .= J.object
+            [ "label" .= ("alicebakery" :: Text),
+              "labelHash" .= Hex32 lh,
+              "length" .= nameLengthInt (ofLength termsOrder),
+              "duration" .= ofDuration termsOrder,
+              "commitment" .= ofCommitment termsOrder,
+              "sealed" .= ofSealed termsOrder,
+              "sealedHash" .= Hex32 (sha256Hash $ encodeUtf8 $ ofSealed termsOrder),
+              "resolver" .= resolver,
+              "registrationId" .= ("t2Jk8RmQ4vXw9NcP3yLb6g" :: Text),
+              "timestamp" .= termsTimestamp
+            ],
+        "findTimestamp" .= timestamp,
+        "messages"
+          .= [ J.object ["kind" .= kind, "terms" .= (textEncode . ofAgreedTerms <$> fields), "text" .= decodeLatin1 text, "digest" .= digest, "signature" .= signature]
+               | (_, kind, fields, _, text, digest, signature) <- messageVectors
+             ],
+        "registerName"
+          .= J.object
+            [ "chainId" .= chainId,
+              "sponsor" .= sponsor,
+              "label" .= rLabel dynamis,
+              "owner" .= rOwner dynamis,
+              "duration" .= rDuration dynamis,
+              "secret" .= rSecret dynamis,
+              "resolver" .= rResolver dynamis,
+              "contact" .= rContactLink dynamis,
+              "channel" .= rChannelLink dynamis,
+              "commitment" .= makeCommitment dynamis,
+              "nonce" .= (0 :: Int),
+              "deadline" .= (1800000000 :: Word64),
+              "digest" .= Hex32 (registerIntentDigest (sponsorDomain chainId sponsor) dynamis 0 1800000000)
+            ],
+        "setText"
+          .= J.object
+            [ "chainId" .= chainId,
+              "resolver" .= resolver,
+              "label" .= ("dynamis" :: Text),
+              "key" .= textEncode LKContact,
+              "value" .= ("https://x" :: Text),
+              "nonce" .= (3 :: Int),
+              "deadline" .= (99 :: Int),
+              "digest" .= Hex32 (setTextDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") LKContact "https://x" 3 99)
+            ]
+      ]
+  where
+    LabelHash lh = ofLabelHash termsOrder
 
 testHighS :: IO ()
 testHighS = do
