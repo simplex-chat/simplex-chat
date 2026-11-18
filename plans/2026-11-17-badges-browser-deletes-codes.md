@@ -2,7 +2,7 @@
 
 ## Problem
 
-A bought code is stored only in the browser's localStorage. WebKit, the engine of Safari, of other browsers on iPhone and iPad, of web views in macOS apps and of GNOME Web, deletes a site's script-written storage after days of browser use without a tap, click or key press on that site. A buyer who opened the page from the app later found no code on Your codes, where "Nothing bought on this device" was shown.
+A bought code is stored only in the browser's localStorage. WebKit, the engine of Safari, other iPhone and iPad browsers, macOS app web views and GNOME Web, deletes a site's script-written storage after days of browser use without a tap, click or key press on that site. A buyer who opened the page from the app later found no code on Your codes, where "Nothing bought on this device" was shown.
 
 | Browser | Stored codes are deleted after |
 |---|---|
@@ -24,7 +24,7 @@ Sources:
 
 - Warnings are added. Persistent storage is not requested.
 - WebKit is recognised by its user agent: `AppleWebKit/` without `Chrome/` or `Android`.
-- Each screen receives one value, `Keeping`:
+- The code, return-to-app, paid-no-code and Your codes screens receive one value, `Retention`, in place of two flags:
 
 ```
 notKept         a write to localStorage fails
@@ -49,16 +49,16 @@ keptUntilIdle   a write succeeds, in WebKit
 ```mermaid
 flowchart LR
   load[page load] --> w0{write to localStorage succeeds}
-  w0 -->|no| nk[notKept: no warning]
+  w0 -->|no| nk[notKept: no deletion warning]
   w0 -->|yes| d{browserDeletesIdle of navigator.userAgent}
-  d -->|false| k[kept: no warning]
+  d -->|false| k[kept: no deletion warning]
   d -->|true| u[keptUntilIdle: warning on the five screens]
 ```
 
 ## Tests
 
 - `test/store.test.ts`: the user agents of Safari on macOS and iPhone, Chrome, Firefox and Edge on iPhone, an iPhone web view, GNOME Web, and of Chrome, Edge, Chromium, Samsung Internet, an Android web view and Firefox on desktop and Android.
-- `test/screens.test.ts`: the five screens for each `Keeping` value.
+- `test/screens.test.ts`: the five screens with and without the deletion warning.
 - `test/main-app-safari.test.ts`: the paid ending opened from the app, and Your codes, in Safari on iPhone.
 - `test/main-safari-code.test.ts`: the code screen in Safari on macOS.
 - `test/main-chrome-code.test.ts`: the code screen and Your codes in Chrome on macOS, without the warning.
