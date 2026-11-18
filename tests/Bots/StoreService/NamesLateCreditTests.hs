@@ -72,6 +72,7 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "credits an invoice past the read window after a hinted read" testHintPastWindow
     it "credits Stripe's succeeded amount without reading a rate" testStripeCredited
     it "credits late XMR in piconero when the plugin shows a confirmation, and alerts it to support when it shows none" testXmrLate
+    it "names late Lightning money in millisatoshi in a support alert" testLnAlertUnits
   describe "price share" $ do
     it "credits the share of the invoice's amount at the lower rate, so a network fee is never credited, and nothing without invoiced units" testLateCreditOf
   describe "overpayment" $ do
@@ -534,6 +535,17 @@ testXmrLate = withLate $ \l@Late {lStore = st} -> do
   now <- getCurrentTime
   alertsAt l (Right stubRate) (pastWindow now 60)
     >>= (`shouldSatisfy` logged "ERROR" "invoice ref-inv-xmrnone: 320950000000 piconero received, 0 piconero confirmed, 0 piconero credited; the Monero plugin shows no confirmation of this money, so it is never credited by itself; refund by hand only a transaction confirmed on chain")
+
+testLnAlertUnits :: IO ()
+testLnAlertUnits = withLate $ \l@Late {lStore = st} -> do
+  closedOrder l "lnfloor" False
+  withTransaction st $ \db -> DB.execute_ db "UPDATE sx_badge_service_invoices SET payment_crypto_currency = 'ln' WHERE invoice_id = 'inv-lnfloor'"
+  let floored = rateOf "31000" 31000
+  setRate l (Right floored)
+  settleAt l "lnfloor" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart) (at 70) `shouldReturn` Right ISExpired
+  void $ passAt l (at 71)
+  alertsAt l (Right floored) (pastWindow (at 70) 60)
+    >>= (`shouldSatisfy` logged "ERROR" "invoice ref-inv-lnfloor: 320000 millisatoshi received, 320000 millisatoshi confirmed, 0 millisatoshi credited")
 
 -- price share
 
