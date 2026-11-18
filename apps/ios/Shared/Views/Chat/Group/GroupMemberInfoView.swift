@@ -661,7 +661,7 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    private func bannedText(_ mem: GroupMember) -> String {
+    func bannedText(_ mem: GroupMember) -> String {
         if let blockedUntil = mem.blockedUntil {
             String.localizedStringWithFormat(NSLocalizedString("Blocked until %@", comment: "member info"), blockedUntil.formatted(date: .abbreviated, time: .shortened))
         } else {

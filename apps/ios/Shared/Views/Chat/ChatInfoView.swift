@@ -1419,7 +1419,7 @@ struct KeepConversationDialog: View {
     }
 
     private var confirmed: Bool {
-        confirmWord == nil || typedWord.trimmingCharacters(in: .whitespaces).lowercased() == confirmWord
+        confirmWord.map { typedWordConfirms(typedWord, $0) } ?? true
     }
 }
 

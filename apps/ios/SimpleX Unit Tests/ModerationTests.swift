@@ -53,6 +53,13 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testContactCardNotice() async throws {
+        try recorded("bans/connect-contact-notice")
+        _ = await apiConnectContactViaAddress(incognito: false, contactId: 6)
+        try await assertTexts(["Not allowed", "Blocked by this contact until \(Self.until).", "Ok", "How it works"])
+    }
+
+    @MainActor
     func testGroupNoticePlan() async throws {
         try recorded("bans/plan-group-notice")
         connect("GROUP_LINK")
@@ -137,6 +144,17 @@ final class ModerationTests: RecordedAPITestCase {
         try await assertTexts(["Unblock member for all?", "Messages from bob will be shown for all members.", "Unblock for all", "Cancel"])
         try await press("Unblock for all")
         try await awaitMember("bob") { !$0.blockedByAdmin }
+    }
+
+    @MainActor
+    func testMemberInfoBlockedText() async throws {
+        try recorded("bans/block-members")
+        let (groupInfo, _) = try openGroup()
+        let bob = try member(try blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
+        let dan = try member(try blockedMembers("/_block #1 4 blocked=on"), "dan")
+        let info = GroupMemberInfoView(groupInfo: groupInfo, chat: groupChat(groupInfo), groupMember: GMember(bob), scrollToItemId: .constant(nil))
+        XCTAssertEqual(info.bannedText(bob), "Blocked until \(Self.until)")
+        XCTAssertEqual(info.bannedText(dan), "Blocked by admin")
     }
 
     @MainActor
@@ -499,6 +517,12 @@ final class ModerationTests: RecordedAPITestCase {
         XCTAssertEqual(keep.confirmWord, "yes")
         keep.close { keep.delete(false) }
         try await waitFor { ChatModel.shared.getChat(chat.id) == nil }
+    }
+
+    func testTypedWordConfirms() {
+        XCTAssertTrue(typedWordConfirms(" Yes ", "yes"))
+        XCTAssertFalse(typedWordConfirms("ye", "yes"))
+        XCTAssertFalse(typedWordConfirms(nil, "yes"))
     }
 
     @MainActor

@@ -1,17 +1,31 @@
 package chat.simplex.app
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.isToggleable
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.chat.archiveContact
 import chat.simplex.common.views.chat.deleteAndBanContactDialog
 import chat.simplex.common.views.chat.deleteContactDialog
 import chat.simplex.common.views.chat.group.*
+import chat.simplex.common.views.chatlist.TagListView
+import chat.simplex.common.views.helpers.AppBarHandler
+import chat.simplex.common.views.helpers.AppBarHeight
+import chat.simplex.common.views.helpers.LocalAppBarHandler
+import chat.simplex.common.views.helpers.rememberAppBarHandler
 import chat.simplex.common.views.newchat.LinkNoticeTarget
+import chat.simplex.common.views.usersettings.PrivacySettingsView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -60,6 +74,12 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun preparedContactNotice() = recordedAlerts("bans/connect-contact-notice") {
     runBlocking { ChatController.apiConnectPreparedContact(null, 5, incognito = false, msg = null) }
+    assertTexts("Not allowed", "Blocked by this contact until $UNTIL.", "OK", "How it works")
+  }
+
+  @Test
+  fun contactCardNotice() = recordedAlerts("bans/connect-contact-notice") {
+    runBlocking { ChatController.apiConnectContactViaAddress(null, incognito = false, contactId = 6) }
     assertTexts("Not allowed", "Blocked by this contact until $UNTIL.", "OK", "How it works")
   }
 
@@ -149,6 +169,24 @@ class ModerationTest : RecordedApiTest() {
     press("Unblock for all")
     awaitMember("cath") { !it.blockedByAdmin }
     awaitMember("dan") { !it.blockedByAdmin }
+  }
+
+  @Test
+  fun memberInfoBlockedUntil() = recorded("bans/block-members") {
+    val (groupInfo, _) = openGroup()
+    var unblocked = false
+    showMemberInfo(groupInfo, member(blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")) { unblocked = true }
+    onNodeWithText("Blocked until $UNTIL").assertExists()
+    onNodeWithText("Unblock for all").performScrollTo().performClick()
+    assertTrue(unblocked)
+  }
+
+  @Test
+  fun memberInfoBlockedForever() = recorded("bans/block-members") {
+    val (groupInfo, _) = openGroup()
+    showMemberInfo(groupInfo, member(blockedMembers("/_block #1 4 blocked=on"), "dan")) {}
+    onNodeWithText("Blocked by admin").assertExists()
+    onNodeWithText("Unblock for all").assertExists()
   }
 
   @Test
@@ -278,6 +316,25 @@ class ModerationTest : RecordedApiTest() {
     banMemberDialog(null, groupInfo, bob)
     press("Block")
     awaitMember("bob") { it.blockedByAdmin }
+  }
+
+  @Test
+  fun bulkBlockDisabledForPendingAmongSeveral() = recorded("bans/pending-member") {
+    val (groupInfo, members) = openGroup()
+    val bob = member(members, "bob")
+    val cath = bob.copy(groupMemberId = 3, memberRole = GroupMemberRole.Member, memberStatus = GroupMemberStatus.MemConnected)
+    val selected = mutableStateOf<Set<Long>?>(setOf(bob.groupMemberId, cath.groupMemberId))
+    val delete = mutableStateOf(false)
+    val block = mutableStateOf(false)
+    val unblock = mutableStateOf(false)
+    val toMember = mutableStateOf(false)
+    val toObserver = mutableStateOf(false)
+    recheckItems(groupInfo, selected, listOf(bob, cath), delete, block, unblock, toMember, toObserver)
+    assertFalse(block.value)
+    assertFalse(unblock.value)
+    selected.value = setOf(bob.groupMemberId)
+    recheckItems(groupInfo, selected, listOf(bob, cath), delete, block, unblock, toMember, toObserver)
+    assertTrue(block.value)
   }
 
   @Test
@@ -530,6 +587,25 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
+  fun favoritesRow() = recorded("bans/contact-deletion") {
+    val chat = openContact("/_get chat @2 count=0")
+    var closed = false
+    showView { TagListView(rhId = null, chat = chat, close = { closed = true }, reorderMode = false) }
+    press("Favorites")
+    waitUntil(timeoutMillis = 5_000) { chatInfo(chat.id).chatSettings?.favorite == true }
+    assertTrue(closed)
+  }
+
+  @Test
+  fun contactDeletionSetting() = recorded("bans/contact-deletion") {
+    ChatController.appPrefs.privacyContactDeletion.set(ContactDeletion.Ask)
+    showView { PrivacySettingsView(ChatModel, showSettingsModal = { {} }, setPerformLA = {}) }
+    onNodeWithText("Ask").performScrollTo().performClick()
+    press("Notify")
+    assertEquals(ContactDeletion.Notify, ChatController.appPrefs.privacyContactDeletion.get())
+  }
+
+  @Test
   fun reportReasonIsContent() {
     assertEquals("/_report #1 2 reason=content spam", CC.ApiReportMessage(1, 2, ReportReason.Content, "spam").cmdString)
   }
@@ -543,6 +619,48 @@ class ModerationTest : RecordedApiTest() {
   private fun ComposeUiTest.selectDuration(duration: String) {
     press("1 day")
     press(duration)
+  }
+
+  private fun ComposeUiTest.showView(content: @Composable () -> Unit) {
+    setContent {
+      SimpleXTheme {
+        AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
+        CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(), content = content)
+      }
+    }
+  }
+
+  private fun ComposeUiTest.showMemberInfo(groupInfo: GroupInfo, member: GroupMember, unblockForAll: () -> Unit) {
+    showView {
+      GroupMemberInfoLayout(
+        rhId = null,
+        groupInfo = groupInfo,
+        member = member,
+        scrollToItemId = remember { mutableStateOf(null) },
+        connStats = remember { mutableStateOf(null) },
+        newRole = remember { mutableStateOf(member.memberRole) },
+        developerTools = false,
+        connectionCode = null,
+        connectionLoaded = true,
+        getContactChat = { null },
+        openDirectChat = {},
+        createMemberContact = {},
+        connectViaAddress = {},
+        blockMember = {},
+        unblockMember = {},
+        blockForAll = {},
+        unblockForAll = unblockForAll,
+        removeMember = {},
+        deleteMemberMessages = {},
+        onRoleSelected = {},
+        switchMemberAddress = {},
+        abortSwitchMemberAddress = {},
+        syncMemberConnection = {},
+        syncMemberConnectionForce = {},
+        verifyClicked = {},
+        openedFromSupportChat = false,
+      )
+    }
   }
 
   private fun ComposeUiTest.awaitMember(name: String, condition: (GroupMember) -> Boolean) {

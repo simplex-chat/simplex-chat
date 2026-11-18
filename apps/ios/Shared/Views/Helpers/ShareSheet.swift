@@ -78,6 +78,10 @@ func typeToConfirmPlaceholder(_ word: String) -> String {
     String.localizedStringWithFormat(NSLocalizedString("Type %@", comment: "confirmation field placeholder"), word)
 }
 
+func typedWordConfirms(_ typed: String?, _ word: String) -> Bool {
+    typed?.trimmingCharacters(in: .whitespaces).lowercased() == word
+}
+
 func typedConfirmationAlert(
     _ title: String,
     message: String,
@@ -93,7 +97,7 @@ func typedConfirmationAlert(
         field.autocapitalizationType = .none
         field.autocorrectionType = .no
         field.addAction(UIAction { [weak field] _ in
-            confirmAction.isEnabled = field?.text?.trimmingCharacters(in: .whitespaces).lowercased() == word
+            confirmAction.isEnabled = typedWordConfirms(field?.text, word)
         }, for: .editingChanged)
     }
     alert.addAction(cancelAlertAction)

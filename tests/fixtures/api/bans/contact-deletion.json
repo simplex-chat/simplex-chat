@@ -32,7 +32,7 @@
           "chatDeleted": true,
           "chatSettings": {
             "enableNtfs": "all",
-            "favorite": false
+            "favorite": true
           },
           "chatTags": [],
           "chatTs": "1970-01-01T00:00:00Z",
@@ -269,7 +269,7 @@
           "chatDeleted": true,
           "chatSettings": {
             "enableNtfs": "all",
-            "favorite": false
+            "favorite": true
           },
           "chatTags": [],
           "chatTs": "1970-01-01T00:00:00Z",
@@ -2278,6 +2278,81 @@
         },
         "type": "apiChat",
         "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "alice",
+          "profile": {
+            "displayName": "alice",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Alice"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    },
+    "/_settings @2 {\n    \"enableNtfs\": \"all\",\n    \"favorite\": true\n}": {
+      "result": {
+        "type": "cmdOk",
+        "user_": {
           "activeOrder": 1,
           "activeUser": true,
           "agentUserId": "1",

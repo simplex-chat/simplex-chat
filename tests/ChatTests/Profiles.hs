@@ -2576,7 +2576,10 @@ testContactNoticeFixtures =
           }
       bob ##> ("/_prepare contact 1 " <> aliceFullLink <> " " <> aliceLink <> " " <> aliceLinkData)
       bob <## "alice: contact is prepared"
-      apiFixture "bans/connect-contact-notice" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_connect contact @5 incognito=off"]}
+      case A.parseOnly strP (B.pack aliceLink) of
+        Left _ -> error "error parsing contact link"
+        Right shortLink -> void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user aliceProfile {contactLink = Just shortLink}
+      apiFixture "bans/connect-contact-notice" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_connect contact @5 incognito=off", "/_connect contact 1 incognito=off 6"]}
 
 testContactDeletionFixtures :: HasCallStack => TestParams -> IO ()
 testContactDeletionFixtures =
@@ -2599,6 +2602,7 @@ testContactDeletionFixtures =
                 "/_get chat @3 count=0",
                 "/_get chat @4 count=0",
                 "/_get chat @5 count=0",
+                "/_settings @2 {\n    \"enableNtfs\": \"all\",\n    \"favorite\": true\n}",
                 "/_delete @2 archive",
                 "/_delete @2 entity notify=on",
                 "/_delete @3 entity notify=off notice={\"ttl\":86400}",

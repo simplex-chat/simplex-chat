@@ -93,7 +93,7 @@ fun SelectedItemsMembersToolbar(
   }
 }
 
-private fun recheckItems(
+internal fun recheckItems(
   groupInfo: GroupInfo,
   selectedItems: MutableState<Set<Long>?>,
   activeMembers: List<GroupMember>,

@@ -8930,7 +8930,7 @@ testBlockMembersFixtures =
         alice
         []
         FixtureRequests
-          { frMarkdown = [],
+          { frMarkdown = ["Bob", "Daniel"],
             frUris = [],
             frCommands =
               [ "/_members #1",
