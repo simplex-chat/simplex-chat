@@ -811,6 +811,8 @@ testPlanKnownNameMovedToKnownChat = withKnownAliceName $ \reg alice bob cath -> 
   concurrently_
     (bob <## "cath (Catherine): contact is connected")
     (cath <## "bob (Bob): contact is connected")
+  cath #> "@bob hi"
+  bob <# "cath> hi"
   bob ##> "/_connect plan 1 @alice.simplex"
   knownContactPlan "cath" "alice.simplex" bob
   bob <## "known contact @alice"
