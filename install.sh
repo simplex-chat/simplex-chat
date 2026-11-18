@@ -18,7 +18,11 @@ else
 fi
 
 if [ $PLATFORM == "Darwin" ]; then
-  PLATFORM="macos-x86-64"
+  if [ "$(uname -m)" == "arm64" ]; then
+    PLATFORM="macos-aarch64"
+  else
+    PLATFORM="macos-x86-64"
+  fi
 elif [ $PLATFORM == "Linux" ]; then
   PLATFORM="ubuntu-22_04-x86_64"
 else
