@@ -1197,7 +1197,7 @@ sudo cp next/store_service.ini config/store_service.ini && sudo rm -r next
 ```
 
 The address check prints the key's address, as in `0xB2590B3a4fa5bEdda803F5f1F605803438C3F71E`, and
-fails when the line was not replaced. The key is `0x` and 64 lowercase hex digits.
+fails when the line was not replaced. The key is `0x` and 64 hex digits in either case.
 
 The ini holds the only copy of the key. It is gitignored, every `*.ini` is kept out of the image,
 and compose mounts its folder read-only. Keep it owned by the service user with mode 600. The

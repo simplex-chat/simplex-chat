@@ -716,7 +716,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a term_start that is not an ISO 8601 UTC time" testNamesBadTermStart
   it "refuses a TLD other than simplex or testing" testNamesBadTLD
   it "refuses a bad or wrongly checksummed contract address, naming the key" testNamesBadAddress
-  it "refuses a bad service key without quoting it" testNamesBadServiceKey
+  it "reads the service key's hex digits in either case, and refuses a bad key without quoting it" testNamesBadServiceKey
   it "keeps the RPC URL and the service key out of errors, and the service key out of the shown config" testNamesSecretsHidden
   it "takes an http rpc_url only to a node on loopback, any other only as https, in any case of the scheme, and refuses one the HTTP client cannot parse" testNamesRpcUrlHttps
   it "refuses a [names] or [chain] setting nothing reads, terms_version among them, naming each" testNamesUnknownKeys
@@ -899,9 +899,13 @@ testNamesBadServiceKey = do
   let withKey v = map (\l -> if "service_key =" `T.isPrefixOf` l then "service_key = " <> v else l) chainSection
       refused v = do
         e <- namesRefusal namesSection (withKey v)
-        e `shouldBe` "chain.service_key must be 0x and 64 lowercase hex digits of a valid secp256k1 key"
-  refused (T.drop 2 serviceKeyHex)
-  refused ("0x" <> T.toUpper (T.drop 2 serviceKeyHex))
+        e `shouldBe` "chain.service_key must be 0x and 64 hex digits of a valid secp256k1 key"
+      keyOf v = cServiceKey . nChain <$> parsedNames namesSection (withKey v)
+      digits = T.drop 2 serviceKeyHex
+  lowerKey <- keyOf serviceKeyHex
+  forM_ ["0x" <> T.toUpper digits, "0x" <> T.toUpper (T.take 32 digits) <> T.drop 32 digits] $ \v ->
+    keyOf v >>= (`shouldBe` True) . (== lowerKey)
+  refused digits
   refused (T.dropEnd 2 serviceKeyHex)
   refused ("0x" <> T.replicate 64 "0")
   -- the curve order n is not a valid key

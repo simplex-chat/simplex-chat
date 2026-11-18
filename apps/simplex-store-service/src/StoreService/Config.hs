@@ -40,8 +40,9 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Attoparsec.Text (char, endOfInput, option, parseOnly, satisfy, skipSpace, skipWhile, takeText, takeWhile1)
 import Data.Bifunctor (first)
 import qualified Data.ByteArray as BA
+import Data.ByteArray.Encoding (Base (..), convertFromBase)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit)
+import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit, isHexDigit)
 import Data.List (find, intercalate, nub, partition)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
@@ -64,7 +65,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import StoreService.Names.Chain (ChainConfig (..), Hex32 (..))
+import StoreService.Names.Chain (ChainConfig (..), abiWordSize, parseText)
 import StoreService.Names.Registration (LabelError (..), validLabel)
 import StoreService.StoreReceipts (StoreChecks (..))
 import System.IO.Error (ioeGetErrorString)
@@ -686,7 +687,9 @@ parseConfig ini = do
       either (const (Left ("chain." <> T.unpack k <> " is not an Ethereum address"))) Right (strDecode (encodeUtf8 v) :: Either String Address)
     serviceKey = do
       v <- required "chain" "service_key"
-      let bad = Left "chain.service_key must be 0x and 64 lowercase hex digits of a valid secp256k1 key"
-      case strDecode (encodeUtf8 v) of
-        Right (Hex32 bytes) -> either (const bad) Right (mkPrivateKey (BA.convert bytes))
+      let bad = Left "chain.service_key must be 0x and 64 hex digits of a valid secp256k1 key"
+      case parseText serviceKeyP v of
+        Right bytes -> either (const bad) Right (mkPrivateKey (BA.convert bytes))
         Left _ -> bad
+    serviceKeyP :: A.Parser B.ByteString
+    serviceKeyP = A.string "0x" *> A.count (2 * abiWordSize) (A.satisfy isHexDigit) >>= either fail pure . convertFromBase Base16 . B.pack
