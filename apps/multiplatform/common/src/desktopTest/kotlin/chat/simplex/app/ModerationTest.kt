@@ -96,6 +96,12 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
+  fun channelNameNoticePlan() = recordedAlerts("names/plan-channel-notice") {
+    connect("#team.simplex")
+    assertTexts("Not allowed", "Blocked by the owners of this channel until $UNTIL.", "OK", "How it works")
+  }
+
+  @Test
   fun businessNoticePlan() = recordedAlerts("bans/plan-business-notice") {
     connect("BUSINESS_LINK")
     assertTexts("Not allowed", "Blocked by this business until $UNTIL.", "OK", "How it works")

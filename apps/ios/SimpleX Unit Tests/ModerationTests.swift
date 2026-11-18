@@ -74,6 +74,13 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
+    func testChannelNameNoticePlan() async throws {
+        try recorded("names/plan-channel-notice")
+        connect("#team.simplex")
+        try await assertTexts(["Not allowed", "Blocked by the owners of this channel until \(Self.until).", "Ok", "How it works"])
+    }
+
+    @MainActor
     func testBusinessNoticePlan() async throws {
         try recorded("bans/plan-business-notice")
         connect("BUSINESS_LINK")

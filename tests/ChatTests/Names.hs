@@ -54,6 +54,7 @@ chatNamesTests = do
     it "own channel expired, joined channel moved to a new channel, new channel joined" testPlanChannelNameMoved
     it "joined channel moved to a channel with no relays" testPlanChannelNameMovedNoRelays
     it "no local chat, the channel has no relays" testPlanNameChannelNoRelays
+    it "no local chat, removed from the channel with a notice" testPlanChannelNameNotice
     it "known chats, the name's link differs only in its key hash" testPlanNameLinkKeyHash
     it "known chats, the name's link differs only in its server address" testPlanNameLinkServer
     it "local chats, before and after the name expired" testPlanLocalChats
@@ -936,6 +937,23 @@ testPlanNameChannelNoRelays = withChannelChats $ \reg alice cath bob -> do
   _ <- getTermLine bob
   bob ##> "/_connect plan 1 @nobody.simplex resolve=never"
   bob <## "no matching chat found, name resolution is disabled"
+
+testPlanChannelNameNotice :: HasCallStack => TestParams -> IO ()
+testPlanChannelNameNotice = withChannelChats $ \reg alice cath bob -> do
+  _ <- joinVerifiedTeam reg alice cath bob
+  alice ##> "/rm #team bob notice={\"ttl\":86400}"
+  alice <## "#team: you removed bob from the group (signed)"
+  cath <## "#team: alice removed bob from the group (signed)"
+  waitLinkNoticesCount bob 1
+  bob <// 50000
+  bob ##> "/l #team"
+  bob <## "#team: you left the group"
+  bob <## "use /d #team to delete the group"
+  bob ##> "/d #team"
+  bob <## "#team: you deleted your local copy of the group"
+  bob ##> "/_connect plan 1 #team.simplex"
+  bannedLine bob "group link: "
+  apiFixture "names/plan-channel-notice" bob [] FixtureRequests {frMarkdown = ["#team.simplex"], frUris = [], frCommands = ["/_connect plan 1 #team.simplex"]}
 
 testPlanNameLinkKeyHash :: HasCallStack => TestParams -> IO ()
 testPlanNameLinkKeyHash = withTeamChats $ \reg contactLink channelLink _alice bob -> do
