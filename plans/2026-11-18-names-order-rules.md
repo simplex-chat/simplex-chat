@@ -20,22 +20,23 @@ Each item gives `names` (the base branch: service code of b13968b61, page 9a16ca
 
 ```mermaid
 stateDiagram-v2
-  [*] --> unpaid: invoice opened, holds its price only
-  unpaid --> queued: payment settled, the name held, the name's other open invoices cancelled
+  [*] --> unpaid: one request with the commitment, the signed registration and the terms acceptance; invoice opened, holds its price only
+  unpaid --> queued: payment settled, the name held, other buyers' open invoices of the name cancelled
   unpaid --> taken: payment settled while another paid order holds the name
   queued --> committing: commit sent
   committing --> committed: commit mined, signing window 60 s to 24 h
-  committed --> registering: owner signed, register sent
+  committed --> registering: commitment 60 s old, register sent with the stored signature
   registering --> registered
-  committed --> waiting: window passed unsigned, terms or policy changed, counter moved, signature week ended
-  waiting --> queued: the order's link asks to commit again, once per window
+  committed --> waiting: rare: the stored signature cleared (deadline passed, counter moved, terms or policy changed)
+  waiting --> committed: the owner signs again within the window, no new commit
+  waiting --> queued: the window passed unsigned, the order's page asks to commit again, once per window
   waiting --> failed: no read by its page for 3 days
-  committed --> failed: permanent reason
-  registering --> failed: permanent reason
-  queued --> cancelled: card dispute or payment reversal
-  committed --> cancelled: card dispute or payment reversal
-  queued --> failed: 1 month from payment, price to the balance
-  committed --> failed: 1 month from payment, price to the balance
+  committed --> failed: permanent reason at its cap
+  registering --> failed: permanent reason at its cap
+  queued --> cancelled: dispute or reversal, no register ever sent
+  committed --> cancelled: dispute or reversal, no register ever sent
+  queued --> failed: 1 month from payment, money to the balance
+  committed --> failed: 1 month from payment, money to the balance
 ```
 
 ### 1.1 Payment holds the name
@@ -54,7 +55,11 @@ stateDiagram-v2
 
 ### 1.4 Card disputes and payment reversals
 - **names:** the service acts on three Stripe events only: succeeded, failed, cancelled (`Providers/Stripe.hs:104`); a dispute changes nothing and nobody is told.
-- **Final:** a dispute or a reversal cancels the order while its register has not been sent; on a registered order it alerts the operators, with the order's evidence (payment, signed order, registration transaction) for the answer to Stripe.
+- **Final:** every dispute and reversal alerts the operators in the log and the group, with the order's evidence (payment, signed order, registration transaction) for the answer to Stripe, whatever the order's state. In addition:
+  - an order of which no register transaction was ever sent is cancelled: the hold released, nothing credited, a part paid from a balance returned to its source balance;
+  - an order of which a register transaction was sent is treated as registered for the dispute: not cancelled, its registration continues;
+  - a disputed order's price is never credited to its balance; an order whose price is already in its balance (taken, month ended) has it taken back from the balance, as far as the balance holds it; an order whose refund support recorded is alerted only.
+  - Events: `charge.dispute.created` and `charge.refunded` as reversals, `radar.early_fraud_warning.created` alerted only; badge card payments unchanged.
 - **Facts from Stripe's documentation:**
   - a buyer can usually dispute within 120 days of the payment; card networks allow longer in some cases, and for a future event or service the window starts at its date;
   - when a dispute opens, Stripe takes the disputed amount and a dispute fee from the balance at once; outside Mexico the fee is not refunded;
@@ -74,8 +79,10 @@ stateDiagram-v2
 - **Final:** a code can reserve a name for 3 months from its issue.
 - **Why:** some time pressure; it bounds how long an old price stays valid.
 
-### 1.7 When the service learns the name: as now
-- The service learns the name only at the signing step, after the commit has aged (page `screens/order.ts:300`); until then it holds the name's hash and a copy sealed with the owner's key (page `flow.ts:49, 67-69`).
+### 1.7 One request before the invoice
+- **names:** the order request holds the name's hash, the commitment and a copy of the name and links sealed with the owner's key (page `flow.ts:67-71`); the name, links and signature come at the signing step, after the commit has aged (page `screens/order.ts:300`), so the page must be open then.
+- **Final:** the order request, for paid, code and balance orders alike, holds the name, links, commitment, the owner's signed registration and the terms acceptance; links are checked before the invoice. After payment the service commits, and registers once the commitment is 60 s old, with no page online. The page polls the order's state. The owner signs again only in the rare cases of 2.2.
+- **Why:** the page cannot check the chain itself, so a second request protects nothing against the service, while it creates every waiting state; third parties stay unable to front-run, as the chain sequence (commit, at least 60 s, register) is unchanged. The service learns the names of unpaid orders too; the privacy policy's amendment states it.
 
 ## 2. Failures and retries: wait only for what can resolve
 
@@ -83,7 +90,7 @@ stateDiagram-v2
 - **names:** four places decide. Errors without a revert, and every commit error, are retried every 15 s with no end (`Names/Worker.hs:178, 237-243, 300, 315`). A register or relay revert goes to `judge`, which fails the order at once for any reason it does not name (`:336-362`). The service's own signature check fails it the same way (`:305-309`). 5 sends of one kind fail it (`:449-458`).
 - **Final:** one function classifies every reason. Permanent is what the operators cannot fix without the owner signing again or without a code change; every code error is permanent.
   - Temporary: retried, logged, reported to the group at about the 5th failure, until the month from payment ends (1.3).
-  - Permanent: the order fails at once, keeps its commit and register transactions, and is logged and reported to the group.
+  - Permanent: retried up to its cap (2.5), then the order fails, keeps its commit and register transactions, and is logged as an error, reported to the group and counted in Prometheus by reason.
   - Waiting for the owner: what the owner's page resolves (2.2).
 - **Why:** retrying a lost cause hides it; failing a fixable one loses a sale.
 
@@ -114,7 +121,7 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 2.2 Waiting for the owner
 - **names:** an order whose signing window (60 s to 24 h after the commit; the contracts' deploy script, `deploy/simplex/00_deploy_simplex_controller.ts:46-47`) passes unsigned fails "The name was not signed in time" (`Names/Worker.hs:257-259`); Try again commits again (`:426-500`).
-- **Final:** the order waits while the owner's page can resolve it: the window passed unsigned; the terms changed (the page asks again and never signs changed terms silently); the owner's counter moved; the name policy changed, so the owner signs the new terms; the signature's week ended. The page holding the owner code asks the service to commit again by itself; Try again goes. The order fails when its page has not read it for 3 days; the last read is stored at most once an hour.
+- **Final:** rare with the single request (1.7). The stored signature is cleared when it can no longer register: the terms changed (the page asks again and never signs changed terms silently); the owner's counter moved; the name policy changed, so the owner signs the new terms; the signature's week ended. The owner signs again; the service commits again only if the signing window passed meanwhile, when the page asks for it by itself, once per window. A link refused at signing again waits for the owner to replace or remove it (2.4). The order fails when its page has not read it for 3 days, logged, reported to the group and counted in Prometheus; the last read is stored at most once an hour; the name stays held until the month ends.
 - **Why:** waiting helps only while someone can act; 3 days covers a buyer away for a weekend.
 
 ### 2.3 The owner's signature is valid one week
@@ -123,20 +130,20 @@ Contracts: brenzi/simplex-namespace-contract e3ba0a5, `ens-contracts/contracts`.
 
 ### 2.4 Refused links
 - **names:** a link that is not a short link of its key's kind, or a second link for one key, is refused with `invalid_link`, without saying which (`Names/Reveal.hs:107-116, 142-145`; `Names/Links.hs:32-47`); the order fails "not signed in time" at the window's end; the page offers another name, or none of the links.
-- **Final:** the buyer is told which link was refused, contact or channel, and asked to replace or remove it; the name stays reserved; the operators are alerted in the log and the group.
+- **Final:** links are checked at the order request, before the invoice (1.7), which names the refused link. A link refused when the owner signs again: the buyer is told which link was refused, contact or channel, and asked to replace or remove it; the name stays held; the operators are alerted in the log and the group.
 
 ### 2.5 Counting attempts
 - **names:** only sent transactions count, 5 per kind; a dry run that always reverts is retried forever.
 - **Final:** up to 5 dry-run failures; once a dry run passes, up to 5 sent transactions failing for a permanent reason; temporary reasons have no count limit; the two counts are kept apart. New commits of a waiting order have no cap of their own (section 4 bounds them). The caps are settings in `store_service.ini`.
 
 ### 2.6 A signature refused after a configuration change
-- **Final:** a stored signature refused because the service's chain id or sponsor address changed is a code error: the order fails at once, visibly, logged and reported.
+- **Final:** a stored signature, within its deadline, refused because a setting it covers changed (chain id, sponsor, resolver or TLD) is a code error: the order fails at once, visibly, logged and reported. The service refuses to sign such an order again from its page; support resolves it.
 
 ## 3. Prompt service: the operators learn first
 
 ### 3.1 The 3-hour alert
 - **names:** the queue alert fires after 20 minutes, but only for queued, committing, registering and committed with a stored signature (`README.md:912, 951`); an order waiting for its owner is not covered.
-- **Final:** every paid order not registered within 3 hours of payment raises an alert in the log, the managed group and Prometheus. Badges: a later pull request.
+- **Final:** every paid order not registered within 3 hours of payment, failed orders and orders waiting for the owner included, raises one alert in the log and the managed group, and is in the Prometheus gauge by phase. Badges: a later pull request.
 - **Why:** a customer once complained after a week, when the browser state needed to investigate was gone.
 
 ### 3.2 Failure reasons are stored
@@ -187,8 +194,8 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
   - **Final:** as `names`: the names migration changes no badge table.
 - **Invoice product:** the generic `invoices` table names its product.
   - **names:** the generic invoice read left-joins both products' tables, `badge_code_invoices` and `name_invoices`, and reads `badge_type`, `months` and `registration_id` to tell an invoice's product and its product data (`Store/Invoices.hs:212-222`).
-  - **Final:** `invoices` gets a `product` column, `badge` or `name`; the migration sets `badge` as the default for existing rows and `name` for the rows `name_invoices` refers to. Generic code reads the product from it and dispatches to the product's own code, which reads its own table; no generic query joins product tables.
-- **Provider reference:** as `names`: each product's table holds the provider's invoice id, `name_invoices.provider_ref` and the deployed badge service's `badge_code_invoices.provider_ref`, both NOT NULL, each with its own unique index. Moving it into the generic `invoices` table would have the names migration change a badge table; a generic column for both products would be a change of its own.
+  - **Final:** `invoices` gets a `product` column, `badge` or `name`, NOT NULL; the migration sets `badge` as the default for existing rows and `name` for the rows `name_invoices` refers to. Code that does not know the product reads the invoice first, cases on its product, and reads the product's own table, two reads in one transaction; code that knows the product reads the invoice joined with that product's table, one read. No query reads both product tables. Precedent: a connection and the entity tables it points to (`getConnectionEntityKeys`, `src/Simplex/Chat/Store/Connections.hs:84-97`).
+- **Provider reference:** in the generic `invoices` table, NOT NULL with a unique index, added by the invoice-product migration and filled for existing badge and name invoices; the payment events, the poller and the overdue close find an invoice by it in `invoices` alone. `badge_code_invoices.provider_ref` stays as deployed, so new badge invoices write the reference in both tables; `name_invoices` holds none.
 
 ## 7. Operators: commands and configuration
 
