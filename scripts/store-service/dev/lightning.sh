@@ -15,6 +15,12 @@ BTC_USD="108000.12"
 MATURE_BLOCKS=110
 PAYER_FUNDING_BTC=1
 CHANNEL_SAT=5000000
+CONFIRMATION_BLOCKS=6
+TRY_SECONDS=2
+NODE_TRIES=90
+BTCPAY_TRIES=150
+CHANNEL_TRIES=60
+FUNDING_TRIES=30
 STORE_PERMISSIONS="cancreateinvoice canviewinvoices canviewstoresettings canmodifyinvoices"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -29,7 +35,7 @@ wait_for() {
       log "ready: $what"
       return 0
     fi
-    sleep 2
+    sleep "$TRY_SECONDS"
   done
   log "timed out: $what"
   return 1
@@ -64,9 +70,9 @@ payer_funded() { [ "$(curl -sf "$PAYER/v1/balance/blockchain" | jq -r .confirmed
 docker compose -f lightning.yml up -d
 
 log "waiting for the nodes"
-wait_for "bitcoind" 90 rpc "" getblockchaininfo "[]"
-wait_for "merchant_lnd" 90 curl -sf "$MERCHANT/v1/getinfo"
-wait_for "payer_lnd" 90 curl -sf "$PAYER/v1/getinfo"
+wait_for "bitcoind" "$NODE_TRIES" rpc "" getblockchaininfo "[]"
+wait_for "merchant_lnd" "$NODE_TRIES" curl -sf "$MERCHANT/v1/getinfo"
+wait_for "payer_lnd" "$NODE_TRIES" curl -sf "$PAYER/v1/getinfo"
 
 if [ "$(rpc "" listwallets "[]" | jq '.result | length')" = "0" ]; then
   rpc "" createwallet '["miner"]' >/dev/null
@@ -79,9 +85,9 @@ if [ "$(rpc "" getblockcount "[]" | jq -r .result)" -lt "$MATURE_BLOCKS" ]; then
   log "mining the first blocks"
   mine "$MATURE_BLOCKS"
 fi
-wait_for "merchant_lnd synced" 90 lnd_synced "$MERCHANT"
-wait_for "payer_lnd synced" 90 lnd_synced "$PAYER"
-wait_for "btcpay synchronized" 150 btcpay_synced
+wait_for "merchant_lnd synced" "$NODE_TRIES" lnd_synced "$MERCHANT"
+wait_for "payer_lnd synced" "$NODE_TRIES" lnd_synced "$PAYER"
+wait_for "btcpay synchronized" "$BTCPAY_TRIES" btcpay_synced
 
 channel_active() {
   mine 1
@@ -97,15 +103,15 @@ if [ "$(active_channels "$PAYER")" = "0" ]; then
   log "funding payer_lnd and opening its channel to merchant_lnd"
   PAYER_ADDRESS="$(curl -sf "$PAYER/v1/newaddress?type=WITNESS_PUBKEY_HASH" | jq -r .address)"
   rpc "$WALLET" sendtoaddress "[\"$PAYER_ADDRESS\",$PAYER_FUNDING_BTC]" >/dev/null
-  mine 6
-  wait_for "payer_lnd funded" 60 payer_funded
+  mine "$CONFIRMATION_BLOCKS"
+  wait_for "payer_lnd funded" "$CHANNEL_TRIES" payer_funded
   MERCHANT_PUBKEY="$(curl -sf "$MERCHANT/v1/getinfo" | jq -r .identity_pubkey)"
   curl -sS -o /dev/null -X POST "$PAYER/v1/peers" \
     --data-binary "{\"addr\":{\"pubkey\":\"$MERCHANT_PUBKEY\",\"host\":\"merchant_lnd:9735\"},\"perm\":true}"
   MERCHANT_PUBKEY_B64="$(echo -n "$MERCHANT_PUBKEY" | xxd -r -p | base64 -w0)"
-  wait_for "channel funding broadcast" 30 open_channel
-  wait_for "channel active on both nodes" 60 channel_active
-  wait_for "merchant_lnd synced" 60 lnd_synced "$MERCHANT"
+  wait_for "channel funding broadcast" "$FUNDING_TRIES" open_channel
+  wait_for "channel active on both nodes" "$CHANNEL_TRIES" channel_active
+  wait_for "merchant_lnd synced" "$CHANNEL_TRIES" lnd_synced "$MERCHANT"
 fi
 
 log "creating the store, its payment methods, webhook and API key"

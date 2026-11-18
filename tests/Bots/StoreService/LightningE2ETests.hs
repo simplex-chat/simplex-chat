@@ -80,8 +80,14 @@ readIntervalMicros = 200000
 paymentSeconds :: Int
 paymentSeconds = 60
 
+paymentReplySeconds :: Int
+paymentReplySeconds = 30
+
 paymentMicros :: Int
-paymentMicros = (paymentSeconds + 30) * 1000000
+paymentMicros = (paymentSeconds + paymentReplySeconds) * 1000000
+
+feeLimitSat :: Text
+feeLimitSat = "1000"
 
 bolt11Prefix :: Text
 bolt11Prefix = "lnbcrt"
@@ -131,7 +137,7 @@ payBolt11 LightningStack {lsPayerUrl} Ctx {cClient = (mgr, _)} bolt11 = do
         J.object
           [ "payment_request" .= bolt11,
             "timeout_seconds" .= paymentSeconds,
-            "fee_limit_sat" .= ("1000" :: Text),
+            "fee_limit_sat" .= feeLimitSat,
             "no_inflight_updates" .= True
           ]
     paymentStatus = \case

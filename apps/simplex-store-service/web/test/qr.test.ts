@@ -486,11 +486,14 @@ qrTest("qr: a Bitcoin BIP-21 URI round-trips", () => {
   roundTrip(uri, "the Bitcoin URI");
 });
 
-qrTest("qr: a 400-character BOLT11 is scanned as its lightning: link, which a camera hands to a wallet", () => {
-  const bolt11 = `lnbc500u1${"qpzry9x8gf2tvdw0s3jn54khce6mua7l".repeat(13)}`.slice(0, 400);
+const LONGEST_BOLT11 = 400;
+const VERSION_FOR_LONGEST_BOLT11 = 15;
+
+qrTest("qr: a 400-character BOLT11 is scanned as its lightning: link, which a phone camera opens in a wallet", () => {
+  const bolt11 = `lnbc500u1${"qpzry9x8gf2tvdw0s3jn54khce6mua7l".repeat(13)}`.slice(0, LONGEST_BOLT11);
   const uri = paymentUri("ln", bolt11, "0.00050000")!;
-  assert.equal(uri, `lightning:${bolt11}`, "the amount is inside the invoice, so the link carries none");
-  assert.equal(roundTrip(uri, "the Lightning link").version, 15);
+  assert.equal(uri, `lightning:${bolt11}`, "the amount is part of the invoice, so the link has none");
+  assert.equal(roundTrip(uri, "the Lightning link").version, VERSION_FOR_LONGEST_BOLT11);
 });
 
 qrTest("qr: a badge code round-trips exactly, hyphens and all", () => {

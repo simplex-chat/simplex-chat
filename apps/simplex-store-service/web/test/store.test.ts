@@ -170,7 +170,7 @@ storeTest("store: a session or theme outside the known set falls back to the def
     "a good step keeps what reads beside it, and only that");
 });
 
-storeTest("store: a Lightning order and its BOLT11 destination survive a reload, as do the session's method", () => {
+storeTest("store: a Lightning order, its BOLT11 destination and the session's method are kept across a reload", () => {
   const mem = new MemoryStorage();
   const s = new Store(mem);
   const bolt11 = "lnbc500u1pfakeinvoicedestinationforthetestsonly";
