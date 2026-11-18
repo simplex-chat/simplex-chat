@@ -40,7 +40,7 @@ stateDiagram-v2
 
 ### 1.1 Payment holds the name
 - **names:** another buyer's order is refused only while an order of the name has its register in flight (`Names/Orders.hs:295-302`, `Names/Store.hs:864-869`); search shows the name as available otherwise (`Web/Names/Search.hs:59, 69-70`). Two buyers can pay for one name; the loser ends `taken`, its price kept as a balance (`Names/Worker.hs:352-356, 369-383`).
-- **Final:** a paid order holds its name against every order through the service, from payment until it is registered, fails or is cancelled; search shows the name as being registered. An open invoice holds only its price. A payment that settles while another paid order holds the name ends its own order `taken`, its price kept as its balance.
+- **Final:** a paid order holds its name against every order through the service, from payment until it is registered, cancelled, or the month from payment ends (1.3); a failure inside the month does not end the hold. Search shows the name as being registered. An open invoice holds only its price. A payment that settles while another paid order holds the name ends its own order `taken`, its price kept as its balance.
 - **Why:** money from a second buyer for a name already paid for must not be taken; opening an invoice costs nothing, so it cannot hold a name.
 
 ### 1.2 Other invoices of a paid name are cancelled
