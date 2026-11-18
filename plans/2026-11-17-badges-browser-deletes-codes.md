@@ -17,9 +17,9 @@ keptUntilIdle   a value written to localStorage at page load is read back, with 
 ```
 
 - The period on the screens is 7 days, with U+00A0 in "7 days" and in "key press".
-- On Your codes, in every browser:
-  - empty list: "Codes stored in this browser are listed here."
-  - listed codes: "Codes are stored only in the browser they were bought in."
+- On Your codes:
+  - empty list, in every browser: "Codes stored in this browser are listed here."
+  - listed codes, for `kept` and `keptUntilIdle`: "Codes are stored only in the browser they were bought in."
 - "This code is not in this browser" replaces "This code is not on this device".
 - "Forget everything in this browser" replaces "Forget everything on this device".
 - At phone width, the Your codes list row:
@@ -39,10 +39,10 @@ The period text: "after 7 days of browser use without a tap, click or key press 
 
 | Screen | Box | Title | Lines |
 |---|---|---|---|
-| Paid, code shown | warning under "This is the only copy." | This browser can delete the code | It can do so after the period. Redeem it now, or copy it and keep it outside this browser. |
-| Paid, opened from the app, code hidden | warning above "Show code" | This browser can delete the code | It can do so after the period. If the app does not add the badge, tap Show code and keep a copy of the code outside this browser. |
-| Your codes, with a paid code | warning above the list | This browser can delete codes | It can do so after the period. Copy each code you have not redeemed and keep it outside this browser. |
-| Your codes, without a paid code | list without a warning | | |
+| Paid, code shown | warning under "This is the only copy." | This browser can delete the code | It may do so after the period. Redeem it now, or copy it and keep it outside this browser. |
+| Paid, opened from the app, code hidden | warning above "Show code" | This browser can delete the code | It may do so after the period. If the app does not add the badge, show the code and keep a copy outside this browser. |
+| Your codes, with a paid code | warning above the list | This browser can delete codes | It may do so after the period. Copy each code you have not redeemed and keep it outside this browser. |
+| Your codes, without a paid code | grey line under the lede | | This browser can delete codes after the period. |
 | Your codes, empty | grey line under the lede | | This browser can delete codes after the period. |
 | Paid order opened without its code | notice | unchanged | If the code was bought in this browser, it may have been deleted after the period. |
 
@@ -53,14 +53,17 @@ flowchart LR
   w0 -->|yes| d{browserDeletesIdle of navigator.userAgent}
   d -->|false| k[kept]
   d -->|true| u[keptUntilIdle]
+  k --> ck{code or return-to-app: this code written to localStorage}
+  ck -->|no| nk
+  ck -->|yes| none[only-copy box]
   u --> s{screen}
   s -->|code or return-to-app| c{this code written to localStorage}
   c -->|yes| box[warning]
   c -->|no| nk
   s -->|paid-no-code| notice[line in the notice]
   s -->|Your codes, empty| grey[grey line]
+  s -->|Your codes, without a paid code| grey
   s -->|Your codes, with a paid code| box
-  s -->|Your codes, without a paid code| plain[list only]
 ```
 
 ## Tests
