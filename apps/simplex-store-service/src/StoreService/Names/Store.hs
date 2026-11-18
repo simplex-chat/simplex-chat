@@ -1871,6 +1871,8 @@ decodeAll decode = either (E.throwIO . StoreDecodeError) pure . traverse decode
 firstDecoded :: (row -> Either Text a) -> IO [row] -> IO (Maybe a)
 firstDecoded decode rows = rows >>= fmap listToMaybe . decodeAll decode . take 1
 
+$(JQ.deriveToJSON (enumJSON $ dropPrefix "P") ''NamePhase)
+
 $(JQ.deriveToJSON (enumJSON $ dropPrefix "IC") ''InvoiceClose)
 
 $(JQ.deriveToJSON (enumJSON $ dropPrefix "FR") ''FailReason)

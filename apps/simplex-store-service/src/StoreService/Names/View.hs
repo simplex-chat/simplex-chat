@@ -16,7 +16,6 @@ module StoreService.Names.View
     readToSign,
     toRegistrationView,
     balanceView,
-    phaseText,
     addressText,
     lapsedAt,
     lapseMoment,
@@ -48,7 +47,7 @@ import StoreService.Names.Community (AcceptanceAsked, Community, communityOf, cu
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (AgreedTerms (..), RegistrationId (..))
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NamePhase (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, heldBy, lateWait, namePhase, paymentInvoice)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, heldBy, lateWait, paymentInvoice)
 
 data PaidWith
   = PWInvoice {method :: Text}
@@ -197,11 +196,6 @@ paidWith = \case
 
 balanceView :: Balance -> BalanceView
 balanceView b@Balance {blAmount, blRefunded} = BalanceView {amount = blAmount, hold = bhState <$> heldBy b, refunded = blRefunded}
-
-phaseText :: OrderPhase -> Text
-phaseText = \case
-  OClosed _ -> textEncode PUnpaid
-  phase -> textEncode $ namePhase phase
 
 -- | EIP-55, as the page compares owners.
 addressText :: Address -> Text

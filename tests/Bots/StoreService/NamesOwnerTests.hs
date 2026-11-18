@@ -337,7 +337,21 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
   none <- findBody ctx keyB ownerBText (seconds orderTime) >>= postFind ctx
   storeFixture "find-none" (fst none) (J.Object <$> snd none) Nothing
   none `shouldBe` (200, Just $ KM.fromList [("registrations", J.Array mempty)])
+  forM_ [1, 2] $ \i -> do
+    (_, code) <- issueCode ctx 8 2 id
+    let o = order ("bobbakery" <> tshow i) (fromIntegral $ 100 + i)
+        new = NewRegistration {nrgId = listedOrder i, nrgOwner = ownerB, nrgOrder = o, nrgYears = 2, nrgOrderHash = orderHash ownerB o (OTCode $ pcCodeHash code), nrgReplaces = Nothing}
+    withTransaction cStore (\db -> createCodeRegistration db new code (addUTCTime (fromIntegral i) t0)) `shouldReturn` Right ()
+  void $ registrationById ctx (listedOrder 1) >>= \r -> rewrite ctx r failedPhase
+  listed <- findBody ctx keyB ownerBText (seconds orderTime) >>= postFind ctx
+  storeFixture "find-orders" (fst listed) (J.Object <$> snd listed) Nothing
+  case listed of
+    (200, Just v) | Just (J.Array found) <- KM.lookup "registrations" v ->
+      map ((\e -> (fieldOf e "registrationId", fieldOf e "phase")) . objectEntry) (toList found) `shouldBe` [(Just "listed2", Just "queued"), (Just "listed1", Just "failed")]
+    other -> expectationFailure $ "find refused: " <> show other
   where
+    ownerB = address "0x39ad11775d14FC8c9118Bd94f374DF3c7ad5655d"
+    listedOrder i = RegistrationId $ "listed" <> tshow (i :: Int)
     oldOrder i = RegistrationId $ "old" <> tshow (i :: Int)
     idText (RegistrationId t) = J.String t
     objectEntry = \case

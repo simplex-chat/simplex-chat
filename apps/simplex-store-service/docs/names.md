@@ -424,7 +424,8 @@ sequenceDiagram
 
 Notes:
 
-- The signature and a timestamp within 600 s are checked; an owner without orders is answered an empty list. 5 finds a minute are allowed per client ([`Web/Names.hs:38`](../src/StoreService/Web/Names.hs#L38), [`Web/Names/Owner.hs:44-67`](../src/StoreService/Web/Names/Owner.hs#L44-L67), [`Names/Registration.hs:386-387`](../src/StoreService/Names/Registration.hs#L386-L387), [`Names/Store.hs:815-837`](../src/StoreService/Names/Store.hs#L815-L837)).
+- The signature and a timestamp within 600 s are checked; an owner without orders is answered an empty list. 5 finds a minute are allowed per client ([`Web/Names.hs:38`](../src/StoreService/Web/Names.hs#L38), [`Web/Names/Owner.hs:51-99`](../src/StoreService/Web/Names/Owner.hs#L51-L99), [`Names/Registration.hs:386-387`](../src/StoreService/Names/Registration.hs#L386-L387), [`Names/Store.hs:1038-1062`](../src/StoreService/Names/Store.hs#L1038-L1062)).
+- Each order's `phase` is its stored phase, `closed` for an unpaid order whose invoice closed.
 
 ---
 

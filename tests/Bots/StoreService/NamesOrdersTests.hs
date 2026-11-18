@@ -1699,6 +1699,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
                  J.object ["type" .= ("failed" :: Text), "reason" .= ("registryRefused" :: Text)]
                ]
   map J.toJSON [FRSendsUsedUp, FRLinksRefused] `shouldBe` ["sendsUsedUp", "linksRefused"]
+  map J.toJSON [PUnpaid, PClosed, PRegistered] `shouldBe` ["unpaid", "closed", "registered"]
 
 testViewStates :: IO ()
 testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do

@@ -1,0 +1,27 @@
+{
+  "body": {
+    "registrations": [
+      {
+        "balanceSource": null,
+        "createdAt": "2026-10-21T00:00:02Z",
+        "heldBy": null,
+        "invoiceId": null,
+        "labelHash": "0x4589035929eadbaae95c613ec2f9212e02107f6dd132daf8b329c32ad273aa72",
+        "phase": "queued",
+        "registrationId": "listed2",
+        "sealed": "sealed-bobbakery2-102"
+      },
+      {
+        "balanceSource": null,
+        "createdAt": "2026-10-21T00:00:01Z",
+        "heldBy": null,
+        "invoiceId": null,
+        "labelHash": "0x5eb9ef2610ec8335ac119acb7f0b22e5339c0f8b9085e78da6e1836a0ab06a1d",
+        "phase": "failed",
+        "registrationId": "listed1",
+        "sealed": "sealed-bobbakery1-101"
+      }
+    ]
+  },
+  "status": 200
+}

@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 -- | The requests only the owner code can sign: find and another name.
 module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
@@ -8,17 +9,21 @@ module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
 import Control.Concurrent.STM (atomically)
 import Control.Logger.Simple (logError, logNote)
 import Control.Monad.Except (ExceptT (..), runExceptT)
-import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
 import Data.Int (Int64)
+import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
+import Simplex.Chat.PaymentService.Types (InvoiceId)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
@@ -28,7 +33,7 @@ import StoreService.Names.Phases (publish)
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, retargetMessage)
 import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
-import StoreService.Names.View (phaseText, registrationView)
+import StoreService.Names.View (registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
 import StoreService.Names.Worker (Retried (..), checkFailedOrder)
 import StoreService.Web.Names.Orders (Answer (..), answerNow, refused, sendAnswer)
@@ -42,6 +47,23 @@ data FindRequest = FindRequest
 
 instance J.FromJSON FindRequest where
   parseJSON = J.withObject "find request" $ \o -> FindRequest <$> jsonField o "owner" (textWith $ first show . parseAnyCaseAddress) <*> o J..: "timestamp" <*> o J..: "signature"
+
+newtype FindAnswer = FindAnswer {faRegistrations :: [FoundOrder]}
+
+data FoundOrder = FoundOrder
+  { foRegistrationId :: Text,
+    foInvoiceId :: Maybe InvoiceId,
+    foPhase :: NamePhase,
+    foCreatedAt :: UTCTime,
+    foLabelHash :: Hex32,
+    foSealed :: Text,
+    foBalanceSource :: Maybe Text,
+    foHeldBy :: Maybe Text
+  }
+
+$(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "fo"} ''FoundOrder)
+
+$(JQ.deriveToJSON defaultJSON {J.fieldLabelModifier = dropPrefix "fa"} ''FindAnswer)
 
 -- | POST /api/registration/find, the owner's orders newest first.
 findHandler :: OrdersEnv -> Request -> Respond -> IO ResponseReceived
@@ -57,22 +79,22 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
         Left refusal -> refuse refusal
         Right () -> do
           rs <- withTransaction oeStore (\db -> findRegistrations db frOwner now)
-          pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (uncurry foundJSON) rs]
+          pure $ answerNow $ jsonResponse status200 $ J.toJSON FindAnswer {faRegistrations = map (uncurry foundOrder) rs}
     refuse = refused "POST /api/registration/find"
 
 -- | balanceSource: the order whose balance paid this one; heldBy: the order whose invoice holds this one's balance.
-foundJSON :: NameRegistration -> Maybe RegistrationId -> J.Value
-foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} holder =
-  J.object
-    [ "registrationId" .= rid,
-      "invoiceId" .= paymentInvoice nrPayment,
-      "phase" .= phaseText nrPhase,
-      "createdAt" .= nrCreatedAt,
-      "labelHash" .= Hex32 lh,
-      "sealed" .= nrSealed,
-      "balanceSource" .= (idText . buSource <$> paymentBalance nrPayment),
-      "heldBy" .= (idText <$> holder)
-    ]
+foundOrder :: NameRegistration -> Maybe RegistrationId -> FoundOrder
+foundOrder NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} holder =
+  FoundOrder
+    { foRegistrationId = rid,
+      foInvoiceId = paymentInvoice nrPayment,
+      foPhase = namePhase nrPhase,
+      foCreatedAt = nrCreatedAt,
+      foLabelHash = Hex32 lh,
+      foSealed = nrSealed,
+      foBalanceSource = idText . buSource <$> paymentBalance nrPayment,
+      foHeldBy = idText <$> holder
+    }
   where
     idText (RegistrationId t) = t
 
