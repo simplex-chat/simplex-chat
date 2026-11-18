@@ -416,9 +416,9 @@ object ChatModel {
   }
 
   suspend fun addSentChatItem(activeCtx: ChatsContext, rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
-    activeCtx.addChatItem(rhId, cInfo, cItem)
+    activeCtx.addChatItem(rhId, cInfo, activeCtx.withSentItemUpdate(cItem))
     if (activeCtx.secondaryContextFilter != null && cInfo.inMainChatList) {
-      chatsContext.addChatItem(rhId, cInfo, cItem)
+      chatsContext.addChatItem(rhId, cInfo, chatsContext.withSentItemUpdate(cItem))
     }
   }
 
@@ -432,6 +432,10 @@ object ChatModel {
     val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
     // set listener here that will be notified on every add/delete of a chat item
     val chatState = ActiveChatState()
+    val sentItemUpdates = mutableMapOf<Long, ChatItem>()
+
+    fun withSentItemUpdate(cItem: ChatItem): ChatItem =
+      sentItemUpdates.remove(cItem.id)?.takeIf { it.meta.createdAt == cItem.meta.createdAt } ?: cItem
 
     fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
     fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
@@ -693,7 +697,10 @@ object ChatModel {
       }
       val items = chatItems.value
       val itemIndex = items.indexOfFirst { it.id == cItem.id }
-      if (itemIndex < 0) return
+      if (itemIndex < 0) {
+        if (cItem.chatDir.sent) sentItemUpdates[cItem.id] = cItem
+        return
+      }
       val oldStatus = items[itemIndex].meta.itemStatus
       val newStatus = cItem.meta.itemStatus
       items[itemIndex] = if (shouldKeepOldSndCIStatus(oldStatus, newStatus)) {

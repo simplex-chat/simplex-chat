@@ -86,6 +86,13 @@ class ItemsModel: ObservableObject {
 
     let chatState = ActiveChatState()
 
+    var sentItemUpdates: [ChatItem.ID: ChatItem] = [:]
+
+    func takeSentItemUpdate(_ cItem: ChatItem) -> ChatItem? {
+        guard let update = sentItemUpdates.removeValue(forKey: cItem.id), update.meta.createdAt == cItem.meta.createdAt else { return nil }
+        return update
+    }
+
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
     @Published var isLoading = false
@@ -722,6 +729,7 @@ final class ChatModel: ObservableObject {
 //    }
 
     func addChatItem(_ chatInfo: ChatInfo, _ cItem: ChatItem) {
+        let cItem = getCIItemsModel(chatInfo, cItem)?.takeSentItemUpdate(cItem) ?? cItem
         // updates membersRequireAttention
         let cInfo: ChatInfo
         if case let .direct(contact) = chatInfo, contact.chatDeleted {
@@ -804,8 +812,12 @@ final class ChatModel: ObservableObject {
                 VoiceItemState.stopVoiceInChatView(cInfo, cItem)
             }
         }
-        if let ciIM = getCIItemsModel(cInfo, cItem), let i = getChatItemIndex(ciIM, cItem) {
-            _replaceChatItem(ciIM, at: i, with: cItem)
+        if let ciIM = getCIItemsModel(cInfo, cItem) {
+            if let i = getChatItemIndex(ciIM, cItem) {
+                _replaceChatItem(ciIM, at: i, with: cItem)
+            } else if cItem.chatDir.sent {
+                ciIM.sentItemUpdates[cItem.id] = cItem
+            }
         }
     }
 
