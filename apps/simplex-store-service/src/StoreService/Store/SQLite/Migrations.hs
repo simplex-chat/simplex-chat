@@ -385,6 +385,7 @@ CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by
 CREATE TABLE @name_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
   registration_id TEXT NOT NULL REFERENCES @name_registrations ON DELETE CASCADE,
+  provider_ref TEXT NOT NULL,
   late_alerted_at TEXT,
   late_alerted_units INTEGER,
   late_support TEXT,
@@ -393,15 +394,7 @@ CREATE TABLE @name_invoices(
 
 CREATE UNIQUE INDEX @idx_name_invoices_registration ON @name_invoices(registration_id);
 
-ALTER TABLE @invoices ADD COLUMN provider_ref TEXT;
-
-UPDATE @invoices SET provider_ref = (SELECT ci.provider_ref FROM @badge_code_invoices ci WHERE ci.invoice_id = @invoices.invoice_id);
-
-CREATE UNIQUE INDEX @idx_invoices_provider_ref ON @invoices(provider_ref);
-
-DROP INDEX @idx_badge_code_invoices_provider_ref;
-
-ALTER TABLE @badge_code_invoices DROP COLUMN provider_ref;
+CREATE UNIQUE INDEX @idx_name_invoices_provider_ref ON @name_invoices(provider_ref);
 
 ALTER TABLE @payments ADD COLUMN confirmed_amount INTEGER NOT NULL DEFAULT 0;
 
@@ -525,11 +518,7 @@ DELETE FROM @invoices WHERE invoice_id IN (
   SELECT ni.invoice_id FROM @name_invoices ni
   WHERE NOT EXISTS (SELECT 1 FROM @payments p WHERE p.invoice_id = ni.invoice_id)
 );
-ALTER TABLE @badge_code_invoices ADD COLUMN provider_ref TEXT NOT NULL DEFAULT '';
-UPDATE @badge_code_invoices SET provider_ref = (SELECT i.provider_ref FROM @invoices i WHERE i.invoice_id = @badge_code_invoices.invoice_id);
-CREATE UNIQUE INDEX @idx_badge_code_invoices_provider_ref ON @badge_code_invoices(provider_ref);
-DROP INDEX @idx_invoices_provider_ref;
-ALTER TABLE @invoices DROP COLUMN provider_ref;
+DROP INDEX @idx_name_invoices_provider_ref;
 DROP INDEX @idx_name_invoices_registration;
 DROP TABLE @name_invoices;
 
