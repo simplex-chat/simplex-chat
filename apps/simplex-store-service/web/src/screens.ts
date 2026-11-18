@@ -860,7 +860,7 @@ export type AppCode =
 export interface ReturnToAppOptions {
   onReturn: () => void;
   code: AppCode;
-  retention: Retention;
+  retention: Exclude<Retention, "notKept">;
 }
 
 // The buyer is on the phone the code is for, so the revealed code comes without the QR that would carry it there.
@@ -1004,7 +1004,7 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
     return withInvest(panel(
       el("h1", {}, "Your codes"),
       el("p", { class: "lede" }, el("span", { class: "half" }, CODES_STORED_HERE), " ", el("span", { class: "half" }, ARE_LISTED_HERE)),
-      ...(o.retention === "keptUntilIdle" ? [el("p", { class: "muted" }, IDLE_DELETION_CODES)] : []),
+      ...(o.retention === "keptUntilIdle" ? [deletionLine()] : []),
       el("div", { class: "hero", role: "presentation" }),
       button("Choose your badge", o.onStart),
     ), investPanel(undefined));
@@ -1029,8 +1029,12 @@ function listHead(retention: Retention, hasPaid: boolean): HTMLElement[] {
     case "kept": return [stored()];
     case "keptUntilIdle": return hasPaid
       ? [stored(), warning(CAN_DELETE_CODES, MAY_DO_SO_AFTER, KEEP_EACH_OUTSIDE)]
-      : [stored(), el("p", { class: "muted" }, IDLE_DELETION_CODES)];
+      : [stored(), deletionLine()];
   }
+}
+
+function deletionLine(): HTMLElement {
+  return el("p", { class: "muted" }, IDLE_DELETION_CODES);
 }
 
 export interface InvoiceFailureOptions {
