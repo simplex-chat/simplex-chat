@@ -791,14 +791,15 @@ domTest("screens: Your codes warns in a browser that deletes idle data, with cod
   assert.equal(warn.all("span.title")[0]!.textContent, screens.COPY_UNREDEEMED);
   assert.ok(warn.textContent.includes(screens.IDLE_DELETION_ALL));
   const empty = render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: true, rows: [], onOpen: noop, onStart: noop }));
-  assert.equal(empty.all("p.lede")[0]!.textContent, screens.NOTHING_STORED, "the browser may have deleted codes bought on this device");
-  assert.equal(empty.all("p.muted")[0]!.textContent, screens.IDLE_DELETION_ALL, "and the emptied list says why");
+  assert.equal(empty.all("p.muted")[0]!.textContent, screens.IDLE_DELETION_ALL, "an emptied list says why");
+  const unpaid = render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: true,
+    rows: historyRows([record({ orderId: "b", status: "open" })]), onOpen: noop, onStart: noop }));
+  assert.equal(unpaid.all("div.warn").length, 0, "a list without a code has nothing to copy");
   for (const kept of [
     render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: false, rows, onOpen: noop, onStart: noop })),
     render(screens.purchaseHistory({ onForget: noop, keepsNewCodes: true, browserDeletesIdle: false, rows: [], onOpen: noop, onStart: noop })),
   ]) {
     assert.ok(!kept.textContent.includes(screens.IDLE_DELETION_ALL));
-    assert.ok(!kept.textContent.includes(screens.NOTHING_STORED));
   }
 });
 
@@ -971,9 +972,9 @@ domTest("screens: the history list's Copy is offered only on a paid entry, and c
   assert.deepEqual(copied, [HELD_CODE]);
 });
 
-domTest("screens: an empty store reads 'Nothing bought on this device', with the picture and the invest block", () => {
+domTest("screens: an empty store reads 'No codes stored in this browser', with the picture and the invest block", () => {
   const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, browserDeletesIdle: false, rows: [], onOpen: noop, onStart: noop }));
-  assert.ok(p.textContent.includes("Nothing bought on this device"));
+  assert.equal(p.all("p.lede")[0]!.textContent, screens.NOTHING_STORED, "codes cleared or bought in another browser are not here either");
   assert.ok(p.textContent.includes("Choose your badge"));
   assert.equal(p.all("div.hero").length, 1, "the landing's picture, so the screen is not a heading over a button");
   assert.equal(p.all("div.invest").length, 1, "and the crowdfunding under the button, as on every screen with one");

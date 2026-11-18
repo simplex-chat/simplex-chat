@@ -56,6 +56,7 @@ function memoryOver(real: StorageLike | undefined): StorageLike {
 }
 
 const store = pageStore();
+const deletesIdle = browserDeletesIdle(navigator.userAgent);
 
 const flow = new Flow({
   store,
@@ -717,7 +718,6 @@ type CodeView = Extract<PaymentView, { screen: "codeIssued" }>;
 
 const codeRevealed = new Set<string>();
 const appLaunched = new Set<string>();
-const deletesIdle = browserDeletesIdle(navigator.userAgent);
 
 function codeScreen(view: CodeView): HTMLElement {
   const { orderId } = view.order;

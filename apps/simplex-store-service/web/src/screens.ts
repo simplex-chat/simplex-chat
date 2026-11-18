@@ -989,7 +989,7 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
   if (o.rows.length === 0) {
     return withInvest(panel(
       el("h1", {}, "Your codes"),
-      el("p", { class: "lede" }, o.browserDeletesIdle ? NOTHING_STORED : "Nothing bought on this device"),
+      el("p", { class: "lede" }, NOTHING_STORED),
       ...(o.browserDeletesIdle ? [el("p", { class: "muted" }, IDLE_DELETION_ALL)] : []),
       el("div", { class: "hero", role: "presentation" }),
       button("Choose your badge", o.onStart),
@@ -1004,7 +1004,7 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
     el("p", { class: "lede" }, o.keepsNewCodes
       ? "Every code you bought is in this browser, and nowhere else."
       : "This browser cannot save anything new right now. Copy any code you have not kept elsewhere."),
-    ...(o.browserDeletesIdle ? [warning(COPY_UNREDEEMED, IDLE_DELETION_ALL)] : []),
+    ...(o.browserDeletesIdle && o.rows.some((r) => r.kind === "paid") ? [warning(COPY_UNREDEEMED, IDLE_DELETION_ALL)] : []),
     list,
     forget,
   ), investPanel(undefined));
