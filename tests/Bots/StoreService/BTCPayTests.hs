@@ -115,7 +115,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "creates a monero invoice and reads back where to pay" $ testFakeCreatesCoin CCXmr xmrAddress "0.32095000" "XMR-CHAIN"
     it "creates a Lightning invoice and reads back its BOLT11" $ testFakeCreatesCoin CCLn lnInvoice "0.00050000" "BTC-LN"
     it "sends the api key as `token <key>` on every call it makes" testFakeSendsApiKey
-    it "reads the store's payment methods with BTCPay's onlyEnabled, so a disabled method is reported" testFakeAsksEnabledMethods
+    it "asks BTCPay for the store's enabled payment methods with onlyEnabled" testFakeAsksEnabledMethods
     it "is refused when the api key is wrong, rather than passing silently" testFakeWrongApiKey
     it "sends the documented create body, and no redirectURL" testFakeCreateBody
     it "walks New to Processing to Settled, two calls per read" testFakeLifecycle
