@@ -355,7 +355,9 @@ the service's operators.
 | `POST /webhooks/btcpay` | Verifies `BTCPay-Sig` over the bytes as received and queues a read. A hint only: the poller is what carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
 | `POST /webhooks/stripe` | Verifies `Stripe-Signature` over the bytes as received and queues a read. The card lane's equivalent of the row above, and a hint just the same: the poller carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
 
-Every `/api` refusal is `{"error": "<code>"}`. Besides the codes above, any of them can answer
+Every refusal of these routes is `{"error": "<code>"}`; the names routes of search, link preview,
+terms, code check and link edits, and the rate limit of every names route, answer
+`{"type": "<code>", …}` instead. Besides the codes above, any of them can answer
 `internal`, an unknown id answers `not_found`, and a wrong verb answers `method_not_allowed` —
 ten codes in all, which is what the browser's `WIRE_ERROR_CODES` lists. The two webhook routes are
 the exception: each answers 200, 400 or 413 with an empty body, because its provider is the only
@@ -1147,8 +1149,8 @@ any 365 days:
 - an exact resend of an accepted request is answered as before and counts nothing more.
 
 When a name has none left, `POST /api/name/records` answers
-`429 {"error": "edit_limit", "nextAt": <unix seconds>}` before any chain read, and the search answer
-for the name carries `recordEdits: {"left": 0, "nextAt": …}`, from which the page shows when the
+`409 {"type": "edit_limit", "nextAt": <ISO time>}` before any chain read, and the search answer
+for the name has `found.records.edits: {"left": 0, "nextAt": …}`, from which the page shows when the
 owner can edit again. Lowering the setting keeps the edits already counted. The hourly cap of 10
 relayed requests per name still applies.
 

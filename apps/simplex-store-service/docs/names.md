@@ -306,17 +306,17 @@ sequenceDiagram
     W->>E: rentPriceUSD, generalTermsLink, communityTermsLink
     W->>D: terms text stored for the hash, sha256 checked when the link has one
     W->>G: terms text when none is stored, once per hash, sha256 checked when the link has one, then stored
-    W-->>P: available: price, years, termStart, terms, community
+    W-->>P: found available: price, years, terms; community
   else registered
     W->>E: records simplex.contact and simplex.channel, resolver nonce
     W->>C: the link data per link, 3 s each, after the chain reads
     C->>M: short link data
     W->>D: record edits of the last 365 days
-    W-->>P: registered: entities, records, owner, recordEdits, expiresAt
+    W-->>P: found registered: owner, resolver, expiresAt, gracePeriod, entities, records with nonce and edits; community
   end
   P->>W: POST /api/link/preview: link
   W->>C: the same profile read, under the preview limits
-  W-->>P: type, profile; with a read profile, its names, image, and peer type or group type
+  W-->>P: kind, profile: the chat core's link data, or unread or unavailable
 ```
 
 Notes:
@@ -419,7 +419,7 @@ sequenceDiagram
 
 Notes:
 
-- The signature and a timestamp within 600 s are checked; an owner without orders is answered `404`. 5 finds a minute are allowed per client ([`Web/Names.hs:38`](../src/StoreService/Web/Names.hs#L38), [`Web/Names/Owner.hs:44-67`](../src/StoreService/Web/Names/Owner.hs#L44-L67), [`Names/Registration.hs:386-387`](../src/StoreService/Names/Registration.hs#L386-L387), [`Names/Store.hs:815-837`](../src/StoreService/Names/Store.hs#L815-L837)).
+- The signature and a timestamp within 600 s are checked; an owner without orders is answered an empty list. 5 finds a minute are allowed per client ([`Web/Names.hs:38`](../src/StoreService/Web/Names.hs#L38), [`Web/Names/Owner.hs:44-67`](../src/StoreService/Web/Names/Owner.hs#L44-L67), [`Names/Registration.hs:386-387`](../src/StoreService/Names/Registration.hs#L386-L387), [`Names/Store.hs:815-837`](../src/StoreService/Names/Store.hs#L815-L837)).
 
 ---
 
@@ -582,7 +582,7 @@ sequenceDiagram
 
 Notes:
 
-- `SetText` is signed in the EIP-712 domain `SimplexResolver`; the signer must be the registry's owner of a name on the default resolver, and the first nonce the owner's current resolver nonce, which the search answers as `recordsNonce`; another first nonce is answered `409 stale_nonce`, and any other refusal `400 bad_request` ([`Names/Registration.hs:83-84`](../src/StoreService/Names/Registration.hs#L83-L84), [`Names/Records.hs:185-199`](../src/StoreService/Names/Records.hs#L185-L199), [`Web/Names/Search.hs:105`](../src/StoreService/Web/Names/Search.hs#L105)).
+- `SetText` is signed in the EIP-712 domain `SimplexResolver`; the signer must be the registry's owner of a name on the default resolver, and the first nonce the owner's current resolver nonce, which the search answers as `found.records.nonce`; another first nonce is answered `409 stale_nonce`, and any other refusal `400 bad_request` ([`Names/Registration.hs:83-84`](../src/StoreService/Names/Registration.hs#L83-L84), [`Names/Records.hs:185-199`](../src/StoreService/Names/Records.hs#L185-L199), [`Web/Names/Search.hs:105`](../src/StoreService/Web/Names/Search.hs#L105)).
 - Edits relayed per name are bounded by `record_edits_per_year` (default 3, from 1 to 100) in any 365 days, and every stored edit is counted, a reverted one too; at most 10 are relayed per name an hour, and 10 requests are accepted a minute per client ([`Names/Records.hs:112-151`](../src/StoreService/Names/Records.hs#L112-L151), [`Config.hs:286-289`](../src/StoreService/Config.hs#L286-L289), [`Web/Http.hs:149`](../src/StoreService/Web/Http.hs#L149)).
 - The earliest deadline must be more than 600 s past the latest block's time ([`Names/Records.hs:126-129`](../src/StoreService/Names/Records.hs#L126-L129), [`Names/Records.hs:185-199`](../src/StoreService/Names/Records.hs#L185-L199)).
 - Two changes are sent in one `multicall`, and both or neither are applied ([`Names/Registration.hs:205-207`](../src/StoreService/Names/Registration.hs#L205-L207), [`Names/Records.hs:399-408`](../src/StoreService/Names/Records.hs#L399-L408)).
