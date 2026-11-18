@@ -6,7 +6,7 @@ The badges page keeps a bought code only in the browser's localStorage. WebKit, 
 
 | Browser | Stored codes are deleted when |
 |---|---|
-| Safari on macOS, iOS, iPadOS | 7 days of browser use without a tap or click on the site, when a known tracker redirected to it with a decorated link; 30 days otherwise; only while tracking prevention is on |
+| Safari on macOS, iOS, iPadOS | 7 days of browser use without a tap or click on the site, when a known tracker redirected to it with a decorated link; 30 days otherwise, since WebKit 274398@main (February 2024), 7 days for every site before; only while tracking prevention is on |
 | Other browsers on iOS and iPadOS | unconfirmed; they run WebKit |
 | Chromium, Chrome, Edge | the disk is short of space, least recently used sites first; private window closed; data cleared |
 | Firefox | the disk is short of space, least recently used sites first; private window closed; data cleared |
@@ -17,12 +17,14 @@ Sources:
 - https://webkit.org/tracking-prevention/
 - https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria
 
-`navigator.storage.persist()` exempts a site from the deletion when disk space is short, in Chromium and Firefox; the page does not request it, as Firefox asks the user.
+`navigator.storage.persist()` exempts a site from the deletion when disk space is short, in Chromium and Firefox.
 
 ## Decisions
 
+- The change adds warnings only; the page requests no persistent storage.
 - WebKit is recognised by its user agent: `AppleWebKit/` without `Chrome/`, `Chromium/` or `Android`.
 - In those browsers the page says that the browser can delete the code after 7 days of browsing without a tap or click on the site, the earliest case.
+- The empty Your codes screen reads "No codes stored in this browser" in every browser.
 - The page keeps its other texts and behaviour in other browsers.
 
 ## Where the warning is shown
@@ -31,8 +33,8 @@ Sources:
 |---|---|
 | Paid, code shown, "This is the only copy." box | This browser can delete it after 7 days of browsing without a tap or click on this site. Redeem it now, or copy it and keep it outside this browser. |
 | Paid, opened from the app, code hidden, warning box above "Show code" | Show and copy the code if the app does not add it. This browser can delete it after 7 days of browsing without a tap or click on this site. |
-| Your codes, with codes, warning box | Copy each code you have not redeemed. This browser can delete the codes stored here after 7 days of browsing without a tap or click on this site. |
-| Your codes, empty | heading line "No codes stored in this browser", then the deletion line |
+| Your codes, with a paid code, warning box | Copy each code you have not redeemed. This browser can delete the codes stored here after 7 days of browsing without a tap or click on this site. |
+| Your codes, empty | the deletion line under "No codes stored in this browser" |
 | Paid order opened without its code ("This code is not on this device") | the deletion line in the notice |
 
 ```mermaid
@@ -47,4 +49,6 @@ flowchart LR
 - `test/store.test.ts`: the user agents of Safari, Chrome, Firefox and Edge on iPhone, an iPhone web view, GNOME Web, and of Chrome, Edge, Chromium, Samsung Internet, an Android web view and Firefox on desktop and Android.
 - `test/screens.test.ts`: the five screens with and without the warning.
 - `test/main-app-safari.test.ts`: the paid ending opened from the app, and Your codes, in Safari on iPhone.
-- Playwright WebKit, Chromium and Firefox: the purchase flow against the mock service, with and without the app.
+- `test/main-safari-code.test.ts`: the code screen in Safari on macOS.
+- `test/main-safari-lost.test.ts`: a paid order opened without its code in Safari on macOS.
+- Manual check with Playwright WebKit 27.2, Chromium 156 and Firefox 159: the purchase flow against the mock service, with and without the app, and the order opened after its code was cleared.
