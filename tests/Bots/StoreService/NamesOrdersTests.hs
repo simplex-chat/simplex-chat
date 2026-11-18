@@ -132,7 +132,7 @@ namesOrdersTests :: Spec
 namesOrdersTests = describe "StoreService names: orders" $ do
   describe "paid orders" $ do
     it "places an order as an unpaid live registration and answers the name invoice view" testPaidOrder
-    it "places a Lightning order, reaching the provider as ln and storing its method" testLnOrder
+    it "places a Lightning order, sent to the provider as ln, and stores its method" testLnOrder
     it "answers an exact resend with its invoice, also with a new timestamp and signature, and after the timestamp window" testExactResend
     it "answers an exact resend after its order went past unpaid, before any chain read" testResendPastUnpaid
     it "reads an exact resend's unpaid invoice past its expiry as expired, and its lapsed commitment as failed, writing neither" testResendReadsTime

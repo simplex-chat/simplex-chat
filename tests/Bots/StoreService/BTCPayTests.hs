@@ -64,7 +64,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "reports a closed invoice paid in full only on PaidLate or PaidOver, whatever its due" testClosedPaidInFull
     it "reports a closed Lightning invoice paid in full once its due is at 0 or less, its payments settled when recorded" testLnClosedPaidInFull
     it "reports a Lightning invoice still New but paid in full as paid in full, never as part paid" testLnNewPaidInFull
-    it "reads the bodies BTCPay 2.4.4 recorded for a settled and for a cancelled then paid Lightning invoice" testRecordedLnBodies
+    it "reads the bodies recorded from BTCPay 2.4.4 for a settled Lightning invoice and for one cancelled, then paid" testRecordedLnBodies
     it "reads an overpaid invoice's negative due as 0" testOverpaidDueIsZero
     it "funds on New with something received" testNewWithPayment
     it "funds on New with a payment worth less than a minor unit" testNewWithDust

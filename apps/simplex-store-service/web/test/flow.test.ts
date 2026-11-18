@@ -820,12 +820,14 @@ e2eTest("e2e: a repeated code hash is refused with code_conflict, not merely ref
   });
 });
 
-e2eTest("e2e: a Lightning invoice is a BOLT11 with no confirmations, and cannot be part-paid", async () => {
+const MIN_MOCK_BOLT11_BODY = 250;
+
+e2eTest("e2e: a Lightning invoice is a BOLT11, its confirmations are omitted, and it cannot be part-paid", async () => {
   await withServer(async (f) => {
     const inv = await createInvoice(
       { priceId: "price_supporter", method: "ln", codeHash: await hash(generate()) }, f);
     assert.equal(inv.cryptoCurrency, "ln");
-    assert.match(inv.address ?? "", /^lnbc[0-9a-z]{250,}$/, "a lowercase BOLT11 of realistic length");
+    assert.match(inv.address ?? "", new RegExp(`^lnbc[0-9a-z]{${MIN_MOCK_BOLT11_BODY},}$`), "a lowercase BOLT11 of realistic length");
     assert.match(inv.cryptoAmount ?? "", /^\d+\.\d{8}$/, "BTC in whole satoshi, as BTCPay rounds a Lightning method's amount");
     const open = await readInvoice(inv.invoiceId, f);
     assert.equal(open.requiredConfirmations, undefined, "a Lightning payment is final once paid");

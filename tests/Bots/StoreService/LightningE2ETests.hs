@@ -71,8 +71,14 @@ lightningStack = stackOf <$> getEnvironment
         setting name = lookup (envPrefix <> name) env
         text = fmap T.pack . setting
 
+microsPerSecond :: Int
+microsPerSecond = 1000000
+
+settleSeconds :: Int
+settleSeconds = 60
+
 settleMicros :: Int
-settleMicros = 60 * 1000000
+settleMicros = settleSeconds * microsPerSecond
 
 readIntervalMicros :: Int
 readIntervalMicros = 200000
@@ -84,7 +90,7 @@ paymentReplySeconds :: Int
 paymentReplySeconds = 30
 
 paymentMicros :: Int
-paymentMicros = (paymentSeconds + paymentReplySeconds) * 1000000
+paymentMicros = (paymentSeconds + paymentReplySeconds) * microsPerSecond
 
 feeLimitSat :: Text
 feeLimitSat = "1000"
@@ -146,7 +152,7 @@ payBolt11 LightningStack {lsPayerUrl} Ctx {cClient = (mgr, _)} bolt11 = do
 
 awaitInvoice :: HasCallStack => Ctx -> InvoiceId -> IO () -> (InvoiceRow -> Bool) -> IO ()
 awaitInvoice Ctx {cStore} invId readProvider reached =
-  timeout settleMicros readUntilReached >>= maybe (expectationFailure "the invoice did not reach the awaited state within a minute") pure
+  timeout settleMicros readUntilReached >>= maybe (expectationFailure ("the awaited state of the invoice was not read within " <> show settleSeconds <> " seconds")) pure
   where
     readUntilReached = do
       readProvider
