@@ -185,6 +185,9 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 - **Schema boundaries:** the names product uses the generic tables and its own, never a badge table.
   - **names:** names code reads and writes the generic `invoices` and `payments` and its own `name_*` tables (`Names/Store.hs`); none of the names modules mentions a badge table. The names migration creates only `name_*` tables and adds five columns to the generic `payments` (`confirmed_amount`, `received_units`, `confirmed_units`, `invoiced_units`, `invoice_rate`: a payment's crypto amounts and rate). The generic invoice read joins both products' tables to tell an invoice's product (`Store/Invoices.hs:212-222`). Every table carries the badge service's prefix `sx_badge_service_`, the names tables included.
   - **Final:** as `names`: the names migration changes no badge table.
+- **Invoice product:** the generic `invoices` table names its product.
+  - **names:** the generic invoice read left-joins both products' tables, `badge_code_invoices` and `name_invoices`, and reads `badge_type`, `months` and `registration_id` to tell an invoice's product and its product data (`Store/Invoices.hs:212-222`).
+  - **Final:** `invoices` gets a `product` column, `badge` or `name`; the migration sets `badge` as the default for existing rows and `name` for the rows `name_invoices` refers to. Generic code reads the product from it and dispatches to the product's own code, which reads its own table; no generic query joins product tables.
 - **Provider reference:** as `names`: each product's table holds the provider's invoice id, `name_invoices.provider_ref` and the deployed badge service's `badge_code_invoices.provider_ref`, both NOT NULL, each with its own unique index. Moving it into the generic `invoices` table would have the names migration change a badge table; a generic column for both products would be a change of its own.
 
 ## 7. Operators: commands and configuration
