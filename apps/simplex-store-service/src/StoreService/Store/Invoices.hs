@@ -8,6 +8,7 @@
 module StoreService.Store.Invoices
   ( InvoiceRow (..),
     InvoiceProduct (..),
+    InvoiceKind (..),
     InvoicePayment (..),
     paymentHolds,
     note,
@@ -68,8 +69,9 @@ import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency, CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
+import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Encoding.String (textDecode, textEncode)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Names.Chain (unixSeconds)
 import StoreService.Names.Registration (RegistrationId (..))
@@ -106,6 +108,22 @@ data InvoiceRow = InvoiceRow
 -- | A badge's type and months, or the name registration the invoice pays for.
 data InvoiceProduct = IPBadge BadgeType Word8 | IPName RegistrationId
   deriving (Eq, Show)
+
+data InvoiceKind = IKBadge | IKName
+  deriving (Eq, Show)
+
+instance TextEncoding InvoiceKind where
+  textEncode = \case
+    IKBadge -> "badge"
+    IKName -> "name"
+  textDecode = \case
+    "badge" -> Just IKBadge
+    "name" -> Just IKName
+    _ -> Nothing
+
+instance FromField InvoiceKind where fromField = fromTextField_ textDecode
+
+instance ToField InvoiceKind where toField = toField . textEncode
 
 paymentHolds :: InvoicePayment -> Bool
 paymentHolds InvoicePayment {ipAmount, ipCryptoPaid, ipPaidInFull} =
@@ -192,10 +210,10 @@ qInsertInvoice :: Query
 qInsertInvoice =
   mkQuery $
     "INSERT INTO @invoices "
-      <> "(invoice_id, provider, price, discount_amount, credit_amount, amount, currency, "
+      <> "(invoice_id, provider, product, price, discount_amount, credit_amount, amount, currency, "
       <> "payment_url, payment_address, payment_crypto_currency, payment_crypto_amount, "
       <> "expires_at, status, created_at, updated_at) "
-      <> "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      <> "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
 qInsertBadgeCodeInvoice :: Query
 qInsertBadgeCodeInvoice =
@@ -210,45 +228,43 @@ qInsertBadgeCode =
     "INSERT INTO @badge_codes (code_hash, badge_type, months, code_payment_status, created_at) "
       <> "VALUES (?,?,?,?,?)"
 
--- | Every invoice has a badge code row or a name registration row, never both.
-productJoins :: Text
-productJoins =
-  "LEFT JOIN @badge_code_invoices ci ON ci.invoice_id = i.invoice_id "
+productInvoices :: Text
+productInvoices =
+  "(SELECT " <> invoiceColumns <> ", ci.provider_ref, bc.badge_type, bc.months, NULL AS registration_id FROM @invoices i "
+    <> "LEFT JOIN @badge_code_invoices ci ON ci.invoice_id = i.invoice_id "
     <> "LEFT JOIN @badge_codes bc ON bc.badge_code_id = ci.badge_code_id "
+    <> productIs IKBadge
+    <> "UNION ALL SELECT " <> invoiceColumns <> ", ni.provider_ref, NULL, NULL, ni.registration_id FROM @invoices i "
     <> "LEFT JOIN @name_invoices ni ON ni.invoice_id = i.invoice_id "
-
-providerRefColumn :: Text
-providerRefColumn = "COALESCE(ci.provider_ref, ni.provider_ref)"
+    <> productIs IKName
+    <> ") i "
+  where
+    invoiceColumns =
+      "i.invoice_id, i.provider, i.product, i.price, i.amount, i.currency, i.payment_url, i.payment_address, "
+        <> "i.payment_crypto_currency, i.payment_crypto_amount, i.expires_at, i.status, i.created_at"
+    productIs kind = "WHERE i.product = '" <> textEncode kind <> "' "
 
 invoiceRowSelect :: Text
 invoiceRowSelect =
-  "SELECT i.invoice_id, i.provider, "
-    <> providerRefColumn
-    <> ", bc.badge_type, bc.months, ni.registration_id, "
+  "SELECT i.invoice_id, i.provider, i.product, i.provider_ref, i.badge_type, i.months, i.registration_id, "
     <> "i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, "
     <> "i.payment_crypto_amount, i.expires_at, i.status, i.created_at, "
     <> "p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at, p.confirmed_amount, p.confirmed_units, p.received_units "
-    <> "FROM @invoices i "
-    <> productJoins
+    <> "FROM "
+    <> productInvoices
     <> "LEFT JOIN @payments p ON p.invoice_id = i.invoice_id "
 
 qGetInvoice :: Query
 qGetInvoice = mkQuery (invoiceRowSelect <> "WHERE i.invoice_id = ?")
 
 qGetInvoiceByProviderRef :: Query
-qGetInvoiceByProviderRef =
-  mkQuery $
-    invoiceRowSelect
-      <> "WHERE i.invoice_id IN (SELECT invoice_id FROM @badge_code_invoices WHERE provider_ref = ? "
-      <> "UNION ALL SELECT invoice_id FROM @name_invoices WHERE provider_ref = ?)"
+qGetInvoiceByProviderRef = mkQuery (invoiceRowSelect <> "WHERE i.provider_ref = ?")
 
 qUnpaidRefs :: Query
 qUnpaidRefs =
   mkQuery $
-    "SELECT i.provider, "
-      <> providerRefColumn
-      <> " FROM @invoices i "
-      <> productJoins
+    "SELECT i.provider, i.provider_ref FROM "
+      <> productInvoices
       <> "WHERE i.status <> 'paid' AND i.created_at >= ? "
       -- created_at is whole seconds; the id breaks ties the same way on SQLite and Postgres
       <> "ORDER BY i.created_at, i.invoice_id"
@@ -273,10 +289,8 @@ unfundedOnly = unfundedBy "@invoices.invoice_id"
 qOverdueInvoices :: Query
 qOverdueInvoices =
   mkQuery $
-    "SELECT i.invoice_id, i.provider, "
-      <> providerRefColumn
-      <> ", i.created_at FROM @invoices i "
-      <> productJoins
+    "SELECT i.invoice_id, i.provider, i.provider_ref, i.created_at FROM "
+      <> productInvoices
       <> "WHERE i.status = 'open' AND i.expires_at < ? "
       <> unfundedBy "i.invoice_id"
       <> "ORDER BY i.created_at"
@@ -426,7 +440,7 @@ note :: Text -> Maybe a -> Either Text a
 note ctx = maybe (Left ctx) Right
 
 type InvoiceCols =
-  (Text, Text, Text, Maybe BadgeType, Maybe Word32, Maybe Text)
+  (Text, Text, InvoiceKind, Maybe Text, Maybe BadgeType, Maybe Word32, Maybe Text)
     :. (Word32, Word32, Text, Maybe Text, Maybe Text, Maybe CryptoCurrency)
     :. (Maybe Text, UTCTime, InvoiceStatus, UTCTime)
     :. (Maybe Word32, Maybe Text, Maybe Text, Maybe Int, Maybe Text, Maybe UTCTime, Maybe Word32, Maybe Int64)
@@ -434,17 +448,17 @@ type InvoiceCols =
 
 mkInvoiceRow :: InvoiceCols -> Either Text InvoiceRow
 mkInvoiceRow
-  ( (invId, providerTxt, providerRef, badgeType, months, registrationId)
+  ( (invId, providerTxt, kind, providerRef_, badgeType, months, registrationId)
       :. (price, amount, currency, url, addr, cryptoCur)
       :. (cryptoAmt, expiresAt, status, createdAt)
       :. (pAmount, pCryptoPaid, pCryptoDue, pPaidInFull, pStatus, pUpdatedAt, pConfirmedAmount, pConfirmedUnits)
       :. Only pUnits
     ) = do
     provider <- note "invoices.provider" (textDecode providerTxt)
-    invoiceProduct <- case (badgeType, months, registrationId) of
-      (Just bt, Just m, Nothing) -> Right (IPBadge bt (fromIntegral m))
-      (Nothing, Nothing, Just rid) -> Right (IPName (RegistrationId rid))
-      _ -> Left ("invoice product: " <> providerRef)
+    (providerRef, invoiceProduct) <- case (kind, providerRef_, badgeType, months, registrationId) of
+      (IKBadge, Just ref, Just bt, Just m, Nothing) -> Right (ref, IPBadge bt (fromIntegral m))
+      (IKName, Just ref, Nothing, Nothing, Just rid) -> Right (ref, IPName (RegistrationId rid))
+      _ -> Left ("invoice product: " <> invId)
     destination <- note "invoice payment destination" (mkDestination url addr cryptoCur cryptoAmt)
     pure
       InvoiceRow
@@ -525,7 +539,7 @@ insertInvoiceRows db NewInvoice {..} = do
       BadgePriceId priceId = niPriceId
       offerId = (\(BadgeOfferId o) -> o) <$> niOfferId
       months = fromIntegral niMonths :: Word32
-  insertInvoiceRow db niInvoiceId niProvider price amount niCurrency niDestination niExpiresAt createdAt
+  insertInvoiceRow db niInvoiceId niProvider IKBadge price amount niCurrency niDestination niExpiresAt createdAt
   DB.execute
     db
     qInsertBadgeCode
@@ -539,16 +553,16 @@ insertInvoiceRows db NewInvoice {..} = do
 -- | A name is sold at its chain price, with no discount.
 insertNameInvoice :: DB.Connection -> NewNameInvoice -> IO ()
 insertNameInvoice db NewNameInvoice {..} =
-  insertInvoiceRow db nniInvoiceId nniProvider amount amount nniCurrency nniDestination nniExpiresAt nniCreatedAt
+  insertInvoiceRow db nniInvoiceId nniProvider IKName amount amount nniCurrency nniDestination nniExpiresAt nniCreatedAt
   where
     CurrencyAmount amount = nniAmount
 
-insertInvoiceRow :: DB.Connection -> InvoiceId -> PaymentProvider -> Word32 -> Word32 -> Text -> ServicePaymentDestination -> UTCTime -> UTCTime -> IO ()
-insertInvoiceRow db (InvoiceId invId) provider price amount currency destination expiresAt' createdAt' =
+insertInvoiceRow :: DB.Connection -> InvoiceId -> PaymentProvider -> InvoiceKind -> Word32 -> Word32 -> Text -> ServicePaymentDestination -> UTCTime -> UTCTime -> IO ()
+insertInvoiceRow db (InvoiceId invId) provider kind price amount currency destination expiresAt' createdAt' =
   DB.execute
     db
     qInsertInvoice
-    ( (invId, textEncode provider, price, price - amount, Nothing :: Maybe Word32, amount, currency)
+    ( (invId, textEncode provider, kind, price, price - amount, Nothing :: Maybe Word32, amount, currency)
         :. (url, addr, cryptoCur, cryptoAmt, truncateToSecond expiresAt', ISOpen, createdAt, createdAt)
     )
   where
@@ -586,7 +600,7 @@ getInvoice st (InvoiceId invId) = withConnection st $ \db -> selectInvoiceRow db
 -- | Throws ProviderRefConflict for a ref both a badge invoice and a name invoice hold.
 getInvoiceByProviderRef :: DBStore -> Text -> IO (Maybe InvoiceRow)
 getInvoiceByProviderRef st ref = withConnection st $ \db ->
-  DB.query db qGetInvoiceByProviderRef (ref, ref) >>= \case
+  DB.query db qGetInvoiceByProviderRef (Only ref) >>= \case
     [] -> pure Nothing
     [row] -> Just <$> decodeInvoiceRow row
     _ -> E.throwIO (ProviderRefConflict ref)

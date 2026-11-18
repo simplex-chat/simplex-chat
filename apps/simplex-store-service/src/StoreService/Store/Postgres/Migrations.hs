@@ -21,7 +21,8 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
-    ("20261013_names", m20261013_names, Just down_m20261013_names)
+    ("20261013_names", m20261013_names, Just down_m20261013_names),
+    ("20261118_invoice_product", m20261118_invoice_product, Just down_m20261118_invoice_product)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -537,6 +538,24 @@ ALTER TABLE @name_prepaid_codes DROP COLUMN reserved_by;
 DROP TABLE @name_registrations;
 
 DROP TABLE @name_prepaid_codes;
+|]
+
+m20261118_invoice_product :: Text
+m20261118_invoice_product =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @invoices ADD COLUMN product TEXT NOT NULL DEFAULT 'badge';
+
+UPDATE @invoices SET product = 'name' WHERE invoice_id IN (SELECT invoice_id FROM @name_invoices);
+|]
+
+down_m20261118_invoice_product :: Text
+down_m20261118_invoice_product =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @invoices DROP COLUMN product;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

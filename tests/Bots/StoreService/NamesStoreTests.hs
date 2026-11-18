@@ -35,7 +35,7 @@ import StoreService.Names.Registration (AgreedTerms (..), LinkKind (..), OrderFi
 import StoreService.Names.Store
 import StoreService.Providers (Uncreditable (..))
 import StoreService.Store (RevokeResult (..))
-import StoreService.Store.Invoices (InvoiceRow (..), NewInvoice (..), createInvoiceRows, getInvoiceByProviderRef)
+import StoreService.Store.Invoices (InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), StoreDecodeError (..), createInvoiceRows, getInvoice, getInvoiceByProviderRef)
 import Test.Hspec
 
 #if defined(dbPostgres)
@@ -50,6 +50,7 @@ namesStoreTests :: Spec
 namesStoreTests = describe "StoreService names: store" $ do
   describe "migration" $ do
     it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
+    it "names each invoice's product, badge for the existing rows and name for those a name invoice refers to, and reads a name row marked badge as no product" testInvoiceProduct
     it "refuses a stored reveal whose acceptance columns are unset or set only in part" testPartialAcceptance
     it "refuses a stored commitment, secret or accepted terms hash that is not 32 bytes" testShortHashes
     it "refuses a stored length outside the name lengths" testStoredLength
@@ -145,8 +146,8 @@ insertProviderInvoice :: DB.Connection -> Text -> Text -> UTCTime -> Text -> IO 
 insertProviderInvoice db provider invId expiresAt status =
   DB.execute
     db
-    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
-    ((invId, provider, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
+    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, product, price, amount, currency, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    ((invId, provider, "name" :: Text, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
 
 -- | A paid order whose invoice, named after the registration, expires at the given time.
 placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either BalanceInsertRefused ())
@@ -193,10 +194,10 @@ badgeTables = map ("sx_badge_service_" <>) ["invoices", "payments", "badge_price
 
 testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
-  let names = dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
+  let (names, later) = span ((/= productMigration) . name) $ dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
   map name names `shouldBe` ["20261013_names"]
-  badgeBefore <- badgeColumns
+  map name later `shouldBe` [productMigration]
   seedBadgePrice st "price1"
   createInvoiceRows st sampleInvoice `shouldReturn` Right ()
   let NewInvoice {niInvoiceId = InvoiceId badgeInvoice, niProviderRef = badgeRef} = sampleInvoice
@@ -206,6 +207,8 @@ testNamesDownUp = withServiceStore $ \st -> do
   placePaid st "r3" ownerB (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
   withTransaction st $ \db -> insertPayment db "inv-r3"
   withTransaction st $ \db -> setTermsText db (hashFixture 1) "terms"
+  runMigrations st $ MTRDown (mapMaybe toDownMigration later)
+  badgeBefore <- badgeColumns
   runMigrations st $ MTRDown (mapMaybe toDownMigration names)
   mapM (columnsOf st) namesTables `shouldReturn` map (const []) namesTables
   mapM (invoiceCount st) ["inv-r2", "inv-r3"] `shouldReturn` [0, 1]
@@ -214,7 +217,26 @@ testNamesDownUp = withServiceStore $ \st -> do
   runMigrations st $ MTRUp names
   mapM (fmap null . columnsOf st) namesTables `shouldReturn` map (const False) namesTables
   badgeColumns `shouldReturn` badgeBefore
+  runMigrations st $ MTRUp later
   (fmap irInvoiceId <$> getInvoiceByProviderRef st badgeRef) `shouldReturn` Just (InvoiceId badgeInvoice)
+
+productMigration :: String
+productMigration = "20261118_invoice_product"
+
+testInvoiceProduct :: IO ()
+testInvoiceProduct = withServiceStore $ \st -> do
+  let migration = filter ((== productMigration) . name) storeServiceSchemaMigrations
+  seedBadgePrice st "price1"
+  createInvoiceRows st sampleInvoice `shouldReturn` Right ()
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  runMigrations st $ MTRDown (mapMaybe toDownMigration migration)
+  runMigrations st $ MTRUp migration
+  let NewInvoice {niInvoiceId = InvoiceId badgeInvoice} = sampleInvoice
+      productOf invId = withTransaction st $ \db -> DB.query db "SELECT product FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId)
+  mapM productOf [badgeInvoice, "inv-r1"] `shouldReturn` [[Only ("badge" :: Text)], [Only "name"]]
+  fmap irProduct <$> getInvoice st (InvoiceId "inv-r1") `shouldReturn` Just (IPName (RegistrationId "r1"))
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_invoices SET product = 'badge' WHERE invoice_id = ?" (Only ("inv-r1" :: Text))
+  getInvoice st (InvoiceId "inv-r1") `shouldThrow` (\(StoreDecodeError e) -> e == "invoice product: inv-r1")
 
 testPartialAcceptance :: IO ()
 testPartialAcceptance = withServiceStore $ \st -> do
