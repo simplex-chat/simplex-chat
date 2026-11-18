@@ -10,6 +10,7 @@ module StoreService.Names.View
     PhaseView (..),
     Signing (..),
     ToSign (..),
+    Successor (..),
     registrationView,
     phaseView,
     readToSign,
@@ -33,6 +34,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
+import Simplex.Chat.PaymentService.Types (InvoiceId)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.Eth.Address (Address)
@@ -78,6 +80,9 @@ data Signing = SAwaiting {toSign :: ToSign} | SSigned | SLapsed
 data ToSign = TSUnread | TSRead {intentNonce :: Word64, acceptance :: AcceptanceAsked}
   deriving (Eq, Show)
 
+data Successor = Successor {scRegistrationId :: Text, scInvoiceId :: Maybe InvoiceId}
+  deriving (Eq, Show)
+
 data RegistrationView = RegistrationView
   { vwId :: Text,
     vwVersion :: Int64,
@@ -98,7 +103,8 @@ data RegistrationView = RegistrationView
     vwCommitTx :: Maybe TxHash,
     vwRegisterTx :: Maybe TxHash,
     vwCommunity :: Maybe Community,
-    vwTerms :: AgreedTerms
+    vwTerms :: AgreedTerms,
+    vwReplacedBy :: Maybe Successor
   }
   deriving (Eq, Show)
 
@@ -111,6 +117,8 @@ $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "TS") ''ToSign)
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "S") ''Signing)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "PV") ''PhaseView)
+
+$(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "sc"} ''Successor)
 
 $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "vw"} ''RegistrationView)
 
@@ -173,11 +181,12 @@ toRegistrationView cfg r balance late phase =
       vwCommitTx = thCommitTx,
       vwRegisterTx = thRegisterTx,
       vwCommunity = communityOf cfg (nrLabelHash r) (atCommunityName nrAgreedTerms),
-      vwTerms = nrAgreedTerms
+      vwTerms = nrAgreedTerms,
+      vwReplacedBy = (\(RegistrationId s, invId) -> Successor {scRegistrationId = s, scInvoiceId = invId}) <$> nrReplacedBy
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrLinksRefusedAt, nrHistory = TxHistory {thCommitTx, thRegisterTx}} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrLinksRefusedAt, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrReplacedBy} = r
 
 paidWith :: OrderPayment -> PaidWith
 paidWith = \case

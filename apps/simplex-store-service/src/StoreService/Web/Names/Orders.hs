@@ -153,9 +153,9 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} http client cfg provid
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
-              registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash}
+              registration replaced = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash, nrgReplaces = replaced}
               paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId}
-          placeOrder env req ivHolders (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)
+          placeOrder env req ivHolders (\replaced db at -> insertNameInvoice db invoice >> ivInsert (registration replaced) paid db at)
             `E.catch` strandedBy provider piProviderRef
             >>= \case
             Left refusal -> do
@@ -279,8 +279,8 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers w
     place order@OrderRequest {orOwner, orFields} hash spend@Spend {spPrice, spBalance, spMethod} holder = case spMethod of
       Nothing -> do
         rid <- newRegistrationId
-        let new = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = hash}
-        placeOrder env order (maybeToList holder) (coveredOrderInsert spend new) >>= \case
+        let new replaced = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig, nrgOrderHash = hash, nrgReplaces = replaced}
+        placeOrder env order (maybeToList holder) (coveredOrderInsert spend . new) >>= \case
           Left refusal -> refuse refusal
           Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
       Just (SPMCard _)

@@ -57,7 +57,9 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
-import Data.Maybe (catMaybes, isJust)
+import Data.List (partition, sortOn)
+import Data.Maybe (catMaybes, isJust, listToMaybe)
+import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -212,12 +214,14 @@ existingOrder db req hash now =
     Just r -> pure $ EOResent r
     Nothing -> maybe EOMeets (const EONew) <$> overdueOrdersMet db req now
 
--- | The live orders of the request's commitment, or of its owner and label hash, when all are overdue orders of the same wallet and name;
--- Nothing when any other live order holds them.
-overdueOrdersMet :: DB.Connection -> OrderRequest -> UTCTime -> IO (Maybe [NameRegistration])
+-- | The live orders of the request's commitment, or of its owner and label hash, when all are overdue orders of the same wallet and name,
+-- with the order the new one replaces: the newest of them, else the newest closed one; Nothing when any other live order holds them.
+overdueOrdersMet :: DB.Connection -> OrderRequest -> UTCTime -> IO (Maybe ([NameRegistration], Maybe RegistrationId))
 overdueOrdersMet db OrderRequest {orOwner, orFields = OrderFields {ofLabelHash, ofCommitment}} now = do
-  orders <- getLiveOrders db ofCommitment orOwner ofLabelHash now
-  pure $ if all closable orders then Just (map loRegistration orders) else Nothing
+  (live, closed) <- partition (orderLive . loRegistration) <$> getLiveOrders db ofCommitment orOwner ofLabelHash now
+  let overdue = map loRegistration live
+      replaced = listToMaybe $ sortOn (Down . nrCreatedAt) overdue <> map loRegistration closed
+  pure $ if all closable live then Just (overdue, nrId <$> replaced) else Nothing
   where
     closable LiveOrder {loRegistration = NameRegistration {nrOwner, nrLabelHash}, loOverdue} =
       loOverdue && nrOwner == orOwner && nrLabelHash == ofLabelHash
@@ -225,17 +229,17 @@ overdueOrdersMet db OrderRequest {orOwner, orFields = OrderFields {ofLabelHash, 
 -- | In one transaction, the overdue orders the request meets and the balance holders the caller names are closed, then the order is inserted.
 -- A named holder no longer live is skipped, and one still live that cannot be closed refuses with the balance it holds.
 -- Refused, changing nothing, when it meets an order it cannot close, or the insert refuses.
-placeOrder :: OrdersEnv -> OrderRequest -> [NameRegistration] -> (DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
+placeOrder :: OrdersEnv -> OrderRequest -> [NameRegistration] -> (Maybe RegistrationId -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
 placeOrder OrdersEnv {oeStore, oeNow} req holders insert = do
   now <- oeNow
   first (\(OrderRefused refusal) -> refusal) <$> E.try (withTransaction oeStore $ \db -> transaction db now)
   where
     transaction db now =
       overdueOrdersMet db req now >>= \case
-        Just overdue -> do
+        Just (overdue, replaced) -> do
           closed <- mapM (close db now) overdue
           closedHolders <- catMaybes <$> mapM (closeHolder db now) holders
-          insert db now >>= either (E.throwIO . OrderRefused) (const $ pure $ closed <> closedHolders)
+          insert replaced db now >>= either (E.throwIO . OrderRefused) (const $ pure $ closed <> closedHolders)
         Nothing -> E.throwIO $ OrderRefused OROrderExists
     close db now r =
       closeOverdue db r now >>= \case
@@ -260,7 +264,7 @@ placeCodeOrder env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orOwner
       Nothing -> pure $ Left $ ORCode CRInvalid
       Just code
         | Just refusal <- codeRefusal now rid ofLength code -> pure $ Left $ ORCode refusal
-        | otherwise -> placeOrder env req [] $ codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = fields, nrgYears = pcYears, nrgOrderHash = hash} code
+        | otherwise -> placeOrder env req [] $ \replaced -> codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = fields, nrgYears = pcYears, nrgOrderHash = hash, nrgReplaces = replaced} code
 
 -- | The code was checked in its turn, so only a writer outside this process can make its reservation fail.
 codeOrderInsert :: NewRegistration -> PrepaidCode -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())
@@ -331,7 +335,7 @@ orderFieldsOf NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment,
 checkMoveMeets :: DBStore -> NameRegistration -> OrderFields -> UTCTime -> IO (Either OrderRefusal ())
 checkMoveMeets st NameRegistration {nrId = rid, nrOwner} OrderFields {ofLabelHash, ofCommitment} now = do
   orders <- withTransaction st $ \db -> getLiveOrders db ofCommitment nrOwner ofLabelHash now
-  pure $ if any ((/= rid) . nrId . loRegistration) orders then Left OROrderExists else Right ()
+  pure $ if any (\LiveOrder {loRegistration = o} -> orderLive o && nrId o /= rid) orders then Left OROrderExists else Right ()
 
 -- | The new name's chain price for its years, at most what the order is worth, becomes its price.
 checkMovePrice :: Contracts -> NameRegistration -> NameLength -> Int -> IO (Either OrderRefusal USDCents)

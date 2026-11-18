@@ -349,7 +349,8 @@ data NameRegistration = NameRegistration
     nrOrderHash :: OrderHash,
     nrMoves :: Int,
     nrCreatedAt :: UTCTime,
-    nrUpdatedAt :: UTCTime
+    nrUpdatedAt :: UTCTime,
+    nrReplacedBy :: Maybe (RegistrationId, Maybe InvoiceId)
   }
   deriving (Eq, Show)
 
@@ -358,7 +359,8 @@ data NewRegistration = NewRegistration
     nrgOwner :: Address,
     nrgOrder :: OrderFields,
     nrgYears :: Int,
-    nrgOrderHash :: OrderHash
+    nrgOrderHash :: OrderHash,
+    nrgReplaces :: Maybe RegistrationId
   }
 
 -- | The invoice row is inserted by the caller, in the same transaction and before the registration.
@@ -750,7 +752,7 @@ createBalanceRegistration db new use@BalanceUse {buSource, buUsed} seen now' = d
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
 insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> USDCents -> Maybe ServicePaymentMethod -> Maybe CodeId -> Maybe BalanceUse -> UTCTime -> IO Bool
-insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears, nrgOrderHash} phase price method codeId fromBalance now =
+insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears, nrgOrderHash, nrgReplaces} phase price method codeId fromBalance now =
   (> 0)
     <$> executeChanging
       db
@@ -758,14 +760,14 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
           [sql|
         INSERT INTO @name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
-           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms)
-        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?)
+           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms, replaces)
+        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?,?)
         ON CONFLICT DO NOTHING
       |]
       )
       ( (rid, initialVersion, ofLabelHash, nameLengthInt ofLength, int64 ofDuration, nrgOwner, ofCommitment, ofSealed, phase, nrgYears)
           :. (price, method, codeId, BI True, nrgOrderHash, 0 :: Int, now, now, (\BalanceUse {buSource = RegistrationId s} -> s) <$> fromBalance, maybe 0 buUsed fromBalance)
-          :. Only ofAgreedTerms
+          :. (ofAgreedTerms, (\(RegistrationId s) -> s) <$> nrgReplaces)
       )
   where
     OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = nrgOrder
@@ -777,7 +779,7 @@ registrationColumns =
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
       r.closed_by, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used, r.agreed_terms, r.accept_terms,
-      r.accept_nonce, r.accept_signature
+      r.accept_nonce, r.accept_signature, rs.registration_id, rsi.invoice_id
   |]
 
 registrationFrom :: Query
@@ -787,6 +789,8 @@ registrationFrom =
       [sql|
     FROM @name_registrations r
     LEFT JOIN @name_invoices ni ON ni.registration_id = r.registration_id
+    LEFT JOIN @name_registrations rs ON rs.replaces = r.registration_id
+    LEFT JOIN @name_invoices rsi ON rsi.registration_id = rs.registration_id
   |]
 
 selectRegistrations :: Query
@@ -797,7 +801,7 @@ type RegistrationRow =
     :. (USDCents, Maybe ServicePaymentMethod, Maybe Text, Maybe Int64, Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe UTCTime, Maybe FailReason)
     :. (Maybe InvoiceClose, OrderHash, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, USDCents, AgreedTerms, Maybe TermsHash)
-    :. (Maybe Int64, Maybe RecoverableSignature)
+    :. (Maybe Int64, Maybe RecoverableSignature, Maybe Text, Maybe Text)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
@@ -805,7 +809,7 @@ toRegistration
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
       :. (closedBy, nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used, nrAgreedTerms, acceptTerms_)
-      :. (acceptNonce_, acceptSignature_)
+      :. (acceptNonce_, acceptSignature_, successor_, successorInvoice_)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
     let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = word64 after, cmRevealBefore = word64 before}
@@ -869,7 +873,8 @@ toRegistration
           nrOrderHash,
           nrMoves,
           nrCreatedAt,
-          nrUpdatedAt
+          nrUpdatedAt,
+          nrReplacedBy = (\s -> (RegistrationId s, InvoiceId <$> successorInvoice_)) <$> successor_
         }
 
 getRegistration :: DB.Connection -> RegistrationId -> IO (Maybe NameRegistration)
@@ -883,6 +888,7 @@ getRegistrationByOrderHash db hash =
     DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, r.registration_id DESC LIMIT 1") (Only hash)
 
 -- | Overdue whatever status the poller has marked, as long as the invoice is not paid and holds no money, as the sweep decides.
+-- With them, the owner's newest closed order of the label hash that no order replaces yet.
 getLiveOrders :: DB.Connection -> Commitment -> Address -> LabelHash -> UTCTime -> IO [LiveOrder]
 getLiveOrders db commitment owner lh now =
   DB.query
@@ -892,10 +898,16 @@ getLiveOrders db commitment owner lh now =
         <> overdueOrder "r"
         <> " THEN 1 ELSE 0 END"
         <> registrationFrom
-        <> mkQuery " LEFT JOIN @invoices i ON i.invoice_id = ni.invoice_id"
-        <> " WHERE r.live = 1 AND (r.commitment = ? OR (r.owner = ? AND r.label_hash = ?))"
+        <> mkQuery
+          ( " LEFT JOIN @invoices i ON i.invoice_id = ni.invoice_id"
+              <> " WHERE (r.live = 1 AND (r.commitment = ? OR (r.owner = ? AND r.label_hash = ?)))"
+              <> " OR r.registration_id = (SELECT c.registration_id FROM @name_registrations c"
+              <> " WHERE c.owner = ? AND c.label_hash = ? AND c.phase = ?"
+              <> " AND NOT EXISTS (SELECT 1 FROM @name_registrations n WHERE n.replaces = c.registration_id)"
+              <> " ORDER BY c.updated_at DESC, c.registration_id DESC LIMIT 1)"
+          )
     )
-    (PUnpaid, ISPaid, truncateToSecond now, commitment, owner, lh)
+    ((PUnpaid, ISPaid, truncateToSecond now, commitment, owner, lh) :. (owner, lh, PClosed))
     >>= decodeAll toLiveOrder
   where
     toLiveOrder (row :. Only (BI loOverdue)) = (\loRegistration -> LiveOrder {loRegistration, loOverdue}) <$> toRegistration row

@@ -183,7 +183,8 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "checks a community name's order for 2 years at their price, whatever years the configuration gives, storing those years" testCommunityInvoiceYears
   describe "closed orders" $ do
     it "accepts a new order of the same wallet and name after a cancel" testOrderAfterCancel
-    it "closes an overdue order of the same wallet and name before the poller marks it, cancelling its invoice after" testOverdueClosed
+    it "closes an overdue order of the same wallet and name before the poller marks it, cancelling its invoice after, and the new order replaces it" testOverdueClosed
+    it "links a closed order to the next order of the same wallet and name, which its view names, each closed order once" testReplacesClosed
     it "records a payment of the closed order as a late payment, changing nothing of it and leaving the newer order alone" testLatePaymentAfterNewOrder
     it "keeps an overdue order whose invoice holds money, refusing the next order, and settles it" testFundedOverdueKept
     it "alerts on a late payment as BTCPay reports it for an expired, cancelled or swept invoice, once" testLateBTCPayPayments
@@ -1221,7 +1222,7 @@ testCodeNotReservable = withOrders $ \ctx@Ctx {cStore} -> do
   req <- either (error . show) id . (\body -> Orders.parseBody "order" (fromMaybe J.Null $ KM.lookup "order" body) >>= Orders.orderRequest) <$> signedBody (cRandom ctx) aliceOrder
   forM_ [(reservedLate, CRReserved), (revokedLate, CRInvalid)] $ \(stale, refusal) -> do
     let new = codeReg "late" ownerA (fieldsOf aliceOrder) stale
-    placedOrder <- Orders.placeOrder (cOrders ctx) req [] (Orders.codeOrderInsert new stale)
+    placedOrder <- Orders.placeOrder (cOrders ctx) req [] (const $ Orders.codeOrderInsert new stale)
     either Just (const Nothing) placedOrder `shouldBe` Just (Orders.ORCode refusal)
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
@@ -1279,10 +1280,35 @@ testOverdueClosed = withOrders $ \ctx -> do
   Just oldRow <- getInvoice (cStore ctx) oldInv
   irStatus oldRow `shouldBe` ISExpired
   old <- invoiceRegistration ctx oldInv
-  (nrPhase old, nrVersion old) `shouldBe` (OClosed ICExpired, 2)
-  orderLive <$> invoiceRegistration ctx newInv `shouldReturn` True
+  new <- invoiceRegistration ctx newInv
+  (nrPhase old, nrVersion old, nrReplacedBy old) `shouldBe` (OClosed ICExpired, 2, Just (nrId new, Just newInv))
+  orderLive new `shouldBe` True
   calls <- stubCalls (cStub ctx)
   [c | c@StubCancel {} <- calls] `shouldBe` [StubCancel (irProviderRef oldRow)]
+
+testReplacesClosed :: IO ()
+testReplacesClosed = withOrders $ \ctx -> do
+  let invoiceText (InvoiceId t) = t
+      cancel inv = fst <$> post ctx ("/api/invoice/" <> T.unpack (invoiceText inv) <> "/cancel") "" `shouldReturn` 200
+      again n = do
+        now <- readIORef (cClock ctx)
+        (inv, _) <- placed ctx aliceOrder {oCommitment = commitmentOf n, oTimestamp = seconds now, oDuration = durationAt now}
+        (,) inv <$> invoiceRegistration ctx inv
+  (firstInv, _) <- placed ctx aliceOrder
+  cancel firstInv
+  (secondInv, second) <- again 2
+  nrReplacedBy <$> invoiceRegistration ctx firstInv `shouldReturn` Just (nrId second, Just secondInv)
+  cancel secondInv
+  (thirdInv, third) <- again 3
+  nrReplacedBy <$> invoiceRegistration ctx secondInv `shouldReturn` Just (nrId third, Just thirdInv)
+  nrReplacedBy <$> invoiceRegistration ctx firstInv `shouldReturn` Just (nrId second, Just secondInv)
+  nrReplacedBy third `shouldBe` Nothing
+  (_, view) <- answerOf <$> webGet (cClient ctx) ("/api/invoice/" <> T.unpack (invoiceText secondInv))
+  ((`fieldOf` "replacedBy") . registrationOf =<< view) `shouldBe` Just (J.object ["registrationId" J..= (\(RegistrationId t) -> t) (nrId third), "invoiceId" J..= thirdInv])
+  (otherInv, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 4}
+  other <- invoiceRegistration ctx otherInv
+  nrReplacedBy <$> invoiceRegistration ctx thirdInv `shouldReturn` Nothing
+  nrReplacedBy other `shouldBe` Nothing
 
 testLatePaymentAfterNewOrder :: IO ()
 testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
@@ -1648,7 +1674,8 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwCommitTx = Nothing,
         vwRegisterTx = Nothing,
         vwCommunity = Nothing,
-        vwTerms = agreed plainTerms
+        vwTerms = agreed plainTerms,
+        vwReplacedBy = Nothing
       }
   map (\w -> J.toJSON (vwLatePayment $ viewWith (Just w) PVUnpaid)) [LWConfirming, LWCrediting, LWSupport] `shouldBe` ["confirming", "crediting", "support"]
   let acceptance community h = AcceptanceAsked {acCommunity = community, acPolicy = fakeNamePolicy, acTermsHash = Hex32 h, acNonce = 2}
@@ -1718,7 +1745,8 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
               ("latePayment", J.Null),
               ("commitTx", txText 8),
               ("community", J.Null),
-              ("terms", J.toJSON $ agreed plainTerms)
+              ("terms", J.toJSON $ agreed plainTerms),
+              ("replacedBy", J.Null)
             ]
 
 testViewTerms :: IO ()

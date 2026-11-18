@@ -257,8 +257,8 @@ creditLate st c = withTransaction st $ \db -> creditLatePayment db c (at 3)
 orderRequest :: Text -> OrderRequest
 orderRequest r = OrderRequest {orOwner = ownerA, orFields = fieldsN r, orTimestamp = 0, orSignature = signature}
 
-spendInsert :: Text -> Text -> USDCents -> USDCents -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())
-spendInsert r src price seen db now = first (const $ ORBalanceChanged Nothing) <$> coveredInsert r src price seen db now
+spendInsert :: Text -> Text -> USDCents -> USDCents -> Maybe RegistrationId -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())
+spendInsert r src price seen _ db now = first (const $ ORBalanceChanged Nothing) <$> coveredInsert r src price seen db now
 
 closedIds :: Either OrderRefusal [ClosedOrder] -> Either OrderRefusal [(RegistrationId, Int64)]
 closedIds = fmap $ map $ \ClosedOrder {coRegistration, coVersion} -> (nrId coRegistration, coVersion)
@@ -528,7 +528,7 @@ testOverdueHolderClosed = withOrders $ \Ctx {cStore = st, cOrders} -> do
   (blHold balance, heldBy balance) `shouldBe` (Just $ hold "h" (at 60) True, Nothing)
   Right (Just h) <- checkSpendBalance st Spend {spSource = RegistrationId "s", spPrice = 6000, spBalance = 10000, spMethod = Nothing} now
   nrId h `shouldBe` RegistrationId "h"
-  closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (\_ _ -> pure $ Left $ ORBadRequest "refused") `shouldReturn` Left (ORBadRequest "refused")
+  closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (\_ _ _ -> pure $ Left $ ORBadRequest "refused") `shouldReturn` Left (ORBadRequest "refused")
   invoiceStatus st (InvoiceId "inv-h") `shouldReturn` ISOpen
   orderLive <$> reg st "h" `shouldReturn` True
   figures st "s" now `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" (at 60) True)

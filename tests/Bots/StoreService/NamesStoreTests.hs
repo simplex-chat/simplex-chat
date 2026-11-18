@@ -124,7 +124,7 @@ order label n =
     }
 
 newReg :: Text -> Address -> OrderFields -> NewRegistration
-newReg rid nrgOwner nrgOrder = NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears = twoYears, nrgOrderHash = orderHash nrgOwner nrgOrder (OTInvoice btc price)}
+newReg rid nrgOwner nrgOrder = NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears = twoYears, nrgOrderHash = orderHash nrgOwner nrgOrder (OTInvoice btc price), nrgReplaces = Nothing}
 
 btc :: ServicePaymentMethod
 btc = SPMCrypto CCBtc
@@ -314,7 +314,8 @@ testCreatePaid = withServiceStore $ \st -> do
         nrOrderHash = orderHash ownerA o (OTInvoice btc price),
         nrMoves = 0,
         nrCreatedAt = t0,
-        nrUpdatedAt = t0
+        nrUpdatedAt = t0,
+        nrReplacedBy = Nothing
       }
 
 testCreateCode :: IO ()
