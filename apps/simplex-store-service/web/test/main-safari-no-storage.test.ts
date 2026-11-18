@@ -18,5 +18,5 @@ refusedTest("main: in Safari with localStorage refused, Your codes is shown with
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
   const screen = inViewOf(app);
   assert.equal(headingOf(screen), "Your codes");
-  assert.ok(!screen.textContent.includes(IDLE_DELETION_CODES), `the deletion warning is shown although localStorage refuses writes: ${screen.textContent.slice(0, 300)}`);
+  assert.ok(!screen.textContent.includes(IDLE_DELETION_CODES), `the deletion warning is shown although writes to localStorage throw:${screen.textContent.slice(0, 300)}`);
 });

@@ -16,7 +16,7 @@ await import("../src/main.js");
 const heading = (): string => headingOf(screenOf(app));
 const inView = (): StubElement => inViewOf(app);
 
-safariTest("main: in Safari opened from the app, the deletion warning is shown above Show code", async () => {
+safariTest("main: in Safari opened from the app, the deletion warning and the hint are shown on the ending", async () => {
   inView().all("button.choice").find((c) => c.textContent.startsWith("Legend"))!.click();
   primaryOf(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("12 months"))!.click();

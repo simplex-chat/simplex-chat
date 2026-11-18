@@ -650,7 +650,7 @@ qrTest("the payment screen: with no address there is no QR, and the screen keeps
 });
 
 qrTest("the code screen: the QR is the code, and the code screen is the only screen that has one", () => {
-  const panel = screens.codeIssued({ code: BADGE_CODE, keeping: "kept" }) as unknown as StubElement;
+  const panel = screens.codeIssued({ code: BADGE_CODE, retention: "kept" }) as unknown as StubElement;
   const svg = panel.querySelector("svg.qr");
   assert.ok(svg !== null, "support reconciliation: with a QR, scan to carry it to your phone");
   assert.equal(decodeQr(modulesOfSvg(svg)).payload, BADGE_CODE);
@@ -665,11 +665,11 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
     ["awaitingConfirmation", screens.awaitingConfirmation({ invoice: undefined, method: undefined, order: unpaid, gaveUp: false, onCheckAgain: noop }) as unknown as StubElement],
     ["the confirming screen gave up", screens.awaitingConfirmation({ invoice: undefined, method: undefined, order: unpaid, gaveUp: true, onCheckAgain: noop }) as unknown as StubElement],
     ["windowClosed", screens.windowClosed({ onNewInvoice: noop, order: unpaid, invoice: xmrInvoice }) as unknown as StubElement],
-    ["paidNoCode", screens.paidNoCode({ order: unpaid, settledAt: undefined, keeping: "kept" }) as unknown as StubElement],
+    ["paidNoCode", screens.paidNoCode({ order: unpaid, settledAt: undefined, retention: "kept" }) as unknown as StubElement],
     ["the card form", screens.cardForm({ order: unpaid, invoice: xmrInvoice, resumed: false }) as unknown as StubElement],
   ];
   const rows = order.historyRows([record({ status: "open", code: BADGE_CODE }), record({ orderId: "inv_2", status: "expired", code: BADGE_CODE })]);
-  panels.push(["the history list", screens.purchaseHistory({ onForget: () => {}, keeping: "kept", rows, onOpen: noop, onStart: noop }) as unknown as StubElement]);
+  panels.push(["the history list", screens.purchaseHistory({ onForget: () => {}, retention: "kept", rows, onOpen: noop, onStart: noop }) as unknown as StubElement]);
 
   for (const [where, panel] of panels) {
     for (const svg of panel.all("svg.qr")) {
@@ -689,7 +689,7 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
     }
   }
 
-  const codeIssued = screens.codeIssued({ code: BADGE_CODE, keeping: "kept" }) as unknown as StubElement;
+  const codeIssued = screens.codeIssued({ code: BADGE_CODE, retention: "kept" }) as unknown as StubElement;
   assert.equal(codeIssued.all("svg.qr").length, 1, "the code screen draws exactly one");
   assert.equal(decodeQr(modulesOfSvg(codeIssued.all("svg.qr")[0]!)).payload, BADGE_CODE);
 });
