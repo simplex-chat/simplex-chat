@@ -53,13 +53,14 @@ flowchart TD
   w0 -->|yes| d{browserDeletesIdle of navigator.userAgent}
   d -->|false| k[kept]
   d -->|true| u[keptUntilIdle]
-  k --> cw{code screens only: this code written to localStorage}
-  u --> cw
-  cw -->|no| nk
-  cw -->|yes| same[kept or keptUntilIdle, unchanged]
   nk --> other[Your codes, paid-no-code: the page-load value]
   k --> other
   u --> other
+  nk --> csn[code screens: notKept]
+  k --> cw{this code written to localStorage}
+  u --> cw
+  cw -->|no| csn
+  cw -->|yes| same[code screens: the page-load value]
 ```
 
 | Screen | `notKept` | `kept` | `keptUntilIdle` |
@@ -94,7 +95,7 @@ flowchart TD
   - Firefox on Android
   - the Android stock browser
   - an empty user agent
-- `test/screens.test.ts`: the five screens with and without the deletion warning, and the title and lines of each warning box.
+- `test/screens.test.ts`: the code screen, the return-to-app screen before and after Show code, Your codes and the paid-no-code screen, with and without the deletion warning, and the title and lines of each warning box.
 - `test/main-safari-app.test.ts`: the paid ending opened from the app, and Your codes, in Safari on iPhone.
 - `test/main-safari-code.test.ts`: the code screen in Safari on macOS.
 - `test/main-chrome-code.test.ts`: the code screen and Your codes in Chrome on macOS, without the warning.
