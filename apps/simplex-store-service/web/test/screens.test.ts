@@ -567,9 +567,9 @@ domTest("screens: on a Lightning payment screen the BOLT11 is offered as a light
   assert.deepEqual(copied, ["0.00050000", BOLT11]);
 });
 
-domTest("screens: a Lightning invoice is shown as its first 14 and last 8 characters, an on-chain address in full", () => {
+domTest("screens: a Lightning invoice is shown as its first 8 and last 6 characters, an on-chain address in full", () => {
   const bolt11 = `lnbcrt1562500n1p${"q".repeat(300)}qpw0frsq`;
-  assert.equal(screens.shownDestination("ln", bolt11), "lnbcrt1562500n…qpw0frsq");
+  assert.equal(screens.shownDestination("ln", bolt11), "lnbcrt15…w0frsq");
   const address = "bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080";
   assert.equal(screens.shownDestination("btc", address), address);
   assert.equal(screens.shownDestination("xmr", address), address);

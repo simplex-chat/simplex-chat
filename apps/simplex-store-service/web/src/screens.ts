@@ -564,8 +564,8 @@ function offlineNote(): HTMLElement {
 const CRYPTO_NAMES: Readonly<Record<Chain, string>> = { btc: "Bitcoin", ln: "Lightning", xmr: "Monero" };
 const CRYPTO_TICKERS: Readonly<Record<Chain, string>> = { btc: "BTC", ln: "BTC", xmr: "XMR" };
 const DESTINATIONS: Readonly<Record<Chain, string>> = { btc: "address", ln: "invoice", xmr: "address" };
-const INVOICE_HEAD = 14;
-const INVOICE_TAIL = 8;
+const INVOICE_HEAD = 8;
+const INVOICE_TAIL = 6;
 
 export function shownDestination(method: Chain, address: string): string {
   return method === "ln" ? `${address.slice(0, INVOICE_HEAD)}…${address.slice(-INVOICE_TAIL)}` : address;
