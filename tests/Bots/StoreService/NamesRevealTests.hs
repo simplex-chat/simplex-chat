@@ -66,7 +66,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "answers an identical repeat in a later phase, and refuses a different one" testRepeats
     it "answers after the name's turn, so a slow reader of one answer holds no other reveal" testAnswersAfterTurn
   describe "refused" $ do
-    it "refuses a high-s intent, a wrong signer, a stale nonce, and a deadline past or before revealBefore, writing nothing" testIntentRefusals
+    it "refuses a high-s intent, a wrong signer, a stale nonce, a deadline before revealBefore or over a week ahead, writing nothing, and accepts one a week ahead" testIntentRefusals
     it "refuses a label not of the order, another secret or other links, writing nothing" testCommitmentRefusals
     it "refuses a commitment of another duration than the order's" testWrongDuration
     it "refuses a list of links for a key as bad_request, recording nothing" testSecondLink
@@ -407,18 +407,25 @@ testIntentRefusals = withReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
   sig <- signIntent ctx keyA alice 0 revealBefore
   other <- signIntent ctx fakeRegistrarKey alice 0 revealBefore
   early <- signIntent ctx keyA alice 0 (revealBefore - 1)
+  let weekAhead = orderSeconds + 7 * 86400
+      pastWeek = weekAhead + 601
+  late <- signIntent ctx keyA alice 0 pastWeek
   acceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 revealBefore
+  lateAcceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 pastWeek
   forM_
-    [ ("high s", bodyOf (highS sig) alice 0 revealBefore),
-      ("another signer", bodyOf other alice 0 revealBefore),
-      ("a deadline a second before revealBefore", bodyOf early alice 0 (revealBefore - 1))
+    [ ("high s", withAcceptance acceptance $ bodyOf (highS sig) alice 0 revealBefore),
+      ("another signer", withAcceptance acceptance $ bodyOf other alice 0 revealBefore),
+      ("a deadline a second before revealBefore", withAcceptance acceptance $ bodyOf early alice 0 (revealBefore - 1)),
+      ("a deadline a week and the signed request slack ahead, and a second", withAcceptance lateAcceptance $ bodyOf late alice 0 pastWeek)
     ]
-    $ \(what, body) -> (what,) <$> reveal ctx rid (withAcceptance acceptance body) `shouldReturn` (what :: String, badRequest)
+    $ \(what, body) -> (what,) <$> reveal ctx rid body `shouldReturn` (what :: String, badRequest)
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (1 :: Int)
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
-  reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
+  week <- signIntent ctx keyA alice 0 weekAhead
+  weekAcceptance <- acceptanceOf ctx keyA alice False fakeGeneralTerms 0 weekAhead
+  reveal ctx rid (withAcceptance weekAcceptance $ bodyOf week alice 0 weekAhead) `shouldReturn` accepted
 
 testCommitmentRefusals :: IO ()
 testCommitmentRefusals = withReveals $ \Fx {fCtx = ctx} -> do

@@ -1088,7 +1088,7 @@ register refused for the acceptance (new terms, a used nonce), an acceptance of 
 terms, or one signed for the name policy before a `setNamePolicy`, clears the reveal, and the page
 signs again. A relay that reverts while the policy holds that acceptance for the commitment, as when
 another sent it first, is followed by the register. The page signs the reveal and the acceptance
-with a deadline a week ahead, so the service keeps them across a lapse while the deadline has not
+with a deadline a week ahead, the latest the service accepts, so it keeps them across a lapse while the deadline has not
 passed and the sponsor nonce is unchanged: it commits again and registers with no new signature. The
 intent does not cover the secret; the service clears the stored reveal at a move and at a close.
 

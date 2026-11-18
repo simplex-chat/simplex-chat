@@ -31,7 +31,8 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
-import StoreService.Names.Chain (ChainSeconds, Hex32, chainSeconds)
+import StoreService.Names.Chain (ChainSeconds, Hex32, chainSeconds, unixSeconds)
+import StoreService.Names.Orders (signedRequestSeconds)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Registration (LinkKind (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, validLabel, verifyAcceptance, verifyRegisterIntent)
@@ -79,6 +80,7 @@ committedReveal cfg@NamesConfig {nTLD} r@NameRegistration {nrLabelHash, nrLength
 checkIntent :: NamesConfig -> Contracts -> UTCTime -> ChainSeconds -> RegisterIntent -> IO (Either RevealRefusal ())
 checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revealBefore intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
   | riDeadline < revealBefore = pure $ Left $ RVBadRequest "the intent's deadline is before revealBefore"
+  | toInteger riDeadline > unixSeconds now + signatureSeconds + signedRequestSeconds = pure $ Left $ RVBadRequest "the intent's deadline is more than a week ahead"
   | otherwise =
       verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
         Left e -> pure $ Left $ RVBadRequest $ T.pack e
@@ -96,6 +98,9 @@ checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistratio
     Right AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce}
       | taTermsHash == acTermsHash && taNonce == acNonce -> first (RVBadRequest . T.pack) <$> verifyAcceptance (policyDomain cChainId acPolicy) (termsKind acCommunity) nrOwner nrCommitment rvDeadline a
       | otherwise -> pure $ Left $ RVBadRequest "the acceptance is not of the terms and nonce the policy asks"
+
+signatureSeconds :: Integer
+signatureSeconds = 7 * 86400
 
 linksValid :: NameReveal -> Bool
 linksValid NameReveal {rvContactLink, rvChannelLink} = all (ofKind LKContact) rvContactLink && all (ofKind LKChannel) rvChannelLink
