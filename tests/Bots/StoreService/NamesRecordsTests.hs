@@ -8,7 +8,7 @@ module Bots.StoreService.NamesRecordsTests (namesRecordsTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (alice, gracePeriod, minPriceCentsPerYear, otherResolver, registry)
 import Bots.StoreService.NamesStoreTests (t0)
-import Bots.StoreService.WebTests (bounded, refusedWith, withServiceStore)
+import Bots.StoreService.WebTests (bounded, nameRefusedWith, withServiceStore)
 import qualified Bots.StoreService.WebTests as WT
 import Bots.StoreService.WebUIMock (EphemeralWallet (..), newEphemeralWallet, walletFromCode)
 import Control.Concurrent.Async (Async, async, concurrently, wait)
@@ -29,7 +29,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseHeaders)
 import Network.HTTP.Types (hContentType, statusCode)
@@ -116,7 +115,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "counts a pending edit and one reverted on chain, and no edit refused or never sent" $ testYearFailedRelays g
   describe "http" $ do
     it "answers the contract's statuses and bodies, and bad_request to a body over the cap" $ testHttp g
-    it "answers 504 edit_pending, 503, 429 with the real wait in Retry-After, 429 edit_limit with nextAt in unix seconds and no Retry-After, 400 to a refusal and 409 stale_nonce" testEditResponses
+    it "answers 504 edit_pending, 503, 429 with the real wait in Retry-After, 409 edit_limit with nextAt and no Retry-After, 400 to a refusal and 409 stale_nonce" testEditResponses
     it "relays a body of two edits with links of the largest size" $ testHttpTwoLongLinks g
 
 data Setup = Setup
@@ -879,19 +878,18 @@ day, year :: NominalDiffTime
 day = 86400
 year = 365 * day
 
-yearSeconds, t0Seconds :: Int
+yearSeconds :: Int
 yearSeconds = 365 * 86400
-t0Seconds = floor $ utcTimeToPOSIXSeconds t0
 
 -- http
 
 testHttp :: TVar ChaChaDRG -> IO ()
 testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
   let editBody value = J.encode $ requestOf [editFields [("key", J.String channelKey), ("value", J.String value)]]
-  post "[]" `shouldReturn` (refusedWith 400 "bad_request", Nothing)
-  post (editBody "https://x/a") `shouldReturn` (refusedWith 400 "invalid_link", Nothing)
+  post "[]" `shouldReturn` (nameRefusedWith 400 "bad_request", Nothing)
+  post (editBody "https://x/a") `shouldReturn` (nameRefusedWith 400 "invalid_link", Nothing)
   let overCap = KM.insert "pad" (J.String $ T.replicate maxBodyBytes "a") $ requestOf [editFields [("key", J.String channelKey), ("value", J.String viemChannelLink)]]
-  post (J.encode overCap) `shouldReturn` (refusedWith 400 "bad_request", Nothing)
+  post (J.encode overCap) `shouldReturn` (nameRefusedWith 400 "bad_request", Nothing)
   editRows s `shouldReturn` 0
   answer <- async $ post $ editBody viemChannelLink
   TxHash (Hex32 h) <- mineSent s 1 True
@@ -899,17 +897,17 @@ testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post 
   setNonce s 1
   next <- async . post . J.encode . editJson =<< signEdit s (owner s) (channel "https://smp9.simplex.im/c#next") 1 deadline
   _ <- mineSent s 2 False
-  bounded "the edit's answer" (wait next) `shouldReturn` ((409, Just $ KM.fromList ["error" .= ("record_reverted" :: Text), "revert" .= J.Null]), Nothing)
+  bounded "the edit's answer" (wait next) `shouldReturn` (nameRefusedWith 409 "record_reverted", Nothing)
 
 testEditResponses :: IO ()
 testEditResponses =
   mapM (responseParts . editResponse) [EAPending, EAUnavailable, EACapped 3600, EALimited (addUTCTime (fromIntegral yearSeconds) t0), EARefused "the name is not registered", EAStaleNonce]
-    `shouldReturn` [ (refusedWith 504 "edit_pending", Nothing),
-                     (refusedWith 503 "provider_unavailable", Nothing),
-                     (refusedWith 429 "rate_limited", Just "3600"),
-                     ((429, Just $ KM.fromList ["error" .= ("edit_limit" :: Text), "nextAt" .= (t0Seconds + yearSeconds)]), Nothing),
-                     (refusedWith 400 "bad_request", Nothing),
-                     (refusedWith 409 "stale_nonce", Nothing)
+    `shouldReturn` [ (nameRefusedWith 504 "edit_pending", Nothing),
+                     (nameRefusedWith 503 "provider_unavailable", Nothing),
+                     ((429, Just $ KM.fromList ["type" .= ("rate_limited" :: Text), "retryAfter" .= (3600 :: Int)]), Just "3600"),
+                     ((409, Just $ KM.fromList ["type" .= ("edit_limit" :: Text), "nextAt" .= addUTCTime (fromIntegral yearSeconds) t0]), Nothing),
+                     (nameRefusedWith 400 "bad_request", Nothing),
+                     (nameRefusedWith 409 "stale_nonce", Nothing)
                    ]
 
 -- | A response's status, JSON body and Retry-After, as withRecordsApp reads them over HTTP.

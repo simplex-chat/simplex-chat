@@ -19,7 +19,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore)
 import Simplex.Messaging.Encoding.String (textEncode)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusalTag, codeState, readPrepaidCode)
 import StoreService.Names.Store (PrepaidCode (..))
-import StoreService.Web.Http (Respond, badRequest, jsonError, jsonResponse, maxBodyBytes, readBoundedBody)
+import StoreService.Web.Http (NameRefusal (..), Respond, jsonError, jsonResponse, maxBodyBytes, readBoundedBody, refusalResponse)
 
 -- | It names no registration, even for a reserved code: holding a code proves nothing about an order.
 codeCheckHandler :: DBStore -> Request -> Respond -> IO ResponseReceived
@@ -29,10 +29,10 @@ codeCheckHandler st req respond =
       Right text -> case parseNameCode text of
         Just code -> do
           now <- getCurrentTime
-          readPrepaidCode st code >>= respond . maybe (codeRefusalResponse CRInvalid) (codeAnswer now)
-        Nothing -> respond $ codeRefusalResponse CRInvalid
-      Left e -> logNote ("POST /api/code/check refused: a malformed code check: " <> T.pack e) >> respond badRequest
-    Nothing -> respond badRequest
+          readPrepaidCode st code >>= respond . maybe (refusalResponse NRCodeInvalid) (codeAnswer now)
+        Nothing -> respond $ refusalResponse NRCodeInvalid
+      Left e -> logNote ("POST /api/code/check refused: a malformed code check: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
+    Nothing -> respond $ refusalResponse NRBadRequest
 
 codeField :: LB.ByteString -> Either String Text
 codeField body = J.eitherDecode body >>= JT.parseEither (J.withObject "code check" (.: "code"))

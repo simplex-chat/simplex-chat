@@ -35,6 +35,7 @@ module Bots.StoreService.WebTests
     fieldOf,
     answerOf,
     refusedWith,
+    nameRefusedWith,
     siteConfigJson,
     rcv,
     bounded,
@@ -1524,6 +1525,9 @@ answerOf r = (statusOf r, J.decode (responseBody r))
 
 refusedWith :: Int -> Text -> (Int, Maybe J.Object)
 refusedWith status tag = (status, Just $ KM.fromList [("error", J.String tag)])
+
+nameRefusedWith :: Int -> Text -> (Int, Maybe J.Object)
+nameRefusedWith status tag = (status, Just $ KM.fromList [("type", J.String tag)])
 
 timedGet :: WebClient -> String -> IO (NominalDiffTime, Response LB.ByteString)
 timedGet client target = do

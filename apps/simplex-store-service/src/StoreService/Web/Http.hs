@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module StoreService.Web.Http
   ( HttpEnv (..),
@@ -11,6 +12,7 @@ module StoreService.Web.Http
     takeFrom,
     takeToken,
     limited,
+    limitedWith,
     only,
     CheckoutClient,
     checkoutClient,
@@ -44,6 +46,8 @@ module StoreService.Web.Http
     rateLimited,
     methodNotAllowed,
     internalError,
+    NameRefusal (..),
+    refusalResponse,
     readBoundedBody,
     maxBodyBytes,
     nameBodyBytes,
@@ -65,6 +69,7 @@ import Control.Exception (bracket)
 import Control.Monad (foldM, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Aeson.Types (Pair)
 import Data.Bits (shiftR, (.&.))
 import Data.ByteString (ByteString)
@@ -80,12 +85,13 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word8)
-import Network.HTTP.Types (Header, Method, Status, hCacheControl, hContentType, status400, status404, status405, status409, status429, status500, status503)
+import Network.HTTP.Types (Header, Method, Status, hCacheControl, hContentType, status400, status404, status405, status409, status429, status500, status503, status504)
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Network.Wai
 import Numeric (showHex)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
+import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, stateTVar', tshow)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
@@ -221,10 +227,13 @@ takeTokens HttpEnv {heBuckets} limits = do
     either (refuse . max 1 . ceiling) count (foldM takeOne buckets limits)
 
 limited :: HttpEnv -> Limit -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
-limited env limit req respond action =
+limited = limitedWith rateLimited
+
+limitedWith :: (Int -> Response) -> HttpEnv -> Limit -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
+limitedWith refuse env limit req respond action =
   takeToken env limit (clientKey hostPrefix env req) >>= \case
     Nothing -> action
-    Just seconds -> respond (rateLimited seconds)
+    Just seconds -> respond (refuse seconds)
 
 -- | The client network's limit and the one every client shares, taken just before the provider is asked, so refused requests do not use them.
 limitedCheckout :: HttpEnv -> CheckoutClient -> ServicePaymentMethod -> (Response -> IO a) -> IO a -> IO a
@@ -437,3 +446,41 @@ providerOf :: ServicePaymentMethod -> PaymentProvider
 providerOf = \case
   SPMCard CPStripe -> PPStripe
   SPMCrypto _ -> PPCrypto
+
+data NameRefusal
+  = NRBadRequest
+  | NRInvalidName
+  | NRInvalidLink
+  | NRNotFound
+  | NRCodeInvalid
+  | NRStaleNonce
+  | NRRecordReverted
+  | NREditLimit {nextAt :: UTCTime}
+  | NRRateLimited {retryAfter :: Int}
+  | NRProviderUnavailable
+  | NRTermsUnavailable {retryAfter :: Int}
+  | NREditPending
+  deriving (Eq, Show)
+
+$(JQ.deriveToJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NR") ''NameRefusal)
+
+refusalResponse :: NameRefusal -> Response
+refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encode r)
+  where
+    status = case r of
+      NRBadRequest -> status400
+      NRInvalidName -> status400
+      NRInvalidLink -> status400
+      NRNotFound -> status404
+      NRCodeInvalid -> status400
+      NRStaleNonce -> status409
+      NRRecordReverted -> status409
+      NREditLimit {} -> status409
+      NRRateLimited {} -> status429
+      NRProviderUnavailable -> status503
+      NRTermsUnavailable {} -> status503
+      NREditPending -> status504
+    retryAfterHeader = case r of
+      NRRateLimited {retryAfter} -> [("Retry-After", B.pack $ show retryAfter)]
+      NRTermsUnavailable {retryAfter} -> [("Retry-After", B.pack $ show retryAfter)]
+      _ -> []

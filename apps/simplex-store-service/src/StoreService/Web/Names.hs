@@ -12,7 +12,7 @@ import StoreService.Config (ServiceConfig)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Registration (RegistrationId (..))
-import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, createLimit, findLimit, holdMicros, limited, only, previewLimit, readLimit, recordsLimit, searchLimit)
+import StoreService.Web.Http (HttpEnv, Limit, NameRefusal (..), Respond, codeLimit, createLimit, findLimit, holdMicros, limitedWith, only, previewLimit, readLimit, recordsLimit, refusalResponse, searchLimit)
 import StoreService.Web.Names.Codes (codeCheckHandler)
 import StoreService.Web.Names.Orders (codeOrderHandler, spendHandler)
 import StoreService.Web.Names.Owner (findHandler, retargetHandler)
@@ -49,4 +49,4 @@ namesApp :: HttpEnv -> ([Text] -> Maybe Route) -> Request -> Respond -> Maybe (I
 namesApp http routes req respond = serve <$> routes (pathInfo req)
   where
     serve Route {rMethod, rLimit, rHandler} =
-      only rMethod req respond $ limited http rLimit req respond $ rHandler req respond
+      only rMethod req respond $ limitedWith (refusalResponse . NRRateLimited) http rLimit req respond $ rHandler req respond

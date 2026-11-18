@@ -29,7 +29,7 @@ import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, co
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, refusedWith, siteConfigJson, statusOf)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, nameRefusedWith, refusedWith, siteConfigJson, statusOf)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, reg, t0, usable, write)
@@ -288,13 +288,13 @@ testNamesBoot ps = do
     unknown <- request "/api/names/unknown"
     statusOf <$> httpLbs unknown mgr `shouldReturn` 404
     records <- request "/api/name/records"
-    answer records {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
+    answer records {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` nameRefusedWith 400 "bad_request"
     register <- request "/api/name/register"
     answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
     search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
-    answer search `shouldReturn` refusedWith 400 "invalid_name"
+    answer search `shouldReturn` nameRefusedWith 400 "invalid_name"
     terms <- request "/api/terms/0x12"
-    answer terms `shouldReturn` refusedWith 400 "bad_request"
+    answer terms `shouldReturn` nameRefusedWith 400 "bad_request"
     termsPosted <- httpLbs terms {method = "POST"} mgr
     (statusOf termsPosted, lookup "Allow" $ responseHeaders termsPosted) `shouldBe` (405, Just "GET")
     registration <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g"
@@ -370,7 +370,7 @@ testNamesBootCodesOnly ps = do
     posted "/api/invoice" "{\"kind\":\"name\"}" `shouldReturn` refusedWith 403 "codes_only"
     posted "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend" "{}" `shouldReturn` refusedWith 403 "codes_only"
     posted "/api/name/register" "{}" `shouldReturn` refusedWith 400 "bad_request"
-    posted "/api/code/check" "{}" `shouldReturn` refusedWith 400 "bad_request"
+    posted "/api/code/check" "{}" `shouldReturn` nameRefusedWith 400 "bad_request"
     badgesShell <- parseRequest ("http://127.0.0.1:" <> show port <> "/") >>= (`httpLbs` mgr)
     (statusOf badgesShell, responseBody badgesShell) `shouldBe` (200, LB.fromStrict shell)
     config <- parseRequest ("http://127.0.0.1:" <> show port <> "/api/config") >>= (`httpLbs` mgr)

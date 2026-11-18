@@ -29,7 +29,7 @@ import Bots.StoreService.NamesContractsTests
 import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, testNamesConfig, threeYears)
 import Bots.StoreService.NamesProfilesTests (bakeryLink, channelData, contactData, jpeg, linkDataProfile, newsLink, parsed)
 import Bots.StoreService.NamesStoreTests (atNonce, commitFixture, hashFixture, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
-import Bots.StoreService.WebTests (answerOf, refusedWith, withServiceStore, withApp)
+import Bots.StoreService.WebTests (answerOf, nameRefusedWith, withServiceStore, withApp)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Monad (forM_)
@@ -334,7 +334,7 @@ testSearchSlot g = withSearch g id id $ \s@Search {node, searches, searchesAtFet
   fst <$> searchAlice s 12 `shouldReturn` 200
   readTVarIO searchesAtFetch `shouldReturn` [0, 0]
   atomically $ writeTVar searches maxSearches
-  searchAlice s 12 `shouldReturn` refusedWith 429 "rate_limited"
+  searchAlice s 12 `shouldReturn` withField "retryAfter" (J.Number 1) (nameRefusedWith 429 "rate_limited")
 
 testCommunity :: TVar ChaChaDRG -> IO ()
 testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
@@ -360,7 +360,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   setPhase store $ ORegistered Nothing Nothing 1861833600 t0
   searchAlice s 12 `shouldReturn` listedUnder fakeNewCommunityTermsText (availableAnswer 10000)
   answerListing node alice $ Reverts ""
-  searchAlice s 12 `shouldReturn` refusedWith 503 "provider_unavailable"
+  searchAlice s 12 `shouldReturn` nameRefusedWith 503 "provider_unavailable"
 
 testTermsUnavailable :: TVar ChaChaDRG -> IO ()
 testTermsUnavailable g = withSearch g listAlice id $ \s@Search {node} -> do
@@ -387,27 +387,27 @@ testTerms g = withSearch g id id $ \s@Search {node} -> do
       otherLink = "https://example.org/terms.md"
   answerOf <$> terms (hex fakeGeneralTerms) `shouldReturn` termsAnswer fakeGeneralTermsText
   answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` termsAnswer fakeCommunityTermsText
-  answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refusedWith 404 "not_found"
+  answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` nameRefusedWith 404 "not_found"
   setCommunityTerms node fakeNewCommunityTermsText
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` termsAnswer fakeNewCommunityTermsText
-  answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` refusedWith 404 "not_found"
+  answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` nameRefusedWith 404 "not_found"
   setGeneralTerms node ""
-  answerOf <$> terms (hex $ C.keccak256 "") `shouldReturn` refusedWith 404 "not_found"
-  answerOf <$> terms (hex fakeGeneralTerms) `shouldReturn` refusedWith 404 "not_found"
+  answerOf <$> terms (hex $ C.keccak256 "") `shouldReturn` nameRefusedWith 404 "not_found"
+  answerOf <$> terms (hex fakeGeneralTerms) `shouldReturn` nameRefusedWith 404 "not_found"
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Returns $ textAnswer otherLink
   nextBlock node
-  answerOf <$> terms (hex $ C.keccak256 $ encodeUtf8 otherLink) `shouldReturn` refusedWith 404 "not_found"
+  answerOf <$> terms (hex $ C.keccak256 $ encodeUtf8 otherLink) `shouldReturn` nameRefusedWith 404 "not_found"
   setGeneralTerms node fakeNewGeneralTermsText
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status429 [("Retry-After", "60")] ""
   r <- terms (hex fakeNewGeneralTerms)
-  (answerOf r, lookup "Retry-After" (responseHeaders r)) `shouldBe` (refusedWith 503 "terms_unavailable", Just "60")
+  (answerOf r, lookup "Retry-After" (responseHeaders r)) `shouldBe` (withField "retryAfter" (J.Number 60) (nameRefusedWith 503 "terms_unavailable"), Just "60")
   answerText node (fakeTermsPath fakeNewGeneralTermsText) $ TextAnswer status404 [] ""
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` termsAnswer fakeNewCommunityTermsText
   answerCall node fakeNamePolicy (selector "generalTermsLink()") $ Reverts ""
   nextBlock node
-  answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refusedWith 503 "provider_unavailable"
+  answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` nameRefusedWith 503 "provider_unavailable"
   forM_ [T.toUpper (hex fakeGeneralTerms), T.drop 2 (hex fakeGeneralTerms), "0x12"] $ \h ->
-    answerOf <$> terms h `shouldReturn` refusedWith 400 "bad_request"
+    answerOf <$> terms h `shouldReturn` nameRefusedWith 400 "bad_request"
 
 testCommunityWithoutText :: TVar ChaChaDRG -> IO ()
 testCommunityWithoutText g = withSearch g id id $ \s@Search {node} -> do
@@ -456,7 +456,7 @@ testRecordEdits g = forM_ [(4, 1, 10), (2, 0, 5)] $ \(perYear, left, returnsFrom
 
 testFailedReads :: TVar ChaChaDRG -> IO ()
 testFailedReads g = withSearch g id id $ \s@Search {node} -> do
-  let unavailable = refusedWith 503 "provider_unavailable"
+  let unavailable = nameRefusedWith 503 "provider_unavailable"
   available node
   searchAlice s 12 `shouldReturn` unavailable
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 9999
@@ -487,7 +487,7 @@ testOneDeadline g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Sea
   fst <$> searchAlice s 12 `shouldReturn` 200
   forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ deadline * 2 `div` 7
   (answer, elapsed) <- timed $ searchAlice s 12
-  answer `shouldBe` refusedWith 503 "provider_unavailable"
+  answer `shouldBe` nameRefusedWith 503 "provider_unavailable"
   elapsed `shouldSatisfy` (< 3)
   answerRegistered node otherResolver
   searchAlice s 12 `shouldReturn` registeredAnswer [] otherRecords otherResolverText
@@ -500,7 +500,7 @@ testSlowTerms g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Searc
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   setFault node "GET" $ Slow $ deadline * 3 `div` 2
   (answer, elapsed) <- timed $ searchAlice s 12
-  answer `shouldBe` refusedWith 503 "provider_unavailable"
+  answer `shouldBe` nameRefusedWith 503 "provider_unavailable"
   elapsed `shouldSatisfy` (< 2)
   clearFault node "GET"
   threadDelay deadline
@@ -513,8 +513,8 @@ testBadHash :: TVar ChaChaDRG -> IO ()
 testBadHash g = withSearch g id id $ \s -> do
   let hexDigits = T.drop 2 aliceHex
   forM_ [T.toUpper aliceHex, "0x" <> T.toUpper hexDigits, hexDigits, "0x" <> T.drop 1 hexDigits, aliceHex <> "0", "0x" <> T.replicate 64 "g", "0X" <> hexDigits] $ \h ->
-    (h, searchName s h "?length=12") `shouldReturnPair` refusedWith 400 "bad_request"
-  searchName s ("0x" <> T.toUpper hexDigits) "?length=5" `shouldReturn` refusedWith 400 "bad_request"
+    (h, searchName s h "?length=12") `shouldReturnPair` nameRefusedWith 400 "bad_request"
+  searchName s ("0x" <> T.toUpper hexDigits) "?length=5" `shouldReturn` nameRefusedWith 400 "bad_request"
   where
     shouldReturnPair (h, act) expected = act >>= \a -> (h, a) `shouldBe` (h, expected)
 
@@ -522,7 +522,7 @@ testBadLength :: TVar ChaChaDRG -> IO ()
 testBadLength g = withSearch g id id $ \s@Search {node} -> do
   reserved node
   forM_ ["?length=5", "?length=64", "", "?length=", "?length", "?length=abc", "?length=6.0", "?length=%2B7", "?length=-6", "?length=%207", "?length=0x6", "?length=18446744073709551622"] $ \q ->
-    searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, refusedWith 400 "invalid_name")
+    searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, nameRefusedWith 400 "invalid_name")
   forM_ ["?length=6", "?length=63", "?length=007"] $ \q ->
     searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, reservedAnswer)
 
@@ -540,7 +540,7 @@ testPreviewInvalid :: TVar ChaChaDRG -> IO ()
 testPreviewInvalid g = withSearch g id id $ \s -> do
   let base = bakeryLink <> "?x="
       padded n = base <> T.replicate (n - T.length base) "a"
-      invalid = refusedWith 400 "invalid_link"
+      invalid = nameRefusedWith 400 "invalid_link"
   forM_ ["hello", "", fullLink, bakeryLink <> ";" <> bakeryLink, " " <> bakeryLink, taggedLink "smp8.simplex.im" 'g' "Y8m3", padded (linkMaxBytes + 1)] $ \l ->
     previewOf s l >>= \a -> (l, a) `shouldBe` (l, invalid)
   answerOf <$> postPreview s "{}" `shouldReturn` invalid
@@ -551,4 +551,4 @@ testPreviewInvalid g = withSearch g id id $ \s -> do
 testPreviewBadBody :: TVar ChaChaDRG -> IO ()
 testPreviewBadBody g = withSearch g id id $ \s -> do
   forM_ ["[]", "\"link\"", "not json", "", J.encode (J.object ["link" .= T.replicate 9000 "a"])] $ \body ->
-    answerOf <$> postPreview s body >>= \a -> (body, a) `shouldBe` (body, refusedWith 400 "bad_request")
+    answerOf <$> postPreview s body >>= \a -> (body, a) `shouldBe` (body, nameRefusedWith 400 "bad_request")

@@ -42,7 +42,7 @@ import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (EditsLeft, nameEditsLeft)
 import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink)
 import StoreService.Names.Store (isLabelRegistering)
-import StoreService.Web.Http (HttpEnv, Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, notFound, providerUnavailable, rateLimited, readBoundedBody, searchSlot, termsUnavailable)
+import StoreService.Web.Http (HttpEnv, NameRefusal (..), Respond, jsonResponse, maxBodyBytes, readBoundedBody, refusalResponse, searchSlot)
 import System.Timeout (timeout)
 
 data Found
@@ -78,13 +78,13 @@ $(JQ.deriveToJSON defaultJSON ''TermsText)
 -- Only they hold a search slot: the profile reads after them have their own bound.
 searchHandler :: NamesConfig -> HttpEnv -> DBStore -> Contracts -> Profiles -> IO UTCTime -> Text -> Request -> Respond -> IO ResponseReceived
 searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond = case LabelHash . unHex32 <$> strDecode (encodeUtf8 hashText) of
-  Left _ -> respond badRequest
+  Left _ -> respond $ refusalResponse NRBadRequest
   Right lh -> case queryLength req of
-    Nothing -> respond invalidName
+    Nothing -> respond $ refusalResponse NRInvalidName
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
       searchSlot http (timeout (ctDeadline ct) (runExceptT $ found lh len registering)) >>= \case
-        Nothing -> respond $ rateLimited 1
+        Nothing -> respond $ refusalResponse $ NRRateLimited 1
         Just (Just (Right (f, community))) -> respond =<< searchAnswer cfg st ps clock lh community f
         Just (Just (Left e)) -> unavailable $ tshow e
         Just Nothing -> unavailable "timed out"
@@ -99,7 +99,7 @@ searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond 
         NSRegistered name -> FRegistered name <$> ExceptT (nameRecords ct lh name)
     readableNow community = termsLinks ct >>= traverse (\links -> eitherToMaybe <$> (wait =<< async (readableTerms ct $ kindTerms community links)))
     unavailable :: Text -> IO ResponseReceived
-    unavailable why = logWarn ("GET /api/name: a chain read failed: " <> why) >> respond providerUnavailable
+    unavailable why = logWarn ("GET /api/name: a chain read failed: " <> why) >> respond (refusalResponse NRProviderUnavailable)
 
 -- | Nothing unless @length@ is a decimal integer in the label's bounds.
 queryLength :: Request -> Maybe NameLength
@@ -144,19 +144,19 @@ previewHandler ps req respond =
   readBoundedBody maxBodyBytes req >>= \case
     Just body | Just (J.Object o) <- J.decode body -> case JT.parseEither (.: "link") o of
       Right link | Just (kind, sl) <- nameLink link -> respond . jsonResponse status200 . J.toJSON =<< linkPreview ps kind sl
-      _ -> respond invalidLink
-    _ -> respond badRequest
+      _ -> respond $ refusalResponse NRInvalidLink
+    _ -> respond $ refusalResponse NRBadRequest
 
 -- | The text of either current set of terms, by its hash, with its link; any other hash answers not_found.
 termsHandler :: Contracts -> Text -> Request -> Respond -> IO ResponseReceived
 termsHandler ct hashText _ respond = case strDecode $ encodeUtf8 hashText of
-  Left _ -> respond badRequest
+  Left _ -> respond $ refusalResponse NRBadRequest
   Right h ->
     termsLinks ct >>= \case
-      Left e -> logWarn ("GET /api/terms: a chain read failed: " <> tshow e) >> respond providerUnavailable
+      Left e -> logWarn ("GET /api/terms: a chain read failed: " <> tshow e) >> respond (refusalResponse NRProviderUnavailable)
       Right (general, community) -> case find ((h ==) . tmHash) $ catMaybes [general, community] of
-        Nothing -> respond notFound
+        Nothing -> respond $ refusalResponse NRNotFound
         Just t@Terms {tmLink} ->
           termsText ct t >>= \case
             Right text -> respond $ jsonResponse status200 TermsText {link = tmLink, text}
-            Left (TRWait seconds) -> respond $ termsUnavailable seconds
+            Left (TRWait seconds) -> respond $ refusalResponse $ NRTermsUnavailable seconds

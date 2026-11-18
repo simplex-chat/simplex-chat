@@ -12,6 +12,7 @@ import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad (forM_, replicateM_)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
 import Data.Maybe (fromMaybe, isNothing)
@@ -141,8 +142,9 @@ testWrongMethod = withProbeRouter $ \client -> do
   allowed <- send client "GET" "/api/probe/x"
   statusOf allowed `shouldBe` 200
   limitedR <- send client "GET" "/api/probe/x"
-  answerOf limitedR `shouldBe` refusedWith 429 "rate_limited"
-  lookup "Retry-After" (responseHeaders limitedR) `shouldSatisfy` maybe False (BC.all (`elem` ['0' .. '9']))
+  let seconds = lookup "Retry-After" (responseHeaders limitedR)
+  seconds `shouldSatisfy` maybe False (BC.all (`elem` ['0' .. '9']))
+  answerOf limitedR `shouldBe` (429, Just $ KM.fromList [("type", "rate_limited"), ("retryAfter", J.toJSON (maybe 0 (read . BC.unpack) seconds :: Int))])
 
 testUnknownPath :: IO ()
 testUnknownPath = withProbeRouter $ \client -> do

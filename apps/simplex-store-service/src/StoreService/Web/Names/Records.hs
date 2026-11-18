@@ -15,7 +15,7 @@ import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
-import Network.HTTP.Types (status200, status409, status429, status504)
+import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Messaging.Encoding.String (strDecode, textDecode)
 import Simplex.Messaging.SimplexName (LabelHash (..))
@@ -23,8 +23,7 @@ import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), Records, relayEdit)
 import StoreService.Names.Registration (LinkKind, nameLink, parseSignature)
 import StoreService.Names.Store (EditOutcome (..), RecordChange (..), SignedChange (..))
-import StoreService.Store.Invoices (unixSeconds)
-import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonError, jsonResponse, maxBodyBytes, providerUnavailable, rateLimited, readBoundedBody)
+import StoreService.Web.Http (NameRefusal (..), Respond, jsonResponse, maxBodyBytes, readBoundedBody, refusalResponse)
 
 data EditInvalid = EIBadRequest | EIInvalidLink
   deriving (Eq, Show)
@@ -34,12 +33,13 @@ recordsHandler rs req respond =
   readBoundedBody maxBodyBytes req >>= \case
     Just body | Just o <- J.decode body -> case editRequest o of
       Right edit -> relayEdit rs edit >>= \answer -> logged answer >> respond (editResponse answer)
-      Left EIInvalidLink -> respond invalidLink
-      Left EIBadRequest -> respond badRequest
-    _ -> respond badRequest
+      Left EIInvalidLink -> respond $ refusalResponse NRInvalidLink
+      Left EIBadRequest -> respond $ refusalResponse NRBadRequest
+    _ -> respond $ refusalResponse NRBadRequest
   where
     logged = \case
       EARefused reason -> logNote $ "POST /api/name/records refused: " <> reason
+      EASettled (EOReverted revert) -> logNote $ "POST /api/name/records reverted on chain" <> maybe "" (": " <>) revert
       _ -> pure ()
 
 -- | An edit as sent, before its link and signature are checked.
@@ -76,11 +76,11 @@ editRequest o = do
 editResponse :: EditAnswer -> Response
 editResponse = \case
   EASettled (EOApplied tx) -> jsonResponse status200 $ J.object ["tx" .= tx]
-  EASettled (EOReverted revert) -> jsonResponse status409 $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= revert]
-  EAPending -> jsonError status504 "edit_pending"
-  EARefused _ -> badRequest
-  EAStaleNonce -> jsonError status409 "stale_nonce"
-  EAUnavailable -> providerUnavailable
-  EACapped seconds -> rateLimited seconds
-  EALimited nextAt -> jsonResponse status429 $ J.object ["error" .= ("edit_limit" :: Text), "nextAt" .= unixSeconds nextAt]
+  EASettled (EOReverted _) -> refusalResponse NRRecordReverted
+  EAPending -> refusalResponse NREditPending
+  EARefused _ -> refusalResponse NRBadRequest
+  EAStaleNonce -> refusalResponse NRStaleNonce
+  EAUnavailable -> refusalResponse NRProviderUnavailable
+  EACapped seconds -> refusalResponse $ NRRateLimited seconds
+  EALimited nextAt -> refusalResponse $ NREditLimit nextAt
 
