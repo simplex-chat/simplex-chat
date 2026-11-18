@@ -58,7 +58,7 @@ settings are written to `dev/lightning.env`:
 | `STORE_LIGHTNING_SERVICE_PORT` | the port on which the store service is served in the tests, for the webhook |
 
 With these variables in the environment, the test group `StoreService Lightning e2e` is run against
-the stack; without them it is reported as pending:
+the stack from the repository root; without them it is reported as pending:
 
 ```
 set -a; . scripts/store-service/dev/lightning.env; set +a
@@ -66,6 +66,6 @@ cabal test simplex-chat-test --ghc-options=-O0 --test-option=-m --test-option='S
 ```
 
 On a second run of `dev/lightning.sh`, the channel is kept and another store is created. The stack is
-removed with `docker compose -f dev/lightning.yml down -v`.
+removed, from `scripts/store-service`, with `docker compose -f dev/lightning.yml down -v`.
 
 Everything else is in [apps/simplex-store-service/README.md](../../apps/simplex-store-service/README.md#deployment).

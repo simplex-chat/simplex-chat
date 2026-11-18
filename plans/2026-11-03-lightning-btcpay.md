@@ -100,7 +100,7 @@ Settlement rules:
 | Pay screen | BOLT11 labelled "Lightning invoice"; QR and wallet button: `lightning:<bolt11>` |
 | Confirming screen | the confirmation count is omitted |
 | Cancel confirmation, badges | the BOLT11 stays payable until it expires |
-| Closed screen, badges | "Don't pay its Lightning invoice" |
+| Closed screen, badges | "Do not pay its Lightning invoice" |
 | Closed screen, names | "can still be paid until HH:MM" while the expiry, by the service's clock, is ahead |
 
 ## Tests
