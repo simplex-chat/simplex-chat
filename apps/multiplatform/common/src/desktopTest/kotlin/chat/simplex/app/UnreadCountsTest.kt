@@ -1,10 +1,6 @@
 package chat.simplex.app
 
-import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.runComposeUiTest
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.NotificationAction
 import chat.simplex.common.platform.NtfManager
@@ -14,14 +10,9 @@ import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.chat.apiLoadMessages
 import chat.simplex.common.views.chatlist.ActiveFilter
-import chat.simplex.common.views.chatlist.ChatListView
-import chat.simplex.common.views.chatlist.ChatPreviewView
+import chat.simplex.common.views.chatlist.filteredChats
 import chat.simplex.common.views.chatlist.markChatRead
-import chat.simplex.common.views.helpers.AnimatedViewState
-import chat.simplex.common.views.helpers.LocalAppBarHandler
-import chat.simplex.common.views.helpers.rememberAppBarHandler
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
@@ -29,7 +20,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
 
-@OptIn(ExperimentalTestApi::class)
 class UnreadCountsTest {
   private val sendCmd = chatSendCmdRetry
   private val notifications = mutableListOf<String>()
@@ -60,8 +50,6 @@ class UnreadCountsTest {
     ChatModel.chatsContext.chatItems.value.clear()
     ChatModel.secondaryChatsContext.value = null
     ChatModel.chatId.value = null
-    ChatModel.activeChatTagFilter.value = null
-    ChatModel.chatRunning.value = null
     ChatModel.currentUser.value = null
     ChatModel.users.clear()
     simplexWindowState.windowFocused.value = true
@@ -179,33 +167,13 @@ class UnreadCountsTest {
   }
 
   @Test
-  fun pendingMemberRowShowsBadge() = runComposeUiTest {
-    val (received) = events("counts/pending-support")
-    listChat(received)
-    runBlocking { receive(received) }
-    setContent {
-      ChatPreviewView(ChatModel.chatsContext.chats.value.single(), true, null, null, null, false, SimplexLinkMode.DESCRIPTION, false, false) {}
-    }
-    onNodeWithText("1").assertExists()
-  }
-
-  @Test
-  fun moderatorSupportMessageListedByUnreadFilter() = runComposeUiTest {
-    val (support) = events("counts/moderator-support")
+  fun moderatorSupportMessageListedByUnreadFilter() = recorded("counts/moderator-support") { (support) ->
     listChat(support)
-    runBlocking { receive(support) }
-    val chat = ChatModel.chatsContext.chats.value.single()
+    receive(support)
+    val chats = ChatModel.chatsContext.chats.value.toList()
     assertEquals(0 to 0, rowCounts())
     assertEquals(0, ChatModel.activeUserUnreadCount)
-    assertTrue(chat.unreadTag)
-    ChatModel.chatRunning.value = true
-    ChatModel.activeChatTagFilter.value = ActiveFilter.Unread
-    setContent {
-      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-        ChatListView(ChatModel, MutableStateFlow(AnimatedViewState.GONE), {}, false)
-      }
-    }
-    waitUntil(timeoutMillis = 5_000) { onAllNodesWithText(chat.chatInfo.displayName).fetchSemanticsNodes().isNotEmpty() }
+    assertEquals(chats.map { it.id }, filteredChats(mutableStateOf(false), mutableStateOf(emptySet()), "", chats, ActiveFilter.Unread).map { it.id })
   }
 
   @Test

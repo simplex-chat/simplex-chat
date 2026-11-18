@@ -200,8 +200,7 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 | chat outside the list | counts/direct-muted | added with 1 0 0 |
 | opening keeps the row count | counts/direct-muted, counts/chat-page | 2 0 0 after the page with 1 |
 | pending member's row | counts/pending-support, counts/pending-read | row 1 0, 1 1, 2 1, 1 1 from the counter; the edit in the preview; 0 0 after "Mark read" |
-| pending member's badge | counts/pending-support | "1" in `ChatPreviewView` |
-| moderator's support message | counts/moderator-support | row 0 0, profile 0; the group in `ChatListView` with the Unread filter |
+| moderator's support message | counts/moderator-support | row 0 0, profile 0; the group in `filteredChats` with the Unread filter |
 | support chat context | counts/moderator-support | `chatState.unreadTotal` 1; its list keeps only its chat after a pop |
 | reading a support chat | counts/moderator-support, counts/moderator-read | row 1 0 kept; support flag cleared |
 | counters follow previous and new item, changed | updates/group-mention | 1 0 0, 1 1 1, 1 0 0 |
@@ -237,4 +236,5 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 - Unloaded unread items of a member removed with messages stay counted until the next list load.
 - A chat added from outside the loaded list has the messages received since counted.
 - Kotlin: the scroll button's count source is tested on the support chat's `ChatsContext`; `ChatView` is not composed in tests.
+- Kotlin: views are not composed in these tests. `SnapshotTest` previews call the core library, which desktop tests do not load; the errors of their coroutines fail the next `runComposeUiTest` of another class.
 - Kotlin: removing a chat with unread messages leaves its list tag dot until the next list load (`removeChat`).
