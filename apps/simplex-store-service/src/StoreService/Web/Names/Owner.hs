@@ -55,10 +55,9 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
       now <- oeNow
       runExceptT (mapM_ ExceptT [checkSigner frOwner (findMessage frOwner frTimestamp) frSignature, pure $ checkTimestamp now frTimestamp]) >>= \case
         Left refusal -> refuse refusal
-        Right () ->
-          withTransaction oeStore (\db -> findRegistrations db frOwner now) >>= \case
-            [] -> pure $ answerNow notFound
-            rs -> pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (\(r, holder) -> foundJSON (registrationAt now r) holder) rs]
+        Right () -> do
+          rs <- withTransaction oeStore (\db -> findRegistrations db frOwner now)
+          pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (\(r, holder) -> foundJSON (registrationAt now r) holder) rs]
     refuse = refused "POST /api/registration/find"
 
 parseFind :: J.Object -> JT.Parser FindRequest

@@ -80,7 +80,7 @@ import Test.Hspec
 namesOwnerTests :: Spec
 namesOwnerTests = describe "StoreService names: owner" $ do
   describe "find" $ do
-    it "lists the owner's orders newest first, a moved, an unpaid and a lapsed one read failed included, at most 50, and 404 for none" testFind
+    it "lists the owner's orders newest first, a moved, an unpaid and a lapsed one read failed included, at most 50, and none for an owner of none" testFind
     it "refuses another signer's signature, a stale timestamp and a malformed body" testFindRefused
   describe "another name" $ do
     it "refuses a move from registered, queued, taken, and committed without a refused reveal" testMoveRefusedPhases
@@ -345,7 +345,7 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
               ]
         _ -> expectationFailure "fewer than three entries"
     other -> expectationFailure $ "find refused: " <> show other
-  (findBody ctx keyB ownerBText (seconds orderTime) >>= postFind ctx) `shouldReturn` refusedWith 404 "not_found"
+  (findBody ctx keyB ownerBText (seconds orderTime) >>= postFind ctx) `shouldReturn` (200, Just $ KM.fromList [("registrations", J.Array mempty)])
   where
     oldOrder i = RegistrationId $ "old" <> tshow (i :: Int)
     idText (RegistrationId t) = J.String t
