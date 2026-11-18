@@ -1167,10 +1167,11 @@ p.row-line { margin: 16px 0 0; }
 .entry-row:nth-child(2) { margin-top: 5px; }
 .entry-row > .status,
 .entry-row > .secondary { margin-left: auto; }
-/* The state is one short phrase and reads as a label, so it keeps its own line
-   and lets the title take the wrap. Allowed to wrap, "this invoice expired"
-   becomes a two-line block on a phone and squeezes the title beside it. */
-.entry-row > .status { flex: 0 0 auto; white-space: nowrap; }
+/* The state is one short phrase and reads as a label: beside the title where its
+   one line fits there, under the title where it does not, and wrapped only where
+   it is wider than the card. */
+.entry-row:first-child { flex-wrap: wrap; row-gap: 6px; }
+.entry-row > .status { flex: 0 1 auto; text-align: center; }
 .entry-row > .secondary {
   flex: 0 0 auto;
   width: auto;
