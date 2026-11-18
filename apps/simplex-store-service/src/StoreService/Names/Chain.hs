@@ -125,11 +125,7 @@ data ChainConfig = ChainConfig
     -- | wei; no transaction is signed with a higher max fee per gas
     cMaxFeePerGas :: Word64
   }
-  deriving (Eq)
-
--- The RPC URL can carry a provider's API key, so neither it nor the service key is shown.
-instance Show ChainConfig where
-  show ChainConfig {cChainId} = "chain " <> show cChainId
+  deriving (Eq, Show)
 
 data ChainClient = ChainClient
   { ccManager :: Manager,

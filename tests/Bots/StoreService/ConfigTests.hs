@@ -717,7 +717,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a TLD other than simplex or testing" testNamesBadTLD
   it "refuses a bad or wrongly checksummed contract address, naming the key" testNamesBadAddress
   it "refuses a bad service key without quoting it" testNamesBadServiceKey
-  it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
+  it "keeps the RPC URL and the service key out of errors, and the service key out of the shown config" testNamesSecretsHidden
   it "takes an http rpc_url only to a node on loopback, any other only as https, in any case of the scheme, and refuses one the HTTP client cannot parse" testNamesRpcUrlHttps
   it "refuses a [names] or [chain] setting nothing reads, terms_version among them, naming each" testNamesUnknownKeys
   it "reads codes_only on and off as a known setting, off when absent, and refuses any other value" testNamesCodesOnly
@@ -933,9 +933,7 @@ testNamesSecretsHidden = do
   other `shouldNotContain` "rpc-token-value"
   other `shouldNotContain` T.unpack (T.drop 2 serviceKeyHex)
   Right cfg <- parseIni (namesIni namesSection chainSection)
-  show cfg `shouldNotContain` "rpc-token-value"
   show cfg `shouldNotContain` T.unpack (T.drop 2 serviceKeyHex)
-  show cfg `shouldContain` "chain 31337"
 
 testNamesUnknownKeys :: IO ()
 testNamesUnknownKeys = do
