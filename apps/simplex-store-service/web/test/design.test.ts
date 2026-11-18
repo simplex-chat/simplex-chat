@@ -441,6 +441,10 @@ designTest("type: the monospace runs are sized against the copy beside them", ()
   assert.equal(decl(".entry .mono", "font-size"), undefined);
 });
 
+designTest("type: at phone width the history list's 26-character code fits one line in a 360 column", () => {
+  assert.equal(phoneDecl(".entry .code-row code", "font-size"), ".75rem");
+});
+
 const officialAssets: ReadonlyArray<readonly [string, string, (source: string) => string]> = [
   ["wordmark-light.svg", "../../../../../website/src/img/simplex.svg", (x) => x],
   // wordmark-dark is the official file with its navy lettering set to white, as simplex.chat's own dark header does.

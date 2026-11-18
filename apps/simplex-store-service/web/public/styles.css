@@ -1253,4 +1253,5 @@ p.row-line { margin: 16px 0 0; }
      every width. The paid-no-code screen's summary carries the same title and steps with it. */
   .entry { padding: 14px 16px 16px; }
   .entry .name, .rows.field > .name { font-size: 1rem; }
+  .entry .code-row code { font-size: .75rem; }
 }
