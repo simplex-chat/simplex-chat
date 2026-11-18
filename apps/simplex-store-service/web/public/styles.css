@@ -1202,9 +1202,9 @@ p.row-line { margin: 16px 0 0; }
 
 /* ------------------------------------------------------------ the phone band */
 
-/* The same layout at a smaller scale. It sits at the end of the sheet because a media
-   query adds no specificity, so a phone rule beside its desktop rule would be beaten by any equally specific rule
-   further down the file. */
+/* The same layout at a smaller scale. It is last in the sheet because a media query adds
+   no specificity, and an equally specific rule later in the file overrides a phone rule
+   placed beside its desktop rule. */
 @media (max-width: 560px) {
   .chrome-bar { padding: 8px 0; }
   .brand { width: 108px; }

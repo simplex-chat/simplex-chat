@@ -762,7 +762,10 @@ domTest("screens: the deletion warning box follows the only-copy box in a browse
   const p = render(screens.codeIssued({ code: HELD_CODE, retention: "keptUntilIdle" }));
   const boxes = p.all("div.warn");
   assert.deepEqual(boxes.map((b) => b.all("span.title")[0]!.textContent), ["This is the only copy.", screens.CAN_DELETE_CODE]);
-  assert.deepEqual(boxes[1]!.all("p").map((l) => l.textContent), [screens.MAY_DO_SO_AFTER, screens.KEEP_OUTSIDE]);
+  assert.deepEqual(boxes[1]!.all("p").map((l) => l.textContent), [
+    "It may do so after 7 days of browser use without a tap, click or key press on this site.",
+    "Redeem the code now, or keep a copy outside this browser.",
+  ], "the period is 7 days, with \"7 days\" and \"key press\" kept on one line");
   const kept = render(screens.codeIssued({ code: HELD_CODE, retention: "kept" }));
   assert.ok(!kept.textContent.includes(screens.CAN_DELETE_CODE), "the deletion warning is shown only in a browser that deletes storage");
   assert.ok(!kept.textContent.includes(screens.KEEP_OUTSIDE));

@@ -801,9 +801,9 @@ export const DELETED_IF_BOUGHT_HERE = `If the code was bought in this browser, i
 export const KEEP_OUTSIDE = "Redeem the code now, or keep a copy outside this browser.";
 export const KEEP_EACH_OUTSIDE = "Copy each code you have not redeemed and keep it outside this browser.";
 export const COPY_UNLESS_ADDED = "If the app does not add the badge, show the code and keep a copy outside this browser.";
-const CODES_STORED_HERE = "Codes stored in this browser";
+const CODES_STORED_IN_THIS_BROWSER = "Codes stored in this browser";
 const ARE_LISTED_HERE = "are listed here.";
-export const CODES_LISTED_HERE = `${CODES_STORED_HERE} ${ARE_LISTED_HERE}`;
+export const CODES_LISTED_HERE = `${CODES_STORED_IN_THIS_BROWSER} ${ARE_LISTED_HERE}`;
 const CODES_STORED_ONLY = "Codes are stored only";
 const IN_BROWSER_BOUGHT_IN = "in the browser they were bought in.";
 export const CODES_STORED_IN_BROWSER = `${CODES_STORED_ONLY} ${IN_BROWSER_BOUGHT_IN}`;
@@ -1006,7 +1006,7 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
   if (o.rows.length === 0) {
     return withInvest(panel(
       el("h1", {}, "Your codes"),
-      el("p", { class: "lede" }, el("span", { class: "half" }, CODES_STORED_HERE), " ", el("span", { class: "half" }, ARE_LISTED_HERE)),
+      el("p", { class: "lede" }, el("span", { class: "half" }, CODES_STORED_IN_THIS_BROWSER), " ", el("span", { class: "half" }, ARE_LISTED_HERE)),
       ...deletion,
       el("div", { class: "hero", role: "presentation" }),
       button("Choose your badge", o.onStart),
