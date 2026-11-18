@@ -44,11 +44,12 @@ import StoreService.Orders (decide, expireOverdue, publishRegistration, settleOr
 import StoreService.Providers (CryptoReceived (..), ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, getInvoice, getInvoiceByProviderRef, overdueInvoices, paymentHolds, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
+import StoreService.Web.Http (providerNamed)
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (filterM, foldM, forM_, forever, unless, void, when)
-import Data.List (find, partition, sortOn)
+import Data.List (partition, sortOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust)
@@ -219,7 +220,7 @@ readsPerPass = 25
 
 coveringProvider :: PollerEnv -> UTCTime -> (PaymentProvider, Text) -> IO (Maybe Provider)
 coveringProvider env@PollerEnv {peProviders} now (provider, ref) =
-  case find ((== provider) . pProvider) peProviders of
+  case providerNamed peProviders provider of
     Just p -> pure (Just p)
     Nothing -> Nothing <$ warnNoProvider env now (textEncode provider) ref
 
@@ -291,7 +292,7 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
       when (isJust (decide irStatus signal)) $
         settleOrder peStore peWaiters pePhases irInvoiceId signal now >>= \status -> do
           reportSettled irProduct irStatus status
-          case (irProduct, find ((== provider) . pProvider) peProviders) of
+          case (irProduct, providerNamed peProviders provider) of
             (IPName _, Just p) ->
               creditLate env p now irInvoiceId ref >>= \case
                 CONothingDue -> pendingLate env irInvoiceId ref
@@ -319,7 +320,7 @@ readHint :: PollerEnv -> UTCTime -> Text -> IO ()
 readHint env@PollerEnv {peStore, peProviders} now ref =
   getInvoiceByProviderRef peStore ref >>= \case
     Nothing -> pure ()
-    Just InvoiceRow {irProvider} -> case find ((== irProvider) . pProvider) peProviders of
+    Just InvoiceRow {irProvider} -> case providerNamed peProviders irProvider of
       Nothing -> pure ()
       Just p ->
         pReadInvoice p ref >>= \case
@@ -414,7 +415,7 @@ cleanupUnpaid env@PollerEnv {peStore, pePhases, peCleanedAt, peCleanupLeft} now 
     cleanOne (rid, invId, ref) =
       getInvoice peStore invId >>= \case
         Nothing -> pure False
-        Just InvoiceRow {irProvider, irProviderRef} -> case find ((== irProvider) . pProvider) (peProviders env) of
+        Just InvoiceRow {irProvider, irProviderRef} -> case providerNamed (peProviders env) irProvider of
           Nothing -> keep ("no " <> tshow irProvider <> " provider is configured to read its invoice")
           Just p ->
             pReadInvoice p irProviderRef >>= \case
@@ -446,7 +447,7 @@ creditPass env@PollerEnv {peStore, peProviders} now = do
     forM_ invoices $ \(invId@(InvoiceId invText), ref) ->
       (`catchOwn'` \e -> logError ("names: crediting invoice " <> ref <> " failed; the next credit pass tries it again: " <> tshow e)) $
         getInvoice peStore invId >>= \case
-          Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> void $ creditLate env p now invId ref
+          Just InvoiceRow {irProvider} | Just p <- providerNamed peProviders irProvider -> void $ creditLate env p now invId ref
           _ -> do
             due' <- dueToWarn env now ("no rate provider: " <> invText)
             when due' $ logWarn ("names: invoice " <> ref <> " has late money to credit, but no provider is configured to read its rate")
@@ -523,7 +524,7 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
     LFCrypto {lfCoin, lfInvoiceRate}
       | lsSupport == Just LSRateFloor ->
           getInvoice peStore lsInvoice >>= \case
-            Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> (\r -> (rateFloor lfInvoiceRate (either (const "unread") rateText r), Nothing)) <$> cachedRate env p lfCoin
+            Just InvoiceRow {irProvider} | Just p <- providerNamed peProviders irProvider -> (\r -> (rateFloor lfInvoiceRate (either (const "unread") rateText r), Nothing)) <$> cachedRate env p lfCoin
             _ -> pure (rateFloor lfInvoiceRate "unread", Nothing)
       | otherwise -> pure (rateRead, Nothing)
   _ | lsSupport == Just (LSUncreditable UCHighSpeed) -> pure (highSpeed, Nothing)
@@ -560,7 +561,7 @@ lateAlertText LateAlert {laProviderRef, laState = s@LateCreditState {lsReceivedC
 closedAtProvider :: PollerEnv -> UTCTime -> OverdueInvoice -> IO Bool
 closedAtProvider env@PollerEnv {peStore, peProviders} now oi@OverdueInvoice {oiInvoiceId, oiProvider, oiProviderRef = ref} =
   (`catchOwn'` \e -> False <$ logError ("badge poller: cancelling " <> tshow oiProvider <> " invoice " <> ref <> " failed; the next pass tries it again: " <> tshow e)) $
-    case find ((== oiProvider) . pProvider) peProviders of
+    case providerNamed peProviders oiProvider of
       Nothing -> uncancelled env now oi "no provider is configured for it"
       Just p ->
         getInvoice peStore oiInvoiceId >>= \case
