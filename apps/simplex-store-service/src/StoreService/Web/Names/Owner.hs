@@ -36,6 +36,9 @@ import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (NameRefusal (..), registrationView)
 import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, nameBodyBytes, readBoundedBody)
 import StoreService.Names.Worker (Retried (..), checkFailedOrder)
+import StoreService.Orders (cancelNameInvoices)
+import StoreService.Providers (Provider)
+import StoreService.Waiters (Waiters)
 import StoreService.Web.Names.Orders (Answer (..), answerNow, refusalAnswer, refused, sendAnswer)
 import StoreService.Web.Names.Registration (registrationChanged, registrationRefusal, retryRefusal)
 
@@ -99,8 +102,8 @@ foundOrder NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCr
     idText (RegistrationId t) = t
 
 -- | POST /api/registration/:id/name, another name or other links, under the turns of both names.
-retargetHandler :: OrdersEnv -> RegistrationId -> Request -> Respond -> IO ResponseReceived
-retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} rid@(RegistrationId ridText) req respond =
+retargetHandler :: OrdersEnv -> [Provider] -> Waiters -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow, oePhases} providers waiters rid@(RegistrationId ridText) req respond =
   readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
     requested = \case
@@ -144,9 +147,10 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
         Left (WRRefused refusal) -> refuse refusal
     movedAnswer now v =
       withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just r -> written env rid v . answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
+        Just r -> heldAfter . written env rid v . answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
         Nothing -> refusalAnswer NRInternal <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
     changed = refusalAnswer <$> registrationChanged env rid
+    heldAfter a@Answer {aAfter} = a {aAfter = aAfter >> cancelNameInvoices oeStore waiters (Just oePhases) providers rid}
     what = "POST /api/registration/:id/name"
     refuse = refused what
 

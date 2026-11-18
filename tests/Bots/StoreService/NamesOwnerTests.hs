@@ -35,7 +35,7 @@ import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rent
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.NamesPhasesTests (held, registrationPath, seenVersion, woken)
-import Bots.StoreService.WebTests (answerFixture, bounded, capturingStderr, fieldOf, jsonObject, nameRefusedWith, phaseOf, phaseValue, storeFixture, webGet, withApp)
+import Bots.StoreService.WebTests (StubCall (..), answerFixture, bounded, capturingStderr, fieldOf, stubCalls, jsonObject, nameRefusedWith, phaseOf, phaseValue, storeFixture, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent.Async (async, wait)
@@ -69,10 +69,11 @@ import StoreService.Names.Registration (LinkKind (..), OrderFields (..), Registr
 import StoreService.Names.Store hiding (findLimit)
 import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
 import StoreService.Store (RevokeResult (..))
-import StoreService.Web.Http (HttpEnv, createLimit, findLimit, holdMicros, readLimit)
+import StoreService.Web.Http (createLimit, findLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Owner (findHandler, retargetHandler)
 import StoreService.Web.Names.Registration (registrationHandler)
+import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
 import StoreService.Web.Server (WebEnv (..), webApp)
 import Test.Hspec
 
@@ -84,6 +85,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
   describe "another name" $ do
     it "refuses a move from registered, queued, taken, and committed without a refused reveal" testMoveRefusedPhases
     it "moves a failed order, a lapsed one, and a committed one whose links were refused, to the same name with other links too, and to no name another paid order holds" testMoveAccepted
+    it "cancels another buyer's open invoice for the name once a moved order holds it" testMoveHoldsName
     it "answers a body equal to the current fields with the view unchanged, counting no move, whatever its timestamp" testMoveRepeat
     it "moves an order by a body differing only in terms, storing them" testMoveTermsOnly
     it "answers terms_changed for an old version, other terms or the other kind, listed or not, a body differing only in terms included, and moves under the community terms, storing them" testMoveTermsChanged
@@ -121,15 +123,15 @@ withOwnerAs change action = withOrders $ \ctx -> do
 -- | The owner routes over the context's settings.
 serveOwner :: Ctx -> (Ctx -> IO a) -> IO a
 serveOwner ctx@Ctx {cOrders = orders, cWeb = web} action = do
-  let routes path = ownerRoutes orders (weHttp web) path <|> codeRoutes orders (weProviders web) (weWaiters web) path
+  let routes path = ownerRoutes orders web path <|> codeRoutes orders (weProviders web) (weWaiters web) path
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   withApp app $ \client -> action ctx {cClient = client}
 
-ownerRoutes :: OrdersEnv -> HttpEnv -> [Text] -> Maybe Route
-ownerRoutes orders http = \case
+ownerRoutes :: OrdersEnv -> WebEnv -> [Text] -> Maybe Route
+ownerRoutes orders WebEnv {weHttp, weProviders, weWaiters} = \case
   ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = findLimit, rHandler = findHandler orders}
-  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders http holdMicros (RegistrationId rid)}
-  ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler orders (RegistrationId rid)}
+  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders weHttp holdMicros (RegistrationId rid)}
+  ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler orders weProviders weWaiters (RegistrationId rid)}
   _ -> Nothing
 
 signWith :: Ctx -> Secp256k1PrivateKey -> ByteString -> IO Text
@@ -383,6 +385,18 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
   movableWith orderTime Nothing `shouldBe` [PFailed]
   movableWith orderTime (Just (orderTime, LKContact)) `shouldBe` [PCommitted, PFailed]
   movableWith (addUTCTime (86400 + 1) orderTime) Nothing `shouldBe` [PCommitted, PFailed]
+
+testMoveHoldsName :: IO ()
+testMoveHoldsName = withOwner $ \ctx@Ctx {cStore, cStub} -> do
+  answerFree ctx "alicebakers"
+  (aliceInv, _) <- placed ctx aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 9}
+  aliceRef <- maybe (error "no invoice row") irProviderRef <$> getInvoice cStore aliceInv
+  bobFailed <- paidIn ctx (byB dynamisOrder) failedPhase
+  to <- moveTo ctx "alicebakers" 10
+  void $ moved ctx keyB bobFailed to
+  calls <- stubCalls cStub
+  [r | StubCancel r <- calls] `shouldBe` [aliceRef]
+  nrPhase <$> invoiceRegistration ctx aliceInv `shouldReturn` OClosed ICCancelled
 
 testMoveAccepted :: IO ()
 testMoveAccepted = withOwner $ \ctx -> do

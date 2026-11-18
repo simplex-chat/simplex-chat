@@ -10,7 +10,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates,
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (credit)
 import Bots.StoreService.NamesContractsTests (rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, fieldsJSON, fieldsOf, inObject, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, registrationById, registrationOf, registrationsOf, seconds, settleNow, nameTermsChanged, threeYears, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, fieldsJSON, fieldsOf, inObject, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, ownerBText, placeOrder, placed, post, registrationById, registrationOf, registrationsOf, seconds, settleNow, nameTermsChanged, threeYears, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesPhasesTests (registrationPath, seenVersion, woken)
 import qualified Bots.StoreService.NamesPhasesTests as Phases
@@ -73,6 +73,7 @@ namesSpendTests :: Spec
 namesSpendTests = describe "StoreService names: spend" $ do
   describe "orders" $ do
     it "queues an order whose price the balance covers, spending the price and keeping the rest, or all of it" testCoveredSpend
+    it "cancels another buyer's open invoice for the name once an order paid from a balance holds it" testBalanceOrderHoldsName
     it "makes an invoice for the difference, the order holding all of the balance until the invoice's expiry" testDifferenceSpend
     it "refuses a difference from a client network whose checkouts are used up, reaching no provider" testDifferenceLimitedPerNetwork
     it "answers an exact resend with its order in any phase, by its own hash, with a new timestamp and after the balance changed" testSpendResend
@@ -246,6 +247,15 @@ btc :: ServicePaymentMethod
 btc = SPMCrypto CCBtc
 
 -- tests
+
+testBalanceOrderHoldsName :: IO ()
+testBalanceOrderHoldsName = withSpend $ \ctx -> do
+  (bobInv, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 9}
+  bobRef <- providerRef ctx bobInv
+  src <- sourceOf ctx "src" 15000
+  fst <$> spend ctx src (covered 15000) `shouldReturn` 200
+  cancels ctx `shouldReturn` [bobRef]
+  nrPhase <$> invoiceRegistration ctx bobInv `shouldReturn` OClosed ICCancelled
 
 testCoveredSpend :: IO ()
 testCoveredSpend = withSpend $ \ctx -> do
