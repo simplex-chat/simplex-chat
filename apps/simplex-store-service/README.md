@@ -665,8 +665,9 @@ from `scripts/store-service/`. The database `badge_service`,
 
 A badge-service database upgrades in place: the store's own migrations run after every badge
 migration, `20261012_badge_subscriptions` included; `20261118_invoice_product` marks each existing
-invoice `badge`, or `name` when a name order's invoice row refers to it, and copies each badge
-invoice's provider reference into the invoices table, which holds every invoice's reference from then on. A database that ran the names migrations of
+invoice `badge`, or `name` when a name order's invoice row refers to it, and copies each invoice's
+provider reference into the invoices table, which holds every invoice's reference from then on: a
+badge invoice's stays in its badge row too, and a name invoice's moves, its rollback moving it back. A database that ran the names migrations of
 an earlier draft (`20261010_names`, or that draft's steps dated after `20261013_names`) does not start, as
 the service refuses to roll back migrations it does not list. A database that ran `20261013_names`
 before it created `sx_badge_service_name_terms` starts without that table, and every terms read

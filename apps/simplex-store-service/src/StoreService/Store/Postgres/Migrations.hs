@@ -391,6 +391,7 @@ CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by
 CREATE TABLE @name_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
   registration_id TEXT NOT NULL REFERENCES @name_registrations ON DELETE CASCADE,
+  provider_ref TEXT NOT NULL,
   late_alerted_at TIMESTAMPTZ,
   late_alerted_units BIGINT,
   late_support TEXT,
@@ -398,6 +399,8 @@ CREATE TABLE @name_invoices(
 );
 
 CREATE UNIQUE INDEX @idx_name_invoices_registration ON @name_invoices(registration_id);
+
+CREATE UNIQUE INDEX @idx_name_invoices_provider_ref ON @name_invoices(provider_ref);
 
 ALTER TABLE @payments ADD COLUMN confirmed_amount INTEGER NOT NULL DEFAULT 0;
 
@@ -520,6 +523,7 @@ DELETE FROM @invoices WHERE invoice_id IN (
   SELECT ni.invoice_id FROM @name_invoices ni
   WHERE NOT EXISTS (SELECT 1 FROM @payments p WHERE p.invoice_id = ni.invoice_id)
 );
+DROP INDEX @idx_name_invoices_provider_ref;
 DROP INDEX @idx_name_invoices_registration;
 DROP TABLE @name_invoices;
 
@@ -556,9 +560,15 @@ UPDATE @invoices SET product = 'name' WHERE invoice_id IN (SELECT invoice_id FRO
 
 UPDATE @invoices i SET provider_ref = ci.provider_ref FROM @badge_code_invoices ci WHERE ci.invoice_id = i.invoice_id;
 
+UPDATE @invoices i SET provider_ref = ni.provider_ref FROM @name_invoices ni WHERE ni.invoice_id = i.invoice_id;
+
 ALTER TABLE @invoices ALTER COLUMN provider_ref DROP DEFAULT;
 
 CREATE UNIQUE INDEX @idx_invoices_provider_ref ON @invoices(provider_ref);
+
+DROP INDEX @idx_name_invoices_provider_ref;
+
+ALTER TABLE @name_invoices DROP COLUMN provider_ref;
 |]
 
 down_m20261118_invoice_product :: Text
@@ -566,6 +576,14 @@ down_m20261118_invoice_product =
   withPrefix
     servicePrefix
     [r|
+ALTER TABLE @name_invoices ADD COLUMN provider_ref TEXT;
+
+UPDATE @name_invoices ni SET provider_ref = i.provider_ref FROM @invoices i WHERE i.invoice_id = ni.invoice_id;
+
+ALTER TABLE @name_invoices ALTER COLUMN provider_ref SET NOT NULL;
+
+CREATE UNIQUE INDEX @idx_name_invoices_provider_ref ON @name_invoices(provider_ref);
+
 DROP INDEX @idx_invoices_provider_ref;
 
 ALTER TABLE @invoices DROP COLUMN provider_ref;

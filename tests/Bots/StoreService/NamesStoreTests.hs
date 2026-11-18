@@ -50,7 +50,7 @@ namesStoreTests :: Spec
 namesStoreTests = describe "StoreService names: store" $ do
   describe "migration" $ do
     it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
-    it "names each invoice's product, badge for the existing rows and name for those a name invoice refers to, copies each badge invoice's provider ref, and reads a name row marked badge as no product" testInvoiceProduct
+    it "names each invoice's product, badge for the existing rows and name for those a name invoice refers to, moves each invoice's provider ref into invoices and back, and reads a name row marked badge as no product" testInvoiceProduct
     it "refuses a stored reveal whose acceptance columns are unset or set only in part" testPartialAcceptance
     it "refuses a stored commitment, secret or accepted terms hash that is not 32 bytes" testShortHashes
     it "refuses a stored length outside the name lengths" testStoredLength
@@ -230,11 +230,14 @@ testInvoiceProduct = withServiceStore $ \st -> do
   createInvoiceRows st sampleInvoice `shouldReturn` Right ()
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
   runMigrations st $ MTRDown (mapMaybe toDownMigration migration)
+  withTransaction st (\db -> DB.query db "SELECT provider_ref FROM sx_badge_service_name_invoices WHERE invoice_id = ?" (Only ("inv-r1" :: Text))) `shouldReturn` [Only ("ref-inv-r1" :: Text)]
   runMigrations st $ MTRUp migration
   let NewInvoice {niInvoiceId = InvoiceId badgeInvoice, niProviderRef = badgeRef} = sampleInvoice
       productOf invId = withTransaction st $ \db -> DB.query db "SELECT product FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invId)
   mapM productOf [badgeInvoice, "inv-r1"] `shouldReturn` [[Only ("badge" :: Text)], [Only "name"]]
   fmap irInvoiceId <$> getInvoiceByProviderRef st badgeRef `shouldReturn` Just (InvoiceId badgeInvoice)
+  fmap irInvoiceId <$> getInvoiceByProviderRef st "ref-inv-r1" `shouldReturn` Just (InvoiceId "inv-r1")
+  columnsOf st "sx_badge_service_name_invoices" >>= (`shouldNotSatisfy` elem "provider_ref")
   fmap irProduct <$> getInvoice st (InvoiceId "inv-r1") `shouldReturn` Just (IPName (RegistrationId "r1"))
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_invoices SET product = 'badge' WHERE invoice_id = ?" (Only ("inv-r1" :: Text))
   getInvoice st (InvoiceId "inv-r1") `shouldThrow` (\(StoreDecodeError e) -> e == "invoice product: inv-r1")
