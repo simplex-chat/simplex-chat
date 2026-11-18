@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, primaryOf, screenOf, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
-import { IDLE_DELETION, KEEP_OUTSIDE } from "../src/screens.js";
+import { IDLE_DELETION, IDLE_DELETION_CODES, KEEP_OUTSIDE } from "../src/screens.js";
 
 const codeTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
@@ -40,4 +40,15 @@ codeTest("main: in Chrome, the only-copy box is shown without the deletion warni
   assert.ok(warn.textContent.includes("This is the only copy."));
   assert.ok(!warn.textContent.includes(IDLE_DELETION), `the deletion warning is shown in Chrome: ${warn.textContent}`);
   assert.ok(!warn.textContent.includes(KEEP_OUTSIDE));
+});
+
+codeTest("main: in Chrome, Your codes is shown without the deletion warning", () => {
+  page.respondWith({ status: 200, body: {
+    status: "paid", badgeType: "supporter", months: 1, amount: 700, currency: "usd",
+    paidInFull: true, settledAt: "2026-08-28T12:05:00Z",
+  } });
+  page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
+  assert.equal(headingOf(inView()), "Your codes");
+  assert.equal(inView().all("li.entry").length, 1, "the paid code is listed");
+  assert.ok(!inView().textContent.includes(IDLE_DELETION_CODES), `the deletion warning is shown in Chrome: ${inView().textContent.slice(0, 300)}`);
 });

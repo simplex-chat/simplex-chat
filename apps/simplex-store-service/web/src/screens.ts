@@ -795,9 +795,10 @@ export const IDLE_DELETION = "This browser can delete it after 7 days of browsin
 export const IDLE_DELETION_CODES = "This browser can delete stored codes after 7 days of browsing without a tap or click on this site.";
 export const KEEP_OUTSIDE = "Redeem it now, or copy it and keep it outside this browser.";
 export const KEEP_EACH_OUTSIDE = "Redeem each code now, or copy it and keep it outside this browser.";
-export const COPY_UNLESS_ADDED = "Show and copy the code if the app does not add it.";
+export const COPY_UNLESS_ADDED = "Show and copy the code if it is not in the app.";
 export const CODES_LISTED_HERE = "Codes bought in this browser are listed here.";
-export const CODES_STORED_HERE = "The codes bought in this browser are stored here, and nowhere else.";
+export const CODES_STORED_IN_BROWSER = "Codes are stored only in the browser they were bought in.";
+export const NOT_SAVING = "This browser cannot save anything new right now. Copy any code you have not kept elsewhere.";
 
 function codeWithCopy(code: string): HTMLElement[] {
   const copy = copyControl("Copy code", code, "primary outline");
@@ -990,7 +991,7 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
   if (o.rows.length === 0) {
     return withInvest(panel(
       el("h1", {}, "Your codes"),
-      el("p", { class: "lede" }, CODES_LISTED_HERE),
+      el("p", { class: "lede" }, o.keepsNewCodes ? CODES_LISTED_HERE : NOT_SAVING),
       ...(o.browserDeletesIdle ? [el("p", { class: "muted" }, IDLE_DELETION_CODES)] : []),
       el("div", { class: "hero", role: "presentation" }),
       button("Choose your badge", o.onStart),
@@ -1002,9 +1003,7 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
     button(FORGET_EVERYTHING, o.onForget, "link danger"));
   return withInvest(panel(
     el("h1", {}, "Your codes"),
-    el("p", { class: "lede" }, o.keepsNewCodes
-      ? CODES_STORED_HERE
-      : "This browser cannot save anything new right now. Copy any code you have not kept elsewhere."),
+    el("p", { class: "lede" }, o.keepsNewCodes ? CODES_STORED_IN_BROWSER : NOT_SAVING),
     ...(o.browserDeletesIdle && o.rows.some((r) => r.kind === "paid") ? [warning(KEEP_EACH_OUTSIDE, IDLE_DELETION_CODES)] : []),
     list,
     forget,

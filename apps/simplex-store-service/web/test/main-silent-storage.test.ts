@@ -22,6 +22,6 @@ silentTest("main: a store that swallows writes is not called durable", () => {
   assert.equal(headingOf(screen), "Your codes");
   assert.ok(screen.textContent.includes("cannot save anything new"),
     `a silent write is still a lost code, and the buyer has to be told: ${screen.textContent.slice(0, 200)}`);
-  assert.ok(!screen.textContent.includes("stored here, and nowhere else"),
+  assert.ok(!screen.textContent.includes("stored only in the browser"),
     "nothing may promise the codes are kept here");
 });
