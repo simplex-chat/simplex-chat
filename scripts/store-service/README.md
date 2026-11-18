@@ -55,7 +55,7 @@ settings are written to `dev/lightning.env`:
 | `STORE_LIGHTNING_BTCPAY_STORE_ID` | the store |
 | `STORE_LIGHTNING_BTCPAY_WEBHOOK_SECRET` | the webhook's secret |
 | `STORE_LIGHTNING_PAYER_URL` | the payer node's REST API, `http://127.0.0.1:35532`; an invoice is paid with `POST /v2/router/send` and `{"payment_request": "<BOLT11>", "timeout_seconds": 60, "fee_limit_sat": "1000", "no_inflight_updates": true}` |
-| `STORE_LIGHTNING_SERVICE_PORT` | the port the tests serve the store service on, for the webhook |
+| `STORE_LIGHTNING_SERVICE_PORT` | the port on which the store service is served in the tests, for the webhook |
 
 With these variables in the environment, the test group `StoreService Lightning e2e` is run against
 the stack; without them it is reported as pending:

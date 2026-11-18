@@ -358,7 +358,7 @@ cancelInvoice env ref =
   fmap (fmap (const ())) $ greenfield env what methodPost ["invoices", ref, "status"] [] (Just body)
   where
     what = "cancel invoice"
-    -- Invalid, not Archive: archiving only hides the invoice. Invalid closes it, though BTCPay still records
+    -- Invalid, not Archive: an archived invoice is only hidden. An Invalid invoice is closed, though BTCPay still records
     -- a payment to it, and a Lightning invoice stays payable at the node until it expires
     body = J.object ["status" J..= ("Invalid" :: Text)]
 
@@ -453,8 +453,8 @@ invoiceSignal now ref status additional policy ms = do
       confirming = settlesOnReceipt cc || maybe False (`elem` map speedPolicyName confirmingPolicies) policy
       shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
       received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmAmount gpmDue gpmPayments
-      -- BTCPay never settles an invoice it has closed. On chain only its additional status tells that the whole amount reached it, as its paid amount counts unconfirmed payments too.
-      -- A Lightning payment is recorded only once settled, so there a due at 0 or less tells it.
+      -- BTCPay never settles an invoice it has closed. On chain, the whole amount is known to be received only from the additional status, as unconfirmed payments are included in the paid amount.
+      -- A Lightning payment is recorded only once settled, so there the invoice is paid in full when the due is 0 or less.
       settledInFull = settlesOnReceipt cc && maybe False ((<= 0) . wnValue) gpmDue
       fundedIf inFull = if inFull then PaidInFull else PaidInPart
       closedFunded = fundedIf (maybe False (`elem` closedInFullStatuses) additional || settledInFull)

@@ -68,7 +68,10 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
   [*] --> New
-  New --> Settled: paid at the node
+  New --> NewPaid: payment recorded, status not yet updated
+  NewPaid: New, due ≤ 0
+  NewPaid --> Processing
+  Processing --> Settled
   New --> Invalid: cancelled by the service
   New --> Expired: expiry
   Invalid --> InvalidPaid: paid before the BOLT11 expiry

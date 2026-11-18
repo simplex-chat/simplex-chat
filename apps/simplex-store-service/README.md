@@ -250,13 +250,13 @@ Lightning payment only once the node reports it settled, so the service credits 
 `speed_policy`, `requiredConfirmations` is omitted from its invoice view, and a closed invoice with
 a due of 0 or less is read as paid in full. BTCPay gives the method's amounts in whole satoshi; in
 the logs Lightning is counted in millisatoshi. The BOLT11 invoice expires with the order.
-Cancellation leaves it payable: BTCPay 2.4.4 marks the invoice `Invalid` but leaves the BOLT11
-payable at the node until it expires. While BTCPay keeps running, it records a payment to that
-BOLT11: the service credits it to a name order's balance as late money, and for a badge order it
-logs an error, and support refunds the payment by hand. After a restart BTCPay watches only open invoices, so such a
-payment is recorded by the node alone; support finds it among the node's settled invoices by the
-BOLT11. The node needs inbound channel capacity of at least the largest order: without it the
-buyer's wallet finds no route and the payment fails there.
+After a cancellation it stays payable: BTCPay 2.4.4 marks the invoice `Invalid` but leaves the
+BOLT11 payable at the node until it expires. While BTCPay keeps running, it records a payment to
+that BOLT11: the service credits it to a name order's balance as late money, and for a badge order
+it logs an error, and support refunds the payment by hand. After a restart BTCPay watches only open
+invoices, so such a payment is recorded by the node alone; support finds it among the node's
+settled invoices by the BOLT11. The node needs inbound channel capacity of at least the largest
+order: without it the buyer's wallet finds no route and the payment fails there.
 
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did

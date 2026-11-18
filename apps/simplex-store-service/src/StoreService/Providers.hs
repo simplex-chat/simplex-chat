@@ -142,7 +142,7 @@ data Provider = Provider
   { pProvider :: PaymentProvider,
     pCreateInvoice :: ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice),
     pReadInvoice :: Text -> IO (Either ProviderError (Maybe PaymentSignal)),
-    -- Closes the order at the provider, which refuses a paid one and still records a payment made afterwards.
+    -- The order is closed at the provider, which refuses a paid one and still records a payment made afterwards.
     pCancelInvoice :: Text -> IO (Either ProviderError ()),
     pListOpen :: IO (Either ProviderError ListPass),
     -- | Nothing for a provider of card payments, which needs no rate.
