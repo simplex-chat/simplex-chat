@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 -- | The requests only the owner code can sign: find and another name.
 module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
@@ -11,10 +12,10 @@ import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.Types as JT
-import Data.Bifunctor (first)
+import qualified Data.Aeson.TH as JQ
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Word (Word64)
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
@@ -22,13 +23,14 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Orders
 import StoreService.Names.Phases (publish)
-import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, retargetMessage)
+import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, retargetMessage)
 import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (registrationAt, registrationView)
@@ -43,14 +45,16 @@ data FindRequest = FindRequest
     frSignature :: RecoverableSignature
   }
 
+$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "fr"} ''FindRequest)
+
 -- | POST /api/registration/find, the owner's orders newest first.
 findHandler :: OrdersEnv -> Request -> Respond -> IO ResponseReceived
 findHandler OrdersEnv {oeStore, oeNow} req respond =
   readBoundedBody maxBodyBytes req >>= requested >>= sendAnswer respond
   where
     requested = \case
-      Just body | Just (J.Object o) <- J.decode body -> either refuse found $ parseBody "find request" $ parseFind o
-      _ -> refuse $ ORBadRequest "a malformed find request"
+      Just body -> either (refuse . ORBadRequest . ("a malformed find request: " <>) . T.pack) found $ J.eitherDecode body
+      Nothing -> refuse $ ORBadRequest "a find request over the body cap"
     found FindRequest {frOwner, frTimestamp, frSignature} = do
       now <- oeNow
       runExceptT (mapM_ ExceptT [checkSigner frOwner (findMessage frOwner frTimestamp) frSignature, pure $ checkTimestamp now frTimestamp]) >>= \case
@@ -59,13 +63,6 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
           rs <- withTransaction oeStore (\db -> findRegistrations db frOwner now)
           pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (\(r, holder) -> foundJSON (registrationAt now r) holder) rs]
     refuse = refused "POST /api/registration/find"
-
-parseFind :: J.Object -> JT.Parser FindRequest
-parseFind o = do
-  frOwner <- jsonField o "owner" $ textWith $ first show . parseAnyCaseAddress
-  frTimestamp <- jsonField o "timestamp" boundedInteger
-  frSignature <- jsonField o "signature" hexSignature
-  pure FindRequest {frOwner, frTimestamp, frSignature}
 
 -- | balanceSource: the order whose balance paid this one; heldBy: the order whose invoice holds this one's balance.
 foundJSON :: NameRegistration -> Maybe RegistrationId -> J.Value

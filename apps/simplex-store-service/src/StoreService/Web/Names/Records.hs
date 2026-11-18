@@ -1,22 +1,23 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module StoreService.Web.Names.Records (EditInvalid (..), recordsHandler, editRequest, editResponse) where
 
 import Control.Logger.Simple (logNote)
 import Control.Monad (forM_, unless)
-import Data.Aeson ((.:), (.=))
+import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import Data.List (nub)
 import qualified Data.List.NonEmpty as L
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
-import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), Records, relayEdit)
@@ -26,6 +27,15 @@ import StoreService.Web.Http (NameRefusal (..), Respond, jsonResponse, maxBodyBy
 
 data EditInvalid = EIBadRequest | EIInvalidLink
   deriving (Eq, Show)
+
+-- | An edit as sent, before its link and signature are checked.
+data SentEdit = SentEdit {seKey :: LinkKind, seValue :: Text, seNonce :: Word64, seDeadline :: Word64, seSignature :: Text}
+
+data SentRequest = SentRequest {srLabelHash :: Hex32, srEdits :: [SentEdit]}
+
+$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "se"} ''SentEdit)
+
+$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "sr"} ''SentRequest)
 
 recordsHandler :: Records -> Request -> Respond -> IO ResponseReceived
 recordsHandler rs req respond =
@@ -41,9 +51,6 @@ recordsHandler rs req respond =
       EASettled (EOReverted revert) -> logNote $ "POST /api/name/records reverted on chain" <> maybe "" (": " <>) revert
       _ -> pure ()
 
--- | An edit as sent, before its link and signature are checked.
-data SentEdit = SentEdit {seKind :: LinkKind, seValue :: Text, seNonce :: Word64, seDeadline :: Word64, seSignature :: Text}
-
 -- | One link of each kind, so a Save of both links is the most one request carries.
 maxEdits :: Int
 maxEdits = 2
@@ -51,21 +58,18 @@ maxEdits = 2
 -- | Every edit's format and key, then every link, then every signature's format and low s, as the page's checks run.
 editRequest :: J.Object -> Either EditInvalid EditRequest
 editRequest o = do
-  (labelHash, edits) <- maybe (Left EIBadRequest) Right $ JT.parseMaybe fields o
-  erLabelHash <- either (const $ Left EIBadRequest) (Right . LabelHash . unHex32) $ strDecode $ encodeUtf8 labelHash
+  SentRequest {srLabelHash = Hex32 lh, srEdits = edits} <- maybe (Left EIBadRequest) Right $ JT.parseMaybe J.parseJSON $ J.Object o
   sent <- maybe (Left EIBadRequest) Right $ L.nonEmpty edits
   unless (length edits <= maxEdits && keysOnce edits && consecutive edits) $ Left EIBadRequest
-  forM_ edits $ \SentEdit {seKind, seValue} -> unless (seValue == "" || (fst <$> nameLink seValue) == Just seKind) $ Left EIInvalidLink
+  forM_ edits $ \SentEdit {seKey, seValue} -> unless (seValue == "" || (fst <$> nameLink seValue) == Just seKey) $ Left EIInvalidLink
   erChanges <- mapM signedChange sent
-  pure EditRequest {erLabelHash, erChanges}
+  pure EditRequest {erLabelHash = LabelHash lh, erChanges}
   where
-    fields v = (,) <$> v .: "labelHash" <*> (v .: "edits" >>= mapM (J.withObject "edit" sentEdit))
-    sentEdit v = SentEdit <$> v .: "key" <*> v .: "value" <*> v .: "nonce" <*> v .: "deadline" <*> v .: "signature"
-    keysOnce edits = let keys = map seKind edits in length keys == length (nub keys)
+    keysOnce edits = let keys = map seKey edits in length keys == length (nub keys)
     consecutive edits = and $ zipWith (\a b -> seNonce b == seNonce a + 1) edits (drop 1 edits)
-    signedChange SentEdit {seKind, seValue, seNonce, seDeadline, seSignature} = do
+    signedChange SentEdit {seKey, seValue, seNonce, seDeadline, seSignature} = do
       scSignature <- either (const $ Left EIBadRequest) Right $ parseSignature seSignature
-      pure SignedChange {scChange = RCSetText seKind seValue, scNonce = seNonce, scDeadline = seDeadline, scSignature}
+      pure SignedChange {scChange = RCSetText seKey seValue, scNonce = seNonce, scDeadline = seDeadline, scSignature}
 
 editResponse :: EditAnswer -> Response
 editResponse = \case

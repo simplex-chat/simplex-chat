@@ -62,6 +62,7 @@ import Control.Applicative ((<|>))
 import Control.Monad (unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Crypto.Number.Serialize (os2ip)
+import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
@@ -83,7 +84,7 @@ import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData)
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexDomain (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Names.Chain (AbiValue (..), ChainSeconds, Hex32 (..), abiArray, abiBytes, abiTuple, abiWordSize, addressWord, hex, lowerHexP, parseText, selector, uint256)
@@ -390,3 +391,5 @@ parseAnyCaseAddress t
   | otherwise = Left ADFormat
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "LK") ''LinkKind)
+
+$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "ta"} ''TermsAcceptance)
