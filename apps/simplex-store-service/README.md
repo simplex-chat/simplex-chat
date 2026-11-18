@@ -915,6 +915,7 @@ warning. When the metrics port cannot be listened on, the failure is logged as a
 | `simplex_store_badges_codes_open` | badge codes paid or free, not revoked or expired, with redemptions left |
 | `simplex_store_names_orders{phase}` | name orders in the phase: `unpaid`, `closed`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `closed` counts unpaid orders closed with their invoice, kept for 30 days, and `failed` every failed order not tried again |
 | `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
+| `simplex_store_names_unregistered_oldest_paid_timestamp_seconds` | when the order paid longest ago among those `queued`, `committing`, `committed` or `registering` was paid, a code order or an order paid from a balance at its placement; absent when there is none |
 | `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
 | `simplex_store_names_transactions_oldest_pending_timestamp_seconds` | when the oldest of them was first signed; absent when none is pending |
 | `simplex_store_names_invoices_open` | open invoices of name orders |
@@ -927,6 +928,7 @@ warning. When the metrics port cannot be listened on, the failure is logged as a
 | `simplex_store_names_chain_head_block` | the node's latest block number, as last read |
 | `simplex_store_names_chain_head_timestamp_seconds` | that block's time |
 | `simplex_store_names_chain_base_fee_wei` | that block's base fee per gas |
+| `simplex_store_names_max_fee_per_gas_wei` | the fee cap, `[chain] max_fee_per_gas` |
 | `simplex_store_names_terms_held{kind}` | 1 when the service holds the text of the `general` or `community` terms the name policy links, 0 while it cannot fetch it, so names of that kind cannot be ordered; absent while the policy links none |
 | `simplex_store_names_chain_read_timestamp_seconds` | when every part of the read last succeeded |
 | `simplex_store_names_chain_read_ok` | 1 when the last read succeeded in every part, 0 when a part failed or none has finished |
@@ -948,12 +950,17 @@ failed read keeps the last one and is counted.
 | `simplex_names_refresh_timestamp_seconds` | when the names were last read |
 | `simplex_names_refresh_failures_total` | counter of failed reads of the names since the service started |
 
-Every metric is a gauge, but for the names' histogram and counter. A stuck order, transaction or record edit, a node that cannot be read or
+Every metric is a gauge, but for the names' histogram and counter. A stuck order, a paid order not
+registered 3 hours after its payment, a registrar key that cannot pay for a register with links, a
+base fee above the fee cap, a stuck transaction or record edit, a node that cannot be read or
 has stopped following the chain, terms that cannot be shown and a payment provider that cannot be
 read show as:
 
 ```
 time() - simplex_store_names_queue_oldest_change_timestamp_seconds > 1200
+time() - simplex_store_names_unregistered_oldest_paid_timestamp_seconds > 10800
+simplex_store_names_registrar_balance_wei < 10000000000000000
+simplex_store_names_chain_base_fee_wei > simplex_store_names_max_fee_per_gas_wei
 time() - simplex_store_names_transactions_oldest_pending_timestamp_seconds > 900
 time() - simplex_store_names_record_edits_oldest_pending_timestamp_seconds > 900
 simplex_store_names_chain_read_ok == 0
@@ -970,8 +977,12 @@ head older than 2 minutes means the node has fallen behind.
 An order moves on within minutes: its commit and register are each mined and confirmed, and the
 register waits about a minute after the commit. An order tried again can wait unchanged up to
 `reveal_margin_seconds` (900 by default) for its old commitment to lapse, so the queue alert's
-threshold is above it. Size the alerts on the balance and the allowance to
-the orders expected before a top-up, with the figures in [Fund the key](#fund-the-key).
+threshold is above it. Every 5 minutes the service also logs an error and, with `[group]`, posts in
+the managed group, once for each order paid 3 hours ago or more and still `queued`, `committing`,
+`committed` or `registering`: `names: order <id> was paid at <time> and is <phase>, not registered, 3
+hours later`. Below 0.01 ETH the node refuses a register with links (see [Fund the key](#fund-the-key)),
+and while the base fee is above the cap no transaction is signed; size a warning on the balance and the
+allowance to the orders expected before a top-up, with the figures there.
 
 Caddy proxies it on the monitoring site of the host, beside node_exporter, inside that site's
 `handle_path /metrics/*` block:

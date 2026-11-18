@@ -84,6 +84,9 @@ module StoreService.Names.Store
     retargetRegistration,
     findRegistrations,
     labelHolder,
+    setPaidAt,
+    unregisteredPaidBefore,
+    claimUnregisteredAlert,
     openInvoicesOfHeldName,
     activeRegistrations,
     unpaidCleanupCandidates,
@@ -726,7 +729,8 @@ data NamesCounts = NamesCounts
     ncHeldBalances :: Int,
     ncHeldCents :: Int,
     ncPendingEdits :: Int,
-    ncOldestEdit :: Maybe UTCTime
+    ncOldestEdit :: Maybe UTCTime,
+    ncOldestUnregisteredPaid :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -800,14 +804,14 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
           [sql|
         INSERT INTO @name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
-           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms, replaces)
-        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?,?)
+           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms, replaces, paid_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?,?,?)
         ON CONFLICT DO NOTHING
       |]
       )
       ( (rid, initialVersion, ofLabelHash, nameLengthInt ofLength, int64 ofDuration, nrgOwner, ofCommitment, ofSealed, phase, nrgYears)
           :. (price, method, codeId, BI True, nrgOrderHash, 0 :: Int, now, now, (\BalanceUse {buSource = RegistrationId s} -> s) <$> fromBalance, maybe 0 buUsed fromBalance)
-          :. (ofAgreedTerms, (\(RegistrationId s) -> s) <$> nrgReplaces)
+          :. (ofAgreedTerms, (\(RegistrationId s) -> s) <$> nrgReplaces, if phase == PQueued then Just now else Nothing)
       )
   where
     OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = nrgOrder
@@ -1105,6 +1109,22 @@ labelHolder :: DB.Connection -> LabelHash -> IO (Maybe RegistrationId)
 labelHolder db lh =
   maybeFirstRow (RegistrationId . fromOnly) $
     DB.query db (mkQuery "SELECT registration_id FROM @name_registrations WHERE label_hash = ? AND phase IN (?,?,?,?) LIMIT 1") (lh, PQueued, PCommitting, PCommitted, PRegistering)
+
+setPaidAt :: DB.Connection -> RegistrationId -> UTCTime -> IO ()
+setPaidAt db (RegistrationId rid) paidAt =
+  DB.execute db (mkQuery "UPDATE @name_registrations SET paid_at = ? WHERE registration_id = ? AND paid_at IS NULL") (paidAt, rid)
+
+unregisteredPaidBefore :: DB.Connection -> UTCTime -> IO [(RegistrationId, NamePhase, UTCTime)]
+unregisteredPaidBefore db cutoff =
+  map (\(rid, phase, paidAt) -> (RegistrationId rid, phase, paidAt))
+    <$> DB.query
+      db
+      (mkQuery "SELECT registration_id, phase, paid_at FROM @name_registrations WHERE phase IN (?,?,?,?) AND paid_at < ? AND unregistered_alerted_at IS NULL ORDER BY paid_at, registration_id")
+      (PQueued, PCommitting, PCommitted, PRegistering, cutoff)
+
+claimUnregisteredAlert :: DB.Connection -> RegistrationId -> UTCTime -> IO Bool
+claimUnregisteredAlert db (RegistrationId rid) now =
+  (> 0) <$> executeChanging db (mkQuery "UPDATE @name_registrations SET unregistered_alerted_at = ? WHERE registration_id = ? AND unregistered_alerted_at IS NULL") (now, rid)
 
 openInvoicesOfHeldName :: DB.Connection -> RegistrationId -> IO [(InvoiceId, PaymentProvider, Text)]
 openInvoicesOfHeldName db (RegistrationId rid) =
@@ -1910,13 +1930,14 @@ namesCounts db = do
         (SELECT COUNT(*) FROM @name_balances WHERE reserved_by IS NOT NULL),
         (SELECT COALESCE(SUM(amount), 0) FROM @name_balances WHERE reserved_by IS NOT NULL),
         (SELECT COUNT(*) FROM @name_record_edits WHERE state = ?),
-        (SELECT MIN(created_at) FROM @name_record_edits WHERE state = ?)
+        (SELECT MIN(created_at) FROM @name_record_edits WHERE state = ?),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase IN (?,?,?,?))
     |]
     )
-    (PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, ISOpen, ETPending, ETPending)
+    ((PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, ISOpen, ETPending, ETPending) :. (PQueued, PCommitting, PCommitted, PRegistering))
     >>= \case
-      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit)] ->
-        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit}
+      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid)] ->
+        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid}
       _ -> E.throwIO $ StoreDecodeError "names counts: not one row"
 
 int64 :: Word64 -> Int64

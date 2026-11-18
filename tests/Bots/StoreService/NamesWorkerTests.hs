@@ -20,7 +20,7 @@ import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.Async (wait, withAsync)
 import qualified Control.Exception as E
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (atomically, check)
+import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVarIO)
 import Control.Monad (forM_, replicateM_, void, when)
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
@@ -118,6 +118,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
   describe "lanes" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
+    it "reports once each paid or code order not registered 3 hours after its payment" testUnregisteredAlert
     it "releases the codes of code orders failed or lapsed unsigned for 30 days, closing them taken, and no others" testCodeSweep
   describe "confirmation depth" $
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
@@ -1018,6 +1019,24 @@ testRunWorkers = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} ->
     namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
   nrPhase <$> invoiceRegistration ctx unpaid `shouldReturn` OUnpaid unpaid
   length <$> sent w `shouldReturn` 1
+
+testUnregisteredAlert :: IO ()
+testUnregisteredAlert = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  worker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
+  paid <- paidIn ctx aliceOrder id
+  (code, _) <- codeIn ctx 7 dynamisOrder id
+  answerFree ctx "alicebakers"
+  void $ paidIn ctx aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 5} $ \o -> o {nrPhase = ORegistered expiry orderTime}
+  advance ctx $ 3 * 3600
+  alertUnregisteredPaid worker
+  readTVarIO reports `shouldReturn` []
+  advance ctx 1
+  alertUnregisteredPaid worker
+  alertUnregisteredPaid worker
+  let named NameRegistration {nrId = RegistrationId rid} = any (T.isInfixOf rid)
+  sent' <- readTVarIO reports
+  (length sent', named paid sent', named code sent') `shouldBe` (2, True, True)
 
 testCodeSweep :: IO ()
 testCodeSweep = withWorker $ \W {wCtx = ctx, wWorker} -> do

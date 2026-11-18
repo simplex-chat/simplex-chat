@@ -398,7 +398,7 @@ withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $
   withTempDirectory "tests/tmp" "names-orders" $ \root -> do
     staticDir <- prepareStaticDir root
     let cfg = (testServiceConfig staticDir True) {btcpay = Just testBTCPayConfig}
-        cOrders = OrdersEnv {oeStore = cStore, oeConfig = testNamesConfig cNode, oeContracts = ct, oeTurns = turns, oePhases = phases, oeNow = readIORef cClock}
+        cOrders = OrdersEnv {oeStore = cStore, oeConfig = testNamesConfig cNode, oeContracts = ct, oeTurns = turns, oePhases = phases, oeNow = readIORef cClock, oeReport = \_ -> pure ()}
         crypto = via $ freshRefs (stubProvider cStub)
         card = via $ freshRefs (stubProvider cStub) {pProvider = PPStripe}
     waiters <- newWaiters

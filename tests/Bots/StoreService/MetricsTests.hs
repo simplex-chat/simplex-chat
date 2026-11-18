@@ -260,8 +260,9 @@ testNamesCounts = withServiceStore $ \st -> do
     Just mined <- insertRecordEdit db (newEdit ownerA 1 setChannel) (at 8)
     insertRecordEdit db (newEdit ownerB 3 setChannel) (at 9) >>= (`shouldSatisfy` isJust)
     settleRecordEdit db mined (EOApplied Nothing) `shouldReturn` True
+  withTransaction st $ \db -> forM_ [("c1", 2), ("rg", 1), ("f", 0)] $ \(rid, minute) -> setPaidAt db (RegistrationId rid) (at minute)
   counts <- withTransaction st namesCounts
-  typedSamples (namesText counts noChainRead)
+  typedSamples (namesText fakeMaxFeePerGas counts noChainRead)
     `shouldBe` [ "simplex_store_names_orders{phase=\"unpaid\"} 2",
                  "simplex_store_names_orders{phase=\"closed\"} 0",
                  "simplex_store_names_orders{phase=\"queued\"} 1",
@@ -272,6 +273,7 @@ testNamesCounts = withServiceStore $ \st -> do
                  "simplex_store_names_orders{phase=\"taken\"} 1",
                  "simplex_store_names_orders{phase=\"failed\"} 1",
                  "simplex_store_names_queue_oldest_change_timestamp_seconds " <> seconds (at 3),
+                 "simplex_store_names_unregistered_oldest_paid_timestamp_seconds " <> seconds (at 1),
                  "simplex_store_names_transactions_pending 2",
                  "simplex_store_names_transactions_oldest_pending_timestamp_seconds " <> seconds (at 7),
                  "simplex_store_names_invoices_open 2",
@@ -279,6 +281,7 @@ testNamesCounts = withServiceStore $ \st -> do
                  "simplex_store_names_balances_held_cents 6000",
                  "simplex_store_names_record_edits_pending 1",
                  "simplex_store_names_record_edits_oldest_pending_timestamp_seconds " <> seconds (at 9),
+                 "simplex_store_names_max_fee_per_gas_wei 100000000000",
                  "simplex_store_names_chain_read_ok 0"
                ]
 
@@ -353,9 +356,9 @@ typedSamples text = [l | l <- ls, not (T.null l || "#" `T.isPrefixOf` l), descri
     described name = any (("# TYPE " <> name <> " ") `T.isPrefixOf`) ls && any (("# HELP " <> name <> " ") `T.isPrefixOf`) ls
 
 chainSamples :: ChainRead -> [Text]
-chainSamples = filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_registrar_", "simplex_store_names_sponsor_", "simplex_store_names_chain_", "simplex_store_names_terms_"]) . typedSamples . namesText noCounts
+chainSamples = filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_registrar_", "simplex_store_names_sponsor_", "simplex_store_names_chain_", "simplex_store_names_terms_"]) . typedSamples . namesText fakeMaxFeePerGas noCounts
   where
-    noCounts = NamesCounts {ncPhases = [], ncQueueOldestChange = Nothing, ncPendingTransactions = 0, ncOldestPending = Nothing, ncOpenInvoices = 0, ncHeldBalances = 0, ncHeldCents = 0, ncPendingEdits = 0, ncOldestEdit = Nothing}
+    noCounts = NamesCounts {ncPhases = [], ncQueueOldestChange = Nothing, ncPendingTransactions = 0, ncOldestPending = Nothing, ncOpenInvoices = 0, ncHeldBalances = 0, ncHeldCents = 0, ncPendingEdits = 0, ncOldestEdit = Nothing, ncOldestUnregisteredPaid = Nothing}
 
 seconds :: UTCTime -> Text
 seconds t = tshow (floor $ utcTimeToPOSIXSeconds t :: Integer)

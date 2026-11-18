@@ -93,12 +93,13 @@ data OrdersEnv = OrdersEnv
     oeContracts :: Contracts,
     oeTurns :: Turns,
     oePhases :: Phases,
-    oeNow :: IO UTCTime
+    oeNow :: IO UTCTime,
+    oeReport :: Text -> IO ()
   }
 
 ordersEnv :: NamesEnv -> OrdersEnv
-ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases} =
-  OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = currentSecond}
+ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases, neReport} =
+  OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = currentSecond, oeReport = neReport}
 
 -- | The fields both kinds of order carry, with the owner's signature over them.
 data OrderRequest = OrderRequest

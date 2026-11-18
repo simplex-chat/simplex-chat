@@ -340,6 +340,8 @@ CREATE TABLE @name_registrations(
   order_hash BYTEA NOT NULL,
   moves INTEGER NOT NULL DEFAULT 0,
   links_refused_at TIMESTAMPTZ,
+  paid_at TIMESTAMPTZ,
+  unregistered_alerted_at TIMESTAMPTZ,
   replaces TEXT REFERENCES @name_registrations ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL

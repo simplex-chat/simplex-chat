@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module StoreService.Metrics
   ( MetricsEnv (..),
@@ -34,6 +35,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
+import Data.Word (Word64)
 import Network.HTTP.Types (hContentType, status200)
 import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
@@ -45,7 +47,7 @@ import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Util (catchOwn', raceAny_, tryOwnLogged, tshow)
 import StoreService.Config (ListenerConfig)
-import StoreService.Names.Chain (Block (..), latestBlock)
+import StoreService.Names.Chain (Block (..), ChainClient (..), ChainConfig (..), latestBlock)
 import StoreService.Names.Contracts (Contracts (..), NameEntry (..), RegisteredNames (..), RegistrarFunds (..), recordsLabel, registeredNames, registrarFunds, termsHeld)
 import StoreService.Names.Store (NamesCounts (..), namesCounts)
 import StoreService.Poller (expiryGrace)
@@ -163,11 +165,12 @@ purchaseStatuses = [PSAcquiring, PSIssued, PSSuperseded, PSFailed]
 subscriptionStates :: [SubscriptionState]
 subscriptionStates = [SSRenewing, SSCancelled, SSBillingRetry, SSEnded]
 
-namesText :: NamesCounts -> ChainRead -> Text
-namesText NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} =
+namesText :: Word64 -> NamesCounts -> ChainRead -> Text
+namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} =
   T.concat
     [ gauge "simplex_store_names_orders" "Name orders by phase" [labelled "phase" (textEncode p) (value $ fromMaybe 0 $ lookup p ncPhases) | p <- [minBound .. maxBound]],
       gauge "simplex_store_names_queue_oldest_change_timestamp_seconds" "Last change of the order longest unmoved among those the service moves on: queued, committing, registering, or committed with its reveal" (timestamp <$> ncQueueOldestChange),
+      gauge "simplex_store_names_unregistered_oldest_paid_timestamp_seconds" "When the order paid longest ago among those queued, committing, committed or registering was paid" (timestamp <$> ncOldestUnregisteredPaid),
       gauge "simplex_store_names_transactions_pending" "Registrar transactions sent and not settled, one per nonce" (Just $ value ncPendingTransactions),
       gauge "simplex_store_names_transactions_oldest_pending_timestamp_seconds" "When the oldest pending registrar transaction was first signed" (timestamp <$> ncOldestPending),
       gauge "simplex_store_names_invoices_open" "Open invoices of name orders" (Just $ value ncOpenInvoices),
@@ -180,6 +183,7 @@ namesText NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncO
       gauge "simplex_store_names_chain_head_block" "The node's latest block number, as last read" (value . blockNumber <$> crHead),
       gauge "simplex_store_names_chain_head_timestamp_seconds" "The node's latest block time, as last read" (value . blockTimestamp <$> crHead),
       gauge "simplex_store_names_chain_base_fee_wei" "The node's latest block base fee per gas, as last read" (value . blockBaseFee <$> crHead),
+      gauge "simplex_store_names_max_fee_per_gas_wei" "The fee cap, [chain] max_fee_per_gas" (Just $ value maxFeePerGas),
       gauge "simplex_store_names_terms_held" "1 when the service holds the text of the terms the name policy links, by kind, as last read" [labelled "kind" k (value $ fromEnum held) | (k, held) <- crTerms],
       gauge "simplex_store_names_chain_read_timestamp_seconds" "When every part of the chain read last succeeded" (timestamp <$> crReadAt),
       gauge "simplex_store_names_chain_read_ok" "1 when the last chain read succeeded in every part, 0 when a part failed or none was made" (Just $ value $ fromEnum crOk)
@@ -247,13 +251,16 @@ metricsApp MetricsEnv {meStore, meProviders, meListedOk, meWebhookAt, meNames} v
   ["metrics"] -> only "GET" req respond $ do
     now <- getCurrentTime
     (invoices, badges, names) <- withTransaction meStore $ \db ->
-      (,,) <$> openInvoiceCounts db (addUTCTime (negate expiryGrace) now) <*> badgeCounts db now <*> mapM (const $ namesCounts db) meNames
+      (,,) <$> openInvoiceCounts db (addUTCTime (negate expiryGrace) now) <*> badgeCounts db now <*> mapM (\ct -> (feeCapOf ct,) <$> namesCounts db) meNames
     times <- ProviderTimes <$> readTVarIO meListedOk <*> readTVarIO meWebhookAt
     chain <- readTVarIO v
     counted <- readTVarIO registered
-    let text = serviceText meProviders invoices badges times <> foldMap (\n -> namesText n chain <> registeredNamesText counted) names
+    let text = serviceText meProviders invoices badges times <> foldMap (\(cap, n) -> namesText cap n chain <> registeredNamesText counted) names
     respond $ responseLBS status200 [(hContentType, "text/plain; version=0.0.4; charset=utf-8")] $ LB.fromStrict $ encodeUtf8 text
   _ -> respond notFound
+
+feeCapOf :: Contracts -> Word64
+feeCapOf = cMaxFeePerGas . ccConfig . ctChain
 
 runMetrics :: ListenerConfig -> Int -> MetricsEnv -> IO ()
 runMetrics lc port env@MetricsEnv {meNames, meReport} = do

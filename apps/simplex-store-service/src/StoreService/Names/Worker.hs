@@ -15,6 +15,8 @@ module StoreService.Names.Worker
     runWorkers,
     sweepFailedCodes,
     runCodeSweep,
+    alertUnregisteredPaid,
+    runUnregisteredAlerts,
     Retried (..),
     RetryRefusal (..),
     retryRegistration,
@@ -44,6 +46,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Encoding.String (textEncode)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
@@ -570,3 +573,23 @@ sweepFailedCodes Worker {wkOrders = OrdersEnv {oeStore, oeTurns, oePhases, oeNow
 
 runCodeSweep :: Worker -> IO ()
 runCodeSweep w = forever $ tryOwnLogged "names code sweep failed; the next pass will run: " (sweepFailedCodes w) >> threadDelay sweepInterval
+
+unregisteredAlertAge :: NominalDiffTime
+unregisteredAlertAge = 3 * 3600
+
+unregisteredCheckInterval :: Int
+unregisteredCheckInterval = 300 * 1000000
+
+alertUnregisteredPaid :: Worker -> IO ()
+alertUnregisteredPaid Worker {wkOrders = OrdersEnv {oeStore, oeNow, oeReport}} = do
+  now <- oeNow
+  due <- withTransaction oeStore (`unregisteredPaidBefore` addUTCTime (negate unregisteredAlertAge) now)
+  forM_ due $ \(rid@(RegistrationId ridText), phase, paidAt) -> do
+    claimed <- withTransaction oeStore $ \db -> claimUnregisteredAlert db rid now
+    when claimed $ do
+      let alert = "names: order " <> ridText <> " was paid at " <> tshow paidAt <> " and is " <> textEncode phase <> ", not registered, 3 hours later"
+      logError alert
+      oeReport alert
+
+runUnregisteredAlerts :: Worker -> IO ()
+runUnregisteredAlerts w = forever $ tryOwnLogged "names: the check of unregistered paid orders failed; the next pass will run: " (alertUnregisteredPaid w) >> threadDelay unregisteredCheckInterval

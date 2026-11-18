@@ -341,6 +341,8 @@ CREATE TABLE @name_registrations(
   order_hash BLOB NOT NULL,
   moves INTEGER NOT NULL DEFAULT 0,
   links_refused_at TEXT,
+  paid_at TEXT,
+  unregistered_alerted_at TEXT,
   replaces TEXT REFERENCES @name_registrations ON DELETE SET NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL

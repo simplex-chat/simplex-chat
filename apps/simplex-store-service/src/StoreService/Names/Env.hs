@@ -2,6 +2,7 @@
 
 module StoreService.Names.Env (NamesEnv (..), newNamesEnv) where
 
+import Data.Text (Text)
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Types (User)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
@@ -29,15 +30,16 @@ data NamesEnv = NamesEnv
     neSender :: Sender,
     neRecords :: Records,
     neWaiters :: Waiters,
-    neProviders :: [Provider]
+    neProviders :: [Provider],
+    neReport :: Text -> IO ()
   }
 
-newNamesEnv :: ChatController -> User -> NamesConfig -> DBStore -> Turns -> Waiters -> [Provider] -> IO NamesEnv
-newNamesEnv neChat@ChatController {random} neUser neConfig@NamesConfig {nTLD, nChain, nRecordEditsPerYear, nMinPriceCentsPerYear} neStore neTurns neWaiters neProviders = do
+newNamesEnv :: ChatController -> User -> NamesConfig -> DBStore -> Turns -> Waiters -> [Provider] -> (Text -> IO ()) -> IO NamesEnv
+newNamesEnv neChat@ChatController {random} neUser neConfig@NamesConfig {nTLD, nChain, nRecordEditsPerYear, nMinPriceCentsPerYear} neStore neTurns neWaiters neProviders neReport = do
   nePhases <- newPhases
   chain <- newChainClient random nChain
   neContracts <- newContracts neStore nTLD nMinPriceCentsPerYear chain
   neProfiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile neChat neUser) systemResolver
   neSender <- newSender random chain neStore currentSecond
   neRecords <- newRecords neStore neTurns neContracts neSender nTLD nRecordEditsPerYear currentSecond
-  pure NamesEnv {neChat, neUser, neConfig, neStore, nePhases, neTurns, neContracts, neProfiles, neSender, neRecords, neWaiters, neProviders}
+  pure NamesEnv {neChat, neUser, neConfig, neStore, nePhases, neTurns, neContracts, neProfiles, neSender, neRecords, neWaiters, neProviders, neReport}

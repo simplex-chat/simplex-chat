@@ -19,7 +19,7 @@ where
 import StoreService.Names.Phases (Phases)
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Registration (RegistrationId (..))
-import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
+import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, paymentBalance, releaseHeldBalance, setLateSupport, setPaidAt, spendHeldBalance, updateRegistration)
 import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), Received (..), providerErrorText, receivedAmount, receivedConfirmed)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
@@ -188,7 +188,7 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
         then do
           name <- case sold of
             PBadge codeHash -> [] <$ mapM_ (\h -> markCodePaid db h (addUTCTime codeLifetime at)) codeHash
-            PName r -> nameSettled db (irProviderRef row) irStatus wStatus settledMoney r now
+            PName r -> nameSettled db (irProviderRef row) irStatus wStatus settledMoney r at now
           pure (fromMaybe irStatus wStatus, maybe (if wrotePayment then PubPayment else PubNothing) PubStatus wStatus, name)
         else do
           -- another writer moved the row first, so publish what we found
@@ -199,8 +199,8 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
 -- An invoice the provider closed closes its order, and is late once if it holds money, read now or before.
 -- BTCPay reports money paid into a closed invoice as Expired or Invalid, not Settled, so a new payment figure
 -- on a closed invoice is late too; the monotonic payment write reports each figure once.
-nameSettled :: DB.Connection -> Text -> InvoiceStatus -> Maybe InvoiceStatus -> SettledMoney -> NameRegistration -> UTCTime -> IO [NameOutcome]
-nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrPhase, nrPayment, nrPrice} now
+nameSettled :: DB.Connection -> Text -> InvoiceStatus -> Maybe InvoiceStatus -> SettledMoney -> NameRegistration -> UTCTime -> UTCTime -> IO [NameOutcome]
+nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrPhase, nrPayment, nrPrice} paidAt now
   | namePhase nrPhase `notElem` [PUnpaid, PClosed] = pure []
   | otherwise = case after of
       Just ISPaid
@@ -209,6 +209,7 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrP
             held <- isJust <$> labelHolder db nrLabelHash
             updateRegistration db r {nrPhase = if held then OTaken else OQueued} now >>= \case
               Written v -> do
+                setPaidAt db nrId paidAt
                 spent <- spendHold
                 when held $ creditBalance db nrId nrPrice now
                 pure $ NOWritten nrId v : spent <> [NOTaken ref | held]

@@ -59,7 +59,7 @@ import StoreService.Names.Sender (checkPendingSignatures, runSender)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), BrokenInvariant (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, creditCents)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
-import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runWorkers)
+import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runUnregisteredAlerts, runWorkers)
 import StoreService.Options
 import StoreService.Poller (PollerEnv (peListedOk), expiryGrace, newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider (pProvider), minorDecimal)
@@ -301,7 +301,7 @@ storeService opts serviceCfg baseCfg env = do
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
       let providers = btc <> str
       hints <- newReadHints
-      namesEnv <- forM (names sc) (startNames cc turns ws providers)
+      namesEnv <- forM (names sc) (startNames cc turns ws providers report)
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       nameLanes <- maybe (pure []) namesLanes namesEnv
@@ -309,13 +309,13 @@ storeService opts serviceCfg baseCfg env = do
           metricsLane = [runMetrics (listener sc) port metricsEnv | Just port <- [lMetricsPort $ listener sc]]
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes <> metricsLane
 
-startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig -> IO NamesEnv
-startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nCodesOnly, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =
+startNames :: ChatController -> Turns -> Waiters -> [Provider] -> (T.Text -> IO ()) -> NamesConfig -> IO NamesEnv
+startNames cc@ChatController {chatStore} turns waiters providers report nc@NamesConfig {nTLD, nCodesOnly, nMinPriceCentsPerYear, nChain = ChainConfig {cChainId}} =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just user -> do
       logNote $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId <> ", price floor " <> tshow nMinPriceCentsPerYear <> " cents a year" <> codesOnlyNote
-      ne@NamesEnv {neContracts} <- newNamesEnv cc user nc chatStore turns waiters providers
+      ne@NamesEnv {neContracts} <- newNamesEnv cc user nc chatStore turns waiters providers report
       logNamePolicy nc neContracts
       pure ne
   where
@@ -347,7 +347,7 @@ logNamePolicy NamesConfig {nCommunity} ct =
 namesLanes :: NamesEnv -> IO [IO ()]
 namesLanes ne@NamesEnv {neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neSender
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runTermsFetch neContracts]
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runUnregisteredAlerts worker, runTermsFetch neContracts]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
