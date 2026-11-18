@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, primaryOf, screenOf, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
-import { CAN_DELETE_CODE, DOES_SO_AFTER, KEEP_OUTSIDE } from "../src/screens.js";
+import { CAN_DELETE_CODE, CAN_DO_SO_AFTER, KEEP_OUTSIDE } from "../src/screens.js";
 
 const codeTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
@@ -38,5 +38,5 @@ codeTest("main: in Safari, the deletion warning box follows the only-copy box", 
 
   const boxes = screenOf(app).all("div.warn");
   assert.deepEqual(boxes.map((b) => b.all("span.title")[0]!.textContent), ["This is the only copy.", CAN_DELETE_CODE]);
-  assert.deepEqual(boxes[1]!.all("p").map((l) => l.textContent), [DOES_SO_AFTER, KEEP_OUTSIDE]);
+  assert.deepEqual(boxes[1]!.all("p").map((l) => l.textContent), [CAN_DO_SO_AFTER, KEEP_OUTSIDE]);
 });

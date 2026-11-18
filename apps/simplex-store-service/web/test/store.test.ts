@@ -344,6 +344,7 @@ const OTHERS: Readonly<Record<string, string>> = {
   "Samsung Internet": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/28.0 Chrome/130.0.0.0 Mobile Safari/537.36",
   "Firefox on Windows": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0",
   "Firefox on Android": "Mozilla/5.0 (Android 14; Mobile; rv:142.0) Gecko/142.0 Firefox/142.0",
+  "the Android stock browser": "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; SM-T210 Build/KOT49H) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30",
   "an empty user agent": "",
 };
 
@@ -351,6 +352,6 @@ storeTest("store: browserDeletesIdle is true for WebKit user agents", () => {
   for (const [name, ua] of Object.entries(WEBKIT)) assert.equal(browserDeletesIdle(ua), true, name);
 });
 
-storeTest("store: browserDeletesIdle is false for Chromium, Firefox and Android user agents", () => {
+storeTest("store: browserDeletesIdle is false for Chromium, Firefox and Android user agents and an empty user agent", () => {
   for (const [name, ua] of Object.entries(OTHERS)) assert.equal(browserDeletesIdle(ua), false, name);
 });

@@ -723,7 +723,7 @@ function codeScreen(view: CodeView): HTMLElement {
   const { orderId } = view.order;
   const codeRetention = view.savedLocally ? retention : "notKept";
   // An unsaved code exists only on this screen, so it is never held back behind a link that may fail.
-  if (view.order.app !== "mobile" || !view.savedLocally) {
+  if (view.order.app !== "mobile" || codeRetention === "notKept") {
     return screens.codeIssued({ code: view.code, retention: codeRetention, app: view.order.app });
   }
   const link = appCodeLink(view.code);
