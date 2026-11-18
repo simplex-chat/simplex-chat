@@ -57,7 +57,7 @@ import qualified Data.Set as S
 import Data.Text (Text)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Numeric.Natural (Natural)
-import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
+import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (stateTVar', tshow)
@@ -517,19 +517,24 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
     Just coin
       | lsSupport == Just LSRateFloor ->
           getInvoice peStore lsInvoice >>= \case
-            Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> (\r -> (rateFloor (either (const "unread") rateText r), Nothing)) <$> cachedRate env p coin
-            _ -> pure (rateFloor "unread", Nothing)
+            Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> (\r -> (rateFloor coin (either (const "unread") rateText r), Nothing)) <$> cachedRate env p coin
+            _ -> pure (rateFloor coin "unread", Nothing)
       | otherwise -> pure (rateRead, Nothing)
   _ | lsSupport == Just LSHighSpeed -> pure (highSpeed, Nothing)
   _ | lsSupport == Just LSNoConfirmation -> pure (noConfirmation, Nothing)
   _ -> pure (unconfirmed, Just LSUnconfirmed)
   where
     unconfirmed = "refund by hand only a transaction confirmed on chain that BTCPay no longer monitors; one still Processing there waits"
-    highSpeed = "the invoice was made under HighSpeed, so its money is never credited by itself; refund by hand only a transaction confirmed on chain"
-    noConfirmation = "the Monero plugin shows no confirmation of this money, so it is never credited by itself; refund by hand only a transaction confirmed on chain"
+    highSpeed = "the invoice was made under HighSpeed, so its money is never credited by itself; " <> onChainRefund
+    noConfirmation = "the Monero plugin shows no confirmation of this money, so it is never credited by itself; " <> onChainRefund
     rateRead = "confirmed, the credit waits on the rate read; do not refund; fix the rate read"
     cardWaits = "confirmed, the credit waits on the poller's credit pass; do not refund; check the service log"
-    rateFloor current = "confirmed; the coin's price fell by more than half since the invoice (" <> fromMaybe "?" lsInvoiceRate <> ", " <> current <> "); it is never credited by itself; refund by hand only a transaction confirmed on chain"
+    rateFloor coin current = "confirmed; the coin's price fell by more than half since the invoice (" <> fromMaybe "?" lsInvoiceRate <> ", " <> current <> "); it is never credited by itself; " <> refundByHand coin
+    refundByHand = \case
+      CCBtc -> onChainRefund
+      CCXmr -> onChainRefund
+      CCLn -> "refund the Lightning payment by hand; it is found among the node's settled invoices by its BOLT11"
+    onChainRefund = "refund by hand only a transaction confirmed on chain"
     uncounted = "an amount BTCPay reported with more decimals than its unit; check it at the provider"
 
 lateAlertText :: LateAlert -> Text -> Text
