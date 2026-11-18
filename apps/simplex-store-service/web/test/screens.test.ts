@@ -758,19 +758,19 @@ domTest("screens: the code screen drops its saved-copy clause where the local wr
   assert.ok(p.textContent.includes(HELD_CODE), "the code is still shown — it exists nowhere else");
 });
 
-domTest("screens: the deletion warning box follows the only-copy box for a code kept until idle", () => {
+domTest("screens: the deletion warning box follows the only-copy box in a browser that deletes storage after 7 days without interaction", () => {
   const p = render(screens.codeIssued({ code: HELD_CODE, retention: "keptUntilIdle" }));
   const boxes = p.all("div.warn");
   assert.deepEqual(boxes.map((b) => b.all("span.title")[0]!.textContent), ["This is the only copy.", screens.CAN_DELETE_CODE]);
   assert.deepEqual(boxes[1]!.all("p").map((l) => l.textContent), [screens.MAY_DO_SO_AFTER, screens.KEEP_OUTSIDE]);
   const kept = render(screens.codeIssued({ code: HELD_CODE, retention: "kept" }));
-  assert.ok(!kept.textContent.includes(screens.CAN_DELETE_CODE), "the deletion warning is shown only for a code kept until idle");
+  assert.ok(!kept.textContent.includes(screens.CAN_DELETE_CODE), "the deletion warning is shown only in a browser that deletes storage");
   assert.ok(!kept.textContent.includes(screens.KEEP_OUTSIDE));
   const unsaved = render(screens.codeIssued({ code: HELD_CODE, retention: "notKept" }));
   assert.ok(!unsaved.textContent.includes(screens.CAN_DELETE_CODE), "the deletion warning is shown only for a saved code");
 });
 
-domTest("screens: the deletion warning is shown above Show code on the return-to-app ending for a code kept until idle", () => {
+domTest("screens: the deletion warning is shown above Show code on the return-to-app ending in a browser that deletes storage after 7 days without interaction", () => {
   const hidden = render(screens.returnToApp({ onReturn: noop, code: { kind: "hidden", onShow: noop }, retention: "keptUntilIdle" }));
   const warn = hidden.all("div.warn")[0]!;
   assert.equal(warn.all("span.title")[0]!.textContent, screens.CAN_DELETE_CODE);
@@ -780,12 +780,12 @@ domTest("screens: the deletion warning is shown above Show code on the return-to
   assertNoCode(hidden, "the return-to-app ending with the deletion warning");
   const shown = render(screens.returnToApp({ onReturn: noop, code: { kind: "shown", code: HELD_CODE }, retention: "keptUntilIdle" }));
   assert.ok(shown.all("span.title").some((t) => t.textContent === screens.CAN_DELETE_CODE), "the deletion warning is shown with the revealed code");
-  assert.ok(!shown.textContent.includes(screens.COPY_UNLESS_ADDED), "the Show code hint is absent once the code is shown");
+  assert.ok(!shown.textContent.includes(screens.COPY_UNLESS_ADDED), "the line to show the code is absent once the code is shown");
   const kept = render(screens.returnToApp({ onReturn: noop, code: { kind: "hidden", onShow: noop }, retention: "kept" }));
   assert.equal(kept.all("div.warn").length, 0);
 });
 
-domTest("screens: the deletion warning is shown on Your codes for codes kept until idle, with codes and without", () => {
+domTest("screens: the deletion warning is shown on Your codes in a browser that deletes storage after 7 days without interaction, with codes and without", () => {
   const rows = historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE })]);
   const listed = render(screens.purchaseHistory({ onForget: noop, retention: "keptUntilIdle", rows, onOpen: noop, onStart: noop }));
   const warn = listed.all("div.warn")[0]!;
@@ -805,7 +805,7 @@ domTest("screens: the deletion warning is shown on Your codes for codes kept unt
   }
 });
 
-domTest("screens: the deletion line is shown on the paid-no-code screen in a browser that keeps codes until idle", () => {
+domTest("screens: the deletion line is shown on the paid-no-code screen in a browser that deletes storage after 7 days without interaction", () => {
   const order = unpaidRecord({ status: "paid" });
   const deleting = render(screens.paidNoCode({ order, settledAt: undefined, retention: "keptUntilIdle" }));
   const notice = deleting.all("div.notice")[0]!;

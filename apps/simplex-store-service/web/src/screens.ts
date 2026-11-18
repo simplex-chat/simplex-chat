@@ -1000,11 +1000,14 @@ function entryLine(row: HistoryRow, onOpen: (orderId: string) => void): HTMLElem
 }
 
 export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
+  const deletion = o.retention !== "keptUntilIdle" ? []
+    : o.rows.some((r) => r.kind === "paid") ? [warning(CAN_DELETE_CODES, MAY_DO_SO_AFTER, KEEP_EACH_OUTSIDE)]
+    : [el("p", { class: "muted" }, IDLE_DELETION_CODES)];
   if (o.rows.length === 0) {
     return withInvest(panel(
       el("h1", {}, "Your codes"),
       el("p", { class: "lede" }, el("span", { class: "half" }, CODES_STORED_HERE), " ", el("span", { class: "half" }, ARE_LISTED_HERE)),
-      ...(o.retention === "keptUntilIdle" ? [deletionLine()] : []),
+      ...deletion,
       el("div", { class: "hero", role: "presentation" }),
       button("Choose your badge", o.onStart),
     ), investPanel(undefined));
@@ -1015,26 +1018,13 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
     button(FORGET_EVERYTHING, o.onForget, "link danger"));
   return withInvest(panel(
     el("h1", {}, "Your codes"),
-    ...listHead(o.retention, o.rows.some((r) => r.kind === "paid")),
+    o.retention === "notKept"
+      ? el("p", { class: "lede" }, "This browser cannot save anything new right now. Copy any code you have not kept elsewhere.")
+      : el("p", { class: "lede" }, el("span", { class: "half" }, CODES_STORED_ONLY), " ", el("span", { class: "half" }, IN_BROWSER_BOUGHT_IN)),
+    ...deletion,
     list,
     forget,
   ), investPanel(undefined));
-}
-
-function listHead(retention: Retention, hasPaid: boolean): HTMLElement[] {
-  const stored = (): HTMLElement => el("p", { class: "lede" },
-    el("span", { class: "half" }, CODES_STORED_ONLY), " ", el("span", { class: "half" }, IN_BROWSER_BOUGHT_IN));
-  switch (retention) {
-    case "notKept": return [el("p", { class: "lede" }, "This browser cannot save anything new right now. Copy any code you have not kept elsewhere.")];
-    case "kept": return [stored()];
-    case "keptUntilIdle": return hasPaid
-      ? [stored(), warning(CAN_DELETE_CODES, MAY_DO_SO_AFTER, KEEP_EACH_OUTSIDE)]
-      : [stored(), deletionLine()];
-  }
-}
-
-function deletionLine(): HTMLElement {
-  return el("p", { class: "muted" }, IDLE_DELETION_CODES);
 }
 
 export interface InvoiceFailureOptions {

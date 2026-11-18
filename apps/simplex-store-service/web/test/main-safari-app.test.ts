@@ -16,7 +16,7 @@ await import("../src/main.js");
 const heading = (): string => headingOf(screenOf(app));
 const inView = (): StubElement => inViewOf(app);
 
-safariTest("main: in Safari opened from the app, the deletion warning and the hint are shown on the ending", async () => {
+safariTest("main: in Safari opened from the app, the deletion warning and the line to show the code are shown on the ending", async () => {
   inView().all("button.choice").find((c) => c.textContent.startsWith("Legend"))!.click();
   primaryOf(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("12 months"))!.click();
@@ -37,8 +37,8 @@ safariTest("main: in Safari opened from the app, the deletion warning and the hi
   await until(() => heading() === "Paid", `the return-to-app ending, not ${heading()}`);
 
   const ending = inView();
-  assert.ok(ending.textContent.includes(COPY_UNLESS_ADDED), `the hint is missing from: ${ending.textContent.slice(0, 300)}`);
-  assert.ok(ending.textContent.includes(MAY_DO_SO_AFTER), "the deletion warning is shown with the hint");
+  assert.ok(ending.textContent.includes(COPY_UNLESS_ADDED), `the line to show the code is missing from: ${ending.textContent.slice(0, 300)}`);
+  assert.ok(ending.textContent.includes(MAY_DO_SO_AFTER), `the deletion warning is missing from: ${ending.textContent.slice(0, 300)}`);
 });
 
 safariTest("main: in Safari, the deletion warning is shown on Your codes", () => {
