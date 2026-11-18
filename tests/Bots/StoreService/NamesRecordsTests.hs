@@ -422,7 +422,7 @@ testDryRunRepeat :: TVar ChaChaDRG -> IO ()
 testDryRunRepeat g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerEdit s viemChannelLink
   revertDryRun node viemSetCall $ Just $ selector "InvalidSignature()"
-  relayEdit records req `shouldReturn` EASettled (EOReverted $ Just "InvalidSignature")
+  relayEdit records req `shouldReturn` EASettled (EOReverted $ Just RNInvalidSignature)
   stateOf s req `shouldReturn` Nothing
   revertDryRun node viemSetCall Nothing
   r <- relay s req
@@ -550,12 +550,12 @@ testTwoExpired g = withSetup g $ \s@Setup {node, records, owner} -> do
   stateOf s req `shouldReturn` Just ESPending
   setBlock node 302 $ deadline + 2
   recordsRound records
-  stateOf s req `shouldReturn` Just (ESSettled $ EOReverted $ Just "SignatureExpired")
+  stateOf s req `shouldReturn` Just (ESSettled $ EOReverted $ Just RNSignatureExpired)
   editsLeftNow s `shouldReturn` EditsLeft (editsPerYear - 1) (Just $ addUTCTime year t0)
 
 testTwoAppliedByAnother :: TVar ChaChaDRG -> IO ()
 testTwoAppliedByAnother g =
-  forM_ [(viemChannelLink, EASettled (EOApplied Nothing)), ("https://smp9.simplex.im/c#other", EASettled (EOReverted $ Just "InvalidNonce"))] $ \(held, answer) -> withSetup g $ \s -> do
+  forM_ [(viemChannelLink, EASettled (EOApplied Nothing)), ("https://smp9.simplex.im/c#other", EASettled (EOReverted $ Just RNInvalidNonce))] $ \(held, answer) -> withSetup g $ \s -> do
     req <- ownerTwo s 0 viemContactLink viemChannelLink
     r <- relay s req
     _ <- sentBy s 1
@@ -576,8 +576,8 @@ testTwoFirstNonceTaken g = withSetup g $ \s -> do
   setRecord s contactKey viemContactLink
   setRecord s channelKey viemChannelLink
   _ <- mineSent s 1 False
-  answerOf r `shouldReturn` EASettled (EOReverted $ Just "InvalidNonce")
-  stateOf s req `shouldReturn` Just (ESSettled $ EOReverted $ Just "InvalidNonce")
+  answerOf r `shouldReturn` EASettled (EOReverted $ Just RNInvalidNonce)
+  stateOf s req `shouldReturn` Just (ESSettled $ EOReverted $ Just RNInvalidNonce)
 
 -- | The name's yearly edits left now, by the relay's clock.
 editsLeftNow :: Setup -> IO EditsLeft
@@ -590,7 +590,7 @@ testAppliedByAnother g =
   forM_
     [ (False, viemChannelLink, EASettled (EOApplied Nothing), ESSettled (EOApplied Nothing), Just (EASettled (EOApplied Nothing))),
       (True, viemChannelLink, EASettled (EOApplied Nothing), ESSettled (EOApplied Nothing), Nothing),
-      (False, "https://smp9.simplex.im/c#other", EASettled (EOReverted $ Just "InvalidNonce"), ESSettled (EOReverted $ Just "InvalidNonce"), Nothing)
+      (False, "https://smp9.simplex.im/c#other", EASettled (EOReverted $ Just RNInvalidNonce), ESSettled (EOReverted $ Just RNInvalidNonce), Nothing)
     ]
     $ \(pastDeadline, value, answer, state, repeated) -> withSetup g $ \s@Setup {node, records} -> do
       req <- ownerEdit s viemChannelLink
@@ -744,8 +744,8 @@ testExpiryFreesNonce g = withSetup g $ \s@Setup {node, records, sender} -> do
   stateOf s req `shouldReturn` Just ESPending
   setBlock node 302 $ deadline + 2
   recordsRound records
-  stateOf s req `shouldReturn` Just (ESSettled $ EOReverted $ Just "SignatureExpired")
-  relayEdit records req `shouldReturn` EASettled (EOReverted $ Just "SignatureExpired")
+  stateOf s req `shouldReturn` Just (ESSettled $ EOReverted $ Just RNSignatureExpired)
+  relayEdit records req `shouldReturn` EASettled (EOReverted $ Just RNSignatureExpired)
   dropTransaction node $ C.keccak256 raw
   followTransactions sender
   sentTransactions node `shouldReturn` [raw, raw]
@@ -801,7 +801,7 @@ testYearFailedRelays g = withSetup g $ \s@Setup {node, records, owner} -> do
   (relayEdit records =<< signEdit s owner (channel viemChannelLink) 0 (genesis - 1)) `shouldReturn` EARefused "the deadline is too close to the latest block"
   -- never sent: the dry run reverted, then the fee read failed
   setFault node "eth_estimateGas" $ revertFault $ selector "InvalidSignature()"
-  (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#dry") 0 deadline) `shouldReturn` EASettled (EOReverted $ Just "InvalidSignature")
+  (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#dry") 0 deadline) `shouldReturn` EASettled (EOReverted $ Just RNInvalidSignature)
   clearFault node "eth_estimateGas"
   setFault node "eth_feeHistory" HttpFailure
   (relayEdit records =<< signEdit s owner (channel "https://smp9.simplex.im/c#fee") 0 deadline) `shouldReturn` EAUnavailable
@@ -816,7 +816,7 @@ testYearFailedRelays g = withSetup g $ \s@Setup {node, records, owner} -> do
   relayEdit records fourth `shouldReturn` EALimited (addUTCTime year t0)
   -- the owner spent the pending edit's nonce on another body, so it reverts InvalidNonce, and still counts
   _ <- mineSent s 3 False
-  stateOf s unsettled `shouldReturn` Just (ESSettled $ EOReverted $ Just "InvalidNonce")
+  stateOf s unsettled `shouldReturn` Just (ESSettled $ EOReverted $ Just RNInvalidNonce)
   relayEdit records fourth `shouldReturn` EALimited (addUTCTime year t0)
   editRows s `shouldReturn` 3
 

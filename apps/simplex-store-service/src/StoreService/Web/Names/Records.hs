@@ -19,7 +19,7 @@ import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import StoreService.Names.Chain (Hex32 (..))
+import StoreService.Names.Chain (Hex32 (..), revertText)
 import StoreService.Names.Records (EditAnswer (..), EditRequest (..), Records, relayEdit)
 import StoreService.Names.Registration (LinkKind, nameLink, parseSignature)
 import StoreService.Names.Store (EditOutcome (..), RecordChange (..), SignedChange (..))
@@ -48,7 +48,7 @@ recordsHandler rs req respond =
   where
     logged = \case
       EARefused reason -> logNote $ "POST /api/name/records refused: " <> reason
-      EASettled (EOReverted revert) -> logNote $ "POST /api/name/records reverted on chain" <> maybe "" (": " <>) revert
+      EASettled (EOReverted revert) -> logNote $ "POST /api/name/records reverted on chain" <> maybe "" ((": " <>) . revertText) revert
       _ -> pure ()
 
 -- | One link of each kind, so a Save of both links is the most one request carries.

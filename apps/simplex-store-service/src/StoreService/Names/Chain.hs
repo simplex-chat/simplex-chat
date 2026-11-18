@@ -65,7 +65,7 @@ module StoreService.Names.Chain
     maxNodeMessageLength,
     decodeRevert,
     revertText,
-    revertReasonText,
+    revertName,
   )
 where
 
@@ -86,7 +86,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (isDigit, isHexDigit)
-import Data.List (foldl', mapAccumL, sort)
+import Data.List (find, foldl', mapAccumL, sort)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
@@ -105,7 +105,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), FromField (..), ToField (.
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey)
 import Simplex.Messaging.Encoding (Encoding (..))
-import Simplex.Messaging.Encoding.String (StrEncoding (..), StrJSON (..))
+import Simplex.Messaging.Encoding.String (StrEncoding (..), StrJSON (..), TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), decodeEip1559Tx, eip1559SigningHash, signEip1559Tx)
 import Simplex.Messaging.Parsers (parseAll)
@@ -618,11 +618,14 @@ revertSignature = \case
 revertText :: RevertName -> Text
 revertText = decodeLatin1 . BC.takeWhile (/= '(') . revertSignature
 
-revertReasonText :: RevertReason -> Maybe Text
-revertReasonText = \case
-  RRWithoutData -> Nothing
-  RRNamed n -> Just $ revertText n
-  RRUnnamed reason -> Just reason
+instance TextEncoding RevertName where
+  textEncode = revertText
+  textDecode t = find ((== t) . revertText) [minBound .. maxBound]
+
+revertName :: RevertReason -> Maybe RevertName
+revertName = \case
+  RRNamed n -> Just n
+  _ -> Nothing
 
 revertSelectors :: Map ByteString RevertName
 revertSelectors = M.fromList [(selector $ revertSignature n, n) | n <- [minBound .. maxBound]]

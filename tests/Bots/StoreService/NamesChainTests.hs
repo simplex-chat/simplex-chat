@@ -17,6 +17,7 @@ import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import qualified Network.HTTP.Client as HTTP
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import StoreService.Names.Chain
 import Test.Hspec
@@ -106,7 +107,9 @@ testRevertText :: IO ()
 testRevertText = do
   revertText RNInvalidNonce `shouldBe` "InvalidNonce"
   revertText RNSignatureExpired `shouldBe` "SignatureExpired"
-  map revertReasonText [RRWithoutData, RRNamed RNInvalidNonce, RRUnnamed "ERC721: invalid token ID"] `shouldBe` [Nothing, Just "InvalidNonce", Just "ERC721: invalid token ID"]
+  map revertName [RRWithoutData, RRNamed RNInvalidNonce, RRUnnamed "ERC721: invalid token ID"] `shouldBe` [Nothing, Just RNInvalidNonce, Nothing]
+  let names = [minBound .. maxBound] :: [RevertName]
+  map (textDecode . textEncode) names `shouldBe` map Just names
 
 testDryRunRevertNamed :: TVar ChaChaDRG -> IO ()
 testDryRunRevertNamed g = withChain g $ \node c -> do

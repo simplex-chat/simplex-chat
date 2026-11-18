@@ -29,7 +29,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Group.Command (CmdSource (..))
-import StoreService.Names.Chain (Hex32 (..), TxHash (..))
+import StoreService.Names.Chain (Hex32 (..), RevertName (..), TxHash (..))
 import StoreService.Names.Registration (AgreedTerms (..), LinkKind (..), OrderFields (..), RegistrationId (..), TermsAcceptance (..), communityTermsPrefix, parseSignature)
 import StoreService.Names.Store
 import StoreService.Store (RevokeResult (..))
@@ -791,9 +791,9 @@ testEditNonceUnique = withServiceStore $ \st -> do
   run (\db -> insertRecordEdit db (newEdit ownerA 2 setContact) t0) `shouldReturn` Nothing
   Just other <- run $ \db -> insertRecordEdit db (newEdit ownerB 3 setChannel) t0
   other `shouldNotBe` first
-  run (\db -> settleRecordEdit db first (EOReverted $ Just "SignatureExpired")) `shouldReturn` True
+  run (\db -> settleRecordEdit db first (EOReverted $ Just RNSignatureExpired)) `shouldReturn` True
   Just second <- run $ \db -> insertRecordEdit db (newEdit ownerA 2 setContact) (at 1)
-  fmap reState <$> run (\db -> getRecordEditByBody db (hashFixture 1)) `shouldReturn` Just (ESSettled (EOReverted $ Just "SignatureExpired"))
+  fmap reState <$> run (\db -> getRecordEditByBody db (hashFixture 1)) `shouldReturn` Just (ESSettled (EOReverted $ Just RNSignatureExpired))
   run (\db -> settleRecordEdit db second (EOApplied Nothing)) `shouldReturn` True
   run (\db -> insertRecordEdit db (newEdit ownerA 5 setChannel) (at 2)) `shouldReturn` Nothing
 

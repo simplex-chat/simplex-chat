@@ -160,7 +160,7 @@ import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Group.Command (CmdSource (..))
-import StoreService.Names.Chain (ChainSeconds, Hex32 (..), TxHash (..), chainSeconds)
+import StoreService.Names.Chain (ChainSeconds, Hex32 (..), RevertName, TxHash (..), chainSeconds)
 import StoreService.Names.Registration (AgreedTerms, Commitment, LinkKind, OrderFields (..), RegistrationId (..), TermsAcceptance (..), TermsHash)
 import StoreService.Providers (Rate, Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
@@ -640,7 +640,7 @@ data EditOutcome
   = -- | mined, Nothing when found applied with the applying transaction unknown
     EOApplied (Maybe TxHash)
   | -- | the revert's name when known; the nonce is free again
-    EOReverted (Maybe Text)
+    EOReverted (Maybe RevertName)
   deriving (Eq, Show)
 
 data EditState = ESPending | ESSettled EditOutcome
@@ -1763,10 +1763,10 @@ readRecordEdit db row@(reId, _, _, _, _, _, _, _) = do
 toRecordEdit :: RecordEditRow -> [ChangeRow] -> Either Text RecordEdit
 toRecordEdit (reId, reLabelHash, reOwner, reBodyHash, state, revert, minedTx, reCreatedAt) changeRows = do
   reChanges <- note ("name_record_edits changes: " <> tshow reId) . L.nonEmpty =<< mapM toChange changeRows
-  let reState = case state of
-        ETPending -> ESPending
-        ETMined -> ESSettled $ EOApplied minedTx
-        ETReverted -> ESSettled $ EOReverted revert
+  reState <- case state of
+    ETPending -> Right ESPending
+    ETMined -> Right $ ESSettled $ EOApplied minedTx
+    ETReverted -> ESSettled . EOReverted <$> mapM (note ("name_record_edits revert: " <> tshow reId) . textDecode) revert
   pure RecordEdit {reId, reLabelHash, reOwner, reChanges, reBodyHash, reState, reCreatedAt}
   where
     toChange (nonce, key, value, deadline, scSignature) = do
@@ -1797,7 +1797,7 @@ settleRecordEdit db editId outcome =
   where
     (tag, revert, minedTx) = case outcome of
       EOApplied tx -> (ETMined, Nothing, tx)
-      EOReverted name -> (ETReverted, name, Nothing)
+      EOReverted name -> (ETReverted, textEncode <$> name, Nothing)
 
 pendingEditIds :: DB.Connection -> IO [RecordEditId]
 pendingEditIds db = map fromOnly <$> DB.query db (mkQuery "SELECT name_record_edit_id FROM @name_record_edits WHERE state = ? ORDER BY name_record_edit_id") (Only ETPending)

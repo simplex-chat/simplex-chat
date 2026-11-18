@@ -238,7 +238,7 @@ sendNew rs editId = withStore rs (`getRecordEdit` editId) >>= maybe (pure Nothin
             SEChain (ChainReverted name) ->
               fmap judgmentOutcome <$> judge rs edit >>= \case
                 Left e' -> EAUnavailable <$ logWarn ("names records: edit " <> tshow editId <> " reverted in its dry run and was not judged: " <> tshow e')
-                Right outcome -> pure $ EASettled $ fromMaybe (EOReverted $ revertReasonText name) outcome
+                Right outcome -> pure $ EASettled $ fromMaybe (EOReverted $ revertName name) outcome
             _ -> EAUnavailable <$ logWarn ("names records: edit " <> tshow editId <> " not sent: " <> tshow e)
           Just answer <$ forget rs editId
 
@@ -323,7 +323,7 @@ follow rs Block {blockTimestamp} Block {blockTimestamp = deepTime} edit@RecordEd
     -- the edit was sent before, so its dry run's revert is its outcome
     resend =
       sendEdit rs edit >>= \case
-        Left (SEChain (ChainReverted name)) -> settle rs reId $ EOReverted $ revertReasonText name
+        Left (SEChain (ChainReverted name)) -> settle rs reId $ EOReverted $ revertName name
         r -> either (stall rs reId) pure r
 
 -- | Settles the edit as the chain shows it, or runs the action when its nonce is still free.
@@ -356,7 +356,7 @@ judge rs@Records {rsContracts} RecordEdit {reId, reLabelHash, reOwner, reChanges
 judgmentOutcome :: Judgment -> Maybe EditOutcome
 judgmentOutcome = \case
   Applied tx -> Just $ EOApplied tx
-  NonceTaken -> Just $ EOReverted $ Just $ revertText RNInvalidNonce
+  NonceTaken -> Just $ EOReverted $ Just RNInvalidNonce
   NonceFree -> Nothing
 
 settle :: Records -> RecordEditId -> EditOutcome -> IO ()
@@ -424,8 +424,8 @@ domain rs = resolverDomain (cChainId $ ccConfig $ rsChain rs) (resolver rs)
 resolver :: Records -> Address
 resolver = cResolver . ccConfig . rsChain
 
-signatureExpired :: Maybe Text
-signatureExpired = Just $ revertText RNSignatureExpired
+signatureExpired :: Maybe RevertName
+signatureExpired = Just RNSignatureExpired
 
 withStore :: Records -> (DB.Connection -> IO a) -> IO a
 withStore Records {rsStore} = withTransaction rsStore
