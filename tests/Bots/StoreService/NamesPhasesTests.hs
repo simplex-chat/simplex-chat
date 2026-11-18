@@ -6,13 +6,13 @@
 module Bots.StoreService.NamesPhasesTests (namesPhasesTests, change, held, woken, prompt, registrationPath, seenVersion) where
 
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesStoreTests (hashFixture, reveal)
-import Bots.StoreService.WebTests (bounded, fieldOf, jsonObject, phaseOf, phaseValue, rcv, statusOf, webGet)
+import Bots.StoreService.NamesStoreTests (hashFixture, order, ownerA, placePaid, reveal, t0)
+import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, phaseOf, phaseValue, rcv, statusOf, webGet)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel, wait, waitCatchSTM)
 import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.STM (STM, atomically, check, orElse)
-import Control.Monad (forM_)
+import Control.Monad (forM_, void)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.IORef (readIORef, writeIORef)
@@ -26,11 +26,13 @@ import Network.HTTP.Client (defaultManagerSettings, newManager)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import StoreService.Config (ServiceConfig (..))
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (phasesWaiting, publish)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (Commit (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, updateRegistration)
+import StoreService.Poller (cleanupUnpaid, newPollerEnv, unpaidRetention)
 import StoreService.Providers (Funded (..), PaymentSignal (..))
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
 import StoreService.Waiters (publishPayment, waitingCountSTM)
@@ -56,6 +58,7 @@ namesPhasesTests = describe "StoreService names: phases" $ do
     it "answers at once without seenVersion, with another version, or with one that is not a number" testAnswersAtOnce
     it "answers unchanged after the hold" testHoldTimesOut
     it "answers an unknown registration 404" testUnknownRegistration
+    it "answers 404 at once to a held poll of an order the cleanup deletes" testCleanupWakes
 
 data Polls = Polls
   { pCtx :: Ctx,
@@ -294,3 +297,12 @@ testUnknownRegistration :: IO ()
 testUnknownRegistration = bounded "unknown" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
   (status, o) <- answeredAtOnce ctx (registrationPath (RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g") <> seenVersion 1)
   (status, o) `shouldBe` (404, KM.fromList [("error", "not_found")])
+
+testCleanupWakes :: IO ()
+testCleanupWakes = bounded "cleanup wakes" $ withPolls holdMicros $ \Polls {pCtx = ctx@Ctx {cStore, cWeb, cOrders}} -> do
+  placePaid cStore "gone" ownerA (order "alicebakery" 1) t0 `shouldReturn` Right ()
+  Just NameRegistration {nrVersion} <- withTransaction cStore (`getRegistration` RegistrationId "gone")
+  deleted <- held ctx (0, 1) $ registrationPath (RegistrationId "gone") <> seenVersion nrVersion
+  poller <- newPollerEnv cStore (weWaiters cWeb) (Just $ oePhases cOrders) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
+  void $ capturingStderr $ cleanupUnpaid poller $ addUTCTime (unpaidRetention + 1) t0
+  woken "the deleted order's poll" deleted `shouldReturn` (404, KM.fromList [("error", "not_found")])

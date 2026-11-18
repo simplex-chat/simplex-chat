@@ -40,7 +40,7 @@ import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), credi
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), CreditAmount (..), LateAlert (..), LateCredit (..), LateCreditState (..), LateFigures (..), LatePending (..), LateSupport (..), claimLateAlert, creditCents, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
-import StoreService.Orders (decide, expireOverdue, settleOrder, signalReceived)
+import StoreService.Orders (decide, expireOverdue, publishRegistration, settleOrder, signalReceived)
 import StoreService.Providers (CryptoReceived (..), ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, paymentHolds, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
@@ -397,7 +397,7 @@ cleanupDue PollerEnv {peCleanedAt} now = maybe True (\at -> diffUTCTime now at >
 -- before the order goes: a payment whose webhook was lost is recorded then, and the order is kept with its balance.
 -- Each pass reads at most cleanupReadsPerPass of the day's orders. The day's alerts on late money go with it.
 cleanupUnpaid :: PollerEnv -> UTCTime -> IO ()
-cleanupUnpaid env@PollerEnv {peStore, peCleanedAt, peCleanupLeft} now = do
+cleanupUnpaid env@PollerEnv {peStore, pePhases, peCleanedAt, peCleanupLeft} now = do
   due <- cleanupDue env now
   when due $ do
     listed <-
@@ -422,7 +422,7 @@ cleanupUnpaid env@PollerEnv {peStore, peCleanedAt, peCleanupLeft} now = do
               Right signal_ -> do
                 mapM_ (\signal -> settleMoved env irProvider now (irProviderRef, signal)) signal_
                 withTransaction peStore (`deleteUnpaidRegistration` rid) >>= \case
-                  Right () -> pure True
+                  Right () -> True <$ atomically (publishRegistration pePhases (rid, maxBound))
                   Left CKPaid -> False <$ logNote ("names cleanup: the unpaid order of invoice " <> ref <> " is kept with its balance, because the invoice received a payment")
                   Left (CKHolder (RegistrationId source)) -> False <$ logError ("names cleanup: the unpaid order of invoice " <> ref <> " is kept because it still holds the balance of registration " <> source)
                   Left CKGone -> False <$ logNote ("names cleanup: the unpaid order of invoice " <> ref <> " was deleted meanwhile")
