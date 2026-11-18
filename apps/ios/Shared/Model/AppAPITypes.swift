@@ -1805,6 +1805,7 @@ struct CoreVersionInfo: Decodable {
 struct ArchiveConfig: Encodable {
     var archivePath: String
     var disableCompression: Bool?
+    var replaceStorage: Bool?
 }
 
 struct DBEncryptionConfig: Codable {

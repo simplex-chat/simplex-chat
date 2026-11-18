@@ -4771,7 +4771,7 @@ class ChatTagData(val emoji: String?, val text: String)
 
 // Spec: spec/api.md#ArchiveConfig
 @Serializable
-class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
+class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null, val replaceStorage: Boolean? = null)
 
 // Spec: spec/database.md#DBEncryptionConfig
 @Serializable
