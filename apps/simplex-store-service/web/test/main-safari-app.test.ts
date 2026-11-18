@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, primaryOf, screenOf, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
-import { CAN_DELETE_CODES, COPY_UNLESS_ADDED, CAN_DO_SO_AFTER } from "../src/screens.js";
+import { CAN_DELETE_CODES, COPY_UNLESS_ADDED, MAY_DO_SO_AFTER } from "../src/screens.js";
 
 const safariTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
@@ -38,7 +38,7 @@ safariTest("main: in Safari opened from the app, the deletion warning and the hi
 
   const ending = inView();
   assert.ok(ending.textContent.includes(COPY_UNLESS_ADDED), `the hint is missing from: ${ending.textContent.slice(0, 300)}`);
-  assert.ok(ending.textContent.includes(CAN_DO_SO_AFTER), "the deletion warning is shown with the hint");
+  assert.ok(ending.textContent.includes(MAY_DO_SO_AFTER), "the deletion warning is shown with the hint");
 });
 
 safariTest("main: in Safari, the deletion warning is shown on Your codes", () => {

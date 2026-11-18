@@ -762,7 +762,7 @@ domTest("screens: the deletion warning box follows the only-copy box for a code 
   const p = render(screens.codeIssued({ code: HELD_CODE, retention: "keptUntilIdle" }));
   const boxes = p.all("div.warn");
   assert.deepEqual(boxes.map((b) => b.all("span.title")[0]!.textContent), ["This is the only copy.", screens.CAN_DELETE_CODE]);
-  assert.deepEqual(boxes[1]!.all("p").map((l) => l.textContent), [screens.CAN_DO_SO_AFTER, screens.KEEP_OUTSIDE]);
+  assert.deepEqual(boxes[1]!.all("p").map((l) => l.textContent), [screens.MAY_DO_SO_AFTER, screens.KEEP_OUTSIDE]);
   const kept = render(screens.codeIssued({ code: HELD_CODE, retention: "kept" }));
   assert.ok(!kept.textContent.includes(screens.CAN_DELETE_CODE), "the deletion warning is shown only for a code kept until idle");
   assert.ok(!kept.textContent.includes(screens.KEEP_OUTSIDE));
@@ -774,13 +774,13 @@ domTest("screens: the deletion warning is shown above Show code on the return-to
   const hidden = render(screens.returnToApp({ onReturn: noop, code: { kind: "hidden", onShow: noop }, retention: "keptUntilIdle" }));
   const warn = hidden.all("div.warn")[0]!;
   assert.equal(warn.all("span.title")[0]!.textContent, screens.CAN_DELETE_CODE);
-  assert.deepEqual(warn.all("p").map((l) => l.textContent), [screens.CAN_DO_SO_AFTER, screens.COPY_UNLESS_ADDED]);
+  assert.deepEqual(warn.all("p").map((l) => l.textContent), [screens.MAY_DO_SO_AFTER, screens.COPY_UNLESS_ADDED]);
   const showRow = hidden.children.find((c) => c instanceof StubElement && c.all("button").some((b) => b.textContent === screens.SHOW_CODE))!;
   assert.ok(hidden.children.indexOf(warn) < hidden.children.indexOf(showRow), "the deletion warning is placed above Show code");
   assertNoCode(hidden, "the return-to-app ending with the deletion warning");
   const shown = render(screens.returnToApp({ onReturn: noop, code: { kind: "shown", code: HELD_CODE }, retention: "keptUntilIdle" }));
   assert.ok(shown.all("span.title").some((t) => t.textContent === screens.CAN_DELETE_CODE), "the deletion warning is shown with the revealed code");
-  assert.ok(!shown.textContent.includes(screens.COPY_UNLESS_ADDED), "the shown code carries no hint to show it");
+  assert.ok(!shown.textContent.includes(screens.COPY_UNLESS_ADDED), "the Show code hint is absent once the code is shown");
   const kept = render(screens.returnToApp({ onReturn: noop, code: { kind: "hidden", onShow: noop }, retention: "kept" }));
   assert.equal(kept.all("div.warn").length, 0);
 });
@@ -790,12 +790,13 @@ domTest("screens: the deletion warning is shown on Your codes for codes kept unt
   const listed = render(screens.purchaseHistory({ onForget: noop, retention: "keptUntilIdle", rows, onOpen: noop, onStart: noop }));
   const warn = listed.all("div.warn")[0]!;
   assert.equal(warn.all("span.title")[0]!.textContent, screens.CAN_DELETE_CODES);
-  assert.deepEqual(warn.all("p").map((l) => l.textContent), [screens.CAN_DO_SO_AFTER, screens.KEEP_EACH_OUTSIDE]);
+  assert.deepEqual(warn.all("p").map((l) => l.textContent), [screens.MAY_DO_SO_AFTER, screens.KEEP_EACH_OUTSIDE]);
   const empty = render(screens.purchaseHistory({ onForget: noop, retention: "keptUntilIdle", rows: [], onOpen: noop, onStart: noop }));
   assert.equal(empty.all("p.muted")[0]!.textContent, screens.IDLE_DELETION_CODES, "the deletion line is shown on the empty list");
   const unpaid = render(screens.purchaseHistory({ onForget: noop, retention: "keptUntilIdle",
     rows: historyRows([record({ orderId: "b", status: "open" })]), onOpen: noop, onStart: noop }));
-  assert.equal(unpaid.all("div.warn").length, 0, "the warning is shown only on a list with a paid code");
+  assert.equal(unpaid.all("div.warn").length, 0, "the warning box is shown only on a list with a paid code");
+  assert.equal(unpaid.all("p.muted")[0]!.textContent, screens.IDLE_DELETION_CODES, "the deletion line is shown on a list without a paid code");
   for (const kept of [
     render(screens.purchaseHistory({ onForget: noop, retention: "kept", rows, onOpen: noop, onStart: noop })),
     render(screens.purchaseHistory({ onForget: noop, retention: "kept", rows: [], onOpen: noop, onStart: noop })),

@@ -796,11 +796,11 @@ const IDLE_PERIOD = "after 7\u00a0days of browser use without a tap, click or ke
 export const CAN_DELETE_CODE = "This browser can delete the code";
 export const CAN_DELETE_CODES = "This browser can delete codes";
 export const IDLE_DELETION_CODES = `${CAN_DELETE_CODES} ${IDLE_PERIOD}`;
-export const CAN_DO_SO_AFTER = `It can do so ${IDLE_PERIOD}`;
+export const MAY_DO_SO_AFTER = `It may do so ${IDLE_PERIOD}`;
 export const DELETED_IF_BOUGHT_HERE = `If the code was bought in this browser, it may have been deleted ${IDLE_PERIOD}`;
 export const KEEP_OUTSIDE = "Redeem it now, or copy it and keep it outside this browser.";
 export const KEEP_EACH_OUTSIDE = "Copy each code you have not redeemed and keep it outside this browser.";
-export const COPY_UNLESS_ADDED = "If the app does not add the badge, tap Show code and keep a copy of the code outside this browser.";
+export const COPY_UNLESS_ADDED = "If the app does not add the badge, show the code and keep a copy outside this browser.";
 const CODES_STORED_HERE = "Codes stored in this browser";
 const ARE_LISTED_HERE = "are listed here.";
 export const CODES_LISTED_HERE = `${CODES_STORED_HERE} ${ARE_LISTED_HERE}`;
@@ -822,7 +822,7 @@ function retentionBoxes(retention: Retention): HTMLElement[] {
   switch (retention) {
     case "notKept": return [warning("This code could not be saved in this browser.", "Copy it now. It is shown here and nowhere else.")];
     case "kept": return [onlyCopy()];
-    case "keptUntilIdle": return [onlyCopy(), warning(CAN_DELETE_CODE, CAN_DO_SO_AFTER, KEEP_OUTSIDE)];
+    case "keptUntilIdle": return [onlyCopy(), warning(CAN_DELETE_CODE, MAY_DO_SO_AFTER, KEEP_OUTSIDE)];
   }
 }
 
@@ -877,7 +877,7 @@ export function returnToApp(o: ReturnToAppOptions): HTMLElement {
   p.classList.add("ending");
   switch (o.code.kind) {
     case "hidden":
-      if (o.retention === "keptUntilIdle") p.append(warning(CAN_DELETE_CODE, CAN_DO_SO_AFTER, COPY_UNLESS_ADDED));
+      if (o.retention === "keptUntilIdle") p.append(warning(CAN_DELETE_CODE, MAY_DO_SO_AFTER, COPY_UNLESS_ADDED));
       p.append(el("p", { class: "row-line center" }, button(SHOW_CODE, o.code.onShow, "link")));
       return p;
     case "shown":
@@ -1027,7 +1027,9 @@ function listHead(retention: Retention, hasPaid: boolean): HTMLElement[] {
   switch (retention) {
     case "notKept": return [el("p", { class: "lede" }, "This browser cannot save anything new right now. Copy any code you have not kept elsewhere.")];
     case "kept": return [stored()];
-    case "keptUntilIdle": return hasPaid ? [stored(), warning(CAN_DELETE_CODES, CAN_DO_SO_AFTER, KEEP_EACH_OUTSIDE)] : [stored()];
+    case "keptUntilIdle": return hasPaid
+      ? [stored(), warning(CAN_DELETE_CODES, MAY_DO_SO_AFTER, KEEP_EACH_OUTSIDE)]
+      : [stored(), el("p", { class: "muted" }, IDLE_DELETION_CODES)];
   }
 }
 
