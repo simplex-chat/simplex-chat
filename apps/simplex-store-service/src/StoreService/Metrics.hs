@@ -21,14 +21,14 @@ where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
-import Control.Logger.Simple (logError, logWarn)
+import Control.Logger.Simple (logWarn)
 import Control.Monad (forever, unless)
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isRight)
 import Data.List (nub, sort)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -43,7 +43,7 @@ import Simplex.Chat.PaymentService.Types (PaymentProvider)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.TMap (TMap)
-import Simplex.Messaging.Util (catchOwn', raceAny_, tshow)
+import Simplex.Messaging.Util (raceAny_, tryOwnLogged, tshow)
 import StoreService.Config (ListenerConfig)
 import StoreService.Names.Chain (Block (..), latestBlock)
 import StoreService.Names.Contracts (Contracts (..), NameEntry (..), RegisteredNames (..), RegistrarFunds (..), recordsLabel, registeredNames, registrarFunds, termsHeld)
@@ -108,7 +108,7 @@ readChain ct v = do
 
 runChainReads :: Contracts -> TVar ChainRead -> IO ()
 runChainReads ct v = forever $ do
-  done <- (True <$ readChain ct v) `catchOwn'` \e -> False <$ logError ("store metrics: the chain read failed; the next pass will run: " <> tshow e)
+  done <- isJust <$> tryOwnLogged "store metrics: the chain read failed; the next pass will run: " (readChain ct v)
   unless done $ atomically $ modifyTVar' v $ \cr -> cr {crOk = False}
   threadDelay chainReadInterval
 
@@ -134,7 +134,7 @@ readRegisteredNames ct v = do
 
 runRegisteredNames :: Contracts -> TVar RegisteredNamesRead -> IO ()
 runRegisteredNames ct v = forever $ do
-  done <- (True <$ readRegisteredNames ct v) `catchOwn'` \e -> False <$ logError ("store metrics: the registered names read failed; the next pass will run: " <> tshow e)
+  done <- isJust <$> tryOwnLogged "store metrics: the registered names read failed; the next pass will run: " (readRegisteredNames ct v)
   unless done $ atomically $ modifyTVar' v $ \rr -> rr {rrFailures = rrFailures rr + 1}
   threadDelay registeredNamesInterval
 

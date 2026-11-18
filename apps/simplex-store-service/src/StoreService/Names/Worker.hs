@@ -47,7 +47,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (catchOwn', tshow, ($>>=))
+import Simplex.Messaging.Util (catchOwn', tryOwnLogged, tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), ChainSeconds, RevertName (..), RevertReason (..), blockAt, chainSeconds, chainTime)
@@ -127,7 +127,7 @@ newWorker wkOrders wkSender = Worker wkOrders wkSender <$> TM.emptyIO
 -- | A thread for each registration in the worker's phases, started by a scan every scanInterval; they stop with it.
 runWorkers :: Worker -> IO ()
 runWorkers w@Worker {wkThreads} =
-  forever ((startWorkers w `catchOwn'` \e -> logError ("names worker: the scan failed; the next pass will run: " <> tshow e)) >> threadDelay scanInterval)
+  forever (tryOwnLogged "names worker: the scan failed; the next pass will run: " (startWorkers w) >> threadDelay scanInterval)
     `finally` (readTVarIO wkThreads >>= mapM_ cancel)
 
 startWorkers :: Worker -> IO ()
@@ -569,4 +569,4 @@ sweepFailedCodes Worker {wkOrders = OrdersEnv {oeStore, oeTurns, oePhases, oeNow
       _ -> lapseMoment r
 
 runCodeSweep :: Worker -> IO ()
-runCodeSweep w = forever $ (sweepFailedCodes w `catchOwn'` \e -> logError ("names code sweep failed; the next pass will run: " <> tshow e)) >> threadDelay sweepInterval
+runCodeSweep w = forever $ tryOwnLogged "names code sweep failed; the next pass will run: " (sweepFailedCodes w) >> threadDelay sweepInterval

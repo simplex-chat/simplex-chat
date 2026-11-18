@@ -51,7 +51,7 @@ import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (catchOwn', safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (safeDecodeUtf8, tryOwnLogged, tshow)
 import StoreService.Names.Chain
 import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxSettlement (..), TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
 import StoreService.Names.View (addressText)
@@ -231,7 +231,7 @@ runSender s = forever $ senderRound s >> threadDelay followInterval
 
 -- | A round that fails is logged, so the lane goes on to the next one.
 senderRound :: Sender -> IO ()
-senderRound s = followTransactions s `catchOwn'` \e -> logError ("names sender: the round failed; the next pass will run: " <> tshow e)
+senderRound s = void $ tryOwnLogged "names sender: the round failed; the next pass will run: " $ followTransactions s
 
 -- | One round over the transactions in flight, lowest nonce first. Only one thread may run it.
 followTransactions :: Sender -> IO ()

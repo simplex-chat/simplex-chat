@@ -47,7 +47,7 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
-import Simplex.Messaging.Util (catchOwn', tshow)
+import Simplex.Messaging.Util (catchOwn', tryOwnLogged, tshow)
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (Contracts (ctChain), NameStatus (..), RegisteredName (..), nameStatus, resolverNonce, textRecord)
 import StoreService.Names.Registration (Node, labelNode, multicallCalldata, recordKey, resolverDomain, setTextDigest, setTextWithSigCalldata)
@@ -278,7 +278,7 @@ runRecordEdits rs = forever $ recordsRound rs >> threadDelay recordsInterval
 -- | One pass over the pending edits that no request is sending. A pass or an edit that fails is logged, and the lane goes on.
 recordsRound :: Records -> IO ()
 recordsRound rs =
-  (`catchOwn'` \e -> logError ("names records: the round failed; the next pass will run: " <> tshow e)) $ do
+  void . tryOwnLogged "names records: the round failed; the next pass will run: " $ do
     editIds <- withStore rs pendingEditIds
     unless (null editIds) $
       runExceptT (ExceptT (latestBlock $ rsChain rs) >>= \tip -> (tip,) <$> ExceptT (deepBlock (rsChain rs) tip)) >>= \case
