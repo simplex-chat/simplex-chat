@@ -26,7 +26,7 @@ import StoreService.Names.LateCredits (CreditOutcome (..), LateDue (..), creditL
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns)
-import StoreService.Names.View (balanceJSON)
+import StoreService.Names.View (balanceView)
 import StoreService.Orders (cancelOpenInvoice, settleOrder)
 import StoreService.Poller (PollerEnv, ReadHints, cleanupUnpaid, creditPass, drainHints, forgetRates, newPollerEnv, newReadHints, queueReadHint)
 import StoreService.Providers (Confirmation (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), settleWindow)
@@ -652,10 +652,16 @@ testCreditRefundTwice = withLate $ \l@Late {lStore = st} -> do
 -- the view
 
 balanceAt :: DBStore -> Text -> UTCTime -> IO (Maybe J.Value)
-balanceAt st r now = fmap balanceJSON <$> withTransaction st (\db -> getBalance db (RegistrationId r) now)
+balanceAt st r now = fmap (J.toJSON . balanceView) <$> withTransaction st (\db -> getBalance db (RegistrationId r) now)
 
-balanceObject :: Int -> Bool -> Maybe UTCTime -> Int -> J.Value
-balanceObject amount held heldUntil refunded = J.object ["amount" J..= amount, "held" J..= held, "heldUntil" J..= heldUntil, "refunded" J..= refunded]
+balanceObject :: Int -> Maybe J.Value -> Int -> J.Value
+balanceObject amount hold refunded = J.object ["amount" J..= amount, "hold" J..= hold, "refunded" J..= refunded]
+
+openHold :: UTCTime -> Maybe J.Value
+openHold t = Just $ J.object ["type" J..= ("open" :: Text), "heldUntil" J..= t]
+
+fundedHold :: Maybe J.Value
+fundedHold = Just $ J.object ["type" J..= ("funded" :: Text)]
 
 testHeldUntil :: IO ()
 testHeldUntil = withLate $ \l@Late {lStore = st} -> do
@@ -663,22 +669,22 @@ testHeldUntil = withLate $ \l@Late {lStore = st} -> do
   holder st "fh" "funded" 10000 (at 60) `shouldReturn` Right ()
   source st "unfunded" 10000
   holder st "uh" "unfunded" 10000 (at 60) `shouldReturn` Right ()
-  balanceAt st "funded" (at 30) `shouldReturn` Just (balanceObject 10000 True (Just $ at 60) 0)
+  balanceAt st "funded" (at 30) `shouldReturn` Just (balanceObject 10000 (openHold $ at 60) 0)
   settleAt l "fh" (SigFunded (btcPaid 100 0) PaidInPart) (at 30) `shouldReturn` ISOpen
-  balanceAt st "funded" (at 30) `shouldReturn` Just (balanceObject 10000 True Nothing 0)
-  balanceAt st "funded" (at 120) `shouldReturn` Just (balanceObject 10000 True Nothing 0)
-  balanceAt st "unfunded" (at 30) `shouldReturn` Just (balanceObject 10000 True (Just $ at 60) 0)
-  balanceAt st "unfunded" (at 120) `shouldReturn` Just (balanceObject 10000 False Nothing 0)
+  balanceAt st "funded" (at 30) `shouldReturn` Just (balanceObject 10000 fundedHold 0)
+  balanceAt st "funded" (at 120) `shouldReturn` Just (balanceObject 10000 fundedHold 0)
+  balanceAt st "unfunded" (at 30) `shouldReturn` Just (balanceObject 10000 (openHold $ at 60) 0)
+  balanceAt st "unfunded" (at 120) `shouldReturn` Just (balanceObject 10000 Nothing 0)
 
 testZeroBalances :: IO ()
 testZeroBalances = withLate $ \Late {lStore = st} -> do
   turns <- newTurns
   source st "spent" 10000
   coveredSpend st "c" "spent" 10000 10000 `shouldReturn` Right ()
-  balanceAt st "spent" t0 `shouldReturn` Just (balanceObject 0 False Nothing 0)
+  balanceAt st "spent" t0 `shouldReturn` Just (balanceObject 0 Nothing 0)
   source st "refunded" 10000
   void (recordRefund turns st "refunded" 10000 (at 5) >>= either (fail . show) pure)
-  balanceAt st "refunded" t0 `shouldReturn` Just (balanceObject 0 False Nothing 10000)
+  balanceAt st "refunded" t0 `shouldReturn` Just (balanceObject 0 Nothing 10000)
   placeOrderRow st "none" False 20000 (at 60)
   balanceAt st "none" t0 `shouldReturn` Nothing
 

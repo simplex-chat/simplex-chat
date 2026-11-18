@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
 module StoreService.Names.Store
@@ -131,6 +132,7 @@ where
 import qualified Control.Exception as E
 import Control.Monad (when)
 import Data.Aeson (ToJSON (toJSON))
+import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -154,6 +156,7 @@ import Simplex.Messaging.Encoding (Encoding (..), Large (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..), textToJSON)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Names.Record (USDCents)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Group.Command (CmdSource (..))
@@ -413,7 +416,7 @@ data BalanceHold = BalanceHold
   }
   deriving (Eq, Show)
 
-data HoldState = HSOpen UTCTime | HSFunded | HSOverdue UTCTime
+data HoldState = HSOpen {heldUntil :: UTCTime} | HSFunded | HSOverdue {heldUntil :: UTCTime}
   deriving (Eq, Show)
 
 -- | An order the money of a balance came through. lkPaid and lkFromBalance count only an order that went past unpaid,
@@ -1854,3 +1857,9 @@ decodeAll decode = either (E.throwIO . StoreDecodeError) pure . traverse decode
 
 firstDecoded :: (row -> Either Text a) -> IO [row] -> IO (Maybe a)
 firstDecoded decode rows = rows >>= fmap listToMaybe . decodeAll decode . take 1
+
+$(JQ.deriveToJSON (enumJSON $ dropPrefix "IC") ''InvoiceClose)
+
+$(JQ.deriveToJSON (enumJSON $ dropPrefix "FR") ''FailReason)
+
+$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "HS") ''HoldState)

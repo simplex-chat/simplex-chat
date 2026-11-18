@@ -50,7 +50,7 @@ import StoreService.Names.Orders
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), orderMessage, spendMessage)
 import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
-import StoreService.Names.View (balanceJSON, registrationAt, registrationView)
+import StoreService.Names.View (balanceView, registrationAt, registrationView)
 import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
@@ -333,7 +333,7 @@ orderRefusalResponse = \case
   ORCatalogChanged price -> jsonResponse status409 $ J.object ["error" .= ("catalog_changed" :: Text), "price" .= price]
   ORCode refusal -> codeRefusalResponse refusal
   ORPriceTooHigh price -> jsonResponse status409 $ J.object ["error" .= ("price_too_high" :: Text), "price" .= price]
-  ORBalanceChanged balance -> jsonResponse status409 $ J.object ["error" .= ("balance_changed" :: Text), "balance" .= (balanceJSON <$> balance)]
+  ORBalanceChanged balance -> jsonResponse status409 $ J.object ["error" .= ("balance_changed" :: Text), "balance" .= (balanceView <$> balance)]
   ORTermsChanged terms community -> jsonResponse status409 $ J.object ["error" .= ("terms_changed" :: Text), "terms" .= termsLink terms, "community" .= community]
   ORTermsUnavailable wait -> maybe (jsonError status503 "terms_unavailable") termsUnavailable wait
   ORCodesOnly -> jsonError status403 "codes_only"

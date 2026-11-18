@@ -12,7 +12,7 @@ import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, com
 import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (hashFixture, ownerA)
-import Bots.StoreService.WebTests (bounded, fieldOf, jsonObject, refusedWith, statusOf, webGet, webRequestBody)
+import Bots.StoreService.WebTests (bounded, fieldOf, jsonObject, phaseFieldOf, phaseOf, refusedWith, statusOf, webGet, webRequestBody)
 import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM
@@ -549,7 +549,7 @@ testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx} -> do
     releaseGate gate
     (status, answer) <- wait inFlight
     let view = registrationOf $ fromJust answer
-    (what, status, (`fieldOf` "error") =<< answer, fieldOf view "version", fieldOf view "label", fieldOf view "linksRefused", fieldOf view "revealBefore")
+    (what, status, (`fieldOf` "error") =<< answer, fieldOf view "version", fieldOf view "label", fieldOf view "linksRefused", phaseFieldOf view "revealBefore")
       `shouldBe` (what, 409, Just "registration_changed", Just (J.toJSON v), Just J.Null, Just (J.Bool False), Just (J.toJSON $ revealBefore + 60))
     (what,) . unwritten <$> stored ctx rid `shouldReturn` (what, (v, Nothing, False))
 
@@ -582,7 +582,7 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
   (status, answer) <- wait late
   let view = registrationOf $ fromJust answer
       LabelHash dynamit = labelHash "dynamit"
-  (status, (`fieldOf` "error") =<< answer, fieldOf view "version", fieldOf view "phase", fieldOf view "labelHash", fieldOf view "moves")
+  (status, (`fieldOf` "error") =<< answer, fieldOf view "version", phaseOf view, fieldOf view "labelHash", fieldOf view "moves")
     `shouldBe` (409, Just "registration_changed", fieldOf movedView "version", Just "queued", Just (J.String $ hex dynamit), Just (J.Number 1))
   NameRegistration {nrLabelHash = movedHash, nrReveal = movedReveal, nrLinksRefusedAt = movedRefusedAt} <- stored ctx refusedRid
   (movedHash, movedReveal, movedRefusedAt) `shouldBe` (labelHash "dynamit", Nothing, Nothing)

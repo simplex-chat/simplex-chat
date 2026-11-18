@@ -33,6 +33,9 @@ module Bots.StoreService.WebTests
     statusOf,
     jsonObject,
     fieldOf,
+    phaseOf,
+    phaseFieldOf,
+    phaseValue,
     answerOf,
     refusedWith,
     nameRefusedWith,
@@ -1525,6 +1528,17 @@ jsonObject r = case J.decode (responseBody r) of
 
 fieldOf :: J.Object -> Text -> Maybe J.Value
 fieldOf o k = KM.lookup (K.fromText k) o
+
+phaseOf :: J.Object -> Maybe J.Value
+phaseOf v = phaseFieldOf v "type"
+
+phaseFieldOf :: J.Object -> Text -> Maybe J.Value
+phaseFieldOf v k = case fieldOf v "phase" of
+  Just (J.Object p) -> fieldOf p k
+  _ -> Nothing
+
+phaseValue :: Text -> [(K.Key, J.Value)] -> J.Value
+phaseValue t fields = J.object $ ("type" J..= t) : fields
 
 answerOf :: J.FromJSON a => Response LB.ByteString -> (Int, Maybe a)
 answerOf r = (statusOf r, J.decode (responseBody r))

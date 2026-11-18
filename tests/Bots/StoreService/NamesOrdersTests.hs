@@ -115,7 +115,7 @@ import StoreService.Names.Phases (awaitChange, newPhases)
 import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), orderMessage, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
-import StoreService.Names.View (RegistrationView (..), ViewRead (..), ViewReads (..), readViewChain, registrationView, toRegistrationView)
+import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCommitted, PVFailed, PVRegistered, PVTaken, PVUnpaid), RegistrationView (..), Signing (SAwaiting, SSigned), ToSign (TSRead, TSUnread), phaseView, readToSign, registrationView, toRegistrationView)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
@@ -209,8 +209,8 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "has the contract's fields" testViewFields
     it "answers every field of a failed, a requeued and a taken order" testViewStates
     it "has the terms the order signed" testViewTerms
-    it "reads the intent nonce in committed, the acceptance of the terms of the name's kind before its reveal, and nothing in taken, leaving a failed read null and named in unread" testViewReads
-    it "reads the chain only in a free view slot and within one deadline, else answers every chain field unread" testViewReadsBounded
+    it "reads the intent nonce and the acceptance of the terms of the name's kind only while a committed order awaits its signature, unread when either read fails" testViewReads
+    it "reads the chain only in a free view slot and within one deadline, else answers unread" testViewReadsBounded
     it "reads the order's balance, held until its holder's invoice expires and free past it, and the cents its order took from another's" testViewBalance
 
 -- fixtures
@@ -514,13 +514,13 @@ testPaidOrder = withOrders $ \ctx -> do
   fieldOf v "currency" `shouldBe` Just "usd"
   fieldOf v "expiresAt" `shouldBe` Just (J.toJSON $ addUTCTime (45 * 60) orderTime)
   let r = registrationOf v
-  fieldOf r "phase" `shouldBe` Just "unpaid"
+  fieldOf r "phase" `shouldBe` Just (phaseValue "unpaid" [])
   fieldOf r "version" `shouldBe` Just (J.Number 1)
   fieldOf r "owner" `shouldBe` Just (J.String ownerAText)
   fieldOf r "labelHash" `shouldBe` Just (J.String $ hex $ (\(LabelHash h) -> h) alice)
   fieldOf r "price" `shouldBe` Just (J.Number 10000)
   fieldOf r "duration" `shouldBe` Just (J.toJSON $ durationAt orderTime)
-  fieldOf r "terms" `shouldBe` Just (J.String plainTerms)
+  fieldOf r "terms" `shouldBe` Just (J.toJSON $ agreed plainTerms)
   let reference = "name:" <> hex (unHex32 $ orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000))
   stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference}]
   reg <- invoiceRegistration ctx invId
@@ -567,7 +567,7 @@ testResendPastUnpaid = withOrders $ \ctx -> do
   status `shouldBe` 200
   ((`fieldOf` "invoiceId") =<< v) `shouldBe` Just (J.String $ (\(InvoiceId t) -> t) invId)
   ((`fieldOf` "status") =<< v) `shouldBe` Just "paid"
-  ((`fieldOf` "phase") . registrationOf =<< v) `shouldBe` Just "queued"
+  (phaseOf . registrationOf =<< v) `shouldBe` Just "queued"
 
 testResendReadsTime :: IO ()
 testResendReadsTime = do
@@ -575,7 +575,7 @@ testResendReadsTime = do
     (invId, _) <- placed ctx aliceOrder
     advance ctx (45 * 60 + 1)
     (status, v) <- placeOrder ctx aliceOrder
-    (status, (`fieldOf` "status") =<< v, (`fieldOf` "phase") . registrationOf =<< v) `shouldBe` (200, Just "expired", Just "unpaid")
+    (status, (`fieldOf` "status") =<< v, phaseOf . registrationOf =<< v) `shouldBe` (200, Just "expired", Just "unpaid")
     fmap irStatus <$> getInvoice (cStore ctx) invId `shouldReturn` Just ISOpen
   withOrders $ \ctx@Ctx {cStore, cClock} -> do
     (invId, _) <- placed ctx aliceOrder
@@ -586,10 +586,10 @@ testResendReadsTime = do
         lapsing = OCommitted Commit {cmTx = Nothing, cmRevealAfter = lapse - 3600, cmRevealBefore = lapse}
     Written version <- withTransaction cStore $ \db ->
       updateRegistration db r {nrPhase = lapsing} now
-    let resend = (\(status, v) -> (status, (`fieldOf` "status") =<< v, ((`fieldOf` "phase") &&& (`fieldOf` "error")) . registrationOf <$> v)) <$> placeOrder ctx aliceOrder
-    resend `shouldReturn` (200, Just "paid", Just (Just "committed", Just J.Null))
+    let resend = (\(status, v) -> (status, (`fieldOf` "status") =<< v, (phaseOf &&& (`phaseFieldOf` "reason")) . registrationOf <$> v)) <$> placeOrder ctx aliceOrder
+    resend `shouldReturn` (200, Just "paid", Just (Just "committed", Nothing))
     advance ctx 601
-    resend `shouldReturn` (200, Just "paid", Just (Just "failed", Just "not_signed_in_time"))
+    resend `shouldReturn` (200, Just "paid", Just (Just "failed", Just "notSignedInTime"))
     (nrPhase &&& nrVersion) <$> invoiceRegistration ctx invId `shouldReturn` (lapsing, version)
 
 testOneFieldDiffers :: IO ()
@@ -860,7 +860,7 @@ testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . list
   stubCalls (cStub ctx) `shouldReturn` []
   registrationsOf ctx ownerA `shouldReturn` []
   (invId, v) <- placed ctx dynamis {oTerms = communityTerms}
-  fieldOf (registrationOf v) "terms" `shouldBe` Just (J.String communityTerms)
+  fieldOf (registrationOf v) "terms" `shouldBe` Just (J.toJSON $ agreed communityTerms)
   nrAgreedTerms <$> invoiceRegistration ctx invId `shouldReturn` agreed communityTerms
   void $ placed ctx aliceOrder
 
@@ -906,7 +906,7 @@ testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" 
   signedBody (cRandom ctx) community >>= (`shouldBe` withSignature communitySignature (unsignedBody community))
   (status, v) <- postOrder ctx $ withSignature communitySignature (unsignedBody community)
   (status, (`fieldOf` "terms") . registrationOf =<< v, (`fieldOf` "community") . registrationOf =<< v)
-    `shouldBe` (200, Just (J.String communityTerms), Just (communityEntry $ Just bakers))
+    `shouldBe` (200, Just (J.toJSON $ agreed communityTerms), Just (communityEntry $ Just bakers))
 
 testTermsAfterRestart :: IO ()
 testTermsAfterRestart = withOrders $ \ctx@Ctx {cNode, cOpenStore, cOrders, cRandom} -> do
@@ -1380,7 +1380,7 @@ testCancelAnswers = withOrders $ \ctx -> do
   withOrdersCancelling settled $ \ctx' -> do
     (invId, _) <- placed ctx' aliceOrder
     (status, v) <- cancelAt ctx' invId
-    (status, (`fieldOf` "status") =<< v, (`fieldOf` "phase") . registrationOf =<< v) `shouldBe` (200, Just "paid", Just "queued")
+    (status, (`fieldOf` "status") =<< v, phaseOf . registrationOf =<< v) `shouldBe` (200, Just "paid", Just "queued")
   withOrdersCancelling (SigFunded (rcv 0 Nothing) PaidInFull) $ \ctx' -> do
     (invId, _) <- placed ctx' aliceOrder
     (status, v) <- cancelAt ctx' invId
@@ -1623,15 +1623,14 @@ testViewFields :: IO ()
 testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  let viewWith late vr = toRegistrationView (testNamesConfig node) r Nothing late vr
-      notAsked = ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}
-  viewWith Nothing notAsked
+  let viewWith late phase = toRegistrationView (testNamesConfig node) r Nothing late phase
+  viewWith Nothing PVUnpaid
     `shouldBe` RegistrationView
       { vwId = "r1",
         vwVersion = 1,
         vwMoves = 0,
         vwLinksRefused = False,
-        vwPhase = "unpaid",
+        vwPhase = PVUnpaid,
         vwLabelHash = Hex32 $ (\(LabelHash h) -> h) alice,
         vwLabel = Nothing,
         vwOwner = ownerA,
@@ -1640,28 +1639,34 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwYears = 2,
         vwDuration = 69292800,
         vwPrice = 20000,
-        vwFromBalance = 0,
+        vwPayment = PWInvoice "btc",
         vwBalance = Nothing,
         vwLatePayment = Nothing,
         vwCommitTx = Nothing,
         vwRegisterTx = Nothing,
-        vwRevealAfter = Nothing,
-        vwRevealBefore = Nothing,
-        vwIntentNonce = Nothing,
-        vwAcceptance = Nothing,
-        vwUnread = [],
-        vwExpiresAt = Nothing,
-        vwError = Nothing,
         vwCommunity = Nothing,
-        vwTerms = plainTerms
+        vwTerms = agreed plainTerms
       }
-  map (\w -> vwLatePayment $ viewWith (Just w) notAsked) [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]
+  map (\w -> J.toJSON (vwLatePayment $ viewWith (Just w) PVUnpaid)) [LWConfirming, LWCrediting, LWSupport] `shouldBe` ["confirming", "crediting", "support"]
   let acceptance community h = AcceptanceAsked {acCommunity = community, acPolicy = fakeNamePolicy, acTermsHash = Hex32 h, acNonce = 2}
-      acceptanceOf a = vwAcceptance $ viewWith Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRRead a}
-      acceptanceJSON :: Text -> ByteString -> Maybe J.Value
-      acceptanceJSON kind h = Just (J.object ["kind" .= kind, "policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex h, "nonce" .= (2 :: Int)])
-  acceptanceOf (acceptance False fakeGeneralTerms) `shouldBe` acceptanceJSON "general" fakeGeneralTerms
-  acceptanceOf (acceptance True fakeCommunityTerms) `shouldBe` acceptanceJSON "community" fakeCommunityTerms
+      awaiting a = PVCommitted 1 2 $ SAwaiting $ TSRead 4 a
+      phaseJSON :: Bool -> ByteString -> J.Value
+      phaseJSON community h =
+        J.object
+          [ "type" .= ("committed" :: Text),
+            "revealAfter" .= (1 :: Int),
+            "revealBefore" .= (2 :: Int),
+            "signature" .= J.object ["type" .= ("awaiting" :: Text), "toSign" .= J.object ["type" .= ("read" :: Text), "intentNonce" .= (4 :: Int), "acceptance" .= J.object ["community" .= community, "policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex h, "nonce" .= (2 :: Int)]]]
+          ]
+  J.toJSON (awaiting $ acceptance False fakeGeneralTerms) `shouldBe` phaseJSON False fakeGeneralTerms
+  J.toJSON (awaiting $ acceptance True fakeCommunityTerms) `shouldBe` phaseJSON True fakeCommunityTerms
+  map J.toJSON [PVCommitted 1 2 (SAwaiting TSUnread), PVCommitted 1 2 SSigned, PVClosed ICCancelled, PVRegistered 3, PVFailed FRNotSignedInTime]
+    `shouldBe` [ J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("awaiting" :: Text), "toSign" .= J.object ["type" .= ("unread" :: Text)]]],
+                 J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("signed" :: Text)]],
+                 J.object ["type" .= ("closed" :: Text), "closedBy" .= ("cancelled" :: Text)],
+                 J.object ["type" .= ("registered" :: Text), "expiresAt" .= (3 :: Int)],
+                 J.object ["type" .= ("failed" :: Text), "reason" .= ("notSignedInTime" :: Text)]
+               ]
 
 testViewStates :: IO ()
 testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1679,12 +1684,12 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           nrReveal = Just reveal,
           nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
         }
-  viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", "failed"), ("registerTx", txText 9), ("error", "not_registered"), ("balance", J.Null)]
+  viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("notRegistered" :: Text)]), ("registerTx", txText 9), ("balance", J.Null)]
   requeued <- written $ \r -> r {nrPhase = OQueued, nrHistory = (nrHistory r) {thRegisterTx = Nothing}}
-  viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", "queued"), ("registerTx", J.Null), ("error", J.Null), ("balance", J.Null)]
+  viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null)]
   taken <- written $ \r -> r {nrPhase = OTaken}
   withTransaction st $ \db -> creditBalance db rid 20000 t0
-  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", "taken"), ("registerTx", J.Null), ("error", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "held" .= False, "heldUntil" .= J.Null, "refunded" .= (0 :: Int)])]
+  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", J.object ["type" .= ("taken" :: Text)]), ("registerTx", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "hold" .= J.Null, "refunded" .= (0 :: Int)])]
   where
     o = order "alicebakery" 1
     rid = RegistrationId "r1"
@@ -1704,24 +1709,18 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
               ("years", J.Number 2),
               ("duration", J.Number 69292800),
               ("price", J.Number 20000),
-              ("fromBalance", J.Number 0),
+              ("payment", J.object ["type" .= ("invoice" :: Text), "method" .= ("btc" :: Text)]),
               ("latePayment", J.Null),
               ("commitTx", txText 8),
-              ("revealAfter", J.Null),
-              ("revealBefore", J.Null),
-              ("intentNonce", J.Null),
-              ("acceptance", J.Null),
-              ("unread", J.Array mempty),
-              ("expiresAt", J.Null),
               ("community", J.Null),
-              ("terms", J.String plainTerms)
+              ("terms", J.toJSON $ agreed plainTerms)
             ]
 
 testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = agreed communityTerms} (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  vwTerms (toRegistrationView (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = VRNotAsked, vrAcceptance = VRNotAsked}) `shouldBe` communityTerms
+  vwTerms (toRegistrationView (testNamesConfig node) r Nothing Nothing PVUnpaid) `shouldBe` agreed communityTerms
 
 testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1735,22 +1734,20 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   committed <- inPhase $ OCommitted commitFixture
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
-  readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) (VRRead AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeGeneralTerms, acNonce = 2})
-  -- the policy lists the name: the page signs the community terms' acceptance with the policy's nonce, until a reveal is stored
+  let awaiting = PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) . SAwaiting
+  phaseView ct committed `shouldReturn` awaiting (TSRead 4 AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeGeneralTerms, acNonce = 2})
+  -- the policy lists the name: the page signs the community terms' acceptance with the policy's nonce
   listCommunityName node $ labelHash "alicebakery"
-  readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) (VRRead AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeCommunityTerms, acNonce = 2})
+  readToSign ct committed `shouldReturn` TSRead 4 AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeCommunityTerms, acNonce = 2}
   -- before the policy has terms of the name's kind there are none to sign, so the page waits
   setCommunityTerms node ""
-  readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) VRUnread
+  readToSign ct committed `shouldReturn` TSUnread
   setCommunityTerms node fakeCommunityTermsText
-  readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (VRRead 4) VRNotAsked
   taken <- inPhase OTaken
-  readViewChain ct taken `shouldReturn` ViewReads VRNotAsked VRNotAsked
   setFault node "eth_call" HttpFailure
-  readViewChain ct committed `shouldReturn` ViewReads VRUnread VRUnread
-  readViewChain ct taken `shouldReturn` ViewReads VRNotAsked VRNotAsked
-  let v = toRegistrationView (testNamesConfig node) committed Nothing Nothing (ViewReads VRUnread VRUnread)
-  (vwIntentNonce v, vwAcceptance v, vwUnread v) `shouldBe` (Nothing, Nothing, ["intentNonce", "acceptance"])
+  phaseView ct committed {nrReveal = Just reveal} `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SSigned
+  phaseView ct taken `shouldReturn` PVTaken
+  phaseView ct committed `shouldReturn` awaiting TSUnread
 
 testViewReadsBounded :: IO ()
 testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1762,15 +1759,13 @@ testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   paid <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   Written _ <- withTransaction st $ \db -> updateRegistration db paid {nrPhase = OCommitted commitFixture} t0
   committed <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
-  let unread = ViewReads VRUnread VRUnread
   atomically $ writeTVar (ctViewSlots ct) 0
-  readViewChain ct committed `shouldReturn` unread
-  readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads VRUnread VRNotAsked
+  readToSign ct committed `shouldReturn` TSUnread
   atomically $ writeTVar (ctViewSlots ct) 1
-  vrIntentNonce <$> readViewChain ct committed `shouldReturn` VRRead 4
+  (\case TSRead n _ -> Just n; TSUnread -> Nothing) <$> readToSign ct committed `shouldReturn` Just 4
   setFault node "eth_call" Hang
   started <- getCurrentTime
-  readViewChain ct committed `shouldReturn` unread
+  readToSign ct committed `shouldReturn` TSUnread
   elapsed <- (`diffUTCTime` started) <$> getCurrentTime
   elapsed `shouldSatisfy` (< 2)
   readTVarIO (ctViewSlots ct) `shouldReturn` 1
@@ -1787,21 +1782,22 @@ testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId rid)
         objectOf . J.toJSON <$> registrationView st (testNamesConfig node) ct now r
       balanceOf :: J.Object -> (Maybe J.Value, Maybe J.Value)
-      balanceOf v = (fieldOf v "balance", fieldOf v "fromBalance")
-      balance :: Int -> Bool -> Maybe UTCTime -> Int -> J.Value
-      balance amount held heldUntil refunded = J.object ["amount" .= amount, "held" .= held, "heldUntil" .= heldUntil, "refunded" .= refunded]
+      balanceOf v = (fieldOf v "balance", fieldOf v "payment")
+      balance :: Int -> Maybe UTCTime -> Int -> J.Value
+      balance amount heldTill refunded = J.object ["amount" .= amount, "hold" .= ((\t -> J.object ["type" .= ("open" :: Text), "heldUntil" .= t]) <$> heldTill), "refunded" .= refunded]
+      invoicePaid = J.object ["type" .= ("invoice" :: Text), "method" .= ("btc" :: Text)]
   Right () <- placePaid st "source" ownerA (order "alicebakery" 1) holderExpiry
   withTransaction st $ \db -> creditBalance db (RegistrationId "source") 15000 t0
-  balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 False Nothing 0, Just $ J.Number 0)
+  balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 Nothing 0, Just invoicePaid)
   Right () <- withTransaction st $ \db -> do
     insertInvoiceRow db "inv-holder" holderExpiry "open"
     createPaidRegistration db (newReg "holder" ownerA (order "bobsbakery" 2)) (Just BalanceUse {buSource = RegistrationId "source", buUsed = 15000}) (paidOrder "inv-holder") t0
-  balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 True (Just holderExpiry) 0, Just $ J.Number 0)
-  balanceOf <$> viewOf "source" (addUTCTime 1 holderExpiry) `shouldReturn` (Just $ balance 15000 False Nothing 0, Just $ J.Number 0)
-  balanceOf <$> viewOf "holder" t0 `shouldReturn` (Just J.Null, Just $ J.Number 15000)
+  balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 (Just holderExpiry) 0, Just invoicePaid)
+  balanceOf <$> viewOf "source" (addUTCTime 1 holderExpiry) `shouldReturn` (Just $ balance 15000 Nothing 0, Just invoicePaid)
+  balanceOf <$> viewOf "holder" t0 `shouldReturn` (Just J.Null, Just $ J.object ["type" .= ("difference" :: Text), "method" .= ("btc" :: Text), "fromBalance" .= (15000 :: Int)])
   version <- nrVersion <$> withTransaction st (\db -> fromJust <$> getRegistration db (RegistrationId "source"))
   withTransaction st (\db -> releaseHeldBalance db (RegistrationId "holder") t0) `shouldReturn` True
   withTransaction st (\db -> refundBalance db (RegistrationId "source") 15000 t0) `shouldReturn` True
   v <- viewOf "source" t0
-  balanceOf v `shouldBe` (Just $ balance 0 False Nothing 15000, Just $ J.Number 0)
+  balanceOf v `shouldBe` (Just $ balance 0 Nothing 15000, Just invoicePaid)
   fieldOf v "version" `shouldBe` Just (J.toJSON version)

@@ -34,7 +34,7 @@ import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rent
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.NamesPhasesTests (held, registrationPath, seenVersion, woken)
-import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, refusedWith, storeFixture, webGet, withApp)
+import Bots.StoreService.WebTests (bounded, capturingStderr, fieldOf, jsonObject, phaseOf, phaseValue, refusedWith, storeFixture, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent.Async (async, wait)
@@ -375,7 +375,7 @@ testMoveAccepted = withOwner $ \ctx -> do
   to <- moveTo ctx "alicebakers" 10
   v <- moved ctx keyA failedOrder to
   fieldsIn v
-    [ ("phase", "queued"),
+    [ ("phase", phaseValue "queued" []),
       ("labelHash", labelHashText "alicebakers"),
       ("commitment", J.toJSON $ ofCommitment to),
       ("sealed", J.String $ ofSealed to),
@@ -385,10 +385,7 @@ testMoveAccepted = withOwner $ \ctx -> do
       ("version", J.toJSON $ nrVersion failedOrder + 1),
       ("linksRefused", J.Bool False),
       ("label", J.Null),
-      ("commitTx", J.Null),
-      ("revealAfter", J.Null),
-      ("revealBefore", J.Null),
-      ("error", J.Null)
+      ("commitTx", J.Null)
     ]
   written <- stored ctx failedOrder
   (nrPhase written, nrMoves written, nrOrderHash written) `shouldBe` (OQueued, 1, nrOrderHash failedOrder)
@@ -396,13 +393,13 @@ testMoveAccepted = withOwner $ \ctx -> do
   refusedOrder <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} linksRefusedPhase
   sameName <- moveTo ctx "alicebakery" 11
   v2 <- moved ctx keyB refusedOrder sameName
-  fieldsIn v2 [("phase", "queued"), ("labelHash", labelHashText "alicebakery"), ("linksRefused", J.Bool False), ("commitTx", J.Null), ("revealAfter", J.Null), ("moves", J.Number 1)]
+  fieldsIn v2 [("phase", phaseValue "queued" []), ("labelHash", labelHashText "alicebakery"), ("linksRefused", J.Bool False), ("commitTx", J.Null), ("moves", J.Number 1)]
   nrPhase <$> stored ctx refusedOrder `shouldReturn` OQueued
   -- a committed order with no reveal past revealBefore reads failed
   lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = seconds orderTime - 1}}
   back <- moveTo ctx "alicebakery" 12
   v3 <- moved ctx keyA lapsed back
-  fieldsIn v3 [("phase", "queued"), ("error", J.Null), ("price", J.Number 10000)]
+  fieldsIn v3 [("phase", phaseValue "queued" []), ("price", J.Number 10000)]
 
 testMoveRepeat :: IO ()
 testMoveRepeat = withOwner $ \ctx -> do
@@ -410,7 +407,7 @@ testMoveRepeat = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder failedPhase
   -- the current fields from failed: nothing moves
   (status, v) <- move ctx keyA r (currentFields r)
-  (status, (`fieldOf` "phase") =<< v, (`fieldOf` "moves") =<< v) `shouldBe` (200, Just "failed", Just (J.Number 0))
+  (status, phaseOf =<< v, (`fieldOf` "moves") =<< v) `shouldBe` (200, Just "failed", Just (J.Number 0))
   stored ctx r `shouldReturn` r
   to <- moveTo ctx "alicebakers" 10
   body <- moveBody ctx keyA (nrId r) to
@@ -430,7 +427,7 @@ testMoveTermsOnly :: IO ()
 testMoveTermsOnly = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder $ \p -> (failedPhase p) {nrAgreedTerms = agreed olderTerms}
   (status, v) <- move ctx keyA r (currentFields r) {ofAgreedTerms = agreed plainTerms}
-  (status, (`fieldOf` "phase") =<< v, (`fieldOf` "moves") =<< v) `shouldBe` (200, Just "queued", Just (J.Number 1))
+  (status, phaseOf =<< v, (`fieldOf` "moves") =<< v) `shouldBe` (200, Just "queued", Just (J.Number 1))
   (nrAgreedTerms &&& nrMoves) <$> stored ctx r `shouldReturn` (agreed plainTerms, 1)
 
 testMoveTermsChanged :: IO ()
@@ -444,7 +441,7 @@ testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
   move ctx keyA r to {ofAgreedTerms = agreed plainTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   stored ctx r `shouldReturn` r
   v <- moved ctx keyA r to {ofAgreedTerms = agreed communityTerms}
-  fieldsIn v [("terms", J.String communityTerms), ("community", communityEntry $ Just bakers)]
+  fieldsIn v [("terms", J.toJSON $ agreed communityTerms), ("community", communityEntry $ Just bakers)]
   nrAgreedTerms <$> stored ctx r `shouldReturn` agreed communityTerms
 
 testMoveCommunityYears :: IO ()
@@ -499,7 +496,7 @@ testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   answer <- move ctx keyA r to
   view <- getView ctx r
   answer `shouldBe` refusedWithView "registration_changed" view
-  fieldOf view "phase" `shouldBe` Just "registered"
+  phaseOf view `shouldBe` Just "registered"
 
 testMoveLimit :: IO ()
 testMoveLimit = withOwner $ \ctx -> do
@@ -514,7 +511,7 @@ testMoveLimit = withOwner $ \ctx -> do
   to <- moveTo ctx "alicebakery" 20
   view <- getView ctx limited
   move ctx keyA limited to {ofAgreedTerms = agreed olderTerms} `shouldReturn` refusedWithView "move_limit" view
-  (fieldOf view "moves", fieldOf view "phase") `shouldBe` (Just (J.Number 3), Just "failed")
+  (fieldOf view "moves", phaseOf view) `shouldBe` (Just (J.Number 3), Just "failed")
   stored ctx r `shouldReturn` limited
 
 testMoveMeetsOrder :: IO ()
@@ -565,13 +562,13 @@ testMoveLanded = withOwner $ \ctx -> do
     view <- getView ctx r
     answer `shouldBe` refusedWithView "registration_changed" view
     woken "the registration poll" poll `shouldReturn` (200, view)
-    fieldsIn view [("phase", "registered"), ("expiresAt", J.toJSON expiry), ("moves", J.Number 0), ("error", J.Null), ("registerTx", maybe J.Null (J.String . hex) hash)]
+    fieldsIn view [("phase", phaseValue "registered" ["expiresAt" J..= expiry]), ("moves", J.Number 0), ("registerTx", maybe J.Null (J.String . hex) hash)]
     written <- stored ctx r
     (namePhase (nrPhase written), nrVersion written, nrLabelHash written) `shouldBe` (PRegistered, nrVersion r + 1, nrLabelHash r)
   pcSpentAt <$> codeRow ctx code `shouldReturn` Just orderTime
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyB notLanded to
-  fieldsIn v [("phase", "queued"), ("moves", J.Number 1)]
+  fieldsIn v [("phase", phaseValue "queued" []), ("moves", J.Number 1)]
 
 testMoveLandedReleasedCode :: IO ()
 testMoveLandedReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
@@ -618,8 +615,8 @@ testMovePrice = withOwner $ \ctx -> do
   stored ctx dear `shouldReturn` dear
   balanceOf ctx dear `shouldReturn` Nothing
   v <- moved ctx keyB dear toCheaper
-  (fieldOf v "price", fieldOf v "phase", fieldOf v "fromBalance") `shouldBe` (Just (J.Number 10000), Just "queued", Just (J.Number 0))
-  fieldOf v "balance" `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int)])
+  (fieldOf v "price", phaseOf v, fieldOf v "payment") `shouldBe` (Just (J.Number 10000), Just "queued", Just (J.object ["type" J..= ("invoice" :: Text), "method" J..= ("btc" :: Text)]))
+  fieldOf v "balance" `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "hold" J..= J.Null, "refunded" J..= (0 :: Int)])
   nrPrice <$> stored ctx dear `shouldReturn` 10000
   balanceOf ctx dear `shouldReturn` Just (10000, 10000)
 
@@ -639,7 +636,7 @@ testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
   r <- registrationById ctx (RegistrationId "diff") >>= \d -> rewrite ctx d failedPhase
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyA r to
-  (fieldOf v "price", fieldOf v "fromBalance") `shouldBe` (Just (J.Number 10000), Just (J.Number 5000))
+  (fieldOf v "price", fieldOf v "payment") `shouldBe` (Just (J.Number 10000), Just (J.object ["type" J..= ("difference" :: Text), "method" J..= ("btc" :: Text), "fromBalance" J..= (5000 :: Int)]))
   balanceOf ctx r `shouldReturn` Just (10000, 10000)
   balanceOf ctx paying `shouldReturn` Just (0, 5000)
 
@@ -654,7 +651,7 @@ testMoveCodeOrder = withOwner $ \ctx@Ctx {cStore} -> do
   withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, pcCodeHash)
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyA r to
-  (fieldOf v "phase", fieldOf v "price") `shouldBe` (Just "queued", Just (J.Number 0))
+  (phaseOf v, fieldOf v "price") `shouldBe` (Just "queued", Just (J.Number 0))
   (pcReservedBy &&& pcSpentAt) <$> codeRow ctx code `shouldReturn` (Just (nrId r), Nothing)
 
 testMoveReleasedCode :: IO ()
@@ -762,4 +759,4 @@ testPollsWoken = withOwner $ \ctx -> do
   to <- moveTo ctx "alicebakers" 10
   void $ moved ctx keyA r to
   (status, v) <- woken "the registration poll" poll
-  (status, fieldOf v "version", fieldOf v "phase") `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1), Just "queued")
+  (status, fieldOf v "version", phaseOf v) `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1), Just "queued")

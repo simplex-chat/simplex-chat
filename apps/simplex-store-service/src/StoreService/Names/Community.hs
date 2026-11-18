@@ -19,13 +19,14 @@ module StoreService.Names.Community
 where
 
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
+import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (bimap)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import Data.Word (Word64)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.Parsers (defaultJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (ChainError (..))
@@ -83,3 +84,5 @@ currentAcceptance ct lh owner = runExceptT $ do
   acPolicy <- ExceptT $ namePolicy ct
   acNonce <- ExceptT $ policyNonce ct owner
   pure AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce}
+
+$(JQ.deriveToJSON defaultJSON {J.fieldLabelModifier = dropPrefix "ac"} ''AcceptanceAsked)

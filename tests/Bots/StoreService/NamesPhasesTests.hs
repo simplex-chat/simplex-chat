@@ -7,7 +7,7 @@ module Bots.StoreService.NamesPhasesTests (namesPhasesTests, change, held, woken
 
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (hashFixture, reveal)
-import Bots.StoreService.WebTests (bounded, fieldOf, jsonObject, rcv, statusOf, webGet)
+import Bots.StoreService.WebTests (bounded, fieldOf, jsonObject, phaseOf, phaseValue, rcv, statusOf, webGet)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel, wait, waitCatchSTM)
 import qualified Control.Concurrent.Async as Async
@@ -165,7 +165,7 @@ testEachChangeWakes = bounded "each change wakes" $ withPolls holdMicros $ \Poll
   NameRegistration {nrId} <- invoiceRegistration ctx inv
   let changes :: [(String, NameRegistration -> NameRegistration, Text, J.Value)]
       changes =
-        [("phase", \r -> r {nrPhase = OCommitting $ TxHash $ hashFixture 8}, "phase", "committing")]
+        [("phase", \r -> r {nrPhase = OCommitting $ TxHash $ hashFixture 8}, "phase", phaseValue "committing" [])]
   forM_ changes $ \(what, f, k, expected) -> do
     v <- nrVersion <$> invoiceRegistration ctx inv
     invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
@@ -190,7 +190,7 @@ testPaidHoldsOnVersion = bounded "paid holds on version" $ withPolls holdMicros 
   Async.poll poll >>= (`shouldSatisfy` isNothing)
   v' <- change ctx nrId $ \r -> r {nrPhase = OCommitting $ TxHash $ hashFixture 8}
   (_, o) <- woken "paid invoice poll" poll
-  (fieldOf (registrationOf o) "version", fieldOf (registrationOf o) "phase") `shouldBe` (Just (J.toJSON v'), Just "committing")
+  (fieldOf (registrationOf o) "version", phaseOf (registrationOf o)) `shouldBe` (Just (J.toJSON v'), Just "committing")
   -- marks other than the page saw answer at once
   (fst <$> answeredAtOnce ctx (invoicePath inv <> following ISPaid v' "0.001" True)) `shouldReturn` 200
 
@@ -201,7 +201,7 @@ testLatePaidAnswersAtOnce = bounded "late paid" $ withPolls holdMicros $ \Polls 
   settleNow ctx inv settled `shouldReturn` ISPaid
   NameRegistration {nrVersion} <- invoiceRegistration ctx inv
   (status, o) <- answeredAtOnce ctx $ invoicePath inv <> following ISPaid nrVersion settledPaid True
-  (status, fieldOf o "status", fieldOf (registrationOf o) "phase") `shouldBe` (200, Just "paid", Just "unpaid")
+  (status, fieldOf o "status", fieldOf (registrationOf o) "phase") `shouldBe` (200, Just "paid", Just $ phaseValue "closed" ["closedBy" J..= ("cancelled" :: Text)])
 
 testOpenWakesOnVersion :: IO ()
 testOpenWakesOnVersion = bounded "open wakes on version" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
@@ -257,19 +257,19 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   let committed = OCommitted Commit {cmTx = Nothing, cmRevealAfter = revealBefore - 3600, cmRevealBefore = revealBefore}
   v <- change ctx nrId $ \r -> r {nrPhase = committed}
   (_, r) <- get ctx (registrationPath nrId)
-  fieldOf r "phase" `shouldBe` Just "committed"
+  phaseOf r `shouldBe` Just "committed"
   invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
   poll <- held ctx (0, 1) $ registrationPath nrId <> seenVersion v
   (status, lapsed) <- woken "registration poll at the lapse" poll
-  (status, fieldOf lapsed "phase", fieldOf lapsed "error", fieldOf lapsed "version") `shouldBe` (200, Just "failed", Just "not_signed_in_time", Just (J.toJSON v))
+  (status, fieldOf lapsed "phase", fieldOf lapsed "version") `shouldBe` (200, Just $ phaseValue "failed" ["reason" J..= ("notSignedInTime" :: Text)], Just (J.toJSON v))
   (_, o) <- woken "invoice poll at the lapse" invoicePoll
-  (fieldOf o "status", fieldOf (registrationOf o) "phase", fieldOf (registrationOf o) "error") `shouldBe` (Just "paid", Just "failed", Just "not_signed_in_time")
+  (fieldOf o "status", fieldOf (registrationOf o) "phase") `shouldBe` (Just "paid", Just $ phaseValue "failed" ["reason" J..= ("notSignedInTime" :: Text)])
   (nrPhase <$> invoiceRegistration ctx inv) `shouldReturn` committed
   -- one with a reveal set stays committed past revealBefore
   revealed <- change ctx nrId $ \r' -> r' {nrReveal = Just reveal}
   pSetNow $ addUTCTime 3600 lapsedAt
   (_, r') <- get ctx (registrationPath nrId)
-  (fieldOf r' "phase", fieldOf r' "label", fieldOf r' "version") `shouldBe` (Just "committed", Just "alicebakery", Just (J.toJSON revealed))
+  (phaseOf r', fieldOf r' "label", fieldOf r' "version") `shouldBe` (Just "committed", Just "alicebakery", Just (J.toJSON revealed))
 
 testAnswersAtOnce :: IO ()
 testAnswersAtOnce = bounded "at once" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
@@ -277,7 +277,7 @@ testAnswersAtOnce = bounded "at once" $ withPolls holdMicros $ \Polls {pCtx = ct
   NameRegistration {nrId = rid@(RegistrationId ridText), nrVersion} <- invoiceRegistration ctx inv
   forM_ ["", seenVersion (nrVersion + 1), seenVersion (nrVersion - 1), "?seenVersion=one", "?seenVersion=-1", "?seenVersion=99999999999999999999"] $ \q -> do
     (status, r) <- answeredAtOnce ctx (registrationPath rid <> q)
-    (q, status, fieldOf r "id", fieldOf r "version", fieldOf r "phase") `shouldBe` (q, 200, Just (J.String ridText), Just (J.toJSON nrVersion), Just "unpaid")
+    (q, status, fieldOf r "id", fieldOf r "version", phaseOf r) `shouldBe` (q, 200, Just (J.String ridText), Just (J.toJSON nrVersion), Just "unpaid")
 
 testHoldTimesOut :: IO ()
 testHoldTimesOut = bounded "hold times out" $ withPolls shortHold $ \Polls {pCtx = ctx} -> do

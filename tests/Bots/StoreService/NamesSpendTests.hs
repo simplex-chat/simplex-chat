@@ -15,7 +15,7 @@ import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesPhasesTests (registrationPath, seenVersion, woken)
 import qualified Bots.StoreService.NamesPhasesTests as Phases
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, write)
-import Bots.StoreService.WebTests (StubCall (..), answerOf, bounded, capturingStderr, StubState (..), fieldOf, jsonObject, rcv, refusedWith, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores, withApp)
+import Bots.StoreService.WebTests (StubCall (..), answerOf, bounded, capturingStderr, StubState (..), fieldOf, jsonObject, phaseOf, rcv, refusedWith, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores, withApp)
 import ChatTests.DBUtils (TestParams)
 import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -50,7 +50,8 @@ import StoreService.Names.Chain (Hex32 (..), hex, uint256)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), personalDigest, spendMessage)
 import StoreService.Names.Store
-import StoreService.Names.View (addressText, balanceJSON)
+import StoreService.Names.View (addressText)
+import qualified StoreService.Names.View as View
 import StoreService.Orders (cancelOpenInvoice)
 import StoreService.Poller (PollerEnv, creditPass, drainHints, forgetRates, newPollerEnv)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..))
@@ -227,7 +228,7 @@ amountOf :: Ctx -> RegistrationId -> IO (Maybe USDCents)
 amountOf ctx rid = fmap blAmount <$> balanceOf ctx rid
 
 balanceChanged :: Maybe Balance -> (Int, Maybe J.Object)
-balanceChanged b = (409, Just $ KM.fromList [("error", "balance_changed"), ("balance", maybe J.Null balanceJSON b)])
+balanceChanged b = (409, Just $ KM.fromList [("error", "balance_changed"), ("balance", maybe J.Null (J.toJSON . View.balanceView) b)])
 
 -- | The orders a balance paid.
 paidFrom :: Ctx -> RegistrationId -> IO [NameRegistration]
@@ -253,7 +254,7 @@ testCoveredSpend = withSpend $ \ctx -> do
   nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance Spend {spSource = src, spPrice = 10000, spBalance = 15000, spMethod = Nothing})
   nrAgreedTerms r `shouldBe` agreed (oTerms aliceOrder)
   view <- viewOf ctx rid
-  (fieldOf view "phase", fieldOf view "price", fieldOf view "fromBalance", fieldOf view "balance") `shouldBe` (Just "queued", Just (J.Number 10000), Just (J.Number 10000), Just J.Null)
+  (phaseOf view, fieldOf view "price", fieldOf view "payment", fieldOf view "balance") `shouldBe` (Just "queued", Just (J.Number 10000), Just (J.object ["type" J..= ("balance" :: Text), "fromBalance" J..= (10000 :: Int)]), Just J.Null)
   amountOf ctx src `shouldReturn` Just 5000
   exact <- sourceOf ctx "exact" 20000
   rid' <- registrationAnswer . snd <$> spend ctx exact (dynamis 20000 Nothing)
@@ -269,7 +270,7 @@ testDifferenceSpend = withSpend $ \ctx -> do
   let expiry = addUTCTime (45 * 60) orderTime
       r = registrationOf <$> v
   ((`fieldOf` "status") =<< v, (`fieldOf` "amount") =<< v, (`fieldOf` "expiresAt") =<< v) `shouldBe` (Just "open", Just (J.Number 4000), Just (J.toJSON expiry))
-  ((`fieldOf` "phase") =<< r, (`fieldOf` "price") =<< r, (`fieldOf` "fromBalance") =<< r) `shouldBe` (Just "unpaid", Just (J.Number 10000), Just (J.Number 6000))
+  (phaseOf =<< r, (`fieldOf` "price") =<< r, (`fieldOf` "payment") =<< r) `shouldBe` (Just "unpaid", Just (J.Number 10000), Just (J.object ["type" J..= ("difference" :: Text), "method" J..= ("btc" :: Text), "fromBalance" J..= (6000 :: Int)]))
   let invId = invoiceIdOf v
   holder <- invoiceRegistration ctx invId
   stubCalls (cStub ctx) `shouldReturn` [StubCreate btc OrderDraft {odAmount = CurrencyAmount 4000, odCurrency = "usd", odReference = "name:" <> hex (unHex32 $ nrOrderHash holder)}]
@@ -277,7 +278,7 @@ testDifferenceSpend = withSpend $ \ctx -> do
   nrOrderHash holder `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance Spend {spSource = src, spPrice = 10000, spBalance = 6000, spMethod = Just btc})
   nrAgreedTerms holder `shouldBe` agreed (oTerms aliceOrder)
   fmap irAmount <$> getInvoice (cStore ctx) invId `shouldReturn` Just (CurrencyAmount 4000)
-  (`fieldOf` "balance") <$> viewOf ctx src `shouldReturn` Just (J.object ["amount" J..= (6000 :: Int), "held" J..= True, "heldUntil" J..= expiry, "refunded" J..= (0 :: Int)])
+  (`fieldOf` "balance") <$> viewOf ctx src `shouldReturn` Just (J.object ["amount" J..= (6000 :: Int), "hold" J..= J.object ["type" J..= ("open" :: Text), "heldUntil" J..= expiry], "refunded" J..= (0 :: Int)])
 
 testDifferenceLimitedPerNetwork :: IO ()
 testDifferenceLimitedPerNetwork = withSpend $ \ctx@Ctx {cClient, cWeb, cStub} -> do
@@ -305,7 +306,7 @@ testSpendResend = withSpend $ \ctx@Ctx {cStore, cClock} -> do
   holder <- invoiceRegistration ctx invId
   now <- readIORef cClock
   Written _ <- withTransaction cStore $ \db -> updateRegistration db holder {nrPhase = OQueued} now
-  (\(status, v) -> (status, invoiceIdOf v, (`fieldOf` "phase") . registrationOf =<< v)) <$> postSpend ctx src body `shouldReturn` (200, invId, Just "queued")
+  (\(status, v) -> (status, invoiceIdOf v, phaseOf . registrationOf =<< v)) <$> postSpend ctx src body `shouldReturn` (200, invId, Just "queued")
   other <- sourceOf ctx "other" 25000
   let paid = timedAt now $ dynamis 25000 Nothing
   coveredBody <- spendBody ctx other paid
@@ -709,7 +710,7 @@ balanceView ctx rid = (`fieldOf` "balance") <$> viewOf ctx rid
 
 -- | A balance nothing holds.
 balanceObject :: Int -> Int -> Maybe J.Value
-balanceObject amount refunded = Just $ J.object ["amount" J..= amount, "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= refunded]
+balanceObject amount refunded = Just $ J.object ["amount" J..= amount, "hold" J..= J.Null, "refunded" J..= refunded]
 
 ridText :: RegistrationId -> Text
 ridText (RegistrationId t) = t
@@ -744,7 +745,7 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   -- money paid into the expired invoice: the poller's read cannot credit it while the rate read fails, and its next credit pass does
   setRates fake ratesDown
   report "InvoicePaymentSettled" firstInv latePaid
-  (\v -> (fieldOf v "latePayment", fieldOf v "balance")) <$> viewOf ctx first `shouldReturn` (Just $ J.object ["waiting" J..= ("crediting" :: Text)], Just J.Null)
+  (\v -> (fieldOf v "latePayment", fieldOf v "balance")) <$> viewOf ctx first `shouldReturn` (Just "crediting", Just J.Null)
   setRates fake ratesUp
   void $ capturingStderr $ forgetRates poller >> getCurrentTime >>= creditPass poller
   (\v -> (fieldOf v "latePayment", fieldOf v "balance")) <$> viewOf ctx first `shouldReturn` (Just J.Null, balanceObject 5399 0)

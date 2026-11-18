@@ -12,7 +12,7 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, ownerA, paidOrder, reveal)
-import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, refusedWith, statusOf, stubCalls, webGet, withApp)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, phaseOf, phaseValue, refusedWith, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -340,7 +340,7 @@ testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}}
   r <- registrationById ctx =<< registered ctx text aliceOrder
   commitWaitRegister w (r, code)
   (status', view) <- answerOf <$> webGet cClient (registrationPath $ nrId r)
-  (status', (`fieldOf` "phase") =<< view) `shouldBe` (200, Just "registered")
+  (status', phaseOf =<< view) `shouldBe` (200, Just "registered")
   stubCalls (cStub ctx) `shouldReturn` []
 
 -- | A queued code order, committed, revealed and registered.
@@ -641,7 +641,7 @@ testTakenWakesPoll = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   isJust <$> Async.poll waiting `shouldReturn` False
   endsTaken w r
   (status, view) <- woken "the registration poll" waiting
-  (status, fieldOf view "phase") `shouldBe` (200, Just "taken")
+  (status, phaseOf view) `shouldBe` (200, Just "taken")
   balanceFigures ctx (nrId r) `shouldReturn` Just (500 + oPrice aliceOrder, 500 + oPrice aliceOrder)
   where
     shortWait = 500000
@@ -1131,7 +1131,7 @@ testRetryLanded = withWorker $ \W {wCtx = ctx} -> do
   TxHash (Hex32 minedHash) <- sentRegister ctx redeemed 1 $ TSMinedAt 120
   answerExpiry ctx "alicebakery" expiry
   v <- retried ctx redeemed
-  (fieldOf v "phase", fieldOf v "registerTx", fieldOf v "expiresAt", fieldOf v "error") `shouldBe` (Just "registered", Just (J.String $ hex minedHash), Just (J.toJSON expiry), Just J.Null)
+  (fieldOf v "phase", fieldOf v "registerTx") `shouldBe` (Just $ phaseValue "registered" ["expiresAt" J..= expiry], Just (J.String $ hex minedHash))
   x <- stored ctx redeemed
   (namePhase (nrPhase x), nrVersion x) `shouldBe` (PRegistered, nrVersion redeemed + 1)
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
@@ -1140,7 +1140,7 @@ testRetryLanded = withWorker $ \W {wCtx = ctx} -> do
   answerOwner ctx "dynamis" (nrOwner owned)
   answerExpiry ctx "dynamis" expiry
   v' <- retried ctx owned
-  (fieldOf v' "phase", fieldOf v' "registerTx", fieldOf v' "expiresAt") `shouldBe` (Just "registered", Just J.Null, Just (J.toJSON expiry))
+  (fieldOf v' "phase", fieldOf v' "registerTx") `shouldBe` (Just $ phaseValue "registered" ["expiresAt" J..= expiry], Just J.Null)
 
 testRetryUnread :: IO ()
 testRetryUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}} -> do
@@ -1182,11 +1182,11 @@ testRetryReleasedCode = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
   -- a code its order still holds stays good for it, though revoked and expired since
   (holding, heldCode@PrepaidCode {pcCodeHash}) <- codeOrder 6 failedPhase
   withTransaction cStore $ \db -> revokePrepaidCode db pcCodeHash orderTime >> expire db pcCodeHash
-  (`fieldOf` "phase") <$> retried ctx holding `shouldReturn` Just "queued"
+  phaseOf <$> retried ctx holding `shouldReturn` Just "queued"
   pcReservedBy <$> codeOf ctx heldCode `shouldReturn` Just (nrId holding)
   -- a released code still unused is reserved again
   (unused, unusedCode) <- codeOrder 7 failedPhase >>= released
-  (`fieldOf` "phase") <$> retried ctx unused `shouldReturn` Just "queued"
+  phaseOf <$> retried ctx unused `shouldReturn` Just "queued"
   (pcReservedBy &&& pcSpentAt) <$> codeOf ctx unusedCode `shouldReturn` (Just (nrId unused), Nothing)
 
 testRetryRequeue :: IO ()
@@ -1195,7 +1195,7 @@ testRetryRequeue = withWorker $ \w@W {wCtx = ctx} -> do
   h <- sentRegister ctx committed 1 $ TSRevertedAt 120
   r <- rewrite ctx committed $ \o -> o {nrPhase = OFailed orderTime FRNotRegistered, nrHistory = (nrHistory o) {thRegisterTx = Just h}}
   v <- published w r $ retried ctx r
-  (fieldOf v "phase", fieldOf v "registerTx", fieldOf v "error", fieldOf v "version") `shouldBe` (Just "queued", Just J.Null, Just J.Null, Just (J.toJSON $ nrVersion r + 1))
+  (fieldOf v "phase", fieldOf v "registerTx", fieldOf v "version") `shouldBe` (Just $ phaseValue "queued" [], Just J.Null, Just (J.toJSON $ nrVersion r + 1))
   x <- stored ctx r
   (nrPhase x, nrHistory x) `shouldBe` (OQueued, (nrHistory r) {thRegisterTx = Nothing})
 
@@ -1205,7 +1205,7 @@ testRetryLiveCommitment = withWorker $ \w@W {wCtx = ctx} -> do
   f <- failedAfterRegister w r
   answerNonce w $ rvNonce reveal
   v <- retried ctx f
-  (fieldOf v "phase", fieldOf v "label") `shouldBe` (Just "queued", Just "alicebakery")
+  (phaseOf v, fieldOf v "label") `shouldBe` (Just "queued", Just "alicebakery")
   steps w f >>= waitingUntil >>= (`shouldBe` at (t + minAge))
   x <- stored ctx f
   (namePhase $ nrPhase x, nrReveal x, phaseCommit $ nrPhase x, revealBeforeOf x) `shouldBe` (PCommitted, nrReveal f, phaseCommit $ nrPhase r, Just (t + maxAge))
@@ -1219,7 +1219,7 @@ testRetryShortDeadline = withWorker $ \w@W {wCtx = ctx} -> do
   short <- rewrite ctx f $ \o -> o {nrReveal = Just rv}
   answerNonce w $ rvNonce rv
   v <- retried ctx short
-  (fieldOf v "phase", fieldOf v "label") `shouldBe` (Just "queued", Just J.Null)
+  (phaseOf v, fieldOf v "label") `shouldBe` (Just "queued", Just J.Null)
   nrReveal <$> stored ctx short `shouldReturn` Nothing
 
 testRetryLapsedIntent :: IO ()
@@ -1241,7 +1241,7 @@ testRetryNonceMoved = withWorker $ \w@W {wCtx = ctx} -> do
   f <- failedAfterRegister w r
   answerNonce w $ rvNonce reveal + 1
   v <- retried ctx f
-  (fieldOf v "phase", fieldOf v "label", fieldOf v "commitTx") `shouldBe` (Just "queued", Just J.Null, txJSON (thCommitTx $ nrHistory f))
+  (phaseOf v, fieldOf v "label", fieldOf v "commitTx") `shouldBe` (Just "queued", Just J.Null, txJSON (thCommitTx $ nrHistory f))
   nrReveal <$> stored ctx f `shouldReturn` Nothing
 
 testRetryRefusedIntent :: IO ()
@@ -1253,7 +1253,7 @@ testRetryRefusedIntent = withWorker $ \w@W {wCtx = ctx} -> do
   f' <- rewrite ctx f $ \o -> o {nrReveal = Just rv}
   answerNonce w $ rvNonce reveal
   v <- retried ctx f'
-  (fieldOf v "phase", fieldOf v "label") `shouldBe` (Just "queued", Just J.Null)
+  (phaseOf v, fieldOf v "label") `shouldBe` (Just "queued", Just J.Null)
   nrReveal <$> stored ctx f' `shouldReturn` Nothing
 
 testRetryThirdParty :: IO ()
@@ -1297,9 +1297,9 @@ testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   let path = registrationPath (nrId r) <> "?seenVersion=" <> show (nrVersion r)
   poll <- held ctx (0, 1) path
   v <- retried ctx r
-  (fieldOf v "phase", fieldOf v "version", fieldOf v "error") `shouldBe` (Just "queued", Just (J.toJSON $ nrVersion r + 1), Just J.Null)
+  (fieldOf v "phase", fieldOf v "version") `shouldBe` (Just $ phaseValue "queued" [], Just (J.toJSON $ nrVersion r + 1))
   (status, view) <- woken "the poll held at the lapse" poll
-  (status, fieldOf view "phase") `shouldBe` (200, Just "queued")
+  (status, phaseOf view) `shouldBe` (200, Just "queued")
   -- prompt is far below the 30-second hold
   (status', view') <- timeout prompt (webGet cClient path >>= \resp -> (statusOf resp,) <$> jsonObject resp) >>= maybe (fail "the old version was held") pure
   (status', fieldOf view' "version") `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1))
@@ -1340,7 +1340,7 @@ testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
             putMVar release ()
             timeout prompt (wait requesting) >>= maybe (fail "the retry did not finish") pure
   (status, v) <- whileHeld (retryOf ctx r) (stored ctx r `shouldReturn` r)
-  (status, (`fieldOf` "phase") =<< v) `shouldBe` (200, Just "queued")
+  (status, phaseOf =<< v) `shouldBe` (200, Just "queued")
   -- moved to another name while the retry waited for the old name's turn
   (status', v') <- whileHeld (retryOf ctx moving) (void $ rewrite ctx moving $ \o -> o {nrLabelHash = labelHash "dynamis", nrLength = lengthOf 7})
   (status', (`fieldOf` "error") =<< v') `shouldBe` (409, Just "registration_changed")
