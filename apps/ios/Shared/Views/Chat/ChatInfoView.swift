@@ -1484,7 +1484,7 @@ struct SimplexNameView: View {
             Button { runVerify(manual: true) } label: {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     nameText
-                    Image(systemName: "xmark").font(iconFont).foregroundColor(verified == .failed ? .red : theme.colors.secondary)
+                    Image(systemName: "xmark").font(iconFont).foregroundColor(Self.crossColor(verified, secondary: theme.colors.secondary))
                         .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
                 }
                 .contentShape(Rectangle())
@@ -1498,6 +1498,10 @@ struct SimplexNameView: View {
                 }
             }
         }
+    }
+
+    static func crossColor(_ verified: DomainVerification?, secondary: Color) -> Color {
+        verified == .failed ? .red : secondary
     }
 
     private func runVerify(manual: Bool) {
