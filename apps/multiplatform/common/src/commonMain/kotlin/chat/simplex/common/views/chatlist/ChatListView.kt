@@ -1042,6 +1042,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val connectNameCandidate = remember { mutableStateOf<String?>(null) }
   val showLocalChats: (List<ChatInfo>) -> Unit = { localChats -> searchChatFilteredBySimplexLink.value += localChats.map { it.id } }
   val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
+  val showsCards = searchText.value.text.isBlank()
   val topPaddingToContent = topPaddingToContent(false)
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
@@ -1094,14 +1095,14 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         }
       }
     }
-    if (!oneHandUICardShown.value) {
+    if (showsCards && !oneHandUICardShown.value) {
       item {
         ToggleChatListCard()
       }
     }
     // one slot: an alert about a badge the user paid for outranks the pitch to get one
     val alert = bannerBadgeAlert()
-    if (alert != null) {
+    if (showsCards && alert != null) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeAlert }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1128,7 +1129,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           }
         }
       }
-    } else if (chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
+    } else if (showsCards && chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.BadgePitch }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1142,7 +1143,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
+    } else if (showsCards && chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
       item {
         SideEffect { chatModel.chatListBanner = ChatListBanner.GetStake }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
@@ -1160,7 +1161,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (!addressCreationCardShown.value) {
+    if (showsCards && !addressCreationCardShown.value) {
       item {
         ChatListFeatureCards()
       }
