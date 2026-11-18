@@ -82,7 +82,7 @@ From [Files.desktop.kt](../common/src/desktopMain/kotlin/chat/simplex/common/pla
 | Variable | Value | Notes |
 |----------|-------|-------|
 | `dataDir` | `desktopPlatform.dataPath` | XDG_DATA_HOME (Linux), AppData (Windows), Application Support (macOS) |
-| `tmpDir` | `java.io.tmpdir/simplex` | System temp with `deleteOnExit` |
+| `tmpDir` | `dataDir/app_temp` | Data dir temp with `deleteOnExit` |
 | `filesDir` | `dataDir/simplex_v1_files` | Flat file storage |
 | `appFilesDir` | Same as `filesDir` | No subdirectory on desktop |
 | `wallpapersDir` | `dataDir/simplex_v1_assets/wallpapers` | Custom wallpaper images |
@@ -292,7 +292,7 @@ Declared in [Files.kt](../common/src/commonMain/kotlin/chat/simplex/common/platf
 | App files | `appFilesDir` | `dataDir/files/app_files` | `dataDir/simplex_v1_files` | Chat file attachments (images, videos, documents) |
 | Wallpapers | `wallpapersDir` | `dataDir/files/assets/wallpapers` | `dataDir/simplex_v1_assets/wallpapers` | Custom chat wallpaper images |
 | Core temp | `coreTmpDir` | `dataDir/files/temp_files` | `dataDir/tmp` | Haskell core temporary files (in-progress transfers) |
-| App temp | `tmpDir` | `getDir("temp", MODE_PRIVATE)` | `java.io.tmpdir/simplex` | Application-level temporary files |
+| App temp | `tmpDir` | `getDir("temp", MODE_PRIVATE)` | `dataDir/app_temp` | Application-level temporary files |
 | Remote hosts | `remoteHostsDir` | `tmpDir/remote_hosts` | `dataDir/remote_hosts` | Files staged for remote host sessions |
 | DB export | `databaseExportDir` | `androidAppContext.cacheDir` | Same as `tmpDir` | Temporary storage for database archive ZIP |
 | Preferences | `preferencesDir` | `dataDir/shared_prefs` | `desktopPlatform.configPath` | User preferences, theme YAML |

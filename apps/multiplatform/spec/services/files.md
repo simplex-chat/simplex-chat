@@ -132,7 +132,7 @@ All functions delegate to native C library functions through the chat core JNI b
 | Property | Value |
 |---|---|
 | `dataDir` | `desktopPlatform.dataPath` (XDG_DATA_HOME on Linux, AppData on Windows, Application Support on macOS) |
-| `tmpDir` | `java.io.tmpdir/simplex` (deleted on exit) |
+| `tmpDir` | `dataDir/app_temp` (deleted on exit) |
 | `filesDir` | `dataDir/simplex_v1_files` |
 | `appFilesDir` | Same as `filesDir` |
 | `wallpapersDir` | `dataDir/simplex_v1_assets/wallpapers` |
