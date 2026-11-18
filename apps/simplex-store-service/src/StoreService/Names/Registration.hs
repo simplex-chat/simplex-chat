@@ -393,3 +393,5 @@ parseAnyCaseAddress t
 $(JQ.deriveJSON (enumJSON $ dropPrefix "LK") ''LinkKind)
 
 $(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "ta"} ''TermsAcceptance)
+
+$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "at"} ''AgreedTerms)

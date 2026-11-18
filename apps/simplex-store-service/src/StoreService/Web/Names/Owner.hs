@@ -7,7 +7,6 @@ module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
 
 import Control.Concurrent.STM (atomically)
 import Control.Logger.Simple (logError, logNote)
-import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
@@ -85,7 +84,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
   readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
     requested = \case
-      Just body | Just (J.Object o) <- J.decode body -> either refuse signed $ join $ parseBody "move" $ parseOrderFields o
+      Just body | Just v <- J.decode body -> either refuse signed (parseBody "move" v >>= signedFields)
       _ -> refuse $ ORBadRequest "a malformed move"
     signed (fields, timestamp, signature) =
       withTransaction oeStore (`getRegistration` rid) >>= \case

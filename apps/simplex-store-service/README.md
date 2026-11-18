@@ -1068,7 +1068,8 @@ list and its terms apply as soon as they change on chain. After a restart, searc
 the names site and check that it shows as a community name.
 
 Every order signs the terms the buyer agreed to: the 64 lower-case hex digits of the hash of the
-terms of the name's kind, without `0x`, after `community/` for a listed name. The service stores them
+terms of the name's kind, without `0x`, after `community/` for a listed name. The request sends them
+as `terms` in its `fields`, `{"communityName": true, "termsHash": "0x…"}`. The service stores them
 with the order, so an open order keeps the terms it signed after a change, and every move signs the
 current terms for the name it moves to, and stores them. An order or a move signed with any other
 value answers `409 terms_changed` with the current terms of the name's kind, `{"hash", "link"}`, and

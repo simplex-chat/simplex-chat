@@ -315,18 +315,20 @@ testNamesBoot ps = do
     (statusOf revealedByGet, lookup "Allow" $ responseHeaders revealedByGet) `shouldBe` (405, Just "POST")
     spent <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/spend"
     -- formats are checked before the order, so only a well-formed body reaches the 404
-    let spendBody =
+    let spendFields =
           J.object
             [ "labelHash" J..= aliceHex,
               "length" J..= (11 :: Int),
               "duration" J..= (69292800 :: Int),
               "commitment" J..= aliceHex,
               "sealed" J..= ("sealed" :: Text),
+              "terms" J..= J.object ["communityName" J..= False, "termsHash" J..= ("0x" <> plainTerms)]
+            ]
+        spendBody =
+          J.object
+            [ "signed" J..= J.object ["fields" J..= spendFields, "timestamp" J..= (1792574100 :: Int), "signature" J..= ("0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b")],
               "price" J..= (10000 :: Int),
-              "balance" J..= (10000 :: Int),
-              "terms" J..= plainTerms,
-              "timestamp" J..= (1792574100 :: Int),
-              "signature" J..= ("0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b")
+              "balance" J..= (10000 :: Int)
             ]
     answer spent {method = "POST", requestBody = RequestBodyLBS $ J.encode spendBody} `shouldReturn` refusedWith 404 "not_found"
     spentByGet <- httpLbs spent mgr

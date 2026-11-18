@@ -17,6 +17,8 @@ module Bots.StoreService.NamesOrdersTests
     aliceOrder,
     commitmentOf,
     fieldsOf,
+    fieldsJSON,
+    inObject,
     orderTime,
     orderSeconds,
     seconds,
@@ -70,13 +72,11 @@ import Control.Monad (forM_, replicateM_, void)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.Types as JT
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Either (isRight)
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (sort)
 import qualified Data.Map.Strict as M
@@ -97,7 +97,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransa
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey, signRecoverable)
-import Simplex.Messaging.Encoding.String (strEncode, textEncode)
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
@@ -112,7 +112,7 @@ import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
 import StoreService.Names.Phases (awaitChange, newPhases)
-import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), orderMessage, personalDigest)
+import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), orderMessage, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (RegistrationView (..), ViewRead (..), ViewReads (..), readViewChain, registrationView, toRegistrationView)
@@ -301,22 +301,35 @@ unsignedBody :: Order -> J.Object
 unsignedBody o@Order {oOwner, oMethod, oPrice, oTimestamp} =
   KM.fromList
     [ ("kind", "name"),
-      ("labelHash", J.String $ hex lh),
-      ("length", J.toJSON (nameLengthInt ofLength)),
-      ("duration", J.toJSON ofDuration),
-      ("owner", J.String oOwner),
-      ("commitment", J.toJSON ofCommitment),
-      ("sealed", J.String ofSealed),
+      ("order", J.object ["owner" J..= oOwner, "fields" J..= fieldsJSON (fieldsOf o), "timestamp" J..= oTimestamp]),
       ("method", J.String oMethod),
-      ("price", J.toJSON oPrice),
-      ("terms", J.String $ textEncode ofAgreedTerms),
-      ("timestamp", J.toJSON oTimestamp)
+      ("price", J.toJSON oPrice)
     ]
-  where
-    OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = fieldsOf o
+
+fieldsJSON :: OrderFields -> J.Value
+fieldsJSON OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms = AgreedTerms {atCommunityName, atTermsHash}} =
+  J.object
+    [ "labelHash" J..= hex lh,
+      "length" J..= nameLengthInt ofLength,
+      "duration" J..= ofDuration,
+      "commitment" J..= ofCommitment,
+      "sealed" J..= ofSealed,
+      "terms" J..= J.object ["communityName" J..= atCommunityName, "termsHash" J..= atTermsHash]
+    ]
 
 withSignature :: Text -> J.Object -> J.Object
-withSignature sig = KM.insert "signature" (J.String sig)
+withSignature sig = inOrder $ KM.insert "signature" (J.String sig)
+
+inOrder :: (J.Object -> J.Object) -> J.Object -> J.Object
+inOrder = inObject "order"
+
+inFields :: (J.Object -> J.Object) -> J.Object -> J.Object
+inFields = inOrder . inObject "fields"
+
+inObject :: J.Key -> (J.Object -> J.Object) -> J.Object -> J.Object
+inObject k f o = case KM.lookup k o of
+  Just (J.Object inner) -> KM.insert k (J.Object $ f inner) o
+  _ -> o
 
 data Ctx = Ctx
   { cStore :: DBStore,
@@ -604,7 +617,7 @@ testBadSignature = withOrders $ \ctx -> do
   byB <- signedBody (cRandom ctx) aliceOrder {oKey = keyB}
   postOrder ctx byB `shouldReturn` refusedWith 400 "bad_request"
   good <- signedBody (cRandom ctx) aliceOrder
-  postOrder ctx (KM.delete "signature" good) `shouldReturn` refusedWith 400 "bad_request"
+  postOrder ctx (inOrder (KM.delete "signature") good) `shouldReturn` refusedWith 400 "bad_request"
   stubCalls (cStub ctx) `shouldReturn` []
 
 testStaleTimestamp :: IO ()
@@ -730,27 +743,32 @@ testOrderFormats = do
   g <- C.newRandom
   good <- signedBody g aliceOrder
   longest <- signedBody g aliceOrder {oSealed = T.replicate 11095 "a"}
-  let parses = isRight . JT.parseEither Orders.parseOrderRequest
-      with k v = KM.insert k v good
+  let sentOrder body = Orders.parseBody "order" (fromMaybe J.Null $ KM.lookup "order" body) :: Either Orders.OrderRefusal Orders.SentOrder
+      parses body = case sentOrder body >>= Orders.orderRequest of
+        Left (Orders.ORBadRequest _) -> False
+        _ -> True
+      with k v = inOrder (KM.insert k v) good
+      withField k v = inFields (KM.insert k v) good
+      without k = inFields (KM.delete k) good
   map parses [good, longest] `shouldBe` [True, True]
-  void (Orders.parseBody "order" $ Orders.parseOrderRequest $ with "terms" (J.String "2026-10-01")) `shouldSatisfy` \case
-    Left (Orders.ORBadRequest reason) -> "$.terms" `T.isInfixOf` reason
+  void (sentOrder $ withField "terms" (J.String "2026-10-01")) `shouldSatisfy` \case
+    Left (Orders.ORBadRequest reason) -> "$.fields.terms" `T.isInfixOf` reason
     _ -> False
   forM_
-    ( [ with "labelHash" (J.String $ T.toUpper $ hex $ (\(LabelHash h) -> h) alice),
-        with "commitment" (J.String "0x1234"),
+    ( [ withField "labelHash" (J.String $ T.toUpper $ hex $ (\(LabelHash h) -> h) alice),
+        withField "commitment" (J.String "0x1234"),
         with "owner" (J.String $ T.toLower ownerAText),
-        with "duration" (J.Number (-1)),
+        withField "duration" (J.Number (-1)),
         with "timestamp" "1792574100",
-        with "length" (J.Number 1e30),
-        with "length" "11",
-        KM.delete "sealed" good,
-        with "sealed" (J.String $ T.replicate 11096 "a"),
-        KM.delete "terms" good,
-        with "terms" (J.Number 20261023),
-        KM.delete "signature" good
+        withField "length" (J.Number 1e30),
+        withField "length" "11",
+        without "sealed",
+        withField "sealed" (J.String $ T.replicate 11096 "a"),
+        without "terms",
+        withField "terms" (J.Number 20261023),
+        inOrder (KM.delete "signature") good
       ]
-        <> map (with "terms" . J.String) malformedTerms
+        <> map (withField "terms" . J.String) malformedTerms
     )
     $ \body -> (body, parses body) `shouldBe` (body, False)
 
@@ -760,14 +778,14 @@ testFormats = withOrders $ \ctx -> do
   let with k v = KM.insert k v good
       lowerOwner = J.String $ T.toLower ownerAText
   forM_
-    [ with "owner" lowerOwner,
+    [ inOrder (KM.insert "owner" lowerOwner) good,
       with "method" "eth",
       with "price" (J.Number 100.5),
       KM.delete "kind" good,
       with "kind" "badge"
     ]
     $ \body -> postOrder ctx body `shouldReturn` refusedWith 400 "bad_request"
-  forM_ [5, 64] $ \len -> postOrder ctx (with "length" (J.Number len)) `shouldReturn` refusedWith 400 "invalid_name"
+  forM_ [5, 64] $ \len -> postOrder ctx (inFields (KM.insert "length" (J.Number len)) good) `shouldReturn` refusedWith 400 "invalid_name"
   stubCalls (cStub ctx) `shouldReturn` []
 
 -- | The name on the operator's community list.
@@ -1066,7 +1084,7 @@ testCodeBadSignature = withOrders $ \ctx -> do
   (code, issued) <- issueCode ctx 8 2 id
   register ctx code aliceOrder {oKey = keyB} `shouldReturn` refusedWith 400 "bad_request"
   good <- signedCodeBody ctx code aliceOrder
-  postRegister ctx (KM.delete "signature" good) `shouldReturn` refusedWith 400 "bad_request"
+  postRegister ctx (inOrder (KM.delete "signature") good) `shouldReturn` refusedWith 400 "bad_request"
   unknown <- unissuedCode ctx 8
   register ctx unknown aliceOrder {oKey = keyB} `shouldReturn` refusedWith 400 "code_invalid"
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
@@ -1160,11 +1178,12 @@ testCodeSizes = withOrders $ \ctx -> do
   postRegister ctx padded `shouldReturn` refusedWith 400 "bad_request"
   good <- signedCodeBody ctx code aliceOrder
   let with k v = KM.insert k v good
-  forM_ [KM.delete "code" good, with "code" (J.Number 8), with "labelHash" (J.String "0x1234")] $ \body ->
+      withField k v = inFields (KM.insert k v) good
+  forM_ [KM.delete "code" good, with "code" (J.Number 8), withField "labelHash" (J.String "0x1234")] $ \body ->
     postRegister ctx body `shouldReturn` refusedWith 400 "bad_request"
   forM_ ["[]", "{"] $ \body -> post ctx "/api/name/register" body `shouldReturn` refusedWith 400 "bad_request"
   -- the formats and the length come before the code
-  forM_ [5, 64] $ \len -> postRegister ctx (KM.insert "code" "not a code" $ with "length" (J.Number len)) `shouldReturn` refusedWith 400 "invalid_name"
+  forM_ [5, 64] $ \len -> postRegister ctx (KM.insert "code" "not a code" $ withField "length" (J.Number len)) `shouldReturn` refusedWith 400 "invalid_name"
   longest <- signedCodeBody ctx code aliceOrder {oSealed = T.replicate 11095 "a"}
   LB.length (J.encode longest) `shouldSatisfy` (< 16384)
   fst <$> postRegister ctx longest `shouldReturn` 200
@@ -1196,7 +1215,7 @@ testCodeNotReservable = withOrders $ \ctx@Ctx {cStore} -> do
   placeCode cStore "outsider" ownerB (order "holderone" 1) reservedLate `shouldReturn` Right ()
   (_, revokedLate) <- issueCode ctx 8 2 id
   withTransaction cStore $ \db -> void $ revokePrepaidCode db (pcCodeHash revokedLate) orderTime
-  req <- either error (either (error . show) id) . JT.parseEither Orders.parseOrderRequest <$> signedBody (cRandom ctx) aliceOrder
+  req <- either (error . show) id . (\body -> Orders.parseBody "order" (fromMaybe J.Null $ KM.lookup "order" body) >>= Orders.orderRequest) <$> signedBody (cRandom ctx) aliceOrder
   forM_ [(reservedLate, CRReserved), (revokedLate, CRInvalid)] $ \(stale, refusal) -> do
     let new = codeReg "late" ownerA (fieldsOf aliceOrder) stale
     placedOrder <- Orders.placeOrder (cOrders ctx) req [] (Orders.codeOrderInsert new stale)

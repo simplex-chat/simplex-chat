@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
 module StoreService.Web.Names.Orders
@@ -20,13 +21,13 @@ where
 import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
-import Control.Monad (forM_, join, unless)
+import Control.Monad (forM_, unless)
 import Control.Monad.Except (ExceptT (..), liftEither, runExceptT)
 import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
-import Data.Maybe (maybeToList)
+import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
@@ -38,6 +39,7 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (strEncode, textDecode)
 import Simplex.Messaging.Names.Record (USDCents)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.Util (isAsyncCancellation, safeDecodeUtf8, tshow)
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
@@ -57,23 +59,30 @@ import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, badRequest, chec
 import StoreService.Web.Names.Codes (codeRefusalResponse)
 
 data InvoiceOrder = InvoiceOrder
-  { ioRequest :: OrderRequest,
+  { ioOrder :: SentOrder,
     ioMethod :: ServicePaymentMethod,
-    ioPrice :: USDCents
+    ioPrice :: Word32
   }
 
-parseInvoiceOrder :: J.Object -> Either OrderRefusal InvoiceOrder
-parseInvoiceOrder o = join $ parseBody "order" $ do
-  request <- parseOrderRequest o
-  ioMethod <- jsonField o "method" paymentMethod
-  ioPrice <- jsonField o "price" invoiceCents
-  pure $ (\ioRequest -> InvoiceOrder {ioRequest, ioMethod, ioPrice}) <$> request
+data CodeOrder = CodeOrder {coOrder :: SentOrder, coCode :: Text}
+
+data SpendRequest = SpendRequest
+  { srSigned :: SignedFields,
+    srPrice :: Word32,
+    srBalance :: Word32,
+    srMethod :: Maybe ServicePaymentMethod
+  }
+
+$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "co"} ''CodeOrder)
+
+instance J.FromJSON InvoiceOrder where
+  parseJSON = J.withObject "order" $ \o -> InvoiceOrder <$> o .: "order" <*> jsonField o "method" paymentMethod <*> o .: "price"
+
+instance J.FromJSON SpendRequest where
+  parseJSON = J.withObject "spend" $ \o -> SpendRequest <$> o .: "signed" <*> o .: "price" <*> o .: "balance" <*> JT.explicitParseFieldMaybe paymentMethod o "method"
 
 paymentMethod :: J.Value -> JT.Parser ServicePaymentMethod
 paymentMethod = textWith $ maybe (Left "not a payment method") Right . textDecode
-
-invoiceCents :: J.Value -> JT.Parser USDCents
-invoiceCents v = fromIntegral <$> (boundedInteger v :: JT.Parser Word32)
 
 -- | An order's answer and the work its commit leaves, both done after the name's turn, so a slow client holds no turn.
 data Answer = Answer {aResponse :: Response, aAfter :: IO ()}
@@ -88,21 +97,22 @@ sendAnswer respond Answer {aResponse, aAfter} = aAfter >> respond aResponse
 nameInvoiceHandler :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived
 nameInvoiceHandler env@OrdersEnv {oeStore} http client cfg providers waiters body respond
   | nCodesOnly (oeConfig env) = sendAnswer respond =<< refuse ORCodesOnly
-  | otherwise = sendAnswer respond =<< case parseInvoiceOrder body of
+  | otherwise = sendAnswer respond =<< case parseBody "order" (J.Object body) >>= invoiceOrder of
     Left refusal -> refuse refusal
-    Right order@InvoiceOrder {ioRequest, ioMethod, ioPrice} ->
-      answerOrder env what ioRequest (OTInvoice ioMethod ioPrice) (resentOrder env cfg) (newOrder order)
+    Right (req, method, price) ->
+      answerOrder env what req (OTInvoice method price) (resentOrder env cfg) (newOrder req method price)
   where
     what = "POST /api/invoice (name)"
     refuse = refused what
-    newOrder InvoiceOrder {ioRequest = req@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} hash now = do
+    invoiceOrder InvoiceOrder {ioOrder, ioMethod, ioPrice} = (\req -> (req, ioMethod, fromIntegral ioPrice)) <$> orderRequest ioOrder
+    newOrder req@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} method price hash now = do
       let years = orderYears fields $ nYears $ oeConfig env
           checks =
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration (oeConfig env) now years ofDuration,
               checkTerms (oeConfig env) (oeContracts env) fields,
               checkNameFree (oeContracts env) oeStore ofLabelHash,
-              checkPrice (oeContracts env) ofLength years ioPrice
+              checkPrice (oeContracts env) ofLength years price
             ]
           insert new paid db at =
             createPaidRegistration db new Nothing paid at >>= \case
@@ -111,7 +121,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore} http client cfg providers waiters bod
               Left BIRBalanceChanged -> E.throwIO $ BrokenInvariant "an order holding no balance was refused at a balance"
       runExceptT (mapM_ ExceptT checks) >>= \case
         Left refusal -> refuse refusal
-        Right () -> createAtProvider env http client cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = hash, ivHolders = [], ivMethod = ioMethod, ivPrice = ioPrice, ivAmount = ioPrice, ivInsert = insert}
+        Right () -> createAtProvider env http client cfg providers waiters what InvoicedOrder {ivRequest = req, ivOrderHash = hash, ivHolders = [], ivMethod = method, ivPrice = price, ivAmount = price, ivInsert = insert}
 
 -- | An order paid by invoice: its order hash, the holders its transaction closes, the order's price, what its invoice asks
 -- (less than the price when a balance paid the rest), and its insert after the invoice row's.
@@ -214,7 +224,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} providers waiter
   where
     what = "POST /api/name/register"
     ordered = \case
-      Just body | Just (J.Object o) <- J.decode body -> either refuse withCode (parseCodeOrder o)
+      Just body | Just v <- J.decode body -> either refuse withCode (parseBody "code order" v >>= \CodeOrder {coOrder, coCode} -> (,coCode) <$> orderRequest coOrder)
       _ -> refuse $ ORBadRequest notObject
     refuse = refused what
     withCode (order, codeText) =
@@ -238,9 +248,6 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} providers waiter
             Left refusal -> refuse refusal
             Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
 
-parseCodeOrder :: J.Object -> Either OrderRefusal (OrderRequest, Text)
-parseCodeOrder o = join $ parseBody "code order" $ (\request code -> (,code) <$> request) <$> parseOrderRequest o <*> o .: "code"
-
 -- | POST /api/registration/:id/spend, another name paid from this order's balance, in the contract's order of checks,
 -- under the new name's turn and then the balance's.
 spendHandler :: OrdersEnv -> HttpEnv -> ServiceConfig -> [Provider] -> Waiters -> RegistrationId -> Request -> Respond -> IO ResponseReceived
@@ -251,7 +258,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers w
     what = "POST /api/registration/:id/spend"
     refuse = refused what
     requested = \case
-      Just body | Just (J.Object o) <- J.decode body -> either refuse paying (parseSpend source o)
+      Just body | Just v <- J.decode body -> either refuse paying (parseBody "spend" v >>= spendOf source)
       _ -> refuse $ ORBadRequest notObject
     paying ((fields, timestamp, signature), spend) =
       withTransaction oeStore (`getRegistration` source) >>= \case
@@ -287,20 +294,11 @@ minCardChargeCents :: USDCents
 minCardChargeCents = 50
 
 -- | Every format check, the method present exactly for a difference, then the length's range.
-parseSpend :: RegistrationId -> J.Object -> Either OrderRefusal (SignedOrderFields, Spend)
-parseSpend spSource o = join $ parseBody "spend" $ do
-  signed <- parseOrderFields o
-  spPrice <- cents "price"
-  spBalance <- cents "balance"
-  spMethod <- case (KM.member "method" o, spPrice > spBalance) of
-    (False, False) -> pure Nothing
-    (True, True) -> Just <$> jsonField o "method" paymentMethod
-    _ -> fail "the method is present exactly when the price is above the balance"
-  pure $ (,Spend {spSource, spPrice, spBalance, spMethod}) <$> signed
-  where
-    -- positive, and within an invoice amount's range
-    cents :: J.Key -> JT.Parser USDCents
-    cents k = jsonField o k $ \v -> invoiceCents v >>= \n -> if n > 0 then pure n else fail "not above 0"
+spendOf :: RegistrationId -> SpendRequest -> Either OrderRefusal (SignedOrderFields, Spend)
+spendOf spSource SpendRequest {srSigned, srPrice, srBalance, srMethod}
+  | srPrice == 0 || srBalance == 0 = Left $ ORBadRequest "a malformed spend: a price or balance not above 0"
+  | isJust srMethod /= (srPrice > srBalance) = Left $ ORBadRequest "a malformed spend: the method is present exactly when the price is above the balance"
+  | otherwise = (,Spend {spSource, spPrice = fromIntegral srPrice, spBalance = fromIntegral srBalance, spMethod = srMethod}) <$> signedFields srSigned
 
 -- | After the commit, the closed orders' invoices and versions are published, and their invoices cancelled at the provider,
 -- best effort, as the poller's sweep would cancel them.

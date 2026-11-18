@@ -52,12 +52,10 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (addUTCTime)
 import Data.Word (Word64, Word8)
-import Simplex.Chat.Badges.Code (nameLengthInt)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
-import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
@@ -239,19 +237,9 @@ moveBody :: Ctx -> Secp256k1PrivateKey -> RegistrationId -> OrderFields -> IO J.
 moveBody ctx key rid fields = clockSeconds ctx >>= moveBodyAt ctx key rid fields
 
 moveBodyAt :: Ctx -> Secp256k1PrivateKey -> RegistrationId -> OrderFields -> Word64 -> IO J.Object
-moveBodyAt ctx key rid fields@OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} timestamp = do
+moveBodyAt ctx key rid fields timestamp = do
   sig <- signWith ctx key $ retargetMessage rid fields timestamp
-  pure $
-    KM.fromList
-      [ ("labelHash", J.String $ hex lh),
-        ("length", J.toJSON (nameLengthInt ofLength)),
-        ("duration", J.toJSON ofDuration),
-        ("commitment", J.toJSON ofCommitment),
-        ("sealed", J.String ofSealed),
-        ("terms", J.String $ textEncode ofAgreedTerms),
-        ("timestamp", J.toJSON timestamp),
-        ("signature", J.String sig)
-      ]
+  pure $ KM.fromList [("fields", fieldsJSON fields), ("timestamp", J.toJSON timestamp), ("signature", J.String sig)]
 
 postMove :: Ctx -> RegistrationId -> J.Object -> IO (Int, Maybe J.Object)
 postMove ctx rid = post ctx (registrationPath rid <> "/name") . J.encode
@@ -543,7 +531,7 @@ testMoveOrderChecks :: IO ()
 testMoveOrderChecks = withOwner $ \ctx@Ctx {cNode} -> do
   r <- paidIn ctx aliceOrder failedPhase
   to <- moveTo ctx "alicebakers" 10
-  let withLength len = moveBody ctx keyA (nrId r) to >>= postMove ctx (nrId r) . KM.insert "length" (J.Number len)
+  let withLength len = moveBody ctx keyA (nrId r) to >>= postMove ctx (nrId r) . inObject "fields" (KM.insert "length" (J.Number len))
   withLength 5 `shouldReturn` refusedWith 400 "invalid_name"
   withLength 64 `shouldReturn` refusedWith 400 "invalid_name"
   answerFree ctx "alicebakers"

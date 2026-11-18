@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
 -- | The checks every order runs, by paid invoice or prepaid code, in the contract's order.
@@ -16,13 +17,14 @@ module StoreService.Names.Orders
     maxSealedChars,
     signedRequestSeconds,
     SignedOrderFields,
-    parseOrderRequest,
-    parseOrderFields,
+    SentFields (..),
+    SignedFields (..),
+    SentOrder (..),
+    orderRequest,
+    signedFields,
     parseBody,
     jsonField,
     textWith,
-    hexSignature,
-    boundedInteger,
     checkSigner,
     existingOrder,
     placeOrder,
@@ -48,15 +50,14 @@ import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM, unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
-import Data.Aeson ((.:))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, isJust)
-import Data.Scientific (toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -65,9 +66,10 @@ import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
-import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Names.Record (USDCents)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (NamesConfig (..))
@@ -77,7 +79,7 @@ import StoreService.Names.Contracts (Contracts, NameStatus (..), Terms, chainPri
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Chain (Hex32 (..), TxHash)
-import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), parseChecksumAddress, parseSignature, personalDigest)
+import StoreService.Names.Registration (AgreedTerms (..), Commitment, OrderFields (..), RegistrationId (..), parseChecksumAddress, personalDigest)
 import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), Commit (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, phaseCommit, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
@@ -152,42 +154,49 @@ signedRequestSeconds = 600
 -- | The signed fields of an order, or of another name for one, with their timestamp and signature.
 type SignedOrderFields = (OrderFields, Word64, RecoverableSignature)
 
+data SentFields = SentFields
+  { sfLabelHash :: Hex32,
+    sfLength :: Int,
+    sfDuration :: Word64,
+    sfCommitment :: Commitment,
+    sfSealed :: Text,
+    sfTerms :: AgreedTerms
+  }
+
+data SignedFields = SignedFields
+  { sgFields :: SentFields,
+    sgTimestamp :: Word64,
+    sgSignature :: RecoverableSignature
+  }
+
+data SentOrder = SentOrder {soOwner :: Address, soSigned :: SignedFields}
+
+$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "sf"} ''SentFields)
+
+$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "sg"} ''SignedFields)
+
+instance J.FromJSON SentOrder where
+  parseJSON = J.withObject "order" $ \o -> SentOrder <$> jsonField o "owner" (textWith $ first show . parseChecksumAddress) <*> J.parseJSON (J.Object o)
+
+orderRequest :: SentOrder -> Either OrderRefusal OrderRequest
+orderRequest SentOrder {soOwner, soSigned} = (\(orFields, orTimestamp, orSignature) -> OrderRequest {orOwner = soOwner, orFields, orTimestamp, orSignature}) <$> signedFields soSigned
+
 -- | Every format check; the length's range refuses after the formats a kind of order adds.
-parseOrderRequest :: J.Object -> JT.Parser (Either OrderRefusal OrderRequest)
-parseOrderRequest o = do
-  orOwner <- jsonField o "owner" $ textWith $ first show . parseChecksumAddress
-  signed <- parseOrderFields o
-  pure $ (\(orFields, orTimestamp, orSignature) -> OrderRequest {orOwner, orFields, orTimestamp, orSignature}) <$> signed
+signedFields :: SignedFields -> Either OrderRefusal SignedOrderFields
+signedFields SignedFields {sgFields = SentFields {sfLabelHash, sfLength, sfDuration, sfCommitment, sfSealed, sfTerms}, sgTimestamp, sgSignature}
+  | T.length sfSealed > maxSealedChars = Left $ ORBadRequest "a malformed order: the sealed name is longer than its limit"
+  | otherwise = case nameLength sfLength of
+      Just ofLength -> Right (OrderFields {ofLabelHash = LabelHash $ unHex32 sfLabelHash, ofLength, ofDuration = sfDuration, ofCommitment = sfCommitment, ofSealed = sfSealed, ofAgreedTerms = sfTerms}, sgTimestamp, sgSignature)
+      Nothing -> Left ORInvalidName
 
-parseOrderFields :: J.Object -> JT.Parser (Either OrderRefusal SignedOrderFields)
-parseOrderFields o = do
-  ofLabelHash <- LabelHash . unHex32 <$> o .: "labelHash"
-  len <- jsonField o "length" boundedInteger
-  ofDuration <- jsonField o "duration" boundedInteger
-  ofCommitment <- o .: "commitment"
-  ofSealed <- jsonField o "sealed" $ textWith $ \t -> if T.length t <= maxSealedChars then Right t else Left "longer than its limit"
-  ofAgreedTerms <- jsonField o "terms" $ textWith $ maybe (Left "not agreed terms") Right . textDecode
-  timestamp <- jsonField o "timestamp" boundedInteger
-  signature <- jsonField o "signature" hexSignature
-  pure $ case nameLength len of
-    Just ofLength -> Right (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
-    Nothing -> Left ORInvalidName
-
-hexSignature :: J.Value -> JT.Parser RecoverableSignature
-hexSignature = textWith parseSignature
-
-parseBody :: Text -> JT.Parser a -> Either OrderRefusal a
-parseBody what = first (\e -> ORBadRequest $ "a malformed " <> what <> ": " <> T.pack e) . JT.parseEither id
+parseBody :: J.FromJSON a => Text -> J.Value -> Either OrderRefusal a
+parseBody what = first (\e -> ORBadRequest $ "a malformed " <> what <> ": " <> T.pack e) . JT.parseEither J.parseJSON
 
 jsonField :: J.Object -> J.Key -> (J.Value -> JT.Parser a) -> JT.Parser a
 jsonField o k p = JT.explicitParseField p o k
 
 textWith :: (Text -> Either String a) -> J.Value -> JT.Parser a
 textWith f = J.withText "string" $ either fail pure . f
-
--- | A JSON integer within the type's range; a fraction, an exponent past it, or any other value fails.
-boundedInteger :: (Integral a, Bounded a) => J.Value -> JT.Parser a
-boundedInteger = J.withScientific "integer" $ maybe (fail "not an integer in its range") pure . toBoundedInteger
 
 -- | The owner's EIP-191 signature over the message.
 checkSigner :: Address -> ByteString -> RecoverableSignature -> IO (Either OrderRefusal ())

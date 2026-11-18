@@ -10,7 +10,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates,
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (credit)
 import Bots.StoreService.NamesContractsTests (rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, registrationById, registrationOf, registrationsOf, seconds, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, fieldsJSON, fieldsOf, inObject, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, placeOrder, placed, post, registrationById, registrationOf, registrationsOf, seconds, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesPhasesTests (registrationPath, seenVersion, woken)
 import qualified Bots.StoreService.NamesPhasesTests as Phases
@@ -36,16 +36,14 @@ import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Network.HTTP.Types (hContentType)
 import Network.Wai (Application)
 import qualified Network.Wai as Wai
-import Simplex.Chat.Badges.Code (nameLengthInt)
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
-import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
-import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
+import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
 import StoreService.Names.Balances (RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (Hex32 (..), hex, uint256)
@@ -192,20 +190,16 @@ spendBody Ctx {cRandom} source SpendBody {sbOrder = o@Order {oKey, oPrice, oTime
   sig <- either (error . show) id <$> signRecoverable cRandom oKey (personalDigest $ spendMessage source fields oTimestamp)
   pure $
     KM.fromList $
-      [ ("labelHash", J.String $ hex lh),
-        ("length", J.toJSON (nameLengthInt ofLength)),
-        ("duration", J.toJSON ofDuration),
-        ("commitment", J.toJSON ofCommitment),
-        ("sealed", J.String ofSealed),
+      [ ("signed", J.object ["fields" J..= fieldsJSON fields, "timestamp" J..= oTimestamp, "signature" J..= hex (smpEncode sig)]),
         ("price", J.toJSON oPrice),
-        ("balance", J.toJSON sbBalance),
-        ("terms", J.String $ textEncode ofAgreedTerms),
-        ("timestamp", J.toJSON oTimestamp),
-        ("signature", J.String $ hex $ smpEncode sig)
+        ("balance", J.toJSON sbBalance)
       ]
         <> maybe [] (\m -> [("method", J.String m)]) sbMethod
   where
-    fields@OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = fieldsOf o
+    fields = fieldsOf o
+
+inSignedFields :: (J.Object -> J.Object) -> J.Object -> J.Object
+inSignedFields = inObject "signed" . inObject "fields"
 
 postSpend :: Ctx -> RegistrationId -> J.Object -> IO (Int, Maybe J.Object)
 postSpend ctx (RegistrationId rid) = post ctx ("/api/registration/" <> T.unpack rid <> "/spend") . J.encode
@@ -369,7 +363,7 @@ testMethodRule = withSpend $ \ctx -> do
     ]
   spend ctx src (covered 6000) {sbOrder = aliceOrder {oPrice = 6000}, sbMethod = Just "btc"} `shouldReturn` refusedWith 400 "bad_request"
   spend ctx src (difference 6000) {sbMethod = Nothing} `shouldReturn` refusedWith 400 "bad_request"
-  mapM_ (\len -> postSpend ctx src (with "length" (J.Number len)) `shouldReturn` refusedWith 400 "invalid_name") [5, 64]
+  mapM_ (\len -> postSpend ctx src (inSignedFields (KM.insert "length" (J.Number len)) good) `shouldReturn` refusedWith 400 "invalid_name") [5, 64]
   stubCalls (cStub ctx) `shouldReturn` []
   amountOf ctx src `shouldReturn` Just 6000
 
@@ -396,7 +390,7 @@ testCheckOrder = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   src <- sourceOf ctx "src" 30000
   low <- sourceOf ctx "low" 6000
   let unknown = RegistrationId "unknown"
-  unsealed <- KM.delete "sealed" <$> spendBody ctx unknown (covered 30000)
+  unsealed <- inSignedFields (KM.delete "sealed") <$> spendBody ctx unknown (covered 30000)
   postSpend ctx unknown unsealed `shouldReturn` refusedWith 400 "bad_request"
   spend ctx unknown (covered 30000) {sbOrder = aliceOrder {oKey = keyB}} `shouldReturn` refusedWith 404 "not_found"
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
@@ -485,7 +479,7 @@ testCardMinimum = withSpend $ \ctx -> do
 testSpendSizes :: IO ()
 testSpendSizes = withSpend $ \ctx -> do
   src <- sourceOf ctx "src" 15000
-  missing <- KM.delete "sealed" <$> spendBody ctx src (covered 15000)
+  missing <- inSignedFields (KM.delete "sealed") <$> spendBody ctx src (covered 15000)
   postSpend ctx src missing `shouldReturn` refusedWith 400 "bad_request"
   padded <- KM.insert "padding" (J.String $ T.replicate 16384 "a") <$> spendBody ctx src (covered 15000)
   postSpend ctx src padded `shouldReturn` refusedWith 400 "bad_request"
