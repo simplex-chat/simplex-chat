@@ -41,7 +41,7 @@ import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
-import StoreService.Config (NamesConfig)
+import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (AbiValue (..), Block (..), ChainClient, Hex32 (..), RevertName (..), RevertReason (..), TxHash (..), abiBytes, abiTuple, addressWord, blockAt, decodeSignedTx, newChainClient, selector, uint256)
 import StoreService.Names.Contracts (namePolicy)
@@ -97,6 +97,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "fails an order that sent the most registers an order may, sending nothing, refuses its Try again and a move, and registers it on a move once its owner holds the name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, clearing the reveal and staying committed" testExpiredIntent
+    it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing" testSignatureUnderOtherConfig
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
@@ -907,10 +908,26 @@ testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
   advance ctx $ fromIntegral (rvDeadline reveal - orderSeconds) + 1
   logs <- capturingStderr $ void $ published w r (steps w r) >>= waitingUntil
   let RegistrationId rid = nrId r
-  logs `shouldSatisfy` T.isInfixOf ("registration " <> rid <> ": its stored intent is refused, intent expired")
+  logs `shouldSatisfy` T.isInfixOf ("registration " <> rid <> ": its stored signature's deadline passed, so its page signs again")
   x <- stored ctx r
   (nrPhase x, nrReveal x) `shouldBe` (nrPhase r, Nothing)
   sent w `shouldReturn` []
+
+testSignatureUnderOtherConfig :: IO ()
+testSignatureUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  let NamesConfig {nChain} = oeConfig cOrders
+      moved = cOrders {oeConfig = (oeConfig cOrders) {nChain = nChain {cChainId = cChainId nChain + 1}}, oeReport = \t -> atomically $ modifyTVar' reports (t :)}
+  worker <- newWorker moved wSender
+  logs <- capturingStderr $ void $ stepRegistration worker (nrId r)
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRSignatureRefused
+  let RegistrationId rid = nrId r
+      failed = T.isInfixOf ("registration " <> rid <> " failed: its stored signature is refused under the service's current configuration")
+  logs `shouldSatisfy` failed
+  map failed <$> readTVarIO reports `shouldReturn` [True]
+  sentTransactions (cNode ctx) `shouldReturn` []
 
 testFailedOnlySettled :: IO ()
 testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do

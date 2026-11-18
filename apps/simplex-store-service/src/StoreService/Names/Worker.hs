@@ -309,18 +309,24 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> Commit -> NameReveal -> IO Next
-sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} c rv =
-  verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
-    -- past its deadline the intent can no longer register; a wrong signer follows a change of the chain settings since the reveal
-    Left refusal -> do
-      logWarn $ "names worker: registration " <> rid <> ": its stored intent is refused, " <> T.pack refusal
+sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}, oeReport}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} c rv@NameReveal {rvDeadline}
+  | chainSeconds now > rvDeadline = do
+      logWarn $ "names worker: registration " <> rid <> ": its stored signature's deadline passed, so its page signs again"
       save w now r {nrReveal = Nothing}
-    Right () ->
-      withinSends w now r RTRegister $ submitTransaction wkSender (TxRegistration RTRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
-        Right p -> registerSent w now r c p
-        Left SEInFlight -> pure Again
-        Left (SEChain (ChainReverted reason)) -> judge w now r c $ Just reason
-        Left e -> pure $ failure r $ SFSend e
+  | otherwise =
+      verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
+        Left refusal -> do
+          next <- save w now r {nrPhase = OFailed now FRSignatureRefused}
+          let failed = "names worker: registration " <> rid <> " failed: its stored signature is refused under the service's current configuration, " <> T.pack refusal
+          logError failed
+          oeReport failed
+          pure next
+        Right () ->
+          withinSends w now r RTRegister $ submitTransaction wkSender (TxRegistration RTRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
+            Right p -> registerSent w now r c p
+            Left SEInFlight -> pure Again
+            Left (SEChain (ChainReverted reason)) -> judge w now r c $ Just reason
+            Left e -> pure $ failure r $ SFSend e
   where
     intent = intentOf cfg r rv
 

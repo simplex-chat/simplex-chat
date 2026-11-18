@@ -290,7 +290,7 @@ data TxHistory = TxHistory {thCommitTx :: Maybe TxHash, thRegisterTx :: Maybe Tx
 noHistory :: TxHistory
 noHistory = TxHistory {thCommitTx = Nothing, thRegisterTx = Nothing}
 
-data FailReason = FRSendsUsedUp | FRLinksRefused | FRRegistryRefused
+data FailReason = FRSendsUsedUp | FRLinksRefused | FRRegistryRefused | FRSignatureRefused
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding FailReason where
@@ -298,10 +298,12 @@ instance TextEncoding FailReason where
     FRSendsUsedUp -> "sends_used_up"
     FRLinksRefused -> "links_refused"
     FRRegistryRefused -> "registry_refused"
+    FRSignatureRefused -> "signature_refused"
   textDecode = \case
     "sends_used_up" -> Just FRSendsUsedUp
     "links_refused" -> Just FRLinksRefused
     "registry_refused" -> Just FRRegistryRefused
+    "signature_refused" -> Just FRSignatureRefused
     _ -> Nothing
 
 instance FromField FailReason where fromField = fromTextField_ textDecode

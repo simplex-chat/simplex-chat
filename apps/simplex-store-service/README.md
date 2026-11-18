@@ -1405,6 +1405,12 @@ the order with the reason `registryRefused`. An order whose commitment lapses be
 it waits, and its page asks for a new commitment with `POST /api/registration/:id/retry`; one whose
 links were refused fails at the lapse with the reason `linksRefused`.
 
+A signature past its deadline is cleared, and the page signs again. A signature within its deadline
+that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of
+`[names] tld`, fails the order before any send with the reason `signatureRefused`; the log line is
+`[ERROR …] names worker: registration <id> failed: its stored signature is refused under the service's current configuration, …`,
+and the same text is posted in the managed group.
+
 A move or a close of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
 depth shows the order's owner holding the name, even if this order's register never landed: an
