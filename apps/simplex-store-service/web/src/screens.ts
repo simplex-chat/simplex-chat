@@ -55,7 +55,8 @@ export class CancelRefused extends Error {}
 
 export const PAID_IN_FULL_TITLE = "The full amount has arrived";
 export const LIGHTNING_DO_NOT_PAY = "Do not pay its Lightning invoice: a wallet can pay it until it expires, and such a payment is refunded by hand.";
-export const CANCEL_NOT_OPEN = "This invoice is no longer open, so there is nothing to cancel.";
+const SORT_IT_OUT = "Quote the reference below and we will sort it out.";
+export const CANCEL_NOT_OPEN ="This invoice is no longer open, so there is nothing to cancel.";
 export const CANCEL_HAS_FUNDS = "This invoice has a payment on it, so it cannot be cancelled.";
 export const CANCEL_STILL_OPEN = "This invoice was cancelled, but the service still shows it open. Do not pay it.";
 export const CANCEL_INVOICE = "Cancel this invoice";
@@ -795,7 +796,7 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
     );
   }
   const paid = o.invoice?.amountPaid;
-  const p = panel(el("h1", { class: "tight" }, "This invoice expired"));
+  const p = panel(el("h1", { class: "tight" }, o.canceled === true ? "Invoice canceled" : "This invoice expired"));
   if (funded) {
     const crypto = o.invoice?.cryptoAmountPaid;
     const ticker = o.invoice?.cryptoCurrency;
@@ -804,12 +805,14 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
       : "A payment";
     const total = o.invoice?.amount;
     const short = o.invoice?.paidInFull !== true && (paid === undefined || total === undefined || paid < total);
-    p.append(warning(
-      short ? `${arrived} arrived, which is not the full amount` : `${arrived} arrived after the window closed`,
-      short
-        ? "The rate window has closed, so the shortfall is no longer meaningful."
-        : "The rate window had already closed when it arrived.",
-      "Quote the reference below and we will sort it out."));
+    p.append(o.canceled === true
+      ? warning(`${arrived} arrived for this canceled invoice`, SORT_IT_OUT)
+      : warning(
+        short ? `${arrived} arrived, which is not the full amount` : `${arrived} arrived after the window closed`,
+        short
+          ? "The rate window has closed, so the shortfall is no longer meaningful."
+          : "The rate window had already closed when it arrived.",
+        SORT_IT_OUT));
     p.append(reference(o.order.orderId));
   } else {
     p.append(el("p", { class: "lede" }, "Nothing was received, and nothing was charged."), ...lightningNote);
@@ -939,8 +942,7 @@ export function paidNoCode(o: PaidNoCodeOptions): HTMLElement {
   );
   const p = panel(
     el("h1", { class: "tight" }, "This code is not on this device"),
-    notice("The code was generated in the browser it was bought in, and is not stored anywhere else.",
-      "Quote the reference below and we will sort it out."),
+    notice("The code was generated in the browser it was bought in, and is not stored anywhere else.", SORT_IT_OUT),
     summary,
   );
   const settled = calendarDate(o.settledAt);
@@ -964,6 +966,7 @@ const ENTRY_STATES: Readonly<Record<HistoryRow["kind"], { text: string; tone: st
   partPaid: { text: "part of the amount received", tone: "pending" },
   processing: { text: "payment received, waiting to confirm", tone: "pending" },
   canceled: { text: "canceled", tone: "lost" },
+  canceledPaid: { text: "canceled, then paid", tone: "lost" },
   expired: { text: "this invoice expired", tone: "lost" },
 };
 
@@ -1065,7 +1068,7 @@ export function detailsUnavailable(o: DetailsUnavailableOptions): HTMLElement {
   return panel(
     el("h1", { class: "tight" }, "The payment details are not available"),
     el("p", { class: "lede" }, "This order is open and unpaid, and the payment details did not arrive."),
-    el("p", { class: "lede" }, "Quote the reference below and we will sort it out."),
+    el("p", { class: "lede" }, SORT_IT_OUT),
     reference(o.order.orderId),
     button("Check again", o.onCheckAgain),
     button(BUY_NEW_CODE, o.onNewInvoice, "secondary"),

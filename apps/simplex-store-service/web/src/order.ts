@@ -43,18 +43,20 @@ export type HistoryRow =
   | { kind: "partPaid"; order: UnpaidOrder }
   | { kind: "processing"; order: UnpaidOrder }
   | { kind: "canceled"; order: UnpaidOrder }
+  | { kind: "canceledPaid"; order: UnpaidOrder }
   | { kind: "expired"; order: UnpaidOrder };
 
 export function historyRows(entries: readonly OrderRecord[]): HistoryRow[] {
   return entries.map((e) => {
     const order = withoutCode(e);
-    // A canceled order without money is listed as canceled, whatever status the server returned; a paid
-    // order is listed with its code, also when it was settled before the cancel.
+    // A canceled order is listed as canceled, whatever status the server returned; a paid order is
+    // listed with its code, also when it was settled before the cancel.
     switch (orderPhase(e)) {
       case "paid":
         return e.code !== undefined ? { kind: "paid" as const, order, code: e.code } : { kind: "paidNoCode" as const, order };
       case "expired":
-        return e.canceled === true && !receivedMoney(e) ? { kind: "canceled" as const, order } : { kind: "expired" as const, order };
+        if (e.canceled !== true) return { kind: "expired" as const, order };
+        return receivedMoney(e) ? { kind: "canceledPaid" as const, order } : { kind: "canceled" as const, order };
       case "processing":
         return { kind: "processing" as const, order };
       case "partPaid":

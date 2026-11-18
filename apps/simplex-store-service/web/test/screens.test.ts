@@ -659,8 +659,12 @@ domTest("screens: for a canceled invoice paid after the cancellation, the buyer 
     order: smuggled({ status: "expired" }),
     invoice: { ...openLn, status: "expired", amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true },
   }));
-  assert.ok(paidAfterCancel.textContent.includes("0.00050000 BTC arrived after the window closed"), paidAfterCancel.textContent);
-  assert.ok(!paidAfterCancel.textContent.includes("Nothing was charged"), paidAfterCancel.textContent);
+  for (const line of ["Invoice canceled", "0.00050000 BTC arrived for this canceled invoice", "Quote the reference below and we will sort it out."]) {
+    assert.ok(paidAfterCancel.textContent.includes(line), `missing "${line}": ${paidAfterCancel.textContent}`);
+  }
+  for (const untrue of ["Nothing was charged", "expired", "window"]) {
+    assert.ok(!paidAfterCancel.textContent.includes(untrue), `a canceled invoice paid afterwards is not described with "${untrue}": ${paidAfterCancel.textContent}`);
+  }
   assert.ok(paidAfterCancel.textContent.includes("inv_9f3a"), "with the reference support works from");
 
   const empty = render(screens.windowClosed({ onNewInvoice: noop, canceled: true,
@@ -1033,13 +1037,15 @@ domTest("order: an invoice has received money when it has any one of its full ve
   }
 });
 
-domTest("screens: a canceled order paid afterwards is listed as expired with its Open link, an empty one as canceled", () => {
+domTest("screens: a canceled order paid afterwards is listed as canceled with a payment and its Open link, an empty one as canceled", () => {
   const rows = historyRows([
     record({ orderId: "paid_after_cancel", status: "expired", method: "ln", canceled: true, amountPaid: 700, cryptoAmountPaid: "0.00050000", paidInFull: true }),
     record({ orderId: "empty_cancel", status: "expired", method: "ln", canceled: true }),
   ]);
-  assert.deepEqual(rows.map((r) => r.kind), ["expired", "canceled"]);
+  assert.deepEqual(rows.map((r) => r.kind), ["canceledPaid", "canceled"]);
   const drawn = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows, onOpen: noop, onStart: noop })).all("li.entry");
+  assert.ok(drawn[0]!.textContent.includes("canceled, then paid"), drawn[0]!.textContent);
+  assert.ok(!drawn[0]!.textContent.includes("expired"), drawn[0]!.textContent);
   assert.equal(drawn[0]!.all("a").filter((a) => a.textContent === "Open").length, 1, "from the funded row the buyer opens the screen on which the payment is shown");
   assert.equal(drawn[1]!.all("a").filter((a) => a.textContent === "Open").length, 0);
 });

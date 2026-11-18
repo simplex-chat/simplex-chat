@@ -101,6 +101,7 @@ Settlement rules:
 | Confirming screen | the confirmation count is omitted |
 | Cancel confirmation, badges | the BOLT11 stays payable until it expires |
 | Closed screen, badges | "Do not pay its Lightning invoice" |
+| Cancelled, then paid, badges, every method | "Invoice canceled", the amount that arrived, the reference; listed as "canceled, then paid" |
 | Closed screen, names | "can still be paid until HH:MM" while the expiry, by the service's clock, is ahead |
 
 ## Tests
