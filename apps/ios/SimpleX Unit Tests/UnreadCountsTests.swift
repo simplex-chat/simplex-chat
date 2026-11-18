@@ -19,6 +19,7 @@ final class UnreadCountsTests: XCTestCase {
     override func tearDown() async throws {
         for chat in ChatModel.shared.chats { ChatModel.shared.removeChat(chat.id) }
         ChatModel.shared.im.reversedChatItems = []
+        ChatModel.shared.im.sentItemUpdates = [:]
         ChatModel.shared.chatId = nil
         ChatModel.shared.currentUser = nil
         ChatModel.shared.users = []
@@ -37,6 +38,23 @@ final class UnreadCountsTests: XCTestCase {
         await processReceivedMsg(events[1])
         XCTAssertEqual(loadedTexts(), [])
         guard case .sndRcvd = ChatModel.shared.chats.first?.chatItems.last?.meta.itemStatus else { return XCTFail("preview status is not received") }
+    }
+
+    @MainActor
+    func testStatusBeforeSendResponseIsShown() async throws {
+        let events = try recordedEvents("counts/direct-statuses")
+        try listChat(events[0])
+        try openChat(events[0])
+        await processReceivedMsg(events[0])
+        let response = try XCTUnwrap((try fixtureJSON("counts/direct-send") as? [String: [String: Any]])?["commands"]?.values.first)
+        sendSimpleXCmdStr = { _, _, _ in try? JSONSerialization.data(withJSONObject: singleFieldJSON(response)) }
+        let cInfo = try chatInfo(events[0])
+        let sent = await apiSendMessages(type: cInfo.chatType, id: cInfo.apiId, scope: nil, composedMessages: [ComposedMessage(msgContent: .text("hello"))])
+        let sentItems = try XCTUnwrap(sent)
+        guard case .sndNew = sentItems.first?.meta.itemStatus else { return XCTFail("response status is not new") }
+        for item in sentItems { ChatModel.shared.addChatItem(cInfo, item) }
+        guard case .sndSent = ChatModel.shared.im.reversedChatItems.first?.meta.itemStatus else { return XCTFail("loaded item status is not sent") }
+        guard case .sndSent = ChatModel.shared.chats.first?.chatItems.last?.meta.itemStatus else { return XCTFail("preview status is not sent") }
     }
 
     @MainActor

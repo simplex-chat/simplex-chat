@@ -60,6 +60,7 @@ class UnreadCountsTest {
   fun tearDown() {
     ChatModel.chatsContext.chats.value.clear()
     ChatModel.chatsContext.chatItems.value.clear()
+    ChatModel.chatsContext.sentItemUpdates.clear()
     ChatModel.secondaryChatsContext.value = null
     ChatModel.chatId.value = null
     ChatModel.activeChatTagFilter.value = null
@@ -81,6 +82,22 @@ class UnreadCountsTest {
     receive(received)
     assertEquals(listOf(), loadedTexts())
     assertIs<CIStatus.SndRcvd>(ChatModel.chatsContext.chats.value.single().chatItems.single().meta.itemStatus)
+  }
+
+  @Test
+  fun statusBeforeSendResponseIsShown() = recorded("counts/direct-statuses") { (sent) ->
+    listChat(sent)
+    openChat(sent)
+    receive(sent)
+    val response = Json.parseToJsonElement(fixtureText("counts/direct-send")).jsonObject.getValue("commands").jsonObject.values.single().toString()
+    chatSendCmdRetry = { _, _, _ -> response }
+    val sentItems = assertNotNull(ChatController.apiSendMessages(null, ChatType.Direct, chatInfo(sent).apiId, null, composedMessages = listOf(ComposedMessage(null, null, MsgContent.MCText("hello"), mapOf()))))
+    assertIs<CIStatus.SndNew>(sentItems.single().chatItem.meta.itemStatus)
+    withContext(Dispatchers.Main) {
+      sentItems.forEach { ChatModel.addSentChatItem(ChatModel.chatsContext, null, it.chatInfo, it.chatItem) }
+    }
+    assertIs<CIStatus.SndSent>(ChatModel.chatsContext.chatItems.value.single().meta.itemStatus)
+    assertIs<CIStatus.SndSent>(ChatModel.chatsContext.chats.value.single().chatItems.single().meta.itemStatus)
   }
 
   @Test
