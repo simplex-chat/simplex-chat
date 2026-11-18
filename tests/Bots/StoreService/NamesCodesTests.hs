@@ -231,7 +231,7 @@ testReserveHeld = withOrders $ \turns st -> do
   placeCode st "r3" ownerB (order "carolsbakery" 3) row `shouldReturn` Right ()
   let r3 = RegistrationId "r3"
   fst <$> withTransaction st (\db -> revokePrepaidCode db pcCodeHash tNow) `shouldReturn` Revoked (pcId row)
-  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (tNow, DB.Binary pcCodeHash)
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (tNow, pcCodeHash)
   held <- readCode st row
   reserveCode turns st tNow pcCodeHash r3 (lengthOf 9) writeOk `shouldReturn` Right (Right ())
   reserveCode turns st tNow pcCodeHash r3 (lengthOf 7) writeOk `shouldReturn` Left CRNotCovering

@@ -661,7 +661,7 @@ testMoveCodeOrder = withOwner $ \ctx@Ctx {cStore} -> do
   move ctx keyA r toShorter `shouldReturn` refusedWith 409 "code_not_covering"
   stored ctx r `shouldReturn` r
   fst <$> withTransaction cStore (\db -> revokePrepaidCode db pcCodeHash orderTime) `shouldReturn` Revoked (pcId code)
-  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary pcCodeHash)
+  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, pcCodeHash)
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyA r to
   (fieldOf v "phase", fieldOf v "price") `shouldBe` (Just "queued", Just (J.Number 0))
@@ -672,7 +672,7 @@ testMoveReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   answerFree ctx "alicebakers"
   let refusals :: [(Text, PrepaidCode -> DB.Connection -> IO (), (Int, Maybe J.Object))]
       refusals =
-        [("expired", \PrepaidCode {pcCodeHash} db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary pcCodeHash), refusedWith 409 "code_expired")]
+        [("expired", \PrepaidCode {pcCodeHash} db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, pcCodeHash), refusedWith 409 "code_expired")]
   forM_ (zip [1 :: Int ..] refusals) $ \(n, (what, change, refusal)) -> do
     let label = "codeorder" <> tshow n
     answerFree ctx label
