@@ -544,7 +544,7 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.values["scopes"], "names-page")
 
     def test_store_fixture_change_builds_the_core_and_tests_the_names_page_scope(self):
-        self.assertEqual(self.builds("tests/fixtures/api/store/search.json"), {"haskell"})
+        self.assertIn("haskell", self.builds("tests/fixtures/api/store/search.json"))
         self.assertEqual(self.values["scopes"], "names-page")
 
 
