@@ -108,6 +108,8 @@ flowchart LR
 - Other profiles: the core's count, changed per event by + item - prev with `isRcvNew`, `inMainChatList` and `ntfsEnabled`.
 - `unreadTag`: row counters by notifications, `unreadChat`, or the support flag (`supportUnreadCount > 0`) unless notifications are off (P13, Q3).
 - Unread tag counts are changed by `unreadTag` before and after each row change, `updateChatInfo`, `addChat` and Kotlin `replaceChat` included; they are no longer changed in `updateChatSettings` (both apps) and in Kotlin "mark unread" and "mark read".
+- Kotlin `removeChat` lowers the unread tag counts of an unread chat.
+- Desktop `SnapshotTest` previews call stubs of `chatSendCmdRetry` and `chatParseMarkdown`, so compose tests of later classes start without their errors.
 - iOS: the chat list is published when a row's `unreadTag` changes, so the Unread filter is updated.
 - With "Mark read" on a pending member's group, the chat with admins is read too (`apiSupportChatRead`, the user's scope) (Q2).
 
@@ -174,7 +176,7 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 | counts/direct-statuses | the same test | bob, the sender: statuses of the first message |
 | counts/chat-page | the same test | `/_get chat @2 initial=100` between the two messages |
 | counts/moderator-support | Groups.hs, "unread counts of a moderator's support chat" | alice, the owner: a member's support message, a main chat message |
-| counts/moderator-read | the same test | `/_read chat items #1(_support:2) <id>` |
+| counts/moderator-read | the same test | `/_read chat items #1(_support:2) <id>`<br>markdown of "" for the list search |
 | counts/pending-support | Groups.hs, "unread counts of a pending member's chat with admins" | cath, pending review: an admin message, its edit with a mention, a second message, its removal |
 | counts/pending-read | the same test | `/_read chat #1(_support)` |
 
@@ -200,7 +202,9 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 | chat outside the list | counts/direct-muted | added with 1 0 0 |
 | opening keeps the row count | counts/direct-muted, counts/chat-page | 2 0 0 after the page with 1 |
 | pending member's row | counts/pending-support, counts/pending-read | row 1 0, 1 1, 2 1, 1 1 from the counter; the edit in the preview; 0 0 after "Mark read" |
-| moderator's support message | counts/moderator-support | row 0 0, profile 0; the group in `filteredChats` with the Unread filter |
+| pending member's badge | counts/pending-support | "1" in `ChatPreviewView` |
+| moderator's support message | counts/moderator-support, counts/moderator-read | row 0 0, profile 0; the group in `ChatListView` with the Unread filter |
+| removed chat | counts/group-marked | an unread chat with a tag: tag count 1 after `addChat`, 0 after `removeChat` |
 | support chat context | counts/moderator-support | `chatState.unreadTotal` 1; its list keeps only its chat after a pop |
 | reading a support chat | counts/moderator-support, counts/moderator-read | row 1 0 kept; support flag cleared |
 | counters follow previous and new item, changed | updates/group-mention | 1 0 0, 1 1 1, 1 0 0 |
@@ -236,5 +240,4 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 - Unloaded unread items of a member removed with messages stay counted until the next list load.
 - A chat added from outside the loaded list has the messages received since counted.
 - Kotlin: the scroll button's count source is tested on the support chat's `ChatsContext`; `ChatView` is not composed in tests.
-- Kotlin: views are not composed in these tests. `SnapshotTest` previews call the core library, which desktop tests do not load; the errors of their coroutines fail the next `runComposeUiTest` of another class.
-- Kotlin: removing a chat with unread messages leaves its list tag dot until the next list load (`removeChat`).
+- iOS: `removeChat` leaves the unread tag count of an unread chat until the next list load.
