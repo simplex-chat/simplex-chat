@@ -1345,6 +1345,7 @@ final class ChatModel: ObservableObject {
                 let removed = chats.remove(at: i)
                 groupId = removed.chatInfo.groupInfo?.groupId
                 ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
+                ChatTagsModel.shared.markChatTagRead(removed)
                 removeWallpaperFilesFromChat(removed)
                 if removed.userUnreadCount > 0 {
                     updateNtfBadgeCount()
