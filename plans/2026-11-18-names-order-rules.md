@@ -2,7 +2,7 @@
 
 Principle (the user): a prompt, excellent service to people who pay, defended from people who try to exploit it. Technically: correct decisions, bounded retries, no retries of lost causes, every error tracked and debuggable.
 
-Each item gives `names` (the base branch: service code of b13968b61, page 9a16ca996; line references are to it) and the final state. Decided by the user on 17–18 Nov; section 10 holds the questions still to confirm, with the lead's recommendation and the user's comments.
+Each item gives `names` (the base branch: service code of b13968b61, page 9a16ca996; line references are to it) and the final state, decided by the user on 17–18 Nov.
 
 ## Contents
 
@@ -15,7 +15,6 @@ Each item gives `names` (the base branch: service code of b13968b61, page 9a16ca
 7. [Operators: commands and configuration](#7-operators-commands-and-configuration)
 8. [Tests and CI](#8-tests-and-ci)
 9. [Internal structure, no behaviour change](#9-internal-structure-no-behaviour-change)
-10. [To confirm](#10-to-confirm)
 
 ## 1. Paid orders: the name delivered, or the money returned
 
@@ -64,6 +63,7 @@ stateDiagram-v2
   - an early fraud warning from Visa, Mastercard or JCB leads to a fraud dispute in about 40% of cases; a refund prevents the fraud report only when processed as a reversal, usually within 2 hours of capture;
   - events: `charge.dispute.created`, `charge.dispute.updated`, `charge.dispute.closed`, `charge.dispute.funds_withdrawn`, `charge.dispute.funds_reinstated`, `radar.early_fraud_warning.created`.
   - Sources: https://docs.stripe.com/disputes/how-disputes-work, https://support.stripe.com/questions/disputes-on-a-refunded-transaction-faq, https://docs.stripe.com/api/events/types.
+- **In-app payments, when added for names:** a store refund is a payment reversal under this rule. Apple notifies a granted refund (`REFUND`) and, for a consumable, first asks for consumption data within 12 hours (`CONSUMPTION_REQUEST`); Apple's pages state no deadline for a refund request, and most come within 30 days of purchase (WWDC23). Google refunds within 48 hours of purchase, then the developer decides; unauthorised charges can be reported within 120 days; refunds and chargebacks appear in real-time developer notifications and, for 30 days, in the Voided Purchases API. Sources: https://developer.apple.com/news/?id=tv3bhra6, https://developer.apple.com/videos/play/wwdc2023/10141/, https://support.google.com/googleplay/answer/15574897, https://developers.google.com/android-publisher/voided-purchases.
 
 ### 1.5 Prepaid-code orders
 - **names:** a code order failed for 30 days gives its code back; the order stays failed (`Names/Worker.hs:108-110, 564-579`).
@@ -163,7 +163,7 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 | Area | Final |
 |---|---|
 | Search | one case per name state: available, registering, reserved, registered with the store resolver's records or "other" |
-| Refusals | search, preview, terms, code check, link edits and rate limits answer `{type: code, …}`; `edit_limit` is 409 with an ISO time; order and registration endpoints: 10.1 |
+| Refusals | every endpoint answers a refusal as `{"type": "<code>"}` with flat snake_case codes, such as `{"type": "order_exists"}`, and data beside the code, such as `{"type": "catalog_changed", "price": 1500}`; prepaid-code refusals flat, such as `{"type": "code_used"}`; a `bad_request` reason is logged, not sent (the user's A1-28: the reason as text); `edit_limit` is 409 with an ISO time. On `names`: `{"error": "<code>"}` |
 | Order view | one shape per phase, the payment kind, the balance hold, the terms as a record, the failure reason |
 | Order requests | order, code order, move and spend nest their fields, terms as a record; the payment method stays the text the badge request sends |
 | Find, link edits, signing | decoded by derived types; find answers an empty list for an owner with no orders, and each order's phase as stored |
@@ -182,7 +182,10 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 - **Late credits:** the query computes the two values the code needs.
 - **Edit reverts:** the contract error's name, stored by its tag.
 - **Times:** one whole-second clock for every time names reads, in place of truncations at 25 writes; one time per order request.
-- **Provider reference:** 10.2.
+- **Schema boundaries:** the names product uses the generic tables and its own, never a badge table.
+  - **names:** names code reads and writes the generic `invoices` and `payments` and its own `name_*` tables (`Names/Store.hs`); none of the names modules mentions a badge table. The names migration creates only `name_*` tables and adds five columns to the generic `payments` (`confirmed_amount`, `received_units`, `confirmed_units`, `invoiced_units`, `invoice_rate`: a payment's crypto amounts and rate). The generic invoice read joins both products' tables to tell an invoice's product (`Store/Invoices.hs:212-222`). Every table carries the badge service's prefix `sx_badge_service_`, the names tables included.
+  - **Final:** as `names`: the names migration changes no badge table.
+- **Provider reference:** as `names`: each product's table holds the provider's invoice id, `name_invoices.provider_ref` and the deployed badge service's `badge_code_invoices.provider_ref`, both NOT NULL, each with its own unique index. Moving it into the generic `invoices` table would have the names migration change a badge table; a generic column for both products would be a change of its own.
 
 ## 7. Operators: commands and configuration
 
@@ -191,7 +194,7 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 - **Console commands:** one chain connection made at start, shared by the console and the group.
 - **Configuration:** strict numbers with bounded messages; `credit_test_purchases` with `accept_unverified_store_receipts` refused at start; a new `--execute` option.
 - **Loop failures:** one helper in simplexmq `Util` logs "… failed; the next pass will run" at 11 sites (the user's A3-7).
-- **Configuration `Show`:** 10.3.
+- **Configuration `Show`:** on `names`, a hand-written `Show` hides the chain configuration's RPC URL and key (`Names/Chain.hs:126-128`). Final: a configuration that holds a secret (the key, an RPC URL that can hold a provider key) has no `Show` instance; its tests compare with `Eq`; a log line renders only the parts it needs, locally (the user's A1-35: "either use stock Show, or parse and log locally").
 - No comments in code.
 
 ## 8. Tests and CI
@@ -204,23 +207,3 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 ## 9. Internal structure, no behaviour change
 
 From the review findings the user approved (plans/2026-11-16-names-review-fixes.md): shared maps as `TMap`; one function where code repeated; fewer modules; derived JSON in place of hand-built objects; simplexmq encodings for signatures and addresses (simplexmq #2083); stored tags decoded by their own cases.
-
-## 10. To confirm
-
-### 10.1 The refusals of the order and registration endpoints
-- **names:** `{"error": "<code>"}`.
-- **Recommendation:** the shape of the endpoints already converted: flat snake_case codes, as `{"type": "order_exists"}`, data beside the code, as `{"type": "catalog_changed", "price": 1500}`; a `bad_request` reason logged, not sent. One shape for every endpoint, and the page reads it as it reads the converted ones.
-- **The user's earlier comment (A1-28):** "no to separate constructors in ORBadRequest, better to have reason as Text or String - it's a general approach to group errors".
-- **The user's comment:**
-
-### 10.2 The provider reference column
-- **names:** the provider's invoice id is stored in two child tables, `badge_code_invoices.provider_ref` (NOT NULL, unique, from the deployed badge service) and `name_invoices.provider_ref`, each unique on its own.
-- **Recommendation:** one column in the shared invoices table with one unique index, filled from both, the badge table's copy dropped. NOT NULL in Postgres, set after the copy: every invoice is inserted with its reference (`Store/Invoices.hs:189`). In SQLite it stays nullable: SQLite adds a NOT NULL column only with a default, and rebuilding the deployed invoices table is a larger migration than this column needs.
-- **The user's earlier comment:** "If it cannot be null, then it should be not null in migration. But explain why."
-- **The user's comment:**
-
-### 10.3 The chain configuration's `Show`
-- **names:** a hand-written `Show` that hides the RPC URL and the key (`Names/Chain.hs:126-128`).
-- **Recommendation:** no `Show` instance for a configuration that holds a secret (the RPC URL can hold a provider key); its tests compare with `Eq`; a log line renders only the parts it needs, locally.
-- **The user's earlier comment (A1-35):** "custom Show instance is an antipattern, either use stock Show, or parse and log locally."
-- **The user's comment:**
