@@ -108,7 +108,7 @@ flowchart LR
 - Other profiles: the core's count, changed per event by + item - prev with `isRcvNew`, `inMainChatList` and `ntfsEnabled`.
 - `unreadTag`: row counters by notifications, `unreadChat`, or the support flag (`supportUnreadCount > 0`) unless notifications are off (P13, Q3).
 - Unread tag counts are changed by `unreadTag` before and after each row change, `updateChatInfo`, `addChat` and Kotlin `replaceChat` included; they are no longer changed in `updateChatSettings` (both apps) and in Kotlin "mark unread" and "mark read".
-- Kotlin `removeChat` lowers the unread tag counts of an unread chat.
+- `removeChat` lowers the unread tag counts of an unread chat (both apps).
 - Desktop `SnapshotTest` previews call stubs of `chatSendCmdRetry` and `chatParseMarkdown`, so compose tests of later classes start without their errors.
 - iOS: the chat list is published when a row's `unreadTag` changes, so the Unread filter is updated.
 - With "Mark read" on a pending member's group, the chat with admins is read too (`apiSupportChatRead`, the user's scope) (Q2).
@@ -225,6 +225,7 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 | pending member's row | counts/pending-support, counts/pending-read | as in Kotlin |
 | moderator's support message | counts/moderator-support | row 0 0, profile 0; `unreadTag` true |
 | reading a support chat keeps the group row | counts/moderator-support, counts/moderator-read | 1 0 1 kept |
+| removed chat | counts/group-marked | as in Kotlin |
 | counters follow previous and new item, changed | updates/group-mention | 1 0 0, 1 1 1, 1 0 0 |
 | update of a chat not listed, changed | updates/direct-edit | no chat added, no notification |
 
@@ -240,4 +241,3 @@ Events also recorded by `recordItemEvent` (tests/ChatTests/Utils.hs): `chatItems
 - Unloaded unread items of a member removed with messages stay counted until the next list load.
 - A chat added from outside the loaded list has the messages received since counted.
 - Kotlin: the scroll button's count source is tested on the support chat's `ChatsContext`; `ChatView` is not composed in tests.
-- iOS: `removeChat` leaves the unread tag count of an unread chat until the next list load.

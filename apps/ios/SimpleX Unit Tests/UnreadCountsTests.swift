@@ -22,6 +22,7 @@ final class UnreadCountsTests: XCTestCase {
         ChatModel.shared.chatId = nil
         ChatModel.shared.currentUser = nil
         ChatModel.shared.users = []
+        ChatTagsModel.shared.unreadTags = [:]
         NtfManager.shared = ntfManager
         UNUserNotificationCenter.current().delegate = ntfManager
         sendSimpleXCmdStr = sendCmd
@@ -139,6 +140,18 @@ final class UnreadCountsTests: XCTestCase {
         await apiMarkChatItemsRead(ItemsModel.shared, support.chatInfo, [support.chatItem.id], mentionsRead: 0)
         try await assertCounts(1, 0, 1)
         XCTAssertEqual(try XCTUnwrap(ChatModel.shared.chats.first).supportUnreadCount, 0)
+    }
+
+    @MainActor
+    func testRemovedChatLeavesNoListTagDot() async throws {
+        let events = try recordedEvents("counts/group-marked")
+        guard case var .group(groupInfo, _) = try chatInfo(events[0]) else { return XCTFail("not a group") }
+        groupInfo.chatTags = [1]
+        let chat = Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: try items(events[0]).map(\.chatItem), chatStats: ChatStats(unreadCount: 1))
+        ChatModel.shared.addChat(chat)
+        XCTAssertEqual(ChatTagsModel.shared.unreadTags[1], 1)
+        ChatModel.shared.removeChat(chat.id)
+        XCTAssertEqual(ChatTagsModel.shared.unreadTags[1], 0)
     }
 
     private func recordedEvents(_ fixture: String) throws -> [ChatEvent] {
