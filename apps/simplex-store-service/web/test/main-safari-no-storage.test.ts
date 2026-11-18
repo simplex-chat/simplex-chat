@@ -14,9 +14,9 @@ const page = installPage({ storage: new RefusingStorage(), userAgent: SAFARI_MAC
 const { app } = page;
 await import("../src/main.js");
 
-refusedTest("main: in Safari with storage refused, the deletion warning is shown only with stored codes", () => {
+refusedTest("main: in Safari with localStorage refused, Your codes is shown without the deletion warning", () => {
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
   const screen = inViewOf(app);
   assert.equal(headingOf(screen), "Your codes");
-  assert.ok(!screen.textContent.includes(IDLE_DELETION_CODES), `the deletion warning is shown with nothing stored: ${screen.textContent.slice(0, 300)}`);
+  assert.ok(!screen.textContent.includes(IDLE_DELETION_CODES), `the deletion warning is shown although localStorage refuses writes: ${screen.textContent.slice(0, 300)}`);
 });

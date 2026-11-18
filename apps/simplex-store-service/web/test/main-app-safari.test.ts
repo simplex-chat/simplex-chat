@@ -48,5 +48,6 @@ safariTest("main: in Safari, the deletion warning is shown on Your codes", () =>
   } });
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
   assert.equal(headingOf(inView()), "Your codes");
-  assert.ok(inView().textContent.includes(IDLE_DELETION_CODES));
+  assert.equal(inView().all("li.entry").length, 1, "the paid code is listed");
+  assert.equal(inView().all("div.warn")[0]!.all("span.title")[0]!.textContent, IDLE_DELETION_CODES);
 });

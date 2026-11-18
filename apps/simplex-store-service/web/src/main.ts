@@ -56,7 +56,7 @@ function memoryOver(real: StorageLike | undefined): StorageLike {
 }
 
 const store = pageStore();
-const deletesIdle = store.durable && browserDeletesIdle(navigator.userAgent);
+const keeping: screens.Keeping = !store.durable ? "notKept" : browserDeletesIdle(navigator.userAgent) ? "keptUntilIdle" : "kept";
 
 const flow = new Flow({
   store,
@@ -674,7 +674,7 @@ function paint(view: PaymentView): void {
       root.replaceChildren(codeScreen(view));
       return;
     case "paidNoCode":
-      root.replaceChildren(screens.paidNoCode({ order: view.order, settledAt: view.invoice?.settledAt, browserDeletesIdle: deletesIdle }));
+      root.replaceChildren(screens.paidNoCode({ order: view.order, settledAt: view.invoice?.settledAt, keeping }));
       return;
     case "awaitingPayment": {
       const awaitingPayment = screens.awaitingPayment({
@@ -721,17 +721,18 @@ const appLaunched = new Set<string>();
 
 function codeScreen(view: CodeView): HTMLElement {
   const { orderId } = view.order;
+  const codeKeeping = view.savedLocally ? keeping : "notKept";
   // An unsaved code exists only on this screen, so it is never held back behind a link that may fail.
   if (view.order.app !== "mobile" || !view.savedLocally) {
-    return screens.codeIssued({ code: view.code, savedLocally: view.savedLocally, browserDeletesIdle: deletesIdle, app: view.order.app });
+    return screens.codeIssued({ code: view.code, keeping: codeKeeping, app: view.order.app });
   }
   const link = appCodeLink(view.code);
   const ending = screens.returnToApp({
     onReturn: () => { location.href = link; },
     code: codeRevealed.has(orderId)
-      ? { kind: "shown", code: view.code, savedLocally: view.savedLocally }
+      ? { kind: "shown", code: view.code }
       : { kind: "hidden", onShow: () => { codeRevealed.add(orderId); paint(view); } },
-    browserDeletesIdle: deletesIdle,
+    keeping: codeKeeping,
   });
   // A connectivity event repaints this screen, and each repaint must not fire the scheme again.
   if (!appLaunched.has(orderId)) {
@@ -893,8 +894,7 @@ function renderCodes(entries: readonly OrderRecord[]): void {
   syncChrome();
   root.replaceChildren(screens.purchaseHistory({
     rows: historyRows(entries),
-    keepsNewCodes: store.durable,
-    browserDeletesIdle: deletesIdle,
+    keeping,
     onOpen: goToOrder,
     onStart: startPurchase,
     onForget: () => {

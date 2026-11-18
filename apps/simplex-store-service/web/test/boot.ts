@@ -194,7 +194,7 @@ export function primaryOf(p: StubElement): StubElement | undefined {
   return p.all("button.primary").find((b) => !b.hasAttribute("disabled"));
 }
 
-const FORGET_LABEL = "Forget everything on this device";
+const FORGET_LABEL = "Forget everything in this browser";
 
 export function forgetControl(page: Page): StubElement | undefined {
   page.chrome.all("button.menu-button")[0]!.click();
