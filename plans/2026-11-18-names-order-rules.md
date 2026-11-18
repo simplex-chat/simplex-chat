@@ -129,7 +129,7 @@ stateDiagram-v2
 
 ### 2.5 Counting attempts — to build
 - **names:** only sent transactions count, 5 per kind; dry runs are not counted, so a dry run that always reverts is retried forever.
-- **Change:** up to 5 dry-run failures; once a dry run passes, up to 5 sent transactions failing for a permanent reason; temporary reasons have no count limit; the two counts are kept apart. No extra cap on new commits per order.
+- **Change:** up to 5 dry-run failures; once a dry run passes, up to 5 sent transactions failing for a permanent reason; temporary reasons have no count limit; the two counts are kept apart. No extra cap on new commits per order. The caps are settings in `store_service.ini`, so they can change without a release.
 
 ### 2.6 A signature refused after a configuration change — to build
 - A stored signature refused because the service's chain id or sponsor address changed is a code error: the order fails at once, visibly, logged and reported.
