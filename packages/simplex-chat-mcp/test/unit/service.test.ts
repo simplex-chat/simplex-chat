@@ -93,6 +93,9 @@ function deps(root: string) {
         endToolApprovals: () => {
           agent.turns.push("tool approvals ended")
         },
+        endTeammates: async () => {
+          agent.turns.push("teammates ended")
+        },
         call: async (tool: string, _input: unknown, call: {signal: AbortSignal; progress: (m: string) => void}) => {
           agent.calls.push(tool)
           calling.resolve()

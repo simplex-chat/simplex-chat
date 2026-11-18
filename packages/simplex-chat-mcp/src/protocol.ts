@@ -71,6 +71,19 @@ export interface TurnRequest {
   switched?: boolean
   limits?: Limits
   statusLine?: boolean
+  teammates?: TeammateEvent[]
+  sessionEnd?: boolean
+}
+
+// spec: spec/architecture.md#protocol-teammateevent
+export interface TeammateEvent {
+  name: string
+  kind: "start" | "message" | "report" | "end"
+  id?: string
+  copy?: true
+  description?: string
+  text?: string
+  note?: string
 }
 
 // spec: spec/architecture.md#protocol-limits

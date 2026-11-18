@@ -496,7 +496,8 @@ The plugin adds:
 | SessionStart hook | Checks the Node.js version and starts the service. It opens the session and its group, and shows the Main group link while the Main group has no owner. |
 | PreToolUse hook of the plugin's tools | Lets the plugin's tools run without a Claude Code prompt, because you approve them in the SimpleX app. |
 | UserPromptSubmit, Stop, PostModelSwitch and PostCompact hooks | Post your terminal prompts, Claude's answers, the usage of each turn and a line for each summary of the session's context in the session's group, keep the model and effort in its description, and post their switches. They run in the background. |
-| PreToolUse, PostToolUse and PostToolUseFailure hooks of every tool | Post a line for each step of Claude's work when it starts, and complete it when it ends. They run in the background. |
+| PreToolUse, PostToolUse and PostToolUseFailure hooks of every tool | Post a line for each step of Claude's work when it starts, and complete it when it ends. They start the profile of each teammate that Claude starts with a name. They run in the background. |
+| SubagentStop and SessionEnd hooks | End a teammate's profile when its agent ends, and every teammate's profile when the session ends. SubagentStop runs in the background, and Claude Code waits up to 5 seconds for SessionEnd. |
 | PreToolUse hook of every tool, of type `mcp_tool` | Calls the tool `pre_tool_use` of the session's MCP server, which allows a tool approved for the rest of the session, see [Tool use](#tool-use). It waits up to 5 seconds. |
 
 The server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The PreToolUse hook of the plugin's tools runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js` instead. The package, a 4 MB download, bundles its dependencies and has no lockfile, so Claude Code installs nothing after unpacking it. Node.js loads the modules from the plugin's folder, so a project's `node_modules` can't replace them. The first session start downloads the SimpleX core library. Claude Code waits up to 600 seconds for the SessionStart hook.
@@ -607,7 +608,7 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. Th
 
 - Each session has a number, starting at 1, which is kept across service restarts. Its group is named `N · NAME`. NAME is the session's name from `claude -n NAME` or `/rename`, otherwise the project folder's name, otherwise `Claude Code`. A new name shows from the next session start.
 - The group is created at the session start, and the Main group's owners are invited to it as owners. An owner who joins the Main group later is invited to the groups of the open sessions.
-- The group's members are Claude, the Main group's owners, members who joined with `/join`, people whom members added directly, and `User`. People added directly get the role that the adding member set. `User` is a second profile of the service that posts your terminal prompts.
+- The group's members are Claude, the Main group's owners, members who joined with `/join`, people whom members added directly, `User`, and the session's teammates. People added directly get the role that the adding member set. `User` is a second profile of the service that posts your terminal prompts.
 - Claude's profile has the peer type `agent`, so the app shows Claude with the agent placeholder. `User`'s profile has the peer type `human`, which the service sets at each start. In a session group that you joined while `User` had the peer type `agent`, as in 0.3.0, the new peer type reaches your app with `User`'s next post there, and the app shows `updated profile` from `User` once.
 - Rights follow the member's role in the group, however they joined:
 
@@ -617,8 +618,8 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. Th
   | moderator, member, author | prompts; each of their `/` commands gets `Only admins and owners of this group can send / commands.` |
   | observer | none: the app can't send their messages |
 
-  `User`'s messages are never prompts, commands or approvals.
-- When someone joins or their role changes, Claude posts their rights. For an admin the post is `Bob is an admin and can send prompts to Claude and the group's commands, and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with the group's and the member's IDs. For a moderator, member or author it is `NAME is a ROLE and can send prompts to Claude; the group's commands and approvals need the role admin or owner.`, followed by the same command. The posts for an owner and for an observer have no command: `NAME is an owner and can send prompts to Claude and the group's commands, and approve tool use.` and `NAME is an observer and can't send messages.` Claude posts nothing for `User`.
+  The messages of `User` and the teammates are never prompts, commands or approvals.
+- When someone joins or their role changes, Claude posts their rights. For an admin the post is `Bob is an admin and can send prompts to Claude and the group's commands, and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with the group's and the member's IDs. For a moderator, member or author it is `NAME is a ROLE and can send prompts to Claude; the group's commands and approvals need the role admin or owner.`, followed by the same command. The posts for an owner and for an observer have no command: `NAME is an owner and can send prompts to Claude and the group's commands, and approve tool use.` and `NAME is an observer and can't send messages.` Claude posts nothing for `User` and the teammates.
 - `/observer #G ID` makes that member an observer, and Claude replies `NAME is an observer and can't send messages.` Admins and owners can use it on a member whose role isn't above their own. Standing approvals that the observer gave, of all messages to a chat or all files from it, stop counting while they aren't an admin or owner, and count again if they become one. For a member who was invited and hasn't joined yet, Claude replies `No member ID in this group.` That member joins with the role of the invitation, which can be changed after the join.
 - The group's description is `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set when the group is created. Its short description shows the model and effort, see [Model, effort and usage](#model-effort-and-usage).
 - The group is created in the Flat layout, which SimpleX apps from v7.1.0 show. Each member can choose another layout for it in Group info › `Chat theme` › `Chat layout`, for their own app. The Main group is shown in each member's own layout.
@@ -630,6 +631,15 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. Th
 - A non-interactive run, `claude -p` or the Agent SDK, gets no session and no group. Its hooks post nothing, and its SimpleX tools return `This Claude Code run is not interactive, so it has no SimpleX group; the SimpleX tools work in interactive sessions.`
   - The plugin recognizes such a run by `CLAUDE_CODE_ENTRYPOINT`. Claude Code sets it to `sdk-cli` for `claude -p` and to `sdk-ts` or `sdk-py` for the Agent SDK. It also uses `CLAUDE_CODE_SESSION_ATTENDED`, which Claude Code sets to `0` for the hooks of a run nobody attends.
   - A `claude -p` run started from a session of the VS Code extension or the desktop app keeps that session's entrypoint, and its MCP server gets that session's attended value. For such a run, the SessionStart hook marks its Claude Code process, and the service refuses that process's session server when it registers within 10 seconds. Its tools then return the same text.
+
+### Teammates
+
+- Each agent that Claude starts with a name, as a teammate of an agent team or a named background agent, joins the session's group with its own profile. The profile has the agent's name, the agent placeholder of the peer type `agent`, and the agent's task as its short description, up to 160 characters.
+- A teammate's messages to Claude, and its final report, appear whole under its profile, silent and in normal print, in place of Claude's small-print line `✉️ Message from NAME: ...` or `📋 Report from subagent NAME: ...`.
+- A teammate is a member of the group. Its messages are never prompts, commands or approvals, and Claude posts no rights for it.
+- A teammate leaves the group when it ends, and when the session ends or closes. Its profile is then deleted, and its messages stay in the group. A teammate left in a group by a service that was killed is removed when the service starts again.
+- A session has at most 20 teammates with profiles at once. For a later one, Claude posts `Teammate NAME has no profile: this group has 20 teammates.` in small print, and its messages keep Claude's lines.
+- An agent without a name, as a short subagent, gets no profile; its report keeps Claude's line.
 
 ### Prompts and answers
 
@@ -654,8 +664,8 @@ With the channel, a message from a member of a session's group, other than `User
 - Claude posts one line in small print for each of Claude Code's own prompts, without a quote, so it reads apart from the prompts of people. A `!` in it is shown as `ǃ`, because `!` would end the small print. The line starts with an emoji for the prompt's kind:
   - a notification of a background task, a subagent, a workflow or a monitor: its summary, such as `✅ Background command "Build" completed (exit code 0)`, and the first line of its event, when it has one, such as `📡 Monitor event: "Builds": serverpg exit 0`. The emoji is ✅ for a task that completed, ❌ for one that failed and ⏹️ for one that was stopped or killed. A notification without a status gets 📡 when it has an event, as a monitor event or the end of an artifact watch, and 🔔 otherwise. A notification in plain text, such as `3 background agents were stopped by the user: ...`, gets 🔔 and its first line;
   - a message of another Claude session: `✉️ Message from NAME: ` and its first line;
-  - a message of a teammate in an agent team: `✉️ Message from NAME: ` and its summary, or its first line without one. A prompt with several teammate messages gets the line of the first one that is not an idle notification, and a prompt of idle notifications only gets no line;
-  - the report of a subagent: `📋 Report from subagent NAME: ` and its first line;
+  - a message of a teammate without a profile, see [Teammates](#teammates): `✉️ Message from NAME: ` and its summary, or its first line without one. A prompt with several teammate messages gets a line for each one that is not an idle notification, and a prompt of idle notifications only gets no line;
+  - the report of a subagent without a profile: `📋 Report from subagent NAME: ` and its first line;
   - a scheduled prompt: `⏰ Scheduled prompt: ` and its first line;
   - an automatic prompt, such as the one after a usage limit resets: `🔄 Automatic prompt: ` and its first line;
   - another kind: `⚙️ Claude Code: ` and its first line.
@@ -786,7 +796,7 @@ In mode `host`, a session asks in its group to run in that mode: `I want to run 
 | `status-line.js` | The status line command of the running service's version, written at each service start, see [Status line](#status-line). |
 | `_hub/` | The databases of the profile `Claude`: the Main group, the session groups and the chats with peers. |
 | `_user/` | The databases of the profile `User`. |
-| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, a rejected mode `host`, model, effort level and other session IDs. `files/` holds the files of its chats and of its group. |
+| `_sessions/<session ID>/` | `session.json` with the session's number, name, project folder, group, a rejected mode `host`, model, effort level and other session IDs. `files/` holds the files of its chats and of its group. `agents/` holds the databases of its teammates' profiles, emptied each time the first teammate starts. |
 
 The folders, and the files the service writes, are readable only by the user, except on Windows. One service runs per data folder. These names contain a dot or start with `_`, which agent names of `serve` can't, so the folders of agents in `~/.simplex-mcp` never collide with them.
 

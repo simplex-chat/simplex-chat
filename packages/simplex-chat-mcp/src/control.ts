@@ -75,7 +75,7 @@ export interface ControlOptions {
 export interface SessionOptions {
   approves: (member: T.GroupMember) => boolean
   ownerOf: (session: number) => string | undefined
-  isUser: (member: T.GroupMember) => boolean
+  isOwnProfile: (member: T.GroupMember) => boolean
   toolsChanged: () => void
 }
 
@@ -257,7 +257,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
     if (this.actions.lost || chatItem.chatDir.type !== "groupRcv" || chatItem.content.type !== "rcvMsgContent") return
     const command = parseCommand(chatItem.content.msgContent.text)
     const sender = chatItem.chatDir.groupMember
-    if (command === undefined || this.options.session?.isUser(sender)) return
+    if (command === undefined || this.options.session?.isOwnProfile(sender)) return
     this.ownerCommands = this.ownerCommands
       .then(() => this.ownerCommand(sender, command))
       .then(reply => (reply === undefined ? undefined : this.chat.apiSendTextReply(ci, reply)))

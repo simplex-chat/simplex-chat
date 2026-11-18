@@ -11,9 +11,10 @@ import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
 import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, isLive, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
-import {AttachLine, LimitWindow, Limits, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
+import {AttachLine, LimitWindow, Limits, OwnerState, PermissionRequest, ResetReply, Step, TeammateEvent, TextBatch, TurnRequest} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {Machine, limitParts, machineParts, machineState} from "./status-line"
+import {Opener, Teammates, maxTeammates, removeStale} from "./teammates"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
 import {User, userContact} from "./user"
 
@@ -72,6 +73,8 @@ const claudeStates = new Map<string, [string, string]>([
 ])
 // spec: spec/api.md#list-of-sessions
 const unknownState: [string, string] = ["▶️", "running"]
+// spec: spec/api.md#teammates
+const teammateEndWait = 10_000
 
 // spec: spec/architecture.md#hub-hubtexts
 export const hubTexts: HostTexts = {lost: "The group of this session is lost. Start a new Claude Code session.", stopping: "The SimpleX service is stopping.", pending: `${maxPending} actions are pending; wait for the approvers' decisions.`}
@@ -142,6 +145,7 @@ export class Session {
   readonly actions: Actions
   readonly tools: AgentTools
   readonly control: Control
+  readonly teammates: Teammates
   readonly number: number
   private name: string
   private readonly pushed: {text: string; item: T.ChatItem; at: number; quoted?: boolean}[] = []
@@ -172,6 +176,8 @@ export class Session {
   private liveOrder: Promise<void> = Promise.resolve()
   private claudeStatus?: string
   private recordRead?: Promise<void>
+  private readonly teammatePosts = new Set<string>()
+  private readonly agentNames = new Set<string>()
 
   constructor(
     private readonly hub: Hub,
@@ -212,10 +218,11 @@ export class Session {
     const session = {
       approves: (member: T.GroupMember) => this.approves(member),
       ownerOf: (n: number) => hub.sessionId(n),
-      isUser: (member: T.GroupMember) => this.isUser(member),
+      isOwnProfile: (member: T.GroupMember) => this.isOwnProfile(member),
       toolsChanged: () => this.sendTools(),
     }
     this.control = new Control(chat, group, {displayName: group.groupProfile.displayName, session, registerHint: "", qrCode: "small"}, this.actions, this.tools)
+    this.teammates = new Teammates(join(sessionFolder(root, id), "agents"), {chat, userId: user.userId, groupId: group.groupId, session: number}, hub.teammateOpener)
   }
 
   get displayName(): string {
@@ -361,7 +368,7 @@ export class Session {
   onReaction({added, reaction: {chatInfo, chatReaction}}: CEvt.ChatItemReaction): void {
     const {chatDir, chatItem, reaction} = chatReaction
     const {content} = chatItem
-    if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || this.isUser(chatDir.groupMember) || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
+    if (!added || chatDir.type !== "groupRcv" || !canSend(chatDir.groupMember.memberRole) || this.isOwnProfile(chatDir.groupMember) || (content.type !== "rcvMsgContent" && content.type !== "sndMsgContent")) return
     if (reaction.type !== "emoji" || !reactionEmoji.includes(reaction.emoji)) return this.refuseReaction(chatDir.groupMember, chatItem)
     const replyTo = toReplyTo(chatInfo, {itemId: chatItem.meta.itemId, chatDir: chatItem.chatDir, content: withoutEndLine(content.msgContent, chatItem.chatDir), fileName: chatItem.file?.fileName}, {name: this.hub.profile.profile.displayName})
     this.queue(() => this.prompt({chatInfo, chatItem}, reaction.emoji, chatDir.groupMember, undefined, replyTo, "reaction"))
@@ -389,7 +396,7 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-turn
-  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine}: TurnRequest): Promise<void> {
+  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine, teammates, sessionEnd}: TurnRequest): Promise<void> {
     const startsTurn = prompt !== undefined && midTurn !== true
     if (startsTurn || answer !== undefined) {
       this.endPermissions(at)
@@ -423,6 +430,8 @@ export class Session {
       if (text !== undefined) this.text(text, at ?? Date.now())
       if (step !== undefined) await this.step(step, at ?? Date.now())
       if (note !== undefined) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+      for (const event of teammates ?? []) await this.teammate(event)
+      if (sessionEnd === true) void this.endTeammates()
       const typedPrompt = prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined
       const userPost = typedPrompt ? this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser)) : undefined
       if (startsTurn && (typedPrompt || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.openTurn(at ?? Date.now(), matched[0]?.item, userPost)
@@ -467,6 +476,11 @@ export class Session {
     this.onLine?.({tools})
   }
 
+  // spec: spec/architecture.md#hub-session-teammate
+  endTeammates(): Promise<void> {
+    return this.teammates.close()
+  }
+
   // spec: spec/architecture.md#hub-session-endpermissions
   endLive(): Promise<void> {
     this.endSteps()
@@ -491,7 +505,7 @@ export class Session {
   async announceRights(event: ChatEvent): Promise<void> {
     if (this.actions.lost || (event.type !== "joinedGroupMember" && event.type !== "connectedToGroupMember" && event.type !== "memberRole")) return
     const {member} = event
-    if (this.isUser(member)) return
+    if (this.isOwnProfile(member)) return
     const name = safeName(member.memberProfile.displayName)
     const observer = canSend(member.memberRole) && member.memberRole !== T.GroupMemberRole.Owner ? ` You can change role to observer to stop it: /'observer #${this.control.groupId} ${member.groupMemberId}'` : ""
     await this.post([{text: `${rightsText(name, member.memberRole)}${observer}`}])
@@ -499,8 +513,26 @@ export class Session {
 
   // spec: spec/architecture.md#hub-session-prompt
   private async prompt(ci: T.AChatItem, text: string, member: T.GroupMember, ciFile: T.CIFile | undefined, replyTo?: ReplyTo, kind: PromptKind = "message"): Promise<void> {
-    if (this.isUser(member)) return
+    if (this.isOwnProfile(member)) return
     await this.deliver(ci, text, member, ciFile, replyTo, kind)
+  }
+
+  // spec: spec/architecture.md#hub-session-teammate
+  private async teammate({name, kind, id, copy, description, text, note}: TeammateEvent): Promise<void> {
+    if (kind === "start") {
+      this.agentNames.add(name)
+      if (this.teammates.start(name, description) !== "full") return
+      await this.post([{text: small(`Teammate ${oneLine(name).replaceAll("!", "ǃ")} has no profile: this group has ${maxTeammates} teammates.`), priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+      return
+    }
+    if (kind === "end") return this.teammates.end(name, teammateEndWait)
+    if (id !== undefined && this.teammatePosts.has(id)) return
+    if (id !== undefined) keepLast(this.teammatePosts, id)
+    if (copy === true && this.agentNames.has(name)) return
+    if (copy !== true) this.agentNames.add(name)
+    const posted = text !== undefined && text.trim() !== "" && (await this.teammates.post(name, textParts(text)))
+    if (!posted && note !== undefined) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+    if (kind === "report") void this.teammates.end(name)
   }
 
   // spec: spec/architecture.md#hub-session-refusereaction
@@ -942,17 +974,17 @@ export class Session {
 
   // spec: spec/architecture.md#hub-session-queue
   private refusesCommand(text: string, member: T.GroupMember): boolean {
-    return parseCommand(text) !== undefined && !this.approves(member) && !this.isUser(member)
+    return parseCommand(text) !== undefined && !this.approves(member) && !this.isOwnProfile(member)
   }
 
   // spec: spec/architecture.md#hub-session-approves
   private approves(member: T.GroupMember): boolean {
-    return sessionApproverRoles.includes(member.memberRole) && !this.isUser(member)
+    return sessionApproverRoles.includes(member.memberRole) && !this.isOwnProfile(member)
   }
 
   // spec: spec/architecture.md#hub-session-approves
-  private isUser(member: T.GroupMember): boolean {
-    return member.memberContactId !== undefined && member.memberContactId === this.hub.userContactId
+  private isOwnProfile(member: T.GroupMember): boolean {
+    return (member.memberContactId !== undefined && member.memberContactId === this.hub.userContactId) || this.teammates.isMember(member)
   }
 
   // spec: spec/architecture.md#hub-session-approves
@@ -991,6 +1023,7 @@ export class Hub implements SessionGroups {
   readonly main: MainGroup
   user?: User
   userContactId?: number
+  teammateOpener?: Opener
   promptsHeldUntil = 0
   machine = (): Machine | undefined => machineState(this.root)
   private readonly sessions = new Map<number, Session>()
@@ -1022,6 +1055,7 @@ export class Hub implements SessionGroups {
       hub.user = await User.open(root, chat, user).catch(error => (logError("User", error), undefined))
       hub.userContactId = (await userContact(chat, user.userId))?.contactId
       for (const {id, session} of stored) await hub.session(id, session)
+      await removeStale(chat, user.userId, number => hub.sessions.get(number)?.control.groupId).catch(error => logError("teammates", error))
       hub.promptsHeldUntil = Date.now() + attachWait
       await core.events(event => hub.onEvent(event))
       hub.listTimer = setInterval(() => hub.showSessions(), listCheckMs).unref()
@@ -1063,6 +1097,7 @@ export class Hub implements SessionGroups {
     }
     const folder = sessionFolder(this.root, id)
     rmSync(join(folder, "files", "sent"), {recursive: true, force: true})
+    rmSync(join(folder, "agents"), {recursive: true, force: true})
     const known = await this.storedGroup(stored)
     const group = known ?? (await this.createSessionGroup(stored))
     if (known === undefined) writeSessionFile(folder, {...(readSessionFile(folder) ?? stored), group: group.groupId})
@@ -1144,6 +1179,7 @@ export class Hub implements SessionGroups {
     await this.showSessions()
     await waitForCancelledCards(stopped.flatMap(({lost, cancelled}) => (lost ? [] : cancelled)), cardsWait, new AbortController().signal)
     await Promise.all(sessions.map(session => session.endLive()))
+    await Promise.all(sessions.map(session => session.endTeammates()))
     for (const {tools} of sessions) tools.close()
     await this.user?.close()
     await this.chat.close()

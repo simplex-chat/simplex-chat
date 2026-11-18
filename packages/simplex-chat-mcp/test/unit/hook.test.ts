@@ -1,9 +1,10 @@
-import {appendFileSync, mkdtempSync, rmSync, truncateSync, writeFileSync} from "fs"
+import {appendFileSync, mkdirSync, mkdtempSync, rmSync, truncateSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
 import {ServiceClient} from "../../src/client"
 import {HookDeps, sessionStart, turn} from "../../src/hook"
 import {linkText, resetOwners, resetOwnersText, showLink} from "../../src/owner"
+import {TeammateEvent} from "../../src/protocol"
 import {qrCodeText} from "../../src/qr"
 import {SocketError} from "../../src/socket"
 import {version} from "../../src/version"
@@ -300,8 +301,9 @@ describe("turn hooks", () => {
   const userEntry = (promptId: string, content: unknown, extra: object = {}) => `${JSON.stringify({type: "user", promptId, ...extra, message: {role: "user", content}})}\n`
   const queuedEntry = (prompt: string, origin: object) => `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt, origin, commandMode: "prompt"}})}\n`
   const enqueueEntry = (content: string) => `${JSON.stringify({type: "queue-operation", operation: "enqueue", content})}\n`
-  const notes = (requests: unknown[]) => requests.map(request => (request as {body: {note?: string; typed: boolean; midTurn?: boolean}}).body)
-  const kinds = (requests: unknown[]) => notes(requests).map(({note, typed, midTurn}) => [note?.replace(/^!- ([\s\S]*)!$/, "$1"), typed, midTurn])
+  const notes = (requests: unknown[]) => requests.map(request => (request as {body: {note?: string; teammates?: TeammateEvent[]; typed: boolean; midTurn?: boolean}}).body)
+  const kinds = (requests: unknown[]) => notes(requests).map(({note, teammates, typed, midTurn}) => [(note ?? teammates?.map(event => event.note).join("\n"))?.replace(/^!- (.*)!$/gm, "$1"), typed, midTurn])
+  const teammateEvents = (requests: unknown[]) => requests.map(request => (request as {body: {teammates?: TeammateEvent[]}}).body.teammates)
 
   it("send a one-line note of each kind of Claude Code's own prompt, from the origin of its transcript entry, and none for a typed or a channel prompt", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
@@ -346,7 +348,15 @@ describe("turn hooks", () => {
         [undefined, false, undefined],
         [`${prefix}${"x".repeat(199 - [...prefix].length)}…`, false, undefined],
       ])
-      expect(notes(requests).flatMap(({note}) => (note === undefined ? [] : [note.startsWith("!- ") && note.endsWith("!")]))).toEqual(Array(12).fill(true))
+      expect(teammateEvents(requests).slice(5, 9)).toEqual([
+        undefined,
+        [{name: "general-purpose", kind: "report", id: "report a43be993e71d0a22f", copy: true, text: "\n## Review of the race fix\n\nNo defect.", note: "!- 📋 Report from subagent general-purpose: ## Review of the race fix!"}],
+        [{name: "ios-terminal", kind: "report", id: "report a1", copy: true, text: "[Subagent hand-back] The report follows:\n  All done.", note: "!- 📋 Report from subagent ios-terminal: [Subagent hand-back] The report follows:!"}],
+        undefined,
+      ])
+      expect(requests.map(request => (request as {body: object}).body).filter(body => "note" in body && "teammates" in body)).toEqual([])
+      const shown = notes(requests).flatMap(({note, teammates}) => [note, ...(teammates ?? []).map(event => event.note)]).flatMap(note => (note === undefined ? [] : [note]))
+      expect(shown.map(note => note.startsWith("!- ") && note.endsWith("!"))).toEqual(Array(12).fill(true))
       expect(notes(requests)[5].note).toBe("!- ✉️ Message from mcp-impl2: I read the evidence.!")
     } finally {
       rmSync(folder, {recursive: true, force: true})
@@ -393,11 +403,11 @@ describe("turn hooks", () => {
     }
   })
 
-  it("send a note of a teammate's message with its sender and summary, or the first line without a summary, from the first tag that is not an idle notification, and none for idle notifications only", async () => {
+  it("send each teammate's message that is not an idle notification as a teammate event with its sender, its text and a note with its summary or first line, and nothing for idle notifications only", async () => {
     const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-transcript-"))
     try {
       const transcript = join(folder, "session.jsonl")
-      const tag = (attributes: string, body: string) => `<teammate-message teammate_id="lookalikes-builder" color="green"${attributes}>\n${body}\n</teammate-message>`
+      const tag = (attributes: string, body: string, sender = "lookalikes-builder") => `<teammate-message teammate_id="${sender}" color="green"${attributes}>\n${body}\n</teammate-message>`
       const teammate = (...tags: string[]) => `Another Claude session sent a message:\n${tags.join("\n\n")}\n\nThis came from another Claude session — not typed by your user.`
       const idle = tag("", '{"type":"idle_notification","from":"lookalikes-builder","timestamp":"2026-11-12T19:00:02.715Z"}')
       const prompts: [string, string][] = [
@@ -406,6 +416,7 @@ describe("turn hooks", () => {
         ["p3", teammate(idle)],
         ["p4", teammate(idle, tag(' summary="Handles checked"', "All 37 handles are live."), idle)],
         ["p5", teammate(idle, idle)],
+        ["p6", teammate(tag(' summary="Tests pass"', "All 12 tests pass.", "tester"), tag("", "Reviewed: no defect.", "reviewer &amp; co"))],
       ]
       writeFileSync(transcript, prompts.map(([promptId, content]) => userEntry(promptId, content)).join(""))
       const {client, requests} = turnClient()
@@ -416,6 +427,18 @@ describe("turn hooks", () => {
         [undefined, false, undefined],
         ["✉️ Message from lookalikes-builder: Handles checked", false, undefined],
         [undefined, false, undefined],
+        ["✉️ Message from tester: Tests pass\n✉️ Message from reviewer & co: Reviewed: no defect.", false, undefined],
+      ])
+      expect(teammateEvents(requests)).toEqual([
+        [{name: "lookalikes-builder", kind: "message", copy: true, text: "The seed file is written.\n\nSeeds: 37 handles.", note: '!- ✉️ Message from lookalikes-builder: X Ads look-alike seed file "v2" written!'}],
+        [{name: "lookalikes-builder", kind: "message", copy: true, text: "\nThe seed file is written.\n\nSeeds: 37 handles.", note: "!- ✉️ Message from lookalikes-builder: The seed file is written.!"}],
+        undefined,
+        [{name: "lookalikes-builder", kind: "message", copy: true, text: "All 37 handles are live.", note: "!- ✉️ Message from lookalikes-builder: Handles checked!"}],
+        undefined,
+        [
+          {name: "tester", kind: "message", copy: true, text: "All 12 tests pass.", note: "!- ✉️ Message from tester: Tests pass!"},
+          {name: "reviewer & co", kind: "message", copy: true, text: "Reviewed: no defect.", note: "!- ✉️ Message from reviewer & co: Reviewed: no defect.!"},
+        ],
       ])
     } finally {
       rmSync(folder, {recursive: true, force: true})
@@ -664,6 +687,87 @@ describe("turn hooks", () => {
       {id: "toolu_Bash", text: "!- 💻 Run the tests ❌ 12 ms!", end: true},
     ])
     expect(ensured()).toBe(11)
+  })
+
+  it("send a teammate's start at the lead's Agent call with a name, its end when that call fails or when its finished subagent stops, and the end of the session once, without starting a service", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-subagents-"))
+    try {
+      const transcript = (agent: string) => join(folder, `agent-${agent}.jsonl`)
+      writeFileSync(join(folder, "agent-a1.meta.json"), JSON.stringify({agentType: "general-purpose", description: "Review the diff", name: "reviewer", finished: true}))
+      writeFileSync(join(folder, "agent-a2.meta.json"), JSON.stringify({agentType: "tester", name: "tester", taskKind: "in_process_teammate"}))
+      const {client, requests} = turnClient()
+      const review = {description: "Review the diff of #8204", prompt: "Review it.", name: "reviewer", run_in_background: true}
+      const hook = (input: string) => turn(input, {}, client, 0, 1, 1)
+      await hook(toolUse("PreToolUse", "Agent", review))
+      await hook(toolUse("PreToolUse", "Agent", {...review, name: " ", description: "Unnamed"}))
+      await hook(toolUse("PreToolUse", "Agent", {...review, name: "nested"}, {agent_id: "a9", agent_type: "general-purpose"}))
+      await hook(toolUse("PostToolUse", "Agent", review, {tool_response: {status: "async_launched", agentId: "a1"}}))
+      await hook(toolUse("PostToolUseFailure", "Agent", review, {error: "Denied", is_interrupt: false}))
+      await hook(toolUse("PreToolUse", "Agent", {name: "tester"}))
+      await hook(JSON.stringify({session_id: id, hook_event_name: "SubagentStop", agent_id: "a1", agent_type: "general-purpose", agent_transcript_path: transcript("a1"), last_assistant_message: "Reviewed.", effort: {level: "low"}}))
+      await hook(JSON.stringify({session_id: id, hook_event_name: "SubagentStop", agent_id: "a2", agent_type: "tester", agent_transcript_path: transcript("a2"), last_assistant_message: "Waiting."}))
+      await hook(JSON.stringify({session_id: id, hook_event_name: "SubagentStop", agent_id: "a3", agent_type: "general-purpose", agent_transcript_path: transcript("a3")}))
+      await hook(JSON.stringify({session_id: id, hook_event_name: "SessionEnd", reason: "prompt_input_exit"}))
+      expect(requests.map(request => {
+        const {step, teammates, sessionEnd} = (request as {body: {step?: {text: string}; teammates?: TeammateEvent[]; sessionEnd?: boolean}}).body
+        return {step: step?.text, teammates, sessionEnd}
+      })).toEqual([
+        {step: "!- 🤖 Agent: Review the diff of #8204!", teammates: [{name: "reviewer", kind: "start", description: "Review the diff of #8204"}]},
+        {step: "!- 🤖 Agent: Unnamed!"},
+        {step: "!- 🤖 Agent: Review the diff of #8204 (in background)!"},
+        {step: "!- 🤖 Agent: Review the diff of #8204 ❌!", teammates: [{name: "reviewer", kind: "end"}]},
+        {step: "!- 🤖 Agent!", teammates: [{name: "tester", kind: "start"}]},
+        {teammates: [{name: "reviewer", kind: "end"}]},
+        {sessionEnd: true},
+      ])
+      const errors = captureStderr()
+      const stopped = {ensureService: jest.fn(), request: jest.fn(async () => Promise.reject(Object.assign(new Error("connect ENOENT"), {code: "ENOENT"})))}
+      await turn(JSON.stringify({session_id: id, hook_event_name: "SessionEnd", reason: "other"}), {}, stopped as unknown as HookDeps["client"])
+      expect(stopped.ensureService).not.toHaveBeenCalled()
+      expect(stopped.request).toHaveBeenCalledTimes(1)
+      expect(errors).toEqual([])
+      const bodies = requests.map(request => (request as {body: {answer?: string; effort?: string}}).body)
+      expect(bodies.filter(({answer, effort}) => answer !== undefined || effort !== undefined)).toEqual([
+        expect.objectContaining({effort: "high"}),
+        expect.objectContaining({effort: "high"}),
+        expect.objectContaining({effort: "high"}),
+        expect.objectContaining({effort: "high"}),
+        expect.objectContaining({effort: "high"}),
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("send a teammate's message to the lead and its report under the name of its record, or its type, the end of a teammate whose shutdown it approved, and nothing for its other tool uses", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-subagents-"))
+    try {
+      const lead = join(folder, "session.jsonl")
+      mkdirSync(join(folder, "session", "subagents"), {recursive: true})
+      writeFileSync(join(folder, "session", "subagents", "agent-a1.meta.json"), JSON.stringify({agentType: "general-purpose", name: "reviewer"}))
+      const {client, requests} = turnClient()
+      const used = (tool: string, input: object, extra: object = {}) => turn(JSON.stringify({session_id: id, hook_event_name: "PostToolUse", transcript_path: lead, agent_id: "aprobe-1", agent_type: "probe", effort: {level: "medium"}, tool_name: tool, tool_input: input, tool_use_id: `toolu_${tool}`, tool_response: {success: true}, ...extra}), {}, client, 0, 1, 1)
+      await used("SendMessage", {to: "team-lead", summary: "Output of echo", message: "probe-ok\nsecond line"})
+      await used("SendMessage", {to: "team-lead", message: "Reviewed: no defect."}, {agent_id: "a1", agent_type: "general-purpose"})
+      await used("SubagentHandback", {message: "The report.\nDetails."}, {agent_id: "a1", agent_type: "general-purpose"})
+      await used("SendMessage", {to: "tester", message: "Run the tests."})
+      await used("SendMessage", {to: "team-lead", message: "Lost."}, {tool_response: {success: false}})
+      await used("SendMessage", {to: "team-lead", message: " \n"})
+      await used("SendMessage", {to: "team-lead", message: {type: "shutdown_response", approve: false}, type: "shutdown_response", approve: false})
+      await used("SendMessage", {to: "team-lead", message: {type: "shutdown_response", approve: true}, type: "shutdown_response", approve: true})
+      await used("SendMessage", {to: "team-lead", message: "Early."}, {hook_event_name: "PreToolUse", tool_response: undefined})
+      await used("SendMessage", {to: "team-lead", message: "From ../"}, {agent_id: "../a1", agent_type: "probe"})
+      await used("Bash", {command: "echo probe-ok"})
+      expect(requests.map(request => (request as {body: object}).body)).toEqual([
+        {id, at: 1, teammates: [{name: "probe", kind: "message", id: "message toolu_SendMessage", text: "probe-ok\nsecond line", note: "!- ✉️ Message from probe: Output of echo!"}]},
+        {id, at: 1, teammates: [{name: "reviewer", kind: "message", id: "message toolu_SendMessage", text: "Reviewed: no defect.", note: "!- ✉️ Message from reviewer: Reviewed: no defect.!"}]},
+        {id, at: 1, teammates: [{name: "reviewer", kind: "report", id: "report a1", text: "The report.\nDetails.", note: "!- 📋 Report from subagent reviewer: The report.!"}]},
+        {id, at: 1, teammates: [{name: "probe", kind: "end"}]},
+        {id, at: 1, teammates: [{name: "probe", kind: "message", id: "message toolu_SendMessage", text: "From ../", note: "!- ✉️ Message from probe: From ../!"}]},
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
   })
 
   it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {

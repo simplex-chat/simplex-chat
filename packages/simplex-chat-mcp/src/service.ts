@@ -55,6 +55,7 @@ export interface SessionLike {
   endPermissions(): void
   endLive(): Promise<void>
   endToolApprovals(): void
+  endTeammates(): Promise<void>
 }
 
 // spec: spec/architecture.md#service-hublike
@@ -462,6 +463,7 @@ export class Service {
       this.entries.delete(id)
       agent.open = false
       agent.endToolApprovals()
+      agent.endTeammates().catch(error => logError(`teammates of session ${agent.number}`, error))
       if (this.entries.size === 0) this.scheduleStop()
     }, idleClose)
   }

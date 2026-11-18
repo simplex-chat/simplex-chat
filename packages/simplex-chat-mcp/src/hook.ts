@@ -1,11 +1,11 @@
-import {open} from "fs/promises"
+import {open, readFile} from "fs/promises"
 import {isAbsolute, relative} from "path"
 import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError, oneLine} from "./log"
 import {duration} from "./messages"
-import {Step, TitleReply, TurnRequest} from "./protocol"
+import {Step, TeammateEvent, TitleReply, TurnRequest} from "./protocol"
 import {qrCodeText} from "./qr"
 import {claudePid} from "./service-request"
 import {SocketError, isNotRunning} from "./socket"
@@ -46,6 +46,7 @@ const statusEmoji = new Map([["completed", "✅"], ["failed", "❌"], ["stopped"
 const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammate-message /
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
 const pluginTools = "mcp__plugin_simplex_simplex__"
+const leadName = "team-lead"
 const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
 
 // spec: spec/api.md#plugin-options
@@ -69,8 +70,11 @@ interface TurnInput {
   effort?: {level?: string}
   cwd?: string
   agent_id?: string
+  agent_type?: string
+  agent_transcript_path?: string
   tool_name?: string
   tool_input?: {[field: string]: unknown}
+  tool_response?: {success?: unknown} | null
   tool_use_id?: string
   duration_ms?: number
   is_interrupt?: boolean
@@ -84,6 +88,7 @@ interface Origin {
   body?: unknown
   handback?: unknown
   handbackReportText?: unknown
+  senderTaskId?: unknown
 }
 
 // spec: spec/api.md#plugin-options
@@ -125,6 +130,7 @@ interface PromptKind {
   typed: boolean
   note?: string
   midTurn?: boolean
+  teammates?: TeammateEvent[]
 }
 
 export interface HookOutput {
@@ -178,7 +184,9 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
     const input = JSON.parse(stdin) as TurnInput
     const event = await eventFields(input, at, readMs)
     if (event === undefined) return {}
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model: input.to_model, switched: input.to_model === undefined ? undefined : true, effort: input.effort?.level, ...event}
+    const lead = input.agent_id === undefined
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: lead ? cut(input.last_assistant_message) : undefined, model: input.to_model, switched: input.to_model === undefined ? undefined : true, effort: lead ? input.effort?.level : undefined, ...event}
+    if (event.sessionEnd === true) return await endSession(client, request)
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -196,6 +204,14 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
 }
 
 // spec: spec/architecture.md#hook-turn
+async function endSession(client: HookDeps["client"], request: Partial<TurnRequest>): Promise<HookOutput> {
+  await client.request("POST", "/turn", request).catch(error => {
+    if (!isNotRunning(error) && !(error instanceof SocketError && error.status === unknownSession)) throw error
+  })
+  return {}
+}
+
+// spec: spec/architecture.md#hook-turn
 async function eventFields(input: TurnInput, at: number, readMs: number): Promise<Partial<TurnRequest> | undefined> {
   switch (input.hook_event_name) {
     case "Stop": {
@@ -208,8 +224,16 @@ async function eventFields(input: TurnInput, at: number, readMs: number): Promis
     case "PostToolUse":
     case "PostToolUseFailure": {
       const step = stepOf(input)
-      return step === undefined ? undefined : {step}
+      const teammate = agentCall(input) ?? (await agentPost(input))
+      if (step === undefined && teammate === undefined) return undefined
+      return {...(step === undefined ? {} : {step}), ...(teammate === undefined ? {} : {teammates: [teammate]})}
     }
+    case "SubagentStop": {
+      const name = await endedAgent(input, readMs)
+      return name === undefined ? undefined : {teammates: [{name, kind: "end"}]}
+    }
+    case "SessionEnd":
+      return {sessionEnd: true}
     case "PostCompact": {
       const note = await compactionNote(input, at, readMs)
       return note === undefined ? undefined : {note}
@@ -373,9 +397,44 @@ function recordText(entry: TranscriptEntry): string | undefined {
 // spec: spec/architecture.md#hook-answermodel
 function recordKind(record: TranscriptEntry, id: string | undefined, text: string): PromptKind {
   const origin = record.type === "attachment" ? (record.attachment?.origin ?? (record.attachment?.commandMode === "task-notification" ? {kind: "task-notification"} : undefined)) : record.origin
-  const note = noteOf(origin, record.turnOrigin, text)
+  const teammates = teammateEvents(origin, record.turnOrigin, text)
+  const note = teammates === undefined ? noteOf(origin, record.turnOrigin, text) : undefined
   const midTurn = record.type !== "user" || (id !== undefined && record.promptId !== id)
-  return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: small(shortened(note))}), ...(midTurn ? {midTurn} : {})}
+  return {typed: origin?.kind === "human", ...(note === undefined ? {} : {note: small(shortened(note))}), ...(teammates === undefined ? {} : {teammates}), ...(midTurn ? {midTurn} : {})}
+}
+
+// spec: spec/architecture.md#hook-teammateevents
+function teammateEvents(origin: Origin | null | undefined, turnOrigin: unknown, text: string): TeammateEvent[] | undefined {
+  if (origin?.kind === "peer" && origin.handback === true) {
+    const name = stringOf(origin.name) ?? stringOf(origin.from)
+    if (name === undefined) return undefined
+    const report = stringOf(origin.handbackReportText) ?? stringOf(origin.body) ?? text
+    const agent = stringOf(origin.senderTaskId)
+    return [{name, kind: "report", ...(agent === undefined ? {} : {id: reportId(agent)}), copy: true, text: report, note: reportNote(name, report)}]
+  }
+  if (origin?.kind !== undefined || turnOrigin === "scheduled" || !teammatePrompt.test(text)) return undefined
+  const events = [...text.matchAll(teammateMessage)].flatMap(([, sender, attributes, body]): TeammateEvent[] => {
+    if (idleNotification(body)) return []
+    const name = decoded(sender)
+    const summary = /\ssummary="([^"]*)"/.exec(attributes)?.[1]
+    return [{name, kind: "message", copy: true, text: body, note: messageNote(name, summary === undefined ? body : decoded(summary))}]
+  })
+  return events.length === 0 ? undefined : events
+}
+
+// spec: spec/architecture.md#hook-teammateevents
+function messageNote(name: string, summary: string): string {
+  return small(shortened(`✉️ Message from ${oneLine(name)}: ${firstLine(summary)}`))
+}
+
+// spec: spec/architecture.md#hook-teammateevents
+function reportNote(name: string, report: string): string {
+  return small(shortened(`📋 Report from subagent ${oneLine(name)}: ${firstLine(report)}`))
+}
+
+// spec: spec/architecture.md#hook-teammateevents
+function reportId(agent: string): string {
+  return `report ${agent}`
 }
 
 // spec: spec/architecture.md#hook-noteof
@@ -393,7 +452,7 @@ function noteOf(origin: Origin | null | undefined, turnOrigin: unknown, text: st
     case "auto-continuation":
       return `🔄 Automatic prompt: ${firstLine(text)}`
     case undefined:
-      return turnOrigin === "scheduled" ? `⏰ Scheduled prompt: ${firstLine(text)}` : teammateNote(text)
+      return turnOrigin === "scheduled" ? `⏰ Scheduled prompt: ${firstLine(text)}` : undefined
     default:
       return typeof origin?.kind === "string" ? `⚙️ Claude Code: ${firstLine(text)}` : undefined
   }
@@ -410,17 +469,7 @@ function taskNote(text: string): string {
   return `${emoji} ${summary}${event === "" ? "" : `: ${event}`}`
 }
 
-// spec: spec/architecture.md#hook-noteof
-function teammateNote(text: string): string | undefined {
-  if (!teammatePrompt.test(text)) return undefined
-  const match = [...text.matchAll(teammateMessage)].find(([, , , body]) => !idleNotification(body))
-  if (match === undefined) return undefined
-  const [, sender, attributes, body] = match
-  const summary = /\ssummary="([^"]*)"/.exec(attributes)?.[1]
-  return `✉️ Message from ${oneLine(decoded(sender))}: ${firstLine(summary === undefined ? body : decoded(summary))}`
-}
-
-// spec: spec/architecture.md#hook-noteof
+// spec: spec/architecture.md#hook-teammateevents
 function idleNotification(body: string): boolean {
   try {
     return (JSON.parse(body) as {type?: unknown} | null)?.type === "idle_notification"
@@ -442,6 +491,49 @@ function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_n
   if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: small(`${text} (in background)`), end: true}
   const outcome = event === "PostToolUse" ? "" : interrupted === true ? " ⏹️" : " ❌"
   return {id, text: small(`${text}${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`), end: true}
+}
+
+// spec: spec/architecture.md#hook-agentcall
+function agentCall({tool_name: tool, agent_id: agent, hook_event_name: event, tool_input: fields = {}}: TurnInput): TeammateEvent | undefined {
+  const name = stringOf(fields.name)?.trim()
+  if (tool !== "Agent" || agent !== undefined || !name) return undefined
+  if (event === "PostToolUseFailure") return {name, kind: "end"}
+  if (event !== "PreToolUse") return undefined
+  const description = stringOf(fields.description)?.trim()
+  return {name, kind: "start", ...(description ? {description} : {})}
+}
+
+// spec: spec/architecture.md#hook-agentcall
+async function agentPost({agent_id: agent, agent_type: type, hook_event_name: event, tool_name: tool, tool_input: fields = {}, tool_response: response, tool_use_id: toolUse, transcript_path: path}: TurnInput): Promise<TeammateEvent | undefined> {
+  if (agent === undefined || event !== "PostToolUse" || response?.success !== true) return undefined
+  if (tool !== "SubagentHandback" && (tool !== "SendMessage" || fields.to !== leadName)) return undefined
+  const name = (await agentName(path, agent)) ?? stringOf(type)
+  if (!name) return undefined
+  if (fields.type === "shutdown_response") return fields.approve === true ? {name, kind: "end"} : undefined
+  const text = stringOf(fields.message)
+  if (text === undefined || text.trim() === "") return undefined
+  if (tool === "SubagentHandback") return {name, kind: "report", id: reportId(agent), text, note: reportNote(name, text)}
+  return {name, kind: "message", ...(toolUse === undefined ? {} : {id: `message ${toolUse}`}), text, note: messageNote(name, stringOf(fields.summary) ?? text)}
+}
+
+// spec: spec/architecture.md#hook-agentcall
+async function agentName(path: string | undefined, agent: string): Promise<string | undefined> {
+  if (path === undefined || !path.endsWith(".jsonl") || !/^[\w-]+$/.test(agent)) return undefined
+  const meta = `${path.slice(0, -".jsonl".length)}/subagents/agent-${agent}.meta.json`
+  const record = await readFile(meta, "utf8").then(text => JSON.parse(text) as {name?: unknown} | null, () => undefined)
+  return stringOf(record?.name)
+}
+
+// spec: spec/architecture.md#hook-agentcall
+async function endedAgent({agent_transcript_path: path}: TurnInput, readMs: number): Promise<string | undefined> {
+  if (path === undefined || !path.endsWith(".jsonl")) return undefined
+  const meta = `${path.slice(0, -".jsonl".length)}.meta.json`
+  for (let read = 1; ; read++) {
+    const record = await readFile(meta, "utf8").then(text => JSON.parse(text) as {name?: unknown; finished?: unknown} | null, () => undefined)
+    if (record?.finished === true) return stringOf(record.name)
+    if (read >= answerReads) return undefined
+    await new Promise(resolve => setTimeout(resolve, readMs))
+  }
 }
 
 // spec: spec/architecture.md#hook-stepof
@@ -473,8 +565,10 @@ function stepText(tool: string, fields: {[field: string]: unknown}, cwd: string 
       return `🌐 Fetch ${field("url")}`
     case "WebSearch":
       return `🔍 Search ${field("query")}`
-    case "Agent":
-      return `🤖 Agent: ${field("description")}`
+    case "Agent": {
+      const description = field("description")
+      return description === "" ? "🤖 Agent" : `🤖 Agent: ${description}`
+    }
     default: {
       const value = stepFields.map(field).find(text => text !== "")
       const icon = /search/i.test(tool.split("__").at(-1) ?? "") ? "🔍" : "🔧"
