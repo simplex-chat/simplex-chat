@@ -47,7 +47,7 @@ const MENU_LABEL = "Menu";
 export const THEME_LABEL = "Theme";
 export const NEW_PURCHASE = "Buy a code";
 export const PURCHASE_HISTORY = "Your codes";
-export const FORGET_EVERYTHING = "Forget everything on this device";
+export const FORGET_EVERYTHING = "Forget everything in this browser";
 export const BUY_NEW_CODE = "Buy a new code";
 export const PART_PAID_TITLE = "Part of the amount has arrived";
 export const KEEPS_WAITING = "This page keeps checking. The invoice will not expire while it waits, however long the network takes.";
@@ -782,35 +782,57 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
   return p;
 }
 
+export type Retention = "notKept" | "kept" | "keptUntilIdle";
+
 export interface CodeIssuedOptions {
   code: string;
-  savedLocally: boolean;
+  retention: Retention;
   app?: App | undefined;
 }
 
 export const REDEEM_IN_SETTINGS = "Settings → Supporter perks → Redeem code";
 export const REDEEM_SCREEN_OPEN = "The Redeem code screen is already open.";
+const IDLE_PERIOD = "after 7\u00a0days of browser use without a tap, click or key\u00a0press on this site.";
+export const CAN_DELETE_CODE = "This browser can delete the code";
+export const CAN_DELETE_CODES = "This browser can delete codes";
+export const IDLE_DELETION_CODES = `${CAN_DELETE_CODES} ${IDLE_PERIOD}`;
+export const MAY_DO_SO_AFTER = `It may do so ${IDLE_PERIOD}`;
+export const DELETED_IF_BOUGHT_HERE = `If the code was bought in this browser, it may have been deleted ${IDLE_PERIOD}`;
+export const KEEP_OUTSIDE = "Redeem the code now, or keep a copy outside this browser.";
+export const KEEP_EACH_OUTSIDE = "Copy each code you have not redeemed and keep it outside this browser.";
+export const COPY_UNLESS_ADDED = "If the app does not add the badge, show the code and keep a copy outside this browser.";
+const CODES_STORED_IN_THIS_BROWSER = "Codes stored in this browser";
+const ARE_LISTED_HERE = "are listed here.";
+export const CODES_LISTED_HERE = `${CODES_STORED_IN_THIS_BROWSER} ${ARE_LISTED_HERE}`;
+const CODES_STORED_ONLY = "Codes are stored only";
+const IN_BROWSER_BOUGHT_IN = "in the browser they were bought in.";
+export const CODES_STORED_IN_BROWSER = `${CODES_STORED_ONLY} ${IN_BROWSER_BOUGHT_IN}`;
 
 function codeWithCopy(code: string): HTMLElement[] {
   const copy = copyControl("Copy code", code, "primary outline");
   return [el("div", { class: "code" }, code), copy.control, copy.status];
 }
 
-function codeDetails(o: CodeIssuedOptions): HTMLElement {
-  const onlyCopy = o.savedLocally
-    ? el("div", { class: "warn" },
-        el("span", { class: "title" }, "This is the only copy."),
-        el("p", {}, "Saved in this browser and nowhere else."),
-        el("p", {}, "Anyone using this browser can read it, and clearing the browser loses it."))
-    : el("div", { class: "warn" },
-        el("span", { class: "title" }, "This code could not be saved in this browser."),
-        el("p", {}, "Copy it now. It is shown here and nowhere else."));
+function onlyCopy(): HTMLElement {
+  return warning("This is the only copy.", "Saved in this browser and nowhere else.",
+    "Anyone using this browser can read it, and clearing the browser loses it.");
+}
+
+function retentionBoxes(retention: Retention): HTMLElement[] {
+  switch (retention) {
+    case "notKept": return [warning("This code could not be saved in this browser.", "Copy it now. It is shown here and nowhere else.")];
+    case "kept": return [onlyCopy()];
+    case "keptUntilIdle": return [onlyCopy(), warning(CAN_DELETE_CODE, MAY_DO_SO_AFTER, KEEP_OUTSIDE)];
+  }
+}
+
+function codeDetails(o: Omit<CodeIssuedOptions, "code">): HTMLElement {
   return el("div", { class: "details" },
     el("div", { class: "rows plain" },
       el("span", { class: "label" }, "Redeem it in the app"),
       el("div", {}, o.app === "desktop" ? REDEEM_SCREEN_OPEN : REDEEM_IN_SETTINGS),
     ),
-    onlyCopy,
+    ...retentionBoxes(o.retention),
   );
 }
 
@@ -833,11 +855,12 @@ export const SHOW_CODE = "Show code";
 
 export type AppCode =
   | { kind: "hidden"; onShow: () => void }
-  | { kind: "shown"; code: string; savedLocally: boolean };
+  | { kind: "shown"; code: string };
 
 export interface ReturnToAppOptions {
   onReturn: () => void;
   code: AppCode;
+  retention: Exclude<Retention, "notKept">;
 }
 
 // The buyer is on the phone the code is for, so the revealed code comes without the QR that would carry it there.
@@ -854,10 +877,11 @@ export function returnToApp(o: ReturnToAppOptions): HTMLElement {
   p.classList.add("ending");
   switch (o.code.kind) {
     case "hidden":
+      if (o.retention === "keptUntilIdle") p.append(warning(CAN_DELETE_CODE, MAY_DO_SO_AFTER, COPY_UNLESS_ADDED));
       p.append(el("p", { class: "row-line center" }, button(SHOW_CODE, o.code.onShow, "link")));
       return p;
     case "shown":
-      p.append(...codeWithCopy(o.code.code), el("div", { class: "split" }, codeDetails(o.code)));
+      p.append(...codeWithCopy(o.code.code), el("div", { class: "split" }, codeDetails({ retention: o.retention })));
       return p;
   }
 }
@@ -894,15 +918,19 @@ function orderTitle(badgeType: string, months: number): string {
 export interface PaidNoCodeOptions {
   order: UnpaidOrder;
   settledAt: string | undefined;
+  retention: Retention;
 }
+
+export const CODE_NOT_IN_BROWSER = "This code is not in this browser";
 
 export function paidNoCode(o: PaidNoCodeOptions): HTMLElement {
   const summary = el("div", { class: "rows field" },
     el("div", { class: "name" }, orderTitle(o.order.badgeType, o.order.months)),
   );
   const p = panel(
-    el("h1", { class: "tight" }, "This code is not on this device"),
+    el("h1", { class: "tight" }, CODE_NOT_IN_BROWSER),
     notice("The code was generated in the browser it was bought in, and is not stored anywhere else.",
+      ...(o.retention === "keptUntilIdle" ? [DELETED_IF_BOUGHT_HERE] : []),
       "Quote the reference below and we will sort it out."),
     summary,
   );
@@ -914,7 +942,7 @@ export function paidNoCode(o: PaidNoCodeOptions): HTMLElement {
 
 export interface PurchaseHistoryOptions {
   rows: readonly HistoryRow[];
-  keepsNewCodes: boolean;
+  retention: Retention;
   onOpen: (orderId: string) => void;
   onStart: () => void;
   onForget: () => void;
@@ -972,10 +1000,14 @@ function entryLine(row: HistoryRow, onOpen: (orderId: string) => void): HTMLElem
 }
 
 export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
+  const deletion = o.retention !== "keptUntilIdle" ? []
+    : o.rows.some((r) => r.kind === "paid") ? [warning(CAN_DELETE_CODES, MAY_DO_SO_AFTER, KEEP_EACH_OUTSIDE)]
+    : [el("p", { class: "muted" }, IDLE_DELETION_CODES)];
   if (o.rows.length === 0) {
     return withInvest(panel(
       el("h1", {}, "Your codes"),
-      el("p", { class: "lede" }, "Nothing bought on this device"),
+      el("p", { class: "lede" }, el("span", { class: "half" }, CODES_STORED_IN_THIS_BROWSER), " ", el("span", { class: "half" }, ARE_LISTED_HERE)),
+      ...deletion,
       el("div", { class: "hero", role: "presentation" }),
       button("Choose your badge", o.onStart),
     ), investPanel(undefined));
@@ -986,9 +1018,10 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
     button(FORGET_EVERYTHING, o.onForget, "link danger"));
   return withInvest(panel(
     el("h1", {}, "Your codes"),
-    el("p", { class: "lede" }, o.keepsNewCodes
-      ? "Every code you bought is in this browser, and nowhere else."
-      : "This browser cannot save anything new right now. Copy any code you have not kept elsewhere."),
+    o.retention === "notKept"
+      ? el("p", { class: "lede" }, "This browser cannot save anything new right now. Copy any code you have not kept elsewhere.")
+      : el("p", { class: "lede" }, el("span", { class: "half" }, CODES_STORED_ONLY), " ", el("span", { class: "half" }, IN_BROWSER_BOUGHT_IN)),
+    ...deletion,
     list,
     forget,
   ), investPanel(undefined));

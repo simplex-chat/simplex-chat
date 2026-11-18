@@ -8,7 +8,7 @@ import * as api from "./api.js";
 import { appCodeLink, readHash, resolveLoad } from "./routing.js";
 import * as screens from "./screens.js";
 import { appearanceFor, cardPlan, loadStripeJs, mountCard, type CardFailure, type ConfirmOutcome } from "./stripe.js";
-import { Store, type StorageLike } from "./store.js";
+import { Store, browserDeletesIdle, type StorageLike } from "./store.js";
 import { STEPS } from "./domain.js";
 import type { App, Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
 import { EMBED_READY, HEIGHT_MESSAGE, NAV_MESSAGE, THEME_MESSAGE, bgFromMessage, isNewPurchaseMessage, returnUrlFromMessage, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
@@ -56,6 +56,9 @@ function memoryOver(real: StorageLike | undefined): StorageLike {
 }
 
 const store = pageStore();
+const retention: screens.Retention = !store.durable ? "notKept"
+  : browserDeletesIdle(navigator.userAgent) ? "keptUntilIdle"
+  : "kept";
 
 const flow = new Flow({
   store,
@@ -673,7 +676,7 @@ function paint(view: PaymentView): void {
       root.replaceChildren(codeScreen(view));
       return;
     case "paidNoCode":
-      root.replaceChildren(screens.paidNoCode({ order: view.order, settledAt: view.invoice?.settledAt }));
+      root.replaceChildren(screens.paidNoCode({ order: view.order, settledAt: view.invoice?.settledAt, retention }));
       return;
     case "awaitingPayment": {
       const awaitingPayment = screens.awaitingPayment({
@@ -720,16 +723,18 @@ const appLaunched = new Set<string>();
 
 function codeScreen(view: CodeView): HTMLElement {
   const { orderId } = view.order;
+  const codeRetention = view.savedLocally ? retention : "notKept";
   // An unsaved code exists only on this screen, so it is never held back behind a link that may fail.
-  if (view.order.app !== "mobile" || !view.savedLocally) {
-    return screens.codeIssued({ code: view.code, savedLocally: view.savedLocally, app: view.order.app });
+  if (view.order.app !== "mobile" || codeRetention === "notKept") {
+    return screens.codeIssued({ code: view.code, retention: codeRetention, app: view.order.app });
   }
   const link = appCodeLink(view.code);
   const ending = screens.returnToApp({
     onReturn: () => { location.href = link; },
     code: codeRevealed.has(orderId)
-      ? { kind: "shown", code: view.code, savedLocally: view.savedLocally }
+      ? { kind: "shown", code: view.code }
       : { kind: "hidden", onShow: () => { codeRevealed.add(orderId); paint(view); } },
+    retention: codeRetention,
   });
   // A connectivity event repaints this screen, and each repaint must not fire the scheme again.
   if (!appLaunched.has(orderId)) {
@@ -891,7 +896,7 @@ function renderCodes(entries: readonly OrderRecord[]): void {
   syncChrome();
   root.replaceChildren(screens.purchaseHistory({
     rows: historyRows(entries),
-    keepsNewCodes: store.durable,
+    retention,
     onOpen: goToOrder,
     onStart: startPurchase,
     onForget: () => {

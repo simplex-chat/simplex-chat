@@ -518,7 +518,7 @@ h1 {
   }
 }
 /* the payment screen and the code screen take one step down from the landing screen's. */
-h1.tight { font-size: 1.875rem; line-height: 2.5rem; margin-top: 15px; }
+h1.tight { font-size: 1.875rem; line-height: 2.5rem; margin-top: 15px; text-wrap: balance; }
 
 .lede {
   font-size: 1.125rem;
@@ -539,7 +539,7 @@ h1.tight + .lede { margin-top: 6px; }
 /* A narrower measure than the column, so the closing footnote breaks in two rather than
    reading as a caption that ran on. Scoped to a direct child, so it cannot reach the same
    class inside a left-aligned field and indent the line it holds. */
-.panel > p.muted { max-width: 332px; margin-left: auto; margin-right: auto; }
+.panel > p.muted { max-width: 332px; margin-left: auto; margin-right: auto; text-wrap: pretty; }
 /* Shown beside the status while the browser is offline, not instead of it. */
 .offline { color: var(--warn-fg); }
 .center { text-align: center; }
@@ -880,7 +880,7 @@ p.row-line { margin: 16px 0 0; }
    used to carry was the only leading on the page that was neither the body's
    1.5 nor anything else's, and it set these lines closer together than the same
    size reads anywhere else. */
-.notice p, .warn p, .info p { font-size: .875rem; margin: 0; }
+.notice p, .warn p, .info p { font-size: .875rem; margin: 0; text-wrap: pretty; }
 
 /* the catalog-changed screen, the rate-limited screen and the payment screen's "waiting": something is pending, nothing has gone wrong. */
 .notice { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-fg); }
@@ -1012,8 +1012,6 @@ p.row-line { margin: 16px 0 0; }
   background: var(--surface);
 }
 
-/* A run to be read a character at a time, so it steps one below `.mono`'s body
-   size, the size the copy beside it is set at in both boxes. */
 .entry .code-row code {
   flex: 1 1 auto;
   min-width: 0;
@@ -1204,10 +1202,9 @@ p.row-line { margin: 16px 0 0; }
 
 /* ------------------------------------------------------------ the phone band */
 
-/* The same layout at a smaller scale: the type scale steps down and no box is
-   re-declared. It sits at the end of the sheet because a media query adds no specificity,
-   so a phone rule beside its desktop rule would be beaten by any equally specific rule
-   further down the file. */
+/* The same layout at a smaller scale. It is last in the sheet because a media query adds
+   no specificity, and an equally specific rule later in the file overrides a phone rule
+   placed beside its desktop rule. */
 @media (max-width: 560px) {
   .chrome-bar { padding: 8px 0; }
   .brand { width: 108px; }
@@ -1253,4 +1250,7 @@ p.row-line { margin: 16px 0 0; }
      every width. The paid-no-code screen's summary carries the same title and steps with it. */
   .entry { padding: 14px 16px 16px; }
   .entry .name, .rows.field > .name { font-size: 1rem; }
+  .entry .code-row { gap: 6px; padding-right: 4px; }
+  .entry .code-row code { font-size: .75rem; }
+  .entry .code-row .secondary { padding: 0 8px; }
 }

@@ -22,6 +22,13 @@ const THEME_KEY = "sb.theme.v1";
 const CARD_RETURN_KEY = "sb.cardReturn.v1";
 const CAP = 50;
 
+const WEBKIT = "AppleWebKit/";
+const CHROME_OR_ANDROID = /Chrome\/|Android/;
+
+export function browserDeletesIdle(userAgent: string): boolean {
+  return userAgent.includes(WEBKIT) && !CHROME_OR_ANDROID.test(userAgent);
+}
+
 function readOrder(value: unknown): OrderRecord | undefined {
   const o = asObject(value);
   if (o === undefined) return undefined;

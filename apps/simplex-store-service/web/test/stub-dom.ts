@@ -169,7 +169,7 @@ export interface Connectivity {
   online: boolean;
 }
 
-export function installDocument(): {
+export function installDocument(userAgent = ""): {
   app: StubElement; chrome: StubElement; documentElement: StubElement;
   clipboard: Clipboard; document: StubDocument;
   workers: ServiceWorkers; connectivity: Connectivity;
@@ -231,6 +231,7 @@ export function installDocument(): {
     value: {
       get clipboard() { return clipboard.absent ? undefined : api; },
       get onLine() { return connectivity.online; },
+      userAgent,
       serviceWorker,
     },
   });

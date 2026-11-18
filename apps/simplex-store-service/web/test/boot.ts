@@ -5,6 +5,7 @@ import {
   MemStorage, StubHistory, installDocument, locationOf,
   type Clipboard, type Connectivity, type ServiceWorkers, type StubDocument, type StubElement,
 } from "./stub-dom.js";
+import { FORGET_EVERYTHING } from "../src/screens.js";
 
 export interface Reply {
   status: number;
@@ -40,10 +41,11 @@ export interface Page {
 export interface BootOptions {
   storage?: MemStorage;
   url?: string;
+  userAgent?: string;
 }
 
 export function installPage(opts: BootOptions = {}): Page {
-  const { app, chrome, documentElement, clipboard, document, workers, connectivity } = installDocument();
+  const { app, chrome, documentElement, clipboard, document, workers, connectivity } = installDocument(opts.userAgent);
   const storage = opts.storage ?? new MemStorage();
   const fetches: Array<{ url: string; init?: RequestInit }> = [];
   const siteConfig: Page["siteConfig"] = { stripePublishableKey: null };
@@ -193,10 +195,8 @@ export function primaryOf(p: StubElement): StubElement | undefined {
   return p.all("button.primary").find((b) => !b.hasAttribute("disabled"));
 }
 
-const FORGET_LABEL = "Forget everything on this device";
-
 export function forgetControl(page: Page): StubElement | undefined {
   page.chrome.all("button.menu-button")[0]!.click();
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
-  return page.app.all("button.danger").find((b) => b.textContent === FORGET_LABEL);
+  return page.app.all("button.danger").find((b) => b.textContent === FORGET_EVERYTHING);
 }

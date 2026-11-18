@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, timedTest } from "./boot.js";
 import { MemStorage } from "./stub-dom.js";
 import { ORDER_ID, seededStorage } from "./open-order.js";
+import { CODES_STORED_IN_BROWSER } from "../src/screens.js";
 
 const silentTest = timedTest(3000);
 
@@ -22,6 +23,6 @@ silentTest("main: a store that swallows writes is not called durable", () => {
   assert.equal(headingOf(screen), "Your codes");
   assert.ok(screen.textContent.includes("cannot save anything new"),
     `a silent write is still a lost code, and the buyer has to be told: ${screen.textContent.slice(0, 200)}`);
-  assert.ok(!screen.textContent.includes("in this browser, and nowhere else"),
+  assert.ok(!screen.textContent.includes(CODES_STORED_IN_BROWSER),
     "nothing may promise the codes are kept here");
 });

@@ -54,7 +54,7 @@ is plain TypeScript, tested directly in Node.
 | `codes.ts` | The badge code alphabet and check character |
 | `parse.ts` | Readers for data the page did not produce, each answering the value or undefined |
 | `format.ts` | Money, countdowns and elapsed time as the words a screen prints |
-| `store.ts` | The three `localStorage` keys — session, orders and the chosen theme |
+| `store.ts` | The four `localStorage` keys: session, orders, the chosen theme and the card return; `browserDeletesIdle`, the user-agent test for browsers that delete a site's storage after days without interaction |
 | `order.ts` | What an order's state means: what to keep from a response, which screen it selects, and its history row |
 | `routing.ts` | Reading `?order=`, the step hash with its `?app=` flag, and the store into what to render; the `simplexchat:` link that hands a code to the app |
 | `api.ts` | The three routes — create, cancel and read — and the long-poll wait loop, with `fetch`, sleep and the clock injected |
@@ -189,7 +189,7 @@ The SimpleX app opens the page at a step hash carrying a flag, which decides
 only how the code is handed over at the end. Both endings can be driven here:
 
 ```
-http://localhost:8099/#/tier?app=true      # Return to SimpleX, with Show code under it
+http://localhost:8099/#/tier?app=true      # Return to SimpleX, with Show code under it (in WebKit, the deletion warning between them)
 http://localhost:8099/#/tier?app=desktop   # the code screen, saying the Redeem code screen is already open
 ```
 

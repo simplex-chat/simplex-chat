@@ -1,7 +1,7 @@
 import { timedTest } from "./boot.js";
 import assert from "node:assert/strict";
 import { type OrderRecord } from "../src/domain.js";
-import { Store } from "../src/store.js";
+import { Store, browserDeletesIdle } from "../src/store.js";
 
 const storeTest = timedTest(2000);
 
@@ -322,4 +322,36 @@ storeTest("store: a card-return is returned within the window, cleared on read, 
   s.rememberCardReturn("inv_3", NOW);
   s.clearCardReturn();
   assert.equal(s.takeCardReturn(WINDOW, NOW), undefined, "an explicit clear forgets it");
+});
+
+const WEBKIT: Readonly<Record<string, string>> = {
+  "Safari on macOS and on iPad in desktop mode": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15",
+  "Safari on iPhone": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1",
+  "Chrome on iPhone": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/139.0.7258.76 Mobile/15E148 Safari/604.1",
+  "Firefox on iPhone": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/142.0 Mobile/15E148 Safari/605.1.15",
+  "Edge on iPhone": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 EdgiOS/139.0.3405.86 Mobile/15E148 Safari/605.1.15",
+  "an in-app web view on iPhone": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  "GNOME Web on Linux": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15 Epiphany/605.1.15",
+};
+
+const OTHERS: Readonly<Record<string, string>> = {
+  "Chrome on Windows": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+  "Chrome on macOS": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+  "Chromium on Linux": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chromium/139.0.0.0 Chrome/139.0.0.0 Safari/537.36",
+  "Edge on Windows": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0",
+  "Chrome on Android": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
+  "an Android web view": "Mozilla/5.0 (Linux; Android 14; Pixel 8; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/139.0.0.0 Mobile Safari/537.36",
+  "Samsung Internet": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/28.0 Chrome/130.0.0.0 Mobile Safari/537.36",
+  "Firefox on Windows": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0",
+  "Firefox on Android": "Mozilla/5.0 (Android 14; Mobile; rv:142.0) Gecko/142.0 Firefox/142.0",
+  "the Android stock browser": "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; SM-T210 Build/KOT49H) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Safari/534.30",
+  "an empty user agent": "",
+};
+
+storeTest("store: browserDeletesIdle is true for WebKit user agents", () => {
+  for (const [name, ua] of Object.entries(WEBKIT)) assert.equal(browserDeletesIdle(ua), true, name);
+});
+
+storeTest("store: browserDeletesIdle is false for Chromium, Firefox and Android user agents and an empty user agent", () => {
+  for (const [name, ua] of Object.entries(OTHERS)) assert.equal(browserDeletesIdle(ua), false, name);
 });
