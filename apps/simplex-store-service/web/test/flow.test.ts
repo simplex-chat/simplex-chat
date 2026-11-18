@@ -88,14 +88,14 @@ apiTest("api: createInvoice accepts a card-shaped 200 for a card request", async
   assert.deepEqual(got, cardCreated);
 });
 
-apiTest("api: createInvoice sends method ln and accepts the Lightning invoice it gets back", async () => {
+apiTest("api: with createInvoice, method ln is sent and the Lightning invoice of the answer is returned", async () => {
   const { fn, calls } = fetchReturning({ status: 200, body: lnCreated });
   const got = await createInvoice({ priceId: "p", method: "ln", codeHash: "h" }, fn);
   assert.equal(JSON.parse(String(calls[0]!.init!.body)).method, "ln");
   assert.deepEqual(got, lnCreated, "the BOLT11 and the amount are kept as sent");
 });
 
-apiTest("api: createInvoice refuses a Lightning invoice for an on-chain request, and the reverse", async () => {
+apiTest("api: a Lightning invoice answered to an on-chain request, and the reverse, is rejected by createInvoice", async () => {
   const cases = [
     ["btc", lnCreated],
     ["xmr", lnCreated],
