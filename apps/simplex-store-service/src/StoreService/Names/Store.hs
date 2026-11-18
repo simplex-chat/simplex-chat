@@ -86,6 +86,7 @@ module StoreService.Names.Store
     labelHolder,
     setPaidAt,
     unregisteredPaidBefore,
+    monthCandidates,
     claimUnregisteredAlert,
     openInvoicesOfHeldName,
     activeRegistrations,
@@ -290,7 +291,7 @@ data TxHistory = TxHistory {thCommitTx :: Maybe TxHash, thRegisterTx :: Maybe Tx
 noHistory :: TxHistory
 noHistory = TxHistory {thCommitTx = Nothing, thRegisterTx = Nothing}
 
-data FailReason = FRSendsUsedUp | FRLinksRefused | FRRegistryRefused | FRSignatureRefused
+data FailReason = FRSendsUsedUp | FRLinksRefused | FRRegistryRefused | FRSignatureRefused | FRMonthEnded
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding FailReason where
@@ -299,11 +300,13 @@ instance TextEncoding FailReason where
     FRLinksRefused -> "links_refused"
     FRRegistryRefused -> "registry_refused"
     FRSignatureRefused -> "signature_refused"
+    FRMonthEnded -> "month_ended"
   textDecode = \case
     "sends_used_up" -> Just FRSendsUsedUp
     "links_refused" -> Just FRLinksRefused
     "registry_refused" -> Just FRRegistryRefused
     "signature_refused" -> Just FRSignatureRefused
+    "month_ended" -> Just FRMonthEnded
     _ -> Nothing
 
 instance FromField FailReason where fromField = fromTextField_ textDecode
@@ -1003,6 +1006,7 @@ orderLive NameRegistration {nrPhase} = case nrPhase of
   OCommitting _ -> True
   OCommitted _ -> True
   ORegistering {} -> True
+  OFailed _ FRMonthEnded -> False
   OFailed {} -> True
   OTaken -> False
   ORegistered {} -> False
@@ -1110,7 +1114,7 @@ findRegistrations db owner now = do
 labelHolder :: DB.Connection -> LabelHash -> IO (Maybe RegistrationId)
 labelHolder db lh =
   maybeFirstRow (RegistrationId . fromOnly) $
-    DB.query db (mkQuery "SELECT registration_id FROM @name_registrations WHERE label_hash = ? AND phase IN (?,?,?,?,?) LIMIT 1") (lh, PQueued, PCommitting, PCommitted, PRegistering, PFailed)
+    DB.query db (mkQuery "SELECT registration_id FROM @name_registrations WHERE label_hash = ? AND live = 1 AND phase <> ? LIMIT 1") (lh, PUnpaid)
 
 setPaidAt :: DB.Connection -> RegistrationId -> UTCTime -> IO ()
 setPaidAt db (RegistrationId rid) paidAt =
@@ -1123,6 +1127,14 @@ unregisteredPaidBefore db cutoff =
       db
       (mkQuery "SELECT registration_id, phase, paid_at FROM @name_registrations WHERE phase IN (?,?,?,?) AND paid_at < ? AND unregistered_alerted_at IS NULL ORDER BY paid_at, registration_id")
       (PQueued, PCommitting, PCommitted, PRegistering, cutoff)
+
+monthCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, UTCTime)]
+monthCandidates db cutoff =
+  map (\(rid, paidAt) -> (RegistrationId rid, paidAt))
+    <$> DB.query
+      db
+      (mkQuery "SELECT registration_id, paid_at FROM @name_registrations WHERE live = 1 AND phase IN (?,?,?) AND name_prepaid_code_id IS NULL AND paid_at <= ? ORDER BY paid_at, registration_id")
+      (PQueued, PCommitted, PFailed, cutoff)
 
 claimUnregisteredAlert :: DB.Connection -> RegistrationId -> UTCTime -> IO Bool
 claimUnregisteredAlert db (RegistrationId rid) now =

@@ -355,7 +355,7 @@ CREATE UNIQUE INDEX @idx_name_registrations_live_commitment ON @name_registratio
 
 CREATE UNIQUE INDEX @idx_name_registrations_live_owner_label ON @name_registrations(owner, label_hash) WHERE live = 1;
 
-CREATE UNIQUE INDEX @idx_name_registrations_held_label ON @name_registrations(label_hash) WHERE phase IN ('queued', 'committing', 'committed', 'registering', 'failed');
+CREATE UNIQUE INDEX @idx_name_registrations_held_label ON @name_registrations(label_hash) WHERE live = 1 AND phase <> 'unpaid';
 
 CREATE INDEX @idx_name_registrations_label_phase ON @name_registrations(label_hash, phase);
 

@@ -17,6 +17,8 @@ module StoreService.Names.Worker
     runCodeSweep,
     alertUnregisteredPaid,
     runUnregisteredAlerts,
+    endMonths,
+    runMonthEnds,
     Retried (..),
     RetryRefusal (..),
     retryRegistration,
@@ -48,6 +50,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', tryOwnLogged, tshow, ($>>=))
@@ -412,7 +415,10 @@ takenWrite :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRe
 takenWrite now r db = versionWritten <$> updateRegistration db r {nrPhase = OTaken} now
 
 creditedTaken :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
-creditedTaken now r@NameRegistration {nrId, nrPrice} db = takenWrite now r db >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now)
+creditedTaken now r = creditedWrite now r {nrPhase = OTaken}
+
+creditedWrite :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
+creditedWrite now r@NameRegistration {nrId, nrPrice} db = versionWritten <$> updateRegistration db r now >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now)
 
 -- | A compare-and-set on the version read, in the caller's turn of the name.
 store :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
@@ -500,7 +506,7 @@ orderTransactions OrdersEnv {oeStore} NameRegistration {nrId} = withTransaction 
 data Closed = CLRegistered RegistrationId | CLRefunded UTCTime RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)
 
-data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFUnread | CFChanged | CFHeld BalanceHold | CFBalanceChanged
+data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFMonthEnded | CFUnread | CFChanged | CFHeld BalanceHold | CFBalanceChanged
   deriving (Eq, Show)
 
 newtype CloseRefused = CloseRefused CloseRefusal
@@ -521,6 +527,7 @@ closeRegistration st ct turns clock ref = do
     refused = pure . CLRefused
     closeFailed now r@NameRegistration {nrPayment, nrPhase} = case (nrPayment, nrPhase, lapseMoment r) of
       (OPCode _, _, _) -> refused CFNotFailedPaid
+      (_, OFailed _ FRMonthEnded, _) -> refused CFMonthEnded
       (_, OFailed failedAt _, _) -> close now r failedAt
       (_, _, Just lapse) | now > lapse -> close now r lapse
       _ -> refused CFNotFailedPaid
@@ -599,3 +606,31 @@ alertUnregisteredPaid Worker {wkOrders = OrdersEnv {oeStore, oeNow, oeReport}} =
 
 runUnregisteredAlerts :: Worker -> IO ()
 runUnregisteredAlerts w = forever $ tryOwnLogged "names: the check of unregistered paid orders failed; the next pass will run: " (alertUnregisteredPaid w) >> threadDelay unregisteredCheckInterval
+
+shortestMonth :: NominalDiffTime
+shortestMonth = 28 * 86400
+
+monthCheckInterval :: Int
+monthCheckInterval = 300 * 1000000
+
+endMonths :: Worker -> IO ()
+endMonths Worker {wkOrders = OrdersEnv {oeStore, oeTurns, oePhases, oeNow}} = do
+  now <- oeNow
+  due <- withTransaction oeStore (`monthCandidates` addUTCTime (negate shortestMonth) now)
+  forM_ [rid | (rid, paidAt) <- due, addMonths 1 paidAt <= now] $ \rid@(RegistrationId ridText) ->
+    ( withTransaction oeStore (`getRegistration` rid)
+        >>= traverse (\r -> withRegistrationTurn oeStore oeTurns r (\current -> withBalanceTurn oeTurns rid $ withTransaction oeStore $ monthEnded now current))
+        >>= \case
+          Just (Just (Right (Right v))) -> do
+            atomically $ publish oePhases rid v
+            logNote $ "names: order " <> ridText <> " was not registered within a month of its payment, so it failed, its price kept as its balance"
+          _ -> pure ()
+    )
+      `catchOwn'` \e -> logError ("names month pass: registration " <> ridText <> " failed; the next pass tries it again: " <> tshow e)
+  where
+    monthEnded now r db
+      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] = creditedWrite now r {nrPhase = OFailed now FRMonthEnded} db
+      | otherwise = pure $ Left WRChanged
+
+runMonthEnds :: Worker -> IO ()
+runMonthEnds w = forever $ tryOwnLogged "names month pass failed; the next pass will run: " (endMonths w) >> threadDelay monthCheckInterval

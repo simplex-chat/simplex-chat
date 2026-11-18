@@ -1757,10 +1757,15 @@ Your names; a later late payment credits it again, and a second refund adds to `
 ## Closing a failed order
 
 A failed paid order, after 5 sends of a kind, refused links or a register the registry refused past
-its commitment's lapse, stays live and keeps its money uncredited, so its wallet cannot order the
+its commitment's lapse, stays live, holds its name and keeps its money uncredited, so its wallet cannot order the
 name again. So does a paid order whose commitment lapsed before its page signed it, until the page
-asks for a new commitment. Support closes either in `--run-cli` mode with the service stopped, or with
-`/close` in the group while it runs:
+asks for a new commitment. A calendar month after its payment, clipped to the last day of a shorter
+month, an order paid by invoice or balance that is still `queued`, `committed` or `failed` fails with
+the reason `monthEnded`: its price is credited to its balance, its name is released, and the order is
+final. A pass every 5 minutes does it, logging each order at note; an order sending its commit or
+register is ended at the first pass after that transaction settles. Support closes a failed or lapsed
+order before then in `--run-cli` mode with the service stopped, or with `/close` in the group while
+it runs; a month-ended order is refused, and its refund is recorded with `//record_refund`:
 
 ```
 //close <reference>

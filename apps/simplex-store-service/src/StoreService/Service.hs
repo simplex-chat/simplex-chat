@@ -59,7 +59,7 @@ import StoreService.Names.Sender (checkPendingSignatures, runSender)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), BrokenInvariant (..), HoldState (..), LateCredit (..), OrderPayment (..), balanceByReference, balanceChain, creditCents)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
-import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runUnregisteredAlerts, runWorkers)
+import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runMonthEnds, runUnregisteredAlerts, runWorkers)
 import StoreService.Options
 import StoreService.Poller (PollerEnv (peListedOk), expiryGrace, newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider (pProvider), minorDecimal)
@@ -347,7 +347,7 @@ logNamePolicy NamesConfig {nCommunity} ct =
 namesLanes :: NamesEnv -> IO [IO ()]
 namesLanes ne@NamesEnv {neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neSender
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runUnregisteredAlerts worker, runTermsFetch neContracts]
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runUnregisteredAlerts worker, runMonthEnds worker, runTermsFetch neContracts]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
@@ -475,6 +475,7 @@ closeOrderCmd source turns ct ChatController {chatStore} ref =
     refusalText = \case
       CFNoOrder -> "no order has the reference " <> ref
       CFNotFailedPaid -> "the order of " <> ref <> " is not a failed or lapsed unsigned order paid by invoice or balance"
+      CFMonthEnded -> "the order of " <> ref <> " failed at the end of the month from its payment, its price kept as its balance; record its refund with " <> spelledCmd source "record_refund"
       CFUnread -> "the chain could not be read; " <> again
       CFChanged -> "the order of " <> ref <> " changed meanwhile; " <> again
       CFHeld hold -> heldText source hold

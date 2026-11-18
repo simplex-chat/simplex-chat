@@ -24,11 +24,12 @@ import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTV
 import Control.Monad (forM_, replicateM_, void, when)
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
-import Data.IORef (readIORef)
+import Data.IORef (readIORef, writeIORef)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
+import Simplex.Chat.Badges.Ledger (addMonths)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word8, Word64)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
@@ -120,6 +121,8 @@ workerTests = describe "StoreService names: worker" $ do
   describe "lanes" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
     it "reports once each paid or code order not registered 3 hours after its payment" testUnregisteredAlert
+    it "fails each order paid by invoice or balance, queued, committed or failed, a calendar month after its payment, its price kept as its balance and its name released, once" testMonthEnds
+    it "ends the month on the last day of a shorter month" testMonthClipped
     it "releases the codes of code orders failed or lapsed unsigned for 30 days, closing them taken, and no others" testCodeSweep
   describe "confirmation depth" $
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
@@ -1055,6 +1058,45 @@ testUnregisteredAlert = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> d
   let named NameRegistration {nrId = RegistrationId rid} = any (T.isInfixOf rid)
   sent' <- readTVarIO reports
   (length sent', named paid sent', named code sent') `shouldBe` (2, True, True)
+
+testMonthEnds :: IO ()
+testMonthEnds = withWorker $ \W {wCtx = ctx@Ctx {cStore}, wWorker} -> do
+  queued <- paidIn ctx aliceOrder id
+  failed <- paidIn ctx dynamisOrder failedPhase
+  answerFree ctx "alicebakers"
+  committing <- paidIn ctx aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 5} $ \o -> o {nrPhase = OCommitting $ TxHash $ hashFixture 8}
+  answerFree ctx "carolbakery"
+  (code, _) <- codeIn ctx 8 (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 6} id
+  let ended = [queued, failed]
+      untouched = [committing, code]
+      holders = withTransaction cStore $ \db -> mapM (labelHolder db . nrLabelHash) ended
+  advance ctx $ diffUTCTime (addMonths 1 orderTime) orderTime - 1
+  endMonths wWorker
+  mapM (stored ctx) (ended <> untouched) `shouldReturn` ended <> untouched
+  holders `shouldReturn` map (Just . nrId) ended
+  advance ctx 1
+  now <- nowOf ctx
+  endMonths wWorker
+  endMonths wWorker
+  map nrPhase <$> mapM (stored ctx) ended `shouldReturn` replicate 2 (OFailed now FRMonthEnded)
+  mapM (stored ctx) untouched `shouldReturn` untouched
+  mapM (balanceFigures ctx . nrId) ended `shouldReturn` map (\r -> Just (nrPrice r, nrPrice r)) ended
+  holders `shouldReturn` [Nothing, Nothing]
+  map orderLive <$> mapM (stored ctx) ended `shouldReturn` [False, False]
+  closeOf ctx failed `shouldReturn` CLRefused CFMonthEnded
+
+testMonthClipped :: IO ()
+testMonthClipped = withWorker $ \W {wCtx = ctx@Ctx {cStore, cClock}, wWorker} -> do
+  r <- paidIn ctx aliceOrder id
+  let paidAt = posixSecondsToUTCTime 1801396800
+      lastDay = posixSecondsToUTCTime 1803816000
+  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET paid_at = ? WHERE registration_id = ?" (paidAt, (\(RegistrationId t) -> t) $ nrId r)
+  writeIORef cClock $ addUTCTime (-1) lastDay
+  endMonths wWorker
+  stored ctx r `shouldReturn` r
+  writeIORef cClock lastDay
+  endMonths wWorker
+  nrPhase <$> stored ctx r `shouldReturn` OFailed lastDay FRMonthEnded
 
 testCodeSweep :: IO ()
 testCodeSweep = withWorker $ \W {wCtx = ctx, wWorker} -> do
