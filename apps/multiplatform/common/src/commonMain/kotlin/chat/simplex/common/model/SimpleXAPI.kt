@@ -2263,8 +2263,8 @@ object ChatController {
     return if (r is API.Result && r.res is CR.SndStandaloneFileCreated) {
       r.res.fileTransferMeta to null
     } else {
-      Log.e(TAG, "uploadStandaloneFile error: $r")
-      null to r.toString()
+      Log.e(TAG, "uploadStandaloneFile error: ${r.responseType} ${r.details}")
+      null to "${r.responseType}: ${r.details}"
     }
   }
 
@@ -2273,8 +2273,8 @@ object ChatController {
     return if (r is API.Result && r.res is CR.RcvStandaloneFileCreated) {
       r.res.rcvFileTransfer to null
     } else {
-      Log.e(TAG, "downloadStandaloneFile error: $r")
-      null to r.toString()
+      Log.e(TAG, "downloadStandaloneFile error: ${r.responseType} ${r.details}")
+      null to "${r.responseType}: ${r.details}"
     }
   }
 
@@ -2283,7 +2283,7 @@ object ChatController {
     return if (r is API.Result && r.res is CR.StandaloneFileInfo) {
       r.res.fileMeta
     } else {
-      Log.e(TAG, "standaloneFileInfo error: $r")
+      Log.e(TAG, "standaloneFileInfo error: ${r.responseType} ${r.details}")
       null
     }
   }
