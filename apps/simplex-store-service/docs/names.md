@@ -74,7 +74,7 @@ flowchart LR
 
 How a request flows:
 
-1. The page calls `/api/*` on its own origin. The API and both webhooks are answered on every listener port. With `serve_webapp = on`, as the template sets, the names site is also served on the names port, as built: the page reads the mode and the Stripe key from `GET /api/config`. Caddy proxies each domain to its port and is configured outside this repository ([`Web/Server.hs:124-151`](../src/StoreService/Web/Server.hs#L124-L151), [`Config.hs:505-514`](../src/StoreService/Config.hs#L505-L514), [`store_service.ini.example:8-11`](../../../scripts/store-service/store_service.ini.example#L8-L11), [`README.md:702-795`](../README.md#L702-L795)).
+1. The page calls `/api/*` on its own origin. The API and both webhooks are answered on every listener port. With `serve_webapp = on`, as the template sets, the names site is also served on the names port, as built: the page reads the mode and the Stripe key from `GET /api/config`. Caddy proxies each domain to its port and is configured outside this repository ([`Web/Server.hs:124-151`](../src/StoreService/Web/Server.hs#L124-L151), [`Config.hs:505-514`](../src/StoreService/Config.hs#L505-L514), [`store_service.ini.example:8-11`](../../../scripts/store-service/store_service.ini.example#L8-L11), [`README.md:718-811`](../README.md#L718-L811)).
 2. A route is matched, its method checked, one token of its per-client limit taken (webhooks and site files take none), then its handler run ([`Web/Names.hs:46-51`](../src/StoreService/Web/Names.hs#L46-L51), [`Web/Http.hs:209-222`](../src/StoreService/Web/Http.hs#L209-L222)).
 3. An order is checked against the contracts with `eth_call`, a provider invoice is created, and the order is written with its invoice in one transaction ([`Web/Names/Orders.hs:86-173`](../src/StoreService/Web/Names/Orders.hs#L86-L173)).
 4. On a webhook only a read is queued. The poller reads the provider and settles the invoice in one transaction; a paid order is moved from `unpaid` to `queued` ([`Web/Server.hs:500-554`](../src/StoreService/Web/Server.hs#L500-L554), [`Poller.hs:248-263`](../src/StoreService/Poller.hs#L248-L263), [`Orders.hs:95-213`](../src/StoreService/Orders.hs#L95-L213)).
@@ -550,7 +550,7 @@ sequenceDiagram
 ```
 
 - Only a failed order paid by invoice or balance is closed, and a lapsed committed order reads failed. A balance an order holds refuses the close and writes nothing ([`Names/Worker.hs:515-564`](../src/StoreService/Names/Worker.hs#L515-L564), [`Names/Worker.hs:376-380`](../src/StoreService/Names/Worker.hs#L376-L380), [`Names/Orders.hs:366-412`](../src/StoreService/Names/Orders.hs#L366-L412)).
-- The answer names the failure time, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:502-530`](../src/StoreService/Service.hs#L502-L530), [`README.md:1491-1536`](../README.md#L1491-L1536)).
+- The answer names the failure time, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:502-530`](../src/StoreService/Service.hs#L502-L530), [`README.md:1507-1552`](../README.md#L1507-L1552)).
 
 ---
 
