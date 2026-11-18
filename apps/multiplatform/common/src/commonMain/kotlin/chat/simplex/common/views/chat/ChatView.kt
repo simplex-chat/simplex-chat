@@ -2122,8 +2122,9 @@ fun BoxScope.ChatItemsList(
                       }
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
-                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                        Box {
                           MemberImage(member, 31.dp * fontSizeSqrtMultiplier, Modifier.centeredIn(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier))
+                          AvatarClickArea(member.image, 31.dp * fontSizeSqrtMultiplier, Modifier.centeredIn(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier)) { showMemberInfo(chatInfo.groupInfo, member) }
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                           ChatItemViewShortHand(cItem, itemSeparation, range, false, dismissState.offset.value)
@@ -2198,7 +2199,7 @@ fun BoxScope.ChatItemsList(
                         SelectedListItem(Modifier, cItem.id, selectedChatItems)
                       }
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
-                        Box(Modifier.clickable { showChatInfo() }) {
+                        Box {
                           ProfileImage(
                             31.dp * fontSizeSqrtMultiplier,
                             chatInfo.groupInfo.image,
@@ -2206,6 +2207,7 @@ fun BoxScope.ChatItemsList(
                             backgroundColor = MaterialTheme.colors.background,
                             modifier = Modifier.centeredIn(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier)
                           )
+                          AvatarClickArea(chatInfo.groupInfo.image, 31.dp * fontSizeSqrtMultiplier, Modifier.centeredIn(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier)) { showChatInfo() }
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                           ChatItemViewShortHand(cItem, itemSeparation, range, false)
