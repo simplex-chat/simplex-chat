@@ -5,13 +5,12 @@
 - Warnings are added on the screens below.
 - WebKit is recognised by its user agent: `AppleWebKit/` without `Chrome/` or `Android`.
 - A `Retention` value is passed to the screens:
-  - the code screen, in place of `savedLocally`
-  - the return-to-app screen, in place of `savedLocally`
+  - the code screen and the return-to-app screen, in place of `savedLocally`
   - the paid-no-code screen
   - Your codes, in place of `keepsNewCodes`
 
 ```
-notKept         a value written to localStorage at page load is not read back
+notKept         a value cannot be written to localStorage at page load, or is not read back
 kept            a value written to localStorage at page load is read back, and browserDeletesIdle is false
 keptUntilIdle   a value written to localStorage at page load is read back, and browserDeletesIdle is true
 ```
@@ -50,7 +49,7 @@ The period text: "after 7 days of browser use without a tap, click or key press 
 
 ```mermaid
 flowchart TD
-  load[page load] --> w0{value written to localStorage is read back}
+  load[page load] --> w0{value is written to localStorage and read back}
   w0 -->|no| nk[notKept]
   w0 -->|yes| d{browserDeletesIdle of navigator.userAgent}
   d -->|false| k[kept]
