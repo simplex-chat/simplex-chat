@@ -22,7 +22,7 @@ import StoreService.Catalog (PricedOffer (..), priceOffer)
 import StoreService.Config (ChainConfig (..), ListenerConfig (..), NamesConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
 import StoreService.Names.Chain (ChainSeconds, chainSeconds)
 import StoreService.Names.Env (NamesEnv)
-import StoreService.Names.Orders (OrdersEnv (..), jsonField, ordersEnv, textWith)
+import StoreService.Names.Orders (OrdersEnv (..), jsonField, noteRead, ordersEnv, textWith)
 import StoreService.Names.Phases (awaitChange)
 import StoreService.Names.Registration (RegistrationId, tldLabel)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, namePhase)
@@ -261,7 +261,7 @@ readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@Or
 readName :: OrdersEnv -> InvoiceRow -> RegistrationId -> IO (Maybe (UTCTime, InvoiceRow, NameRegistration))
 readName OrdersEnv {oeStore, oeNow} row rid = do
   now <- oeNow
-  fmap (\r -> (now, invoiceAt now row, r)) <$> withTransaction oeStore (`getRegistration` rid)
+  withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> (now, invoiceAt now row, r) <$ noteRead oeStore now r)
 
 -- | The counter a hold watches starts at zero, so a payment recorded before this request arrived cannot wake it.
 samePayment :: Request -> InvoiceRow -> Bool

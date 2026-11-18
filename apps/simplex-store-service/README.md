@@ -1404,7 +1404,10 @@ commitment is live, logged once per order at error as `names worker: registratio
 register reverts while the name is available, …`; one still there after the commitment lapsed fails
 the order with the reason `registryRefused`. An order whose commitment lapses before its page signed
 it waits, and its page asks for a new commitment with `POST /api/registration/:id/retry`; one whose
-links were refused fails at the lapse with the reason `linksRefused`.
+links were refused fails at the lapse with the reason `linksRefused`. An order waiting for its owner
+fails with the reason `unread` once its page has not read it for 3 days, logged at note as
+`names worker: registration <id> failed: it waited for its owner, and its page has not read it since <time>`;
+a read of the order or of its invoice is stored at most once an hour.
 
 A signature past its deadline is cleared, and the page signs again. A signature within its deadline
 that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of

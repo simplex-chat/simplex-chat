@@ -342,6 +342,7 @@ CREATE TABLE @name_registrations(
   links_refused_at TIMESTAMPTZ,
   paid_at TIMESTAMPTZ,
   unregistered_alerted_at TIMESTAMPTZ,
+  read_at TIMESTAMPTZ NOT NULL,
   replaces TEXT REFERENCES @name_registrations ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL

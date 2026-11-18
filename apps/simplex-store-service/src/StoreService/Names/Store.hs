@@ -87,6 +87,7 @@ module StoreService.Names.Store
     setPaidAt,
     unregisteredPaidBefore,
     monthCandidates,
+    markRead,
     claimUnregisteredAlert,
     openInvoicesOfHeldName,
     activeRegistrations,
@@ -290,7 +291,7 @@ data TxHistory = TxHistory {thCommitTx :: Maybe TxHash, thRegisterTx :: Maybe Tx
 noHistory :: TxHistory
 noHistory = TxHistory {thCommitTx = Nothing, thRegisterTx = Nothing}
 
-data FailReason = FRSendsUsedUp | FRLinksRefused | FRRegistryRefused | FRSignatureRefused | FRMonthEnded
+data FailReason = FRSendsUsedUp | FRLinksRefused | FRRegistryRefused | FRSignatureRefused | FRMonthEnded | FRUnread
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding FailReason where
@@ -300,12 +301,14 @@ instance TextEncoding FailReason where
     FRRegistryRefused -> "registry_refused"
     FRSignatureRefused -> "signature_refused"
     FRMonthEnded -> "month_ended"
+    FRUnread -> "unread"
   textDecode = \case
     "sends_used_up" -> Just FRSendsUsedUp
     "links_refused" -> Just FRLinksRefused
     "registry_refused" -> Just FRRegistryRefused
     "signature_refused" -> Just FRSignatureRefused
     "month_ended" -> Just FRMonthEnded
+    "unread" -> Just FRUnread
     _ -> Nothing
 
 instance FromField FailReason where fromField = fromTextField_ textDecode
@@ -373,7 +376,8 @@ data NameRegistration = NameRegistration
     nrMoves :: Int,
     nrCreatedAt :: UTCTime,
     nrUpdatedAt :: UTCTime,
-    nrReplacedBy :: Maybe (RegistrationId, Maybe InvoiceId)
+    nrReplacedBy :: Maybe (RegistrationId, Maybe InvoiceId),
+    nrReadAt :: UTCTime
   }
   deriving (Eq, Show)
 
@@ -808,14 +812,14 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
           [sql|
         INSERT INTO @name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
-           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms, replaces, paid_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?,?,?)
+           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms, replaces, paid_at, read_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?,?,?,?)
         ON CONFLICT DO NOTHING
       |]
       )
       ( (rid, initialVersion, ofLabelHash, nameLengthInt ofLength, int64 ofDuration, nrgOwner, ofCommitment, ofSealed, phase, nrgYears)
           :. (price, method, codeId, BI True, nrgOrderHash, 0 :: Int, now, now, (\BalanceUse {buSource = RegistrationId s} -> s) <$> fromBalance, maybe 0 buUsed fromBalance)
-          :. (ofAgreedTerms, (\(RegistrationId s) -> s) <$> nrgReplaces, if phase == PQueued then Just now else Nothing)
+          :. (ofAgreedTerms, (\(RegistrationId s) -> s) <$> nrgReplaces, if phase == PQueued then Just now else Nothing, now)
       )
   where
     OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = nrgOrder
@@ -827,7 +831,7 @@ registrationColumns =
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
       r.closed_by, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used, r.agreed_terms, r.accept_terms,
-      r.accept_nonce, r.accept_signature, rs.registration_id, rsi.invoice_id
+      r.accept_nonce, r.accept_signature, rs.registration_id, rsi.invoice_id, r.read_at
   |]
 
 registrationFrom :: Query
@@ -849,7 +853,7 @@ type RegistrationRow =
     :. (USDCents, Maybe ServicePaymentMethod, Maybe Text, Maybe Int64, Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe UTCTime, Maybe FailReason)
     :. (Maybe InvoiceClose, OrderHash, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, USDCents, AgreedTerms, Maybe TermsHash)
-    :. (Maybe Int64, Maybe RecoverableSignature, Maybe Text, Maybe Text)
+    :. (Maybe Int64, Maybe RecoverableSignature, Maybe Text, Maybe Text, UTCTime)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
@@ -857,7 +861,7 @@ toRegistration
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
       :. (closedBy, nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used, nrAgreedTerms, acceptTerms_)
-      :. (acceptNonce_, acceptSignature_, successor_, successorInvoice_)
+      :. (acceptNonce_, acceptSignature_, successor_, successorInvoice_, nrReadAt)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
     let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = word64 after, cmRevealBefore = word64 before}
@@ -922,7 +926,8 @@ toRegistration
           nrMoves,
           nrCreatedAt,
           nrUpdatedAt,
-          nrReplacedBy = (\s -> (RegistrationId s, InvoiceId <$> successorInvoice_)) <$> successor_
+          nrReplacedBy = (\s -> (RegistrationId s, InvoiceId <$> successorInvoice_)) <$> successor_,
+          nrReadAt
         }
 
 getRegistration :: DB.Connection -> RegistrationId -> IO (Maybe NameRegistration)
@@ -1126,6 +1131,10 @@ unregisteredPaidBefore db cutoff =
       db
       (mkQuery "SELECT registration_id, phase, paid_at FROM @name_registrations WHERE phase IN (?,?,?,?) AND paid_at < ? AND unregistered_alerted_at IS NULL ORDER BY paid_at, registration_id")
       (PQueued, PCommitting, PCommitted, PRegistering, cutoff)
+
+markRead :: DB.Connection -> RegistrationId -> UTCTime -> UTCTime -> IO ()
+markRead db (RegistrationId rid) before now =
+  DB.execute db (mkQuery "UPDATE @name_registrations SET read_at = ? WHERE registration_id = ? AND read_at <= ?") (now, rid, before)
 
 monthCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, UTCTime)]
 monthCandidates db cutoff =

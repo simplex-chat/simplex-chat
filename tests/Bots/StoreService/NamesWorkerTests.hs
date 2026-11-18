@@ -123,6 +123,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "reports once each paid or code order not registered 3 hours after its payment" testUnregisteredAlert
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, its name released, a paid order's price kept as its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
+    it "fails an order waiting for its owner once its page has not read it for 3 days, a read of the order or its invoice stored at most hourly" testUnreadFails
   describe "confirmation depth" $
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
   describe "retry" $ do
@@ -1083,6 +1084,28 @@ testMonthEnds = withWorker $ \W {wCtx = ctx@Ctx {cStore}, wWorker} -> do
   holders `shouldReturn` [Nothing, Nothing, Nothing]
   map orderLive <$> mapM (stored ctx) ended `shouldReturn` [False, False, False]
   closeOf ctx failed `shouldReturn` CLRefused CFMonthEnded
+
+testUnreadFails :: IO ()
+testUnreadFails = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+  r <- paidIn ctx aliceOrder committedPhase
+  let readAt = fmap nrReadAt . stored ctx
+      InvoiceId invId = fromJust $ paymentInvoice $ nrPayment r
+  advance ctx $ 2 * day
+  void $ webGet cClient $ registrationPath $ nrId r
+  readAt r `shouldReturn` addUTCTime (2 * day) orderTime
+  advance ctx 1800
+  void $ webGet cClient $ registrationPath $ nrId r
+  readAt r `shouldReturn` addUTCTime (2 * day) orderTime
+  advance ctx 1800
+  void $ webGet cClient $ "/api/invoice/" <> T.unpack invId
+  readAt r `shouldReturn` addUTCTime (2 * day + 3600) orderTime
+  advance ctx $ 3 * day
+  void $ steps w r
+  nrPhase <$> stored ctx r `shouldReturn` nrPhase r
+  advance ctx 1
+  void $ steps w r
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRUnread
 
 testMonthClipped :: IO ()
 testMonthClipped = withWorker $ \W {wCtx = ctx@Ctx {cStore, cClock}, wWorker} -> do

@@ -30,7 +30,7 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (boundedDecimal)
-import StoreService.Names.Orders (OrdersEnv (..), WriteRefusal (..), versionWritten)
+import StoreService.Names.Orders (OrdersEnv (..), WriteRefusal (..), noteRead, versionWritten)
 import StoreService.Names.Phases (awaitChange, publish)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Reveal (RevealRefusal (..), checkReveal, isRepeat, linksValid)
@@ -51,7 +51,7 @@ registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} 
             >>= maybe (respond $ refusalResponse $ NRRateLimited holdsFullSeconds) (const $ readNow >>= maybe (respond $ refusalResponse NRNotFound) answer)
       | otherwise -> answer (now, r)
   where
-    readNow = oeNow >>= \now -> fmap (now,) <$> withTransaction oeStore (`getRegistration` rid)
+    readNow = oeNow >>= \now -> withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> (now, r) <$ noteRead oeStore now r)
     answer (now, r) = respond . jsonResponse status200 . J.toJSON =<< registrationView oeStore oeConfig oeContracts now r
 
 -- | What a reveal decided in the name's turn, with the version it wrote; the publish and the answer come after the turn.

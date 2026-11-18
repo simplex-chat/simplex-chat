@@ -250,15 +250,19 @@ commitSent w now r@NameRegistration {nrPhase} p
 -- | Waits for the page's reveal, past the lapse for /retry unless the links were refused, has its acceptance held by the name
 -- policy, waits for revealAfter, then registers.
 committed :: Worker -> UTCTime -> NameRegistration -> Commit -> IO Next
-committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrLinksRefusedAt} c@Commit {cmRevealAfter} =
-  inFlightTransaction wkSender (TxRegistration RTRegister nrId) >>= \case
+committed w@Worker {wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrReveal, nrLinksRefusedAt, nrReadAt} c@Commit {cmRevealAfter} =
+  inFlightTransaction wkSender (TxRegistration RTRegister regId) >>= \case
     Just p -> registerSent w now r c p
     Nothing -> case nrReveal of
-      Nothing -> case lapseMoment r of
-        Just lapse | now <= lapse -> pure $ waitUntil r $ addUTCTime chainSecond lapse
-        _
-          | isJust nrLinksRefusedAt -> save w now r {nrPhase = OFailed now FRLinksRefused}
-          | otherwise -> pure $ waitUntil r $ addUTCTime maxWait now
+      Nothing
+        | now > unreadAt -> do
+            logNote $ "names worker: registration " <> rid <> " failed: it waited for its owner, and its page has not read it since " <> tshow nrReadAt
+            save w now r {nrPhase = OFailed now FRUnread}
+        | otherwise -> case lapseMoment r of
+            Just lapse | now <= lapse -> pure $ waitUntil r $ min unreadAt $ addUTCTime chainSecond lapse
+            _
+              | isJust nrLinksRefusedAt -> save w now r {nrPhase = OFailed now FRLinksRefused}
+              | otherwise -> pure $ waitUntil r $ min unreadAt $ addUTCTime maxWait now
       Just rv@NameReveal {rvAcceptance, rvDeadline} ->
         -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then decides
         (if unlapsed now c then relayAcceptance w now r c rvDeadline rvAcceptance else pure Nothing) >>= \case
@@ -266,6 +270,11 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrLinksRef
           Nothing
             | now < chainTime cmRevealAfter -> pure $ waitUntil r $ chainTime cmRevealAfter
             | otherwise -> sendRegister w now r c rv
+  where
+    unreadAt = addUTCTime (unreadDays * 86400) nrReadAt
+
+unreadDays :: NominalDiffTime
+unreadDays = 3
 
 unlapsed :: UTCTime -> Commit -> Bool
 unlapsed now Commit {cmRevealBefore} = now <= chainTime cmRevealBefore

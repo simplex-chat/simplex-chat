@@ -352,7 +352,8 @@ testCreatePaid = withServiceStore $ \st -> do
         nrMoves = 0,
         nrCreatedAt = t0,
         nrUpdatedAt = t0,
-        nrReplacedBy = Nothing
+        nrReplacedBy = Nothing,
+        nrReadAt = t0
       }
 
 testCreateCode :: IO ()

@@ -37,6 +37,7 @@ module StoreService.Names.Orders
     checkNameFree,
     checkPrice,
     movable,
+    noteRead,
     orderFieldsOf,
     checkMoveMeets,
     retargetOrder,
@@ -62,7 +63,7 @@ import Data.Maybe (catMaybes, isJust, listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -82,7 +83,7 @@ import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Chain (Hex32 (..), TxHash)
 import StoreService.Names.Registration (AgreedTerms (..), Commitment, OrderFields (..), RegistrationId (..), parseChecksumAddress, personalDigest)
-import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), FailReason (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, labelHolder, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), FailReason (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, labelHolder, markRead, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Names.View (lapsedAt)
 import StoreService.Store.Invoices (currentSecond, unixSeconds)
@@ -327,6 +328,13 @@ movable now r@NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
   OFailed {} -> True
   OCommitted _ -> isJust nrLinksRefusedAt || lapsedAt now r
   _ -> False
+
+readNoteSeconds :: NominalDiffTime
+readNoteSeconds = 3600
+
+noteRead :: DBStore -> UTCTime -> NameRegistration -> IO ()
+noteRead st now NameRegistration {nrId, nrReadAt} =
+  when (diffUTCTime now nrReadAt >= readNoteSeconds) $ withTransaction st $ \db -> markRead db nrId (addUTCTime (negate readNoteSeconds) now) now
 
 orderFieldsOf :: NameRegistration -> OrderFields
 orderFieldsOf NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed, nrAgreedTerms} =
