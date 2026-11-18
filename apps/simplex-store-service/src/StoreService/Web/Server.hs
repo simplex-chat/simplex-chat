@@ -245,7 +245,7 @@ readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros, weHttp} orders@Or
     seenVersion = versionParam req
     holds wait row@InvoiceRow {irStatus} NameRegistration {nrPhase, nrVersion} =
       wait == irStatus
-        && not (irStatus == ISPaid && namePhase nrPhase == PUnpaid)
+        && not (irStatus == ISPaid && namePhase nrPhase `elem` [PUnpaid, PClosed])
         && samePayment req row
         && maybe (irStatus /= ISPaid) (== nrVersion) seenVersion
     hold now row r = do

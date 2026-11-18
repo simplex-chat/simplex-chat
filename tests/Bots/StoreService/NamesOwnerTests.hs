@@ -219,13 +219,13 @@ stored :: Ctx -> NameRegistration -> IO NameRegistration
 stored ctx = registrationById ctx . nrId
 
 failedPhase, registeredPhase, committedPhase, linksRefusedPhase :: NameRegistration -> NameRegistration
-failedPhase r = r {nrPhase = failedFrom orderTime FRNotRegistered $ nrPhase r}
-registeredPhase r = r {nrPhase = ORegistered (phaseCommit $ nrPhase r) Nothing (seconds orderTime + 3 * 31536000) orderTime}
+failedPhase r = r {nrPhase = OFailed orderTime FRNotRegistered}
+registeredPhase r = r {nrPhase = ORegistered (seconds orderTime + 3 * 31536000) orderTime}
 committedPhase r = r {nrPhase = OCommitted committedCommit}
-linksRefusedPhase r = r {nrPhase = OCommitted committedCommit {cmLinksRefusedAt = Just orderTime}}
+linksRefusedPhase r = r {nrPhase = OCommitted committedCommit, nrLinksRefusedAt = Just orderTime}
 
 committedCommit :: Commit
-committedCommit = Commit {cmTx = Just (TxHash $ hashFixture 8, 100), cmRevealAfter = seconds orderTime + 60, cmRevealBefore = seconds orderTime + 86400, cmLinksRefusedAt = Nothing}
+committedCommit = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealAfter = seconds orderTime + 60, cmRevealBefore = seconds orderTime + 86400}
 
 -- | Another name's fields, with the page's duration for 2 years at the service's clock.
 moveTo :: Ctx -> Text -> Int -> IO OrderFields
@@ -363,8 +363,8 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder registeredPhase
   move ctx keyA r to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
-  let phases refused = [OUnpaid True, OQueued Nothing, OCommitting Nothing, OCommitted committedCommit {cmLinksRefusedAt = refused}, ORegistering committedCommit (TxHash $ hashFixture 9), nrPhase r, OTaken Nothing Nothing, nrPhase (failedPhase r)]
-      movableWith refused = [namePhase p | p <- phases refused, movable r {nrPhase = p}]
+  let phases = [OUnpaid (InvoiceId "inv"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted committedCommit, ORegistering committedCommit (TxHash $ hashFixture 9), nrPhase r, OTaken, nrPhase (failedPhase r)]
+      movableWith refused = [namePhase p | p <- phases, movable r {nrPhase = p, nrLinksRefusedAt = refused}]
   movableWith Nothing `shouldBe` [PFailed]
   movableWith (Just orderTime) `shouldBe` [PCommitted, PFailed]
 
@@ -391,13 +391,13 @@ testMoveAccepted = withOwner $ \ctx -> do
       ("error", J.Null)
     ]
   written <- stored ctx failedOrder
-  (nrPhase written, nrMoves written, nrOrderHash written) `shouldBe` (OQueued Nothing, 1, nrOrderHash failedOrder)
+  (nrPhase written, nrMoves written, nrOrderHash written) `shouldBe` (OQueued, 1, nrOrderHash failedOrder)
   -- the same name with other links, after a reveal refused for its links
   refusedOrder <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} linksRefusedPhase
   sameName <- moveTo ctx "alicebakery" 11
   v2 <- moved ctx keyB refusedOrder sameName
   fieldsIn v2 [("phase", "queued"), ("labelHash", labelHashText "alicebakery"), ("linksRefused", J.Bool False), ("commitTx", J.Null), ("revealAfter", J.Null), ("moves", J.Number 1)]
-  nrPhase <$> stored ctx refusedOrder `shouldReturn` OQueued Nothing
+  nrPhase <$> stored ctx refusedOrder `shouldReturn` OQueued
   -- a committed order with no reveal past revealBefore reads failed
   lapsed <- paidIn ctx dynamisOrder $ \r -> r {nrPhase = OCommitted committedCommit {cmRevealBefore = seconds orderTime - 1}}
   back <- moveTo ctx "alicebakery" 12

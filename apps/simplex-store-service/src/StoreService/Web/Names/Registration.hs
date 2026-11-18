@@ -76,18 +76,18 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
           Left e -> logNote ("POST /api/registration/:id/reveal refused: a malformed reveal: " <> T.pack e) >> respond badRequest
         Nothing -> answer $ RDRefused (RVBadRequest "the body is over its size limit") Nothing
   where
-    decide request r@NameRegistration {nrReveal} = do
+    decide request r@NameRegistration {nrReveal, nrLinksRefusedAt} = do
       now <- oeNow
       case nrReveal of
         Just stored -> pure $ if isRepeat request stored then RDAccepted Nothing else RDRefused (RVBadRequest "another reveal is stored") Nothing
         Nothing -> case nrPhase (registrationAt now r) of
-          OCommitted c@Commit {cmRevealBefore, cmLinksRefusedAt} ->
+          OCommitted Commit {cmRevealBefore} ->
             checkReveal oeConfig oeContracts now r cmRevealBefore request >>= \case
               Left refusal -> pure $ RDRefused refusal Nothing
               Right rv
                 | linksValid rv -> write now (RDAccepted . Just) r {nrReveal = Just rv}
-                | isJust cmLinksRefusedAt -> pure $ RDRefused RVInvalidLink Nothing
-                | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrPhase = OCommitted c {cmLinksRefusedAt = Just now}}
+                | isJust nrLinksRefusedAt -> pure $ RDRefused RVInvalidLink Nothing
+                | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrLinksRefusedAt = Just now}
           _ -> pure $ RDRefused (RVBadRequest "the order is not committed") Nothing
     write now decided r =
       withTransaction oeStore (\db -> versionWritten <$> updateRegistration db r now) >>= \case

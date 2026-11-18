@@ -6,7 +6,7 @@
 module Bots.StoreService.NamesPhasesTests (namesPhasesTests, change, held, woken, prompt, registrationPath, seenVersion) where
 
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesStoreTests (reveal)
+import Bots.StoreService.NamesStoreTests (hashFixture, reveal)
 import Bots.StoreService.WebTests (bounded, fieldOf, jsonObject, rcv, statusOf, webGet)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel, wait, waitCatchSTM)
@@ -26,6 +26,7 @@ import Network.HTTP.Client (defaultManagerSettings, newManager)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (phasesWaiting, publish)
 import StoreService.Names.Registration (RegistrationId (..))
@@ -164,7 +165,7 @@ testEachChangeWakes = bounded "each change wakes" $ withPolls holdMicros $ \Poll
   NameRegistration {nrId} <- invoiceRegistration ctx inv
   let changes :: [(String, NameRegistration -> NameRegistration, Text, J.Value)]
       changes =
-        [("phase", \r -> r {nrPhase = OCommitting Nothing}, "phase", "committing")]
+        [("phase", \r -> r {nrPhase = OCommitting $ TxHash $ hashFixture 8}, "phase", "committing")]
   forM_ changes $ \(what, f, k, expected) -> do
     v <- nrVersion <$> invoiceRegistration ctx inv
     invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
@@ -187,7 +188,7 @@ testPaidHoldsOnVersion = bounded "paid holds on version" $ withPolls holdMicros 
   atomically $ publishPayment (weWaiters cWeb) inv
   threadDelay parkDelay
   Async.poll poll >>= (`shouldSatisfy` isNothing)
-  v' <- change ctx nrId $ \r -> r {nrPhase = OCommitting Nothing}
+  v' <- change ctx nrId $ \r -> r {nrPhase = OCommitting $ TxHash $ hashFixture 8}
   (_, o) <- woken "paid invoice poll" poll
   (fieldOf (registrationOf o) "version", fieldOf (registrationOf o) "phase") `shouldBe` (Just (J.toJSON v'), Just "committing")
   -- marks other than the page saw answer at once
@@ -253,16 +254,16 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   let revealBefore = seconds now + 600
       lapsedAt = posixSecondsToUTCTime (fromIntegral revealBefore)
   pSetNow $ addUTCTime (negate shortOfMoment) lapsedAt
-  let committed = OCommitted Commit {cmTx = Nothing, cmRevealAfter = revealBefore - 3600, cmRevealBefore = revealBefore, cmLinksRefusedAt = Nothing}
+  let committed = OCommitted Commit {cmTx = Nothing, cmRevealAfter = revealBefore - 3600, cmRevealBefore = revealBefore}
   v <- change ctx nrId $ \r -> r {nrPhase = committed}
   (_, r) <- get ctx (registrationPath nrId)
   fieldOf r "phase" `shouldBe` Just "committed"
   invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
   poll <- held ctx (0, 1) $ registrationPath nrId <> seenVersion v
   (status, lapsed) <- woken "registration poll at the lapse" poll
-  (status, fieldOf lapsed "phase", fieldOf lapsed "error", fieldOf lapsed "version") `shouldBe` (200, Just "failed", Just "The name was not signed in time", Just (J.toJSON v))
+  (status, fieldOf lapsed "phase", fieldOf lapsed "error", fieldOf lapsed "version") `shouldBe` (200, Just "failed", Just "not_signed_in_time", Just (J.toJSON v))
   (_, o) <- woken "invoice poll at the lapse" invoicePoll
-  (fieldOf o "status", fieldOf (registrationOf o) "phase", fieldOf (registrationOf o) "error") `shouldBe` (Just "paid", Just "failed", Just "The name was not signed in time")
+  (fieldOf o "status", fieldOf (registrationOf o) "phase", fieldOf (registrationOf o) "error") `shouldBe` (Just "paid", Just "failed", Just "not_signed_in_time")
   (nrPhase <$> invoiceRegistration ctx inv) `shouldReturn` committed
   -- one with a reveal set stays committed past revealBefore
   revealed <- change ctx nrId $ \r' -> r' {nrReveal = Just reveal}

@@ -12,15 +12,14 @@ module StoreService.Names.Store
     CodeHash,
     BodyHash,
     NamePhase (..),
-    Live,
+    TxRef (..),
     Commit (..),
-    CommitStep (..),
+    InvoiceClose (..),
     OrderPhase (..),
     namePhase,
     phaseCommit,
-    phaseRegisterTx,
-    commitTxOf,
-    failedFrom,
+    TxHistory (..),
+    noHistory,
     FailReason (..),
     enumTextDecode,
     OrderPayment (..),
@@ -136,7 +135,7 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (isJust, listToMaybe)
+import Data.Maybe (isJust, isNothing, listToMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -165,10 +164,10 @@ import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, lockInvoice, mkQuery, newInvoiceId, note, prefixQuery, truncateToSecond, unfundedQuery)
 
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple (Only (..), Query, ToRow, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
-import Database.SQLite.Simple (Only (..), Query, (:.) (..))
+import Database.SQLite.Simple (Only (..), Query, ToRow, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
@@ -184,6 +183,7 @@ type BodyHash = Hex32
 
 data NamePhase
   = PUnpaid
+  | PClosed
   | PQueued
   | PCommitting
   | PCommitted
@@ -196,6 +196,7 @@ data NamePhase
 instance TextEncoding NamePhase where
   textEncode = \case
     PUnpaid -> "unpaid"
+    PClosed -> "closed"
     PQueued -> "queued"
     PCommitting -> "committing"
     PCommitted -> "committed"
@@ -212,78 +213,72 @@ instance FromField NamePhase where fromField = fromTextField_ textDecode
 
 instance ToField NamePhase where toField = toField . textEncode
 
-type Live = Bool
+data TxRef = TxRef {txHash :: TxHash, txBlock :: Word64}
+  deriving (Eq, Show)
 
 data Commit = Commit
-  { cmTx :: Maybe (TxHash, Word64),
+  { cmTx :: Maybe TxRef,
     cmRevealAfter :: ChainSeconds,
-    cmRevealBefore :: ChainSeconds,
-    cmLinksRefusedAt :: Maybe UTCTime
+    cmRevealBefore :: ChainSeconds
   }
   deriving (Eq, Show)
 
-data CommitStep = CSSent TxHash | CSCommitted Commit
-  deriving (Eq, Show)
+data InvoiceClose = ICExpired | ICCancelled
+  deriving (Eq, Show, Enum, Bounded)
+
+instance TextEncoding InvoiceClose where
+  textEncode = \case
+    ICExpired -> "expired"
+    ICCancelled -> "cancelled"
+  textDecode = enumTextDecode
+
+instance FromField InvoiceClose where fromField = fromTextField_ textDecode
+
+instance ToField InvoiceClose where toField = toField . textEncode
 
 data OrderPhase
-  = OUnpaid Live
-  | OQueued (Maybe CommitStep)
-  | OCommitting (Maybe TxHash)
+  = OUnpaid InvoiceId
+  | OClosed InvoiceClose
+  | OQueued
+  | OCommitting TxHash
   | OCommitted Commit
   | ORegistering Commit TxHash
-  | ORegistered (Maybe CommitStep) (Maybe (TxHash, Maybe Word64)) ChainSeconds UTCTime
-  | OTaken (Maybe CommitStep) (Maybe TxHash)
-  | OFailed (Maybe CommitStep) (Maybe TxHash) UTCTime FailReason
+  | ORegistered ChainSeconds UTCTime
+  | OTaken
+  | OFailed UTCTime FailReason
   deriving (Eq, Show)
 
 namePhase :: OrderPhase -> NamePhase
 namePhase = \case
   OUnpaid _ -> PUnpaid
-  OQueued _ -> PQueued
+  OClosed _ -> PClosed
+  OQueued -> PQueued
   OCommitting _ -> PCommitting
   OCommitted _ -> PCommitted
   ORegistering {} -> PRegistering
   ORegistered {} -> PRegistered
-  OTaken {} -> PTaken
+  OTaken -> PTaken
   OFailed {} -> PFailed
 
-phaseCommit :: OrderPhase -> Maybe CommitStep
+phaseCommit :: OrderPhase -> Maybe Commit
 phaseCommit = \case
-  OUnpaid _ -> Nothing
-  OQueued step -> step
-  OCommitting tx -> CSSent <$> tx
-  OCommitted c -> Just $ CSCommitted c
-  ORegistering c _ -> Just $ CSCommitted c
-  ORegistered step _ _ _ -> step
-  OTaken step _ -> step
-  OFailed step _ _ _ -> step
+  OCommitted c -> Just c
+  ORegistering c _ -> Just c
+  _ -> Nothing
 
-phaseRegisterTx :: OrderPhase -> Maybe TxHash
-phaseRegisterTx = \case
-  OUnpaid _ -> Nothing
-  OQueued _ -> Nothing
-  OCommitting _ -> Nothing
-  OCommitted _ -> Nothing
-  ORegistering _ tx -> Just tx
-  ORegistered _ tx _ _ -> fst <$> tx
-  OTaken _ tx -> tx
-  OFailed _ tx _ _ -> tx
+data TxHistory = TxHistory {thCommitTx :: Maybe TxHash, thRegisterTx :: Maybe TxHash}
+  deriving (Eq, Show)
 
-commitTxOf :: CommitStep -> Maybe TxHash
-commitTxOf = \case
-  CSSent tx -> Just tx
-  CSCommitted Commit {cmTx} -> fst <$> cmTx
-
-failedFrom :: UTCTime -> FailReason -> OrderPhase -> OrderPhase
-failedFrom failedAt reason p = OFailed (phaseCommit p) (phaseRegisterTx p) failedAt reason
+noHistory :: TxHistory
+noHistory = TxHistory {thCommitTx = Nothing, thRegisterTx = Nothing}
 
 data FailReason = FRNotSignedInTime | FRNotRegistered
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding FailReason where
   textEncode = \case
-    FRNotSignedInTime -> "The name was not signed in time"
-    FRNotRegistered -> "The name could not be registered"
+    FRNotSignedInTime -> "not_signed_in_time"
+    FRNotRegistered -> "not_registered"
   textDecode = enumTextDecode
 
 instance FromField FailReason where fromField = fromTextField_ textDecode
@@ -345,6 +340,8 @@ data NameRegistration = NameRegistration
     nrPrice :: USDCents,
     nrPayment :: OrderPayment,
     nrReveal :: Maybe NameReveal,
+    nrLinksRefusedAt :: Maybe UTCTime,
+    nrHistory :: TxHistory,
     nrOrderHash :: OrderHash,
     nrMoves :: Int,
     nrCreatedAt :: UTCTime,
@@ -452,13 +449,12 @@ creditCents = \case
   CACard cents -> cents
   CACrypto {caCents} -> caCents
 
--- | A name invoice's payment figures, what was credited from it, and its order's phase and live flag.
+-- | A name invoice's payment figures, what was credited from it, and its order's phase.
 -- lsSupport: why its money will not be credited by itself, once known.
 data LateCreditState = LateCreditState
   { lsInvoice :: InvoiceId,
     lsRegistration :: RegistrationId,
     lsPhase :: NamePhase,
-    lsLive :: Bool,
     lsSupport :: Maybe LateSupport,
     lsReceivedCents :: USDCents,
     lsFigures :: LateFigures,
@@ -775,9 +771,9 @@ registrationColumns =
   [sql|
     SELECT r.registration_id, r.version, r.label_hash, r.length, r.duration, r.owner, r.commitment, r.sealed, r.phase, r.years,
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
-      r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.register_block, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at,
-      r.failed_at, r.error, r.live, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used,
-      r.agreed_terms, r.accept_terms, r.accept_nonce, r.accept_signature
+      r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
+      r.closed_by, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used, r.agreed_terms, r.accept_terms,
+      r.accept_nonce, r.accept_signature
   |]
 
 registrationFrom :: Query
@@ -795,41 +791,44 @@ selectRegistrations = registrationColumns <> registrationFrom
 type RegistrationRow =
   (Text, Int64, LabelHash, Int, Int64, Address, Commitment, Text, NamePhase, Int)
     :. (USDCents, Maybe ServicePaymentMethod, Maybe Text, Maybe Int64, Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
-    :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
-    :. (Maybe UTCTime, Maybe FailReason, BoolInt, OrderHash, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, USDCents)
-    :. (AgreedTerms, Maybe TermsHash, Maybe Int64, Maybe RecoverableSignature)
+    :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe UTCTime, Maybe FailReason)
+    :. (Maybe InvoiceClose, OrderHash, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, USDCents, AgreedTerms, Maybe TermsHash)
+    :. (Maybe Int64, Maybe RecoverableSignature)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
   ( (rid, nrVersion, nrLabelHash, len, duration, nrOwner, nrCommitment, nrSealed, phase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
-      :. (signature_, commitTx, commitBlock, registerTx, registerBlock, revealAfter, revealBefore, expiresAt, registeredAt)
-      :. (failedAt, failReason, BI live, nrOrderHash, nrMoves, linksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used)
-      :. (nrAgreedTerms, acceptTerms_, acceptNonce_, acceptSignature_)
+      :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
+      :. (closedBy, nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, used, nrAgreedTerms, acceptTerms_)
+      :. (acceptNonce_, acceptSignature_)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
-    commitStep <- case (commitTx, commitBlock, revealAfter, revealBefore, linksRefusedAt) of
-      (Nothing, Nothing, Nothing, Nothing, Nothing) -> Right Nothing
-      (Just tx, Nothing, Nothing, Nothing, Nothing) -> Right $ Just $ CSSent tx
-      (Just tx, Just block, Just after, Just before, _) -> Right $ Just $ CSCommitted Commit {cmTx = Just (tx, word64 block), cmRevealAfter = word64 after, cmRevealBefore = word64 before, cmLinksRefusedAt = linksRefusedAt}
-      (Nothing, Nothing, Just after, Just before, _) -> Right $ Just $ CSCommitted Commit {cmTx = Nothing, cmRevealAfter = word64 after, cmRevealBefore = word64 before, cmLinksRefusedAt = linksRefusedAt}
-      _ -> Left $ "name_registrations commit: " <> rid
+    let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = word64 after, cmRevealBefore = word64 before}
+        noCommit = isNothing revealAfter && isNothing revealBefore && isNothing commitBlock
+        noRegistered = isNothing expiresAt && isNothing registeredAt
+        noFailure = isNothing failedAt && isNothing failReason
+        noClose = isNothing closedBy
+        ownCommit = isJust commitTx == isJust commitBlock
+        fitting p fits = if fits then Right p else Left $ "name_registrations " <> textEncode phase <> ": " <> rid
     nrPhase <- case phase of
-      PUnpaid -> Right $ OUnpaid live
-      PQueued -> Right $ OQueued commitStep
-      PCommitting -> case commitStep of
-        Nothing -> Right $ OCommitting Nothing
-        Just (CSSent tx) -> Right $ OCommitting $ Just tx
-        Just (CSCommitted _) -> Left $ "name_registrations committing: " <> rid
-      PCommitted -> case commitStep of
-        Just (CSCommitted c) -> Right $ OCommitted c
-        _ -> Left $ "name_registrations committed: " <> rid
-      PRegistering -> case (commitStep, registerTx) of
-        (Just (CSCommitted c), Just tx) -> Right $ ORegistering c tx
-        _ -> Left $ "name_registrations registering: " <> rid
-      PRegistered -> note ("name_registrations registered: " <> rid) $ ORegistered commitStep ((\tx -> (tx, word64 <$> registerBlock)) <$> registerTx) . word64 <$> expiresAt <*> registeredAt
-      PTaken -> Right $ OTaken commitStep registerTx
-      PFailed -> note ("name_registrations failed: " <> rid) $ OFailed commitStep registerTx <$> failedAt <*> failReason
+      PUnpaid -> maybe (Left $ "name_registrations unpaid without an invoice: " <> rid) (\invId -> fitting (OUnpaid $ InvoiceId invId) (noCommit && noRegistered && noFailure && noClose)) invoiceId_
+      PClosed -> maybe (Left $ "name_registrations closed without closed_by: " <> rid) (\c -> fitting (OClosed c) (noCommit && noRegistered && noFailure)) closedBy
+      PQueued -> fitting OQueued (noCommit && noRegistered && noFailure && noClose)
+      PCommitting -> maybe (Left $ "name_registrations committing without commit_tx: " <> rid) (\tx -> fitting (OCommitting tx) (noCommit && noRegistered && noFailure && noClose)) commitTx
+      PCommitted -> case (revealAfter, revealBefore) of
+        (Just after, Just before) -> fitting (OCommitted $ commitOf after before) (ownCommit && noRegistered && noFailure && noClose)
+        _ -> Left $ "name_registrations committed without reveal times: " <> rid
+      PRegistering -> case (revealAfter, revealBefore, registerTx) of
+        (Just after, Just before, Just tx) -> fitting (ORegistering (commitOf after before) tx) (ownCommit && noRegistered && noFailure && noClose)
+        _ -> Left $ "name_registrations registering without reveal times or register_tx: " <> rid
+      PRegistered -> case (expiresAt, registeredAt) of
+        (Just expiry, Just at) -> fitting (ORegistered (word64 expiry) at) (noCommit && noFailure && noClose)
+        _ -> Left $ "name_registrations registered without expires_at or registered_at: " <> rid
+      PTaken -> fitting OTaken (noCommit && noRegistered && noFailure && noClose)
+      PFailed -> case (failedAt, failReason) of
+        (Just at, Just reason) -> fitting (OFailed at reason) (noCommit && noRegistered && noClose)
+        _ -> Left $ "name_registrations failed without failed_at or fail_reason: " <> rid
     let balanceUse source = BalanceUse {buSource = RegistrationId source, buUsed = used}
     nrPayment <- case (method_, invoiceId_, codeId_, source_) of
       (Just m, Just invId, Nothing, Nothing) -> Right $ OPInvoice m (InvoiceId invId)
@@ -861,6 +860,8 @@ toRegistration
           nrPrice,
           nrPayment,
           nrReveal,
+          nrLinksRefusedAt,
+          nrHistory = TxHistory {thCommitTx = commitTx, thRegisterTx = registerTx},
           nrOrderHash,
           nrMoves,
           nrCreatedAt,
@@ -924,7 +925,7 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
       (ISExpired, truncateToSecond now, ISOpen, rid, nrVersion, truncateToSecond now)
   if expired > 0
     then
-      updateRegistration db r {nrPhase = OUnpaid False} now >>= \case
+      updateRegistration db r {nrPhase = OClosed ICExpired} now >>= \case
         Written v -> Just v <$ releaseHeldBalance db regId now
         _ -> pure Nothing
     else pure Nothing
@@ -934,13 +935,14 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
 -- An unpaid order is live while its invoice is open; a taken order is final, its worth kept as a balance.
 orderLive :: NameRegistration -> Bool
 orderLive NameRegistration {nrPhase} = case nrPhase of
-  OUnpaid live -> live
-  OQueued _ -> True
+  OUnpaid _ -> True
+  OClosed _ -> False
+  OQueued -> True
   OCommitting _ -> True
   OCommitted _ -> True
   ORegistering {} -> True
   OFailed {} -> True
-  OTaken {} -> False
+  OTaken -> False
   ORegistered {} -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
@@ -955,8 +957,8 @@ updateRegistration db r now = do
         UPDATE @name_registrations
         SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, agreed_terms = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
-          accept_terms = ?, accept_nonce = ?, accept_signature = ?, commit_tx = ?, commit_block = ?, register_tx = ?, register_block = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
-          registered_at = ?, failed_at = ?, error = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
+          accept_terms = ?, accept_nonce = ?, accept_signature = ?, commit_tx = ?, commit_block = ?, register_tx = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
+          registered_at = ?, failed_at = ?, fail_reason = ?, closed_by = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
           AND (? = 0 OR (live = 1 AND NOT EXISTS (
             SELECT 1 FROM @name_registrations o
@@ -967,21 +969,27 @@ updateRegistration db r now = do
       ( (nrLabelHash, nameLengthInt nrLength, int64 nrDuration, nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, rvSignature <$> nrReveal)
           :. (taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
-          :. (commitTx, int64 <$> commitBlock, phaseRegisterTx nrPhase, int64 <$> registerBlock, int64 <$> revealAfter, int64 <$> revealBefore, int64 <$> expiresAt)
-          :. (truncateToSecond <$> registeredAt, truncateToSecond <$> failedAt, failReason, BI live, nrMoves, truncateToSecond <$> linksRefusedAt, truncateToSecond now)
+          :. (commitTx, int64 <$> commitBlock, registerTx, int64 <$> revealAfter, int64 <$> revealBefore, int64 <$> expiresAt)
+          :. (truncateToSecond <$> registeredAt, truncateToSecond <$> failedAt, failReason, closedBy, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
           :. (rid, nrVersion, BI live, rid, nrCommitment, nrOwner, nrLabelHash)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
-    NameRegistration {nrMoves} = r
-    (commitTx, commitBlock, revealAfter, revealBefore, linksRefusedAt) = case phaseCommit nrPhase of
-      Nothing -> (Nothing, Nothing, Nothing, Nothing, Nothing)
-      Just (CSSent tx) -> (Just tx, Nothing, Nothing, Nothing, Nothing)
-      Just (CSCommitted Commit {cmTx, cmRevealAfter, cmRevealBefore, cmLinksRefusedAt}) -> (fst <$> cmTx, snd <$> cmTx, Just cmRevealAfter, Just cmRevealBefore, cmLinksRefusedAt)
-    (expiresAt, registeredAt, registerBlock, failedAt, failReason) = case nrPhase of
-      ORegistered _ tx expiry at -> (Just expiry, Just at, snd =<< tx, Nothing, Nothing)
-      OFailed _ _ at reason -> (Nothing, Nothing, Nothing, Just at, Just reason)
+    NameRegistration {nrMoves, nrLinksRefusedAt, nrHistory = TxHistory {thCommitTx, thRegisterTx}} = r
+    (commitBlock, revealAfter, revealBefore) = case phaseCommit nrPhase of
+      Just Commit {cmTx, cmRevealAfter, cmRevealBefore} -> (txBlock <$> cmTx, Just cmRevealAfter, Just cmRevealBefore)
+      Nothing -> (Nothing, Nothing, Nothing)
+    commitTx = case nrPhase of
+      OCommitting tx -> Just tx
+      _ -> maybe thCommitTx (fmap txHash . cmTx) (phaseCommit nrPhase)
+    registerTx = case nrPhase of
+      ORegistering _ tx -> Just tx
+      _ -> thRegisterTx
+    (expiresAt, registeredAt, failedAt, failReason, closedBy) = case nrPhase of
+      ORegistered expiry at -> (Just expiry, Just at, Nothing, Nothing, Nothing)
+      OFailed at reason -> (Nothing, Nothing, Just at, Just reason, Nothing)
+      OClosed closed -> (Nothing, Nothing, Nothing, Nothing, Just closed)
       _ -> (Nothing, Nothing, Nothing, Nothing, Nothing)
     acceptance = rvAcceptance <$> nrReveal
     live = orderLive r
@@ -1004,9 +1012,11 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrSealed = ofSealed,
         nrAgreedTerms = ofAgreedTerms,
         nrPrice = price,
-        nrPhase = OQueued Nothing,
+        nrPhase = OQueued,
         nrMoves = nrMoves r + 1,
-        nrReveal = Nothing
+        nrReveal = Nothing,
+        nrLinksRefusedAt = Nothing,
+        nrHistory = noHistory
       }
 
 -- | Newest first: findLimit of them, then every older one holding a balance above 0, since a balance never expires.
@@ -1063,12 +1073,12 @@ unpaidCleanupCandidates db expiredBefore =
         FROM @name_registrations r
         JOIN @name_invoices ni ON ni.registration_id = r.registration_id
         JOIN @invoices i ON i.invoice_id = ni.invoice_id
-        WHERE r.phase = ? AND i.expires_at < ?
+        WHERE r.phase IN (?, ?) AND i.expires_at < ?
           AND NOT EXISTS (SELECT 1 FROM @payments p WHERE p.invoice_id = ni.invoice_id)
         ORDER BY i.expires_at, r.registration_id
       |]
       )
-      (PUnpaid, truncateToSecond expiredBefore)
+      (PUnpaid, PClosed, truncateToSecond expiredBefore)
 
 -- | Deletes an unpaid registration and its invoice, unless a payment was recorded for it or it holds a balance.
 deleteUnpaidRegistration :: DB.Connection -> RegistrationId -> IO (Either CleanupKept ())
@@ -1085,7 +1095,7 @@ deleteUnpaidRegistration db (RegistrationId rid) =
               ( prefixQuery
                   [sql|
                 DELETE FROM @name_registrations
-                WHERE registration_id = ? AND phase = ?
+                WHERE registration_id = ? AND phase IN (?, ?)
                   AND NOT EXISTS (
                     SELECT 1 FROM @name_invoices ni
                     JOIN @payments p ON p.invoice_id = ni.invoice_id
@@ -1093,7 +1103,7 @@ deleteUnpaidRegistration db (RegistrationId rid) =
                   )
               |]
               )
-              (rid, PUnpaid, rid)
+              (rid, PUnpaid, PClosed, rid)
           if deleted > 0
             then Right () <$ mapM_ (DB.execute db (mkQuery "DELETE FROM @invoices WHERE invoice_id = ?") . Only) [invId | Only (Just invId) <- invoiceIds :: [Only (Maybe Text)]]
             else pure $ Left CKPaid
@@ -1177,7 +1187,7 @@ balanceChain db rid =
   getRegistration db rid >>= \case
     Nothing -> pure []
     Just NameRegistration {nrPhase, nrOwner, nrPayment} -> do
-      let pastUnpaid = namePhase nrPhase /= PUnpaid
+      let pastUnpaid = namePhase nrPhase `notElem` [PUnpaid, PClosed]
           used = if pastUnpaid then paymentBalance nrPayment else Nothing
       (lkPaid, lkProviderRef, lkLateCredits) <- case paymentInvoice nrPayment of
         Just invId -> (,,) <$> (if pastUnpaid then invoiceAmount db invId else pure 0) <*> providerRef db invId <*> lateCredits db invId
@@ -1286,14 +1296,14 @@ lateFrom =
       <> " JOIN @invoices i ON i.invoice_id = ni.invoice_id"
       <> " JOIN @payments p ON p.invoice_id = ni.invoice_id"
 
--- | Its order closed unpaid, whatever the invoice's status, since settlement queues only a live order; takes the unpaid phase.
+-- | Its order closed unpaid, whatever the invoice's status, since settlement queues only a live order; takes the closed phase.
 closedUnpaid :: Query
-closedUnpaid = " r.phase = ? AND r.live = 0"
+closedUnpaid = " r.phase = ?"
 
--- | Its order paid by it, with crypto received above what it asked; takes the unpaid phase. The last term matches the partial index of
+-- | Its order paid by it, with crypto received above what it asked; takes the unpaid and closed phases. The last term matches the partial index of
 -- overpaid payments, so the poller's pass reads only those.
 overpaidOrder :: Query
-overpaidOrder = " r.phase <> ? AND" <> cryptoInvoice <> " AND p.received_units > p.invoiced_units"
+overpaidOrder = " r.phase NOT IN (?, ?) AND" <> cryptoInvoice <> " AND p.received_units > p.invoiced_units"
 
 -- | Confirmed crypto above what the invoice asked, not all credited.
 uncreditedExtra :: Query
@@ -1359,24 +1369,24 @@ receivedFigure = " CASE WHEN" <> cardInvoice <> " THEN p.amount ELSE COALESCE(p.
 
 lateColumns :: Query
 lateColumns =
-  "SELECT ni.invoice_id, ni.registration_id, r.phase, r.live, i.payment_crypto_currency, ni.late_support, COALESCE(p.amount, 0), p.confirmed_amount,"
+  "SELECT ni.invoice_id, ni.registration_id, r.phase, i.payment_crypto_currency, ni.late_support, COALESCE(p.amount, 0), p.confirmed_amount,"
     <> " p.received_units, p.confirmed_units, p.invoice_rate,"
     <> creditedTotal "units"
     <> ","
     <> creditedTotal "cents"
     <> mkQuery ", (SELECT COUNT(*) FROM @name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at, i.amount, p.invoiced_units"
 
-type LateRow = (Text, Text, NamePhase, BoolInt, Maybe CryptoCurrency, Maybe LateSupport, USDCents, USDCents, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, USDCents, Int, UTCTime, USDCents, Maybe Int64)
+type LateRow = (Text, Text, NamePhase, Maybe CryptoCurrency, Maybe LateSupport, USDCents, USDCents, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, USDCents, Int, UTCTime, USDCents, Maybe Int64)
 
 toLateState :: LateRow -> Either Text LateCreditState
 toLateState
-  ( (inv, reg, lsPhase, BI lsLive, coin_, lsSupport, lsReceivedCents, confirmedCents, lfReceivedUnits, lfConfirmedUnits)
+  ( (inv, reg, lsPhase, coin_, lsSupport, lsReceivedCents, confirmedCents, lfReceivedUnits, lfConfirmedUnits)
       :. (lfInvoiceRate, lfCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt, lsInvoiceAmount, lfInvoicedUnits)
     ) = do
     lsFigures <- case coin_ of
       Nothing -> Right LFCard {lfConfirmedCents = confirmedCents}
       Just lfCoin -> Right LFCrypto {lfCoin, lfReceivedUnits, lfConfirmedUnits, lfInvoicedUnits, lfInvoiceRate, lfCreditedUnits}
-    pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsLive, lsSupport, lsReceivedCents, lsFigures, lsInvoiceAmount, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
+    pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsSupport, lsReceivedCents, lsFigures, lsInvoiceAmount, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
 
 -- | Nothing without a payment row.
 lateCreditState :: DB.Connection -> InvoiceId -> IO (Maybe LateCreditState)
@@ -1408,13 +1418,13 @@ creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegi
 latePending :: DB.Connection -> InvoiceId -> IO (Maybe LatePending)
 latePending db (InvoiceId invId) =
   maybeFirstRow' Nothing fromOnly $
-    DB.query db ("SELECT" <> pendingCase <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PUnpaid)
+    DB.query db ("SELECT" <> pendingCase <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PClosed)
 
 -- | Nothing once all of the closed order's money is credited, whatever support reason was given before.
 lateWait :: DB.Connection -> InvoiceId -> IO (Maybe LateWait)
 lateWait db (InvoiceId invId) =
   maybeFirstRow' Nothing waitOf $
-    DB.query db ("SELECT" <> pendingCase <> ", ni.late_support" <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PUnpaid)
+    DB.query db ("SELECT" <> pendingCase <> ", ni.late_support" <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PClosed)
   where
     waitOf :: (Maybe LatePending, Maybe LateSupport) -> Maybe LateWait
     waitOf = \case
@@ -1428,21 +1438,23 @@ lateWait db (InvoiceId invId) =
 -- | Closed orders' invoices with confirmed money not all credited, then overpaid invoices with confirmed extra not all credited, for the
 -- poller's credit pass; none a rate below the floor sent to support.
 uncreditedLateInvoices :: DB.Connection -> IO [(InvoiceId, Text)]
-uncreditedLateInvoices db = (<>) <$> uncredited closedUnpaid uncreditedMoney <*> uncredited overpaidOrder uncreditedExtra
+uncreditedLateInvoices db = (<>) <$> uncredited closedUnpaid (Only PClosed) uncreditedMoney <*> uncredited overpaidOrder (PUnpaid, PClosed) uncreditedExtra
   where
-    uncredited order money =
+    uncredited :: ToRow p => Query -> p -> Query -> IO [(InvoiceId, Text)]
+    uncredited order phases money =
       map (\(invId, ref) -> (InvoiceId invId, ref))
         <$> DB.query
           db
           ("SELECT ni.invoice_id, i.provider_ref" <> lateFrom <> " WHERE" <> order <> " AND" <> money <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
-          (PUnpaid, LSRateFloor)
+          (phases :. Only LSRateFloor)
 
 -- | Pending money of closed orders, then of overpaid invoices, whose payment row was created before the cutoff, never alerted, or alerted
 -- for less money than now received.
 lateAlertDue :: DB.Connection -> UTCTime -> IO [LateAlert]
-lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid pendingCase <*> alertsDue overpaidOrder overpaidPendingCase
+lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid (Only PClosed) pendingCase <*> alertsDue overpaidOrder (PUnpaid, PClosed) overpaidPendingCase
   where
-    alertsDue order pending =
+    alertsDue :: ToRow p => Query -> p -> Query -> IO [LateAlert]
+    alertsDue order phases pending =
       DB.query
         db
         ( lateColumns
@@ -1460,7 +1472,7 @@ lateAlertDue db cutoff = (<>) <$> alertsDue closedUnpaid pendingCase <*> alertsD
             <> receivedFigure
             <> " > COALESCE(ni.late_alerted_units, -1)) ORDER BY p.created_at, ni.invoice_id"
         )
-        (PUnpaid, truncateToSecond cutoff)
+        (phases :. Only (truncateToSecond cutoff))
         >>= decodeAll toAlert
     toAlert :: LateRow :. (Maybe LatePending, Maybe Int64, Maybe UTCTime, Maybe Int64, Text) -> Either Text LateAlert
     toAlert (row :. (pending_, laReceived, laAlertedAt, laAlertedReceived, laProviderRef)) = case pending_ of

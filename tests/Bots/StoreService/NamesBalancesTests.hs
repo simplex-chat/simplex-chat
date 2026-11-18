@@ -143,7 +143,7 @@ source :: DBStore -> Text -> USDCents -> IO ()
 source st r cents = do
   placeOrderRow st r False cents (at 60)
   taken <- reg st r
-  write st taken {nrPhase = OTaken Nothing Nothing} `shouldReturn` Written 2
+  write st taken {nrPhase = OTaken} `shouldReturn` Written 2
   credit st r cents
 
 credit :: DBStore -> Text -> USDCents -> IO ()
@@ -173,7 +173,7 @@ coveredInsert r src price seen db = createBalanceRegistration db (regFor r (OTBa
 -- | The holder queued and its hold spent in one transaction, as settlement does.
 settleHolder :: DB.Connection -> NameRegistration -> IO Bool
 settleHolder db r = do
-  updateRegistration db r {nrPhase = OQueued Nothing} t0 `shouldReturn` Written (nrVersion r + 1)
+  updateRegistration db r {nrPhase = OQueued} t0 `shouldReturn` Written (nrVersion r + 1)
   spendHeldBalance db (nrId r) (maybe 0 buUsed $ paymentBalance $ nrPayment r) t0
 
 release :: DBStore -> Text -> IO Bool
@@ -190,7 +190,7 @@ figures st r now = withTransaction st $ \db -> fmap (\Balance {blAmount, blCredi
 invariantHolds :: DBStore -> Text -> IO ()
 invariantHolds st r = do
   Just (amount, credited, refunded, _) <- figures st r t0
-  used <- withTransaction st $ \db -> DB.query db "SELECT balance_used FROM sx_badge_service_name_registrations WHERE balance_source = ? AND phase <> ?" (r, PUnpaid)
+  used <- withTransaction st $ \db -> DB.query db "SELECT balance_used FROM sx_badge_service_name_registrations WHERE balance_source = ? AND phase NOT IN (?, ?)" (r, PUnpaid, PClosed)
   (r, amount) `shouldBe` (r, credited - sum (map fromOnly (used :: [Only USDCents])) - refunded)
 
 absent :: DBStore -> Text -> IO ()
@@ -225,7 +225,7 @@ closedWith :: DBStore -> Text -> Bool -> Paid -> UTCTime -> IO ()
 closedWith st r card paid createdAt = do
   placeOrderRow st r card 20000 (at 60)
   open <- reg st r
-  write st open {nrPhase = OUnpaid False} `shouldReturn` Written 2
+  write st open {nrPhase = OClosed ICExpired} `shouldReturn` Written 2
   payment st ("inv-" <> r) paid createdAt
 
 lateCredit :: Text -> Int -> Maybe Int64 -> USDCents -> LateCredit
@@ -278,7 +278,7 @@ testSpendAtOnce = withServiceStore $ \st -> do
   source st "s" 10000
   coveredSpend st "c1" "s" 6000 10000 `shouldReturn` Right ()
   c1 <- reg st "c1"
-  (nrPhase c1, nrPrice c1, nrPayment c1) `shouldBe` (OQueued Nothing, 6000, OPBalance BalanceUse {buSource = RegistrationId "s", buUsed = 6000})
+  (nrPhase c1, nrPrice c1, nrPayment c1) `shouldBe` (OQueued, 6000, OPBalance BalanceUse {buSource = RegistrationId "s", buUsed = 6000})
   nrOrderHash c1 `shouldBe` orderHash ownerA (fieldsN "c1") (OTBalance $ spendOf "s" 6000 10000 Nothing)
   figures st "s" t0 `shouldReturn` Just (4000, 10000, 0, Nothing)
   coveredSpend st "c2" "s" 3000 10000 `shouldReturn` Left BIRBalanceChanged
@@ -300,7 +300,7 @@ testTwoHolds = withServiceStore $ \st -> do
   holder st "h2" "s" 10000 (at 60) `shouldReturn` Left BIRBalanceChanged
   absent st "h2"
   h1 <- reg st "h1"
-  (nrPhase h1, nrPayment h1, nrPrice h1) `shouldBe` (OUnpaid True, OPDifference BalanceUse {buSource = RegistrationId "s", buUsed = 10000} btc (InvoiceId "inv-h1"), holdPrice)
+  (nrPhase h1, nrPayment h1, nrPrice h1) `shouldBe` (OUnpaid (InvoiceId "inv-h1"), OPDifference BalanceUse {buSource = RegistrationId "s", buUsed = 10000} btc (InvoiceId "inv-h1"), holdPrice)
   figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Just $ hold "h1" (at 60) False)
   release st "h1" `shouldReturn` True
   holder st "h3" "s" 9000 (at 60) `shouldReturn` Left BIRBalanceChanged
@@ -431,7 +431,7 @@ testChain = withServiceStore $ \st -> do
   b <- reg st "b"
   withTransaction st (`settleHolder` b) `shouldReturn` True
   queued <- reg st "b"
-  write st queued {nrPhase = OTaken Nothing Nothing} `shouldReturn` Written (nrVersion queued + 1)
+  write st queued {nrPhase = OTaken} `shouldReturn` Written (nrVersion queued + 1)
   credit st "b" holdPrice
   coveredSpend st "c" "b" 10000 holdPrice `shouldReturn` Right ()
   withTransaction st (\db -> balanceChain db (RegistrationId "c"))
@@ -456,7 +456,7 @@ testChainOfOverpaid :: IO ()
 testChainOfOverpaid = withServiceStore $ \st -> do
   placeOrderRow st "o" False 20000 t0
   queued <- reg st "o"
-  write st queued {nrPhase = OQueued Nothing} `shouldReturn` Written (nrVersion queued + 1)
+  write st queued {nrPhase = OQueued} `shouldReturn` Written (nrVersion queued + 1)
   let late = lateCredit "o" 1 (Just 40000) 2400
   creditLate st late `shouldReturn` True
   withTransaction st (\db -> balanceChain db (RegistrationId "o"))
@@ -536,7 +536,7 @@ testOverdueHolderClosed = withOrders $ \Ctx {cStore = st, cOrders} -> do
   invoiceStatus st (InvoiceId "inv-h") `shouldReturn` ISExpired
   orderLive <$> reg st "h" `shouldReturn` False
   figures st "s" now `shouldReturn` Just (4000, 10000, 0, Nothing)
-  nrPhase <$> reg st "c" `shouldReturn` OQueued Nothing
+  nrPhase <$> reg st "c" `shouldReturn` OQueued
 
 testNamedHolders :: IO ()
 testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
@@ -669,8 +669,7 @@ testLateScans = withServiceStore $ \st -> do
       LateCreditState
         { lsInvoice = InvoiceId "inv-part",
           lsRegistration = RegistrationId "part",
-          lsPhase = PUnpaid,
-          lsLive = False,
+          lsPhase = PClosed,
           lsSupport = Nothing,
           lsReceivedCents = 20000,
           lsFigures =

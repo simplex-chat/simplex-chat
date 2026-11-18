@@ -80,7 +80,7 @@ import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Chain (Hex32 (..), TxHash)
 import StoreService.Names.Registration (AgreedTerms (..), Commitment, OrderFields (..), RegistrationId (..), parseChecksumAddress, personalDigest)
-import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), Commit (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), paymentBalance, phaseCommit, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (Balance, BalanceUse (..), CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), paymentBalance, NameTransaction (..), RegistrationTx (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, orderLive, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 import StoreService.Store.Invoices (unixSeconds)
 
@@ -142,7 +142,7 @@ data WriteRefusal = WRChanged | WRRefused OrderRefusal
 data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
   deriving (Eq, Show)
 
-data Landed = LandedByReceipt TxHash (Maybe Word64) | LandedByOwner
+data Landed = LandedByReceipt TxHash | LandedByOwner
 
 maxSealedChars :: Int
 maxSealedChars = 11095
@@ -317,9 +317,9 @@ checkPrice ct len years price =
 
 -- | A failed order, and one whose reveal was refused for its links, can move to another name.
 movable :: NameRegistration -> Bool
-movable NameRegistration {nrPhase} = case nrPhase of
+movable NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
   OFailed {} -> True
-  OCommitted Commit {cmLinksRefusedAt} -> isJust cmLinksRefusedAt
+  OCommitted _ -> isJust nrLinksRefusedAt
   _ -> False
 
 orderFieldsOf :: NameRegistration -> OrderFields
@@ -376,9 +376,9 @@ confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeS
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
 -- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
-checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPhase, nrPayment} = do
+checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory} = do
   txs <- withTransaction st (`registrationTransactions` nrId)
-  let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegistration RTRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
+  let mined = [ntHash | NameTransaction {ntFor = TxRegistration RTRegister _, ntStatus = TSMined, ntHash} <- txs]
   runExceptT (landed mined) >>= \case
     Left e -> LUnread <$ logWarn ("names: a register check's chain read failed: " <> tshow e)
     Right Nothing -> pure LNotLanded
@@ -387,16 +387,16 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
     landed mined = do
       confirmed <- ExceptT $ confirmedTag ct
       how <- case mined of
-        (tx, block) : _ -> pure $ Just $ LandedByReceipt tx block
+        tx : _ -> pure $ Just $ LandedByReceipt tx
         [] -> (\holder -> if holder == Just nrOwner then Just LandedByOwner else Nothing) <$> ExceptT (ownerOfToken ct confirmed nrLabelHash)
       forM how $ \l -> (l,) <$> ExceptT (nameExpires ct confirmed nrLabelHash)
     markRegistered how expiry = do
       now <- clock
       let registerTx = case how of
-            LandedByReceipt tx block -> Just (tx, block)
+            LandedByReceipt tx -> Just tx
             -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
             LandedByOwner -> Nothing
-          registered = r {nrPhase = ORegistered (phaseCommit nrPhase) registerTx expiry now}
+          registered = r {nrPhase = ORegistered expiry now, nrHistory = nrHistory {thRegisterTx = registerTx}}
           write db = versionWritten <$> updateRegistration db registered now
       case nrPayment of
         OPInvoice {} -> withTransaction st write

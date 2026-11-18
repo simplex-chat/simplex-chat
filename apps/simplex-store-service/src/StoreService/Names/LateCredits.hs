@@ -77,14 +77,14 @@ creditLateInvoice st readRate invId@(InvoiceId invText) now =
 
 -- | An order its invoice paid gets credits only for the crypto paid above what the invoice asked.
 lateMoneyOf :: LateCreditState -> LateMoney
-lateMoneyOf LateCreditState {lsPhase} = if lsPhase == PUnpaid then LMLate else LMOverpaid
+lateMoneyOf LateCreditState {lsPhase} = if lsPhase `elem` [PUnpaid, PClosed] then LMLate else LMOverpaid
 
 -- | A closed order's money, or an overpaid order's crypto, unless a rate below the floor sent it to support for good, so a later
 -- recovery cannot credit money refunded by hand.
 creditable :: LateCreditState -> Bool
-creditable s@LateCreditState {lsLive, lsSupport} =
+creditable s@LateCreditState {lsPhase, lsSupport} =
   lsSupport /= Just LSRateFloor && case lateMoneyOf s of
-    LMLate -> not lsLive
+    LMLate -> lsPhase == PClosed
     LMOverpaid -> True
 
 -- | The next credit of the money not yet credited: card cents as they are, crypto units as their share of the invoice's amount at the

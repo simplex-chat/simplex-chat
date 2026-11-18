@@ -524,7 +524,7 @@ testPaidOrder = withOrders $ \ctx -> do
   let reference = "name:" <> hex (unHex32 $ orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000))
   stubCalls (cStub ctx) `shouldReturn` [StubCreate (SPMCrypto CCBtc) OrderDraft {odAmount = CurrencyAmount 10000, odCurrency = "usd", odReference = reference}]
   reg <- invoiceRegistration ctx invId
-  (nrPhase reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (OUnpaid True, 1, 2, 10000, OPInvoice (SPMCrypto CCBtc) invId)
+  (nrPhase reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (OUnpaid invId, 1, 2, 10000, OPInvoice (SPMCrypto CCBtc) invId)
   nrOrderHash reg `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000)
   nrAgreedTerms reg `shouldBe` agreed plainTerms
 
@@ -583,13 +583,13 @@ testResendReadsTime = do
     r <- invoiceRegistration ctx invId
     now <- readIORef cClock
     let lapse = seconds now + 600
-        lapsing = OCommitted Commit {cmTx = Nothing, cmRevealAfter = lapse - 3600, cmRevealBefore = lapse, cmLinksRefusedAt = Nothing}
+        lapsing = OCommitted Commit {cmTx = Nothing, cmRevealAfter = lapse - 3600, cmRevealBefore = lapse}
     Written version <- withTransaction cStore $ \db ->
       updateRegistration db r {nrPhase = lapsing} now
     let resend = (\(status, v) -> (status, (`fieldOf` "status") =<< v, ((`fieldOf` "phase") &&& (`fieldOf` "error")) . registrationOf <$> v)) <$> placeOrder ctx aliceOrder
     resend `shouldReturn` (200, Just "paid", Just (Just "committed", Just J.Null))
     advance ctx 601
-    resend `shouldReturn` (200, Just "paid", Just (Just "failed", Just "The name was not signed in time"))
+    resend `shouldReturn` (200, Just "paid", Just (Just "failed", Just "not_signed_in_time"))
     (nrPhase &&& nrVersion) <$> invoiceRegistration ctx invId `shouldReturn` (lapsing, version)
 
 testOneFieldDiffers :: IO ()
@@ -998,7 +998,7 @@ testCodeOrder = withOrders $ \ctx -> do
   (code, issued@PrepaidCode {pcId, pcCodeHash}) <- issueCode ctx 8 2 id
   rid <- registered ctx code aliceOrder
   r <- registrationById ctx rid
-  (nrPhase r, nrVersion r, nrYears r, nrPrice r, nrPayment r) `shouldBe` (OQueued Nothing, 1, 2, 0, OPCode pcId)
+  (nrPhase r, nrVersion r, nrYears r, nrPrice r, nrPayment r) `shouldBe` (OQueued, 1, 2, 0, OPCode pcId)
   (nrOwner r, nrDuration r, nrCommitment r, nrSealed r, nrAgreedTerms r) `shouldBe` (ownerA, durationAt orderTime, oCommitment aliceOrder, oSealed aliceOrder, agreed plainTerms)
   nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTCode pcCodeHash)
   held <- readCode ctx issued
@@ -1018,7 +1018,7 @@ testCodeResend = withOrders $ \ctx -> do
   r <- registrationById ctx rid
   now <- readIORef (cClock ctx)
   withTransaction (cStore ctx) $ \db -> do
-    updateRegistration db r {nrPhase = ORegistered Nothing Nothing (seconds now + 31536000) now} now `shouldReturn` Written 2
+    updateRegistration db r {nrPhase = ORegistered (seconds now + 31536000) now} now `shouldReturn` Written 2
     spendLandedPrepaidCode db pcId rid now `shouldReturn` True
   advance ctx 3600
   setFault (cNode ctx) "eth_call" HttpFailure
@@ -1117,8 +1117,8 @@ testCodeClosesOverdue = withOrders $ \ctx -> do
   Just oldRow <- getInvoice (cStore ctx) oldInv
   irStatus oldRow `shouldBe` ISExpired
   old <- invoiceRegistration ctx oldInv
-  (nrPhase old, nrVersion old) `shouldBe` (OUnpaid False, 2)
-  nrPhase <$> registrationById ctx rid `shouldReturn` OQueued Nothing
+  (nrPhase old, nrVersion old) `shouldBe` (OClosed ICExpired, 2)
+  nrPhase <$> registrationById ctx rid `shouldReturn` OQueued
   calls <- stubCalls (cStub ctx)
   [c | c@StubCancel {} <- calls] `shouldBe` [StubCancel (irProviderRef oldRow)]
 
@@ -1276,7 +1276,7 @@ testOverdueClosed = withOrders $ \ctx -> do
   Just oldRow <- getInvoice (cStore ctx) oldInv
   irStatus oldRow `shouldBe` ISExpired
   old <- invoiceRegistration ctx oldInv
-  (nrPhase old, nrVersion old) `shouldBe` (OUnpaid False, 2)
+  (nrPhase old, nrVersion old) `shouldBe` (OClosed ICExpired, 2)
   orderLive <$> invoiceRegistration ctx newInv `shouldReturn` True
   calls <- stubCalls (cStub ctx)
   [c | c@StubCancel {} <- calls] `shouldBe` [StubCancel (irProviderRef oldRow)]
@@ -1288,15 +1288,15 @@ testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
   now <- readIORef (cClock ctx)
   (newInv, _) <- placed ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now}
   closed <- invoiceRegistration ctx oldInv
-  nrPhase closed `shouldBe` OUnpaid False
+  nrPhase closed `shouldBe` OClosed ICExpired
   Just InvoiceRow {irProviderRef} <- getInvoice (cStore ctx) oldInv
   logs <- capturingStderr $ settleNow ctx oldInv settled `shouldReturn` ISPaid
   logs `shouldSatisfy` T.isInfixOf ("invoice " <> irProviderRef <> " received money after its order closed; it stays unpaid, and its money is credited to the order's balance")
   invoiceRegistration ctx oldInv `shouldReturn` closed
   new <- invoiceRegistration ctx newInv
-  (nrPhase new, nrVersion new) `shouldBe` (OUnpaid True, 1)
+  (nrPhase new, nrVersion new) `shouldBe` (OUnpaid newInv, 1)
   settleNow ctx newInv settled `shouldReturn` ISPaid
-  (nrPhase <$> invoiceRegistration ctx newInv) `shouldReturn` OQueued Nothing
+  (nrPhase <$> invoiceRegistration ctx newInv) `shouldReturn` OQueued
 
 -- | Paid in full at minute 44 of 45 and confirming after; a second tab's order at minute 46 must not refund it.
 testFundedOverdueKept :: IO ()
@@ -1308,11 +1308,11 @@ testFundedOverdueKept = withOrders $ \ctx -> do
   now <- readIORef (cClock ctx)
   placeOrder ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now} `shouldReturn` refusedWith 409 "order_exists"
   r <- invoiceRegistration ctx inv
-  nrPhase r `shouldBe` OUnpaid True
+  nrPhase r `shouldBe` OUnpaid inv
   withTransaction (cStore ctx) (\db -> closeOverdue db r now) `shouldReturn` Nothing
   (irStatus <$>) <$> getInvoice (cStore ctx) inv `shouldReturn` Just ISOpen
   settleNow ctx inv settled `shouldReturn` ISPaid
-  nrPhase <$> invoiceRegistration ctx inv `shouldReturn` OQueued Nothing
+  nrPhase <$> invoiceRegistration ctx inv `shouldReturn` OQueued
 
 -- | The real BTCPay adapter against the fake: a payment into an expired invoice reads Expired with PaidLate,
 -- into a cancelled one Invalid, and into one only we closed New and paid in part.
@@ -1342,9 +1342,9 @@ testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
     overdue <- overdueOf st swept
     expireOverdue st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) later later [overdue] `shouldReturn` [swept]
     paidLate sweptRef ["paymentMethodPaid" .= ("0.00025000" :: Text)] >>= (`shouldSatisfy` alerted sweptRef)
-    forM_ [expired, cancelled, swept] $ \inv -> do
+    forM_ [(expired, ICExpired), (cancelled, ICCancelled), (swept, ICExpired)] $ \(inv, how) -> do
       r <- invoiceRegistration ctx inv
-      nrPhase r `shouldBe` OUnpaid False
+      nrPhase r `shouldBe` OClosed how
 
 -- | Paid in part while open, then expired by BTCPay with the same figures: one late payment line, none from a restarted poller.
 testOneLateAlert :: IO ()
@@ -1364,7 +1364,7 @@ testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
   logs `shouldSatisfy` T.isInfixOf ("invoice " <> ref <> " received money after its order closed; it stays unpaid, and its money is credited to the order's balance once confirmed, else alerted")
   restarted <- newPoller
   refunds <$> readWith restarted `shouldReturn` 0
-  nrPhase <$> invoiceRegistration ctx inv `shouldReturn` OUnpaid False
+  nrPhase <$> invoiceRegistration ctx inv `shouldReturn` OClosed ICExpired
 
 testCancelAnswers :: IO ()
 testCancelAnswers = withOrders $ \ctx -> do
@@ -1401,7 +1401,7 @@ testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx
     (status, (`fieldOf` "status") =<< v, (`fieldOf` "cryptoAmountPaid") =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
   length (T.breakOnAll alert logs) `shouldBe` 1
   capturingStderr (settleNow ctx invId (SigClosed paid PaidInPart) `shouldReturn` ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf alert)
-  nrPhase <$> invoiceRegistration ctx invId `shouldReturn` OUnpaid False
+  nrPhase <$> invoiceRegistration ctx invId `shouldReturn` OClosed ICCancelled
   where
     paid = rcv 5000 (Just "0.00078")
     invoiceText (InvoiceId t) = t
@@ -1463,7 +1463,7 @@ testSettlementQueues = withOrders $ \ctx -> do
   settleNow ctx invId settled `shouldReturn` ISPaid
   timeout 2000000 (wait waiter) `shouldReturn` Just True
   r <- invoiceRegistration ctx invId
-  (nrPhase r, nrVersion r) `shouldBe` (OQueued Nothing, 2)
+  (nrPhase r, nrVersion r) `shouldBe` (OQueued, 2)
 
 -- | Postgres serializes the payment with a concurrent overdue close only on this row; SQLite shows that it is written.
 testSettlementLocksInvoice :: IO ()
@@ -1672,17 +1672,17 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         Written _ <- withTransaction st $ \db -> getRegistration db rid >>= \r -> updateRegistration db (change $ fromJust r) t0
         withTransaction st $ \db -> fromJust <$> getRegistration db rid
       viewOf r = J.toJSON <$> registrationView st (testNamesConfig node) ct t0 r
-      onChain = Commit {cmTx = Just (TxHash $ hashFixture 8, 100), cmRevealAfter = 1792574160, cmRevealBefore = 1792660500, cmLinksRefusedAt = Nothing}
   failed <-
     written $ \r ->
       r
-        { nrPhase = OFailed (Just $ CSCommitted onChain) (Just $ TxHash $ hashFixture 9) t0 FRNotRegistered,
-          nrReveal = Just reveal
+        { nrPhase = OFailed t0 FRNotRegistered,
+          nrReveal = Just reveal,
+          nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
         }
-  viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", "failed"), ("registerTx", txText 9), ("error", "The name could not be registered"), ("balance", J.Null)]
-  requeued <- written $ \r -> r {nrPhase = OQueued $ phaseCommit $ nrPhase r}
+  viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", "failed"), ("registerTx", txText 9), ("error", "not_registered"), ("balance", J.Null)]
+  requeued <- written $ \r -> r {nrPhase = OQueued, nrHistory = (nrHistory r) {thRegisterTx = Nothing}}
   viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", "queued"), ("registerTx", J.Null), ("error", J.Null), ("balance", J.Null)]
-  taken <- written $ \r -> r {nrPhase = OTaken (phaseCommit $ nrPhase r) (phaseRegisterTx $ nrPhase r)}
+  taken <- written $ \r -> r {nrPhase = OTaken}
   withTransaction st $ \db -> creditBalance db rid 20000 t0
   viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", "taken"), ("registerTx", J.Null), ("error", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "held" .= False, "heldUntil" .= J.Null, "refunded" .= (0 :: Int)])]
   where
@@ -1707,8 +1707,8 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
               ("fromBalance", J.Number 0),
               ("latePayment", J.Null),
               ("commitTx", txText 8),
-              ("revealAfter", J.Number 1792574160),
-              ("revealBefore", J.Number 1792660500),
+              ("revealAfter", J.Null),
+              ("revealBefore", J.Null),
               ("intentNonce", J.Null),
               ("acceptance", J.Null),
               ("unread", J.Array mempty),
@@ -1744,7 +1744,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   readViewChain ct committed `shouldReturn` ViewReads (VRRead 4) VRUnread
   setCommunityTerms node fakeCommunityTermsText
   readViewChain ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (VRRead 4) VRNotAsked
-  taken <- inPhase $ OTaken Nothing Nothing
+  taken <- inPhase OTaken
   readViewChain ct taken `shouldReturn` ViewReads VRNotAsked VRNotAsked
   setFault node "eth_call" HttpFailure
   readViewChain ct committed `shouldReturn` ViewReads VRUnread VRUnread

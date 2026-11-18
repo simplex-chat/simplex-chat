@@ -237,7 +237,7 @@ Notes:
 - A reveal whose link is not a short link of its record's kind is answered `400 invalid_link`, and the order is marked `linksRefused`. The links are part of the commitment, so only a move (3.6) continues the order ([`Web/Names/Registration.hs:95-109`](../src/StoreService/Web/Names/Registration.hs#L95-L109), [`Names/Orders.hs:315-320`](../src/StoreService/Names/Orders.hs#L315-L320)).
 - The acceptance relay is `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`. It is sent as soon as the reveal is stored, without waiting for `revealAfter`, while `revealBefore` has not passed, unless the policy already holds that acceptance. The register is sent after the relay settles and `revealAfter` has passed ([`Names/Worker.hs:254-272`](../src/StoreService/Names/Worker.hs#L254-L272)).
 - The links are set by `setText` calls for `simplex.contact` and `simplex.channel` in the register's data ([`Names/Registration.hs:212-235`](../src/StoreService/Names/Registration.hs#L212-L235)).
-- Without a reveal by `revealBefore` the order is set `failed` with "The name was not signed in time" ([`Names/Worker.hs:251-253`](../src/StoreService/Names/Worker.hs#L251-L253), [`Names/View.hs:145-152`](../src/StoreService/Names/View.hs#L145-L152)).
+- Without a reveal by `revealBefore` the order is set `failed` with the error `not_signed_in_time` ([`Names/Worker.hs:251-253`](../src/StoreService/Names/Worker.hs#L251-L253), [`Names/View.hs:145-152`](../src/StoreService/Names/View.hs#L145-L152)).
 - After a restart every phase is resumed from the stored order and the sender's saved transactions ([`Names/Sender.hs:123-131`](../src/StoreService/Names/Sender.hs#L123-L131), [`Names/Worker.hs:6-8`](../src/StoreService/Names/Worker.hs#L6-L8)).
 
 ---
@@ -354,7 +354,7 @@ sequenceDiagram
   else name taken at the latest block and at the confirmation depth
     K->>D: phase taken, a paid order's price kept as its balance
   else name available
-    K->>D: phase failed, error "The name could not be registered"
+    K->>D: phase failed, error not_registered
   end
 ```
 
@@ -491,7 +491,7 @@ sequenceDiagram
 Notes:
 
 - An invoice paid more crypto than it asked is settled as in 3.1, and only its confirmed units above the invoiced units are credited to the order's balance, the same way ([`Providers/BTCPay.hs:448-452`](../src/StoreService/Providers/BTCPay.hs#L448-L452), [`Names/LateCredits.hs:74-104`](../src/StoreService/Names/LateCredits.hs#L74-L104)).
-- `InvoiceReceivedPayment` and `InvoicePaymentSettled` are among the BTCPay events acted on. From a BTCPay invoice read `Expired` or `Invalid` a closed signal is made, and at settlement the payment is recorded while the order is kept unpaid ([`Providers/BTCPay.hs:115`](../src/StoreService/Providers/BTCPay.hs#L115), [`Providers/BTCPay.hs:448-454`](../src/StoreService/Providers/BTCPay.hs#L448-L454), [`Orders.hs:55-60`](../src/StoreService/Orders.hs#L55-L60), [`Orders.hs:180-198`](../src/StoreService/Orders.hs#L180-L198)).
+- `InvoiceReceivedPayment` and `InvoicePaymentSettled` are among the BTCPay events acted on. From a BTCPay invoice read `Expired` or `Invalid` a closed signal is made, and at settlement the payment is recorded while the order stays closed ([`Providers/BTCPay.hs:115`](../src/StoreService/Providers/BTCPay.hs#L115), [`Providers/BTCPay.hs:448-454`](../src/StoreService/Providers/BTCPay.hs#L448-L454), [`Orders.hs:55-60`](../src/StoreService/Orders.hs#L55-L60), [`Orders.hs:180-198`](../src/StoreService/Orders.hs#L180-L198)).
 - Only confirmed money is credited: crypto as its share of the invoice's amount, at the lower of the invoice's and the current rate, rounded down to the cent. With a current rate below half the invoice's, the money is never credited and is marked for support ([`Names/LateCredits.hs:31-72`](../src/StoreService/Names/LateCredits.hs#L31-L72), [`Names/LateCredits.hs:114-129`](../src/StoreService/Names/LateCredits.hs#L114-L129)).
 - Confirmed money not yet credited is credited again by a pass at the idle cadence ([`Poller.hs:393-413`](../src/StoreService/Poller.hs#L393-L413)). With late card money the invoice is set paid and the order kept closed; its cents are credited as they are ([`Orders.hs:184-189`](../src/StoreService/Orders.hs#L184-L189), [`Names/LateCredits.hs:91-95`](../src/StoreService/Names/LateCredits.hs#L91-L95)). Crypto sent to an invoice already recorded paid is left unrecorded, and an error naming the invoice by the provider's reference is logged at most hourly ([`Poller.hs:242-252`](../src/StoreService/Poller.hs#L242-L252)).
 

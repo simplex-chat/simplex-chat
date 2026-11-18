@@ -12,14 +12,12 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import Data.Bifunctor (first)
 import Data.Int (Int64)
-import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word (Word64)
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
-import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
@@ -30,7 +28,7 @@ import StoreService.Names.Phases (publish)
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, retargetMessage)
 import StoreService.Names.Store (BalanceUse (..), NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
-import StoreService.Names.View (registrationAt, registrationView)
+import StoreService.Names.View (phaseText, registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
 import StoreService.Names.Worker (Retried (..), checkFailedOrder)
 import StoreService.Web.Names.Orders (Answer (..), answerNow, refused, sendAnswer)
@@ -68,7 +66,7 @@ foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCre
   J.object
     [ "registrationId" .= rid,
       "invoiceId" .= paymentInvoice nrPayment,
-      "phase" .= (textEncode (namePhase nrPhase) :: Text),
+      "phase" .= phaseText nrPhase,
       "createdAt" .= nrCreatedAt,
       "labelHash" .= Hex32 lh,
       "sealed" .= nrSealed,

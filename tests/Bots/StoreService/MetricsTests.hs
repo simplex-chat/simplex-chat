@@ -240,12 +240,12 @@ testNamesCounts = withServiceStore $ \st -> do
         updateRegistration db (change r) (at minute) `shouldReturn` Written 2
   placedAs "open" "u" 1 Nothing
   mapM_ (\(rid, n) -> placedAs "paid" rid n Nothing) [("src", 2), ("q", 3), ("c1", 4), ("c2", 5), ("rg", 6), ("f", 7)]
-  moved "src" 1 $ \r -> r {nrPhase = OTaken Nothing Nothing}
-  moved "f" 1 $ \r -> r {nrPhase = OFailed Nothing Nothing (at 1) FRNotRegistered}
+  moved "src" 1 $ \r -> r {nrPhase = OTaken}
+  moved "f" 1 $ \r -> r {nrPhase = OFailed (at 1) FRNotRegistered}
   moved "c1" 2 $ \r -> r {nrPhase = OCommitted commitFixture}
   moved "c2" 3 $ \r -> r {nrPhase = OCommitted commitFixture, nrReveal = Just reveal}
   moved "rg" 4 $ \r -> r {nrPhase = ORegistering commitFixture $ TxHash $ hashFixture 9}
-  moved "q" 5 $ \r -> r {nrPhase = OQueued Nothing}
+  moved "q" 5 $ \r -> r {nrPhase = OQueued}
   withTransaction st $ \db -> do
     creditBalance db (RegistrationId "src") 6000 t0
     creditBalance db (RegistrationId "f") 2500 t0
@@ -261,6 +261,7 @@ testNamesCounts = withServiceStore $ \st -> do
   counts <- withTransaction st namesCounts
   typedSamples (namesText counts noChainRead)
     `shouldBe` [ "simplex_store_names_orders{phase=\"unpaid\"} 2",
+                 "simplex_store_names_orders{phase=\"closed\"} 0",
                  "simplex_store_names_orders{phase=\"queued\"} 1",
                  "simplex_store_names_orders{phase=\"committing\"} 0",
                  "simplex_store_names_orders{phase=\"committed\"} 2",

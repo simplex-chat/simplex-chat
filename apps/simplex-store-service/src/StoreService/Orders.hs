@@ -18,7 +18,7 @@ where
 import StoreService.Names.Phases (Phases)
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Registration (RegistrationId (..))
-import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, namePhase, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
+import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, namePhase, paymentBalance, releaseHeldBalance, setLateSupport, spendHeldBalance, updateRegistration)
 import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Received (..), receivedAmount, receivedConfirmed)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
@@ -198,12 +198,12 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
 -- on a closed invoice is late too; the monotonic payment write reports each figure once.
 nameSettled :: DB.Connection -> Text -> InvoiceStatus -> Maybe InvoiceStatus -> SettledMoney -> NameRegistration -> UTCTime -> IO [NameOutcome]
 nameSettled db ref before after money r@NameRegistration {nrId, nrPhase, nrPayment} now
-  | namePhase nrPhase /= PUnpaid = pure []
+  | namePhase nrPhase `notElem` [PUnpaid, PClosed] = pure []
   | otherwise = case after of
       Just ISPaid
         | before /= ISOpen -> pure [NOLate ref]
         | otherwise ->
-            updateRegistration db r {nrPhase = OQueued Nothing} now >>= \case
+            updateRegistration db r {nrPhase = OQueued} now >>= \case
               Written v -> (NOWritten nrId v :) <$> spendHold
               NotLive -> pure [NOLate ref]
               -- an invariant broke; left live, the order would keep its hold for ever, as no sweep closes a paid invoice
@@ -212,26 +212,26 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrPhase, nrPayme
       Just ISExpired -> (<> [NOLate ref | money /= SMNone]) <$> closed
       _ -> pure [NOLate ref | before /= ISOpen, money == SMNewPayment]
   where
-    closed = maybe [] (\(rid, v) -> [NOWritten rid v]) <$> closeOrder db r now
+    closed = maybe [] (\(rid, v) -> [NOWritten rid v]) <$> closeOrder db ICExpired r now
     -- the buyer paid the difference, so the order stays queued even when its hold cannot be spent
     spendHold = case paymentBalance nrPayment of
       Just BalanceUse {buSource, buUsed} -> (\spent -> [NOHoldNotSpent ref buSource | not spent]) <$> spendHeldBalance db nrId buUsed now
       Nothing -> pure []
 
--- | Clears a live unpaid order's live flag, as its invoice closes in the same transaction, and releases a balance it held.
-closeOrder :: DB.Connection -> NameRegistration -> UTCTime -> IO (Maybe (RegistrationId, Int64))
-closeOrder db r@NameRegistration {nrId, nrPhase} now
-  | nrPhase /= OUnpaid True = pure Nothing
-  | otherwise =
-      updateRegistration db r {nrPhase = OUnpaid False} now >>= \case
-        Written v -> Just (nrId, v) <$ releaseHeldBalance db nrId now
-        _ -> E.throwIO (RegistrationChanged nrId)
+-- | Closes a live unpaid order, as its invoice closes in the same transaction, and releases a balance it held.
+closeOrder :: DB.Connection -> InvoiceClose -> NameRegistration -> UTCTime -> IO (Maybe (RegistrationId, Int64))
+closeOrder db how r@NameRegistration {nrId, nrPhase} now = case nrPhase of
+  OUnpaid _ ->
+    updateRegistration db r {nrPhase = OClosed how} now >>= \case
+      Written v -> Just (nrId, v) <$ releaseHeldBalance db nrId now
+      _ -> E.throwIO (RegistrationChanged nrId)
+  _ -> pure Nothing
 
--- | The order of a name invoice whose status this transaction moved to expired.
-closeInvoiceOrder :: DB.Connection -> InvoiceId -> UTCTime -> IO (Maybe (RegistrationId, Int64))
-closeInvoiceOrder db invId now =
+-- | The order of a name invoice whose status this transaction moved to expired, by a cancel or by its expiry.
+closeInvoiceOrder :: DB.Connection -> InvoiceClose -> InvoiceId -> UTCTime -> IO (Maybe (RegistrationId, Int64))
+closeInvoiceOrder db how invId now =
   settlementInvoice db invId >>= \case
-    Just InvoiceRow {irProduct = IPName rid} -> getRegistration db rid >>= maybe (pure Nothing) (\r -> closeOrder db r now)
+    Just InvoiceRow {irProduct = IPName rid} -> getRegistration db rid >>= maybe (pure Nothing) (\r -> closeOrder db how r now)
     _ -> pure Nothing
 
 latePayment :: Text -> IO ()
@@ -260,7 +260,7 @@ cancelOpenInvoice st waiters phases invId now = do
     settlementInvoice db invId >>= \case
       Just row@InvoiceRow {irStatus = ISOpen} -> do
         cancelled <- updateInvoiceStatus db invId ISOpen ISExpired now
-        if cancelled then Just . (,lateOf row) <$> closeInvoiceOrder db invId now else pure Nothing
+        if cancelled then Just . (,lateOf row) <$> closeInvoiceOrder db ICCancelled invId now else pure Nothing
       _ -> pure Nothing
   forM_ closed $ \(order, late) -> do
     atomically $ publish waiters invId ISExpired >> mapM_ (publishRegistration phases) order
@@ -279,7 +279,7 @@ expireOverdue st waiters phases now cutoff = fmap catMaybes . mapM expire
     expire OverdueInvoice {oiInvoiceId = invId, oiProviderRef} = (`catchOwn'` \e -> Nothing <$ logError ("expiring invoice " <> oiProviderRef <> " failed; the next pass tries it again: " <> tshow e)) $ do
       expired <- withTransaction st $ \db -> do
         moved <- expireOverdueInvoice db cutoff invId
-        if moved then Just <$> closeInvoiceOrder db invId now else pure Nothing
+        if moved then Just <$> closeInvoiceOrder db ICExpired invId now else pure Nothing
       forM_ expired $ \order -> atomically $ publish waiters invId ISExpired >> mapM_ (publishRegistration phases) order
       pure (invId <$ expired)
 

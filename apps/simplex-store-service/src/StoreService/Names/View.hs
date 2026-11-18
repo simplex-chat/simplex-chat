@@ -11,6 +11,7 @@ module StoreService.Names.View
     readViewChain,
     toRegistrationView,
     balanceJSON,
+    phaseText,
     addressText,
     registrationAt,
     lapseMoment,
@@ -41,7 +42,7 @@ import StoreService.Names.Community (AcceptanceAsked (..), Community, communityO
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (AgreedTerms (..), RegistrationId (..), termsKindText)
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), CommitStep (..), FailReason (..), HoldState (..), LateWait, NameRegistration (..), NameReveal (..), OrderPhase (..), commitTxOf, failedFrom, getBalance, getRegistration, heldBy, lateWait, namePhase, paymentBalance, paymentInvoice, phaseCommit, phaseRegisterTx)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason (..), HoldState (..), LateWait, NamePhase (..), NameRegistration (..), NameReveal (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, heldBy, lateWait, namePhase, paymentBalance, paymentInvoice, phaseCommit)
 
 -- | The view's chain reads; a field whose read failed is null and named in unread.
 data ViewReads = ViewReads
@@ -117,8 +118,8 @@ toRegistrationView cfg r balance late ViewReads {vrIntentNonce, vrAcceptance} =
     { vwId = rid,
       vwVersion = nrVersion,
       vwMoves = nrMoves,
-      vwLinksRefused = isJust (cmLinksRefusedAt =<< commit),
-      vwPhase = textEncode (namePhase nrPhase),
+      vwLinksRefused = isJust nrLinksRefusedAt,
+      vwPhase = phaseText nrPhase,
       vwLabelHash = Hex32 lh,
       vwLabel = rvLabel <$> nrReveal,
       vwOwner = nrOwner,
@@ -130,8 +131,8 @@ toRegistrationView cfg r balance late ViewReads {vrIntentNonce, vrAcceptance} =
       vwFromBalance = maybe 0 buUsed (paymentBalance nrPayment),
       vwBalance = balanceJSON <$> balance,
       vwLatePayment = (\w -> J.object ["waiting" .= w]) <$> late,
-      vwCommitTx = commitTxOf =<< commitStep,
-      vwRegisterTx = phaseRegisterTx nrPhase,
+      vwCommitTx = thCommitTx,
+      vwRegisterTx = thRegisterTx,
       vwRevealAfter = cmRevealAfter <$> commit,
       vwRevealBefore = cmRevealBefore <$> commit,
       vwIntentNonce = readValue vrIntentNonce,
@@ -144,14 +145,11 @@ toRegistrationView cfg r balance late ViewReads {vrIntentNonce, vrAcceptance} =
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms} = r
-    commitStep = phaseCommit nrPhase
-    commit = case commitStep of
-      Just (CSCommitted c) -> Just c
-      _ -> Nothing
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrLinksRefusedAt, nrHistory = TxHistory {thCommitTx, thRegisterTx}} = r
+    commit = phaseCommit nrPhase
     (expiresAt, failReason) = case nrPhase of
-      ORegistered _ _ expiry _ -> (Just expiry, Nothing)
-      OFailed _ _ _ reason -> (Nothing, Just reason)
+      ORegistered expiry _ -> (Just expiry, Nothing)
+      OFailed _ reason -> (Nothing, Just reason)
       _ -> (Nothing, Nothing)
     readValue = \case
       VRRead a -> Just a
@@ -161,6 +159,11 @@ toRegistrationView cfg r balance late ViewReads {vrIntentNonce, vrAcceptance} =
       _ -> False
     acceptanceJSON AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce} =
       J.object ["kind" .= termsKindText acCommunity, "policy" .= acPolicy, "termsHash" .= acTermsHash, "nonce" .= acNonce]
+
+phaseText :: OrderPhase -> Text
+phaseText = \case
+  OClosed _ -> textEncode PUnpaid
+  phase -> textEncode $ namePhase phase
 
 -- | The holder is not named, so an order's link discloses no other order. A funded hold has no end time.
 balanceJSON :: Balance -> J.Value
@@ -184,7 +187,7 @@ registrationVersion st rid = maybe 0 nrVersion <$> withTransaction st (`getRegis
 -- | Past revealBefore with no reveal, the commitment can no longer register, so it reads failed.
 registrationAt :: UTCTime -> NameRegistration -> NameRegistration
 registrationAt now r = case lapseMoment r of
-  Just lapse | now > lapse -> r {nrPhase = failedFrom lapse FRNotSignedInTime $ nrPhase r}
+  Just lapse | now > lapse -> r {nrPhase = OFailed lapse FRNotSignedInTime}
   _ -> r
 
 lapseMoment :: NameRegistration -> Maybe UTCTime

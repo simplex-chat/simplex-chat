@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, commitFixture, hashFixture, linksRefusedAt, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
+module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, commitFixture, hashFixture, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.FakeEthNode (address, agreed, lengthOf, plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, invoiceStatus, runMigrations, sampleInvoice, seedBadgePrice, withServiceStore)
@@ -51,6 +51,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "refuses a stored reveal whose acceptance columns are unset or set only in part" testPartialAcceptance
     it "refuses a stored commitment, secret or accepted terms hash that is not 32 bytes" testShortHashes
     it "refuses a stored length outside the name lengths" testStoredLength
+    it "refuses a stored phase whose columns fit none of its cases" testStoredPhase
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -241,6 +242,24 @@ testStoredLength = forM_ [5, 64 :: Int] $ \len -> withServiceStore $ \st -> do
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET length = ? WHERE registration_id = 'r1'" (Only len)
   reg st "r1" `shouldThrow` anyException
 
+testStoredPhase :: IO ()
+testStoredPhase = forM_ unfit $ \columns -> withServiceStore $ \st -> do
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  withTransaction st $ \db -> DB.execute_ db (fromString $ "UPDATE sx_badge_service_name_registrations SET " <> columns <> " WHERE registration_id = 'r1'")
+  reg st "r1" `shouldThrow` anyException
+  where
+    unfit =
+      [ "closed_by = 'expired'",
+        "phase = 'closed'",
+        "phase = 'queued', reveal_after = 1",
+        "phase = 'committing'",
+        "phase = 'committed', reveal_after = 1",
+        "phase = 'committed', reveal_after = 1, reveal_before = 2, commit_block = 100",
+        "phase = 'registered', expires_at = 1",
+        "phase = 'failed', fail_reason = 'not_registered'",
+        "phase = 'failed', failed_at = created_at, fail_reason = 'not_registered', closed_by = 'expired'"
+      ]
+
 testOrderHashFields :: IO ()
 testOrderHashFields = do
   let o = order "alicebakery" 1
@@ -285,11 +304,13 @@ testCreatePaid = withServiceStore $ \st -> do
         nrCommitment = ofCommitment o,
         nrSealed = ofSealed o,
         nrAgreedTerms = agreed plainTerms,
-        nrPhase = OUnpaid True,
+        nrPhase = OUnpaid (InvoiceId "inv-r1"),
         nrYears = twoYears,
         nrPrice = price,
         nrPayment = OPInvoice btc (InvoiceId "inv-r1"),
         nrReveal = Nothing,
+        nrLinksRefusedAt = Nothing,
+        nrHistory = noHistory,
         nrOrderHash = orderHash ownerA o (OTInvoice btc price),
         nrMoves = 0,
         nrCreatedAt = t0,
@@ -302,7 +323,7 @@ testCreateCode = withServiceStore $ \st -> do
   code@PrepaidCode {pcId, pcCodeHash} <- issue st 1 usable
   placeCode st "r1" ownerA o code `shouldReturn` Right ()
   r <- reg st "r1"
-  (nrPhase r, nrPrice r, nrPayment r, nrVersion r) `shouldBe` (OQueued Nothing, 0, OPCode pcId, 1)
+  (nrPhase r, nrPrice r, nrPayment r, nrVersion r) `shouldBe` (OQueued, 0, OPCode pcId, 1)
   nrOrderHash r `shouldBe` orderHash ownerA o (OTCode pcCodeHash)
   held <- withTransaction st $ \db -> getPrepaidCode db pcCodeHash
   (pcReservedBy =<< held, pcReservedAt =<< held) `shouldBe` (Just (RegistrationId "r1"), Just t0)
@@ -338,7 +359,7 @@ testOrderHashLookup = withServiceStore $ \st -> do
   closed <- withTransaction st $ \db -> closeOverdue db r (at 2)
   closed `shouldBe` Just 2
   found <- withTransaction st $ \db -> getRegistrationByOrderHash db (orderHash ownerA o (OTInvoice btc price))
-  (nrId <$> found, nrPhase <$> found) `shouldBe` (Just (RegistrationId "r1"), Just (OUnpaid False))
+  (nrId <$> found, nrPhase <$> found) `shouldBe` (Just (RegistrationId "r1"), Just (OClosed ICExpired))
   withTransaction st (\db -> getRegistrationByOrderHash db (orderHash ownerA o (OTInvoice btc (price + 1)))) `shouldReturn` Nothing
 
 testLiveOrdersOverdue :: IO ()
@@ -369,7 +390,7 @@ testCloseOverdue = withServiceStore $ \st -> do
     createPaidRegistration db (newReg "r2" ownerA o') Nothing (paidOrder "inv-r2") (at 61)
   placed `shouldBe` Right ()
   old <- reg st "r1"
-  (nrPhase old, nrVersion old) `shouldBe` (OUnpaid False, 2)
+  (nrPhase old, nrVersion old) `shouldBe` (OClosed ICExpired, 2)
   invoiceStatus st (InvoiceId "inv-r1") `shouldReturn` ISExpired
   invoiceStatus st (InvoiceId "inv-r2") `shouldReturn` ISOpen
 
@@ -377,10 +398,10 @@ testCloseOverdueStale :: IO ()
 testCloseOverdueStale = withServiceStore $ \st -> do
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
   r <- reg st "r1"
-  write st r {nrPhase = OQueued Nothing} `shouldReturn` Written 2
+  write st r {nrPhase = OQueued} `shouldReturn` Written 2
   withTransaction st (\db -> closeOverdue db r (at 61)) `shouldReturn` Nothing
   invoiceStatus st (InvoiceId "inv-r1") `shouldReturn` ISOpen
-  (orderLive &&& nrPhase) <$> reg st "r1" `shouldReturn` (True, OQueued Nothing)
+  (orderLive &&& nrPhase) <$> reg st "r1" `shouldReturn` (True, OQueued)
 
 reveal :: NameReveal
 reveal =
@@ -396,28 +417,23 @@ reveal =
     }
 
 commitFixture :: Commit
-commitFixture = Commit {cmTx = Just (TxHash $ hashFixture 8, 100), cmRevealAfter = 1792828800, cmRevealBefore = 1792915140, cmLinksRefusedAt = Nothing}
+commitFixture = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealAfter = 1792828800, cmRevealBefore = 1792915140}
 
 hashFixture :: Word8 -> Hex32
 hashFixture = Hex32 . digestFixture
-
-linksRefusedAt :: NameRegistration -> Maybe UTCTime
-linksRefusedAt NameRegistration {nrPhase} = case phaseCommit nrPhase of
-  Just (CSCommitted Commit {cmLinksRefusedAt}) -> cmLinksRefusedAt
-  _ -> Nothing
 
 testVersionBumps :: IO ()
 testVersionBumps = withServiceStore $ \st -> do
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   r1 <- reg st "r1"
-  write st r1 {nrPhase = OCommitting $ Just $ TxHash $ hashFixture 8} `shouldReturn` Written 2
+  write st r1 {nrPhase = OCommitting $ TxHash $ hashFixture 8} `shouldReturn` Written 2
   r2 <- reg st "r1"
   write st r2 {nrPhase = OCommitted commitFixture} `shouldReturn` Written 3
   r3 <- reg st "r1"
   write st r3 {nrReveal = Just reveal} `shouldReturn` Written 4
-  write st r3 {nrPhase = OCommitted commitFixture {cmLinksRefusedAt = Just (at 5)}} `shouldReturn` VersionChanged
-  write st r1 {nrPhase = OFailed Nothing Nothing (at 5) FRNotRegistered} `shouldReturn` VersionChanged
+  write st r3 {nrLinksRefusedAt = Just (at 5)} `shouldReturn` VersionChanged
+  write st r1 {nrPhase = OFailed (at 5) FRNotRegistered} `shouldReturn` VersionChanged
   r4 <- reg st "r1"
   (nrVersion r4, nrPhase r4, nrReveal r4) `shouldBe` (4, OCommitted commitFixture, Just reveal)
 
@@ -428,13 +444,14 @@ testRoundTrip = withServiceStore $ \st -> do
   r <- reg st "r1"
   let changed =
         r
-          { nrPhase = OFailed (Just $ CSCommitted refused) (Just $ TxHash $ hashFixture 9) (at 2) FRNotSignedInTime,
+          { nrPhase = OFailed (at 2) FRNotSignedInTime,
             nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = TermsAcceptance {taTermsHash = hashFixture 10, taNonce = 4, taSignature = signature}},
+            nrLinksRefusedAt = Just (at 4),
+            nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9},
             nrMoves = 2,
             nrAgreedTerms = agreed (communityTermsPrefix <> plainTerms)
           }
-      refused = commitFixture {cmLinksRefusedAt = Just (at 4)}
-      registered = changed {nrPhase = ORegistered (Just $ CSCommitted refused) (Just (TxHash $ hashFixture 9, Just 120)) 1861833600 (at 3)}
+      registered = changed {nrPhase = ORegistered 1861833600 (at 3)}
   write st changed `shouldReturn` Written 2
   reg st "r1" `shouldReturn` changed {nrVersion = 2, nrUpdatedAt = at 1}
   write st registered {nrVersion = 2} `shouldReturn` Written 3
@@ -451,17 +468,17 @@ testLiveFollowsPhase = withServiceStore $ \st -> do
         r <- reg st rid
         write st r {nrPhase = phase} `shouldReturn` Written (nrVersion r + 1)
         (nrPhase &&& orderLive) <$> reg st rid `shouldReturn` (phase, expected)
-      failedPhase = OFailed Nothing Nothing (at 1) FRNotRegistered
-  step "r1" (OQueued Nothing) True
+      failedPhase = OFailed (at 1) FRNotRegistered
+  step "r1" OQueued True
   step "r1" failedPhase True
-  step "r1" (OTaken Nothing Nothing) False
+  step "r1" OTaken False
   r1 <- reg st "r1"
   write st r1 {nrPhase = failedPhase} `shouldReturn` NotLive
   step "r2" (ORegistering commitFixture $ TxHash $ hashFixture 9) True
-  step "r2" (OTaken Nothing Nothing) False
+  step "r2" OTaken False
   placePaid st "r3" ownerA (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
   r3 <- reg st "r3"
-  write st r3 {nrPhase = OUnpaid False} `shouldReturn` Written 2
+  write st r3 {nrPhase = OClosed ICExpired} `shouldReturn` Written 2
   orderLive <$> reg st "r3" `shouldReturn` False
 
 testOrderLive :: IO ()
@@ -470,13 +487,12 @@ testOrderLive = withServiceStore $ \st -> do
   paid <- reg st "r1"
   let code = paid {nrPayment = OPCode 1}
       liveIn r phase = (namePhase phase, orderLive r {nrPhase = phase})
-      registered = ORegistered Nothing Nothing 1861833600 (at 3)
-      failed = OFailed Nothing Nothing (at 2) FRNotRegistered
-      taken = OTaken Nothing Nothing
-  map (liveIn paid) [OUnpaid True, OQueued Nothing, OCommitting Nothing, OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), registered, taken, failed]
-    `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True)]
+      registered = ORegistered 1861833600 (at 3)
+      failed = OFailed (at 2) FRNotRegistered
+      taken = OTaken
+  map (liveIn paid) [OUnpaid (InvoiceId "inv-r1"), OClosed ICExpired, OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), registered, taken, failed]
+    `shouldBe` [(PUnpaid, True), (PClosed, False), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True)]
   map (liveIn code) [taken, failed, registered] `shouldBe` [(PTaken, False), (PFailed, True), (PRegistered, False)]
-  orderLive paid {nrPhase = OUnpaid False} `shouldBe` False
 
 testLatePayment :: IO ()
 testLatePayment = withServiceStore $ \st -> do
@@ -486,13 +502,13 @@ testLatePayment = withServiceStore $ \st -> do
   closed <- reg st "r1"
   withTransaction st (\db -> closeOverdue db closed (at 61)) `shouldReturn` Just 2
   r1 <- reg st "r1"
-  write st r1 {nrPhase = OQueued Nothing} `shouldReturn` NotLive
+  write st r1 {nrPhase = OQueued} `shouldReturn` NotLive
   reg st "r1" `shouldReturn` r1
   placePaid st "r2" ownerA o' (at 120) `shouldReturn` Right ()
-  write st r1 {nrPhase = OQueued Nothing} `shouldReturn` NotLive
+  write st r1 {nrPhase = OQueued} `shouldReturn` NotLive
   reg st "r1" `shouldReturn` r1
-  nrPhase <$> reg st "r2" `shouldReturn` OUnpaid True
-  write st r1 {nrVersion = 1, nrPhase = OQueued Nothing} `shouldReturn` VersionChanged
+  nrPhase <$> reg st "r2" `shouldReturn` OUnpaid (InvoiceId "inv-r2")
+  write st r1 {nrVersion = 1, nrPhase = OQueued} `shouldReturn` VersionChanged
 
 testWriteMeetsLiveOrder :: IO ()
 testWriteMeetsLiveOrder = withServiceStore $ \st -> do
@@ -501,7 +517,7 @@ testWriteMeetsLiveOrder = withServiceStore $ \st -> do
   placePaid st "r2" ownerA held (at 60) `shouldReturn` Right ()
   placePaid st "r3" ownerB (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
   r1 <- reg st "r1"
-  write st r1 {nrPhase = OFailed Nothing Nothing (at 1) FRNotRegistered} `shouldReturn` Written 2
+  write st r1 {nrPhase = OFailed (at 1) FRNotRegistered} `shouldReturn` Written 2
   failed <- reg st "r1"
   let retarget o = withTransaction st $ \db -> retargetRegistration db failed o 10000 (at 6)
   retarget held {ofCommitment = hashFixture 4} `shouldReturn` LiveOrderExists
@@ -518,8 +534,10 @@ testRetarget = withServiceStore $ \st -> do
   r <- reg st "r1"
   let failed =
         r
-          { nrPhase = OFailed (Just $ CSCommitted commitFixture {cmRevealAfter = 1, cmRevealBefore = 2, cmLinksRefusedAt = Just (at 4)}) (Just $ TxHash $ hashFixture 9) (at 5) FRNotRegistered,
-            nrReveal = Just reveal
+          { nrPhase = OFailed (at 5) FRNotRegistered,
+            nrReveal = Just reveal,
+            nrLinksRefusedAt = Just (at 4),
+            nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
           }
   write st failed `shouldReturn` Written 2
   withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o' 10000 (at 6)) `shouldReturn` Written 3
@@ -532,7 +550,7 @@ testRetarget = withServiceStore $ \st -> do
         nrSealed = ofSealed o',
         nrAgreedTerms = ofAgreedTerms o',
         nrPrice = 10000,
-        nrPhase = OQueued Nothing,
+        nrPhase = OQueued,
         nrMoves = 1,
         nrUpdatedAt = at 6
       }
@@ -545,7 +563,7 @@ testSameSecondOrder = withServiceStore $ \st -> do
   forM_ (zip ids [10 ..]) $ \(rid, n) -> do
     placePaid st rid ownerA (order ("alicebakery" <> rid) n) (at 60) `shouldReturn` Right ()
     r <- reg st rid
-    write st r {nrPhase = OQueued Nothing} `shouldReturn` Written 2
+    write st r {nrPhase = OQueued} `shouldReturn` Written 2
   map (nrId . fst) <$> withTransaction st (\db -> findRegistrations db ownerA t0) `shouldReturn` map RegistrationId ["r3", "r2", "r1"]
   withTransaction st activeRegistrations `shouldReturn` map RegistrationId ["r1", "r2", "r3"]
   forM_ ["r5", "r4"] $ \rid -> do
@@ -566,12 +584,12 @@ testLabelRegistering = withServiceStore $ \st -> do
   void $ write st r {nrPhase = ORegistering commitFixture $ TxHash $ hashFixture 9}
   registering `shouldReturn` True
   r' <- reg st "r1"
-  void $ write st r' {nrPhase = ORegistered Nothing Nothing 1861833600 (at 3)}
+  void $ write st r' {nrPhase = ORegistered 1861833600 (at 3)}
   registering `shouldReturn` False
 
 testActive :: IO ()
 testActive = withServiceStore $ \st -> do
-  let phases = [OUnpaid True, OQueued Nothing, OCommitting Nothing, OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), ORegistered Nothing Nothing 1861833600 (at 3), OTaken Nothing Nothing, OFailed Nothing Nothing (at 2) FRNotRegistered]
+  let phases = [OUnpaid (InvoiceId "inv-r1"), OQueued, OCommitting (TxHash $ hashFixture 8), OCommitted commitFixture, ORegistering commitFixture (TxHash $ hashFixture 9), ORegistered 1861833600 (at 3), OTaken, OFailed (at 2) FRNotRegistered, OClosed ICExpired]
   forM_ (zip [1 ..] phases) $ \(i, phase) -> do
     let rid = "r" <> T.pack (show i)
     placePaid st rid ownerA (order ("alicebakery" <> T.pack (show i)) i) (at 60) `shouldReturn` Right ()
@@ -589,14 +607,14 @@ testUnpaidCleanup = withServiceStore $ \st -> do
   placePaid st "open" ownerA (order "davesbakery" 4) (at 120) `shouldReturn` Right ()
   withTransaction st $ \db -> insertPayment db "inv-funded"
   r <- reg st "queued"
-  void $ write st r {nrPhase = OQueued Nothing}
+  void $ write st r {nrPhase = OQueued}
   candidates <- withTransaction st $ \db -> unpaidCleanupCandidates db (at 61)
   map (\(RegistrationId rid, InvoiceId invId, ref) -> (rid, invId, ref)) candidates `shouldBe` [("old", "inv-old", "ref-inv-old")]
   withTransaction st (\db -> mapM (deleteUnpaidRegistration db . RegistrationId) ["old", "funded", "queued", "old"]) `shouldReturn` [Right (), Left CKPaid, Left CKPaid, Left CKGone]
   withTransaction st (\db -> getRegistration db (RegistrationId "old")) `shouldReturn` Nothing
   invoiceCount st "inv-old" `shouldReturn` 0
   invoiceCount st "inv-funded" `shouldReturn` 1
-  nrPhase <$> reg st "funded" `shouldReturn` OUnpaid True
+  nrPhase <$> reg st "funded" `shouldReturn` OUnpaid (InvoiceId "inv-funded")
 
 insertPayment :: DB.Connection -> Text -> IO ()
 insertPayment db invId =
@@ -616,7 +634,7 @@ testFailedCodeOrders = withServiceStore $ \st -> do
   codes@[oldCode, _, releasedCode, _] <- mapM (\n -> issue st n usable) [1, 2, 3, 4]
   forM_ (zip3 ["old", "recent", "released", "queued"] [1 ..] codes) $ \(rid, n, code) ->
     placeCode st rid ownerA (order ("alicebakery" <> rid) n) code `shouldReturn` Right ()
-  let failAt rid t = reg st rid >>= \r -> void (write st r {nrPhase = OFailed Nothing Nothing t FRNotRegistered})
+  let failAt rid t = reg st rid >>= \r -> void (write st r {nrPhase = OFailed t FRNotRegistered})
   failAt "old" (at 1)
   failAt "recent" (at 30)
   failAt "released" (at 1)
