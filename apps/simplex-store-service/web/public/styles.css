@@ -518,7 +518,7 @@ h1 {
   }
 }
 /* the payment screen and the code screen take one step down from the landing screen's. */
-h1.tight { font-size: 1.875rem; line-height: 2.5rem; margin-top: 15px; }
+h1.tight { font-size: 1.875rem; line-height: 2.5rem; margin-top: 15px; text-wrap: balance; }
 
 .lede {
   font-size: 1.125rem;
@@ -539,7 +539,7 @@ h1.tight + .lede { margin-top: 6px; }
 /* A narrower measure than the column, so the closing footnote breaks in two rather than
    reading as a caption that ran on. Scoped to a direct child, so it cannot reach the same
    class inside a left-aligned field and indent the line it holds. */
-.panel > p.muted { max-width: 332px; margin-left: auto; margin-right: auto; }
+.panel > p.muted { max-width: 332px; margin-left: auto; margin-right: auto; text-wrap: pretty; }
 /* Shown beside the status while the browser is offline, not instead of it. */
 .offline { color: var(--warn-fg); }
 .center { text-align: center; }
@@ -880,7 +880,7 @@ p.row-line { margin: 16px 0 0; }
    used to carry was the only leading on the page that was neither the body's
    1.5 nor anything else's, and it set these lines closer together than the same
    size reads anywhere else. */
-.notice p, .warn p, .info p { font-size: .875rem; margin: 0; }
+.notice p, .warn p, .info p { font-size: .875rem; margin: 0; text-wrap: pretty; }
 
 /* the catalog-changed screen, the rate-limited screen and the payment screen's "waiting": something is pending, nothing has gone wrong. */
 .notice { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-fg); }
@@ -1249,10 +1249,11 @@ p.row-line { margin: 16px 0 0; }
   .row.total { font-size: 1.125rem; }
 
   /* the history list's rows: the type scale steps down, and the art keeps the 44 it has at
-     every width. The paid-no-code screen's summary carries the same title and steps with it. */
+     every width. The paid-no-code screen's summary carries the same title and steps with it.
+     The code row narrows, so a code and "Copied" share one line at 360. */
   .entry { padding: 14px 16px 16px; }
   .entry .name, .rows.field > .name { font-size: 1rem; }
-  .entry .code-row { gap: 6px; padding: 10px 8px 10px 12px; }
+  .entry .code-row { gap: 6px; padding-right: 8px; }
   .entry .code-row code { font-size: .75rem; }
   .entry .code-row .secondary { padding: 0 8px; }
 }

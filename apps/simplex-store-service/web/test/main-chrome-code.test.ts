@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, primaryOf, screenOf, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
-import { CAN_DELETE_CODES, IDLE_DELETION, KEEP_OUTSIDE } from "../src/screens.js";
+import { CAN_DELETE_CODES, CODE_DELETED_AFTER, KEEP_OUTSIDE } from "../src/screens.js";
 
 const codeTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
@@ -38,7 +38,7 @@ codeTest("main: in Chrome, the only-copy box is shown without the deletion warni
 
   const warn = screenOf(app).all("div.warn")[0]!;
   assert.ok(warn.textContent.includes("This is the only copy."));
-  assert.ok(!warn.textContent.includes(IDLE_DELETION), `the deletion warning is shown in Chrome: ${warn.textContent}`);
+  assert.ok(!warn.textContent.includes(CODE_DELETED_AFTER), `the deletion warning is shown in Chrome: ${warn.textContent}`);
   assert.ok(!warn.textContent.includes(KEEP_OUTSIDE));
 });
 

@@ -762,13 +762,13 @@ domTest("screens: the deletion warning and the advice are shown in the only-copy
   const p = render(screens.codeIssued({ code: HELD_CODE, retention: "keptUntilIdle" }));
   const warn = p.all("div.warn")[0]!;
   assert.ok(warn.textContent.includes("This is the only copy."));
-  assert.ok(warn.textContent.includes(screens.IDLE_DELETION), `the deletion warning is missing from: ${warn.textContent}`);
-  assert.ok(warn.textContent.includes(screens.KEEP_OUTSIDE), "the advice is shown with it");
+  assert.deepEqual(warn.all("p").slice(-2).map((l) => l.textContent), [screens.CODE_DELETED_AFTER, screens.KEEP_OUTSIDE],
+    "the deletion line and the advice close the only-copy box");
   const kept = render(screens.codeIssued({ code: HELD_CODE, retention: "kept" }));
-  assert.ok(!kept.textContent.includes(screens.IDLE_DELETION), "the deletion warning is shown only for a code kept until idle");
+  assert.ok(!kept.textContent.includes(screens.CODE_DELETED_AFTER), "the deletion warning is shown only for a code kept until idle");
   assert.ok(!kept.textContent.includes(screens.KEEP_OUTSIDE));
   const unsaved = render(screens.codeIssued({ code: HELD_CODE, retention: "notKept" }));
-  assert.ok(!unsaved.textContent.includes(screens.IDLE_DELETION), "the deletion warning is shown only for a saved code");
+  assert.ok(!unsaved.textContent.includes(screens.CODE_DELETED_AFTER), "the deletion warning is shown only for a saved code");
 });
 
 domTest("screens: the deletion warning is shown above Show code on the return-to-app ending for a code kept until idle", () => {
@@ -780,7 +780,7 @@ domTest("screens: the deletion warning is shown above Show code on the return-to
   assert.ok(hidden.children.indexOf(warn) < hidden.children.indexOf(showRow), "the deletion warning is placed above Show code");
   assertNoCode(hidden, "the return-to-app ending with the deletion warning");
   const shown = render(screens.returnToApp({ onReturn: noop, code: { kind: "shown", code: HELD_CODE }, retention: "keptUntilIdle" }));
-  assert.ok(shown.textContent.includes(screens.IDLE_DELETION), "the deletion warning is shown with the revealed code");
+  assert.ok(shown.textContent.includes(screens.CODE_DELETED_AFTER), "the deletion warning is shown with the revealed code");
   assert.ok(!shown.textContent.includes(screens.COPY_UNLESS_ADDED), "the hint to show the code is removed once the code is shown");
   const kept = render(screens.returnToApp({ onReturn: noop, code: { kind: "hidden", onShow: noop }, retention: "kept" }));
   assert.equal(kept.all("div.warn").length, 0);
@@ -809,10 +809,10 @@ domTest("screens: the deletion line is shown on the paid-no-code screen in a bro
   const order = unpaidRecord({ status: "paid" });
   const deleting = render(screens.paidNoCode({ order, settledAt: undefined, retention: "keptUntilIdle" }));
   const notice = deleting.all("div.notice")[0]!;
-  assert.ok(notice.textContent.includes(screens.IDLE_DELETION_CODES), `the deletion line is missing from: ${notice.textContent}`);
+  assert.ok(notice.textContent.includes(screens.DELETED_IF_BOUGHT_HERE), `the deletion line is missing from: ${notice.textContent}`);
   assert.ok(notice.textContent.includes("Quote the reference below and we will sort it out."));
   const kept = render(screens.paidNoCode({ order, settledAt: undefined, retention: "kept" }));
-  assert.ok(!kept.textContent.includes(screens.IDLE_DELETION_CODES));
+  assert.ok(!kept.textContent.includes(screens.DELETED_IF_BOUGHT_HERE));
 });
 
 domTest("screens: the paid-no-code screen names the badge and the reference, and has nothing else to offer", () => {

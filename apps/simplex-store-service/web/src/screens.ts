@@ -792,17 +792,19 @@ export interface CodeIssuedOptions {
 
 export const REDEEM_IN_SETTINGS = "Settings → Supporter perks → Redeem code";
 export const REDEEM_SCREEN_OPEN = "The Redeem code screen is already open.";
-const IDLE_PERIOD = "after 7 days of browsing without a tap or click on this site.";
+const IDLE_PERIOD = "after 7\u00a0days of browser use without a tap or click on this site.";
 export const CAN_DELETE_CODE = "This browser can delete the code";
-export const CAN_DELETE_CODES = "This browser can delete stored codes";
-export const IDLE_DELETION = `${CAN_DELETE_CODE} ${IDLE_PERIOD}`;
+export const CAN_DELETE_CODES = "This browser can delete codes";
 export const IDLE_DELETION_CODES = `${CAN_DELETE_CODES} ${IDLE_PERIOD}`;
 export const CODE_DELETED_AFTER = `It can be deleted ${IDLE_PERIOD}`;
 export const CODES_DELETED_AFTER = `They can be deleted ${IDLE_PERIOD}`;
+export const DELETED_IF_BOUGHT_HERE = `If the code was bought in this browser, the browser may have deleted it ${IDLE_PERIOD}`;
 export const KEEP_OUTSIDE = "Redeem it now, or copy it and keep it outside this browser.";
-export const KEEP_EACH_OUTSIDE = "Copy each code you have not redeemed, and keep it outside this browser.";
-export const COPY_UNLESS_ADDED = "If the badge is not added in the app, show the code, copy it and keep it outside this browser.";
-export const CODES_LISTED_HERE = "Codes stored in this browser are listed here.";
+export const KEEP_EACH_OUTSIDE = "Copy each code you have not redeemed and keep it outside this browser.";
+export const COPY_UNLESS_ADDED = "If the app does not show the badge, show the code, copy it and keep it outside this browser.";
+const CODES_STORED_HERE = "Codes stored in this browser";
+const ARE_LISTED_HERE = "are listed here.";
+export const CODES_LISTED_HERE = `${CODES_STORED_HERE} ${ARE_LISTED_HERE}`;
 export const CODES_STORED_IN_BROWSER = "Codes are stored only in the browser they were bought in.";
 
 function codeWithCopy(code: string): HTMLElement[] {
@@ -816,7 +818,7 @@ function codeDetails(o: Omit<CodeIssuedOptions, "code">): HTMLElement {
         el("span", { class: "title" }, "This is the only copy."),
         el("p", {}, "Saved in this browser and nowhere else."),
         el("p", {}, "Anyone using this browser can read it, and clearing the browser loses it."),
-        ...(o.retention === "keptUntilIdle" ? [el("p", {}, IDLE_DELETION), el("p", {}, KEEP_OUTSIDE)] : []))
+        ...(o.retention === "keptUntilIdle" ? [el("p", {}, CODE_DELETED_AFTER), el("p", {}, KEEP_OUTSIDE)] : []))
     : el("div", { class: "warn" },
         el("span", { class: "title" }, "This code could not be saved in this browser."),
         el("p", {}, "Copy it now. It is shown here and nowhere else."));
@@ -923,7 +925,7 @@ export function paidNoCode(o: PaidNoCodeOptions): HTMLElement {
   const p = panel(
     el("h1", { class: "tight" }, CODE_NOT_IN_BROWSER),
     notice("The code was generated in the browser it was bought in, and is not stored anywhere else.",
-      ...(o.retention === "keptUntilIdle" ? [IDLE_DELETION_CODES] : []),
+      ...(o.retention === "keptUntilIdle" ? [DELETED_IF_BOUGHT_HERE] : []),
       "Quote the reference below and we will sort it out."),
     summary,
   );
@@ -996,7 +998,7 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
   if (o.rows.length === 0) {
     return withInvest(panel(
       el("h1", {}, "Your codes"),
-      el("p", { class: "lede" }, CODES_LISTED_HERE),
+      el("p", { class: "lede" }, el("span", { class: "half" }, CODES_STORED_HERE), " ", el("span", { class: "half" }, ARE_LISTED_HERE)),
       ...(o.retention === "keptUntilIdle" ? [el("p", { class: "muted" }, IDLE_DELETION_CODES)] : []),
       el("div", { class: "hero", role: "presentation" }),
       button("Choose your badge", o.onStart),
