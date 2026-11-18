@@ -5,15 +5,15 @@ module StoreService.Metrics
   ( MetricsEnv (..),
     ChainRead (..),
     ProviderTimes (..),
-    CensusRead (..),
+    RegisteredNamesRead (..),
     noChainRead,
-    noCensusRead,
+    noRegisteredNamesRead,
     readChain,
     runChainReads,
-    readCensus,
+    readRegisteredNames,
     serviceText,
     namesText,
-    censusText,
+    registeredNamesText,
     metricsApp,
     runMetrics,
   )
@@ -112,31 +112,31 @@ runChainReads ct v = forever $ do
   unless done $ atomically $ modifyTVar' v $ \cr -> cr {crOk = False}
   threadDelay chainReadInterval
 
--- | A failed census keeps the last one and is counted.
-data CensusRead = CensusRead {crCensus :: Maybe (RegisteredNames, UTCTime), crFailures :: Int}
+-- | A failed read of the registered names keeps the last one and is counted.
+data RegisteredNamesRead = RegisteredNamesRead {rrNames :: Maybe (RegisteredNames, UTCTime), rrFailures :: Int}
 
-noCensusRead :: CensusRead
-noCensusRead = CensusRead {crCensus = Nothing, crFailures = 0}
+noRegisteredNamesRead :: RegisteredNamesRead
+noRegisteredNamesRead = RegisteredNamesRead {rrNames = Nothing, rrFailures = 0}
 
-censusInterval :: Int
-censusInterval = 300 * 1000000
+registeredNamesInterval :: Int
+registeredNamesInterval = 300 * 1000000
 
-readCensus :: Contracts -> TVar CensusRead -> IO ()
-readCensus ct v = do
+readRegisteredNames :: Contracts -> TVar RegisteredNamesRead -> IO ()
+readRegisteredNames ct v = do
   counted <- registeredNames ct
   case counted of
-    Right census -> do
+    Right registered -> do
       now <- getCurrentTime
-      atomically $ modifyTVar' v $ \cr -> cr {crCensus = Just (census, now)}
+      atomically $ modifyTVar' v $ \rr -> rr {rrNames = Just (registered, now)}
     Left e -> do
-      atomically $ modifyTVar' v $ \cr -> cr {crFailures = crFailures cr + 1}
-      logWarn $ "store metrics: the names census failed: " <> tshow e
+      atomically $ modifyTVar' v $ \rr -> rr {rrFailures = rrFailures rr + 1}
+      logWarn $ "store metrics: the registered names read failed: " <> tshow e
 
-runCensus :: Contracts -> TVar CensusRead -> IO ()
-runCensus ct v = forever $ do
-  done <- (True <$ readCensus ct v) `catchOwn'` \e -> False <$ logError ("store metrics: the names census failed; the next pass will run: " <> tshow e)
-  unless done $ atomically $ modifyTVar' v $ \cr -> cr {crFailures = crFailures cr + 1}
-  threadDelay censusInterval
+runRegisteredNames :: Contracts -> TVar RegisteredNamesRead -> IO ()
+runRegisteredNames ct v = forever $ do
+  done <- (True <$ readRegisteredNames ct v) `catchOwn'` \e -> False <$ logError ("store metrics: the registered names read failed; the next pass will run: " <> tshow e)
+  unless done $ atomically $ modifyTVar' v $ \rr -> rr {rrFailures = rrFailures rr + 1}
+  threadDelay registeredNamesInterval
 
 -- | Open invoices come as (provider, open, overdue).
 serviceText :: [PaymentProvider] -> [(PaymentProvider, Int, Int)] -> BadgeCounts -> ProviderTimes -> Text
@@ -211,12 +211,12 @@ family kind name help samples
   where
     sample (labels, v) = name <> labels <> " " <> v <> "\n"
 
--- | The census of #8114's exporter, under its metric names: names and subnames by level and records set, and their
--- label lengths. Before the first census only the failures are answered.
-censusText :: CensusRead -> Text
-censusText CensusRead {crCensus, crFailures} =
-  family "counter" "simplex_names_refresh_failures_total" "Refreshes that failed" (Just $ value crFailures)
-    <> foldMap counted crCensus
+-- | The registered names of #8114's exporter, under its metric names: names and subnames by level and records set, and
+-- their label lengths. Before the first read only the failures are answered.
+registeredNamesText :: RegisteredNamesRead -> Text
+registeredNamesText RegisteredNamesRead {rrNames, rrFailures} =
+  family "counter" "simplex_names_refresh_failures_total" "Refreshes that failed" (Just $ value rrFailures)
+    <> foldMap counted rrNames
   where
     counted (RegisteredNames {rgBlock, rgNames}, refreshedAt) =
       T.concat
@@ -241,22 +241,22 @@ censusText CensusRead {crCensus, crFailures} =
                 <> line "_sum" level (sum lengths)
                 <> line "_count" level (length lengths)
 
-metricsApp :: MetricsEnv -> TVar ChainRead -> TVar CensusRead -> Application
-metricsApp MetricsEnv {meStore, meProviders, meListedOk, meWebhookAt, meNames} v census req respond = case pathInfo req of
+metricsApp :: MetricsEnv -> TVar ChainRead -> TVar RegisteredNamesRead -> Application
+metricsApp MetricsEnv {meStore, meProviders, meListedOk, meWebhookAt, meNames} v registered req respond = case pathInfo req of
   ["metrics"] -> only "GET" req respond $ do
     now <- getCurrentTime
     (invoices, badges, names) <- withTransaction meStore $ \db ->
       (,,) <$> openInvoiceCounts db (addUTCTime (negate expiryGrace) now) <*> badgeCounts db now <*> mapM (const $ namesCounts db) meNames
     times <- ProviderTimes <$> readTVarIO meListedOk <*> readTVarIO meWebhookAt
     chain <- readTVarIO v
-    counted <- readTVarIO census
-    let text = serviceText meProviders invoices badges times <> foldMap (\n -> namesText n chain <> censusText counted) names
+    counted <- readTVarIO registered
+    let text = serviceText meProviders invoices badges times <> foldMap (\n -> namesText n chain <> registeredNamesText counted) names
     respond $ responseLBS status200 [(hContentType, "text/plain; version=0.0.4; charset=utf-8")] $ LB.fromStrict $ encodeUtf8 text
   _ -> respond notFound
 
 runMetrics :: ListenerConfig -> Int -> MetricsEnv -> IO ()
 runMetrics lc port env@MetricsEnv {meNames} = do
   v <- newTVarIO noChainRead
-  census <- newTVarIO noCensusRead
-  let serve = Warp.runSettings (Warp.setPort port . Warp.setHost (fromString metricsHost) $ webSettings lc) (metricsApp env v census)
-  raceAny_ $ serve : concat [[runChainReads ns v, runCensus ns census] | Just ns <- [meNames]]
+  registered <- newTVarIO noRegisteredNamesRead
+  let serve = Warp.runSettings (Warp.setPort port . Warp.setHost (fromString metricsHost) $ webSettings lc) (metricsApp env v registered)
+  raceAny_ $ serve : concat [[runChainReads ns v, runRegisteredNames ns registered] | Just ns <- [meNames]]

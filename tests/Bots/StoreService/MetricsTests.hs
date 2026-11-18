@@ -59,7 +59,7 @@ storeMetricsTests = describe "StoreService: metrics" $ do
   it "counts name orders by phase, the oldest change among the orders the service moves on, pending transactions by nonce, open name invoices, held balances and pending record edits" testNamesCounts
   it "reads the registrar's funds, the latest block and which terms texts are held, and keeps each part while a read fails" $ testChainRead g
   it "answers GET /metrics with the service metrics alone without names, and with the names metrics while the node holds the chain read" $ testScrape g
-  it "counts live names and owned subnames by level and records, with their label lengths, and keeps the last census while one fails" $ testCensus g
+  it "counts live names and owned subnames by level and records, with their label lengths, and keeps the last read while one fails" $ testRegisteredNames g
   it "ends when its port is taken, as a web listener does" testPortTaken
 
 testPortTaken :: IO ()
@@ -71,8 +71,8 @@ testPortTaken = withServiceStore $ \st -> Warp.testWithApplication (pure $ \_ re
   ended <- timeout 5000000 (try (runMetrics lc port env) :: IO (Either SomeException ()))
   either (const True) (const False) <$> ended `shouldBe` Just True
 
-testCensus :: TVar ChaChaDRG -> IO ()
-testCensus g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+testRegisteredNames :: TVar ChaChaDRG -> IO ()
+testRegisteredNames g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
   let answer to signature args = answerCall node to (selector signature <> args) . Returns
       str t = abiTuple [Dynamic (abiBytes $ encodeUtf8 t)]
@@ -110,9 +110,9 @@ testCensus g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   answer censusRegistry "resolver(bytes32)" shopNode $ addressWord fakeResolver
   texts shopNode ("https://smp8.simplex.im/a#shop", "https://smp8.simplex.im/c#shop")
   answer censusSubnames "childrenLength(bytes32)" shopNode $ uint256 (0 :: Int)
-  v <- newTVarIO noCensusRead
-  readCensus ct v
-  fmap (rgBlock . fst) . crCensus <$> readTVarIO v `shouldReturn` Just 1
+  v <- newTVarIO noRegisteredNamesRead
+  readRegisteredNames ct v
+  fmap (rgBlock . fst) . rrNames <$> readTVarIO v `shouldReturn` Just 1
   let counted =
         [ "simplex_names{level=\"2\",records=\"none\"} 1",
           "simplex_names{level=\"2\",records=\"contact\"} 1",
@@ -141,12 +141,12 @@ testCensus g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           "simplex_names_block 1",
           "simplex_names_refresh_failures_total 0"
         ]
-      censusLines = T.lines . censusText <$> readTVarIO v
+      censusLines = T.lines . registeredNamesText <$> readTVarIO v
   filter ("simplex_names{" `T.isPrefixOf`) <$> censusLines `shouldReturn` counted
   censusLines >>= \ls -> forM_ lengths $ \l -> (l, l `elem` ls) `shouldBe` (l, True)
   setFault node "eth_getBlockByNumber" HttpFailure
-  readCensus ct v
-  crFailures <$> readTVarIO v `shouldReturn` 1
+  readRegisteredNames ct v
+  rrFailures <$> readTVarIO v `shouldReturn` 1
   filter ("simplex_names{" `T.isPrefixOf`) <$> censusLines `shouldReturn` counted
 
 censusRegistry, censusSubnames, censusOtherResolver, censusOwner :: Address
@@ -317,7 +317,7 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   listedOk <- TM.emptyIO
   webhookAt <- TM.emptyIO
   v <- newTVarIO noChainRead
-  census <- newTVarIO noCensusRead
+  census <- newTVarIO noRegisteredNamesRead
   let badgesOnly = MetricsEnv {meStore = st, meProviders = [PPCrypto], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing}
   withApp (metricsApp badgesOnly v census) $ \client -> do
     r <- webGet client "/metrics"

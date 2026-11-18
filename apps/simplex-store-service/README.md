@@ -937,17 +937,17 @@ block it reads the base registrar's names (`totalSupply`, `tokenByIndex`), keeps
 registrar (`subnameHook()`) level by level with `getChildren`, keeping subnames whose `ownerOf` is
 not zero. For each name it reads `resolver(node)` on the registry and, on the configured resolver,
 its `simplex.contact` and `simplex.channel` texts. The reads run 16 at a time at that one block. A
-failed census keeps the last one and is counted.
+failed read keeps the last one and is counted.
 
 | Metric | Value |
 |---|---|
 | `simplex_names{level,records}` | live names at `level` 2 (`alice.simplex`), 3 (`shop.alice.simplex`) and below, by `records`: `none`, `contact`, `channel`, `both`, or `other_resolver` for a name whose resolver is not the configured one, whose records are not read; names in the 90-day grace period are not counted |
 | `simplex_name_length` | histogram of label lengths in characters, by `level`, a bucket for each length 1 to 63 |
-| `simplex_names_block` | the block the census read |
-| `simplex_names_refresh_timestamp_seconds` | when the census last succeeded |
-| `simplex_names_refresh_failures_total` | counter of failed censuses since the service started |
+| `simplex_names_block` | the block the names were read at |
+| `simplex_names_refresh_timestamp_seconds` | when the names were last read |
+| `simplex_names_refresh_failures_total` | counter of failed reads of the names since the service started |
 
-Every metric is a gauge, but for the census's histogram and counter. A stuck order, transaction or record edit, a node that cannot be read or
+Every metric is a gauge, but for the names' histogram and counter. A stuck order, transaction or record edit, a node that cannot be read or
 has stopped following the chain, terms that cannot be shown and a payment provider that cannot be
 read show as:
 
