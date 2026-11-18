@@ -9478,7 +9478,7 @@ testUnreadCountsModeratorSupport ps = do
       alice ##> "/users"
       alice <## "alice (Alice) (active, unread: 1)"
       supportItemId <- itemIdByText alice "hi"
-      apiFixture "counts/moderator-read" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_read chat items #1(_support:2) " <> supportItemId]}
+      apiFixture "counts/moderator-read" alice [] FixtureRequests {frMarkdown = [""], frUris = [], frCommands = ["/_read chat items #1(_support:2) " <> supportItemId]}
       alice ##> "/member support chats #team"
       alice <## "members require attention: 0"
       alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"

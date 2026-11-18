@@ -1,18 +1,28 @@
 package chat.simplex.app
 
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.runtime.CompositionLocalProvider
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.NotificationAction
 import chat.simplex.common.platform.NtfManager
+import chat.simplex.common.platform.chatParseMarkdown
 import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.chat.apiLoadMessages
 import chat.simplex.common.views.chatlist.ActiveFilter
-import chat.simplex.common.views.chatlist.filteredChats
+import chat.simplex.common.views.chatlist.ChatListView
+import chat.simplex.common.views.chatlist.ChatPreviewView
 import chat.simplex.common.views.chatlist.markChatRead
+import chat.simplex.common.views.helpers.AnimatedViewState
+import chat.simplex.common.views.helpers.LocalAppBarHandler
+import chat.simplex.common.views.helpers.rememberAppBarHandler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
@@ -20,8 +30,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.*
 
+@OptIn(ExperimentalTestApi::class)
 class UnreadCountsTest {
   private val sendCmd = chatSendCmdRetry
+  private val parseMarkdown = chatParseMarkdown
   private val notifications = mutableListOf<String>()
 
   @BeforeTest
@@ -50,10 +62,14 @@ class UnreadCountsTest {
     ChatModel.chatsContext.chatItems.value.clear()
     ChatModel.secondaryChatsContext.value = null
     ChatModel.chatId.value = null
+    ChatModel.activeChatTagFilter.value = null
+    ChatModel.chatRunning.value = null
+    ChatModel.unreadTags.clear()
     ChatModel.currentUser.value = null
     ChatModel.users.clear()
     simplexWindowState.windowFocused.value = true
     chatSendCmdRetry = sendCmd
+    chatParseMarkdown = parseMarkdown
   }
 
   @Test
@@ -167,13 +183,46 @@ class UnreadCountsTest {
   }
 
   @Test
-  fun moderatorSupportMessageListedByUnreadFilter() = recorded("counts/moderator-support") { (support) ->
+  fun pendingMemberRowShowsBadge() = runComposeUiTest {
+    val (received) = events("counts/pending-support")
+    listChat(received)
+    runBlocking { receive(received) }
+    setContent {
+      ChatPreviewView(ChatModel.chatsContext.chats.value.single(), true, null, null, null, false, SimplexLinkMode.DESCRIPTION, false, false) {}
+    }
+    onNodeWithText("1").assertExists()
+  }
+
+  @Test
+  fun moderatorSupportMessageListedByUnreadFilter() = runComposeUiTest {
+    val (support) = events("counts/moderator-support")
     listChat(support)
-    receive(support)
-    val chats = ChatModel.chatsContext.chats.value.toList()
+    runBlocking { receive(support) }
+    val chat = ChatModel.chatsContext.chats.value.single()
     assertEquals(0 to 0, rowCounts())
     assertEquals(0, ChatModel.activeUserUnreadCount)
-    assertEquals(chats.map { it.id }, filteredChats(mutableStateOf(false), mutableStateOf(emptySet()), "", chats, ActiveFilter.Unread).map { it.id })
+    assertTrue(chat.unreadTag)
+    respond("counts/moderator-read")
+    ChatModel.chatRunning.value = true
+    ChatModel.activeChatTagFilter.value = ActiveFilter.Unread
+    setContent {
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        ChatListView(ChatModel, MutableStateFlow(AnimatedViewState.GONE), {}, false)
+      }
+    }
+    waitUntil(timeoutMillis = 5_000) { onAllNodesWithText(chat.chatInfo.displayName).fetchSemanticsNodes().isNotEmpty() }
+  }
+
+  @Test
+  fun removedChatLeavesNoListTagDot() = recorded("counts/group-marked") { (mention) ->
+    val group = chatInfo(mention) as ChatInfo.Group
+    val tagged = group.copy(groupInfo = group.groupInfo.copy(chatTags = listOf(1L)))
+    withContext(Dispatchers.Main) {
+      ChatModel.chatsContext.addChat(Chat(remoteHostId = null, chatInfo = tagged, chatItems = items(mention).map { it.chatItem }, chatStats = Chat.ChatStats(unreadCount = 1)))
+    }
+    assertEquals(1, ChatModel.unreadTags[1L])
+    withContext(Dispatchers.Main) { ChatModel.chatsContext.removeChat(null, tagged.id) }
+    assertEquals(0, ChatModel.unreadTags[1L])
   }
 
   @Test
@@ -219,8 +268,11 @@ class UnreadCountsTest {
   private fun events(fixture: String): List<API> = json.decodeFromString(fixtureText(fixture))
 
   private fun respond(fixture: String) {
-    val commands = Json.parseToJsonElement(fixtureText(fixture)).jsonObject.getValue("commands").jsonObject
+    val responses = Json.parseToJsonElement(fixtureText(fixture)).jsonObject
+    val commands = responses.getValue("commands").jsonObject
+    val markdown = responses.getValue("markdown").jsonObject
     chatSendCmdRetry = { _, cmd, _ -> commands[cmd]?.toString() ?: error("no recorded response: $cmd") }
+    chatParseMarkdown = { text -> markdown[text]?.toString() ?: error("no recorded markdown: $text") }
   }
 
   private fun listChat(event: API, preview: ChatItem? = null) = runBlocking {
