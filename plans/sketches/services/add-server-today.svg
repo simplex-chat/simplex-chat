@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 560" width="300" height="560" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<title>Today: Your servers, Add server</title>
+<style>.ph{fill:#f2f2f7;stroke:#c7c7cc}.g{fill:#fff}.t{font-size:14px;fill:#111}.s{font-size:11px;fill:#6e6e73}.h{font-size:22px;font-weight:700;fill:#111}.b{font-size:14px;fill:#0071e3}.sep{stroke:#e3e3e8}.ok{font-size:14px;fill:#248a3d;font-weight:700}.ch{font-size:14px;fill:#c4c4c7}.scrim{fill:#000;fill-opacity:.38}.sh{fill:#f2f2f7}.sb{font-size:17px;fill:#0071e3}.sbb{font-size:17px;fill:#0071e3;font-weight:600}</style>
+<rect class="ph" x="1" y="1" width="298" height="558" rx="34"/>
+<text class="b" x="14" y="52">‹ Network &amp; servers</text>
+<text class="h" x="16" y="86">Your servers</text>
+<text class="s" x="28" y="118">MESSAGE SERVERS</text>
+<rect class="g" x="12" y="124" width="276" height="44" rx="10"/>
+<text class="ok" x="26" y="151">✓</text>
+<text class="t" x="46" y="151">[your server]</text>
+<text class="ch" x="272" y="151">›</text>
+<text class="s" x="28" y="184">The servers for new connections of your</text>
+<text class="s" x="28" y="198">current chat profile [profile].</text>
+<rect class="g" x="12" y="214" width="276" height="44" rx="10"/>
+<text class="b" x="26" y="241">Add server</text>
+<rect class="scrim" x="1" y="1" width="298" height="558" rx="34"/>
+<rect class="sh" x="10" y="318" width="280" height="168" rx="14"/>
+<text class="sb" x="150" y="350" text-anchor="middle">Enter server manually</text>
+<line class="sep" x1="10" y1="374" x2="290" y2="374"/>
+<text class="sb" x="150" y="406" text-anchor="middle">Scan server QR code</text>
+<line class="sep" x1="10" y1="430" x2="290" y2="430"/>
+<text class="sb" x="150" y="462" text-anchor="middle">Chat relay</text>
+<rect class="g" x="10" y="494" width="280" height="52" rx="14"/>
+<text class="sbb" x="150" y="526" text-anchor="middle">Cancel</text>
+</svg>
