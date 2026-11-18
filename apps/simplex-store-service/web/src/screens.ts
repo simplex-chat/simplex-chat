@@ -690,36 +690,46 @@ export interface AwaitingConfirmationOptions {
   onCheckAgain: () => void;
 }
 
-const CONFIRMING: Readonly<Record<Method, { status: string; wait: string }>> = {
+const NOT_CONFIRMED = "The payment has not been confirmed.";
+
+const CONFIRMING: Readonly<Record<Method, { status: string; wait: string; unsettled: string; countsConfirmations: boolean }>> = {
   card: {
     status: "Waiting for the card network to confirm.",
     wait: "This usually takes a few seconds. The page updates itself.",
+    unsettled: NOT_CONFIRMED,
+    countsConfirmations: false,
   },
   btc: {
     status: "Waiting for the Bitcoin network to confirm.",
     wait: "This takes a block, usually about ten minutes. The page updates itself.",
+    unsettled: NOT_CONFIRMED,
+    countsConfirmations: true,
   },
   ln: {
     status: "Waiting for the Lightning payment to settle.",
     wait: "This usually takes a few seconds. The page updates itself.",
+    unsettled: "The payment has not settled.",
+    countsConfirmations: false,
   },
   xmr: {
     status: "Waiting for the Monero network to confirm.",
     wait: "This takes a block, usually a couple of minutes. The page updates itself.",
+    unsettled: NOT_CONFIRMED,
+    countsConfirmations: true,
   },
 };
 
 export function awaitingConfirmation(o: AwaitingConfirmationOptions): HTMLElement {
+  const method = o.method ?? "card";
   if (o.gaveUp) {
     return panel(
       el("h1", { class: "tight" }, "This is taking longer than expected"),
       el("p", { class: "lede" },
-        `${o.method === "ln" ? "The payment has not settled." : "The payment has not been confirmed."} This page keeps working: come back to it later, or quote the reference below.`),
+        `${CONFIRMING[method].unsettled} This page keeps working: come back to it later, or quote the reference below.`),
       reference(o.order.orderId),
       button("Check again", o.onCheckAgain),
     );
   }
-  const method = o.method ?? "card";
   const p = panel(
     el("h1", { class: "tight" }, "Payment received"),
     el("p", { class: "awaiting", role: "status" },
@@ -728,7 +738,7 @@ export function awaitingConfirmation(o: AwaitingConfirmationOptions): HTMLElemen
     notice("Still processing", CONFIRMING[method].wait),
   );
   const needed = o.invoice?.requiredConfirmations;
-  if (needed !== undefined && needed > 0 && method !== "card" && method !== "ln") {
+  if (needed !== undefined && needed > 0 && method !== "card" && CONFIRMING[method].countsConfirmations) {
     p.append(el("p", { class: "muted" },
       `This is settled once the payment has ${needed === 1 ? "1 confirmation" : `${needed} confirmations`} on the ${CRYPTO_NAMES[method]} blockchain.`));
   }
