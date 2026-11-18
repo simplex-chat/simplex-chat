@@ -120,7 +120,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
   describe "lanes" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
-    it "reports once each paid or code order not registered 3 hours after its payment" testUnregisteredAlert
+    it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, its name released, a paid order's price kept as its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
     it "fails an order waiting for its owner once its page has not read it for 3 days, a read of the order or its invoice stored at most hourly" testUnreadFails
@@ -1048,6 +1048,8 @@ testUnregisteredAlert = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> d
   (code, _) <- codeIn ctx 7 dynamisOrder id
   answerFree ctx "alicebakers"
   void $ paidIn ctx aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 5} $ \o -> o {nrPhase = ORegistered expiry orderTime}
+  answerFree ctx "carolbakery"
+  failedOrder <- paidIn ctx aliceOrder {oLabel = "carolbakery", oCommitment = commitmentOf 6} failedPhase
   advance ctx $ 3 * 3600
   alertUnregisteredPaid worker
   readTVarIO reports `shouldReturn` []
@@ -1056,7 +1058,7 @@ testUnregisteredAlert = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> d
   alertUnregisteredPaid worker
   let named NameRegistration {nrId = RegistrationId rid} = any (T.isInfixOf rid)
   sent' <- readTVarIO reports
-  (length sent', named paid sent', named code sent') `shouldBe` (2, True, True)
+  (length sent', named paid sent', named code sent', named failedOrder sent') `shouldBe` (3, True, True, True)
 
 testMonthEnds :: IO ()
 testMonthEnds = withWorker $ \W {wCtx = ctx@Ctx {cStore}, wWorker} -> do

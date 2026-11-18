@@ -736,7 +736,7 @@ data NamesCounts = NamesCounts
     ncHeldCents :: Int,
     ncPendingEdits :: Int,
     ncOldestEdit :: Maybe UTCTime,
-    ncOldestUnregisteredPaid :: Maybe UTCTime
+    ncOldestUnregisteredPaid :: [(NamePhase, UTCTime)]
   }
   deriving (Eq, Show)
 
@@ -1131,8 +1131,8 @@ unregisteredPaidBefore db cutoff =
   map (\(rid, phase, paidAt) -> (RegistrationId rid, phase, paidAt))
     <$> DB.query
       db
-      (mkQuery "SELECT registration_id, phase, paid_at FROM @name_registrations WHERE phase IN (?,?,?,?) AND paid_at < ? AND unregistered_alerted_at IS NULL ORDER BY paid_at, registration_id")
-      (PQueued, PCommitting, PCommitted, PRegistering, cutoff)
+      (mkQuery "SELECT registration_id, phase, paid_at FROM @name_registrations WHERE phase IN (?,?,?,?,?) AND paid_at < ? AND unregistered_alerted_at IS NULL ORDER BY paid_at, registration_id")
+      (PQueued, PCommitting, PCommitted, PRegistering, PFailed, cutoff)
 
 markRead :: DB.Connection -> RegistrationId -> UTCTime -> UTCTime -> IO ()
 markRead db (RegistrationId rid) before now =
@@ -1938,14 +1938,21 @@ namesCounts db = do
         (SELECT COALESCE(SUM(amount), 0) FROM @name_balances WHERE reserved_by IS NOT NULL),
         (SELECT COUNT(*) FROM @name_record_edits WHERE state = ?),
         (SELECT MIN(created_at) FROM @name_record_edits WHERE state = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase IN (?,?,?,?))
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?)
     |]
     )
-    ((PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, ISOpen, ETPending, ETPending) :. (PQueued, PCommitting, PCommitted, PRegistering))
+    ((PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, ISOpen, ETPending, ETPending) :. unregisteredPhases)
     >>= \case
-      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid)] ->
-        pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid}
+      [(ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit) :. (q, cg, cd, rg, f)] ->
+        let ncOldestUnregisteredPaid = [(p, t) | (p, Just t) <- zip [PQueued, PCommitting, PCommitted, PRegistering, PFailed] [q, cg, cd, rg, f]]
+         in pure NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid}
       _ -> E.throwIO $ StoreDecodeError "names counts: not one row"
+  where
+    unregisteredPhases = (PQueued, PCommitting, PCommitted, PRegistering, PFailed)
 
 int64 :: Word64 -> Int64
 int64 = fromIntegral

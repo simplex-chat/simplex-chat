@@ -170,7 +170,7 @@ namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTran
   T.concat
     [ gauge "simplex_store_names_orders" "Name orders by phase" [labelled "phase" (textEncode p) (value $ fromMaybe 0 $ lookup p ncPhases) | p <- [minBound .. maxBound]],
       gauge "simplex_store_names_queue_oldest_change_timestamp_seconds" "Last change of the order longest unmoved among those the service moves on: queued, committing, registering, or committed with its reveal" (timestamp <$> ncQueueOldestChange),
-      gauge "simplex_store_names_unregistered_oldest_paid_timestamp_seconds" "When the order paid longest ago among those queued, committing, committed or registering was paid" (timestamp <$> ncOldestUnregisteredPaid),
+      gauge "simplex_store_names_unregistered_oldest_paid_timestamp_seconds" "When the order paid longest ago among those in the phase, queued, committing, committed, registering or failed, was paid" [labelled "phase" (textEncode p) (timestamp t) | (p, t) <- ncOldestUnregisteredPaid],
       gauge "simplex_store_names_transactions_pending" "Registrar transactions sent and not settled, one per nonce" (Just $ value ncPendingTransactions),
       gauge "simplex_store_names_transactions_oldest_pending_timestamp_seconds" "When the oldest pending registrar transaction was first signed" (timestamp <$> ncOldestPending),
       gauge "simplex_store_names_invoices_open" "Open invoices of name orders" (Just $ value ncOpenInvoices),
