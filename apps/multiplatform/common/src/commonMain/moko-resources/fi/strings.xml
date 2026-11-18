@@ -501,7 +501,7 @@
     <string name="enter_one_ICE_server_per_line">ICE-palvelimet (yksi per rivi)</string>
     <string name="error_saving_ICE_servers">Virhe ICE-palvelimien tallentamisessa</string>
     <string name="network_disable_socks_info">Jos vahvistat, viestipalvelimet näkevät IP-osoitteesi ja palveluntarjoajasi - mihin palvelimiin olet yhteydessä.</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Se voi tapahtua, kun: \n1. Viestit vanhenivat lähettävässä päätelaitteessa kahden päivän päästä tai palvelimessa 30 päivän kuluttua. \n2. Viestin salauksen purku epäonnistui, koska sinä tai kontaktisi käytitte vanhaa varmuuskopiota tietokannasta. \n3. Yhteys vaarantui.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Se voi tapahtua, kun: \n1. Viestit vanhenivat lähettävässä päätelaitteessa kahden päivän päästä tai palvelimessa 21 päivän kuluttua. \n2. Viestin salauksen purku epäonnistui, koska sinä tai kontaktisi käytitte vanhaa varmuuskopiota tietokannasta. \n3. Yhteys vaarantui.</string>
     <string name="v4_3_improved_privacy_and_security">Parannettu yksityisyys ja turvallisuus</string>
     <string name="v4_3_improved_server_configuration">Parannettu palvelimen kokoonpano</string>
     <string name="image_saved">Kuva tallennettu galleriaan</string>

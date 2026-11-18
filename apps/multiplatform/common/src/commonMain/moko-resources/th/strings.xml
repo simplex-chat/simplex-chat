@@ -508,7 +508,7 @@
     <string name="incognito_info_protects">โหมดไม่ระบุตัวตนปกป้องความเป็นส่วนตัวของชื่อและรูปภาพโปรไฟล์หลักของคุณ — สำหรับผู้ติดต่อใหม่แต่ละราย จะมีการสร้างโปรไฟล์ใหม่แบบสุ่ม</string>
     <string name="conn_level_desc_indirect">ทางอ้อม (%1$s)</string>
     <string name="install_simplex_chat_for_terminal">ติดตั้ง SimpleX Chat สำหรับเทอร์มินัล</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">มันสามารถเกิดขึ้นได้เมื่อ: \n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเซิร์ฟเวอร์หลังจาก 30 วัน \n2. การถอดรหัสข้อความล้มเหลว เนื่องจากคุณหรือผู้ติดต่อของคุณใช้การสำรองฐานข้อมูลเก่า \n3. การเชื่อมต่อถูกบุกรุก</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">มันสามารถเกิดขึ้นได้เมื่อ: \n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเซิร์ฟเวอร์หลังจาก 21 วัน \n2. การถอดรหัสข้อความล้มเหลว เนื่องจากคุณหรือผู้ติดต่อของคุณใช้การสำรองฐานข้อมูลเก่า \n3. การเชื่อมต่อถูกบุกรุก</string>
     <string name="join_group_incognito_button">เข้าร่วมแบบไม่ระบุตัวตน</string>
     <string name="thousand_abbreviation">เค</string>
     <string name="invalid_message_format">รูปแบบข้อความไม่ถูกต้อง</string>

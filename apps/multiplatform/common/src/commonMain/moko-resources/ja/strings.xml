@@ -516,7 +516,7 @@
     <string name="reject">拒否</string>
     <string name="call_connection_peer_to_peer">P2P</string>
     <string name="privacy_and_security">プライバシーとセキュリティ</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">次の場合に起こる場合があります： \n① メッセージの有効期限（送信側のクライアントでは2日後、サーバーでは30日後）が切れた \n②あなたや 連絡相手が古いデータベースのバックアップを使用したため、メッセージの復号化に失敗した \n③ 接続に問題があった</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">次の場合に起こる場合があります： \n① メッセージの有効期限（送信側のクライアントでは2日後、サーバーでは21日後）が切れた \n②あなたや 連絡相手が古いデータベースのバックアップを使用したため、メッセージの復号化に失敗した \n③ 接続に問題があった</string>
     <string name="settings_section_title_device">端末</string>
     <string name="no_received_app_files">送受信済みのファイルがありません</string>
     <string name="delete_messages">メッセージを削除</string>

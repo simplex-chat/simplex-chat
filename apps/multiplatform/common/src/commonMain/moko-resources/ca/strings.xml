@@ -1118,7 +1118,7 @@
     <string name="description_you_shared_one_time_link_incognito">has compartit enllaç d\'un sol ús en mode incògnit</string>
     <string name="connect_plan_repeat_connection_request">Repetir la sol·licitud de connexió?</string>
     <string name="servers_info_missing">Sense informació, prova de tornar a carregar</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Pot passar quan:\n1. Els missatges van caducar al client d\'enviament al cap de 2 dies o al servidor després de 30 dies.\n2. No s\'ha pogut desxifrar el missatge, perquè tu o el teu contacte feien servir una còpia de seguretat de la base de dades antiga.\n3. La connexió s\'ha compromès.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Pot passar quan:\n1. Els missatges van caducar al client d\'enviament al cap de 2 dies o al servidor després de 21 dies.\n2. No s\'ha pogut desxifrar el missatge, perquè tu o el teu contacte feien servir una còpia de seguretat de la base de dades antiga.\n3. La connexió s\'ha compromès.</string>
     <string name="users_delete_data_only">Només dades de perfil local</string>
     <string name="connect_plan_join_your_group">Unir-se al teu grup?</string>
     <string name="delete_message_mark_deleted_warning">El missatge es marcarà per suprimir-lo. Els destinataris podran visualitzar aquest missatge.</string>

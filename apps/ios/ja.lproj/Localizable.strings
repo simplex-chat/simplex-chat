@@ -2060,7 +2060,7 @@ server test error */
 "It can happen when you or your connection used the old database backup." = "古いデータベースのバックアップを使用した場合に発生する可能性があります。";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "次の場合に起こる場合があります：\n1. メッセージの有効期限（送信側のクライアントでは2日後、サーバーでは30日後）が切れた。\n2. あなたや 連絡相手が古いデータベースのバックアップを使用したため、メッセージの復号化に失敗した。\n3. 接続に問題があった。";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 21 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "次の場合に起こる場合があります：\n1. メッセージの有効期限（送信側のクライアントでは2日後、サーバーでは21日後）が切れた。\n2. あなたや 連絡相手が古いデータベースのバックアップを使用したため、メッセージの復号化に失敗した。\n3. 接続に問題があった。";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "このリンクからすでに接続されているようです。そうでない場合は、エラー(%@)が発生しました。";

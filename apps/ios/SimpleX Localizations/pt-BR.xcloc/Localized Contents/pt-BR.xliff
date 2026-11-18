@@ -4083,13 +4083,13 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <target state="translated">Salvar senha do perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target state="translated">Pode acontecer quando:
-1. As mensagens expiraram no remetente após 2 dias ou no servidor após 30 dias.
+1. As mensagens expiraram no remetente após 2 dias ou no servidor após 21 dias.
 2. A descriptografia da mensagem falhou porque você ou seu contato usou o backup do banco de dados antigo.
 3. A conexão foi comprometida.</target>
         <note>No comment provided by engineer.</note>

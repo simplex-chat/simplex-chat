@@ -4691,13 +4691,13 @@ Available in v5.1</source>
         <target state="translated">當你或你的連結在用舊的數據庫備份時會發生。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 21 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
         <source>It can happen when:
-1. The messages expired in the sending client after 2 days or on the server after 30 days.
+1. The messages expired in the sending client after 2 days or on the server after 21 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
         <target state="translated">當發生：
-1.訊息將在發送客戶端後兩天或在伺服器內三十天時過時。
+1.訊息將在發送客戶端後兩天或在伺服器內二十一天時過時。
 2. 訊息解密失敗，因為你或你的聯絡人用了舊的數據庫備份
 3.連接被破壞。</target>
         <note>No comment provided by engineer.</note>

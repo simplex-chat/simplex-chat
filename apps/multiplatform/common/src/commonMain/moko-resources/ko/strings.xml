@@ -343,7 +343,7 @@
     <string name="contact_wants_to_connect_via_call">%1$s님이 다음을 통해 연결하려고 해요 :</string>
     <string name="allow_accepting_calls_from_lock_screen">설정에서 잠금 화면에서 바로 전화를 받을 수 있도록 설정할 수 있어요.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">연결을 완료하려면 대화 상대가 온라인 상태여야 해요. \n연결 요청을 취소하고 대화 상대를 삭제할 수 있어요 (그리고 새 링크로 재시도).</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">다음과 같은 경우에 발생할 수 있습니다. \n1. 대화 상대가 메시지를 보낸 지 30일 지나서 서버에서 삭제된 경우 \n2. 메시지를 수신하는 데 사용된 서버가 업데이트되고 재부팅된 경우 \n3. 침해된 연결의 경우</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">다음과 같은 경우에 발생할 수 있습니다. \n1. 대화 상대가 메시지를 보낸 지 21일 지나서 서버에서 삭제된 경우 \n2. 메시지를 수신하는 데 사용된 서버가 업데이트되고 재부팅된 경우 \n3. 침해된 연결의 경우</string>
     <string name="auth_simplex_lock_turned_on">SimpleX 잠금 켜짐</string>
     <string name="callstate_received_answer">응답됨…</string>
     <string name="callstate_received_confirmation">확인 받음…</string>

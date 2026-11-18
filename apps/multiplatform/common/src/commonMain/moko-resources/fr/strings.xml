@@ -411,7 +411,7 @@
     <string name="integrity_msg_skipped">%1$d message(s) manqué(s)</string>
     <string name="integrity_msg_bad_id">ID du message incorrect</string>
     <string name="settings_section_title_settings">Paramètres</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Cela peut arriver lorsque :\n1. Les messages ont expiré sur le client d\'envoi après 2 jours ou sur le serveur après 30 jours.\n2. Le déchiffrement du message a échoué, car vous ou votre contact avez utilisé une ancienne sauvegarde de la base de données.\n3. La connexion a été compromise.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Cela peut arriver lorsque :\n1. Les messages ont expiré sur le client d\'envoi après 2 jours ou sur le serveur après 21 jours.\n2. Le déchiffrement du message a échoué, car vous ou votre contact avez utilisé une ancienne sauvegarde de la base de données.\n3. La connexion a été compromise.</string>
     <string name="icon_descr_call_rejected">Appel rejeté</string>
     <string name="rcv_group_event_member_deleted">a retiré %1$s</string>
     <string name="snd_group_event_member_deleted">vous avez retiré %1$s</string>
