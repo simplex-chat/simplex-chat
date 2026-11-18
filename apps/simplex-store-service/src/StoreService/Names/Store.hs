@@ -727,7 +727,7 @@ data NewRecordEdit = NewRecordEdit
   }
 
 data NamesCounts = NamesCounts
-  { ncPhases :: [(NamePhase, Int)],
+  { ncPhases :: [(NamePhase, Maybe FailReason, Int)],
     ncQueueOldestChange :: Maybe UTCTime,
     ncPendingTransactions :: Int,
     ncOldestPending :: Maybe UTCTime,
@@ -1924,7 +1924,7 @@ setTermsText db termsHash text =
 
 namesCounts :: DB.Connection -> IO NamesCounts
 namesCounts db = do
-  ncPhases <- DB.query_ db (mkQuery "SELECT phase, COUNT(*) FROM @name_registrations GROUP BY phase")
+  ncPhases <- DB.query_ db (mkQuery "SELECT phase, fail_reason, COUNT(*) FROM @name_registrations GROUP BY phase, fail_reason")
   DB.query
     db
     ( prefixQuery

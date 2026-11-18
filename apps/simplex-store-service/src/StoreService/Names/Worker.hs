@@ -34,7 +34,7 @@ import Control.Concurrent.Async (Async, asyncWithUnmask, cancel, poll)
 import Control.Concurrent.STM
 import Control.Exception (finally, mask_)
 import qualified Control.Exception as E
-import Control.Logger.Simple (logError, logNote, logWarn)
+import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM_, forever, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Containers.ListUtils (nubOrd)
@@ -249,14 +249,12 @@ commitSent w now r@NameRegistration {nrPhase} p
 -- | Waits for the page's reveal, past the lapse for /retry unless the links were refused, has its acceptance held by the name
 -- policy, waits for revealAfter, then registers.
 committed :: Worker -> UTCTime -> NameRegistration -> Commit -> IO Next
-committed w@Worker {wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrReveal, nrReadAt} c@Commit {cmRevealAfter} =
+committed w@Worker {wkSender} now r@NameRegistration {nrId = regId, nrReveal, nrReadAt} c@Commit {cmRevealAfter} =
   inFlightTransaction wkSender (TxRegistration RTRegister regId) >>= \case
     Just p -> registerSent w now r c p
     Nothing -> case nrReveal of
       Nothing
-        | now > unreadAt -> do
-            logNote $ "names worker: registration " <> rid <> " failed: it waited for its owner, and its page has not read it since " <> tshow nrReadAt
-            save w now r {nrPhase = OFailed now FRUnread}
+        | now > unreadAt -> inTurn w r $ failOrder w now r FRUnread $ "it waited for its owner, and its page has not read it since " <> tshow nrReadAt
         | otherwise -> case lapseMoment r of
             Just lapse | now <= lapse -> pure $ waitUntil r $ min unreadAt $ addUTCTime chainSecond lapse
             _ -> pure $ waitUntil r $ min unreadAt $ addUTCTime maxWait now
@@ -309,18 +307,13 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> Commit -> NameReveal -> IO Next
-sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}, oeReport}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} c rv@NameReveal {rvDeadline}
+sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} c rv@NameReveal {rvDeadline}
   | chainSeconds now > rvDeadline = do
       logWarn $ "names worker: registration " <> rid <> ": its stored signature's deadline passed, so its page signs again"
       save w now r {nrReveal = Nothing}
   | otherwise =
       verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
-        Left refusal -> do
-          next <- save w now r {nrPhase = OFailed now FRSignatureRefused}
-          let failed = "names worker: registration " <> rid <> " failed: its stored signature is refused under the service's current configuration, " <> T.pack refusal
-          logError failed
-          oeReport failed
-          pure next
+        Left refusal -> inTurn w r $ failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal
         Right () ->
           withinSends w now r RTRegister $ submitTransaction wkSender (TxRegistration RTRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
             Right p -> registerSent w now r c p
@@ -386,7 +379,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
       ORegistering {} -> store w now r {nrPhase = OCommitted c}
       _
         | unlapsed now c -> pure (Nothing, Stalled (nrVersion r) $ SFRegisterRefused reason)
-        | otherwise -> store w now r {nrPhase = OFailed now FRRegistryRefused}
+        | otherwise -> failOrder w now r FRRegistryRefused $ "its commitment lapsed while the register reverts with the name available, " <> maybe "without a reason" tshow reason
     -- at the latest block, and at the confirmation depth while the latest reads it taken
     availability label = runExceptT $ do
       latest <- ExceptT $ controllerAvailable oeContracts Latest label
@@ -416,6 +409,15 @@ creditedTaken now r = creditedWrite now r {nrPhase = OTaken}
 
 creditedWrite :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
 creditedWrite now r@NameRegistration {nrId, nrPrice} db = versionWritten <$> updateRegistration db r now >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now)
+
+failOrder :: Worker -> UTCTime -> NameRegistration -> FailReason -> Text -> IO (Maybe Int64, Next)
+failOrder w@Worker {wkOrders = OrdersEnv {oeReport}} now r@NameRegistration {nrId = RegistrationId rid} reason why = do
+  result@(v, _) <- store w now r {nrPhase = OFailed now reason}
+  forM_ v $ \_ -> do
+    let failed = "names worker: registration " <> rid <> " failed: " <> why
+    logError failed
+    oeReport failed
+  pure result
 
 -- | A compare-and-set on the version read, in the caller's turn of the name.
 store :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
@@ -480,15 +482,13 @@ maxSendsPerKind = 5
 
 -- | The send while the order has sent fewer than maxSendsPerKind transactions of its kind, else the order fails.
 withinSends :: Worker -> UTCTime -> NameRegistration -> RegistrationTx -> IO Next -> IO Next
-withinSends w@Worker {wkOrders} now r@NameRegistration {nrId = RegistrationId rid} step send = do
+withinSends w@Worker {wkOrders} now r step send = do
   txs <- orderTransactions wkOrders r
   let minedCommits = [ntNonce | NameTransaction {ntFor = TxRegistration RTCommit _, ntNonce, ntState = TxSettled TSMinedAt {}} <- txs]
       sent = sendCount step [tx | tx@NameTransaction {ntNonce} <- txs, ntNonce `notElem` minedCommits]
   if sent < maxSendsPerKind
     then send
-    else do
-      logWarn $ "names worker: registration " <> rid <> " failed: it sent " <> tshow sent <> " transactions of one kind, the most an order may"
-      save w now r {nrPhase = OFailed now FRSendsUsedUp}
+    else inTurn w r $ failOrder w now r FRSendsUsedUp $ "it sent " <> tshow sent <> " transactions of one kind, the most an order may"
 
 sendsUsedUp :: OrdersEnv -> NameRegistration -> IO Bool
 sendsUsedUp oe r = orderTransactions oe r <&> \txs -> any (\step -> sendCount step txs >= maxSendsPerKind) [minBound .. maxBound]
@@ -581,7 +581,7 @@ monthCheckInterval :: Int
 monthCheckInterval = 300 * 1000000
 
 endMonths :: Worker -> IO ()
-endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow}} = do
+endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow, oeReport}} = do
   now <- oeNow
   due <- withTransaction oeStore (`monthCandidates` addUTCTime (negate shortestMonth) now)
   forM_ [rid | (rid, paidAt) <- due, addMonths 1 paidAt <= now] $ \rid@(RegistrationId ridText) ->
@@ -590,7 +590,9 @@ endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow}} =
         >>= \case
           Just (Just (Right (Right (v, kept)))) -> do
             atomically $ publish oePhases rid v
-            logNote $ "names: order " <> ridText <> " was not registered within a month of its payment, so it failed, " <> kept
+            let failed = "names: order " <> ridText <> " was not registered within a month of its payment, so it failed, " <> kept
+            logError failed
+            oeReport failed
           _ -> pure ()
     )
       `catchOwn'` \e -> logError ("names month pass: registration " <> ridText <> " failed; the next pass tries it again: " <> tshow e)

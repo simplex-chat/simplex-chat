@@ -121,9 +121,9 @@ workerTests = describe "StoreService names: worker" $ do
   describe "lanes" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
     it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
-    it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
+    it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
-    it "fails an order waiting for a refused link to be replaced once its page has not read it for 3 days, holding its name" testLinksRefusedUnread
+    it "fails an order waiting for a refused link to be replaced once its page has not read it for 3 days, logging and reporting it, holding its name" testLinksRefusedUnread
     it "fails an order waiting for its owner once its page has not read it for 3 days, a read of the order or its invoice stored at most hourly" testUnreadFails
   describe "confirmation depth" $
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
@@ -1068,7 +1068,9 @@ testUnregisteredAlert = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> d
   (length sent', named paid sent', named code sent', named failedOrder sent') `shouldBe` (3, True, True, True)
 
 testMonthEnds :: IO ()
-testMonthEnds = withWorker $ \W {wCtx = ctx@Ctx {cStore}, wWorker} -> do
+testMonthEnds = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  wWorker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
   queued <- paidIn ctx aliceOrder id
   failed <- paidIn ctx dynamisOrder failedPhase
   answerFree ctx "alicebakers"
@@ -1092,6 +1094,9 @@ testMonthEnds = withWorker $ \W {wCtx = ctx@Ctx {cStore}, wWorker} -> do
   holders `shouldReturn` [Nothing, Nothing, Nothing]
   map orderLive <$> mapM (stored ctx) ended `shouldReturn` [False, False, False]
   closeOf ctx failed `shouldReturn` CLRefused CFMonthEnded
+  sent' <- readTVarIO reports
+  map (\NameRegistration {nrId = RegistrationId rid} -> length $ filter (T.isInfixOf $ "order " <> rid <> " was not registered within a month") sent') ended `shouldBe` [1, 1, 1]
+  length sent' `shouldBe` 3
 
 testUnreadFails :: IO ()
 testUnreadFails = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
@@ -1116,16 +1121,22 @@ testUnreadFails = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   nrPhase <$> stored ctx r `shouldReturn` OFailed now FRUnread
 
 testLinksRefusedUnread :: IO ()
-testLinksRefusedUnread = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
+testLinksRefusedUnread = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  worker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
   r <- paidIn ctx aliceOrder linksRefusedPhase
   advance ctx $ 3 * day
-  void $ steps w r
+  void $ stepRegistration worker (nrId r)
   stored ctx r `shouldReturn` r
   advance ctx 1
-  void $ steps w r
+  logs <- capturingStderr $ void $ stepRegistration worker (nrId r)
   now <- nowOf ctx
   nrPhase <$> stored ctx r `shouldReturn` OFailed now FRUnread
   withTransaction cStore (\db -> labelHolder db (nrLabelHash r)) `shouldReturn` Just (nrId r)
+  let RegistrationId rid = nrId r
+      failed = T.isInfixOf ("registration " <> rid <> " failed: it waited for its owner")
+  logs `shouldSatisfy` failed
+  map failed <$> readTVarIO reports `shouldReturn` [True]
 
 testMonthClipped :: IO ()
 testMonthClipped = withWorker $ \W {wCtx = ctx@Ctx {cStore, cClock}, wWorker} -> do

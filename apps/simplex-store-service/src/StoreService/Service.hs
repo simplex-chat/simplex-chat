@@ -342,8 +342,7 @@ logNamePolicy NamesConfig {nCommunity} ct =
       Nothing -> logWarn $ "names: the name policy has no " <> what <> " the service takes, so " <> sold <> " cannot be ordered until the owner sets them"
       Just Terms {tmLink, tmHash} -> logNote $ "names: " <> what <> " " <> tmLink <> ", hash " <> safeDecodeUtf8 (strEncode tmHash)
 
--- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
--- terms fetch at the start and then hourly.
+-- | The workers resume every registration in their phases, and the terms fetch runs at the start and then hourly.
 namesLanes :: NamesEnv -> IO [IO ()]
 namesLanes ne@NamesEnv {neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neSender

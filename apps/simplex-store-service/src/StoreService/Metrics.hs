@@ -49,7 +49,7 @@ import Simplex.Messaging.Util (catchOwn', raceAny_, tryOwnLogged, tshow)
 import StoreService.Config (ListenerConfig)
 import StoreService.Names.Chain (Block (..), ChainClient (..), ChainConfig (..), latestBlock)
 import StoreService.Names.Contracts (Contracts (..), NameEntry (..), RegisteredNames (..), RegistrarFunds (..), recordsLabel, registeredNames, registrarFunds, termsHeld)
-import StoreService.Names.Store (NamesCounts (..), namesCounts)
+import StoreService.Names.Store (FailReason, NamePhase (..), NamesCounts (..), namesCounts)
 import StoreService.Poller (expiryGrace)
 import StoreService.Store (BadgeCounts (..), badgeCounts)
 import StoreService.Store.Invoices (openInvoiceCounts, unixSeconds)
@@ -168,7 +168,9 @@ subscriptionStates = [SSRenewing, SSCancelled, SSBillingRetry, SSEnded]
 namesText :: Word64 -> NamesCounts -> ChainRead -> Text
 namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTransactions, ncOldestPending, ncOpenInvoices, ncHeldBalances, ncHeldCents, ncPendingEdits, ncOldestEdit, ncOldestUnregisteredPaid} ChainRead {crFunds, crHead, crTerms, crReadAt, crOk} =
   T.concat
-    [ gauge "simplex_store_names_orders" "Name orders by phase" [labelled "phase" (textEncode p) (value $ fromMaybe 0 $ lookup p ncPhases) | p <- [minBound .. maxBound]],
+    [ gauge "simplex_store_names_orders" "Name orders by phase, and failed orders by reason" $
+        [labelled "phase" (textEncode p) (value $ sum [n | (p', _, n) <- ncPhases, p' == p]) | p <- [minBound .. maxBound], p /= PFailed]
+          <> [withLabels [("phase", textEncode PFailed), ("reason", textEncode r)] (value $ sum [n | (PFailed, Just r', n) <- ncPhases, r' == r]) | r <- [minBound .. maxBound :: FailReason]],
       gauge "simplex_store_names_queue_oldest_change_timestamp_seconds" "Last change of the order longest unmoved among those the service moves on: queued, committing, registering, or committed with its reveal" (timestamp <$> ncQueueOldestChange),
       gauge "simplex_store_names_unregistered_oldest_paid_timestamp_seconds" "When the order paid longest ago among those in the phase, queued, committing, committed, registering or failed, was paid" [labelled "phase" (textEncode p) (timestamp t) | (p, t) <- ncOldestUnregisteredPaid],
       gauge "simplex_store_names_transactions_pending" "Registrar transactions sent and not settled, one per nonce" (Just $ value ncPendingTransactions),
