@@ -190,6 +190,15 @@ class NameAlertsTest {
   }
 
   @Test
+  fun channelUpdateRequired() = recordedAlerts("names/plan-update-required") {
+    connect("team.simplex")
+    assertTexts("team", "This group requires a newer version of the app. Please update the app to join.", "Connect to @team.simplex", "OK")
+    assertLocalChats()
+    press("Connect to @team.simplex")
+    assertTexts("alice", "@team.simplex", "Open new chat", "Cancel")
+  }
+
+  @Test
   fun ownChannel() = recordedAlerts("names/plan-own-channel") {
     connect("#team.simplex")
     assertTexts("Your channel", "This is your link for channel team (#team)!", "Open channel", "Cancel")
@@ -244,6 +253,13 @@ class NameAlertsTest {
     connect("CONTACT_LINK")
     assertTexts("alice", "Open chat", "Cancel")
     assertLocalChats("@3")
+  }
+
+  @Test
+  fun contactConnecting() = recordedAlerts("names/plan-connecting-contact") {
+    connect("CONTACT_LINK")
+    assertTexts("alice", "Open chat", "Cancel")
+    assertLocalChats("@2")
   }
 
   @Test
@@ -308,6 +324,25 @@ class NameAlertsTest {
     waitUntil(timeoutMillis = 5_000) { names.all { onAllNodesWithText(it).fetchSemanticsNodes().size > shownBefore.getValue(it) } }
     assertEquals(setOf("@2", "#1"), chatIds().toSet())
     onNodeWithText("Connect to team.simplex").assertExists()
+  }
+
+  @Test
+  fun chatListRowShowsChatsOfName() = recorded("names/search-moved-known") {
+    val sent = mutableListOf<String>()
+    val respond = chatSendCmdRetry
+    chatSendCmdRetry = { ctrl, cmd, retryNum -> synchronized(sent) { sent += cmd }; respond(ctrl, cmd, retryNum) }
+    ChatModel.chatRunning.value = true
+    setContent {
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        ChatListView(ChatModel, MutableStateFlow(AnimatedViewState.GONE), {}, false)
+      }
+    }
+    onNode(hasSetTextAction()).performTextInput("@alice.simplex")
+    waitUntil(timeoutMillis = 5_000) { synchronized(sent) { "/_connect plan 1 @alice.simplex resolve=never" in sent } }
+    waitForIdle()
+    press("Connect to @alice.simplex")
+    waitUntil(timeoutMillis = 5_000) { onAllNodesWithText("cath").fetchSemanticsNodes().isNotEmpty() }
+    assertEquals(listOf("@3"), chatIds())
   }
 
   @Test
