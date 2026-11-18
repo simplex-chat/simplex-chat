@@ -45,6 +45,7 @@ module StoreService.Names.Store
     CreditAmount (..),
     creditCents,
     LateCreditState (..),
+    LateMoney (..),
     LateFigures (..),
     LatePending (..),
     LateAlert (..),
@@ -458,10 +459,15 @@ creditCents = \case
 
 -- | A name invoice's payment figures, what was credited from it, and its order's phase.
 -- lsSupport: why its money will not be credited by itself, once known.
+-- | A closed order's late money, or the extra crypto of an invoice that paid its order.
+data LateMoney = LMLate | LMOverpaid
+  deriving (Eq, Show)
+
 data LateCreditState = LateCreditState
   { lsInvoice :: InvoiceId,
     lsRegistration :: RegistrationId,
-    lsPhase :: NamePhase,
+    lsMoney :: LateMoney,
+    lsClosed :: Bool,
     lsSupport :: Maybe LateSupport,
     lsReceivedCents :: USDCents,
     lsFigures :: LateFigures,
@@ -1358,23 +1364,23 @@ uncreditedMoney =
 -- Confirmed money waiting comes first, so its alert never asks for a refund by hand.
 pendingCase :: Query
 pendingCase =
-  " CASE WHEN" <> uncreditedMoney <> " THEN " <> pendingLiteral LPUncredited
-    <> " WHEN COALESCE(p.amount, 0) = 0 AND (p.crypto_paid IS NOT NULL OR p.paid_in_full = 1) THEN " <> pendingLiteral LPConfirming
-    <> " WHEN" <> cardInvoice <> " AND COALESCE(p.amount, 0) > p.confirmed_amount THEN " <> pendingLiteral LPUnconfirmed
-    <> " WHEN p.received_units > COALESCE(p.confirmed_units, 0) THEN " <> pendingLiteral LPUnconfirmed
-    <> " WHEN" <> cryptoInvoice <> " AND p.received_units IS NULL AND COALESCE(p.amount, 0) > 0 THEN " <> pendingLiteral LPUncounted
+  " CASE WHEN" <> uncreditedMoney <> " THEN " <> textLiteral LPUncredited
+    <> " WHEN COALESCE(p.amount, 0) = 0 AND (p.crypto_paid IS NOT NULL OR p.paid_in_full = 1) THEN " <> textLiteral LPConfirming
+    <> " WHEN" <> cardInvoice <> " AND COALESCE(p.amount, 0) > p.confirmed_amount THEN " <> textLiteral LPUnconfirmed
+    <> " WHEN p.received_units > COALESCE(p.confirmed_units, 0) THEN " <> textLiteral LPUnconfirmed
+    <> " WHEN" <> cryptoInvoice <> " AND p.received_units IS NULL AND COALESCE(p.amount, 0) > 0 THEN " <> textLiteral LPUncounted
     <> " END"
 
 -- | Why an overpaid invoice's extra is not all credited: confirmed extra not credited yet, or received units above the confirmed ones,
 -- which overpaidOrder already holds above the invoiced ones.
 overpaidPendingCase :: Query
 overpaidPendingCase =
-  " CASE WHEN" <> uncreditedExtra <> " THEN " <> pendingLiteral LPUncredited
-    <> " WHEN p.received_units > COALESCE(p.confirmed_units, 0) THEN " <> pendingLiteral LPUnconfirmed
+  " CASE WHEN" <> uncreditedExtra <> " THEN " <> textLiteral LPUncredited
+    <> " WHEN p.received_units > COALESCE(p.confirmed_units, 0) THEN " <> textLiteral LPUnconfirmed
     <> " END"
 
-pendingLiteral :: LatePending -> Query
-pendingLiteral p = fromString $ "'" <> T.unpack (textEncode p) <> "'"
+textLiteral :: TextEncoding a => a -> Query
+textLiteral p = fromString $ "'" <> T.unpack (textEncode p) <> "'"
 
 -- | What an alert names as received: units for crypto, and cents for card or for crypto that could not be counted in units.
 receivedFigure :: Query
@@ -1382,24 +1388,25 @@ receivedFigure = " CASE WHEN" <> cardInvoice <> " THEN p.amount ELSE COALESCE(p.
 
 lateColumns :: Query
 lateColumns =
-  "SELECT ni.invoice_id, ni.registration_id, r.phase, i.payment_crypto_currency, ni.late_support, COALESCE(p.amount, 0), p.confirmed_amount,"
+  "SELECT ni.invoice_id, ni.registration_id, r.phase IN (" <> textLiteral PUnpaid <> ", " <> textLiteral PClosed <> "), r.phase = " <> textLiteral PClosed
+    <> ", i.payment_crypto_currency, ni.late_support, COALESCE(p.amount, 0), p.confirmed_amount,"
     <> " p.received_units, p.confirmed_units, p.invoice_rate,"
     <> creditedTotal "units"
     <> ","
     <> creditedTotal "cents"
     <> mkQuery ", (SELECT COUNT(*) FROM @name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at, i.amount, p.invoiced_units"
 
-type LateRow = (Text, Text, NamePhase, Maybe CryptoCurrency, Maybe LateSupport, USDCents, USDCents, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, USDCents, Int, UTCTime, USDCents, Maybe Int64)
+type LateRow = (Text, Text, BoolInt, BoolInt, Maybe CryptoCurrency, Maybe LateSupport, USDCents, USDCents, Maybe Int64, Maybe Int64) :. (Maybe Rate, Int64, USDCents, Int, UTCTime, USDCents, Maybe Int64)
 
 toLateState :: LateRow -> Either Text LateCreditState
 toLateState
-  ( (inv, reg, lsPhase, coin_, lsSupport, lsReceivedCents, confirmedCents, lfReceivedUnits, lfConfirmedUnits)
+  ( (inv, reg, BI late, BI lsClosed, coin_, lsSupport, lsReceivedCents, confirmedCents, lfReceivedUnits, lfConfirmedUnits)
       :. (lfInvoiceRate, lfCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt, lsInvoiceAmount, lfInvoicedUnits)
     ) = do
     lsFigures <- case coin_ of
       Nothing -> Right LFCard {lfConfirmedCents = confirmedCents}
       Just lfCoin -> Right LFCrypto {lfCoin, lfReceivedUnits, lfConfirmedUnits, lfInvoicedUnits, lfInvoiceRate, lfCreditedUnits}
-    pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsSupport, lsReceivedCents, lsFigures, lsInvoiceAmount, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
+    pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsMoney = if late then LMLate else LMOverpaid, lsClosed, lsSupport, lsReceivedCents, lsFigures, lsInvoiceAmount, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
 
 -- | Nothing without a payment row.
 lateCreditState :: DB.Connection -> InvoiceId -> IO (Maybe LateCreditState)

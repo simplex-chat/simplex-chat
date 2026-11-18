@@ -13,7 +13,6 @@ module StoreService.Names.LateCredits
     minCurrentRateFraction,
     creditLateInvoice,
     lateCreditOf,
-    lateMoneyOf,
   )
 where
 
@@ -23,17 +22,13 @@ import Data.Ratio ((%))
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
-import StoreService.Names.Store (BrokenInvariant (..), CreditAmount (..), LateCredit (..), LateCreditState (..), LateFigures (..), LateSupport (..), NamePhase (..), creditLatePayment, lateCreditState, setLateSupport)
+import StoreService.Names.Store (BrokenInvariant (..), CreditAmount (..), LateCredit (..), LateCreditState (..), LateFigures (..), LateMoney (..), LateSupport (..), creditLatePayment, lateCreditState, setLateSupport)
 import StoreService.Providers (ProviderError (..), Rate (..))
 import StoreService.Store.Invoices (lockInvoice)
 
 -- | A current rate below this fraction of the invoice's is not used: it may be a glitch or a real fall, which the owner decides on.
 minCurrentRateFraction :: Rational
 minCurrentRateFraction = 1 % 2
-
--- | A closed order's late money, or the extra crypto of an invoice that paid its order.
-data LateMoney = LMLate | LMOverpaid
-  deriving (Eq, Show)
 
 -- | CONoInvoiceFigures: crypto due with no invoice rate or invoiced units recorded to credit it at.
 data CreditOutcome
@@ -72,19 +67,15 @@ creditLateInvoice st readRate invId@(InvoiceId invText) now =
       lateCreditState db invId >>= \case
         Just s | creditable s, LDCredit c <- lateCreditOf s rate -> do
           applied <- creditLatePayment db c now
-          if applied then pure $ COCredited (lateMoneyOf s) c else E.throwIO $ BrokenInvariant $ "the credit of invoice " <> invText <> " found its number taken under the invoice's lock"
+          if applied then pure $ COCredited (lsMoney s) c else E.throwIO $ BrokenInvariant $ "the credit of invoice " <> invText <> " found its number taken under the invoice's lock"
         _ -> pure CONothingDue
-
--- | An order its invoice paid gets credits only for the crypto paid above what the invoice asked.
-lateMoneyOf :: LateCreditState -> LateMoney
-lateMoneyOf LateCreditState {lsPhase} = if lsPhase `elem` [PUnpaid, PClosed] then LMLate else LMOverpaid
 
 -- | A closed order's money, or an overpaid order's crypto, unless a rate below the floor sent it to support for good, so a later
 -- recovery cannot credit money refunded by hand.
 creditable :: LateCreditState -> Bool
-creditable s@LateCreditState {lsPhase, lsSupport} =
-  lsSupport /= Just LSRateFloor && case lateMoneyOf s of
-    LMLate -> lsPhase == PClosed
+creditable LateCreditState {lsMoney, lsClosed, lsSupport} =
+  lsSupport /= Just LSRateFloor && case lsMoney of
+    LMLate -> lsClosed
     LMOverpaid -> True
 
 -- | The next credit of the money not yet credited: card cents as they are, crypto units as their share of the invoice's amount at the
@@ -92,7 +83,7 @@ creditable s@LateCreditState {lsPhase, lsSupport} =
 lateCreditOf :: LateCreditState -> Maybe Rate -> LateDue
 lateCreditOf s@LateCreditState {lsInvoice, lsRegistration, lsCredits, lsInvoiceAmount, lsCreditedCents, lsFigures} rate = case lsFigures of
   LFCard {lfConfirmedCents}
-    | lateMoneyOf s == LMLate && lfConfirmedCents > lsCreditedCents -> LDCredit $ credit $ CACard (lfConfirmedCents - lsCreditedCents)
+    | lsMoney s == LMLate && lfConfirmedCents > lsCreditedCents -> LDCredit $ credit $ CACard (lfConfirmedCents - lsCreditedCents)
     | otherwise -> LDNothing
   LFCrypto {lfCoin, lfConfirmedUnits, lfInvoicedUnits, lfInvoiceRate, lfCreditedUnits}
     | units <= 0 -> LDNothing
@@ -107,7 +98,7 @@ lateCreditOf s@LateCreditState {lsInvoice, lsRegistration, lsCredits, lsInvoiceA
              in LDCredit $ credit CACrypto {caUnits = fromInteger units, caInvoiceRate = invoiceRate, caCurrentRate = current, caRateUsed = used, caCents = cents}
     where
       confirmed = maybe 0 toInteger lfConfirmedUnits
-      creditableUnits = case lateMoneyOf s of
+      creditableUnits = case lsMoney s of
         LMLate -> confirmed
         LMOverpaid -> maybe 0 (max 0 . (confirmed -) . toInteger) lfInvoicedUnits
       units = creditableUnits - toInteger lfCreditedUnits

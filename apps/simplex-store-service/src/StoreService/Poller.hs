@@ -36,7 +36,7 @@ module StoreService.Poller
 where
 
 import StoreService.Config (PollConfig (..))
-import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), creditLateInvoice, lateMoneyOf)
+import StoreService.Names.LateCredits (CreditOutcome (..), LateMoney (..), creditLateInvoice)
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), CreditAmount (..), LateAlert (..), LateCredit (..), LateCreditState (..), LateFigures (..), LatePending (..), LateSupport (..), claimLateAlert, creditCents, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
@@ -546,7 +546,7 @@ lateAlertText LateAlert {laProviderRef, laState = s@LateCreditState {lsReceivedC
     (overpaid, figures) = case lsFigures of
       LFCard {lfConfirmedCents} -> ("", amounts "cents" (toInteger lsReceivedCents) (toInteger lfConfirmedCents) (toInteger lsCreditedCents))
       LFCrypto {lfCoin, lfReceivedUnits, lfConfirmedUnits, lfInvoicedUnits, lfCreditedUnits} ->
-        let (label, invoiced) = case (lateMoneyOf s, lfInvoicedUnits) of
+        let (label, invoiced) = case (lsMoney s, lfInvoicedUnits) of
               (LMOverpaid, Just units) -> (", overpaid", tshow units <> " " <> unitName lfCoin <> " invoiced, ")
               _ -> ("", "")
          in ( label,

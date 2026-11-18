@@ -539,7 +539,8 @@ testLateCreditOf = do
         LateCreditState
           { lsInvoice = invOf "x",
             lsRegistration = RegistrationId "x",
-            lsPhase = PClosed,
+            lsMoney = LMLate,
+            lsClosed = True,
             lsSupport = Nothing,
             lsReceivedCents = 0,
             lsFigures =

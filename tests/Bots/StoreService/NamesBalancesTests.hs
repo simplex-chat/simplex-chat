@@ -669,7 +669,8 @@ testLateScans = withServiceStore $ \st -> do
       LateCreditState
         { lsInvoice = InvoiceId "inv-part",
           lsRegistration = RegistrationId "part",
-          lsPhase = PClosed,
+          lsMoney = LMLate,
+          lsClosed = True,
           lsSupport = Nothing,
           lsReceivedCents = 20000,
           lsFigures =
