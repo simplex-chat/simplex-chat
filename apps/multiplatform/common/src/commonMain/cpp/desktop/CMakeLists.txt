@@ -19,8 +19,9 @@ project("app")
 if(UNIX AND NOT APPLE)
     set(OS_LIB_PATH "linux")
     set(OS_LIB_EXT "so")
-    # Makes ld search libs in the same dir as libapp-lib, not in system dirs
-    set(CMAKE_BUILD_RPATH "$ORIGIN")
+    # only $ORIGIN, where libsimplex is: CMake would add the build's absolute libs directory
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN")
 elseif(WIN32)
     set(OS_LIB_PATH "windows")
     set(OS_LIB_EXT "dll")
@@ -28,7 +29,9 @@ else()
     set(OS_LIB_PATH "mac")
     set(OS_LIB_EXT "dylib")
     set(CMAKE_MACOSX_RPATH 1)
-    set(CMAKE_BUILD_RPATH "@loader_path")
+    # only @loader_path: CMake would add the build's absolute libs directory, which any local user may create
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "@loader_path")
 endif()
 
 if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "amd64" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES "AMD64")
@@ -74,12 +77,6 @@ else()
 	set_target_properties( rts PROPERTIES IMPORTED_LOCATION ${RTSLIB})
 
 	target_link_libraries(app-lib rts simplex)
-endif()
-
-if(APPLE)
-    add_custom_command(TARGET app-lib POST_BUILD
-        COMMAND  ${CMAKE_CURRENT_SOURCE_DIR}/patch-libapp-mac.sh
-)
 endif()
 
 
