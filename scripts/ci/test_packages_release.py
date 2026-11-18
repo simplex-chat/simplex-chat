@@ -539,6 +539,14 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("packages/simplex-chat-python/src/simplex_chat/client.py"), {"packages"})
         self.assertEqual(self.values["scopes"], "support-bot-light")
 
+    def test_names_page_pin_tests_its_scope(self):
+        self.assertEqual(self.builds("apps/simplex-domains"), set())
+        self.assertEqual(self.values["scopes"], "names-page")
+
+    def test_store_fixture_change_builds_the_core_and_tests_the_names_page_scope(self):
+        self.assertEqual(self.builds("tests/fixtures/api/store/search.json"), {"haskell"})
+        self.assertEqual(self.values["scopes"], "names-page")
+
 
 class PackageStateTest(GitRepoTest):
     def setUp(self):

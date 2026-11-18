@@ -172,6 +172,15 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - CI, in build-linux: `scope-tests.sh support-bot-light` (step "Test changed scopes"): the Python library of the branch and the bot installed in a virtual environment, then ruff, pyright and pytest. The tests use a fake API, without libsimplex.
 - Local: `scripts/ci/scope-tests.sh support-bot-light`.
 
+#### names-page
+
+- Globs:
+  - apps/simplex-domains
+  - tests/fixtures/api/store/**
+- CI, in build-linux: `scope-tests.sh names-page` (step "Test changed scopes"): `npm ci`, `npm test` and `npm run build` in apps/simplex-domains/webapp, at the commit the submodule pins, which build-linux checks out with the submodules.
+- The page's browser tests run in the CI of its own repository (simplex-chat/simplex.domains, webapp.yml).
+- Local: `scripts/ci/scope-tests.sh names-page`.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |

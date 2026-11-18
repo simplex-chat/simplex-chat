@@ -37,8 +37,11 @@ case "${1:-}" in
     .venv/bin/pyright
     .venv/bin/pytest tests
     ;;
+  names-page)
+    (cd apps/simplex-domains/webapp && npm ci --no-audit --no-fund && npm test && npm run build)
+    ;;
   *)
-    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light" >&2
+    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light | names-page" >&2
     exit 1
     ;;
 esac

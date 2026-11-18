@@ -44,6 +44,8 @@ on:
       - "packages/simplex-chat-mcp/**"
       - "apps/simplex-support-bot/**"
       - "apps/simplex-support-bot-light/**"
+      - "apps/simplex-domains"
+      - "tests/fixtures/api/store/**"
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
