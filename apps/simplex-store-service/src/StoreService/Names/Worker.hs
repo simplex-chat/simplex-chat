@@ -601,7 +601,7 @@ endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow}} =
       where
         kept = case nrPayment of
           OPCode _ -> "its code released"
-          _ -> "its price kept as its balance"
+          _ -> "the money paid for it added to its balance"
 
 runMonthEnds :: Worker -> IO ()
 runMonthEnds w = forever $ tryOwnLogged "names month pass failed; the next pass will run: " (endMonths w) >> threadDelay monthCheckInterval

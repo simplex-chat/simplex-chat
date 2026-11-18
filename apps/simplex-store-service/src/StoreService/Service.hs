@@ -475,7 +475,7 @@ closeOrderCmd source turns ct ChatController {chatStore} ref =
     refusalText = \case
       CFNoOrder -> "no order has the reference " <> ref
       CFNotFailedPaid -> "the order of " <> ref <> " is not a failed or lapsed unsigned order paid by invoice or balance"
-      CFMonthEnded -> "the order of " <> ref <> " failed at the end of the month from its payment, its price kept as its balance; record its refund with " <> spelledCmd source "record_refund"
+      CFMonthEnded -> "the order of " <> ref <> " failed at the end of the month from its payment, and the money paid for it has been added to its balance; record its refund with " <> spelledCmd source "record_refund"
       CFUnread -> "the chain could not be read; " <> again
       CFChanged -> "the order of " <> ref <> " changed meanwhile; " <> again
       CFHeld hold -> heldText source hold

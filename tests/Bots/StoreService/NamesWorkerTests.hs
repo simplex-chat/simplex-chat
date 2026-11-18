@@ -98,7 +98,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "fails an order that sent the most registers an order may, sending nothing, refuses its Try again and a move, and registers it on a move once its owner holds the name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, clearing the reveal and staying committed" testExpiredIntent
-    it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing" testSignatureUnderOtherConfig
+    it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing, and refuses its move to any name" testSignatureUnderOtherConfig
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
@@ -121,8 +121,9 @@ workerTests = describe "StoreService names: worker" $ do
   describe "lanes" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
     it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
-    it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, its name released, a paid order's price kept as its balance and a code order's code released" testMonthEnds
+    it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
+    it "fails an order waiting for a refused link to be replaced once its page has not read it for 3 days, holding its name" testLinksRefusedUnread
     it "fails an order waiting for its owner once its page has not read it for 3 days, a read of the order or its invoice stored at most hourly" testUnreadFails
   describe "confirmation depth" $
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
@@ -932,6 +933,12 @@ testSignatureUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSend
   logs `shouldSatisfy` failed
   map failed <$> readTVarIO reports `shouldReturn` [True]
   sentTransactions (cNode ctx) `shouldReturn` []
+  answerFree ctx "alicebakers"
+  failedOrder <- stored ctx r
+  forM_ (zip ["alicebakers", "alicebakery"] [20, 21]) $ \(label, n) -> do
+    to <- moveTo ctx label n
+    move ctx keyA failedOrder to `shouldReturn` nameRefusedWith 400 "bad_request"
+  stored ctx r `shouldReturn` failedOrder
 
 testFailedOnlySettled :: IO ()
 testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do
@@ -1107,6 +1114,18 @@ testUnreadFails = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   void $ steps w r
   now <- nowOf ctx
   nrPhase <$> stored ctx r `shouldReturn` OFailed now FRUnread
+
+testLinksRefusedUnread :: IO ()
+testLinksRefusedUnread = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
+  r <- paidIn ctx aliceOrder linksRefusedPhase
+  advance ctx $ 3 * day
+  void $ steps w r
+  stored ctx r `shouldReturn` r
+  advance ctx 1
+  void $ steps w r
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRUnread
+  withTransaction cStore (\db -> labelHolder db (nrLabelHash r)) `shouldReturn` Just (nrId r)
 
 testMonthClipped :: IO ()
 testMonthClipped = withWorker $ \W {wCtx = ctx@Ctx {cStore, cClock}, wWorker} -> do

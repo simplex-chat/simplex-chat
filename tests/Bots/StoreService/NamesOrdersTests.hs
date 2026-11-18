@@ -195,7 +195,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "alerts once when a cancel expires an invoice a payment landed on while the provider was told" testCancelAlertsFunded
     it "queues an order settled while open and publishes its version" testSettlementQueues
     it "holds the name from payment: the name's other open invoices are cancelled at the provider and closed, and a new order of it is refused name_taken" testPaymentHoldsName
-    it "ends taken an order paid while another paid order holds its name, its price kept as its balance" testSettledWhileHeld
+    it "ends taken an order paid while another paid order holds its name, the money paid for it added to its balance" testSettledWhileHeld
     it "holds the name for a failed paid order: a new order of it is refused name_taken, and a payment for it ends taken" testFailedHoldsName
     it "holds the name from a code order's placement, cancelling the name's other open invoices" testCodeOrderHoldsName
     it "takes the invoice's row before recording a payment that moves no status" testSettlementLocksInvoice

@@ -325,6 +325,7 @@ checkPrice ct len years price =
 movable :: UTCTime -> NameRegistration -> Bool
 movable now r@NameRegistration {nrPhase, nrLinksRefused} = case nrPhase of
   OFailed _ FRMonthEnded -> False
+  OFailed _ FRSignatureRefused -> False
   OFailed {} -> True
   OCommitted _ -> isJust nrLinksRefused || lapsedAt now r
   _ -> False

@@ -1416,7 +1416,8 @@ A signature past its deadline is cleared, and the page signs again. A signature 
 that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of
 `[names] tld`, fails the order before any send with the reason `signatureRefused`; the log line is
 `[ERROR …] names worker: registration <id> failed: its stored signature is refused under the service's current configuration, …`,
-and the same text is posted in the managed group.
+and the same text is posted in the managed group. Such an order is not moved to any name, its own
+included; its page asks the buyer to contact support.
 
 A move or a close of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
@@ -1771,7 +1772,7 @@ its commitment's lapse, stays live, holds its name and keeps its money uncredite
 name again. So does a paid order whose commitment lapsed before its page signed it, until the page
 asks for a new commitment. A calendar month after its payment, clipped to the last day of a shorter
 month, an order that is still `queued`, `committed` or `failed` fails with the reason `monthEnded`:
-the price of an order paid by invoice or balance is credited to its balance, a code order's code is
+the money paid for an order paid by invoice or balance is added to its balance, a code order's code is
 released, its name is released, and the order is final. A pass every 5 minutes does it, logging each order at note; an order sending its commit or
 register is ended at the first pass after that transaction settles. Support closes a failed or lapsed
 order before then in `--run-cli` mode with the service stopped, or with `/close` in the group while

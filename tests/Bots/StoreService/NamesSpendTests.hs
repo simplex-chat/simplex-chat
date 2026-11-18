@@ -741,7 +741,7 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
       orderOf inv = nrId <$> invoiceRegistration ctx inv
       dynamisAgain :: Int -> SpendBody
       dynamisAgain n = timedAt now $ (dynamis 10000 (Just "btc")) {sbOrder = dynamisOrder {oCommitment = commitmentOf n}}
-  -- alicebakery paid at BTCPay and queued by the poller, then taken by another wallet, its price kept as its balance
+  -- alicebakery paid at BTCPay and queued by the poller, then taken by another wallet, the money paid for it added to its balance
   (srcInv@(InvoiceId srcInvText), _) <- placed ctx (orderAt now aliceOrder)
   report "InvoiceSettled" srcInv settledState
   src <- orderOf srcInv
