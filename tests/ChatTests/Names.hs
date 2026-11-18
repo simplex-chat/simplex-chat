@@ -16,6 +16,7 @@ import Data.Time.Clock (UTCTime)
 import NameResolver
 import Simplex.Chat.Controller (NamePrice (..), NameWarning (..))
 import Simplex.Chat.Library.Commands (nameRecordOrWarning)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord, NameRegistration (..), NameReservedReason (..), NameResponse (..), USDCents (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
@@ -55,6 +56,9 @@ chatNamesTests = do
     it "own channel expired, joined channel moved to a new channel, new channel joined" testPlanChannelNameMoved
     it "joined channel moved to a channel with no relays" testPlanChannelNameMovedNoRelays
     it "no local chat, the channel has no relays" testPlanNameChannelNoRelays
+    it "no local chat, the channel requires a newer version" testPlanNameChannelUpdateRequired
+    it "own address, the name's channel not claimed, offered" testPlanOwnNameOtherKind
+    it "contact still connecting, by link" testPlanContactConnecting
     it "known chats, the name's link differs only in its key hash" testPlanNameLinkKeyHash
     it "known chats, the name's link differs only in its server address" testPlanNameLinkServer
     it "local chats, before and after the name expired" testPlanLocalChats
@@ -817,6 +821,7 @@ testPlanKnownNameMovedToKnownChat = withKnownAliceName $ \reg alice bob cath -> 
   knownContactPlan "cath" "alice.simplex" bob
   bob <## "known contact @alice"
   nameFixture "plan-moved-known" bob "@alice.simplex"
+  apiFixture "names/search-moved-known" bob [] FixtureRequests {frMarkdown = ["", "@alice.simplex"], frUris = [], frCommands = ["/_connect plan 1 @alice.simplex resolve=never", "/_connect plan 1 @alice.simplex"]}
   alice ##> ("/c " <> cathLink)
   cath <#? alice
   cath ##> "/ac alice"
@@ -953,6 +958,51 @@ testPlanNameChannelNoRelays = withChannelChats $ \reg alice cath bob -> do
   bob ##> "/_connect plan 1 @nobody.simplex resolve=never"
   bob <## "no matching chat found, name resolution is disabled"
 
+testPlanNameChannelUpdateRequired :: HasCallStack => TestParams -> IO ()
+testPlanNameChannelUpdateRequired = withChannelChats $ \reg alice cath bob -> do
+  (channelLink, _) <- prepareChannel1Relay "team" alice cath
+  alice ##> "/ad"
+  (contactLink, _) <- getContactLinks alice True
+  registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
+  alice ##> "/_set domain 1 team.simplex"
+  alice <## "new contact address set"
+  withCCTransaction alice $ \db -> DB.execute_ db "UPDATE group_profiles SET group_type = 'group'"
+  setChannelDomain alice cath "alice" "team" "team.simplex"
+  waitQueuedLinkUpdates alice
+  bob ##> "/_connect plan 1 team.simplex"
+  bob <## "group link: this group requires a newer version of the app, please upgrade"
+  bob <## "You can also connect to @team.simplex in direct chat"
+  apiFixture "names/plan-update-required" bob [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
+
+testPlanOwnNameOtherKind :: HasCallStack => TestParams -> IO ()
+testPlanOwnNameOtherKind = withChannelChats $ \reg alice cath bob -> do
+  (channelLink, _) <- prepareChannel1Relay "team" alice cath
+  bob ##> "/ad"
+  (contactLink, contactFullLink) <- getContactLinks bob True
+  registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
+  bob ##> "/_set domain 1 team.simplex"
+  bob <## "new contact address set"
+  bob ##> "/_connect plan 1 team.simplex"
+  bob <## "contact address: own address"
+  bob <## "You can also join channel #team"
+  apiFixture "names/plan-own-address-other-kind" bob [(contactFullLink, "connFullLink"), (contactLink, "connShortLink")] FixtureRequests {frMarkdown = ["team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect 1 incognito=off " <> contactFullLink <> " " <> contactLink]}
+  bob
+    <### [ "bob_1 (Bob) wants to connect to you!",
+           "to accept: /ac bob_1",
+           "to reject: /rc bob_1 (the sender will NOT be notified)"
+         ]
+
+testPlanContactConnecting :: HasCallStack => TestParams -> IO ()
+testPlanContactConnecting = withAliceName $ \_reg (_, fullLink) alice bob -> do
+  bob ##> "/c @alice.simplex"
+  bob <## "alice: connection started"
+  alice <## "bob (Bob) wants to connect to you!"
+  alice <## "to accept: /ac bob"
+  alice <## "to reject: /rc bob (the sender will NOT be notified)"
+  bob ##> ("/_connect plan 1 " <> fullLink)
+  bob <## "contact address: connecting to contact alice"
+  apiFixture "names/plan-connecting-contact" bob [(fullLink, "CONTACT_LINK")] FixtureRequests {frMarkdown = [fullLink], frUris = [], frCommands = ["/_connect plan 1 " <> fullLink]}
+
 testPlanNameLinkKeyHash :: HasCallStack => TestParams -> IO ()
 testPlanNameLinkKeyHash = withTeamChats $ \reg contactLink channelLink _alice bob -> do
   registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink <> "?c=LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI") (T.pack channelLink))
@@ -980,6 +1030,7 @@ testPlanLocalChats :: HasCallStack => TestParams -> IO ()
 testPlanLocalChats = withTeamChats $ \reg contactLink channelLink alice bob -> do
   apiFixture "names/search-team" bob [] FixtureRequests {frMarkdown = ["", "team.simplex"], frUris = [], frCommands = ["/_connect plan 1 @team.simplex resolve=never", "/_connect plan 1 #team.simplex resolve=never"]}
   apiFixture "names/plan-own-channel" alice [] FixtureRequests {frMarkdown = ["#team.simplex"], frUris = [], frCommands = ["/_connect plan 1 #team.simplex"]}
+  apiFixture "names/plan-own-channel-other-kind" alice [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
   bob ##> "/_connect plan 1 team.simplex resolve=never"
   knownGroupPlan "team" "team" bob
   bob ##> "/_connect plan 1 #team.simplex resolve=never"
