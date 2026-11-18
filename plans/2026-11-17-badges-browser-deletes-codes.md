@@ -8,8 +8,8 @@ A bought code is stored only in the browser's localStorage. WebKit, the engine o
 |---|---|
 | Safari on macOS, iOS, iPadOS | 7 days of browser use without a tap, click or key press on the site, when the site was opened from a link with query parameters on a page of a classified tracker, and Safari did not filter the parameters; 30 days otherwise, since WebKit 274398@main (February 2024), 7 days for every site before; only while tracking prevention is on |
 | Other browsers on iOS and iPadOS | as Safari, while the app's tracking prevention is on, enabled by default in all WKWebView applications since iOS 14 |
-| Chromium, Chrome, Edge | storage pressure, least recently used sites first; the data of all sites over the browser's limit; private window closed; data cleared |
-| Firefox | storage pressure, least recently used sites first; the data of all sites over the browser's limit; private window closed; data cleared |
+| Chromium, Chrome, Edge | private window closed; data cleared; localStorage is outside Chromium's quota eviction |
+| Firefox | the data of all sites over the browser's limit, least recently used sites first; private window closed; data cleared |
 
 Sources:
 
@@ -17,12 +17,14 @@ Sources:
 - https://webkit.org/tracking-prevention/
 - https://webkit.org/blog/10882/app-bound-domains/
 - https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria
+- Chromium `storage/browser/quota/quota_client_type.h`: `QuotaClientType` without DOM storage
+- Firefox `dom/quota/Client.h`: `Client::Type` with `LS`
 
 ## Decisions
 
 - Warnings are added. Persistent storage is not requested.
 - WebKit is recognised by its user agent: `AppleWebKit/` without `Chrome/` or `Android`.
-- In those browsers, deletion after 7 days of browsing without a tap or click on the site is stated on the screens.
+- In those browsers, when localStorage accepts writes, deletion after 7 days of browsing without a tap or click on the site is stated on the screens.
 - On Your codes, in every browser, "Codes bought in this browser are listed here." is shown when the list is empty, and "Codes are stored only in the browser they were bought in." when it has codes.
 - Other texts and behaviour are unchanged in other browsers.
 
@@ -30,8 +32,8 @@ Sources:
 
 | Screen | Text |
 |---|---|
-| Paid, code shown, "This is the only copy." box | This browser can delete it after 7 days of browsing without a tap or click on this site. Redeem it now, or copy it and keep it outside this browser. |
-| Paid, opened from the app, code hidden, warning box above "Show code" | Show and copy the code if it is not in the app. This browser can delete it after 7 days of browsing without a tap or click on this site. |
+| Paid, code shown, "This is the only copy." box | This browser can delete the code after 7 days of browsing without a tap or click on this site. Redeem it now, or copy it and keep it outside this browser. |
+| Paid, opened from the app, code hidden, warning box above "Show code" | If the badge is not added in the app, show the code and copy it. This browser can delete the code after 7 days of browsing without a tap or click on this site. |
 | Your codes, with a paid code, warning box | Redeem each code now, or copy it and keep it outside this browser. This browser can delete stored codes after 7 days of browsing without a tap or click on this site. |
 | Your codes, empty | This browser can delete stored codes after 7 days of browsing without a tap or click on this site. |
 | Paid order opened without its code ("This code is not on this device") | the same line, in the notice |
@@ -51,4 +53,5 @@ flowchart LR
 - `test/main-safari-code.test.ts`: the code screen in Safari on macOS.
 - `test/main-chrome-code.test.ts`: the code screen and Your codes in Chrome on macOS, without the warning.
 - `test/main-safari-lost.test.ts`: a paid order opened without its code in Safari on macOS.
+- `test/main-safari-no-storage.test.ts`: Your codes in Safari on macOS with localStorage refused, without the warning.
 - Manual check with Playwright's WebKit (Safari 27.2 user agent), Chromium 156 and Firefox 159: the purchase flow against the mock service, with and without the app, and the order opened after its code was cleared.
