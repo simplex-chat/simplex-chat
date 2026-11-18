@@ -760,7 +760,6 @@ export interface DetailsUnavailableOptions {
 
 export function windowClosed(o: WindowClosedOptions): HTMLElement {
   const buyNewCode = button(BUY_NEW_CODE, o.onNewInvoice, "primary outline");
-  const paid = o.invoice?.amountPaid;
   // A payment can land after the window closes, so this screen must count any crypto figure as money
   // and not tell the buyer nothing arrived.
   const funded = receivedMoney(o.invoice);
@@ -774,6 +773,7 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
       buyNewCode,
     );
   }
+  const paid = o.invoice?.amountPaid;
   const p = panel(el("h1", { class: "tight" }, "This invoice expired"));
   if (funded) {
     const crypto = o.invoice?.cryptoAmountPaid;
