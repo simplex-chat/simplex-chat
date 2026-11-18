@@ -189,7 +189,7 @@ The SimpleX app opens the page at a step hash carrying a flag, which decides
 only how the code is handed over at the end. Both endings can be driven here:
 
 ```
-http://localhost:8099/#/tier?app=true      # Return to SimpleX, with Show code under it
+http://localhost:8099/#/tier?app=true      # Return to SimpleX, with Show code under it (in WebKit, the deletion box between them)
 http://localhost:8099/#/tier?app=desktop   # the code screen, saying the Redeem code screen is already open
 ```
 

@@ -1202,9 +1202,8 @@ p.row-line { margin: 16px 0 0; }
 
 /* ------------------------------------------------------------ the phone band */
 
-/* The same layout at a smaller scale: the type scale and the history row's spacing are
-   reduced. It sits at the end of the sheet because a media query adds no specificity,
-   so a phone rule beside its desktop rule would be beaten by any equally specific rule
+/* The same layout at a smaller scale. It sits at the end of the sheet because a media
+   query adds no specificity, so a phone rule beside its desktop rule would be beaten by any equally specific rule
    further down the file. */
 @media (max-width: 560px) {
   .chrome-bar { padding: 8px 0; }
