@@ -1904,8 +1904,8 @@ of the service's tests in place of the payment providers. CI runs it in the `nam
    service's process alone can serve, on `RUNNER_PORT`;
 5. starts the mock on 8099, where the webapp's dev server sends `/api` and `/control`;
 6. runs the cases against the webapp's dev server on 5173, which Playwright starts, then
-   `e2e/offline.spec.ts` against the production build the service serves, with `BASE_URL` at the names
-   site.
+   `e2e/offline.spec.ts` and `e2e/track.spec.ts` against the production build the service serves, with
+   `BASE_URL` at the names site, as the webapp's own CI runs them against `vite preview`.
 
 The mock passes `/api/` to the service with the case's `X-Forwarded-For`, and `/api/config` without
 the Stripe key, so the dev server shows its stand-in card form. Its controls:

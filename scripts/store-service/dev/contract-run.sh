@@ -426,7 +426,7 @@ run_cases() {
   # Playwright matches the project, the file and the title, joined by spaces
   if [ "${#titles[@]}" -gt 0 ]; then filter=(--grep-invert " ($(IFS='|'; echo "${titles[*]}"))\$"); fi
   (cd "$WEBAPP_DIR" && MOCK_URL="$MOCK_URL" SLOTS=1 npx playwright test --project=chromium --output "$RUN_DIR/test-results" "${filter[@]}")
-  (cd "$WEBAPP_DIR" && BASE_URL="$SERVICE_URL" MOCK_URL="$MOCK_URL" npx playwright test --project=chromium --output "$RUN_DIR/build-results" "${filter[@]}" e2e/offline.spec.ts)
+  (cd "$WEBAPP_DIR" && BASE_URL="$SERVICE_URL" MOCK_URL="$MOCK_URL" npx playwright test --project=chromium --output "$RUN_DIR/build-results" "${filter[@]}" e2e/offline.spec.ts e2e/track.spec.ts)
 }
 
 refuse_taken_ports
