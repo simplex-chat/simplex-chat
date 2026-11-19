@@ -92,9 +92,11 @@ let
 
   # .schema --indent must round-trip chat_schema.sql. nixpkgs sqlite.bin is
   # 3.53 on this pin and mis-prints that dump. See sqlite-schema-cli.nix.
+  # python3 is the voice-captcha mock. The Darwin sandbox has /usr/bin/env
+  # and does not have python3 on PATH, so those three examples wait 20s.
   sqliteSchemaCli = pkgs.callPackage ./sqlite-schema-cli.nix {};
   cabalTest = (haskellLib.check nativeProject.simplex-chat.components.tests.simplex-chat-test).overrideAttrs (old: {
-    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ sqliteSchemaCli ];
+    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ sqliteSchemaCli pkgs.python3 ];
   });
 
   xcodetest = pkgs.runCommand "xcodetest" {
