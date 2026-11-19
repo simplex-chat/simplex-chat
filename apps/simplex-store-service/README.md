@@ -1952,9 +1952,10 @@ ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contra
 - Arguments, if given, are passed to `playwright test` against the dev server in place of the
   excluded cases' title filter.
 
-The excluded cases send a control only the mock has, read the mock's memory, send more checkouts
-than the service takes from one client in a minute, or expect the mock's coin amounts or the
-profiles it makes up for its links.
+The excluded cases send a control only the mock has, read the mock's memory, send more checkouts or
+cancels than the service takes from one client in a minute, expect the mock's coin amounts or the
+profiles it makes up for its links, pay late in Monero, which the fake BTCPay's fixture leaves
+unconfirmed, or expect an answer in which the mock and the service differ, each named in its reason.
 
 Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case
 is its own client for the service's per-client limits, as for the mock's code limit. The script stops
