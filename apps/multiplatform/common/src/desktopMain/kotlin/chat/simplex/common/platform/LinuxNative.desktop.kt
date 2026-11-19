@@ -48,6 +48,9 @@ internal object LinuxNative {
 
   @JvmStatic
   external fun nativeConfirm(title: String, message: String): Boolean
+
+  @JvmStatic
+  external fun nativeGtkThemeName(): String?
 }
 
 fun prepareLinuxRuntime() {

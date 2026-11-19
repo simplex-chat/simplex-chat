@@ -26,12 +26,12 @@ actual fun font(name: String, res: String, weight: FontWeight, style: FontStyle)
 
 actual fun StringResource.localized(): String = desc().toString()
 
-internal val systemThemeDetector: OsThemeDetector? = try {
+internal val systemThemeDetector: OsThemeDetector? = if (desktopPlatform.isLinux()) null else try {
   OsThemeDetector.getDetector()
 } catch (_: LinkageError) {
   null
 }
-actual fun isInNightMode() = try {
+actual fun isInNightMode() = if (desktopPlatform.isLinux()) LinuxTheme.isDark else try {
   systemThemeDetector?.isDark ?: false
 }
 catch (e: Exception) {

@@ -6,6 +6,8 @@
 
 #define TAO_RENDERER_ENV "NUCLEUS_TAO_LINUX_RENDERER"
 #define X11_BACKEND "x11"
+#define GNOME_INTERFACE_SCHEMA "org.gnome.desktop.interface"
+#define GTK_THEME_KEY "gtk-theme"
 
 static JavaVM *g_vm = NULL;
 
@@ -121,6 +123,25 @@ Java_chat_simplex_common_platform_LinuxNative_nativeChooseFiles(
     request->callback = (*env)->NewGlobalRef(env, callback);
     g_signal_connect(dialog, "response", G_CALLBACK(on_response), request);
     gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog));
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_LinuxNative_nativeGtkThemeName(JNIEnv *env, jclass clazz)
+{
+    (void)clazz;
+    GSettingsSchemaSource *source = g_settings_schema_source_get_default();
+    if (source == NULL) return NULL;
+    GSettingsSchema *schema = g_settings_schema_source_lookup(source, GNOME_INTERFACE_SCHEMA, TRUE);
+    if (schema == NULL) return NULL;
+    jboolean has_key = g_settings_schema_has_key(schema, GTK_THEME_KEY) ? JNI_TRUE : JNI_FALSE;
+    g_settings_schema_unref(schema);
+    if (has_key == JNI_FALSE) return NULL;
+    GSettings *settings = g_settings_new(GNOME_INTERFACE_SCHEMA);
+    gchar *theme = g_settings_get_string(settings, GTK_THEME_KEY);
+    g_object_unref(settings);
+    jstring result = (*env)->NewStringUTF(env, theme);
+    g_free(theme);
+    return result;
 }
 
 JNIEXPORT jboolean JNICALL
