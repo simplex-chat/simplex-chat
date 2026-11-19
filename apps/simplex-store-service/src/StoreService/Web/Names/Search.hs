@@ -48,7 +48,7 @@ import System.Timeout (timeout)
 
 data Found
   = FAvailable USDCents (Maybe Terms)
-  | FRegistering
+  | FTaken
   | FReserved
   | FRegistered RegisteredName (Maybe NameRecords)
 
@@ -56,7 +56,7 @@ data SearchAnswer = SearchAnswer {found :: NameFound, community :: Maybe Communi
 
 data NameFound
   = NFAvailable {price :: USDCents, years :: Int, terms :: Maybe TermsLink}
-  | NFRegistering
+  | NFTaken
   | NFReserved
   | NFRegistered {owner :: Address, resolver :: Address, expiresAt :: ChainSeconds, gracePeriod :: Integer, entities :: [Entity], records :: ResolverRecords}
 
@@ -82,18 +82,18 @@ searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond 
   Right lh -> case queryLength req of
     Nothing -> respond $ refusalResponse NRInvalidName
     Just len -> do
-      registering <- isJust <$> withTransaction st (`labelHolder` lh)
-      searchSlot http (timeout (ctDeadline ct) (runExceptT $ found lh len registering)) >>= \case
+      held <- isJust <$> withTransaction st (`labelHolder` lh)
+      searchSlot http (timeout (ctDeadline ct) (runExceptT $ found lh len held)) >>= \case
         Nothing -> respond $ refusalResponse $ NRRateLimited 1
         Just (Just (Right (f, community))) -> respond =<< searchAnswer cfg st ps clock lh community f
         Just (Just (Left e)) -> unavailable $ tshow e
         Just Nothing -> unavailable "timed out"
   where
-    found lh len registering = do
+    found lh len held = do
       (status, community) <- ExceptT $ together $ (,) <$> concurrent (nameStatus ct lh) <*> concurrent (communityName ct lh)
       (,community) <$> case status of
         NSAvailable
-          | registering -> pure FRegistering
+          | held -> pure FTaken
           | otherwise -> ExceptT $ together $ FAvailable <$> concurrent (chainPriceCents ct len (yearsFor community nYears)) <*> concurrent (readableNow community)
         NSReserved -> pure FReserved
         NSRegistered name -> FRegistered name <$> ExceptT (nameRecords ct lh name)
@@ -119,7 +119,7 @@ searchAnswer :: NamesConfig -> DBStore -> Profiles -> IO UTCTime -> LabelHash ->
 searchAnswer cfg@NamesConfig {nYears, nRecordEditsPerYear} st ps clock lh community f = do
   found <- case f of
     FAvailable price readable -> pure NFAvailable {price, years = yearsFor community nYears, terms = termsLink <$> readable}
-    FRegistering -> pure NFRegistering
+    FTaken -> pure NFTaken
     FReserved -> pure NFReserved
     FRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt, rnGracePeriod} records_ -> do
       entities <- maybe (pure []) (recordEntities ps) records_

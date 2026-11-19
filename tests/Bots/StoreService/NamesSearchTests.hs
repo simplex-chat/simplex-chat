@@ -61,7 +61,7 @@ import StoreService.Names.Chain (AbiValue (..), TxHash (..), abiBytes, abiTuple,
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Registration (LinkKind (..), RegistrationId (..), linkMaxBytes)
 import StoreService.Names.Profiles (HostResolver, ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
-import StoreService.Names.Store (EditOutcome (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
+import StoreService.Names.Store (EditOutcome (..), FailReason (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (HttpEnv (..), maxSearches, newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Search (previewHandler, recordLinks, searchHandler, signHandler, termsHandler)
@@ -72,7 +72,7 @@ namesSearchTests = describe "StoreService names: search" $ do
   g <- runIO C.newRandom
   describe "search" $ do
     it "answers an available name with the chain's price for the paid years, the term start and the order's contracts" $ testAvailable g
-    it "answers a name the chain has available as registering while a paid order here holds it, without a price" $ testRegistering g
+    it "answers a name the chain has available as taken while an order here holds it, its register in flight or failed included, without a price, and as available once its month ended" $ testTaken g
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
     it "holds a search slot through the chain reads only, answering rate_limited while every slot is taken" $ testSearchSlot g
     it "answers a listed name's community entry when available, reserved, being registered here and registered, a plain answer for an ini line the policy does not list, the community terms on chain as they change, and 503 while its listing is unread" $ testCommunity g
@@ -260,9 +260,9 @@ registeredAnswer entities records resolver =
 editsLeft :: Int -> Maybe UTCTime -> J.Value
 editsLeft left nextAt = J.object $ ["left" .= left] <> maybe [] (\t -> ["nextAt" .= t]) nextAt
 
-reservedAnswer, registeringAnswer :: Answer
+reservedAnswer, takenAnswer :: Answer
 reservedAnswer = found ["type" .= str "reserved"]
-registeringAnswer = found ["type" .= str "registering"]
+takenAnswer = found ["type" .= str "taken"]
 
 ownRecords :: Text -> Text -> J.Value
 ownRecords contact channel = J.object ["type" .= str "own", "contact" .= contact, "channel" .= channel, "nonce" .= (0 :: Int), "edits" .= editsLeft 3 Nothing]
@@ -315,15 +315,20 @@ testAvailable g = withSearch g id id $ \s@Search {node} -> do
   searchFixture "search-available" s 12 `shouldReturn` availableAnswer 10000
   searchAlice s 6 `shouldReturn` availableAnswer 40000
 
-testRegistering :: TVar ChaChaDRG -> IO ()
-testRegistering g = withSearch g id id $ \s@Search {node, store} -> do
+testTaken :: TVar ChaChaDRG -> IO ()
+testTaken g = withSearch g id id $ \s@Search {node, store} -> do
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-  searchAlice s 12 `shouldReturn` registeringAnswer
+  searchAlice s 12 `shouldReturn` takenAnswer
   setPhase store $ ORegistering commitFixture $ TxHash $ hashFixture 9
   -- no price is answered, so reading one would fail the search
-  searchFixture "search-registering" s 12 `shouldReturn` registeringAnswer
+  searchFixture "search-taken" s 12 `shouldReturn` takenAnswer
+  setPhase store $ OFailed t0 FRRegistryRefused
+  searchAlice s 12 `shouldReturn` takenAnswer
+  setPhase store $ OFailed t0 FRMonthEnded
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
+  searchAlice s 12 `shouldReturn` availableAnswer 10000
   setPhase store $ ORegistered 1861833600 t0
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   searchAlice s 12 `shouldReturn` availableAnswer 10000
@@ -361,7 +366,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   setPhase store $ ORegistering commitFixture $ TxHash $ hashFixture 9
-  searchAlice s 12 `shouldReturn` listed registeringAnswer
+  searchAlice s 12 `shouldReturn` listed takenAnswer
   registeredWith node fullLink ""
   let registered = registeredAnswer [] (ownRecords fullLink "") resolverText
   searchAlice s 12 `shouldReturn` listed registered
