@@ -32,7 +32,7 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 
 - Agents ask before they act in other chats or use a tool such as Bash.
 - A live stream of agent's work: tasks, tool calls, etc.
-- Session and machine status: each answer ends with its time, tokens, context, plan usage with the [status line](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#status-line), and free RAM and disk, with ❗️ when something is low. The model and effort are in the group's description.
+- Session and machine status.
 - 🏗️ Code changes as diffs, almost every waiting state answered from the chat, a new session started from the desktop app.
 
 ## Start
