@@ -230,6 +230,10 @@ start() {
     printf '%s\n' "$@" > "$settings"
   fi
   read -r -a session_environment <<< "$(app_environment)"
+  if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    env "${session_environment[@]}" ${XDG_RUNTIME_DIR:+XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR"} \
+      dbus-update-activation-environment "${session_environment[@]%%=*}" ${XDG_RUNTIME_DIR:+XDG_RUNTIME_DIR}
+  fi
   env -u DISPLAY -u WAYLAND_DISPLAY \
     XDG_DATA_HOME="$state/data" \
     XDG_CONFIG_HOME="$state/config" \

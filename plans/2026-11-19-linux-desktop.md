@@ -418,10 +418,25 @@ flowchart LR
   I -->|other| Notice[release notice, no download]
 ```
 
-- Flathub manifest, in a later pull request to `flathub/chat.simplex.simplex`:
-  - `--socket=wayland` and `--socket=fallback-x11` replace `--socket=x11`;
-  - `--filesystem=home` removed;
-  - the launcher's `pkill gsettings` trap removed.
+- Flatpak: `scripts/flatpak/chat.simplex.simplex.yml`, built in CI from the AppImage:
+  - runtime `org.gnome.Platform//51` (GTK 3 and libsecret for Tao and the helper);
+  - finish-args: `--device=dri`, `--share=ipc`, `--share=network`, `--socket=wayland`, `--socket=fallback-x11`, `--socket=pulseaudio`, `--talk-name=org.kde.StatusNotifierWatcher`;
+  - no file system access: files through the FileChooser portal, opened through `xdg-open` (OpenURI portal);
+  - command `simplex`, the jpackage launcher, without a wrapper;
+  - desktop entry `StartupWMClass=chat.simplex.simplex`.
+- Sandbox paths in the app:
+
+| Need | Path in the sandbox |
+|---|---|
+| file pick and save | GTK FileChooser portal (`GTK_USE_PORTAL=1`, automatic in Flatpak) |
+| open a file or folder | `xdg-open` → OpenURI portal |
+| notifications | Notification portal, avatar as bytes |
+| dark mode | Settings portal |
+| keyring | libsecret → Secret portal, keyring file in the app's data |
+| tray | StatusNotifierWatcher talk name |
+| links in the browser | `xdg-open` → OpenURI portal |
+
+- Flathub manifest, in a later pull request to `flathub/chat.simplex.simplex`: the in-repo manifest with release URLs in place of the local AppImage, and the launcher's `pkill gsettings` trap removed.
 
 ## Tests
 
@@ -456,6 +471,7 @@ Matrix, Ubuntu 24.04 runner:
 |---|---|
 | deb, installed with apt | x11, wayland, xwayland |
 | AppImage, `APPIMAGE_EXTRACT_AND_RUN=1` | x11, wayland, xwayland |
+| Flatpak bundle, `flatpak install --user`, with xdg-desktop-portal (GTK, gnome-keyring Secret) | x11, wayland, xwayland |
 
 Sessions (`UI_SESSION` of `ui`):
 
@@ -496,7 +512,7 @@ Later iterations:
 - tray activation, dark mode switching, keyring absent;
 - clipboard image paste, file drop, video, voice;
 - second-launch links, crash recovery, dead keys and non-Latin layouts;
-- Debian, Fedora, Arch containers and the Flatpak.
+- Debian, Fedora and Arch containers.
 
 ## Commits
 

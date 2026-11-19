@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+FLATHUB_REPO=https://dl.flathub.org/repo/flathub.flatpakrepo
+FLATPAK_APP_ID=chat.simplex.simplex
 kind=$1
 package=$(realpath "$2")
 export UI_SESSION=$3
@@ -25,8 +27,23 @@ case "$kind" in
     target=$package
     entry_id=chat.simplex.app
     ;;
+  flatpak)
+    flatpak remote-add --user --if-not-exists flathub "$FLATHUB_REPO"
+    flatpak install --user -y --noninteractive "$package"
+    app_home=$HOME/.var/app/$FLATPAK_APP_ID
+    for dir in config data cache; do
+      mkdir -p "$app_home/$dir"
+      ln -sfn "$app_home/$dir" "$UI_STATE/$dir"
+    done
+    target=$UI_STATE/flatpak-run
+    printf '#!/bin/sh\nexec env -u JAVA_TOOL_OPTIONS flatpak run %s "$@"\n' "$FLATPAK_APP_ID" > "$target"
+    chmod +x "$target"
+    mkdir -p "$HOME/.config/xdg-desktop-portal"
+    printf '[preferred]\ndefault=gtk\norg.freedesktop.impl.portal.Secret=gnome-keyring\n' > "$HOME/.config/xdg-desktop-portal/portals.conf"
+    entry_id=$FLATPAK_APP_ID
+    ;;
   *)
-    echo "error: the package kind is deb or appimage, not \"$kind\""
+    echo "error: the package kind is deb, appimage or flatpak, not \"$kind\""
     exit 1
     ;;
 esac
@@ -87,7 +104,11 @@ passphrase=$(sed -n 's/^EncryptedDBPassphrase=//p' "$settings")
 initialization_vector=$(sed -n 's/^InitializationVectorDBPassphrase=//p' "$settings")
 check "settings hold the database passphrase" [ -n "$passphrase" ]
 check "settings hold the database passphrase only as ciphertext" [ "$passphrase" != "$initialization_vector" ]
-check "the keyring holds the key of the database passphrase" bash -c 'secret-tool lookup application chat.simplex.app alias databasePassword | grep -q .'
+if [ "$kind" = flatpak ]; then
+  check "the sandbox keyring of the Secret portal exists" [ -s "$UI_STATE/data/keyrings/default.keyring" ]
+else
+  check "the keyring holds the key of the database passphrase" bash -c 'secret-tool lookup application chat.simplex.app alias databasePassword | grep -q .'
+fi
 check "settings are readable only by the user" [ "$(stat -c %a "$(dirname "$settings")")" = 700 ]
 check "the tray item registers with the StatusNotifierWatcher" grep -q '"tray_registered"' "$services_log"
 

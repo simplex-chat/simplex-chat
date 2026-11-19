@@ -62,14 +62,14 @@ The runners are free for this public repository. A Claude run spends the subscri
 
 ## Packages end to end
 
-With the input `e2e`, the job `packages` builds the deb and the AppImage with `scripts/desktop/make-deb-linux.sh` (`SKIP_CORE_BUILD=1`, with the job `core`'s library) and `make-appimage-linux.sh` and checks their metadata, then the job `e2e` installs each and runs `e2e.sh` in six jobs: deb and AppImage, each under Xvfb with openbox (`x11`), headless sway (`wayland`) and sway's XWayland (`xwayland`).
+With the input `e2e`, the job `packages` builds the deb and the AppImage with `scripts/desktop/make-deb-linux.sh` (`SKIP_CORE_BUILD=1`, with the job `core`'s library) and `make-appimage-linux.sh`, checks their metadata, and builds a Flatpak bundle from the AppImage with `scripts/flatpak/chat.simplex.simplex.yml` (GNOME runtime, without file system access). The job `e2e` installs each package and runs `e2e.sh` in nine jobs: deb, AppImage and Flatpak, each under Xvfb with openbox (`x11`), headless sway (`wayland`) and sway's XWayland (`xwayland`). The Flatpak runs with its data in `~/.var/app/chat.simplex.simplex`, which `e2e.sh` links into `UI_STATE`, and with xdg-desktop-portal (GTK back-end, gnome-keyring for secrets).
 
 `e2e.sh <deb|appimage> <package> <session> <out dir>` runs inside `dbus-run-session`, with gnome-keyring unlocked and `desktop-services.py`, a StatusNotifierWatcher with a registered host and a notification server that log every call as JSON lines. It runs `smoke-test.sh` with "minimize to tray" set, then checks:
 
 - the window: a native Wayland surface under `wayland`, an X11 window under `xwayland`, and its app_id or WM_CLASS equal to the installation's desktop entry ID (`simplex-simplex` for the deb, `chat.simplex.app` for the AppImage);
 - no `gsettings` process;
 - the OpenGL renderer in the app's log;
-- the database passphrase in `settings.properties` only as ciphertext, its key in the keyring (`secret-tool`), and the config directory with mode 700;
+- the database passphrase in `settings.properties` only as ciphertext, its key in the keyring (`secret-tool`; for the Flatpak, the Secret portal's keyring file in the sandbox), and the config directory with mode 700;
 - the tray item registered with the watcher.
 
 Results are the artifacts `desktop-linux-e2e-<kind>-<session>` (screenshots, `app.log`, `checks.txt`, `e2e-checks.txt`, `desktop-services.log`); the packages are `desktop-linux-packages`, kept 14 days.

@@ -558,6 +558,16 @@ jobs:
           mkdir -p "$RUNNER_TEMP/packages"
           cp "$deb" "$appimage" "$appimage.zsync" "$RUNNER_TEMP/packages/"
 
+      - name: Build Flatpak
+        run: |
+          sudo apt-get install -y flatpak flatpak-builder
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.gnome.Platform//51 org.gnome.Sdk//51
+          flatpak-builder --user --force-clean --repo="$RUNNER_TEMP/flatpak-repo" "$RUNNER_TEMP/flatpak-build" scripts/flatpak/chat.simplex.simplex.yml
+          flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo "$RUNNER_TEMP/flatpak-repo" "$RUNNER_TEMP/packages/simplex.flatpak" chat.simplex.simplex
+          ls -la "$RUNNER_TEMP/packages"
+
       - name: Upload packages
         uses: actions/upload-artifact@v7
         with:
@@ -575,7 +585,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kind: [deb, appimage]
+        kind: [deb, appimage, flatpak]
         session: [x11, wayland, xwayland]
     steps:
       - name: Checkout code
@@ -586,8 +596,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
             sway grim wtype jq dbus gnome-keyring libsecret-tools python3-dbus python3-gi \
-            libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri
-          dpkg-query -W sway grim wtype gnome-keyring libegl-mesa0
+            libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri flatpak xdg-desktop-portal xdg-desktop-portal-gtk
+          dpkg-query -W sway grim wtype gnome-keyring libegl-mesa0 flatpak xdg-desktop-portal
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Download packages
         uses: actions/download-artifact@v8
@@ -603,6 +614,7 @@ jobs:
           case "$KIND" in
             deb) package=$RUNNER_TEMP/packages/simplex_x86_64.deb ;;
             appimage) package=$RUNNER_TEMP/packages/simplex-desktop-x86_64.AppImage ;;
+            flatpak) package=$RUNNER_TEMP/packages/simplex.flatpak ;;
           esac
           dbus-run-session -- scripts/ci/desktop-linux/e2e.sh "$KIND" "$package" "$SESSION" "$RUNNER_TEMP/e2e"
 

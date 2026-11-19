@@ -1,0 +1,41 @@
+app-id: chat.simplex.simplex
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+command: simplex
+separate-locales: false
+build-options:
+  strip: false
+  no-debuginfo: true
+  no-debuginfo-compression: true
+finish-args:
+  - --device=dri
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --talk-name=org.kde.StatusNotifierWatcher
+modules:
+  - name: simplex-chat
+    buildsystem: simple
+    build-commands:
+      - chmod +x simplex.appimage
+      - ./simplex.appimage --appimage-extract
+      - install -Dm644 squashfs-root/simplex.png ${FLATPAK_DEST}/share/icons/hicolor/512x512/apps/${FLATPAK_ID}.png
+      - mv squashfs-root/usr/bin squashfs-root/usr/lib ${FLATPAK_DEST}/
+      - install -Dm644 ${FLATPAK_ID}.metainfo.xml ${FLATPAK_DEST}/share/metainfo/${FLATPAK_ID}.metainfo.xml
+      - install -Dm644 ${FLATPAK_ID}.desktop ${FLATPAK_DEST}/share/applications/${FLATPAK_ID}.desktop
+    sources:
+      - type: file
+        only-arches: [x86_64]
+        path: ../../apps/multiplatform/release/main/simplex-desktop-x86_64.AppImage
+        dest-filename: simplex.appimage
+      - type: file
+        only-arches: [aarch64]
+        path: ../../apps/multiplatform/release/main/simplex-desktop-aarch64.AppImage
+        dest-filename: simplex.appimage
+      - type: file
+        path: chat.simplex.simplex.desktop
+      - type: file
+        path: chat.simplex.simplex.metainfo.xml
