@@ -983,7 +983,7 @@ getRegistration db (RegistrationId rid) =
 getRegistrationByOrderHash :: DB.Connection -> OrderHash -> IO (Maybe NameRegistration)
 getRegistrationByOrderHash db hash =
   firstDecoded toRegistration $
-    DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, r.registration_id DESC LIMIT 1") (Only hash)
+    DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, " <> insertionOrder <> " DESC LIMIT 1") (Only hash)
 
 -- | Overdue whatever status the poller has marked, as long as the invoice is not paid and holds no money, as the sweep decides.
 getLiveOrders :: DB.Connection -> Commitment -> Address -> LabelHash -> UTCTime -> IO [LiveOrder]

@@ -79,7 +79,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "refuses to queue a closed order, also when a newer live order holds its name" testLatePayment
     it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
     it "retargets to the new fields and reveal, clearing the transactions, reveal times and refusal" testRetarget
-    it "finds registrations made in the same second newest first, and orders the rest by their id" testSameSecondOrder
+    it "finds registrations made in the same second, and an exact resend's newest order, newest first, and orders the rest by their id" testSameSecondOrder
     it "names the order holding a label from queued to registering and failed, one at a time, and none for an unpaid, taken or registered one" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
     it "lists unpaid orders whose invoice expired before the cutoff without a payment, and deletes one with its invoice, once" testUnpaidCleanup
@@ -660,7 +660,7 @@ testSameSecondOrder = withServiceStore $ \st -> do
     r <- reg st rid
     withTransaction st (\db -> closeOverdue db r (at 61)) `shouldReturn` Just 2
   found <- withTransaction st $ \db -> getRegistrationByOrderHash db (orderHash ownerB o (OTInvoice btc price))
-  nrId <$> found `shouldBe` Just (RegistrationId "r5")
+  nrId <$> found `shouldBe` Just (RegistrationId "r4")
 
 testLabelRegistering :: IO ()
 testLabelRegistering = withServiceStore $ \st -> do
