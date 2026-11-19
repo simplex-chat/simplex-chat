@@ -16,6 +16,8 @@ Please discuss the problem you want to solve and your detailed implementation pl
 
 ./contributing/CODE.md has details about general requirements common for `simplexmq` and `simplex-chat` repositories.
 
+./contributing/TESTS.md has the testing approaches of this repository: the tests required for a change, how they are written and run, and where CI runs them.
+
 CLAUDE.md in the repository root imports these files, this guide and ../scripts/ci/README.md for Claude Code; apps/ios/CLAUDE.md and apps/multiplatform/CLAUDE.md import the README of each app.
 
 ## Compiling with SQLCipher encryption enabled
