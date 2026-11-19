@@ -34,6 +34,8 @@ m138 adds the paragraph's empty metrics, computed from the text's default style,
 | Proportional | `H` | `(H - leading) * R / (descent - ascent)` |
 | Top, Center, Bottom | `H` | `H - I + R` |
 
+A result for `H` above the font size `F` stays above `F`, at least `1.0001 * F`: Compose lays out a line height at or below the font size with `HeightMode.DISABLE_ALL` (`ParagraphBuilder.skiko.kt`), the same in m132 and m138.
+
 ```mermaid
 flowchart LR
   S["styles and values derived from them: unchanged"] --> T["each Text: lineHeight = desktopLineHeight(fontSize, lineHeight, fontFamily, lineHeightStyle)"]

@@ -25,6 +25,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.*
+import kotlin.math.max
 import kotlin.math.roundToInt
 import org.jetbrains.skia.Font as SkFont
 
@@ -142,7 +143,8 @@ actual fun desktopLineHeight(fontSize: TextUnit, lineHeight: TextUnit, fontFamil
   if (!fontSize.isSp || !lineHeight.isSp || typeface == null) return lineHeight
   val density = LocalDensity.current
   val lineHeightPx = with(density) { lineHeight.toPx() }
-  val metrics = SkFont(typeface, with(density) { fontSize.toPx() }).use { it.metrics }
+  val fontSizePx = with(density) { fontSize.toPx() }
+  val metrics = SkFont(typeface, fontSizePx).use { it.metrics }
   val fontHeight = metrics.descent - metrics.ascent + metrics.leading
   val roundedFontHeight = fontHeight.roundToInt()
   if (roundedFontHeight >= fontHeight) return lineHeight
@@ -157,7 +159,8 @@ actual fun desktopLineHeight(fontSize: TextUnit, lineHeight: TextUnit, fontFamil
   } else {
     (lineHeightPx - metrics.leading) * roundedFontHeight / (metrics.descent - metrics.ascent)
   }
-  return with(density) { adjustedPx.toSp() }
+  val keptPx = if (lineHeightPx > fontSizePx) max(adjustedPx, fontSizePx * 1.0001f) else adjustedPx
+  return with(density) { keptPx.toSp() }
 }
 
 private val interTypeface: Typeface? by lazy { FontMgr.default.makeFromFile(MR.fonts.inter_regular.file.absolutePath) }
