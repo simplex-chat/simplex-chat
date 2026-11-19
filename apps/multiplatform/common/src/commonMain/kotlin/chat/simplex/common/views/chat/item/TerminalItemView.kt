@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.platform.desktopLineHeightPx
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -83,7 +84,7 @@ fun usesChatTypography(): Boolean = LocalTerminalLayout.current || LocalBubbleLa
 fun chatTextStyle(fontSize: TextUnit, color: Color = messageTextColor()): TextStyle =
   if (usesChatTypography()) {
     val lineHeight = fontSize * (CHAT_LINE_HEIGHT_RATIO * contrastLineHeightFactor(color))
-    TextStyle(lineHeight = lineHeight, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE).merge(bubbleLineHeight(lineHeight))
+    TextStyle(lineHeight = lineHeight, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE).merge(bubbleLineHeight(fontSize, lineHeight))
   } else {
     TextStyle.Default
   }
@@ -93,9 +94,9 @@ fun bubbleTextStyle(fontSize: TextUnit, color: Color): TextStyle =
   if (LocalBubbleLayout.current) chatTextStyle(fontSize, color) else TextStyle.Default
 
 @Composable
-fun bubbleLineHeight(lineHeight: TextUnit): TextStyle =
+fun bubbleLineHeight(fontSize: TextUnit, lineHeight: TextUnit): TextStyle =
   if (LocalBubbleLayout.current && appPlatform.isDesktop) {
-    TextStyle(lineHeight = with(LocalDensity.current) { lineHeight.toPx().roundToInt().toSp() }, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE)
+    TextStyle(lineHeight = with(LocalDensity.current) { desktopLineHeightPx(fontSize.toPx(), lineHeight.toPx().roundToInt().toFloat()).toSp() }, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE)
   } else {
     TextStyle.Default
   }

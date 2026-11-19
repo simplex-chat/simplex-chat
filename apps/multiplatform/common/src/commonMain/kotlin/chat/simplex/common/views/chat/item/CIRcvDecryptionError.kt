@@ -171,7 +171,7 @@ fun DecryptionErrorItemFixButton(
             },
             Modifier.desktopDrawnBaselines { fixLayout.value },
             color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-            style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT)),
+            style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp, 16.sp * INTER_LINE_HEIGHT)),
             onTextLayout = { fixLayout.value = it }
           )
         }

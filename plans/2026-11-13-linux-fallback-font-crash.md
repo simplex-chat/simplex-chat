@@ -29,6 +29,8 @@ Skia draws a line's glyphs at `floor(leading/2 - ascent + 0.5)` and reports its 
 
 m138 adds the paragraph's empty metrics to every line. They are scaled by the rounded font height, so when they exceed the runs' metrics, `descent - ascent` is fractional and the drawn baseline is up to 1 px from the reported one.
 
+The empty metrics exceed the runs' metrics when Inter's rounded height `R = round(descent - ascent + leading)` is below its exact height; the line's extent is then `(descent - ascent) * H / R + leading`. `bubbleLineHeight` passes `H = (target - leading) * R / (descent - ascent)` in that case, so the extent is the whole-pixel target (`desktopLineHeightPx`).
+
 `desktopDrawnBaselines` reports the drawn first and last baselines of a bubble text:
 
 ```mermaid
@@ -56,4 +58,5 @@ Texts:
 - Tests:
   - `FallbackFontTest` builds a fontconfig cache for one BDF font with `fc-cache`, then lays out U+2603 in a child JVM.
   - `BubbleLayoutTest.timeDrawnOnTextBaseline` checks the drawn rows of text and time at font scales 0.7 to 1.5.
+  - `BubbleLayoutTest.linesDrawnWholeLineHeightApart` checks that two lines are drawn the whole-pixel line height apart at the same scales.
 - `Dockerfile.build` installs `fontconfig`, which provides `fc-cache` to the test in CI.

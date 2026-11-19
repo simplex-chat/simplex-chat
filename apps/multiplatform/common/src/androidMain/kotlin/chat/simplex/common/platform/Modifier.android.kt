@@ -24,4 +24,6 @@ actual fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier = Modi
 @Composable
 actual fun Modifier.desktopDrawnBaselines(textLayout: () -> TextLayoutResult?): Modifier = this
 
+actual fun desktopLineHeightPx(fontSizePx: Float, lineHeightPx: Float): Float = lineHeightPx
+
 actual fun newPasswordContentType(): ContentType = ContentType.NewPassword + ContentType.Password

@@ -125,6 +125,18 @@ actual fun Modifier.desktopDrawnBaselines(textLayout: () -> TextLayoutResult?): 
     this
   }
 
+actual fun desktopLineHeightPx(fontSizePx: Float, lineHeightPx: Float): Float {
+  val typeface = interTypeface ?: return lineHeightPx
+  val metrics = SkFont(typeface, fontSizePx).use { it.metrics }
+  val fontHeight = metrics.descent - metrics.ascent + metrics.leading
+  val roundedFontHeight = fontHeight.roundToInt()
+  return if (roundedFontHeight >= fontHeight) {
+    lineHeightPx
+  } else {
+    (lineHeightPx - metrics.leading) * roundedFontHeight / (metrics.descent - metrics.ascent)
+  }
+}
+
 private val interTypeface: Typeface? by lazy { FontMgr.default.makeFromFile(MR.fonts.inter_regular.file.absolutePath) }
 
 private fun drawnBaselineShift(layout: TextLayoutResult, line: Int): Int {

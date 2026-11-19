@@ -36,6 +36,8 @@ expect fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier
 @Composable
 expect fun Modifier.desktopDrawnBaselines(textLayout: () -> TextLayoutResult?): Modifier
 
+expect fun desktopLineHeightPx(fontSizePx: Float, lineHeightPx: Float): Float
+
 @Composable
 fun Modifier.desktopModifyBlurredState(blurred: MutableState<Boolean>, showMenu: State<Boolean>,): Modifier {
   val blurRadius = remember { appPrefs.privacyMediaBlurRadius.state }
