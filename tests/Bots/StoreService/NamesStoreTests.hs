@@ -6,8 +6,9 @@
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, commitFixture, hashFixture, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
 import Bots.StoreService.FakeEthNode (address, agreed, lengthOf, plainTerms)
-import Bots.StoreService.WebTests (columnsOf, digestFixture, invoiceStatus, runMigrations, sampleInvoice, seedBadgePrice, withServiceStore)
+import Bots.StoreService.WebTests (columnsOf, digestFixture, insertBadgeCodeInvoice, invoiceStatus, runMigrations, sampleInvoice, seedBadgePrice, withServiceDBOpts, withServiceStore)
 import Control.Arrow ((&&&))
+import qualified Control.Exception as E
 import Control.Monad (forM, forM_, void)
 import qualified Data.ByteString as B
 import Data.List (sort)
@@ -15,6 +16,7 @@ import Data.Maybe (fromJust, mapMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), addUTCTime)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -23,7 +25,8 @@ import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationsToRun (..), toDownMigration)
+import Simplex.Messaging.Agent.Store.Interface (closeDBStore, createDBStore)
+import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address)
@@ -50,6 +53,7 @@ namesStoreTests :: Spec
 namesStoreTests = describe "StoreService names: store" $ do
   describe "migration" $ do
     it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
+    it "rolls back the deployed names migration by its stored text, as master's binary does, then migrates to this schema, keeping the badge rows" testDeployedNamesRevert
     it "names each invoice's product, badge for the existing rows and name for those a name invoice refers to, moves each invoice's provider ref into invoices and back, and reads a name row marked badge as no product" testInvoiceProduct
     it "refuses a stored reveal whose acceptance columns are unset or set only in part" testPartialAcceptance
     it "refuses a stored commitment, secret or accepted terms hash that is not 32 bytes" testShortHashes
@@ -222,6 +226,46 @@ testNamesDownUp = withServiceStore $ \st -> do
 
 productMigration :: String
 productMigration = "20261118_invoice_product"
+
+testDeployedNamesRevert :: IO ()
+testDeployedNamesRevert = withServiceDBOpts $ \opts -> do
+  deployed <- deployedNamesMigration
+  fresh <- withServiceDBOpts $ \freshOpts -> withOpened freshOpts storeServiceSchemaMigrations MCYesUp tablesShape
+  let badgeMigrations = takeWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
+  rows <- withOpened opts (badgeMigrations <> [deployed]) MCYesUp $ \st -> do
+    seedBadgePrice st "price1"
+    withTransaction st $ \db ->
+      DB.execute
+        db
+        "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+        ("inv1" :: Text, "stripe" :: Text, 500 :: Int, 500 :: Int, "usd" :: Text, t0, "paid" :: Text, t0, t0)
+    insertBadgeCodeInvoice st "inv1" "price1" "provider-ref-1"
+    badgeRows st
+  createDBStore opts badgeMigrations (MigrationConfig MCYesUp Nothing) >>= either (const $ pure ()) (\st -> closeDBStore st >> expectationFailure "a downgrade with only up migrations confirmed")
+  withOpened opts badgeMigrations MCYesUpDown $ \st -> do
+    mapM (columnsOf st) namesTables `shouldReturn` map (const []) namesTables
+    badgeRows st `shouldReturn` rows
+  withOpened opts storeServiceSchemaMigrations MCYesUp $ \st -> do
+    tablesShape st `shouldReturn` fresh
+    badgeRows st `shouldReturn` rows
+  where
+    withOpened o ms confirm action = createDBStore o ms (MigrationConfig confirm Nothing) >>= either (fail . show) (\st -> action st `E.finally` closeDBStore st)
+    tablesShape st = mapM (fmap sort . columnsOf st) (badgeTables <> namesTables)
+    badgeRows :: DBStore -> IO ([(Text, Text)], [(Text, Text)])
+    badgeRows st = withTransaction st $ \db -> (,) <$> DB.query_ db "SELECT invoice_id, status FROM sx_badge_service_invoices ORDER BY invoice_id" <*> DB.query_ db "SELECT invoice_id, provider_ref FROM sx_badge_service_badge_code_invoices ORDER BY invoice_id"
+
+deployedNamesMigration :: IO Migration
+deployedNamesMigration = do
+  let file kind = T.replace "@" "sx_badge_service_" <$> T.readFile ("tests/fixtures/store-migrations/20261013_names." <> backend <> "." <> kind <> ".sql")
+  up <- file "up"
+  down <- file "down"
+  pure Migration {name = "20261013_names", up, down = Just down}
+  where
+#if defined(dbPostgres)
+    backend = "postgres"
+#else
+    backend = "sqlite"
+#endif
 
 testInvoiceProduct :: IO ()
 testInvoiceProduct = withServiceStore $ \st -> do

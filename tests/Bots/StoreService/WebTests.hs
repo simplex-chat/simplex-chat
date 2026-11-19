@@ -10,6 +10,8 @@ module Bots.StoreService.WebTests
     withApp,
     withServiceStore,
     withServiceStores,
+    withServiceDBOpts,
+    insertBadgeCodeInvoice,
     columnsOf,
     runMigrations,
     digestFixture,
