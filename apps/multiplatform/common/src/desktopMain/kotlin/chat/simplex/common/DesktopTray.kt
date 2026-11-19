@@ -14,6 +14,7 @@ import chat.simplex.common.model.CloseBehavior
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
+import chat.simplex.common.platform.desktopPlatform
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
@@ -31,7 +32,7 @@ import java.awt.image.BufferedImage
 // hidden, the first-close dialog is skipped (Ask migrates silently to Quit), and
 // the close handler treats MinimizeToTray as Quit.
 val trayIsAvailable: Boolean by lazy {
-  if (!SystemTray.isSupported()) return@lazy false
+  if (desktopPlatform.isLinux() || !SystemTray.isSupported()) return@lazy false
   try {
     val tray = SystemTray.getSystemTray()
     val probe = TrayIcon(BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB))
@@ -81,10 +82,10 @@ fun ApplicationScope.SimplexTray() {
 }
 
 // Renders in the main app window via AlertManager (same surface as e.g. the link
-// previews confirmation). Lambdas close over the calling ApplicationScope; if the
+// previews confirmation). Lambdas close over the calling application's exit; if the
 // app crashes while the dialog is open, the crash handler's alert replaces it, so
 // stale closures never get clicked.
-fun ApplicationScope.requestCloseBehavior() {
+fun requestCloseBehavior(exit: () -> Unit) {
   val pref = appPrefs.closeBehavior
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.close_behavior_dialog_title),
@@ -94,7 +95,7 @@ fun ApplicationScope.requestCloseBehavior() {
         SectionItemView({
           AlertManager.shared.hideAlert()
           pref.set(CloseBehavior.Quit)
-          exitApplication()
+          exit()
         }) {
           Text(
             stringResource(MR.strings.close_behavior_dialog_close),

@@ -18,6 +18,7 @@ import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.showApp
 import chat.simplex.common.singleInstanceLock
 import chat.simplex.common.startShowFileWatcher
+import chat.simplex.common.useAppNativeLibraries
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.*
@@ -25,6 +26,7 @@ import java.io.File
 
 fun main(args: Array<String>) {
   try {
+    if (desktopPlatform.isLinux()) useAppNativeLibraries()
     rejectBitmapFonts()
     val link = linkFromArgs(args)
     if (!acquireSingleInstance(link)) return

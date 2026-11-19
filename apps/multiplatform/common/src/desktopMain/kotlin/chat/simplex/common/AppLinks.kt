@@ -16,9 +16,9 @@ fun linkFromArgs(args: Array<String>): String? =
   args.singleOrNull()?.takeIf(::isAcceptedLink)
 
 // The link is stored before showWindow, so a failure to show the window cannot lose it.
-internal fun openDesktopLink(uri: String) {
+internal fun openDesktopLink(uri: String, activationToken: String? = null) {
   chatModel.appOpenUrl.value = chatModel.remoteHostId() to uri
-  showWindow()
+  showWindow(activationToken)
 }
 
 // macOS delivers a link as an Apple Event, never in args; the JDK queues it until a handler is set
