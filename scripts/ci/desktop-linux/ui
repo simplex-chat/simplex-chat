@@ -51,9 +51,14 @@ case "$session" in
     ;;
 esac
 if [ "$session" != x11 ]; then
-  export XDG_RUNTIME_DIR=$state/run
-  mkdir -p "$XDG_RUNTIME_DIR"
-  chmod 700 "$XDG_RUNTIME_DIR"
+  user_runtime_dir=/run/user/$(id -u)
+  if [ -z "${XDG_RUNTIME_DIR:-}" ] && [ -O "$user_runtime_dir" ]; then
+    export XDG_RUNTIME_DIR=$user_runtime_dir
+  elif [ -z "${XDG_RUNTIME_DIR:-}" ]; then
+    export XDG_RUNTIME_DIR=$state/run
+    mkdir -p "$XDG_RUNTIME_DIR"
+    chmod 700 "$XDG_RUNTIME_DIR"
+  fi
   export WAYLAND_DISPLAY
   WAYLAND_DISPLAY=$(cat "$state/wayland-display" 2> /dev/null || true)
   export SWAYSOCK
@@ -77,6 +82,7 @@ pointer() {
     xdotool mousemove --sync "$1" "$2" click "$3"
   else
     printf 'move %d %d\n' "$1" "$2" > "$state/input"
+    sleep 0.2
     case "$3" in
       4) echo "scroll up" > "$state/input" ;;
       5) echo "scroll down" > "$state/input" ;;
