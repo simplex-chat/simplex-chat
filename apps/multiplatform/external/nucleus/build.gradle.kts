@@ -28,7 +28,7 @@ val composeStubs: SourceSet by sourceSets.creating {
 
 sourceSets {
   main {
-    kotlin.setSrcDirs(nucleusModules.map { upstream.dir("$it/src/main/kotlin") })
+    kotlin.setSrcDirs(nucleusModules.flatMap { listOf(upstream.dir("$it/src/main/kotlin"), upstream.dir("$it/src/main/java")) })
     java.setSrcDirs(nucleusModules.map { upstream.dir("$it/src/main/java") })
     resources.setSrcDirs(nucleusModules.map { upstream.dir("$it/src/main/resources") })
     resources.exclude("nucleus/native/**")
