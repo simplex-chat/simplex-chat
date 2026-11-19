@@ -9,7 +9,6 @@ import java.io.File
 import java.net.URI
 import java.net.URLEncoder
 import chat.simplex.res.*
-import java.awt.Desktop
 
 actual fun UriHandler.sendEmail(subject: String, body: CharSequence) {
   val subjectEncoded = URLEncoder.encode(subject, "UTF-8").replace("+", "%20")
@@ -46,7 +45,7 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
 actual fun openFile(fileSource: CryptoFile) {
   try {
     val filePath = filePathForShare(fileSource) ?: return
-    Desktop.getDesktop().open(File(filePath))
+    desktopOpen(File(filePath))
   } catch (e: Exception) {
     Log.e(TAG, "Unable to open the file: " + e.stackTraceToString())
     AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())

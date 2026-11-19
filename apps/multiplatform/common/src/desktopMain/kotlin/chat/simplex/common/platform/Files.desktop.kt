@@ -59,13 +59,17 @@ actual fun desktopOpenDatabaseDir() {
   desktopOpenDir(dataDir)
 }
 
+fun desktopOpen(file: File) {
+  if (desktopPlatform.isLinux()) {
+    ProcessBuilder(XDG_OPEN, file.absolutePath).start()
+  } else if (Desktop.isDesktopSupported()) {
+    Desktop.getDesktop().open(file)
+  }
+}
+
 actual fun desktopOpenDir(dir: File) {
   try {
-    if (desktopPlatform.isLinux()) {
-      ProcessBuilder(XDG_OPEN, dir.absolutePath).start()
-    } else if (Desktop.isDesktopSupported()) {
-      Desktop.getDesktop().open(dir)
-    }
+    desktopOpen(dir)
   } catch (e: IOException) {
     Log.e(TAG, e.stackTraceToString())
     AlertManager.shared.showAlertMsg(
