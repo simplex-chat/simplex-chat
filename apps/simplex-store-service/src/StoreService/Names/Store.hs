@@ -308,18 +308,16 @@ data TxHistory = TxHistory {thCommitTx :: Maybe TxHash, thRegisterTx :: Maybe Tx
 noHistory :: TxHistory
 noHistory = TxHistory {thCommitTx = Nothing, thRegisterTx = Nothing}
 
-data FailReason = FRSendsUsedUp | FRRegistryRefused | FRSignatureRefused | FRMonthEnded | FRUnread
+data FailReason = FRRegistryRefused | FRSignatureRefused | FRMonthEnded | FRUnread
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding FailReason where
   textEncode = \case
-    FRSendsUsedUp -> "sends_used_up"
     FRRegistryRefused -> "registry_refused"
     FRSignatureRefused -> "signature_refused"
     FRMonthEnded -> "month_ended"
     FRUnread -> "unread"
   textDecode = \case
-    "sends_used_up" -> Just FRSendsUsedUp
     "registry_refused" -> Just FRRegistryRefused
     "signature_refused" -> Just FRSignatureRefused
     "month_ended" -> Just FRMonthEnded

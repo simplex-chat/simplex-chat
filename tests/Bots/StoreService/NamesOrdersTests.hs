@@ -1814,7 +1814,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
                  J.object ["type" .= ("failed" :: Text), "reason" .= ("registryRefused" :: Text)],
                  J.object ["type" .= ("failed" :: Text), "reason" .= ("unread" :: Text), "heldUntil" .= t0]
                ]
-  map J.toJSON [FRSendsUsedUp, FRMonthEnded, FRUnread] `shouldBe` ["sendsUsedUp", "monthEnded", "unread"]
+  map J.toJSON [FRSignatureRefused, FRMonthEnded, FRUnread] `shouldBe` ["signatureRefused", "monthEnded", "unread"]
   map J.toJSON [ICExpired, ICCancelled, ICReversed] `shouldBe` ["expired", "cancelled", "reversed"]
   map J.toJSON [PUnpaid, PClosed, PRegistered] `shouldBe` ["unpaid", "closed", "registered"]
 
@@ -1830,19 +1830,19 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   failed <-
     written $ \r ->
       r
-        { nrPhase = OFailed t0 FRSendsUsedUp,
+        { nrPhase = OFailed t0 FRSignatureRefused,
           nrReveal = Just reveal,
           nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
         }
-  viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("sendsUsedUp" :: Text)]), ("registerTx", txText 9), ("balance", J.Null), ("label", J.Null)]
+  viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text)]), ("registerTx", txText 9), ("balance", J.Null), ("label", J.Null)]
   paidFailed <- withTransaction st $ \db -> setPaidAt db rid t0 >> fromJust <$> getRegistration db rid
   withTransaction st $ \db -> do
     insertAttempt db rid (nrCommitment failed) NameAttempt {naTx = RTRegister, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = t0}
     insertAttempt db rid (hashFixture 7) NameAttempt {naTx = RTCommit, naStage = ASDryRun, naReason = "InsufficientAllowance", naCounted = False, naAt = t0}
-  viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("sendsUsedUp" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null), ("lastAttempt", J.object ["transaction" .= ("register" :: Text), "stage" .= ("sent" :: Text), "reason" .= ("mined with status 0" :: Text), "at" .= t0])]
+  viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null), ("lastAttempt", J.object ["transaction" .= ("register" :: Text), "stage" .= ("sent" :: Text), "reason" .= ("mined with status 0" :: Text), "at" .= t0])]
   withTransaction st $ \db -> insertAttempt db rid (nrCommitment failed) NameAttempt {naTx = RTAccept, naStage = ASDryRun, naReason = "InvalidSignature", naCounted = True, naAt = t0}
   let refused = ("lastAttempt", J.object ["transaction" .= ("accept" :: Text), "stage" .= ("dryRun" :: Text), "reason" .= ("InvalidSignature" :: Text), "at" .= t0])
-  viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("sendsUsedUp" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null), refused]
+  viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("signatureRefused" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null), refused]
   requeued <- written $ \r -> r {nrPhase = OQueued, nrHistory = (nrHistory r) {thRegisterTx = Nothing}}
   viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null), refused]
   taken <- written $ \r -> r {nrPhase = OTaken}

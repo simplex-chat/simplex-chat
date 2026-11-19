@@ -487,7 +487,7 @@ testRoundTrip = withServiceStore $ \st -> do
   r <- reg st "r1"
   let changed =
         r
-          { nrPhase = OFailed (at 2) FRSendsUsedUp,
+          { nrPhase = OFailed (at 2) FRSignatureRefused,
             nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = TermsAcceptance {taTermsHash = hashFixture 10, taNonce = 4, taSignature = signature}},
             nrLinksRefused = Just (at 4, LKChannel),
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9},

@@ -272,7 +272,6 @@ testNamesCounts = withServiceStore $ \st -> do
                  "simplex_store_names_orders{phase=\"registering\"} 1",
                  "simplex_store_names_orders{phase=\"registered\"} 0",
                  "simplex_store_names_orders{phase=\"taken\"} 1",
-                 "simplex_store_names_orders{phase=\"failed\",reason=\"sends_used_up\"} 0",
                  "simplex_store_names_orders{phase=\"failed\",reason=\"registry_refused\"} 1",
                  "simplex_store_names_orders{phase=\"failed\",reason=\"signature_refused\"} 0",
                  "simplex_store_names_orders{phase=\"failed\",reason=\"month_ended\"} 1",
