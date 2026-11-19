@@ -65,10 +65,10 @@ const listCheckMs = 2_000
 const recordReadMs = 1_000
 // spec: spec/api.md#list-of-sessions
 const claudeStates = new Map<string, [string, string]>([
-  ["waiting", ["🔵", "waiting for you in Claude Code"]],
-  ["busy", ["🟠", "working"]],
-  ["idle", ["🟢", "idle"]],
-  ["shell", ["🟢", "idle"]],
+  ["waiting", ["⛔️", "waiting for you in Claude Code"]],
+  ["busy", ["🟢", "working"]],
+  ["idle", ["🔴", "idle"]],
+  ["shell", ["🔴", "idle"]],
 ])
 // spec: spec/api.md#list-of-sessions
 const unknownState: [string, string] = ["▶️", "running"]
@@ -263,7 +263,7 @@ export class Session {
     const state = claudeStates.get(this.claudeStatus ?? "")
     const dialog = state === undefined || this.claudeStatus === "waiting"
     const cards = this.actions.pending().filter(({tool, interrupted}) => !interrupted && (dialog || tool !== "permission")).length
-    if (cards > 0) return `🔵 ${this.displayName}: waiting for you, ${cards} approval${cards === 1 ? "" : "s"}`
+    if (cards > 0) return `🟠 ${this.displayName}: waiting for you, ${cards} approval${cards === 1 ? "" : "s"}`
     if (!this.attached) return undefined
     const [emoji, text] = state ?? unknownState
     return `${emoji} ${this.displayName}: ${text}`
