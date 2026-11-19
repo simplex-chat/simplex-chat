@@ -90,9 +90,11 @@ let
     echo ok > $out/result
   '';
 
-  # Schema dump shells out to sqlite3. The default sqlite output is the library.
+  # .schema --indent must round-trip chat_schema.sql. nixpkgs sqlite.bin is
+  # 3.53 on this pin and mis-prints that dump. See sqlite-schema-cli.nix.
+  sqliteSchemaCli = pkgs.callPackage ./sqlite-schema-cli.nix {};
   cabalTest = (haskellLib.check nativeProject.simplex-chat.components.tests.simplex-chat-test).overrideAttrs (old: {
-    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ pkgs.sqlite.bin ];
+    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ sqliteSchemaCli ];
   });
 
   xcodetest = pkgs.runCommand "xcodetest" {
