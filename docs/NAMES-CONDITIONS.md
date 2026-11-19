@@ -4,7 +4,7 @@ You accept these Conditions of Use of SimpleX Names ("Names Conditions") by regi
 
 **SimpleX names**. A name is a record controlled by your key. The record can contain links to addresses in the SimpleX Network. "Community names" are marked in the registry as referring to specific communities, usually cities or territories. "Reserved names" are marked in the registry, also while registered. A reserved name cannot be extended, and only the registry's admin can register it, by assigning it, which ends the reservation.
 
-**Registry**. The .simplex names registry is a set of contracts on the Ethereum blockchain. Name registrations, records, subnames and controlling addresses are stored in immutable contracts. Other contracts may be updated during a stabilization period, expected to last 12 to 24 months from the first registration.
+**Registry**. The .simplex names registry is a set of contracts on the Ethereum blockchain. The contracts may be updated during a stabilization period, expected to last 12 to 24 months from the first registration, after which each of them is made immutable.
 
 **What the registry allows**.
 
