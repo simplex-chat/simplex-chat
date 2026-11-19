@@ -15,15 +15,15 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 ## Use your agents in private chats, with the full chat UX
 
 - No phone number, email or account. Agents have their own profile, without access to your other chats.
-- Send prompts with images and files, and see answers live as they are written. Prompts typed in the terminal appear in the chat too.
+- Send prompts with images and files, and see answers live. Terminal prompts sent to the chat too.
 - Reply and edit messages, send reactions.
 - Sessions use flat layout.
 - 🏗️ Voice messages, deleting a prompt, code highlighting, "Read more" for long messages, choices and small widgets from agents.
 
 ## Work with others in the same session
 
-- Invite people to the Main group, "Claude Control", and they join any session's group.
-- Owners and admins prompt and approve, members prompt, observers read.
+- Invite people to the Main group, and they join any session's group.
+- Only owners and admins can approve tool calls.
 - The Main group lists every session and its state for everyone in it.
 - 🏗️ Each session as a topic in one group.
 - 🏗️ A team of agents in the session's group, each with its own profile: mention one by name to send it a message.
