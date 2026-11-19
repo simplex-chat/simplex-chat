@@ -424,7 +424,7 @@ testIssuerSecretMissing =
 testIssuerIndexInvalid :: IO ()
 testIssuerIndexInvalid =
   mapM_
-    (\v -> issuerRefusal ["index = " <> v, "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a whole number from 1 to 9223372036854775807")
+    (\v -> issuerRefusal ["index = " <> v, "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a whole number of at least 1")
     ["0", "-1", "one", "1.5", "key_1", "18446744073709551617"]
 
 testIssuerBadSecret :: IO ()
@@ -658,7 +658,7 @@ testGroupNameCodesPerDay = do
   perDay "" `shouldReturn` Right (Just 10)
   perDay "name_codes_per_day = 200\n" `shouldReturn` Right (Just 200)
   perDay "name_codes_per_day = 0\n" `shouldReturn` Right (Just 0)
-  perDay "name_codes_per_day = -1\n" `shouldReturn` Left "group.name_codes_per_day must be a whole number from 0 to 9223372036854775807"
+  perDay "name_codes_per_day = -1\n" `shouldReturn` Left "group.name_codes_per_day must be a whole number of at least 0"
 
 listenerIni :: T.Text
 listenerIni = "[listener]\nbadges_static_dir = /srv/web\n"
@@ -803,17 +803,17 @@ testNamesWrittenOut = do
   (nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nMaxDryRunFailures, nMaxSentFailures) `shouldBe` (60, 0, 0, 2, 3)
   NamesConfig {nMaxDryRunFailures = dryRuns, nMaxSentFailures = sent} <- parsedNames namesSection chainSection
   (dryRuns, sent) `shouldBe` (5, 5)
-  namesRefusal (namesSection <> ["max_dry_run_failures = 0"]) chainSection `shouldReturn` "names.max_dry_run_failures must be a whole number from 1 to 9223372036854775807"
+  namesRefusal (namesSection <> ["max_dry_run_failures = 0"]) chainSection `shouldReturn` "names.max_dry_run_failures must be a whole number of at least 1"
   (cConfirmations, cGasLimitCap, cMaxFeePerGas) `shouldBe` (1, 500000, 30000000000)
-  namesRefusal ns (chainSection <> ["confirmations = 0"]) `shouldReturn` "chain.confirmations must be a whole number from 1 to 9223372036854775807"
-  namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be a whole number from 1 to 9223372036854775807"
-  namesRefusal ns (chainSection <> ["gas_limit_cap = 0"]) `shouldReturn` "chain.gas_limit_cap must be a whole number from 1 to 18446744073709551615"
-  namesRefusal ns (chainSection <> ["max_fee_per_gas = 0"]) `shouldReturn` "chain.max_fee_per_gas must be a whole number from 1 to 18446744073709551615"
-  namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a whole number from 1 to 18446744073709551615"
+  namesRefusal ns (chainSection <> ["confirmations = 0"]) `shouldReturn` "chain.confirmations must be a whole number of at least 1"
+  namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be a whole number of at least 1"
+  namesRefusal ns (chainSection <> ["gas_limit_cap = 0"]) `shouldReturn` "chain.gas_limit_cap must be a whole number of at least 1"
+  namesRefusal ns (chainSection <> ["max_fee_per_gas = 0"]) `shouldReturn` "chain.max_fee_per_gas must be a whole number of at least 1"
+  namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a whole number of at least 1"
   namesRefusal ns (filter (not . ("chain_id" `T.isPrefixOf`)) chainSection) `shouldReturn` "chain.chain_id is required"
   namesRefusal ns (withChainId "") `shouldReturn` "chain.chain_id is required"
-  namesRefusal ns (withChainId "0") `shouldReturn` "chain.chain_id must be a whole number from 1 to 18446744073709551615"
-  namesRefusal (namesSection <> ["max_order_moves = -1"]) chainSection `shouldReturn` "names.max_order_moves must be a whole number from 0 to 9223372036854775807"
+  namesRefusal ns (withChainId "0") `shouldReturn` "chain.chain_id must be a whole number of at least 1"
+  namesRefusal (namesSection <> ["max_order_moves = -1"]) chainSection `shouldReturn` "names.max_order_moves must be a whole number of at least 0"
 
 testNamesListenerKeys :: IO ()
 testNamesListenerKeys = do
@@ -871,7 +871,7 @@ testNamesNeedsChain = do
 
 testNamesYearsBelowTwo :: IO ()
 testNamesYearsBelowTwo = do
-  mapM_ (\v -> namesRefusal (namesSection <> ["years = " <> v]) chainSection `shouldReturn` "names.years must be a whole number from 2 to 9223372036854775807") ["1", "0", "-2"]
+  mapM_ (\v -> namesRefusal (namesSection <> ["years = " <> v]) chainSection `shouldReturn` "names.years must be a whole number of at least 2") ["1", "0", "-2"]
   NamesConfig {nYears} <- parsedNames (namesSection <> ["years = 2"]) chainSection
   nYears `shouldBe` 2
 
@@ -984,8 +984,8 @@ testNamesPriceFloor = do
     NamesConfig {nMinPriceCentsPerYear} <- parsedNames ns chainSection
     (n, nMinPriceCentsPerYear) `shouldBe` (n, n)
   forM_ ["0", "-5000"] $ \v ->
-    namesRefusal (namesSection <> ["min_price_cents_per_year = " <> v]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number from 1 to 9223372036854775807"
-  namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number from 1 to 9223372036854775807"
+    namesRefusal (namesSection <> ["min_price_cents_per_year = " <> v]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
+  namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
 
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text
@@ -1015,7 +1015,7 @@ testDevKeysMalformed = do
     e <- refusal keys
     e `shouldBe` "issuer.dev_keys must be <index>:<secret> entries separated by commas"
     e `shouldNotContain` T.unpack issuerSecret
-  refusal ("0:" <> issuerSecret) `shouldReturn` "issuer.dev_keys index must be a whole number from 1 to 9223372036854775807"
+  refusal ("0:" <> issuerSecret) `shouldReturn` "issuer.dev_keys index must be a whole number of at least 1"
   refusal "9:not-a-key" `shouldReturn` "issuer.dev_keys secret is not a valid issuer secret; use the value from `simplex-chat badge keygen`"
   refusal ("9:" <> issuerSecret <> ",9:" <> issuerSecret) `shouldReturn` "issuer.dev_keys names an index twice"
   where

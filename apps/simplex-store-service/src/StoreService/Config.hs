@@ -506,13 +506,17 @@ parseConfig ini = do
           namesPort <- listenerPort "names_port" defaultNamesPort
           when (namesPort == badgesPort) $ Left "listener.names_port must differ from listener.badges_port"
           Right (Just (namesPort, maybe defaultNamesStaticDir T.unpack (present "listener" "names_static_dir")))
-    num :: (Integral a, Show a) => Text -> Text -> a -> a -> a -> Either String a
+    num :: (Integral a, Bounded a, Show a) => Text -> Text -> a -> a -> a -> Either String a
     num s k lowest highest d = fromMaybe d <$> optionalNum s k lowest highest
-    optionalNum :: (Integral a, Show a) => Text -> Text -> a -> a -> Either String (Maybe a)
+    optionalNum :: (Integral a, Bounded a, Show a) => Text -> Text -> a -> a -> Either String (Maybe a)
     optionalNum s k lowest highest = mapM (boundedSetting (T.unpack s <> "." <> T.unpack k) lowest highest) (look s k)
-    boundedSetting :: (Integral a, Show a) => String -> a -> a -> Text -> Either String a
+    boundedSetting :: (Integral a, Bounded a, Show a) => String -> a -> a -> Text -> Either String a
     boundedSetting name lowest highest v =
-      first (const (name <> " must be a whole number from " <> show lowest <> " to " <> show highest)) $ parseAll (boundedDecimal lowest highest) (encodeUtf8 v)
+      first (const (name <> " must be a whole number " <> range)) $ parseAll (boundedDecimal lowest highest) (encodeUtf8 v)
+      where
+        range
+          | highest == maxBound = "of at least " <> show lowest
+          | otherwise = "from " <> show lowest <> " to " <> show highest
     bool s k d = case fmap (T.toLower . T.strip) (look s k) of
       Nothing -> Right d
       Just "on" -> Right True
