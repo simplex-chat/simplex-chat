@@ -738,7 +738,8 @@ Posts:
 | a running session | `🟠 N · NAME: waiting for you, K approvals`, `1 approval` for one | K pending cards of the session, without those cancelled by a stop. A tool-use card counts while Claude Code's state is `waiting` or unknown |
 | | `⛔️ N · NAME: waiting for you in Claude Code` | no card; attached; state `waiting` |
 | | `🟢 N · NAME: working` | no card; attached; state `busy` |
-| | `🔴 N · NAME: idle` | no card; attached; state `idle` or `shell` |
+| | `🔴 N · NAME: idle` | no card; attached; state `idle` |
+| | `⚙️ N · NAME: working in the background` | no card; attached; state `shell` |
 | | `▶️ N · NAME: running` | no card; attached; no record path, no record file, or another state |
 | the other sessions | `⚪ Not running: N · NAME, N · NAME, K older sessions`, newest first | sessions without a card and without an attachment, or all of them while the service stops |
 | no session | `No sessions.` | |

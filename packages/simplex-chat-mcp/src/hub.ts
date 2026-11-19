@@ -68,7 +68,7 @@ const claudeStates = new Map<string, [string, string]>([
   ["waiting", ["⛔️", "waiting for you in Claude Code"]],
   ["busy", ["🟢", "working"]],
   ["idle", ["🔴", "idle"]],
-  ["shell", ["🔴", "idle"]],
+  ["shell", ["⚙️", "working in the background"]],
 ])
 // spec: spec/api.md#list-of-sessions
 const unknownState: [string, string] = ["▶️", "running"]

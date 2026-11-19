@@ -2606,7 +2606,7 @@ describe("Main group", () => {
     expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 3, memberRole: T.GroupMemberRole.Owner})
   })
 
-  it("posts the list of every session after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, and the ⚪ line after an exit", async () => {
+  it("posts the list of every session after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, working in the background, and the ⚪ line after an exit", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat, [self])
     const one = await openSession(hub, id1, stored(1, "one"))
@@ -2639,7 +2639,7 @@ describe("Main group", () => {
     expect(await shows("waiting")).toBe("🟠 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
     expect(await shows("busy")).toBe("🟢 1 · one: working\n⚪ Not running: 2 · two")
     expect(await shows("idle")).toBe("🔴 1 · one: idle\n⚪ Not running: 2 · two")
-    expect(await shows("shell")).toBeUndefined()
+    expect(await shows("shell")).toBe("⚙️ 1 · one: working in the background\n⚪ Not running: 2 · two")
     one.endPermissions()
     one.onLine = undefined
     expect(await shows("idle")).toBe("⚪ Not running: 2 · two, 1 · one")
