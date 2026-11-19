@@ -50,10 +50,12 @@ case "$session" in
 esac
 if [ "$session" != x11 ]; then
   export XDG_RUNTIME_DIR=$state/run
+  mkdir -p "$XDG_RUNTIME_DIR"
+  chmod 700 "$XDG_RUNTIME_DIR"
   export WAYLAND_DISPLAY
   WAYLAND_DISPLAY=$(cat "$state/wayland-display" 2> /dev/null || true)
   export SWAYSOCK
-  SWAYSOCK=$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'sway-ipc.*.sock' 2> /dev/null | head -n 1)
+  SWAYSOCK=$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'sway-ipc.*.sock' | head -n 1)
 fi
 here=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$UI_OUT" "$state/ocr"
@@ -144,8 +146,6 @@ start_x11() {
 start_sway() {
   local socket
   stop_process sway 5
-  mkdir -p "$XDG_RUNTIME_DIR"
-  chmod 700 "$XDG_RUNTIME_DIR"
   rm -f "$XDG_RUNTIME_DIR"/wayland-* "$XDG_RUNTIME_DIR"/sway-ipc.*.sock
   cat > "$state/sway.conf" << EOF
 output HEADLESS-1 resolution 1440x900 position 0 0 bg #ffffff solid_color
@@ -189,10 +189,12 @@ wait_for_window() {
       return 1
     fi
     xdotool getwindowgeometry "$(head -n 1 "$state/window")"
-    (
-      eval "$(xdotool getwindowgeometry --shell "$(head -n 1 "$state/window")")"
-      echo "$X $Y $WIDTH $HEIGHT" > "$state/window-rect"
-    )
+    xwininfo -id "$(head -n 1 "$state/window")" | awk '
+      /Absolute upper-left X:/ { x = $4 }
+      /Absolute upper-left Y:/ { y = $4 }
+      /^ *Width:/ { w = $2 }
+      /^ *Height:/ { h = $2 }
+      END { print x, y, w, h }' | tee "$state/window-rect"
     xprop -id "$(head -n 1 "$state/window")" WM_CLASS | tee "$state/window-identity"
     return 0
   fi

@@ -8,6 +8,7 @@ kind=$1
 package=$(realpath "$2")
 export UI_SESSION=$3
 out=$4
+export UI_OUT=$out
 here=$(cd "$(dirname "$0")" && pwd)
 export UI_STATE=${RUNNER_TEMP:-/tmp}/ui-$kind-$UI_SESSION
 checks=$out/e2e-checks.txt
@@ -36,7 +37,7 @@ case "$kind" in
       ln -sfn "$app_home/$dir" "$UI_STATE/$dir"
     done
     target=$UI_STATE/flatpak-run
-    printf '#!/bin/sh\nexec env -u JAVA_TOOL_OPTIONS flatpak run %s "$@"\n' "$FLATPAK_APP_ID" > "$target"
+    printf '#!/bin/sh\nexec env -u JAVA_TOOL_OPTIONS -u XDG_DATA_HOME -u XDG_CONFIG_HOME -u XDG_CACHE_HOME flatpak run %s "$@"\n' "$FLATPAK_APP_ID" > "$target"
     chmod +x "$target"
     mkdir -p "$HOME/.config/xdg-desktop-portal"
     printf '[preferred]\ndefault=gtk\norg.freedesktop.impl.portal.Secret=gnome-keyring\n' > "$HOME/.config/xdg-desktop-portal/portals.conf"
