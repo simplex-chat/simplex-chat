@@ -742,8 +742,8 @@ testFindLinks = withLate $ \Late {lStore = st} -> do
   holder st "holder" "held" 10000 (at 60) `shouldReturn` Right ()
   let links now = map (\(NameRegistration {nrId = RegistrationId r, nrPayment}, heldBy') -> (r, buSource <$> paymentBalance nrPayment, heldBy')) <$> withTransaction st (\db -> findRegistrations db ownerA now)
       linked rows = filter (\(_, src, h) -> src /= Nothing || h /= Nothing) rows
-  linked <$> links (at 30) `shouldReturn` [("spend", Just (RegistrationId "paying"), Nothing), ("holder", Just (RegistrationId "held"), Nothing), ("held", Nothing, Just (RegistrationId "holder"))]
-  linked <$> links (at 120) `shouldReturn` [("spend", Just (RegistrationId "paying"), Nothing), ("holder", Just (RegistrationId "held"), Nothing)]
+  linked <$> links (at 30) `shouldReturn` [("holder", Just (RegistrationId "held"), Nothing), ("held", Nothing, Just (RegistrationId "holder")), ("spend", Just (RegistrationId "paying"), Nothing)]
+  linked <$> links (at 120) `shouldReturn` [("holder", Just (RegistrationId "held"), Nothing), ("spend", Just (RegistrationId "paying"), Nothing)]
 
 #if defined(dbPostgres)
 -- | Each thread waits here until both arrive, after its unlocked read and before its locked transaction.

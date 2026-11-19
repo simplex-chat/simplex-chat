@@ -347,7 +347,8 @@ CREATE TABLE @name_registrations(
   unregistered_alerted_at TIMESTAMPTZ,
   read_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
-  updated_at TIMESTAMPTZ NOT NULL
+  updated_at TIMESTAMPTZ NOT NULL,
+  created_seq BIGINT GENERATED ALWAYS AS IDENTITY
 );
 
 ALTER TABLE @name_prepaid_codes ADD COLUMN reserved_by TEXT REFERENCES @name_registrations;

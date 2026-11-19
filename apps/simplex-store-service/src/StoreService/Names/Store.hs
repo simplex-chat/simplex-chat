@@ -1157,8 +1157,15 @@ findRegistrations db owner now = do
     holdParams = (PUnpaid, ISPaid, now)
     found :: RegistrationRow :. Only (Maybe Text) -> Either Text (NameRegistration, Maybe RegistrationId)
     found (row :. Only holder) = (\r -> (r, RegistrationId <$> holder)) <$> toRegistration row
-    newestFirst = " ORDER BY r.created_at DESC, r.registration_id DESC"
+    newestFirst = " ORDER BY r.created_at DESC, " <> insertionOrder <> " DESC"
     withBalance = mkQuery " AND EXISTS (SELECT 1 FROM @name_balances b WHERE b.registration_id = r.registration_id AND b.amount > 0)"
+
+insertionOrder :: Query
+#if defined(dbPostgres)
+insertionOrder = "r.created_seq"
+#else
+insertionOrder = "r.rowid"
+#endif
 
 labelHolder :: DB.Connection -> LabelHash -> IO (Maybe RegistrationId)
 labelHolder db lh =
