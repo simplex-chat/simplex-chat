@@ -9,7 +9,6 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.model.ChatController.appPrefs
@@ -32,11 +31,6 @@ expect fun Modifier.onRightClick(action: () -> Unit): Modifier
 expect fun Modifier.desktopPointerHoverIconHand(): Modifier
 
 expect fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier
-
-@Composable
-expect fun Modifier.desktopDrawnBaselines(textLayout: () -> TextLayoutResult?): Modifier
-
-expect fun desktopLineHeightPx(fontSizePx: Float, lineHeightPx: Float): Float
 
 @Composable
 fun Modifier.desktopModifyBlurredState(blurred: MutableState<Boolean>, showMenu: State<Boolean>,): Modifier {

@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
@@ -236,18 +235,15 @@ fun CIFileView(
             file.fileName,
             maxLines = 1
           )
-          val sizeLayout = remember { mutableStateOf<TextLayoutResult?>(null) }
           Text(
             buildAnnotatedString {
               append(formatBytes(file.fileSize))
               append(metaReserve)
             },
-            Modifier.desktopDrawnBaselines { sizeLayout.value },
             color = secondaryColor,
             fontSize = 14.sp,
             maxLines = 1,
-            style = LocalTextStyle.current.merge(bubbleLineHeight(14.sp, 14.sp * INTER_LINE_HEIGHT)),
-            onTextLayout = { sizeLayout.value = it }
+            style = LocalTextStyle.current.merge(bubbleLineHeight(14.sp * INTER_LINE_HEIGHT)).copy(fontSize = 14.sp).withDesktopLineHeight()
           )
         }
       } else {

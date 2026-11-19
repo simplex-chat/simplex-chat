@@ -23,40 +23,34 @@ Fontconfig lists such a font only from a cache written with the system FreeType,
 
 0.9.24 keeps the `SkiaLayerProperties` constructor that Compose 1.8.2 calls for every window; 0.9.37.3 removes it.
 
-## Bubble baselines on Skia m138
+## Line heights on Skia m138
 
-Skia draws a line's glyphs at `floor(leading/2 - ascent + 0.5)` and reports its baseline as `round(descent - ascent + leading) - descent`. Desktop bubbles keep the two equal with whole-pixel line heights (`bubbleLineHeight`).
+m138 adds the paragraph's empty metrics, computed from the text's default style, to every line. They are scaled by the rounded font height `R = round(descent - ascent + leading)` of a font without the text's rasterization settings. When `R` is below the exact height `I`, they exceed the runs' metrics and the line is laid out unlike m132: taller, with another baseline.
 
-m138 adds the paragraph's empty metrics to every line. They are scaled by the rounded font height, so when they exceed the runs' metrics, `descent - ascent` is fractional and the drawn baseline is up to 1 px from the reported one.
+`desktopLineHeight` returns the line height for which m138 lays out the line as m132 did with the requested one. Inter and the code font have no leading.
 
-The empty metrics exceed the runs' metrics when Inter's rounded height `R = round(descent - ascent + leading)` is below its exact height; the line's extent is then `(descent - ascent) * H / R + leading`. `bubbleLineHeight` passes `H = (target - leading) * R / (descent - ascent)` in that case, so the extent is the whole-pixel target (`desktopLineHeightPx`).
-
-`desktopDrawnBaselines` reports the drawn first and last baselines of a bubble text:
+| Line height style | `R >= I` | `R < I` |
+|---|---|---|
+| Proportional | `H` | `(H - leading) * R / (descent - ascent)` |
+| Top, Center, Bottom | `H` | `H - I + R` |
 
 ```mermaid
-flowchart TD
-  A[Text layout] --> B["line descent = line top + line height - reported baseline"]
-  B --> C{"descent = empty descent of Inter at the style's size?"}
-  C -->|yes| D[ascent = empty ascent]
-  C -->|no| E[ascent = descent - line height]
-  D --> F["drawn = line top + floor(leading/2 - ascent + 0.5)"]
-  E --> F
-  F --> G["FirstBaseline, LastBaseline += drawn - round(reported)"]
+flowchart LR
+  S["styles and values derived from them: unchanged"] --> T["each Text: lineHeight = desktopLineHeight(fontSize, lineHeight, fontFamily, lineHeightStyle)"]
+  T --> K["Skia m138: m132 line geometry"]
 ```
 
-Texts:
-- `MarkdownText`
-- time, TTL and deleted timestamp in `CIMetaView`
-- `HeaderText` and the quote sender in `FramedItemView`
-- deleted, integrity error, marked deleted, decryption error, group invitation and file size texts
+The adjusted value is passed only to `Text`, `BasicText` and `BasicTextField`; spacers, heading and code line heights in `MarkdownBlocks` keep using the unadjusted style.
 
 ## Scope
 
 - Desktop builds on all OSes use Skia m138; Android APKs are unchanged.
-- `desktopDrawnBaselines` is the modifier itself on Android, and acts on desktop only under `LocalBubbleLayout` for Inter texts with a line height in sp.
+- `desktopLineHeight` returns the line height unchanged on Android, and on desktop for fonts other than Inter and the monospace font Compose resolves for `FontFamily.Monospace`.
+- Every text that sets a line height uses it.
 - The rule applies only to 0.9.4.2, so a Compose update that brings another Skiko version is not overridden.
 - Tests:
   - `FallbackFontTest` builds a fontconfig cache for one BDF font with `fc-cache`, then lays out U+2603 in a child JVM.
   - `BubbleLayoutTest.timeDrawnOnTextBaseline` checks the drawn rows of text and time at font scales 0.7 to 1.5.
   - `BubbleLayoutTest.linesDrawnWholeLineHeightApart` checks that two lines are drawn the whole-pixel line height apart at the same scales.
+  - The desktop snapshots are compared with the references rendered with m132.
 - `Dockerfile.build` installs `fontconfig`, which provides `fc-cache` to the test in CI.

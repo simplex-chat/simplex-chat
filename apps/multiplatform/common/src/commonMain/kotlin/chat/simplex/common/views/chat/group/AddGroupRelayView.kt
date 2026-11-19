@@ -129,7 +129,7 @@ private fun AddGroupRelayLayout(
           if (count == 0) generalGetString(MR.strings.no_relays_selected)
           else String.format(generalGetString(MR.strings.num_relays_selected), count),
           color = MaterialTheme.colors.secondary,
-          lineHeight = 18.sp,
+          lineHeight = desktopLineHeight(14.sp, 18.sp),
           fontSize = 14.sp
         )
       }

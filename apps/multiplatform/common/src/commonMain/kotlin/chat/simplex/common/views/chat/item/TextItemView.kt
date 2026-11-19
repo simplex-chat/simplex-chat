@@ -247,6 +247,7 @@ fun MarkdownText (
     }
     return
   }
+  val drawnStyle = style.withDesktopLineHeight()
   val reserve = meta?.let {
     if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current)) {
       AnnotatedString("\n")
@@ -306,15 +307,10 @@ fun MarkdownText (
         if (reserve != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
-      val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
-      val textModifier = modifier.desktopDrawnBaselines { layoutResult.value }
       if (textSelection != null) {
-        SelectableText(annotatedText, style = style, modifier = textModifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = { r ->
-          layoutResult.value = r
-          textSelection.onTextLayoutResult(r)
-        })
+        SelectableText(annotatedText, style = drawnStyle, modifier = modifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = textSelection.onTextLayoutResult)
       } else {
-        Text(annotatedText, style = style, modifier = textModifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf(), onTextLayout = { layoutResult.value = it })
+        Text(annotatedText, style = drawnStyle, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
       }
     } else {
       var selectableEnd = 0
@@ -473,7 +469,6 @@ fun MarkdownText (
         textSelection?.onTextLayoutResult?.invoke(r)
       }
       val textModifier = modifier
-        .desktopDrawnBaselines { layoutResult.value }
         .then(textSelection?.positionModifier ?: Modifier)
         .then(if (hiddenSecrets.isEmpty()) Modifier else Modifier.drawWithContent {
           drawContent()
@@ -481,7 +476,7 @@ fun MarkdownText (
         })
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
-        ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = textModifier.pointerHoverIcon(icon.value), softWrap = softWrap, maxLines = maxLines, overflow = overflow,
+        ClickableText(annotatedText, style = drawnStyle, selectionRange = clampedRange, modifier = textModifier.pointerHoverIcon(icon.value), softWrap = softWrap, maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
             if (hasLinks) {
               val withAnnotation: (String, (Range<String>) -> Unit) -> Unit = { tag, f ->
@@ -542,9 +537,9 @@ fun MarkdownText (
         )
       } else {
         if (textSelection != null) {
-          SelectableText(annotatedText, style = style, modifier = textModifier, softWrap = softWrap, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayout)
+          SelectableText(annotatedText, style = drawnStyle, modifier = textModifier, softWrap = softWrap, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayout)
         } else {
-          Text(annotatedText, style = style, modifier = textModifier, softWrap = softWrap, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf(), onTextLayout = onTextLayout)
+          Text(annotatedText, style = drawnStyle, modifier = textModifier, softWrap = softWrap, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf(), onTextLayout = onTextLayout)
         }
       }
     }

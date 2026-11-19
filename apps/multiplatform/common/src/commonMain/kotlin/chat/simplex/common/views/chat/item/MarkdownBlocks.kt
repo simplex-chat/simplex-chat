@@ -125,7 +125,7 @@ fun MarkdownBlocks(
           entries.forEachIndexed { j, (entry, level) ->
             if (j > 0) Spacer(Modifier.height(emptyLinesHeight(entries[j - 1].first.content.to, entry.content.from, between = true)))
             Row(Modifier.padding(start = 20.dp * level)) {
-              Text(entry.number ?: "•", Modifier.widthIn(min = 14.dp), style = style)
+              Text(entry.number ?: "•", Modifier.widthIn(min = 14.dp), style = style.withDesktopLineHeight())
               Spacer(Modifier.width(6.dp))
               BlockText(start + j, entry.content, style, Modifier.weight(1f, fill = false))
             }

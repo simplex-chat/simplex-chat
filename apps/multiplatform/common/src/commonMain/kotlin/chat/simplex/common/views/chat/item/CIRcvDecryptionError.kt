@@ -12,7 +12,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.desktopDrawnBaselines
+import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.ui.theme.appColors
 import chat.simplex.common.views.helpers.AlertManager
@@ -143,14 +143,11 @@ fun DecryptionErrorItemFixButton(
       Column(
         verticalArrangement = Arrangement.spacedBy(2.dp)
       ) {
-        val errorLayout = remember { mutableStateOf<TextLayoutResult?>(null) }
         Text(
           buildAnnotatedString {
             withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
           },
-          Modifier.desktopDrawnBaselines { errorLayout.value },
-          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red)),
-          onTextLayout = { errorLayout.value = it }
+          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red)).withDesktopLineHeight()
         )
         Row {
           Icon(
@@ -160,7 +157,6 @@ fun DecryptionErrorItemFixButton(
           )
           Spacer(Modifier.padding(2.dp))
           val secondaryColor = MaterialTheme.colors.secondary
-          val fixLayout = remember { mutableStateOf<TextLayoutResult?>(null) }
           Text(
             buildAnnotatedString {
               append(generalGetString(MR.strings.fix_connection))
@@ -169,10 +165,8 @@ fun DecryptionErrorItemFixButton(
                 withStyle(reserveTimestampStyle) { append("    ") } // for icon
               }
             },
-            Modifier.desktopDrawnBaselines { fixLayout.value },
             color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-            style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp, 16.sp * INTER_LINE_HEIGHT)),
-            onTextLayout = { fixLayout.value = it }
+            style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT)).withDesktopLineHeight()
           )
         }
       }
@@ -188,7 +182,6 @@ fun DecryptionErrorItem(
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false, showTimestamp = true) }) { inlineMeta ->
     DecryptionErrorCard(onClick, inlineMeta) {
       val secondaryColor = MaterialTheme.colors.secondary
-      val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
       Text(
         buildAnnotatedString {
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
@@ -196,9 +189,7 @@ fun DecryptionErrorItem(
             withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true, breakBefore = true)) }
           }
         },
-        Modifier.desktopDrawnBaselines { layout.value },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red)),
-        onTextLayout = { layout.value = it }
+        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red)).withDesktopLineHeight()
       )
     }
   }

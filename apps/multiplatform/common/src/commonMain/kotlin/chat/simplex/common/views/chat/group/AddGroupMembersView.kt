@@ -274,7 +274,7 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
       Text(
         String.format(generalGetString(MR.strings.num_contacts_selected), selectedContactsCount),
         color = MaterialTheme.colors.secondary,
-        lineHeight = 18.sp,
+        lineHeight = desktopLineHeight(14.sp, 18.sp),
         fontSize = 14.sp
       )
       Box(
@@ -283,7 +283,7 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
         Text(
           stringResource(MR.strings.clear_contacts_selection_button),
           color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-          lineHeight = 18.sp,
+          lineHeight = desktopLineHeight(14.sp, 18.sp),
           fontSize = 14.sp,
         )
       }
@@ -291,7 +291,7 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
       Text(
         stringResource(MR.strings.no_contacts_selected),
         color = MaterialTheme.colors.secondary,
-        lineHeight = 18.sp,
+        lineHeight = desktopLineHeight(14.sp, 18.sp),
         fontSize = 14.sp,
       )
     }

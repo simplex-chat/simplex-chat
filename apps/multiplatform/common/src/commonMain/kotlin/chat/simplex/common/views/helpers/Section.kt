@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.text.font.FontWeight
+import chat.simplex.common.platform.desktopLineHeight
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.platform.windowWidth
 import chat.simplex.common.ui.theme.*
@@ -321,7 +322,7 @@ fun SectionTextFooter(text: AnnotatedString, textAlign: TextAlign = TextAlign.St
     text,
     Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),
     color = color,
-    lineHeight = 18.sp,
+    lineHeight = desktopLineHeight(14.sp, 18.sp),
     fontSize = 14.sp,
     textAlign = textAlign
   )

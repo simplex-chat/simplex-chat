@@ -197,7 +197,7 @@ fun GroupLinkLayout(
     Text(
       stringResource(if (isChannel) MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect else MR.strings.you_can_share_group_link_anybody_will_be_able_to_connect),
       Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 12.dp),
-      lineHeight = 22.sp
+      lineHeight = desktopLineHeight(LocalTextStyle.current.fontSize, 22.sp)
     )
     Column(
       Modifier.fillMaxWidth(),

@@ -866,7 +866,7 @@ fun ServersErrorFooter(errStr: String) {
     Text(
       errStr,
       color = MaterialTheme.colors.secondary,
-      lineHeight = 18.sp,
+      lineHeight = desktopLineHeight(14.sp, 18.sp),
       fontSize = 14.sp
     )
   }
@@ -890,7 +890,7 @@ fun ServersWarningFooter(warnStr: String) {
     Text(
       warnStr,
       color = MaterialTheme.colors.secondary,
-      lineHeight = 18.sp,
+      lineHeight = desktopLineHeight(14.sp, 18.sp),
       fontSize = 14.sp
     )
   }

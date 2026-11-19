@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
-import chat.simplex.common.platform.desktopDrawnBaselines
+import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
@@ -69,16 +69,14 @@ private fun MergedMarkedDeletedText(chatsCtx: ChatModel.ChatsContext, chatItem: 
     markedDeletedText(chatItem, chatInfo)
   }
 
-  val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
   Text(
     buildAnnotatedString {
       withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(text) }
     },
-    style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleLineHeight(MaterialTheme.typography.body1.fontSize, 22.sp)),
-    modifier = Modifier.padding(end = 8.dp).desktopDrawnBaselines { layout.value },
+    style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleLineHeight(22.sp)).withDesktopLineHeight(),
+    modifier = Modifier.padding(end = 8.dp),
     maxLines = 1,
     overflow = TextOverflow.Ellipsis,
-    onTextLayout = { layout.value = it }
   )
 }
 

@@ -9,6 +9,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.desktopLineHeight
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.common.views.helpers.centeredIn
@@ -61,7 +62,7 @@ fun CIChatLinkHeader(
           descr,
           color = MaterialTheme.colors.secondary,
           fontSize = 13.sp,
-          lineHeight = 18.sp,
+          lineHeight = desktopLineHeight(13.sp, 18.sp),
           maxLines = 2,
           overflow = TextOverflow.Ellipsis,
         )
@@ -70,7 +71,7 @@ fun CIChatLinkHeader(
         chatLink.infoLine(signed = ownerSig != null),
         color = MaterialTheme.colors.secondary,
         fontSize = 13.sp,
-        lineHeight = 18.sp,
+        lineHeight = desktopLineHeight(13.sp, 18.sp),
       )
       Text(
         stringResource(MR.strings.tap_to_open),

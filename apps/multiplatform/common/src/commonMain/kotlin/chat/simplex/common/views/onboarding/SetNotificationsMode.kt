@@ -96,7 +96,7 @@ fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, descr
         Modifier.align(Alignment.CenterHorizontally),
         fontSize = 15.sp,
         color = MaterialTheme.colors.onBackground,
-        lineHeight = 24.sp,
+        lineHeight = desktopLineHeight(15.sp, 24.sp),
         textAlign = TextAlign.Center
       )
     }

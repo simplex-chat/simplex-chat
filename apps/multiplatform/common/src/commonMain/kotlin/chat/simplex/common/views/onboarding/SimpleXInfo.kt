@@ -79,7 +79,7 @@ private fun SimpleXInfoDesktop(chatModel: ChatModel) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.onboarding_be_free), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
           }
-          Text(stringResource(MR.strings.onboarding_private_and_secure), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary, lineHeight = 25.sp, textAlign = TextAlign.Center)
+          Text(stringResource(MR.strings.onboarding_private_and_secure), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary, lineHeight = desktopLineHeight(MaterialTheme.typography.h3.fontSize, 25.sp), textAlign = TextAlign.Center)
           Spacer(Modifier.height(DEFAULT_PADDING_HALF))
           ReadableText(MR.strings.onboarding_first_network, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.secondary))
         }
@@ -130,7 +130,7 @@ fun SimpleXInfoLayout(
           style = MaterialTheme.typography.h1,
           fontWeight = FontWeight.Bold,
           textAlign = TextAlign.Center,
-          lineHeight = 42.sp,
+          lineHeight = desktopLineHeight(MaterialTheme.typography.h1.fontSize, 42.sp),
           modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
         )
         Text(
@@ -138,7 +138,7 @@ fun SimpleXInfoLayout(
           style = MaterialTheme.typography.h3,
           color = MaterialTheme.colors.secondary,
           fontWeight = FontWeight.Medium,
-          lineHeight = 25.sp,
+          lineHeight = desktopLineHeight(MaterialTheme.typography.h3.fontSize, 25.sp),
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(top = 14.dp)
         )
@@ -147,7 +147,7 @@ fun SimpleXInfoLayout(
           style = MaterialTheme.typography.body2,
           color = MaterialTheme.colors.secondary,
           textAlign = TextAlign.Center,
-          lineHeight = 20.sp,
+          lineHeight = desktopLineHeight(MaterialTheme.typography.body2.fontSize, 20.sp),
           modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
         )
       }

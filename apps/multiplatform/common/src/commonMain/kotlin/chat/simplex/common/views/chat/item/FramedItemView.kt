@@ -99,13 +99,10 @@ fun FramedItemView(
         Column(
           horizontalAlignment = Alignment.Start
         ) {
-          val senderLayout = remember { mutableStateOf<TextLayoutResult?>(null) }
           Text(
             sender,
-            Modifier.desktopDrawnBaselines { senderLayout.value },
-            style = quoteBaseStyle.copy(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary).merge(chatTextStyle(13.5.sp)),
-            maxLines = 1,
-            onTextLayout = { senderLayout.value = it }
+            style = quoteBaseStyle.copy(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary).merge(chatTextStyle(13.5.sp)).withDesktopLineHeight(),
+            maxLines = 1
           )
           ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
         }
@@ -128,16 +125,14 @@ fun FramedItemView(
 
   @Composable
   fun HeaderText(caption: String, italic: Boolean, fontSize: TextUnit = 12.sp, modifier: Modifier = Modifier) {
-    val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
     Text(
-      modifier = modifier.desktopDrawnBaselines { layout.value },
-      onTextLayout = { layout.value = it },
+      modifier = modifier,
       text = buildAnnotatedString {
         withStyle(SpanStyle(fontSize = fontSize, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
           append(caption)
         }
       },
-      style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(chatTextStyle(fontSize, MaterialTheme.colors.secondary)),
+      style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(chatTextStyle(fontSize, MaterialTheme.colors.secondary)).withDesktopLineHeight(),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
@@ -395,7 +390,7 @@ fun FramedItemView(
                     Text(
                       metaReserveCopy(ci.meta, chatTTL, encrypted = null, signedFileVerified = null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp),
                       color = Color.Transparent,
-                      style = MaterialTheme.typography.body1.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize))
+                      style = MaterialTheme.typography.body1.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize)).withDesktopLineHeight()
                     )
                   }
                 }

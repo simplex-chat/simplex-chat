@@ -3,11 +3,15 @@ package chat.simplex.common.platform
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.*
 import chat.simplex.common.simplexWindowState
+import chat.simplex.common.ui.theme.Inter
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import com.jthemedetecor.OsThemeDetector
@@ -15,10 +19,14 @@ import com.russhwolf.settings.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.desc
+import org.jetbrains.skia.FontMgr
+import org.jetbrains.skia.Typeface
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.*
+import kotlin.math.roundToInt
+import org.jetbrains.skia.Font as SkFont
 
 @Composable
 actual fun font(name: String, res: String, weight: FontWeight, style: FontStyle): Font =
@@ -122,3 +130,44 @@ actual fun isRtl(text: CharSequence): Boolean {
 
 actual fun ImageResource.toComposeImageBitmap(): ImageBitmap? =
   image.toComposeImageBitmap()
+
+@Composable
+actual fun desktopLineHeight(fontSize: TextUnit, lineHeight: TextUnit, fontFamily: FontFamily?, lineHeightStyle: LineHeightStyle?): TextUnit {
+  val typeface = when (fontFamily) {
+    null, Inter -> interTypeface
+    FontFamily.Monospace -> monospaceTypeface
+    else -> null
+  }
+  if (!fontSize.isSp || !lineHeight.isSp || typeface == null) return lineHeight
+  val density = LocalDensity.current
+  val lineHeightPx = with(density) { lineHeight.toPx() }
+  val metrics = SkFont(typeface, with(density) { fontSize.toPx() }).use { it.metrics }
+  val fontHeight = metrics.descent - metrics.ascent + metrics.leading
+  val roundedFontHeight = fontHeight.roundToInt()
+  if (roundedFontHeight >= fontHeight) return lineHeight
+  val topRatio = when ((lineHeightStyle ?: LineHeightStyle.Default).alignment) {
+    LineHeightStyle.Alignment.Top -> 0f
+    LineHeightStyle.Alignment.Center -> 0.5f
+    LineHeightStyle.Alignment.Bottom -> 1f
+    else -> -1f
+  }
+  val adjustedPx = if (topRatio >= 0f) {
+    lineHeightPx - fontHeight + roundedFontHeight
+  } else {
+    (lineHeightPx - metrics.leading) * roundedFontHeight / (metrics.descent - metrics.ascent)
+  }
+  return with(density) { adjustedPx.toSp() }
+}
+
+private val interTypeface: Typeface? by lazy { FontMgr.default.makeFromFile(MR.fonts.inter_regular.file.absolutePath) }
+
+private val monospaceTypeface: Typeface? by lazy {
+  val families = when {
+    desktopPlatform.isLinux() -> listOf("Noto Sans Mono", "DejaVu Sans Mono", "Consolas")
+    desktopPlatform.isWindows() -> listOf("Consolas")
+    else -> listOf(".AppleSystemUIFontMonospaced", "Menlo", "Courier")
+  }
+  families.firstNotNullOfOrNull { family ->
+    FontMgr.default.matchFamily(family).use { set -> if (set.count() > 0) set.matchStyle(org.jetbrains.skia.FontStyle.NORMAL) else null }
+  }
+}

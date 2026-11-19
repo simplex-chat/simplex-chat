@@ -337,7 +337,7 @@ class AlertManager {
                     if (profileBadge != null) mapOf("nameBadge" to nameBadgeInline(profileBadge, nameFontSize)) else emptyMap(),
                   textAlign = TextAlign.Center,
                   style = MaterialTheme.typography.h4,
-                  lineHeight = 20.sp,
+                  lineHeight = desktopLineHeight(MaterialTheme.typography.h4.fontSize, 20.sp),
                   fontWeight = FontWeight.SemiBold,
                   maxLines = 2,
                   modifier = Modifier.fillMaxWidth()

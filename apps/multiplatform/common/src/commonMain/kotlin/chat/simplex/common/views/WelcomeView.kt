@@ -270,7 +270,7 @@ private fun CreateFirstProfileMobile(chatModel: ChatModel, close: () -> Unit) {
           style = MaterialTheme.typography.h3,
           fontWeight = FontWeight.Medium,
           color = MaterialTheme.colors.secondary,
-          lineHeight = 25.sp,
+          lineHeight = desktopLineHeight(MaterialTheme.typography.h3.fontSize, 25.sp),
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(top = 14.dp)
         )
@@ -279,7 +279,7 @@ private fun CreateFirstProfileMobile(chatModel: ChatModel, close: () -> Unit) {
           style = MaterialTheme.typography.body2,
           color = MaterialTheme.colors.secondary,
           textAlign = TextAlign.Center,
-          lineHeight = 20.sp,
+          lineHeight = desktopLineHeight(MaterialTheme.typography.body2.fontSize, 20.sp),
           modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
         )
         Spacer(Modifier.height(DEFAULT_PADDING_HALF))
@@ -324,7 +324,7 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.onboarding_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
           }
-          Text(stringResource(MR.strings.onboarding_on_your_phone), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary, lineHeight = 25.sp, textAlign = TextAlign.Center)
+          Text(stringResource(MR.strings.onboarding_on_your_phone), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary, lineHeight = desktopLineHeight(MaterialTheme.typography.h3.fontSize, 25.sp), textAlign = TextAlign.Center)
           Spacer(Modifier.height(DEFAULT_PADDING))
           ReadableText(MR.strings.onboarding_no_account, TextAlign.Center, style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.secondary))
           Spacer(Modifier.height(DEFAULT_PADDING))
@@ -446,7 +446,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
         TextFieldDefaults.TextFieldDecorationBox(
           value = name.value,
           innerTextField = innerTextField,
-          placeholder = if (placeholder != "") {{ Text(placeholder, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp)) }} else null,
+          placeholder = if (placeholder != "") {{ Text(placeholder, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp).withDesktopLineHeight()) }} else null,
           contentPadding = PaddingValues(),
           label = null,
           visualTransformation = VisualTransformation.None,

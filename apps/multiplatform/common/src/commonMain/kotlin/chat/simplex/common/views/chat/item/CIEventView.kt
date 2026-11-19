@@ -10,11 +10,12 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
+import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.*
 
 @Composable
 fun CIEventView(text: AnnotatedString) {
-  Text(text, Modifier.padding(chatEventPadding()), style = chatEventTextStyle(MaterialTheme.typography.body1.copy(lineHeight = 22.sp)), maxLines = if (LocalTerminalLayout.current) Int.MAX_VALUE else 4)
+  Text(text, Modifier.padding(chatEventPadding()), style = chatEventTextStyle(MaterialTheme.typography.body1.copy(lineHeight = 22.sp)).withDesktopLineHeight(), maxLines = if (LocalTerminalLayout.current) Int.MAX_VALUE else 4)
 }
 
 @Composable

@@ -1244,7 +1244,7 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
     } else {
       Text(slide.heading, style = MaterialTheme.typography.h4, fontWeight = FontWeight.Medium)
       if (slide.info != null) {
-        Text(slide.info, Modifier.padding(top = 4.dp), lineHeight = 24.sp)
+        Text(slide.info, Modifier.padding(top = 4.dp), lineHeight = desktopLineHeight(LocalTextStyle.current.fontSize, 24.sp))
       }
     }
   }
@@ -1267,13 +1267,13 @@ fun GetStakeView(showFirstImage: Boolean, inCenterOfWindow: Boolean = false, clo
         }
       },
       Modifier.padding(top = if (showFirstImage) 8.dp else 0.dp),
-      lineHeight = 24.sp
+      lineHeight = desktopLineHeight(LocalTextStyle.current.fontSize, 24.sp)
     )
 
     getStakeSlides.drop(1).forEach { slide ->
       Column(Modifier.padding(top = DEFAULT_PADDING * 1.5f)) {
         slideImage(slide)
-        Text(slide.text, Modifier.padding(top = 8.dp), lineHeight = 24.sp)
+        Text(slide.text, Modifier.padding(top = 8.dp), lineHeight = desktopLineHeight(LocalTextStyle.current.fontSize, 24.sp))
       }
     }
 

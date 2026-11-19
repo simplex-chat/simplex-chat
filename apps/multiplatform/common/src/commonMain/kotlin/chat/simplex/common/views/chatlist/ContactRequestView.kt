@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.getTimestampText
@@ -45,7 +46,7 @@ fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
           fontSize = 15.sp,
           color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight,
           lineHeight = 21.sp
-        )
+        ).withDesktopLineHeight()
       )
     }
     val ts = getTimestampText(contactRequest.contactRequest.updatedAt)

@@ -285,7 +285,7 @@ fun ModalData.TagListEditor(
         Text(
           generalGetString(MR.strings.duplicated_list_error),
           color = if (showErrorMessage) colors.secondary else Color.Transparent,
-          lineHeight = 18.sp,
+          lineHeight = desktopLineHeight(14.sp, 18.sp),
           fontSize = 14.sp
         )
       }
@@ -383,7 +383,7 @@ fun TagListNameTextField(name: MutableState<String>, showError: State<Boolean>) 
         value = name.value,
         innerTextField = innerTextField,
         placeholder = {
-          Text(generalGetString(MR.strings.list_name_field_placeholder), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp))
+          Text(generalGetString(MR.strings.list_name_field_placeholder), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp).withDesktopLineHeight())
         },
         contentPadding = PaddingValues(),
         label = null,

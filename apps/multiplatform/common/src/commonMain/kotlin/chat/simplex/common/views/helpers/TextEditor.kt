@@ -68,7 +68,7 @@ fun TextEditor(
       onValueChange = { value.value = it },
       modifier = if (focusRequester == null) textFieldModifier else textFieldModifier.focusRequester(focusRequester),
       enabled = enabled,
-      textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
+      textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp).withDesktopLineHeight(),
       keyboardOptions = KeyboardOptions(
         capitalization = KeyboardCapitalization.None,
         autoCorrect = false
@@ -80,7 +80,7 @@ fun TextEditor(
         TextFieldDefaults.TextFieldDecorationBox(
           value = value.value,
           innerTextField = innerTextField,
-          placeholder = if (placeholder != null) {{ Text(placeholder, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp)) }} else null,
+          placeholder = if (placeholder != null) {{ Text(placeholder, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp).withDesktopLineHeight()) }} else null,
           contentPadding = PaddingValues(),
           label = null,
           visualTransformation = VisualTransformation.None,
