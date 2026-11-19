@@ -426,93 +426,77 @@ flowchart LR
 ## Tests
 
 - desktopTest:
-  - temporary directory selection;
-  - settings writes;
-  - cryptor states: legacy, migrate, decrypted, key missing, unavailable, recovery (in-memory `SecretStore`);
-  - notification map: replacement, cancel by chat, by user, by call and all; escaping with and without `body-markup`; hints per installation;
-  - focus loss → `AppLock.appWasHidden` under the Tao shell;
-  - file chooser result URIs → `File`, including percent-encoded names;
-  - dark-mode values 0, 1, 2 and the GTK fallback;
-  - crash → window recreated;
-  - tray activation → window shown;
-  - `Dispatchers.Main` ordering: a block launched from the Tao thread runs after the current block;
-  - desktop entry ID and WM class per installation;
-  - `$HOME` resolution;
-  - updater choice per installation;
-  - rendering defaults per renderer name.
+  - `LinuxCryptorTest`: legacy, encrypted, key reuse and caching, store absent, store failing, key missing, wrong key, malformed key, delete, separate aliases (in-memory `SecretStore`);
+  - `LinuxNotificationsTest`: markup escaping, action keys, RGBA `image-data`, desktop entry ID per installation;
+  - `LinuxFilesTest`: extension matching, chooser patterns, non-ASCII native paths, `$HOME` resolution;
+  - `LinuxThemeTest`: GTK theme names;
+  - `LinuxRenderingTest`: software and GPU renderer names;
+  - `SingleInstanceTest`: activation token in the signal file;
+  - `FontsTest`: the fontconfig file that rejects bitmap fonts.
 - CI:
-  - `desktop-linux`: X11 smoke test under Xvfb with Tao on X11, typing paths into the GTK file dialog;
-  - `-Dskiko.renderApi=SOFTWARE` removed from the harness;
+  - `desktop-linux`: native libraries built on the runner; the X11 smoke test under Xvfb with Tao on X11, typing paths into the GTK file dialog;
+  - `desktop-linux` with `e2e`: section End-to-end tests;
   - Android unit tests and `android-emu` dispatched on the toolchain commit.
 
 ## End-to-end tests
 
-Workflow `desktop-linux-e2e.yml` in `sh-agents/simplex-chat`, started by hand on the branch.
+`desktop-linux.yml` with the input `e2e`, in `sh-agents/simplex-chat`, started by hand on the branch.
 
 ```mermaid
 flowchart LR
-  Core[core library: build-lib-linux.sh] --> Native[build-native-linux.sh]
-  Native --> Deb[make-deb-linux.sh: deb for 22.04 and 24.04]
-  Native --> Img[make-appimage-linux.sh: AppImage]
-  Img --> Fp[flatpak-builder: local Flathub manifest]
-  Deb --> M[test matrix]
-  Img --> M
-  Fp --> M
+  Core[job core: build-core.sh] --> Pkg[job packages: make-deb-linux.sh SKIP_CORE_BUILD, make-appimage-linux.sh]
+  Pkg --> Meta[package metadata checks]
+  Pkg --> M[job e2e: 2 packages x 3 sessions]
   M --> Art[artifacts: screenshots, logs, checks per cell]
 ```
 
-Matrix:
+Matrix, Ubuntu 24.04 runner:
 
-| Package | Systems |
+| Package | Sessions |
 |---|---|
-| deb | Ubuntu 22.04, Ubuntu 24.04, Debian 12, Debian 13 |
-| AppImage | Ubuntu 22.04, Ubuntu 24.04, Debian 12, Debian 13, Fedora, Arch |
-| Flatpak | runner host, Ubuntu 24.04 |
+| deb, installed with apt | x11, wayland, xwayland |
+| AppImage, `APPIMAGE_EXTRACT_AND_RUN=1` | x11, wayland, xwayland |
 
-Sessions per cell:
+Sessions (`UI_SESSION` of `ui`):
 
 | Session | Display | Input and capture |
 |---|---|---|
-| Wayland | headless sway: `WLR_BACKENDS=headless`, `WLR_RENDERER=pixman`, Mesa llvmpipe for EGL | grim, wtype, `swaymsg seat` pointer |
-| XWayland | headless sway, `NUCLEUS_TAO_LINUX_RENDERER=x11` | grim, xdotool |
-| X11 | Xvfb with openbox | `import`, xdotool |
+| wayland | headless sway: `WLR_BACKENDS=headless`, `WLR_RENDERER=pixman`, Mesa llvmpipe for EGL | grim, wtype, `swaymsg seat` pointer |
+| xwayland | headless sway with `xwayland force`, the app with `DISPLAY` of Xwayland and `GDK_BACKEND=x11` | grim, wtype, `swaymsg seat` pointer |
+| x11 | Xvfb with openbox | `import`, xdotool |
 
-Session services started per cell:
+Session services per cell, inside `dbus-run-session`:
 
-- `dbus-daemon --session`;
-- `xdg-desktop-portal` with `xdg-desktop-portal-gtk`;
-- mako as the notification server (Wayland sessions), dunst (X11);
-- swaybar with tray as the StatusNotifierWatcher host (Wayland sessions), a test watcher (X11);
-- `gnome-keyring-daemon --unlock` with a test password.
+- `gnome-keyring-daemon --unlock --components=secrets`;
+- `desktop-services.py`: StatusNotifierWatcher with `IsStatusNotifierHostRegistered` true, and `org.freedesktop.Notifications`; each call logged as a JSON line.
 
-Checks per cell:
+Package metadata checks (job packages):
 
 | Check | Evidence |
 |---|---|
-| package installs (`apt install ./*.deb`), AppImage runs, Flatpak runs | exit codes, `app.log` |
-| start, onboarding, chat list | OCR on screenshots |
-| native Wayland surface | `swaymsg -t get_tree`: `shell` is `xdg_shell` (Wayland), `xwayland` (XWayland) |
-| app ID | `app_id` or WM class equals the desktop entry ID of the package |
-| GL renderer | renderer name in `app.log` |
-| message notification | `makoctl history` / `dunstctl history`: app name, title, `desktop-entry` |
-| notification click opens the chat | `makoctl invoke` / `dunstctl action`, then OCR of the chat title |
-| call notification buttons, withdrawal on read | notification actions; history after reading |
-| tray icon and activation | `busctl --user` call of `Activate` on the item; window shown |
-| dark mode | `gsettings set org.gnome.desktop.interface color-scheme prefer-dark`; background colour on the screenshot; `pgrep gsettings` empty |
-| keyring | `secret-tool search application chat.simplex.app` lists the keys; `settings.properties` holds ciphertext only |
-| keyring absent | the cell without `gnome-keyring-daemon`: start without keyring, warning shown |
-| file dialog | GTK or portal dialog; path typed; image previewed and sent |
-| clipboard image paste, file drop | image pasted into the compose field; preview shown |
-| video playback, voice recording | VLC playback frame on the screenshot; recording file length |
-| link from a second launch | `simplex <link>` while running; link opened in the running window |
-| crash recovery | a test hook throws in composition; alert shown, window recreated |
-| dead keys and non-Latin layout | keymap switched with `swaymsg input` / `setxkbmap`; typed text by OCR |
-| no child processes | `pgrep -P <app pid>` lists only VLC and the browser when started |
-| temporary files | files under `$XDG_CACHE_HOME/simplex/tmp` |
+| deb `Maintainer` | `dpkg-deb -I` |
+| deb entry `Name=SimpleX Chat`, `StartupWMClass=simplex-simplex` | the entry inside the deb |
+| AppImage update information and `.zsync` | the AppImage's `gh-releases-zsync` string, the `.zsync` file |
 
-- Test backend: `backend.sh` as in `desktop-linux`, for messages, calls and links between two app profiles.
-- Each cell uploads its screenshots, OCR text, `app.log`, `checks.txt`, notification history and `swaymsg` tree.
-- The job summary lists every check per cell.
+Checks per cell (`e2e.sh`):
+
+| Check | Evidence |
+|---|---|
+| package installs and starts; onboarding, both toolbar layouts, images picked in the GTK dialog and sent | `smoke-test.sh` checks on OCR |
+| native Wayland surface | `swaymsg -t get_tree`: `shell` is `xdg_shell` (wayland), `xwayland` (xwayland) |
+| window identity | `app_id` or WM class equals the package's desktop entry ID |
+| GL renderer | "OpenGL renderer:" in `app.log` |
+| no `gsettings` process | `pgrep -x gsettings` |
+| keyring | `settings.properties` holds the passphrase as ciphertext; `secret-tool lookup` finds the key; config directory mode 700 |
+| tray | `RegisterStatusNotifierItem` in the services log |
+
+Later iterations:
+
+- message and call notifications with clicks and withdrawal, through the test backend;
+- tray activation, dark mode switching, keyring absent;
+- clipboard image paste, file drop, video, voice;
+- second-launch links, crash recovery, dead keys and non-Latin layouts;
+- Debian, Fedora, Arch containers and the Flatpak.
 
 ## Commits
 
@@ -523,10 +507,11 @@ Checks per cell:
 5. `desktop: native Wayland window on Linux`
 6. `desktop: native file dialogs, clipboard, drag and drop and video on Linux`
 7. `desktop: notifications with actions on Linux`
-8. `desktop: tray icon on all Linux desktops`
-9. `desktop: follow the system dark mode on Linux`
-10. `desktop: store passphrases in the system keyring on Linux`
-11. `desktop: smooth rendering without a GPU on Linux`
-12. `desktop: consistent Linux desktop entries and AppImage updates`
-13. `ci: end-to-end tests of Linux packages under Wayland and X11`
-14. `docs: Linux desktop specs and user guide`
+8. `desktop: tray icon on Linux`
+9. `desktop: follow the system dark mode on Linux without a helper process`
+10. `desktop: keep the passphrase and passcodes encrypted with a key in the system keyring on Linux`
+11. `desktop: flat bars with software rendering on Linux`
+12. `desktop: one dock icon and named menu entries on Linux, AppImage portable home and update information`
+13. `ci: build the Linux native libraries and use the GTK file dialog in the desktop smoke test`
+14. `ci: deb and AppImage end to end under X11, Wayland and XWayland`
+15. `docs: Linux window, notifications, dark mode and keyring`
