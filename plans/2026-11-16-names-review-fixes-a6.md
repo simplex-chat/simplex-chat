@@ -4,12 +4,10 @@ Branch `ep/names-fixes-a6`, from `ep/names-review-fixes` at 16114b784. Decisions
 
 ## A1 leftovers
 
-simplexmq: cabal.project pins evgeny-simplex/simplexmq e684f063a, which adds:
+simplexmq: cabal.project pins evgeny-simplex/simplexmq 6a1e2aefc, the commit of simplex-chat/simplexmq#2083, which adds:
 - USDCents: Num, Enum, Real, Integral, FromField and ToField;
 - FromField and ToField for Address, LabelHash and RecoverableSignature;
 - Ord LabelHash.
-
-cabal.project then pins A2's 5cb1893c1, a fast-forward of e684f063a for A2-3 and A2-17, in lines identical to A2's.
 
 scripts/nix/sha256map.nix changes once the commit is in simplex-chat/simplexmq; the reduced build reads no Nix map.
 
@@ -73,7 +71,7 @@ sequenceDiagram
 A6-5, wider margins:
 - testLongQuantity: the call's timeout 2 s, the bound 3 s.
 - testSharedHostLookup: "at once" is below fetchTimeout.
-- testConcurrentReads: the deadline 3 s.
+- testConcurrentReads: the deadline 4 s.
 
 A6-6: NamesPhasesTests' held, woken and prompt stay; NamesOwnerTests' held, woken and within, NamesRecordsTests' within and NamesSpendTests' heldPoll and pollSeconds go; their bounded waits use WebTests' bounded.
 

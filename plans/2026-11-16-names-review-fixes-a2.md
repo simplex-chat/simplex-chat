@@ -49,7 +49,7 @@ data StepFailure
 - A2-5: one decoder, simplexmq's `decodeEip1559Tx`, under decodeSignedTx (newSender) and transactionSigner (the start check), one acceptance for both.
 - A2-25: `data TxSettlement = TSMinedAt Word64 | TSRevertedAt Word64 | TSDroppedTx` in Store, the argument of recordTransactionOutcome, produced once per hash in settle; a hash whose row was not pending is logged.
 - A2-26: `data TxFor = TxRegistration RegistrationTx RegistrationId | TxEdit RecordEditId`, `data RegistrationTx = RTCommit | RTAccept | RTRegister` with TextEncoding. The stored kind is `data TxKind = TKRegistration RegistrationTx | TKEdit` with its field instances; the predicates go. withinSends and sendsUsedUp keep their rules on mined commits.
-- A2-3: simplexmq on evgeny-simplex/simplexmq ep/usdcents-instances: `rlpP` (canonical RLP), `decodeEip1559Tx` and `eip1559SigningHash` beside signEip1559Tx; decodeSignedTx and transactionSigner call them.
+- A2-3: simplexmq on evgeny-simplex/simplexmq ep/names-dialect (simplex-chat/simplexmq#2083): the canonical RLP decoder is the Encoding instance of RLPItem in Simplex.Messaging.Eth.RLP; `decodeEip1559Tx` and `eip1559SigningHash` beside signEip1559Tx; decodeSignedTx and transactionSigner call them.
 
 ## Worker's judgment
 
@@ -119,7 +119,9 @@ A2-36: namehash uses simplexmq's labelHash; `tldLabel` serves labelNode and the 
 - A2-15: toRegistration checks the 32-byte columns; verifyRegisterIntent's length check goes.
 - A2-16: `hexP` and `lowerHexP` in Abi read every 0x hash, the secret, the signature, the service key, the terms digest and AgreedTerms; Orders' `hexHash` and `hexSignature` serve the order, the reveal and the find. The node's JSON-RPC data and quantities keep their any-case rule.
   - A quantity is one parse, `0x` and attoparsec's `hexadecimal`, after a length check: over 66 characters is refused as "over 256 bits", any other failure as "not a quantity".
-- A2-17: simplexmq exports `addressFromBytes`, `anyCaseAddressP`, `checksumAddressP` and `lowS`. parseAnyCaseAddress and parseChecksumAddress call the two parsers, their failures mapped to ADFormat and ADChecksum; simplexmq's `signatureFromHex :: ByteString -> Either SignatureError RecoverableSignature` reads 0x and 130 lowercase hex digits, refusing them as SEFormat, a v other than 27 or 28 as SERecoveryId and a high s as SEHighS; its StrEncoding instance of RecoverableSignature uses it. parseSignature is signatureFromHex, and the service's own SignatureError goes for simplexmq's. AddressError stays.
+- A2-17: addresses and signatures are read through simplexmq's StrEncoding instances.
+  - parseAnyCaseAddress requires 0x and decodes the lowercased text with Address's instance, its failure ADFormat; parseChecksumAddress also requires the text to equal the address's EIP-55 encoding, ADChecksum otherwise.
+  - parseSignature is the StrEncoding instance of RecoverableSignature: 0x and 130 lowercase hex digits, a v of 27 or 28, and a low s, each refused with its message. The service's own SignatureError goes. AddressError stays.
 - A2-12: a reveal that does not decode is logged with aeson's error.
 - A2-11: `withRegistrationTurn` and `withRegistrationTurns` in Turns read the order again in its name's turn; `type Moved = ()`. The reveal, Try again, the close and the move use them.
 
