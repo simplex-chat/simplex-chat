@@ -30,6 +30,7 @@ A3-3, A3-4, A3-5, A3-6:
 - `chatProfile cc user` reads the link data with `getShortLinkConnReq'` and `decodeLinkUserData`, in `CM` run by `runReaderT (tryAllErrors' …) cc`; the names env holds the bot's `User`.
 - `boundedProfile` logs a failed read once; a non-temporary agent error or undecodable data is `ProfileUnavailable`, any other failure `ProfileUnread`.
 - Preview JSON: `type` and `profile` always; with `ok`, `displayName`, `fullName` and `image` (data:image/ only), and `peerType` and `business` for an address, `groupType` and `publicMemberCount` for a channel. `kind` and `subscribers` go.
+- Built in place of the two items above, after the text review: `ProfileOk` holds a `LinkProfile` of `kind` (`contact`, `business`, `bot` or `channel`), `displayName`, `fullName`, `image` (data:image/ only) and `subscribers` (a channel's `publicMemberCount`), made from the link data by `linkProfileOf`; the cache holds it, and the answer is `{"type": "ok", "linkProfile": …}`.
 - `ContactShortLinkData` and `GroupShortLinkData` derive `Eq` (core).
 
 ```mermaid

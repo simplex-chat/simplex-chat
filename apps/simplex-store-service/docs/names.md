@@ -26,6 +26,7 @@
    11. [A registered name's links edited](#311-a-registered-names-links-edited)
    12. [Service start](#312-service-start)
    13. [A card dispute or a refund](#313-a-card-dispute-or-a-refund)
+4. [The life of an order](#4-the-life-of-an-order)
 
 ---
 
@@ -244,7 +245,7 @@ sequenceDiagram
 
 Notes:
 
-- Every transaction here is sent through the sender as the commit is, with value 0 and its gas paid by the registrar key; a failed acceptance or register is stored as an attempt and judged by its reason, as 3.5 says ([`Names/Chain.hs:199-214`](../src/StoreService/Names/Chain.hs#L199-L214), `failedAttempt` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). By the code comments and the log line of an `InsufficientAllowance` revert, the rent is spent from the registrar key's allowance on the sponsor ([`Names/Contracts.hs:179-181`](../src/StoreService/Names/Contracts.hs#L179-L181), [`Names/Worker.hs:351`](../src/StoreService/Names/Worker.hs#L351)).
+- Every transaction here is sent through the sender as the commit is, with value 0 and its gas paid by the registrar key; a failed commit, acceptance or register is stored as an attempt and judged by its reason, as 3.5 says ([`Names/Chain.hs:199-214`](../src/StoreService/Names/Chain.hs#L199-L214), `failedAttempt` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). By the code comments and the log line of an `InsufficientAllowance` revert, the rent is spent from the registrar key's allowance on the sponsor ([`Names/Contracts.hs:179-181`](../src/StoreService/Names/Contracts.hs#L179-L181), [`Names/Worker.hs:351`](../src/StoreService/Names/Worker.hs#L351)).
 - `RegisterName` is signed in the EIP-712 domain `SimplexSponsor`, the acceptance in `SimplexNamePolicy`, as `AcceptGeneralTerms` or `AcceptCommunityTerms` ([`Names/Registration.hs:80-111`](../src/StoreService/Names/Registration.hs#L80-L111)).
 - The reveal, of an order or of `/reveal`, is checked in the contract's order: the label, its hash and length, the commitment rebuilt from the owner, duration and default resolver; the intent's deadline not before the service's clock for an order, or `revealBefore` for `/reveal`, and at most a week and 600 s after the service's clock, its signer and the sponsor nonce; the acceptance against the current terms and policy nonce; the links' kinds last ([`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs) `checkReveal`).
 - The names page signs the intent and the acceptance with a deadline a week after the service's clock, so a signature serves across commitments the service sends again within that week. The intent does not cover the secret, and it stays valid until its deadline or until the owner's sponsor nonce moves; a move stores the move's reveal in place of the old one, and a close clears it ([`Names/Store.hs`](../src/StoreService/Names/Store.hs) `retargetRegistration`, [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `sendRegister`).
@@ -354,7 +355,7 @@ Notes:
 
 ### 3.5 A register transaction that fails
 
-After a register or terms acceptance fails, the order is judged from chain state and the revert's reason: its reveal is cleared for the page to sign again, it waits, its transaction is sent again, it is committed again with its reveal, it is set `taken` with its price kept as a balance, or, at an attempt cap, it is set `failed`.
+After a register or terms acceptance fails, the order is judged from chain state and the revert's reason: its reveal is cleared for the page to sign again, it waits, its transaction is sent again, it is committed again with its reveal, it is set `taken` with its price kept as a balance, or, at an attempt cap, it is set `failed`. A failed commit is stored and counted the same way.
 
 ```mermaid
 sequenceDiagram
@@ -362,6 +363,14 @@ sequenceDiagram
   participant S as Sender
   participant E as Ethereum node
   participant D as PostgreSQL
+  opt the commit
+    K->>S: commit(commitment) to the controller
+    alt dry run reverted
+      K->>D: attempt stored, counted for a permanent reason; retried every 15 s; failed at max_dry_run_failures
+    else mined with status 0
+      K->>D: attempt stored, counted; phase queued, the commit sent again; failed at max_sent_failures
+    end
+  end
   K->>S: registerWithCredit to the sponsor, or the acceptance relay to the name policy
   S-->>K: dry run reverted, or mined with status 0
   K->>E: registered after all? ownerOf and nameExpires at the confirmed block
@@ -384,7 +393,7 @@ Notes:
 
 - Whether the name was registered after all is checked first: on a register mined with status 1, or with the name held by the owner at the confirmation depth, the order is set `registered` ([`Names/Orders.hs:365-400`](../src/StoreService/Names/Orders.hs#L365-L400), [`Names/Worker.hs:329-336`](../src/StoreService/Names/Worker.hs#L329-L336)).
 - An `InsufficientAllowance` revert waits for the registrar key's allowance on the sponsor to be raised outside the service, also past the commitment's lapse, as the sponsor checks the allowance before the commitment. The reveal is cleared once its intent's deadline passes, and the page signs again ([`Names/Worker.hs:359`](../src/StoreService/Names/Worker.hs#L359), [`Names/Worker.hs:307-321`](../src/StoreService/Names/Worker.hs#L307-L321)).
-- A stored intent within its deadline that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of `[names] tld`, fails the order before any send with the reason `signatureRefused`, logged as an error and reported in the managed group (`sendRegister` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). Such an order is not moved to any name, its own included: `POST /api/registration/ID/name` answers `400 bad_request`, and support settles it.
+- A stored intent within its deadline that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of `[names] tld`, fails the order with the reason `signatureRefused` before its acceptance relay or its register is sent, logged as an error and reported in the managed group (`intentRefused` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)). Such an order is not moved to any name, its own included: `POST /api/registration/ID/name` answers `400 bad_request`, and support settles it.
 - `CommitmentTooOld` is reverted only after the intent's and the allowance's checks. The order is set `committing` with its reveal kept, or, while `revealBefore` has not passed by the service's clock, the dry run is tried again a second later; the commit is sent again, and the register follows once it has aged, with no new signature while the signature's week lasts (3.2) ([`Names/Worker.hs:356-358`](../src/StoreService/Names/Worker.hs#L356-L358), [`Names/Worker.hs:199-215`](../src/StoreService/Names/Worker.hs#L199-L215)).
 - On `CommitmentTooNew` the register is retried 1 s later. While the name is taken only above the confirmation depth, or is reported gone by the dry run while `available(label)` is true, the order is retried every 15 s ([`Names/Worker.hs:340-352`](../src/StoreService/Names/Worker.hs#L340-L352)).
 - A code order set `taken` has its code released instead of a balance credited ([`Names/Worker.hs:361-368`](../src/StoreService/Names/Worker.hs#L361-L368)).
@@ -422,7 +431,7 @@ sequenceDiagram
 Notes:
 
 - `/retry` is sent with the registration id alone. It is refused with `400 bad_request` for any order but one whose commitment lapsed with no reveal stored, and for such an order whose links were refused. A lapsed order keeps its payment and its code, so `/retry` reads no chain and checks no code ([`Web/Names/Registration.hs:111-132`](../src/StoreService/Web/Names/Registration.hs#L111-L132), [`Names/Worker.hs:434-454`](../src/StoreService/Names/Worker.hs#L434-L454)). At the next scan a new commit is sent, a second past the old commitment's lapse ([`Names/Worker.hs:174-215`](../src/StoreService/Names/Worker.hs#L174-L215)).
-- A move is accepted for a failed order, for one whose links were refused, and for one whose commitment lapsed unsigned, up to `max_order_moves` (default 3). For a failed order the service checks first whether its name was registered after all ([`Web/Names/Owner.hs:113-126`](../src/StoreService/Web/Names/Owner.hs#L113-L126), [`Config.hs:655`](../src/StoreService/Config.hs#L655)).
+- A move is accepted for a failed order but a month-ended or signature-refused one, for one whose links were refused, and for one whose commitment lapsed unsigned, up to `max_order_moves` (default 3). The page offers it for a failed order only when the order's last attempt failed for `NameTooShort` or `LabelTooLong`. For a failed order the service checks first whether its name was registered after all ([`Web/Names/Owner.hs:113-126`](../src/StoreService/Web/Names/Owner.hs#L113-L126), [`Config.hs:655`](../src/StoreService/Config.hs#L655)).
 - Both names' locks are taken in hash order, and the first order's hash is kept. A paid order moved to a cheaper name is credited the difference; a code order is moved at price 0, its code reserved again ([`Names/Turns.hs:27-32`](../src/StoreService/Names/Turns.hs#L27-L32), [`Web/Names/Owner.hs:128-135`](../src/StoreService/Web/Names/Owner.hs#L128-L135), [`Names/Orders.hs:340-356`](../src/StoreService/Names/Orders.hs#L340-L356), [`Names/Store.hs:787-813`](../src/StoreService/Names/Store.hs#L787-L813)).
 - A paid order's move reads the new name's price as an order does: a price under `min_price_cents_per_year` times the paid years is answered `503 name_check_unavailable`, and nothing is credited ([`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)).
 - The move's reveal is checked last, as an order's (3.1), for the order's owner; a repeat of the order's current fields is answered with its view before any check ([`Web/Names/Owner.hs`](../src/StoreService/Web/Names/Owner.hs) `moveChecked`).
@@ -652,7 +661,7 @@ Notes:
 - The container runs `simplex-store-service -d BADGE_DB_CONN --create-schema --yes-migrate --service-config /etc/simplex-store-service/store_service.ini` ([`compose.yml:14-20`](../../../scripts/store-service/compose.yml#L14-L20)).
 - The process exits on a config error (Stripe keys of two modes, or Stripe test keys with `[names]` off chains 31337 and 11155111, among them), a held lock, a chain id mismatch, an issuer key mismatch, a failed migration, a pending transaction signed by another key or for another chain, or a missing site build; while it runs, it exits when the lock's connection fails. Compose restarts it after every exit until it is stopped ([`Main.hs:23-29`](../Main.hs#L23-L29), [`Config.hs:475-479`](../src/StoreService/Config.hs#L475-L479), [`Service.hs:259-264`](../src/StoreService/Service.hs#L259-L264), [`Service.hs:632-635`](../src/StoreService/Service.hs#L632-L635), [`Store/Migrate.hs:53-64`](../src/StoreService/Store/Migrate.hs#L53-L64), [`compose.yml:10`](../../../scripts/store-service/compose.yml#L10)). A node that does not answer `eth_chainId` is only warned of, unless `dev_keys` are set ([`Service.hs:169-181`](../src/StoreService/Service.hs#L169-L181)).
 - The lanes are started in the chat core's callback, after `postStartHook`, so after the bot address exists, unless `--no-address` is passed ([`Chat/Core.hs:97-106`](../../../src/Simplex/Chat/Core.hs#L97-L106), [`Service.hs:301-313`](../src/StoreService/Service.hs#L301-L313), [`Service.hs:636-645`](../src/StoreService/Service.hs#L636-L645)).
-- The names lanes are the sender, the record edits lane, the names worker, the check of paid orders not registered 3 hours after their payment, every 5 minutes, which logs an error and reports in the managed group once for each, the month pass, every 5 minutes, which fails each order still `queued`, `committed` or `failed` a calendar month after its payment or its code's reservation with the reason `monthEnded`, the money paid for it added to its balance or its code released, and its name released, and the terms fetch, which reads or fetches both current terms texts at the start and then hourly; all lanes are started together with `raceAny_` from simplexmq ([`Service.hs:366-371`](../src/StoreService/Service.hs#L366-L371), [`Names/Contracts.hs:247-254`](../src/StoreService/Names/Contracts.hs#L247-L254)).
+- The names lanes are the sender, the record edits lane, the names worker, the check of paid orders not registered 3 hours after their payment, every 5 minutes, which logs an error and reports in the managed group once for each, the month pass, every 5 minutes, which fails each order still `queued`, `committed` or `failed`, with no register transaction pending, a calendar month after its payment or its code's reservation with the reason `monthEnded`, the money paid for it added to its balance or its code released, and its name released, and the terms fetch, which reads or fetches both current terms texts at the start and then hourly; all lanes are started together with `raceAny_` from simplexmq ([`Service.hs:366-371`](../src/StoreService/Service.hs#L366-L371), [`Names/Contracts.hs:247-254`](../src/StoreService/Names/Contracts.hs#L247-L254)).
 - Under `--run-cli` the binary runs the terminal chat and the badge request lanes only ([`Service.hs:381-404`](../src/StoreService/Service.hs#L381-L404)).
 
 ---
@@ -674,13 +683,17 @@ sequenceDiagram
   else a dispute or a refund, its event recorded before
     W->>D: nothing written
   else a dispute or a refund
+    opt the order's balance is taken back, and another order's open invoice holds it
+      W->>V: cancel that invoice
+      W->>D: that invoice expired, its order closed cancelled, the hold released
+    end
     W->>D: under the name's lock, one transaction: the event recorded, the order's row locked
-    alt support recorded the order's refund
-      W->>D: nothing more written
-    else unpaid, its payment not recorded yet
+    alt unpaid, its payment not recorded yet
       W->>D: nothing more written; its settlement later closes it as reversed, its held balance released
     else live past unpaid, no register transaction of it saved
       W->>D: order set closed, reversed; its reveal cleared; the cents it paid from another order's balance returned there; its own balance taken back
+    else support recorded the order's refund
+      W->>D: nothing more written
     else otherwise
       W->>D: its own balance taken back
     end
@@ -694,7 +707,98 @@ Notes:
 - The events are read by `stripeEvent` in [`Providers/Stripe.hs`](../src/StoreService/Providers/Stripe.hs): a dispute's `amount`, a refund's `amount_refunded`, and the `payment_intent` of each. A badge invoice's event changes nothing ([`Web/Server.hs`](../src/StoreService/Web/Server.hs) `onNameOrder`).
 - Each dispute or refund is recorded once in `name_reversals` by its event id; a refund counts the rise of `amount_refunded` over the refunds recorded for the invoice ([`Names/Store.hs`](../src/StoreService/Names/Store.hs) `recordReversal`).
 - The cents taken back from the order's own balance are the reversed cents, at most the balance's amount and the invoice's amount less what earlier reversals of it took back (`takeBackBalance`).
+- A balance that another order's open invoice holds is released first: that invoice is cancelled at its provider, then here, which closes its order as cancelled. The alert names that order. A failed cancel at the provider fails the handling, so Stripe delivers the event again ([`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) `reverseOrder`).
+- A support refund of part of a live order's balance does not keep the order from being cancelled; an order not cancelled whose refund support recorded is only alerted (`reversalCase`).
+- A late credit locks the order's row before it credits, as the reversal does, so a credit and a concurrent reversal of the same order run one after the other (`creditLatePayment` in [`Names/Store.hs`](../src/StoreService/Names/Store.hs)).
 - A payment that settles after a reversal of it was recorded closes its unpaid order as reversed, logged at error, instead of queuing it (`nameSettled` in [`Orders.hs`](../src/StoreService/Orders.hs)).
 - An order with a reversal is credited nothing more: `creditBalance` adds nothing to it, so a taken write, the month's end, a move to a cheaper name and late money credit none of its price. A reversed order is not counted as a closed order's late money (`closedUnpaid`).
 - The register's save locks the order's row at the version the worker read, in the transaction that saves the transaction, and the reversal locks the row before it reads the order's transactions, so a register is saved and sent only for an order not cancelled ([`Names/Sender.hs`](../src/StoreService/Names/Sender.hs) `submitTransactionIf`, [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `sendRegister`).
 - A cancelled order's view reads `{"type": "closed", "closedBy": "reversed"}` ([`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) `reverseOrder`).
+
+---
+
+## 4. The life of an order
+
+Every state of a name order and every transition between them. An order is held from `queued` to `registering`, and while `failed` within its month: no other order through the service can be placed for its name, and a payment for the name is settled as `taken`. The month is one calendar month from `paid_at`, the payment's settlement or the placement of a code or balance order.
+
+```mermaid
+stateDiagram-v2
+  state "unpaid" as unpaid
+  state "closed: expired, cancelled or reversed" as closed
+  state "queued" as queued
+  state "committing" as committing
+  state "committed: awaiting, signed or lapsed; links refused" as committed
+  state "registering" as registering
+  state "registered" as registered
+  state "taken" as taken
+  state "failed: registry refused, signature refused or unread" as failed
+  state "failed: month ended" as monthEnded
+  [*] --> unpaid: T1
+  [*] --> queued: T2
+  unpaid --> queued: T3
+  unpaid --> taken: T4
+  unpaid --> closed: T5, T6, T7
+  closed --> closed: T8
+  queued --> committing: T9
+  queued --> committed: T10
+  committing --> committed: T10
+  committing --> queued: T11
+  committed --> committed: T12
+  committed --> queued: T13, T14
+  committed --> registering: T15
+  committed --> registered: T16
+  registering --> registered: T16
+  registering --> committed: T17
+  committed --> taken: T18
+  registering --> taken: T18
+  queued --> failed: T19
+  committing --> failed: T19
+  committed --> failed: T19, T20, T21
+  registering --> failed: T19
+  failed --> queued: T22, T24
+  failed --> registered: T25
+  queued --> monthEnded: T23
+  committed --> monthEnded: T23
+  failed --> monthEnded: T23
+  committed --> queued: T24
+  failed --> taken: T26
+  committed --> taken: T26
+  queued --> closed: T27
+  committing --> closed: T27
+  committed --> closed: T27
+  failed --> closed: T27
+```
+
+| | From → to | Trigger | Effect |
+|---|---|---|---|
+| T1 | start → unpaid | An invoice order by card, BTC or XMR, or a balance order with an invoice for the difference. | An invoice is opened at the provider. It holds only its price; a difference order holds the balance it spends. A held name is refused `name_taken` (`placeOrder`). |
+| T2 | start → queued | A code order, or an order paid wholly from a balance. | The name is held and the month starts. The code is reserved, or the balance spent. Other buyers' open invoices of the name are cancelled at their providers, then here (`announceHeld`). |
+| T3 | unpaid → queued | The invoice is paid in full, and no other order holds the name. | The name is held; `paid_at` is the settlement's time. A held balance is spent. Other buyers' open invoices of the name are cancelled (`settleOrder`, `cancelNameInvoices`). |
+| T4 | unpaid → taken | The invoice is paid in full while another order holds the name. | The order's price is credited to its balance (`takenAtSettlement`). |
+| T5 | unpaid → closed, expired | Nothing is paid by the invoice's expiry, or a new order of the same wallet and name is placed after it. | The order is no longer live; a balance it held is released (`expireOverdue`, `closeOverdue`). |
+| T6 | unpaid → closed, cancelled | The buyer cancels the invoice; another order's payment holds the name; or a dispute of the order whose balance it holds takes that balance back (section 3.13). | As T5 (`cancelOpenInvoice`). |
+| T7 | unpaid → closed, reversed | The payment is settled after a reversal of it was recorded. | Nothing is credited; a balance it held is released (`reversedAtSettlement`). |
+| T8 | closed → closed | Money is received on the closed invoice. | Once confirmed, it is credited to the order's balance, unless the order has a reversal (`creditLateInvoice`). |
+| T9 | queued → committing | The node accepts the commit's dry run. | The commit is sent (`sendCommit`). |
+| T10 | queued or committing → committed | The commitment is on chain, with the reveal margin left of its window. | The window's times are stored (`toCommitted`). |
+| T11 | committing → queued | The commitment's window is over, or the commit is mined with status 0 below its cap. | A mined failure is stored as an attempt; the commit is sent again (`fromCommitment`, `commit`). |
+| T12 | committed → committed | The page stores the owner's signature; or the signature is cleared (`InvalidNonce`, `TermsMismatch`, `TermsNotAccepted`, `SignatureExpired`, its deadline passed, its acceptance refused under another name policy or kind of terms); or no signature is stored by the window's end; or a link is refused at `/reveal`. | The view's signature reads `signed`, `awaiting` or `lapsed`; a refused link is stored by its kind and reported (`judge`, `relayAcceptance`, `sendRegister`). |
+| T13 | committed → queued | The page asks `/retry` for an order past its window unsigned, without a refused link. | The same commitment is committed again (`retryRegistration`). |
+| T14 | committed → queued | The node reverts the register's dry run with `CommitmentTooOld` past the window, or with `CommitmentNotFound`. | The commitment is committed again with the stored signature; `CommitmentTooOld` is logged and reported (`judge`). |
+| T15 | committed → registering | The signature is stored, the acceptance is held by the name policy or relayed, and the window has opened. | The register is sent (`sendRegister`). |
+| T16 | committed or registering → registered | A register is mined with status 1, or the owner holds the name at the confirmation depth. | A code is spent (`confirmLanded`). |
+| T17 | registering → committed | Every register transaction is settled, none with status 1, and the name is read as free, below the cap. | The mined failure is stored as an attempt; the register is sent again (`judge`, `failedAttempt`). |
+| T18 | committed or registering → taken | The chain reverts a register or relay while the name is not available at the confirmation depth. | A paid order's price is credited to its balance; a code is released (`taken`). |
+| T19 | queued, committing, committed or registering → failed, registry refused | Failed attempts are counted to a cap: 5 dry runs reverted for a permanent reason, or 5 transactions mined with status 0, among the commitment's commits, relays and registers. | Logged and reported; the order still holds its name (`failedAttempt`). |
+| T20 | committed → failed, signature refused | The service cannot verify the stored signature, within its deadline, under its chain id and sponsor, before the relay or the register. | Logged and reported; nothing is sent (`intentRefused`). |
+| T21 | committed → failed, unread | The order is committed without a signature, and its page has not read it for 3 days. | Logged and reported; the order still holds its name (`committed`). |
+| T22 | failed, unread → queued | The page sends the owner's signature (Continue). | Queued with the signature (`revealHandler` in [`Web/Names/Registration.hs`](../src/StoreService/Web/Names/Registration.hs)). |
+| T23 | queued, committed or failed → failed, month ended | The month is over, and no register transaction of the order is pending. | The order is no longer live; a paid order's price is credited to its balance; a code is released; logged and reported (`endMonths`). |
+| T24 | failed (registry refused or unread), or committed with a refused link or past its window → queued | The owner moves the order to another name or other links, at most 3 times. | A new commitment; the month is unchanged; a cheaper name's difference is credited to the balance; other buyers' open invoices of the new name are cancelled (`retargetOrder`). |
+| T25 | failed → registered | At a move or support's close, the service finds the order's register mined with status 1, or the owner holding the name. | As T16 (`checkFailedOrder`, `closeRegistration`). |
+| T26 | failed, or committed past its window → taken | Support's `//close` of a paid order. | The price is credited to the balance, then recorded as refunded (`closeRegistration`). |
+| T27 | queued, committing, committed or failed → closed, reversed | A dispute or refund of the payment while no register transaction of the order was saved. | The hold is released; nothing is credited; a part paid from another order's balance is returned there (`reverseOrder`). |
+
+The functions named are in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs), [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs), [`Orders.hs`](../src/StoreService/Orders.hs), [`Web/Names/Orders.hs`](../src/StoreService/Web/Names/Orders.hs), [`Names/Store.hs`](../src/StoreService/Names/Store.hs), [`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) and [`Names/LateCredits.hs`](../src/StoreService/Names/LateCredits.hs).
+
+The page offers a move (T24) for a failed order only when its last attempt's reason is `NameTooShort` or `LabelTooLong`; the service accepts the move for every failed order but a month-ended or signature-refused one (`movable` in [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs)). A dispute or refund of an order not cancelled (a register sent, taken, month ended or registered) takes the reversed cents back from its balance, as section 3.13 says. Every paid order not registered 3 hours after `paid_at` is alerted once, failed orders included; only live orders are counted in the gauge `simplex_store_names_unregistered_oldest_paid_timestamp_seconds`.
