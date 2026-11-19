@@ -108,7 +108,7 @@ Tests are in:
 ## Platform-Specific Notes
 
 ### Android
-- Min SDK 26, Target SDK 35
+- Min SDK 26, Target SDK 36, Compile SDK 37
 - NDK 23.1.7779620
 - Supports ABI splits: `arm64-v8a`, `armeabi-v7a`
 - Deep linking requires SHA certificate fingerprint in `assetlinks.json` (see README.md)

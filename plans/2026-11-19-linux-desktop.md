@@ -49,15 +49,24 @@ Outside this change:
 | moko-resources | 0.27.1 | 0.27.1 |
 | desktop JVM target | 11 | 17 |
 | Android JVM target | 11 | 11 |
-| Gradle | 8.12 | 8.12 |
-| AGP | 8.10.1 | 8.10.1 |
+| Gradle | 8.12 | 9.6.0 |
+| AGP | 8.10.1 | 9.5.1 |
+| Android compileSdk | 36 | 37 |
+| Android targetSdk, minSdk | 36, 26 | 36, 26 |
 | bundled JDK | Corretto 17.0.21 | Corretto 17.0.21 |
+
+- Compose 1.12.1's Android artifacts require compileSdk 37 and AGP 9.1 or later; AGP 9.5 requires Gradle 9.6.
+- AGP 9 opt-outs in `gradle.properties`, until the common module moves to the KMP Android library plugin with its NDK code in a separate module:
+  - `android.newDsl=false`: `com.android.library` with `kotlin("multiplatform")` in `:common`;
+  - `android.builtInKotlin=false`: `kotlin("android")` in `:android`.
 
 Code changes of the upgrade:
 
 - `kotlinOptions` → `compilerOptions`:
   - `apps/multiplatform/build.gradle.kts`;
   - `android/build.gradle.kts`.
+- Java compile options set in the `android` blocks of `:android` and `:common`, replacing the root block on the legacy `BaseExtension`.
+- Gradle 9: `Project.exec` → `providers.exec`, `buildDir` → `layout.buildDirectory`.
 - `nativeCanvas` → `skiaCanvas` in `BarsBlur.desktop.kt`.
 - `runComposeUiTest` → `androidx.compose.ui.test.v2.runComposeUiTest`.
 - `compose.runtime`, `compose.foundation`, `compose.material` aliases → explicit coordinates.

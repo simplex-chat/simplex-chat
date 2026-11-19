@@ -193,13 +193,13 @@ tasks.named("compileKotlinJvm") {
 tasks.withType<AbstractJPackageTask>().configureEach {
   if (targetFormat == TargetFormat.Msi) {
     doLast {
-      exec {
+      providers.exec {
         commandLine(
           "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
           "-File", project.file("../../../scripts/desktop/disable-msi-install-dir-wipe-windows.ps1"),
           destinationDir.asFileTree.matching { include("*.msi") }.singleFile
         )
-      }
+      }.result.get()
     }
   }
 }
@@ -208,7 +208,7 @@ afterEvaluate {
     dependsOn("cmakeBuild")
     doLast {
       copy {
-        from("${project(":desktop").buildDir}/cmake/main/linux-amd64")
+        from("${layout.buildDirectory.get().asFile}/cmake/main/linux-amd64")
         into("$cppPath/desktop/libs/linux-x86_64")
         include("*.so*")
         eachFile {
@@ -218,7 +218,7 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
       copy {
-        from("${project(":desktop").buildDir}/cmake/main/linux-aarch64")
+        from("${layout.buildDirectory.get().asFile}/cmake/main/linux-aarch64")
         into("$cppPath/desktop/libs/linux-aarch64")
         include("*.so*")
         eachFile {
@@ -228,7 +228,7 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
       copy {
-        from("${project(":desktop").buildDir}/cmake/main/windows-amd64")
+        from("${layout.buildDirectory.get().asFile}/cmake/main/windows-amd64")
         into("$cppPath/desktop/libs/windows-x86_64")
         include("*.dll")
         eachFile {
@@ -238,7 +238,7 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
 	  copy {
-        from("${project(":desktop").buildDir}/cmake/main/windows-amd64")
+        from("${layout.buildDirectory.get().asFile}/cmake/main/windows-amd64")
         into("../build/links/windows-x64")
         include("*.dll")
         eachFile {
@@ -248,7 +248,7 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
       copy {
-        from("${project(":desktop").buildDir}/cmake/main/mac-x86_64")
+        from("${layout.buildDirectory.get().asFile}/cmake/main/mac-x86_64")
         into("$cppPath/desktop/libs/mac-x86_64")
         include("*.dylib")
         eachFile {
@@ -258,7 +258,7 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
       copy {
-        from("${project(":desktop").buildDir}/cmake/main/mac-aarch64")
+        from("${layout.buildDirectory.get().asFile}/cmake/main/mac-aarch64")
         into("$cppPath/desktop/libs/mac-aarch64")
         include("*.dylib")
         eachFile {

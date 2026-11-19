@@ -171,7 +171,11 @@ kotlin {
 
 android {
   namespace = "chat.simplex.common"
-  compileSdk = 36
+  compileSdk = 37
+  compileOptions {
+    sourceCompatibility = JavaVersion.toVersion(providers.gradleProperty("kotlin.jvm.target").get())
+    targetCompatibility = JavaVersion.toVersion(providers.gradleProperty("kotlin.jvm.target").get())
+  }
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
     minSdk = 26

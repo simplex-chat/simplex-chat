@@ -27,7 +27,11 @@ kotlin {
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 37
+    compileOptions {
+        sourceCompatibility = JavaVersion.toVersion(providers.gradleProperty("kotlin.jvm.target").get())
+        targetCompatibility = JavaVersion.toVersion(providers.gradleProperty("kotlin.jvm.target").get())
+    }
 
     defaultConfig {
         applicationId = "chat.simplex.app"
@@ -232,7 +236,7 @@ tasks {
                     }
                 }
                 val outputDir = packageTask.outputs.files.files.last()
-                exec {
+                providers.exec {
                     workingDir("../../scripts/android")
                     environment = mapOf(
                       "JAVA_HOME" to "$javaHome",
@@ -248,7 +252,7 @@ tasks {
                         keyAlias,
                         keyPassword
                     )
-                }
+                }.result.get()
 
                 if (project.properties["android.injected.signing.key.alias"] != null && buildType == "release") {
                     val flavor = variant.removeSuffix("Release").lowercase()
