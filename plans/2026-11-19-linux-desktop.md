@@ -389,7 +389,7 @@ stateDiagram-v2
 
 ## Rendering
 
-- Renderer name: `glGetString(GL_RENDERER)` through the app's helper inside the Tao OpenGL context.
+- Renderer name: `glGetString(GL_RENDERER)` in a short-lived surfaceless EGL context (`EGL_PLATFORM_SURFACELESS_MESA`) created by the app's helper on a background thread after the second frame; Tao's own context is current only on its render and swap threads. Without Mesa's surfaceless platform the name is unknown and the settings stay.
 - On llvmpipe or softpipe with unchanged appearance settings: bar blur 0, bar alpha 1.
 - The renderer name is logged at start.
 
@@ -488,8 +488,8 @@ Sessions (`UI_SESSION` of `ui`):
 
 | Session | Display | Input and capture |
 |---|---|---|
-| wayland | headless sway: `WLR_BACKENDS=headless`, `WLR_RENDERER=pixman`, Mesa llvmpipe for EGL | grim, wtype, `swaymsg seat` pointer |
-| xwayland | headless sway with `xwayland force`, the app with `DISPLAY` of Xwayland and `GDK_BACKEND=x11` | grim, wtype, `swaymsg seat` pointer |
+| wayland | headless sway: `WLR_BACKENDS=headless`, `WLR_RENDERER=pixman`, Mesa llvmpipe for EGL | grim, wtype, `wayland-input` (virtual pointer and keyboard held for the session) |
+| xwayland | headless sway with `xwayland force`, the app with `DISPLAY` of Xwayland and `GDK_BACKEND=x11` | grim, wtype, `wayland-input` |
 | x11 | Xvfb with openbox | `import`, xdotool |
 
 Session services per cell, inside `dbus-run-session`:

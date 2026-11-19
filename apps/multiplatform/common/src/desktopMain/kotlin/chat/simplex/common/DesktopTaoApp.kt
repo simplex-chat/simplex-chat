@@ -83,7 +83,7 @@ private fun ApplicationScope.TaoAppWindow() {
       LaunchedEffect(Unit) {
         withFrameNanos {}
         withFrameNanos {}
-        adjustToLinuxRenderer(ChatController.appPrefs)
+        withContext(Dispatchers.IO) { adjustToLinuxRenderer(ChatController.appPrefs) }
       }
       AppScreen()
       GtkFileDialogs(taoWindow)

@@ -19,9 +19,18 @@
 #define ABSENT_EXCEPTION "chat/simplex/common/platform/SecretServiceAbsentException"
 #define FAILURE_EXCEPTION "chat/simplex/common/platform/SecretServiceException"
 
+#define LIBEGL "libEGL.so.1"
 #define GL_RENDERER_NAME 0x1F01
+#define EGL_PLATFORM_SURFACELESS_MESA 0x31DD
+#define EGL_OPENGL_API_NAME 0x30A2
 
-typedef void *(*egl_current_context_fn)(void);
+typedef void *(*egl_get_platform_display_fn)(unsigned int, void *, const intptr_t *);
+typedef unsigned int (*egl_initialize_fn)(void *, int *, int *);
+typedef unsigned int (*egl_bind_api_fn)(unsigned int);
+typedef void *(*egl_create_context_fn)(void *, void *, void *, const int *);
+typedef unsigned int (*egl_make_current_fn)(void *, void *, void *, void *);
+typedef unsigned int (*egl_destroy_context_fn)(void *, void *);
+typedef unsigned int (*egl_terminate_fn)(void *);
 typedef void *(*egl_proc_address_fn)(const char *);
 typedef const unsigned char *(*gl_get_string_fn)(unsigned int);
 
@@ -209,13 +218,38 @@ JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_LinuxNative_nativeGlRenderer(JNIEnv *env, jclass clazz)
 {
     (void)clazz;
-    egl_current_context_fn current_context = (egl_current_context_fn)dlsym(RTLD_DEFAULT, "eglGetCurrentContext");
-    egl_proc_address_fn proc_address = (egl_proc_address_fn)dlsym(RTLD_DEFAULT, "eglGetProcAddress");
-    if (current_context == NULL || proc_address == NULL || current_context() == NULL) return NULL;
-    gl_get_string_fn get_string = (gl_get_string_fn)proc_address("glGetString");
-    if (get_string == NULL) return NULL;
-    const unsigned char *renderer = get_string(GL_RENDERER_NAME);
-    return renderer != NULL ? (*env)->NewStringUTF(env, (const char *)renderer) : NULL;
+    void *library = dlopen(LIBEGL, RTLD_NOW | RTLD_LOCAL);
+    if (library == NULL) return NULL;
+    egl_get_platform_display_fn get_platform_display = (egl_get_platform_display_fn)dlsym(library, "eglGetPlatformDisplay");
+    egl_initialize_fn initialize = (egl_initialize_fn)dlsym(library, "eglInitialize");
+    egl_bind_api_fn bind_api = (egl_bind_api_fn)dlsym(library, "eglBindAPI");
+    egl_create_context_fn create_context = (egl_create_context_fn)dlsym(library, "eglCreateContext");
+    egl_make_current_fn make_current = (egl_make_current_fn)dlsym(library, "eglMakeCurrent");
+    egl_destroy_context_fn destroy_context = (egl_destroy_context_fn)dlsym(library, "eglDestroyContext");
+    egl_terminate_fn terminate = (egl_terminate_fn)dlsym(library, "eglTerminate");
+    egl_proc_address_fn proc_address = (egl_proc_address_fn)dlsym(library, "eglGetProcAddress");
+    jstring result = NULL;
+    if (get_platform_display == NULL || initialize == NULL || bind_api == NULL || create_context == NULL ||
+        make_current == NULL || destroy_context == NULL || terminate == NULL || proc_address == NULL) {
+        dlclose(library);
+        return NULL;
+    }
+    void *display = get_platform_display(EGL_PLATFORM_SURFACELESS_MESA, NULL, NULL);
+    if (display != NULL && initialize(display, NULL, NULL)) {
+        void *context = bind_api(EGL_OPENGL_API_NAME) ? create_context(display, NULL, NULL, NULL) : NULL;
+        if (context != NULL) {
+            gl_get_string_fn get_string = (gl_get_string_fn)proc_address("glGetString");
+            if (make_current(display, NULL, NULL, context) && get_string != NULL) {
+                const unsigned char *renderer = get_string(GL_RENDERER_NAME);
+                if (renderer != NULL) result = (*env)->NewStringUTF(env, (const char *)renderer);
+                make_current(display, NULL, NULL, NULL);
+            }
+            destroy_context(display, context);
+        }
+        terminate(display);
+    }
+    dlclose(library);
+    return result;
 }
 
 static gpointer load_secret_api(gpointer data) {

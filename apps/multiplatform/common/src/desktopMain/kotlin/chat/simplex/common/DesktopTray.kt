@@ -34,7 +34,7 @@ import java.awt.image.BufferedImage
 // hidden, the first-close dialog is skipped (Ask migrates silently to Quit), and
 // the close handler treats MinimizeToTray as Quit.
 val trayIsAvailable: Boolean by lazy {
-  if (desktopPlatform.isLinux()) return@lazy isLinuxTrayHostRegistered()
+  if (desktopPlatform.isLinux()) return@lazy isLinuxTrayHostRegistered().also { Log.i(TAG, "Linux tray host registered: $it") }
   if (!SystemTray.isSupported()) return@lazy false
   try {
     val tray = SystemTray.getSystemTray()
