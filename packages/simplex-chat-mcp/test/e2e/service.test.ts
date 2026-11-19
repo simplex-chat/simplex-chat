@@ -14,11 +14,13 @@ import {resetOwners} from "../../src/owner"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {qrCodeText} from "../../src/qr"
 import {Service, productionDeps} from "../../src/service"
+import {statusLine} from "../../src/status-line"
+import {userContact} from "../../src/user"
 import {version} from "../../src/version"
 import {descendants} from "../unit/fixtures"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, isActive, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, startSmpServer, startXftpServer} from "./smpServer"
-import {killService, servicePid, spawnSession, spawnSessionStart} from "./stdio"
+import {killService, runDisplay, servicePid, spawnSession, spawnSessionStart} from "./stdio"
 
 const one = "11111111-1111-4111-8111-111111111111"
 const two = "22222222-2222-4222-8222-222222222222"
@@ -74,10 +76,12 @@ async function startService(root: string): Promise<Service> {
   return service
 }
 
-async function openSession(client: ServiceClient, id: string, name: string): Promise<SessionReply> {
+async function openSession(client: ServiceClient, id: string, name: string, record?: string): Promise<SessionReply> {
   await client.request<TitleReply>("POST", "/title", {id, name, config: defaultConfig})
-  return client.request<SessionReply>("POST", "/session", {id, project: "/p", config: defaultConfig})
+  return client.request<SessionReply>("POST", "/session", {id, project: "/p", config: defaultConfig, record})
 }
+
+const sessionsReply = (groupId: number, text: string): ItemCheck => inGroup(groupId, ({chatItem}) => chatItem.quotedItem !== undefined && chatItem.meta.itemText === text)
 
 const inGroup = (groupId: number, check: ItemCheck): ItemCheck => ci => ci.chatInfo.type === "group" && ci.chatInfo.groupInfo.groupId === groupId && check(ci)
 
@@ -141,7 +145,7 @@ async function setLinks({alice, hub, groupOne, claudeGroup}: LinkSession, prefer
   })
 }
 
-test("an owner joins the Main group and each session's group, and approves its connect, send, download and leave there; chats belong to their sessions; the owner's short description and welcome message of the Main group stay after a service restart", async () => {
+test("an owner joins the Main group and each session's group, whose profile sets the Flat layout, and approves its connect, send, download and leave there; chats belong to their sessions; the owner's short description and welcome message of the Main group stay after a service restart", async () => {
   const root = join(dir, "sessions", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("sessions", "Alice")
@@ -160,6 +164,8 @@ test("an owner joins the Main group and each session's group, and approves its c
   await greeting
   const groups = await invitations
   const [groupOne, groupTwo] = [groups.get("1 · one")!, groups.get("2 · two")!]
+  const layouts = new Map((await alice.chat.apiListGroups(alice.user.userId)).map(({groupId, groupProfile}) => [groupId, groupProfile.chatLayout]))
+  expect([layouts.get(groupOne), layouts.get(groupTwo), layouts.has(mainGroupId), layouts.get(mainGroupId)]).toEqual([T.ChatLayout.Terminal, T.ChatLayout.Terminal, true, undefined])
   expect((await client.request<StatusReply>("GET", "/status")).owner).toEqual({owners: ["Alice"]})
   const ownerSends = (groupId: number, text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], text)
   const card = (groupId: number, text: string): Promise<T.AChatItem> => received(alice.chat, inGroup(groupId, textStarts(text)))
@@ -216,7 +222,7 @@ test("an owner joins the Main group and each session's group, and approves its c
   const mainProfile = async () => (await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === mainGroupId)!.groupProfile
   const edited = {shortDescr: "Sessions of the team", description: "Ask Alice before you approve."}
   await alice.chat.apiUpdateGroupProfile(mainGroupId, {...(await mainProfile()), ...edited})
-  const sessionsListed = received(alice.chat, inGroup(mainGroupId, textStarts("1 · one")))
+  const sessionsListed = received(alice.chat, sessionsReply(mainGroupId, "⚪ Not running: 2 · two, 1 · one"))
   await ownerSends(mainGroupId, "/sessions")
   await sessionsListed
   await service.stop()
@@ -226,11 +232,49 @@ test("an owner joins the Main group and each session's group, and approves its c
   await listedOne
   expect(await openSession(client, two, "two")).toMatchObject({number: 2, displayName: "2 · two", owner: {owners: ["Alice"]}})
   expect((await chatsOf(two)).sort()).toEqual([directoryChat, shopChat].sort())
-  const sessionsListedAgain = received(alice.chat, inGroup(mainGroupId, textStarts("1 · one")))
+  const sessionsListedAgain = received(alice.chat, sessionsReply(mainGroupId, "⚪ Not running: 2 · two, 1 · one"))
   await ownerSends(mainGroupId, "/sessions")
   await sessionsListedAgain
   expect(await mainProfile()).toMatchObject(edited)
 }, 600_000)
+
+test("the Main group shows every session in one list, the running ones with their states from Claude Code's record and the cards, edited in place, and /sessions replies with its text", async () => {
+  const root = join(dir, "list", "root")
+  await prepareRoot(smpServer.address, root)
+  const alice = await personIn("list", "Alice")
+  await startService(root)
+  const client = ServiceClient.forRoot(root)
+  const record = join(dir, "list", "claude.json")
+  writeFileSync(record, JSON.stringify({status: "busy"}))
+  await openSession(client, one, "one", record)
+  await openSession(client, two, "two")
+  const attached: AttachLine[] = []
+  const controller = new AbortController()
+  closing.push(async () => controller.abort())
+  client.stream("/attach", {id: one}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
+  await until(() => attached.length === 1)
+  const owner = await client.request<OwnerState>("GET", "/link")
+  const invitations = joinSessionGroups(alice, ["1 · one", "2 · two"])
+  const working = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🟠 1 · one: working\n⚪ Not running: 2 · two")
+  const mainGroupId = await joinByLink(alice, owner.link!)
+  const list = await working
+  expect(list.chatInfo).toMatchObject({type: "group", groupInfo: {groupId: mainGroupId}})
+  await invitations
+  const edited = (text: string): Promise<T.AChatItem> => updated(alice.chat, inGroup(mainGroupId, ({chatItem}) => chatItem.meta.itemId === list.chatItem.meta.itemId && chatItem.meta.itemText === text))
+  const waiting = edited("🔵 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
+  writeFileSync(record, JSON.stringify({status: "waiting", waitingFor: "permission prompt"}))
+  await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+  await waiting
+  const idle = edited("🟢 1 · one: idle\n⚪ Not running: 2 · two")
+  writeFileSync(record, JSON.stringify({status: "idle"}))
+  await idle
+  const ended = edited("⚪ Not running: 2 · two, 1 · one")
+  controller.abort()
+  await ended
+  const replied = received(alice.chat, sessionsReply(mainGroupId, "⚪ Not running: 2 · two, 1 · one"))
+  await alice.chat.apiSendTextMessage([T.ChatType.Group, mainGroupId], "/sessions")
+  await replied
+}, 300_000)
 
 test("while files and media are off in a session's group, the card of a send of an image is posted as text, the image is sent after the approval, and the card is edited as text", async () => {
   const root = join(dir, "media", "root")
@@ -270,7 +314,7 @@ test("while files and media are off in a session's group, the card of a send of 
   expect((await edited).chatItem.content).toMatchObject({type: "rcvMsgContent", msgContent: {type: "text", text: expect.stringMatching(/\nApproved by Alice\.$/)}})
 }, 600_000)
 
-test("while SimpleX links are off in a session's group, a send card with the local server's SimpleX link, which has a query, at the end of its code span is posted, and Claude posts that a terminal prompt and an answer with a SimpleX link were not posted, naming the preference", async () => {
+test("while SimpleX links are off in a session's group, a send card with the local server's SimpleX link, which has a query, at the end of its code span is posted, and Claude posts that a terminal prompt and an answer with a SimpleX link were not posted, naming the preference, the answer's refusal in the turn's opening message", async () => {
   const root = join(dir, "links", "root")
   await prepareRoot(smpServer.address, root, xftpServer.address)
   const alice = await personIn("links", "Alice")
@@ -298,9 +342,10 @@ test("while SimpleX links are off in a session's group, a send card with the loc
   await ownerSends(`/reject ${directoryChat} ${cardNumber(await sendCard)}`)
   expect((await sending).result).toMatchObject({status: "rejected"})
 
-  const notices = [`User's prompt was not posted: ${linksNotForUser}`, `Claude's answer was not posted: ${linksOff}`].map(text => received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === text)))
+  const notice = received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText === `User's prompt was not posted: ${linksNotForUser}`))
+  const opening = updated(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText.startsWith(`Claude's answer was not posted: ${linksOff}\n!- Done`)))
   await client.request("POST", "/turn", {id: one, prompt: `Open ${directory.link}`, answer: `The bot's address is ${directory.link}`})
-  await Promise.all(notices)
+  await Promise.all([notice, opening])
 }, 600_000)
 
 test("while SimpleX links are off in a session's group, a send with a preset server's SimpleX link under a standing approval is sent and stays done, and Claude posts that it was performed and its card was not posted", async () => {
@@ -327,7 +372,7 @@ test("while SimpleX links are on for admins only in a session's group, Claude's 
   const link = await alice.chat.apiCreateGroupLink(camp.groupId, T.GroupMemberRole.Member)
   await setLinks(session, {enable: T.GroupFeatureEnabled.On, role: T.GroupMemberRole.Admin})
   const fromClaude = (check: (text: string) => boolean): Promise<T.AChatItem> => received(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "Claude" && check(chatItem.meta.itemText)))
-  const answer = fromClaude(text => text === `The group's address is ${link}`)
+  const answer = updated(alice.chat, inGroup(groupOne, ({chatItem}) => chatItem.meta.itemText.startsWith(`The group's address is ${link}\n!- Done`)))
   const notice = fromClaude(text => text.startsWith("User's prompt was not posted: "))
   await client.request("POST", "/turn", {id: one, prompt: `Open ${link}`, answer: `The group's address is ${link}`})
   await answer
@@ -351,7 +396,7 @@ test("while SimpleX links are off in a session's group, the connect card of a bo
   await sendNotice
 }, 600_000)
 
-test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, and the answer as Claude in the session's group, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the answer quotes it; an owner's reply to the answer reaches the session after the quote line, with the answer's ID and sender; an owner's reaction to an answer gets Session 1 is not running., quoting the answer, before the session attaches, and reaches the attached session as its emoji after the answer's quote line, with the answer's ID as item and reply_to, the answer of its turn quotes the reacted answer, and a removed reaction reaches no session; Claude posts the line of a tool use live at its start and finalizes it at its end, not edited", async () => {
+test("the hooks post a prompt typed in the terminal as User, also the session's first one whose hook starts before the transcript file is created, a task notification at a turn's start or within a running turn as Claude's one-line note, a compaction of the session as Claude's line, and the answer as Claude in the session's group, in the opening message of its turn, whose description shows the model of the first answer from the transcript; a prompt to a session without Claude Code gets Session 1 is not running., without the quote for a prompt as long as a message can be; an owner's prompt reaches an attached session, in the channel tag or raw it is not posted again, and the opening message of its turn quotes it; an owner's reply to the answer reaches the session after the quote line, with the answer's ID and sender; an owner's reaction to an answer gets Session 1 is not running., quoting the answer, before the session attaches, and reaches the attached session as its emoji after the answer's quote line, with the answer's ID as item and reply_to, the opening message of its turn quotes the reacted answer, and a removed reaction reaches no session; Claude posts the line of a tool use live at its start and finalizes it at its end, not edited; the display hook streams Claude's text into the opening message, live until the Stop hook finalizes it with a line in small print, not edited; the last message of each answer ends with that line, with the turn's usage from the transcript and the plan's usage of the status line command", async () => {
   const root = join(dir, "mirror", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("mirror", "Alice")
@@ -365,21 +410,26 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await until(async () => (await alice.chat.apiListMembers(groupId)).some(member => member.memberProfile.displayName === "User" && isActive(member)))
   const message = (text: string, sender: string, quoted?: number): ItemCheck =>
     inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === text && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === sender && chatItem.quotedItem?.itemId === quoted)
+  const withEnd = (text: string, quoted?: number): ItemCheck =>
+    inGroup(groupId, ({chatItem}) => chatItem.meta.itemText.startsWith(`${text}\n!- Done`) && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "Claude" && chatItem.quotedItem?.itemId === quoted)
+  const machine = " · RAM [\\d.]+ [TGM]B free(❗️)? · disk [\\d.]+ [TGM]B free(❗️)?!$"
+  const matches = (pattern: string): ItemCheck => inGroup(groupId, ({chatItem}) => new RegExp(pattern).test(chatItem.meta.itemText) && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "Claude")
   let hookStart = 0
   const hook = (input: object) => turn(JSON.stringify({session_id: five, ...input}), {}, client, undefined, ++hookStart)
 
   const transcript = join(dir, "mirror", "transcript.jsonl")
-  const userEntry = (promptId: string, content: string, kind: string) => `${JSON.stringify({type: "user", promptId, origin: {kind}, message: {role: "user", content}})}\n`
+  const userEntry = (promptId: string, content: string, kind: string, extra: object = {}) => `${JSON.stringify({type: "user", promptId, origin: {kind}, ...extra, message: {role: "user", content}})}\n`
   const typed = received(alice.chat, message("Fix the build", "User"))
   const submitted = hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p1", prompt: "Fix the build"})
   await new Promise(resolve => setTimeout(resolve, 1_000))
-  writeFileSync(transcript, userEntry("p1", "Fix the build", "human"))
+  writeFileSync(transcript, userEntry("p1", "Fix the build", "human", {timestamp: "2026-11-13T10:00:00.000Z"}))
   expect(await submitted).toEqual({})
   await typed
-  const fixed = received(alice.chat, message("Fixed.", "Claude"))
-  appendFileSync(transcript, `${JSON.stringify({type: "assistant", message: {model: "claude-opus-5", content: [{type: "text", text: "Fixed."}]}})}\n`)
+  const fixed = updated(alice.chat, matches(`^Fixed\\.\\n!- Done in 2\\.0 s · 861 output tokens · 36K tokens in context${machine}`))
+  const usage = {input_tokens: 3, cache_creation_input_tokens: 600, cache_read_input_tokens: 35_000, output_tokens: 861}
+  appendFileSync(transcript, `${JSON.stringify({type: "assistant", timestamp: "2026-11-13T10:00:02.000Z", message: {id: "msg_1", model: "claude-opus-5", content: [{type: "text", text: "Fixed."}], usage}})}\n`)
   const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupId && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
-  await hook({hook_event_name: "Stop", transcript_path: transcript, last_assistant_message: "Fixed."})
+  await hook({hook_event_name: "Stop", transcript_path: transcript, prompt_id: "p1", last_assistant_message: "Fixed."})
   await fixed
   expect((await described)?.toGroup.groupProfile.shortDescr).toBe("claude-opus-5")
   const notRunning = received(alice.chat, inGroup(groupId, textStarts("Session 1 is not running.")))
@@ -405,23 +455,27 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await until(() => attached.length === 2)
   const {item} = (attached[1] as {prompt: {item: number}}).prompt
   expect(attached[1]).toEqual({prompt: {text: "Run the tests", from: "Alice", item}})
-  const passed = received(alice.chat, message("Tests pass.", "Claude", sent.chatItem.meta.itemId))
+  const passed = updated(alice.chat, withEnd("Tests pass.", sent.chatItem.meta.itemId))
   await hook({hook_event_name: "UserPromptSubmit", prompt: `<channel source="plugin:simplex:simplex" from="Alice" item="${item}">\nRun the tests\n</channel>`})
   await hook({hook_event_name: "Stop", last_assistant_message: "Tests pass."})
   await passed
   const notification = '<task-notification>\n<task-id>b1</task-id>\n<status>completed</status>\n<summary>Background command "Build" completed (exit code 0)</summary>\n</task-notification>'
-  const noted = received(alice.chat, message('✅ Background command "Build" completed (exit code 0)', "Claude"))
+  const noted = received(alice.chat, message('!- ✅ Background command "Build" completed (exit code 0)!', "Claude"))
   appendFileSync(transcript, userEntry("p2", notification, "task-notification"))
   await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p2", prompt: notification})
   await noted
   const midTurn = '<task-notification>\n<task-id>b2</task-id>\n<status>failed</status>\n<summary>Background command "Lint" failed with exit code 1</summary>\n</task-notification>'
-  const midTurnNoted = received(alice.chat, message('❌ Background command "Lint" failed with exit code 1', "Claude"))
+  const midTurnNoted = received(alice.chat, message('!- ❌ Background command "Lint" failed with exit code 1!', "Claude"))
   appendFileSync(transcript, `${JSON.stringify({type: "attachment", attachment: {type: "queued_command", prompt: midTurn, origin: {kind: "task-notification"}, commandMode: "task-notification"}})}\n`)
   await hook({hook_event_name: "UserPromptSubmit", transcript_path: transcript, prompt_id: "p2", prompt: midTurn})
   await midTurnNoted
+  const compacted = received(alice.chat, message("⚙️ Context summarised on request: 399K → 25K tokens", "Claude"))
+  appendFileSync(transcript, `${JSON.stringify({type: "system", subtype: "compact_boundary", content: "Conversation compacted", timestamp: new Date().toISOString(), compactMetadata: {trigger: "manual", preTokens: 398_983, postTokens: 25_399}})}\n`)
+  await turn(JSON.stringify({session_id: five, hook_event_name: "PostCompact", transcript_path: transcript, trigger: "manual", compact_summary: "Summary."}), {}, client, undefined, Date.now())
+  await compacted
   const [lint] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Run the linter")
   await until(() => attached.length === 3)
-  const linted = received(alice.chat, message("Lint passes.", "Claude", lint.chatItem.meta.itemId))
+  const linted = updated(alice.chat, withEnd("Lint passes.", lint.chatItem.meta.itemId))
   await hook({hook_event_name: "UserPromptSubmit", prompt: "Run the linter"})
   await hook({hook_event_name: "Stop", last_assistant_message: "Lint passes."})
   await alice.chat.apiSendTextReply(await linted, "Why so fast?")
@@ -433,7 +487,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await until(() => attached.length === 5)
   const reacted = (attached[4] as {prompt: {item: number}}).prompt.item
   expect(attached[4]).toEqual({prompt: {text: "> Tests pass.\n👍", from: "Alice", item: reacted, replyTo: {item: reacted, from: "Claude"}}})
-  const thanked = received(alice.chat, message("Thanks.", "Claude", testsPass.chatItem.meta.itemId))
+  const thanked = updated(alice.chat, withEnd("Thanks.", testsPass.chatItem.meta.itemId))
   await hook({hook_event_name: "UserPromptSubmit", prompt: `<channel source="plugin:simplex:simplex" from="Alice" item="${reacted}" reply_to="${reacted}" reply_to_from="Claude">\n> Tests pass.\n👍\n</channel>`})
   await hook({hook_event_name: "Stop", last_assistant_message: "Thanks."})
   await thanked
@@ -441,20 +495,49 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   await react("🚀")
   await until(() => attached.length === 6)
   expect((attached[5] as {prompt: {text: string}}).prompt.text).toBe("> Tests pass.\n🚀")
-  const bash = {tool_name: "Bash", tool_input: {command: "npm test", description: "Run the tests"}, tool_use_id: "toolu_1"}
-  const started = received(alice.chat, message("💻 Run the tests", "Claude"))
+  const lintItem = (attached[2] as {prompt: {item: number}}).prompt.item
+  await alice.chat.apiUpdateChatItem(T.ChatType.Group, groupId, lint.chatItem.meta.itemId, {type: "text", text: "Run the linter twice"})
+  await until(() => attached.length === 7)
+  expect(attached[6]).toEqual({prompt: {text: "Run the linter twice", from: "Alice", item: lintItem, edited: true}})
+  const [live] = await alice.chat.apiSendMessages([T.ChatType.Group, groupId], [{msgContent: {type: "text", text: "Run"}, mentions: {}}], true)
+  await alice.chat.apiUpdateChatItem(T.ChatType.Group, groupId, live.chatItem.meta.itemId, {type: "text", text: "Run the"}, true)
+  await alice.chat.apiUpdateChatItem(T.ChatType.Group, groupId, live.chatItem.meta.itemId, {type: "text", text: "Run the build"}, false)
+  await until(() => attached.length === 8)
+  expect(attached[7]).toEqual({prompt: {text: "Run the build", from: "Alice", item: expect.any(Number)}})
+  const bash ={tool_name: "Bash", tool_input: {command: "npm test", description: "Run the tests"}, tool_use_id: "toolu_1"}
+  const started = received(alice.chat, message("!- 💻 Run the tests!", "Claude"))
   await hook({hook_event_name: "PreToolUse", cwd: "/p", ...bash})
   expect((await started).chatItem.meta.itemLive).toBe(true)
-  const ended = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "💻 Run the tests ✅ 2.0 s"))
+  const ended = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "!- 💻 Run the tests 2.0 s!"))
   await hook({hook_event_name: "PostToolUse", cwd: "/p", ...bash, tool_response: {stdout: "ok"}, duration_ms: 2018})
   const {meta: finalized} = (await ended).chatItem
   expect([finalized.itemLive, finalized.itemEdited]).toEqual([false, false])
+
+  const [summarize] = await alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], "Summarize")
+  await until(() => attached.length === 9)
+  const opened = received(alice.chat, message("", "Claude", summarize.chatItem.meta.itemId))
+  await hook({hook_event_name: "UserPromptSubmit", prompt: "Summarize"})
+  expect((await opened).chatItem.meta.itemLive).toBe(true)
+  const display = (index: number, final: boolean, delta: string) => runDisplay({SIMPLEX_MCP_HOME: root}, {session_id: five, hook_event_name: "MessageDisplay", turn_id: "t1", message_id: "m1", index, final, delta})
+  const streamed = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "Summary:\n"))
+  expect(await display(0, false, "Summary:\n")).toBe("{}\n")
+  expect((await streamed).chatItem.meta.itemLive).toBe(true)
+  const summarized = updated(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "Summary:\nAll green."))
+  expect(await display(1, true, "All green.")).toBe("{}\n")
+  expect((await summarized).chatItem.meta.itemLive).toBe(true)
+  const resetsAt = Date.now() / 1_000 + 3_600
+  await statusLine(JSON.stringify({session_id: five, model: {display_name: "Opus 5"}, rate_limits: {five_hour: {used_percentage: 34.7, resets_at: resetsAt}, seven_day: {used_percentage: 61, resets_at: resetsAt}}}), () => undefined, {SIMPLEX_MCP_HOME: root})
+  const endLine = updated(alice.chat, matches(`^Summary:\\nAll green\\.\\n!- Done in .* · 5 h: 34% · week: 61%${machine}`))
+  await turn(JSON.stringify({session_id: five, hook_event_name: "Stop", last_assistant_message: "Summary:\nAll green."}), {}, client, undefined, Date.now())
+  const {meta: summary} = (await endLine).chatItem
+  expect([summary.itemLive, summary.itemEdited]).toEqual([false, false])
   const {chatItems} = await alice.chat.apiGetChat(T.ChatType.Group, groupId, 50)
+  expect(chatItems.filter(({meta}) => meta.itemText.startsWith("Summary:\nAll green."))).toHaveLength(1)
   const fromUser = chatItems.filter(({chatDir, content}) => chatDir.type === "groupRcv" && chatDir.groupMember.memberProfile.displayName === "User" && content.type === "rcvMsgContent")
   expect(fromUser.map(({meta}) => meta.itemText)).toEqual(["Fix the build"])
 }, 600_000)
 
-test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, owns a contact and a group that accept after connect returned, asks for mode host, and gets a prompt sent before it attached again after a service start", async () => {
+test("a session keeps its group for hooks with a new ID from its process, relays tool use to its owners, who approve Bash for the rest of the session, owns a contact and a group that accept after connect returned, asks for mode host, and gets a prompt sent before it attached again after a service start", async () => {
   const root = join(dir, "channel", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("channel", "Alice")
@@ -468,7 +551,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   const attached: AttachLine[] = []
   const controller = new AbortController()
   closing.push(async () => controller.abort())
-  client.stream("/attach", {id: one}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
+  client.stream("/attach", {id: one, pid}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
   await until(() => attached.length === 1)
   const owner = await client.request<OwnerState>("GET", "/link")
   const invitations = joinSessionGroups(alice, ["1 · one"])
@@ -478,7 +561,7 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   const ownerSends = (text: string) => alice.chat.apiSendTextMessage([T.ChatType.Group, groupId], text)
 
   expect(await sessionStart(JSON.stringify({session_id: two, cwd: "/p", source: "clear"}), env, {client, nodeVersion: process.versions.node})).toEqual({})
-  const cleared = received(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText === "Cleared." && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "Claude"))
+  const cleared = received(alice.chat, inGroup(groupId, ({chatItem}) => chatItem.meta.itemText.startsWith("Cleared.\n!- Done") && chatItem.chatDir.type === "groupRcv" && chatItem.chatDir.groupMember.memberProfile.displayName === "Claude"))
   await turn(JSON.stringify({session_id: two, hook_event_name: "Stop", last_assistant_message: "Cleared."}), env, client)
   await cleared
   expect((await client.request<StatusReply>("GET", "/status")).sessions).toEqual([{number: 1, name: "1 · one", attached: 1}])
@@ -488,6 +571,13 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   await ownerSends(`/approve ${cardNumber(await toolUse)}`)
   await until(() => attached.some(({permission}) => permission !== undefined))
   expect(attached.filter(({permission}) => permission !== undefined)).toEqual([{permission: {requestId: "abcde", behavior: "allow"}}])
+  const toolUseAll = card("I want to use `Bash`: `Run shell command`")
+  const approvedAll = card("Approved `Bash` for the rest of this session by Alice. /'revoke Bash'")
+  await client.request("POST", "/permission", {id: one, requestId: "fghij", toolName: "Bash", description: "Run shell command", inputPreview: "pwd"})
+  await ownerSends(`/approve ${cardNumber(await toolUseAll)} all`)
+  await approvedAll
+  await until(() => attached.some(({permission}) => permission?.requestId === "fghij"))
+  expect(attached.filter(({tools}) => tools !== undefined)).toEqual([{tools: [{tool: "Bash", approvedBy: "Alice"}]}])
 
   const address = await bob.chat.apiCreateUserAddress(bob.user.userId)
   const requested = bob.chat.wait("receivedContactRequest", 60_000)
@@ -599,7 +689,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   const bobRemoved = bob.chat.wait("deletedMemberUser", ({groupInfo}) => groupInfo.groupId === bobMain, 60_000)
   await alice.chat.apiRemoveMembers(mainGroupId, [bobInAlice.groupMemberId])
   expect(await bobRemoved).toBeDefined()
-  const sessionsListed = received(alice.chat, inGroup(mainGroupId, textStarts("1 · one")))
+  const sessionsListed = received(alice.chat, sessionsReply(mainGroupId, "▶️ 1 · one: running"))
   await alice.chat.apiSendTextMessage([T.ChatType.Group, mainGroupId], "/sessions")
   await sessionsListed
   await bobSends("Run the tests")
@@ -652,7 +742,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   expect((await alice.chat.apiListGroups(alice.user.userId)).find(({groupId}) => groupId === groupOne)?.membership.memberRole).toBe(T.GroupMemberRole.Owner)
 }, 600_000)
 
-test("/observer ends the standing approvals of the member it makes an observer, and answers that a member who has not joined yet is no member", async () => {
+test("/observer ends the standing approvals of the member it makes an observer, of a chat and of a tool, and answers that a member who has not joined yet is no member", async () => {
   const root = join(dir, "observer", "root")
   await prepareRoot(smpServer.address, root)
   const alice = await personIn("observer", "Alice")
@@ -662,6 +752,11 @@ test("/observer ends the standing approvals of the member it makes an observer, 
   const service = await startService(root)
   const client = ServiceClient.forRoot(root)
   await openSession(client, one, "one")
+  const attached: AttachLine[] = []
+  const controller = new AbortController()
+  closing.push(async () => controller.abort())
+  client.stream("/attach", {id: one}, line => attached.push(line as AttachLine), controller.signal).catch(() => undefined)
+  await until(() => attached.length === 1)
   const owner = await client.request<OwnerState>("GET", "/link")
   const aliceInvited = joinSessionGroups(alice, ["1 · one"])
   const mainGroupId = await joinByLink(alice, owner.link!)
@@ -691,12 +786,18 @@ test("/observer ends the standing approvals of the member it makes an observer, 
     await aliceSends("/list")
     return (await shown).chatItem.meta.itemText
   }
-  expect(await listed()).toBe(`${chat}  bot Directory, approved for this chat by Bob`)
+  const toolUse = received(bob.chat, inGroup(bobGroupOne, textStarts("I want to use `Bash`")))
+  await client.request("POST", "/permission", {id: one, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+  const bashApproved = received(bob.chat, inGroup(bobGroupOne, textStarts("Approved `Bash` for the rest of this session by Bob.")))
+  await bob.chat.apiSendTextMessage([T.ChatType.Group, bobGroupOne], `/approve ${cardNumber(await toolUse)} all`)
+  await bashApproved
+  expect(await listed()).toBe(`${chat}  bot Directory, approved for this chat by Bob\n\`Bash\`  approved for this session by Bob`)
 
   const bobObserver = aliceSees("Bob is an observer and can't send messages.")
   await aliceSends(`/${makeBobObserver}`)
   await bobObserver
   expect(await listed()).toBe(`${chat}  bot Directory`)
+  expect(attached.filter(({tools}) => tools !== undefined)).toEqual([{tools: [{tool: "Bash", approvedBy: "Bob"}]}, {tools: []}])
 
   const daveConnected = dave.chat.wait("connectedToGroupMember", ({member}) => member.memberProfile.displayName === "Claude", 60_000)
   const daveMain = await joinByLink(dave, mainLink)
@@ -716,6 +817,15 @@ test("/observer ends the standing approvals of the member it makes an observer, 
   await dave.chat.apiJoinGroup(daveGroupOne)
   await daveJoined
   await daveRights
+}, 600_000)
+
+test("a data folder of 0.3.0 starts with User as a person, and an owner sees Claude as an agent and User as a person", async () => {
+  const {alice, hub, groupOne} = await linkSession("peers")
+  expect(hub.user!["user"].profile.peerType).toBe(T.ChatPeerType.Human)
+  await until(async () => (await userContact(hub.chat, hub.profile.userId))?.profile.peerType === T.ChatPeerType.Human)
+  const members = await alice.chat.apiListMembers(groupOne)
+  expect(members.find(({memberProfile}) => memberProfile.displayName === "Claude")?.memberProfile.peerType).toBe(T.ChatPeerType.Agent)
+  expect(members.find(({memberProfile}) => memberProfile.displayName === "User")?.memberProfile.peerType).toBe(T.ChatPeerType.Human)
 }, 600_000)
 
 test("a new session has no chats", async () => {
@@ -748,7 +858,7 @@ test("stdio session spawns the service and recovers after the service is killed"
 
   expect(await session.client.initialize()).toMatchObject({serverInfo: {name: "simplex-mcp"}})
   const {result} = await session.client.request("tools/list")
-  expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply"])
+  expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave", "reply", "pre_tool_use"])
   const listed = await session.call("list", {})
   expect(listed.isError).toBeUndefined()
   expect(listed.structuredContent.actions).toEqual([])

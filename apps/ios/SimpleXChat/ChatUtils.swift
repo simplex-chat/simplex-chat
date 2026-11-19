@@ -97,7 +97,7 @@ public func chatIcon(_ cInfo: ChatInfo) -> Image {
     case let .direct(contact): contact.chatIcon
     case let .group(groupInfo, _): Image(systemName: groupInfo.chatIconName)
     case .local: Image(systemName: "folder.circle.fill")
-    case .contactRequest: Image(systemName: "person.crop.circle.fill")
+    case let .contactRequest(contactRequest): peerTypeIcon(contactRequest.profile.peerType)
     default:  Image(systemName: "circle.fill")
     }
 }

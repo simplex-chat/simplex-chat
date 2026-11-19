@@ -45,6 +45,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - caches (the steps "Restore ... from cache");
   - `cabal build -j --enable-tests --ghc-options=-O0` (step "Build CLI");
   - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed.
+- App test fixtures: core tests write the core's responses and events that the app tests use to tests/fixtures/api (`/names tests/` to tests/fixtures/api/names; `/contact via address/`, `/should validate link type/` and `/reject contact and notify the sender/` to tests/fixtures/api/connect; `/updated item event has the previous item/`, `/should send updated item with mentions added and removed by edit/` and `/mark call invitation missed when the caller ends the call/` to tests/fixtures/api/updates), and fail when a recording differs from the committed file; the rewritten files are committed, and the kotlin and ios scopes run for them.
 - Local:
   ```sh
   cp scripts/cabal.project.local.linux cabal.project.local
@@ -73,9 +74,10 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 - Globs:
   - apps/ios/**
+  - tests/fixtures/api/**
   - scripts/ci/ios-stub-libs.sh
-- CI: build-ios: stub libraries, then xcodebuild for the iOS Simulator without signing.
-- Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the xcodebuild command of the step "Build iOS app" of build-ios.
+- CI: build-ios: stub libraries, then xcodebuild for the iOS Simulator without signing (step "Build iOS app"), then the target SimpleX Unit Tests, hosted by the app, in a new simulator (step "Run iOS unit tests"). The stubs of `chat_migrate_init` and `chat_migrate_init_key` return an empty string, so the app opens its database error screen and calls the core no more.
+- Local, on macOS: `scripts/ci/ios-stub-libs.sh`, then the commands of the steps "Build iOS app" and "Run iOS unit tests" of build-ios.
 
 #### packages
 
@@ -132,17 +134,13 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 #### mcp
 
-- Globs:
-  - packages/simplex-chat-mcp/**
-  - packages/simplex-chat-nodejs/**
-  - packages/simplex-chat-client/types/typescript/**
+- Globs: packages/simplex-chat-mcp/**.
 - CI:
-  - in build-linux: `scope-tests.sh mcp` (step "Test changed scopes"):
-    - the types package and the Node.js library built from the branch without the add-on, as package-tests.sh builds them;
-    - `npm ci`, then both installed into the MCP package with `npm install --no-save`;
+  - in build-linux: `scope-tests.sh mcp` (step "Test changed scopes"), with the published `simplex-chat` and `@simplex-chat/types` of package-lock.json:
+    - `npm ci`;
     - `npx tsc` and `npx tsc -p test/tsconfig.json --noEmit`;
     - `npm test`, the unit tests;
-    - `npm run test:e2e`, the end-to-end tests. They download libsimplex and the add-on pinned in packages/simplex-chat-nodejs/src/release.ts, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
+    - `npm run test:e2e`, the end-to-end tests. They download libsimplex and the add-on pinned by the installed `simplex-chat`, and smp-server and xftp-server of the simplexmq release in test/e2e/smpServer.ts;
   - before a publication: the package with its published dependencies, type-checked and unit tested in job `publish` of build.yml (docs/contributing/RELEASES.md, "MCP server release").
 - Local: `scripts/ci/scope-tests.sh mcp`.
 
@@ -165,7 +163,6 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 | Scope | Paths | CI |
 |---|---|---|
-| ios | apps/ios/** | compile only |
 | types package | packages/simplex-chat-client/types/typescript/** | compile only |
 | ts-client | packages/simplex-chat-client/typescript/** | - |
 | webrtc | packages/simplex-chat-webrtc/** | - |

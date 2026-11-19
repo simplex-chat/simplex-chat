@@ -14,7 +14,7 @@ module ChatTests.Groups where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
+import ChatTests.Profiles (addTestBadge, futureDate, invalidLink, issueTestBadge, setLinkType, setTestGroupLinkData, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -32,10 +32,10 @@ import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
+import Simplex.Chat.Messages (AChatItemUpdate (..), CIMention (..), CIMentionMember (..), ChatItem (ChatItem, mentions), ChatItemId, isUserMention)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
@@ -46,7 +46,7 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Chat.Types.UITheme (ChatLayout (..))
 import Simplex.Messaging.Agent (createConnection, joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SConnectionMode (..))
+import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SConnectionMode (..), UserLinkData (..))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
@@ -236,6 +236,7 @@ chatGroupTests = do
     it "member contact is active" testMembershipProfileUpdateContactActive
     it "member contact is deleted" testMembershipProfileUpdateContactDeleted
     it "member contact is deleted, peer type is updated" testMembershipProfileUpdateContactDeletedPeerType
+    it "change of peer type alone is sent on next message" testMembershipProfileUpdatePeerTypeOnly
     it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
     it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
     it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
@@ -255,6 +256,7 @@ chatGroupTests = do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   describe "group member mentions" $ do
     it "should send and edit messages with member mentions" testMemberMention
+    it "should send updated item with mentions added and removed by edit" testMemberMentionEdited
     it "should forward and quote message updating mentioned member name" testForwardQuoteMention
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
@@ -274,6 +276,7 @@ chatGroupTests = do
     it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
+    it "should correctly maintain unread stats for support chats on editing mentions" testScopedSupportUnreadStatsOnMentionEdit
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
     it "should not read support chat items when reading group without scope" testScopedSupportUnreadStatsGroupReadNoScope
@@ -321,7 +324,10 @@ chatGroupTests = do
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should keep channel profile from link data when joining" testChannelJoinKeepsLinkProfile
       it "should apply channel profile from link data when joining" testChannelJoinAppliesLinkProfile
+      it "should apply channel profile from link data to known channel in plan" testChannelPlanAppliesLinkProfile
       it "should check entity ID of channel link on refresh" testChannelLinkDataOtherChannel
+      it "should validate type of channel link" testChannelLinkAsOtherTypes
+      it "relay link checks should skip invalid channel link data" testRelayLinkChecksInvalidData
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
@@ -1437,7 +1443,7 @@ testGroupMessageEditHistory =
 
       alice ##> ("/_update item #1 " <> aliceItemId <> " text hey there")
       alice <# "#team [edited] hey there"
-      bob <# "#team alice> [edited] hey there"
+      bob <# "#team alice> hey there"
 
       alice ##> "/item info #team hey"
       alice <##. "sent at: "
@@ -1505,7 +1511,7 @@ testGroupMessageDelete =
       bob <# "#team [edited] > alice hello!"
       bob <## "      hi alice"
       concurrently_
-        (alice <# "#team bob> [edited] hi alice")
+        (alice <# "#team bob> hi alice")
         ( do
             cath <# "#team bob> [edited] > alice hello!"
             cath <## "      hi alice"
@@ -3746,6 +3752,7 @@ testGroupLinkIgnoreRelayJoinRequest ps =
       (gShortLink, _gLink) <- getGroupLinks alice "team" GRMember True
       sendMemberJoinRequest bob gShortLink
       alice <## "warning: memberJoinRequestViaRelay (group team): ignored relay join request from bob (group does not use relays)"
+      checkPendingInvitations alice 0
       alice ##> "/ms team"
       alice <## "alice (Alice): owner, you, created group"
 
@@ -3755,7 +3762,7 @@ sendMemberJoinRequest cc groupLink =
     gLink :: ShortLinkContact <- either fail pure $ strDecode (B.pack groupLink)
     (memberKey, _) <- atomically . C.generateKeyPair =<< C.newRandom
     let joinGroup = do
-          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user gLink
+          (_, _, cReq, _) <- getShortLinkConnReq NRMInteractive user gLink
           (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
           dm <- encodeConnInfo $ XMember bobProfile (MemberId "member") (MemberKey memberKey) Nothing
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
@@ -7581,6 +7588,30 @@ testMembershipProfileUpdateContactDeletedPeerType =
 
       memberAddressPeerType bob "alisa" `shouldReturn` [(Nothing, Just CPTBot)]
 
+testMembershipProfileUpdatePeerTypeOnly :: HasCallStack => TestParams -> IO ()
+testMembershipProfileUpdatePeerTypeOnly =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"shortDescr\": \"Alice\", \"peerType\": \"agent\"}"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      memberAddressPeerType bob "alice" `shouldReturn` [(Nothing, Just CPTAgent)]
+
+      alice #> "#team hello again"
+      bob <# "#team alice> hello again"
+
+      bob ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine bob
+      filter (== (0, "updated profile (signed)")) r `shouldBe` [(0, "updated profile (signed)")]
+
 testMembershipProfileUpdateContactDisabled :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactDisabled =
   testChat2 aliceProfile bobProfile $
@@ -8461,6 +8492,35 @@ testMemberMention =
           bob <# "#team cath> [edited] hello @alice @bob"
         ]
 
+testMemberMentionEdited :: HasCallStack => TestParams -> IO ()
+testMemberMentionEdited ps = do
+  updates <- newTVarIO []
+  events <- newTVarIO []
+  let hook _ evt = do
+        recordItemEvent events evt
+        case evt of
+          Right (CEvtChatItemUpdated _ (AChatItemUpdate _ _ _ ci prevCi)) ->
+            atomically $ modifyTVar' updates (<> [(mentionOf prevCi, mentionOf ci)])
+          _ -> pure ()
+        pure evt
+      mentionOf :: ChatItem c d -> ([T.Text], Bool)
+      mentionOf ci@ChatItem {mentions} = (M.keys mentions, isUserMention ci)
+  withNewTestChatCfgOpts ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} testOpts {markRead = False} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/unmute mentions #team"
+      alice <## "ok"
+      eventsFixture "updates/group-mention" events $ do
+        bob #> "#team hello"
+        alice <# "#team bob> hello <muted>"
+        bob ##> "! #team hello @alice"
+        bob <# "#team [edited] hello @alice"
+        alice <# "#team bob> [edited] hello @alice"
+        bob ##> "! #team hello"
+        bob <# "#team [edited] hello"
+        alice <# "#team bob> [edited] hello <muted>"
+      readTVarIO updates `shouldReturn` [(([], False), (["alice"], True)), ((["alice"], True), ([], False))]
+
 testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
 testForwardQuoteMention =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -9309,6 +9369,31 @@ testScopedSupportUnreadStatsOnRead =
 
     cath ##> "/member support chats #team"
     cath <// 50000
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportUnreadStatsOnMentionEdit :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsOnMentionEdit =
+  testChatOpts4 opts aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+
+    dan ##> "/_send #1(_support:3) text 1"
+    dan <# "#team (support: bob) 1"
+    alice <# "#team (support: bob) dan> 1"
+    bob <# "#team (support) dan> 1"
+    danItemId <- lastItemId dan
+
+    dan ##> ("/_update item #1(_support:3) " <> danItemId <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"@alice 1\"}, \"mentions\": {\"alice\": 1}}")
+    dan <# "#team (support: bob) [edited] @alice 1"
+    alice <# "#team (support: bob) dan> [edited] @alice 1"
+    bob <# "#team (support) dan> [edited] @alice 1"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 0, mentions: 1"
   where
     opts =
       testOpts
@@ -10821,6 +10906,57 @@ testChannelLinkDataOtherChannel ps =
         cath <## "Please ask your contact to check /version and update if needed."
         cath <## "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
 
+testChannelLinkAsOtherTypes :: HasCallStack => TestParams -> IO ()
+testChannelLinkAsOtherTypes ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, _) <- prepareChannel1Relay "team" alice bob
+        cath ##> ("/_connect plan 1 " <> shortLink)
+        cath <## "group link: ok to connect via relays"
+        _ <- getTermLine cath
+        forM_ ["/g#", "/a#"] $ \linkType -> do
+          cath ##> ("/_connect plan 1 " <> setLinkType "/c#" linkType shortLink)
+          invalidLink cath
+        cath ##> ("/relay test " <> setLinkType "/c#" "/r#" shortLink)
+        cath <## "relay test failed at RTSGetLink, error: ChatError {errorType = CEInvalidConnReq}"
+
+testChannelPlanAppliesLinkProfile :: HasCallStack => TestParams -> IO ()
+testChannelPlanAppliesLinkProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        withCCTransaction cath $ \db ->
+          DB.execute_ db "UPDATE group_profiles SET short_descr = 'local copy'"
+        cath ##> ("/_connect plan 1 " <> shortLink <> " resolve=allGroups")
+        cath <## "group link: known group #team"
+        cath <## "use #team <message> to send messages"
+        withCCTransaction cath (\db -> DB.query_ db "SELECT short_descr FROM group_profiles" :: IO [Only (Maybe T.Text)])
+          `shouldReturn` [Only Nothing]
+
+testRelayLinkChecksInvalidData :: HasCallStack => TestParams -> IO ()
+testRelayLinkChecksInvalidData ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps testCfg {relayChecksInterval = 3} relayTestOpts "bob" bobProfile $ \bob -> do
+      _ <- prepareChannel1Relay "team" alice bob
+      relayOwnStatus bob "active"
+      setTestGroupLinkData alice $ UserLinkData ""
+      invalidLink bob
+      relayOwnStatus bob "active"
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+  where
+    relayOwnStatus :: HasCallStack => TestCC -> T.Text -> IO ()
+    relayOwnStatus cc status = go (100 :: Int)
+      where
+        go n = do
+          [Only s] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT relay_own_status FROM groups" :: IO [Only T.Text]
+          if s == status || n == 0
+            then s `shouldBe` status
+            else threadDelay 100000 >> go (n - 1)
+
 testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdatePrefsSigned ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -12168,6 +12304,7 @@ testChannelRelayInvUnsigned ps =
       (cathSLink, _cLink) <- getContactLinks cath True
       sendUnsignedRelayInv alice cathSLink
       cath <##. "error: x.grp.relay.inv: invitation is not signed by the owner"
+      checkPendingInvitations cath 0
 
 sendUnsignedRelayInv :: TestCC -> String -> IO ()
 sendUnsignedRelayInv cc relayAddress =
@@ -12184,7 +12321,7 @@ sendUnsignedRelayInv cc relayAddress =
               fromMemberKey = Just $ MemberKey memberKey
             }
         joinRelay = do
-          (_, _, cReq) <- getShortLinkConnReq NRMInteractive user relayLink
+          (_, _, cReq, _) <- getShortLinkConnReq NRMInteractive user relayLink
           (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
           dm <- encodeConnInfo $ XGrpRelayInv inv
           withAgent $ \a -> joinConnection a NRMInteractive (aUserId user) connId True cReq dm PQSupportOff SMSubscribe
@@ -13527,8 +13664,8 @@ testChannelUpdateFallbackSendAsGroup ps =
             aliceMsgId <- lastItemId alice
             alice ##> ("/_update item #1 " <> aliceMsgId <> " text channel msg updated")
             alice <# "#team [edited] channel msg updated"
-            -- bob's item was locally deleted, fallback recreates it with [edited] marker
-            bob <# "#team> [edited] channel msg updated"
+            -- bob's item was locally deleted, fallback recreates it as a new item
+            bob <# "#team> channel msg updated"
             [cath, dan, eve] *<# "#team> [edited] channel msg updated"
 
             -- now test sendAsGroup=False case
@@ -13547,7 +13684,7 @@ testChannelUpdateFallbackSendAsGroup ps =
             alice ##> ("/_update item #1 " <> aliceMsgId2 <> " text member msg updated")
             alice <# "#team [edited] member msg updated"
             -- bob's internally deleted item is re-created as from member (sendAsGroup=False)
-            bob <# "#team alice> [edited] member msg updated"
+            bob <# "#team alice> member msg updated"
             -- forwarded members see correct member attribution
             [cath, dan, eve] *<# "#team alice> [edited] member msg updated"
 
@@ -14111,7 +14248,7 @@ testChannelSignedHistory ps =
 
       -- catch-up subscriber joins late: as-group edited content + signed member post (author unknown to dan, shown by id hash), deleted excluded
       memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
-      dan <# "#team> [edited] history one edited (signed)"
+      dan <# "#team> history one edited (signed) [>>]"
       dan .<## "> from cath member (signed) [>>]"
       dan #$> ("/_get chat #1 count=100 search=history one edited", chat, [(0, "history one edited (signed)")])
       dan #$> ("/_get chat #1 count=100 search=from cath member", chat, [(0, "from cath member (signed)")])

@@ -28,6 +28,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -707,8 +708,8 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
 
 updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
 updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
-  ci' <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
-  toView $ CEvtChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci')
+  (ci, ci') <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent edited live timed_ msgId_
+  toView $ CEvtChatItemUpdated user (AChatItemUpdate SCTDirect msgDir (DirectChat ct) ci' ci)
 
 callStatusItemContent :: User -> Contact -> ChatItemId -> WebRTCCallStatus -> CM (Maybe ACIContent)
 callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
@@ -849,12 +850,11 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     -- TODO re-enable redirects with relay checks
     when (isJust redirect) $ do
       cxt <- chatStoreCxt
-      aci_ <- withStore $ \db -> do
-        liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
-        lookupChatItemByFileId db cxt user fileId
-      forM_ aci_ $ \aci -> do
-        cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci
+      upd_ <- withStore $ \db ->
+        updateFileChatItem db cxt user fileId $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
+      forM_ upd_ $ \upd -> do
+        cleanupACIFile $ updatedAChatItem upd
+        toView $ CEvtChatItemUpdated user upd
       throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
@@ -884,10 +884,10 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       pure $ all (ipAddressProtected netCfg) srvs
     relaysNotApproved :: [XFTPServer] -> CM ()
     relaysNotApproved unknownSrvs = do
-      aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
-      forM_ aci_ $ \aci -> do
-        cleanupACIFile aci
-        toView $ CEvtChatItemUpdated user aci
+      upd_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+      forM_ upd_ $ \upd -> do
+        cleanupACIFile $ updatedAChatItem upd
+        toView $ CEvtChatItemUpdated user upd
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 cleanupACIFile :: AChatItem -> CM ()
@@ -910,15 +910,16 @@ protoServer' ServerCfg {server} = protoServer server
 getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getFastNetworkConfig
 
-resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItem)
+resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItemUpdate)
 resetRcvCIFileStatus user fileId ciFileStatus = do
   cxt <- chatStoreCxt
-  withStore $ \db -> do
-    liftIO $ do
-      updateCIFileStatus db user fileId ciFileStatus
-      updateRcvFileStatus db fileId FSNew
-      updateRcvFileAgentId db fileId Nothing
-    lookupChatItemByFileId db cxt user fileId
+  withStore $ \db -> updateFileChatItem db cxt user fileId $ resetRcvFile db user fileId ciFileStatus
+
+resetRcvFile :: DB.Connection -> User -> FileTransferId -> CIFileStatus 'MDRcv -> IO ()
+resetRcvFile db user fileId ciFileStatus = do
+  updateCIFileStatus db user fileId ciFileStatus
+  updateRcvFileStatus db fileId FSNew
+  updateRcvFileAgentId db fileId Nothing
 
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
@@ -1637,40 +1638,68 @@ updatePublicGroupData user gInfo gks
   | otherwise = pure gInfo
 
 -- must not resolve names here: a background link-data refresh would leak channel membership to the resolver
-updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe SimplexDomain -> CM (GroupInfo, Bool)
+updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe SimplexDomain -> CM (GroupInfo, Bool, ([ContactId], [GroupId]))
 updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_
   | profileChanged || countChanged || verifyResolved = do
       cxt <- chatStoreCxt
-      withStore $ \db -> do
+      (gInfo', moved) <- withStore $ \db -> do
         g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
         g' <- case publicGroupData of
           Just PublicGroupData {publicMemberCount} | countChanged ->
             setPublicMemberCount db cxt user g publicMemberCount
           _ -> pure g
-        g'' <- if verifyResolved then liftIO $ setGroupDomainVerified db user g' True else pure g'
-        pure (g'', profileChanged)
-  | otherwise = pure (gInfo, False)
+        if verifyResolved
+          then liftIO $ do
+            g'' <- setGroupDomainVerified db user g' True
+            (g'',) <$> setOtherNameChatsMoved db user (GroupChat g'' Nothing)
+          else pure (g', ([], []))
+      nameMovedToView user moved
+      pure (gInfo', profileChanged, moved)
+  | otherwise = pure (gInfo, False, ([], []))
   where
     profileChanged = p /= groupProfile
     countChanged = case publicGroupData of
       Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
       _ -> False
-    groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
     newClaim = groupClaim groupProfile
     verifyResolved = isJust resolvedDomain_ && resolvedDomain_ == newClaim
 
-updateContactFromLinkData :: User -> Contact -> ProofPresHeader -> Profile -> CM Contact
+groupClaim :: GroupProfile -> Maybe SimplexDomain
+groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
+
+updateContactFromLinkData :: User -> Contact -> ProofPresHeader -> Profile -> CM (Contact, ([ContactId], [GroupId]))
 updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} presHeader linkProfile@Profile {contactDomain = newClaim}
   | profileChanged || verifyChanged = do
       cxt <- chatStoreCxt
-      withFastStore $ \db -> do
+      r@(_, moved) <- withFastStore $ \db -> do
         ct' <- updateContactProfile db cxt user ct (Just presHeader) linkProfile
-        if verifyChanged then liftIO $ setContactDomainVerified db user ct' True else pure ct'
-  | otherwise = pure ct
+        if verifyChanged
+          then liftIO $ do
+            ct'' <- setContactDomainVerified db user ct' True
+            (ct'',) <$> setOtherNameChatsMoved db user (DirectChat ct'')
+          else pure (ct', ([], []))
+      nameMovedToView user moved
+      pure r
+  | otherwise = pure (ct, ([], []))
   where
     profileChanged = fromLocalProfile profile /= linkProfile
     claimChanged = (claimDomain <$> prevClaim) /= (claimDomain <$> newClaim)
-    verifyChanged = contactDomainVerified /= Just True || claimChanged
+    verifyChanged = contactDomainVerified /= Just DVVerified || claimChanged
+
+setOtherNameChatsMoved :: DB.Connection -> User -> ChatInfo c -> IO ([ContactId], [GroupId])
+setOtherNameChatsMoved db user = \case
+  DirectChat Contact {contactId, profile = LocalProfile {contactDomain = Just d}} -> setMoved (SimplexNameInfo NTContact $ claimDomain d) (Just contactId) Nothing
+  GroupChat GroupInfo {groupId, businessChat = Just BusinessChatInfo {businessDomain = Just d}} _ -> setMoved (SimplexNameInfo NTContact $ claimDomain d) Nothing (Just groupId)
+  GroupChat GroupInfo {groupId, businessChat = Nothing, groupProfile} _ | Just d <- groupClaim groupProfile -> setMoved (SimplexNameInfo NTPublicGroup d) Nothing (Just groupId)
+  _ -> pure ([], [])
+  where
+    setMoved ni@SimplexNameInfo {nameType, nameDomain} ctId_ gId_ =
+      (,)
+        <$> (if nameType == NTContact then setNameContactsMoved db user nameDomain ctId_ else pure [])
+        <*> setNameGroupsMoved db user ni gId_
+
+nameMovedToView :: User -> ([ContactId], [GroupId]) -> CM ()
+nameMovedToView user (ctIds, gIds) = unless (null ctIds && null gIds) $ toView $ CEvtNameMoved user ctIds gIds
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfoKeys -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
@@ -1693,14 +1722,35 @@ groupLinkData (GIK gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {p
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
 
-getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
+getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m, Maybe ShortLinkData)
 getShortLinkConnReq' nm user l = do
   l' <- restoreShortLink' l
-  withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  (fd, cData, cReq) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  linkData <- liftIO $ decodeLinkUserData cData
+  case JT.parseMaybe (shortLinkDataP l) (fromMaybe J.Null linkData) of
+    Just sLinkData_ -> pure (fd, cData, cReq, sLinkData_)
+    Nothing -> throwChatError CEInvalidConnReq
 
-getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
+shortLinkDataP :: ConnShortLink m -> J.Value -> JT.Parser (Maybe ShortLinkData)
+shortLinkDataP l v = case l of
+  CSLInvitation {} -> optionalData $ contact <|> group notChannel
+  CSLContact _ ct _ _ -> case ct of
+    CCTContact -> optionalData $ contact <|> relayAddress
+    CCTGroup -> optionalData $ group notChannel <|> relayLink
+    CCTChannel -> Just <$> group isJust
+    CCTRelay -> optionalData $ relayAddress <|> contact
+  where
+    optionalData :: JT.Parser ShortLinkData -> JT.Parser (Maybe ShortLinkData)
+    optionalData p = if v == J.Null then pure Nothing else Just <$> p
+    contact = SLDContact <$> J.parseJSON v
+    relayLink = SLDRelayLink <$> J.parseJSON v
+    relayAddress = SLDRelayAddress <$> J.parseJSON v
+    group ok = SLDGroup <$> mfilter (\GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} -> ok publicGroup) (J.parseJSON v)
+    notChannel = maybe True (\PublicGroupProfile {groupType} -> groupType /= GTChannel)
+
+getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m, Maybe ShortLinkData)
 getShortLinkConnReq nm user l = do
-  r@(_, cData, _) <- getShortLinkConnReq' nm user l
+  r@(_, cData, _, _) <- getShortLinkConnReq' nm user l
   case cData of
     ContactLinkData _ UserContactData {direct, relays}
       | not direct && null relays -> throwChatError CEUnsupportedConnReq
@@ -3074,11 +3124,10 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
       let senderBlocked = case cd of
             CDGroupRcv _g _scope m -> memberBlocked m
             _ -> False
-          userReply = not senderBlocked && case cmToQuotedMsg chatMsgEvent of
+          userReply = case cmToQuotedMsg chatMsgEvent of
             Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
             _ -> False
-          userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
-       in pure (mentions', userMention')
+       in pure (mentions', userMentioned membership senderBlocked userReply mentions')
     memberChatStats :: Bool -> Maybe (Int, MemberAttention, Int)
     memberChatStats userMention = case cd of
       CDGroupRcv _g (Just scope) m ->

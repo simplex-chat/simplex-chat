@@ -249,3 +249,14 @@ describe("download cards", () => {
     expect(lastLines(["xftp://hash@a.example.com", "xftp://hash@evil`*bold*`/approve"])[0]).toBe("Servers: `a.example.com`, `evil'*bold*'`, unknown: downloading shows them this computer's IP address.")
   })
 })
+
+describe("tool-use cards", () => {
+  const permission = (toolApproved: boolean): NewAction => ({tool: "permission", input: {requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"}, toolApproved})
+
+  it("offers the approval of the tool for the session, and says that Claude Code still asks for a use of an approved tool", () => {
+    const lines = (toolApproved: boolean, state: State, extra: Partial<Action> = {}): string[] => cardText(action(permission(toolApproved), state, extra), mode).split("\n")
+    expect(lines(false, "pending")).toEqual(["I want to use `Bash`: `Run shell command`", "`ls`", "/'approve 1', /'approve 1 all' or /'reject 1'"])
+    expect(lines(true, "pending")).toEqual(["I want to use `Bash`: `Run shell command`", "`ls`", "`Bash` is approved for this session, and Claude Code still asks for this use.", "/'approve 1' or /'reject 1'"])
+    expect(lines(true, "done", {decidedBy: "Alice"})).toEqual(["I want to use `Bash`: `Run shell command`", "`ls`", "`Bash` is approved for this session, and Claude Code still asks for this use.", "Approved by Alice."])
+  })
+})
