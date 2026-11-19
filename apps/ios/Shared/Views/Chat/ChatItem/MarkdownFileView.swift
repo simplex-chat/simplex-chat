@@ -3,6 +3,7 @@ import SimpleXChat
 import Ink
 
 private let MAX_MARKDOWN_VIEW_SIZE: Int64 = 1_048_576
+private let MAX_MARKDOWN_COPY_SIZE: Int64 = 131_072
 private let MAX_MARKDOWN_LINE_LENGTH = 15_000
 private let MAX_MARKDOWN_NESTING = 16
 private let MAX_MARKDOWN_LINK_NESTING = 4
@@ -27,7 +28,7 @@ func showMarkdownFile(_ file: CIFile) {
             let hasBidiControls = text.unicodeScalars.contains(where: isBidiControl)
             await MainActor.run {
                 showAppSheet {
-                    MarkdownFileView(file: file, fileSource: fileSource, lines: shownLines, html: html, hasBidiControls: hasBidiControls)
+                    MarkdownFileView(file: file, fileSource: fileSource, text: text, lines: shownLines, html: html, hasBidiControls: hasBidiControls)
                 }
             }
         } catch {
@@ -170,6 +171,7 @@ struct MarkdownFileView: View {
     @AppStorage(DEFAULT_MARKDOWN_FILE_TEXT_VIEW) private var textView = false
     let file: CIFile
     let fileSource: CryptoFile
+    let text: String
     let lines: [String]
     let html: String?
     let hasBidiControls: Bool
@@ -203,6 +205,21 @@ struct MarkdownFileView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button {
+                        if file.fileSize > MAX_MARKDOWN_COPY_SIZE {
+                            showAlert(
+                                NSLocalizedString("File too large to copy", comment: "alert title"),
+                                message: String.localizedStringWithFormat(
+                                    NSLocalizedString("Files up to %@ can be copied. Save the file to open it in another app.", comment: "alert message"),
+                                    ByteCountFormatter.string(fromByteCount: MAX_MARKDOWN_COPY_SIZE, countStyle: .binary)
+                                )
+                            )
+                        } else {
+                            UIPasteboard.general.string = text
+                        }
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                    }
                     if html != nil {
                         Button {
                             textView.toggle()

@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
@@ -58,6 +59,7 @@ import java.util.Base64
 private const val DATA_IMAGE = "data:image/"
 private val IMAGE_TYPES = listOf(ImageFileType.JPEG, ImageFileType.PNG)
 private const val MAX_MARKDOWN_VIEW_SIZE: Long = 1_048_576
+private const val MAX_MARKDOWN_COPY_SIZE = 131_072
 private const val MAX_MARKDOWN_LINE_LENGTH = 15_000
 private const val MAX_MARKDOWN_DEPTH = 32
 private const val MAX_MARKDOWN_TABLE_ROWS = 200
@@ -71,7 +73,7 @@ private val invisibleCharMarkerStyle = SpanStyle(color = WarningOrange)
 
 internal class MarkdownLine(val text: String, val lineBreak: Boolean)
 
-internal class MarkdownDocument(val lines: List<MarkdownLine>, val formatted: State.Success?, val hasBidiControls: Boolean)
+internal class MarkdownDocument(val text: String, val lines: List<MarkdownLine>, val formatted: State.Success?, val hasBidiControls: Boolean)
 
 fun isMarkdownFile(file: CIFile): Boolean =
   file.fileSize <= MAX_MARKDOWN_VIEW_SIZE && file.fileName.substringAfterLast('.', "").lowercase() in listOf("md", "markdown")
@@ -98,6 +100,7 @@ fun showMarkdownFile(file: CIFile) {
     withContext(Dispatchers.Main) {
       if (appPlatform.isDesktop && ModalManager.center.isTopModalOpen(ModalViewId.MARKDOWN_FILE)) ModalManager.center.closeModal()
       ModalManager.center.showModal(id = ModalViewId.MARKDOWN_FILE, endButtons = {
+        MarkdownFileCopyButton(document.text, bytes.size)
         if (document.formatted != null) MarkdownViewSwitch()
         MarkdownFileSaveButton(file, bytes)
       }) {
@@ -112,6 +115,7 @@ internal suspend fun markdownDocument(bytes: ByteArray): MarkdownDocument {
   val lines = text.lines()
   val formatted = if (lines.all { it.length <= MAX_MARKDOWN_LINE_LENGTH }) formattedWithinLimits(text) else null
   return MarkdownDocument(
+    text,
     lines.flatMapIndexed { i, line ->
       val chunks = line.chunked(MAX_MARKDOWN_LINE_LENGTH).ifEmpty { listOf("") }
       chunks.mapIndexed { j, chunk -> MarkdownLine(chunk, lineBreak = i < lines.lastIndex && j == chunks.lastIndex) }
@@ -153,6 +157,24 @@ private fun MarkdownViewSwitch() {
       stringResource(if (textView.value) MR.strings.markdown_formatted_view else MR.strings.markdown_text_view),
       tint = MaterialTheme.colors.primary
     )
+  }
+}
+
+@Composable
+private fun MarkdownFileCopyButton(text: String, fileSize: Int) {
+  val clipboard = LocalClipboardManager.current
+  IconButton({
+    if (fileSize > MAX_MARKDOWN_COPY_SIZE) {
+      AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.markdown_file_too_large_to_copy),
+        String.format(generalGetString(MR.strings.markdown_file_copy_limit), formatBytes(MAX_MARKDOWN_COPY_SIZE.toLong()))
+      )
+    } else {
+      clipboard.setText(AnnotatedString(text))
+      showToast(generalGetString(MR.strings.copied))
+    }
+  }) {
+    Icon(painterResource(MR.images.ic_content_copy), stringResource(MR.strings.copy_verb), tint = MaterialTheme.colors.primary)
   }
 }
 

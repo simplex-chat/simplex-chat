@@ -721,6 +721,8 @@
   <string name="markdown_formatted_view">Formatted view</string>
   <string name="markdown_text_view">Text view</string>
   <string name="markdown_file_bidi_warning">This file has text direction characters. The text can be shown in a different order than it is written.</string>
+  <string name="markdown_file_too_large_to_copy">File too large to copy</string>
+  <string name="markdown_file_copy_limit">Files up to %s can be copied. Save the file to open it in another app.</string>
   <string name="loading_remote_file_title">Loading the file </string>
   <string name="loading_remote_file_desc">Please, wait while the file is being loaded from the linked mobile</string>
   <string name="file_error">File error</string>
