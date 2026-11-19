@@ -18,22 +18,22 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 - Send prompts with images and files, and see answers live. Terminal prompts sent to the chat too.
 - Reply and edit messages, send reactions.
 - Sessions use flat layout.
-- 🏗️ Voice messages, deleting a prompt, code highlighting, "Read more" for long messages, choices and small widgets from agents.
+- 🏗️ Voice messages, code highlighting, widgets, etc.
 
 ## Work with others in the same session
 
 - Invite people to the Main group, and they join any session's group.
 - Only owners and admins can approve tool calls.
-- The Main group lists every session and its state for everyone in it.
+- The Main group shows every session's state.
 - 🏗️ Each session as a topic in one group.
-- 🏗️ A team of agents in the session's group, each with its own profile: mention one by name to send it a message.
+- 🏗️ Agent teams: mention an agent to message it.
 
 ## Control your agents' activity
 
 - Agents ask before they act in other chats or use a tool such as Bash.
 - A live stream of agent's work: tasks, tool calls, etc.
 - Session and machine status.
-- 🏗️ Code changes as diffs, almost every waiting state answered from the chat, a new session started from the desktop app.
+- 🏗️ Code diffs, almost every waiting state answered from the chat, etc.
 
 ## Start
 
