@@ -327,9 +327,9 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId = regId, nrReveal, nr
         | otherwise -> case lapseMoment r of
             Just lapse | now <= lapse -> pure $ waitUntil r $ min unreadAt $ addUTCTime chainSecond lapse
             _ -> pure $ waitUntil r $ min unreadAt $ addUTCTime maxWait now
-      Just rv@NameReveal {rvAcceptance, rvDeadline} ->
+      Just rv ->
         -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then decides
-        (if unlapsed now c then relayAcceptance w now r c rvDeadline rvAcceptance else pure Nothing) >>= \case
+        (if unlapsed now c then relayAcceptance w now r c rv else pure Nothing) >>= \case
           Just next -> pure next
           Nothing
             | now < chainTime cmRevealAfter -> pure $ waitUntil r $ chainTime cmRevealAfter
@@ -347,8 +347,8 @@ unlapsed now Commit {cmRevealBefore} = now <= chainTime cmRevealBefore
 -- stores that acceptance. One signed for another policy, before a setNamePolicy, or for the other kind of terms, clears the
 -- reveal for the page to sign again; the relay's dry run's revert is judged as a register's is, unless the policy holds the
 -- acceptance, which another sent first.
-relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Commit -> ChainSeconds -> TermsAcceptance -> IO (Maybe Next)
-relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} c deadline a@TermsAcceptance {taTermsHash} =
+relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Commit -> NameReveal -> IO (Maybe Next)
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} c rv@NameReveal {rvDeadline = deadline, rvAcceptance = a@TermsAcceptance {taTermsHash}} =
   inFlightTransaction wkSender (TxRegistration RTAccept regId) >>= \case
     Just p -> pure $ Just $ Await p
     Nothing ->
@@ -362,7 +362,9 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
     relay policy kind =
       relayReverted w r >>= \case
         True -> inTurn w r $ failedAttempt w now r RTAccept ASSent Nothing $ pure (Nothing, Again)
-        False -> verifyRelay policy kind
+        False
+          | chainSeconds now > deadline -> verifyRelay policy kind
+          | otherwise -> intentRefused w now r rv >>= maybe (verifyRelay policy kind) pure
     verifyRelay policy kind =
       verifyAcceptance (policyDomain cChainId policy) kind nrOwner nrCommitment deadline a >>= \case
         Left refusal -> do
@@ -380,22 +382,26 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> Commit -> NameReveal -> IO Next
-sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} c rv@NameReveal {rvDeadline}
+sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cSponsor}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} c rv@NameReveal {rvDeadline}
   | chainSeconds now > rvDeadline = do
       logWarn $ "names worker: registration " <> rid <> ": its stored signature's deadline passed, so its page signs again"
       save w now r {nrReveal = Nothing}
   | otherwise =
-      verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
-        Left refusal -> inTurn w r $ failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal
-        Right () ->
-          submitTransactionIf wkSender (TxRegistration RTRegister regId) (`lockRegistration` r) cSponsor (registerWithCreditCalldata intent) >>= \case
+      intentRefused w now r rv >>= \case
+        Just next -> pure next
+        Nothing ->
+          submitTransactionIf wkSender (TxRegistration RTRegister regId) (`lockRegistration` r) cSponsor (registerWithCreditCalldata $ intentOf cfg (nrOwner r) (nrDuration r) rv) >>= \case
             Right p -> registerSent w now r c p
             Left SEInFlight -> pure Again
             Left SEChanged -> pure Again
             Left (SEChain (ChainReverted reason)) -> judge w now r c RTRegister $ Just reason
             Left e -> pure $ failure r $ SFSend e
-  where
-    intent = intentOf cfg (nrOwner r) (nrDuration r) rv
+
+intentRefused :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO (Maybe Next)
+intentRefused w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}} now r rv =
+  verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) (intentOf cfg (nrOwner r) (nrDuration r) rv) >>= \case
+    Left refusal -> Just <$> inTurn w r (failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal)
+    Right () -> pure Nothing
 
 registerSent :: Worker -> UTCTime -> NameRegistration -> Commit -> PendingTx -> IO Next
 registerSent w now r@NameRegistration {nrPhase} c p

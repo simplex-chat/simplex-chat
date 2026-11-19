@@ -101,6 +101,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, clearing the reveal and staying committed" testExpiredIntent
     it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing, and refuses its move to any name" testSignatureUnderOtherConfig
+    it "fails an order at once, before relaying its acceptance, when its stored signature is refused under another chain id, sending nothing" testRelayUnderOtherConfig
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
@@ -1030,6 +1031,16 @@ testSignatureUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSend
     to <- moveTo ctx label n
     move ctx keyA failedOrder to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` failedOrder
+
+testRelayUnderOtherConfig :: IO ()
+testRelayUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  let NamesConfig {nChain} = oeConfig cOrders
+  worker <- newWorker cOrders {oeConfig = (oeConfig cOrders) {nChain = nChain {cChainId = cChainId nChain + 1}}} wSender
+  void $ capturingStderr $ void $ stepRegistration worker (nrId r)
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRSignatureRefused
+  sentTransactions (cNode ctx) `shouldReturn` []
 
 testFailedOnlySettled :: IO ()
 testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do
