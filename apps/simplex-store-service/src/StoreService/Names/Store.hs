@@ -375,7 +375,8 @@ data NameRegistration = NameRegistration
     nrCreatedAt :: UTCTime,
     nrUpdatedAt :: UTCTime,
     nrReplacedBy :: Maybe (RegistrationId, Maybe InvoiceId),
-    nrReadAt :: UTCTime
+    nrReadAt :: UTCTime,
+    nrPaidAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -831,7 +832,7 @@ registrationColumns =
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at, r.failed_at, r.fail_reason,
       r.closed_by, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used, r.agreed_terms, r.accept_terms,
-      r.accept_nonce, r.accept_signature, rs.registration_id, rsi.invoice_id, r.read_at, r.links_refused_kind
+      r.accept_nonce, r.accept_signature, rs.registration_id, rsi.invoice_id, r.read_at, r.links_refused_kind, r.paid_at
   |]
 
 registrationFrom :: Query
@@ -853,7 +854,7 @@ type RegistrationRow =
     :. (USDCents, Maybe ServicePaymentMethod, Maybe Text, Maybe Int64, Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe RecoverableSignature, Maybe TxHash, Maybe Int64, Maybe TxHash, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe UTCTime, Maybe FailReason)
     :. (Maybe InvoiceClose, OrderHash, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, USDCents, AgreedTerms, Maybe TermsHash)
-    :. (Maybe Int64, Maybe RecoverableSignature, Maybe Text, Maybe Text, UTCTime, Maybe Text)
+    :. (Maybe Int64, Maybe RecoverableSignature, Maybe Text, Maybe Text, UTCTime, Maybe Text, Maybe UTCTime)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
@@ -861,7 +862,7 @@ toRegistration
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, revealAfter, revealBefore, expiresAt, registeredAt, failedAt, failReason)
       :. (closedBy, nrOrderHash, nrMoves, linksRefusedAt_, nrCreatedAt, nrUpdatedAt, source_, used, nrAgreedTerms, acceptTerms_)
-      :. (acceptNonce_, acceptSignature_, successor_, successorInvoice_, nrReadAt, linksRefusedKind_)
+      :. (acceptNonce_, acceptSignature_, successor_, successorInvoice_, nrReadAt, linksRefusedKind_, nrPaidAt)
     ) = do
     nrLength <- note ("name_registrations.length: " <> rid) $ nameLength len
     let commitOf after before = Commit {cmTx = TxRef <$> commitTx <*> (word64 <$> commitBlock), cmRevealAfter = word64 after, cmRevealBefore = word64 before}
@@ -931,7 +932,8 @@ toRegistration
           nrCreatedAt,
           nrUpdatedAt,
           nrReplacedBy = (\s -> (RegistrationId s, InvoiceId <$> successorInvoice_)) <$> successor_,
-          nrReadAt
+          nrReadAt,
+          nrPaidAt
         }
 
 getRegistration :: DB.Connection -> RegistrationId -> IO (Maybe NameRegistration)

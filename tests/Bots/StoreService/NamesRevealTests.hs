@@ -46,7 +46,7 @@ import StoreService.Names.Chain (Hex32 (..), TxHash (..), hex, uint256)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Registration (LinkKind (..), Registration (..), RegistrationId (..), TermsAcceptance (..), acceptanceDigest, linkMaxBytes, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (RevealRequest (..))
-import StoreService.Names.Store (Commit (..), NameRegistration (..), NameReveal (..), OrderPhase (..), getRegistration)
+import StoreService.Names.Store (Commit (..), FailReason (..), NameRegistration (..), NameReveal (..), OrderPhase (..), TxHistory (..), getRegistration, noHistory)
 import StoreService.Names.Turns (labelTurnCount)
 import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -65,6 +65,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "accepts a reveal with two records at the link bound, within the body cap" testRecordsAtBound
     it "answers an identical repeat in a later phase, and refuses a different one" testRepeats
     it "answers after the name's turn, so a slow reader of one answer holds no other reveal" testAnswersAfterTurn
+    it "continues an order failed with its page unread: queued again with the reveal stored and its transactions cleared, and refuses one failed otherwise" testUnreadContinues
   describe "refused" $ do
     it "refuses a high-s intent, a wrong signer, a stale nonce, a deadline before revealBefore or over a week ahead, writing nothing, and accepts one a week ahead" testIntentRefusals
     it "refuses a label not of the order, another secret or other links, writing nothing" testCommitmentRefusals
@@ -344,6 +345,18 @@ testWithLinks = bounded "with links" $ withReveals $ \Fx {fCtx = ctx} -> do
     `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig, rvAcceptance = acceptance}
   (status, view) <- woken "registration poll" poll
   (status, fieldOf view "version", fieldOf view "label") `shouldBe` (200, Just (J.toJSON $ v + 1), Just "alicebakery")
+
+testUnreadContinues :: IO ()
+testUnreadContinues = withReveals $ \Fx {fCtx = ctx} -> do
+  NameRegistration {nrId = rid} <- paidOrder ctx (orderOf alice)
+  let failedAt = orderTime
+      commitTx = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 7, thRegisterTx = Nothing}
+  _ <- change ctx rid $ \r -> r {nrPhase = OFailed failedAt FRRegistryRefused, nrHistory = commitTx}
+  ownerReveal ctx rid alice `shouldReturn` badRequest
+  _ <- change ctx rid $ \r -> r {nrPhase = OFailed failedAt FRUnread}
+  ownerReveal ctx rid alice `shouldReturn` accepted
+  (\NameRegistration {nrPhase, nrHistory, nrReveal} -> (nrPhase, nrHistory, rvLabel <$> nrReveal)) <$> stored ctx rid
+    `shouldReturn` (OQueued, noHistory, Just "alicebakery")
 
 testWithoutLinks :: IO ()
 testWithoutLinks = withReveals $ \Fx {fCtx = ctx} -> do

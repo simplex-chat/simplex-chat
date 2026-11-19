@@ -18,6 +18,7 @@
         "type": "invoice"
       },
       "phase": {
+        "heldUntil": "2026-11-21T09:15:00Z",
         "reason": "registryRefused",
         "type": "failed"
       },

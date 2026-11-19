@@ -94,6 +94,7 @@ import Network.HTTP.Types (hContentType, status404)
 import Network.Wai (Application, requestHeaders)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges.Code (formatNameCode, nameLength, nameLengthInt, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
@@ -1813,13 +1814,14 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           ]
   J.toJSON (awaiting $ acceptance False fakeGeneralTerms) `shouldBe` phaseJSON False fakeGeneralTerms
   J.toJSON (awaiting $ acceptance True fakeCommunityTerms) `shouldBe` phaseJSON True fakeCommunityTerms
-  map J.toJSON [PVCommitted 1 2 (SAwaiting TSUnread), PVCommitted 1 2 SSigned, PVCommitted 1 2 SLapsed, PVClosed ICCancelled, PVRegistered 3, PVFailed FRRegistryRefused]
+  map J.toJSON [PVCommitted 1 2 (SAwaiting TSUnread), PVCommitted 1 2 SSigned, PVCommitted 1 2 SLapsed, PVClosed ICCancelled, PVRegistered 3, PVFailed FRRegistryRefused Nothing, PVFailed FRUnread (Just t0)]
     `shouldBe` [ J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("awaiting" :: Text), "toSign" .= J.object ["type" .= ("unread" :: Text)]]],
                  J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("signed" :: Text)]],
                  J.object ["type" .= ("committed" :: Text), "revealAfter" .= (1 :: Int), "revealBefore" .= (2 :: Int), "signature" .= J.object ["type" .= ("lapsed" :: Text)]],
                  J.object ["type" .= ("closed" :: Text), "closedBy" .= ("cancelled" :: Text)],
                  J.object ["type" .= ("registered" :: Text), "expiresAt" .= (3 :: Int)],
-                 J.object ["type" .= ("failed" :: Text), "reason" .= ("registryRefused" :: Text)]
+                 J.object ["type" .= ("failed" :: Text), "reason" .= ("registryRefused" :: Text)],
+                 J.object ["type" .= ("failed" :: Text), "reason" .= ("unread" :: Text), "heldUntil" .= t0]
                ]
   map J.toJSON [FRSendsUsedUp, FRMonthEnded, FRUnread] `shouldBe` ["sendsUsedUp", "monthEnded", "unread"]
   map J.toJSON [PUnpaid, PClosed, PRegistered] `shouldBe` ["unpaid", "closed", "registered"]
@@ -1841,6 +1843,8 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
           nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
         }
   viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("sendsUsedUp" :: Text)]), ("registerTx", txText 9), ("balance", J.Null)]
+  paidFailed <- withTransaction st $ \db -> setPaidAt db rid t0 >> fromJust <$> getRegistration db rid
+  viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("sendsUsedUp" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null)]
   requeued <- written $ \r -> r {nrPhase = OQueued, nrHistory = (nrHistory r) {thRegisterTx = Nothing}}
   viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null)]
   taken <- written $ \r -> r {nrPhase = OTaken}

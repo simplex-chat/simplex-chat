@@ -1162,7 +1162,7 @@ testMonthClipped = withWorker $ \W {wCtx = ctx@Ctx {cStore, cClock}, wWorker} ->
   withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET paid_at = ? WHERE registration_id = ?" (paidAt, (\(RegistrationId t) -> t) $ nrId r)
   writeIORef cClock $ addUTCTime (-1) lastDay
   endMonths wWorker
-  stored ctx r `shouldReturn` r
+  stored ctx r `shouldReturn` r {nrPaidAt = Just paidAt}
   writeIORef cClock lastDay
   endMonths wWorker
   nrPhase <$> stored ctx r `shouldReturn` OFailed lastDay FRMonthEnded

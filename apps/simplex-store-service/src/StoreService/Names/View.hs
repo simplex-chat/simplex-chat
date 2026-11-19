@@ -38,6 +38,7 @@ import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
 import Network.HTTP.Types (status400, status403, status404, status405, status409, status429, status500, status503, status504)
 import Network.Wai (Response, responseLBS)
+import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.PaymentService.Types (InvoiceId)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
@@ -52,7 +53,7 @@ import StoreService.Names.Community (AcceptanceAsked, Community, TermsLink, comm
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (AgreedTerms (..), LinkKind, RegistrationId (..))
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, heldBy, lateWait, paymentInvoice)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, heldBy, lateWait, orderLive, paymentInvoice)
 import StoreService.Web.Http (apiHeaders)
 
 data PaidWith
@@ -75,7 +76,7 @@ data PhaseView
   | PVRegistering
   | PVRegistered {expiresAt :: ChainSeconds}
   | PVTaken
-  | PVFailed {reason :: FailReason}
+  | PVFailed {reason :: FailReason, heldUntil :: Maybe UTCTime}
   deriving (Eq, Show)
 
 data Signing = SAwaiting {toSign :: ToSign} | SSigned | SLapsed
@@ -219,7 +220,7 @@ phaseView ct now r@NameRegistration {nrPhase, nrReveal} = case nrPhase of
   ORegistering {} -> pure PVRegistering
   ORegistered expiry _ -> pure PVRegistered {expiresAt = expiry}
   OTaken -> pure PVTaken
-  OFailed _ why -> pure PVFailed {reason = why}
+  OFailed _ why -> pure PVFailed {reason = why, heldUntil = if orderLive r then addMonths 1 <$> nrPaidAt r else Nothing}
   where
     signing
       | isJust nrReveal = pure SSigned

@@ -31,11 +31,12 @@ import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (boundedDecimal)
+import StoreService.Names.Chain (chainSeconds)
 import StoreService.Names.Orders (OrdersEnv (..), WriteRefusal (..), noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (awaitChange, publish)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Reveal (RevealRefusal (..), checkReveal, isRepeat, refusedLink)
-import StoreService.Names.Store (BrokenInvariant (..), Commit (..), NameRegistration (..), OrderPhase (..), getRegistration, updateRegistration)
+import StoreService.Names.Store (BrokenInvariant (..), Commit (..), FailReason (..), NameRegistration (..), OrderPhase (..), getRegistration, noHistory, updateRegistration)
 import StoreService.Names.Turns (withRegistrationTurn)
 import StoreService.Names.View (NameRefusal (..), RegistrationView, lapseMoment, lapsedAt, refusalResponse, registrationVersion, registrationView)
 import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
@@ -81,20 +82,23 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
         Nothing -> case nrPhase r of
           OCommitted Commit {cmRevealBefore}
             | lapsedAt now r -> pure $ RDRefused (RVBadRequest "the commitment lapsed") Nothing
-            | otherwise ->
-                checkReveal oeConfig oeContracts now (nrOwner r) (orderFieldsOf r) cmRevealBefore request >>= \case
-                  Left refusal -> pure $ RDRefused refusal Nothing
-                  Right rv -> case refusedLink rv of
-                    Nothing -> write now (RDAccepted . Just) r {nrReveal = Just rv}
-                    Just kind
-                      | (snd <$> nrLinksRefused) == Just kind -> pure $ RDRefused (RVInvalidLink kind) Nothing
-                      | otherwise -> write now (RDRefused (RVInvalidLink kind) . Just) r {nrLinksRefused = Just (now, kind)}
+            | otherwise -> signed now cmRevealBefore $ \rv -> r {nrReveal = Just rv}
+          OFailed _ FRUnread -> signed now (chainSeconds now) $ \rv -> r {nrPhase = OQueued, nrHistory = noHistory, nrReveal = Just rv}
           _ -> pure $ RDRefused (RVBadRequest "the order is not committed") Nothing
+      where
+        signed now earliest accept =
+          checkReveal oeConfig oeContracts now (nrOwner r) (orderFieldsOf r) earliest request >>= \case
+            Left refusal -> pure $ RDRefused refusal Nothing
+            Right rv -> case refusedLink rv of
+              Nothing -> write now (RDAccepted . Just) (accept rv)
+              Just kind
+                | (snd <$> nrLinksRefused) == Just kind -> pure $ RDRefused (RVInvalidLink kind) Nothing
+                | otherwise -> write now (RDRefused (RVInvalidLink kind) . Just) r {nrLinksRefused = Just (now, kind)}
     write now decided r =
       withTransaction oeStore (\db -> versionWritten <$> updateRegistration db r now) >>= \case
         Right v -> pure $ decided v
         Left WRChanged -> pure RDChanged
-        Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "registration " <> ridText <> " is live while committed, yet its reveal was refused: " <> tshow refusal
+        Left (WRRefused refusal) -> E.throwIO $ BrokenInvariant $ "registration " <> ridText <> " is live while it waits for its owner, yet its reveal was refused: " <> tshow refusal
     answer = \case
       RDAccepted v -> published v >> respond (jsonResponse status200 $ J.object [])
       RDRefused refusal v -> do
