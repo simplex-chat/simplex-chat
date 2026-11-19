@@ -18,13 +18,14 @@ Every run builds the core library, and the backend when it's asked for, from the
 | `claude` (opt-in) | after `app` passed: its distributable at the first screen, then Claude Code drives it | about 4 min, Claude 3 |
 | `backend` (opt-in) | `build-backend.sh`: `simplex-chat`, `simplex-directory-service`, and `smp-server` from the simplexmq commit `cabal.project` pins | about 30 min, skipped when reused |
 | `release` (opt-in) | the latest release's .deb for this Ubuntu, onboarding only, to tell a branch's failure from the runner's | 1.5 min |
+| `packages`, `e2e` (opt-in) | the deb and the AppImage, then each installed and tested under X11, Wayland and XWayland (below) | not measured yet |
 
 Queueing for a runner adds from under a minute to 20 minutes. Results are artifacts: `desktop-smoke-test` (numbered screenshots, the text OCR read from each, `steps.log`, `checks.txt`, `app.log`), `desktop-test-report`, `desktop-snapshots` (below), `desktop-claude-test`, and the backend's logs; `desktop-app`, the distributable for manual tests and the Claude job, is kept 14 days. The job summaries list the checks, the desktopTest results and the Claude usage.
 
 ## Scripts
 
-- `ui`: the UI driver. Compose for Desktop has no accessibility tree on Linux, so it finds text on screenshots by OCR (tesseract) and acts with xdotool on an Xvfb display. `ui` alone prints its commands: start (with app settings), shot, text, find, wait, click, right-click, click-text, scroll, type, key, avatar (a profile image's colour), ink (a text's height), do (several in a row), stop. `screen-text.py`, `screen-colour.py` and `screen-ink.py` are its helpers.
-- `smoke-test.sh <app dir> <out dir> [start|onboarding|setup|backend]`: the scripted cases; the default is onboarding, a local group, both layouts, and `tests/fixtures/test.jpg` and `logo-large-rgba.png` picked in the file dialog, resized by the core, previewed and sent in the group. `setup` also creates a local group and makes the test SMP server the app's only names server; `backend` does that, connects to the seeded name, and checks both layouts.
+- `ui`: the UI driver. Compose for Desktop has no accessibility tree on Linux, so it finds text on screenshots by OCR (tesseract) and acts with xdotool on an Xvfb display, or, with `UI_SESSION=wayland` or `xwayland`, with `swaymsg seat` pointer commands and `wtype` in a headless sway session, taking screenshots with `grim`. `ui start` writes the window's identity (WM_CLASS, or the sway shell, app_id and class) to `UI_STATE/window-identity`. `ui` alone prints its commands: start (with app settings), shot, text, find, wait, click, right-click, click-text, scroll, type, key, avatar (a profile image's colour), ink (a text's height), do (several in a row), stop. `screen-text.py`, `screen-colour.py` and `screen-ink.py` are its helpers.
+- `smoke-test.sh <app dir> <out dir> [start|onboarding|setup|backend]`: the scripted cases; the default is onboarding, a local group, both layouts, and `tests/fixtures/test.jpg` and `logo-large-rgba.png` picked in the GTK file dialog, resized by the core, previewed and sent in the group. `setup` also creates a local group and makes the test SMP server the app's only names server; `backend` does that, connects to the seeded name, and checks both layouts.
 - `backend.sh start <tar.gz> <dir>` / `stop <dir>`: the test backend, below.
 - `claude-test.sh`, `claude-test.md` (the prompt), `claude-scope` (whether the prompt uses the test backend, and optionally the session's turns and budget), `claude-guard.py`, `claude-usage.py`: the Claude job.
 - `build-core.sh`, `install-core.sh`, `build-backend.sh`, `earlier-run.sh`, `release-app.sh`, `test-summary.py`: builds, reuse and reports.
@@ -58,3 +59,17 @@ It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OA
 ## Cost
 
 The runners are free for this public repository. A Claude run spends the subscription's usage limits, which interactive sessions share: Haiku 5.5 does this smoke path in 15 to 30 turns, 0.01 to 0.02 USD estimated at API prices (Claude Code's estimate, not a bill on a subscription).
+
+## Packages end to end
+
+With the input `e2e`, the job `packages` builds the deb and the AppImage with `scripts/desktop/make-deb-linux.sh` (`SKIP_CORE_BUILD=1`, with the job `core`'s library) and `make-appimage-linux.sh` and checks their metadata, then the job `e2e` installs each and runs `e2e.sh` in six jobs: deb and AppImage, each under Xvfb with openbox (`x11`), headless sway (`wayland`) and sway's XWayland (`xwayland`).
+
+`e2e.sh <deb|appimage> <package> <session> <out dir>` runs inside `dbus-run-session`, with gnome-keyring unlocked and `desktop-services.py`, a StatusNotifierWatcher with a registered host and a notification server that log every call as JSON lines. It runs `smoke-test.sh` with "minimize to tray" set, then checks:
+
+- the window: a native Wayland surface under `wayland`, an X11 window under `xwayland`, and its app_id or WM_CLASS equal to the installation's desktop entry ID (`simplex-simplex` for the deb, `chat.simplex.app` for the AppImage);
+- no `gsettings` process;
+- the OpenGL renderer in the app's log;
+- the database passphrase in `settings.properties` only as ciphertext, its key in the keyring (`secret-tool`), and the config directory with mode 700;
+- the tray item registered with the watcher.
+
+Results are the artifacts `desktop-linux-e2e-<kind>-<session>` (screenshots, `app.log`, `checks.txt`, `e2e-checks.txt`, `desktop-services.log`); the packages are `desktop-linux-packages`, kept 14 days.

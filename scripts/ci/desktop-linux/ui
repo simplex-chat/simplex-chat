@@ -1,12 +1,14 @@
 #!/bin/bash
 
-# Drives the desktop app on a virtual X display, for the scripted cases and for an agent on the runner.
+# Drives the desktop app on a virtual X display, or with UI_SESSION=wayland or xwayland in a headless sway session,
+# for the scripted cases and for an agent on the runner.
 # Compose for Desktop has no accessibility tree on Linux, so text is found on screenshots by OCR (tesseract);
 # coordinates are screen pixels, as in the screenshots. Screenshots, the text read from them and
 # a log of every command (steps.log) go to UI_OUT; the app's data stays in UI_STATE between starts.
 #
-#   ui start <app dir> [<setting>=<value>...]
-#                                 start Xvfb, openbox and <app dir>/bin/simplex, and wait for its window; the app gets
+#   ui start <app dir or executable> [<setting>=<value>...]
+#                                 start Xvfb and openbox, or sway, then <app dir>/bin/simplex or the executable, and wait
+#                                 for its window, whose identity goes to UI_STATE/window-identity; the app gets
 #                                 the settings given when UI_STATE has none yet
 #   ui shot <name>                save UI_OUT/NN-<name>.png and NN-<name>.txt (OCR's input and output in UI_OUT/ocr), and print the text on screen
 #   ui text                       print the text on screen, one phrase per line after its centre x,y
@@ -25,7 +27,7 @@
 #   ui key <key>...               press keys named as in xdotool (Return, Escape, ctrl+a)
 #   ui do <command> [args] -- <command> [args] ...
 #                                 run the commands in order, stopping at the first that fails
-#   ui stop                       stop the app, openbox and Xvfb
+#   ui stop                       stop the app, openbox and Xvfb or sway
 #
 # Text is compared ignoring case, spaces and punctuation, with a capital I and a lowercase l alike; a phrase that is
 # exactly the text wins over one that contains it.
@@ -37,8 +39,68 @@ unset CLAUDE_CODE_OAUTH_TOKEN
 : "${UI_OUT:?UI_OUT must be the output directory}"
 export DISPLAY=${UI_DISPLAY:-:99}
 state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
+session=${UI_SESSION:-x11}
+case "$session" in
+  x11 | wayland | xwayland) ;;
+  *)
+    echo "error: UI_SESSION is x11, wayland or xwayland, not \"$session\""
+    exit 1
+    ;;
+esac
+if [ "$session" != x11 ]; then
+  export XDG_RUNTIME_DIR=$state/run
+  export WAYLAND_DISPLAY
+  WAYLAND_DISPLAY=$(cat "$state/wayland-display" 2> /dev/null || true)
+  export SWAYSOCK
+  SWAYSOCK=$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'sway-ipc.*.sock' 2> /dev/null | head -n 1)
+fi
 here=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$UI_OUT" "$state/ocr"
+
+screenshot() {
+  if [ "$session" = x11 ]; then
+    import -window root "$1"
+  else
+    grim "$1"
+  fi
+}
+
+pointer() {
+  if [ "$session" = x11 ]; then
+    xdotool mousemove --sync "$1" "$2" click "$3"
+  else
+    swaymsg -q seat seat0 cursor set "$1" "$2"
+    swaymsg -q seat seat0 cursor press "button$3"
+    swaymsg -q seat seat0 cursor release "button$3"
+  fi
+}
+
+type_text() {
+  if [ "$session" = x11 ]; then
+    xdotool type --delay 50 -- "$1"
+  else
+    wtype -d 50 -- "$1"
+  fi
+}
+
+press_key() {
+  if [ "$session" = x11 ]; then
+    xdotool key --delay 100 -- "$1"
+    return
+  fi
+  local -a parts args=()
+  IFS=+ read -r -a parts <<< "$1"
+  local last=$((${#parts[@]} - 1))
+  for part in "${parts[@]:0:last}"; do
+    args+=(-M "$part")
+  done
+  args+=(-k "${parts[last]}")
+  for part in "${parts[@]:0:last}"; do
+    args+=(-m "$part")
+  done
+  wtype "${args[@]}"
+  sleep 0.1
+}
 
 log() {
   echo "$(date -u +%H:%M:%S) $*" | tee -a "$UI_OUT/steps.log"
@@ -64,17 +126,9 @@ stop_process() {
   rm -f "$state/$name.pid"
 }
 
-start() {
-  local app_dir settings=$state/config/simplex/settings.properties
-  app_dir=$(cd "$1" && pwd)
-  shift
-  if running app; then
-    echo "error: the app is already running"
-    return 1
-  fi
+start_x11() {
   stop_process openbox 2
   stop_process xvfb 2
-
   setsid Xvfb "$DISPLAY" -screen 0 1440x900x24 -nolisten tcp < /dev/null > "$UI_OUT/xvfb.log" 2>&1 &
   echo $! > "$state/xvfb.pid"
   for _ in $(seq 20); do
@@ -82,28 +136,109 @@ start() {
     sleep 0.5
   done
   xdotool getdisplaygeometry
-
   setsid openbox --sm-disable < /dev/null > "$UI_OUT/openbox.log" 2>&1 &
   echo $! > "$state/openbox.pid"
+}
+
+start_sway() {
+  local socket
+  stop_process sway 5
+  mkdir -p "$XDG_RUNTIME_DIR"
+  chmod 700 "$XDG_RUNTIME_DIR"
+  rm -f "$XDG_RUNTIME_DIR"/wayland-* "$XDG_RUNTIME_DIR"/sway-ipc.*.sock
+  cat > "$state/sway.conf" << EOF
+output HEADLESS-1 resolution 1440x900 position 0 0 bg #ffffff solid_color
+default_border none
+default_floating_border none
+xwayland $([ "$session" = xwayland ] && echo force || echo disable)
+for_window [title="^SimpleX\$"] floating enable, move position 0 0
+EOF
+  WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
+    setsid sway -c "$state/sway.conf" < /dev/null > "$UI_OUT/sway.log" 2>&1 &
+  echo $! > "$state/sway.pid"
+  for _ in $(seq 40); do
+    socket=$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'wayland-*' ! -name '*.lock' -printf '%f\n' | head -n 1)
+    [ -n "$socket" ] && swaymsg -t get_outputs > /dev/null 2>&1 && break
+    sleep 0.5
+  done
+  echo "$socket" > "$state/wayland-display"
+  swaymsg -t get_outputs
+  if [ "$session" = xwayland ]; then
+    for _ in $(seq 40); do
+      find /tmp/.X11-unix -newer "$state/sway.conf" -name 'X*' | grep -q . && break
+      sleep 0.5
+    done
+    find /tmp/.X11-unix -newer "$state/sway.conf" -name 'X*' -printf '%f\n' | sed 's/^X/:/' | head -n 1 > "$state/x-display"
+    cat "$state/x-display"
+  fi
+}
+
+app_environment() {
+  case "$session" in
+    x11) echo "DISPLAY=$DISPLAY" ;;
+    wayland) echo "WAYLAND_DISPLAY=$(cat "$state/wayland-display")" ;;
+    xwayland) echo "DISPLAY=$(cat "$state/x-display")" "GDK_BACKEND=x11" ;;
+  esac
+}
+
+wait_for_window() {
+  if [ "$session" = x11 ]; then
+    if ! timeout 120 xdotool search --sync --onlyvisible --name '^SimpleX$' > "$state/window"; then
+      echo "error: no app window after 120 s"
+      return 1
+    fi
+    xdotool getwindowgeometry "$(head -n 1 "$state/window")"
+    xprop -id "$(head -n 1 "$state/window")" WM_CLASS | tee "$state/window-identity"
+    return 0
+  fi
+  local deadline=$((SECONDS + 120)) node
+  until node=$(swaymsg -t get_tree | jq -ec '[recurse(.nodes[]?, .floating_nodes[]?) | select(.name == "SimpleX")][0] // empty'); do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      echo "error: no app window after 120 s"
+      return 1
+    fi
+    sleep 1
+  done
+  jq -c '{shell, app_id, class: .window_properties.class, rect}' <<< "$node" | tee "$state/window-identity"
+}
+
+start() {
+  local target settings=$state/config/simplex/settings.properties
+  local -a command environment session_environment
+  if [ -f "$1" ]; then
+    target=$(realpath "$1")
+    command=("$target")
+    environment=()
+  else
+    target=$(cd "$1" && pwd)
+    command=("$target/bin/simplex")
+    environment=("LD_LIBRARY_PATH=$target/lib/app/resources")
+  fi
+  shift
+  if running app; then
+    echo "error: the app is already running"
+    return 1
+  fi
+  case "$session" in
+    x11) start_x11 ;;
+    wayland | xwayland) start_sway ;;
+  esac
 
   mkdir -p "$state/data" "$state/config" "$state/cache" "$state/tmp"
   if [ $# -gt 0 ] && [ ! -f "$settings" ]; then
     mkdir -p "$(dirname "$settings")"
     printf '%s\n' "$@" > "$settings"
   fi
-  XDG_DATA_HOME="$state/data" \
+  read -r -a session_environment <<< "$(app_environment)"
+  env -u DISPLAY -u WAYLAND_DISPLAY \
+    XDG_DATA_HOME="$state/data" \
     XDG_CONFIG_HOME="$state/config" \
     XDG_CACHE_HOME="$state/cache" \
     JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$state/tmp -Dskiko.renderApi=SOFTWARE" \
-    LD_LIBRARY_PATH="$app_dir/lib/app/resources" \
-    setsid "$app_dir/bin/simplex" < /dev/null >> "$UI_OUT/app.log" 2>&1 &
+    "${session_environment[@]}" "${environment[@]}" \
+    setsid "${command[@]}" < /dev/null >> "$UI_OUT/app.log" 2>&1 &
   echo $! > "$state/app.pid"
-
-  if ! timeout 120 xdotool search --sync --onlyvisible --name '^SimpleX$' > "$state/window"; then
-    echo "error: no app window after 120 s"
-    return 1
-  fi
-  xdotool getwindowgeometry "$(head -n 1 "$state/window")"
+  wait_for_window
 }
 
 # ocr <png> lines | ocr <png> find <text>
@@ -121,7 +256,7 @@ ocr() {
 }
 
 screen_ocr() {
-  import -window root "$state/ocr/screen.png"
+  screenshot "$state/ocr/screen.png"
   ocr "$state/ocr/screen.png" "$@"
 }
 
@@ -144,7 +279,7 @@ next_file() {
 shot() {
   local f
   f=$(next_file "$1")
-  import -window root "$f.png"
+  screenshot "$f.png"
   ocr "$f.png" lines > "$f.txt"
   mkdir -p "$UI_OUT/ocr"
   for pass in dark light; do
@@ -167,7 +302,7 @@ number() {
 click() {
   number "$1"
   number "$2"
-  xdotool mousemove --sync "$1" "$2" click "${3:-1}"
+  pointer "$1" "$2" "${3:-1}"
   sleep 1
 }
 
@@ -185,7 +320,10 @@ scroll() {
   number "$1"
   number "$2"
   number "$4"
-  xdotool mousemove --sync "$1" "$2" click --repeat "$4" --delay 100 "$button"
+  for _ in $(seq "$4"); do
+    pointer "$1" "$2" "$button"
+    sleep 0.1
+  done
   sleep 1
 }
 
@@ -270,7 +408,7 @@ case "${1:-}" in
     ;;
   avatar) avatar "$2" "${3:-}" ;;
   type)
-    xdotool type --delay 50 -- "$2"
+    type_text "$2"
     log "type \"$2\""
     ;;
   key)
@@ -283,7 +421,7 @@ case "${1:-}" in
     done
     # one key per call: xdotool key runs any later argument that names one of its commands, such as exec
     for k in "$@"; do
-      xdotool key --delay 100 -- "$k"
+      press_key "$k"
     done
     log "key $*"
     ;;
@@ -303,6 +441,7 @@ case "${1:-}" in
     stop_process app 10
     stop_process openbox 2
     stop_process xvfb 2
+    stop_process sway 5
     log "stop"
     ;;
   *)

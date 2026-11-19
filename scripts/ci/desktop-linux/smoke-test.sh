@@ -378,7 +378,8 @@ send_images() {
 
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
-"$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
+read -r -a extra_settings <<< "${SMOKE_SETTINGS:-}"
+"$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG "${extra_settings[@]}"
 
 # onboarding to the chat list
 "$ui" wait "Create your profile" 180
