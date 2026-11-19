@@ -141,8 +141,8 @@ class BubbleLayoutTest {
   fun timeDrawnOnTextBaseline() {
     val texts = listOf<@Composable () -> TextStyle>(
       { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleTextStyle(16.sp, HighOrLowlight)) },
-      { TextStyle(fontFamily = Inter, fontSize = 13.sp, lineHeight = 18.sp, lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)).merge(bubbleLineHeight(18.sp)) },
-      { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT)) },
+      { TextStyle(fontFamily = Inter, fontSize = 13.sp, lineHeight = 18.sp, lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)).merge(bubbleLineHeight(18.sp, 13.sp)) },
+      { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT, 16.sp)) },
     )
     for (fontScale in listOf(0.7f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f)) {
       texts.forEachIndexed { i, textStyle ->

@@ -132,7 +132,7 @@ fun CIGroupInvitationView(
                       MaterialTheme.colors.secondary
                     else
                       if (chatIncognito) Indigo else MaterialTheme.colors.primary,
-                    style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT))
+                    style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT, LocalTextStyle.current.fontSize))
                   )
                 } else {
                   Text(
@@ -143,7 +143,7 @@ fun CIGroupInvitationView(
                       }
                     },
                     fontSize = 13.sp,
-                    style = LocalTextStyle.current.copy(lineHeight = 18.sp).merge(bubbleLineHeight(18.sp)),
+                    style = LocalTextStyle.current.copy(lineHeight = 18.sp).merge(bubbleLineHeight(18.sp, 13.sp)),
                   )
                 }
               }
