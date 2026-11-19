@@ -58,7 +58,8 @@ Outside this change:
 - Compose 1.12.1's Android artifacts require compileSdk 37 and AGP 9.1 or later; AGP 9.5 requires Gradle 9.6.
 - AGP 9 opt-outs in `gradle.properties`, until the common module moves to the KMP Android library plugin with its NDK code in a separate module:
   - `android.newDsl=false`: `com.android.library` with `kotlin("multiplatform")` in `:common`;
-  - `android.builtInKotlin=false`: `kotlin("android")` in `:android`.
+  - `android.builtInKotlin=false`: `kotlin("android")` in `:android`;
+  - `android.sourceset.disallowProvider=false`: a plugin of `:common` adds generated sources to the Android source set as a Provider.
 
 Code changes of the upgrade:
 
