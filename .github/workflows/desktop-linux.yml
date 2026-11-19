@@ -204,8 +204,9 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
-          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
+          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
+            pkg-config libgtk-3-dev libdbus-1-dev libsystemd-dev libegl-dev libwayland-dev libsecret-1-dev libegl-mesa0 libgl1-mesa-dri
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core libgtk-3-dev libsecret-1-dev libegl-mesa0
 
       - name: Download core library
         uses: actions/download-artifact@v8
@@ -248,6 +249,7 @@ jobs:
         if: ${{ !cancelled() && steps.core.outcome == 'success' }}
         working-directory: apps/multiplatform
         run: |
+          ../../scripts/desktop/build-native-linux.sh
           ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :desktop:createDistributable
           app=release/main/app/simplex
           ls -la "$app/bin" "$app/lib/app/resources"
@@ -367,8 +369,9 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
-          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
+          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
+            libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core libgtk-3-0 libegl-mesa0
 
       - name: Download app
         uses: actions/download-artifact@v8

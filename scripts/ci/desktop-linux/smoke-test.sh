@@ -2,7 +2,7 @@
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
-# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
+# tests/fixtures/test.jpg and logo-large-rgba.png picked in the GTK file dialog and sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
@@ -348,16 +348,14 @@ core_returned_no_image() {
 }
 
 send_image() {
-  local file=$1 ext=$2 sent no_image x y
+  local file=$1 ext=$2 sent no_image
   sent=$(sent_files "$ext")
   no_image=$(core_returned_no_image)
   "$ui" shot "before-$ext"
   "$ui" click "$paperclip_x" "$compose_y"
   "$ui" click-text Image 10
-  "$ui" wait "File Name" 20
+  "$ui" wait "Cancel" 20
   "$ui" shot "file-dialog-$ext"
-  read -r x y _ < <("$ui" find "File Name")
-  "$ui" click $((x + 250)) "$y"
   "$ui" type "$fixtures/$file"
   "$ui" key Return
   sleep 3

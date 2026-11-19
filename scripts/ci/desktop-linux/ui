@@ -86,13 +86,14 @@ start() {
   setsid openbox --sm-disable < /dev/null > "$UI_OUT/openbox.log" 2>&1 &
   echo $! > "$state/openbox.pid"
 
-  mkdir -p "$state/data" "$state/config" "$state/tmp"
+  mkdir -p "$state/data" "$state/config" "$state/cache" "$state/tmp"
   if [ $# -gt 0 ] && [ ! -f "$settings" ]; then
     mkdir -p "$(dirname "$settings")"
     printf '%s\n' "$@" > "$settings"
   fi
   XDG_DATA_HOME="$state/data" \
     XDG_CONFIG_HOME="$state/config" \
+    XDG_CACHE_HOME="$state/cache" \
     JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$state/tmp -Dskiko.renderApi=SOFTWARE" \
     LD_LIBRARY_PATH="$app_dir/lib/app/resources" \
     setsid "$app_dir/bin/simplex" < /dev/null >> "$UI_OUT/app.log" 2>&1 &
