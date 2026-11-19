@@ -42,6 +42,19 @@ Build prerequisites and the general contribution flow are in [`docs/CONTRIBUTING
 cabal build exe:simplex-store-service
 ```
 
+### Tests on PostgreSQL
+
+The tests are built with `+client_postgres` and run against a PostgreSQL server with
+`max_connections=1500`, with `PGHOST` set to its host and `LANG=C.UTF-8`, as CI's job
+`test-store-postgres` (`.github/workflows/build.yml`) runs them. They connect as `test_chat_user`
+to `test_chat_db`, which they create and drop. With the default 100 connections, examples fail with
+"remaining connection slots are reserved"; without a UTF-8 locale, reading the label vectors fails.
+
+```
+cabal build --enable-tests --ghc-options -O0 --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres' simplex-chat-test
+LANG=C.UTF-8 PGHOST=127.0.0.1 $(cabal list-bin simplex-chat-test --ghc-options -O0 --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres') -m "Supporter badges" -m "SimpleX store service" -m "StoreService names"
+```
+
 ## Run
 
 ```

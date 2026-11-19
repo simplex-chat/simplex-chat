@@ -20,6 +20,7 @@ import qualified Data.Aeson as J
 import Data.Bifunctor (first)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import Data.Int (Int64)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -273,7 +274,7 @@ creditedUnits LateCreditState {lsFigures} = case lsFigures of
   LFCard {} -> 0
 
 creditLate :: DBStore -> LateCredit -> IO Bool
-creditLate st c = withTransaction st $ \db -> creditLatePayment db c (at 3)
+creditLate st c = withTransaction st $ \db -> isJust <$> creditLatePayment db c (at 3)
 
 orderRequest :: Text -> OrderRequest
 orderRequest r = OrderRequest {orOwner = ownerA, orFields = fieldsN r, orTimestamp = 0, orSignature = signature}
@@ -986,7 +987,7 @@ testConcurrentWrites = withServiceStores $ \open -> do
     figures st heldSrc t0 `shouldReturn` Just (0, 10000, 0, Nothing)
     invariantHolds st heldSrc
     source st lateSrc 10000
-    (credited, refundedLate) <- together st other (\db -> creditLatePayment db (lateCredit lateSrc 1 (Just 50000) 3000) t0) (\db -> refundBalance db (RegistrationId lateSrc) 10000 t0)
+    (credited, refundedLate) <- together st other (\db -> isJust <$> creditLatePayment db (lateCredit lateSrc 1 (Just 50000) 3000) t0) (\db -> refundBalance db (RegistrationId lateSrc) 10000 t0)
     credited `shouldBe` True
     (n,) <$> figures st lateSrc t0 `shouldReturn` (n, Just $ if refundedLate then (3000, 13000, 10000, Nothing) else (13000, 13000, 0, Nothing))
     invariantHolds st lateSrc

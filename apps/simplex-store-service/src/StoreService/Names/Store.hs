@@ -983,7 +983,7 @@ getRegistration db (RegistrationId rid) =
 getRegistrationByOrderHash :: DB.Connection -> OrderHash -> IO (Maybe NameRegistration)
 getRegistrationByOrderHash db hash =
   firstDecoded toRegistration $
-    DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, r.registration_id DESC LIMIT 1") (Only hash)
+    DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, " <> insertionOrder <> " DESC LIMIT 1") (Only hash)
 
 -- | Overdue whatever status the poller has marked, as long as the invoice is not paid and holds no money, as the sweep decides.
 getLiveOrders :: DB.Connection -> Commitment -> Address -> LabelHash -> UTCTime -> IO [LiveOrder]
@@ -1630,9 +1630,9 @@ lateCreditState :: DB.Connection -> InvoiceId -> IO (Maybe LateCreditState)
 lateCreditState db (InvoiceId invId) = firstDecoded toLateState $ DB.query db (lateColumns <> lateFrom <> " WHERE ni.invoice_id = ?") (Only invId)
 
 -- | Run after the invoice's lock. The order's balance is credited only when the credit's row is new, so a taken credit number changes neither.
-creditLatePayment :: DB.Connection -> LateCredit -> UTCTime -> IO Bool
+creditLatePayment :: DB.Connection -> LateCredit -> UTCTime -> IO (Maybe Int64)
 creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegistration = regId@(RegistrationId rid), lcAmount} now = do
-  DB.execute db (mkQuery "UPDATE @name_registrations SET version = version WHERE registration_id = ?") (Only rid)
+  version <- maybeFirstRow fromOnly $ DB.query db (mkQuery "UPDATE @name_registrations SET version = version + 1 WHERE registration_id = ? RETURNING version") (Only rid)
   inserted <-
     executeChanging
       db
@@ -1644,8 +1644,7 @@ creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegi
       |]
       )
       (invId, lcCreditNo, rid, units, invoiceRate, currentRate, rateUsed, creditCents lcAmount, now)
-  when (inserted > 0) $ creditBalance db regId (creditCents lcAmount) now
-  pure $ inserted > 0
+  if inserted > 0 then version <$ creditBalance db regId (creditCents lcAmount) now else pure Nothing
   where
     (units, invoiceRate, currentRate, rateUsed) = case lcAmount of
       CACard _ -> (Nothing, Nothing, Nothing, Nothing)

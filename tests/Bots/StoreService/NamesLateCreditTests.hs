@@ -9,8 +9,6 @@ module Bots.StoreService.NamesLateCreditTests (namesLateCreditTests) where
 import Bots.StoreService.NamesBalancesTests (coveredSpend, figures, holder, invariantHolds, placeOrderRow, source)
 import Bots.StoreService.NamesStoreTests (at, ownerA, reg, t0)
 import Bots.StoreService.WebTests (StubCall (..), StubState (..), capturingStderr, newStubState, sampleProviderInvoice, setSignals, stubCalls, stubProvider, stubRate, withServiceStore)
-import Control.Concurrent.Async (async, wait)
-import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Monad (void)
 import qualified Data.Aeson as J
 import Data.Int (Int64)
@@ -33,8 +31,7 @@ import StoreService.Orders (cancelOpenInvoice, settleOrder)
 import StoreService.Poller (PollerEnv, ReadHints, cleanupUnpaid, creditPass, drainHints, forgetRates, newPollerEnv, newReadHints, queueReadHint)
 import StoreService.Providers (Confirmation (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), settleWindow)
 import StoreService.Store.Invoices (unpaidRefs)
-import StoreService.Waiters (Waiters, awaitStatus, newWaiters)
-import System.Timeout (timeout)
+import StoreService.Waiters (Waiters, newWaiters)
 import Test.Hspec
 
 #if defined(dbPostgres)
@@ -42,7 +39,7 @@ import Bots.StoreService.WebTests (withServiceStores)
 import Control.Concurrent.Async (concurrently)
 import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar)
 import Control.Monad (forM, forM_)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import StoreService.Store.Invoices (lockInvoice)
 import Database.PostgreSQL.Simple (Only (..))
 #else
@@ -69,7 +66,6 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "alerts confirmed money waiting on the rate read as such, whatever reason was stored before" testWaitingOutranksStoredReason
     it "warns once of an invoice no provider reads a rate for, and names an invoice with no recorded rate" testRateProblemsNamed
     it "reads one rate per coin per pass for several invoices, crediting a late Settled invoice and settlements whose credit step did not run, and none when nothing is due" testOneRateReadPerPass
-    it "wakes a browser holding on the invoice once its late money is credited" testCreditWakesHold
     it "never credits a late Settled payment on an invoice made under HighSpeed, alerting it past the window" testHighSpeed
     it "refuses to credit an order that is live again by the time it takes the invoice's lock" testLiveAgain
     it "alerts once of two instances, and again when more money arrives" testTwoInstancesAlert
@@ -443,19 +439,6 @@ testOneRateReadPerPass = withLate $ \l@Late {lStore = st} -> do
   void $ passAt l (at 72)
   rateCalls l `shouldReturn` 1
 
-testCreditWakesHold :: IO ()
-testCreditWakesHold = withLate $ \l@Late {lStore = st, lWaiters} -> do
-  closedOrder l "x" False
-  void $ settleAt l "x" (SigClosed (btcPaid lateUnits lateUnits) PaidInPart) (at 70)
-  balanceOf st "x" `shouldReturn` Nothing
-  subscribed <- newEmptyMVar
-  let seen = (ISExpired, ("", False))
-  held <- async $ timeout 5000000 $ awaitStatus lWaiters (invOf "x") (seen <$ putMVar subscribed ()) seen 30000000
-  takeMVar subscribed
-  void $ passAt l (at 71)
-  balanceOf st "x" `shouldReturn` Just (19200, 19200, 0)
-  wait held `shouldReturn` Just ISExpired
-
 testHighSpeed :: IO ()
 testHighSpeed = withLate $ \l@Late {lStore = st} -> do
   closedOrder l "hs" False
@@ -769,7 +752,7 @@ testConcurrentCredits = withServiceStores $ \open -> do
       let readRate :: CryptoCurrency -> IO (Either ProviderError Rate)
           readRate _ = Right stubRate <$ meet arrived
       (a, b) <- concurrently (creditLateInvoice st readRate (invOf r) (at 80)) (creditLateInvoice other readRate (invOf r) (at 80))
-      (n, length [() | COCredited _ _ <- [a, b]], length [() | CONothingDue <- [a, b]]) `shouldBe` (n, 1, 1)
+      (n, length [() | COCredited {} <- [a, b]], length [() | CONothingDue <- [a, b]]) `shouldBe` (n, 1, 1)
       length <$> creditsOf st r `shouldReturn` 1
       balanceOf st r `shouldReturn` Just (19200, 19200, 0)
     refused <- forM [1 .. rounds] $ \n -> do
@@ -783,7 +766,7 @@ testConcurrentCredits = withServiceStores $ \open -> do
             meet arrived
             withTransaction store $ \db -> do
               lockInvoice db (invOf r) (at 80)
-              creditLatePayment db c (at 80)
+              isJust <$> creditLatePayment db c (at 80)
       (a, b) <- concurrently (staleStep st) (staleStep other)
       balanceOf st r `shouldReturn` Just (19200, 19200, 0)
       pure $ length (filter not [a, b])
@@ -805,7 +788,7 @@ testCreditAgainstSettlement = withServiceStores $ \open -> do
         raise = meet arrived >> settleOrder other otherWaiters Nothing (invOf r) (SigClosed (btcPaid lateUnits lateUnits) PaidInPart) (at 80)
     (credited, raised) <- concurrently (creditLateInvoice st readRate (invOf r) (at 80)) raise
     (n, raised) `shouldBe` (n, ISExpired)
-    credited `shouldSatisfy` \case COCredited _ _ -> True; _ -> False
+    credited `shouldSatisfy` \case COCredited {} -> True; _ -> False
     void $ creditLateInvoice st (const $ pure $ Right stubRate) (invOf r) (at 81)
     units <- map (\(u, _, _, _, _) -> u) <$> creditsOf st r
     (n, sum (map (fromMaybe 0) units)) `shouldBe` (n, lateUnits)

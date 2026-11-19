@@ -24,7 +24,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCu
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import qualified Network.Wai.Handler.Warp as Warp
-import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import StoreService.Config (ServiceConfig (..))
 import StoreService.Names.Chain (TxHash (..))
@@ -32,8 +32,8 @@ import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (phasesWaiting, publish)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (Commit (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, updateRegistration)
-import StoreService.Poller (cleanupUnpaid, newPollerEnv, unpaidRetention)
-import StoreService.Providers (Funded (..), PaymentSignal (..))
+import StoreService.Poller (cleanupUnpaid, creditPass, newPollerEnv, unpaidRetention)
+import StoreService.Providers (Confirmation (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Rate (..), Received (..))
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
 import StoreService.Waiters (publishPayment, waitingCountSTM)
 import StoreService.Web.Http (holdMicros, readLimit)
@@ -49,6 +49,7 @@ namesPhasesTests = describe "StoreService names: phases" $ do
     it "wakes a held invoice poll and a held registration poll on a change" testEachChangeWakes
     it "holds a paid name invoice on its registration's version alone, and answers at once without a valid version" testPaidHoldsOnVersion
     it "answers at once an invoice paid after its order closed" testLatePaidAnswersAtOnce
+    it "answers a held poll of a closed order's invoice at its late payment's credit, and at once one sent after it as the page saw the order before" testLateCreditAnswers
     it "wakes an open invoice poll by a version change, and holds it on its status without a valid version" testOpenWakesOnVersion
   describe "time" $ do
     it "wakes an unpaid invoice held on its status at its expiry, reading it expired" testExpiryWakes
@@ -205,6 +206,33 @@ testLatePaidAnswersAtOnce = bounded "late paid" $ withPolls holdMicros $ \Polls 
   NameRegistration {nrVersion} <- invoiceRegistration ctx inv
   (status, o) <- answeredAtOnce ctx $ invoicePath inv <> following ISPaid nrVersion settledPaid True
   (status, fieldOf o "status", fieldOf (registrationOf o) "phase") `shouldBe` (200, Just "paid", Just $ phaseValue "closed" ["closedBy" J..= ("cancelled" :: Text)])
+
+testLateCreditAnswers :: IO ()
+testLateCreditAnswers = bounded "late credit answers" $ withPolls holdMicros $ \Polls {pCtx = ctx@Ctx {cStore, cWeb, cOrders, cClock}} -> do
+  (inv, _) <- placed ctx aliceOrder
+  settleNow ctx inv (SigClosed (rcv 0 Nothing) PaidInPart) `shouldReturn` ISExpired
+  settleNow ctx inv (SigClosed latePaid PaidInPart) `shouldReturn` ISExpired
+  NameRegistration {nrVersion} <- invoiceRegistration ctx inv
+  let seenBefore = invoicePath inv <> following ISExpired nrVersion "0.0032" False
+  waiting <- held ctx (1, 1) seenBefore
+  poller <- newPollerEnv cStore (weWaiters cWeb) (Just $ oePhases cOrders) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
+  void $ capturingStderr $ creditPass poller =<< readIORef cClock
+  (_, o) <- woken "the late payment's poll" waiting
+  fieldOf (registrationOf o) "latePayment" `shouldBe` Just J.Null
+  (_, o') <- answeredAtOnce ctx seenBefore
+  (fieldOf (registrationOf o') "latePayment", fieldOf (registrationOf o') "version") `shouldBe` (Just J.Null, Just (J.toJSON $ nrVersion + 1))
+  where
+    latePaid =
+      RCrypto
+        CryptoReceived
+          { crAmount = CurrencyAmount 10000,
+            crPaid = Just "0.0032",
+            crDue = Nothing,
+            crUnits = Just 320000,
+            crInvoicedUnits = Just 320000,
+            crRate = Rate {rateText = "62500", rateValue = 62500},
+            crConfirmation = CryptoConfirmed 320000 (CurrencyAmount 10000)
+          }
 
 testOpenWakesOnVersion :: IO ()
 testOpenWakesOnVersion = bounded "open wakes on version" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do

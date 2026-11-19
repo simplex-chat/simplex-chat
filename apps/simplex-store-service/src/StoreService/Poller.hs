@@ -471,12 +471,12 @@ forgetRates :: PollerEnv -> IO ()
 forgetRates PollerEnv {peRates} = atomically $ TM.clear peRates
 
 creditLate :: PollerEnv -> Provider -> UTCTime -> InvoiceId -> Text -> IO CreditOutcome
-creditLate env@PollerEnv {peStore, peWaiters} p now invId@(InvoiceId invText) ref = do
+creditLate env@PollerEnv {peStore, peWaiters, pePhases} p now invId@(InvoiceId invText) ref = do
   outcome <- creditLateInvoice peStore (cachedRate env p) invId now
   case outcome of
     CONothingDue -> pure ()
-    COCredited money LateCredit {lcAmount} -> do
-      atomically $ publishPayment peWaiters invId
+    COCredited money LateCredit {lcRegistration, lcAmount} version -> do
+      atomically $ publishPayment peWaiters invId >> publishRegistration pePhases (lcRegistration, version)
       logNote $
         "names: invoice " <> ref <> credited money <> tshow (toInteger (creditCents lcAmount)) <> " cents" <> extra money <> " to its order's balance"
           <> case lcAmount of
