@@ -67,6 +67,7 @@ Code changes of the upgrade:
   - `android/build.gradle.kts`.
 - Java compile options set in the `android` blocks of `:android` and `:common`, replacing the root block on the legacy `BaseExtension`.
 - Gradle 9: `Project.exec` → `providers.exec`, `buildDir` → `layout.buildDirectory`.
+- `org.gradle.configureondemand=true`, desktop tasks named with `:desktop:`: desktop builds leave `:android` unconfigured, whose NDK 23.1 AGP 9 installs while configuring.
 - `nativeCanvas` → `skiaCanvas` in `BarsBlur.desktop.kt`.
 - `runComposeUiTest` → `androidx.compose.ui.test.v2.runComposeUiTest`.
 - `compose.runtime`, `compose.foundation`, `compose.material` aliases → explicit coordinates.

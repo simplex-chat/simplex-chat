@@ -24,7 +24,7 @@ if [ -n "${ASSETS_DIR:-}" ]; then
 else
   set --
 fi
-./gradlew "$@" createDistributable
+./gradlew "$@" :desktop:createDistributable
 rm common/src/commonMain/cpp/desktop/libs/*/`basename $libcrypto_path`
 
 rm -rf $release_app_dir/AppDir 2>/dev/null

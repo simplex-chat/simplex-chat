@@ -10,7 +10,7 @@ if [ -n "${ASSETS_DIR:-}" ]; then
 else
   set --
 fi
-./gradlew "$@" packageDeb
+./gradlew "$@" :desktop:packageDeb
 
 # Workaround for skiko library
 #
