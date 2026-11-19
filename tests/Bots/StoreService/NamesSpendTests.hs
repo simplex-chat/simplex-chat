@@ -10,7 +10,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates,
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (credit)
 import Bots.StoreService.NamesContractsTests (rentPriceAnswer, rentPriceCall, reservedNamesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, commitmentOf, communityTerms, configured, fieldsJSON, fieldsOf, inObject, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, ownerBText, placeOrder, placed, post, registrationById, registrationOf, registrationsOf, seconds, settleNow, termsChanged, threeYears, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, codesOnly, communityTerms, configured, fieldsJSON, fieldsOf, inObject, invoiceRegistration, keyA, keyB, listName, listOnChain, olderTerms, orderTime, ownerAText, ownerBText, placeOrder, placed, post, registrationById, registrationOf, registrationsOf, seconds, secretOf, settleNow, termsChanged, threeYears, withOrdersOn, withReveal, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesPhasesTests (registrationPath, seenVersion, woken)
 import qualified Bots.StoreService.NamesPhasesTests as Phases
@@ -177,7 +177,7 @@ difference balance = (covered balance) {sbMethod = Just "btc"}
 
 -- | 7 letters, at the launch price of 20000 for 2 years.
 dynamisOrder :: Order
-dynamisOrder = aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
+dynamisOrder = aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
 
 dynamis :: Int -> Maybe Text -> SpendBody
 dynamis = SpendBody dynamisOrder
@@ -192,7 +192,7 @@ orderAt now o = o {oTimestamp = seconds now, oDuration = yearsDuration 2 now}
 spendBody :: Ctx -> RegistrationId -> SpendBody -> IO J.Object
 spendBody Ctx {cRandom} source SpendBody {sbOrder = o@Order {oKey, oPrice, oTimestamp}, sbBalance, sbMethod} = do
   sig <- either (error . show) id <$> signRecoverable cRandom oKey (personalDigest $ spendMessage source fields oTimestamp)
-  pure $
+  withReveal cRandom o $
     KM.fromList $
       [ ("signed", J.object ["fields" J..= fieldsJSON fields, "timestamp" J..= oTimestamp, "signature" J..= hex (smpEncode sig)]),
         ("price", J.toJSON oPrice),
@@ -250,7 +250,7 @@ btc = SPMCrypto CCBtc
 
 testBalanceOrderHoldsName :: IO ()
 testBalanceOrderHoldsName = withSpend $ \ctx -> do
-  (bobInv, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 9}
+  (bobInv, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oSecret = secretOf 9}
   bobRef <- providerRef ctx bobInv
   src <- sourceOf ctx "src" 15000
   fst <$> spend ctx src (covered 15000) `shouldReturn` 200
@@ -396,7 +396,7 @@ testOrderChecks = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   spend ctx low (difference 6000) `shouldReturn` refusedWith 503 "provider_unavailable"
   modifyIORef' cStub $ \s -> s {ssCreateResult = Right sampleProviderInvoice}
   fst <$> placeOrder ctx aliceOrder `shouldReturn` 200
-  spend ctx src (covered 30000) {sbOrder = aliceOrder {oCommitment = commitmentOf 3}} `shouldReturn` refusedWith 409 "order_exists"
+  spend ctx src (covered 30000) {sbOrder = aliceOrder {oSecret = secretOf 3}} `shouldReturn` refusedWith 409 "order_exists"
   mapM (amountOf ctx) [src, low] `shouldReturn` [Just 30000, Just 6000]
   mapM (paidFrom ctx) [src, low] `shouldReturn` [[], []]
 
@@ -422,7 +422,7 @@ testCheckOrder = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   modifyIORef' cStub $ \s -> s {ssCreateResult = Right sampleProviderInvoice}
   fst <$> spend ctx src (covered 30000) `shouldReturn` 200
   spend ctx src (covered 30000) {sbOrder = aliceOrder {oKey = keyB}} `shouldReturn` refusedWith 400 "bad_request"
-  spend ctx src (covered 31000) {sbOrder = aliceOrder {oCommitment = commitmentOf 3}} `shouldReturn` refusedWith 409 "order_exists"
+  spend ctx src (covered 31000) {sbOrder = aliceOrder {oSecret = secretOf 3}} `shouldReturn` refusedWith 409 "order_exists"
   amountOf ctx src `shouldReturn` Just 20000
 
 testSpendTermsChanged :: IO ()
@@ -546,7 +546,7 @@ holderAfter ctx@Ctx {cStore} NameRegistration {nrPayment} = case paymentInvoice 
 testDifferenceClosesHolder :: IO ()
 testDifferenceClosesHolder =
   -- the second row is the page's "Get a new invoice": the same name with a new commitment
-  forM_ [(dynamis 6000 (Just "btc"), False), (SpendBody {sbOrder = aliceOrder {oCommitment = commitmentOf 5}, sbBalance = 6000, sbMethod = Just "card"}, True)] $ \(body, sameName) ->
+  forM_ [(dynamis 6000 (Just "btc"), False), (SpendBody {sbOrder = aliceOrder {oSecret = secretOf 5}, sbBalance = 6000, sbMethod = Just "card"}, True)] $ \(body, sameName) ->
     withSpend $ \ctx@Ctx {cClock} -> do
       src <- sourceOf ctx "src" 6000
       (holder, holderRef) <- overdueCardHolder ctx src
@@ -740,7 +740,7 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
       orderOf :: InvoiceId -> IO RegistrationId
       orderOf inv = nrId <$> invoiceRegistration ctx inv
       dynamisAgain :: Int -> SpendBody
-      dynamisAgain n = timedAt now $ (dynamis 10000 (Just "btc")) {sbOrder = dynamisOrder {oCommitment = commitmentOf n}}
+      dynamisAgain n = timedAt now $ (dynamis 10000 (Just "btc")) {sbOrder = dynamisOrder {oSecret = secretOf n}}
   -- alicebakery paid at BTCPay and queued by the poller, then taken by another wallet, the money paid for it added to its balance
   (srcInv@(InvoiceId srcInvText), _) <- placed ctx (orderAt now aliceOrder)
   report "InvoiceSettled" srcInv settledState
@@ -779,7 +779,7 @@ testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> 
   links ctx `shouldReturn` sort [(s, Nothing, Nothing), (f, Just s, Nothing), (d, Just s, Nothing)]
   -- that order taken in turn keeps its whole price; a covered spend of alicebakery takes half, and support refunds the rest
   takenNow ctx dearer
-  covering <- registrationAnswer . snd <$> spend ctx dearer (timedAt now $ (covered 20000) {sbOrder = aliceOrder {oCommitment = commitmentOf 4}})
+  covering <- registrationAnswer . snd <$> spend ctx dearer (timedAt now $ (covered 20000) {sbOrder = aliceOrder {oSecret = secretOf 4}})
   (\r -> (nrPhase r, paymentBalance (nrPayment r))) <$> registrationById ctx covering `shouldReturn` (OQueued, Just BalanceUse {buSource = dearer, buUsed = 10000})
   dearerRef <- providerRef ctx dearerInv
   srcRef <- providerRef ctx srcInv

@@ -383,6 +383,7 @@ data NewRegistration = NewRegistration
   { nrgId :: RegistrationId,
     nrgOwner :: Address,
     nrgOrder :: OrderFields,
+    nrgReveal :: NameReveal,
     nrgYears :: Int,
     nrgOrderHash :: OrderHash,
     nrgReplaces :: Maybe RegistrationId
@@ -801,7 +802,7 @@ createBalanceRegistration db new use@BalanceUse {buSource, buUsed} seen now = do
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
 insertRegistration :: DB.Connection -> NewRegistration -> NamePhase -> USDCents -> Maybe ServicePaymentMethod -> Maybe CodeId -> Maybe BalanceUse -> UTCTime -> IO Bool
-insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears, nrgOrderHash, nrgReplaces} phase price method codeId fromBalance now =
+insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgReveal, nrgYears, nrgOrderHash, nrgReplaces} phase price method codeId fromBalance now =
   (> 0)
     <$> executeChanging
       db
@@ -809,14 +810,16 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
           [sql|
         INSERT INTO @name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
-           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms, replaces, paid_at, read_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?,?,?,?)
+           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms, replaces, paid_at, read_at,
+           label, secret, contact_link, channel_link, intent_nonce, intent_deadline, intent_signature, accept_terms, accept_nonce, accept_signature)
+        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?,?,?,?, ?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT DO NOTHING
       |]
       )
       ( (rid, initialVersion, ofLabelHash, nameLengthInt ofLength, int64 ofDuration, nrgOwner, ofCommitment, ofSealed, phase, nrgYears)
           :. (price, method, codeId, BI True, nrgOrderHash, 0 :: Int, now, now, (\BalanceUse {buSource = RegistrationId s} -> s) <$> fromBalance, maybe 0 buUsed fromBalance)
           :. (ofAgreedTerms, (\(RegistrationId s) -> s) <$> nrgReplaces, if phase == PQueued then Just now else Nothing, now)
+          :. revealRow (Just nrgReveal)
       )
   where
     OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = nrgOrder
@@ -995,7 +998,7 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
       (ISExpired, now, ISOpen, rid, nrVersion, now)
   if expired > 0
     then
-      updateRegistration db r {nrPhase = OClosed ICExpired} now >>= \case
+      updateRegistration db r {nrPhase = OClosed ICExpired, nrReveal = Nothing} now >>= \case
         Written v -> Just v <$ releaseHeldBalance db regId now
         _ -> pure Nothing
     else pure Nothing
@@ -1038,8 +1041,7 @@ updateRegistration db r now = do
       |]
       )
       ( (nrLabelHash, nameLengthInt nrLength, int64 nrDuration, nrCommitment, nrSealed, nrAgreedTerms, namePhase nrPhase, nrPrice)
-          :. (rvLabel <$> nrReveal, rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, rvSignature <$> nrReveal)
-          :. (taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
+          :. revealRow nrReveal
           :. (commitTx, int64 <$> commitBlock, registerTx, int64 <$> revealAfter, int64 <$> revealBefore, int64 <$> expiresAt)
           :. (registeredAt, failedAt, failReason, closedBy, BI live, nrMoves, fst <$> nrLinksRefused, textEncode . snd <$> nrLinksRefused :: Maybe Text, now)
           :. (rid, nrVersion, BI live, rid, nrCommitment, nrOwner, nrLabelHash)
@@ -1062,17 +1064,25 @@ updateRegistration db r now = do
       OFailed at reason -> (Nothing, Nothing, Just at, Just reason, Nothing)
       OClosed closed -> (Nothing, Nothing, Nothing, Nothing, Just closed)
       _ -> (Nothing, Nothing, Nothing, Nothing, Nothing)
-    acceptance = rvAcceptance <$> nrReveal
     live = orderLive r
     refusal =
       DB.query db (mkQuery "SELECT version, live FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case
         [(version, BI storedLive)] | version == nrVersion -> pure $ if storedLive then LiveOrderExists else NotLive
         _ -> pure VersionChanged
 
--- | Another name, or other links, with the terms agreed for it: queued again with the reveal, transactions, reveal times and link refusal cleared.
+type RevealRow = (Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64, Maybe RecoverableSignature) :. (Maybe TermsHash, Maybe Int64, Maybe RecoverableSignature)
+
+revealRow :: Maybe NameReveal -> RevealRow
+revealRow rv =
+  (rvLabel <$> rv, rvSecret <$> rv, rvContactLink =<< rv, rvChannelLink =<< rv, int64 . rvNonce <$> rv, int64 . rvDeadline <$> rv, rvSignature <$> rv)
+    :. (taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
+  where
+    acceptance = rvAcceptance <$> rv
+
+-- | Another name, or other links, with the terms agreed for it and its reveal: queued again with the transactions, reveal times and link refusal cleared.
 -- The order hash stays the original order's, so a resend of that order still finds it.
-retargetRegistration :: DB.Connection -> NameRegistration -> OrderFields -> USDCents -> UTCTime -> IO VersionWrite
-retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} price =
+retargetRegistration :: DB.Connection -> NameRegistration -> OrderFields -> NameReveal -> USDCents -> UTCTime -> IO VersionWrite
+retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} reveal price =
   updateRegistration
     db
     r
@@ -1085,7 +1095,7 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrPrice = price,
         nrPhase = OQueued,
         nrMoves = nrMoves r + 1,
-        nrReveal = Nothing,
+        nrReveal = Just reveal,
         nrLinksRefused = Nothing,
         nrHistory = noHistory
       }

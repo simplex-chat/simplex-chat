@@ -145,7 +145,7 @@ dynamis = alice {rLabel = "dynamis"}
 
 -- | At the launch prices for 2 years that the orders fixture answers: 7 letters 20000 cents, 11 letters 10000.
 orderOf :: Registration -> Order
-orderOf r@Registration {rLabel} = aliceOrder {oLabel = rLabel, oCommitment = makeCommitment r, oPrice = if T.length rLabel == 7 then 20000 else 10000}
+orderOf Registration {rLabel, rSecret, rContactLink, rChannelLink} = aliceOrder {oLabel = rLabel, oSecret = rSecret, oContact = rContactLink, oChannel = rChannelLink, oPrice = if T.length rLabel == 7 then 20000 else 10000}
 
 -- | Ordered, paid, and committed by the worker with its reveal window open.
 committed :: Ctx -> Order -> IO RegistrationId
@@ -154,11 +154,18 @@ committed ctx o = do
   _ <- change ctx nrId $ \r -> r {nrPhase = OCommitted openWindow}
   pure nrId
 
+committedUnchecked :: Ctx -> Registration -> IO RegistrationId
+committedUnchecked ctx r = do
+  rid <- committed ctx $ orderOf r {rContactLink = Nothing, rChannelLink = Nothing}
+  rid <$ change ctx rid (\x -> x {nrCommitment = makeCommitment r})
+
 paidOrder :: Ctx -> Order -> IO NameRegistration
 paidOrder ctx o = do
   (inv, _) <- placed ctx o
   settleNow ctx inv settled `shouldReturn` ISPaid
-  invoiceRegistration ctx inv
+  NameRegistration {nrId} <- invoiceRegistration ctx inv
+  _ <- change ctx nrId $ \r -> r {nrReveal = Nothing}
+  stored ctx nrId
 
 signIntent :: Ctx -> Secp256k1PrivateKey -> Registration -> Word64 -> Word64 -> IO RecoverableSignature
 signIntent Ctx {cRandom} key r nonce deadline =
@@ -210,7 +217,7 @@ withListedReveals action = withReveals $ \fx@Fx {fCtx = Ctx {cNode}} -> do
 
 -- | Alice's order under the community terms, as the page orders a listed name.
 listedOrder :: Order
-listedOrder = (orderOf alice) {oTerms = communityTerms}
+listedOrder = (orderOf alice) {oTerms = communityTerms, oAcceptanceNonce = 2}
 
 signAcceptance :: Ctx -> Secp256k1PrivateKey -> Bool -> B.ByteString -> Word64 -> IO TermsAcceptance
 signAcceptance ctx key community terms nonce = acceptanceOf ctx key alice community terms nonce revealBefore
@@ -364,7 +371,7 @@ testViemReveal = withReveals $ \Fx {fCtx = ctx} -> do
           ]
   hex (unHex32 $ makeCommitment page) `shouldBe` "0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1"
   ownerBody ctx page `shouldReturn` body
-  rid <- committed ctx (orderOf page)
+  rid <- committedUnchecked ctx page
   reveal ctx rid body `shouldReturn` contactRefused
 
 testRecordsAtBound :: IO ()
@@ -448,7 +455,7 @@ testCommitmentRefusals = withReveals $ \Fx {fCtx = ctx} -> do
 -- | The commitment is of another duration than the order states; the intent, of the order's, passes on its own.
 testWrongDuration :: IO ()
 testWrongDuration = withReveals $ \Fx {fCtx = ctx} -> do
-  rid <- committed ctx (orderOf alice {rDuration = rDuration alice + 1})
+  rid <- committedUnchecked ctx alice {rDuration = rDuration alice + 1}
   nrDuration <$> stored ctx rid `shouldReturn` rDuration alice
   ownerReveal ctx rid alice `shouldReturn` badRequest
   nrReveal <$> stored ctx rid `shouldReturn` Nothing
@@ -515,7 +522,7 @@ testNonceUnavailable = withReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
 testLinksRefused :: IO ()
 testLinksRefused = bounded "links refused" $ withReveals $ \Fx {fCtx = ctx@Ctx {cClient}} -> do
   let overBound = alice {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
-  rid <- committed ctx (orderOf overBound)
+  rid <- committedUnchecked ctx overBound
   NameRegistration {nrVersion = v} <- stored ctx rid
   poll <- held ctx (0, 1) $ registrationPath rid <> seenVersion v
   body <- ownerBody ctx overBound
@@ -541,7 +548,7 @@ testNoRefusalRecorded = withReveals $ \Fx {fCtx = ctx} -> do
   ownerReveal ctx committedGood alice {rContactLink = Just "hello"} `shouldReturn` badRequest
   unwritten <$> stored ctx committedGood `shouldReturn` goodBefore
   let overBound = dynamis {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
-  committedBad <- committed ctx (orderOf overBound)
+  committedBad <- committedUnchecked ctx overBound
   badBefore <- unwritten <$> stored ctx committedBad
   other <- signIntent ctx fakeRegistrarKey overBound 0 revealBefore
   acceptance <- acceptanceOf ctx keyA overBound False fakeGeneralTerms 0 revealBefore
@@ -555,7 +562,7 @@ testLostRace :: IO ()
 testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx} -> do
   let overBound = dynamis {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
   forM_ [(alice, "accepted"), (overBound, "links refused")] $ \(r, what :: String) -> do
-    rid <- committed ctx (orderOf r)
+    rid <- committedUnchecked ctx r
     body <- ownerBody ctx r
     (inFlight, gate) <- pausedAtChainRead ctx (reveal ctx rid body)
     v <- change ctx rid $ \x -> x {nrPhase = OCommitted openWindow {cmRevealAfter = revealAfter + 60, cmRevealBefore = revealBefore + 60}}
@@ -583,7 +590,7 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
   -- /name holds the turns of a reveal refused for its links while it checks the name, so the reveal waits and then finds the order moved
   answerFree ctx "dynamit"
   let overBound = dynamis {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
-  refusedRid <- committed ctx (orderOf overBound)
+  refusedRid <- committedUnchecked ctx overBound
   body <- ownerBody ctx overBound
   reveal ctx refusedRid body `shouldReturn` contactRefused
   toDynamit <- moveTo ctx "dynamit" 2
@@ -598,4 +605,4 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
   (status, (`fieldOf` "type") =<< answer, fieldOf view "version", phaseOf view, fieldOf view "labelHash", fieldOf view "moves")
     `shouldBe` (409, Just "registration_changed", fieldOf movedView "version", Just "queued", Just (J.String $ hex dynamit), Just (J.Number 1))
   NameRegistration {nrLabelHash = movedHash, nrReveal = movedReveal, nrLinksRefused = movedRefusedAt} <- stored ctx refusedRid
-  (movedHash, movedReveal, movedRefusedAt) `shouldBe` (labelHash "dynamit", Nothing, Nothing)
+  (movedHash, rvLabel <$> movedReveal, movedRefusedAt) `shouldBe` (labelHash "dynamit", Just "dynamit", Nothing)

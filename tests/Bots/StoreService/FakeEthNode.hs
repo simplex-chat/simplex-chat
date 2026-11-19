@@ -262,6 +262,7 @@ defaultCall (to, calldata)
   | to == unAddress fakeNamePolicy && calldata == selector "communityTermsLink()" = Just $ Returns $ linkAnswer $ fakeTermsLink fakeCommunityTermsText
   | to == unAddress fakeNamePolicy && selector "acceptedTerms(bytes32,address)" `B.isPrefixOf` calldata = Just $ Returns $ B.replicate 32 0
   | to == unAddress fakeNamePolicy && selector "nonces(address)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
+  | to == unAddress fakeSponsor && selector "nonces(address)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
   | otherwise = Nothing
 
 fakeRegistrarKey :: S.Secp256k1PrivateKey

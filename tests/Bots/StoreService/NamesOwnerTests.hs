@@ -33,7 +33,7 @@ where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (registrarOf, rentPriceAnswer, rentPriceCall, threeYearsOf11)
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, order, ownerA, paidOrder, t0)
+import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, order, ownerA, paidOrder, reveal, t0)
 import Bots.StoreService.NamesPhasesTests (held, registrationPath, seenVersion, woken)
 import Bots.StoreService.WebTests (StubCall (..), answerFixture, bounded, capturingStderr, fieldOf, stubCalls, jsonObject, refusedWith, phaseOf, phaseValue, storeFixture, webGet, withApp)
 import Control.Applicative ((<|>))
@@ -57,7 +57,7 @@ import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
-import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
@@ -68,6 +68,7 @@ import StoreService.Names.Orders (OrdersEnv (..), movable, signedRequestSeconds)
 import StoreService.Names.Registration (LinkKind (..), OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage)
 import StoreService.Names.Store hiding (findLimit)
 import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
+import StoreService.Names.View (addressText)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (createLimit, findLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -147,7 +148,7 @@ byB :: Order -> Order
 byB o = o {oOwner = ownerBText, oKey = keyB}
 
 dynamisOrder :: Order
-dynamisOrder = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 3, oSealed = "sealed-dynamis-3", oPrice = 20000}
+dynamisOrder = aliceOrder {oLabel = "dynamis", oSecret = secretOf 3, oSealed = "sealed-dynamis-3", oPrice = 20000}
 
 -- viem's selectors of nameExpires(uint256), reservedNames(bytes32) and ownerOf(uint256), as in the calls of the contracts tests
 nameExpiresSelector, reservedNamesSelector, ownerOfSelector :: ByteString
@@ -189,20 +190,23 @@ answerReserved Ctx {cNode} label reason = do
   where
     LabelHash lh = labelHash label
 
--- | A paid order, settled, then written as the worker would write it.
+-- | A paid order, settled, then written as the worker would write it, without the signature its order stored, as after a rare path cleared it.
 paidIn :: Ctx -> Order -> (NameRegistration -> NameRegistration) -> IO NameRegistration
 paidIn ctx o change = do
   (invId, _) <- placed ctx o
   settleNow ctx invId settled `shouldReturn` ISPaid
   r <- invoiceRegistration ctx invId
-  rewrite ctx r change
+  rewrite ctx r (change . unsigned)
 
--- | A code order of a code of this length, then written as the worker would write it.
+-- | A code order of a code of this length, then written as paidIn writes it.
 codeIn :: Ctx -> Int -> Order -> (NameRegistration -> NameRegistration) -> IO (NameRegistration, PrepaidCode)
 codeIn ctx len o change = do
   (text, code) <- issueCode ctx len 2 id
   r <- registrationById ctx =<< registered ctx text o
-  (,code) <$> rewrite ctx r change
+  (,code) <$> rewrite ctx r (change . unsigned)
+
+unsigned :: NameRegistration -> NameRegistration
+unsigned r = r {nrReveal = Nothing}
 
 -- | A write outside the turns, as the worker's, at the stored version.
 rewrite :: Ctx -> NameRegistration -> (NameRegistration -> NameRegistration) -> IO NameRegistration
@@ -230,30 +234,33 @@ linksRefusedPhase r = r {nrPhase = OCommitted committedCommit, nrLinksRefused = 
 committedCommit :: Commit
 committedCommit = Commit {cmTx = Just $ TxRef (TxHash $ hashFixture 8) 100, cmRevealAfter = seconds orderTime + 60, cmRevealBefore = seconds orderTime + 86400}
 
--- | Another name's fields, with the page's duration for 2 years at the service's clock.
-moveTo :: Ctx -> Text -> Int -> IO OrderFields
+-- | Another name's order, with the page's duration for 2 years at the service's clock.
+moveTo :: Ctx -> Text -> Int -> IO Order
 moveTo Ctx {cClock} label n = do
   t <- readIORef cClock
-  pure OrderFields {ofLabelHash = labelHash label, ofLength = lengthOf (T.length label), ofDuration = yearsDuration 2 t, ofCommitment = commitmentOf n, ofSealed = "sealed-" <> label <> "-" <> tshow n, ofAgreedTerms = agreed plainTerms}
+  pure aliceOrder {oLabel = label, oSecret = secretOf n, oSealed = "sealed-" <> label <> "-" <> tshow n, oDuration = yearsDuration 2 t}
 
-moveBody :: Ctx -> Secp256k1PrivateKey -> RegistrationId -> OrderFields -> IO J.Object
-moveBody ctx key rid fields = clockSeconds ctx >>= moveBodyAt ctx key rid fields
+moveBody :: Ctx -> Secp256k1PrivateKey -> RegistrationId -> Order -> IO J.Object
+moveBody ctx key rid o = clockSeconds ctx >>= moveBodyAt ctx key rid o
 
-moveBodyAt :: Ctx -> Secp256k1PrivateKey -> RegistrationId -> OrderFields -> Word64 -> IO J.Object
-moveBodyAt ctx key rid fields timestamp = do
+moveBodyAt :: Ctx -> Secp256k1PrivateKey -> RegistrationId -> Order -> Word64 -> IO J.Object
+moveBodyAt ctx@Ctx {cRandom} key rid o timestamp = do
+  owner <- addressFromPrivateKey cRandom key
+  let signed = o {oKey = key, oOwner = addressText owner, oTimestamp = timestamp}
+      fields = fieldsOf signed
   sig <- signWith ctx key $ retargetMessage rid fields timestamp
-  pure $ KM.fromList [("fields", fieldsJSON fields), ("timestamp", J.toJSON timestamp), ("signature", J.String sig)]
+  withReveal cRandom signed $ KM.fromList [("fields", fieldsJSON fields), ("timestamp", J.toJSON timestamp), ("signature", J.String sig)]
 
 postMove :: Ctx -> RegistrationId -> J.Object -> IO (Int, Maybe J.Object)
 postMove ctx rid = post ctx (registrationPath rid <> "/name") . J.encode
 
-move :: Ctx -> Secp256k1PrivateKey -> NameRegistration -> OrderFields -> IO (Int, Maybe J.Object)
-move ctx key NameRegistration {nrId} fields = moveBody ctx key nrId fields >>= postMove ctx nrId
+move :: Ctx -> Secp256k1PrivateKey -> NameRegistration -> Order -> IO (Int, Maybe J.Object)
+move ctx key NameRegistration {nrId} o = moveBody ctx key nrId o >>= postMove ctx nrId
 
 -- | The view of an accepted move, failing the test otherwise.
-moved :: Ctx -> Secp256k1PrivateKey -> NameRegistration -> OrderFields -> IO J.Object
-moved ctx key r fields =
-  move ctx key r fields >>= \case
+moved :: Ctx -> Secp256k1PrivateKey -> NameRegistration -> Order -> IO J.Object
+moved ctx key r o =
+  move ctx key r o >>= \case
     (200, Just v) -> pure v
     other -> error $ "move refused: " <> show other
 
@@ -267,10 +274,6 @@ findBody ctx key owner timestamp = do
 
 postFind :: Ctx -> J.Object -> IO (Int, Maybe J.Object)
 postFind ctx = post ctx "/api/registration/find" . J.encode
-
-currentFields :: NameRegistration -> OrderFields
-currentFields NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed, nrAgreedTerms} =
-  OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed, ofAgreedTerms = nrAgreedTerms}
 
 fieldsIn :: J.Object -> [(Text, J.Value)] -> Expectation
 fieldsIn v = mapM_ (\(k, value) -> (k, fieldOf v k) `shouldBe` (k, Just value))
@@ -293,7 +296,7 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
   forM_ [1 .. 50 :: Int] $ \i -> do
     (_, code) <- issueCode ctx 8 2 id
     let o = order ("alicebakery" <> tshow i) (fromIntegral i)
-        new = NewRegistration {nrgId = oldOrder i, nrgOwner = ownerA, nrgOrder = o, nrgYears = 2, nrgOrderHash = orderHash ownerA o (OTCode $ pcCodeHash code), nrgReplaces = Nothing}
+        new = NewRegistration {nrgId = oldOrder i, nrgOwner = ownerA, nrgOrder = o, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerA o (OTCode $ pcCodeHash code), nrgReplaces = Nothing}
     withTransaction cStore (\db -> createCodeRegistration db new code (addUTCTime (fromIntegral i) t0)) `shouldReturn` Right ()
   answerFree ctx "alicebakers"
   answerUnowned ctx "alicebakery50"
@@ -342,7 +345,7 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
   forM_ [1, 2] $ \i -> do
     (_, code) <- issueCode ctx 8 2 id
     let o = order ("bobbakery" <> tshow i) (fromIntegral $ 100 + i)
-        new = NewRegistration {nrgId = listedOrder i, nrgOwner = ownerB, nrgOrder = o, nrgYears = 2, nrgOrderHash = orderHash ownerB o (OTCode $ pcCodeHash code), nrgReplaces = Nothing}
+        new = NewRegistration {nrgId = listedOrder i, nrgOwner = ownerB, nrgOrder = o, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerB o (OTCode $ pcCodeHash code), nrgReplaces = Nothing}
     withTransaction cStore (\db -> createCodeRegistration db new code (addUTCTime (fromIntegral i) t0)) `shouldReturn` Right ()
   void $ registrationById ctx (listedOrder 1) >>= \r -> rewrite ctx r failedPhase
   listed <- findBody ctx keyB ownerBText (seconds orderTime) >>= postFind ctx
@@ -389,7 +392,7 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
 testMoveHoldsName :: IO ()
 testMoveHoldsName = withOwner $ \ctx@Ctx {cStore, cStub} -> do
   answerFree ctx "alicebakers"
-  (aliceInv, _) <- placed ctx aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 9}
+  (aliceInv, _) <- placed ctx aliceOrder {oLabel = "alicebakers", oSecret = secretOf 9}
   aliceRef <- maybe (error "no invoice row") irProviderRef <$> getInvoice cStore aliceInv
   bobFailed <- paidIn ctx (byB dynamisOrder) failedPhase
   to <- moveTo ctx "alicebakers" 10
@@ -407,20 +410,20 @@ testMoveAccepted = withOwner $ \ctx -> do
   fieldsIn v
     [ ("phase", phaseValue "queued" []),
       ("labelHash", labelHashText "alicebakers"),
-      ("commitment", J.toJSON $ ofCommitment to),
-      ("sealed", J.String $ ofSealed to),
-      ("duration", J.toJSON $ ofDuration to),
+      ("commitment", J.toJSON $ ofCommitment $ fieldsOf to),
+      ("sealed", J.String $ oSealed to),
+      ("duration", J.toJSON $ oDuration to),
       ("price", J.Number 10000),
       ("moves", J.Number 1),
       ("version", J.toJSON $ nrVersion failedOrder + 1),
       ("linksRefused", J.Null),
-      ("label", J.Null),
+      ("label", J.String "alicebakers"),
       ("commitTx", J.Null)
     ]
   written <- stored ctx failedOrder
   (nrPhase written, nrMoves written, nrOrderHash written) `shouldBe` (OQueued, 1, nrOrderHash failedOrder)
   -- the same name with other links, after a reveal refused for its links
-  refusedOrder <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} linksRefusedPhase
+  refusedOrder <- paidIn ctx (byB aliceOrder) {oSecret = secretOf 2} linksRefusedPhase
   sameName <- moveTo ctx "alicebakery" 11
   v2 <- moved ctx keyB refusedOrder sameName
   fieldsIn v2 [("phase", phaseValue "queued" []), ("labelHash", labelHashText "alicebakery"), ("linksRefused", J.Null), ("commitTx", J.Null), ("moves", J.Number 1)]
@@ -438,7 +441,7 @@ testMoveRepeat = withOwner $ \ctx -> do
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
   -- the current fields from failed: nothing moves
-  (status, v) <- move ctx keyA r (currentFields r)
+  (status, v) <- move ctx keyA r aliceOrder
   (status, phaseOf =<< v, (`fieldOf` "moves") =<< v) `shouldBe` (200, Just "failed", Just (J.Number 0))
   stored ctx r `shouldReturn` r
   to <- moveTo ctx "alicebakers" 10
@@ -458,7 +461,7 @@ testMoveRepeat = withOwner $ \ctx -> do
 testMoveTermsOnly :: IO ()
 testMoveTermsOnly = withOwner $ \ctx -> do
   r <- paidIn ctx aliceOrder $ \p -> (failedPhase p) {nrAgreedTerms = agreed olderTerms}
-  (status, v) <- move ctx keyA r (currentFields r) {ofAgreedTerms = agreed plainTerms}
+  (status, v) <- move ctx keyA r aliceOrder
   (status, phaseOf =<< v, (`fieldOf` "moves") =<< v) `shouldBe` (200, Just "queued", Just (J.Number 1))
   (nrAgreedTerms &&& nrMoves) <$> stored ctx r `shouldReturn` (agreed plainTerms, 1)
 
@@ -467,12 +470,12 @@ testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
   listOnChain ctx "alicebakers"
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
-  move ctx keyA r (currentFields r) {ofCommitment = commitmentOf 11, ofAgreedTerms = agreed communityTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
-  move ctx keyA r (currentFields r) {ofAgreedTerms = agreed olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  move ctx keyA r aliceOrder {oSecret = secretOf 11, oTerms = communityTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
+  move ctx keyA r aliceOrder {oTerms = olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   to <- moveTo ctx "alicebakers" 10
-  move ctx keyA r to {ofAgreedTerms = agreed plainTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
+  move ctx keyA r to {oTerms = plainTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   stored ctx r `shouldReturn` r
-  v <- moved ctx keyA r to {ofAgreedTerms = agreed communityTerms}
+  v <- moved ctx keyA r to {oTerms = communityTerms}
   fieldsIn v [("terms", J.toJSON $ agreed communityTerms), ("community", communityEntry $ Just bakers)]
   nrAgreedTerms <$> stored ctx r `shouldReturn` agreed communityTerms
 
@@ -483,13 +486,13 @@ testMoveCommunityYears = withOwnerAs (listName "alicebakers") $ \ctx -> do
   (code, _) <- issueCode ctx 8 5 id
   r <- registrationById ctx =<< registered ctx code aliceOrder {oDuration = yearsDuration 5 orderTime}
   failed <- rewrite ctx r failedPhase
-  to <- (\f -> f {ofAgreedTerms = agreed communityTerms}) <$> moveTo ctx "alicebakers" 10
-  move ctx keyA failed to {ofDuration = yearsDuration 5 orderTime} `shouldReturn` refusedWith 400 "bad_request"
+  to <- (\o -> o {oTerms = communityTerms}) <$> moveTo ctx "alicebakers" 10
+  move ctx keyA failed to {oDuration = yearsDuration 5 orderTime} `shouldReturn` refusedWith 400 "bad_request"
   void $ moved ctx keyA failed to
   answerFree ctx "alicecakes"
   again <- rewrite ctx r failedPhase
   toPlain <- moveTo ctx "alicecakes" 11
-  void $ moved ctx keyA again toPlain {ofDuration = yearsDuration 5 orderTime}
+  void $ moved ctx keyA again toPlain {oDuration = yearsDuration 5 orderTime}
   (nrYears &&& nrDuration) <$> stored ctx r `shouldReturn` (5, yearsDuration 5 orderTime)
 
 testMoveCommunityPaidYears :: IO ()
@@ -498,7 +501,7 @@ testMoveCommunityPaidYears = withOwnerAs (threeYears . listName "alicebakers") $
   answerFree ctx "alicebakers"
   answerCall (cNode ctx) fakeController threeYearsOf11 $ Returns $ rentPriceAnswer 15000
   r <- paidIn ctx aliceOrder {oDuration = yearsDuration 3 orderTime, oPrice = 15000} failedPhase
-  to <- (\f -> f {ofAgreedTerms = agreed communityTerms}) <$> moveTo ctx "alicebakers" 10
+  to <- (\o -> o {oTerms = communityTerms}) <$> moveTo ctx "alicebakers" 10
   void $ moved ctx keyA r to
   (nrYears &&& nrPrice) <$> stored ctx r `shouldReturn` (3, 10000)
   balanceOf ctx r `shouldReturn` Just (5000, 5000)
@@ -507,7 +510,7 @@ testMoveTermsCheckOrder :: IO ()
 testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
-  to <- (\f -> f {ofAgreedTerms = agreed olderTerms}) <$> moveTo ctx "alicebakers" 10
+  to <- (\o -> o {oTerms = olderTerms}) <$> moveTo ctx "alicebakers" 10
   ts <- clockSeconds ctx
   (moveBodyAt ctx keyA (nrId r) to (ts - signedWindow - 1) >>= postMove ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
   setFault cNode "eth_call" HttpFailure
@@ -515,8 +518,8 @@ testMoveTermsCheckOrder = withOwner $ \ctx@Ctx {cNode} -> do
   clearFault cNode "eth_call"
   void $ placed ctx dynamisOrder
   toDynamis <- moveTo ctx "dynamis" 10
-  move ctx keyA r toDynamis {ofAgreedTerms = agreed olderTerms} `shouldReturn` refusedWith 409 "order_exists"
-  move ctx keyA r to {ofDuration = ofDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
+  move ctx keyA r toDynamis {oTerms = olderTerms} `shouldReturn` refusedWith 409 "order_exists"
+  move ctx keyA r to {oDuration = oDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
   setGeneralTerms cNode ""
   move ctx keyA r to `shouldReturn` (503, Just $ KM.fromList [("type", "terms_unavailable"), ("wait", J.Null)])
   setGeneralTerms cNode fakeGeneralTermsText
@@ -543,7 +546,7 @@ testMoveLimit = withOwner $ \ctx -> do
   limited <- stored ctx r
   to <- moveTo ctx "alicebakery" 20
   view <- getView ctx limited
-  limitAnswer <- move ctx keyA limited to {ofAgreedTerms = agreed olderTerms}
+  limitAnswer <- move ctx keyA limited to {oTerms = olderTerms}
   limitAnswer `shouldBe` refusedWithView "move_limit" view
   answerFixture "move-limit" limitAnswer
   (fieldOf view "moves", phaseOf view) `shouldBe` (Just (J.Number 3), Just "failed")
@@ -556,8 +559,9 @@ testMoveMeetsOrder = withOwner $ \ctx -> do
   void $ placed ctx dynamisOrder
   toDynamis <- moveTo ctx "dynamis" 10
   move ctx keyA r toDynamis `shouldReturn` refusedWith 409 "order_exists"
-  void $ placed ctx (byB aliceOrder) {oLabel = "alicebakers", oCommitment = commitmentOf 4}
-  toForeign <- moveTo ctx "alicebakers" 4
+  let bobs = (byB aliceOrder) {oLabel = "alicebakers", oSecret = secretOf 4}
+  void $ placed ctx bobs
+  toForeign <- (\o -> o {oCommitment = Just $ ofCommitment $ fieldsOf bobs}) <$> moveTo ctx "alicebakers" 4
   move ctx keyA r toForeign `shouldReturn` refusedWith 409 "order_exists"
   stored ctx r `shouldReturn` r
 
@@ -569,7 +573,7 @@ testMoveOrderChecks = withOwner $ \ctx@Ctx {cNode} -> do
   withLength 5 `shouldReturn` refusedWith 400 "invalid_name"
   withLength 64 `shouldReturn` refusedWith 400 "invalid_name"
   answerFree ctx "alicebakers"
-  move ctx keyA r to {ofDuration = ofDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
+  move ctx keyA r to {oDuration = oDuration to + 3601} `shouldReturn` refusedWith 400 "bad_request"
   answerReserved ctx "alicebakers" 1
   move ctx keyA r to `shouldReturn` refusedWith 409 "name_taken"
   answerCall cNode fakeNamePolicy (reservedNamesSelector <> labelBytes "alicebakers") $ Reverts ""
@@ -584,7 +588,7 @@ testMoveLanded = withOwner $ \ctx -> do
   minedOrder <- paidIn ctx aliceOrder failedPhase
   (ownedOrder, code) <- codeIn ctx 7 dynamisOrder failedPhase
   answerFree ctx "carolbakery"
-  notLanded <- paidIn ctx (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 2} failedPhase
+  notLanded <- paidIn ctx (byB aliceOrder) {oLabel = "carolbakery", oSecret = secretOf 2} failedPhase
   let expiry = seconds orderTime + 2 * 31536000
   forM_ ["alicebakery", "dynamis", "carolbakery"] $ \label -> answerExpiry ctx label expiry
   TxHash (Hex32 minedHash) <- sentRegister ctx minedOrder 1 $ TSMinedAt 120
@@ -613,7 +617,7 @@ testMoveLandedReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   (unused, unusedCode) <- codeIn ctx 7 dynamisOrder failedPhase
   (spentElsewhere, spentCode) <- codeIn ctx 8 aliceOrder failedPhase
   answerFree ctx "carolbakery"
-  spender <- paidIn ctx (byB aliceOrder) {oLabel = "carolbakery", oCommitment = commitmentOf 20} id
+  spender <- paidIn ctx (byB aliceOrder) {oLabel = "carolbakery", oSecret = secretOf 20} id
   let expiry = seconds orderTime + 2 * 31536000
   forM_ [("dynamis", unused), ("alicebakery", spentElsewhere)] $ \(label, r) -> do
     answerExpiry ctx label expiry
@@ -666,9 +670,9 @@ testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
   answerFree ctx "alicebakers"
   paying <- paidIn ctx (byB aliceOrder) failedPhase
   withTransaction cStore $ \db -> creditBalance db (nrId paying) 5000 orderTime
-  let fields = OrderFields {ofLabelHash = labelHash "dynamis", ofLength = lengthOf 7, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf 3, ofSealed = "sealed-dynamis-3", ofAgreedTerms = agreed plainTerms}
+  let fields = fieldsOf aliceOrder {oLabel = "dynamis", oSecret = secretOf 3, oSealed = "sealed-dynamis-3"}
       spend = Spend {spSource = nrId paying, spPrice = 20000, spBalance = 5000, spMethod = Just btc}
-      new = NewRegistration {nrgId = RegistrationId "diff", nrgOwner = ownerA, nrgOrder = fields, nrgYears = 2, nrgOrderHash = orderHash ownerA fields (OTBalance spend), nrgReplaces = Nothing}
+      new = NewRegistration {nrgId = RegistrationId "diff", nrgOwner = ownerA, nrgOrder = fields, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerA fields (OTBalance spend), nrgReplaces = Nothing}
   withTransaction cStore $ \db -> do
     insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"
     createPaidRegistration db new (Just BalanceUse {buSource = nrId paying, buUsed = 5000}) (paidOrder "inv-diff") {poPrice = 20000} orderTime `shouldReturn` Right ()
@@ -703,7 +707,7 @@ testMoveReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
   forM_ (zip [1 :: Int ..] refusals) $ \(n, (what, change, refusal)) -> do
     let label = "codeorder" <> tshow n
     answerFree ctx label
-    (r, code) <- codeIn ctx 8 aliceOrder {oLabel = label, oCommitment = commitmentOf (30 + n)} failedPhase
+    (r, code) <- codeIn ctx 8 aliceOrder {oLabel = label, oSecret = secretOf (30 + n)} failedPhase
     withTransaction cStore (\db -> releasePrepaidCode db (pcId code) (nrId r)) `shouldReturn` True
     withTransaction cStore $ change code
     to <- moveTo ctx "alicebakers" (40 + n)
@@ -720,14 +724,14 @@ testMoveSizes = withOwner $ \ctx -> do
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
   to <- moveTo ctx "alicebakers" 10
-  let longest = to {ofSealed = T.replicate 11095 "s"}
+  let longest = to {oSealed = T.replicate 11095 "s"}
   body <- moveBody ctx keyA (nrId r) longest
   postMove ctx (nrId r) (KM.insert "owner" (J.String $ T.replicate 5300 "0") body) `shouldReturn` refusedWith 400 "bad_request"
   post ctx (registrationPath (nrId r) <> "/name") "[]" `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` r
   -- an owner in the body is ignored
   (status, v) <- postMove ctx (nrId r) (KM.insert "owner" (J.String ownerBText) body)
-  (status, (`fieldOf` "sealed") =<< v, (`fieldOf` "owner") =<< v) `shouldBe` (200, Just (J.String $ ofSealed longest), Just (J.String ownerAText))
+  (status, (`fieldOf` "sealed") =<< v, (`fieldOf` "owner") =<< v) `shouldBe` (200, Just (J.String $ oSealed longest), Just (J.String ownerAText))
 
 testMoveRefusedSigner :: IO ()
 testMoveRefusedSigner = withOwner $ \ctx -> do
@@ -766,8 +770,8 @@ testMovesCross = withOwnerAs (\cfg -> cfg {nMaxOrderMoves = 100}) $ \ctx -> do
   let (low, high) = case sortOn hashOf ["alicebakery", "alicebakers"] of
         [l, h] -> (l, h)
         _ -> error "two names"
-  a <- paidIn ctx aliceOrder {oLabel = low, oCommitment = commitmentOf 60} failedPhase
-  b <- paidIn ctx (byB aliceOrder) {oLabel = high, oCommitment = commitmentOf 61} failedPhase
+  a <- paidIn ctx aliceOrder {oLabel = low, oSecret = secretOf 60} failedPhase
+  b <- paidIn ctx (byB aliceOrder) {oLabel = high, oSecret = secretOf 61} failedPhase
   forM_ [1 .. 6 :: Int] $ \n -> do
     rs <- mapM (stored ctx) [a, b]
     let onName label = fromJust $ find ((== labelHash label) . nrLabelHash) rs

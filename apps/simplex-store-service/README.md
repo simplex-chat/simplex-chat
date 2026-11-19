@@ -1115,8 +1115,8 @@ who hold them before anyone can pay. It is `off` by default. While it is on:
 - `POST /api/invoice` for a name and `POST /api/registration/:id/spend` answer
   `403 {"type": "codes_only"}`, before they read the order,
   so no order takes money for a name;
-- search, link previews, code checks, code orders (`POST /api/name/register`), the registration
-  view, `find`, the reveal, `/retry`, another name and record edits work as before. Webhooks and the
+- search, the signing read, link previews, code checks, code orders (`POST /api/name/register`),
+  the registration view, `find`, the reveal, `/retry`, another name and record edits work as before. Webhooks and the
   poller still settle the invoices already open, and badges sell as before.
 
 The setting is read at startup, so switching it is an edit of the ini and a restart, with the same
@@ -1403,13 +1403,15 @@ The log line is `[WARN …] names worker: registration <id> failed: it sent <n> 
 Any other revert of a register while the name is available is retried every 15 seconds while the
 commitment is live, logged once per order at error as `names worker: registration <id> waits: the
 register reverts while the name is available, …`; one still there after the commitment lapsed fails
-the order with the reason `registryRefused`. An order whose commitment lapses before its page signed
-it waits, and its page asks for a new commitment with `POST /api/registration/:id/retry`; one whose
+the order with the reason `registryRefused`. An order whose stored signature was cleared, and whose
+commitment lapses before its page signed again, waits, and its page asks for a new commitment with
+`POST /api/registration/:id/retry`; one whose
 links were refused waits for its owner to replace or remove the refused link by a move, and the
 first refusal of a link is logged at warning and posted in the managed group as
 `names: registration <id>: its simplex.contact link was refused at its reveal, so its owner is asked to replace or remove it`.
 An order waiting for its owner
-fails with the reason `unread` once its page has not read it for 3 days, logged at note as
+fails with the reason `unread` once its page has not read it for 3 days, logged at error and posted
+in the managed group as
 `names worker: registration <id> failed: it waited for its owner, and its page has not read it since <time>`;
 a read of the order or of its invoice is stored at most once an hour.
 

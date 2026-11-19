@@ -6,7 +6,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
-module StoreService.Web.Names.Search (searchHandler, previewHandler, termsHandler, recordLinks) where
+module StoreService.Web.Names.Search (searchHandler, signHandler, previewHandler, termsHandler, recordLinks) where
 
 import Control.Concurrent.Async (async, mapConcurrently, wait)
 import Control.Logger.Simple (logWarn)
@@ -19,7 +19,7 @@ import qualified Data.Aeson.Types as JT
 import Data.List (find)
 import Data.Maybe (catMaybes, isJust, mapMaybe)
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import qualified Data.Text as T
 import Data.Word (Word64)
@@ -40,9 +40,9 @@ import StoreService.Names.Community (Community, TermsLink, communityOf, readable
 import StoreService.Names.Contracts
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (EditsLeft, nameEditsLeft)
-import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink)
+import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink, parseChecksumAddress)
 import StoreService.Names.Store (labelHolder)
-import StoreService.Names.View (NameRefusal (..), refusalResponse)
+import StoreService.Names.View (NameRefusal (..), ToSign (..), readToSign, refusalResponse)
 import StoreService.Web.Http (HttpEnv, Respond, jsonResponse, maxBodyBytes, readBoundedBody, searchSlot)
 import System.Timeout (timeout)
 
@@ -100,6 +100,16 @@ searchHandler cfg@NamesConfig {nYears} http st ct ps clock hashText req respond 
     readableNow community = termsLinks ct >>= traverse (\links -> eitherToMaybe <$> (wait =<< async (readableTerms ct $ kindTerms community links)))
     unavailable :: Text -> IO ResponseReceived
     unavailable why = logWarn ("GET /api/name: a chain read failed: " <> why) >> respond (refusalResponse NRProviderUnavailable)
+
+signHandler :: Contracts -> Text -> Request -> Respond -> IO ResponseReceived
+signHandler ct hashText req respond = case (LabelHash . unHex32 <$> strDecode (encodeUtf8 hashText), queryOwner) of
+  (Right lh, Just owner) ->
+    readToSign ct "a signing read" owner lh >>= \case
+      toSign@TSRead {} -> respond $ jsonResponse status200 toSign
+      TSUnread -> respond $ refusalResponse NRNameCheckUnavailable
+  _ -> respond $ refusalResponse NRBadRequest
+  where
+    queryOwner = join (lookup "owner" $ queryString req) >>= eitherToMaybe . parseChecksumAddress . decodeLatin1
 
 -- | Nothing unless @length@ is a decimal integer in the label's bounds.
 queryLength :: Request -> Maybe NameLength

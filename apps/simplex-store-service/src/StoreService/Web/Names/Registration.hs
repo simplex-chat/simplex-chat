@@ -31,7 +31,7 @@ import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (boundedDecimal)
-import StoreService.Names.Orders (OrdersEnv (..), WriteRefusal (..), noteRead, versionWritten)
+import StoreService.Names.Orders (OrdersEnv (..), WriteRefusal (..), noteRead, orderFieldsOf, versionWritten)
 import StoreService.Names.Phases (awaitChange, publish)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Reveal (RevealRefusal (..), checkReveal, isRepeat, refusedLink)
@@ -82,7 +82,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
           OCommitted Commit {cmRevealBefore}
             | lapsedAt now r -> pure $ RDRefused (RVBadRequest "the commitment lapsed") Nothing
             | otherwise ->
-                checkReveal oeConfig oeContracts now r cmRevealBefore request >>= \case
+                checkReveal oeConfig oeContracts now (nrOwner r) (orderFieldsOf r) cmRevealBefore request >>= \case
                   Left refusal -> pure $ RDRefused refusal Nothing
                   Right rv -> case refusedLink rv of
                     Nothing -> write now (RDAccepted . Just) r {nrReveal = Just rv}

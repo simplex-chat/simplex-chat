@@ -230,7 +230,7 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrP
 closeOrder :: DB.Connection -> InvoiceClose -> NameRegistration -> UTCTime -> IO (Maybe (RegistrationId, Int64))
 closeOrder db how r@NameRegistration {nrId, nrPhase} now = case nrPhase of
   OUnpaid _ ->
-    updateRegistration db r {nrPhase = OClosed how} now >>= \case
+    updateRegistration db r {nrPhase = OClosed how, nrReveal = Nothing} now >>= \case
       Written v -> Just (nrId, v) <$ releaseHeldBalance db nrId now
       _ -> E.throwIO (RegistrationChanged nrId)
   _ -> pure Nothing

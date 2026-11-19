@@ -258,7 +258,7 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
       lapsedAt = posixSecondsToUTCTime (fromIntegral revealBefore)
   pSetNow $ addUTCTime (negate shortOfMoment) lapsedAt
   let committed = OCommitted Commit {cmTx = Nothing, cmRevealAfter = revealBefore - 3600, cmRevealBefore = revealBefore}
-  v <- change ctx nrId $ \r -> r {nrPhase = committed}
+  v <- change ctx nrId $ \r -> r {nrPhase = committed, nrReveal = Nothing}
   (_, r) <- get ctx (registrationPath nrId)
   phaseOf r `shouldBe` Just "committed"
   invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True

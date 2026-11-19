@@ -3,7 +3,7 @@
     "registration": {
       "balance": null,
       "commitTx": null,
-      "commitment": "0x6956890c127404ef097babc481114461ed6d0fe7721ff7266532e29c513caafd",
+      "commitment": "0xbd3ab23bccfdbcb0ac4f8445afd1b34eb67b0c8274b89e6870fa7e084ed4b184",
       "community": null,
       "duration": 69259500,
       "id": "registration",

@@ -3,11 +3,11 @@
     "registration": {
       "balance": null,
       "commitTx": null,
-      "commitment": "0x2d0fc4ba00829c6450ce3a89b70b361b09cb7bdd0977240a7f9330afd7a22d9e",
+      "commitment": "0x91dc01305cef64378da32af28e6034c0847fc14a0131927e37b7b84cf286aefb",
       "community": null,
       "duration": 69259500,
       "id": "registration",
-      "label": null,
+      "label": "alicebakers",
       "labelHash": "0x31435c2a8c42d425eccac7b91f2674de61efc6d2ef7476e131c0f9ad5ed9ce5b",
       "latePayment": null,
       "linksRefused": null,

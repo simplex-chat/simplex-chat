@@ -15,7 +15,10 @@ module Bots.StoreService.NamesOrdersTests
     testNamesConfig,
     codesOnly,
     aliceOrder,
-    commitmentOf,
+    secretOf,
+    orderRegistration,
+    revealOf,
+    withReveal,
     fieldsOf,
     fieldsJSON,
     inObject,
@@ -65,7 +68,7 @@ import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, writeTVar)
+import Control.Concurrent.STM (TVar, atomically, readTVarIO, writeTVar)
 import qualified Control.Exception as E
 import Control.Arrow ((&&&))
 import Control.Monad (forM_, replicateM_, void)
@@ -112,7 +115,7 @@ import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
 import StoreService.Names.Phases (awaitChange, newPhases)
-import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), RegistrationId (..), orderMessage, personalDigest)
+import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), Registration (..), RegistrationId (..), acceptanceDigest, makeCommitment, orderMessage, parseChecksumAddress, personalDigest, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCommitted, PVFailed, PVRegistered, PVTaken, PVUnpaid), RegistrationView (..), Signing (SAwaiting, SLapsed, SSigned), ToSign (TSRead, TSUnread), phaseView, readToSign, registrationView, toRegistrationView)
@@ -142,9 +145,9 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses a resend differing in any one field, or a new commitment, with a bare order_exists" testOneFieldDiffers
     it "refuses an order carrying another wallet's commitment without disclosing anything" testForeignCommitment
     it "refuses a bad signature, or another signer's" testBadSignature
+    it "refuses an order without a reveal, or whose reveal is not the order's label, commitment, owner's intent, sponsor nonce or acceptance, or a week ahead, and names a refused link, reaching no provider" testOrderRevealRefusals
     it "takes a timestamp within 600 seconds of the clock, also near the top of Word64" testStaleTimestamp
     it "lets one of two concurrent orders for one owner and name win, the other never reaching the provider" testConcurrentOrders
-    it "cancels the provider invoice of an order whose insert lost to another with the same commitment" testLostInsertCancels
     it "cancels the provider invoice and logs it when the order's insert fails" testInsertFailureCancels
     it "checks the duration within the slack, before and after the term start" testDurationSlack
     it "answers catalog_changed with the chain price" testCatalogChanged
@@ -159,9 +162,9 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "places a code order as a queued live registration holding its code, answering only its id" testCodeOrder
     it "answers an exact resend with its id in any phase, the code spent or not, also after the terms changed on chain, before any chain read" testCodeResend
     it "refuses a resend differing in any one field, the code included, with a bare order_exists" testCodeOneFieldDiffers
-    it "refuses a bad signature, or another signer's, after the code check" testCodeBadSignature
+    it "refuses a bad signature, or another signer's, after the code check, and a refused link, reserving nothing" testCodeBadSignature
     it "refuses a code order meeting an open invoice for the name with order_exists" testCodeMeetsInvoice
-    it "closes an overdue paid order of the same wallet and name, cancelling its invoice after" testCodeClosesOverdue
+    it "closes an overdue paid order of the same wallet and name, removing its reveal and cancelling its invoice after" testCodeClosesOverdue
     it "refuses each code that cannot pay with its tag" testCodeRefusals
     it "checks the duration for the code's years" testCodeYears
     it "checks a community name's code order for 2 years, whatever its code's years, keeping the code's" testCommunityCodeYears
@@ -187,7 +190,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "links a closed order to the next order of the same wallet and name, which its view names, each closed order once" testReplacesClosed
     it "records a payment of the closed order as a late payment, changing nothing of it and leaving the newer order alone" testLatePaymentAfterNewOrder
     it "keeps an overdue order whose invoice holds money, refusing the next order, and settles it" testFundedOverdueKept
-    it "alerts on a late payment as BTCPay reports it for an expired, cancelled or swept invoice, once" testLateBTCPayPayments
+    it "alerts on a late payment as BTCPay reports it for an expired, cancelled or swept invoice, once, the order's reveal removed at its close" testLateBTCPayPayments
     it "alerts once on money read while open when the provider then closes the invoice, also after a restart" testOneLateAlert
     it "answers cancel with funded, not_open, paid when settlement won, and expired with the payment read meanwhile" testCancelAnswers
     it "alerts once when a cancel expires an invoice a payment landed on while the provider was told" testCancelAlertsFunded
@@ -262,7 +265,11 @@ data Order = Order
   { oLabel :: Text,
     oOwner :: Text,
     oKey :: Secp256k1PrivateKey,
-    oCommitment :: Hex32,
+    oSecret :: Hex32,
+    oContact :: Maybe Text,
+    oChannel :: Maybe Text,
+    oCommitment :: Maybe Hex32,
+    oAcceptanceNonce :: Word64,
     oSealed :: Text,
     oDuration :: Word64,
     oMethod :: Text,
@@ -277,7 +284,11 @@ aliceOrder =
     { oLabel = "alicebakery",
       oOwner = ownerAText,
       oKey = keyA,
-      oCommitment = commitmentOf 1,
+      oSecret = secretOf 1,
+      oContact = Nothing,
+      oChannel = Nothing,
+      oCommitment = Nothing,
+      oAcceptanceNonce = 0,
       oSealed = "sealed-alicebakery-1",
       oDuration = durationAt orderTime,
       oMethod = "btc",
@@ -290,17 +301,58 @@ aliceOrder =
 alicePrice :: USDCents
 alicePrice = 10000
 
-commitmentOf :: Int -> Hex32
-commitmentOf n = Hex32 $ C.sha256Hash $ BC.pack $ "commitment " <> show n
+secretOf :: Int -> Hex32
+secretOf n = Hex32 $ C.sha256Hash $ BC.pack $ "commitment " <> show n
+
+orderRegistration :: Order -> Registration
+orderRegistration Order {oLabel, oOwner, oSecret, oContact, oChannel, oDuration} =
+  Registration
+    { rLabel = oLabel,
+      rTLD = TLDSimplex,
+      rOwner = either (error . show) id $ parseChecksumAddress oOwner,
+      rDuration = oDuration,
+      rSecret = oSecret,
+      rResolver = fakeResolver,
+      rContactLink = oContact,
+      rChannelLink = oChannel
+    }
 
 fieldsOf :: Order -> OrderFields
-fieldsOf Order {oLabel, oCommitment, oSealed, oDuration, oTerms} =
-  OrderFields {ofLabelHash = labelHash oLabel, ofLength = lengthOf (T.length oLabel), ofDuration = oDuration, ofCommitment = oCommitment, ofSealed = oSealed, ofAgreedTerms = agreed oTerms}
+fieldsOf o@Order {oLabel, oCommitment, oSealed, oDuration, oTerms} =
+  OrderFields {ofLabelHash = labelHash oLabel, ofLength = lengthOf (T.length oLabel), ofDuration = oDuration, ofCommitment = fromMaybe (makeCommitment $ orderRegistration o) oCommitment, ofSealed = oSealed, ofAgreedTerms = agreed oTerms}
+
+aliceCommitment :: Hex32
+aliceCommitment = ofCommitment $ fieldsOf aliceOrder
+
+revealDeadline :: Order -> Word64
+revealDeadline Order {oTimestamp} = oTimestamp + 7 * 86400
+
+revealOf :: TVar ChaChaDRG -> Order -> IO J.Value
+revealOf g o@Order {oKey, oTerms, oAcceptanceNonce} = do
+  let r@Registration {rLabel, rSecret = Hex32 secret, rContactLink, rChannelLink} = orderRegistration o
+      deadline = revealDeadline o
+      AgreedTerms {atCommunityName, atTermsHash = Hex32 termsHash} = agreed oTerms
+      sign digest = either error id <$> signRecoverable g oKey digest
+  intent <- sign $ registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) r 0 deadline
+  acceptance <- sign $ acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (termsKind atCommunityName) (makeCommitment r) (Hex32 termsHash) oAcceptanceNonce deadline
+  pure $
+    J.object
+      [ "label" .= rLabel,
+        "secret" .= hex secret,
+        "records" .= J.object ["contact" .= rContactLink, "channel" .= rChannelLink],
+        "nonce" .= (0 :: Int),
+        "deadline" .= deadline,
+        "signature" .= hex (smpEncode intent),
+        "acceptance" .= J.object ["termsHash" .= hex termsHash, "nonce" .= oAcceptanceNonce, "signature" .= hex (smpEncode acceptance)]
+      ]
+
+withReveal :: TVar ChaChaDRG -> Order -> J.Object -> IO J.Object
+withReveal g o body = (\rv -> KM.insert "reveal" rv body) <$> revealOf g o
 
 signedBody :: TVar ChaChaDRG -> Order -> IO J.Object
 signedBody g o@Order {oKey, oTimestamp} = do
   sig <- either error id <$> signRecoverable g oKey (personalDigest $ orderMessage (fieldsOf o) oTimestamp)
-  pure $ withSignature (hex $ smpEncode sig) (unsignedBody o)
+  withReveal g o $ withSignature (hex $ smpEncode sig) (unsignedBody o)
 
 unsignedBody :: Order -> J.Object
 unsignedBody o@Order {oOwner, oMethod, oPrice, oTimestamp} =
@@ -537,7 +589,7 @@ testPaidOrder = withOrders $ \ctx -> do
 vectorOrder :: Order
 vectorOrder =
   aliceOrder
-    { oCommitment = Hex32 $ unhex "5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5",
+    { oSecret = Hex32 $ unhex "d67bb185babef492b23920618fa6c5d2dfd160b0dfe0b5e4befa3718392be262",
       oSealed = "AAAAAAAAAAAAAAAACWgxqMk-UKfpra_Zh6vc4KNBR6SX1WYpGb4COoWCCbM0bisYCH14WLzghp8hqi_-KyXSi4qf_DAdP_M4bFetD0s",
       oDuration = 69292800,
       oTimestamp = 1792828800
@@ -590,7 +642,7 @@ testResendReadsTime = do
     let lapse = seconds now + 600
         lapsing = OCommitted Commit {cmTx = Nothing, cmRevealAfter = lapse - 3600, cmRevealBefore = lapse}
     Written version <- withTransaction cStore $ \db ->
-      updateRegistration db r {nrPhase = lapsing} now
+      updateRegistration db r {nrPhase = lapsing, nrReveal = Nothing} now
     let signingOf v = case phaseFieldOf v "signature" of
           Just (J.Object s) -> fieldOf s "type"
           _ -> Nothing
@@ -604,8 +656,8 @@ testOneFieldDiffers :: IO ()
 testOneFieldDiffers = withOrders $ \ctx -> do
   void $ placed ctx aliceOrder
   let variants =
-        [ aliceOrder {oLabel = "dynamis"},
-          aliceOrder {oCommitment = commitmentOf 2},
+        [ aliceOrder {oLabel = "dynamis", oCommitment = Just aliceCommitment},
+          aliceOrder {oSecret = secretOf 2},
           aliceOrder {oMethod = "xmr"}
         ]
   forM_ variants $ \o -> placeOrder ctx o `shouldReturn` refusedWith 409 "order_exists"
@@ -614,9 +666,9 @@ testOneFieldDiffers = withOrders $ \ctx -> do
 testForeignCommitment :: IO ()
 testForeignCommitment = withOrders $ \ctx -> do
   void $ placed ctx aliceOrder
-  placeOrder ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oLabel = "dynamis", oPrice = 20000}
+  placeOrder ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oLabel = "dynamis", oPrice = 20000, oCommitment = Just aliceCommitment}
     `shouldReturn` refusedWith 409 "order_exists"
-  placeOrder ctx aliceOrder {oOwner = ownerBText, oKey = keyB}
+  placeOrder ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = Just aliceCommitment}
     `shouldReturn` refusedWith 409 "order_exists"
   length <$> registrationsOf ctx ownerB `shouldReturn` 0
 
@@ -627,6 +679,28 @@ testBadSignature = withOrders $ \ctx -> do
   good <- signedBody (cRandom ctx) aliceOrder
   postOrder ctx (inOrder (KM.delete "signature") good) `shouldReturn` refusedWith 400 "bad_request"
   stubCalls (cStub ctx) `shouldReturn` []
+
+testOrderRevealRefusals :: IO ()
+testOrderRevealRefusals = withOrders $ \ctx@Ctx {cRandom, cNode} -> do
+  body <- signedBody cRandom aliceOrder
+  otherKeys <- revealOf cRandom aliceOrder {oKey = keyB}
+  let inReveal = inObject "reveal"
+      badRequest = refusedWith 400 "bad_request"
+      linkRefused kind = (400, Just $ KM.fromList [("type", "invalid_link"), ("kind", kind)])
+  postOrder ctx (KM.delete "reveal" body) `shouldReturn` badRequest
+  postOrder ctx (inReveal (KM.insert "label" "alicebakers") body) `shouldReturn` badRequest
+  postOrder ctx (inReveal (KM.insert "secret" (J.String $ hex $ unHex32 $ secretOf 2)) body) `shouldReturn` badRequest
+  postOrder ctx (KM.insert "reveal" otherKeys body) `shouldReturn` badRequest
+  postOrder ctx (inReveal (KM.insert "deadline" (J.toJSON $ oTimestamp aliceOrder + 7 * 86400 + 601)) body) `shouldReturn` badRequest
+  placeOrder ctx aliceOrder {oAcceptanceNonce = 1} `shouldReturn` badRequest
+  answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (1 :: Int)
+  postOrder ctx body `shouldReturn` badRequest
+  answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
+  placeOrder ctx aliceOrder {oContact = Just "https://smp8.simplex.im/a#contact"} `shouldReturn` linkRefused "contact"
+  placeOrder ctx aliceOrder {oChannel = Just "https://smp8.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"} `shouldReturn` linkRefused "channel"
+  stubCalls (cStub ctx) `shouldReturn` []
+  registrationsOf ctx ownerA `shouldReturn` []
+  void $ placed ctx aliceOrder
 
 testStaleTimestamp :: IO ()
 testStaleTimestamp = do
@@ -640,29 +714,11 @@ testStaleTimestamp = do
 -- | The provider is slow, so without the name's turn both orders would pass the existing-order check and create an invoice.
 testConcurrentOrders :: IO ()
 testConcurrentOrders = withOrdersVia (\p -> p {pCreateInvoice = \m d -> threadDelay 300000 >> pCreateInvoice p m d}) $ \ctx -> do
-  (a, b) <- concurrently (placeOrder ctx aliceOrder) (placeOrder ctx aliceOrder {oCommitment = commitmentOf 2})
+  (a, b) <- concurrently (placeOrder ctx aliceOrder) (placeOrder ctx aliceOrder {oSecret = secretOf 2})
   sort [fst a, fst b] `shouldBe` [200, 409]
   filter ((== 409) . fst) [a, b] `shouldBe` [refusedWith 409 "order_exists"]
   length <$> registrationsOf ctx ownerA `shouldReturn` 1
   length <$> stubCalls (cStub ctx) `shouldReturn` 1
-
--- | Two names take two turns, and both creates are let through together, so both orders reach the insert.
-testLostInsertCancels :: IO ()
-testLostInsertCancels = do
-  arrived <- newTVarIO (0 :: Int)
-  let meet = atomically (modifyTVar' arrived (+ 1)) >> atomically (readTVar arrived >>= check . (>= 2))
-  withOrdersVia (\p -> p {pCreateInvoice = \m d -> meet >> pCreateInvoice p m d}) $ \ctx -> do
-    (a, b) <- concurrently (placeOrder ctx aliceOrder) (placeOrder ctx aliceOrder {oLabel = "dynamis", oPrice = 20000})
-    sort [fst a, fst b] `shouldBe` [200, 409]
-    filter ((== 409) . fst) [a, b] `shouldBe` [refusedWith 409 "order_exists"]
-    [(_, winner)] <- pure $ filter ((== 200) . fst) [a, b]
-    Just InvoiceRow {irProviderRef = won} <- getInvoice (cStore ctx) (InvoiceId $ textOf "invoiceId" winner)
-    calls <- stubCalls (cStub ctx)
-    let created = length [() | StubCreate {} <- calls]
-        cancelled = [r | StubCancel r <- calls]
-    created `shouldBe` 2
-    length cancelled `shouldBe` 1
-    cancelled `shouldNotBe` [won]
 
 -- | The stub gives every invoice one ref, so the second order's insert breaks the unique ref.
 testInsertFailureCancels :: IO ()
@@ -672,7 +728,7 @@ testInsertFailureCancels = withOrdersVia (\p -> p {pCreateInvoice = \m d -> fmap
   mgr <- newManager defaultManagerSettings
   logs <- Warp.withApplication (pure $ webApp $ cWeb ctx) $ \port -> do
     let answering = ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
-    capturingStderr $ fst <$> placeOrder answering aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2} `shouldReturn` 500
+    capturingStderr $ fst <$> placeOrder answering aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2} `shouldReturn` 500
   logs `shouldSatisfy` T.isInfixOf "invoice pref-same is cancelled at the provider"
   calls <- stubCalls (cStub ctx)
   [r | StubCancel r <- calls] `shouldBe` ["pref-same"]
@@ -701,7 +757,7 @@ testOrdersLimitForAll = withOrders $ \ctx -> do
   replicateM_ (lmPerMinute btcpayLimit) $ fst <$> placeOrder ctx aliceOrder {oPrice = 9000} `shouldReturn` 409
   void $ placed ctx aliceOrder
   replicateM_ (lmPerMinute btcpayLimit - 1) $ takeToken (weHttp $ cWeb ctx) btcpayLimit ""
-  let dynamis = aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
+  let dynamis = aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
   limitedAnswer <- placeOrder ctx dynamis
   fmap (KM.delete "retryAfter") <$> limitedAnswer `shouldBe` refusedWith 429 "rate_limited"
   void $ placed ctx dynamis {oMethod = "card"}
@@ -853,7 +909,7 @@ malformedTerms = ["", T.replicate 74 "a", "2026-10-01", T.toUpper plainTerms, "c
 testCheckTerms :: IO ()
 testCheckTerms = withOrders $ \ctx0 -> withSettings (listName "dynamis" . listName "alicebakery") ctx0 $ \ctx@Ctx {cOrders = OrdersEnv {oeConfig, oeContracts}} -> do
   listOnChain ctx "dynamis"
-  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
+  let dynamis = aliceOrder {oLabel = "dynamis", oSecret = secretOf 2, oPrice = 20000}
       checked o = Orders.checkTerms oeConfig oeContracts (fieldsOf o)
       changed o = (\v -> ((oLabel o, oTerms o), v)) . (\case Left (Orders.ORTermsChanged _ _) -> True; _ -> False) <$> checked o
   forM_ ([aliceOrder {oTerms = t} | t <- [olderTerms, communityTerms, newerTerms]] <> [dynamis {oTerms = t} | t <- [plainTerms, olderTerms, otherCommunityTerms, "community/" <> newerTerms]]) $ \o ->
@@ -863,7 +919,7 @@ testCheckTerms = withOrders $ \ctx0 -> withSettings (listName "dynamis" . listNa
 testTermsChanged :: IO ()
 testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . listName "alicebakery") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
-  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
+  let dynamis = aliceOrder {oLabel = "dynamis", oSecret = secretOf 2, oPrice = 20000}
   placeOrder ctx aliceOrder {oTerms = olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   placeOrder ctx dynamis {oTerms = plainTerms} `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   stubCalls (cStub ctx) `shouldReturn` []
@@ -876,7 +932,7 @@ testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . list
 testOtherKindTerms :: IO ()
 testOtherKindTerms = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx@Ctx {cNode = node} -> do
   listOnChain ctx "dynamis"
-  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms}
+  let dynamis = aliceOrder {oLabel = "dynamis", oSecret = secretOf 2, oPrice = 20000, oTerms = communityTerms}
   setGeneralTerms node fakeNewGeneralTermsText
   (community, _) <- placed ctx dynamis
   setCommunityTerms node fakeNewCommunityTermsText
@@ -887,7 +943,7 @@ testTermsUnavailable :: IO ()
 testTermsUnavailable = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx@Ctx {cNode = node} -> do
   listOnChain ctx "dynamis"
   (code, issued) <- issueCode ctx 8 2 id
-  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms}
+  let dynamis = aliceOrder {oLabel = "dynamis", oSecret = secretOf 2, oPrice = 20000, oTerms = communityTerms}
       unavailable = (503, Just $ KM.fromList [("type", "terms_unavailable"), ("wait", J.Null)])
   setCommunityTerms node ""
   placeOrder ctx dynamis `shouldReturn` unavailable
@@ -911,11 +967,11 @@ testCommunityTerms :: IO ()
 testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" . vectorTermStart) ctx0 $ \ctx -> do
   listOnChain ctx "alicebakery"
   writeIORef (cClock ctx) (posixSecondsToUTCTime $ fromIntegral $ oTimestamp vectorOrder)
-  postOrder ctx (withSignature vectorSignature $ unsignedBody vectorOrder) `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
+  (postOrder ctx =<< withReveal (cRandom ctx) vectorOrder (withSignature vectorSignature $ unsignedBody vectorOrder)) `shouldReturn` termsChanged fakeCommunityTermsText (Just bakers)
   let community = vectorOrder {oTerms = communityTerms}
       communitySignature = "0x11ade94c79f14bdfde60b23f60f217206b7fd6b29504a2e3020eaef5dabbf24c39330b92099ce6564c36c0a2e484c91a5a9cfa341285a05a169bafbb1dfd1cb01c"
-  signedBody (cRandom ctx) community >>= (`shouldBe` withSignature communitySignature (unsignedBody community))
-  (status, v) <- postOrder ctx $ withSignature communitySignature (unsignedBody community)
+  KM.delete "reveal" <$> signedBody (cRandom ctx) community >>= (`shouldBe` withSignature communitySignature (unsignedBody community))
+  (status, v) <- postOrder ctx =<< withReveal (cRandom ctx) community (withSignature communitySignature (unsignedBody community))
   (status, (`fieldOf` "terms") . registrationOf =<< v, (`fieldOf` "community") . registrationOf =<< v)
     `shouldBe` (200, Just (J.toJSON $ agreed communityTerms), Just (communityEntry $ Just bakers))
 
@@ -926,7 +982,7 @@ testTermsAfterRestart = withOrders $ \ctx@Ctx {cNode, cOpenStore, cOrders, cRand
   st <- cOpenStore
   ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient cRandom cNode
   withSettings id ctx {cOrders = cOrders {oeContracts = ct}} $ \restarted ->
-    void $ placed restarted aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 3}
+    void $ placed restarted aliceOrder {oOwner = ownerBText, oKey = keyB, oSecret = secretOf 3}
   fetchedTexts cNode `shouldReturn` [fakeTermsPath fakeGeneralTermsText]
 
 testResendAfterBump :: IO ()
@@ -951,8 +1007,8 @@ testResendAfterBump = withOrders $ \ctx -> do
 testTermsCheckOrder :: IO ()
 testTermsCheckOrder = withOrders $ \ctx@Ctx {cNode = node} -> do
   let old = aliceOrder {oTerms = olderTerms}
-  void $ placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 5}
-  placeOrder ctx old {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 6} `shouldReturn` refusedWith 409 "order_exists"
+  void $ placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oSecret = secretOf 5}
+  placeOrder ctx old {oOwner = ownerBText, oKey = keyB, oSecret = secretOf 6} `shouldReturn` refusedWith 409 "order_exists"
   placeOrder ctx old {oTimestamp = seconds orderTime + 601} `shouldReturn` refusedWith 400 "bad_request"
   placeOrder ctx old {oDuration = oDuration old + fromIntegral slackSeconds + 1} `shouldReturn` refusedWith 400 "bad_request"
   placeOrder ctx old {oPrice = 9000} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
@@ -1010,7 +1066,7 @@ testCodeOrder = withOrders $ \ctx -> do
   rid <- registered ctx code aliceOrder
   r <- registrationById ctx rid
   (nrPhase r, nrVersion r, nrYears r, nrPrice r, nrPayment r) `shouldBe` (OQueued, 1, 2, 0, OPCode pcId)
-  (nrOwner r, nrDuration r, nrCommitment r, nrSealed r, nrAgreedTerms r) `shouldBe` (ownerA, durationAt orderTime, oCommitment aliceOrder, oSealed aliceOrder, agreed plainTerms)
+  (nrOwner r, nrDuration r, nrCommitment r, nrSealed r, nrAgreedTerms r) `shouldBe` (ownerA, durationAt orderTime, ofCommitment (fieldsOf aliceOrder), oSealed aliceOrder, agreed plainTerms)
   nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTCode pcCodeHash)
   held <- readCode ctx issued
   (pcReservedBy held, pcReservedAt held, pcSpentAt held) `shouldBe` (Just rid, Just orderTime, Nothing)
@@ -1041,7 +1097,7 @@ testCodeTermsChanged :: IO ()
 testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
   (code, issued) <- issueCode ctx 7 2 id
-  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2}
+  let dynamis = aliceOrder {oLabel = "dynamis", oSecret = secretOf 2}
   register ctx code aliceOrder {oTerms = olderTerms} `shouldReturn` termsChanged fakeGeneralTermsText Nothing
   communityChanged <- register ctx code dynamis {oTerms = plainTerms}
   communityChanged `shouldBe` termsChanged fakeCommunityTermsText (Just bakers)
@@ -1054,7 +1110,7 @@ testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
 testCommunityInvoiceYears :: IO ()
 testCommunityInvoiceYears = withOrders $ \ctx0 -> withSettings (threeYears . listName "dynamis") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
-  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000, oTerms = communityTerms}
+  let dynamis = aliceOrder {oLabel = "dynamis", oSecret = secretOf 2, oPrice = 20000, oTerms = communityTerms}
   placeOrder ctx dynamis {oDuration = yearsDuration 3 orderTime} `shouldReturn` refusedWith 400 "bad_request"
   fst <$> placeOrder ctx dynamis `shouldReturn` 200
   map nrYears <$> registrationsOf ctx ownerA `shouldReturn` [3]
@@ -1082,8 +1138,8 @@ testCodeOneFieldDiffers = withOrders $ \ctx -> do
   (other, otherCode) <- issueCode ctx 8 2 id
   void $ registered ctx code aliceOrder
   let variants =
-        [ (code, aliceOrder {oLabel = "dynamis"}),
-          (code, aliceOrder {oCommitment = commitmentOf 2}),
+        [ (code, aliceOrder {oLabel = "dynamis", oCommitment = Just aliceCommitment}),
+          (code, aliceOrder {oSecret = secretOf 2}),
           (other, aliceOrder)
         ]
   forM_ variants $ \(c, o) -> register ctx c o `shouldReturn` refusedWith 409 "order_exists"
@@ -1100,6 +1156,7 @@ testCodeBadSignature = withOrders $ \ctx -> do
   postRegister ctx (inOrder (KM.delete "signature") good) `shouldReturn` refusedWith 400 "bad_request"
   unknown <- unissuedCode ctx 8
   register ctx unknown aliceOrder {oKey = keyB} `shouldReturn` refusedWith 400 "code_invalid"
+  register ctx code aliceOrder {oContact = Just "https://smp8.simplex.im/a#contact"} `shouldReturn` (400, Just $ KM.fromList [("type", "invalid_link"), ("kind", "contact")])
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
@@ -1108,9 +1165,9 @@ testCodeMeetsInvoice = withOrders $ \ctx -> do
   (code, issued) <- issueCode ctx 8 2 id
   void $ placed ctx aliceOrder
   register ctx code aliceOrder `shouldReturn` refusedWith 409 "order_exists"
-  register ctx code aliceOrder {oCommitment = commitmentOf 2} `shouldReturn` refusedWith 409 "order_exists"
+  register ctx code aliceOrder {oSecret = secretOf 2} `shouldReturn` refusedWith 409 "order_exists"
   -- another wallet sending the open order's commitment
-  register ctx code aliceOrder {oOwner = ownerBText, oKey = keyB} `shouldReturn` refusedWith 409 "order_exists"
+  register ctx code aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = Just aliceCommitment} `shouldReturn` refusedWith 409 "order_exists"
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   length <$> registrationsOf ctx ownerA `shouldReturn` 1
   length <$> registrationsOf ctx ownerB `shouldReturn` 0
@@ -1123,14 +1180,14 @@ testCodeClosesOverdue = withOrders $ \ctx -> do
   -- past the card invoice's 60 minutes, before any sweep
   advance ctx (61 * 60)
   now <- readIORef (cClock ctx)
-  let next = aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now}
+  let next = aliceOrder {oSecret = secretOf 2, oTimestamp = seconds now, oDuration = durationAt now}
   register ctx short next `shouldReturn` refusedWith 409 "code_not_covering"
   orderLive <$> invoiceRegistration ctx oldInv `shouldReturn` True
   rid <- registered ctx code next
   Just oldRow <- getInvoice (cStore ctx) oldInv
   irStatus oldRow `shouldBe` ISExpired
   old <- invoiceRegistration ctx oldInv
-  (nrPhase old, nrVersion old) `shouldBe` (OClosed ICExpired, 2)
+  (nrPhase old, nrVersion old, nrReveal old) `shouldBe` (OClosed ICExpired, 2, Nothing)
   nrPhase <$> registrationById ctx rid `shouldReturn` OQueued
   calls <- stubCalls (cStub ctx)
   [c | c@StubCancel {} <- calls] `shouldBe` [StubCancel (irProviderRef oldRow)]
@@ -1163,7 +1220,7 @@ testCommunityCodeYears :: IO ()
 testCommunityCodeYears = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
   (code, _) <- issueCode ctx 7 5 id
-  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oTerms = communityTerms}
+  let dynamis = aliceOrder {oLabel = "dynamis", oSecret = secretOf 2, oTerms = communityTerms}
   register ctx code dynamis {oDuration = yearsDuration 5 orderTime} `shouldReturn` refusedWith 400 "bad_request"
   rid <- registered ctx code dynamis
   (nrYears &&& nrDuration) <$> registrationById ctx rid `shouldReturn` (5, yearsDuration 2 orderTime)
@@ -1213,7 +1270,7 @@ testConcurrentCodeOrders = withOrders $ \ctx -> do
   release <- newEmptyMVar
   holder <- async $ withCodeTurn (oeTurns $ cOrders ctx) pcCodeHash $ putMVar entered () >> takeMVar release
   takeMVar entered
-  orders <- async $ concurrently (register ctx code aliceOrder) (register ctx code aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2})
+  orders <- async $ concurrently (register ctx code aliceOrder) (register ctx code aliceOrder {oLabel = "dynamis", oSecret = secretOf 2})
   timeout 300000 (wait orders) >>= (`shouldSatisfy` isNothing)
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   putMVar release ()
@@ -1260,10 +1317,10 @@ testSlowReaderHoldsNoTurn = withOrders $ \ctx@Ctx {cWeb, cOrders} -> do
           timeout 2000000 second >>= (`shouldSatisfy` maybe False ((== answered) . fst))
           putMVar release ()
           wait held `shouldReturn` 200
-        byB o = o {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 2}
+        byB o = o {oOwner = ownerBText, oKey = keyB, oSecret = secretOf 2}
     whileHeld (signedBody (cRandom c) aliceOrder >>= slowPost "/api/invoice") (placeOrder c $ byB aliceOrder) 200
-    let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 3}
-    whileHeld (signedCodeBody c codeA dynamis >>= slowPost "/api/name/register") (register c codeB (byB dynamis) {oCommitment = commitmentOf 4}) 409
+    let dynamis = aliceOrder {oLabel = "dynamis", oSecret = secretOf 3}
+    whileHeld (signedCodeBody c codeA dynamis >>= slowPost "/api/name/register") (register c codeB (byB dynamis) {oSecret = secretOf 4}) 409
   where
     slowReader = "x-slow-reader"
 
@@ -1276,7 +1333,7 @@ testOrderAfterCancel = withOrders $ \ctx -> do
   ((`fieldOf` "version") . registrationOf =<< v) `shouldBe` Just (J.Number 2)
   old <- invoiceRegistration ctx invId
   orderLive old `shouldBe` False
-  (newInvId, _) <- placed ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds orderTime + 1}
+  (newInvId, _) <- placed ctx aliceOrder {oSecret = secretOf 2, oTimestamp = seconds orderTime + 1}
   newInvId `shouldNotBe` invId
   orderLive <$> invoiceRegistration ctx newInvId `shouldReturn` True
 
@@ -1287,9 +1344,9 @@ testOverdueClosed = withOrders $ \ctx -> do
   advance ctx (61 * 60)
   now <- readIORef (cClock ctx)
   -- a refused order closes nothing
-  placeOrder ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now} `shouldReturn` refusedWith 400 "bad_request"
+  placeOrder ctx aliceOrder {oSecret = secretOf 2, oTimestamp = seconds now} `shouldReturn` refusedWith 400 "bad_request"
   orderLive <$> invoiceRegistration ctx oldInv `shouldReturn` True
-  (newInv, _) <- placed ctx aliceOrder {oMethod = "card", oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now}
+  (newInv, _) <- placed ctx aliceOrder {oMethod = "card", oSecret = secretOf 2, oTimestamp = seconds now, oDuration = durationAt now}
   Just oldRow <- getInvoice (cStore ctx) oldInv
   irStatus oldRow `shouldBe` ISExpired
   old <- invoiceRegistration ctx oldInv
@@ -1305,7 +1362,7 @@ testReplacesClosed = withOrders $ \ctx -> do
       cancel inv = fst <$> post ctx ("/api/invoice/" <> T.unpack (invoiceText inv) <> "/cancel") "" `shouldReturn` 200
       again n = do
         now <- readIORef (cClock ctx)
-        (inv, _) <- placed ctx aliceOrder {oCommitment = commitmentOf n, oTimestamp = seconds now, oDuration = durationAt now}
+        (inv, _) <- placed ctx aliceOrder {oSecret = secretOf n, oTimestamp = seconds now, oDuration = durationAt now}
         (,) inv <$> invoiceRegistration ctx inv
   (firstInv, _) <- placed ctx aliceOrder
   cancel firstInv
@@ -1318,7 +1375,7 @@ testReplacesClosed = withOrders $ \ctx -> do
   nrReplacedBy third `shouldBe` Nothing
   (_, view) <- answerOf <$> webGet (cClient ctx) ("/api/invoice/" <> T.unpack (invoiceText secondInv))
   ((`fieldOf` "replacedBy") . registrationOf =<< view) `shouldBe` Just (J.object ["registrationId" J..= (\(RegistrationId t) -> t) (nrId third), "invoiceId" J..= thirdInv])
-  (otherInv, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 4}
+  (otherInv, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oSecret = secretOf 4}
   other <- invoiceRegistration ctx otherInv
   nrReplacedBy <$> invoiceRegistration ctx thirdInv `shouldReturn` Nothing
   nrReplacedBy other `shouldBe` Nothing
@@ -1328,7 +1385,7 @@ testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
   (oldInv, _) <- placed ctx aliceOrder
   advance ctx (46 * 60)
   now <- readIORef (cClock ctx)
-  (newInv, _) <- placed ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now}
+  (newInv, _) <- placed ctx aliceOrder {oSecret = secretOf 2, oTimestamp = seconds now, oDuration = durationAt now}
   closed <- invoiceRegistration ctx oldInv
   nrPhase closed `shouldBe` OClosed ICExpired
   Just InvoiceRow {irProviderRef} <- getInvoice (cStore ctx) oldInv
@@ -1348,7 +1405,7 @@ testFundedOverdueKept = withOrders $ \ctx -> do
   settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` ISOpen
   advance ctx (2 * 60)
   now <- readIORef (cClock ctx)
-  placeOrder ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now} `shouldReturn` refusedWith 409 "order_exists"
+  placeOrder ctx aliceOrder {oSecret = secretOf 2, oTimestamp = seconds now, oDuration = durationAt now} `shouldReturn` refusedWith 409 "order_exists"
   r <- invoiceRegistration ctx inv
   nrPhase r `shouldBe` OUnpaid inv
   withTransaction (cStore ctx) (\db -> closeOverdue db r now) `shouldReturn` Nothing
@@ -1375,18 +1432,18 @@ testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
     (irStatus <$>) <$> getInvoice st expired `shouldReturn` Just ISExpired
     paidLate expiredRef ["additionalStatus" .= ("PaidLate" :: Text), "paymentMethodPaid" .= ("0.00050000" :: Text)] >>= (`shouldSatisfy` alerted expiredRef)
     capturingStderr (readAt expiredRef) >>= (`shouldNotSatisfy` alerted expiredRef)
-    (cancelled, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
+    (cancelled, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
     cancelledRef <- refOf cancelled
     cancelOpenInvoice st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) cancelled later `shouldReturn` True
     paidLate cancelledRef ["status" .= ("Invalid" :: Text), "paymentMethodPaid" .= ("0.00078000" :: Text)] >>= (`shouldSatisfy` alerted cancelledRef)
-    (swept, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 3}
+    (swept, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oSecret = secretOf 3}
     sweptRef <- refOf swept
     overdue <- overdueOf st swept
     expireOverdue st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) later later [overdue] `shouldReturn` [swept]
     paidLate sweptRef ["paymentMethodPaid" .= ("0.00025000" :: Text)] >>= (`shouldSatisfy` alerted sweptRef)
     forM_ [(expired, ICExpired), (cancelled, ICCancelled), (swept, ICExpired)] $ \(inv, how) -> do
       r <- invoiceRegistration ctx inv
-      nrPhase r `shouldBe` OClosed how
+      (nrPhase r, nrReveal r) `shouldBe` (OClosed how, Nothing)
 
 -- | Paid in part while open, then expired by BTCPay with the same figures: one late payment line, none from a restarted poller.
 testOneLateAlert :: IO ()
@@ -1414,7 +1471,7 @@ testCancelAnswers = withOrders $ \ctx -> do
   (funded, _) <- placed ctx aliceOrder
   settleNow ctx funded (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` ISOpen
   cancel funded `shouldReturn` refusedWith 409 "funded"
-  (other, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
+  (other, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
   fst <$> cancel other `shouldReturn` 200
   cancel other `shouldReturn` refusedWith 409 "not_open"
   cancel (InvoiceId "no-such-invoice") `shouldReturn` refusedWith 404 "not_found"
@@ -1508,7 +1565,7 @@ testSettlementQueues = withOrders $ \ctx -> do
   (nrPhase r, nrVersion r) `shouldBe` (OQueued, 2)
 
 bobOrder :: Int -> Order
-bobOrder n = aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf n}
+bobOrder n = aliceOrder {oOwner = ownerBText, oKey = keyB, oSecret = secretOf n}
 
 invoiceRef :: Ctx -> InvoiceId -> IO Text
 invoiceRef Ctx {cStore} inv = maybe (error "no invoice") irProviderRef <$> getInvoice cStore inv
@@ -1574,7 +1631,7 @@ testSettlementLocksInvoice = withOrders $ \ctx -> do
 testSweepSkipsBadRow :: IO ()
 testSweepSkipsBadRow = withOrders $ \ctx@Ctx {cStore = st} -> do
   (bad, _) <- placed ctx aliceOrder
-  (good, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
+  (good, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
   NameRegistration {nrId = RegistrationId badId} <- invoiceRegistration ctx bad
   withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (badId, "unpaid" :: Text)
   let later = addUTCTime 3600 orderTime
@@ -1599,8 +1656,8 @@ testPassSweepsAroundFailures = do
     let at' o = o {oTimestamp = seconds placedAt, oDuration = durationAt placedAt}
         refOf inv = maybe (error "no invoice") irProviderRef <$> getInvoice st inv
     (poisoned, _) <- placed ctx $ at' aliceOrder
-    (unread, _) <- placed ctx $ at' aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
-    (good, _) <- placed ctx $ at' aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 3}
+    (unread, _) <- placed ctx $ at' aliceOrder {oLabel = "dynamis", oPrice = 20000, oSecret = secretOf 2}
+    (good, _) <- placed ctx $ at' aliceOrder {oOwner = ownerBText, oKey = keyB, oSecret = secretOf 3}
     NameRegistration {nrId = RegistrationId poisonedId} <- invoiceRegistration ctx poisoned
     withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (poisonedId, "unpaid" :: Text)
     poisonedRef <- refOf poisoned
@@ -1727,7 +1784,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwLinksRefused = Nothing,
         vwPhase = PVUnpaid,
         vwLabelHash = Hex32 $ (\(LabelHash h) -> h) alice,
-        vwLabel = Nothing,
+        vwLabel = Just "alicebakery",
         vwOwner = ownerA,
         vwCommitment = hashFixture 1,
         vwSealed = "sealed-alicebakery-1",
@@ -1830,7 +1887,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   let inPhase phase = do
         r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
-        Written _ <- withTransaction st $ \db -> updateRegistration db r {nrPhase = phase} t0
+        Written _ <- withTransaction st $ \db -> updateRegistration db r {nrPhase = phase, nrReveal = Nothing} t0
         withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   committed <- inPhase $ OCommitted commitFixture
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
@@ -1838,10 +1895,10 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   phaseView ct t0 committed `shouldReturn` awaiting (TSRead 4 AcceptanceAsked {acCommunity = False, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeGeneralTerms, acNonce = 2})
   -- the policy lists the name: the page signs the community terms' acceptance with the policy's nonce
   listCommunityName node $ labelHash "alicebakery"
-  readToSign ct committed `shouldReturn` TSRead 4 AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeCommunityTerms, acNonce = 2}
+  readToSignOf ct committed `shouldReturn` TSRead 4 AcceptanceAsked {acCommunity = True, acPolicy = fakeNamePolicy, acTermsHash = Hex32 fakeCommunityTerms, acNonce = 2}
   -- before the policy has terms of the name's kind there are none to sign, so the page waits
   setCommunityTerms node ""
-  readToSign ct committed `shouldReturn` TSUnread
+  readToSignOf ct committed `shouldReturn` TSUnread
   setCommunityTerms node fakeCommunityTermsText
   taken <- inPhase OTaken
   setFault node "eth_call" HttpFailure
@@ -1849,6 +1906,9 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   phaseView ct (addUTCTime 1 $ chainTime $ cmRevealBefore commitFixture) committed `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SLapsed
   phaseView ct t0 taken `shouldReturn` PVTaken
   phaseView ct t0 committed `shouldReturn` awaiting TSUnread
+
+readToSignOf :: Contracts -> NameRegistration -> IO ToSign
+readToSignOf ct NameRegistration {nrOwner, nrLabelHash} = readToSign ct "the view" nrOwner nrLabelHash
 
 testViewReadsBounded :: IO ()
 testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1861,12 +1921,12 @@ testViewReadsBounded = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Written _ <- withTransaction st $ \db -> updateRegistration db paid {nrPhase = OCommitted commitFixture} t0
   committed <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   atomically $ writeTVar (ctViewSlots ct) 0
-  readToSign ct committed `shouldReturn` TSUnread
+  readToSignOf ct committed `shouldReturn` TSUnread
   atomically $ writeTVar (ctViewSlots ct) 1
-  (\case TSRead n _ -> Just n; TSUnread -> Nothing) <$> readToSign ct committed `shouldReturn` Just 4
+  (\case TSRead n _ -> Just n; TSUnread -> Nothing) <$> readToSignOf ct committed `shouldReturn` Just 4
   setFault node "eth_call" Hang
   started <- getCurrentTime
-  readToSign ct committed `shouldReturn` TSUnread
+  readToSignOf ct committed `shouldReturn` TSUnread
   elapsed <- (`diffUTCTime` started) <$> getCurrentTime
   elapsed `shouldSatisfy` (< 2)
   readTVarIO (ctViewSlots ct) `shouldReturn` 1

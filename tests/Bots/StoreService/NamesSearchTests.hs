@@ -26,7 +26,7 @@ import Bots.StoreService.NamesContractsTests
     withContracts,
     year,
   )
-import Bots.StoreService.NamesOrdersTests (communityEntry, termsEntry, testNamesConfig, threeYears)
+import Bots.StoreService.NamesOrdersTests (communityEntry, ownerAText, termsEntry, testNamesConfig, threeYears)
 import Bots.StoreService.NamesProfilesTests (bakeryLink, channelData, contactData, jpeg, linkDataProfile, newsLink, parsed)
 import Bots.StoreService.NamesStoreTests (atNonce, commitFixture, hashFixture, issue, newEdit, order, ownerA, placeCode, setChannel, t0, usable)
 import Bots.StoreService.WebTests (answerOf, refusedWith, responseFixture, withServiceStore, withApp)
@@ -55,6 +55,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Config (ListenerConfig (..), NamesConfig (..))
 import StoreService.Names.Chain (AbiValue (..), TxHash (..), abiBytes, abiTuple, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
@@ -63,7 +64,7 @@ import StoreService.Names.Profiles (HostResolver, ProfileFetcher, ProfileLimits 
 import StoreService.Names.Store (EditOutcome (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), getRegistration, insertRecordEdit, settleRecordEdit, updateRegistration)
 import StoreService.Web.Http (HttpEnv (..), maxSearches, newHttpEnv, notFound, previewLimit, searchLimit)
 import StoreService.Web.Names (Route (..), namesApp)
-import StoreService.Web.Names.Search (previewHandler, recordLinks, searchHandler, termsHandler)
+import StoreService.Web.Names.Search (previewHandler, recordLinks, searchHandler, signHandler, termsHandler)
 import Test.Hspec
 
 namesSearchTests :: Spec
@@ -85,6 +86,8 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "fails a search whose terms text arrives past the deadline, and answers the text that fetch kept to the next search" $ testSlowTerms g
     it "answers bad_request to a hash not in 0x and 64 lowercase hex, before the length" $ testBadHash g
     it "answers invalid_name to a length not a decimal integer in 6-63" $ testBadLength g
+  describe "signing read" $
+    it "answers the owner's sponsor nonce and the acceptance the policy asks of the name's kind, bad_request to a malformed hash or an owner not in its checksum case, and name_check_unavailable while either read fails" $ testSignRead g
   describe "link preview" $ do
     it "answers each kind of chat as an entity without its links" $ testPreviewKinds g
     it "answers invalid_link to anything but one short link within the link bound" $ testPreviewInvalid g
@@ -109,6 +112,7 @@ withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContr
         ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler ps}
         ["api", "terms", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = termsHandler (adjust ct) hash}
         ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler cfg http store (adjust ct) ps (pure t0) hash}
+        ["api", "name", hash, "sign"] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = signHandler (adjust ct) hash}
         _ -> Nothing
       app req respond = fromMaybe (respond notFound) (namesApp http routes req respond)
   withApp app $ \client -> action Search {node, store, client, fetched, searches = heSearches, searchesAtFetch}
@@ -525,6 +529,21 @@ testBadHash g = withSearch g id id $ \s -> do
   fixtureOf "search-bad-request" (send s ("/api/name/0x" <> T.unpack (T.toUpper hexDigits) <> "?length=5") id) `shouldReturn` refusedWith 400 "bad_request"
   where
     shouldReturnPair (h, act) expected = act >>= \a -> (h, a) `shouldBe` (h, expected)
+
+testSignRead :: TVar ChaChaDRG -> IO ()
+testSignRead g = withSearch g id id $ \s@Search {node} -> do
+  answerCall node fakeSponsor noncesCall $ Returns $ uint256 (4 :: Int)
+  answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
+  let signPath hash owner = "/api/name/" <> T.unpack hash <> "/sign?owner=" <> T.unpack owner
+      asked community terms = ok [("type", "read"), ("intentNonce", J.Number 4), ("acceptance", J.object ["community" .= community, "policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex terms, "nonce" .= (2 :: Int)])]
+  fixtureOf "sign-read" (send s (signPath aliceHex ownerAText) id) `shouldReturn` asked False fakeGeneralTerms
+  listCommunityName node alice
+  answerOf <$> send s (signPath aliceHex ownerAText) id `shouldReturn` asked True fakeCommunityTerms
+  answerOf <$> send s (signPath aliceHex (T.toLower ownerAText)) id `shouldReturn` refusedWith 400 "bad_request"
+  answerOf <$> send s (signPath (T.toUpper aliceHex) ownerAText) id `shouldReturn` refusedWith 400 "bad_request"
+  answerOf <$> send s ("/api/name/" <> T.unpack aliceHex <> "/sign") id `shouldReturn` refusedWith 400 "bad_request"
+  setFault node "eth_call" HttpFailure
+  fixtureOf "sign-unavailable" (send s (signPath aliceHex ownerAText) id) `shouldReturn` refusedWith 503 "name_check_unavailable"
 
 testBadLength :: TVar ChaChaDRG -> IO ()
 testBadLength g = withSearch g id id $ \s@Search {node} -> do

@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 
 -- | The requests only the owner code can sign: find and another name.
 module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
@@ -31,6 +32,7 @@ import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Orders
 import StoreService.Names.Phases (publish)
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), findMessage, parseAnyCaseAddress, retargetMessage)
+import StoreService.Names.Reveal (RevealRequest, orderReveal)
 import StoreService.Names.Store (BalanceUse (..), FailReason (..), NamePhase (..), NameRegistration (..), OrderPhase (..), findRegistrations, getRegistration, namePhase, paymentBalance, paymentInvoice)
 import StoreService.Names.Turns (withRegistrationTurns)
 import StoreService.Names.View (NameRefusal (..), registrationView)
@@ -67,6 +69,11 @@ data FoundOrder = FoundOrder
 $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "fo"} ''FoundOrder)
 
 $(JQ.deriveToJSON defaultJSON {J.fieldLabelModifier = dropPrefix "fa"} ''FindAnswer)
+
+data MoveRequest = MoveRequest {mvSigned :: SignedFields, mvReveal :: RevealRequest}
+
+instance J.FromJSON MoveRequest where
+  parseJSON = J.withObject "move" $ \o -> MoveRequest <$> J.parseJSON (J.Object o) <*> o J..: "reveal"
 
 -- | POST /api/registration/find, the owner's orders newest first.
 findHandler :: OrdersEnv -> Request -> Respond -> IO ResponseReceived
@@ -107,42 +114,42 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow, o
   readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
     requested = \case
-      Just body | Just v <- J.decode body -> either refuse signed (parseBody "move" v >>= signedFields)
+      Just body | Just v <- J.decode body -> either refuse signed (parseBody "move" v >>= \MoveRequest {mvSigned, mvReveal} -> (,mvReveal) <$> signedFields mvSigned)
       _ -> refuse $ ORBadRequest "a malformed move"
-    signed (fields, timestamp, signature) =
+    signed ((fields, timestamp, signature), reveal) =
       withTransaction oeStore (`getRegistration` rid) >>= \case
         Nothing -> pure $ refusalAnswer NRNotFound
         Just r@NameRegistration {nrOwner} ->
           checkSigner nrOwner (retargetMessage rid fields timestamp) signature >>= \case
             Left refusal -> refuse refusal
             Right () ->
-              withRegistrationTurns oeStore oeTurns r (ofLabelHash fields) (inTurns fields timestamp)
+              withRegistrationTurns oeStore oeTurns r (ofLabelHash fields) (inTurns fields timestamp reveal)
                 >>= maybe (pure $ refusalAnswer NRNotFound) (either (const changed) pure)
-    inTurns fields timestamp stored = do
+    inTurns fields timestamp reveal stored = do
       now <- oeNow
-      moveTo now stored fields timestamp
-    moveTo now r@NameRegistration {nrPhase} fields timestamp
+      moveTo now stored fields timestamp reveal
+    moveTo now r@NameRegistration {nrPhase} fields timestamp reveal
       | OFailed _ FRSignatureRefused <- nrPhase = refuse $ ORBadRequest "the order failed with its signature refused, so support settles it"
       | orderFieldsOf r == fields = answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
       | not (movable now r) = refuse $ ORBadRequest "the order is not movable"
       | namePhase nrPhase == PFailed =
           checkFailedOrder env r >>= \case
-            Right () -> moveChecked now r fields
+            Right () -> moveChecked now r fields reveal
             Left (RTWritten v) -> written env rid v . refusalAnswer <$> registrationChanged env rid
             Left RTChanged -> changed
             Left (RTRefused refusal) -> refusalAnswer (retryRefusal refusal) <$ logNote (what <> " refused: " <> tshow refusal)
-      | otherwise = moveChecked now r fields
-    moveChecked now r@NameRegistration {nrMoves, nrYears} fields@OrderFields {ofLabelHash, ofDuration}
+      | otherwise = moveChecked now r fields reveal
+    moveChecked now r@NameRegistration {nrOwner, nrMoves, nrYears} fields@OrderFields {ofLabelHash, ofDuration} reveal
       | nrMoves >= nMaxOrderMoves oeConfig = refusalAnswer <$> registrationRefusal env NRMoveLimit rid
       | otherwise =
-          runExceptT (mapM_ ExceptT [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore (Just rid) ofLabelHash]) >>= \case
+          runExceptT (mapM_ ExceptT [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore (Just rid) ofLabelHash] >> ExceptT (orderReveal oeConfig oeContracts now nrOwner fields reveal)) >>= \case
             Left refusal -> refuse refusal
-            Right () -> write now r fields
+            Right rv -> write now r fields rv
       where
         years = orderYears fields nrYears
-    write now r fields =
-      retargetOrder env r fields >>= \case
+    write now r fields rv =
+      retargetOrder env r fields rv >>= \case
         Right v -> movedAnswer now v
         Left WRChanged -> changed
         Left (WRRefused refusal) -> refuse refusal

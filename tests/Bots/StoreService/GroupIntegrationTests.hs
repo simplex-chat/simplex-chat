@@ -172,7 +172,7 @@ namesBootTests = do
   it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
   it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
   it "boots codes-only, refusing paid name orders 403 codes_only and answering code orders and code checks, the badges shell as built and /api/config in codes mode" testNamesBootCodesOnly
-  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
+  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, the community terms, the signing read and registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, and each route under its limit, shared by the routes of that limit" testNamesBoot
   it "searches with the configured price floor, answering a price at it and 503 to one cent under it" testNamesBootPriceFloor
 
 testDevKeysWarned :: HasCallStack => TestParams -> IO ()
@@ -295,6 +295,10 @@ testNamesBoot ps = do
     answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refusedWith 400 "bad_request"
     search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
     answer search `shouldReturn` refusedWith 400 "invalid_name"
+    signing <- request $ "/api/name/" <> T.unpack aliceHex <> "/sign?owner=0x014f9c09"
+    answer signing `shouldReturn` refusedWith 400 "bad_request"
+    signingPosted <- httpLbs signing {method = "POST"} mgr
+    (statusOf signingPosted, lookup "Allow" $ responseHeaders signingPosted) `shouldBe` (405, Just "GET")
     terms <- request "/api/terms/0x12"
     answer terms `shouldReturn` refusedWith 400 "bad_request"
     termsPosted <- httpLbs terms {method = "POST"} mgr
@@ -326,11 +330,23 @@ testNamesBoot ps = do
               "sealed" J..= ("sealed" :: Text),
               "terms" J..= J.object ["communityName" J..= False, "termsHash" J..= ("0x" <> plainTerms)]
             ]
+        signature = "0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b" :: Text
+        revealBody =
+          J.object
+            [ "label" J..= ("alicebakery" :: Text),
+              "secret" J..= aliceHex,
+              "records" J..= J.object ["contact" J..= J.Null, "channel" J..= J.Null],
+              "nonce" J..= (0 :: Int),
+              "deadline" J..= (1792574100 :: Int),
+              "signature" J..= signature,
+              "acceptance" J..= J.object ["termsHash" J..= aliceHex, "nonce" J..= (0 :: Int), "signature" J..= signature]
+            ]
         spendBody =
           J.object
-            [ "signed" J..= J.object ["fields" J..= spendFields, "timestamp" J..= (1792574100 :: Int), "signature" J..= ("0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b")],
+            [ "signed" J..= J.object ["fields" J..= spendFields, "timestamp" J..= (1792574100 :: Int), "signature" J..= signature],
               "price" J..= (10000 :: Int),
-              "balance" J..= (10000 :: Int)
+              "balance" J..= (10000 :: Int),
+              "reveal" J..= revealBody
             ]
     answer spent {method = "POST", requestBody = RequestBodyLBS $ J.encode spendBody} `shouldReturn` refusedWith 404 "not_found"
     spentByGet <- httpLbs spent mgr
@@ -345,7 +361,7 @@ testNamesBoot ps = do
           [ ("create", 5, [("POST", rid <> "/name"), ("POST", rid <> "/retry"), ("POST", rid <> "/spend")]),
             ("code", 10, [("POST", "/api/name/register"), ("POST", "/api/code/check")]),
             ("read", 60, [("GET", rid), ("POST", rid <> "/reveal")]),
-            ("search", 30, [("GET", "/api/name/" <> T.unpack aliceHex <> "?length=5"), ("GET", "/api/terms/0x12")]),
+            ("search", 30, [("GET", "/api/name/" <> T.unpack aliceHex <> "?length=5"), ("GET", "/api/name/" <> T.unpack aliceHex <> "/sign?owner=0x014f9c09"), ("GET", "/api/terms/0x12")]),
             ("preview", 20, [("POST", "/api/link/preview")]),
             ("find", 5, [("POST", "/api/registration/find")]),
             ("records", 10, [("POST", "/api/name/records")])

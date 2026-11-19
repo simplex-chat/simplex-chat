@@ -60,7 +60,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
   describe "registrations" $ do
-    it "creates a paid order unpaid and live at version 1, linked to its invoice" testCreatePaid
+    it "creates a paid order unpaid and live at version 1, linked to its invoice, with its reveal" testCreatePaid
     it "creates a code order queued with its code reserved" testCreateCode
     it "refuses a second live order for one owner and label hash, or for one commitment" testLiveUnique
     it "refuses a code order whose code cannot be reserved, leaving no registration once its writes are rolled back" testCodeNotReservable
@@ -74,7 +74,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "is live while an order can still progress to a registration for its name" testOrderLive
     it "refuses to queue a closed order, also when a newer live order holds its name" testLatePayment
     it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
-    it "retargets to the new fields, clearing the reveal, transactions, reveal times and refusal" testRetarget
+    it "retargets to the new fields and reveal, clearing the transactions, reveal times and refusal" testRetarget
     it "orders registrations made in the same second by their id" testSameSecondOrder
     it "names the order holding a label from queued to registering and failed, one at a time, and none for an unpaid, taken or registered one" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
@@ -128,7 +128,7 @@ order label n =
     }
 
 newReg :: Text -> Address -> OrderFields -> NewRegistration
-newReg rid nrgOwner nrgOrder = NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgYears = twoYears, nrgOrderHash = orderHash nrgOwner nrgOrder (OTInvoice btc price), nrgReplaces = Nothing}
+newReg rid nrgOwner nrgOrder = NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrgOrder, nrgReveal = reveal, nrgYears = twoYears, nrgOrderHash = orderHash nrgOwner nrgOrder (OTInvoice btc price), nrgReplaces = Nothing}
 
 btc :: ServicePaymentMethod
 btc = SPMCrypto CCBtc
@@ -349,7 +349,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrYears = twoYears,
         nrPrice = price,
         nrPayment = OPInvoice btc (InvoiceId "inv-r1"),
-        nrReveal = Nothing,
+        nrReveal = Just reveal,
         nrLinksRefused = Nothing,
         nrHistory = noHistory,
         nrOrderHash = orderHash ownerA o (OTInvoice btc price),
@@ -562,7 +562,7 @@ testWriteMeetsLiveOrder = withServiceStore $ \st -> do
   r1 <- reg st "r1"
   write st r1 {nrPhase = OFailed (at 1) FRRegistryRefused} `shouldReturn` Written 2
   failed <- reg st "r1"
-  let retarget o = withTransaction st $ \db -> retargetRegistration db failed o 10000 (at 6)
+  let retarget o = withTransaction st $ \db -> retargetRegistration db failed o reveal 10000 (at 6)
   retarget held {ofCommitment = hashFixture 4} `shouldReturn` LiveOrderExists
   r3 <- reg st "r3"
   retarget (order "carolsbakery" 5) {ofCommitment = nrCommitment r3} `shouldReturn` LiveOrderExists
@@ -583,7 +583,8 @@ testRetarget = withServiceStore $ \st -> do
             nrHistory = TxHistory {thCommitTx = Just $ TxHash $ hashFixture 8, thRegisterTx = Just $ TxHash $ hashFixture 9}
           }
   write st failed `shouldReturn` Written 2
-  withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o' 10000 (at 6)) `shouldReturn` Written 3
+  let moved = reveal {rvLabel = "alicebakers", rvSecret = hashFixture 12}
+  withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o' moved 10000 (at 6)) `shouldReturn` Written 3
   r' <- reg st "r1"
   r'
     `shouldBe` r
@@ -594,10 +595,11 @@ testRetarget = withServiceStore $ \st -> do
         nrAgreedTerms = ofAgreedTerms o',
         nrPrice = 10000,
         nrPhase = OQueued,
+        nrReveal = Just moved,
         nrMoves = 1,
         nrUpdatedAt = at 6
       }
-  withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o 10000 (at 7)) `shouldReturn` VersionChanged
+  withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o reveal 10000 (at 7)) `shouldReturn` VersionChanged
 
 testSameSecondOrder :: IO ()
 testSameSecondOrder = withServiceStore $ \st -> do

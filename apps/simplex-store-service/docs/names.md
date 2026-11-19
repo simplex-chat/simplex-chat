@@ -94,11 +94,11 @@ How a request flows:
 |---|---|---|
 | Startup | `store_service.ini` is parsed, the database lock taken, and the node's chain id and the issuer key checked; then the chat core is started. In its callback the providers, the names environment and the web environment are built, the managed group resolved, and all lanes started together. Without `--service-config` only the chat side and the badge request lanes run. | [`Main.hs:16-29`](../Main.hs#L16-L29), [`Service.hs:259-347`](../src/StoreService/Service.hs#L259-L347) |
 | Web API | Warp listeners on `[listener] host`: `badges_port` (8080) always, `names_port` (8081) with `[names]` and `serve_webapp = on`; with `metrics_port`, a listener on `127.0.0.1` for `/metrics` alone. `/api/*` and both webhooks are answered on every port but the metrics one. Per-client limits a minute: read 60, search 30, preview 20, code 10, records 10, create 5, find 5. Checkouts that reach a provider: 5 a minute per IPv4 /24 or IPv6 /48, and 60 card and 30 BTCPay a minute for all clients together. At most 500 long polls are held at once, each up to 30 s. | [`Web/Server.hs:121-151`](../src/StoreService/Web/Server.hs#L121-L151), [`Web/Server.hs:563-586`](../src/StoreService/Web/Server.hs#L563-L586), [`Config.hs:511-520`](../src/StoreService/Config.hs#L511-L520), [`Web/Names.hs:28-51`](../src/StoreService/Web/Names.hs#L28-L51), [`Web/Http.hs:111-161`](../src/StoreService/Web/Http.hs#L111-L161), [`Web/Http.hs:227-230`](../src/StoreService/Web/Http.hs#L227-L230) |
-| Order handlers | An order is placed in one of three ways: a paid invoice, a prepaid code, a spend of another order's balance. The owner's signature, the timestamp, the duration, the terms and an available name are checked, then the chain price for a paid or spent order and the balance for a spend. The order is written in one transaction, in which the same wallet's overdue orders for that name are closed. | [`Web/Names/Orders.hs:86-306`](../src/StoreService/Web/Names/Orders.hs#L86-L306), [`Names/Orders.hs:201-310`](../src/StoreService/Names/Orders.hs#L201-L310), [`Names/Balances.hs:79-106`](../src/StoreService/Names/Balances.hs#L79-L106) |
+| Order handlers | An order is placed in one of three ways: a paid invoice, a prepaid code, a spend of another order's balance. The owner's signature, the timestamp, the duration, the terms and an available name are checked, then the chain price for a paid or spent order and the balance for a spend, then the owner's signed registration and terms acceptance. The order is written with them in one transaction, in which the same wallet's overdue orders for that name are closed. | [`Web/Names/Orders.hs:86-306`](../src/StoreService/Web/Names/Orders.hs#L86-L306), [`Names/Orders.hs:201-310`](../src/StoreService/Names/Orders.hs#L201-L310), [`Names/Balances.hs:79-106`](../src/StoreService/Names/Balances.hs#L79-L106) |
 | Registration and owner handlers | The registration view, held on its version; the reveal; `/retry`; find by the owner's signature; a move to another name. | [`Web/Names/Registration.hs:45-140`](../src/StoreService/Web/Names/Registration.hs#L45-L140), [`Web/Names/Owner.hs:44-152`](../src/StoreService/Web/Names/Owner.hs#L44-L152), [`Names/Reveal.hs:103-145`](../src/StoreService/Names/Reveal.hs#L103-L145), [`Names/View.hs:81-176`](../src/StoreService/Names/View.hs#L81-L176) |
-| Search handlers | Name status, price, terms, and records with link profiles; the terms text; the link preview. These handlers only read, except that a terms text fetched for the first time is stored. | [`Web/Names/Search.hs:53-154`](../src/StoreService/Web/Names/Search.hs#L53-L154), [`Names/Profiles.hs:231-276`](../src/StoreService/Names/Profiles.hs#L231-L276) |
+| Search handlers | Name status, price, terms, and records with link profiles; the terms text; the link preview; what an owner signs with an order. These handlers only read, except that a terms text fetched for the first time is stored. | [`Web/Names/Search.hs:53-154`](../src/StoreService/Web/Names/Search.hs#L53-L154), [`Names/Profiles.hs:231-276`](../src/StoreService/Names/Profiles.hs#L231-L276) |
 | Poller | One loop. A pass is run every `waiting_seconds` (3) while a page holds an invoice poll, else every `idle_seconds` (60), and webhook read hints are served between passes. Invoices are settled, overdue ones expired 10 minutes past their window, late money credited, and unpaid orders deleted daily, 30 days after their invoice expired. | [`Poller.hs:62-76`](../src/StoreService/Poller.hs#L62-L76), [`Poller.hs:148-168`](../src/StoreService/Poller.hs#L148-L168), [`Poller.hs:559-598`](../src/StoreService/Poller.hs#L559-L598), [`Orders.hs:95-275`](../src/StoreService/Orders.hs#L95-L275), [`Names/LateCredits.hs:50-72`](../src/StoreService/Names/LateCredits.hs#L50-L72) |
-| Names worker | A thread is started by a scan every 5 s for each order in `queued`, `committing`, `committed` or `registering`: commit, wait for the reveal, terms acceptance relay, register, and the outcome judged from chain state. A month pass every 5 minutes fails each order unregistered a calendar month after its payment or its code's reservation. | [`Names/Worker.hs:115-401`](../src/StoreService/Names/Worker.hs#L115-L401), [`Names/Worker.hs:503-522`](../src/StoreService/Names/Worker.hs#L503-L522) |
+| Names worker | A thread is started by a scan every 5 s for each order in `queued`, `committing`, `committed` or `registering`: commit, terms acceptance relay, register with the stored reveal or wait for a new one, and the outcome judged from chain state. A month pass every 5 minutes fails each order unregistered a calendar month after its payment or its code's reservation. | [`Names/Worker.hs:115-401`](../src/StoreService/Names/Worker.hs#L115-L401), [`Names/Worker.hs:503-522`](../src/StoreService/Names/Worker.hs#L503-L522) |
 | Sender | Signs with `[chain] service_key`, the only signer of that key. Per transaction: dry run, nonce, a tip of the last 10 blocks' median tip and at least 0.05 gwei, fees within `max_fee_per_gas` and within 0.01 ETH over the gas limit, EIP-1559 signature, a saved row, broadcast. Every 4 s: receipts followed to `confirmations` (default 3), an unknown transaction rebroadcast, and one unmined after 36 s replaced with higher fees when the market's fees have passed its own, within the same caps. | [`Names/Sender.hs:109-332`](../src/StoreService/Names/Sender.hs#L109-L332) |
 | Record edits relay and lane | Owner-signed link edits, each relayed as one resolver transaction through the sender, within `record_edits_per_year` and 10 an hour per name. Pending edits are settled by the lane every 4 s. | [`Names/Records.hs:108-375`](../src/StoreService/Names/Records.hs#L108-L375), [`Web/Names/Records.hs:33-86`](../src/StoreService/Web/Names/Records.hs#L33-L86) |
 | Contracts reader and chain client | One JSON-RPC client to `[chain] rpc_url`, 10 s per call, redirects refused. Typed `eth_call` reads; the name policy address, the registrar constants and the commitment ages kept once read; terms texts fetched once per hash and stored. | [`Names/Contracts.hs:147-411`](../src/StoreService/Names/Contracts.hs#L147-L411), [`Names/Chain.hs:112-305`](../src/StoreService/Names/Chain.hs#L112-L305) |
@@ -146,13 +146,13 @@ Terms used in the diagrams:
 - A lock is held in the process: one request or lane at a time per name (its label hash), prepaid code or balance ([`Names/Turns.hs:3-69`](../src/StoreService/Names/Turns.hs#L3-L69)).
 - A read hint asks the poller to read one invoice at the provider before its next pass ([`Poller.hs:88-108`](../src/StoreService/Poller.hs#L88-L108)).
 - A lane is a thread that runs for the whole life of the process ([`Service.hs:301-313`](../src/StoreService/Service.hs#L301-L313), [`Service.hs:366-370`](../src/StoreService/Service.hs#L366-L370)).
-- `ID` is a registration or invoice id, `SOURCE` the registration id of the order whose balance pays, `LABELHASH` the keccak256 of the label, `REFERENCE` an invoice id or a registration id. A signed order is `owner`, `fields` (`labelHash`, `length`, `duration`, `commitment`, `sealed` and `terms`, which is `communityName` and `termsHash`), `timestamp` and `signature`. `POST /api/invoice` sends it as `order`, with `kind` `name`, `method` (`card`, `btc` or `xmr`, as the badge page sends it) and `price`; `POST /api/name/register` as `order`, with `code`. A move sends `fields`, `timestamp` and `signature`; a spend sends them as `signed`, with `price`, `balance` and, for a difference, `method` ([`Names/Orders.hs:157-190`](../src/StoreService/Names/Orders.hs#L157-L190), [`Web/Names/Orders.hs:61-82`](../src/StoreService/Web/Names/Orders.hs#L61-L82)).
+- `ID` is a registration or invoice id, `SOURCE` the registration id of the order whose balance pays, `LABELHASH` the keccak256 of the label, `REFERENCE` an invoice id or a registration id. A signed order is `owner`, `fields` (`labelHash`, `length`, `duration`, `commitment`, `sealed` and `terms`, which is `communityName` and `termsHash`), `timestamp` and `signature`. `POST /api/invoice` sends it as `order`, with `kind` `name`, `method` (`card`, `btc` or `xmr`, as the badge page sends it) and `price`; `POST /api/name/register` as `order`, with `code`. A move sends `fields`, `timestamp` and `signature`; a spend sends them as `signed`, with `price`, `balance` and, for a difference, `method` ([`Names/Orders.hs:157-190`](../src/StoreService/Names/Orders.hs#L157-L190), [`Web/Names/Orders.hs:61-82`](../src/StoreService/Web/Names/Orders.hs#L61-L82)). All four also send `reveal`: `label`, `secret`, `records` (`contact` and `channel`), the owner's `RegisterName` signature with its `nonce` and `deadline`, and `acceptance` (`termsHash`, `nonce` and `signature`), signed with what `GET /api/name/LABELHASH/sign?owner=OWNER` answers ([`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs) `orderReveal`, [`Web/Names/Search.hs`](../src/StoreService/Web/Names/Search.hs) `signHandler`).
 
 ---
 
 ### 3.1 A name ordered and paid by card or crypto
 
-A signed order is turned into an open invoice at the provider and a registration in phase `unpaid`, which is moved to `queued` when the payment is settled.
+A signed order with its reveal is turned into an open invoice at the provider and a registration in phase `unpaid`, which is moved to `queued` when the payment is settled.
 
 ```mermaid
 sequenceDiagram
@@ -162,12 +162,17 @@ sequenceDiagram
   participant E as Ethereum node
   participant V as BTCPay or Stripe
   participant L as Poller
-  P->>W: POST /api/invoice: kind name, method, price, signed order
+  P->>W: GET /api/name/LABELHASH/sign?owner=OWNER
+  W->>E: sponsor nonce, terms of the name's kind, policy nonce
+  W-->>P: 200: the intent nonce and the terms acceptance to sign
+  P->>P: owner signs RegisterName and the terms acceptance (EIP-712)
+  P->>W: POST /api/invoice: kind name, method, price, signed order, reveal
   W->>W: owner's EIP-191 signature checked, name lock taken
   W->>D: identical earlier order looked up
   W->>E: eth_call: terms of the name's kind, name status, rentPriceUSD
+  W->>E: reveal: sponsor nonce, current terms, policy nonce
   W->>V: create invoice for the price
-  W->>D: one transaction: invoice open, registration unpaid
+  W->>D: one transaction: invoice open, registration unpaid with its reveal
   W-->>P: 200 invoice view: clientSecret, or address and cryptoAmount
   P->>W: GET /api/invoice/ID with wait and seenVersion, held up to 30 s
   P->>V: card payment with the clientSecret, or crypto to the address
@@ -185,7 +190,9 @@ sequenceDiagram
 
 Notes:
 
-- The checks are run in the contract's order: timestamp within 600 s, duration (paid years plus the free days until `term_start`), current terms, a name available on chain and held by no paid order here, then the chain price, at least `min_price_cents_per_year` times the paid years and equal to the order's ([`Web/Names/Orders.hs:104-118`](../src/StoreService/Web/Names/Orders.hs#L104-L118), [`Names/Orders.hs:266-310`](../src/StoreService/Names/Orders.hs#L266-L310), [`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)). Refusals are listed in [`Web/Names/Orders.hs:344-357`](../src/StoreService/Web/Names/Orders.hs#L344-L357).
+- The checks are run in the contract's order: timestamp within 600 s, duration (paid years plus the free days until `term_start`), current terms, a name available on chain and held by no paid order here, then the chain price, at least `min_price_cents_per_year` times the paid years and equal to the order's, then the reveal as 3.2 lists, with its deadline not before the service's clock ([`Web/Names/Orders.hs:104-118`](../src/StoreService/Web/Names/Orders.hs#L104-L118), [`Names/Orders.hs:266-310`](../src/StoreService/Names/Orders.hs#L266-L310), [`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)). Refusals are listed in [`Web/Names/Orders.hs:344-357`](../src/StoreService/Web/Names/Orders.hs#L344-L357).
+- A reveal whose link is not a short link of its record's kind is answered `400 {"type": "invalid_link", "kind": "contact" | "channel"}`, naming the first such link, contact before channel, before any invoice, code reservation or balance hold. A chain read of the reveal's checks that fails is answered `503 name_check_unavailable` (`orderReveal` in [`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs)).
+- The reveal is stored with the order and cleared when the order is closed (`closeOrder` in [`Orders.hs`](../src/StoreService/Orders.hs), `closeOverdue` in [`Names/Store.hs`](../src/StoreService/Names/Store.hs)).
 - The terms text is read from the database, or fetched from git.simplex.chat or GitHub on the first use of its hash and stored; either is checked against the sha256 in its link when the link has one. While it cannot be read, the order is answered `503 terms_unavailable` ([`Names/Orders.hs:284-291`](../src/StoreService/Names/Orders.hs#L284-L291), [`Names/Contracts.hs:239-290`](../src/StoreService/Names/Contracts.hs#L239-L290), [`Web/Names/Orders.hs:356`](../src/StoreService/Web/Names/Orders.hs#L356)).
 - The name lock is held across the provider call, and the answer is sent after it. Overdue unpaid orders of the same wallet and name are closed in the order's transaction ([`Web/Names/Orders.hs:76-100`](../src/StoreService/Web/Names/Orders.hs#L76-L100), [`Names/Orders.hs:217-256`](../src/StoreService/Names/Orders.hs#L217-L256)).
 - The new order `replaces` the newest of those it closes, else the wallet's newest closed order of the name that no order replaces yet; the old order's view names it in `replacedBy`, with its invoice, so its page leads there in any browser ([`Names/Store.hs:785-794`](../src/StoreService/Names/Store.hs#L785-L794), [`Names/Store.hs:890-913`](../src/StoreService/Names/Store.hs#L890-L913)).
@@ -201,7 +208,7 @@ Notes:
 
 ### 3.2 A paid order registered on chain
 
-The names worker commits the order's commitment, waits for the page's signed reveal, relays the terms acceptance and registers the name.
+The names worker commits the order's commitment, relays the terms acceptance of the reveal stored with the order and registers the name. The page signs again only when the stored reveal was cleared.
 
 ```mermaid
 sequenceDiagram
@@ -218,11 +225,15 @@ sequenceDiagram
   S-->>K: receipt at the confirmation depth (default 3)
   K->>D: phase committed, reveal window set
   P->>W: GET /api/registration/ID, held while the version is unchanged
-  W-->>P: committed: the reveal window, the intent nonce and the terms acceptance to sign
-  P->>P: owner signs RegisterName and the terms acceptance (EIP-712)
-  P->>W: POST /api/registration/ID/reveal: label, secret, links, signatures
-  W->>E: sponsor nonce, current terms, policy nonce
-  W->>D: reveal stored, version published
+  alt reveal stored
+    W-->>P: committed, signed
+  else reveal cleared
+    W-->>P: committed: the reveal window, the intent nonce and the terms acceptance to sign
+    P->>P: owner signs RegisterName and the terms acceptance (EIP-712)
+    P->>W: POST /api/registration/ID/reveal: label, secret, links, signatures
+    W->>E: sponsor nonce, current terms, policy nonce
+    W->>D: reveal stored, version published
+  end
   K->>S: acceptance relayed to the name policy
   Note over K: register waits for the relay and for revealAfter
   K->>S: registerWithCredit to the sponsor, phase registering
@@ -235,12 +246,12 @@ Notes:
 
 - Every transaction here is sent through the sender as the commit is, with value 0 and its gas paid by the registrar key; each kind is sent at most 5 times per order, moves included; the worker's own sends do not count a commit mined with status 1, while Try again and a move count every commit ([`Names/Chain.hs:199-214`](../src/StoreService/Names/Chain.hs#L199-L214), [`Names/Worker.hs:443-468`](../src/StoreService/Names/Worker.hs#L443-L468)). By the code comments and the log line of an `InsufficientAllowance` revert, the rent is spent from the registrar key's allowance on the sponsor ([`Names/Contracts.hs:179-181`](../src/StoreService/Names/Contracts.hs#L179-L181), [`Names/Worker.hs:351`](../src/StoreService/Names/Worker.hs#L351)).
 - `RegisterName` is signed in the EIP-712 domain `SimplexSponsor`, the acceptance in `SimplexNamePolicy`, as `AcceptGeneralTerms` or `AcceptCommunityTerms` ([`Names/Registration.hs:80-111`](../src/StoreService/Names/Registration.hs#L80-L111)).
-- The reveal is checked in the contract's order: the label, its hash and length, the commitment rebuilt from the stored owner, duration and default resolver; the intent's deadline not before `revealBefore` and at most a week and 600 s after the service's clock, its signer and the sponsor nonce; the acceptance against the current terms and policy nonce; the links' kinds last ([`Names/Reveal.hs:103-145`](../src/StoreService/Names/Reveal.hs#L103-L145)).
-- The names page signs the intent and the acceptance with a deadline a week after the service's clock, so a signature serves across commitments the service sends again within that week. The intent does not cover the secret, and it stays valid until its deadline or until the owner's sponsor nonce moves; the service clears the stored reveal at a move and at a close ([`Names/Reveal.hs:77-81`](../src/StoreService/Names/Reveal.hs#L77-L81), [`Names/Store.hs:1005-1024`](../src/StoreService/Names/Store.hs#L1005-L1024), [`Names/Worker.hs:523`](../src/StoreService/Names/Worker.hs#L523)).
-- A reveal whose link is not a short link of its record's kind is answered `400 {"type": "invalid_link", "kind": "contact" | "channel"}`, naming the first such link, contact before channel, and the order's view reads that kind in `linksRefused`. The first refusal of a kind is logged at warning and posted in the managed group. The links are part of the commitment, so only a move (3.6) continues the order, which holds its name while it waits ([`Web/Names/Registration.hs:95-109`](../src/StoreService/Web/Names/Registration.hs#L95-L109), [`Names/Orders.hs:315-320`](../src/StoreService/Names/Orders.hs#L315-L320)).
-- The acceptance relay is `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`. It is sent as soon as the reveal is stored, without waiting for `revealAfter`, while `revealBefore` has not passed, unless the policy already holds that acceptance. The register is sent after the relay settles and `revealAfter` has passed ([`Names/Worker.hs:254-272`](../src/StoreService/Names/Worker.hs#L254-L272)).
+- The reveal, of an order or of `/reveal`, is checked in the contract's order: the label, its hash and length, the commitment rebuilt from the owner, duration and default resolver; the intent's deadline not before the service's clock for an order, or `revealBefore` for `/reveal`, and at most a week and 600 s after the service's clock, its signer and the sponsor nonce; the acceptance against the current terms and policy nonce; the links' kinds last ([`Names/Reveal.hs`](../src/StoreService/Names/Reveal.hs) `checkReveal`).
+- The names page signs the intent and the acceptance with a deadline a week after the service's clock, so a signature serves across commitments the service sends again within that week. The intent does not cover the secret, and it stays valid until its deadline or until the owner's sponsor nonce moves; a move stores the move's reveal in place of the old one, and a close clears it ([`Names/Store.hs`](../src/StoreService/Names/Store.hs) `retargetRegistration`, [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `sendRegister`).
+- A `/reveal` whose link is not a short link of its record's kind is answered `400 {"type": "invalid_link", "kind": "contact" | "channel"}`, naming the first such link, contact before channel, and the order's view reads that kind in `linksRefused`. The first refusal of a kind is logged at warning and posted in the managed group. The links are part of the commitment, so only a move (3.6) continues the order, which holds its name while it waits ([`Web/Names/Registration.hs:95-109`](../src/StoreService/Web/Names/Registration.hs#L95-L109), [`Names/Orders.hs:315-320`](../src/StoreService/Names/Orders.hs#L315-L320)).
+- The acceptance relay is `commitUnderGeneralTermsWithSig` or `commitUnderCommunityTermsWithSig`. It is sent once the order is committed with a reveal stored, without waiting for `revealAfter`, while `revealBefore` has not passed, unless the policy already holds that acceptance. The register is sent after the relay settles and `revealAfter` has passed ([`Names/Worker.hs:254-272`](../src/StoreService/Names/Worker.hs#L254-L272)).
 - The links are set by `setText` calls for `simplex.contact` and `simplex.channel` in the register's data ([`Names/Registration.hs:212-235`](../src/StoreService/Names/Registration.hs#L212-L235)).
-- Without a reveal by `revealBefore` the order waits, and its view's signature reads `lapsed`; the page with the code then sends `POST /api/registration/ID/retry`, which queues it to be committed again (3.6). One whose links were refused waits past the lapse for a move ([`Names/Worker.hs:255-264`](../src/StoreService/Names/Worker.hs#L255-L264), [`Names/View.hs:127-143`](../src/StoreService/Names/View.hs#L127-L143)).
+- The stored reveal is cleared when its deadline passes, on `InvalidNonce`, `TermsNotAccepted` or `TermsMismatch` (3.5), and when its acceptance is refused for another policy or kind of terms. Without a reveal by `revealBefore` the order waits, and its view's signature reads `lapsed`; the page with the code then sends `POST /api/registration/ID/retry`, which queues it to be committed again (3.6). One whose links were refused waits past the lapse for a move ([`Names/Worker.hs:255-264`](../src/StoreService/Names/Worker.hs#L255-L264), [`Names/View.hs:127-143`](../src/StoreService/Names/View.hs#L127-L143)).
 - An order waiting for its owner, committed without a reveal, fails with the reason `unread` once its page has not read it for 3 days. A read is `GET /api/registration/ID` or the order's `GET /api/invoice/ID`, stored in `read_at` at most once an hour; an order starts read at its placement (`noteRead` in [`Names/Orders.hs`](../src/StoreService/Names/Orders.hs), `committed` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)).
 - After a restart every phase is resumed from the stored order and the sender's saved transactions ([`Names/Sender.hs:123-131`](../src/StoreService/Names/Sender.hs#L123-L131), [`Names/Worker.hs:6-8`](../src/StoreService/Names/Worker.hs#L6-L8)).
 
@@ -269,12 +280,14 @@ sequenceDiagram
   P->>W: POST /api/code/check: code
   W->>D: code read by its SHA-256
   W-->>P: 200: minLength, years, state
-  P->>W: POST /api/name/register: signed order and code
+  P->>W: GET /api/name/LABELHASH/sign?owner=OWNER, as in 3.1
+  P->>W: POST /api/name/register: signed order, code, reveal
   W->>D: code read by its SHA-256
   W->>W: owner's signature checked, name lock taken
   W->>D: identical earlier order looked up
   W->>E: terms of the name's kind, name status
-  W->>D: under the code's lock: registration queued with price 0, code reserved
+  W->>E: reveal: sponsor nonce, current terms, policy nonce
+  W->>D: under the code's lock: registration queued with price 0 and its reveal, code reserved
   W-->>P: 200: registrationId
   Note over W,D: the names worker registers it as in 3.2
 ```
@@ -283,7 +296,7 @@ Notes:
 
 - Only the code's SHA-256 is stored, so a code not copied when shown cannot be recovered ([`Names/Codes.hs:147-159`](../src/StoreService/Names/Codes.hs#L147-L159)). `unpaid` name codes are refused in the console, and name codes without `[names]` in the console and the group ([`Group/Command.hs:116-118`](../src/StoreService/Group/Command.hs#L116-L118), [`Group.hs:326-330`](../src/StoreService/Group.hs#L326-L330)).
 - In the group, `/issue` is taken from moderators and above, a name code too, for 2 to 10 years. A name code command is refused once the name codes the group issued in the last 24 hours would pass 10; the console has no cap ([`Group/Command.hs:65-118`](../src/StoreService/Group/Command.hs#L65-L118), [`Group.hs:300-322`](../src/StoreService/Group.hs#L300-L322)).
-- A code order is checked for the timestamp, the duration, the terms and an available name; its years are the code's, 2 for a community name ([`Web/Names/Orders.hs:216-222`](../src/StoreService/Web/Names/Orders.hs#L216-L222), [`Names/Community.hs:54-59`](../src/StoreService/Names/Community.hs#L54-L59)).
+- A code order is checked for the timestamp, the duration, the terms, an available name and its reveal (3.1); its years are the code's, 2 for a community name ([`Web/Names/Orders.hs:216-222`](../src/StoreService/Web/Names/Orders.hs#L216-L222), [`Names/Community.hs:54-59`](../src/StoreService/Names/Community.hs#L54-L59)).
 - The code is spent when the name is registered, released when the order is set `taken`, and kept with a failed order for a move, or with a lapsed unsigned one for `/retry` or a move, until a calendar month after its reservation, when the month pass fails the order `monthEnded` and releases the code in the same write (`endOrder` and `endMonths` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)).
 - A name code is issued valid for 3 calendar months, and the answer names its expiry: `Code: SN6-…. Valid until <time> UTC.` (`issueNameCode` in [`Names/Codes.hs`](../src/StoreService/Names/Codes.hs)).
 - A name code is withdrawn by `//revoke` unless it is spent; a code an order already holds stays usable by that order ([`Names/Codes.hs:162-173`](../src/StoreService/Names/Codes.hs#L162-L173), [`Names/Codes.hs:78-88`](../src/StoreService/Names/Codes.hs#L78-L88)).
@@ -393,10 +406,11 @@ sequenceDiagram
     W->>D: phase queued, commit's history cleared
     W-->>P: 200 the order's view: queued
   else another name
-    P->>W: POST /api/registration/ID/name, signed new name
+    P->>W: POST /api/registration/ID/name, signed new name, reveal
     W->>E: registered after all? refused after 5 sends of a kind
     W->>E: terms, name available, a paid order's rentPriceUSD at least the floor and at most its price
-    W->>D: under both names' locks: new name queued, moves + 1
+    W->>E: reveal: sponsor nonce, current terms, policy nonce
+    W->>D: under both names' locks: new name queued with its reveal, moves + 1
     W-->>P: 200 the order's view, or 409 registration_changed when registered after all
   end
   Note over W,D: next scan: commitment reused or committed again
@@ -408,6 +422,7 @@ Notes:
 - A move is accepted for a failed order, for one whose links were refused, and for one whose commitment lapsed unsigned, up to `max_order_moves` (default 3). For a failed order the service checks first whether its name was registered after all, then refuses a move after 5 sends of a kind ([`Web/Names/Owner.hs:113-126`](../src/StoreService/Web/Names/Owner.hs#L113-L126), [`Config.hs:655`](../src/StoreService/Config.hs#L655)).
 - Both names' locks are taken in hash order, and the first order's hash is kept. A paid order moved to a cheaper name is credited the difference; a code order is moved at price 0, its code reserved again ([`Names/Turns.hs:27-32`](../src/StoreService/Names/Turns.hs#L27-L32), [`Web/Names/Owner.hs:128-135`](../src/StoreService/Web/Names/Owner.hs#L128-L135), [`Names/Orders.hs:340-356`](../src/StoreService/Names/Orders.hs#L340-L356), [`Names/Store.hs:787-813`](../src/StoreService/Names/Store.hs#L787-L813)).
 - A paid order's move reads the new name's price as an order does: a price under `min_price_cents_per_year` times the paid years is answered `503 name_check_unavailable`, and nothing is credited ([`Names/Contracts.hs:190-202`](../src/StoreService/Names/Contracts.hs#L190-L202)).
+- The move's reveal is checked last, as an order's (3.1), for the order's owner; a repeat of the order's current fields is answered with its view before any check ([`Web/Names/Owner.hs`](../src/StoreService/Web/Names/Owner.hs) `moveChecked`).
 
 ---
 
@@ -446,18 +461,20 @@ sequenceDiagram
   participant V as BTCPay or Stripe
   participant L as Poller
   P->>W: GET /api/registration/SOURCE, answered with its balance
-  P->>W: POST /api/registration/SOURCE/spend: signed order
+  P->>W: GET /api/name/LABELHASH/sign?owner=OWNER, as in 3.1
+  P->>W: POST /api/registration/SOURCE/spend: signed order, reveal
   W->>D: source order read
   W->>W: its owner's signature checked, name and balance locks taken
   W->>E: terms of the name's kind
   W->>D: balance equal to the amount read and not held
   W->>E: name status, rentPriceUSD at least the floor and equal to the price
+  W->>E: reveal: sponsor nonce, current terms, policy nonce
   alt balance covers the price, no method sent
-    W->>D: one transaction: registration queued, balance lowered by the price
+    W->>D: one transaction: registration queued with its reveal, balance lowered by the price
     W-->>P: 200: registrationId
   else a difference to pay, method sent
     W->>V: invoice for the price minus the balance
-    W->>D: one transaction: invoice open, registration unpaid, balance held
+    W->>D: one transaction: invoice open, registration unpaid with its reveal, balance held
     W-->>P: 200: invoice view of the new order, paid by the difference and the balance's part
     alt paid
       L->>D: settlement: registration queued, held balance spent

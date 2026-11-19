@@ -224,17 +224,18 @@ phaseView ct now r@NameRegistration {nrPhase, nrReveal} = case nrPhase of
     signing
       | isJust nrReveal = pure SSigned
       | lapsedAt now r = pure SLapsed
-      | otherwise = SAwaiting <$> readToSign ct r
+      | otherwise = SAwaiting <$> readToSign ct ("the view of registration " <> rid) nrOwner nrLabelHash
+    NameRegistration {nrId = RegistrationId rid, nrOwner, nrLabelHash} = r
 
-readToSign :: Contracts -> NameRegistration -> IO ToSign
-readToSign ct NameRegistration {nrId = RegistrationId rid, nrOwner, nrLabelHash} = do
+readToSign :: Contracts -> Text -> Address -> LabelHash -> IO ToSign
+readToSign ct what owner lh = do
   deadline <- deadlineIn $ ctDeadline ct
-  withSlot deadline (ctViewSlots ct) (concurrently (sponsorNonce ct nrOwner) (currentAcceptance ct nrLabelHash nrOwner)) >>= \case
+  withSlot deadline (ctViewSlots ct) (concurrently (sponsorNonce ct owner) (currentAcceptance ct lh owner)) >>= \case
     Just (Right nonce, Right asked) -> pure TSRead {intentNonce = nonce, acceptance = asked}
     Just (nonceRead, askedRead) -> TSUnread <$ unread ("could not read what its owner signs: " <> T.intercalate "; " [tshow e | Left e <- [() <$ nonceRead, () <$ askedRead]])
     Nothing -> TSUnread <$ unread "read the chain in no slot within its deadline"
   where
-    unread reason = logWarn $ "names: the view of registration " <> rid <> " " <> reason
+    unread reason = logWarn $ "names: " <> what <> " " <> reason
 
 toRegistrationView :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> PhaseView -> RegistrationView
 toRegistrationView cfg r balance late phase =

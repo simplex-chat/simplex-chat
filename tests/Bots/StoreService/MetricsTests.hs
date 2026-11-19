@@ -244,7 +244,7 @@ testNamesCounts = withServiceStore $ \st -> do
   mapM_ (\(rid, n) -> placedAs "paid" rid n Nothing) [("src", 2), ("q", 3), ("c1", 4), ("c2", 5), ("rg", 6), ("f", 7)]
   moved "src" 1 $ \r -> r {nrPhase = OTaken}
   moved "f" 1 $ \r -> r {nrPhase = OFailed (at 1) FRRegistryRefused}
-  moved "c1" 2 $ \r -> r {nrPhase = OCommitted commitFixture}
+  moved "c1" 2 $ \r -> r {nrPhase = OCommitted commitFixture, nrReveal = Nothing}
   moved "c2" 3 $ \r -> r {nrPhase = OCommitted commitFixture, nrReveal = Just reveal}
   moved "rg" 4 $ \r -> r {nrPhase = ORegistering commitFixture $ TxHash $ hashFixture 9}
   moved "q" 5 $ \r -> r {nrPhase = OQueued}

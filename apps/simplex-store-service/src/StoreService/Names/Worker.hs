@@ -321,7 +321,7 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
             Left (SEChain (ChainReverted reason)) -> judge w now r c $ Just reason
             Left e -> pure $ failure r $ SFSend e
   where
-    intent = intentOf cfg r rv
+    intent = intentOf cfg (nrOwner r) (nrDuration r) rv
 
 registerSent :: Worker -> UTCTime -> NameRegistration -> Commit -> PendingTx -> IO Next
 registerSent w now r@NameRegistration {nrPhase} c p
