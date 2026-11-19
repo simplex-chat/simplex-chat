@@ -802,6 +802,7 @@ test-suite simplex-chat-test
       Bots.StoreService.NamesLinksTests
       Bots.StoreService.NamesOrdersTests
       Bots.StoreService.NamesOwnerTests
+      Bots.StoreService.NamesPageService
       Bots.StoreService.NamesPhasesTests
       Bots.StoreService.NamesProfilesTests
       Bots.StoreService.NamesRecordsTests

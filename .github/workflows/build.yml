@@ -16,6 +16,7 @@ on:
       - "apps/simplex-bot/**"
       - "apps/simplex-bot-advanced/**"
       - "apps/simplex-store-service/**"
+      - "scripts/store-service/**"
       - "apps/simplex-broadcast-bot/**"
       - "apps/simplex-directory-service/**"
       - "apps/multiplatform/**"
@@ -47,6 +48,7 @@ on:
       - "apps/simplex-support-bot-light/**"
       - "apps/simplex-domains"
       - "tests/fixtures/api/store/**"
+      - "tests/Bots/StoreService/**"
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
@@ -746,7 +748,7 @@ jobs:
 
       - name: Test changed scopes
         if: ${{ !cancelled() && matrix.scope_tests == true && steps.setup-python.outcome == 'success' }}
-        timeout-minutes: 30
+        timeout-minutes: 90
         shell: bash
         env:
           SCOPES: ${{ needs.maybe-release.outputs.scopes }}

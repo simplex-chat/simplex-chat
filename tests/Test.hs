@@ -21,6 +21,7 @@ import Bots.StoreService.NamesLabelTests
 import Bots.StoreService.NamesLinksTests
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests
+import Bots.StoreService.NamesPageService
 import Bots.StoreService.NamesPhasesTests
 import Bots.StoreService.NamesProfilesTests
 import Bots.StoreService.NamesRecordsTests
@@ -133,6 +134,7 @@ main = do
       namesStoreTests
       namesWiringTests
       namesWorkerTests
+      namesPageServiceTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests

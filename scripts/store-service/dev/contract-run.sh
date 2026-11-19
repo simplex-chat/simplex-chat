@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Runs the names webapp's end-to-end cases that need no payment against this service, all in one, on a
-# local anvil chain deployed by the webapp's dev/deploy.ts. See the README's "Running the webapp's
-# cases against the service". Arguments, if any, replace the default cases' title filter as
+# Runs the names webapp's end-to-end cases against this service, with the fake BTCPay and Stripe of its
+# tests, on a local anvil chain deployed by the webapp's dev/deploy.ts. See the README's "Running the
+# webapp's cases against the service". Arguments, if any, replace the default cases' title filter as
 # Playwright test arguments.
 set -euo pipefail
 shopt -s inherit_errexit
@@ -9,23 +9,23 @@ shopt -s inherit_errexit
 WEBAPP_DIR="${WEBAPP_DIR:-$(cd "$(dirname "$0")/../../.." && pwd)/apps/simplex-domains/webapp}"
 : "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to the compiled ens-contracts submodule of a simplex-namespace-contract checkout, as for the webapp dev/start.sh}"
 ANVIL="${ANVIL:-anvil}"
+RPC_PORT="${RPC_PORT:-8545}"
 SERVICE_PORT="${SERVICE_PORT:-8180}"
 BADGES_PORT="${BADGES_PORT:-8181}"
-CODES_PORT="${CODES_PORT:-8199}"
+RUNNER_PORT="${RUNNER_PORT:-8182}"
 REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
-STORE_SERVICE_BIN="${STORE_SERVICE_BIN:-$(cd "$REPO" && cabal list-bin exe:simplex-store-service)}"
+STORE_TEST_BIN="${STORE_TEST_BIN:-$(cd "$REPO" && cabal list-bin simplex-chat-test)}"
 
-# The e2e helpers read the chain from the webapp's dev/local-chain-0.json, which slot 0 of dev/start.sh
-# writes: anvil on 8545, a 5-second commitment age, and so the same contract addresses.
-RPC_PORT=8545
 RPC_URL="http://127.0.0.1:$RPC_PORT"
 CHAIN_ID=31337
-MIN_COMMITMENT_AGE=5
+MIN_COMMITMENT_AGE=1
 # as dev/start.sh: a block a second, and a few states kept in memory rather than gigabytes under ~/.foundry
 MEMORY_STATES=8
 SERVICE_URL="http://127.0.0.1:$SERVICE_PORT"
 BADGES_URL="http://127.0.0.1:$BADGES_PORT"
-CODES_URL="http://127.0.0.1:$CODES_PORT"
+RUNNER_URL="http://127.0.0.1:$RUNNER_PORT"
+MOCK_URL="http://127.0.0.1:8099"
+PAGE_URL="http://127.0.0.1:5173"
 TERMS_URL="http://127.0.0.1:8098"
 STARTUP_SECONDS=120
 # The test suite's public issuer secret (issuerSecret in tests/Bots/StoreService/ConfigTests.hs), trusted
@@ -36,37 +36,11 @@ DEV_ISSUER_SECRET=Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg=
 COMMUNITY_LABEL=bakers
 COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
-# The cases at webapp 60a1cb9. Each case is its own client by X-Forwarded-For, which the service trusts
-# here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
-# below answers from the codes issued here, so CODES holds one per case that asks for one. "search
-# answers every kind of name" is not among them: it sets /control/search.
-CASES=(
-  "a search link's name is shown folded to lower case"
-  "Back to a search from the links step shows its answer at once"
-  "Check your code tells a prepaid code, a name code and anything else apart, and a code for longer names says so on the home"
-  "Check your code opened again shows a prepaid code typed there, never a name code"
-  "Check your code says nothing of a code being typed, and refuses one too short once Enter is pressed or focus leaves"
-  "a name code the service finds no order for says so as its verdict, offers no Add, and keeps focus in the code's field"
-  "a prepaid code from Check your code shows a name as Free and registers it with nothing to pay"
-  "the registering page keeps its heading still on a phone from the commit to the name being registered"
-  "a registration's stages are said as each is reached, not each second of the wait"
-  "Edit links keeps several links on chain as the contact address they hold, and emptying the field removes them"
-  "a prepaid code registers a name with its links, which its records on chain then hold, its register recording the owner's acceptance of the general terms"
-  "a code order registers its name with its links after its browser closed, and its name code entered in another browser shows it, which reveals nothing"
-  "Edit links on a name registered with a code adds both its links on chain in one transaction, then changes one"
-  "a code check past the service's limit counts down its wait, then checks the code again by itself"
-  "a name's link whose data cannot be read now shows as its kind's default picture, and opens by the chat core's form"
-  "a community name shows its marker after the name, a button whose popup says what the name is for"
-  "a community name's order shows its community terms on their own step before Check your order, Continue waiting for their tick, and its ⓘ says what the name is for"
-  "a prepaid code registers a name the contracts' owner listed on chain, its register recording the owner's acceptance of the community terms"
-  "a prepaid code for 5 years registers a community name for its 2 years and the free days, saying the code's other years are not used"
-  "a Save's two link edits are one request and one multicall transaction, counted as one edit, and its exact resend answers it again"
-)
-CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6 years 5")
+EXCLUDED=()
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
 INI="$RUN_DIR/store_service.ini"
-DB="$RUN_DIR/db"
+CHAIN="$WEBAPP_DIR/dev/local-chain-0.json"
 
 # Only jobs still running are stopped, so a PID reused since one ended is never killed. The run's
 # folder is kept when the run fails, for its logs.
@@ -101,7 +75,7 @@ answering() {
 # Another chain on the port would take the deployment, and the cases would read that chain.
 refuse_taken_ports() {
   local url
-  for url in "$RPC_URL" "$SERVICE_URL" "$BADGES_URL" "$CODES_URL" "$TERMS_URL"; do
+  for url in "$RPC_URL" "$SERVICE_URL" "$BADGES_URL" "$RUNNER_URL" "$MOCK_URL" "$PAGE_URL" "$TERMS_URL"; do
     if curl -s -o /dev/null "$url"; then
       echo "something already answers on $url; stop it first" >&2
       exit 1
@@ -110,15 +84,11 @@ refuse_taken_ports() {
 }
 
 start_chain() {
-  "$ANVIL" --chain-id "$CHAIN_ID" --host 127.0.0.1 --port "$RPC_PORT" --block-time 1 --prune-history "$MEMORY_STATES" --silent \
+  "$ANVIL" --chain-id "$CHAIN_ID" --host 127.0.0.1 --port "$RPC_PORT" --block-time 1 --mixed-mining --prune-history "$MEMORY_STATES" --silent \
     > "$RUN_DIR/anvil.log" 2>&1 &
   answering $! -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}' "$RPC_URL"
-  (cd "$WEBAPP_DIR" && RPC_URL="$RPC_URL" LOCAL_CHAIN_OUT="$RUN_DIR/chain.json" MIN_COMMITMENT_AGE="$MIN_COMMITMENT_AGE" \
+  (cd "$WEBAPP_DIR" && RPC_URL="$RPC_URL" LOCAL_CHAIN_OUT="$CHAIN" MIN_COMMITMENT_AGE="$MIN_COMMITMENT_AGE" \
     ENS_CONTRACTS_DIR="$ENS_CONTRACTS_DIR" node dev/deploy.ts) > "$RUN_DIR/deploy.log" 2>&1
-  if ! cmp -s "$RUN_DIR/chain.json" "$WEBAPP_DIR/dev/local-chain-0.json"; then
-    echo "the deployment differs from $WEBAPP_DIR/dev/local-chain-0.json, which the e2e helpers read; run its dev/start.sh with SLOTS=1 MIN_COMMITMENT_AGE=$MIN_COMMITMENT_AGE once" >&2
-    exit 1
-  fi
 }
 
 start_terms() {
@@ -130,10 +100,11 @@ build_site() {
   (cd "$WEBAPP_DIR" && npx vite build --outDir "$RUN_DIR/names" --emptyOutDir --logLevel warn) > "$RUN_DIR/build.log" 2>&1
 }
 
-# No [btcpay] and no [stripe]: these cases pay for nothing. The names site is served on the port the
-# tests open; the badges site, on its own port, is not used, so its build is an empty folder.
+deployed() {
+  node -p "require(process.argv[1]).$1" "$CHAIN"
+}
+
 write_ini() {
-  local chain="$RUN_DIR/chain.json"
   mkdir -p "$RUN_DIR/badges"
   cat > "$INI" <<INI
 [listener]
@@ -151,60 +122,75 @@ private_key = $DEV_ISSUER_SECRET
 dev_keys = $DEV_ISSUER_INDEX:$DEV_ISSUER_SECRET
 
 [names]
-tld = $(jq -r .tld "$chain")
+tld = $(deployed tld)
 
 [community]
 $COMMUNITY_LABEL = $COMMUNITY_TEXT
 
 [chain]
 rpc_url = $RPC_URL
-chain_id = $(jq -r .chainId "$chain")
-controller = $(jq -r .controller "$chain")
-sponsor = $(jq -r .sponsor "$chain")
-base_registrar = $(jq -r .baseRegistrar "$chain")
-resolver = $(jq -r .resolver "$chain")
-service_key = $(jq -r .registrarKey "$chain")
+chain_id = $(deployed chainId)
+controller = $(deployed controller)
+sponsor = $(deployed sponsor)
+base_registrar = $(deployed baseRegistrar)
+resolver = $(deployed resolver)
+service_key = $(deployed registrarKey)
+confirmations = 1
 INI
   chmod 600 "$INI"
 }
 
 start_service() {
-  "$STORE_SERVICE_BIN" --no-address --service-config "$INI" -d "$DB" >> "$RUN_DIR/service.log" 2>&1 &
+  (cd "$REPO" && NAMES_PAGE_RUN_DIR="$RUN_DIR" NAMES_PAGE_CONTROL_PORT="$RUNNER_PORT" \
+    exec "$STORE_TEST_BIN" -m "/Names page against the store service/") >> "$RUN_DIR/service.log" 2>&1 &
   SERVICE_PID=$!
   answering "$SERVICE_PID" "$SERVICE_URL/"
+  answering "$SERVICE_PID" -X POST "$RUNNER_URL/control/none"
 }
 
-# //issue with the service stopped, as the README says.
-issue_codes() {
-  local i command out code years
-  for i in "${!CODES[@]}"; do
-    command="//issue ${CODES[$i]}"
-    out="$RUN_DIR/issue-$i.out"
-    "$STORE_SERVICE_BIN" --no-address --service-config "$INI" -d "$DB" --execute "$command" > "$out" 2>> "$RUN_DIR/issue.log"
-    code="$(sed -nE 's/^Code: (SN[0-9]+(-[0-9A-Z]+)+)\. Valid until .* UTC\.$/\1/p' "$out")"
-    if [ -z "$code" ]; then
-      echo "$command printed no code; see $out" >&2
-      exit 1
-    fi
-    years=2
-    if [[ "$command" =~ years\ ([0-9]+) ]]; then years="${BASH_REMATCH[1]}"; fi
-    [[ "$code" =~ ^SN([0-9]+)- ]]
-    jq -cn --arg code "$code" --argjson minLength "${BASH_REMATCH[1]}" --argjson years "$years" '{$code, $minLength, $years}'
-  done | jq -s . > "$RUN_DIR/codes.json"
-}
-
-# The tests' MOCK_URL. POST /control/code hands out the issued codes; the reset of /control/search
-# that search.spec.ts sends after each case is the service's own state, so it is answered as done.
-# Any other control answers 501, failing the case that sends it. /api is the service's.
-start_code_server() {
-  node --input-type=module - "$CODES_PORT" "$SERVICE_URL" "$RUN_DIR/codes.json" > "$RUN_DIR/codes.log" 2>&1 <<'JS' &
+start_mock() {
+  (cd "$WEBAPP_DIR" && ENS_CONTRACTS_DIR="$ENS_CONTRACTS_DIR" exec node --input-type=module - "${MOCK_URL##*:}" "$SERVICE_URL" "$RUNNER_URL" "$CHAIN" "$RUN_DIR/rival-chain.json") \
+    > "$RUN_DIR/mock.log" 2>&1 <<'JS' &
 import { createServer } from "node:http"
-import { readFileSync } from "node:fs"
+import { readFileSync, writeFileSync } from "node:fs"
+import { keccak256, toHex } from "viem"
+import { mnemonicToAccount } from "viem/accounts"
 
-const [port, service, codesFile] = process.argv.slice(2)
-const codes = JSON.parse(readFileSync(codesFile, "utf8"))
+const [port, service, runner, chainFile, rivalChainFile] = process.argv.slice(2)
+const ANVIL_MNEMONIC = "test test test test test test test test test test test junk"
+const [guardian, rival] = [1, 4].map((addressIndex) => mnemonicToAccount(ANVIL_MNEMONIC, { addressIndex }))
+const ALLOWANCE = 1_000_000n * 10n ** 18n
+const TAKE_SECONDS = 60
 const SEARCH_RESET = { chainDown: false, limitSeconds: 0, invoiceError: null, findLimitSeconds: 0 }
+const RUNNER_CONTROL = /^\/control\/(code|rate|(settle|partial|confirming|expire)\/[^/]+)$/
+
+writeFileSync(rivalChainFile, JSON.stringify({ ...JSON.parse(readFileSync(chainFile, "utf8")), registrarKey: toHex(rival.getHdKey().privateKey) }))
+process.env.LOCAL_CHAIN_OUT = rivalChainFile
+const { controlCommunityTerms, controlGeneralTerms, controlTake, HttpError } = await import("./dev/mock/service.ts")
+const { holder, ownerOf, send, sponsor } = await import("./dev/mock/chain.ts")
+await send(sponsor, "setRegistrarAllowance", [rival.address, ALLOWANCE], undefined, guardian)
+
 const sameJson = (a, b) => JSON.stringify(Object.entries(a).sort()) === JSON.stringify(Object.entries(b).sort())
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function taken(label) {
+  const hash = keccak256(toHex(label))
+  for (let left = TAKE_SECONDS * 4; left > 0; left--) {
+    if ((await ownerOf(hash)) === holder.address) return
+    await sleep(250)
+  }
+  throw new Error(`${label} was not registered to the holder`)
+}
+
+const CHAIN_CONTROLS = {
+  "/control/take": async (body) => {
+    const answer = controlTake(body.label)
+    await taken(body.label)
+    return answer
+  },
+  "/control/general-terms": controlGeneralTerms,
+  "/control/community-terms": controlCommunityTerms,
+}
 
 async function bodyOf(req) {
   const chunks = []
@@ -216,15 +202,20 @@ function json(res, status, value) {
   res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify(value))
 }
 
-function control(path, body) {
-  if (path === "/control/code" && body.state === undefined) {
-    const years = body.years ?? 2
-    const at = codes.findIndex((c) => c.minLength === body.minLength && c.years === years)
-    if (at < 0) return [501, { error: `no issued code left of ${body.minLength}+ letters for ${years} years` }]
-    return [200, { code: codes.splice(at, 1)[0].code }]
+async function control(path, body) {
+  if (RUNNER_CONTROL.test(path)) {
+    const answer = await fetch(`${runner}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
+    return [answer.status, await answer.json()]
   }
   if (path === "/control/search" && sameJson(body, SEARCH_RESET)) return [200, {}]
-  return [501, { error: `${path} ${JSON.stringify(body)} is the mock's control, which the service has not` }]
+  const chainControl = CHAIN_CONTROLS[path]
+  if (!chainControl) return [501, { error: `${path} ${JSON.stringify(body)} is the mock's control, which the service has not` }]
+  try {
+    return [200, await chainControl(body)]
+  } catch (e) {
+    if (e instanceof HttpError) return [e.status, e.body]
+    throw e
+  }
 }
 
 // fetch has decoded and measured the body itself, so these headers no longer describe it
@@ -239,6 +230,7 @@ async function proxy(req, res, body) {
     headers: { "content-type": req.headers["content-type"] ?? "application/json", ...forwardedFor(req) },
     body: req.method === "GET" ? undefined : body,
   })
+  if (req.url === "/api/config") return json(res, answer.status, { ...(await answer.json()), stripePublishableKey: null })
   const headers = Object.fromEntries([...answer.headers].filter(([name]) => !NOT_PASSED.has(name)))
   res.writeHead(answer.status, headers).end(Buffer.from(await answer.arrayBuffer()))
 }
@@ -252,7 +244,7 @@ async function serve(req, res) {
     } catch {
       return json(res, 400, { error: "bad_request" })
     }
-    const [status, answer] = control(req.url, parsed)
+    const [status, answer] = await control(req.url, parsed)
     console.log(req.url, status, JSON.stringify(answer))
     return json(res, status, answer)
   }
@@ -263,12 +255,12 @@ async function serve(req, res) {
 createServer((req, res) => {
   serve(req, res).catch((e) => {
     console.error(req.url, e)
-    if (!res.headersSent) json(res, 502, { error: "the service did not answer" })
+    if (!res.headersSent) json(res, 502, { error: String(e) })
     else res.destroy()
   })
 }).listen(Number(port), "127.0.0.1")
 JS
-  answering $! -X POST "$CODES_URL/control/none"
+  answering $! -X POST "$MOCK_URL/control/none"
 }
 
 escape_regex() {
@@ -276,17 +268,17 @@ escape_regex() {
 }
 
 run_cases() {
-  local filter=()
   if [ "$#" -gt 0 ]; then
-    filter=("$@")
-  else
-    local titles=()
-    for title in "${CASES[@]}"; do titles+=("$(escape_regex "$title")"); done
-    # Playwright matches the project, the file and the title, joined by spaces
-    filter=(--grep " ($(IFS='|'; echo "${titles[*]}"))\$")
+    (cd "$WEBAPP_DIR" && MOCK_URL="$MOCK_URL" SLOTS=1 npx playwright test --project=chromium --output "$RUN_DIR/test-results" "$@")
+    return
   fi
-  (cd "$WEBAPP_DIR" && BASE_URL="$SERVICE_URL" MOCK_URL="$CODES_URL" \
-    npx playwright test --project=chromium --output "$RUN_DIR/test-results" "${filter[@]}")
+  local titles=() i
+  for ((i = 0; i < ${#EXCLUDED[@]}; i += 2)); do titles+=("$(escape_regex "${EXCLUDED[i]}")"); done
+  local filter=()
+  # Playwright matches the project, the file and the title, joined by spaces
+  if [ "${#titles[@]}" -gt 0 ]; then filter=(--grep-invert " ($(IFS='|'; echo "${titles[*]}"))\$"); fi
+  (cd "$WEBAPP_DIR" && MOCK_URL="$MOCK_URL" SLOTS=1 npx playwright test --project=chromium --output "$RUN_DIR/test-results" "${filter[@]}")
+  (cd "$WEBAPP_DIR" && BASE_URL="$SERVICE_URL" MOCK_URL="$MOCK_URL" npx playwright test --project=chromium --output "$RUN_DIR/build-results" "${filter[@]}" e2e/offline.spec.ts)
 }
 
 refuse_taken_ports
@@ -294,7 +286,6 @@ start_chain
 start_terms
 build_site
 write_ini
-issue_codes
 start_service
-start_code_server
+start_mock
 run_cases "$@"

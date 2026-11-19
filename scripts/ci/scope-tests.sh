@@ -41,8 +41,26 @@ case "${1:-}" in
     STORE_FIXTURES="$fixtures" npm test
     npm run build
     ;;
+  names-e2e)
+    tools="$(mktemp -d)"
+    mkdir -p "$tools/ens-contracts" "$tools/test/fixtures"
+    for stage in contracts anvil; do
+      docker build -q --target "$stage" -t "names-$stage" -f apps/simplex-domains/webapp/dev/Dockerfile apps/simplex-domains
+    done
+    contracts="$(docker create names-contracts)"
+    docker cp "$contracts:/src/ens-contracts/artifacts" "$tools/ens-contracts/artifacts"
+    docker cp "$contracts:/src/test/fixtures/terms" "$tools/test/fixtures/terms"
+    docker rm "$contracts"
+    anvil="$(docker create names-anvil)"
+    docker cp "$anvil:/usr/local/bin/anvil" "$tools/anvil"
+    docker rm "$anvil"
+    (cd apps/simplex-domains/webapp && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium)
+    if [ -x simplex-chat-test ]; then export STORE_TEST_BIN="$PWD/simplex-chat-test"; fi
+    ulimit -c 0
+    ENS_CONTRACTS_DIR="$tools/ens-contracts" ANVIL="$tools/anvil" scripts/store-service/dev/contract-run.sh
+    ;;
   *)
-    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light | names-page" >&2
+    echo "usage: $0 badge-web | ci-scripts | website | mcp | support-bot | support-bot-light | names-page | names-e2e" >&2
     exit 1
     ;;
 esac
