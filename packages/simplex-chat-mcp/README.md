@@ -10,7 +10,32 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
   <img src="https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/packages/simplex-chat-mcp/images/session.png" alt="The group of a Claude Code session in the SimpleX app: a prompt, Claude's answer, and its requests to run commands, which one tap approves" width="320">
 </p>
 
-## Run Claude Code from the app
+🏗️ marks what is on the [roadmap](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/ROADMAP.md).
+
+## Use your agents in private chats, with the full chat UX
+
+- No phone number, email or account. Agents have their own profile, without access to your other chats.
+- Send prompts with images and files, and see answers live as they are written. Prompts typed in the terminal appear in the chat too.
+- Reply to a message to point at it, react to it, or edit your prompt.
+- Sessions open in the Flat layout, with the agent avatar.
+- 🏗️ Voice messages, deleting a prompt, code highlighting, "Read more" for long messages, choices and small widgets from agents.
+
+## Work with others in the same session
+
+- Invite people to the Main group, "Claude Control", and they join any session's group.
+- Owners and admins prompt and approve, members prompt, observers read.
+- The Main group lists every session and its state for everyone in it.
+- 🏗️ Each session as a topic in one group.
+- 🏗️ A team of agents in the session's group, each with its own profile: mention one by name to send it a message.
+
+## Control your agents' activity
+
+- Agents ask before they act in other chats or use a tool such as Bash. One tap approves once, a second tap approves for the rest of the session, and `/revoke` withdraws that.
+- A live stream of the work: each step appears as one line, completed with its outcome, together with background tasks and context summaries.
+- Session and machine status: each answer ends with its time, tokens, context, plan usage with the [status line](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#status-line), and free RAM and disk, with ❗️ when something is low. The model and effort are in the group's description.
+- 🏗️ Code changes as diffs, every waiting state answered from the chat, a new session started from the desktop app.
+
+## Start
 
 You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://simplex.chat/downloads/) 7.1 or later.
 
@@ -27,40 +52,24 @@ You need Node.js 22 or later, Claude Code, and the [SimpleX Chat app](https://si
    claude --dangerously-load-development-channels plugin:simplex@simplex-chat
    ```
 
-   If you don't want to run SimpleX MCP as a channel, start `claude` without the flag to use it as an MCP server. [Read more](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#install).
+   Scan the QR code with the SimpleX app and tap Join: the Main group "Claude Control" appears. The first start downloads the SimpleX core library, so the QR code can take a minute.
 
-   Scan the QR code with the SimpleX app and tap Join. The group "Claude Control" appears. At the first start the plugin downloads the SimpleX core library, so the QR code can take a minute. If you close Claude Code before then, the next start shows it.
+3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "Claude Control", and send prompts there.
 
-   On several machines or containers, set `SIMPLEX_MCP_MACHINE` on each, for example `SIMPLEX_MCP_MACHINE=laptop`, to name its group "Claude Control - laptop".
-
-3. Each Claude Code session gets its own group, such as "1 · my-project". Join it from the invitation in "Claude Control". A list there shows every session and its state: working, waiting for you or idle.
-
-4. Send prompts in the session's group, and Claude answers there, live as it writes. The answer's last message ends with a line in small print with the turn's time and tokens and the machine's free memory and disk, such as `Done in 2 min 51 s · 16K output tokens · 673K tokens in context · RAM 12 GB free · disk 3.4 GB free❗️`, with ❗️ when one runs low. A switch of the model or the effort level appears as one line. Reply to a message to show Claude which one you mean. Claude also gets your reactions, as emoji replies, and the new text of a prompt you edit. Prompts you type in the terminal appear there too, and Claude Code's own prompts, such as a finished background task, appear as one line each. Each step of Claude's work, such as running the tests, appears as one line, completed with its outcome when the step ends. A line also shows when Claude Code summarises the session's context. Before Claude acts in other chats or uses a tool such as Bash, it asks in the group, and one tap approves. Another tap approves the tool for the rest of the session.
-
-5. Optionally, add your plan's 5-hour and weekly usage to the last line of each answer, and get a status line in the terminal, with this setting in `~/.claude/settings.json`. It replaces a status line of your own. [Read more](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#status-line).
-
-   ```json
-   "statusLine": {"type": "command", "command": "node \"${SIMPLEX_MCP_HOME:-$HOME/.simplex-mcp}/status-line.js\""}
-   ```
+[REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md) covers the plugin without the channel, several machines or containers, the status line, options, recovery and security.
 
 ## Safety
 
 - Anyone in "Claude Control" can join your sessions as an admin, so only invite people you trust.
-- In a session, admins and owners can prompt Claude and approve what it does. Other members can only prompt, and observers can only read.
+- In a session, admins and owners can prompt the agent and approve what it does. Other members can only prompt, and observers can only read.
 - A tool approved for the session runs without asking until the session ends or `/revoke`. Claude Code still asks where its own rules require it, such as before a change to `.git` or `.bashrc`.
 - Claude Code doesn't run `!` or `/` commands sent in the group.
-- Claude sends files to the group only if the group allows them.
-- Claude has no SimpleX address, so nobody can contact it first.
+- Agents send files to the group only if the group allows them.
+- Agents have no SimpleX address, so nobody can contact them first.
 
 ## Only Claude Code, for now
 
 The agent is tested with Claude Code. Tell us which other apps and models you want to use in [an issue](https://github.com/simplex-chat/simplex-chat/issues), or contribute.
-
-## Reference
-
-[REFERENCE.md](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md) covers the plugin's options, recovery and security. It also explains shared settings for several machines or containers, and running the agent as an MCP server without the channel.
-
-What comes next: [Roadmap](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/ROADMAP.md).
 
 ## Own a part of SimpleX
 
