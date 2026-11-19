@@ -3,21 +3,21 @@
 ## Problems
 
 1. Linux packages fail to start on some systems: [#6898](https://github.com/simplex-chat/simplex-chat/issues/6898), [#7381](https://github.com/simplex-chat/simplex-chat/issues/7381), [#6266](https://github.com/simplex-chat/simplex-chat/issues/6266), [#6638](https://github.com/simplex-chat/simplex-chat/issues/6638), [#6995](https://github.com/simplex-chat/simplex-chat/issues/6995), [#5000](https://github.com/simplex-chat/simplex-chat/issues/5000), [#7119](https://github.com/simplex-chat/simplex-chat/issues/7119), [#6372](https://github.com/simplex-chat/simplex-chat/issues/6372), [#6377](https://github.com/simplex-chat/simplex-chat/issues/6377), [#6540](https://github.com/simplex-chat/simplex-chat/issues/6540).
-2. Video fails to load on aarch64 kernels with 16 KiB or 64 KiB pages: [#6494](https://github.com/simplex-chat/simplex-chat/issues/6494).
-3. The app runs only through X11: it fails on Wayland-only systems and resizes wrongly on Sway: [#4171](https://github.com/simplex-chat/simplex-chat/issues/4171), [#6390](https://github.com/simplex-chat/simplex-chat/issues/6390), [#2889](https://github.com/simplex-chat/simplex-chat/issues/2889).
-4. Notifications lack call buttons, the click to open the chat and withdrawal, and show "notify-send" as their source: [#6792](https://github.com/simplex-chat/simplex-chat/issues/6792), [#7116](https://github.com/simplex-chat/simplex-chat/issues/7116), [#3301](https://github.com/simplex-chat/simplex-chat/issues/3301).
-5. The database passphrase and passcodes are stored in the settings file instead of the system keyring: [#4476](https://github.com/simplex-chat/simplex-chat/issues/4476), [#5801](https://github.com/simplex-chat/simplex-chat/issues/5801).
-6. The tray icon is missing on GNOME and does not restore the window on KDE: [#7003](https://github.com/simplex-chat/simplex-chat/issues/7003).
-7. Dark mode follows GTK theme names only, stays light inside Flatpak, and the app leaves `gsettings` processes running.
-8. File dialogs are Swing dialogs that hide other drives, and the Flatpak requires full home access: [#4339](https://github.com/simplex-chat/simplex-chat/issues/4339), [#4412](https://github.com/simplex-chat/simplex-chat/issues/4412), [#7534](https://github.com/simplex-chat/simplex-chat/issues/7534).
-9. Rendering lags without a GPU, the window freezes after inactivity, and keyboard input fails on non-Latin layouts and with dead keys: [#7215](https://github.com/simplex-chat/simplex-chat/issues/7215), [#6234](https://github.com/simplex-chat/simplex-chat/issues/6234), [#6467](https://github.com/simplex-chat/simplex-chat/issues/6467), [#7216](https://github.com/simplex-chat/simplex-chat/issues/7216), [#6042](https://github.com/simplex-chat/simplex-chat/issues/6042).
-10. Docks show a second icon, and the deb's menu entry is named "simplex": [#5570](https://github.com/simplex-chat/simplex-chat/issues/5570).
-11. AppImage portable mode is ignored, and AppImage updates are invisible to update tools: [#6030](https://github.com/simplex-chat/simplex-chat/issues/6030), [#7026](https://github.com/simplex-chat/simplex-chat/issues/7026).
+2. The app runs only through X11: it fails on Wayland-only systems and resizes wrongly on Sway: [#4171](https://github.com/simplex-chat/simplex-chat/issues/4171), [#6390](https://github.com/simplex-chat/simplex-chat/issues/6390), [#2889](https://github.com/simplex-chat/simplex-chat/issues/2889).
+3. Notifications lack call buttons, the click to open the chat and withdrawal, and show "notify-send" as their source: [#6792](https://github.com/simplex-chat/simplex-chat/issues/6792), [#7116](https://github.com/simplex-chat/simplex-chat/issues/7116), [#3301](https://github.com/simplex-chat/simplex-chat/issues/3301).
+4. The database passphrase and passcodes are stored in the settings file instead of the system keyring: [#4476](https://github.com/simplex-chat/simplex-chat/issues/4476), [#5801](https://github.com/simplex-chat/simplex-chat/issues/5801).
+5. The tray icon is missing on GNOME and does not restore the window on KDE: [#7003](https://github.com/simplex-chat/simplex-chat/issues/7003).
+6. Dark mode follows GTK theme names only, stays light inside Flatpak, and the app leaves `gsettings` processes running.
+7. File dialogs are Swing dialogs that hide other drives, and the Flatpak requires full home access: [#4339](https://github.com/simplex-chat/simplex-chat/issues/4339), [#4412](https://github.com/simplex-chat/simplex-chat/issues/4412), [#7534](https://github.com/simplex-chat/simplex-chat/issues/7534).
+8. Rendering lags without a GPU, the window freezes after inactivity, and keyboard input fails on non-Latin layouts and with dead keys: [#7215](https://github.com/simplex-chat/simplex-chat/issues/7215), [#6234](https://github.com/simplex-chat/simplex-chat/issues/6234), [#6467](https://github.com/simplex-chat/simplex-chat/issues/6467), [#7216](https://github.com/simplex-chat/simplex-chat/issues/7216), [#6042](https://github.com/simplex-chat/simplex-chat/issues/6042).
+9. Docks show a second icon, and the deb's menu entry is named "simplex": [#5570](https://github.com/simplex-chat/simplex-chat/issues/5570).
+10. AppImage portable mode is ignored, and AppImage updates are invisible to update tools: [#6030](https://github.com/simplex-chat/simplex-chat/issues/6030), [#7026](https://github.com/simplex-chat/simplex-chat/issues/7026).
 
 Outside this change:
 
 - [#7935](https://github.com/simplex-chat/simplex-chat/issues/7935): primary selection; Tao's clipboard covers CLIPBOARD only.
 - [#4162](https://github.com/simplex-chat/simplex-chat/issues/4162): AppImage size.
+- [#6494](https://github.com/simplex-chat/simplex-chat/issues/6494): aarch64 video on kernels with 16 KiB or 64 KiB pages, a rebuild of the simplex-chat/vlc bundle.
 - [#7330](https://github.com/simplex-chat/simplex-chat/issues/7330): remote control between incompatible versions.
 - Sharp rendering at fractional scales under Wayland.
 
@@ -384,7 +384,7 @@ flowchart LR
 - `simplex.cfg`: the classpath lines → `app.classpath=$APPDIR/*`, in `make-deb-linux.sh` and `make-appimage-linux.sh`.
 - `libHSzstd`: `ZSTD_*` symbols local to the core libraries (linker version script in `build-lib-linux.sh`).
 - Fonts: `FONTCONFIG_FILE` set at start to an app configuration that includes the system configuration and rejects bitmap PCF fonts.
-- aarch64 VLC libraries: segments aligned to 64 KiB.
+- VLC bundle download: SHA-256 pinned per architecture, `curl -f`, a private temporary directory.
 - Desktop entries:
 
 | Field | deb | AppImage | Flatpak |
