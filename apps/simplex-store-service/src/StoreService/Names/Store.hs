@@ -2074,11 +2074,11 @@ namesCounts db = do
         (SELECT COALESCE(SUM(amount), 0) FROM @name_balances WHERE reserved_by IS NOT NULL),
         (SELECT COUNT(*) FROM @name_record_edits WHERE state = ?),
         (SELECT MIN(created_at) FROM @name_record_edits WHERE state = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?)
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1)
     |]
     )
     ((PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, ISOpen, ETPending, ETPending) :. unregisteredPhases)

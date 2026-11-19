@@ -241,9 +241,10 @@ testNamesCounts = withServiceStore $ \st -> do
         Just r <- getRegistration db (RegistrationId rid)
         updateRegistration db (change r) (at minute) `shouldReturn` Written 2
   placedAs "open" "u" 1 Nothing
-  mapM_ (\(rid, n) -> placedAs "paid" rid n Nothing) [("src", 2), ("q", 3), ("c1", 4), ("c2", 5), ("rg", 6), ("f", 7)]
+  mapM_ (\(rid, n) -> placedAs "paid" rid n Nothing) [("src", 2), ("q", 3), ("c1", 4), ("c2", 5), ("rg", 6), ("f", 7), ("me", 10)]
   moved "src" 1 $ \r -> r {nrPhase = OTaken}
   moved "f" 1 $ \r -> r {nrPhase = OFailed (at 1) FRRegistryRefused}
+  moved "me" 1 $ \r -> r {nrPhase = OFailed (at 1) FRMonthEnded}
   moved "c1" 2 $ \r -> r {nrPhase = OCommitted commitFixture, nrReveal = Nothing}
   moved "c2" 3 $ \r -> r {nrPhase = OCommitted commitFixture, nrReveal = Just reveal}
   moved "rg" 4 $ \r -> r {nrPhase = ORegistering commitFixture $ TxHash $ hashFixture 9}
@@ -260,7 +261,7 @@ testNamesCounts = withServiceStore $ \st -> do
     Just mined <- insertRecordEdit db (newEdit ownerA 1 setChannel) (at 8)
     insertRecordEdit db (newEdit ownerB 3 setChannel) (at 9) >>= (`shouldSatisfy` isJust)
     settleRecordEdit db mined (EOApplied Nothing) `shouldReturn` True
-  withTransaction st $ \db -> forM_ [("c1", 2), ("rg", 1), ("f", 0)] $ \(rid, minute) -> setPaidAt db (RegistrationId rid) (at minute)
+  withTransaction st $ \db -> forM_ [("c1", 2), ("rg", 1), ("f", 0), ("me", -1)] $ \(rid, minute) -> setPaidAt db (RegistrationId rid) (at minute)
   counts <- withTransaction st namesCounts
   typedSamples (namesText fakeMaxFeePerGas counts noChainRead)
     `shouldBe` [ "simplex_store_names_orders{phase=\"unpaid\"} 2",
@@ -274,7 +275,7 @@ testNamesCounts = withServiceStore $ \st -> do
                  "simplex_store_names_orders{phase=\"failed\",reason=\"sends_used_up\"} 0",
                  "simplex_store_names_orders{phase=\"failed\",reason=\"registry_refused\"} 1",
                  "simplex_store_names_orders{phase=\"failed\",reason=\"signature_refused\"} 0",
-                 "simplex_store_names_orders{phase=\"failed\",reason=\"month_ended\"} 0",
+                 "simplex_store_names_orders{phase=\"failed\",reason=\"month_ended\"} 1",
                  "simplex_store_names_orders{phase=\"failed\",reason=\"unread\"} 0",
                  "simplex_store_names_queue_oldest_change_timestamp_seconds " <> seconds (at 3),
                  "simplex_store_names_unregistered_oldest_paid_timestamp_seconds{phase=\"committed\"} " <> seconds (at 2),
