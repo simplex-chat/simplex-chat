@@ -17,7 +17,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.LineHeightStyle
 import chat.simplex.common.ui.theme.Inter
-import chat.simplex.common.views.chat.item.usesChatTypography
+import chat.simplex.common.views.chat.item.LocalBubbleLayout
 import chat.simplex.res.*
 import org.jetbrains.skia.FontMgr
 import org.jetbrains.skia.Typeface
@@ -105,7 +105,7 @@ actual fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier =
 
 @Composable
 actual fun Modifier.desktopDrawnBaselines(textLayout: () -> TextLayoutResult?): Modifier =
-  if (usesChatTypography()) {
+  if (LocalBubbleLayout.current) {
     layout { measurable, constraints ->
       val placeable = measurable.measure(constraints)
       val result = Snapshot.withoutReadObservation(textLayout)

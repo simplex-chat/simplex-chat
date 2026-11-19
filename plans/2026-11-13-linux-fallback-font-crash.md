@@ -51,7 +51,7 @@ Texts:
 ## Scope
 
 - Desktop builds on all OSes use Skia m138; Android APKs are unchanged.
-- `desktopDrawnBaselines` is the modifier itself on Android, and acts on desktop only in bubble and terminal rows (`usesChatTypography`) for Inter texts with a line height in sp.
+- `desktopDrawnBaselines` is the modifier itself on Android, and acts on desktop only under `LocalBubbleLayout` for Inter texts with a line height in sp.
 - The rule applies only to 0.9.4.2, so a Compose update that brings another Skiko version is not overridden.
 - Tests:
   - `FallbackFontTest` builds a fontconfig cache for one BDF font with `fc-cache`, then lays out U+2603 in a child JVM.
