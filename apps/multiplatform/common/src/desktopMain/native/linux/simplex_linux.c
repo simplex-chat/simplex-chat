@@ -39,12 +39,11 @@ typedef struct {
 } secret_api;
 
 static const SecretSchema simplex_schema = {
-    SECRET_SCHEMA_NAME,
-    SECRET_SCHEMA_NONE,
-    {
+    .name = SECRET_SCHEMA_NAME,
+    .flags = SECRET_SCHEMA_NONE,
+    .attributes = {
         { SECRET_APPLICATION_ATTRIBUTE, SECRET_SCHEMA_ATTRIBUTE_STRING },
         { SECRET_ALIAS_ATTRIBUTE, SECRET_SCHEMA_ATTRIBUTE_STRING },
-        { NULL, 0 },
     },
 };
 
