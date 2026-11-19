@@ -1916,62 +1916,83 @@ reply; run it again.
 
 ## Running the webapp's cases against the service
 
-`scripts/store-service/dev/contract-run.sh` runs the names webapp's end-to-end cases that need no
-payment against this service in Chromium, as they run against the webapp's mock. It:
+`scripts/store-service/dev/contract-run.sh` runs the names webapp's end-to-end cases in Chromium
+against this service, as they run against the webapp's mock, with the fake BTCPay and the fake Stripe
+of the service's tests in place of the payment providers. CI runs it in the `names-e2e` scope
+(scripts/ci/README.md). It:
 
-1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
-   age of 5 seconds, and the webapp's `dev/serve-terms.ts` on 8098, which serves the texts of the terms'
-   links that the deploy sets;
+1. starts anvil on `RPC_PORT`, mining a block for each transaction and one a second, deploys the
+   contracts with the webapp's `dev/deploy.ts` with a commitment age of 5 seconds, which the cases
+   that watch the wait need, into the webapp's `dev/local-chain-0.json`, which the cases read, and starts the
+   webapp's `dev/serve-terms.ts` on 8098, which serves the texts of the terms' links that the deploy sets;
 2. builds the names site (`vite build`) into the run's folder;
-3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
-   with the one community name `bakers`, which the webapp's community cases search for,
+3. writes an ini for that deployment with `[names]`, `[chain]` with 1 confirmation, and no `[btcpay]`
+   or `[stripe]`, with the one community name `bakers`, which the webapp's community cases search for,
    serving the names site all in one on `SERVICE_PORT` and the badges site, from an empty folder, on
    `BADGES_PORT`, and signing with the test suite's
    public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
    `[issuer] dev_keys`. That secret is public: never use it outside this script;
-4. issues the prepaid codes the cases need with `//issue name`, one `--execute` run each, the first of
-   which makes the database;
-5. starts the service on 8180 (the names site) and 8181 (the badges site) and a code server on 8199,
-   and runs the cases with `BASE_URL` at the names site and `MOCK_URL` at the code server.
+4. starts the service from the test suite, `simplex-chat-test -m "/Names page against the store service/"`
+   (tests/Bots/StoreService/NamesPageService.hs): the service as `Main` runs it from that ini, with the
+   fake BTCPay and the fake Stripe in place of `[btcpay]` and `[stripe]`, and an SMP server where nothing
+   listens, so the cases' links read as unread and no case reaches a real server; and the controls the
+   service's process alone can serve, on `RUNNER_PORT`;
+5. starts the mock on 8099, where the webapp's dev server sends `/api` and `/control`;
+6. runs the cases against the webapp's dev server on 5173, which Playwright starts, then
+   `e2e/offline.spec.ts` and `e2e/track.spec.ts` against the production build the service serves, with
+   `BASE_URL` at the names site, as the webapp's own CI runs them against `vite preview`.
 
-The code server answers the cases' `POST /control/code` with the issued codes, the reset of
-`/control/search` that `search.spec.ts` sends after each case as done, and any other `/control/` with
-`501`, which fails the case that sends it. It passes `/api/` to the service with the case's
-`X-Forwarded-For`.
+The mock passes `/api/` to the service with the case's `X-Forwarded-For`, and `/api/config` without
+the Stripe key, so the dev server shows its stand-in card form. Its controls:
 
-It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_SERVICE_BIN`),
+| Request | Against the service |
+|---|---|
+| `/control/code` `{"minLength", "years", "state"}` | the runner issues a code as `//issue name` does, and with `"state": "revoked"` revokes it as `//revoke` does |
+| `/control/settle/<invoice>` `{"paid"}` | BTCPay settles the invoice, for the coin given or its amount, or, once it is closed, takes the coin as a confirmed late payment; Stripe's payment intent succeeds |
+| `/control/partial/<invoice>` | half the invoice's coin reaches it, unconfirmed |
+| `/control/confirming/<invoice>` | BTCPay processes the invoice paid in full; Stripe processes the card payment |
+| `/control/expire/<invoice>` | BTCPay expires the invoice; Stripe cancels the payment intent |
+| `/control/rate` `{"btc", "xmr"}` | BTCPay's rate source answers these rates; `null` answers the fixtures' rate |
+| `/control/take` `{"label"}` | the mock's own: the holder registers the name, through a registrar of its own |
+| `/control/general-terms`, `/control/community-terms` | the mock's own: the contracts' owner sets the terms |
+| `/control/search` with the reset that `search.spec.ts` sends after each case | answered as done |
+
+After each change at a provider, the runner sends the service that provider's webhook and answers
+once the service has read the change, its late money credited. `/control/refund/<invoice or
+registration>` `{"cents"}` runs support's `//record_refund` for those cents or the whole balance, and
+`/control/take` holds these controls until the name is the holder's. Any other
+`/control/` answers `501`, which fails the case that sends it; `EXCLUDED` in the script names each case
+that cannot run against the service, with the reason.
+
+It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_TEST_BIN`),
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
-`dev/start.sh` does), `jq` and `curl`; the webapp with its packages and
+`dev/start.sh` does), and `curl`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
 `ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
 (brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
-as the terms, as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
-`dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
-`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8098, 8180, 8181 and 8199 must be free:
-the script stops before starting anything when one of them answers, and stops at once when anvil,
-the terms server, the service or the code server exits before it answers.
+as the terms, as the webapp's `dev/start.sh` needs; the webapp's `dev/Dockerfile` builds both at the
+versions it pins. `RPC_PORT`, `SERVICE_PORT`, `BADGES_PORT`, `RUNNER_PORT`, 8099, 5173 and 8098 must be
+free: the script stops before starting anything when one of them answers, and stops at once when anvil,
+the terms server, the service or the mock exits before it answers.
 
 ```
-cabal build exe:simplex-store-service
+cabal build --enable-tests simplex-chat-test
 ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contract-run.sh
 ```
 
 - `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).
-- `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
-- `SERVICE_PORT`, `BADGES_PORT`, `CODES_PORT`: the service's names and badges ports and the code
-  server's (8180, 8181 and 8199).
-- Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
+- `STORE_TEST_BIN`: the test suite (default: `cabal list-bin simplex-chat-test`).
+- `RPC_PORT`, `SERVICE_PORT`, `BADGES_PORT`, `RUNNER_PORT`: anvil's, the service's names and badges
+  ports and the runner's (8545, 8180, 8181 and 8182).
+- Arguments, if given, are passed to `playwright test` against the dev server in place of the
+  excluded cases' title filter.
 
-The default cases cover search answers for an available name, Check your code and its rate-limit
-countdown, code orders to `registered` with and without links, one whose register records its buyer's
-acceptance of the general terms, a code order's name code restored and
-revealed in another browser, Edit links on a name registered with a code (the other Edit links case
-answers its own name and record requests in the page), a link whose data cannot be read now, a
-community name's marker and its Check your order wording, and a code order of a name the contracts'
-owner lists on chain, whose register records its buyer's acceptance of the community terms. "search answers every kind of name" is not among them: it takes the chain down
-with `/control/search`.
+The excluded cases send a control only the mock has, read the mock's memory, send more checkouts or
+cancels than the service takes from one client in a minute, expect the mock's coin amounts or the
+profiles it makes up for its links, or pay late in Monero, which the fake BTCPay's fixture leaves
+unconfirmed.
 
 Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case
 is its own client for the service's per-client limits, as for the mock's code limit. The script stops
 everything it started, deletes its folder when the cases pass, and keeps it with the logs, the ini and
-Playwright's results when they fail.
+Playwright's results when they fail, printing the last `LOG_LINES` lines of each log (100).
