@@ -80,7 +80,8 @@ workerTests = describe "StoreService names: worker" $ do
     it "registers a code order with codes_only on, from the code check to the registered view, refusing a paid order" testCodesOnlyRegister
     it "waits for a pending commit without sending another, following its fee-bumped replacement" testPendingCommit
     it "goes to committed when the commit reverts UnexpiredCommitmentExists, in its dry run or mined, with the commitment's times" testUnexpiredCommitment
-    it "sends a commit mined out of gas again" testCommitOutOfGas
+    it "sends a commit mined out of gas again, storing the attempt" testCommitOutOfGas
+    it "fails an order at its fifth commit mined with status 0 for its commitment, sending nothing more" testCommitsCapped
     it "retries, writing nothing, while the commitment's reveal window would pass 2^64 seconds" testRevealWindowPastRange
     it "waits a second at the lapse second, retries as usual when the dry run still reverts, then commits" testLapseSecond
     it "keeps a requeued order's intent while it commits again after a lapse, and over a third party's commitment" testIntentAcrossCommits
@@ -113,6 +114,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "clears the reveal when the relay's dry run refuses the acceptance for new terms or a used nonce, staying committed" testAcceptanceRefused
     it "registers, keeping the reveal, when the relay's dry run reverts while the policy holds the acceptance another sent first" testAcceptanceSentFirst
     it "registers, keeping the reveal, when the relay is mined with status 0 while the policy holds the acceptance another sent first" testAcceptanceMinedFailed
+    it "fails an order at its fifth relay mined with status 0 for its commitment, sending nothing more" testRelaysCapped
     it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
     it "clears the reveal of an acceptance signed for another policy or for the other kind of terms, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
     it "clears the reveal when a dry run reverts SignatureExpired, for the page to sign again" testAcceptanceExpired
@@ -458,6 +460,20 @@ testCommitOutOfGas = withWorker $ \w@W {wCtx = ctx} -> do
   txNonce <$> either error pure (decodeSignedTx raw) `shouldReturn` 1
   x <- stored ctx r
   nrPhase x `shouldBe` OCommitting second
+  attemptsOf ctx r `shouldReturn` [(RTCommit, ASSent, "mined with status 0", True)]
+
+testCommitsCapped :: IO ()
+testCommitsCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
+  r <- paidIn ctx aliceOrder id
+  withTransaction cStore $ \db -> replicateM_ 4 $ insertAttempt db (nrId r) (nrCommitment r) NameAttempt {naTx = RTCommit, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = orderTime}
+  answerCommitment w r 0
+  void $ steps w r >>= awaiting
+  void $ mineNewest w False
+  steps w r >>= done
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRRegistryRefused
+  attemptsOf ctx r `shouldReturn` replicate 5 (RTCommit, ASSent, "mined with status 0", True)
+  length <$> sent w `shouldReturn` 1
 
 testLapseSecond :: IO ()
 testLapseSecond = withWorker $ \w@W {wCtx = ctx} -> do
@@ -861,6 +877,18 @@ testAcceptanceMinedFailed = withWorker $ \w@W {wCtx = ctx} -> do
   (txTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
   x <- stored ctx r
   (namePhase $ nrPhase x, nrReveal x) `shouldBe` (PRegistering, nrReveal r)
+
+testRelaysCapped :: IO ()
+testRelaysCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  withTransaction cStore $ \db -> replicateM_ 4 $ insertAttempt db (nrId r) (nrCommitment r) NameAttempt {naTx = RTAccept, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = addUTCTime (-60) orderTime}
+  void $ steps w r >>= awaiting
+  void $ mineNewest w False
+  steps w r >>= done
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRRegistryRefused
+  attemptsOf ctx r `shouldReturn` replicate 5 (RTAccept, ASSent, "mined with status 0", True)
+  length <$> sent w `shouldReturn` 1
 
 testAcceptanceUnread :: IO ()
 testAcceptanceUnread = withWorker $ \w@W {wCtx = ctx} -> do

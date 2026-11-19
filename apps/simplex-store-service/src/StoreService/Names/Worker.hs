@@ -53,7 +53,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', tryOwnLogged, tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), ChainSeconds, RevertName (..), RevertReason (..), blockAt, chainSeconds, chainTime, revertText)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), ChainSeconds, RevertName (..), RevertReason (..), TxHash, blockAt, chainSeconds, chainTime, revertText)
 import StoreService.Names.Codes (releaseCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
@@ -230,8 +230,33 @@ commit w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistr
     Nothing ->
       runExceptT ((,) <$> ExceptT (commitmentAges oeContracts) <*> ExceptT (commitmentTime oeContracts nrCommitment)) >>= \case
         Left e -> pure $ failure r $ SFChain e
-        Right (_, Nothing) -> sendCommit w now r
+        Right (_, Nothing) -> case nrPhase r of
+          OCommitting h ->
+            commitReverted w r h >>= \case
+              True -> inTurn w r $ failedAttempt w now r RTCommit ASSent Nothing $ store w now r {nrPhase = OQueued}
+              False -> sendCommit w now r
+          _ -> sendCommit w now r
         Right (ages, Just t) -> fromCommitment w now r ages t
+
+-- | The commit last sent, by its signature's nonce, mined with status 0.
+commitReverted :: Worker -> NameRegistration -> TxHash -> IO Bool
+commitReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId} h = do
+  txs <- withTransaction oeStore (`registrationTransactions` nrId)
+  let nonces = [ntNonce | NameTransaction {ntHash, ntNonce} <- txs, ntHash == h]
+  pure $ or [True | NameTransaction {ntNonce, ntState = TxSettled TSRevertedAt {}} <- txs, ntNonce `elem` nonces]
+
+-- | The newest relay, by its signature's nonce, mined with status 0 and stored as no attempt since it was sent.
+relayReverted :: Worker -> NameRegistration -> IO Bool
+relayReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId} = withTransaction oeStore $ \db -> do
+  relays <- filter (\NameTransaction {ntFor} -> ntFor == TxRegistration RTAccept nrId) <$> registrationTransactions db nrId
+  attempts <- registrationAttempts db nrId
+  let newest = [ntNonce | NameTransaction {ntNonce} <- take 1 $ reverse relays]
+      group = [t | t@NameTransaction {ntNonce} <- relays, ntNonce `elem` newest]
+      reverted = or [True | NameTransaction {ntState = TxSettled TSRevertedAt {}} <- group]
+      stored sentAt = or [True | NameAttempt {naTx = RTAccept, naStage = ASSent, naAt} <- attempts, naAt >= sentAt]
+  pure $ case [ntSentAt | NameTransaction {ntSentAt} <- group] of
+    [] -> False
+    sent -> reverted && not (stored $ maximum sent)
 
 -- | At the lapse second a commitment can neither register nor be committed again, so the worker waits a second past it,
 -- then commits again with the stale fields cleared.
@@ -281,6 +306,7 @@ sendCommit w@Worker {wkOrders = OrdersEnv {oeConfig}, wkSender} now r@NameRegist
     Right p -> commitSent w now r p
     Left SEInFlight -> pure Again
     -- UnexpiredCommitmentExists among them: a commit mined since the read, or a latest block still at the lapse second
+    Left e@(SEChain (ChainReverted reason)) -> inTurn w r $ failedAttempt w now r RTCommit ASDryRun (Just reason) $ pure (Nothing, failure r $ SFSend e)
     Left e -> pure $ failure r $ SFSend e
 
 -- | Recorded with the newest signature's hash, so a fee-bumped replacement is the one the view shows.
@@ -334,6 +360,10 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
   where
     held = acceptedTerms oeContracts nrCommitment nrOwner
     relay policy kind =
+      relayReverted w r >>= \case
+        True -> inTurn w r $ failedAttempt w now r RTAccept ASSent Nothing $ pure (Nothing, Again)
+        False -> verifyRelay policy kind
+    verifyRelay policy kind =
       verifyAcceptance (policyDomain cChainId policy) kind nrOwner nrCommitment deadline a >>= \case
         Left refusal -> do
           logWarn $ "names worker: registration " <> rid <> ": its stored acceptance is refused, " <> T.pack refusal
