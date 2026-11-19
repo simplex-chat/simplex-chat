@@ -80,6 +80,7 @@ pointer() {
       5) echo "scroll down" > "$state/input" ;;
       *) printf 'button %d press\nbutton %d release\n' "$3" "$3" > "$state/input" ;;
     esac
+    printf 'move %d %d\n' $((SCREEN_WIDTH - 1)) $((SCREEN_HEIGHT - 1)) > "$state/input"
   fi
 }
 

@@ -40,7 +40,7 @@ pencil_offset=363
 pane_centre_offset=195
 pane_right_offset=390
 paperclip_offset=415
-message_offset=700
+send_offset=27
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -372,8 +372,7 @@ send_image() {
   sleep 3
   "$ui" shot "preview-$ext"
   check "$ext: the compose area shows the picked image" compose_changed "before-$ext" "preview-$ext"
-  "$ui" click "$message_x" "$bottom_y"
-  "$ui" key Return
+  "$ui" click "$send_x" "$bottom_y"
   check "$ext: the image is sent as a .$ext file" sent_file "$ext" "$sent"
   "$ui" shot "sent-$ext"
   check "$ext: the core resized the image" [ "$(core_returned_no_image)" -eq "$no_image" ]
@@ -391,7 +390,7 @@ send_images() {
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 read -r -a extra_settings <<< "${SMOKE_SETTINGS:-}"
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG "${extra_settings[@]}"
-read -r window_x window_y _ window_height < "$state/window-rect"
+read -r window_x window_y window_width window_height < "$state/window-rect"
 bottom_y=$((window_y + window_height - bottom_bar_offset))
 switch_x=$((window_x + switch_offset))
 avatar_x=$((window_x + avatar_offset))
@@ -399,7 +398,7 @@ pencil_x=$((window_x + pencil_offset))
 pane_centre_x=$((window_x + pane_centre_offset))
 pane_right_x=$((window_x + pane_right_offset))
 paperclip_x=$((window_x + paperclip_offset))
-message_x=$((window_x + message_offset))
+send_x=$((window_x + window_width - send_offset))
 
 # onboarding to the chat list
 "$ui" wait "Create your profile" 180

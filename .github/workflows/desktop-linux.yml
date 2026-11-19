@@ -597,7 +597,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
             sway xwayland grim wtype jq dbus gnome-keyring libsecret-tools python3-dbus python3-gi libwayland-dev libxkbcommon-dev pkg-config \
-            libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri flatpak xdg-desktop-portal xdg-desktop-portal-gtk
+            libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri flatpak xdg-desktop-portal xdg-desktop-portal-gtk fuse3
           dpkg-query -W sway grim wtype gnome-keyring libegl-mesa0 flatpak xdg-desktop-portal
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
