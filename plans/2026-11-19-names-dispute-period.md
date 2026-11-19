@@ -10,10 +10,10 @@ Requirement: the Names Conditions describe the registry's dispute period, as the
 
 A holder accepts docs/NAMES-CONDITIONS.md on chain. It states that changing the record of a name, creating subnames and transferring control require the holder's key, and that a name can be extended until 90 days after its period ends.
 
-The registry contracts change on simplex-network/ens-contracts, branch `ab/dispute-period`:
+The registry contracts change on brenzi-agent/ens-contracts, branch `ab/dispute-period`, for simplex-network/ens-contracts:
 
-- a registration through a registrar funded on the sponsor has a dispute period of 14 to 120 days, its end stored in the registry;
-- before that end, the registry's guardian or admin can end the registration and its record;
+- a registration through a registrar with an allowance on the sponsor has a dispute period of 14 to 120 days, its end stored in the registry;
+- before that end, the registry's guardian or admin can end the registration, its record and its subnames;
 - before that end, the name cannot be extended;
 - a registration paid to the registry in ETH by the registrant's own transaction, or assigned by the registry's admin, is not subject to a dispute period.
 
@@ -23,15 +23,15 @@ The conditions would describe a registry that holders do not get.
 
 | State | Entered by | What the registry allows |
 |---|---|---|
-| disputable | registration through a funded registrar | transfer; end by the guardian or admin; reservation |
+| disputable | registration through a registrar with an allowance | transfer; end by the guardian or admin; reservation |
 | final | registration paid in ETH by the registrant; assignment by the admin; end of the dispute period | transfer; extension; reservation |
-| reserved | reservation | transfer until the registration period ends; end by the guardian or admin while still disputable |
-| withheld | end of the registration of a reserved name; 90 days after the registration period of a reserved name | assignment by the admin |
-| available | end of the registration of an unreserved name; 90 days after the registration period of an unreserved name | registration |
+| reserved | reservation | transfer until the registration period ends; end by the guardian or admin while still disputable; release by the admin |
+| withheld | end of the registration of a reserved name; 90 days after the registration period of a reserved name | assignment or release by the admin |
+| available | end of the registration of an unreserved name; 90 days after the registration period of an unreserved name; release of a withheld name | registration |
 
 ```mermaid
 stateDiagram-v2
-  [*] --> disputable: registered through a funded registrar
+  [*] --> disputable: registered through a registrar with an allowance
   [*] --> final: paid in ETH by the registrant, or assigned by the admin
   disputable --> disputable: transferred
   disputable --> final: dispute period ends
@@ -40,9 +40,12 @@ stateDiagram-v2
   final --> final: extended or transferred
   final --> reserved: reserved
   final --> available: 90 days after the registration period
+  reserved --> disputable: released by the admin, while disputable
+  reserved --> final: released by the admin, after the dispute period
   reserved --> withheld: ended, while disputable
   reserved --> withheld: 90 days after the registration period
   withheld --> final: assigned by the admin
+  withheld --> available: released by the admin
   available --> [*]
 ```
 
@@ -56,17 +59,17 @@ docs/NAMES-CONDITIONS.md:
 | your key | the next point as its exception |
 | dispute period | new, second point |
 | period and extension | after the dispute period, if any, unless reserved; "the period" named "the registration period" |
-| refused extensions | new, last point |
+| reservation after a disputed payment | new, last point |
 
 The dispute period point states:
 
 - which registrations have one, its length, and its end in the registry;
-- what the registry allows before that end;
-- the only grounds for ending a registration;
+- what the registry allows before that end: the registration, its record and its subnames ended without the holder's key;
+- in a sentence of its own, the only grounds for ending a registration;
 - registration again at once, unless the name is reserved;
 - that a transfer leaves the period unchanged.
 
-The other sections are unchanged. A separate change, for the registry's upgradeable contracts, edits the section "Registry"; the change merged second merges master.
+The other sections are unchanged. A separate change, for the registry's upgradeable contracts, edits the section "Registry"; master is merged into the pull request merged second.
 
 ## After the merge
 
