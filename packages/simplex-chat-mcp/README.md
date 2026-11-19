@@ -30,7 +30,7 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 
 ## Control your agents' activity
 
-- Agents ask before they act in other chats or use a tool such as Bash. One tap approves once, a second tap approves for the rest of the session, and `/revoke` withdraws that.
+- Agents ask before they act in other chats or use a tool such as Bash.
 - A live stream of the work: each step appears as one line, completed with its outcome, together with background tasks and context summaries.
 - Session and machine status: each answer ends with its time, tokens, context, plan usage with the [status line](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-mcp/REFERENCE.md#status-line), and free RAM and disk, with ❗️ when something is low. The model and effort are in the group's description.
 - 🏗️ Code changes as diffs, almost every waiting state answered from the chat, a new session started from the desktop app.
