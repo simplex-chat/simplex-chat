@@ -34,9 +34,8 @@ Outside this change:
 - macOS and Windows keep the AWT window; their changes are the toolchain upgrade and the Windows notification back-end.
 - Android builds and passes its unit tests and the `android-emu` run.
 - Verification:
-  - CI: X11 under Xvfb, Wayland under headless sway;
-  - manual: GNOME and KDE, from the `desktop-linux` artifact;
-  - Flatpak: after the Flathub pull request.
+  - CI end-to-end: deb, AppImage and Flatpak, installed and run under headless sway (Wayland and XWayland) and Xvfb (X11), every check of section End-to-end tests passing;
+  - manual: GNOME and KDE, from the end-to-end artifacts.
 
 ## Toolchain
 
@@ -432,9 +431,77 @@ flowchart LR
   - rendering defaults per renderer name.
 - CI:
   - `desktop-linux`: X11 smoke test under Xvfb with Tao on X11, typing paths into the GTK file dialog;
-  - Wayland smoke job: the app under headless sway, screenshots with grim, keys with wtype, pointer with `swaymsg seat`;
   - `-Dskiko.renderApi=SOFTWARE` removed from the harness;
   - Android unit tests and `android-emu` dispatched on the toolchain commit.
+
+## End-to-end tests
+
+Workflow `desktop-linux-e2e.yml` in `sh-agents/simplex-chat`, started by hand on the branch.
+
+```mermaid
+flowchart LR
+  Core[core library: build-lib-linux.sh] --> Native[build-native-linux.sh]
+  Native --> Deb[make-deb-linux.sh: deb for 22.04 and 24.04]
+  Native --> Img[make-appimage-linux.sh: AppImage]
+  Img --> Fp[flatpak-builder: local Flathub manifest]
+  Deb --> M[test matrix]
+  Img --> M
+  Fp --> M
+  M --> Art[artifacts: screenshots, logs, checks per cell]
+```
+
+Matrix:
+
+| Package | Systems |
+|---|---|
+| deb | Ubuntu 22.04, Ubuntu 24.04, Debian 12, Debian 13 |
+| AppImage | Ubuntu 22.04, Ubuntu 24.04, Debian 12, Debian 13, Fedora, Arch |
+| Flatpak | runner host, Ubuntu 24.04 |
+
+Sessions per cell:
+
+| Session | Display | Input and capture |
+|---|---|---|
+| Wayland | headless sway: `WLR_BACKENDS=headless`, `WLR_RENDERER=pixman`, Mesa llvmpipe for EGL | grim, wtype, `swaymsg seat` pointer |
+| XWayland | headless sway, `NUCLEUS_TAO_LINUX_RENDERER=x11` | grim, xdotool |
+| X11 | Xvfb with openbox | `import`, xdotool |
+
+Session services started per cell:
+
+- `dbus-daemon --session`;
+- `xdg-desktop-portal` with `xdg-desktop-portal-gtk`;
+- mako as the notification server (Wayland sessions), dunst (X11);
+- swaybar with tray as the StatusNotifierWatcher host (Wayland sessions), a test watcher (X11);
+- `gnome-keyring-daemon --unlock` with a test password.
+
+Checks per cell:
+
+| Check | Evidence |
+|---|---|
+| package installs (`apt install ./*.deb`), AppImage runs, Flatpak runs | exit codes, `app.log` |
+| start, onboarding, chat list | OCR on screenshots |
+| native Wayland surface | `swaymsg -t get_tree`: `shell` is `xdg_shell` (Wayland), `xwayland` (XWayland) |
+| app ID | `app_id` or WM class equals the desktop entry ID of the package |
+| GL renderer | renderer name in `app.log` |
+| message notification | `makoctl history` / `dunstctl history`: app name, title, `desktop-entry` |
+| notification click opens the chat | `makoctl invoke` / `dunstctl action`, then OCR of the chat title |
+| call notification buttons, withdrawal on read | notification actions; history after reading |
+| tray icon and activation | `busctl --user` call of `Activate` on the item; window shown |
+| dark mode | `gsettings set org.gnome.desktop.interface color-scheme prefer-dark`; background colour on the screenshot; `pgrep gsettings` empty |
+| keyring | `secret-tool search application chat.simplex.app` lists the keys; `settings.properties` holds ciphertext only |
+| keyring absent | the cell without `gnome-keyring-daemon`: start without keyring, warning shown |
+| file dialog | GTK or portal dialog; path typed; image previewed and sent |
+| clipboard image paste, file drop | image pasted into the compose field; preview shown |
+| video playback, voice recording | VLC playback frame on the screenshot; recording file length |
+| link from a second launch | `simplex <link>` while running; link opened in the running window |
+| crash recovery | a test hook throws in composition; alert shown, window recreated |
+| dead keys and non-Latin layout | keymap switched with `swaymsg input` / `setxkbmap`; typed text by OCR |
+| no child processes | `pgrep -P <app pid>` lists only VLC and the browser when started |
+| temporary files | files under `$XDG_CACHE_HOME/simplex/tmp` |
+
+- Test backend: `backend.sh` as in `desktop-linux`, for messages, calls and links between two app profiles.
+- Each cell uploads its screenshots, OCR text, `app.log`, `checks.txt`, notification history and `swaymsg` tree.
+- The job summary lists every check per cell.
 
 ## Commits
 
@@ -450,5 +517,5 @@ flowchart LR
 10. `desktop: store passphrases in the system keyring on Linux`
 11. `desktop: smooth rendering without a GPU on Linux`
 12. `desktop: consistent Linux desktop entries and AppImage updates`
-13. `ci: Wayland smoke test of the desktop app`
+13. `ci: end-to-end tests of Linux packages under Wayland and X11`
 14. `docs: Linux desktop specs and user guide`
