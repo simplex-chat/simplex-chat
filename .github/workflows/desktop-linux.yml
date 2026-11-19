@@ -211,7 +211,7 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
+          sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
             pkg-config libgtk-3-dev libdbus-1-dev libsystemd-dev libegl-dev libwayland-dev libsecret-1-dev libegl-mesa0 libgl1-mesa-dri
           dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core libgtk-3-dev libsecret-1-dev libegl-mesa0
 
@@ -376,7 +376,7 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
+          sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
             libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri
           dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core libgtk-3-0 libegl-mesa0
 
@@ -483,7 +483,7 @@ jobs:
       - name: Install UI tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr
+          sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr
           dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr
 
       - name: Run smoke test

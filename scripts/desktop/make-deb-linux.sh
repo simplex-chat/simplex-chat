@@ -48,7 +48,7 @@ dpkg-deb -R ./release/main/deb/simplex*.deb ./extracted
 
 rm -f ./extracted/opt/*imple*/lib/app/*skiko-awt-runtime-linux*
 sed -i -e '/^app\.classpath=/d' -e 's|^\[Application\]$|&\napp.classpath=$APPDIR/*|' ./extracted/opt/*imple*/lib/app/simplex.cfg
-sed -i "/Version/ s/\$/~$VERSION_CODENAME/" ./extracted/DEBIAN/control
+sed -i -e "/Version/ s/\$/~$VERSION_CODENAME/" -e 's/^Maintainer: .*/Maintainer: SimpleX Chat <chat@simplex.chat>/' ./extracted/DEBIAN/control
 # jpackage's desktop entry passes no URL and handles no MIME type; this registers the simplexchat: and simplex: schemes
 SCHEME_MIME_TYPE_LINE='MimeType=x-scheme-handler/simplexchat;x-scheme-handler/simplex;'
 sed -i -e '/%[uU]/!s|^Exec=.*|& %u|' -e "s|^MimeType=.*|$SCHEME_MIME_TYPE_LINE|" ./extracted/opt/*imple*/lib/*.desktop
