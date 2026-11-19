@@ -360,9 +360,9 @@ send_image() {
   "$ui" click-text Image 10
   "$ui" wait "Other Locations" 60
   "$ui" shot "file-dialog-$ext"
-  "$ui" key ctrl+l
+  "$ui" type /
   sleep 1
-  "$ui" type "$fixtures/$file"
+  "$ui" type "${fixtures#/}/$file"
   sleep 1
   "$ui" key Return
   sleep 2

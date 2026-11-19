@@ -228,6 +228,15 @@ app_environment() {
   esac
 }
 
+x_window_rect() {
+  xwininfo -id "$1" | awk '
+    /Absolute upper-left X:/ { x = $4 }
+    /Absolute upper-left Y:/ { y = $4 }
+    /^ *Width:/ { w = $2 }
+    /^ *Height:/ { h = $2 }
+    END { print x, y, w, h }' | tee "$state/window-rect"
+}
+
 wait_for_window() {
   if [ "$session" = x11 ]; then
     if ! timeout 120 xdotool search --sync --onlyvisible --name '^SimpleX$' > "$state/window"; then
@@ -235,12 +244,7 @@ wait_for_window() {
       return 1
     fi
     xdotool getwindowgeometry "$(head -n 1 "$state/window")"
-    xwininfo -id "$(head -n 1 "$state/window")" | awk '
-      /Absolute upper-left X:/ { x = $4 }
-      /Absolute upper-left Y:/ { y = $4 }
-      /^ *Width:/ { w = $2 }
-      /^ *Height:/ { h = $2 }
-      END { print x, y, w, h }' | tee "$state/window-rect"
+    x_window_rect "$(head -n 1 "$state/window")"
     xprop -id "$(head -n 1 "$state/window")" WM_CLASS | tee "$state/window-identity"
     return 0
   fi
@@ -253,7 +257,11 @@ wait_for_window() {
     sleep 1
   done
   jq -c '{shell, app_id, class: .window_properties.class, rect}' <<< "$node" | tee "$state/window-identity"
-  jq -r '.rect | "\(.x) \(.y) \(.width) \(.height)"' <<< "$node" > "$state/window-rect"
+  if [ "$session" = xwayland ]; then
+    DISPLAY=$(cat "$state/x-display") x_window_rect "$(DISPLAY=$(cat "$state/x-display") xdotool search --onlyvisible --name '^SimpleX$' | head -n 1)"
+  else
+    jq -r '.rect | "\(.x) \(.y) \(.width) \(.height)"' <<< "$node" | tee "$state/window-rect"
+  fi
 }
 
 start() {
