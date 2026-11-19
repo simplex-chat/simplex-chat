@@ -273,6 +273,7 @@ jobs:
         if: ${{ !cancelled() && steps.core.outcome == 'success' }}
         working-directory: apps/multiplatform
         run: |
+          sudo ../../scripts/android/install-ndk.sh "$ANDROID_HOME"
           ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=arm64-v8a :android:assembleFossDebug
           mkdir -p "$RUNNER_TEMP/apk"
           cp "android/build/intermediates/apk/foss/debug/$APK" "$RUNNER_TEMP/apk"

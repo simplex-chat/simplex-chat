@@ -164,6 +164,9 @@ RUN mkdir -p "$HOME/.android" "$HOME/.gradle" && \
     echo 'org.gradle.console=plain' > "$HOME/.gradle/gradle.properties" &&\
     yes | sdkmanager --licenses >/dev/null
 
+COPY --chmod=755 scripts/android/install-ndk.sh /usr/local/bin/install-ndk.sh
+RUN install-ndk.sh "$ANDROID_HOME"
+
 ENV PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools"
 
 # Android reproducibility scripts
