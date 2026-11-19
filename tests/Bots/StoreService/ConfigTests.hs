@@ -425,10 +425,8 @@ testIssuerIndexInvalid :: IO ()
 testIssuerIndexInvalid = do
   mapM_
     (\v -> issuerRefusal ["index = " <> v, "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a whole number of at least 1")
-    ["0", "-1"]
-  mapM_
-    (\v -> issuerRefusal ["index = " <> v, "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a whole number from 1 to 9223372036854775807")
-    ["one", "1.5", "key_1", "18446744073709551617"]
+    ["0", "-1", "one", "1.5", "key_1"]
+  issuerRefusal ["index = 18446744073709551617", "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a whole number from 1 to 9223372036854775807"
 
 testIssuerBadSecret :: IO ()
 testIssuerBadSecret =
@@ -988,7 +986,7 @@ testNamesPriceFloor = do
     (n, nMinPriceCentsPerYear) `shouldBe` (n, n)
   forM_ ["0", "-5000"] $ \v ->
     namesRefusal (namesSection <> ["min_price_cents_per_year = " <> v]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
-  namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number from 1 to 9223372036854775807"
+  namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
 
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text
