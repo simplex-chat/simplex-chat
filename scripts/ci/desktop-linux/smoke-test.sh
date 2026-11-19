@@ -31,12 +31,16 @@ local_chat="seeded notes"
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
 # switches are at the right of the left pane, where Settings open
-switch_x=335
+switch_offset=335
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
 state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
 bottom_bar_offset=30
-paperclip_x=415
-message_x=700
+avatar_offset=27
+pencil_offset=363
+pane_centre_offset=195
+pane_right_offset=390
+paperclip_offset=415
+message_offset=700
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -101,7 +105,7 @@ left_pane_position() {
     x=${line%%,*}
     y=${line#*,}
     y=${y%% *}
-    [ "$x" -lt 390 ] || continue
+    [ "$x" -lt "$pane_right_x" ] || continue
     case "$(normalise "${line#* }")" in
       "$target")
         echo "$x $y"
@@ -152,7 +156,7 @@ scroll_to() {
     if y=$(y_of "$1") && [ "$y" -lt $((bottom_y - 90)) ]; then
       return 0
     fi
-    "$ui" scroll 195 400 down
+    "$ui" scroll "$pane_centre_x" $((window_y + 380)) down
   done
   return 1
 }
@@ -173,7 +177,7 @@ on_chat_list() {
 
 # Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
 open_settings() {
-  "$ui" click 27 "$bottom_y"
+  "$ui" click "$avatar_x" "$bottom_y"
   "$ui" click-text "Settings" 10
 }
 
@@ -213,11 +217,11 @@ check_layout() {
 create_local_chat() {
   local y
   # the pencil at the right of the bottom toolbar opens New chat
-  "$ui" click 363 "$bottom_y"
+  "$ui" click "$pencil_x" "$bottom_y"
   "$ui" click-text "Create group" 10
   "$ui" wait "Enter group name" 10
   y=$(y_of "Enter group name")
-  "$ui" click 195 $((y + 40))
+  "$ui" click "$pane_centre_x" $((y + 40))
   "$ui" type "$local_chat"
   "$ui" shot new-group
   "$ui" click-text "Create group" 10
@@ -255,7 +259,7 @@ use_names_server() {
   "$ui" click-text "Enter server manually" 10
   "$ui" wait "Your server address" 10
   y=$(y_of "Your server address")
-  "$ui" click 195 $((y + 50))
+  "$ui" click "$pane_centre_x" $((y + 50))
   "$ui" type "$NAMES_SERVER"
   y=$(y_of "Use for new connections")
   "$ui" click "$switch_x" "$y"
@@ -334,7 +338,7 @@ latest_shot() {
 
 compose_changed() {
   local changed
-  local compose_area=976x200+390+$((bottom_y - 230))
+  local compose_area=976x200+$pane_right_x+$((bottom_y - 230))
   convert "$(latest_shot "$1")" -crop "$compose_area" +repage "$UI_OUT/compose-$1.png"
   convert "$(latest_shot "$2")" -crop "$compose_area" +repage "$UI_OUT/compose-$2.png"
   changed=$(compare -metric AE -fuzz 10% "$UI_OUT/compose-$1.png" "$UI_OUT/compose-$2.png" null: 2>&1 || true)
@@ -354,12 +358,17 @@ send_image() {
   "$ui" shot "before-$ext"
   "$ui" click "$paperclip_x" "$bottom_y"
   "$ui" click-text Image 10
-  "$ui" wait "Cancel" 60
+  "$ui" wait "Other Locations" 60
   "$ui" shot "file-dialog-$ext"
   "$ui" key ctrl+l
   sleep 1
   "$ui" type "$fixtures/$file"
+  sleep 1
   "$ui" key Return
+  sleep 2
+  if "$ui" find "Other Locations" > /dev/null 2>&1; then
+    "$ui" click-text Open 5
+  fi
   sleep 3
   "$ui" shot "preview-$ext"
   check "$ext: the compose area shows the picked image" compose_changed "before-$ext" "preview-$ext"
@@ -382,8 +391,15 @@ send_images() {
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 read -r -a extra_settings <<< "${SMOKE_SETTINGS:-}"
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG "${extra_settings[@]}"
-read -r _ window_y _ window_height < "$state/window-rect"
+read -r window_x window_y _ window_height < "$state/window-rect"
 bottom_y=$((window_y + window_height - bottom_bar_offset))
+switch_x=$((window_x + switch_offset))
+avatar_x=$((window_x + avatar_offset))
+pencil_x=$((window_x + pencil_offset))
+pane_centre_x=$((window_x + pane_centre_offset))
+pane_right_x=$((window_x + pane_right_offset))
+paperclip_x=$((window_x + paperclip_offset))
+message_x=$((window_x + message_offset))
 
 # onboarding to the chat list
 "$ui" wait "Create your profile" 180
