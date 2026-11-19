@@ -67,7 +67,7 @@ private val bidiControlChar = Regex("[\\u061C\\u200E\\u200F\\u202A-\\u202E\\u206
 
 private val invisibleCharMarkerStyle = SpanStyle(color = WarningOrange)
 
-private class MarkdownDocument(val lines: List<String>, val formatted: State.Success?, val hasBidiControls: Boolean)
+internal class MarkdownDocument(val lines: List<String>, val formatted: State.Success?, val hasBidiControls: Boolean)
 
 fun isMarkdownFile(file: CIFile): Boolean =
   file.fileSize <= MAX_MARKDOWN_VIEW_SIZE && file.fileName.substringAfterLast('.', "").lowercase() in listOf("md", "markdown")
@@ -90,24 +90,28 @@ fun showMarkdownFile(file: CIFile) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.message)
       return@withLongRunningApi
     }
-    val text = decodedText(bytes)
-    val lines = text.lines()
-    val formatted = if (lines.all { it.length <= MAX_MARKDOWN_LINE_LENGTH }) formattedWithinLimits(text) else null
-    val document = MarkdownDocument(
-      lines.flatMap { line -> line.chunked(MAX_MARKDOWN_LINE_LENGTH).ifEmpty { listOf("") } },
-      formatted,
-      bidiControlChar.containsMatchIn(text)
-    )
+    val document = markdownDocument(bytes)
     withContext(Dispatchers.Main) {
       if (appPlatform.isDesktop && ModalManager.center.isTopModalOpen(ModalViewId.MARKDOWN_FILE)) ModalManager.center.closeModal()
       ModalManager.center.showModal(id = ModalViewId.MARKDOWN_FILE, endButtons = {
-        if (formatted != null) MarkdownViewSwitch()
+        if (document.formatted != null) MarkdownViewSwitch()
         MarkdownFileSaveButton(file, bytes)
       }) {
         key(this) { MarkdownFileView(file.fileName, document) }
       }
     }
   }
+}
+
+internal suspend fun markdownDocument(bytes: ByteArray): MarkdownDocument {
+  val text = decodedText(bytes)
+  val lines = text.lines()
+  val formatted = if (lines.all { it.length <= MAX_MARKDOWN_LINE_LENGTH }) formattedWithinLimits(text) else null
+  return MarkdownDocument(
+    lines.flatMap { line -> line.chunked(MAX_MARKDOWN_LINE_LENGTH).ifEmpty { listOf("") } },
+    formatted,
+    bidiControlChar.containsMatchIn(text)
+  )
 }
 
 private fun decodedText(bytes: ByteArray): String =
@@ -156,7 +160,7 @@ private fun MarkdownFileSaveButton(file: CIFile, bytes: ByteArray) {
 }
 
 @Composable
-private fun MarkdownFileView(fileName: String, document: MarkdownDocument) {
+internal fun MarkdownFileView(fileName: String, document: MarkdownDocument) {
   val textView = remember { appPrefs.markdownFileTextView.state }
   val formatted = document.formatted
   if (textView.value || formatted == null) {
