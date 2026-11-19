@@ -11,7 +11,7 @@ import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Lazy as LB
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime)
 import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Chat.Badges.Code (parseNameCode)
@@ -20,6 +20,7 @@ import Simplex.Messaging.Encoding.String (textEncode)
 import StoreService.Names.Codes (codeState, readPrepaidCode)
 import StoreService.Names.Store (PrepaidCode (..))
 import StoreService.Names.View (NameRefusal (..), refusalResponse)
+import StoreService.Store.Invoices (currentSecond)
 import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, readBoundedBody)
 
 -- | It names no registration, even for a reserved code: holding a code proves nothing about an order.
@@ -29,7 +30,7 @@ codeCheckHandler st req respond =
     Just body -> case codeField body of
       Right text -> case parseNameCode text of
         Just code -> do
-          now <- getCurrentTime
+          now <- currentSecond
           readPrepaidCode st code >>= respond . maybe (refusalResponse NRCodeInvalid) (codeAnswer now)
         Nothing -> respond $ refusalResponse NRCodeInvalid
       Left e -> logNote ("POST /api/code/check refused: a malformed code check: " <> T.pack e) >> respond (refusalResponse NRBadRequest)
