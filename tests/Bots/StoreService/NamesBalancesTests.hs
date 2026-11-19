@@ -107,6 +107,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total" testReversalTakesBack
     it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
     it "cancels a live order of which no register was sent, also after support refunded part of its balance" testReversalCancelsRefunded
+    it "cancels a live order of which no register was sent for a dispute of part of its payment" testReversalCancelsPartial
     it "cancels the open invoice of the order that holds the balance, at the provider and here, then takes back the whole balance" testReversalCancelsHolder
     it "cancels an order by a signed dispute delivered to the Stripe webhook" testDisputeWebhook
     it "locks an order only at its version" testLockRegistration
@@ -896,6 +897,14 @@ testReversalAlertsOnly = withReversals $ \Ctx {cStore = st} env alerts -> do
   credit st "w" 100
   figures st "w" t0 `shouldReturn` Just (100, 100, 0, Nothing)
   alertsWith alerts ["of order r: support recorded its refund, so nothing changed. Evidence", "names: early fraud warning, card_never_received on payment ref-inv-w of order w: nothing changed. Evidence"]
+
+testReversalCancelsPartial :: IO ()
+testReversalCancelsPartial = withReversals $ \Ctx {cStore = st} env alerts -> do
+  _ <- queuedOrder st "p"
+  reverseWith env "p" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 5000
+  nrPhase <$> reg st "p" `shouldReturn` OClosed ICReversed
+  figures st "p" t0 `shouldReturn` Nothing
+  alertsWith alerts ["names: card dispute dp_1 of 5000 cents on payment ref-inv-p of order p: it is cancelled, as no register transaction of it was sent, and its name is released. Evidence"]
 
 testReversalCancelsHolder :: IO ()
 testReversalCancelsHolder = withReversals $ \Ctx {cStore = st, cWeb, cStub} env alerts -> do
