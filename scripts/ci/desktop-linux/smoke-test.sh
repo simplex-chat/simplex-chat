@@ -321,7 +321,7 @@ connect_by_name() {
 }
 
 sent_files() {
-  find "$state/data" -name "IMG_*.$1" | wc -l
+  find -H "$state/data" -name "IMG_*.$1" | wc -l
 }
 
 sent_file() {
@@ -363,7 +363,7 @@ send_image() {
   "$ui" type /
   sleep 1
   "$ui" type "${fixtures#/}/$file"
-  sleep 1
+  "$ui" shot "file-path-$ext"
   "$ui" key Return
   sleep 2
   if "$ui" find "Other Locations" > /dev/null 2>&1; then
