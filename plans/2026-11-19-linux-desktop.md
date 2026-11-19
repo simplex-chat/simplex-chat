@@ -44,8 +44,8 @@ Outside this change:
 | Kotlin | 2.1.20 | 2.4.21 |
 | Compose Multiplatform | 1.8.2 | 1.12.1 |
 | kotlinx-coroutines | 1.8.0 | 1.11.0 |
-| kotlinx-serialization-json | 1.6.3 | 1.13.0 |
-| multiplatform-markdown-renderer | 0.34.0 | 0.46.0 |
+| kotlinx-serialization-json | 1.6.3 | 1.12.0 |
+| multiplatform-markdown-renderer | 0.34.0 | 0.34.0 |
 | moko-resources | 0.27.1 | 0.27.1 |
 | desktop JVM target | 11 | 17 |
 | Android JVM target | 11 | 11 |
@@ -58,10 +58,10 @@ Code changes of the upgrade:
 - `kotlinOptions` → `compilerOptions`:
   - `apps/multiplatform/build.gradle.kts`;
   - `android/build.gradle.kts`.
-- `nativeCanvas` → `Canvas` API in `BarsBlur.desktop.kt`.
-- `LocalClipboardManager` → `LocalClipboard`.
-- `runComposeUiTest` → its current replacement.
-- `compose.*` dependency aliases → explicit coordinates.
+- `nativeCanvas` → `skiaCanvas` in `BarsBlur.desktop.kt`.
+- `runComposeUiTest` → `androidx.compose.ui.test.v2.runComposeUiTest`.
+- `compose.runtime`, `compose.foundation`, `compose.material` aliases → explicit coordinates.
+- JVM targets set per Kotlin target from `kotlin.jvm.target` (Android) and `desktop.jvm.target` (desktop).
 - compose-color-picker kept when it compiles and renders on Compose 1.12; otherwise replaced.
 
 ## Composition
