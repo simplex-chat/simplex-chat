@@ -1,6 +1,5 @@
 package chat.simplex.common.platform
 
-import com.sun.jna.platform.unix.LibC
 import java.io.File
 import java.nio.charset.Charset
 
@@ -9,9 +8,6 @@ private const val COMPOSE_RESOURCES_DIR = "compose.application.resources.dir"
 private const val NUCLEUS_LIBRARY_PATH = "nucleus.native.libraryPath"
 private const val NUCLEUS_DESKTOP_ENTRY_ID = "nucleus.app.linux.desktop.entry.id"
 private const val NUCLEUS_STARTUP_WM_CLASS = "nucleus.app.linux.startup.wm.class"
-private const val GTK_USE_PORTAL = "GTK_USE_PORTAL"
-private const val GTK_USE_PORTAL_ON = "1"
-private const val KEEP_ENV = 0
 private const val FILE_NAME_ENCODING = "sun.jnu.encoding"
 
 enum class FileChooserAction(val gtkAction: Int) {
@@ -72,11 +68,6 @@ fun prepareLinuxRuntime() {
   linuxDesktopEntryId?.let {
     System.setProperty(NUCLEUS_DESKTOP_ENTRY_ID, it)
     System.setProperty(NUCLEUS_STARTUP_WM_CLASS, it)
-  }
-  try {
-    LibC.INSTANCE.setenv(GTK_USE_PORTAL, GTK_USE_PORTAL_ON, KEEP_ENV)
-  } catch (e: LinkageError) {
-    Log.w(TAG, "cannot set $GTK_USE_PORTAL: ${e.message}")
   }
 }
 

@@ -439,7 +439,7 @@ flowchart LR
 
 | Need | Path in the sandbox |
 |---|---|
-| file pick and save | GTK FileChooser portal (`GTK_USE_PORTAL=1`, automatic in Flatpak) |
+| file pick and save | GTK FileChooser portal, used by GTK in Flatpak and where the session sets `GTK_USE_PORTAL`; GTK's own dialog elsewhere |
 | open a file or folder | `xdg-open` → OpenURI portal |
 | notifications | Notification portal, avatar as bytes |
 | dark mode | Settings portal |

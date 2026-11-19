@@ -233,7 +233,7 @@ Entry: [`main()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L26
 
 ```
 main(args)
-  +-- prepareLinuxRuntime()              // Linux: Nucleus library path, window identity, GTK_USE_PORTAL
+  +-- prepareLinuxRuntime()              // Linux: Nucleus library path, window identity
   +-- rejectBitmapFonts()                // FONTCONFIG_FILE that rejects PCF and BDF fonts
   +-- linkFromArgs(args)                 // A simplexchat: or simplex: link passed by the OS
   +-- acquireSingleInstance(link)        // Or forward the link to the running instance and exit
