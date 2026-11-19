@@ -18,6 +18,7 @@ where
 
 import qualified Control.Exception as E
 import Control.Monad (mfilter)
+import Data.Int (Int64)
 import Data.Ratio ((%))
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..))
@@ -33,7 +34,7 @@ minCurrentRateFraction = 1 % 2
 -- | CONoInvoiceFigures: crypto due with no invoice rate or invoiced units recorded to credit it at.
 data CreditOutcome
   = CONothingDue
-  | COCredited LateMoney LateCredit
+  | COCredited LateMoney LateCredit Int64
   | CONoInvoiceFigures
   | CORateFailed ProviderError
   | CORateFloor Rate Rate
@@ -66,8 +67,9 @@ creditLateInvoice st readRate invId@(InvoiceId invText) now =
       lockInvoice db invId now
       lateCreditState db invId >>= \case
         Just s | creditable s, LDCredit c <- lateCreditOf s rate -> do
-          applied <- creditLatePayment db c now
-          if applied then pure $ COCredited (lsMoney s) c else E.throwIO $ BrokenInvariant $ "the credit of invoice " <> invText <> " found its number taken under the invoice's lock"
+          creditLatePayment db c now >>= \case
+            Just version -> pure $ COCredited (lsMoney s) c version
+            Nothing -> E.throwIO $ BrokenInvariant $ "the credit of invoice " <> invText <> " found its number taken under the invoice's lock"
         _ -> pure CONothingDue
 
 -- | A closed order's money, or an overpaid order's crypto, unless a rate below the floor sent it to support for good, so a later
