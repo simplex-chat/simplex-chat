@@ -7,7 +7,7 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
 ## What is set up
 
 - The app is already running, on its first screen, with a new, empty database: never run `ui start` or `ui stop`. Begin with `ui shot start` to see it.
-- After onboarding, the chat list is in the left pane (x 1 to 389) and chats open in the right pane. An empty chat list shows only its toolbar, with the profile picture at about 27,730 and a pencil (New chat) at about 363,730: the search field "Search or paste SimpleX link" appears once there is a chat. The toolbar is at the bottom of the left pane.
+- After onboarding, the chat list is in the left pane (x 1 to 389) and chats open in the right pane. An empty chat list shows only its toolbar, with the profile picture at about 27,760 and a pencil (New chat) at about 363,760: the search field "Search or paste SimpleX link" appears once there is a chat. The toolbar is at the bottom of the left pane.
 - The channel uses the app's preset chat relays, on the internet. Creating it and joining it wait for them: wait up to 120 s there (`ui wait "<text>" 120`).
 - The folder `images` in your working directory has two images for part I: `test-card.jpg`, a TV test card 1280×720 (colour bars, a large circle, "1080" at the top and "TVB" at the bottom), and `simplex-logo.png`, the dark blue and turquoise SimpleX logo on a transparent background. You can Read them to compare with what the app shows.
 
@@ -17,9 +17,9 @@ Your working directory is where your output goes. `ui shot <name>` saves `screen
 - **Channel info:** click the channel name at the top of the right pane. Press Escape to close it and other panes (preferences, member info, a message's info) and get back to the chat.
 - **Message menu:** `ui right-click <x> <y>` on the message's text (centre from `ui find`) opens its menu ("Info", "Moderate", …).
 - **Signatures are read as text, never from the seal icons:** a message's "Info" shows "Signed" (your own message), "Signed & verified" (someone else's, checked) or "Signature missing".
-- **Switch profile:** click the profile picture (about 27,730); the menu lists your other profiles by name: click the one you want. The chat list then shows that profile's chats; click "ci signing" in it.
+- **Switch profile:** click the profile picture (about 27,760); the menu lists your other profiles by name: click the one you want. The chat list then shows that profile's chats; click "ci signing" in it.
 - **Add a profile:** profile picture → "Your chat profiles" → "Add profile". On "Create profile", click the field about 40 px below the text "Enter your name:", type the name, and click the "Create profile" button (the lower of the two "Create profile" texts; the upper one is the title). The new profile becomes the active one; press Escape until the chat list shows.
-- **Join by the copied link** (from a profile without chats): the pencil (about 363,730) → "Paste link" → "Tap to paste link". An alert names the channel with "Open channel": click it. The channel opens with "Tap Join channel" and a "Join channel" bar at the bottom: click the bar, and wait up to 120 s until the bottom of the chat shows "you are subscriber".
+- **Join by the copied link** (from a profile without chats): the pencil (about 363,760) → "Paste link" → "Tap to paste link". An alert names the channel with "Open channel": click it. The channel opens with "Tap Join channel" and a "Join channel" bar at the bottom: click the bar, and wait up to 120 s until the bottom of the chat shows "you are subscriber".
 
 ## The test
 
@@ -60,7 +60,7 @@ The parts build on each other: run them in this order. cisub must join only afte
 
 **I. Sending images (as citester).**
 
-1. (I1) Switch to citester, and press Escape until the chat list shows. Click the pencil (about 363,730), then "Create group". Click the name field, about 40 px below the text "Enter group name", type `image notes`, and click "Create group". If "Skip inviting members" shows, click it. Check: the group "image notes" is open in the right pane.
+1. (I1) Switch to citester, and press Escape until the chat list shows. Click the pencil (about 363,760), then "Create group". Click the name field, about 40 px below the text "Enter group name", type `image notes`, and click "Create group". If "Skip inviting members" shows, click it. Check: the group "image notes" is open in the right pane.
 2. (I2) Click the attachment button, the paperclip icon at the left end of the message field at the bottom of the right pane, then "Image". The GTK file dialog opens: type the absolute path of `images/test-card.jpg` in your working directory, which opens its location field, and press Return. Back in the app, the compose area shows the image above the message field before it is sent. Take a shot. Check: the preview shows the whole test card, upright, not stretched.
 3. (I3) Press Return or click the send button at the right end of the message field. Check: the chat shows the sent test card. Click the image: it opens larger, and "1080" and "TVB" are sharp and readable. Take a shot, then close the image with Escape.
 4. (I4) Repeat I2 and I3 with `images/simplex-logo.png`. Check: the preview and the sent image show the whole logo, and the area around its letters shows the chat's background, not black or grey.
@@ -68,9 +68,9 @@ The parts build on each other: run them in this order. cisub must join only afte
 You have at most 330 turns, and the whole test fits in about 170 if you chain steps whose outcome you can predict with `ui do` and look at the screen after each chain. For example:
 
 - `ui do click-text "Create your profile" -- wait "Enter profile name" -- click-text "Enter profile name" -- type citester -- shot profile`
-- `ui do click 363 730 -- click-text "Create public channel" 10 -- wait "Channel name" -- shot new-channel`
+- `ui do click 363 760 -- click-text "Create public channel" 10 -- wait "Channel name" -- shot new-channel`
 - `ui do click-text "Broadcast" -- type "after signing" -- key Return -- wait "after signing" -- shot after-signing`
-- `ui do click 27 730 -- click-text "Your chat profiles" 10 -- click-text "Add profile" 10 -- wait "Enter your name" -- shot add-profile`
+- `ui do click 27 760 -- click-text "Your chat profiles" 10 -- click-text "Add profile" 10 -- wait "Enter your name" -- shot add-profile`
 
 `ui do` stops at the first command that fails, so a failed chain tells you where it stopped. Take a shot at each check, named after its step (`ui shot A2`).
 

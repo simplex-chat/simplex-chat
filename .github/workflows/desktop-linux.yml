@@ -580,6 +580,7 @@ jobs:
   e2e:
     name: ${{ matrix.kind }} under ${{ matrix.session }}
     needs: packages
+    if: ${{ !cancelled() && needs.packages.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     strategy:
