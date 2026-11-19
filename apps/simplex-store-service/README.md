@@ -695,6 +695,23 @@ the service refuses to roll back migrations it does not list. A database that ra
 before it created `sx_badge_service_name_terms` starts without that table, and every terms read
 fails. Recreate such a database.
 
+A database that a build of the `names` branch ran keeps `20261013_names` as that branch wrote it,
+in a shape this service does not read. It is upgraded in two steps:
+
+1. From master's `scripts/badge-service/`, run the badge service once without `--yes-migrate`, and
+   answer `y` when it asks to roll back `20261013_names`:
+
+   ```
+   docker compose run --rm badge-service -d "$BADGE_DB_CONN" --create-schema --service-config /etc/simplex-badge-service/badge_service.ini
+   ```
+
+   It runs the down migration that the database stored with `20261013_names`: the names tables
+   and the columns that migration added to the payments table are dropped, and the badge tables
+   and their rows stay. With `--yes-migrate` it refuses the rollback and exits. Stop it once it
+   runs.
+2. Deploy this service as [Deployment](#deployment) says. It applies `20261013_names` and the
+   migrations after it.
+
 ### Two sites
 
 Both images carry the badges build at `/srv/badges` and the names build at `/srv/names`: the
