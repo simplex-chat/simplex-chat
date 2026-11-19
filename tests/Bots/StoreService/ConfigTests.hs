@@ -422,10 +422,13 @@ testIssuerSecretMissing =
   issuerRefusal ["index = 1"] `shouldReturn` "issuer.private_key is required"
 
 testIssuerIndexInvalid :: IO ()
-testIssuerIndexInvalid =
+testIssuerIndexInvalid = do
   mapM_
     (\v -> issuerRefusal ["index = " <> v, "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a whole number of at least 1")
-    ["0", "-1", "one", "1.5", "key_1", "18446744073709551617"]
+    ["0", "-1"]
+  mapM_
+    (\v -> issuerRefusal ["index = " <> v, "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a whole number from 1 to 9223372036854775807")
+    ["one", "1.5", "key_1", "18446744073709551617"]
 
 testIssuerBadSecret :: IO ()
 testIssuerBadSecret =
@@ -809,7 +812,7 @@ testNamesWrittenOut = do
   namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be a whole number of at least 1"
   namesRefusal ns (chainSection <> ["gas_limit_cap = 0"]) `shouldReturn` "chain.gas_limit_cap must be a whole number of at least 1"
   namesRefusal ns (chainSection <> ["max_fee_per_gas = 0"]) `shouldReturn` "chain.max_fee_per_gas must be a whole number of at least 1"
-  namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a whole number of at least 1"
+  namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a whole number from 1 to 18446744073709551615"
   namesRefusal ns (filter (not . ("chain_id" `T.isPrefixOf`)) chainSection) `shouldReturn` "chain.chain_id is required"
   namesRefusal ns (withChainId "") `shouldReturn` "chain.chain_id is required"
   namesRefusal ns (withChainId "0") `shouldReturn` "chain.chain_id must be a whole number of at least 1"
@@ -985,7 +988,7 @@ testNamesPriceFloor = do
     (n, nMinPriceCentsPerYear) `shouldBe` (n, n)
   forM_ ["0", "-5000"] $ \v ->
     namesRefusal (namesSection <> ["min_price_cents_per_year = " <> v]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
-  namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number of at least 1"
+  namesRefusal (namesSection <> ["min_price_cents_per_year = 50.00"]) chainSection `shouldReturn` "names.min_price_cents_per_year must be a whole number from 1 to 9223372036854775807"
 
 -- | Names on the local chain with no payment provider, as a run with dev keys has.
 localNamesIni :: [T.Text] -> T.Text

@@ -25,7 +25,7 @@ A4-6, A4-20, A4-21, the ini file:
 A4-7: each URL is parsed by http-client's `parseRequest` in Config; `secure` and `host` give the https and loopback rules of btcpay.host, apple.api_host, chain.rpc_url and the dev_keys BTCPay check; a malformed URL is refused at start; urlHost and requireHttps go; the fields stay text.
 
 A4-17: `boundedDecimal :: Integral a => a -> a -> Parser a`, attoparsec's `decimal` read at Integer and checked against the bounds, in Config:
-- every integer setting is read through it, with one message per setting: `<section>.<key> must be a whole number from L to H`, or `of at least L` without an upper bound;
+- every integer setting is read through it, with one message per setting: `<section>.<key> must be a whole number from L to H`, or `of at least L` for a value below L of a setting without an upper bound;
 - Group/Command's options, the names page's `length` and `seenVersion` parameters use it.
 
 A4-19: stripeSection refuses keys of two modes; parseConfig binds whether the keys are test keys once, for the dev_keys and chain checks.

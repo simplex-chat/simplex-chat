@@ -514,9 +514,9 @@ parseConfig ini = do
     boundedSetting name lowest highest v =
       first (const (name <> " must be a whole number " <> range)) $ parseAll (boundedDecimal lowest highest) (encodeUtf8 v)
       where
-        range
-          | highest == maxBound = "of at least " <> show lowest
-          | otherwise = "from " <> show lowest <> " to " <> show highest
+        range = case parseAll (A.signed A.decimal) (encodeUtf8 v) of
+          Right (n :: Integer) | highest == maxBound && n < toInteger lowest -> "of at least " <> show lowest
+          _ -> "from " <> show lowest <> " to " <> show highest
     bool s k d = case fmap (T.toLower . T.strip) (look s k) of
       Nothing -> Right d
       Just "on" -> Right True
