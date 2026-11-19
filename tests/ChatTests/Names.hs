@@ -1009,6 +1009,8 @@ joinVerifiedTeam reg alice cath bob = do
   registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
   setChannelDomain alice cath "alice" "team" "team.simplex"
   memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
+  waitRosterApplied bob
+  waitQueuedLinkUpdates alice
   bob ##> "/_verify domain #1"
   bob <## "SimpleX name #team verified"
   pure shortLink
@@ -1089,6 +1091,8 @@ joinChannelByName g alice cath bob = do
         cath <## ("#" <> g <> ": bob joined the group"),
       alice <### [EndsWith "(Bob) in the channel"]
     ]
+  waitRosterApplied bob
+  waitQueuedLinkUpdates alice
 
 withTeamChats :: HasCallStack => (NameRegistry -> String -> String -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
 withTeamChats test = withChannelChats $ \reg alice cath bob -> do

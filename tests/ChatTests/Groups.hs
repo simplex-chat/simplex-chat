@@ -11094,7 +11094,7 @@ waitRosterApplied cc = go (100 :: Int)
   where
     go n = do
       [[unapplied]] <- withCCTransaction cc $ \db ->
-        DB.query_ db "SELECT COUNT(1) FROM groups WHERE roster_version IS NULL" :: IO [[Int]]
+        DB.query_ db "SELECT COUNT(1) FROM groups WHERE use_relays = 1 AND roster_version IS NULL" :: IO [[Int]]
       if unapplied == 0 || n == 0
         then unapplied `shouldBe` 0
         else threadDelay 100000 >> go (n - 1)
