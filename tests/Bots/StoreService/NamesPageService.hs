@@ -7,6 +7,7 @@ module Bots.StoreService.NamesPageService (namesPageServiceTests) where
 
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), fixtureRates, setInvoiceState, setRates, webhookEvent, webhookSigHeader, withFakeBTCPay)
 import Bots.StoreService.FakeStripe (FakeStripe (..), setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race_)
 import Control.Concurrent.STM (atomically, readTMVar)
 import qualified Control.Exception as E
@@ -21,22 +22,26 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import qualified Network.HTTP.Client as HTTP
-import Network.HTTP.Types (Header, Status, badRequest400, hContentType, internalServerError500, notFound404, ok200, status501, statusCode)
+import Network.HTTP.Types (Header, Status, badRequest400, conflict409, hContentType, internalServerError500, notFound404, ok200, status501, statusCode)
 import Network.Wai (Application, pathInfo, requestMethod, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Options.Applicative (defaultPrefs, execParserPure, handleParseResult, info)
 import Simplex.Chat.Badges.Code (formatNameCode, nameLength)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
-import Simplex.Chat.Controller (ChatController (..))
+import Simplex.Chat.Controller (ChatController (..), ChatResponse (CRCustomChatResponse))
+import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
+import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import Simplex.Messaging.Names.Record (USDCents (..))
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), StripeConfig (..), readServiceConfig)
 import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
+import StoreService.Names.Store (Balance (..), LatePending (..), balanceByReference, latePending)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Options (storeServiceOpts)
 import StoreService.Service (ServiceState (..), newServiceState, storeService)
-import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), currentSecond, getInvoice)
 import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 import Test.Hspec
@@ -95,6 +100,7 @@ controlApp pc req respond = do
     control body = case (requestMethod req, pathInfo req) of
       ("POST", ["control", "code"]) -> withObject body (codeControl pc)
       ("POST", ["control", "rate"]) -> withObject body (rateControl pc)
+      ("POST", ["control", "refund", ref]) -> withObject body (refundControl pc ref)
       ("POST", ["control", action, invId])
         | action `elem` ["settle", "partial", "confirming", "expire"] -> withObject body (invoiceControl pc action (InvoiceId invId))
       _ -> pure $ Left (status501, "the service's runner has no such control")
@@ -132,6 +138,19 @@ rateControl PageControls {pcBTCPay} o = case JT.parseEither fields o of
     rate :: Text -> Maybe Int -> J.Value
     rate pair dollars = J.object ["currencyPair" J..= pair, "errors" J..= ([] :: [Text]), "rate" J..= maybe (lookup pair fixtureRates) (Just . T.pack . show) dollars]
 
+refundControl :: PageControls -> Text -> J.Object -> IO ControlAnswer
+refundControl PageControls {pcService} ref o = case JT.parseEither (J..:? "cents") o of
+  Left e -> pure $ Left (badRequest400, T.pack e)
+  Right cents_ -> do
+    now <- currentSecond
+    withTransaction (chatStore pcService) (\db -> balanceByReference db ref now) >>= \case
+      Nothing -> pure $ Left (notFound404, "no order " <> ref)
+      Just (_, balance) -> do
+        let cents = fromMaybe (maybe 0 (\Balance {blAmount = USDCents c} -> c) balance) cents_
+        sendChatCmdStr pcService ("//record_refund " <> T.unpack ref <> " " <> show cents) >>= \case
+          Right (CRCustomChatResponse _ answer) -> pure $ Right $ J.object ["cents" J..= cents, "answer" J..= answer]
+          r -> pure $ Left (conflict409, T.pack (show (() <$ r)))
+
 invoiceControl :: PageControls -> Text -> InvoiceId -> J.Object -> IO ControlAnswer
 invoiceControl pc action invId o =
   getInvoice (chatStore $ pcService pc) invId >>= \case
@@ -139,9 +158,9 @@ invoiceControl pc action invId o =
     Just InvoiceRow {irProvider, irProviderRef, irDestination, irStatus} -> case (irProvider, irDestination) of
       (PPCrypto, SPDCrypto {currency, cryptoAmount}) -> case (JT.parseEither (J..:? "paid") o, decimal cryptoAmount) of
         (Right paid_, Just amount)
-          | Just paid <- maybe (Just amount) decimal paid_ -> btcpayControl pc action irProviderRef (coinPlaces currency) (irStatus == ISOpen) amount paid
+          | Just paid <- maybe (Just amount) decimal paid_ -> btcpayControl pc invId action irProviderRef (coinPlaces currency) (irStatus == ISOpen) amount paid
         _ -> pure $ Left (badRequest400, "paid must be a decimal amount of the invoice's coin")
-      (PPStripe, _) -> stripeControl pc action irProviderRef
+      (PPStripe, _) -> stripeControl pc invId action irProviderRef
       _ -> pure $ Left (badRequest400, "the invoice is neither BTCPay's nor Stripe's")
   where
     decimal :: Text -> Maybe Scientific
@@ -152,10 +171,10 @@ coinPlaces = \case
   CCBtc -> 8
   CCXmr -> 12
 
-btcpayControl :: PageControls -> Text -> Text -> Int -> Bool -> Scientific -> Scientific -> IO ControlAnswer
-btcpayControl pc@PageControls {pcBTCPay} action ref places open amount paid = case action of
+btcpayControl :: PageControls -> InvoiceId -> Text -> Text -> Int -> Bool -> Scientific -> Scientific -> IO ControlAnswer
+btcpayControl pc@PageControls {pcBTCPay} invId action ref places open amount paid = case action of
   "settle"
-    | open -> report "InvoiceSettled" ["status" J..= ("Settled" :: Text), "paymentMethodPaid" J..= coin paid]
+    | open -> report "InvoiceSettled" ["status" J..= ("Settled" :: Text), "paymentMethodPaid" J..= coin paid] (statusRead ISPaid)
     | otherwise -> do
         now <- round <$> getPOSIXTime
         report
@@ -164,35 +183,57 @@ btcpayControl pc@PageControls {pcBTCPay} action ref places open amount paid = ca
             "paymentMethodPaid" J..= coin paid,
             "payments" J..= [J.object ["id" J..= ("late-" <> coin paid), "receivedDate" J..= (now :: Int), "value" J..= coin paid, "fee" J..= coin 0, "status" J..= ("Settled" :: Text)]]
           ]
-  "partial" -> report "InvoiceReceivedPayment" ["additionalStatus" J..= ("PaidPartial" :: Text), "paymentMethodPaid" J..= coin (amount / 2)]
-  "confirming" -> report "InvoiceProcessing" ["status" J..= ("Processing" :: Text), "paymentMethodPaid" J..= coin amount]
-  _ -> report "InvoiceExpired" ["status" J..= ("Expired" :: Text)]
+          (paidRead paid)
+  "partial" -> report "InvoiceReceivedPayment" ["additionalStatus" J..= ("PaidPartial" :: Text), "paymentMethodPaid" J..= coin (amount / 2)] (paidRead (amount / 2))
+  "confirming" -> report "InvoiceProcessing" ["status" J..= ("Processing" :: Text), "paymentMethodPaid" J..= coin amount] (paidRead amount)
+  _ -> report "InvoiceExpired" ["status" J..= ("Expired" :: Text)] (statusRead ISExpired)
   where
     coin :: Scientific -> Text
     coin x = T.pack $ formatScientific Fixed (Just places) $ scientific (floor (toRational x * 10 ^ places)) (negate places)
-    report event state = do
+    paidRead x InvoiceRow {irPayment} = (ipCryptoPaid =<< irPayment) == Just (coin x)
+    report event state done = do
       setInvoiceState pcBTCPay ref state
       let body = webhookEvent event ref
-      Right <$> webhook pc "btcpay" (webhookSigHeader (bWebhookSecret $ fbConfig pcBTCPay) body) body
+      webhook pc "btcpay" (webhookSigHeader (bWebhookSecret $ fbConfig pcBTCPay) body) body
+      Right <$> readByService pc invId done
 
-stripeControl :: PageControls -> Text -> Text -> IO ControlAnswer
-stripeControl pc@PageControls {pcStripe} action pid = case action of
-  "settle" -> report "succeeded" "payment_intent.succeeded"
-  "confirming" -> Right (J.object ["ok" J..= True]) <$ setIntentState pcStripe pid ["status" J..= ("processing" :: Text)]
-  "expire" -> report "canceled" "payment_intent.canceled"
+stripeControl :: PageControls -> InvoiceId -> Text -> Text -> IO ControlAnswer
+stripeControl pc@PageControls {pcStripe} invId action pid = case action of
+  "settle" -> report "succeeded" "payment_intent.succeeded" ISPaid
+  "confirming" -> Right (J.object ["read" J..= True]) <$ setIntentState pcStripe pid ["status" J..= ("processing" :: Text)]
+  "expire" -> report "canceled" "payment_intent.canceled" ISExpired
   _ -> pure $ Left (badRequest400, "a card payment is never paid in part")
   where
-    report :: Text -> Text -> IO ControlAnswer
-    report status event = do
+    report :: Text -> Text -> InvoiceStatus -> IO ControlAnswer
+    report status event done = do
       setIntentState pcStripe pid ["status" J..= status]
       t <- round <$> getPOSIXTime
       let body = stripeEvent event pid
-      Right <$> webhook pc "stripe" (stripeSigHeader (sWebhookSecret $ fsConfig pcStripe) t body) body
+      webhook pc "stripe" (stripeSigHeader (sWebhookSecret $ fsConfig pcStripe) t body) body
+      Right <$> readByService pc invId (statusRead done)
 
-webhook :: PageControls -> String -> [Header] -> LB.ByteString -> IO J.Value
+statusRead :: InvoiceStatus -> InvoiceRow -> Bool
+statusRead st InvoiceRow {irStatus} = irStatus == st
+
+webhook :: PageControls -> String -> [Header] -> LB.ByteString -> IO ()
 webhook PageControls {pcManager, pcWebhooks} provider headers body = do
   req <- HTTP.parseRequest (pcWebhooks <> provider)
   r <- HTTP.httpLbs req {HTTP.method = "POST", HTTP.requestHeaders = (hContentType, "application/json") : headers, HTTP.requestBody = HTTP.RequestBodyLBS body} pcManager
   let st = statusCode (HTTP.responseStatus r)
   unless (st == 200) $ fail ("the service answered the " <> provider <> " webhook with " <> show st)
-  pure $ J.object ["ok" J..= True]
+
+readByService :: PageControls -> InvoiceId -> (InvoiceRow -> Bool) -> IO J.Value
+readByService PageControls {pcService} invId done = (\ok -> J.object ["read" J..= ok]) <$> poll readAttempts
+  where
+    st = chatStore pcService
+    poll :: Int -> IO Bool
+    poll left = do
+      row <- getInvoice st invId
+      pending <- withTransaction st (`latePending` invId)
+      if maybe False done row && pending /= Just LPUncredited
+        then pure True
+        else if left <= 0 then pure False else threadDelay readIntervalMicros >> poll (left - 1)
+
+readAttempts, readIntervalMicros :: Int
+readAttempts = 100
+readIntervalMicros = 100000

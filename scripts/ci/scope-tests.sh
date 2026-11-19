@@ -42,6 +42,7 @@ case "${1:-}" in
     npm run build
     ;;
   names-e2e)
+    export TMPDIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
     tools="$(mktemp -d)"
     mkdir -p "$tools/ens-contracts" "$tools/test/fixtures"
     for stage in contracts anvil; do

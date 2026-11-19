@@ -757,6 +757,14 @@ jobs:
             scripts/ci/scope-tests.sh "$scope"
           done
 
+      - name: Names page cases' results
+        if: ${{ failure() && matrix.scope_tests == true && contains(needs.maybe-release.outputs.scopes, 'names-e2e') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: names-e2e
+          path: ${{ runner.temp }}/names-contract-run.*
+          retention-days: 14
+
       - name: Remove -O2 build directory
         id: remove-o2
         if: env.cache_o0 == 'true' && !cancelled() && steps.build-cli.outcome == 'success'

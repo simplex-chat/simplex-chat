@@ -18,7 +18,7 @@ STORE_TEST_BIN="${STORE_TEST_BIN:-$(cd "$REPO" && cabal list-bin simplex-chat-te
 
 RPC_URL="http://127.0.0.1:$RPC_PORT"
 CHAIN_ID=31337
-MIN_COMMITMENT_AGE=1
+MIN_COMMITMENT_AGE=5
 # as dev/start.sh: a block a second, and a few states kept in memory rather than gigabytes under ~/.foundry
 MEMORY_STATES=8
 SERVICE_URL="http://127.0.0.1:$SERVICE_PORT"
@@ -28,6 +28,7 @@ MOCK_URL="http://127.0.0.1:8099"
 PAGE_URL="http://127.0.0.1:5173"
 TERMS_URL="http://127.0.0.1:8098"
 STARTUP_SECONDS=120
+LOG_LINES="${LOG_LINES:-100}"
 # The test suite's public issuer secret (issuerSecret in tests/Bots/StoreService/ConfigTests.hs), trusted
 # through [issuer] dev_keys, which the service accepts only on chain 31337. Never use it elsewhere.
 DEV_ISSUER_INDEX=999
@@ -36,7 +37,130 @@ DEV_ISSUER_SECRET=Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg=
 COMMUNITY_LABEL=bakers
 COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
-EXCLUDED=()
+STATE="reads the mock's memory at /control/state or /control/mode"
+MODE="switches the mock to codes only at /control/mode; the service reads codes_only from its ini at start"
+SEARCH="injects a fault with /control/search: a chain down, a rate limit, a provider's refusal, an unsent transaction, an unread chain, a slow write or link read, or refused links"
+STALE="drops an order's signed reveal with /control/stale, which only the mock does"
+FAIL="fails an order's next commit or register with /control/fail, which only the mock does"
+FAIL_NAME="refuses a name the controller takes with /control/fail-name, which only the mock does"
+COMMUNITY="lists a community name with what it is for at /control/community; the service reads that text from its ini at start"
+OVERDUE="ends an invoice's rate window at once with /control/overdue; the service's clock ends it"
+LATE="holds a late payment's credit with /control/late; the service credits it on its own"
+CREDIT="adds money no payment brought to a balance with /control/credit"
+EDITS="sets the yearly limit of link edits or a name's counted edits at /control/edits; the service reads the limit from its ini and counts the edits it relayed"
+CODE_STATE="needs a prepaid code reserved or used by an order elsewhere, which only the mock sets at once"
+REFUND_ANSWER="compares the answer of /control/refund, which the mock defines; the service's refund is the operator's //record_refund"
+LIMIT="sends more checkouts than the service takes from one client in a minute, 5, which the mock does not limit"
+AMOUNTS="expects the mock's coin amounts or its decimal text; the fake BTCPay answers its fixtures' amounts, written to 8 places as BTCPay writes them"
+PROFILES="expects the profiles the mock makes up for its links; the service reads a link's profile from the link's server, which these links are not on"
+
+EXCLUDED=(
+  "a balance held by another browser's invoice whose payment is confirming past its expiry names that order, says so without a time, and is read at a pause" "$OVERDUE"
+  "Try again after a spend whose answer was lost sends the same body, and the service answers the one order it made" "$STATE"
+  "a difference order whose balance has grown to cover the price offers to register with it, which registers the name with nothing to pay" "$CREDIT"
+  "the service's mode is at /api/config: open by default, codes once the mock takes codes only, the page the same in both" "$STATE"
+  "the mock refuses every payment in codes-only mode, as the service does" "$MODE"
+  "each mode's home is drawn from its first frame, never the other mode's first, however slowly the config answers" "$MODE"
+  "a load asks the service's mode once, as the preload's answer is the one the page reads" "$MODE"
+  "without a code, the home's search is greyed, takes no pointer, focus or Enter, and Register with code leads on" "$MODE"
+  "#/code opens Check your code from a cold load, its field ready for the code" "$MODE"
+  "a valid prepaid code opens the search for the names it covers and registers one as a free code order" "$MODE"
+  "a code taken off on Check your order leaves the code field in place of payment, and a code there registers" "$MODE"
+  "an order paid before codes only shows no new invoice or balance to spend, only Register with code and the refund" "$MODE"
+  "a page opened before codes only, refused as it pays, says registration is by code and leads to a code" "$MODE"
+  "a closed invoice's page opened before codes only, refused a new invoice, says so with a way to a code" "$MODE"
+  "a checkout open as the service takes codes only loads again in codes mode with its name, links, name code and terms" "$MODE"
+  "an order paid as the service takes codes only loads again with its invoice, and registers" "$MODE"
+  "a codes-only page open as the service opens loads again with the search on" "$MODE"
+  "a closed invoice's page holding changed terms ticked again stays as the service takes codes only, until the reader leaves it" "$MODE"
+  "Edit links saves both links with the last edit left, then keeps Save off until the edits return" "$EDITS"
+  "a Save of both links from a tab opened before the name's edits ran out says when they return, and changes neither link" "$EDITS"
+  "a code on Check your order that is not valid, used, too short for the name or a name code says why, and the order is paid once it is removed" "$CODE_STATE"
+  "Save pressed in Edit links while a link is still checked waits for its check, then saves it" "$SEARCH"
+  "a failed code order opened again after its code was used elsewhere offers no other name, and from the first frame the time after" "$FAIL"
+  "a failed code order is drawn before its code is checked, and says the code is kept only once the check answers" "$FAIL_NAME"
+  "a failed code order whose code check meets the rate limit counts down its wait, then says the code is kept" "$FAIL_NAME"
+  "a code held by this browser's failed order says it is in use and links to the order; a revoked code says SimpleX withdrew it" "$FAIL"
+  "a failed code order whose code is revoked or past its date while still held by it offers another name" "$FAIL_NAME"
+  "an order restored in a browser without its code promises nothing of the code" "$FAIL_NAME"
+  "a view whose sponsor nonce could not be read is read again after 5 then 15 seconds, without holding, and then signed" "$SEARCH"
+  "a name whose terms can't be read now can't be ordered: its search says so, and an order sent meanwhile is refused with nothing charged" "$STATE"
+  "a name put on the list meanwhile is refused for the community terms, which their step then asks for, the review showing its marker, and Your names marks the name" "$COMMUNITY"
+  "a failed order moved through the search to another name asks for that name's terms first, a community name's own box in place of the general terms' one, whose words open the terms, and signs them anew after they changed" "$FAIL_NAME"
+  "Your names draws a community name's row with its marker on the name's last line, its popup saying what the name is for" "$COMMUNITY"
+  "Register without links asks for the terms once they changed, and the order registers under the new ones" "$SEARCH"
+  "community terms changed on chain between the order and its reveal are agreed to again on the order's page before it signs, and the name registers under them" "$COMMUNITY"
+  "changed community terms whose searches fail for now are asked for once a search is made again after a pause" "$COMMUNITY"
+  "changed community terms are asked for by the hash the order's view asks to accept, the view read again while the service has no terms of that hash" "$COMMUNITY"
+  "changed community terms of the name an order holds are asked for whatever a search answers for the name" "$COMMUNITY"
+  "community terms changed after the reveal, before its relay, are agreed to again and the name registers under them" "$SEARCH"
+  "the marker stands where the mockup draws it in the search's rows, available and taken" "$COMMUNITY"
+  "the marker stands where the mockup draws it on Check your order" "$COMMUNITY"
+  "the marker stands where the mockup draws it in Your names" "$COMMUNITY"
+  "an order is answered again only for an exact resend, at any age of its signature; anything else meeting it is order_exists" "$LIMIT"
+  "an order refuses a wrong signer, a stale timestamp, free days off the term, a missing or oversized sealed, and a price the chain does not quote" "$LIMIT"
+  "an order past its invoice's expiry is closed by the next order of its wallet and name only while nothing has reached it" "$OVERDUE"
+  "a code order closes an overdue invoice of its wallet and name with nothing received" "$OVERDUE"
+  "a code check answers every state, revoked included, and an unknown code is code_invalid" "$CODE_STATE"
+  "a held poll wakes on a new version, and of two retries at once of a lapsed order one wins and the other is registration_changed with the view" "$SEARCH"
+  "another name or links: refused from an order with nothing to fix, a repeat changes nothing, a dearer name is price_too_high, and the fourth move is move_limit" "$SEARCH"
+  "a spend refuses in the contract's order: formats, the paying order, its owner, existing orders, the time, the balance, the chain, the price, the provider" "$LIMIT"
+  "a cancel or an expiry releases a held balance; an overdue holder reads free and the next spend closes it, while a refund waits for it" "$OVERDUE"
+  "a holder that money reached keeps the hold past its expiry until it settles, and the next order of a holder's wallet and name closes an empty one" "$OVERDUE"
+  "support's refund takes the whole balance by invoice id or registration id, refuses other cents or none left, and a cheaper move credits the rest again" "$REFUND_ANSWER"
+  "a paid order taken first keeps its whole price as a balance of its own, also when a balance paid it, moves no more, and its refund names what paid it" "$REFUND_ANSWER"
+  "a late payment is credited once settled, each confirmed figure once, at the lower of its invoice's rate and the current one" "$AMOUNTS"
+  "a part payment confirmed on a closed invoice, also after a cancel, is credited at its share of the price, and the rest once it arrives" "$AMOUNTS"
+  "an overpaid invoice registers its name, leaves nothing to pay, and credits the extra at its share of the price or the lower current rate" "$AMOUNTS"
+  "find lists the 50 newest orders of a code and then every older one holding a balance" "$LIMIT"
+  "a hold by an invoice money reached has no end, find names each order's paying balance and holder, and late money says what its credit waits on" "$OVERDUE"
+  "an order signs the terms of its name's kind: the other kind or other terms is terms_changed with the terms and community now, a malformed one bad_request" "$LIMIT"
+  "a code order meets changed terms before the code's state, and a spend before its balance" "$CODE_STATE"
+  "a move signs the new name's terms: a community name needs the community terms, which are stored; the same body again is a repeat, also after the terms changed, and one differing only in terms a move" "$FAIL"
+  "a committed community name's view asks for the owner's acceptance of the community terms on chain; its reveal without one, or with one for another nonce, terms, kind or policy, is bad_request, and with it the register records it" "$STALE"
+  "a plain name's committed view asks for the owner's acceptance of the general terms; its reveal without one or with the other kind is bad_request, and with it the register records it" "$STALE"
+  "a move repeat is answered however old its signature, while a move signed too long ago is bad_request" "$FAIL"
+  "a Bitcoin order pays in two parts, registers on chain, takes its links on Edit links, and the code owns it" "$EDITS"
+  "a purchase walks the steps a buyer expects, and the links set before paying are on chain" "$PROFILES"
+  "a link's late preview never fills the field once it holds another link, whose own preview it waits for" "$SEARCH"
+  "a link's profile comes in the very box its place held while it was read, at a laptop's and a phone's width" "$SEARCH"
+  "Continue pressed while a link is checked is busy where it stands, says so, and goes on once the check ends" "$SEARCH"
+  "the owner code restores an order in another browser, and a bad code is refused" "$STALE"
+  "a part payment on a closed invoice, once credited, says so and gets an invoice for the rest of the same name in the main button's place" "$AMOUNTS"
+  "an invoice past its rate window that part of the payment reached stays open, asks for no more, and registers once paid" "$OVERDUE"
+  "a browser restored before another browser made a new invoice carries on with that invoice" "$STATE"
+  "a forgotten order whose code's lookup is rate limited waits as asked, then answers" "$SEARCH"
+  "a failed retarget shows one message below the result, however often it is tried" "$FAIL_NAME"
+  "a retarget refused for a name taken meanwhile says the name is no longer available" "$FAIL_NAME"
+  "a move refused for its code says what happened to the code and where to write, never to try again" "$FAIL_NAME"
+  "money paid after the close that the service cannot credit by itself sends the buyer to support, and the page stops reading it" "$LATE"
+  "an order left before its wait ends asks for this browser in Your names" "$STATE"
+  "Find the order shows a wait met elsewhere in the tab" "$SEARCH"
+  "search answers every kind of name" "$SEARCH"
+  "the checkout explains every refusal and keeps the order" "$SEARCH"
+  "a new invoice for a method that is unavailable says so and offers another way, with the same name code" "$SEARCH"
+  "a name code's lookup refused for a rate limit counts down its wait, and the code is judged again once it is over" "$SEARCH"
+  "a search pause reads the same after leaving the page and coming back" "$SEARCH"
+  "as a search pause ends, the paused line gives way to a checking line rather than an empty room, until the answer" "$SEARCH"
+  "Back to a search whose check fails because the service is down no longer offers the remembered answer" "$SEARCH"
+  "Back to a search whose check fails because searching is rate limited no longer offers the remembered answer" "$SEARCH"
+  "a failed order offers another name for it without searching its own name" "$FAIL_NAME"
+  "a wait on moving the payment that ends while Back checks the name again sends no second search" "$FAIL_NAME"
+  "a name an order holds is searched as that order in its browser, and as taken with nothing more in another" "$FAIL_NAME"
+  "a failed registration keeps its payment for another name, also in another tab" "$FAIL_NAME"
+  "an order whose commitment lapses before its page signs is committed again by that page, which signs it then" "$STATE"
+  "an order failed while its page was not read says until when the name stays its, and Continue signs it again and registers it" "$STATE"
+  "a chain that sends nothing for a moment keeps the order where it was, then registers it" "$STATE"
+  "a chain that sends nothing for longer than its resends fails the order in plain words, leaving it to support" "$SEARCH"
+  "an order whose links the service refuses at its reveal registers without them, and a move past the limit names support" "$SEARCH"
+  "Register without links that loses a race follows the order as it is now, saying nothing changed only when nothing did" "$SEARCH"
+  "an order with links the service refused waits past its commitment's lapse, offers no Try again, which the service refuses, in another browser too, and registers without them" "$SEARCH"
+  "a failed order's move to a cheaper name says the rest stays as its balance" "$FAIL_NAME"
+  "a code order whose links the service refuses moves to another name its code pays for, which costs it nothing" "$SEARCH"
+  "the home keeps its headline and search still as each kind of answer comes, at a laptop's and a phone's size" "$SEARCH"
+  "the words under the registering page's clock are centred on its icon" "$SEARCH"
+  "a commit that does not move on for longer than usual says so in its words' place, and nothing moves" "$SEARCH"
+)
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
 INI="$RUN_DIR/store_service.ini"
@@ -53,7 +177,12 @@ cleanup() {
     kill $pids 2>/dev/null || true
     wait 2>/dev/null || true
   fi
-  if [ "$status" -eq 0 ]; then rm -rf "$RUN_DIR"; else echo "failed; logs in $RUN_DIR" >&2; fi
+  if [ "$status" -eq 0 ]; then
+    rm -rf "$RUN_DIR"
+  else
+    tail -n "$LOG_LINES" "$RUN_DIR"/*.log >&2 || true
+    echo "failed; logs in $RUN_DIR" >&2
+  fi
 }
 trap cleanup EXIT
 trap 'exit 130' INT TERM
@@ -92,7 +221,7 @@ start_chain() {
 }
 
 start_terms() {
-  (cd "$WEBAPP_DIR" && node dev/serve-terms.ts) > "$RUN_DIR/terms.log" 2>&1 &
+  (cd "$WEBAPP_DIR" && exec node dev/serve-terms.ts) > "$RUN_DIR/terms.log" 2>&1 &
   answering $! "$TERMS_URL/terms/"
 }
 
@@ -162,7 +291,7 @@ const [guardian, rival] = [1, 4].map((addressIndex) => mnemonicToAccount(ANVIL_M
 const ALLOWANCE = 1_000_000n * 10n ** 18n
 const TAKE_SECONDS = 60
 const SEARCH_RESET = { chainDown: false, limitSeconds: 0, invoiceError: null, findLimitSeconds: 0 }
-const RUNNER_CONTROL = /^\/control\/(code|rate|(settle|partial|confirming|expire)\/[^/]+)$/
+const RUNNER_CONTROL = /^\/control\/(code|rate|(settle|partial|confirming|expire|refund)\/[^/]+)$/
 
 writeFileSync(rivalChainFile, JSON.stringify({ ...JSON.parse(readFileSync(chainFile, "utf8")), registrarKey: toHex(rival.getHdKey().privateKey) }))
 process.env.LOCAL_CHAIN_OUT = rivalChainFile
@@ -182,10 +311,13 @@ async function taken(label) {
   throw new Error(`${label} was not registered to the holder`)
 }
 
+const taking = new Set()
+
 const CHAIN_CONTROLS = {
-  "/control/take": async (body) => {
+  "/control/take": (body) => {
     const answer = controlTake(body.label)
-    await taken(body.label)
+    const done = taken(body.label).catch((e) => console.error(`take ${body.label}:`, e)).finally(() => taking.delete(done))
+    taking.add(done)
     return answer
   },
   "/control/general-terms": controlGeneralTerms,
@@ -204,6 +336,7 @@ function json(res, status, value) {
 
 async function control(path, body) {
   if (RUNNER_CONTROL.test(path)) {
+    await Promise.all(taking)
     const answer = await fetch(`${runner}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
     return [answer.status, await answer.json()]
   }
