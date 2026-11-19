@@ -113,6 +113,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
 #if defined(dbPostgres)
   describe "two connections" $ do
     it "applies one of a spend and a refund, or of a held spend and a refund, and keeps the invariant for a credit and a refund" testConcurrentWrites
+    it "credits nothing that a concurrent dispute leaves in the balance" testConcurrentCreditDispute
 #endif
 
 -- fixtures
@@ -980,4 +981,22 @@ testConcurrentWrites = withServiceStores $ \open -> do
     credited `shouldBe` True
     (n,) <$> figures st lateSrc t0 `shouldReturn` (n, Just $ if refundedLate then (3000, 13000, 10000, Nothing) else (13000, 13000, 0, Nothing))
     invariantHolds st lateSrc
+
+testConcurrentCreditDispute :: IO ()
+testConcurrentCreditDispute = withServiceStores $ \open -> do
+  st <- open
+  other <- open
+  forM_ [1 .. 25 :: Int] $ \n -> do
+    let r = "disputed" <> T.pack (show n)
+        rid = RegistrationId r
+        inv = InvoiceId $ "inv-" <> r
+    placeOrderRow st r True 20000 (at 60)
+    order <- reg st r
+    _ <-
+      together
+        st
+        other
+        (\db -> lockRegistration db order >> recordReversal db ("evt_" <> r) inv (RVDispute "dp_1" $ CurrencyAmount 20000) t0 >>= mapM_ (\cents -> takeBackBalance db ("evt_" <> r) inv rid cents t0))
+        (\db -> creditLatePayment db (lateCredit r 1 Nothing 3000) t0)
+    (n,) . fmap (\(amount, _, _, _) -> amount) <$> figures st r t0 >>= (`shouldSatisfy` (`elem` [Nothing, Just 0]) . snd)
 #endif

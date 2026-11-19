@@ -1625,6 +1625,7 @@ lateCreditState db (InvoiceId invId) = firstDecoded toLateState $ DB.query db (l
 -- | Run after the invoice's lock. The order's balance is credited only when the credit's row is new, so a taken credit number changes neither.
 creditLatePayment :: DB.Connection -> LateCredit -> UTCTime -> IO Bool
 creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegistration = regId@(RegistrationId rid), lcAmount} now = do
+  DB.execute db (mkQuery "UPDATE @name_registrations SET version = version WHERE registration_id = ?") (Only rid)
   inserted <-
     executeChanging
       db
