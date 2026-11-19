@@ -49,6 +49,7 @@ fun showTaoApp() {
         TaoAppWindow()
       }
     }
+    LinuxTray()
   }
 }
 
