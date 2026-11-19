@@ -106,6 +106,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "keeps an order whose register was sent, naming the transaction" testReversalKeepsSent
     it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total" testReversalTakesBack
     it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
+    it "cancels a live order of which no register was sent, also after support refunded part of its balance" testReversalCancelsRefunded
     it "cancels an order by a signed dispute delivered to the Stripe webhook" testDisputeWebhook
     it "locks an order only at its version" testLockRegistration
 #if defined(dbPostgres)
@@ -892,6 +893,16 @@ testReversalAlertsOnly = withReversals $ \Ctx {cStore = st} env alerts -> do
   credit st "w" 100
   figures st "w" t0 `shouldReturn` Just (100, 100, 0, Nothing)
   alertsWith alerts ["of order r: support recorded its refund, so nothing changed. Evidence", "names: early fraud warning, card_never_received on payment ref-inv-w of order w: nothing changed. Evidence"]
+
+testReversalCancelsRefunded :: IO ()
+testReversalCancelsRefunded = withReversals $ \Ctx {cStore = st} env alerts -> do
+  _ <- queuedOrder st "m"
+  credit st "m" 800
+  refund st "m" 800 `shouldReturn` True
+  reverseWith env "m" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 20000
+  nrPhase <$> reg st "m" `shouldReturn` OClosed ICReversed
+  figures st "m" t0 `shouldReturn` Just (0, 800, 800, Nothing)
+  alertsWith alerts ["of order m: it is cancelled, as no register transaction of it was sent, and its name is released. Evidence"]
 
 testDisputeWebhook :: IO ()
 testDisputeWebhook = withFakeStripe $ \fake -> do

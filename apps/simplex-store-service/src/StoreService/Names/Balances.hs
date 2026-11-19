@@ -124,7 +124,6 @@ reverseOrder oe@OrdersEnv {oeNow} row@InvoiceRow {irInvoiceId} rid event reversa
       let takeBack = takeBackBalance db event irInvoiceId nrId cents now
           takenText taken = if taken > 0 then "; " <> centsText taken <> " taken back from its balance" else ""
       if
-        | refunded -> pure (Nothing, "support recorded its refund, so nothing changed")
         | namePhase nrPhase == PUnpaid -> pure (Nothing, "its payment is not recorded yet, so it is closed as reversed when it is")
         | orderLive r && not sent -> do
             v <-
@@ -137,6 +136,7 @@ reverseOrder oe@OrdersEnv {oeNow} row@InvoiceRow {irInvoiceId} rid event reversa
               pure $ "; " <> centsText buUsed <> " returned to the balance of order " <> s
             taken <- takeBack
             pure (Just v, "it is cancelled, as no register transaction of it was sent, and its name is released" <> fromMaybe "" returned <> takenText taken)
+        | refunded -> pure (Nothing, "support recorded its refund, so nothing changed")
         | otherwise -> do
             taken <- takeBack
             let kept = if sent then "its register transaction was sent" else "it is " <> textEncode (namePhase nrPhase)
