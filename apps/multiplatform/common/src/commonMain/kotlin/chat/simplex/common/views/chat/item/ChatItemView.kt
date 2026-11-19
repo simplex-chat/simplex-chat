@@ -658,7 +658,7 @@ fun ChatItemView(
                   withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(cInfo.isChannel)) }
                 },
                 Modifier.padding(chatEventPadding()),
-                style = chatEventTextStyle()
+                style = chatEventTextStyle().withDesktopLineHeight()
               )
             }
 
@@ -689,7 +689,7 @@ fun ChatItemView(
                   withStyle(chatEventStyle) { append(annotatedStringResource(sId)) }
                 },
                 Modifier.padding(chatEventPadding()),
-                style = chatEventTextStyle()
+                style = chatEventTextStyle().withDesktopLineHeight()
               )
             }
 

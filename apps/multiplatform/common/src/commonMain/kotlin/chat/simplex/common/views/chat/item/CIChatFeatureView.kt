@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
 import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.views.helpers.toDp
 
 @Composable
@@ -110,7 +111,7 @@ private fun FeatureIconView(f: FeatureInfo) {
   if (f.param != null) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       icon()
-      Text(chatEventText(f.param, AnnotatedString("  ")), maxLines = 1, style = chatEventTextStyle())
+      Text(chatEventText(f.param, AnnotatedString("  ")), maxLines = 1, style = chatEventTextStyle().withDesktopLineHeight())
     }
   } else {
     icon()
@@ -136,7 +137,7 @@ private fun FullFeatureView(
         Modifier,
         // this is important. Otherwise, aligning will be bad because annotated string has a Span with size 12.sp
         fontSize = 12.sp,
-        style = chatEventTextStyle()
+        style = chatEventTextStyle().copy(fontSize = 12.sp).withDesktopLineHeight()
       )
     }
   }

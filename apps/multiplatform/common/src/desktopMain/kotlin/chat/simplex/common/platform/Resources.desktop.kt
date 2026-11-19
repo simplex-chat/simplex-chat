@@ -136,6 +136,7 @@ actual fun desktopLineHeight(fontSize: TextUnit, lineHeight: TextUnit, fontFamil
   val typeface = when (fontFamily) {
     null, Inter -> interTypeface
     FontFamily.Monospace -> monospaceTypeface
+    FontFamily.Default, FontFamily.SansSerif -> sansSerifTypeface
     else -> null
   }
   if (!fontSize.isSp || !lineHeight.isSp || typeface == null) return lineHeight
@@ -162,12 +163,28 @@ actual fun desktopLineHeight(fontSize: TextUnit, lineHeight: TextUnit, fontFamil
 private val interTypeface: Typeface? by lazy { FontMgr.default.makeFromFile(MR.fonts.inter_regular.file.absolutePath) }
 
 private val monospaceTypeface: Typeface? by lazy {
+  firstInstalledTypeface(
+    linux = listOf("Noto Sans Mono", "DejaVu Sans Mono", "Consolas"),
+    windows = listOf("Consolas"),
+    mac = listOf(".AppleSystemUIFontMonospaced", "Menlo", "Courier")
+  )
+}
+
+private val sansSerifTypeface: Typeface? by lazy {
+  firstInstalledTypeface(
+    linux = listOf("Noto Sans", "DejaVu Sans", "Arial"),
+    windows = listOf("Segoe UI", "Arial"),
+    mac = listOf(".AppleSystemUIFont", "Helvetica Neue", "Helvetica")
+  )
+}
+
+private fun firstInstalledTypeface(linux: List<String>, windows: List<String>, mac: List<String>): Typeface? {
   val families = when {
-    desktopPlatform.isLinux() -> listOf("Noto Sans Mono", "DejaVu Sans Mono", "Consolas")
-    desktopPlatform.isWindows() -> listOf("Consolas")
-    else -> listOf(".AppleSystemUIFontMonospaced", "Menlo", "Courier")
+    desktopPlatform.isLinux() -> linux
+    desktopPlatform.isWindows() -> windows
+    else -> mac
   }
-  families.firstNotNullOfOrNull { family ->
+  return families.firstNotNullOfOrNull { family ->
     FontMgr.default.matchFamily(family).use { set -> if (set.count() > 0) set.matchStyle(org.jetbrains.skia.FontStyle.NORMAL) else null }
   }
 }

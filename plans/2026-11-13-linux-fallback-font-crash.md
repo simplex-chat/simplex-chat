@@ -27,7 +27,7 @@ Fontconfig lists such a font only from a cache written with the system FreeType,
 
 m138 adds the paragraph's empty metrics, computed from the text's default style, to every line. They are scaled by the rounded font height `R = round(descent - ascent + leading)` of a font without the text's rasterization settings. When `R` is below the exact height `I`, they exceed the runs' metrics and the line is laid out unlike m132: taller, with another baseline.
 
-`desktopLineHeight` returns the line height for which m138 lays out the line as m132 did with the requested one. Inter and the code font have no leading.
+`desktopLineHeight` returns the line height for which m138 lays out the line as m132 did with the requested one.
 
 | Line height style | `R >= I` | `R < I` |
 |---|---|---|
@@ -45,7 +45,7 @@ The adjusted value is passed only to `Text`, `BasicText` and `BasicTextField`; s
 ## Scope
 
 - Desktop builds on all OSes use Skia m138; Android APKs are unchanged.
-- `desktopLineHeight` returns the line height unchanged on Android, and on desktop for fonts other than Inter and the monospace font Compose resolves for `FontFamily.Monospace`.
+- `desktopLineHeight` returns the line height unchanged on Android, and on desktop for fonts other than Inter and the fonts Compose resolves for `FontFamily.Monospace` and `FontFamily.Default`.
 - Every text that sets a line height uses it.
 - The rule applies only to 0.9.4.2, so a Compose update that brings another Skiko version is not overridden.
 - Tests:
