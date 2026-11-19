@@ -15,7 +15,7 @@ import chat.simplex.common.platform.fileChooserPatterns
 import chat.simplex.common.platform.fileFromNativePath
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.views.helpers.fontSizeSqrtMultiplier
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.nucleusframework.core.runtime.ActivationToken
 import dev.nucleusframework.window.tao.ApplicationScope
 import dev.nucleusframework.window.tao.DecoratedWindow

@@ -5,7 +5,7 @@ import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.tmpDir
 import chat.simplex.common.views.helpers.generateNewFileName
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.stringResource
 import dev.nucleusframework.composenativetray.tray.api.NativeTray

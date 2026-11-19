@@ -3,7 +3,7 @@ package chat.simplex.common.platform
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.DatabaseUtils
 import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.security.GeneralSecurityException
 import java.security.SecureRandom
 import java.util.Base64
