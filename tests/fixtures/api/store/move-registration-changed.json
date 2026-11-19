@@ -9,6 +9,7 @@
       "id": "registration",
       "label": null,
       "labelHash": "0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6",
+      "lastAttempt": null,
       "latePayment": null,
       "linksRefused": null,
       "moves": 0,

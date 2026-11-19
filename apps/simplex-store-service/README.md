@@ -1394,21 +1394,23 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
 
 Every failed attempt of a terms acceptance or a register is stored in `name_attempts` with its
 transaction, its stage (`dry_run`, or `sent` for a transaction mined with status 0), its decoded
-reason and its time; an attempt repeating the order's last one, uncounted, updates that one's time.
+reason and its time; an attempt repeating the last one of its commitment, uncounted, updates that
+one's time. The order's view gives that last attempt in `lastAttempt`.
 A dry run that reverts while the name is available is retried every 15 seconds. Its reason decides:
 - `InvalidSignature`, `DurationTooLong`, `DurationTooShort`, `ResolverRequiredWhenDataSupplied`,
   `ReverseRecordNotSupported`, `NameTooShort`, `LabelTooLong` and `ReentrantCall` count toward
   `[names] max_dry_run_failures` (default 5) for the order's commitment;
 - any other reason, a revert without data and `Error(string)` are retried with no count, logged at
-  error and posted in the managed group at their first time in a row as
-  `names worker: registration <id> waits: the register reverts while the name is available, <reason>`.
+  error at their first time in a row and posted in the managed group at their fifth as
+  `names worker: registration <id> waits: the register reverts while the name is available, <reason>, 5 times in a row`.
 
 A transaction mined with status 0 counts toward `[names] max_sent_failures` (default 5) for the
 commitment. At either cap the order fails with the reason `registryRefused`, logged at error and
 posted in the managed group as `names worker: registration <id> failed: its register failed <n> times
 at its dry run, last: <reason>`, and support closes it with `//close` (see
-[Closing a failed order](#closing-a-failed-order)). A move starts both counts again. A temporary
-failure, such as a node that does not answer, is posted in the group at its fifth time in a row.
+[Closing a failed order](#closing-a-failed-order)). A move starts both counts again. Any other
+failure that keeps an order waiting, such as a node that does not answer, funds, the fee cap or the
+allowance, is posted in the group at its fifth time in a row.
 `CommitmentNotFound` commits the order again, and `CommitmentTooOld` past the commitment's lapse
 commits it again, posted in the group as `names worker: registration <id> is committed again: its
 commitment lapsed`. An order whose stored signature was cleared, and whose

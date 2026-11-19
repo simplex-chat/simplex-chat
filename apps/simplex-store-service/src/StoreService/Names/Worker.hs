@@ -135,9 +135,8 @@ failureNotice lastFailure reason = (times, Just times == reportAt)
       Just (lastReason, n) | lastReason == reason -> n + 1
       _ -> 1
     reportAt = case stepClass reason of
-      FCTemporary -> Just temporaryReportAt
-      FCOperator -> Just 1
       FCPermanent -> Nothing
+      _ -> Just temporaryReportAt
 
 -- | How often the stored registrations are scanned for one without a thread, such as an order just paid or requeued.
 scanInterval :: Int
@@ -528,8 +527,8 @@ checkFailedOrder oe r =
 failedAttempt :: Worker -> UTCTime -> NameRegistration -> RegistrationTx -> AttemptStage -> Maybe RevertReason -> IO (Maybe Int64, Next) -> IO (Maybe Int64, Next)
 failedAttempt w@Worker {wkOrders = OrdersEnv {oeStore, oeConfig = NamesConfig {nMaxDryRunFailures, nMaxSentFailures}}} now r@NameRegistration {nrId, nrCommitment} tx stage reason underCap = do
   failures <- withTransaction oeStore $ \db -> do
-    lastAttempt db nrId >>= \case
-      Just a | not counted && a {naAt = now} == attempt -> touchAttempt db nrId now
+    lastAttempt db nrId nrCommitment >>= \case
+      Just a | not counted && a {naAt = now} == attempt -> touchAttempt db nrId nrCommitment now
       _ -> insertAttempt db nrId nrCommitment attempt
     countedAttempts db nrId nrCommitment stage
   if counted && failures >= cap

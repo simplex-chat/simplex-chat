@@ -11,6 +11,7 @@ module StoreService.Names.View
     Signing (..),
     ToSign (..),
     Successor (..),
+    AttemptView (..),
     NameRefusal (..),
     refusalResponse,
     registrationView,
@@ -53,7 +54,7 @@ import StoreService.Names.Community (AcceptanceAsked, Community, TermsLink, comm
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (AgreedTerms (..), LinkKind, RegistrationId (..))
-import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), TxHistory (..), getBalance, getRegistration, heldBy, lateWait, orderLive, paymentInvoice)
+import StoreService.Names.Store (AttemptStage, Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameAttempt (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), RegistrationTx, TxHistory (..), getBalance, getRegistration, heldBy, lateWait, lastAttempt, orderLive, paymentInvoice)
 import StoreService.Web.Http (apiHeaders)
 
 data PaidWith
@@ -110,8 +111,12 @@ data RegistrationView = RegistrationView
     vwRegisterTx :: Maybe TxHash,
     vwCommunity :: Maybe Community,
     vwTerms :: AgreedTerms,
-    vwReplacedBy :: Maybe Successor
+    vwReplacedBy :: Maybe Successor,
+    vwLastAttempt :: Maybe AttemptView
   }
+  deriving (Eq, Show)
+
+data AttemptView = AttemptView {avTransaction :: RegistrationTx, avStage :: AttemptStage, avReason :: Text, avAt :: UTCTime}
   deriving (Eq, Show)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "PW") ''PaidWith)
@@ -125,6 +130,8 @@ $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "S") ''Signing)
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "PV") ''PhaseView)
 
 $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "sc"} ''Successor)
+
+$(JQ.deriveToJSON defaultJSON {J.fieldLabelModifier = dropPrefix "av"} ''AttemptView)
 
 $(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "vw"} ''RegistrationView)
 
@@ -203,11 +210,12 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
 -- | The balance as it reads at the given time, when a hold may have become overdue, and what a closed order's late money waits on.
 registrationView :: DBStore -> NamesConfig -> Contracts -> UTCTime -> NameRegistration -> IO RegistrationView
 registrationView st cfg ct now r = do
-  (balance, late) <- withTransaction st $ \db -> do
+  (balance, late, attempt) <- withTransaction st $ \db -> do
     balance <- getBalance db (nrId r) now
     late <- maybe (pure Nothing) (lateWait db) (paymentInvoice $ nrPayment r)
-    pure (balance, late)
-  toRegistrationView cfg r balance late <$> phaseView ct now r
+    attempt <- lastAttempt db (nrId r) (nrCommitment r)
+    pure (balance, late, attempt)
+  toRegistrationView cfg r balance late attempt <$> phaseView ct now r
 
 -- | The chain is read only while a committed order awaits its owner's signature.
 phaseView :: Contracts -> UTCTime -> NameRegistration -> IO PhaseView
@@ -238,8 +246,8 @@ readToSign ct what owner lh = do
   where
     unread reason = logWarn $ "names: " <> what <> " " <> reason
 
-toRegistrationView :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> PhaseView -> RegistrationView
-toRegistrationView cfg r balance late phase =
+toRegistrationView :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> Maybe NameAttempt -> PhaseView -> RegistrationView
+toRegistrationView cfg r balance late attempt phase =
   RegistrationView
     { vwId = rid,
       vwVersion = nrVersion,
@@ -261,7 +269,8 @@ toRegistrationView cfg r balance late phase =
       vwRegisterTx = thRegisterTx,
       vwCommunity = communityOf cfg (nrLabelHash r) (atCommunityName nrAgreedTerms),
       vwTerms = nrAgreedTerms,
-      vwReplacedBy = (\(RegistrationId s, invId) -> Successor {scRegistrationId = s, scInvoiceId = invId}) <$> nrReplacedBy
+      vwReplacedBy = (\(RegistrationId s, invId) -> Successor {scRegistrationId = s, scInvoiceId = invId}) <$> nrReplacedBy,
+      vwLastAttempt = (\NameAttempt {naTx, naStage, naReason, naAt} -> AttemptView {avTransaction = naTx, avStage = naStage, avReason = naReason, avAt = naAt}) <$> attempt
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r

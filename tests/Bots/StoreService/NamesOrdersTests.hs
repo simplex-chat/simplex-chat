@@ -1778,7 +1778,7 @@ testViewFields :: IO ()
 testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  let viewWith late phase = toRegistrationView (testNamesConfig node) r Nothing late phase
+  let viewWith late phase = toRegistrationView (testNamesConfig node) r Nothing late Nothing phase
   viewWith Nothing PVUnpaid
     `shouldBe` RegistrationView
       { vwId = "r1",
@@ -1801,7 +1801,8 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwRegisterTx = Nothing,
         vwCommunity = Nothing,
         vwTerms = agreed plainTerms,
-        vwReplacedBy = Nothing
+        vwReplacedBy = Nothing,
+        vwLastAttempt = Nothing
       }
   map (\w -> J.toJSON (vwLatePayment $ viewWith (Just w) PVUnpaid)) [LWConfirming, LWCrediting, LWSupport] `shouldBe` ["confirming", "crediting", "support"]
   let acceptance community h = AcceptanceAsked {acCommunity = community, acPolicy = fakeNamePolicy, acTermsHash = Hex32 h, acNonce = 2}
@@ -1846,12 +1847,18 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         }
   viewOf failed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("sendsUsedUp" :: Text)]), ("registerTx", txText 9), ("balance", J.Null)]
   paidFailed <- withTransaction st $ \db -> setPaidAt db rid t0 >> fromJust <$> getRegistration db rid
-  viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("sendsUsedUp" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null)]
+  withTransaction st $ \db -> do
+    insertAttempt db rid (nrCommitment failed) NameAttempt {naTx = RTRegister, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = t0}
+    insertAttempt db rid (hashFixture 7) NameAttempt {naTx = RTCommit, naStage = ASDryRun, naReason = "InsufficientAllowance", naCounted = False, naAt = t0}
+  viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("sendsUsedUp" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null), ("lastAttempt", J.object ["transaction" .= ("register" :: Text), "stage" .= ("sent" :: Text), "reason" .= ("mined with status 0" :: Text), "at" .= t0])]
+  withTransaction st $ \db -> insertAttempt db rid (nrCommitment failed) NameAttempt {naTx = RTAccept, naStage = ASDryRun, naReason = "InvalidSignature", naCounted = True, naAt = t0}
+  let refused = ("lastAttempt", J.object ["transaction" .= ("accept" :: Text), "stage" .= ("dryRun" :: Text), "reason" .= ("InvalidSignature" :: Text), "at" .= t0])
+  viewOf paidFailed `shouldReturn` view [("version", J.Number 2), ("phase", J.object ["type" .= ("failed" :: Text), "reason" .= ("sendsUsedUp" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", txText 9), ("balance", J.Null), refused]
   requeued <- written $ \r -> r {nrPhase = OQueued, nrHistory = (nrHistory r) {thRegisterTx = Nothing}}
-  viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null)]
+  viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null), refused]
   taken <- written $ \r -> r {nrPhase = OTaken}
   withTransaction st $ \db -> creditBalance db rid 20000 t0
-  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", J.object ["type" .= ("taken" :: Text)]), ("registerTx", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "hold" .= J.Null, "refunded" .= (0 :: Int)])]
+  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", J.object ["type" .= ("taken" :: Text)]), ("registerTx", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "hold" .= J.Null, "refunded" .= (0 :: Int)]), refused]
   where
     o = order "alicebakery" 1
     rid = RegistrationId "r1"
@@ -1876,14 +1883,15 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
               ("commitTx", txText 8),
               ("community", J.Null),
               ("terms", J.toJSON $ agreed plainTerms),
-              ("replacedBy", J.Null)
+              ("replacedBy", J.Null),
+              ("lastAttempt", J.Null)
             ]
 
 testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = agreed communityTerms} (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  vwTerms (toRegistrationView (testNamesConfig node) r Nothing Nothing PVUnpaid) `shouldBe` agreed communityTerms
+  vwTerms (toRegistrationView (testNamesConfig node) r Nothing Nothing Nothing PVUnpaid) `shouldBe` agreed communityTerms
 
 testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do

@@ -1209,17 +1209,17 @@ countedAttempts db (RegistrationId rid) commitment stage =
   maybeFirstRow' 0 fromOnly $
     DB.query db (mkQuery "SELECT COUNT(*) FROM @name_attempts WHERE registration_id = ? AND commitment = ? AND stage = ? AND counted = 1") (rid, commitment, stage)
 
-touchAttempt :: DB.Connection -> RegistrationId -> UTCTime -> IO ()
-touchAttempt db (RegistrationId rid) now =
+touchAttempt :: DB.Connection -> RegistrationId -> Commitment -> UTCTime -> IO ()
+touchAttempt db (RegistrationId rid) commitment now =
   DB.execute
     db
-    (mkQuery "UPDATE @name_attempts SET attempted_at = ? WHERE name_attempt_id = (SELECT MAX(name_attempt_id) FROM @name_attempts WHERE registration_id = ?)")
-    (now, rid)
+    (mkQuery "UPDATE @name_attempts SET attempted_at = ? WHERE name_attempt_id = (SELECT MAX(name_attempt_id) FROM @name_attempts WHERE registration_id = ? AND commitment = ?)")
+    (now, rid, commitment)
 
-lastAttempt :: DB.Connection -> RegistrationId -> IO (Maybe NameAttempt)
-lastAttempt db (RegistrationId rid) =
+lastAttempt :: DB.Connection -> RegistrationId -> Commitment -> IO (Maybe NameAttempt)
+lastAttempt db (RegistrationId rid) commitment =
   maybeFirstRow toAttempt $
-    DB.query db (mkQuery "SELECT tx_kind, stage, reason, counted, attempted_at FROM @name_attempts WHERE registration_id = ? ORDER BY name_attempt_id DESC LIMIT 1") (Only rid)
+    DB.query db (mkQuery "SELECT tx_kind, stage, reason, counted, attempted_at FROM @name_attempts WHERE registration_id = ? AND commitment = ? ORDER BY name_attempt_id DESC LIMIT 1") (rid, commitment)
 
 registrationAttempts :: DB.Connection -> RegistrationId -> IO [NameAttempt]
 registrationAttempts db (RegistrationId rid) =
@@ -2049,5 +2049,9 @@ $(JQ.deriveToJSON (enumJSON $ dropPrefix "P") ''NamePhase)
 $(JQ.deriveToJSON (enumJSON $ dropPrefix "IC") ''InvoiceClose)
 
 $(JQ.deriveToJSON (enumJSON $ dropPrefix "FR") ''FailReason)
+
+$(JQ.deriveToJSON (enumJSON $ dropPrefix "RT") ''RegistrationTx)
+
+$(JQ.deriveToJSON (enumJSON $ dropPrefix "AS") ''AttemptStage)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "HS") ''HoldState)

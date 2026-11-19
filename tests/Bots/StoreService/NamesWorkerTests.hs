@@ -104,7 +104,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
     it "classes the contracts' errors as permanent, or temporary with an operator alert" testRevertClasses
-    it "reports a temporary failure at its fifth time in a row, an operator failure at its first, and a permanent one never" testFailureNotice
+    it "reports a temporary failure, one an operator fixes included, at its fifth time in a row, and a permanent one never" testFailureNotice
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
     it "sends a register again only once none can still be mined, and writes registered when the owner holds the name" testFailedOnlySettled
   describe "terms acceptance" $ do
@@ -951,9 +951,9 @@ testFailureNotice = do
   let unread = SFChain $ ChainUnavailable "timeout"
       notices reason = take 6 $ map snd $ tail $ scanl (\(prev, _) _ -> let (n, reported) = failureNotice prev reason in (Just (reason, n), reported)) (Nothing, False) [1 .. 6 :: Int]
   notices unread `shouldBe` [False, False, False, False, True, False]
-  notices SFAllowanceUsedUp `shouldBe` [True, False, False, False, False, False]
+  notices SFAllowanceUsedUp `shouldBe` [False, False, False, False, True, False]
   notices (SFRefused RTRegister $ Just $ RRNamed RNLabelTooLong) `shouldBe` replicate 6 False
-  failureNotice (Just (SFAllowanceUsedUp, 3)) unread `shouldBe` (1, False)
+  failureNotice (Just (SFAllowanceUsedUp, 4)) unread `shouldBe` (1, False)
 
 testMinedRevertTaken :: IO ()
 testMinedRevertTaken = withWorker $ \w@W {wCtx = ctx} -> do
