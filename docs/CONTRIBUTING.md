@@ -95,6 +95,7 @@ For some complex features we create feature branches that will be merged once re
 4. Mark the pull request ready for review once it is ready. CI then runs the full matrix on each push, and the code owners are requested for review.
 5. Mark it as a draft again when more work is needed. After the approval, the pull request is merged by squash once CI passes.
 6. A change to a scope without CI tests adds its build and tests to CI in the same pull request.
+7. A change of the apps' code adds, in the same pull request, app tests of all its changes on the core's real responses: core tests record the responses and events in tests/fixtures/api, and the Kotlin and iOS tests run the app code on them, with any platform service the code calls mocked (CI guide: "App test fixtures").
 
 ## Differences between GHC 8.10.7 and GHC 9.6.3
 
