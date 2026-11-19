@@ -129,6 +129,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
+    it "ends no month of an order whose register is sent and not settled, and ends it once the register reverted" testMonthRegisterInFlight
     it "fails an order waiting for a refused link to be replaced once its page has not read it for 3 days, logging and reporting it, holding its name" testLinksRefusedUnread
     it "fails an order waiting for its owner once its page has not read it for 3 days, a read of the order or its invoice stored at most hourly" testUnreadFails
   describe "confirmation depth" $
@@ -1240,6 +1241,19 @@ testMonthClipped = withWorker $ \W {wCtx = ctx@Ctx {cStore, cClock}, wWorker} ->
   writeIORef cClock lastDay
   endMonths wWorker
   nrPhase <$> stored ctx r `shouldReturn` OFailed lastDay FRMonthEnded
+
+testMonthRegisterInFlight :: IO ()
+testMonthRegisterInFlight = withWorker $ \W {wCtx = ctx@Ctx {cStore}, wWorker} -> do
+  r <- paidIn ctx aliceOrder openPhase
+  let h = TxHash $ hashFixture 9
+  withTransaction cStore $ \db -> void $ insertTransaction db (TxRegistration RTRegister $ nrId r) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = 9} orderTime
+  advance ctx $ diffUTCTime (addMonths 1 orderTime) orderTime
+  endMonths wWorker
+  stored ctx r `shouldReturn` r
+  withTransaction cStore $ \db -> recordTransactionOutcome db h TSPending (TSRevertedAt 120) `shouldReturn` True
+  now <- nowOf ctx
+  endMonths wWorker
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRMonthEnded
 
 testLandedAtDepth :: IO ()
 testLandedAtDepth = withOrders $ \ctx@Ctx {cNode, cOrders} -> do

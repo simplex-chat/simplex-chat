@@ -473,16 +473,20 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts, oeReport}} now r@NameRegis
 -- | A paid order keeps its whole price as a balance of its own, credited in the taken write's transaction, registration before balance,
 -- in the balance's turn after the name's; a code order's code is released.
 taken :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
-taken Worker {wkOrders} now r = written r <$> endOrder wkOrders now r {nrPhase = OTaken}
+taken Worker {wkOrders} now r = written r <$> endOrder wkOrders now r {nrPhase = OTaken} (\_ -> pure True)
 
-endOrder :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either WriteRefusal Int64)
-endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment} = case nrPayment of
+endOrder :: OrdersEnv -> UTCTime -> NameRegistration -> (DB.Connection -> IO Bool) -> IO (Either WriteRefusal Int64)
+endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment} mayEnd = case nrPayment of
   OPInvoice {} -> credited
   OPDifference {} -> credited
   OPBalance _ -> credited
-  OPCode codeId -> fmap fst <$> releaseCode oeTurns oeStore codeId nrId (\db -> versionWritten <$> updateRegistration db r now)
+  OPCode codeId -> fmap fst <$> releaseCode oeTurns oeStore codeId nrId (ending $ \db -> versionWritten <$> updateRegistration db r now)
   where
-    credited = withBalanceTurn oeTurns nrId (withTransaction oeStore $ creditedWrite now r)
+    credited = withBalanceTurn oeTurns nrId (withTransaction oeStore $ ending $ creditedWrite now r)
+    ending write db =
+      mayEnd db >>= \case
+        True -> write db
+        False -> pure $ Left WRChanged
 
 creditedTaken :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
 creditedTaken now r = creditedWrite now r {nrPhase = OTaken}
@@ -676,10 +680,14 @@ endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow, oe
     )
       `catchOwn'` \e -> logError ("names month pass: registration " <> ridText <> " failed; the next pass tries it again: " <> tshow e)
   where
-    monthEnded now r@NameRegistration {nrPayment}
-      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] = fmap (,kept) <$> endOrder oe now r {nrPhase = OFailed now FRMonthEnded}
+    monthEnded now r@NameRegistration {nrId, nrPayment}
+      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] = fmap (,kept) <$> endOrder oe now r {nrPhase = OFailed now FRMonthEnded} registerUnsent
       | otherwise = pure $ Left WRChanged
       where
+        registerUnsent db =
+          lockRegistration db r >>= \case
+            True -> not <$> registerTxPending db nrId
+            False -> pure False
         kept = case nrPayment of
           OPCode _ -> "its code released"
           _ -> "the money paid for it added to its balance"

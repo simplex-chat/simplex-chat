@@ -114,6 +114,7 @@ module StoreService.Names.Store
     lockRegistration,
     reversalRecorded,
     registerTxSent,
+    registerTxPending,
     lateCreditState,
     creditLatePayment,
     latePending,
@@ -1507,6 +1508,10 @@ reversalRecorded db (RegistrationId rid) =
 registerTxSent :: DB.Connection -> RegistrationId -> IO Bool
 registerTxSent db (RegistrationId rid) =
   not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_transactions WHERE registration_id = ? AND kind = ? LIMIT 1") (rid, TKRegistration RTRegister) :: IO [Only Int])
+
+registerTxPending :: DB.Connection -> RegistrationId -> IO Bool
+registerTxPending db (RegistrationId rid) =
+  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_transactions WHERE registration_id = ? AND kind = ? AND status = ? LIMIT 1") (rid, TKRegistration RTRegister, TSPending) :: IO [Only Int])
 
 -- | A name invoice with its order, its invoice row and its payment row.
 lateFrom :: Query
