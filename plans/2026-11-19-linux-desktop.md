@@ -99,8 +99,8 @@ Sources:
 
 | Dependency | Submodule | Fork | Pin |
 |---|---|---|---|
-| Nucleus | `apps/multiplatform/external/nucleus/upstream` | `sh-agents/Nucleus` | `dc2373192508cae9c9ee904e30491a358960c882` (v3.0.0-dev-202611161221) with fixes |
-| ComposeNativeTray | `apps/multiplatform/external/composenativetray/upstream` | `sh-agents/ComposeNativeTray` | `8977f60c61767a048acffb85166ad95a453cb4dd` (v2.1.7) with fixes |
+| Nucleus | `apps/multiplatform/external/nucleus/upstream` | `sh-agents/Nucleus` | `bb34fbc628c5e46978928f56ef3d16e36565aaee`: v3.0.0-dev-202611161221 with fixes |
+| ComposeNativeTray | `apps/multiplatform/external/composenativetray/upstream` | `sh-agents/ComposeNativeTray` | `05e381c2fcf477b4523dabf7ed9f6dae11d31866`: v2.1.7 with fixes |
 
 Nucleus modules, built by `apps/multiplatform/external/nucleus/build.gradle.kts`:
 
@@ -110,7 +110,6 @@ Nucleus modules, built by `apps/multiplatform/external/nucleus/build.gradle.kts`
 - `energy-manager`
 - `freedesktop-icons`
 - `darkmode-detector`
-- `notification-common`
 - `notification-linux`
 - `launcher-linux`
 
@@ -132,13 +131,11 @@ Fork fixes:
 - Nucleus: `Dispatchers.Main` on Tao dispatches every block, as the Swing dispatcher does; `Dispatchers.Main.immediate` runs inline on the Tao thread.
 - Nucleus: notification-linux signals accepted from the owner of the notification service name only.
 - Nucleus: darkmode-detector change signals accepted from the portal's owner only.
-- Nucleus: notification-linux avatar passed as a file path on the portal.
+- Nucleus: Rust toolchain pinned in `decorated-window-tao/src/main/native/rust-toolchain.toml`; the crate built with `cargo build --locked`.
 - ComposeNativeTray: the item activated by a click.
 - ComposeNativeTray: registration by unique bus name inside Flatpak.
-- ComposeNativeTray: tray icons are passed in memory.
 - ComposeNativeTray: registration repeated after a watcher restart.
-- ComposeNativeTray: the menu shown on `ContextMenu`.
-- ComposeNativeTray: the token of `ProvideXdgActivationToken` passed to the window.
+- ComposeNativeTray: the token of `ProvideXdgActivationToken` offered to the window through Nucleus `ActivationToken`.
 
 ## Native build
 
@@ -158,7 +155,9 @@ flowchart LR
 ```
 
 - Script: `scripts/desktop/build-native-linux.sh`, run after `build-lib-linux.sh`.
-- Rust: `rustup-init` pinned by hash in `Dockerfile.build`; toolchain pinned in `apps/multiplatform/external/nucleus/rust-toolchain.toml`.
+- Rust: `rustup-init` 1.29.3 pinned by hash in `Dockerfile.build`; Rust 1.100.0 pinned by the fork.
+- Gradle projects `:external:nucleus` and `:external:composenativetray` compile the submodule sources; native outputs are excluded from their jars.
+- The scripts `make-deb-linux.sh` and `make-appimage-linux.sh` run `build-native-linux.sh`.
 - Libraries built:
   - `libnucleus_tao.so` (Rust crate and the C helpers of `decorated-window-tao/src/main/native/linux`);
   - `decorated-window-core`: layout direction helper;
@@ -297,6 +296,7 @@ sequenceDiagram
 
 - Linux: ComposeNativeTray when a StatusNotifierWatcher is registered; menu items Show and Quit; unread state as the icon.
 - Tray callbacks run on `Dispatchers.Main`.
+- Tray icon files are written to the app's temporary directory and passed by path.
 - The tray option follows watcher registration and loss.
 
 ```mermaid
