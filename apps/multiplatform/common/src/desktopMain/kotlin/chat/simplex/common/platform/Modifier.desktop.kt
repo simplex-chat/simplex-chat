@@ -18,7 +18,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.LineHeightStyle
 import chat.simplex.common.ui.theme.Inter
 import chat.simplex.common.views.chat.item.LocalBubbleLayout
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import org.jetbrains.skia.FontMgr
 import org.jetbrains.skia.Typeface
 import java.awt.Image
@@ -111,7 +111,7 @@ actual fun Modifier.desktopDrawnBaselines(textLayout: () -> TextLayoutResult?): 
       val result = Snapshot.withoutReadObservation(textLayout)
       val first = placeable[FirstBaseline]
       val last = placeable[LastBaseline]
-      val baselines = if (result == null || first == AlignmentLine.Unspecified || last == AlignmentLine.Unspecified) {
+      val baselines: Map<AlignmentLine, Int> = if (result == null || first == AlignmentLine.Unspecified || last == AlignmentLine.Unspecified) {
         emptyMap()
       } else {
         mapOf(
