@@ -41,6 +41,8 @@ unset CLAUDE_CODE_OAUTH_TOKEN
 export DISPLAY=${UI_DISPLAY:-:99}
 state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
 session=${UI_SESSION:-x11}
+SCREEN_WIDTH=1440
+SCREEN_HEIGHT=900
 case "$session" in
   x11 | wayland | xwayland) ;;
   *)
@@ -72,10 +74,43 @@ pointer() {
   if [ "$session" = x11 ]; then
     xdotool mousemove --sync "$1" "$2" click "$3"
   else
-    swaymsg -q seat seat0 cursor set "$1" "$2"
-    swaymsg -q seat seat0 cursor press "button$3"
-    swaymsg -q seat seat0 cursor release "button$3"
+    printf 'move %d %d\n' "$1" "$2" > "$state/input"
+    case "$3" in
+      4) echo "scroll up" > "$state/input" ;;
+      5) echo "scroll down" > "$state/input" ;;
+      *) printf 'button %d press\nbutton %d release\n' "$3" "$3" > "$state/input" ;;
+    esac
   fi
+}
+
+build_wayland_input() {
+  local out=$state/bin protocol
+  [ -x "$out/wayland-input" ] && return
+  mkdir -p "$out"
+  for protocol in wlr-virtual-pointer-unstable-v1 virtual-keyboard-unstable-v1; do
+    wayland-scanner client-header "$here/$protocol.xml" "$out/$protocol-client-protocol.h"
+    wayland-scanner private-code "$here/$protocol.xml" "$out/$protocol-protocol.c"
+  done
+  read -r -a flags <<< "$(pkg-config --cflags --libs wayland-client xkbcommon)"
+  gcc -O2 -Wall -Wextra -Werror -I"$out" "$here/wayland-input.c" "$out"/*-protocol.c "${flags[@]}" -o "$out/wayland-input"
+}
+
+start_wayland_input() {
+  stop_process wayland-input 2
+  build_wayland_input
+  rm -f "$state/input"
+  mkfifo "$state/input"
+  : > "$UI_OUT/wayland-input.log"
+  setsid "$state/bin/wayland-input" "$state/input" "$SCREEN_WIDTH" "$SCREEN_HEIGHT" < /dev/null > "$UI_OUT/wayland-input.log" 2>&1 &
+  echo $! > "$state/wayland-input.pid"
+  for _ in $(seq 20); do
+    grep -q '^ready$' "$UI_OUT/wayland-input.log" && return 0
+    running wayland-input || break
+    sleep 0.5
+  done
+  cat "$UI_OUT/wayland-input.log"
+  echo "error: the Wayland input client did not start"
+  return 1
 }
 
 type_text() {
@@ -132,7 +167,7 @@ stop_process() {
 start_x11() {
   stop_process openbox 2
   stop_process xvfb 2
-  setsid Xvfb "$DISPLAY" -screen 0 1440x900x24 -nolisten tcp < /dev/null > "$UI_OUT/xvfb.log" 2>&1 &
+  setsid Xvfb "$DISPLAY" -screen 0 "${SCREEN_WIDTH}x${SCREEN_HEIGHT}x24" -nolisten tcp < /dev/null > "$UI_OUT/xvfb.log" 2>&1 &
   echo $! > "$state/xvfb.pid"
   for _ in $(seq 20); do
     xdotool getdisplaygeometry > /dev/null 2>&1 && break
@@ -148,7 +183,7 @@ start_sway() {
   stop_process sway 5
   rm -f "$XDG_RUNTIME_DIR"/wayland-* "$XDG_RUNTIME_DIR"/sway-ipc.*.sock
   cat > "$state/sway.conf" << EOF
-output HEADLESS-1 resolution 1440x900 position 0 0 bg #ffffff solid_color
+output HEADLESS-1 resolution ${SCREEN_WIDTH}x${SCREEN_HEIGHT} position 0 0 bg #ffffff solid_color
 default_border none
 default_floating_border none
 xwayland $([ "$session" = xwayland ] && echo force || echo disable)
@@ -163,7 +198,9 @@ EOF
     sleep 0.5
   done
   echo "$socket" > "$state/wayland-display"
+  WAYLAND_DISPLAY=$socket
   swaymsg -t get_outputs
+  start_wayland_input
   if [ "$session" = xwayland ]; then
     for _ in $(seq 40); do
       find /tmp/.X11-unix -newer "$state/sway.conf" -name 'X*' | grep -q . && break
@@ -453,6 +490,7 @@ case "${1:-}" in
     stop_process app 10
     stop_process openbox 2
     stop_process xvfb 2
+    stop_process wayland-input 2
     stop_process sway 5
     log "stop"
     ;;
