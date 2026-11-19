@@ -423,13 +423,19 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `StoreWindowState.kt` | — | Low | Window position/size persistence |
 | `AppLinks.kt` | — | Medium | `simplexchat:` and `simplex:` links from launch arguments and macOS Apple Events |
 | `SingleInstance.kt` | — | Medium | Single-instance lock; forwards a second launch and its link to the running app |
-| `WindowActivation.kt` | — | Low | `_NET_ACTIVE_WINDOW` request that raises the window on X11 and XWayland |
+| `DesktopTaoApp.kt` | PC1, PC2, PC3 | High | Linux window on Nucleus Tao — window lifecycle, crash recovery, GTK file dialogs |
+| `LinuxTray.kt` | — | Low | Linux tray icon through ComposeNativeTray |
+| `model/LinuxNotifications.kt` | PC18 | Medium | Linux notifications: replacement, actions, closing, launcher urgency |
+| `platform/LinuxNative.desktop.kt` | PC10, PC23 | Medium | JNI helper: GTK file chooser, GTK theme name, GL renderer, Secret Service |
+| `platform/LinuxCryptor.desktop.kt` | PC23 | High | Linux keyring: passphrase and passcodes encrypted with keys in the Secret Service |
+| `platform/LinuxTheme.desktop.kt` | — | Low | Linux dark mode from the desktop portal and the GTK theme name |
+| `platform/LinuxRendering.desktop.kt` | — | Low | Flat bars with software OpenGL renderers |
 | `platform/AppLinkScheme.desktop.kt` | — | Medium | Runtime `simplexchat:` and `simplex:` scheme registration (Windows HKCU, AppImage desktop entry) |
 | `model/NtfManager.desktop.kt` | PC18 | Medium | Desktop system tray notification display |
 | `platform/AppCommon.desktop.kt` | PC1 through PC32 | Medium | Desktop app initialization actual declarations |
 | `platform/SimplexService.desktop.kt` | PC18 | Low | Desktop background receiver (no foreground service) |
 | `platform/Files.desktop.kt` | PC10, PC23, PC26 | Medium | Desktop file path resolution |
-| `platform/Cryptor.desktop.kt` | PC23 | Medium | Desktop keystore encryption actual implementation |
+| `platform/Cryptor.desktop.kt` | PC23 | Medium | Desktop cryptor: `LinuxCryptor` on Linux, settings in the legacy layout on macOS and Windows |
 | `platform/RecAndPlay.desktop.kt` | PC9 | Medium | Desktop audio recording/playback actual implementation |
 | `platform/VideoPlayer.desktop.kt` | PC10 | Low | Desktop VLC-based video player |
 | `platform/Videos.desktop.kt` | PC10 | Low | Desktop video utilities |
