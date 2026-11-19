@@ -99,6 +99,8 @@ tray?** with **Close the app** and **Minimize to tray**. Messages are not
 received after the app is closed. The tray icon shows a dot when there are
 unread messages, and its tooltip shows how many. Its menu has **Show SimpleX**
 and **Quit SimpleX**. **Close to tray** is available when the system has a tray.
+The Flatpak app has a tray only with xdg-dbus-proxy 0.1.6 or newer on the
+system: Ubuntu 24.04, Linux Mint 22 and Debian 12 have older versions.
 
 ## Notifications and the database passphrase
 
