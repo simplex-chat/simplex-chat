@@ -11,7 +11,7 @@ import Bots.StoreService.FakeEthNode (agreed, lengthOf, plainTerms)
 import Bots.StoreService.FakeStripe (FakeStripe (..), stripeObjectEvent, stripeSigHeader, withFakeStripe)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders, withOrdersVia)
 import Bots.StoreService.NamesStoreTests (at, btc, hashFixture, insertOrRollBack, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
-import Bots.StoreService.WebTests (capturingStderr, invoiceStatus, overdueOf, rcv, statusOf, webRequestBody, withServiceStore, withServiceStores)
+import Bots.StoreService.WebTests (StubCall (..), StubState (..), capturingStderr, invoiceStatus, overdueOf, rcv, statusOf, webRequestBody, withServiceStore, withServiceStores)
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
@@ -107,6 +107,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total" testReversalTakesBack
     it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
     it "cancels a live order of which no register was sent, also after support refunded part of its balance" testReversalCancelsRefunded
+    it "cancels the open invoice of the order that holds the balance, at the provider and here, then takes back the whole balance" testReversalCancelsHolder
     it "cancels an order by a signed dispute delivered to the Stripe webhook" testDisputeWebhook
     it "locks an order only at its version" testLockRegistration
 #if defined(dbPostgres)
@@ -788,7 +789,8 @@ withReversals action = withOrders $ \ctx@Ctx {cOrders} -> do
 reverseWith :: OrdersEnv -> Text -> Text -> Reversal -> IO ()
 reverseWith env r event reversal = do
   Just row <- getInvoice (oeStore env) (InvoiceId $ "inv-" <> r)
-  reverseOrder env row (RegistrationId r) event reversal
+  waiters <- newWaiters
+  reverseOrder env [] waiters row (RegistrationId r) event reversal
 
 queuedOrder :: DBStore -> Text -> IO NameRegistration
 queuedOrder st r = do
@@ -893,6 +895,18 @@ testReversalAlertsOnly = withReversals $ \Ctx {cStore = st} env alerts -> do
   credit st "w" 100
   figures st "w" t0 `shouldReturn` Just (100, 100, 0, Nothing)
   alertsWith alerts ["of order r: support recorded its refund, so nothing changed. Evidence", "names: early fraud warning, card_never_received on payment ref-inv-w of order w: nothing changed. Evidence"]
+
+testReversalCancelsHolder :: IO ()
+testReversalCancelsHolder = withReversals $ \Ctx {cStore = st, cWeb, cStub} env alerts -> do
+  source st "x" 1000
+  holder st "y" "x" 1000 (at 86400) `shouldReturn` Right ()
+  Just row <- getInvoice st (InvoiceId "inv-x")
+  reverseOrder env (weProviders cWeb) (weWaiters cWeb) row (RegistrationId "x") "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 1000
+  nrPhase <$> reg st "y" `shouldReturn` OClosed ICCancelled
+  invoiceStatus st (InvoiceId "inv-y") `shouldReturn` ISExpired
+  ssCalls <$> readIORef cStub >>= (`shouldSatisfy` elem (StubCancel "ref-inv-y"))
+  figures st "x" t0 `shouldReturn` Just (0, 1000, 0, Nothing)
+  alertsWith alerts ["of order x: it is not cancelled, as it is taken; 1000 cents taken back from its balance; the open invoice of order y, which held its balance, is cancelled. Evidence"]
 
 testReversalCancelsRefunded :: IO ()
 testReversalCancelsRefunded = withReversals $ \Ctx {cStore = st} env alerts -> do

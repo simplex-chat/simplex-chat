@@ -469,7 +469,7 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
                 case event_ of
                   Nothing -> ignore body "nothing this service acts on"
                   Just (WEPayment ref) -> resolve body ref
-                  Just WEReversal {weEvent, weProviderRef, weReversal} -> onNameOrder body weProviderRef $ \oe row rid -> reverseOrder oe row rid weEvent weReversal
+                  Just WEReversal {weEvent, weProviderRef, weReversal} -> onNameOrder body weProviderRef $ \oe row rid -> reverseOrder oe (weProviders env) (weWaiters env) row rid weEvent weReversal
                   Just WEFraudWarning {weProviderRef, weWarning} -> onNameOrder body weProviderRef $ \oe row rid -> warnOfFraud oe row rid weWarning
     refuse :: Text -> IO ResponseReceived
     refuse why = logRefusal logNote (route <> " refused: " <> why) >> respond webhookRefused
