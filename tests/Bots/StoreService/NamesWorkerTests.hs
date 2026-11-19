@@ -44,7 +44,7 @@ import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
-import StoreService.Names.Chain (AbiValue (..), Block (..), ChainClient, Hex32 (..), RevertName (..), RevertReason (..), TxHash (..), abiBytes, abiTuple, addressWord, blockAt, decodeSignedTx, newChainClient, selector, uint256)
+import StoreService.Names.Chain (AbiValue (..), Block (..), ChainClient, ChainError (..), Hex32 (..), RevertName (..), RevertReason (..), TxHash (..), abiBytes, abiTuple, addressWord, blockAt, decodeSignedTx, newChainClient, selector, uint256)
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (awaitChange)
@@ -85,7 +85,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits a second at the lapse second, retries as usual when the dry run still reverts, then commits" testLapseSecond
     it "keeps a requeued order's intent while it commits again after a lapse, and over a third party's commitment" testIntentAcrossCommits
     it "keeps the phase while the latest block needs more than the fee cap, then commits" testFeeAboveCap
-    it "commits again after commits mined with status 1 on every lapse while a move counts them, and fails an order whose commits reverted the most times an order may" testMinedCommitsUncounted
+    it "commits however many commits were sent before, mined with status 1 or reverted" testMinedCommitsUncounted
   describe "writes" $ do
     it "writes nothing when the registration changed since it was read" testLostRace
     it "writes in the name's turn" testInNameTurn
@@ -93,15 +93,18 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends taken on any revert while the name is not available, releasing a code and keeping no balance" testRevertTaken
     it "waits while the name reads taken only above the confirmation depth, and ends taken once it reads so at the depth" testTakenAtDepth
     it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
-    it "retries a revert while the name is available and the commitment live, and ends failed on it once the commitment lapsed, keeping a code" testRevertFailed
+    it "stores each failed dry run, fails an order at the fifth for a permanent reason, keeping a code, and retries one without data past the lapse, storing it once" testRevertFailed
     it "keeps an order committed while the sponsor allowance is used up, and registers it after a top-up" testAllowanceUsedUp
     it "keeps an order waiting on the allowance past its commitment's lapse, sending nothing, then commits again and registers with its stored intent" testAllowanceAcrossLapse
-    it "fails an order that sent the most registers an order may, sending nothing, refuses its Try again and a move, and registers it on a move once its owner holds the name" testSendsCapped
+    it "fails an order at its fifth register mined with status 0 for its commitment, sending nothing, refuses its Try again, and registers it on a move once its owner holds the name" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, clearing the reveal and staying committed" testExpiredIntent
     it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing, and refuses its move to any name" testSignatureUnderOtherConfig
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
+    it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
+    it "classes the contracts' errors as permanent, or temporary with an operator alert" testRevertClasses
+    it "reports a temporary failure at its fifth time in a row, an operator failure at its first, and a permanent one never" testFailureNotice
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
     it "sends a register again only once none can still be mined, and writes registered when the owner holds the name" testFailedOnlySettled
   describe "terms acceptance" $ do
@@ -112,7 +115,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "registers, keeping the reveal, when the relay is mined with status 0 while the policy holds the acceptance another sent first" testAcceptanceMinedFailed
     it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
     it "clears the reveal of an acceptance signed for another policy or for the other kind of terms, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
-    it "judges a relay past the acceptance's deadline as a register past it, retrying it while the commitment is live" testAcceptanceExpired
+    it "clears the reveal when a dry run reverts SignatureExpired, for the page to sign again" testAcceptanceExpired
     it "relays no acceptance once the commitment lapsed, so the policy commits nothing again" testAcceptanceLapsed
   describe "lapse" $ do
     it "keeps a committed order not revealed by revealBefore waiting, for /retry, or for a move when its links were refused, keeping its code" testLapseFailed
@@ -517,20 +520,18 @@ sentCommits Ctx {cStore} NameRegistration {nrId} settlement nonces = withTransac
   recordTransactionOutcome db h TSPending settlement `shouldReturn` True
 
 testMinedCommitsUncounted :: IO ()
-testMinedCommitsUncounted = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}} -> do
+testMinedCommitsUncounted = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder id
-  sentCommits ctx r (TSMinedAt 120) [1 .. fromIntegral maxSendsPerKind]
-  sendsUsedUp cOrders r `shouldReturn` True
+  sentCommits ctx r (TSMinedAt 120) [1 .. 5]
   answerCommitment w r 0
   void $ steps w r >>= awaiting
   namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
   r2 <- paidIn ctx (byB dynamisOrder) {oSecret = secretOf 2} id
-  sentCommits ctx r2 (TSRevertedAt 120) [11 .. 10 + fromIntegral maxSendsPerKind]
+  sentCommits ctx r2 (TSRevertedAt 120) [11 .. 15]
   answerCommitment w r2 0
-  steps w r2 >>= done
-  now <- nowOf ctx
-  nrPhase <$> stored ctx r2 `shouldReturn` OFailed now FRSendsUsedUp
-  length <$> sent w `shouldReturn` 1
+  void $ steps w r2 >>= awaiting
+  namePhase . nrPhase <$> stored ctx r2 `shouldReturn` PCommitting
+  length <$> sent w `shouldReturn` 2
 
 testLostRace :: IO ()
 testLostRace = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
@@ -685,22 +686,29 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   (r, code) <- codeIn ctx 8 aliceOrder openPhase >>= traverseFst (revealed ctx keyA "alicebakery")
   p <- paidIn ctx dynamisOrder openPhase >>= revealed ctx keyA "dynamis"
   answerAvailable w True
-  dryRunsRevert w "SignatureExpired()" ""
-  steps w r >>= stalled >>= (`shouldBe` SFRegisterRefused (Just $ RRNamed RNSignatureExpired))
+  dryRunsRevert w "InvalidSignature()" ""
+  replicateM_ 4 $ steps w r >>= stalled >>= (`shouldBe` SFRefused RTRegister (Just $ RRNamed RNInvalidSignature))
   stored ctx r `shouldReturn` r
-  advance ctx $ fromIntegral (cmRevealBefore openCommit + 1 - orderSeconds)
+  attemptsOf ctx r `shouldReturn` replicate 4 (RTRegister, ASDryRun, "InvalidSignature", True)
   steps w r >>= done
   now <- nowOf ctx
   x <- stored ctx r
   (nrPhase x, nrHistory x, orderLive x) `shouldBe` (OFailed now FRRegistryRefused, nrHistory r, True)
   pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
-  -- a revert without data while the name is available, past the lapse, fails a paid order too
+  -- a revert without data while the name is available is retried past the lapse, stored once, and fails nothing
   answerCall cNode fakeController (selector "available(string)" <> abiTuple [Dynamic $ abiBytes "dynamis"]) $ Returns $ uint256 (1 :: Int)
   answerUnowned ctx "dynamis"
   setFault cNode "eth_estimateGas" $ RpcError (-32000) "execution reverted" Nothing
-  steps w p >>= done
-  namePhase . nrPhase <$> stored ctx p `shouldReturn` PFailed
+  replicateM_ 3 $ steps w p >>= stalled
+  advance ctx $ fromIntegral (cmRevealBefore openCommit + 1 - orderSeconds)
+  void $ steps w p >>= stalled
+  namePhase . nrPhase <$> stored ctx p `shouldReturn` PCommitted
+  map (\(_, stage, _, counted) -> (stage, counted)) <$> attemptsOf ctx p `shouldReturn` [(ASDryRun, False)]
   sent w `shouldReturn` []
+
+attemptsOf :: Ctx -> NameRegistration -> IO [(RegistrationTx, AttemptStage, Text, Bool)]
+attemptsOf Ctx {cStore} NameRegistration {nrId} =
+  map (\NameAttempt {naTx, naStage, naReason, naCounted} -> (naTx, naStage, naReason, naCounted)) <$> withTransaction cStore (`registrationAttempts` nrId)
 
 testAllowanceUsedUp :: IO ()
 testAllowanceUsedUp = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
@@ -744,21 +752,22 @@ testAllowanceAcrossLapse = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}} -
   length <$> sent w `shouldReturn` 2
 
 testSendsCapped :: IO ()
-testSendsCapped = withWorker $ \w@W {wCtx = ctx} -> do
+testSendsCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
   answerAvailable w True
   answerUnowned ctx "alicebakery"
-  mapM_ (\n -> sentRegister ctx r n $ TSRevertedAt 120) [1 .. fromIntegral maxSendsPerKind]
-  steps w r >>= done
+  withTransaction cStore $ \db -> replicateM_ 4 $ insertAttempt db (nrId r) (nrCommitment r) NameAttempt {naTx = RTRegister, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = orderTime}
+  h <- sentRegister ctx r 5 $ TSRevertedAt 120
+  registering <- rewrite ctx r $ \o -> o {nrPhase = ORegistering openCommit h}
+  steps w registering >>= done
   now <- nowOf ctx
   x <- stored ctx r
-  nrPhase x `shouldBe` OFailed now FRSendsUsedUp
+  nrPhase x `shouldBe` OFailed now FRRegistryRefused
+  attemptsOf ctx r `shouldReturn` replicate 5 (RTRegister, ASSent, "mined with status 0", True)
   sent w `shouldReturn` []
   fst <$> retryOf ctx x `shouldReturn` 400
   answerFree ctx "alicebakers"
   to <- moveTo ctx "alicebakers" 10
-  fst <$> move ctx keyA x to `shouldReturn` 400
-  stored ctx x `shouldReturn` x
   answerOwner ctx "alicebakery" (nrOwner x)
   answerExpiry ctx "alicebakery" expiry
   fst <$> move ctx keyA x to `shouldReturn` 409
@@ -874,8 +883,9 @@ testAcceptanceExpired = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
   answerAvailable w True
   dryRunsRevert w "SignatureExpired()" ""
-  steps w r >>= stalled >>= (`shouldBe` SFRegisterRefused (Just $ RRNamed RNSignatureExpired))
-  stored ctx r `shouldReturn` r
+  published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (nrPhase r, Nothing)
   sent w `shouldReturn` []
 
 testAcceptanceLapsed :: IO ()
@@ -908,6 +918,42 @@ testCommitmentTooNew = withWorker $ \w@W {wCtx = ctx} -> do
   steps w r >>= waitingUntil >>= (`shouldBe` addUTCTime 1 orderTime)
   stored ctx r `shouldReturn` r
   sent w `shouldReturn` []
+
+testCommitAgain :: IO ()
+testCommitAgain = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  worker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  answerAvailable w True
+  dryRunsRevert w "CommitmentNotFound(bytes32)" $ unHex32 (nrCommitment r)
+  void $ stepRegistration worker (nrId r)
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (OQueued, nrReveal r)
+  readTVarIO reports `shouldReturn` []
+  lapsed <- rewrite ctx x $ \o -> o {nrPhase = OCommitted openCommit}
+  advance ctx $ fromIntegral (cmRevealBefore openCommit + 1 - orderSeconds)
+  dryRunsRevert w "CommitmentTooOld(bytes32,uint256,uint256)" $ unHex32 (nrCommitment r) <> uint256 (orderSeconds - minAge) <> uint256 orderSeconds
+  void $ stepRegistration worker (nrId lapsed)
+  y <- stored ctx r
+  (nrPhase y, nrReveal y) `shouldBe` (OQueued, nrReveal r)
+  readTVarIO reports `shouldReturn` ["names worker: registration " <> (\(RegistrationId t) -> t) (nrId r) <> " is committed again: its commitment lapsed"]
+  sent w `shouldReturn` []
+
+testRevertClasses :: IO ()
+testRevertClasses = do
+  let permanent = [RNDurationTooLong, RNDurationTooShort, RNInvalidSignature, RNLabelTooLong, RNNameTooShort, RNReentrantCall, RNResolverRequiredWhenDataSupplied, RNReverseRecordNotSupported]
+  [n | n <- [minBound .. maxBound], revertClass (RRNamed n) == FCPermanent] `shouldBe` permanent
+  map revertClass [RRNamed RNNotSponsor, RRNamed RNNotController, RRNamed RNNotProxy, RRNamed RNInsufficientAllowance, RRWithoutData, RRUnnamed "ERC721: invalid token ID"]
+    `shouldBe` replicate 6 FCOperator
+
+testFailureNotice :: IO ()
+testFailureNotice = do
+  let unread = SFChain $ ChainUnavailable "timeout"
+      notices reason = take 6 $ map snd $ tail $ scanl (\(prev, _) _ -> let (n, reported) = failureNotice prev reason in (Just (reason, n), reported)) (Nothing, False) [1 .. 6 :: Int]
+  notices unread `shouldBe` [False, False, False, False, True, False]
+  notices SFAllowanceUsedUp `shouldBe` [True, False, False, False, False, False]
+  notices (SFRefused RTRegister $ Just $ RRNamed RNLabelTooLong) `shouldBe` replicate 6 False
+  failureNotice (Just (SFAllowanceUsedUp, 3)) unread `shouldBe` (1, False)
 
 testMinedRevertTaken :: IO ()
 testMinedRevertTaken = withWorker $ \w@W {wCtx = ctx} -> do

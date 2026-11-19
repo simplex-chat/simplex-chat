@@ -22,7 +22,8 @@ schemaMigrations =
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
     ("20261013_names", m20261013_names, Just down_m20261013_names),
-    ("20261118_invoice_product", m20261118_invoice_product, Just down_m20261118_invoice_product)
+    ("20261118_invoice_product", m20261118_invoice_product, Just down_m20261118_invoice_product),
+    ("20261119_name_attempts", m20261119_name_attempts, Just down_m20261119_name_attempts)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -589,6 +590,35 @@ DROP INDEX @idx_invoices_provider_ref;
 ALTER TABLE @invoices DROP COLUMN provider_ref;
 
 ALTER TABLE @invoices DROP COLUMN product;
+|]
+
+m20261119_name_attempts :: Text
+m20261119_name_attempts =
+  withPrefix
+    servicePrefix
+    [r|
+CREATE TABLE @name_attempts(
+  name_attempt_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  registration_id TEXT NOT NULL REFERENCES @name_registrations,
+  commitment BYTEA NOT NULL,
+  tx_kind TEXT NOT NULL,
+  stage TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  counted SMALLINT NOT NULL,
+  attempted_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX @idx_name_attempts_registration ON @name_attempts(registration_id, commitment);
+|]
+
+down_m20261119_name_attempts :: Text
+down_m20261119_name_attempts =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_name_attempts_registration;
+
+DROP TABLE @name_attempts;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

@@ -138,7 +138,6 @@ retryRefusal :: RetryRefusal -> NameRefusal
 retryRefusal = \case
   RFNotLapsed -> NRBadRequest
   RFLinksRefused -> NRBadRequest
-  RFSendsUsedUp -> NRBadRequest
   RFUnread -> NRProviderUnavailable
 
 -- | The registration's current view, for a request that lost the race to change it.

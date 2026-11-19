@@ -1392,18 +1392,26 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
   of their own once it is old enough. The order then ends `taken`: a paid order keeps its price as a
   balance, and a code order keeps its code.
 
-An order sends at most 5 commits, 5 terms acceptances and 5 registers, its moves included, since an
-owner who changes their terms acceptance on chain can make each acceptance and register revert at the
-service's gas. The service's own commits after a lapse, which wait for it, count against that only when
-they revert, so a signature kept for its week registers over several commitment windows; a move
-counts every commit. Past that the order fails with the reason `sendsUsedUp`, a move answers `400 bad_request`, and support closes it
-with `//close` (see [Closing a failed order](#closing-a-failed-order)).
-The log line is `[WARN …] names worker: registration <id> failed: it sent <n> transactions of one kind`.
+Every failed attempt of a terms acceptance or a register is stored in `name_attempts` with its
+transaction, its stage (`dry_run`, or `sent` for a transaction mined with status 0), its decoded
+reason and its time; an attempt repeating the order's last one, uncounted, updates that one's time.
+A dry run that reverts while the name is available is retried every 15 seconds. Its reason decides:
+- `InvalidSignature`, `DurationTooLong`, `DurationTooShort`, `ResolverRequiredWhenDataSupplied`,
+  `ReverseRecordNotSupported`, `NameTooShort`, `LabelTooLong` and `ReentrantCall` count toward
+  `[names] max_dry_run_failures` (default 5) for the order's commitment;
+- any other reason, a revert without data and `Error(string)` are retried with no count, logged at
+  error and posted in the managed group at their first time in a row as
+  `names worker: registration <id> waits: the register reverts while the name is available, <reason>`.
 
-Any other revert of a register while the name is available is retried every 15 seconds while the
-commitment is live, logged once per order at error as `names worker: registration <id> waits: the
-register reverts while the name is available, …`; one still there after the commitment lapsed fails
-the order with the reason `registryRefused`. An order whose stored signature was cleared, and whose
+A transaction mined with status 0 counts toward `[names] max_sent_failures` (default 5) for the
+commitment. At either cap the order fails with the reason `registryRefused`, logged at error and
+posted in the managed group as `names worker: registration <id> failed: its register failed <n> times
+at its dry run, last: <reason>`, and support closes it with `//close` (see
+[Closing a failed order](#closing-a-failed-order)). A move starts both counts again. A temporary
+failure, such as a node that does not answer, is posted in the group at its fifth time in a row.
+`CommitmentNotFound` commits the order again, and `CommitmentTooOld` past the commitment's lapse
+commits it again, posted in the group as `names worker: registration <id> is committed again: its
+commitment lapsed`. An order whose stored signature was cleared, and whose
 commitment lapses before its page signed again, waits, and its page asks for a new commitment with
 `POST /api/registration/:id/retry`; one whose
 links were refused waits for its owner to replace or remove the refused link by a move, and the
@@ -1771,8 +1779,7 @@ Your names; a later late payment credits it again, and a second refund adds to `
 
 ## Closing a failed order
 
-A failed paid order, after 5 sends of a kind, refused links or a register the registry refused past
-its commitment's lapse, stays live, holds its name and keeps its money uncredited, so its wallet cannot order the
+A failed paid order, after its attempts reached a cap or with refused links, stays live, holds its name and keeps its money uncredited, so its wallet cannot order the
 name again. So does a paid order whose commitment lapsed before its page signed it, until the page
 asks for a new commitment. A calendar month after its payment, clipped to the last day of a shorter
 month, an order that is still `queued`, `committed` or `failed` fails with the reason `monthEnded`:

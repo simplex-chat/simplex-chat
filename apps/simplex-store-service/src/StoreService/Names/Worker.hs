@@ -24,8 +24,9 @@ module StoreService.Names.Worker
     Closed (..),
     CloseRefusal (..),
     closeRegistration,
-    maxSendsPerKind,
-    sendsUsedUp,
+    FailureClass (..),
+    revertClass,
+    failureNotice,
   )
 where
 
@@ -37,7 +38,6 @@ import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM_, forever, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
-import Data.Containers.ListUtils (nubOrd)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
@@ -53,7 +53,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', tryOwnLogged, tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), ChainSeconds, RevertName (..), RevertReason (..), blockAt, chainSeconds, chainTime)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), ChainSeconds, RevertName (..), RevertReason (..), blockAt, chainSeconds, chainTime, revertText)
 import StoreService.Names.Codes (releaseCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
@@ -95,8 +95,49 @@ data StepFailure
   | SFAllowanceUsedUp
   | SFTakenAboveDepth
   | SFGoneButAvailable
-  | SFRegisterRefused (Maybe RevertReason)
+  | SFRefused RegistrationTx (Maybe RevertReason)
   deriving (Eq, Show)
+
+data FailureClass = FCTemporary | FCOperator | FCPermanent
+  deriving (Eq, Show)
+
+revertClass :: RevertReason -> FailureClass
+revertClass = \case
+  RRNamed n
+    | n `elem` [RNInvalidSignature, RNDurationTooLong, RNDurationTooShort, RNResolverRequiredWhenDataSupplied, RNReverseRecordNotSupported, RNNameTooShort, RNLabelTooLong, RNReentrantCall] -> FCPermanent
+  _ -> FCOperator
+
+stepClass :: StepFailure -> FailureClass
+stepClass = \case
+  SFChain e -> chainClass e
+  SFSend (SEChain e) -> chainClass e
+  SFSend SEInFlight -> FCTemporary
+  SFSend _ -> FCOperator
+  SFWrite _ -> FCTemporary
+  SFUnread -> FCTemporary
+  SFAllowanceUsedUp -> FCOperator
+  SFTakenAboveDepth -> FCTemporary
+  SFGoneButAvailable -> FCTemporary
+  SFRefused _ reason -> maybe FCOperator revertClass reason
+  where
+    chainClass = \case
+      ChainUnavailable _ -> FCTemporary
+      ChainReverted reason -> revertClass reason
+      _ -> FCOperator
+
+temporaryReportAt :: Int
+temporaryReportAt = 5
+
+failureNotice :: Maybe (StepFailure, Int) -> StepFailure -> (Int, Bool)
+failureNotice lastFailure reason = (times, Just times == reportAt)
+  where
+    times = case lastFailure of
+      Just (lastReason, n) | lastReason == reason -> n + 1
+      _ -> 1
+    reportAt = case stepClass reason of
+      FCTemporary -> Just temporaryReportAt
+      FCOperator -> Just 1
+      FCPermanent -> Nothing
 
 -- | How often the stored registrations are scanned for one without a thread, such as an order just paid or requeued.
 scanInterval :: Int
@@ -137,9 +178,9 @@ startWorkers w@Worker {wkOrders = OrdersEnv {oeStore}, wkThreads} = do
 work :: Worker -> RegistrationId -> IO ()
 work w rid@(RegistrationId ridText) = follow w rid Nothing `catchOwn'` \e -> logError ("names worker: registration " <> ridText <> " failed; the next scan starts it again: " <> tshow e)
 
--- | Steps until the registration leaves the worker's phases, logging a lasting failure once.
-follow :: Worker -> RegistrationId -> Maybe StepFailure -> IO ()
-follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow}} rid@(RegistrationId ridText) lastFailure =
+-- | Steps until the registration leaves the worker's phases, logging a lasting failure once and reporting it as its class says.
+follow :: Worker -> RegistrationId -> Maybe (StepFailure, Int) -> IO ()
+follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow, oeReport}} rid@(RegistrationId ridText) lastFailure =
   stepRegistration w rid >>= \case
     Done -> pure ()
     Again -> follow w rid Nothing
@@ -149,10 +190,13 @@ follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow}} rid@(Registrat
     Await p -> awaitOutcome outcomeWait p >> follow w rid Nothing
   where
     waitAgain logAt v reason = do
-      when (Just reason /= lastFailure) $ logAt $ "names worker: registration " <> ridText <> " waits: " <> stepFailureText reason
+      let (times, reported) = failureNotice lastFailure reason
+          waits = "names worker: registration " <> ridText <> " waits: " <> stepFailureText reason
+      when (times == 1) $ logAt waits
+      when reported $ oeReport $ waits <> if times > 1 then ", " <> tshow times <> " times in a row" else ""
       now <- oeNow
       waitFor v $ addUTCTime retryInterval now
-      follow w rid $ Just reason
+      follow w rid $ Just (reason, times)
     waitFor v t = do
       now <- oeNow
       let micros = max 0 $ ceiling $ min maxWait (diffUTCTime t now) * 1000000
@@ -165,7 +209,7 @@ follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow}} rid@(Registrat
       SFAllowanceUsedUp -> "the registrar's allowance on the sponsor is used up; the guardian raises it with setRegistrarAllowance"
       SFTakenAboveDepth -> "the name reads taken only above the confirmation depth, where a reorg can undo it"
       SFGoneButAvailable -> "the dry run reverted the name as gone, but it reads available"
-      SFRegisterRefused reason -> "the register reverts while the name is available, " <> maybe "without a reason" tshow reason
+      SFRefused tx reason -> "the " <> textEncode tx <> " reverts while the name is available, " <> maybe "without a reason" reasonText reason
 
 stepRegistration :: Worker -> RegistrationId -> IO Next
 stepRegistration w@Worker {wkOrders = OrdersEnv {oeStore, oeNow}} rid = do
@@ -234,7 +278,7 @@ ourCommit Worker {wkOrders = OrdersEnv {oeStore, oeContracts}} NameRegistration 
 
 sendCommit :: Worker -> UTCTime -> NameRegistration -> IO Next
 sendCommit w@Worker {wkOrders = OrdersEnv {oeConfig}, wkSender} now r@NameRegistration {nrId, nrCommitment} =
-  withinSends w now r RTCommit $ submitTransaction wkSender (TxRegistration RTCommit nrId) (cController $ nChain oeConfig) (commitCalldata nrCommitment) >>= \case
+  submitTransaction wkSender (TxRegistration RTCommit nrId) (cController $ nChain oeConfig) (commitCalldata nrCommitment) >>= \case
     Right p -> commitSent w now r p
     Left SEInFlight -> pure Again
     -- UnexpiredCommitmentExists among them: a commit mined since the read, or a latest block still at the lapse second
@@ -287,7 +331,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
         Left e -> pure $ Just $ failure r $ SFChain e
         Right (policy, community, accepted)
           | accepted == taTermsHash -> pure Nothing
-          | otherwise -> Just <$> withinSends w now r RTAccept (relay policy (termsKind community))
+          | otherwise -> Just <$> relay policy (termsKind community)
   where
     held = acceptedTerms oeContracts nrCommitment nrOwner
     relay policy kind =
@@ -302,7 +346,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
             Left (SEChain (ChainReverted reason)) ->
               held >>= \case
                 Right accepted | accepted == taTermsHash -> pure Again
-                _ -> judge w now r c $ Just reason
+                _ -> judge w now r c RTAccept $ Just reason
             Left e -> pure $ failure r $ SFSend e
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
@@ -315,10 +359,10 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
       verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
         Left refusal -> inTurn w r $ failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal
         Right () ->
-          withinSends w now r RTRegister $ submitTransaction wkSender (TxRegistration RTRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
+          submitTransaction wkSender (TxRegistration RTRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
             Right p -> registerSent w now r c p
             Left SEInFlight -> pure Again
-            Left (SEChain (ChainReverted reason)) -> judge w now r c $ Just reason
+            Left (SEChain (ChainReverted reason)) -> judge w now r c RTRegister $ Just reason
             Left e -> pure $ failure r $ SFSend e
   where
     intent = intentOf cfg (nrOwner r) (nrDuration r) rv
@@ -333,18 +377,19 @@ registering :: Worker -> UTCTime -> NameRegistration -> Commit -> IO Next
 registering w@Worker {wkSender} now r@NameRegistration {nrId} c =
   inFlightTransaction wkSender (TxRegistration RTRegister nrId) >>= \case
     Just p -> registerSent w now r c p
-    Nothing -> judge w now r c Nothing
+    Nothing -> judge w now r c RTRegister Nothing
 
 data Availability = AvailableAtLatest | TakenAtDepth | TakenOnlyAboveDepth
 
--- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
--- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again, the name
--- policy read again on TermsNotAccepted; committing again with its reveal on CommitmentTooOld, which the sponsor reverts only after the
--- intent's and the allowance's checks; kept waiting while the sponsor allowance is used up; taken on any revert while the name is not
--- available at the confirmation depth. Otherwise, unless the dry run named the name as gone, a mined register is sent again, and
--- a dry run is retried while the commitment is live and fails the order once it lapsed; committed for the page without a reveal.
-judge :: Worker -> UTCTime -> NameRegistration -> Commit -> Maybe RevertReason -> IO Next
-judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} c reason =
+-- | A register or relay that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
+-- with status 1 or the owner holds the name; its reveal cleared on InvalidNonce, SignatureExpired or a refused terms acceptance, for the
+-- page to sign again, the name policy read again on TermsNotAccepted; committing again with its reveal on CommitmentTooOld, which the
+-- sponsor reverts only after the intent's and the allowance's checks, and on CommitmentNotFound; kept waiting while the sponsor allowance
+-- is used up; taken on any revert while the name is not available at the confirmation depth. Otherwise, unless the dry run named the
+-- name as gone, the attempt is stored and retried, and a permanent reason or a mined failure at its stage's cap fails the order;
+-- committed for the page without a reveal.
+judge :: Worker -> UTCTime -> NameRegistration -> Commit -> RegistrationTx -> Maybe RevertReason -> IO Next
+judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts, oeReport}} now r@NameRegistration {nrId = RegistrationId rid, nrReveal} c tx reason =
   inTurn w r $
     confirmLanded oe r >>= \case
       LRegistered v -> pure (Just v, Again)
@@ -354,16 +399,23 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
         Just (RRNamed RNInvalidNonce) -> clearReveal
         Just (RRNamed RNTermsMismatch) -> clearReveal
         Just (RRNamed RNTermsNotAccepted) -> forgetNamePolicy oeContracts >> clearReveal
+        Just (RRNamed RNSignatureExpired) -> clearReveal
         Just (RRNamed RNCommitmentTooNew) -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
         Just (RRNamed RNCommitmentTooOld)
           | unlapsed now c -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
-          | otherwise -> store w now r {nrPhase = OQueued, nrHistory = noHistory}
-        Just (RRNamed RNInsufficientAllowance) -> pure (Nothing, Stalled (nrVersion r) SFAllowanceUsedUp)
+          | otherwise -> commitAgain True "its commitment lapsed"
+        Just (RRNamed RNCommitmentNotFound) -> commitAgain False "its commitment is not on chain"
+        Just (RRNamed RNInsufficientAllowance) -> failedAttempt w now r tx ASDryRun reason $ pure (Nothing, Stalled (nrVersion r) SFAllowanceUsedUp)
         Just (RRNamed RNNameNotAvailable) -> notRegistered True
         Just (RRNamed RNNameReserved) -> notRegistered True
         _ -> notRegistered False
   where
     clearReveal = store w now r {nrReveal = Nothing}
+    commitAgain reported why = do
+      let again = "names worker: registration " <> rid <> " is committed again: " <> why
+      logWarn again
+      when reported $ oeReport again
+      store w now r {nrPhase = OQueued, nrHistory = noHistory}
     notRegistered gone = case nrReveal of
       Just NameReveal {rvLabel} ->
         availability rvLabel >>= \case
@@ -376,10 +428,8 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
             | otherwise -> refused
       Nothing -> store w now r {nrPhase = OCommitted c}
     refused = case nrPhase r of
-      ORegistering {} -> store w now r {nrPhase = OCommitted c}
-      _
-        | unlapsed now c -> pure (Nothing, Stalled (nrVersion r) $ SFRegisterRefused reason)
-        | otherwise -> failOrder w now r FRRegistryRefused $ "its commitment lapsed while the register reverts with the name available, " <> maybe "without a reason" tshow reason
+      ORegistering {} -> failedAttempt w now r tx ASSent reason $ store w now r {nrPhase = OCommitted c}
+      _ -> failedAttempt w now r tx ASDryRun reason $ pure (Nothing, Stalled (nrVersion r) $ SFRefused tx reason)
     -- at the latest block, and at the confirmation depth while the latest reads it taken
     availability label = runExceptT $ do
       latest <- ExceptT $ controllerAvailable oeContracts Latest label
@@ -448,7 +498,7 @@ waitUntil r = WaitUntil (nrVersion r)
 -- | What /retry did: the version it wrote, the order changed since it was read, or a refusal.
 data Retried = RTWritten Int64 | RTChanged | RTRefused RetryRefusal
 
-data RetryRefusal = RFNotLapsed | RFLinksRefused | RFUnread | RFSendsUsedUp
+data RetryRefusal = RFNotLapsed | RFLinksRefused | RFUnread
   deriving (Eq, Show)
 
 -- | /retry, in the caller's turn of the order's name: an order whose commitment lapsed unsigned is queued to be committed again,
@@ -473,32 +523,31 @@ checkFailedOrder oe r =
     LRegistered v -> pure $ Left $ RTWritten v
     LChanged -> pure $ Left RTChanged
     LUnread -> pure $ Left $ RTRefused RFUnread
-    LNotLanded -> (\usedUp -> if usedUp then Left (RTRefused RFSendsUsedUp) else Right ()) <$> sendsUsedUp oe r
+    LNotLanded -> pure $ Right ()
 
--- | An owner who changes their terms acceptance on chain makes every relay and register revert at the service's gas, so each
--- kind of transaction is sent at most this many times for one order, its moves included.
-maxSendsPerKind :: Int
-maxSendsPerKind = 5
+failedAttempt :: Worker -> UTCTime -> NameRegistration -> RegistrationTx -> AttemptStage -> Maybe RevertReason -> IO (Maybe Int64, Next) -> IO (Maybe Int64, Next)
+failedAttempt w@Worker {wkOrders = OrdersEnv {oeStore, oeConfig = NamesConfig {nMaxDryRunFailures, nMaxSentFailures}}} now r@NameRegistration {nrId, nrCommitment} tx stage reason underCap = do
+  failures <- withTransaction oeStore $ \db -> do
+    lastAttempt db nrId >>= \case
+      Just a | not counted && a {naAt = now} == attempt -> touchAttempt db nrId now
+      _ -> insertAttempt db nrId nrCommitment attempt
+    countedAttempts db nrId nrCommitment stage
+  if counted && failures >= cap
+    then failOrder w now r FRRegistryRefused $ "its " <> textEncode tx <> " failed " <> tshow failures <> " times at its " <> stageText <> ", last: " <> why
+    else underCap
+  where
+    counted = stage == ASSent || maybe False ((== FCPermanent) . revertClass) reason
+    why = maybe "mined with status 0" reasonText reason
+    attempt = NameAttempt {naTx = tx, naStage = stage, naReason = why, naCounted = counted, naAt = now}
+    (cap, stageText) = case stage of
+      ASDryRun -> (nMaxDryRunFailures, "dry run")
+      ASSent -> (nMaxSentFailures, "sending")
 
--- | The send while the order has sent fewer than maxSendsPerKind transactions of its kind, else the order fails.
-withinSends :: Worker -> UTCTime -> NameRegistration -> RegistrationTx -> IO Next -> IO Next
-withinSends w@Worker {wkOrders} now r step send = do
-  txs <- orderTransactions wkOrders r
-  let minedCommits = [ntNonce | NameTransaction {ntFor = TxRegistration RTCommit _, ntNonce, ntState = TxSettled TSMinedAt {}} <- txs]
-      sent = sendCount step [tx | tx@NameTransaction {ntNonce} <- txs, ntNonce `notElem` minedCommits]
-  if sent < maxSendsPerKind
-    then send
-    else inTurn w r $ failOrder w now r FRSendsUsedUp $ "it sent " <> tshow sent <> " transactions of one kind, the most an order may"
-
-sendsUsedUp :: OrdersEnv -> NameRegistration -> IO Bool
-sendsUsedUp oe r = orderTransactions oe r <&> \txs -> any (\step -> sendCount step txs >= maxSendsPerKind) [minBound .. maxBound]
-
--- | One per nonce, as a fee replacement is the same send.
-sendCount :: RegistrationTx -> [NameTransaction] -> Int
-sendCount step txs = length $ nubOrd [ntNonce | NameTransaction {ntFor = TxRegistration s _, ntNonce} <- txs, s == step]
-
-orderTransactions :: OrdersEnv -> NameRegistration -> IO [NameTransaction]
-orderTransactions OrdersEnv {oeStore} NameRegistration {nrId} = withTransaction oeStore (`registrationTransactions` nrId)
+reasonText :: RevertReason -> Text
+reasonText = \case
+  RRNamed n -> revertText n
+  RRUnnamed t -> t
+  RRWithoutData -> "without data"
 
 data Closed = CLRegistered RegistrationId | CLRefunded UTCTime RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)

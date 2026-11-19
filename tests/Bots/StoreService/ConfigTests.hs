@@ -794,13 +794,16 @@ testNamesDefaults = do
 
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do
-  let ns = ["[names]", "tld = simplex", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_order_moves = 0"]
+  let ns = ["[names]", "tld = simplex", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_order_moves = 0", "max_dry_run_failures = 2", "max_sent_failures = 3"]
       cs = chainSection <> ["confirmations = 1", "gas_limit_cap = 500000", "max_fee_per_gas = 30000000000"]
-  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
+  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nMaxDryRunFailures, nMaxSentFailures, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
   nTLD `shouldBe` TLDSimplex
   nYears `shouldBe` 5
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 3 1) (12 * 3600)
-  (nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves) `shouldBe` (60, 0, 0)
+  (nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nMaxDryRunFailures, nMaxSentFailures) `shouldBe` (60, 0, 0, 2, 3)
+  NamesConfig {nMaxDryRunFailures = dryRuns, nMaxSentFailures = sent} <- parsedNames namesSection chainSection
+  (dryRuns, sent) `shouldBe` (5, 5)
+  namesRefusal (namesSection <> ["max_dry_run_failures = 0"]) chainSection `shouldReturn` "names.max_dry_run_failures must be a whole number from 1 to 9223372036854775807"
   (cConfirmations, cGasLimitCap, cMaxFeePerGas) `shouldBe` (1, 500000, 30000000000)
   namesRefusal ns (chainSection <> ["confirmations = 0"]) `shouldReturn` "chain.confirmations must be a whole number from 1 to 9223372036854775807"
   namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be a whole number from 1 to 9223372036854775807"

@@ -89,6 +89,13 @@ module StoreService.Names.Store
     monthCandidates,
     markRead,
     claimUnregisteredAlert,
+    AttemptStage (..),
+    NameAttempt (..),
+    insertAttempt,
+    touchAttempt,
+    countedAttempts,
+    lastAttempt,
+    registrationAttempts,
     openInvoicesOfHeldName,
     activeRegistrations,
     unpaidCleanupCandidates,
@@ -641,6 +648,35 @@ instance TextEncoding RegistrationTx where
     "register" -> Just RTRegister
     _ -> Nothing
 
+instance FromField RegistrationTx where fromField = fromTextField_ textDecode
+
+instance ToField RegistrationTx where toField = toField . textEncode
+
+data AttemptStage = ASDryRun | ASSent
+  deriving (Eq, Show)
+
+instance TextEncoding AttemptStage where
+  textEncode = \case
+    ASDryRun -> "dry_run"
+    ASSent -> "sent"
+  textDecode = \case
+    "dry_run" -> Just ASDryRun
+    "sent" -> Just ASSent
+    _ -> Nothing
+
+instance FromField AttemptStage where fromField = fromTextField_ textDecode
+
+instance ToField AttemptStage where toField = toField . textEncode
+
+data NameAttempt = NameAttempt
+  { naTx :: RegistrationTx,
+    naStage :: AttemptStage,
+    naReason :: Text,
+    naCounted :: Bool,
+    naAt :: UTCTime
+  }
+  deriving (Eq, Show)
+
 -- | A dropped transaction has no receipt and its registrar nonce is used.
 data TxStatus = TSPending | TSMined | TSReverted | TSDropped
   deriving (Eq, Show, Enum, Bounded)
@@ -1160,6 +1196,37 @@ monthCandidates db cutoff =
 claimUnregisteredAlert :: DB.Connection -> RegistrationId -> UTCTime -> IO Bool
 claimUnregisteredAlert db (RegistrationId rid) now =
   (> 0) <$> executeChanging db (mkQuery "UPDATE @name_registrations SET unregistered_alerted_at = ? WHERE registration_id = ? AND unregistered_alerted_at IS NULL") (now, rid)
+
+insertAttempt :: DB.Connection -> RegistrationId -> Commitment -> NameAttempt -> IO ()
+insertAttempt db (RegistrationId rid) commitment NameAttempt {naTx, naStage, naReason, naCounted, naAt} =
+  DB.execute
+    db
+    (mkQuery "INSERT INTO @name_attempts (registration_id, commitment, tx_kind, stage, reason, counted, attempted_at) VALUES (?,?,?,?,?,?,?)")
+    (rid, commitment, naTx, naStage, naReason, BI naCounted, naAt)
+
+countedAttempts :: DB.Connection -> RegistrationId -> Commitment -> AttemptStage -> IO Int
+countedAttempts db (RegistrationId rid) commitment stage =
+  maybeFirstRow' 0 fromOnly $
+    DB.query db (mkQuery "SELECT COUNT(*) FROM @name_attempts WHERE registration_id = ? AND commitment = ? AND stage = ? AND counted = 1") (rid, commitment, stage)
+
+touchAttempt :: DB.Connection -> RegistrationId -> UTCTime -> IO ()
+touchAttempt db (RegistrationId rid) now =
+  DB.execute
+    db
+    (mkQuery "UPDATE @name_attempts SET attempted_at = ? WHERE name_attempt_id = (SELECT MAX(name_attempt_id) FROM @name_attempts WHERE registration_id = ?)")
+    (now, rid)
+
+lastAttempt :: DB.Connection -> RegistrationId -> IO (Maybe NameAttempt)
+lastAttempt db (RegistrationId rid) =
+  maybeFirstRow toAttempt $
+    DB.query db (mkQuery "SELECT tx_kind, stage, reason, counted, attempted_at FROM @name_attempts WHERE registration_id = ? ORDER BY name_attempt_id DESC LIMIT 1") (Only rid)
+
+registrationAttempts :: DB.Connection -> RegistrationId -> IO [NameAttempt]
+registrationAttempts db (RegistrationId rid) =
+  map toAttempt <$> DB.query db (mkQuery "SELECT tx_kind, stage, reason, counted, attempted_at FROM @name_attempts WHERE registration_id = ? ORDER BY name_attempt_id") (Only rid)
+
+toAttempt :: (RegistrationTx, AttemptStage, Text, BoolInt, UTCTime) -> NameAttempt
+toAttempt (naTx, naStage, naReason, BI naCounted, naAt) = NameAttempt {naTx, naStage, naReason, naCounted, naAt}
 
 openInvoicesOfHeldName :: DB.Connection -> RegistrationId -> IO [(InvoiceId, PaymentProvider, Text)]
 openInvoicesOfHeldName db (RegistrationId rid) =

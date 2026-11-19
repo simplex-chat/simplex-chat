@@ -516,6 +516,7 @@ data RevertName
   | RNCommitmentNotFound
   | RNCommitmentTooNew
   | RNCommitmentTooOld
+  | RNDurationTooLong
   | RNDurationTooShort
   | RNFrozen
   | RNInsufficientAllowance
@@ -537,9 +538,11 @@ data RevertName
   | RNNftRequired
   | RNNodeNotOwnedByRegistrar
   | RNNotBeneficiary
+  | RNNotController
   | RNNotNameOwner
   | RNNotOffered
   | RNNotOwnerOrBeneficiary
+  | RNNotProxy
   | RNNotSponsor
   | RNNotSubnameRegistrar
   | RNOffsetOutOfBoundsError
@@ -568,6 +571,7 @@ revertSignature = \case
   RNCommitmentNotFound -> "CommitmentNotFound(bytes32)"
   RNCommitmentTooNew -> "CommitmentTooNew(bytes32,uint256,uint256)"
   RNCommitmentTooOld -> "CommitmentTooOld(bytes32,uint256,uint256)"
+  RNDurationTooLong -> "DurationTooLong(uint256)"
   RNDurationTooShort -> "DurationTooShort(uint256)"
   RNFrozen -> "Frozen()"
   RNInsufficientAllowance -> "InsufficientAllowance(uint256,uint256)"
@@ -589,9 +593,11 @@ revertSignature = \case
   RNNftRequired -> "NftRequired()"
   RNNodeNotOwnedByRegistrar -> "NodeNotOwnedByRegistrar()"
   RNNotBeneficiary -> "NotBeneficiary()"
+  RNNotController -> "NotController()"
   RNNotNameOwner -> "NotNameOwner()"
   RNNotOffered -> "NotOffered()"
   RNNotOwnerOrBeneficiary -> "NotOwnerOrBeneficiary()"
+  RNNotProxy -> "NotProxy()"
   RNNotSponsor -> "NotSponsor()"
   RNNotSubnameRegistrar -> "NotSubnameRegistrar()"
   RNOffsetOutOfBoundsError -> "OffsetOutOfBoundsError(uint256,uint256)"
