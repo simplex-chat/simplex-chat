@@ -206,7 +206,7 @@ output HEADLESS-1 resolution ${SCREEN_WIDTH}x${SCREEN_HEIGHT} position 0 0 bg #f
 default_border none
 default_floating_border none
 xwayland $([ "$session" = xwayland ] && echo force || echo disable)
-for_window [all] floating enable, move position 0 0
+for_window [all] floating enable$([ "$session" = xwayland ] || echo ", move position 0 0")
 EOF
   WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
     setsid sway -c "$state/sway.conf" < /dev/null > "$UI_OUT/sway.log" 2>&1 &
