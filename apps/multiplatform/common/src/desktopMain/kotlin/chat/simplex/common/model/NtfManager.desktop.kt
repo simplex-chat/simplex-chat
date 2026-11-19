@@ -2,17 +2,17 @@ package chat.simplex.common.model
 
 import androidx.compose.ui.graphics.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.showWindow
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import com.sshtools.twoslices.*
+import com.sshtools.twoslices.impl.AWTToaster
 import com.sshtools.twoslices.impl.NotificationCenterToaster
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.awt.*
-import java.awt.TrayIcon.MessageType
 import java.io.File
 import javax.imageio.ImageIO
 
@@ -20,6 +20,14 @@ object NtfManager {
   private val prevNtfs = arrayListOf<Pair<Pair<Long, ChatId>, Slice>>()
   private val prevNtfsMutex: Mutex = Mutex()
   private val macToaster by lazy { NotificationCenterToaster(ToasterFactory.getSettings()) }
+  private val windowsToaster: Toaster? by lazy {
+    try {
+      AWTToaster(ToasterFactory.getSettings())
+    } catch (e: UnsupportedOperationException) {
+      Log.e(TAG, "Windows notifications are unavailable: ${e.message}")
+      null
+    }
+  }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
     if (simplexWindowState.windowFocused.value) return false
@@ -47,36 +55,32 @@ object NtfManager {
       generalGetString(MR.strings.accept) to { ntfManager.acceptCallAction(invitation.contact.id) },
       generalGetString(MR.strings.reject) to { ChatModel.callManager.endCall(invitation = invitation) }
     )
-    displayNotificationViaLib(invitation.user.userId, contactId, title, text, prepareIconPath(largeIcon), actions) {
+    displayNotificationViaLib(invitation.user.userId, contactId, isCall = true, title, text, largeIcon, actions) {
       ntfManager.openChatAction(invitation.user.userId, contactId)
     }
     return true
   }
 
   fun showMessage(title: String, text: String) {
-    displayNotificationViaLib(-1, "MESSAGE", title, text, null, emptyList()) {}
+    displayNotificationViaLib(-1, "MESSAGE", isCall = false, title, text, null, emptyList()) {}
   }
 
-  fun hasNotificationsForChat(chatId: ChatId) = false//prevNtfs.any { it.first == chatId }
+  fun hasNotificationsForChat(chatId: ChatId) = desktopPlatform.isLinux() && LinuxNotifications.isShown(chatId)
 
   fun cancelNotificationsForChat(chatId: ChatId) {
+    if (desktopPlatform.isLinux()) LinuxNotifications.close { !it.isCall && it.chatId == chatId }
     withBGApi {
       prevNtfsMutex.withLock {
         val ntf = prevNtfs.firstOrNull { (userChat) -> userChat.second == chatId }
         if (ntf != null) {
           prevNtfs.remove(ntf)
-          /*try {
-            ntf.second.close()
-          } catch (e: Exception) {
-            // Can be java.lang.UnsupportedOperationException, for example. May do nothing
-            Log.e(TAG, "Failed to close notification: ${e.stackTraceToString()}")
-          }*/
         }
       }
     }
   }
 
   fun cancelNotificationsForUser(userId: Long) {
+    if (desktopPlatform.isLinux()) LinuxNotifications.close { it.userId == userId }
     withBGApi {
       prevNtfsMutex.withLock {
         prevNtfs.filter { (userChat) -> userChat.first == userId }.forEach {
@@ -87,13 +91,20 @@ object NtfManager {
   }
 
   fun cancelAllNotifications() {
-//    prevNtfs.forEach { try { it.second.close() } catch (e: Exception) { Log.e(TAG, "Failed to close notification: ${e
-    //    .stackTraceToString()}") } }
+    if (desktopPlatform.isLinux()) LinuxNotifications.close { true }
     withBGApi {
       prevNtfsMutex.withLock {
         prevNtfs.clear()
       }
     }
+  }
+
+  fun cancelCallNotification() {
+    if (desktopPlatform.isLinux()) LinuxNotifications.close { it.isCall }
+  }
+
+  fun clearUrgency() {
+    if (desktopPlatform.isLinux()) LinuxNotifications.clearUrgency()
   }
 
   fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) {
@@ -108,35 +119,46 @@ object NtfManager {
       else -> base64ToBitmap(image)
     }
 
-    displayNotificationViaLib(user.userId, chatId, title, content, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }) {
+    displayNotificationViaLib(user.userId, chatId, isCall = false, title, content, largeIcon, actions.map { notificationActionLabel(it.first) to it.second }) {
       ntfManager.openChatAction(user.userId, chatId)
     }
+  }
+
+  private fun notificationActionLabel(action: NotificationAction): String = when (action) {
+    NotificationAction.ACCEPT_CONTACT_REQUEST -> generalGetString(MR.strings.accept)
   }
 
   private fun displayNotificationViaLib(
     userId: Long,
     chatId: String,
+    isCall: Boolean,
     title: String,
     text: String,
-    iconPath: String?,
+    icon: ImageBitmap?,
     actions: List<Pair<String, () -> Unit>>,
-    defaultAction: (() -> Unit)?
+    defaultAction: () -> Unit
   ) {
+    if (desktopPlatform.isLinux()) {
+      val open = {
+        showWindow()
+        defaultAction()
+      }
+      LinuxNotifications.show(NotificationKey(userId, chatId, isCall), LinuxNotificationContent(title, text, icon, actions, open))
+      return
+    }
     val builder = Toast.builder()
       .title(title)
       .content(text)
-    if (iconPath != null) {
-      builder.icon(iconPath)
-    }
-    if (defaultAction != null) {
-      builder.defaultAction(defaultAction)
-    }
+    prepareIconPath(icon)?.let { builder.icon(it.absolutePath) }
+    builder.defaultAction(defaultAction)
     actions.forEach {
       builder.action(it.first, it.second)
     }
     try {
       if (desktopPlatform.isMac()) {
         builder.toaster(macToaster)
+      } else {
+        builder.toaster(windowsToaster ?: return)
       }
       withBGApi {
         prevNtfsMutex.withLock {
@@ -151,48 +173,16 @@ object NtfManager {
       }
     }
   }
-
-  private fun prepareIconPath(icon: ImageBitmap?): String? = if (icon != null) {
-    tmpDir.mkdir()
-    val newFile = File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", "png", tmpDir))
-    try {
-      ImageIO.write(icon.toAwtImage(), "PNG", newFile.outputStream())
-      newFile.absolutePath
-    } catch (e: Exception) {
-      Log.e(TAG, "Failed to write an icon to tmpDir: ${e.stackTraceToString()}")
-      null
-    }
-  } else null
-
-  private fun displayNotification(title: String, text: String, icon: ImageBitmap?) = when (desktopPlatform) {
-    DesktopPlatform.LINUX_X86_64, DesktopPlatform.LINUX_AARCH64 -> linuxDisplayNotification(title, text, prepareIconPath(icon))
-    DesktopPlatform.WINDOWS_X86_64 -> windowsDisplayNotification(title, text, icon)
-    DesktopPlatform.MAC_X86_64, DesktopPlatform.MAC_AARCH64 -> macDisplayNotification(title, text, prepareIconPath(icon))
-  }
-
-  private fun linuxDisplayNotification(title: String, text: String, iconPath: String?) {
-    if (iconPath != null) {
-      Runtime.getRuntime().exec(arrayOf("notify-send", "-i", iconPath, title, text))
-    } else {
-      Toast.toast(ToastType.INFO, title, text)
-      Runtime.getRuntime().exec(arrayOf("notify-send", title, text))
-    }
-  }
-
-  private fun windowsDisplayNotification(title: String, text: String, icon: ImageBitmap?) {
-    if (SystemTray.isSupported()) {
-      val tray = SystemTray.getSystemTray()
-      tray.remove(tray.trayIcons.firstOrNull { it.toolTip == "SimpleX" })
-      val trayIcon = TrayIcon(icon?.toAwtImage(), "SimpleX")
-      trayIcon.isImageAutoSize = true
-      tray.add(trayIcon)
-      trayIcon.displayMessage(title, text, MessageType.INFO)
-    } else {
-      Log.e(TAG, "System tray not supported!")
-    }
-  }
-
-  private fun macDisplayNotification(title: String, text: String, iconPath: String?) {
-    Runtime.getRuntime().exec(arrayOf("osascript", "-e", """display notification "${text.replace("\"", "\\\"")}" with title "${title.replace("\"", "\\\"")}""""))
-  }
 }
+
+internal fun prepareIconPath(icon: ImageBitmap?): File? = if (icon != null) {
+  tmpDir.mkdir()
+  val newFile = File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", "png", tmpDir))
+  try {
+    ImageIO.write(icon.toAwtImage(), "PNG", newFile.outputStream())
+    newFile
+  } catch (e: Exception) {
+    Log.e(TAG, "Failed to write an icon to tmpDir: ${e.stackTraceToString()}")
+    null
+  }
+} else null

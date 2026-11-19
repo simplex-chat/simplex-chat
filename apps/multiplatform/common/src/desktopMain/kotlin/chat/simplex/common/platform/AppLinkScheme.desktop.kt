@@ -44,6 +44,9 @@ private const val APP_DISPLAY_NAME = "SimpleX Chat"
 private const val XDG_MIME = "xdg-mime"
 // jpackage names the deb's desktop entry <package>-<app>.desktop
 private const val DEB_ENTRY_NAME = "simplex-simplex.desktop"
+private const val DEB_ENTRY_ID = "simplex-simplex"
+private const val APPIMAGE_ENTRY_ID = "chat.simplex.app"
+private const val FLATPAK_ENTRY_ID = "chat.simplex.simplex"
 private const val PROCESS_TIMEOUT_SECONDS = 5L
 private const val ROOT_USER = "root"
 // the characters the desktop entry spec requires an Exec argument to quote
@@ -87,6 +90,21 @@ internal fun desktopInstallation(platform: DesktopPlatform, appPath: String?, en
 }
 
 // jpackage.app-path is resolved through /proc/self/exe, while APPDIR keeps any symlink in TMPDIR.
+internal fun desktopEntryId(installation: DesktopInstallation): String? =
+  when (installation) {
+    DesktopInstallation.LinuxPackage -> DEB_ENTRY_ID
+    is DesktopInstallation.AppImage -> APPIMAGE_ENTRY_ID
+    DesktopInstallation.Flatpak -> FLATPAK_ENTRY_ID
+    DesktopInstallation.MacBundle, is DesktopInstallation.WindowsExe, DesktopInstallation.Unpackaged -> null
+  }
+
+val linuxDesktopEntryId: String? by lazy {
+  desktopEntryId(currentInstallation())
+}
+
+private fun currentInstallation(): DesktopInstallation =
+  desktopInstallation(desktopPlatform, System.getProperty("jpackage.app-path"), System.getenv())
+
 private fun realPathOrSelf(path: String): Path =
   try {
     Path.of(path).toRealPath()
@@ -95,7 +113,7 @@ private fun realPathOrSelf(path: String): Path =
   }
 
 private fun registerForThisInstallation(): Boolean =
-  when (val installation = desktopInstallation(desktopPlatform, System.getProperty("jpackage.app-path"), System.getenv())) {
+  when (val installation = currentInstallation()) {
     // The bundle's Info.plist and the Flatpak's exported desktop entry register the schemes.
     DesktopInstallation.MacBundle, DesktopInstallation.Flatpak -> true
     is DesktopInstallation.WindowsExe -> registerWindowsSchemes(installation.path, SystemWindowsShell)

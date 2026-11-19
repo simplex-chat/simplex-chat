@@ -26,7 +26,7 @@ fun initApp() {
     override fun cancelNotificationsForUser(userId: Long) = chat.simplex.common.model.NtfManager.cancelNotificationsForUser(userId)
     override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = chat.simplex.common.model.NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions)
     override fun androidCreateNtfChannelsMaybeShowAlert() {}
-    override fun cancelCallNotification() {}
+    override fun cancelCallNotification() = chat.simplex.common.model.NtfManager.cancelCallNotification()
     override fun cancelAllNotifications() = chat.simplex.common.model.NtfManager.cancelAllNotifications()
     override fun showMessage(title: String, text: String) = chat.simplex.common.model.NtfManager.showMessage(title, text)
   }

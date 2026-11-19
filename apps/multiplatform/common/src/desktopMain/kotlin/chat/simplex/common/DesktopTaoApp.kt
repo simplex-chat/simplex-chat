@@ -7,6 +7,7 @@ import androidx.compose.ui.window.WindowExceptionHandler
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.rememberWindowState
 import chat.simplex.common.model.ChatController
+import chat.simplex.common.model.NtfManager
 import chat.simplex.common.platform.FileChooserAction
 import chat.simplex.common.platform.LinuxNative
 import chat.simplex.common.platform.fileChooserPatterns
@@ -71,7 +72,10 @@ private fun ApplicationScope.TaoAppWindow() {
           taoWindow.show()
           taoWindow.focus()
         }
-        taoWindow.onFocusChanged(::onWindowFocusChanged)
+        taoWindow.onFocusChanged { focused ->
+          onWindowFocusChanged(focused)
+          if (focused) NtfManager.clearUrgency()
+        }
         onDispose { simplexWindowState.raise = {} }
       }
       AppScreen()
