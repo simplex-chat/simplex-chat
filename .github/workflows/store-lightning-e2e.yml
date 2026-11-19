@@ -182,21 +182,22 @@ jobs:
         id: contracts
         uses: actions/cache@v4
         with:
-          path: contracts/ens-contracts/artifacts
+          path: ens-contracts-artifacts
           key: ens-contracts-${{ env.namespace_commit }}-${{ env.ens_contracts_commit }}
 
       - name: Compile the contracts
         shell: bash
         run: |
-          if [ ! -d contracts/.git ]; then
-            git clone -q https://github.com/brenzi/simplex-namespace-contract.git contracts
-          fi
+          git clone -q https://github.com/brenzi/simplex-namespace-contract.git contracts
           git -C contracts fetch -q origin "$namespace_commit"
           git -C contracts checkout -q "$namespace_commit"
           git -C contracts submodule update -q --init ens-contracts
           git -C contracts/ens-contracts checkout -q "$ens_contracts_commit"
-          if [ "${{ steps.contracts.outputs.cache-hit }}" != "true" ]; then
+          if [ "${{ steps.contracts.outputs.cache-hit }}" = "true" ]; then
+            cp -r ens-contracts-artifacts contracts/ens-contracts/artifacts
+          else
             (cd contracts/ens-contracts && npx --yes pnpm@9 install --frozen-lockfile --ignore-scripts && npx hardhat compile)
+            cp -r contracts/ens-contracts/artifacts ens-contracts-artifacts
           fi
 
       - name: Install anvil
