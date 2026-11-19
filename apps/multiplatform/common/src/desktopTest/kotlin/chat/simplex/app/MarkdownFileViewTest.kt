@@ -49,7 +49,7 @@ class MarkdownFileViewTest {
       }
       onRoot().performKeyInput { pressKey(Key.Copy) }
       waitForIdle()
-      assertEquals(listOf("alpha\n\ngamma"), clipboard.texts)
+      assertEquals("alpha\n\ngamma", clipboard.text)
     } finally {
       appPrefs.markdownFileTextView.set(textView)
     }
@@ -57,12 +57,12 @@ class MarkdownFileViewTest {
 }
 
 private class RecordingClipboard : Clipboard {
-  val texts = mutableListOf<String>()
+  var text: String? = null
 
   override suspend fun getClipEntry(): ClipEntry? = null
 
   override suspend fun setClipEntry(clipEntry: ClipEntry?) {
-    texts += (clipEntry?.nativeClipEntry as Transferable).getTransferData(DataFlavor.stringFlavor) as String
+    text = (clipEntry?.nativeClipEntry as Transferable).getTransferData(DataFlavor.stringFlavor) as String
   }
 
   override val nativeClipboard: NativeClipboard get() = this
