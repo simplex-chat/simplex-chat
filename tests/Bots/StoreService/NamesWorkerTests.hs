@@ -80,7 +80,8 @@ workerTests = describe "StoreService names: worker" $ do
     it "registers a code order with codes_only on, from the code check to the registered view, refusing a paid order" testCodesOnlyRegister
     it "waits for a pending commit without sending another, following its fee-bumped replacement" testPendingCommit
     it "goes to committed when the commit reverts UnexpiredCommitmentExists, in its dry run or mined, with the commitment's times" testUnexpiredCommitment
-    it "sends a commit mined out of gas again" testCommitOutOfGas
+    it "sends a commit mined out of gas again, storing the attempt" testCommitOutOfGas
+    it "fails an order at its fifth commit mined with status 0 for its commitment, sending nothing more" testCommitsCapped
     it "retries, writing nothing, while the commitment's reveal window would pass 2^64 seconds" testRevealWindowPastRange
     it "waits a second at the lapse second, retries as usual when the dry run still reverts, then commits" testLapseSecond
     it "keeps a requeued order's intent while it commits again after a lapse, and over a third party's commitment" testIntentAcrossCommits
@@ -100,6 +101,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, clearing the reveal and staying committed" testExpiredIntent
     it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing, and refuses its move to any name" testSignatureUnderOtherConfig
+    it "fails an order at once, before relaying its acceptance, when its stored signature is refused under another chain id, sending nothing" testRelayUnderOtherConfig
     it "keeps the phase when a read of the final check fails" testCheckUnread
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
@@ -113,6 +115,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "clears the reveal when the relay's dry run refuses the acceptance for new terms or a used nonce, staying committed" testAcceptanceRefused
     it "registers, keeping the reveal, when the relay's dry run reverts while the policy holds the acceptance another sent first" testAcceptanceSentFirst
     it "registers, keeping the reveal, when the relay is mined with status 0 while the policy holds the acceptance another sent first" testAcceptanceMinedFailed
+    it "fails an order at its fifth relay mined with status 0 for its commitment, sending nothing more" testRelaysCapped
     it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
     it "clears the reveal of an acceptance signed for another policy or for the other kind of terms, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
     it "clears the reveal when a dry run reverts SignatureExpired, for the page to sign again" testAcceptanceExpired
@@ -127,6 +130,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
+    it "ends no month of an order whose register is sent and not settled, and ends it once the register reverted" testMonthRegisterInFlight
     it "fails an order waiting for a refused link to be replaced once its page has not read it for 3 days, logging and reporting it, holding its name" testLinksRefusedUnread
     it "fails an order waiting for its owner once its page has not read it for 3 days, a read of the order or its invoice stored at most hourly" testUnreadFails
   describe "confirmation depth" $
@@ -458,6 +462,20 @@ testCommitOutOfGas = withWorker $ \w@W {wCtx = ctx} -> do
   txNonce <$> either error pure (decodeSignedTx raw) `shouldReturn` 1
   x <- stored ctx r
   nrPhase x `shouldBe` OCommitting second
+  attemptsOf ctx r `shouldReturn` [(RTCommit, ASSent, "mined with status 0", True)]
+
+testCommitsCapped :: IO ()
+testCommitsCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
+  r <- paidIn ctx aliceOrder id
+  withTransaction cStore $ \db -> replicateM_ 4 $ insertAttempt db (nrId r) (nrCommitment r) NameAttempt {naTx = RTCommit, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = orderTime}
+  answerCommitment w r 0
+  void $ steps w r >>= awaiting
+  void $ mineNewest w False
+  steps w r >>= done
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRRegistryRefused
+  attemptsOf ctx r `shouldReturn` replicate 5 (RTCommit, ASSent, "mined with status 0", True)
+  length <$> sent w `shouldReturn` 1
 
 testLapseSecond :: IO ()
 testLapseSecond = withWorker $ \w@W {wCtx = ctx} -> do
@@ -862,6 +880,18 @@ testAcceptanceMinedFailed = withWorker $ \w@W {wCtx = ctx} -> do
   x <- stored ctx r
   (namePhase $ nrPhase x, nrReveal x) `shouldBe` (PRegistering, nrReveal r)
 
+testRelaysCapped :: IO ()
+testRelaysCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  withTransaction cStore $ \db -> replicateM_ 4 $ insertAttempt db (nrId r) (nrCommitment r) NameAttempt {naTx = RTAccept, naStage = ASSent, naReason = "mined with status 0", naCounted = True, naAt = addUTCTime (-60) orderTime}
+  void $ steps w r >>= awaiting
+  void $ mineNewest w False
+  steps w r >>= done
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRRegistryRefused
+  attemptsOf ctx r `shouldReturn` replicate 5 (RTAccept, ASSent, "mined with status 0", True)
+  length <$> sent w `shouldReturn` 1
+
 testAcceptanceUnread :: IO ()
 testAcceptanceUnread = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
@@ -1001,6 +1031,16 @@ testSignatureUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSend
     to <- moveTo ctx label n
     move ctx keyA failedOrder to `shouldReturn` refusedWith 400 "bad_request"
   stored ctx r `shouldReturn` failedOrder
+
+testRelayUnderOtherConfig :: IO ()
+testRelayUnderOtherConfig = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  let NamesConfig {nChain} = oeConfig cOrders
+  worker <- newWorker cOrders {oeConfig = (oeConfig cOrders) {nChain = nChain {cChainId = cChainId nChain + 1}}} wSender
+  void $ capturingStderr $ void $ stepRegistration worker (nrId r)
+  now <- nowOf ctx
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRSignatureRefused
+  sentTransactions (cNode ctx) `shouldReturn` []
 
 testFailedOnlySettled :: IO ()
 testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> do
@@ -1212,6 +1252,19 @@ testMonthClipped = withWorker $ \W {wCtx = ctx@Ctx {cStore, cClock}, wWorker} ->
   writeIORef cClock lastDay
   endMonths wWorker
   nrPhase <$> stored ctx r `shouldReturn` OFailed lastDay FRMonthEnded
+
+testMonthRegisterInFlight :: IO ()
+testMonthRegisterInFlight = withWorker $ \W {wCtx = ctx@Ctx {cStore}, wWorker} -> do
+  r <- paidIn ctx aliceOrder openPhase
+  let h = TxHash $ hashFixture 9
+  withTransaction cStore $ \db -> void $ insertTransaction db (TxRegistration RTRegister $ nrId r) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = 9} orderTime
+  advance ctx $ diffUTCTime (addMonths 1 orderTime) orderTime
+  endMonths wWorker
+  stored ctx r `shouldReturn` r
+  withTransaction cStore $ \db -> recordTransactionOutcome db h TSPending (TSRevertedAt 120) `shouldReturn` True
+  now <- nowOf ctx
+  endMonths wWorker
+  nrPhase <$> stored ctx r `shouldReturn` OFailed now FRMonthEnded
 
 testLandedAtDepth :: IO ()
 testLandedAtDepth = withOrders $ \ctx@Ctx {cNode, cOrders} -> do

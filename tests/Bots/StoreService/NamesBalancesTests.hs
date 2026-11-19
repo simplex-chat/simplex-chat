@@ -11,7 +11,7 @@ import Bots.StoreService.FakeEthNode (agreed, lengthOf, plainTerms)
 import Bots.StoreService.FakeStripe (FakeStripe (..), stripeObjectEvent, stripeSigHeader, withFakeStripe)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders, withOrdersVia)
 import Bots.StoreService.NamesStoreTests (at, btc, hashFixture, insertOrRollBack, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
-import Bots.StoreService.WebTests (capturingStderr, invoiceStatus, overdueOf, rcv, statusOf, webRequestBody, withServiceStore, withServiceStores)
+import Bots.StoreService.WebTests (StubCall (..), StubState (..), capturingStderr, invoiceStatus, overdueOf, rcv, statusOf, webRequestBody, withServiceStore, withServiceStores)
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
@@ -106,11 +106,15 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "keeps an order whose register was sent, naming the transaction" testReversalKeepsSent
     it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total" testReversalTakesBack
     it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
+    it "cancels a live order of which no register was sent, also after support refunded part of its balance" testReversalCancelsRefunded
+    it "cancels a live order of which no register was sent for a dispute of part of its payment" testReversalCancelsPartial
+    it "cancels the open invoice of the order that holds the balance, at the provider and here, then takes back the whole balance" testReversalCancelsHolder
     it "cancels an order by a signed dispute delivered to the Stripe webhook" testDisputeWebhook
     it "locks an order only at its version" testLockRegistration
 #if defined(dbPostgres)
   describe "two connections" $ do
     it "applies one of a spend and a refund, or of a held spend and a refund, and keeps the invariant for a credit and a refund" testConcurrentWrites
+    it "credits nothing that a concurrent dispute leaves in the balance" testConcurrentCreditDispute
 #endif
 
 -- fixtures
@@ -787,7 +791,8 @@ withReversals action = withOrders $ \ctx@Ctx {cOrders} -> do
 reverseWith :: OrdersEnv -> Text -> Text -> Reversal -> IO ()
 reverseWith env r event reversal = do
   Just row <- getInvoice (oeStore env) (InvoiceId $ "inv-" <> r)
-  reverseOrder env row (RegistrationId r) event reversal
+  waiters <- newWaiters
+  reverseOrder env [] waiters row (RegistrationId r) event reversal
 
 queuedOrder :: DBStore -> Text -> IO NameRegistration
 queuedOrder st r = do
@@ -893,6 +898,36 @@ testReversalAlertsOnly = withReversals $ \Ctx {cStore = st} env alerts -> do
   figures st "w" t0 `shouldReturn` Just (100, 100, 0, Nothing)
   alertsWith alerts ["of order r: support recorded its refund, so nothing changed. Evidence", "names: early fraud warning, card_never_received on payment ref-inv-w of order w: nothing changed. Evidence"]
 
+testReversalCancelsPartial :: IO ()
+testReversalCancelsPartial = withReversals $ \Ctx {cStore = st} env alerts -> do
+  _ <- queuedOrder st "p"
+  reverseWith env "p" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 5000
+  nrPhase <$> reg st "p" `shouldReturn` OClosed ICReversed
+  figures st "p" t0 `shouldReturn` Nothing
+  alertsWith alerts ["names: card dispute dp_1 of 5000 cents on payment ref-inv-p of order p: it is cancelled, as no register transaction of it was sent, and its name is released. Evidence"]
+
+testReversalCancelsHolder :: IO ()
+testReversalCancelsHolder = withReversals $ \Ctx {cStore = st, cWeb, cStub} env alerts -> do
+  source st "x" 1000
+  holder st "y" "x" 1000 (at 86400) `shouldReturn` Right ()
+  Just row <- getInvoice st (InvoiceId "inv-x")
+  reverseOrder env (weProviders cWeb) (weWaiters cWeb) row (RegistrationId "x") "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 1000
+  nrPhase <$> reg st "y" `shouldReturn` OClosed ICCancelled
+  invoiceStatus st (InvoiceId "inv-y") `shouldReturn` ISExpired
+  ssCalls <$> readIORef cStub >>= (`shouldSatisfy` elem (StubCancel "ref-inv-y"))
+  figures st "x" t0 `shouldReturn` Just (0, 1000, 0, Nothing)
+  alertsWith alerts ["of order x: it is not cancelled, as it is taken; 1000 cents taken back from its balance; the open invoice of order y, which held its balance, is cancelled. Evidence"]
+
+testReversalCancelsRefunded :: IO ()
+testReversalCancelsRefunded = withReversals $ \Ctx {cStore = st} env alerts -> do
+  _ <- queuedOrder st "m"
+  credit st "m" 800
+  refund st "m" 800 `shouldReturn` True
+  reverseWith env "m" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 20000
+  nrPhase <$> reg st "m" `shouldReturn` OClosed ICReversed
+  figures st "m" t0 `shouldReturn` Just (0, 800, 800, Nothing)
+  alertsWith alerts ["of order m: it is cancelled, as no register transaction of it was sent, and its name is released. Evidence"]
+
 testDisputeWebhook :: IO ()
 testDisputeWebhook = withFakeStripe $ \fake -> do
   real <- stripeProvider (fsConfig fake)
@@ -955,4 +990,22 @@ testConcurrentWrites = withServiceStores $ \open -> do
     credited `shouldBe` True
     (n,) <$> figures st lateSrc t0 `shouldReturn` (n, Just $ if refundedLate then (3000, 13000, 10000, Nothing) else (13000, 13000, 0, Nothing))
     invariantHolds st lateSrc
+
+testConcurrentCreditDispute :: IO ()
+testConcurrentCreditDispute = withServiceStores $ \open -> do
+  st <- open
+  other <- open
+  forM_ [1 .. 25 :: Int] $ \n -> do
+    let r = "disputed" <> T.pack (show n)
+        rid = RegistrationId r
+        inv = InvoiceId $ "inv-" <> r
+    placeOrderRow st r True 20000 (at 60)
+    order <- reg st r
+    _ <-
+      together
+        st
+        other
+        (\db -> lockRegistration db order >> recordReversal db ("evt_" <> r) inv (RVDispute "dp_1" $ CurrencyAmount 20000) t0 >>= mapM_ (\cents -> takeBackBalance db ("evt_" <> r) inv rid cents t0))
+        (\db -> creditLatePayment db (lateCredit r 1 Nothing 3000) t0)
+    (n,) . fmap (\(amount, _, _, _) -> amount) <$> figures st r t0 >>= (`shouldSatisfy` (`elem` [Nothing, Just 0]) . snd)
 #endif

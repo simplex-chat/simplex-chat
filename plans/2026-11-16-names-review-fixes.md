@@ -89,6 +89,8 @@ stateDiagram-v2
   Failed --> Taken: close
 ```
 
+Built: the failure reason `sends used up` was replaced by the attempt caps of plans/2026-11-18-names-order-rules.md 2.5, which fail an order `registryRefused`; nothing sets it, and it was removed. The implemented states and transitions are in apps/simplex-store-service/docs/names.md section 4.
+
 A1-2, one payment sum, stored and hashed:
 - `data OrderPayment = OPInvoice ServicePaymentMethod InvoiceId | OPDifference BalanceUse ServicePaymentMethod InvoiceId | OPBalance BalanceUse | OPCode CodeId`.
 - `data BalanceUse = BalanceUse {buSource :: RegistrationId, buUsed :: cents}`.

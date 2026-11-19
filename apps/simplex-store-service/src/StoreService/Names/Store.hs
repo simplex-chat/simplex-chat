@@ -114,6 +114,8 @@ module StoreService.Names.Store
     lockRegistration,
     reversalRecorded,
     registerTxSent,
+    registerTxPending,
+    reversalEventRecorded,
     lateCreditState,
     creditLatePayment,
     latePending,
@@ -306,18 +308,16 @@ data TxHistory = TxHistory {thCommitTx :: Maybe TxHash, thRegisterTx :: Maybe Tx
 noHistory :: TxHistory
 noHistory = TxHistory {thCommitTx = Nothing, thRegisterTx = Nothing}
 
-data FailReason = FRSendsUsedUp | FRRegistryRefused | FRSignatureRefused | FRMonthEnded | FRUnread
+data FailReason = FRRegistryRefused | FRSignatureRefused | FRMonthEnded | FRUnread
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding FailReason where
   textEncode = \case
-    FRSendsUsedUp -> "sends_used_up"
     FRRegistryRefused -> "registry_refused"
     FRSignatureRefused -> "signature_refused"
     FRMonthEnded -> "month_ended"
     FRUnread -> "unread"
   textDecode = \case
-    "sends_used_up" -> Just FRSendsUsedUp
     "registry_refused" -> Just FRRegistryRefused
     "signature_refused" -> Just FRSignatureRefused
     "month_ended" -> Just FRMonthEnded
@@ -1157,8 +1157,15 @@ findRegistrations db owner now = do
     holdParams = (PUnpaid, ISPaid, now)
     found :: RegistrationRow :. Only (Maybe Text) -> Either Text (NameRegistration, Maybe RegistrationId)
     found (row :. Only holder) = (\r -> (r, RegistrationId <$> holder)) <$> toRegistration row
-    newestFirst = " ORDER BY r.created_at DESC, r.registration_id DESC"
+    newestFirst = " ORDER BY r.created_at DESC, " <> insertionOrder <> " DESC"
     withBalance = mkQuery " AND EXISTS (SELECT 1 FROM @name_balances b WHERE b.registration_id = r.registration_id AND b.amount > 0)"
+
+insertionOrder :: Query
+#if defined(dbPostgres)
+insertionOrder = "r.created_seq"
+#else
+insertionOrder = "r.rowid"
+#endif
 
 labelHolder :: DB.Connection -> LabelHash -> IO (Maybe RegistrationId)
 labelHolder db lh =
@@ -1500,6 +1507,10 @@ lockRegistration :: DB.Connection -> NameRegistration -> IO Bool
 lockRegistration db NameRegistration {nrId = RegistrationId rid, nrVersion} =
   (> 0) <$> executeChanging db (mkQuery "UPDATE @name_registrations SET version = version WHERE registration_id = ? AND version = ?") (rid, nrVersion)
 
+reversalEventRecorded :: DB.Connection -> Text -> IO Bool
+reversalEventRecorded db event =
+  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_reversals WHERE provider_event = ?") (Only event) :: IO [Only Int])
+
 reversalRecorded :: DB.Connection -> RegistrationId -> IO Bool
 reversalRecorded db (RegistrationId rid) =
   not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_reversals v JOIN @name_invoices ni ON ni.invoice_id = v.invoice_id WHERE ni.registration_id = ? LIMIT 1") (Only rid) :: IO [Only Int])
@@ -1507,6 +1518,10 @@ reversalRecorded db (RegistrationId rid) =
 registerTxSent :: DB.Connection -> RegistrationId -> IO Bool
 registerTxSent db (RegistrationId rid) =
   not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_transactions WHERE registration_id = ? AND kind = ? LIMIT 1") (rid, TKRegistration RTRegister) :: IO [Only Int])
+
+registerTxPending :: DB.Connection -> RegistrationId -> IO Bool
+registerTxPending db (RegistrationId rid) =
+  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_transactions WHERE registration_id = ? AND kind = ? AND status = ? LIMIT 1") (rid, TKRegistration RTRegister, TSPending) :: IO [Only Int])
 
 -- | A name invoice with its order, its invoice row and its payment row.
 lateFrom :: Query
@@ -1617,6 +1632,7 @@ lateCreditState db (InvoiceId invId) = firstDecoded toLateState $ DB.query db (l
 -- | Run after the invoice's lock. The order's balance is credited only when the credit's row is new, so a taken credit number changes neither.
 creditLatePayment :: DB.Connection -> LateCredit -> UTCTime -> IO Bool
 creditLatePayment db LateCredit {lcInvoice = InvoiceId invId, lcCreditNo, lcRegistration = regId@(RegistrationId rid), lcAmount} now = do
+  DB.execute db (mkQuery "UPDATE @name_registrations SET version = version WHERE registration_id = ?") (Only rid)
   inserted <-
     executeChanging
       db
@@ -2064,11 +2080,11 @@ namesCounts db = do
         (SELECT COALESCE(SUM(amount), 0) FROM @name_balances WHERE reserved_by IS NOT NULL),
         (SELECT COUNT(*) FROM @name_record_edits WHERE state = ?),
         (SELECT MIN(created_at) FROM @name_record_edits WHERE state = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?),
-        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ?)
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1),
+        (SELECT MIN(paid_at) FROM @name_registrations WHERE phase = ? AND live = 1)
     |]
     )
     ((PQueued, PCommitting, PRegistering, PCommitted, TSPending, TSPending, ISOpen, ETPending, ETPending) :. unregisteredPhases)

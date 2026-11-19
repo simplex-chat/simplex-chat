@@ -317,15 +317,19 @@ The endpoint's events in the Dashboard are `payment_intent.succeeded`,
 
 A dispute or a refund of a name order's payment is acted on at its delivery, as no read finds it:
 - an order paid and live, of which no register transaction was saved, is closed with
-  `closedBy` `reversed`, its name released and nothing credited to its balance; the cents it paid
-  from another order's balance are returned to that balance;
+  `closedBy` `reversed`, its name released and nothing credited to its balance, also after support
+  refunded part of its balance; the cents it paid from another order's balance are returned to
+  that balance;
 - an order whose payment is not recorded yet is closed the same way when its payment settles,
   instead of being queued, its held balance released;
 - any other order is kept, and the reversed cents are taken back from its balance, as far as the
   balance and the invoice's amount hold them; an order whose refund support recorded is kept as
   it is;
+- before its balance is taken back, the open invoice of another order that holds that balance is
+  cancelled at its provider and then here, and the alert names that order;
 - an order with a recorded dispute or refund is credited nothing more, its price included when
-  it is taken or its month ends.
+  it is taken or its month ends, and a late credit concurrent with a dispute of its order is
+  written after it.
 
 Each is recorded once in `name_reversals` by its event id, a refund as the rise of
 `amount_refunded`. Every dispute, refund and early fraud warning of a name order is logged at
@@ -695,6 +699,23 @@ the service refuses to roll back migrations it does not list. A database that ra
 before it created `sx_badge_service_name_terms` starts without that table, and every terms read
 fails. Recreate such a database.
 
+A database that a build of the `names` branch ran keeps `20261013_names` as that branch wrote it,
+in a shape this service does not read. It is upgraded in two steps:
+
+1. From master's `scripts/badge-service/`, run the badge service once without `--yes-migrate`, and
+   answer `y` when it asks to roll back `20261013_names`:
+
+   ```
+   docker compose run --rm badge-service -d "$BADGE_DB_CONN" --create-schema --service-config /etc/simplex-badge-service/badge_service.ini
+   ```
+
+   It runs the down migration that the database stored with `20261013_names`: the names tables
+   and the columns that migration added to the payments table are dropped, and the badge tables
+   and their rows stay. With `--yes-migrate` it refuses the rollback and exits. Stop it once it
+   runs.
+2. Deploy this service as [Deployment](#deployment) says. It applies `20261013_names` and the
+   migrations after it.
+
 ### Two sites
 
 Both images carry the badges build at `/srv/badges` and the names build at `/srv/names`: the
@@ -936,9 +957,9 @@ warning. When the metrics port cannot be listened on, the failure is logged as a
 | `simplex_store_badges_purchases{status}` | badge purchases by status: `acquiring`, `issued`, `superseded` or `failed`, each 0 when it has none |
 | `simplex_store_badges_subscriptions{state}` | App Store and Google Play subscriptions paying for badges, by state: `renewing`, `cancelled`, `billingRetry` or `ended`, each 0 when it has none |
 | `simplex_store_badges_codes_open` | badge codes paid or free, not revoked or expired, with redemptions left |
-| `simplex_store_names_orders{phase,reason}` | name orders in the phase: `unpaid`, `closed`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `closed` counts unpaid orders closed with their invoice, kept for 30 days, and `failed` every failed order not tried again, by `reason`: `sends_used_up`, `registry_refused`, `signature_refused`, `month_ended` or `unread`, each 0 when it has none |
+| `simplex_store_names_orders{phase,reason}` | name orders in the phase: `unpaid`, `closed`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `closed` counts unpaid orders closed with their invoice, kept for 30 days, and `failed` every failed order not tried again, by `reason`: `registry_refused`, `signature_refused`, `month_ended` or `unread`, each 0 when it has none |
 | `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
-| `simplex_store_names_unregistered_oldest_paid_timestamp_seconds{phase}` | when the order paid longest ago in the phase, `queued`, `committing`, `committed`, `registering` or `failed`, was paid, a code order or an order paid from a balance at its placement; absent for a phase with none |
+| `simplex_store_names_unregistered_oldest_paid_timestamp_seconds{phase}` | when the live order paid longest ago in the phase, `queued`, `committing`, `committed`, `registering` or `failed`, was paid, a month-ended order not counted, a code order or an order paid from a balance at its placement; absent for a phase with none |
 | `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
 | `simplex_store_names_transactions_oldest_pending_timestamp_seconds` | when the oldest of them was first signed; absent when none is pending |
 | `simplex_store_names_invoices_open` | open invoices of name orders |
@@ -1414,7 +1435,7 @@ With `metrics_port` set, both are exported before they run out (see [Metrics](#m
   of their own once it is old enough. The order then ends `taken`: a paid order keeps its price as a
   balance, and a code order keeps its code.
 
-Every failed attempt of a terms acceptance or a register is stored in `name_attempts` with its
+Every failed attempt of a commit, a terms acceptance or a register is stored in `name_attempts` with its
 transaction, its stage (`dry_run`, or `sent` for a transaction mined with status 0), its decoded
 reason and its time; an attempt repeating the last one of its commitment, uncounted, updates that
 one's time. The order's view gives that last attempt in `lastAttempt`.
@@ -1426,8 +1447,9 @@ A dry run that reverts while the name is available is retried every 15 seconds. 
   error at their first time in a row and posted in the managed group at their fifth as
   `names worker: registration <id> waits: the register reverts while the name is available, <reason>, 5 times in a row`.
 
-A transaction mined with status 0 counts toward `[names] max_sent_failures` (default 5) for the
-commitment. At either cap the order fails with the reason `registryRefused`, logged at error and
+A commit, relay or register mined with status 0 counts toward `[names] max_sent_failures` (default 5) for the
+commitment, and a commit's dry run that reverts for one of the reasons above toward
+`max_dry_run_failures`. At either cap the order fails with the reason `registryRefused`, logged at error and
 posted in the managed group as `names worker: registration <id> failed: its register failed <n> times
 at its dry run, last: <reason>`, and support closes it with `//close` (see
 [Closing a failed order](#closing-a-failed-order)). A move starts both counts again. Any other
@@ -1450,7 +1472,7 @@ signing again, queues it to be committed again while it holds its name.
 
 A signature past its deadline is cleared, and the page signs again. A signature within its deadline
 that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of
-`[names] tld`, fails the order before any send with the reason `signatureRefused`; the log line is
+`[names] tld`, fails the order before its acceptance relay or its register is sent, with the reason `signatureRefused`; the log line is
 `[ERROR …] names worker: registration <id> failed: its stored signature is refused under the service's current configuration, …`,
 and the same text is posted in the managed group. Such an order is not moved to any name, its own
 included; its page asks the buyer to contact support.
@@ -1808,8 +1830,8 @@ name again. So does a paid order whose commitment lapsed before its page signed 
 asks for a new commitment. A calendar month after its payment, clipped to the last day of a shorter
 month, an order that is still `queued`, `committed` or `failed` fails with the reason `monthEnded`:
 the money paid for an order paid by invoice or balance is added to its balance, a code order's code is
-released, its name is released, and the order is final. A pass every 5 minutes does it, logging each order at note; an order sending its commit or
-register is ended at the first pass after that transaction settles. Support closes a failed or lapsed
+released, its name is released, and the order is final. A pass every 5 minutes does it, logging each order at note; an order sending its commit, or with a
+register transaction sent and not settled, is ended at the first pass after that transaction settles. Support closes a failed or lapsed
 order before then in `--run-cli` mode with the service stopped, or with `/close` in the group while
 it runs; a month-ended order is refused, and its refund is recorded with `//record_refund`:
 

@@ -539,7 +539,8 @@ testLinksRefused = bounded "links refused" $ withReveals $ \Fx {fCtx = ctx@Ctx {
   NameRegistration {nrVersion = v} <- stored ctx rid
   poll <- held ctx (0, 1) $ registrationPath rid <> seenVersion v
   body <- ownerBody ctx overBound
-  let alerted = length . filter (T.isInfixOf "its simplex.contact link was refused at its reveal") . T.lines
+  let RegistrationId ridText = rid
+      alerted = length . filter (T.isInfixOf $ "names: registration " <> ridText <> ": its simplex.contact link was refused at its reveal") . T.lines
   firstLogs <- capturingStderr $ reveal ctx rid body `shouldReturn` contactRefused
   alerted firstLogs `shouldBe` 1
   (status, view) <- woken "registration poll" poll

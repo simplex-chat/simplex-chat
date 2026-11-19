@@ -53,7 +53,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (catchOwn', tryOwnLogged, tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), ChainSeconds, RevertName (..), RevertReason (..), blockAt, chainSeconds, chainTime, revertText)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), ChainSeconds, RevertName (..), RevertReason (..), TxHash, blockAt, chainSeconds, chainTime, revertText)
 import StoreService.Names.Codes (releaseCode)
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts (..), acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, versionWritten)
@@ -230,8 +230,33 @@ commit w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistr
     Nothing ->
       runExceptT ((,) <$> ExceptT (commitmentAges oeContracts) <*> ExceptT (commitmentTime oeContracts nrCommitment)) >>= \case
         Left e -> pure $ failure r $ SFChain e
-        Right (_, Nothing) -> sendCommit w now r
+        Right (_, Nothing) -> case nrPhase r of
+          OCommitting h ->
+            commitReverted w r h >>= \case
+              True -> inTurn w r $ failedAttempt w now r RTCommit ASSent Nothing $ store w now r {nrPhase = OQueued}
+              False -> sendCommit w now r
+          _ -> sendCommit w now r
         Right (ages, Just t) -> fromCommitment w now r ages t
+
+-- | The commit last sent, by its signature's nonce, mined with status 0.
+commitReverted :: Worker -> NameRegistration -> TxHash -> IO Bool
+commitReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId} h = do
+  txs <- withTransaction oeStore (`registrationTransactions` nrId)
+  let nonces = [ntNonce | NameTransaction {ntHash, ntNonce} <- txs, ntHash == h]
+  pure $ or [True | NameTransaction {ntNonce, ntState = TxSettled TSRevertedAt {}} <- txs, ntNonce `elem` nonces]
+
+-- | The newest relay, by its signature's nonce, mined with status 0 and stored as no attempt since it was sent.
+relayReverted :: Worker -> NameRegistration -> IO Bool
+relayReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId} = withTransaction oeStore $ \db -> do
+  relays <- filter (\NameTransaction {ntFor} -> ntFor == TxRegistration RTAccept nrId) <$> registrationTransactions db nrId
+  attempts <- registrationAttempts db nrId
+  let newest = [ntNonce | NameTransaction {ntNonce} <- take 1 $ reverse relays]
+      group = [t | t@NameTransaction {ntNonce} <- relays, ntNonce `elem` newest]
+      reverted = or [True | NameTransaction {ntState = TxSettled TSRevertedAt {}} <- group]
+      stored sentAt = or [True | NameAttempt {naTx = RTAccept, naStage = ASSent, naAt} <- attempts, naAt >= sentAt]
+  pure $ case [ntSentAt | NameTransaction {ntSentAt} <- group] of
+    [] -> False
+    sent -> reverted && not (stored $ maximum sent)
 
 -- | At the lapse second a commitment can neither register nor be committed again, so the worker waits a second past it,
 -- then commits again with the stale fields cleared.
@@ -281,6 +306,7 @@ sendCommit w@Worker {wkOrders = OrdersEnv {oeConfig}, wkSender} now r@NameRegist
     Right p -> commitSent w now r p
     Left SEInFlight -> pure Again
     -- UnexpiredCommitmentExists among them: a commit mined since the read, or a latest block still at the lapse second
+    Left e@(SEChain (ChainReverted reason)) -> inTurn w r $ failedAttempt w now r RTCommit ASDryRun (Just reason) $ pure (Nothing, failure r $ SFSend e)
     Left e -> pure $ failure r $ SFSend e
 
 -- | Recorded with the newest signature's hash, so a fee-bumped replacement is the one the view shows.
@@ -301,9 +327,9 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId = regId, nrReveal, nr
         | otherwise -> case lapseMoment r of
             Just lapse | now <= lapse -> pure $ waitUntil r $ min unreadAt $ addUTCTime chainSecond lapse
             _ -> pure $ waitUntil r $ min unreadAt $ addUTCTime maxWait now
-      Just rv@NameReveal {rvAcceptance, rvDeadline} ->
+      Just rv ->
         -- past the commitment's lapse no acceptance is relayed, as the policy would commit again; the register's dry run then decides
-        (if unlapsed now c then relayAcceptance w now r c rvDeadline rvAcceptance else pure Nothing) >>= \case
+        (if unlapsed now c then relayAcceptance w now r c rv else pure Nothing) >>= \case
           Just next -> pure next
           Nothing
             | now < chainTime cmRevealAfter -> pure $ waitUntil r $ chainTime cmRevealAfter
@@ -321,8 +347,8 @@ unlapsed now Commit {cmRevealBefore} = now <= chainTime cmRevealBefore
 -- stores that acceptance. One signed for another policy, before a setNamePolicy, or for the other kind of terms, clears the
 -- reveal for the page to sign again; the relay's dry run's revert is judged as a register's is, unless the policy holds the
 -- acceptance, which another sent first.
-relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Commit -> ChainSeconds -> TermsAcceptance -> IO (Maybe Next)
-relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} c deadline a@TermsAcceptance {taTermsHash} =
+relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Commit -> NameReveal -> IO (Maybe Next)
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment, nrLabelHash} c rv@NameReveal {rvDeadline = deadline, rvAcceptance = a@TermsAcceptance {taTermsHash}} =
   inFlightTransaction wkSender (TxRegistration RTAccept regId) >>= \case
     Just p -> pure $ Just $ Await p
     Nothing ->
@@ -334,6 +360,12 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
   where
     held = acceptedTerms oeContracts nrCommitment nrOwner
     relay policy kind =
+      relayReverted w r >>= \case
+        True -> inTurn w r $ failedAttempt w now r RTAccept ASSent Nothing $ pure (Nothing, Again)
+        False
+          | chainSeconds now > deadline -> verifyRelay policy kind
+          | otherwise -> intentRefused w now r rv >>= maybe (verifyRelay policy kind) pure
+    verifyRelay policy kind =
       verifyAcceptance (policyDomain cChainId policy) kind nrOwner nrCommitment deadline a >>= \case
         Left refusal -> do
           logWarn $ "names worker: registration " <> rid <> ": its stored acceptance is refused, " <> T.pack refusal
@@ -350,22 +382,26 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> Commit -> NameReveal -> IO Next
-sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} c rv@NameReveal {rvDeadline}
+sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cSponsor}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} c rv@NameReveal {rvDeadline}
   | chainSeconds now > rvDeadline = do
       logWarn $ "names worker: registration " <> rid <> ": its stored signature's deadline passed, so its page signs again"
       save w now r {nrReveal = Nothing}
   | otherwise =
-      verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
-        Left refusal -> inTurn w r $ failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal
-        Right () ->
-          submitTransactionIf wkSender (TxRegistration RTRegister regId) (`lockRegistration` r) cSponsor (registerWithCreditCalldata intent) >>= \case
+      intentRefused w now r rv >>= \case
+        Just next -> pure next
+        Nothing ->
+          submitTransactionIf wkSender (TxRegistration RTRegister regId) (`lockRegistration` r) cSponsor (registerWithCreditCalldata $ intentOf cfg (nrOwner r) (nrDuration r) rv) >>= \case
             Right p -> registerSent w now r c p
             Left SEInFlight -> pure Again
             Left SEChanged -> pure Again
             Left (SEChain (ChainReverted reason)) -> judge w now r c RTRegister $ Just reason
             Left e -> pure $ failure r $ SFSend e
-  where
-    intent = intentOf cfg (nrOwner r) (nrDuration r) rv
+
+intentRefused :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO (Maybe Next)
+intentRefused w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}} now r rv =
+  verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) (intentOf cfg (nrOwner r) (nrDuration r) rv) >>= \case
+    Left refusal -> Just <$> inTurn w r (failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal)
+    Right () -> pure Nothing
 
 registerSent :: Worker -> UTCTime -> NameRegistration -> Commit -> PendingTx -> IO Next
 registerSent w now r@NameRegistration {nrPhase} c p
@@ -443,16 +479,20 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts, oeReport}} now r@NameRegis
 -- | A paid order keeps its whole price as a balance of its own, credited in the taken write's transaction, registration before balance,
 -- in the balance's turn after the name's; a code order's code is released.
 taken :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
-taken Worker {wkOrders} now r = written r <$> endOrder wkOrders now r {nrPhase = OTaken}
+taken Worker {wkOrders} now r = written r <$> endOrder wkOrders now r {nrPhase = OTaken} (\_ -> pure True)
 
-endOrder :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either WriteRefusal Int64)
-endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment} = case nrPayment of
+endOrder :: OrdersEnv -> UTCTime -> NameRegistration -> (DB.Connection -> IO Bool) -> IO (Either WriteRefusal Int64)
+endOrder OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrPayment} mayEnd = case nrPayment of
   OPInvoice {} -> credited
   OPDifference {} -> credited
   OPBalance _ -> credited
-  OPCode codeId -> fmap fst <$> releaseCode oeTurns oeStore codeId nrId (\db -> versionWritten <$> updateRegistration db r now)
+  OPCode codeId -> fmap fst <$> releaseCode oeTurns oeStore codeId nrId (ending $ \db -> versionWritten <$> updateRegistration db r now)
   where
-    credited = withBalanceTurn oeTurns nrId (withTransaction oeStore $ creditedWrite now r)
+    credited = withBalanceTurn oeTurns nrId (withTransaction oeStore $ ending $ creditedWrite now r)
+    ending write db =
+      mayEnd db >>= \case
+        True -> write db
+        False -> pure $ Left WRChanged
 
 creditedTaken :: UTCTime -> NameRegistration -> DB.Connection -> IO (Either WriteRefusal Int64)
 creditedTaken now r = creditedWrite now r {nrPhase = OTaken}
@@ -646,10 +686,14 @@ endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow, oe
     )
       `catchOwn'` \e -> logError ("names month pass: registration " <> ridText <> " failed; the next pass tries it again: " <> tshow e)
   where
-    monthEnded now r@NameRegistration {nrPayment}
-      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] = fmap (,kept) <$> endOrder oe now r {nrPhase = OFailed now FRMonthEnded}
+    monthEnded now r@NameRegistration {nrId, nrPayment}
+      | orderLive r && namePhase (nrPhase r) `elem` [PQueued, PCommitted, PFailed] = fmap (,kept) <$> endOrder oe now r {nrPhase = OFailed now FRMonthEnded} registerUnsent
       | otherwise = pure $ Left WRChanged
       where
+        registerUnsent db =
+          lockRegistration db r >>= \case
+            True -> not <$> registerTxPending db nrId
+            False -> pure False
         kept = case nrPayment of
           OPCode _ -> "its code released"
           _ -> "the money paid for it added to its balance"
