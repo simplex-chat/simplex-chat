@@ -36,7 +36,7 @@ DEV_ISSUER_SECRET=Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg=
 COMMUNITY_LABEL=bakers
 COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
-# The cases at webapp 5228f9d. Each case is its own client by X-Forwarded-For, which the service trusts
+# The cases at webapp 60a1cb9. Each case is its own client by X-Forwarded-For, which the service trusts
 # here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
 # below answers from the codes issued here, so CODES holds one per case that asks for one. "search
 # answers every kind of name" is not among them: it sets /control/search.
@@ -52,7 +52,7 @@ CASES=(
   "a registration's stages are said as each is reached, not each second of the wait"
   "Edit links keeps several links on chain as the contact address they hold, and emptying the field removes them"
   "a prepaid code registers a name with its links, which its records on chain then hold, its register recording the owner's acceptance of the general terms"
-  "a code order's name code, entered in another browser before the reveal, lets that browser reveal and register the name"
+  "a code order registers its name with its links after its browser closed, and its name code entered in another browser shows it, which reveals nothing"
   "Edit links on a name registered with a code adds both its links on chain in one transaction, then changes one"
   "a code check past the service's limit counts down its wait, then checks the code again by itself"
   "a name's link whose data cannot be read now shows as its kind's default picture, and opens by the chat core's form"
@@ -181,7 +181,7 @@ issue_codes() {
     command="//issue ${CODES[$i]}"
     out="$RUN_DIR/issue-$i.out"
     "$STORE_SERVICE_BIN" --no-address --service-config "$INI" -d "$DB" --execute "$command" > "$out" 2>> "$RUN_DIR/issue.log"
-    code="$(sed -nE 's/^Code: (SN[0-9]+(-[0-9A-Z]+)+)$/\1/p' "$out")"
+    code="$(sed -nE 's/^Code: (SN[0-9]+(-[0-9A-Z]+)+)\. Valid until .* UTC\.$/\1/p' "$out")"
     if [ -z "$code" ]; then
       echo "$command printed no code; see $out" >&2
       exit 1
