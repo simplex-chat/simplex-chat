@@ -16,7 +16,7 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 
 - No phone number, email or account. Agents have their own profile, without access to your other chats.
 - Send prompts with images and files, and see answers live as they are written. Prompts typed in the terminal appear in the chat too.
-- Reply to a message to point at it, react to it, or edit your prompt.
+- Reply and edit messages, send reactions.
 - Sessions open in the Flat layout, with the agent avatar.
 - 🏗️ Voice messages, deleting a prompt, code highlighting, "Read more" for long messages, choices and small widgets from agents.
 
