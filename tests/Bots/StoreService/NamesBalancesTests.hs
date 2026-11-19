@@ -102,6 +102,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
   describe "reversals" $ do
     it "cancels a paid order of which no register was sent, releasing its name and crediting nothing, once per event" testReversalCancels
     it "returns the part a difference order paid from a balance to that balance" testReversalReturnsSource
+    it "records a reversal of an order not yet paid, and closes the order as reversed when its payment settles" testReversalBeforePayment
     it "keeps an order whose register was sent, naming the transaction" testReversalKeepsSent
     it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total" testReversalTakesBack
     it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
@@ -839,6 +840,20 @@ testReversalReturnsSource = withReversals $ \Ctx {cStore = st} env alerts -> do
   figures st "s" t0 `shouldReturn` Just (30000, 30000, 0, Nothing)
   invariantHolds st "s"
   alertsWith alerts ["its name is released; 30000 cents returned to the balance of order s. Evidence"]
+
+testReversalBeforePayment :: IO ()
+testReversalBeforePayment = withReversals $ \Ctx {cStore = st, cWeb} env alerts -> do
+  source st "s" 30000
+  holder st "d" "s" 30000 (at 60) `shouldReturn` Right ()
+  reverseWith env "d" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 10000
+  nrPhase <$> reg st "d" `shouldReturn` OUnpaid (InvoiceId "inv-d")
+  alertsWith alerts ["names: card dispute dp_1 of 10000 cents on payment ref-inv-d of order d: its payment is not recorded yet, so it is closed as reversed when it is. Evidence"]
+  settleOrder st (weWaiters cWeb) (Just $ oePhases env) (InvoiceId "inv-d") (SigSettled (rcv 10000 Nothing) t0) t0 `shouldReturn` ISPaid
+  d <- reg st "d"
+  (nrPhase d, nrPaidAt d) `shouldBe` (OClosed ICReversed, Just t0)
+  withTransaction st (`labelHolder` nrLabelHash d) `shouldReturn` Nothing
+  figures st "s" t0 `shouldReturn` Just (30000, 30000, 0, Nothing)
+  invariantHolds st "s"
 
 testReversalKeepsSent :: IO ()
 testReversalKeepsSent = withReversals $ \Ctx {cStore = st} env alerts -> do

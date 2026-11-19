@@ -125,7 +125,8 @@ reverseOrder oe@OrdersEnv {oeNow} row@InvoiceRow {irInvoiceId} rid event reversa
           takenText taken = if taken > 0 then "; " <> centsText taken <> " taken back from its balance" else ""
       if
         | refunded -> pure (Nothing, "support recorded its refund, so nothing changed")
-        | orderLive r && namePhase nrPhase /= PUnpaid && not sent -> do
+        | namePhase nrPhase == PUnpaid -> pure (Nothing, "its payment is not recorded yet, so it is closed as reversed when it is")
+        | orderLive r && not sent -> do
             v <-
               updateRegistration db r {nrPhase = OClosed ICReversed, nrReveal = Nothing} now >>= \case
                 Written v -> pure v

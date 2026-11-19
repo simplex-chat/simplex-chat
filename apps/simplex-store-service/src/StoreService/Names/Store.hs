@@ -112,6 +112,7 @@ module StoreService.Names.Store
     takeBackBalance,
     returnBalance,
     lockRegistration,
+    reversalRecorded,
     registerTxSent,
     lateCreditState,
     creditLatePayment,
@@ -1510,6 +1511,10 @@ returnBalance db (RegistrationId source) cents now =
 lockRegistration :: DB.Connection -> NameRegistration -> IO Bool
 lockRegistration db NameRegistration {nrId = RegistrationId rid, nrVersion} =
   (> 0) <$> executeChanging db (mkQuery "UPDATE @name_registrations SET version = version WHERE registration_id = ? AND version = ?") (rid, nrVersion)
+
+reversalRecorded :: DB.Connection -> RegistrationId -> IO Bool
+reversalRecorded db (RegistrationId rid) =
+  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_reversals v JOIN @name_invoices ni ON ni.invoice_id = v.invoice_id WHERE ni.registration_id = ? LIMIT 1") (Only rid) :: IO [Only Int])
 
 registerTxSent :: DB.Connection -> RegistrationId -> IO Bool
 registerTxSent db (RegistrationId rid) =

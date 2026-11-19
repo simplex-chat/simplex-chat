@@ -677,6 +677,8 @@ sequenceDiagram
     W->>D: under the name's lock, one transaction: the event recorded, the order's row locked
     alt support recorded the order's refund
       W->>D: nothing more written
+    else unpaid, its payment not recorded yet
+      W->>D: nothing more written; its settlement later closes it as reversed, its held balance released
     else live past unpaid, no register transaction of it saved
       W->>D: order set closed, reversed; its reveal cleared; the cents it paid from another order's balance returned there; its own balance taken back
     else otherwise
@@ -692,6 +694,7 @@ Notes:
 - The events are read by `stripeEvent` in [`Providers/Stripe.hs`](../src/StoreService/Providers/Stripe.hs): a dispute's `amount`, a refund's `amount_refunded`, and the `payment_intent` of each. A badge invoice's event changes nothing ([`Web/Server.hs`](../src/StoreService/Web/Server.hs) `onNameOrder`).
 - Each dispute or refund is recorded once in `name_reversals` by its event id; a refund counts the rise of `amount_refunded` over the refunds recorded for the invoice ([`Names/Store.hs`](../src/StoreService/Names/Store.hs) `recordReversal`).
 - The cents taken back from the order's own balance are the reversed cents, at most the balance's amount and the invoice's amount less what earlier reversals of it took back (`takeBackBalance`).
+- A payment that settles after a reversal of it was recorded closes its unpaid order as reversed, logged at error, instead of queuing it (`nameSettled` in [`Orders.hs`](../src/StoreService/Orders.hs)).
 - An order with a reversal is credited nothing more: `creditBalance` adds nothing to it, so a taken write, the month's end, a move to a cheaper name and late money credit none of its price. A reversed order is not counted as a closed order's late money (`closedUnpaid`).
 - The register's save locks the order's row at the version the worker read, in the transaction that saves the transaction, and the reversal locks the row before it reads the order's transactions, so a register is saved and sent only for an order not cancelled ([`Names/Sender.hs`](../src/StoreService/Names/Sender.hs) `submitTransactionIf`, [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `sendRegister`).
 - A cancelled order's view reads `{"type": "closed", "closedBy": "reversed"}` ([`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) `reverseOrder`).

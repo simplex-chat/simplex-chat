@@ -319,6 +319,8 @@ A dispute or a refund of a name order's payment is acted on at its delivery, as 
 - an order paid and live, of which no register transaction was saved, is closed with
   `closedBy` `reversed`, its name released and nothing credited to its balance; the cents it paid
   from another order's balance are returned to that balance;
+- an order whose payment is not recorded yet is closed the same way when its payment settles,
+  instead of being queued, its held balance released;
 - any other order is kept, and the reversed cents are taken back from its balance, as far as the
   balance and the invoice's amount hold them; an order whose refund support recorded is kept as
   it is;

@@ -19,7 +19,7 @@ where
 import StoreService.Names.Phases (Phases)
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Registration (RegistrationId (..))
-import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, paymentBalance, releaseHeldBalance, setLateSupport, setPaidAt, spendHeldBalance, updateRegistration)
+import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, paymentBalance, releaseHeldBalance, reversalRecorded, setLateSupport, setPaidAt, spendHeldBalance, updateRegistration)
 import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), Received (..), providerErrorText, receivedAmount, receivedConfirmed)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
@@ -93,7 +93,7 @@ data Product = PBadge (Maybe ByteString) | PName NameRegistration
 -- | A name order's change at settlement: its new version; money received after it closed, which stays unpaid and is credited to its balance;
 -- a holder queued whose held balance could not be spent (then the balance's order); or an order closed because another live order
 -- holds its commitment, or its owner and name. The text is the provider's reference of the order's invoice.
-data NameOutcome = NOWritten RegistrationId Int64 | NOLate Text | NOHoldNotSpent Text RegistrationId | NOLiveOrderExists Text | NOTaken Text
+data NameOutcome = NOWritten RegistrationId Int64 | NOLate Text | NOHoldNotSpent Text RegistrationId | NOLiveOrderExists Text | NOTaken Text | NOReversed Text
 
 data SettledMoney = SMNone | SMHeld | SMNewPayment
   deriving (Eq)
@@ -127,6 +127,7 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
       NOHoldNotSpent ref source -> (pure (), holdNotSpent ref source)
       NOLiveOrderExists ref -> (pure (), liveOrderExists ref)
       NOTaken ref -> (pure (), takenAtSettlement ref)
+      NOReversed ref -> (pure (), reversedAtSettlement ref)
     now = truncateToSecond now'
     at = truncateToSecond (settledInstant signal now)
     settleRow db = \case
@@ -205,18 +206,27 @@ nameSettled db ref before after money r@NameRegistration {nrId, nrLabelHash, nrP
   | otherwise = case after of
       Just ISPaid
         | before /= ISOpen -> pure [NOLate ref]
-        | otherwise -> do
-            held <- isJust <$> labelHolder db nrLabelHash
-            updateRegistration db r {nrPhase = if held then OTaken else OQueued} now >>= \case
-              Written v -> do
-                setPaidAt db nrId paidAt
-                spent <- spendHold
-                when held $ creditBalance db nrId nrPrice now
-                pure $ NOWritten nrId v : spent <> [NOTaken ref | held]
-              NotLive -> pure [NOLate ref]
-              -- an invariant broke; left live, the order would keep its hold for ever, as no sweep closes a paid invoice
-              LiveOrderExists -> (<> [NOLate ref, NOLiveOrderExists ref]) <$> closed
-              _ -> E.throwIO (RegistrationChanged nrId)
+        | otherwise ->
+            reversalRecorded db nrId >>= \case
+              True ->
+                updateRegistration db r {nrPhase = OClosed ICReversed, nrReveal = Nothing} now >>= \case
+                  Written v -> do
+                    setPaidAt db nrId paidAt
+                    _ <- releaseHeldBalance db nrId now
+                    pure [NOWritten nrId v, NOReversed ref]
+                  _ -> E.throwIO (RegistrationChanged nrId)
+              False -> do
+                held <- isJust <$> labelHolder db nrLabelHash
+                updateRegistration db r {nrPhase = if held then OTaken else OQueued} now >>= \case
+                  Written v -> do
+                    setPaidAt db nrId paidAt
+                    spent <- spendHold
+                    when held $ creditBalance db nrId nrPrice now
+                    pure $ NOWritten nrId v : spent <> [NOTaken ref | held]
+                  NotLive -> pure [NOLate ref]
+                  -- an invariant broke; left live, the order would keep its hold for ever, as no sweep closes a paid invoice
+                  LiveOrderExists -> (<> [NOLate ref, NOLiveOrderExists ref]) <$> closed
+                  _ -> E.throwIO (RegistrationChanged nrId)
       Just ISExpired -> (<> [NOLate ref | money /= SMNone]) <$> closed
       _ -> pure [NOLate ref | before /= ISOpen, money == SMNewPayment]
   where
@@ -255,6 +265,10 @@ holdNotSpent ref (RegistrationId source) =
 takenAtSettlement :: Text -> IO ()
 takenAtSettlement ref =
   logNote $ "names: invoice " <> ref <> " was paid while another paid order holds its name, so its order is taken and the money paid for it is added to its balance"
+
+reversedAtSettlement :: Text -> IO ()
+reversedAtSettlement ref =
+  logError $ "names: invoice " <> ref <> " was paid after a reversal of its payment was recorded, so its order is closed as reversed, holds no name and is credited nothing"
 
 liveOrderExists :: Text -> IO ()
 liveOrderExists ref =
