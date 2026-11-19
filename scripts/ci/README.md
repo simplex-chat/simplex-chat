@@ -195,7 +195,8 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - CI, in build-linux: core build, then `scope-tests.sh names-e2e` (step "Test changed scopes"):
   - anvil and the compiled contracts from the `anvil` and `contracts` stages of the page's webapp/dev/Dockerfile, at the versions it pins;
   - `npm ci` and Playwright's Chromium with its system packages, in apps/simplex-domains/webapp;
-  - scripts/store-service/dev/contract-run.sh with the job's simplex-chat-test: the page's end-to-end cases in Chromium against the service, with the fake BTCPay and Stripe of its tests (apps/simplex-store-service/README.md, "Running the webapp's cases against the service").
+  - scripts/store-service/dev/contract-run.sh with the job's simplex-chat-test: the page's end-to-end cases in Chromium against the service, with the fake BTCPay and Stripe of its tests (apps/simplex-store-service/README.md, "Running the webapp's cases against the service");
+  - on a failure, the run's folder (logs, the service's database, Playwright's results and traces) uploaded as the artifact `names-e2e`, kept 14 days (step "Names page cases' results").
 - Local: `scripts/ci/scope-tests.sh names-e2e`, with Docker; or contract-run.sh with anvil and the compiled contracts, as the README states.
 
 #### Scopes lacking CI tests
