@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,6 +19,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.LineHeightStyle
@@ -24,6 +27,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.platform.desktopDrawnBaselines
 import chat.simplex.common.ui.theme.HighOrLowlight
 import chat.simplex.common.ui.theme.Inter
 import chat.simplex.common.views.chat.item.*
@@ -149,13 +153,22 @@ class BubbleLayoutTest {
         val image = renderScene {
           CompositionLocalProvider(LocalBubbleLayout provides true, LocalDensity provides Density(1f, fontScale)) {
             Row(Modifier.background(Color.White)) {
+              val textLayout = remember { mutableStateOf<TextLayoutResult?>(null) }
+              val timeLayout = remember { mutableStateOf<TextLayoutResult?>(null) }
               Text(
                 buildAnnotatedString { append("11"); withStyle(SpanStyle(fontSize = 12.sp)) { append("11") } },
-                Modifier.alignByBaseline().record(placed, "text"),
+                Modifier.alignByBaseline().record(placed, "text").desktopDrawnBaselines { textLayout.value },
                 Color.Black,
-                style = textStyle()
+                style = textStyle(),
+                onTextLayout = { textLayout.value = it }
               )
-              Text("11", Modifier.alignByBaseline().record(placed, "time"), Color.Black, style = TextStyle(fontFamily = Inter, fontSize = 12.sp).merge(chatTextStyle(12.sp, HighOrLowlight)))
+              Text(
+                "11",
+                Modifier.alignByBaseline().record(placed, "time").desktopDrawnBaselines { timeLayout.value },
+                Color.Black,
+                style = TextStyle(fontFamily = Inter, fontSize = 12.sp).merge(chatTextStyle(12.sp, HighOrLowlight)),
+                onTextLayout = { timeLayout.value = it }
+              )
             }
           }
         }

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.LastBaseline
@@ -17,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.MsgErrorType
 import chat.simplex.common.model.RcvMsgError
+import chat.simplex.common.platform.desktopDrawnBaselines
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
@@ -52,12 +55,14 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: 
 fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onClick: () -> Unit) {
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
     ItemTextCard(ci, 16.sp, inlineMeta, Modifier.clickable(onClick = onClick)) {
+      val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
       Text(
         buildAnnotatedString {
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red)),
-        modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline)
+        modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline).desktopDrawnBaselines { layout.value },
+        onTextLayout = { layout.value = it }
       )
     }
   }

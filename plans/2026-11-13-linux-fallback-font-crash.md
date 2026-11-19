@@ -17,15 +17,43 @@ Fontconfig lists such a font only from a cache written with the system FreeType,
 
 ## Fix
 
-On Linux build hosts, `apps/multiplatform/build.gradle.kts` resolves every `org.jetbrains.skiko` module requested at 0.9.4.2 to 0.9.24 (Skia m138), where:
+`apps/multiplatform/build.gradle.kts` resolves every `org.jetbrains.skiko` module requested at 0.9.4.2 to 0.9.24 (Skia m138), where:
 - `FontAccessible` also requires that the font scanner loads the file;
 - `SkTypeface_fontconfig::Make` returns null when it does not.
 
 0.9.24 keeps the `SkiaLayerProperties` constructor that Compose 1.8.2 calls for every window; 0.9.37.3 removes it.
 
+## Bubble baselines on Skia m138
+
+Skia draws a line's glyphs at `floor(leading/2 - ascent + 0.5)` and reports its baseline as `round(descent - ascent + leading) - descent`. Desktop bubbles keep the two equal with whole-pixel line heights (`bubbleLineHeight`).
+
+m138 adds the paragraph's empty metrics to every line. They are scaled by the rounded font height, so when they exceed the runs' metrics, `descent - ascent` is fractional and the drawn baseline is up to 1 px from the reported one.
+
+`desktopDrawnBaselines` reports the drawn first and last baselines of a bubble text:
+
+```mermaid
+flowchart TD
+  A[Text layout] --> B["line descent = line top + line height - reported baseline"]
+  B --> C{"descent = empty descent of Inter at the style's size?"}
+  C -->|yes| D[ascent = empty ascent]
+  C -->|no| E[ascent = descent - line height]
+  D --> F["drawn = line top + floor(leading/2 - ascent + 0.5)"]
+  E --> F
+  F --> G["FirstBaseline, LastBaseline += drawn - round(reported)"]
+```
+
+Texts:
+- `MarkdownText`
+- time, TTL and deleted timestamp in `CIMetaView`
+- `HeaderText` and the quote sender in `FramedItemView`
+- deleted, integrity error, marked deleted, decryption error, group invitation and file size texts
+
 ## Scope
 
-- Linux desktop builds (x64 and arm64) use Skia m138; macOS and Windows builds and Android APKs are unchanged.
+- Desktop builds on all OSes use Skia m138; Android APKs are unchanged.
+- `desktopDrawnBaselines` is the modifier itself on Android, and acts on desktop only under `LocalBubbleLayout` for Inter texts with a line height in sp.
 - The rule applies only to 0.9.4.2, so a Compose update that brings another Skiko version is not overridden.
-- Test: `FallbackFontTest` builds a fontconfig cache for one BDF font with `fc-cache`, then lays out U+2603 in a child JVM.
+- Tests:
+  - `FallbackFontTest` builds a fontconfig cache for one BDF font with `fc-cache`, then lays out U+2603 in a child JVM.
+  - `BubbleLayoutTest.timeDrawnOnTextBaseline` checks the drawn rows of text and time at font scales 0.7 to 1.5.
 - `Dockerfile.build` installs `fontconfig`, which provides `fc-cache` to the test in CI.

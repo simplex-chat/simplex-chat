@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.text.*
@@ -13,18 +15,21 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
+import chat.simplex.common.platform.desktopDrawnBaselines
 import chat.simplex.common.ui.theme.*
 
 @Composable
 fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
     ItemTextCard(ci, 16.sp, inlineMeta) {
+      val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
       Text(
         buildAnnotatedString {
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, MaterialTheme.colors.secondary)),
-        modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline)
+        modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignBy(LastBaseline).desktopDrawnBaselines { layout.value },
+        onTextLayout = { layout.value = it }
       )
     }
   }

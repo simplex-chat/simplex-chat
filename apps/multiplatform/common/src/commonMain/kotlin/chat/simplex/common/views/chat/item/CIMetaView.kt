@@ -5,6 +5,8 @@ import androidx.compose.material.*
 import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -12,6 +14,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -25,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPreferences
+import chat.simplex.common.platform.desktopDrawnBaselines
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.*
 
@@ -53,12 +57,14 @@ fun CIMetaView(
   val timeStyle = LocalTextStyle.current.merge(chatTextStyle(12.sp, lineHeightColor))
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
+      val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
       Text(
         chatItem.timestampText,
         color = metaColor,
         fontSize = 12.sp,
-        modifier = Modifier.padding(start = 3.dp),
-        style = timeStyle
+        modifier = Modifier.padding(start = 3.dp).desktopDrawnBaselines { layout.value },
+        style = timeStyle,
+        onTextLayout = { layout.value = it }
       )
     } else {
       CIMetaText(
@@ -102,7 +108,8 @@ private fun CIMetaText(
     StatusIconText(painterResource(MR.images.ic_timer), color)
     val ttl = meta.itemTimed?.ttl
     if (ttl != chatTTL) {
-      Text(shortTimeText(ttl), color = color, fontSize = 12.sp, style = timeStyle)
+      val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
+      Text(shortTimeText(ttl), Modifier.desktopDrawnBaselines { layout.value }, color = color, fontSize = 12.sp, style = timeStyle, onTextLayout = { layout.value = it })
     }
   }
   if (showViaProxy && meta.sentViaProxy == true) {
@@ -137,7 +144,8 @@ private fun CIMetaText(
 
   if (showTimestamp) {
     Spacer(Modifier.width(4.dp))
-    Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = timeStyle)
+    val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
+    Text(meta.timestampText, Modifier.desktopDrawnBaselines { layout.value }, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = timeStyle, onTextLayout = { layout.value = it })
   }
 }
 

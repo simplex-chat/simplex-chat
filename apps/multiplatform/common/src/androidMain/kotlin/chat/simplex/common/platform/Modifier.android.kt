@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.text.TextLayoutResult
 import java.io.File
 
 @Composable
@@ -19,5 +20,8 @@ actual fun Modifier.onRightClick(action: () -> Unit): Modifier = this
 actual fun Modifier.desktopPointerHoverIconHand(): Modifier = this
 
 actual fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier = Modifier
+
+@Composable
+actual fun Modifier.desktopDrawnBaselines(textLayout: () -> TextLayoutResult?): Modifier = this
 
 actual fun newPasswordContentType(): ContentType = ContentType.NewPassword + ContentType.Password

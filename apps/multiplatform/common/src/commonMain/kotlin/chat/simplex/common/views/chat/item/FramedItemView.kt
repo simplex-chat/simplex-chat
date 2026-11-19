@@ -99,10 +99,13 @@ fun FramedItemView(
         Column(
           horizontalAlignment = Alignment.Start
         ) {
+          val senderLayout = remember { mutableStateOf<TextLayoutResult?>(null) }
           Text(
             sender,
+            Modifier.desktopDrawnBaselines { senderLayout.value },
             style = quoteBaseStyle.copy(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary).merge(chatTextStyle(13.5.sp)),
-            maxLines = 1
+            maxLines = 1,
+            onTextLayout = { senderLayout.value = it }
           )
           ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
         }
@@ -125,8 +128,10 @@ fun FramedItemView(
 
   @Composable
   fun HeaderText(caption: String, italic: Boolean, fontSize: TextUnit = 12.sp, modifier: Modifier = Modifier) {
+    val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
     Text(
-      modifier = modifier,
+      modifier = modifier.desktopDrawnBaselines { layout.value },
+      onTextLayout = { layout.value = it },
       text = buildAnnotatedString {
         withStyle(SpanStyle(fontSize = fontSize, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
           append(caption)

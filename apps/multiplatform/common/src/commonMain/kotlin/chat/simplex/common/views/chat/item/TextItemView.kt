@@ -306,10 +306,15 @@ fun MarkdownText (
         if (reserve != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
+      val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+      val textModifier = modifier.desktopDrawnBaselines { layoutResult.value }
       if (textSelection != null) {
-        SelectableText(annotatedText, style = style, modifier = modifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = textSelection.onTextLayoutResult)
+        SelectableText(annotatedText, style = style, modifier = textModifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = { r ->
+          layoutResult.value = r
+          textSelection.onTextLayoutResult(r)
+        })
       } else {
-        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+        Text(annotatedText, style = style, modifier = textModifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf(), onTextLayout = { layoutResult.value = it })
       }
     } else {
       var selectableEnd = 0
@@ -468,6 +473,7 @@ fun MarkdownText (
         textSelection?.onTextLayoutResult?.invoke(r)
       }
       val textModifier = modifier
+        .desktopDrawnBaselines { layoutResult.value }
         .then(textSelection?.positionModifier ?: Modifier)
         .then(if (hiddenSecrets.isEmpty()) Modifier else Modifier.drawWithContent {
           drawContent()
