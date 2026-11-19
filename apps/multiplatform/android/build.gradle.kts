@@ -40,8 +40,8 @@ android {
         targetSdk = 36
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
-        versionCode = (extra["android.version_code"] as String).toInt()
-        versionName = extra["android.version_name"] as String
+        versionCode = (project.extra["android.version_code"] as String).toInt()
+        versionName = project.extra["android.version_name"] as String
 
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -205,7 +205,7 @@ dependencies {
 }
 
 tasks {
-    val compressApk by creating {
+    val compressApk by registering {
         doLast {
             val javaHome = System.getProperties()["java.home"] ?: org.gradle.internal.jvm.Jvm.current().javaHome
             val sdkDir = android.sdkDirectory.absolutePath
@@ -217,11 +217,11 @@ tasks {
                 val keyPassword: String
                 val storeFile: String
                 val storePassword: String
-                if (project.properties["android.injected.signing.key.alias"] != null) {
-                    keyAlias = project.properties["android.injected.signing.key.alias"] as String
-                    keyPassword = project.properties["android.injected.signing.key.password"] as String
-                    storeFile = project.properties["android.injected.signing.store.file"] as String
-                    storePassword = project.properties["android.injected.signing.store.password"] as String
+                if (project.findProperty("android.injected.signing.key.alias") != null) {
+                    keyAlias = project.findProperty("android.injected.signing.key.alias") as String
+                    keyPassword = project.findProperty("android.injected.signing.key.password") as String
+                    storeFile = project.findProperty("android.injected.signing.store.file") as String
+                    storePassword = project.findProperty("android.injected.signing.store.password") as String
                 } else {
                     try {
                         val gradleConfig = android.signingConfigs.getByName(buildType)
@@ -254,7 +254,7 @@ tasks {
                     )
                 }.result.get()
 
-                if (project.properties["android.injected.signing.key.alias"] != null && buildType == "release") {
+                if (project.findProperty("android.injected.signing.key.alias") != null && buildType == "release") {
                     val flavor = variant.removeSuffix("Release").lowercase()
                     mapOf("arm64-v8a" to "simplex.apk", "armeabi-v7a" to "simplex-armv7a.apk").forEach { (abi, name) ->
                         if (!File(outputDir, "android-$flavor-$abi-release.apk").renameTo(File(outputDir, name))) {

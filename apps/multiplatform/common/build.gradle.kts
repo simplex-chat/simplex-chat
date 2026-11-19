@@ -197,11 +197,11 @@ multiplatformResources {
 
 buildConfig {
   forClass("BuildConfigCommon") {
-    buildConfigField("String", "ANDROID_VERSION_NAME", "\"${extra["android.version_name"]}\"")
-    buildConfigField("int", "ANDROID_VERSION_CODE", "${extra["android.version_code"]}")
-    buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
-    buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
-    buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
+    buildConfigField("String", "ANDROID_VERSION_NAME", "\"${project.extra["android.version_name"]}\"")
+    buildConfigField("int", "ANDROID_VERSION_CODE", "${project.extra["android.version_code"]}")
+    buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${project.extra["desktop.version_name"]}\"")
+    buildConfigField("int", "DESKTOP_VERSION_CODE", "${project.extra["desktop.version_code"]}")
+    buildConfigField("String", "DATABASE_BACKEND", "\"${project.extra["database.backend"]}\"")
     buildConfigField("Boolean", "SIMPLEX_ASSETS", "$hasSimplexAssets")
   }
 }
