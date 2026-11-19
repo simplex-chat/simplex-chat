@@ -26,6 +26,8 @@ exports=( $(sed 's/foreign export ccall "chat_migrate_init_key"//' src/Simplex/C
 for elem in "${exports[@]}"; do count=$(grep -R "$elem$" libsimplex.dll.def | wc -l); if [ $count -ne 1 ]; then echo Wrong exports in libsimplex.dll.def. Add \"$elem\" to that file; exit 1; fi ; done
 for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 1 ]; then echo Wrong exports in flake.nix. Add \"$elem\" to aarch64-android:lib:simplex-chat; exit 1; fi ; done
 
+grep -q "^package zstd" cabal.project.local 2>/dev/null || printf '\npackage zstd\n    ld-options: -Wl,--version-script=%s\n' "$root_dir/scripts/desktop/zstd-symbols.map" >> cabal.project.local
+
 #rm -rf $BUILD_DIR
 if [[ "$DATABASE_BACKEND" == "postgres" ]]; then
     echo "Building with postgres backend..."
@@ -45,6 +47,7 @@ patchelf --replace-needed "libffi.so.7" "libffi.so.8" libsimplex.so
 
 mkdir deps 2> /dev/null || true
 ldd libsimplex.so | grep "ghc" | cut -d' ' -f 3 | xargs -I {} cp {} ./deps/
+if nm -D --defined-only deps/libHSzstd-*.so | grep -qE ' (ZSTD|ZDICT)_'; then echo "libHSzstd exports zstd symbols"; exit 1; fi
 
 cd -
 

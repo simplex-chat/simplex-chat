@@ -25,6 +25,7 @@ import java.io.File
 
 fun main(args: Array<String>) {
   try {
+    rejectBitmapFonts()
     val link = linkFromArgs(args)
     if (!acquireSingleInstance(link)) return
     link?.let { chatModel.appOpenUrl.value = null to it }

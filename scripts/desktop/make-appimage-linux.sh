@@ -59,7 +59,7 @@ export SOURCE_DATE_EPOCH=1704067200
 
 # Delete redundant jar file and modify cfg
 rm -f ./usr/lib/app/*skiko-awt-runtime-linux*
-sed -i -e '/skiko-awt-runtime-linux/d' ./usr/lib/app/simplex.cfg
+sed -i -e '/^app\.classpath=/d' -e 's|^\[Application\]$|&\napp.classpath=$APPDIR/*|' ./usr/lib/app/simplex.cfg
 
 # Set all files to fixed time
 find . -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
