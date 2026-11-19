@@ -81,8 +81,10 @@ pointer() {
   if [ "$session" = x11 ]; then
     xdotool mousemove --sync "$1" "$2" click "$3"
   else
+    printf 'move %d %d\n' $(($1 - 1)) "$2" > "$state/input"
+    sleep 0.1
     printf 'move %d %d\n' "$1" "$2" > "$state/input"
-    sleep 0.2
+    sleep 0.1
     case "$3" in
       4) echo "scroll up" > "$state/input" ;;
       5) echo "scroll down" > "$state/input" ;;
