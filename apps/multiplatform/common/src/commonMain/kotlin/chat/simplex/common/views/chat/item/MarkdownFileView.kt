@@ -161,7 +161,7 @@ private fun MarkdownViewSwitch() {
 }
 
 @Composable
-private fun MarkdownFileCopyButton(text: String, fileSize: Int) {
+internal fun MarkdownFileCopyButton(text: String, fileSize: Int) {
   val clipboard = LocalClipboardManager.current
   IconButton({
     if (fileSize > MAX_MARKDOWN_COPY_SIZE) {
