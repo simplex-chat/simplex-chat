@@ -601,6 +601,23 @@ jobs:
           dpkg-query -W sway grim wtype gnome-keyring libegl-mesa0 flatpak xdg-desktop-portal
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
+      - name: Build xdg-dbus-proxy
+        if: ${{ matrix.kind == 'flatpak' }}
+        env:
+          VERSION: 0.1.9
+          SHA256: 5450dda586ec3bb3ca709d311e845487883faa3b09cf562608d7e84f4311dced
+        run: |
+          sudo apt-get install -y meson ninja-build libglib2.0-dev
+          curl -fsSL -o "$RUNNER_TEMP/xdg-dbus-proxy.tar.xz" \
+            "https://github.com/flatpak/xdg-dbus-proxy/releases/download/$VERSION/xdg-dbus-proxy-$VERSION.tar.xz"
+          echo "$SHA256  $RUNNER_TEMP/xdg-dbus-proxy.tar.xz" | sha256sum -c -
+          tar -xJf "$RUNNER_TEMP/xdg-dbus-proxy.tar.xz" -C "$RUNNER_TEMP"
+          meson setup "$RUNNER_TEMP/xdg-dbus-proxy-build" "$RUNNER_TEMP/xdg-dbus-proxy-$VERSION" \
+            --prefix=/usr/local -Dman=disabled -Dtests=false
+          ninja -C "$RUNNER_TEMP/xdg-dbus-proxy-build"
+          sudo ninja -C "$RUNNER_TEMP/xdg-dbus-proxy-build" install
+          echo "FLATPAK_DBUSPROXY=/usr/local/bin/xdg-dbus-proxy" >> "$GITHUB_ENV"
+
       - name: Download packages
         uses: actions/download-artifact@v8
         with:

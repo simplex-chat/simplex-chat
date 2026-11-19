@@ -311,6 +311,7 @@ sequenceDiagram
 - Tray callbacks run on `Dispatchers.Main`.
 - Tray icon files are written to the app's temporary directory and passed by path.
 - The tray item re-registers when the watcher restarts (fork).
+- Flatpak: the tray connects through the host's xdg-dbus-proxy; versions before 0.1.6 (Ubuntu 24.04, Linux Mint 22, Debian 12) reject sd-bus connections, and the tray is unavailable there.
 
 ```mermaid
 stateDiagram-v2
