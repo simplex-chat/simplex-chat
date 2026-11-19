@@ -354,8 +354,10 @@ send_image() {
   "$ui" shot "before-$ext"
   "$ui" click "$paperclip_x" "$bottom_y"
   "$ui" click-text Image 10
-  "$ui" wait "Cancel" 20
+  "$ui" wait "Cancel" 60
   "$ui" shot "file-dialog-$ext"
+  "$ui" key ctrl+l
+  sleep 1
   "$ui" type "$fixtures/$file"
   "$ui" key Return
   sleep 3

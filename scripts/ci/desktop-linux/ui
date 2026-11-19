@@ -83,6 +83,15 @@ pointer() {
   fi
 }
 
+start_session_bus() {
+  [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && return
+  if ! running dbus; then
+    dbus-daemon --session --fork --print-address=3 --print-pid=4 3> "$state/dbus-address" 4> "$state/dbus.pid"
+  fi
+  export DBUS_SESSION_BUS_ADDRESS
+  DBUS_SESSION_BUS_ADDRESS=$(cat "$state/dbus-address")
+}
+
 build_wayland_input() {
   local out=$state/bin protocol
   [ -x "$out/wayland-input" ] && return
@@ -187,7 +196,7 @@ output HEADLESS-1 resolution ${SCREEN_WIDTH}x${SCREEN_HEIGHT} position 0 0 bg #f
 default_border none
 default_floating_border none
 xwayland $([ "$session" = xwayland ] && echo force || echo disable)
-for_window [title="^SimpleX\$"] floating enable, move position 0 0
+for_window [all] floating enable, move position 0 0
 EOF
   WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
     setsid sway -c "$state/sway.conf" < /dev/null > "$UI_OUT/sway.log" 2>&1 &
@@ -275,6 +284,7 @@ start() {
     printf '%s\n' "$@" > "$settings"
   fi
   read -r -a session_environment <<< "$(app_environment)"
+  start_session_bus
   if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
     env "${session_environment[@]}" ${XDG_RUNTIME_DIR:+XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR"} \
       dbus-update-activation-environment "${session_environment[@]%%=*}" ${XDG_RUNTIME_DIR:+XDG_RUNTIME_DIR}
@@ -492,6 +502,7 @@ case "${1:-}" in
     stop_process xvfb 2
     stop_process wayland-input 2
     stop_process sway 5
+    stop_process dbus 2
     log "stop"
     ;;
   *)
