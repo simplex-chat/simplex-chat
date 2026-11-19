@@ -197,7 +197,7 @@ testNamesDownUp = withServiceStore $ \st -> do
   let (names, later) = span ((/= productMigration) . name) $ dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
   map name names `shouldBe` ["20261013_names"]
-  map name later `shouldBe` [productMigration, "20261119_name_attempts"]
+  map name later `shouldBe` [productMigration, "20261119_name_attempts", "20261120_name_reversals"]
   seedBadgePrice st "price1"
   createInvoiceRows st sampleInvoice `shouldReturn` Right ()
   let NewInvoice {niInvoiceId = InvoiceId badgeInvoice, niProviderRef = badgeRef} = sampleInvoice

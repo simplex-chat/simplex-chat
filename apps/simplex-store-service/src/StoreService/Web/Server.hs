@@ -20,6 +20,7 @@ where
 
 import StoreService.Catalog (PricedOffer (..), priceOffer)
 import StoreService.Config (ChainConfig (..), ListenerConfig (..), NamesConfig (..), ServiceConfig (..), StripeConfig (..), isLoopbackHost)
+import StoreService.Names.Balances (reverseOrder, warnOfFraud)
 import StoreService.Names.Chain (ChainSeconds, chainSeconds)
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), jsonField, noteRead, ordersEnv, textWith)
@@ -29,7 +30,7 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegis
 import StoreService.Names.View (lapseMoment, refusalResponse, registrationVersion)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
-import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), providerErrorText)
+import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), WebhookError (..), WebhookEvent (..), providerErrorText)
 import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), NewInvoice (..), codeHashExists, createInvoiceRows, currentSecond, getInvoice, getInvoiceByProviderRef, newInvoiceId, paymentHolds, readCatalogRows, truncateToSecond)
 import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
@@ -58,7 +59,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8')
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Word (Word64, Word8)
-import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status409, status413)
+import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status409, status413, status500)
 import Network.Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeType)
@@ -125,10 +126,11 @@ maxWebhookBytes = 64 * 1024
 catalogChanged :: Response
 catalogChanged = jsonError status400 "catalog_changed"
 
-webhookOk, webhookRefused, webhookTooLarge :: Response
+webhookOk, webhookRefused, webhookTooLarge, webhookFailed :: Response
 webhookOk = webhookResponse status200
 webhookRefused = webhookResponse status400
 webhookTooLarge = webhookResponse status413
+webhookFailed = webhookResponse status500
 
 webhookResponse :: Status -> Response
 webhookResponse st = responseLBS st [(hCacheControl, "no-store")] ""
@@ -462,9 +464,13 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
             case pVerifyWebhook p now (requestHeaders req) (LB.toStrict body) of
               Left (WebhookError e) -> refuse e
               Left (WebhookStale e) -> logRefusal logWarn (route <> " refused: " <> e) >> respond webhookRefused
-              Right ref_ -> do
+              Right event_ -> do
                 atomically $ TM.insert provider now (weWebhookAt env)
-                maybe (ignore body "nothing this service acts on") (resolve body) ref_
+                case event_ of
+                  Nothing -> ignore body "nothing this service acts on"
+                  Just (WEPayment ref) -> resolve body ref
+                  Just WEReversal {weEvent, weProviderRef, weReversal} -> onNameOrder body weProviderRef $ \oe row rid -> reverseOrder oe row rid weEvent weReversal
+                  Just WEFraudWarning {weProviderRef, weWarning} -> onNameOrder body weProviderRef $ \oe row rid -> warnOfFraud oe row rid weWarning
     refuse :: Text -> IO ResponseReceived
     refuse why = logRefusal logNote (route <> " refused: " <> why) >> respond webhookRefused
     -- anyone can post here, so the lines a flood would write are capped, not the refusals
@@ -485,6 +491,17 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
           -- provider_ref is unique table-wide, not per provider, so without this a collision could credit the wrong order
           | irProvider /= provider -> ignore body ("provider_ref " <> ref <> " belongs to " <> tshow irProvider)
           | otherwise -> queue body ref
+    onNameOrder :: LB.ByteString -> Text -> (OrdersEnv -> InvoiceRow -> RegistrationId -> IO ()) -> IO ResponseReceived
+    onNameOrder body ref act =
+      getInvoiceByProviderRef weStore ref >>= \case
+        Just row@InvoiceRow {irProvider, irProduct = IPName rid}
+          | irProvider == provider, Just oe <- weOrders env ->
+              ((Right <$> act oe row rid) `catchOwn'` (pure . Left)) >>= \case
+                Right () -> logEvent body ("handled for " <> ref) >> respond webhookOk
+                Left e -> do
+                  logError (route <> ": " <> fromMaybe noEventType (eventTypeOf body) <> " of " <> ref <> " failed, so the provider delivers it again: " <> tshow e)
+                  respond webhookFailed
+        _ -> ignore body ("no name order's invoice holds provider_ref " <> ref)
     queue :: LB.ByteString -> Text -> IO ResponseReceived
     queue body ref = do
       queued <- queueReadHint weHints ref

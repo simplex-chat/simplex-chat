@@ -23,7 +23,8 @@ schemaMigrations =
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
     ("20261013_names", m20261013_names, Just down_m20261013_names),
     ("20261118_invoice_product", m20261118_invoice_product, Just down_m20261118_invoice_product),
-    ("20261119_name_attempts", m20261119_name_attempts, Just down_m20261119_name_attempts)
+    ("20261119_name_attempts", m20261119_name_attempts, Just down_m20261119_name_attempts),
+    ("20261120_name_reversals", m20261120_name_reversals, Just down_m20261120_name_reversals)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -619,6 +620,33 @@ down_m20261119_name_attempts =
 DROP INDEX @idx_name_attempts_registration;
 
 DROP TABLE @name_attempts;
+|]
+
+m20261120_name_reversals :: Text
+m20261120_name_reversals =
+  withPrefix
+    servicePrefix
+    [r|
+CREATE TABLE @name_reversals(
+  provider_event TEXT NOT NULL PRIMARY KEY,
+  invoice_id TEXT NOT NULL REFERENCES @invoices,
+  kind TEXT NOT NULL,
+  cents INTEGER NOT NULL CHECK (cents >= 0),
+  taken_back INTEGER NOT NULL CHECK (taken_back >= 0),
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX @idx_name_reversals_invoice ON @name_reversals(invoice_id);
+|]
+
+down_m20261120_name_reversals :: Text
+down_m20261120_name_reversals =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_name_reversals_invoice;
+
+DROP TABLE @name_reversals;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

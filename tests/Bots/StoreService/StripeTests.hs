@@ -14,9 +14,11 @@ import StoreService.Providers
     ProviderError (..),
     ProviderInvoice (..),
     Received (..),
+    Reversal (..),
     providerErrorText,
     settleWindow,
     WebhookError (..),
+    WebhookEvent (..),
   )
 import StoreService.Providers.Stripe (IntentRead (..), IntentStatus (..), signalOf, stripeProvider)
 import Bots.StoreService.FakeStripe
@@ -78,6 +80,7 @@ badgeStripeTests = describe "badge stripe adapter" $ do
   describe "verifying the webhook signature" $ do
     it "accepts a signed succeeded event and names its intent" testWebhookVerifies
     it "answers a valid but unhandled event with no intent" testWebhookUnhandled
+    it "reads a dispute, a refund and an early fraud warning with their intent" testWebhookReversals
     it "accepts any v1 during a rotation, refusing only when none matches" testWebhookRotatedSignature
     it "refuses a missing, malformed, or tampered signature" testWebhookMalformed
     it "accepts a signature up to 15 minutes from now, either way, and refuses one further out" testWebhookTimestampWindow
@@ -398,14 +401,29 @@ testWebhookVerifies :: IO ()
 testWebhookVerifies = withProvider $ \fake p -> do
   let secret = sWebhookSecret (fsConfig fake)
       body = stripeEvent "payment_intent.succeeded" "pi_test_a"
-  pVerifyWebhook p signedAt (stripeSigHeader secret 1700000000 body) (LB.toStrict body) `shouldBe` Right (Just "pi_test_a")
+  pVerifyWebhook p signedAt (stripeSigHeader secret 1700000000 body) (LB.toStrict body) `shouldBe` Right (Just $ WEPayment "pi_test_a")
   pVerifyWebhook p signedAt (stripeSigHeader (secret <> "0") 1700000000 body) (LB.toStrict body) `shouldSatisfy` isRefused
 
 testWebhookUnhandled :: IO ()
 testWebhookUnhandled = withProvider $ \fake p -> do
   let secret = sWebhookSecret (fsConfig fake)
-      body = stripeEvent "charge.refunded" "pi_test_a"
-  pVerifyWebhook p signedAt (stripeSigHeader secret 1700000000 body) (LB.toStrict body) `shouldBe` Right Nothing
+      verified body = pVerifyWebhook p signedAt (stripeSigHeader secret 1700000000 body) (LB.toStrict body)
+  verified (stripeEvent "charge.refunded" "pi_test_a") `shouldBe` Right Nothing
+  verified (stripeObjectEvent "evt_1" "charge.dispute.created" ["id" .= ("dp_1" :: Text), "amount" .= (2000 :: Int)]) `shouldBe` Right Nothing
+  verified (stripeObjectEvent "evt_2" "charge.succeeded" ["id" .= ("ch_1" :: Text), "payment_intent" .= ("pi_test_a" :: Text)]) `shouldBe` Right Nothing
+
+testWebhookReversals :: IO ()
+testWebhookReversals = withProvider $ \fake p -> do
+  let secret = sWebhookSecret (fsConfig fake)
+      verified body = pVerifyWebhook p signedAt (stripeSigHeader secret 1700000000 body) (LB.toStrict body)
+      intent = "payment_intent" .= ("pi_test_a" :: Text)
+  verified (stripeObjectEvent "evt_1" "charge.dispute.created" ["id" .= ("dp_1" :: Text), "amount" .= (2000 :: Int), "charge" .= ("ch_1" :: Text), intent])
+    `shouldBe` Right (Just $ WEReversal "evt_1" "pi_test_a" $ RVDispute "dp_1" $ CurrencyAmount 2000)
+  verified (stripeObjectEvent "evt_2" "charge.refunded" ["id" .= ("ch_1" :: Text), "amount" .= (2000 :: Int), "amount_refunded" .= (500 :: Int), intent])
+    `shouldBe` Right (Just $ WEReversal "evt_2" "pi_test_a" $ RVRefund "ch_1" $ CurrencyAmount 500)
+  verified (stripeObjectEvent "evt_3" "radar.early_fraud_warning.created" ["id" .= ("issfr_1" :: Text), "fraud_type" .= ("card_never_received" :: Text), "charge" .= ("ch_1" :: Text), intent])
+    `shouldBe` Right (Just $ WEFraudWarning "pi_test_a" "card_never_received")
+  verified (stripeEvent "charge.dispute.created" "dp_1") `shouldBe` Right Nothing
 
 -- | Stripe sends one v1 per active secret while a signing secret is being rotated, so a valid
 -- signature can be any of them, not only the first.
@@ -417,7 +435,7 @@ testWebhookRotatedSignature = withProvider $ \fake p -> do
       good = stripeHexSig secret t body
       wrong = stripeHexSig (secret <> "0") t body
       header sigs = [("Stripe-Signature", "t=" <> B8.pack (show t) <> B8.concat [",v1=" <> s | s <- sigs])]
-  pVerifyWebhook p signedAt (header [wrong, good]) (LB.toStrict body) `shouldBe` Right (Just "pi_test_a")
+  pVerifyWebhook p signedAt (header [wrong, good]) (LB.toStrict body) `shouldBe` Right (Just $ WEPayment "pi_test_a")
   pVerifyWebhook p signedAt (header [wrong, wrong]) (LB.toStrict body) `shouldSatisfy` isRefused
 
 testWebhookMalformed :: IO ()
@@ -436,8 +454,8 @@ testWebhookTimestampWindow = withProvider $ \fake p -> do
       body = stripeEvent "payment_intent.succeeded" "pi_test_a"
       signedOffBy offset = pVerifyWebhook p signedAt (stripeSigHeader secret (1700000000 + offset) body) (LB.toStrict body)
       window = 15 * 60
-  signedOffBy (negate window) `shouldBe` Right (Just "pi_test_a")
-  signedOffBy window `shouldBe` Right (Just "pi_test_a")
+  signedOffBy (negate window) `shouldBe` Right (Just $ WEPayment "pi_test_a")
+  signedOffBy window `shouldBe` Right (Just $ WEPayment "pi_test_a")
   signedOffBy (negate window - 1) `shouldSatisfy` isStale
   signedOffBy (window + 1) `shouldSatisfy` isStale
 
@@ -450,12 +468,12 @@ namesInError what = \case
   Left e -> what `T.isInfixOf` providerErrorText e
   Right _ -> False
 
-isRefused :: Either WebhookError (Maybe Text) -> Bool
+isRefused :: Either WebhookError (Maybe WebhookEvent) -> Bool
 isRefused = \case
   Left (WebhookError _) -> True
   _ -> False
 
-isStale :: Either WebhookError (Maybe Text) -> Bool
+isStale :: Either WebhookError (Maybe WebhookEvent) -> Bool
 isStale = \case
   Left (WebhookStale _) -> True
   _ -> False

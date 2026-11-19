@@ -25,6 +25,7 @@
    10. [A balance refunded by support](#310-a-balance-refunded-by-support)
    11. [A registered name's links edited](#311-a-registered-names-links-edited)
    12. [Service start](#312-service-start)
+   13. [A card dispute or a refund](#313-a-card-dispute-or-a-refund)
 
 ---
 
@@ -653,3 +654,44 @@ Notes:
 - The lanes are started in the chat core's callback, after `postStartHook`, so after the bot address exists, unless `--no-address` is passed ([`Chat/Core.hs:97-106`](../../../src/Simplex/Chat/Core.hs#L97-L106), [`Service.hs:301-313`](../src/StoreService/Service.hs#L301-L313), [`Service.hs:636-645`](../src/StoreService/Service.hs#L636-L645)).
 - The names lanes are the sender, the record edits lane, the names worker, the check of paid orders not registered 3 hours after their payment, every 5 minutes, which logs an error and reports in the managed group once for each, the month pass, every 5 minutes, which fails each order still `queued`, `committed` or `failed` a calendar month after its payment or its code's reservation with the reason `monthEnded`, the money paid for it added to its balance or its code released, and its name released, and the terms fetch, which reads or fetches both current terms texts at the start and then hourly; all lanes are started together with `raceAny_` from simplexmq ([`Service.hs:366-371`](../src/StoreService/Service.hs#L366-L371), [`Names/Contracts.hs:247-254`](../src/StoreService/Names/Contracts.hs#L247-L254)).
 - Under `--run-cli` the binary runs the terminal chat and the badge request lanes only ([`Service.hs:381-404`](../src/StoreService/Service.hs#L381-L404)).
+
+---
+
+### 3.13 A card dispute or a refund
+
+Stripe reports a dispute, a refund or an early fraud warning on a name order's payment; the order is cancelled while no register transaction of it was sent, and the operators are alerted with its evidence.
+
+```mermaid
+sequenceDiagram
+  participant V as Stripe
+  participant W as Web API
+  participant D as PostgreSQL
+  participant O as Operators
+  V->>W: POST /webhooks/stripe: charge.dispute.created, charge.refunded or radar.early_fraud_warning.created
+  W->>D: the invoice of its payment_intent, a name order's
+  alt an early fraud warning
+    W->>D: nothing written
+  else a dispute or a refund, its event recorded before
+    W->>D: nothing written
+  else a dispute or a refund
+    W->>D: under the name's lock, one transaction: the event recorded, the order's row locked
+    alt support recorded the order's refund
+      W->>D: nothing more written
+    else live past unpaid, no register transaction of it saved
+      W->>D: order set closed, reversed; its reveal cleared; the cents it paid from another order's balance returned there; its own balance taken back
+    else otherwise
+      W->>D: its own balance taken back
+    end
+  end
+  W->>O: log and managed group: the event, the outcome, the payment, the signed order and its transactions
+  W-->>V: 200, or 500 when the handling failed, so Stripe delivers it again
+```
+
+Notes:
+
+- The events are read by `stripeEvent` in [`Providers/Stripe.hs`](../src/StoreService/Providers/Stripe.hs): a dispute's `amount`, a refund's `amount_refunded`, and the `payment_intent` of each. A badge invoice's event changes nothing ([`Web/Server.hs`](../src/StoreService/Web/Server.hs) `onNameOrder`).
+- Each dispute or refund is recorded once in `name_reversals` by its event id; a refund counts the rise of `amount_refunded` over the refunds recorded for the invoice ([`Names/Store.hs`](../src/StoreService/Names/Store.hs) `recordReversal`).
+- The cents taken back from the order's own balance are the reversed cents, at most the balance's amount and the invoice's amount less what earlier reversals of it took back (`takeBackBalance`).
+- An order with a reversal is credited nothing more: `creditBalance` adds nothing to it, so a taken write, the month's end, a move to a cheaper name and late money credit none of its price. A reversed order is not counted as a closed order's late money (`closedUnpaid`).
+- The register's save locks the order's row at the version the worker read, in the transaction that saves the transaction, and the reversal locks the row before it reads the order's transactions, so a register is saved and sent only for an order not cancelled ([`Names/Sender.hs`](../src/StoreService/Names/Sender.hs) `submitTransactionIf`, [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs) `sendRegister`).
+- A cancelled order's view reads `{"type": "closed", "closedBy": "reversed"}` ([`Names/Balances.hs`](../src/StoreService/Names/Balances.hs) `reverseOrder`).

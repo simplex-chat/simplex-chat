@@ -19,6 +19,7 @@ module Bots.StoreService.FakeStripe
     stripeSigHeader,
     stripeHexSig,
     stripeEvent,
+    stripeObjectEvent,
   )
 where
 
@@ -172,6 +173,10 @@ stripeHexSig secret t body = convertToBase Base16 digest
 stripeEvent :: Text -> Text -> LB.ByteString
 stripeEvent eventType pid =
   J.encode (J.object ["type" J..= eventType, "data" J..= J.object ["object" J..= J.object ["id" J..= pid]]])
+
+stripeObjectEvent :: Text -> Text -> [Pair] -> LB.ByteString
+stripeObjectEvent eventId eventType object =
+  J.encode (J.object ["id" J..= eventId, "type" J..= eventType, "data" J..= J.object ["object" J..= J.object object]])
 
 fixtureResponse :: Text -> IO J.Value
 fixtureResponse name = do

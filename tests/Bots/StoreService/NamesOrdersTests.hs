@@ -1827,6 +1827,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
                  J.object ["type" .= ("failed" :: Text), "reason" .= ("unread" :: Text), "heldUntil" .= t0]
                ]
   map J.toJSON [FRSendsUsedUp, FRMonthEnded, FRUnread] `shouldBe` ["sendsUsedUp", "monthEnded", "unread"]
+  map J.toJSON [ICExpired, ICCancelled, ICReversed] `shouldBe` ["expired", "cancelled", "reversed"]
   map J.toJSON [PUnpaid, PClosed, PRegistered] `shouldBe` ["unpaid", "closed", "registered"]
 
 testViewStates :: IO ()

@@ -108,6 +108,11 @@ module StoreService.Names.Store
     spendHeldBalance,
     releaseHeldBalance,
     refundBalance,
+    recordReversal,
+    takeBackBalance,
+    returnBalance,
+    lockRegistration,
+    registerTxSent,
     lateCreditState,
     creditLatePayment,
     latePending,
@@ -159,7 +164,7 @@ import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
-import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..), InvoiceStatus (..), PaymentProvider, ServicePaymentMethod)
+import Simplex.Chat.PaymentService.Types (CryptoCurrency, CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider, ServicePaymentMethod)
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), FromField (..), ToField (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -175,7 +180,7 @@ import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
 import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Chain (ChainSeconds, Hex32 (..), RevertName, TxHash (..))
 import StoreService.Names.Registration (AgreedTerms, Commitment, LinkKind, OrderFields (..), RegistrationId (..), TermsAcceptance (..), TermsHash)
-import StoreService.Providers (Rate, Uncreditable (..), Units)
+import StoreService.Providers (Rate, Reversal (..), Uncreditable (..), Units)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, lockInvoice, mkQuery, newInvoiceId, note, prefixQuery, unfundedQuery)
 
@@ -246,16 +251,18 @@ data Commit = Commit
   }
   deriving (Eq, Show)
 
-data InvoiceClose = ICExpired | ICCancelled
+data InvoiceClose = ICExpired | ICCancelled | ICReversed
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding InvoiceClose where
   textEncode = \case
     ICExpired -> "expired"
     ICCancelled -> "cancelled"
+    ICReversed -> "reversed"
   textDecode = \case
     "expired" -> Just ICExpired
     "cancelled" -> Just ICCancelled
+    "reversed" -> Just ICReversed
     _ -> Nothing
 
 instance FromField InvoiceClose where fromField = fromTextField_ textDecode
@@ -1394,7 +1401,7 @@ lateCredits db (InvoiceId invId) =
         (Just caUnits, Just caInvoiceRate, Just caCurrentRate, Just caRateUsed) -> Right CACrypto {caUnits, caInvoiceRate, caCurrentRate, caRateUsed, caCents = cents}
         _ -> Left $ "name_late_credits figures: " <> inv
 
--- | Adds to the order's balance, making it on its first credit.
+-- | Adds to the order's balance, making it on its first credit, unless a payment of the order was reversed.
 creditBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO ()
 creditBalance db (RegistrationId rid) cents now =
   DB.execute
@@ -1402,14 +1409,19 @@ creditBalance db (RegistrationId rid) cents now =
     ( prefixQuery
         [sql|
       INSERT INTO @name_balances (registration_id, amount, credited, refunded, created_at, updated_at)
-      VALUES (?,?,?,0,?,?)
+      SELECT ?, ?, ?, 0, ?, ?
+      WHERE NOT EXISTS (
+        SELECT 1 FROM @name_reversals v
+        JOIN @name_invoices ni ON ni.invoice_id = v.invoice_id
+        WHERE ni.registration_id = ?
+      )
       ON CONFLICT (registration_id) DO UPDATE SET
         amount = @name_balances.amount + excluded.amount,
         credited = @name_balances.credited + excluded.credited,
         updated_at = excluded.updated_at
     |]
     )
-    (rid, cents, cents, now, now)
+    (rid, cents, cents, now, now, rid)
 
 -- | The price, above 0, spent at once, where the amount is the one seen and nothing holds it.
 spendBalance :: DB.Connection -> RegistrationId -> USDCents -> USDCents -> UTCTime -> IO Bool
@@ -1460,6 +1472,49 @@ refundBalance db (RegistrationId rid) cents now =
       )
       (cents, now, now, rid, cents)
 
+recordReversal :: DB.Connection -> Text -> InvoiceId -> Reversal -> UTCTime -> IO (Maybe USDCents)
+recordReversal db event (InvoiceId invId) reversal now = do
+  cents <- case reversal of
+    RVDispute _ (CurrencyAmount amount) -> pure $ fromIntegral amount
+    RVRefund _ (CurrencyAmount total) -> do
+      refunded <- maybeFirstRow' 0 fromOnly $ DB.query db ("SELECT " <> integerSum "COALESCE(SUM(cents), 0)" <> mkQuery " FROM @name_reversals WHERE invoice_id = ? AND kind = ?") (invId, kind)
+      pure $ max 0 $ fromIntegral total - refunded
+  inserted <-
+    executeChanging
+      db
+      (mkQuery "INSERT INTO @name_reversals (provider_event, invoice_id, kind, cents, taken_back, created_at) VALUES (?,?,?,?,0,?) ON CONFLICT DO NOTHING")
+      (event, invId, kind, cents, now)
+  pure $ if inserted > 0 then Just cents else Nothing
+  where
+    kind :: Text
+    kind = case reversal of
+      RVDispute {} -> "dispute"
+      RVRefund {} -> "refund"
+
+takeBackBalance :: DB.Connection -> Text -> InvoiceId -> RegistrationId -> USDCents -> UTCTime -> IO USDCents
+takeBackBalance db event invId@(InvoiceId inv) (RegistrationId rid) cents now = do
+  invoiced <- invoiceAmount db invId
+  takenBefore <- maybeFirstRow' 0 fromOnly $ DB.query db ("SELECT " <> integerSum "COALESCE(SUM(taken_back), 0)" <> mkQuery " FROM @name_reversals WHERE invoice_id = ?") (Only inv)
+  DB.execute db (mkQuery "UPDATE @name_balances SET amount = amount WHERE registration_id = ?") (Only rid)
+  amount <- maybeFirstRow' 0 fromOnly $ DB.query db (mkQuery "SELECT amount FROM @name_balances WHERE registration_id = ?") (Only rid)
+  let taken = max 0 $ minimum [cents, invoiced - takenBefore, amount]
+  when (taken > 0) $ do
+    DB.execute db (mkQuery "UPDATE @name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ?") (taken, now, rid)
+    DB.execute db (mkQuery "UPDATE @name_reversals SET taken_back = ? WHERE provider_event = ?") (taken, event)
+  pure taken
+
+returnBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
+returnBalance db (RegistrationId source) cents now =
+  (> 0) <$> executeChanging db (mkQuery "UPDATE @name_balances SET amount = amount + ?, updated_at = ? WHERE registration_id = ?") (cents, now, source)
+
+lockRegistration :: DB.Connection -> NameRegistration -> IO Bool
+lockRegistration db NameRegistration {nrId = RegistrationId rid, nrVersion} =
+  (> 0) <$> executeChanging db (mkQuery "UPDATE @name_registrations SET version = version WHERE registration_id = ? AND version = ?") (rid, nrVersion)
+
+registerTxSent :: DB.Connection -> RegistrationId -> IO Bool
+registerTxSent db (RegistrationId rid) =
+  not . null <$> (DB.query db (mkQuery "SELECT 1 FROM @name_transactions WHERE registration_id = ? AND kind = ? LIMIT 1") (rid, TKRegistration RTRegister) :: IO [Only Int])
+
 -- | A name invoice with its order, its invoice row and its payment row.
 lateFrom :: Query
 lateFrom =
@@ -1471,7 +1526,7 @@ lateFrom =
 
 -- | Its order closed unpaid, whatever the invoice's status, since settlement queues only a live order; takes the closed phase.
 closedUnpaid :: Query
-closedUnpaid = " r.phase = ?"
+closedUnpaid = " r.phase = ? AND r.closed_by <> " <> textLiteral ICReversed
 
 -- | Its order paid by it, with crypto received above what it asked; takes the unpaid and closed phases. The last term matches the partial index of
 -- overpaid payments, so the poller's pass reads only those.
@@ -1543,7 +1598,7 @@ receivedFigure = " CASE WHEN" <> cardInvoice <> " THEN p.amount ELSE COALESCE(p.
 lateColumns :: Query
 lateColumns =
   "SELECT ni.invoice_id, ni.registration_id, CASE WHEN r.phase IN (" <> textLiteral PUnpaid <> ", " <> textLiteral PClosed <> ") THEN 1 ELSE 0 END, CASE WHEN r.phase = " <> textLiteral PClosed
-    <> " THEN 1 ELSE 0 END, i.payment_crypto_currency, ni.late_support, COALESCE(p.amount, 0), p.confirmed_amount,"
+    <> " AND r.closed_by <> " <> textLiteral ICReversed <> " THEN 1 ELSE 0 END, i.payment_crypto_currency, ni.late_support, COALESCE(p.amount, 0), p.confirmed_amount,"
     <> " p.received_units, p.confirmed_units, p.invoice_rate,"
     <> creditedTotal "units"
     <> ","

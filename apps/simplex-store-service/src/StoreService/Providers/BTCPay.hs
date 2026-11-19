@@ -41,6 +41,7 @@ import StoreService.Providers
     settleWindow,
     unitDecimals,
     WebhookError (..),
+    WebhookEvent (..),
   )
 import StoreService.Store.Invoices (unixSeconds)
 import Control.Logger.Simple (logError, logNote, logWarn)
@@ -314,7 +315,7 @@ btcpayProvider cfg = do
         pCancelInvoice = cancelInvoice env,
         pListOpen = listOpen env,
         pCurrentRate = Just (currentRate env),
-        pVerifyWebhook = const (verifyBTCPaySig (bWebhookSecret cfg))
+        pVerifyWebhook = \_ hdrs body -> fmap WEPayment <$> verifyBTCPaySig (bWebhookSecret cfg) hdrs body
       }
 
 -- enabledOnly returns only enabled methods, so the boot log shows what the store can actually use.

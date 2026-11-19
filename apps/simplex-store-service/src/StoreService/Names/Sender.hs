@@ -15,6 +15,7 @@ module StoreService.Names.Sender
     newSender,
     checkPendingSignatures,
     submitTransaction,
+    submitTransactionIf,
     inFlightTransaction,
     awaitOutcome,
     followTransactions,
@@ -46,6 +47,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
@@ -93,6 +95,7 @@ data SendError
     SEInFlight
   | -- | the wei per gas the latest block needs is above the configured max fee per gas
     SEFeeAboveCap Integer
+  | SEChanged
   deriving (Eq, Show)
 
 -- | Settled at the configured confirmation depth.
@@ -174,7 +177,10 @@ checkPendingSignatures g ChainConfig {cChainId, cServiceKey} st = do
 
 -- | Dry run, the next nonce, the market's fees, the signature, saved, then sent. A failed send is retried by 'followTransactions'.
 submitTransaction :: Sender -> TxFor -> Address -> ByteString -> IO (Either SendError PendingTx)
-submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar, ccConfig = ChainConfig {cChainId}}, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight} for to calldata =
+submitTransaction s for = submitTransactionIf s for (\_ -> pure True)
+
+submitTransactionIf :: Sender -> TxFor -> (DB.Connection -> IO Bool) -> Address -> ByteString -> IO (Either SendError PendingTx)
+submitTransactionIf s@Sender {snChain = c@ChainClient {ccRegistrar, ccConfig = ChainConfig {cChainId}}, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight} for unchanged to calldata =
   withMVar snQueue $ \_ -> runExceptT $ do
     busy <- any ((== for) . ifFor) <$> liftIO (readTVarIO snInFlight)
     when busy $ throwError SEInFlight
@@ -202,9 +208,10 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar, ccConfig = Cha
               txData = calldata
             }
     SignedTx {stRaw, stHash} <- withExceptT SESigning $ ExceptT $ signTransaction snRandom c request
+    now <- liftIO snNow
+    saved <- liftIO $ saveTransaction snStore unchanged for stRaw stHash nonce now
+    unless saved $ throwError SEChanged
     liftIO $ do
-      now <- snNow
-      saveTransaction snStore for stRaw stHash nonce now
       outcome <- newEmptyTMVarIO
       atomically $ do
         writeTVar snNextNonce $ nonce + 1
@@ -291,7 +298,7 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
           signTransaction snRandom c request >>= \case
             Left e -> False <$ logError ("names sender: replacement for nonce " <> tshow nonce <> " not signed: " <> T.pack e)
             Right SignedTx {stRaw, stHash} -> do
-              saveTransaction snStore ifFor stRaw stHash nonce now
+              void $ saveTransaction snStore (\_ -> pure True) ifFor stRaw stHash nonce now
               update s nonce $ \t -> t {ifRequest = request, ifRaw = stRaw, ifHashes = stHash <| ifHashes t, ifReplaceAt = later}
               logNote $
                 "names sender: replacing nonce " <> tshow nonce <> " at max fee " <> tshow maxFee'
@@ -349,9 +356,9 @@ maxTxFeeWei = 10_000_000_000_000_000
 maxTxFeeText :: Text
 maxTxFeeText = "0.01 ETH"
 
-saveTransaction :: DBStore -> TxFor -> ByteString -> TxHash -> Word64 -> UTCTime -> IO ()
-saveTransaction st for raw hash nonce now =
-  withTransaction st $ \db -> void $ insertTransaction db for NewTransaction {ntxRaw = raw, ntxHash = hash, ntxNonce = nonce} now
+saveTransaction :: DBStore -> (DB.Connection -> IO Bool) -> TxFor -> ByteString -> TxHash -> Word64 -> UTCTime -> IO Bool
+saveTransaction st unchanged for raw hash nonce now =
+  withTransaction st $ \db -> unchanged db >>= \ok -> ok <$ when ok (void $ insertTransaction db for NewTransaction {ntxRaw = raw, ntxHash = hash, ntxNonce = nonce} now)
 
 -- | An underfunded key is an error, since only the operator can fund it.
 broadcast :: Sender -> Word64 -> ByteString -> IO ()

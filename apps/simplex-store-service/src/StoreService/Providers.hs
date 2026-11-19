@@ -10,6 +10,8 @@ module StoreService.Providers
     decodeAnswer,
     objectId,
     WebhookError (..),
+    WebhookEvent (..),
+    Reversal (..),
     Received (..),
     CryptoReceived (..),
     Confirmation (..),
@@ -108,6 +110,15 @@ objectId v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
 
 -- | WebhookStale is a valid signature with a timestamp too far from our clock.
 data WebhookError = WebhookError Text | WebhookStale Text deriving (Eq, Show)
+
+data WebhookEvent
+  = WEPayment Text
+  | WEReversal {weEvent :: Text, weProviderRef :: Text, weReversal :: Reversal}
+  | WEFraudWarning {weProviderRef :: Text, weWarning :: Text}
+  deriving (Eq, Show)
+
+data Reversal = RVDispute Text CurrencyAmount | RVRefund Text CurrencyAmount
+  deriving (Eq, Show)
 
 -- | The amounts are the total received on the invoice so far, not the amount of one payment.
 data Received
@@ -238,5 +249,5 @@ data Provider = Provider
     pListOpen :: IO (Either ProviderError ListPass),
     -- | Nothing for a provider of card payments, which needs no rate.
     pCurrentRate :: Maybe (CryptoCurrency -> IO (Either ProviderError Rate)),
-    pVerifyWebhook :: UTCTime -> [Header] -> ByteString -> Either WebhookError (Maybe Text)
+    pVerifyWebhook :: UTCTime -> [Header] -> ByteString -> Either WebhookError (Maybe WebhookEvent)
   }

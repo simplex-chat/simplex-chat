@@ -20,6 +20,7 @@ import StoreService.Providers
     Confirmation (..),
     Uncreditable (..),
     WebhookError (..),
+    WebhookEvent (..),
     providerErrorText,
     receivedAmount,
     settleWindow,
@@ -669,7 +670,7 @@ testWebhookMalformed = do
   verifyEvent [("BTCPay-Sig", "sha256=not hex at all")] b `shouldSatisfy` isRefused
   verifyEvent [("BTCPay-Sig", "sha256=")] b `shouldSatisfy` isRefused
 
-isRefused :: Either WebhookError (Maybe Text) -> Bool
+isRefused :: Either WebhookError a -> Bool
 isRefused = \case
   Left (WebhookError _) -> True
   _ -> False
@@ -921,7 +922,7 @@ testFakeWebhookSecretWiring :: IO ()
 testFakeWebhookSecretWiring = withProvider $ \fake p -> do
   let configured = bWebhookSecret (fbConfig fake)
       b = webhookEvent "InvoiceSettled" ref
-  pVerifyWebhook p readTime (webhookSigHeader configured b) (LB.toStrict b) `shouldBe` Right (Just ref)
+  pVerifyWebhook p readTime (webhookSigHeader configured b) (LB.toStrict b) `shouldBe` Right (Just $ WEPayment ref)
   pVerifyWebhook p readTime (webhookSigHeader (configured <> "0") b) (LB.toStrict b) `shouldSatisfy` isRefused
 
 -- | An amount assertion only proves the adapter reads paymentMethodPaid rather than totalPaid while

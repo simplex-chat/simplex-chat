@@ -60,7 +60,7 @@ import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), Wr
 import StoreService.Names.Phases (awaitChange, publish)
 import StoreService.Names.Registration (RegistrationId (..), TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
-import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
+import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction, submitTransactionIf)
 import StoreService.Names.Store
 import StoreService.Names.Turns (Turns, withBalanceTurn, withLabelTurn, withRegistrationTurn)
 import StoreService.Names.View (lapseMoment, lapsedAt, registrationVersion)
@@ -358,9 +358,10 @@ sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain 
       verifyRegisterIntent (sponsorDomain cChainId cSponsor) (chainSeconds now) intent >>= \case
         Left refusal -> inTurn w r $ failOrder w now r FRSignatureRefused $ "its stored signature is refused under the service's current configuration, " <> T.pack refusal
         Right () ->
-          submitTransaction wkSender (TxRegistration RTRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
+          submitTransactionIf wkSender (TxRegistration RTRegister regId) (`lockRegistration` r) cSponsor (registerWithCreditCalldata intent) >>= \case
             Right p -> registerSent w now r c p
             Left SEInFlight -> pure Again
+            Left SEChanged -> pure Again
             Left (SEChain (ChainReverted reason)) -> judge w now r c RTRegister $ Just reason
             Left e -> pure $ failure r $ SFSend e
   where

@@ -17,6 +17,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Either (isLeft)
 import Data.List (sort)
+import Data.Maybe (isNothing)
 import Data.String (fromString)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
@@ -43,6 +44,7 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "saves nothing and takes no nonce when the dry run reverts or the chain does not answer" $ testNothingSaved g
   it "tips at least minTip when the recent blocks' median tip is lower" $ testTipFloor g
   it "refuses a second transaction for work with one in flight" $ testOneInFlight g
+  it "saves and sends nothing, taking no nonce, when its order changed before the save" $ testChangedNotSaved g
   it "settles a receipt only once it is confirmations deep, with its status" $ testConfirmationDepth g
   it "logs a settled transaction whose row was not pending" $ testSettledNotPending g
   it "keeps a transaction whose send failed, and sends it in the next round" $ testFailedSend g
@@ -150,6 +152,16 @@ testOneInFlight g = withSetup g $ \s@Setup {node} -> do
   ptNonce other `shouldBe` 1
   (fmap ptHash <$> inFlightTransaction sender (TxRegistration RTCommit r1)) `shouldReturn` Just (ptHash p)
   length <$> sentTransactions node `shouldReturn` 2
+
+testChangedNotSaved :: TVar ChaChaDRG -> IO ()
+testChangedNotSaved g = withSetup g $ \s@Setup {node, store} -> do
+  sender <- start s
+  submitTransactionIf sender (TxRegistration RTRegister r1) (\_ -> pure False) fakeSponsor (commit 1) `refusedWith` SEChanged
+  withTransaction store pendingTransactions `shouldReturn` []
+  sentTransactions node `shouldReturn` []
+  (isNothing <$> inFlightTransaction sender (TxRegistration RTRegister r1)) `shouldReturn` True
+  Right p <- submitTransactionIf sender (TxRegistration RTRegister r1) (\_ -> pure True) fakeSponsor (commit 1)
+  ptNonce p `shouldBe` 0
 
 testConfirmationDepth :: TVar ChaChaDRG -> IO ()
 testConfirmationDepth g = withSetup g $ \s@Setup {node, store} -> do

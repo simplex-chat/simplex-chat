@@ -21,12 +21,14 @@ import StoreService.Providers
     ProviderError (..),
     ProviderInvoice (..),
     Received (..),
+    Reversal (..),
     decodeAnswer,
     objectId,
     providerCall,
     providerErrorText,
     settleWindow,
     WebhookError (..),
+    WebhookEvent (..),
   )
 import StoreService.Store.Invoices (unixSeconds)
 import Control.Logger.Simple (logWarn)
@@ -35,6 +37,7 @@ import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
 import Data.ByteArray (constEq)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
@@ -166,7 +169,7 @@ webhookTolerance :: NominalDiffTime
 webhookTolerance = 15 * 60
 
 -- Constant-time over the raw bytes. Stripe signs "{t}.{body}", so hash the timestamp, a dot, then the body as it arrived.
-verifyStripeSig :: Text -> UTCTime -> [Header] -> ByteString -> Either WebhookError (Maybe Text)
+verifyStripeSig :: Text -> UTCTime -> [Header] -> ByteString -> Either WebhookError (Maybe WebhookEvent)
 verifyStripeSig secret now hdrs body = do
   raw <- note "missing Stripe-Signature header" (lookup sigHeaderName hdrs)
   (t, v1hexes) <- note "Stripe-Signature is not t=..,v1=.." (parseStripeSig raw)
@@ -187,9 +190,7 @@ verifyStripeSig secret now hdrs body = do
     decodeHex v1hex = case convertFromBase Base16 (B8.map toLower v1hex) of
       Right (bs :: ByteString) -> Right bs
       Left (_ :: String) -> Left (WebhookError "Stripe-Signature v1 is not hex")
-    actedOn = do
-      SEvent {seType, seRef} <- J.decodeStrict' body
-      if seType `elem` actedOnStripeEvents then Just seRef else Nothing
+    actedOn = J.decodeStrict' body >>= stripeEvent
 
 parseStripeSig :: ByteString -> Maybe (ByteString, [ByteString])
 parseStripeSig raw = do
@@ -199,15 +200,29 @@ parseStripeSig raw = do
     [] -> Nothing
     v1s -> Just (t, v1s)
 
-data SEvent = SEvent {seType :: Text, seRef :: Text}
+data SEvent = SEvent {seId :: Maybe Text, seType :: Text, seObject :: J.Object}
 
 instance J.FromJSON SEvent where
   parseJSON = J.withObject "stripe event" $ \o -> do
+    seId <- o J..:? "id"
     seType <- o J..: "type"
     dataO <- o J..: "data"
-    obj <- dataO J..: "object"
-    seRef <- obj J..: "id"
-    pure SEvent {seType, seRef}
+    seObject <- dataO J..: "object"
+    pure SEvent {seId, seType, seObject}
+
+stripeEvent :: SEvent -> Maybe WebhookEvent
+stripeEvent SEvent {seId, seType, seObject}
+  | seType `elem` actedOnStripeEvents = WEPayment <$> field "id"
+  | otherwise = case seType of
+      "charge.dispute.created" -> reversal RVDispute "amount"
+      "charge.refunded" -> reversal RVRefund "amount_refunded"
+      "radar.early_fraud_warning.created" -> WEFraudWarning <$> intent <*> field "fraud_type"
+      _ -> Nothing
+  where
+    field :: J.FromJSON a => J.Key -> Maybe a
+    field k = JT.parseMaybe (J..: k) seObject
+    intent = field "payment_intent"
+    reversal kind amount = WEReversal <$> seId <*> intent <*> (kind <$> field "id" <*> (amountFrom <$> field amount))
 
 data CreatedIntent = CreatedIntent {ciId :: Text, ciClientSecret :: Text}
 

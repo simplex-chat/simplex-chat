@@ -311,6 +311,26 @@ without an ini.
 read, the same hint-only role as `POST /webhooks/btcpay`: the poller carries authority, so
 an unverified or unreadable delivery costs nothing but a log line. A delivery signed more than
 15 minutes away from the server's clock is refused with a warning, so keep the clock synced (NTP).
+The endpoint's events in the Dashboard are `payment_intent.succeeded`,
+`payment_intent.payment_failed` and `payment_intent.canceled`, and with `[names]` also
+`charge.dispute.created`, `charge.refunded` and `radar.early_fraud_warning.created`.
+
+A dispute or a refund of a name order's payment is acted on at its delivery, as no read finds it:
+- an order paid and live, of which no register transaction was saved, is closed with
+  `closedBy` `reversed`, its name released and nothing credited to its balance; the cents it paid
+  from another order's balance are returned to that balance;
+- any other order is kept, and the reversed cents are taken back from its balance, as far as the
+  balance and the invoice's amount hold them; an order whose refund support recorded is kept as
+  it is;
+- an order with a recorded dispute or refund is credited nothing more, its price included when
+  it is taken or its month ends.
+
+Each is recorded once in `name_reversals` by its event id, a refund as the rise of
+`amount_refunded`. Every dispute, refund and early fraud warning of a name order is logged at
+error and posted in the managed group as `names: <event> on payment <pi_...> of order <id>:
+<outcome>. Evidence: <payment>; <owner and order hash>; <signed registration>; <commit and register
+transactions>`, the evidence for the answer to Stripe. A delivery whose handling fails is answered
+500, so Stripe delivers it again; a badge order's dispute or refund changes nothing.
 
 The reverse proxy in front of this service must send a Content-Security-Policy that
 allows Stripe.js and its iframes, since Stripe forbids bundling or self-hosting its
@@ -353,13 +373,13 @@ the service's operators.
 | `GET /api/invoice/:id?wait=<status>&seenPaid=<figure>&seenFull=<0\|1>` | The same, held for up to 30 seconds while the invoice's status is still `<status>` **and** its payment is the one the caller says it has rendered. `wait=paid` and any value that is not a status answer at once, since neither can change. A status the caller has not seen, or a payment it has not seen, answers at once — the provider's verdict counts as much as the figure, because Monero reports an invoice as confirming while its figures are still zero. A request that omits `seenPaid` holds on the status alone. |
 | `POST /api/invoice/:id/cancel` | Invalidates an open invoice at the provider and expires it here. Refuses a settled or expired one with `not_open`, and one that already holds a payment with `funded`. The provider is told first, and a payment landing in between does not keep the invoice open: nothing can reach that address any more, so the row is expired either way and the poller settles or reports what arrived. |
 | `POST /webhooks/btcpay` | Verifies `BTCPay-Sig` over the bytes as received and queues a read. A hint only: the poller is what carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
-| `POST /webhooks/stripe` | Verifies `Stripe-Signature` over the bytes as received and queues a read. The card lane's equivalent of the row above, and a hint just the same: the poller carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
+| `POST /webhooks/stripe` | Verifies `Stripe-Signature` over the bytes as received and queues a read. The card lane's equivalent of the row above, and a hint just the same: the poller carries authority, so an unverified or unreadable delivery costs nothing but a log line. A name order's dispute, refund or early fraud warning is acted on at once (see Stripe above). |
 
 Every refusal is `{"type": "<code>", …}`, with its data beside the code, such as
 `{"type": "catalog_changed", "price": 1500}`. Besides the codes above, any of them can answer
 `internal`, an unknown id answers `not_found`, and a wrong verb answers `method_not_allowed` —
 ten codes in all, which is what the browser's `WIRE_ERROR_CODES` lists. The two webhook routes are
-the exception: each answers 200, 400 or 413 with an empty body, because its provider is the only
+the exception: each answers 200, 400, 413 or, for a name order's dispute or refund not handled, 500 with an empty body, because its provider is the only
 caller and nothing it could read would change what the route does. A wrong verb on any route, those
 two included, answers `method_not_allowed`.
 

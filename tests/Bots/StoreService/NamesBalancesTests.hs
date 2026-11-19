@@ -8,31 +8,37 @@
 module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, coveredSpend, credit, creditLate, figures, holdPrice, holder, invariantHolds, lateCredit, payment, placeOrderRow, settleHolder, source) where
 
 import Bots.StoreService.FakeEthNode (agreed, lengthOf, plainTerms)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders)
-import Bots.StoreService.NamesStoreTests (at, btc, insertOrRollBack, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
-import Bots.StoreService.WebTests (capturingStderr, invoiceStatus, overdueOf, rcv, withServiceStore, withServiceStores)
+import Bots.StoreService.FakeStripe (FakeStripe (..), stripeObjectEvent, stripeSigHeader, withFakeStripe)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders, withOrdersVia)
+import Bots.StoreService.NamesStoreTests (at, btc, hashFixture, insertOrRollBack, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
+import Bots.StoreService.WebTests (capturingStderr, invoiceStatus, overdueOf, rcv, statusOf, webRequestBody, withServiceStore, withServiceStores)
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
 import Control.Monad (forM_, when)
+import qualified Data.Aeson as J
 import Data.Bifunctor (first)
+import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
-import Data.Time.Clock (UTCTime (..), addUTCTime)
-import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
+import Data.Time.Clock (UTCTime (..), addUTCTime, getCurrentTime)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
-import StoreService.Config (ServiceConfig (..))
+import Simplex.Messaging.Util (safeDecodeUtf8)
+import StoreService.Config (ServiceConfig (..), StripeConfig (..))
 import StoreService.Names.Balances
 import StoreService.Names.Orders (ClosedOrder (..), OrderRefusal (..), OrderRequest (..), OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
-import StoreService.Names.Chain (Hex32 (..))
+import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Registration (OrderFields (..), RegistrationId (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (balanceTurnCount, newTurns, turnsCount, withBalanceTurn, withLabelTurn)
@@ -40,7 +46,9 @@ import StoreService.Names.View (addressText)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupUnpaid, newPollerEnv, unpaidRetention)
 import StoreService.Service (CmdSource (..), chainText, heldText)
-import StoreService.Providers (Funded (..), PaymentSignal (..), Rate (..))
+import StoreService.Providers (Funded (..), PaymentSignal (..), Provider (..), Rate (..), Reversal (..))
+import StoreService.Providers.Stripe (stripeProvider)
+import StoreService.Store.Invoices (getInvoice)
 import StoreService.Waiters (newWaiters)
 import StoreService.Web.Server (WebEnv (..))
 import System.Timeout (timeout)
@@ -91,6 +99,14 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "alerts again on money that could not be counted in units when more of it arrives" testUncountedAlertRepeats
   describe "turns" $ do
     it "runs two holders of one balance one after the other, and nests in a label turn" testBalanceTurn
+  describe "reversals" $ do
+    it "cancels a paid order of which no register was sent, releasing its name and crediting nothing, once per event" testReversalCancels
+    it "returns the part a difference order paid from a balance to that balance" testReversalReturnsSource
+    it "keeps an order whose register was sent, naming the transaction" testReversalKeepsSent
+    it "takes the reversed cents back from a taken order's balance, as far as it and the invoice's amount hold them, a refund as the rise of its total" testReversalTakesBack
+    it "changes nothing for an order whose refund support recorded, and for an early fraud warning" testReversalAlertsOnly
+    it "cancels an order by a signed dispute delivered to the Stripe webhook" testDisputeWebhook
+    it "locks an order only at its version" testLockRegistration
 #if defined(dbPostgres)
   describe "two connections" $ do
     it "applies one of a spend and a refund, or of a held spend and a refund, and keeps the invariant for a credit and a refund" testConcurrentWrites
@@ -759,6 +775,132 @@ testBalanceTurn = withServiceStore $ \st -> do
   wait secondHolder `shouldReturn` Left BIRBalanceChanged
   timeout 5000000 (withLabelTurn turns (labelHash "alicebakery") $ withBalanceTurn turns src $ pure ()) `shouldReturn` Just ()
   turnsCount turns `shouldReturn` 0
+
+-- reversals
+
+withReversals :: (Ctx -> OrdersEnv -> IORef [Text] -> IO a) -> IO a
+withReversals action = withOrders $ \ctx@Ctx {cOrders} -> do
+  alerts <- newIORef []
+  action ctx cOrders {oeReport = \alert -> modifyIORef' alerts (alert :)} alerts
+
+reverseWith :: OrdersEnv -> Text -> Text -> Reversal -> IO ()
+reverseWith env r event reversal = do
+  Just row <- getInvoice (oeStore env) (InvoiceId $ "inv-" <> r)
+  reverseOrder env row (RegistrationId r) event reversal
+
+queuedOrder :: DBStore -> Text -> IO NameRegistration
+queuedOrder st r = do
+  placeOrderRow st r True 20000 (at 60)
+  unpaid <- reg st r
+  write st unpaid {nrPhase = OQueued} `shouldReturn` Written 2
+  reg st r
+
+takenOrder :: DBStore -> Text -> USDCents -> IO ()
+takenOrder st r cents = do
+  placeOrderRow st r True 20000 (at 60)
+  open <- reg st r
+  write st open {nrPhase = OTaken} `shouldReturn` Written 2
+  credit st r cents
+
+alertsWith :: IORef [Text] -> [Text] -> Expectation
+alertsWith alerts parts = do
+  sent <- reverse <$> readIORef alerts
+  length sent `shouldBe` length parts
+  forM_ (zip parts sent) $ \(part, alert) -> alert `shouldSatisfy` T.isInfixOf part
+
+testReversalCancels :: IO ()
+testReversalCancels = withReversals $ \Ctx {cStore = st} env alerts -> do
+  queued <- queuedOrder st "a"
+  let holderOf = withTransaction st (`labelHolder` nrLabelHash queued)
+  holderOf `shouldReturn` Just (RegistrationId "a")
+  reverseWith env "a" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 20000
+  cancelled <- reg st "a"
+  (nrPhase cancelled, nrVersion cancelled, nrReveal cancelled) `shouldBe` (OClosed ICReversed, 3, Nothing)
+  holderOf `shouldReturn` Nothing
+  alertsWith alerts ["names: card dispute dp_1 of 20000 cents on payment ref-inv-a of order a: it is cancelled, as no register transaction of it was sent, and its name is released. Evidence: payment ref-inv-a of 20000 cents"]
+  reverseWith env "a" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 20000
+  length <$> readIORef alerts `shouldReturn` 1
+  nrVersion <$> reg st "a" `shouldReturn` 3
+  credit st "a" 20000
+  figures st "a" t0 `shouldReturn` Nothing
+  payment st "inv-a" (cardPaid 20000 20000) t0
+  withTransaction st uncreditedLateInvoices `shouldReturn` []
+  withTransaction st (\db -> lateWait db (InvoiceId "inv-a")) `shouldReturn` Nothing
+
+testReversalReturnsSource :: IO ()
+testReversalReturnsSource = withReversals $ \Ctx {cStore = st} env alerts -> do
+  source st "s" 30000
+  holder st "d" "s" 30000 (at 60) `shouldReturn` Right ()
+  d <- reg st "d"
+  withTransaction st (`settleHolder` d) `shouldReturn` True
+  figures st "s" t0 `shouldReturn` Just (0, 30000, 0, Nothing)
+  reverseWith env "d" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 10000
+  nrPhase <$> reg st "d" `shouldReturn` OClosed ICReversed
+  figures st "s" t0 `shouldReturn` Just (30000, 30000, 0, Nothing)
+  invariantHolds st "s"
+  alertsWith alerts ["its name is released; 30000 cents returned to the balance of order s. Evidence"]
+
+testReversalKeepsSent :: IO ()
+testReversalKeepsSent = withReversals $ \Ctx {cStore = st} env alerts -> do
+  _ <- queuedOrder st "b"
+  _ <- withTransaction st $ \db -> insertTransaction db (TxRegistration RTRegister $ RegistrationId "b") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ hashFixture 9, ntxNonce = 1} t0
+  reverseWith env "b" "evt_1" $ RVRefund "ch_1" $ CurrencyAmount 20000
+  nrPhase <$> reg st "b" `shouldReturn` OQueued
+  alertsWith alerts ["names: refund of charge ch_1 to 20000 cents in all on payment ref-inv-b of order b: it is not cancelled, as its register transaction was sent. Evidence"]
+  readIORef alerts >>= (`shouldSatisfy` all (("no commit transaction sent; register " <> strText (TxHash $ hashFixture 9) <> " pending") `T.isInfixOf`))
+
+testReversalTakesBack :: IO ()
+testReversalTakesBack = withReversals $ \Ctx {cStore = st} env alerts -> do
+  takenOrder st "t" 25000
+  let refunded total = RVRefund "ch_1" $ CurrencyAmount total
+      amount = fmap (\(a, _, _, _) -> a) <$> figures st "t" t0
+  reverseWith env "t" "evt_1" $ refunded 500
+  amount `shouldReturn` Just 24500
+  reverseWith env "t" "evt_1" $ refunded 500
+  reverseWith env "t" "evt_2" $ refunded 2000
+  amount `shouldReturn` Just 23000
+  reverseWith env "t" "evt_3" $ RVDispute "dp_1" $ CurrencyAmount 20000
+  amount `shouldReturn` Just 5000
+  nrPhase <$> reg st "t" `shouldReturn` OTaken
+  alertsWith alerts ["it is not cancelled, as it is taken; 500 cents taken back", "it is not cancelled, as it is taken; 1500 cents taken back", "it is not cancelled, as it is taken; 18000 cents taken back"]
+
+testReversalAlertsOnly :: IO ()
+testReversalAlertsOnly = withReversals $ \Ctx {cStore = st} env alerts -> do
+  takenOrder st "r" 20000
+  refund st "r" 20000 `shouldReturn` True
+  reverseWith env "r" "evt_1" $ RVDispute "dp_1" $ CurrencyAmount 20000
+  figures st "r" t0 `shouldReturn` Just (0, 20000, 20000, Nothing)
+  _ <- queuedOrder st "w"
+  Just row <- getInvoice st (InvoiceId "inv-w")
+  warnOfFraud env row (RegistrationId "w") "card_never_received"
+  nrPhase <$> reg st "w" `shouldReturn` OQueued
+  credit st "w" 100
+  figures st "w" t0 `shouldReturn` Just (100, 100, 0, Nothing)
+  alertsWith alerts ["of order r: support recorded its refund, so nothing changed. Evidence", "names: early fraud warning, card_never_received on payment ref-inv-w of order w: nothing changed. Evidence"]
+
+testDisputeWebhook :: IO ()
+testDisputeWebhook = withFakeStripe $ \fake -> do
+  real <- stripeProvider (fsConfig fake)
+  withOrdersVia (\p -> p {pVerifyWebhook = pVerifyWebhook real}) $ \Ctx {cStore = st, cClient} -> do
+    _ <- queuedOrder st "a"
+    t <- round . utcTimeToPOSIXSeconds <$> getCurrentTime
+    let body = stripeObjectEvent "evt_1" "charge.dispute.created" ["id" J..= ("dp_1" :: Text), "amount" J..= (20000 :: Int), "payment_intent" J..= ("ref-inv-a" :: Text)]
+        deliver = statusOf <$> webRequestBody cClient "POST" "/webhooks/stripe" (stripeSigHeader (sWebhookSecret $ fsConfig fake) t body) body
+    deliver `shouldReturn` 200
+    nrPhase <$> reg st "a" `shouldReturn` OClosed ICReversed
+    deliver `shouldReturn` 200
+    nrVersion <$> reg st "a" `shouldReturn` 3
+
+testLockRegistration :: IO ()
+testLockRegistration = withServiceStore $ \st -> do
+  placeOrderRow st "a" True 20000 (at 60)
+  r <- reg st "a"
+  withTransaction st (`lockRegistration` r) `shouldReturn` True
+  write st r {nrPhase = OQueued} `shouldReturn` Written 2
+  withTransaction st (`lockRegistration` r) `shouldReturn` False
+
+strText :: StrEncoding a => a -> Text
+strText = safeDecodeUtf8 . strEncode
 
 #if defined(dbPostgres)
 -- | Both transactions begun before either writes, so the second writer waits for the first's row lock and re-reads its condition.
