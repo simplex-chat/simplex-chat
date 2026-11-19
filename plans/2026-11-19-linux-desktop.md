@@ -294,48 +294,54 @@ sequenceDiagram
 
 ## Tray
 
-- Linux: ComposeNativeTray when a StatusNotifierWatcher is registered; menu items Show and Quit; unread state as the icon.
+- Linux: ComposeNativeTray `NativeTray`; menu items Show and Quit; unread state as the icon.
+- Tray availability: `IsStatusNotifierHostRegistered` of the StatusNotifierWatcher, read once at start.
+- Icon colour: panel darkness from ComposeNativeTray `isMenuBarInDarkMode`.
 - Tray callbacks run on `Dispatchers.Main`.
 - Tray icon files are written to the app's temporary directory and passed by path.
-- The tray option follows watcher registration and loss.
+- The tray item re-registers when the watcher restarts (fork).
 
 ```mermaid
 stateDiagram-v2
-  [*] --> NoWatcher
-  NoWatcher --> Registered: watcher appears
-  Registered --> NoWatcher: watcher lost
-  Registered --> Registered: unread changes icon
-  Registered --> [*]: quit
+  [*] --> Check: start
+  Check --> Unavailable: no host registered
+  Check --> Shown: host registered, minimize to tray chosen
+  Shown --> Shown: unread changes icon
+  Shown --> Shown: watcher restarts, item re-registered
+  Shown --> [*]: quit
 ```
 
 ## Dark mode
 
-- Linux: darkmode-detector, as a Compose state updated on `Dispatchers.Main`.
-- Without a portal setting: the GTK theme name read once from GTK settings, else light.
+- Linux: darkmode-detector; changes delivered on `Dispatchers.Main`.
+- Fallback: GSettings `org.gnome.desktop.interface gtk-theme` through GIO in the app's helper, read once.
 - macOS and Windows: jSystemThemeDetector.
 - The `gsettings` shutdown hook is removed.
 
 ```mermaid
 flowchart LR
   P{portal color-scheme} -->|1| Dark[dark]
-  P -->|0 or 2| Light[light]
-  P -->|no portal| G{GTK theme name contains dark}
+  P -->|0, 2 or no portal| G{gtk-theme contains dark}
   G -->|yes| Dark
-  G -->|no| Light
+  G -->|no| Light[light]
 ```
 
 ## Keyring
 
 - Desktop `CryptorInterface` on Linux:
   - key: random AES-256-GCM key per alias;
-  - key storage: Secret Service item through `libsecret-1.so.0` via JNA, behind a `SecretStore` interface;
+  - key storage: Secret Service item through `libsecret-1.so.0`, opened with `dlopen` by the app's C helper, behind a `SecretStore` interface;
   - stored in settings: ciphertext and IV, as on Android.
-- Secret Service attributes:
+- Secret Service schema `chat.simplex.app.Key`, attributes:
   - `application`: `chat.simplex.app`
   - `alias`: `databasePassword`, `appPassword` or `selfDestructPassword`
-- Settings files are restricted to the user.
-- Keys are read once before the main window opens and kept in memory.
-- Desktop footer strings show the Secret Service provider's name from `keyStorage()`.
+- Secret Service errors:
+  - absent: helper or libsecret missing, a GIO error, `ServiceUnknown` or `NameHasNoOwner`;
+  - failed: any other error, such as a dismissed unlock prompt.
+- Without a stored key (absent or failed): the legacy record is written; the database footer reads "stored in settings as plaintext".
+- The config directory is restricted to the user.
+- Keys are cached in memory after the first read.
+- Desktop footer: "encrypted with a key kept in the system keyring" when `keyStorage()` is set.
 - macOS and Windows keep the current cryptor.
 
 Record kinds in settings:
@@ -354,16 +360,21 @@ stateDiagram-v2
   Read --> Decrypted: encrypted record, key found
   Read --> KeyMissing: encrypted record, key not found
   Read --> Unavailable: encrypted record, keyring locked, refused or absent
-  KeyMissing --> Recovery
-  Unavailable --> Recovery
-  Recovery --> Read: Retry
-  Recovery --> Decrypted: database passphrase entered
+  KeyMissing --> DatabaseError: alert once
+  Unavailable --> DatabaseError: alert once
+  DatabaseError --> Decrypted: database passphrase entered
+  DatabaseError --> Read: restart after keyring unlock
   Plain --> [*]
   Decrypted --> [*]
 ```
 
-- Recovery screen: Retry, or entry of the database passphrase.
-- In KeyMissing and Unavailable, the app passcode and self-destruct passcode read as unavailable values, never as absent ones.
+| Record | Unavailable | KeyMissing |
+|---|---|---|
+| database passphrase | database error screen | database error screen |
+| app passcode | authentication error, app stays locked | lock turned off with the existing alert |
+| self-destruct passcode | controller start waits for authentication | treated as unset |
+
+- Unavailable is thrown as `KeyUnavailableException` by `KeyStoreItem.getChecked()`; `get()` returns null.
 
 ## Rendering
 
