@@ -1,11 +1,29 @@
 @file:Suppress("UnstableApiUsage")
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.compose")
     kotlin("android")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.fromTarget(providers.gradleProperty("kotlin.jvm.target").get()))
+        optIn.addAll(
+            "kotlinx.coroutines.DelicateCoroutinesApi",
+            "androidx.compose.foundation.ExperimentalFoundationApi",
+            "androidx.compose.ui.text.ExperimentalTextApi",
+            "androidx.compose.material.ExperimentalMaterialApi",
+            "com.google.accompanist.insets.ExperimentalAnimatedInsets",
+            "com.google.accompanist.permissions.ExperimentalPermissionsApi",
+            "kotlinx.serialization.InternalSerializationApi",
+            "kotlinx.serialization.ExperimentalSerializationApi",
+        )
+    }
 }
 
 android {
@@ -62,16 +80,6 @@ android {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
-    }
-    kotlinOptions {
-        freeCompilerArgs += "-opt-in=kotlinx.coroutines.DelicateCoroutinesApi"
-        freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
-        freeCompilerArgs += "-opt-in=androidx.compose.ui.text.ExperimentalTextApi"
-        freeCompilerArgs += "-opt-in=androidx.compose.material.ExperimentalMaterialApi"
-        freeCompilerArgs += "-opt-in=com.google.accompanist.insets.ExperimentalAnimatedInsets"
-        freeCompilerArgs += "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi"
-        freeCompilerArgs += "-opt-in=kotlinx.serialization.InternalSerializationApi"
-        freeCompilerArgs += "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
     }
     externalNativeBuild {
         cmake {

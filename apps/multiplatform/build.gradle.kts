@@ -100,13 +100,6 @@ configure(subprojects) {
             }
         }
     }
-
-    // Apply kotlinOptions.jvmTarget to subprojects
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        kotlinOptions {
-            if (jvmVersion.isPresent) jvmTarget = jvmVersion.get()
-        }
-    }
 }
 
 tasks.register("clean", Delete::class) {

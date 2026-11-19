@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
   kotlin("multiplatform")
   id("org.jetbrains.compose")
@@ -37,8 +39,16 @@ if (simplexAssetsDir != null) {
 }
 
 kotlin {
-  androidTarget()
-  jvm("desktop")
+  androidTarget {
+    compilerOptions {
+      jvmTarget.set(JvmTarget.fromTarget(providers.gradleProperty("kotlin.jvm.target").get()))
+    }
+  }
+  jvm("desktop") {
+    compilerOptions {
+      jvmTarget.set(JvmTarget.fromTarget(providers.gradleProperty("desktop.jvm.target").get()))
+    }
+  }
   applyDefaultHierarchyTemplate()
   sourceSets {
     all {
@@ -57,10 +67,10 @@ kotlin {
 
     val commonMain by getting {
       dependencies {
-        api(compose.runtime)
-        api(compose.foundation)
-        api(compose.material)
-        api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+        api("org.jetbrains.compose.runtime:runtime:${rootProject.extra["compose.version"] as String}")
+        api("org.jetbrains.compose.foundation:foundation:${rootProject.extra["compose.version"] as String}")
+        api("org.jetbrains.compose.material:material:${rootProject.extra["compose.version"] as String}")
+        api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
         api("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
         api("com.russhwolf:multiplatform-settings:1.1.1")
         api("com.charleskorn.kaml:kaml:0.59.0")
@@ -131,7 +141,7 @@ kotlin {
     }
     val desktopMain by getting {
       dependencies {
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.11.0")
         implementation("com.github.Dansoftowner:jSystemThemeDetector:3.8") {
           exclude("net.java.dev.jna")
         }

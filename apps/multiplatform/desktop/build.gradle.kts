@@ -1,6 +1,7 @@
 import org.gradle.internal.extensions.stdlib.toDefaultLowerCase
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
   kotlin("multiplatform")
@@ -14,7 +15,11 @@ version = extra["desktop.version_name"] as String
 
 
 kotlin {
-  jvm()
+  jvm {
+    compilerOptions {
+      jvmTarget.set(JvmTarget.fromTarget(providers.gradleProperty("desktop.jvm.target").get()))
+    }
+  }
   sourceSets {
     val jvmMain by getting {
       dependencies {

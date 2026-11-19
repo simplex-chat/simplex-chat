@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.skiaCanvas
 import androidx.compose.ui.unit.Density
 import org.jetbrains.skia.*
 import kotlin.math.ceil
@@ -83,7 +83,7 @@ actual fun DrawScope.drawBarsBlurred(radiusPx: Float, barWidth: Float, barHeight
 
   // The surface is whole pixels while the bar is not, so only the bar's own area is taken from it.
   drawIntoCanvas {
-    it.nativeCanvas.drawImageRect(
+    it.skiaCanvas.drawImageRect(
       surface.makeImageSnapshot(),
       Rect.makeWH(barWidth / scale, barHeight / rows),
       Rect.makeWH(barWidth, barHeight),
