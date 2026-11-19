@@ -36,7 +36,6 @@ import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.Key as JK
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
@@ -271,18 +270,16 @@ otherRecords :: J.Value
 otherRecords = J.object ["type" .= str "other"]
 
 -- | A preview's fields, and with the link and its deep link a search answer's entity.
-chat :: Text -> J.Value -> [(J.Key, J.Value)]
-chat kind linkData = ["kind" .= kind, "profile" .= J.object ["type" .= str "ok", "linkData" .= J.object ["type" .= kind, kind' .= linkData]]]
-  where
-    kind' = JK.fromText kind
+chat :: Text -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
+chat kind profile = ["kind" .= kind, "profile" .= J.object ["type" .= str "ok", "linkProfile" .= J.object profile]]
 
-contactChat :: Text -> Text -> Maybe Text -> [(J.Key, J.Value)] -> Bool -> [(J.Key, J.Value)]
-contactChat displayName fullName image peer business =
-  chat "contact" $ J.object ["profile" .= J.object (["displayName" .= displayName, "fullName" .= fullName] <> maybe [] (\i -> ["image" .= i]) image <> peer), "business" .= business]
+contactChat :: Text -> Text -> Maybe Text -> Text -> [(J.Key, J.Value)]
+contactChat displayName fullName image chatKind =
+  chat "contact" $ ["kind" .= chatKind, "displayName" .= displayName, "fullName" .= fullName] <> maybe [] (\i -> ["image" .= i]) image
 
 bakeryChat, newsChat :: [(J.Key, J.Value)]
-bakeryChat = contactChat "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just jpeg) [] False
-newsChat = chat "channel" $ J.object ["groupProfile" .= J.object ["displayName" .= str "Bakery news", "fullName" .= str "Daily bakes and opening hours"], "publicGroupData" .= J.object ["publicMemberCount" .= (1204 :: Int)]]
+bakeryChat = contactChat "Alice's Bakery" "Sourdough and pastries, Lisbon" (Just jpeg) "contact"
+newsChat = chat "channel" ["kind" .= str "channel", "displayName" .= str "Bakery news", "fullName" .= str "Daily bakes and opening hours", "subscribers" .= (1204 :: Int)]
 
 entity :: [(J.Key, J.Value)] -> Text -> Text -> J.Value
 entity fields l deepLink = J.object ["preview" .= J.object fields, "link" .= l, "deepLink" .= deepLink]
@@ -568,8 +565,8 @@ testPreviewKinds g = withSearch g id id $ \s -> do
   previewFixture "preview-contact" bakeryLink `shouldReturn` ok bakeryChat
   previewFixture "preview-channel" newsLink `shouldReturn` ok newsChat
   previewOf s "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im" `shouldReturn` ok newsChat
-  previewFixture "preview-bot" (taggedLink "smp8.simplex.im" 'a' "Bot") `shouldReturn` ok (contactChat "helper" "" Nothing ["peerType" .= str "bot"] False)
-  previewFixture "preview-business" (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (contactChat "helper" "" Nothing [] True)
+  previewFixture "preview-bot" (taggedLink "smp8.simplex.im" 'a' "Bot") `shouldReturn` ok (contactChat "helper" "" Nothing "bot")
+  previewFixture "preview-business" (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (contactChat "helper" "" Nothing "business")
   previewFixture "preview-unavailable" (taggedLink "smp8.simplex.im" 'a' "Gone") `shouldReturn` ok ["kind" .= str "contact", "profile" .= J.object ["type" .= str "unavailable"]]
 
 testPreviewInvalid :: TVar ChaChaDRG -> IO ()

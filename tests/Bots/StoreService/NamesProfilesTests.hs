@@ -106,7 +106,7 @@ jpeg = "data:image/jpg;base64,/9j/4AAQSkZJRg=="
 testReadOutcome :: IO ()
 testReadOutcome =
   forM_
-    [ ("decoded", Right $ Just bakery, ProfileOk bakery),
+    [ ("decoded", Right $ Just bakery, ProfileOk $ linkProfileOf bakery),
       ("not decoded", Right Nothing, ProfileUnavailable),
       ("refused by its server", Left $ agentFailure $ SMP "smp8.simplex.im" AUTH, ProfileUnavailable),
       ("its server timed out", Left $ agentFailure $ BROKER "smp8.simplex.im" TIMEOUT, ProfileUnread),
@@ -141,14 +141,14 @@ testEntityContactJSON = do
   ps <- quietProfiles (const $ pure $ Right $ Just $ contactData False alice) publicResolver
   e <- linkEntity ps LKContact (parsed bakeryLink)
   e
-    `shouldEncodeAs` "{\"preview\": {\"kind\": \"contact\", \"profile\": {\"type\": \"ok\", \"linkData\": {\"type\": \"contact\", \"contact\": {\"profile\":\
-                     \ {\"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\", \"image\": \"data:image/jpg;base64,/9j/4AAQSkZJRg==\"},\
-                     \ \"business\": false}}}},\
+    `shouldEncodeAs` "{\"preview\": {\"kind\": \"contact\", \"profile\": {\"type\": \"ok\", \"linkProfile\": {\"kind\": \"contact\",\
+                     \ \"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\", \"image\": \"data:image/jpg;base64,/9j/4AAQSkZJRg==\"}}},\
                      \ \"link\": \"https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA\", \"deepLink\": \"simplex:/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA?h=smp8.simplex.im\"}"
-  Preview LKContact (ProfileOk $ contactData True alice {peerType = Just CPTBot})
-    `shouldEncodeAs` "{\"kind\": \"contact\", \"profile\": {\"type\": \"ok\", \"linkData\": {\"type\": \"contact\", \"contact\": {\"profile\":\
-                     \ {\"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\", \"image\": \"data:image/jpg;base64,/9j/4AAQSkZJRg==\", \"peerType\": \"bot\"},\
-                     \ \"business\": true}}}}"
+  Preview LKContact (ProfileOk $ linkProfileOf $ contactData False alice {peerType = Just CPTBot})
+    `shouldEncodeAs` "{\"kind\": \"contact\", \"profile\": {\"type\": \"ok\", \"linkProfile\": {\"kind\": \"bot\",\
+                     \ \"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\", \"image\": \"data:image/jpg;base64,/9j/4AAQSkZJRg==\"}}}"
+  (\(Preview _ r) -> r) (Preview LKContact (ProfileOk $ linkProfileOf $ contactData True alice {peerType = Just CPTBot}))
+    `shouldBe` ProfileOk LinkProfile {kind = CKBusiness, displayName = "Alice's Bakery", fullName = "Sourdough and pastries, Lisbon", image = Just jpeg, subscribers = Nothing}
 
 testEntityChannelJSON :: IO ()
 testEntityChannelJSON = do
@@ -158,21 +158,22 @@ testEntityChannelJSON = do
   Just (J.toJSON e)
     `shouldBe` Just
       ( J.object
-          [ "preview" J..= okPreview "channel" news,
+          [ "preview" J..= okPreview "channel" (linkProfileOf news),
             "link" J..= ("https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA" :: Text),
             "deepLink" J..= ("simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im" :: Text)
           ]
       )
-  Preview LKChannel (ProfileOk $ channelData Nothing Nothing)
-    `shouldEncodeAs` "{\"kind\": \"channel\", \"profile\": {\"type\": \"ok\", \"linkData\": {\"type\": \"channel\", \"channel\":\
-                     \ {\"groupProfile\": {\"displayName\": \"Bakery news\", \"fullName\": \"Daily bakes and opening hours\"}}}}}"
+  linkProfileOf news `shouldBe` LinkProfile {kind = CKChannel, displayName = "Bakery news", fullName = "Daily bakes and opening hours", image = Nothing, subscribers = Just 1204}
+  Preview LKChannel (ProfileOk $ linkProfileOf $ channelData Nothing Nothing)
+    `shouldEncodeAs` "{\"kind\": \"channel\", \"profile\": {\"type\": \"ok\", \"linkProfile\": {\"kind\": \"channel\",\
+                     \ \"displayName\": \"Bakery news\", \"fullName\": \"Daily bakes and opening hours\"}}}"
   let simplexLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im"
   linksOf <$> linkEntity ps LKChannel (parsed simplexLink) `shouldReturn` Just (simplexLink, simplexLink)
   where
     channel = PublicGroupProfile {groupType = GTChannel, groupLink = parsed newsLink, publicGroupId = B64UrlByteString "news", publicGroupAccess = Nothing}
 
-okPreview :: Text -> LinkData -> J.Value
-okPreview kind d = J.object ["kind" J..= kind, "profile" J..= J.object ["type" J..= ("ok" :: Text), "linkData" J..= d]]
+okPreview :: Text -> LinkProfile -> J.Value
+okPreview kind p = J.object ["kind" J..= kind, "profile" J..= J.object ["type" J..= ("ok" :: Text), "linkProfile" J..= p]]
 
 testDeepLinkParses :: IO ()
 testDeepLinkParses = do
@@ -203,9 +204,9 @@ testImageJSON = do
       imageOf p = do
         ps <- quietProfiles (const $ pure $ Right $ Just $ contactData False p) publicResolver
         JT.parseMaybe imageField . J.toJSON <$> linkPreview ps LKContact (parsed bakeryLink)
-      imageField = J.withObject "preview" $ \o -> o J..: "profile" >>= (J..: "linkData") >>= (J..: "contact") >>= (J..: "profile") >>= (J..:? "image")
-  imageOf (bakeryWith (Just (ImageData "javascript:alert(1)"))) `shouldReturn` Just (Just "")
-  imageOf (bakeryWith (Just (ImageData "https://example.com/a.png"))) `shouldReturn` Just (Just "")
+      imageField = J.withObject "preview" $ \o -> o J..: "profile" >>= (J..: "linkProfile") >>= (J..:? "image")
+  imageOf (bakeryWith (Just (ImageData "javascript:alert(1)"))) `shouldReturn` Just Nothing
+  imageOf (bakeryWith (Just (ImageData "https://example.com/a.png"))) `shouldReturn` Just Nothing
   imageOf alice `shouldReturn` Just (Just jpeg)
 
 -- Bounds and cache
@@ -263,16 +264,16 @@ testCacheExpiry :: IO ()
 testCacheExpiry = do
   fake@Fake {clockAt} <- newFake testLimits answerAll publicResolver
   let l = addressLink 1
-  preview fake l `shouldReturn` ProfileOk (profileFor l)
-  search fake l `shouldReturn` ProfileOk (profileFor l)
+  preview fake l `shouldReturn` ProfileOk (linkProfileOf $ profileFor l)
+  search fake l `shouldReturn` ProfileOk (linkProfileOf $ profileFor l)
   fetchCount fake `shouldReturn` 1
-  preview fake (linkText $ simplexShortLink $ parsed l) `shouldReturn` ProfileOk (profileFor l)
+  preview fake (linkText $ simplexShortLink $ parsed l) `shouldReturn` ProfileOk (linkProfileOf $ profileFor l)
   fetchCount fake `shouldReturn` 1
   atomically $ writeTVar clockAt 599
-  preview fake l `shouldReturn` ProfileOk (profileFor l)
+  preview fake l `shouldReturn` ProfileOk (linkProfileOf $ profileFor l)
   fetchCount fake `shouldReturn` 1
   atomically $ writeTVar clockAt 600
-  preview fake l `shouldReturn` ProfileOk (profileFor l)
+  preview fake l `shouldReturn` ProfileOk (linkProfileOf $ profileFor l)
   fetchCount fake `shouldReturn` 2
 
 testFailureNotCached :: IO ()
@@ -282,7 +283,7 @@ testFailureNotCached = do
   let l = addressLink 1
   preview fake l `shouldReturn` ProfileUnread
   atomically $ writeTVar failing False
-  preview fake l `shouldReturn` ProfileOk (profileFor l)
+  preview fake l `shouldReturn` ProfileOk (linkProfileOf $ profileFor l)
   fetchCount fake `shouldReturn` 2
 
 testCacheBound :: IO ()
@@ -293,10 +294,10 @@ testCacheBound = do
       c = addressLink 3
   mapM_ (\(t, l) -> atomically (writeTVar clockAt t) >> preview fake l) [(0, a), (1, b), (2, c)]
   fetchCount fake `shouldReturn` 3
-  preview fake b `shouldReturn` ProfileOk (profileFor b)
-  preview fake c `shouldReturn` ProfileOk (profileFor c)
+  preview fake b `shouldReturn` ProfileOk (linkProfileOf $ profileFor b)
+  preview fake c `shouldReturn` ProfileOk (linkProfileOf $ profileFor c)
   fetchCount fake `shouldReturn` 3
-  preview fake a `shouldReturn` ProfileOk (profileFor a)
+  preview fake a `shouldReturn` ProfileOk (linkProfileOf $ profileFor a)
   fetchCount fake `shouldReturn` 4
 
 testFetchTimeout :: IO ()
@@ -308,7 +309,7 @@ testFetchTimeout = do
   elapsed <- (`diffUTCTime` start) <$> getCurrentTime
   elapsed `shouldSatisfy` (< 2 * micros testTimeout)
   -- Both preview slots were taken by the timed-out fetches; they must be free again.
-  replicateConcurrently 2 (preview fake (addressLink 1)) `shouldReturn` replicate 2 (ProfileOk (profileFor (addressLink 1)))
+  replicateConcurrently 2 (preview fake (addressLink 1)) `shouldReturn` replicate 2 (ProfileOk (linkProfileOf $ profileFor (addressLink 1)))
   where
     micros n = fromIntegral n / 1000000
 
@@ -326,13 +327,13 @@ gatedFake = do
 testPreviewBound :: IO ()
 testPreviewBound = do
   (raced, fetchedThen) <- boundFilled preview 2
-  raced `shouldBe` (ProfileOk (profileFor (addressLink 100)), ProfileUnread)
+  raced `shouldBe` (ProfileOk (linkProfileOf $ profileFor (addressLink 100)), ProfileUnread)
   fetchedThen `shouldNotContain` [addressLink 101]
 
 testSearchBound :: IO ()
 testSearchBound = do
   (raced, fetchedThen) <- boundFilled search 4
-  raced `shouldBe` (ProfileUnread, ProfileOk (profileFor (addressLink 101)))
+  raced `shouldBe` (ProfileUnread, ProfileOk (linkProfileOf $ profileFor (addressLink 101)))
   fetchedThen `shouldNotContain` [addressLink 100]
 
 -- | Holds a full pool of one kind of read, then races a search and a preview against it, and lets the held reads go.
@@ -355,8 +356,8 @@ testSlotFreesInTime = do
   waiting <- async $ preview fake (addressLink 100)
   threadDelay (testTimeout `div` 5)
   atomically $ putTMVar gate ()
-  wait waiting `shouldReturn` ProfileOk (profileFor (addressLink 100))
-  mapM wait held `shouldReturn` map (ProfileOk . profileFor . addressLink) [0, 1]
+  wait waiting `shouldReturn` ProfileOk (linkProfileOf $ profileFor (addressLink 100))
+  mapM wait held `shouldReturn` map (ProfileOk . linkProfileOf . profileFor . addressLink) [0, 1]
 
 -- Host rule
 
@@ -437,7 +438,7 @@ testRefusedNotFetched = do
   (\(Preview _ r) -> r) <$> linkPreview profiles LKContact (parsed $ l <> "?h=private.test") `shouldReturn` ProfileUnavailable
   (\(Entity (Preview _ r) _ _) -> r) <$> linkEntity profiles LKContact (parsed $ addressLinkAt "127.0.0.1" 1) `shouldReturn` ProfileUnavailable
   fetchCount fake `shouldReturn` 0
-  (\(Preview _ r) -> r) <$> linkPreview profiles LKContact (parsed l) `shouldReturn` ProfileOk (profileFor l)
+  (\(Preview _ r) -> r) <$> linkPreview profiles LKContact (parsed l) `shouldReturn` ProfileOk (linkProfileOf $ profileFor l)
   fetchCount fake `shouldReturn` 1
 
 -- Host lookups
@@ -464,7 +465,7 @@ testLookupBound = do
   preview fake (at "free.test") `shouldReturn` ProfileUnavailable
   readTVarIO asked >>= (`shouldNotContain` ["free.test"])
   atomically $ putTMVar gate ()
-  preview fake (at "free.test") `shouldReturn` ProfileOk (profileFor (at "free.test"))
+  preview fake (at "free.test") `shouldReturn` ProfileOk (linkProfileOf $ profileFor (at "free.test"))
   fetchCount fake `shouldReturn` 1
 
 testPreviewLookupShare :: IO ()
@@ -477,7 +478,7 @@ testPreviewLookupShare = do
   preview fake (at "held-1.test") `shouldReturn` ProfileUnread
   atomically $ readTQueue started
   preview fake (at "free.test") `shouldReturn` ProfileUnavailable
-  search fake (at "free.test") `shouldReturn` ProfileOk (profileFor (at "free.test"))
+  search fake (at "free.test") `shouldReturn` ProfileOk (linkProfileOf $ profileFor (at "free.test"))
   atomically $ putTMVar gate ()
 
 testRefusedHostCache :: IO ()
@@ -499,7 +500,7 @@ testRefusedHostCache = do
   preview fake (addressLinkAt "held.test" 1) `shouldReturn` ProfileUnread
   atomically $ putTMVar gate ()
   -- The one lookup slot frees in the same transaction that remembers the late refusal.
-  preview fake (addressLink 1) `shouldReturn` ProfileOk (profileFor (addressLink 1))
+  preview fake (addressLink 1) `shouldReturn` ProfileOk (linkProfileOf $ profileFor (addressLink 1))
   preview fake (addressLinkAt "held.test" 2) `shouldReturn` ProfileUnavailable
   lookups "held.test" `shouldReturn` 1
   fetchCount fake `shouldReturn` 1
@@ -523,8 +524,8 @@ testSharedHostLookup = do
   lookups `shouldReturn` 1
   search fake (addressLink 1) `shouldReturn` ProfileUnavailable
   atomically $ putTMVar gate ()
-  search fake (addressLink 2) `shouldReturn` ProfileOk (profileFor (addressLink 2))
-  search fake (slow 3) `shouldReturn` ProfileOk (profileFor (slow 3))
+  search fake (addressLink 2) `shouldReturn` ProfileOk (linkProfileOf $ profileFor (addressLink 2))
+  search fake (slow 3) `shouldReturn` ProfileOk (linkProfileOf $ profileFor (slow 3))
 
 -- Through the chat core
 

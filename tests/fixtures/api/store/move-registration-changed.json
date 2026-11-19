@@ -24,7 +24,6 @@
       },
       "price": 10000,
       "registerTx": null,
-      "replacedBy": null,
       "sealed": "sealed-alicebakery-1",
       "terms": {
         "communityName": false,

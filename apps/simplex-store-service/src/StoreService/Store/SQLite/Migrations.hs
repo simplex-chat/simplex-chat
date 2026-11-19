@@ -347,7 +347,6 @@ CREATE TABLE @name_registrations(
   paid_at TEXT,
   unregistered_alerted_at TEXT,
   read_at TEXT NOT NULL,
-  replaces TEXT REFERENCES @name_registrations ON DELETE SET NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 ) STRICT;
@@ -373,8 +372,6 @@ CREATE INDEX @idx_name_registrations_order_hash ON @name_registrations(order_has
 CREATE INDEX @idx_name_registrations_prepaid_code ON @name_registrations(name_prepaid_code_id);
 
 CREATE INDEX @idx_name_registrations_balance_source ON @name_registrations(balance_source);
-
-CREATE UNIQUE INDEX @idx_name_registrations_replaces ON @name_registrations(replaces);
 
 CREATE TABLE @name_balances(
   registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations,
@@ -534,7 +531,6 @@ DROP TABLE @name_invoices;
 DROP INDEX @idx_name_balances_reserved_by;
 DROP TABLE @name_balances;
 
-DROP INDEX @idx_name_registrations_replaces;
 DROP INDEX @idx_name_registrations_balance_source;
 DROP INDEX @idx_name_registrations_prepaid_code;
 DROP INDEX @idx_name_registrations_order_hash;

@@ -2,16 +2,11 @@
   "body": {
     "kind": "contact",
     "profile": {
-      "linkData": {
-        "contact": {
-          "business": false,
-          "profile": {
-            "displayName": "Alice's Bakery",
-            "fullName": "Sourdough and pastries, Lisbon",
-            "image": "data:image/jpg;base64,/9j/4AAQSkZJRg=="
-          }
-        },
-        "type": "contact"
+      "linkProfile": {
+        "displayName": "Alice's Bakery",
+        "fullName": "Sourdough and pastries, Lisbon",
+        "image": "data:image/jpg;base64,/9j/4AAQSkZJRg==",
+        "kind": "contact"
       },
       "type": "ok"
     }

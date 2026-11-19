@@ -16,6 +16,9 @@ module StoreService.Names.Profiles
     ProfileFetcher,
     HostResolver,
     LinkData (..),
+    ChatKind (..),
+    LinkProfile (..),
+    linkProfileOf,
     ProfileRead (..),
     Preview (..),
     Entity (..),
@@ -52,19 +55,22 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Word (Word32, Word64, Word8)
 import GHC.Clock (getMonotonicTimeNSec)
 import Network.Socket (AddrInfo (..), HostName, SocketType (..), defaultHints, getAddrInfo)
 import Simplex.Chat.Controller (ChatController, ChatError (..))
 import Simplex.Chat.Library.Internal (decodeLinkUserData, getShortLinkConnReq')
-import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..))
-import Simplex.Chat.Types (User)
+import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
+import Simplex.Chat.Types (ChatPeerType (..), GroupProfile (..), ImageData (..), Profile (..), User)
 import Simplex.Messaging.Agent.Client (temporaryOrHostError)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), simplexShortLink)
 import Simplex.Messaging.Client (pattern NRMInteractive)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
@@ -118,7 +124,7 @@ data Profiles = Profiles
     previewSlots :: TVar Int,
     lookupSlots :: TVar Int,
     previewLookups :: TVar Int,
-    cache :: TMap ByteString (Word64, LinkData),
+    cache :: TMap ByteString (Word64, LinkProfile),
     refusedHosts :: TMap HostName (Word64, ()),
     runningLookups :: TMap HostName (Deadline, TMVar Bool)
   }
@@ -188,7 +194,13 @@ insertBounded maxSize now k entry m = Map.insert k entry room
 data LinkData = LDContact {contact :: ContactShortLinkData} | LDChannel {channel :: GroupShortLinkData}
   deriving (Eq, Show)
 
-data ProfileRead = ProfileOk {linkData :: LinkData} | ProfileUnread | ProfileUnavailable
+data ChatKind = CKContact | CKBusiness | CKBot | CKChannel
+  deriving (Eq, Show)
+
+data LinkProfile = LinkProfile {kind :: ChatKind, displayName :: Text, fullName :: Text, image :: Maybe Text, subscribers :: Maybe Int64}
+  deriving (Eq, Show)
+
+data ProfileRead = ProfileOk {linkProfile :: LinkProfile} | ProfileUnread | ProfileUnavailable
   deriving (Eq, Show)
 
 data Preview = Preview {kind :: LinkKind, profile :: ProfileRead}
@@ -197,7 +209,9 @@ data Preview = Preview {kind :: LinkKind, profile :: ProfileRead}
 data Entity = Entity {preview :: Preview, link :: ConnShortLink 'CMContact, deepLink :: ConnShortLink 'CMContact}
   deriving (Eq, Show)
 
-$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "LD") ''LinkData)
+$(JQ.deriveToJSON (enumJSON $ dropPrefix "CK") ''ChatKind)
+
+$(JQ.deriveToJSON defaultJSON ''LinkProfile)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "Profile") ''ProfileRead)
 
@@ -234,12 +248,27 @@ boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, 
       now <- clock
       p <$ atomically (modifyTVar' cache $ insertBounded maxCachedProfiles now key (now + cacheSeconds, p))
     profileRead = \case
-      Right (Just d) -> ProfileOk <$> remember d
+      Right (Just d) -> ProfileOk <$> remember (linkProfileOf d)
       Right Nothing -> pure ProfileUnavailable
       Left e -> unreadable e <$ logWarn ("names: a link's data could not be read: " <> tshow e)
     unreadable = \case
       ChatErrorAgent {agentError} | not (temporaryOrHostError agentError) -> ProfileUnavailable
       _ -> ProfileUnread
+
+linkProfileOf :: LinkData -> LinkProfile
+linkProfileOf = \case
+  LDContact ContactShortLinkData {profile = Profile {displayName, fullName, image, peerType}, business} ->
+    LinkProfile {kind = contactKind business peerType, displayName, fullName, image = imageURI =<< image, subscribers = Nothing}
+  LDChannel GroupShortLinkData {groupProfile = GroupProfile {displayName, fullName, image}, publicGroupData} ->
+    LinkProfile {kind = CKChannel, displayName, fullName, image = imageURI =<< image, subscribers = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData}
+  where
+    contactKind business peerType
+      | business || peerType == Just CPTBusiness = CKBusiness
+      | peerType == Just CPTBot = CKBot
+      | otherwise = CKContact
+    imageURI (ImageData uri)
+      | "data:image/" `T.isPrefixOf` uri = Just uri
+      | otherwise = Nothing
 
 shortLinkHosts :: ConnShortLink 'CMContact -> NonEmpty TransportHost
 shortLinkHosts (CSLContact _ _ ProtocolServer {host} _) = host

@@ -574,7 +574,7 @@ aliceFields :: Int -> OrderFields
 aliceFields n = fieldsOf aliceOrder {oSecret = secretOf n, oSealed = "sealed-alicebakery-" <> tshow n}
 
 aliceRegistration :: Text -> Int -> NewRegistration
-aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerA (aliceFields n) (OTInvoice btc $ oPrice aliceOrder), nrgReplaces = Nothing}
+aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerA (aliceFields n) (OTInvoice btc $ oPrice aliceOrder)}
 
 -- | The amount and credited of the order's balance.
 balanceFigures :: Ctx -> RegistrationId -> IO (Maybe (USDCents, USDCents))

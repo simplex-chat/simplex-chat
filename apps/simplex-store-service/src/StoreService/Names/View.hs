@@ -10,7 +10,6 @@ module StoreService.Names.View
     PhaseView (..),
     Signing (..),
     ToSign (..),
-    Successor (..),
     AttemptView (..),
     NameRefusal (..),
     refusalResponse,
@@ -40,7 +39,6 @@ import Data.Word (Word64)
 import Network.HTTP.Types (status400, status403, status404, status405, status409, status429, status500, status503, status504)
 import Network.Wai (Response, responseLBS)
 import Simplex.Chat.Badges.Ledger (addMonths)
-import Simplex.Chat.PaymentService.Types (InvoiceId)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.Eth.Address (Address)
@@ -87,9 +85,6 @@ data Signing = SAwaiting {toSign :: ToSign} | SSigned | SLapsed
 data ToSign = TSUnread | TSRead {intentNonce :: Word64, acceptance :: AcceptanceAsked}
   deriving (Eq, Show)
 
-data Successor = Successor {scRegistrationId :: Text, scInvoiceId :: Maybe InvoiceId}
-  deriving (Eq, Show)
-
 data RegistrationView = RegistrationView
   { vwId :: Text,
     vwVersion :: Int64,
@@ -111,7 +106,6 @@ data RegistrationView = RegistrationView
     vwRegisterTx :: Maybe TxHash,
     vwCommunity :: Maybe Community,
     vwTerms :: AgreedTerms,
-    vwReplacedBy :: Maybe Successor,
     vwLastAttempt :: Maybe AttemptView
   }
   deriving (Eq, Show)
@@ -128,8 +122,6 @@ $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "TS") ''ToSign)
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "S") ''Signing)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "PV") ''PhaseView)
-
-$(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "sc"} ''Successor)
 
 $(JQ.deriveToJSON defaultJSON {J.fieldLabelModifier = dropPrefix "av"} ''AttemptView)
 
@@ -255,7 +247,7 @@ toRegistrationView cfg r balance late attempt phase =
       vwLinksRefused = snd <$> nrLinksRefused,
       vwPhase = phase,
       vwLabelHash = Hex32 lh,
-      vwLabel = rvLabel <$> nrReveal,
+      vwLabel = if isJust nrPaidAt then rvLabel <$> nrReveal else Nothing,
       vwOwner = nrOwner,
       vwCommitment = nrCommitment,
       vwSealed = nrSealed,
@@ -269,12 +261,11 @@ toRegistrationView cfg r balance late attempt phase =
       vwRegisterTx = thRegisterTx,
       vwCommunity = communityOf cfg (nrLabelHash r) (atCommunityName nrAgreedTerms),
       vwTerms = nrAgreedTerms,
-      vwReplacedBy = (\(RegistrationId s, invId) -> Successor {scRegistrationId = s, scInvoiceId = invId}) <$> nrReplacedBy,
       vwLastAttempt = (\NameAttempt {naTx, naStage, naReason, naAt} -> AttemptView {avTransaction = naTx, avStage = naStage, avReason = naReason, avAt = naAt}) <$> attempt
     }
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrLinksRefused, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrReplacedBy} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrPayment, nrAgreedTerms, nrLinksRefused, nrHistory = TxHistory {thCommitTx, thRegisterTx}, nrPaidAt} = r
 
 paidWith :: OrderPayment -> PaidWith
 paidWith = \case

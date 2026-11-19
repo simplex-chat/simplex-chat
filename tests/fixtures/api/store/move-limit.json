@@ -25,7 +25,6 @@
       },
       "price": 10000,
       "registerTx": null,
-      "replacedBy": null,
       "sealed": "sealed-alicebakers-13",
       "terms": {
         "communityName": false,

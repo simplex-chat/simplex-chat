@@ -159,9 +159,9 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig} http client cfg providers wai
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniProviderRef = piProviderRef, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
-              registration replaced = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = ivReveal, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash, nrgReplaces = replaced}
+              registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = ivReveal, nrgYears = nYears oeConfig, nrgOrderHash = ivOrderHash}
               paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId}
-          placeOrder env now req ivHolders (\replaced db at -> insertNameInvoice db invoice >> ivInsert (registration replaced) paid db at)
+          placeOrder env now req ivHolders (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)
             `E.catch` strandedBy provider piProviderRef
             >>= \case
             Left refusal -> do
@@ -285,8 +285,8 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts} http cfg providers w
     place now order@OrderRequest {orOwner, orFields} hash spend@Spend {spPrice, spBalance, spMethod} (holder, rv) = case spMethod of
       Nothing -> do
         rid <- newRegistrationId
-        let new replaced = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = rv, nrgYears = nYears oeConfig, nrgOrderHash = hash, nrgReplaces = replaced}
-        placeOrder env now order (maybeToList holder) (coveredOrderInsert spend . new) >>= \case
+        let new = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgReveal = rv, nrgYears = nYears oeConfig, nrgOrderHash = hash}
+        placeOrder env now order (maybeToList holder) (coveredOrderInsert spend new) >>= \case
           Left refusal -> refuse refusal
           Right closed -> pure Answer {aResponse = Right $ registrationAnswer rid, aAfter = announceHeld env providers waiters closed rid}
       Just (SPMCard _)

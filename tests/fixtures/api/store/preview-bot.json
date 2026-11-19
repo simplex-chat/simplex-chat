@@ -2,16 +2,10 @@
   "body": {
     "kind": "contact",
     "profile": {
-      "linkData": {
-        "contact": {
-          "business": false,
-          "profile": {
-            "displayName": "helper",
-            "fullName": "",
-            "peerType": "bot"
-          }
-        },
-        "type": "contact"
+      "linkProfile": {
+        "displayName": "helper",
+        "fullName": "",
+        "kind": "bot"
       },
       "type": "ok"
     }

@@ -296,7 +296,7 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
   forM_ [1 .. 50 :: Int] $ \i -> do
     (_, code) <- issueCode ctx 8 2 id
     let o = order ("alicebakery" <> tshow i) (fromIntegral i)
-        new = NewRegistration {nrgId = oldOrder i, nrgOwner = ownerA, nrgOrder = o, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerA o (OTCode $ pcCodeHash code), nrgReplaces = Nothing}
+        new = NewRegistration {nrgId = oldOrder i, nrgOwner = ownerA, nrgOrder = o, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerA o (OTCode $ pcCodeHash code)}
     withTransaction cStore (\db -> createCodeRegistration db new code (addUTCTime (fromIntegral i) t0)) `shouldReturn` Right ()
   answerFree ctx "alicebakers"
   answerUnowned ctx "alicebakery50"
@@ -345,7 +345,7 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
   forM_ [1, 2] $ \i -> do
     (_, code) <- issueCode ctx 8 2 id
     let o = order ("bobbakery" <> tshow i) (fromIntegral $ 100 + i)
-        new = NewRegistration {nrgId = listedOrder i, nrgOwner = ownerB, nrgOrder = o, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerB o (OTCode $ pcCodeHash code), nrgReplaces = Nothing}
+        new = NewRegistration {nrgId = listedOrder i, nrgOwner = ownerB, nrgOrder = o, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerB o (OTCode $ pcCodeHash code)}
     withTransaction cStore (\db -> createCodeRegistration db new code (addUTCTime (fromIntegral i) t0)) `shouldReturn` Right ()
   void $ registrationById ctx (listedOrder 1) >>= \r -> rewrite ctx r failedPhase
   listed <- findBody ctx keyB ownerBText (seconds orderTime) >>= postFind ctx
@@ -672,7 +672,7 @@ testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
   withTransaction cStore $ \db -> creditBalance db (nrId paying) 5000 orderTime
   let fields = fieldsOf aliceOrder {oLabel = "dynamis", oSecret = secretOf 3, oSealed = "sealed-dynamis-3"}
       spend = Spend {spSource = nrId paying, spPrice = 20000, spBalance = 5000, spMethod = Just btc}
-      new = NewRegistration {nrgId = RegistrationId "diff", nrgOwner = ownerA, nrgOrder = fields, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerA fields (OTBalance spend), nrgReplaces = Nothing}
+      new = NewRegistration {nrgId = RegistrationId "diff", nrgOwner = ownerA, nrgOrder = fields, nrgReveal = reveal, nrgYears = 2, nrgOrderHash = orderHash ownerA fields (OTBalance spend)}
   withTransaction cStore $ \db -> do
     insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"
     createPaidRegistration db new (Just BalanceUse {buSource = nrId paying, buUsed = 5000}) (paidOrder "inv-diff") {poPrice = 20000} orderTime `shouldReturn` Right ()
