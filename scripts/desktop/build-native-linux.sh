@@ -42,9 +42,17 @@ for module in "${nucleus_modules[@]}"; do
   rm -rf "$out_dir"
 done
 
+java_home="${JAVA_HOME:-$(dirname "$(dirname "$(realpath "$(command -v javac)")")")}"
+gcc -shared -fPIC -O2 -Wall -Wextra \
+  -I"$java_home/include" -I"$java_home/include/linux" \
+  $(pkg-config --cflags gtk+-3.0) \
+  "$root_dir/apps/multiplatform/common/src/desktopMain/native/linux/simplex_linux.c" \
+  -o "$libs_dir/libsimplex_linux.so" \
+  $(pkg-config --libs gtk+-3.0)
+
 tray_out_dir="$(mktemp -d)"
 trap 'rm -rf "$tray_out_dir"' EXIT
 NATIVE_LIBS_OUTPUT_DIR="$tray_out_dir" bash "$tray_dir/src/native/linux/build.sh"
 cp "$tray_out_dir/$NATIVE_ARCH/"*.so "$libs_dir/"
 
-ls -la "$libs_dir"/libnucleus_*.so "$libs_dir"/libLinuxTray.so
+ls -la "$libs_dir"/libnucleus_*.so "$libs_dir"/libLinuxTray.so "$libs_dir"/libsimplex_linux.so

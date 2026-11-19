@@ -7,6 +7,10 @@ import androidx.compose.ui.window.WindowExceptionHandler
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.rememberWindowState
 import chat.simplex.common.model.ChatController
+import chat.simplex.common.platform.FileChooserAction
+import chat.simplex.common.platform.LinuxNative
+import chat.simplex.common.platform.fileChooserPatterns
+import chat.simplex.common.platform.fileFromNativePath
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.views.helpers.fontSizeSqrtMultiplier
 import chat.simplex.res.MR
@@ -14,17 +18,18 @@ import dev.nucleusframework.core.runtime.ActivationToken
 import dev.nucleusframework.window.tao.ApplicationScope
 import dev.nucleusframework.window.tao.DecoratedWindow
 import dev.nucleusframework.window.tao.LocalWindowExceptionHandlerFactory
+import dev.nucleusframework.window.tao.TaoWindow
 import dev.nucleusframework.window.tao.WindowExceptionHandlerFactory
 import dev.nucleusframework.window.tao.taoApplication
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import java.io.File
+import kotlin.coroutines.resume
 
-private const val NUCLEUS_LIBRARY_PATH = "nucleus.native.libraryPath"
-private const val COMPOSE_RESOURCES_DIR = "compose.application.resources.dir"
-
-fun useAppNativeLibraries() {
-  System.getProperty(COMPOSE_RESOURCES_DIR)?.let { System.setProperty(NUCLEUS_LIBRARY_PATH, it) }
-}
+private const val FILE_DIALOG_TITLE = "SimpleX"
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun showTaoApp() {
@@ -70,6 +75,7 @@ private fun ApplicationScope.TaoAppWindow() {
         onDispose { simplexWindowState.raise = {} }
       }
       AppScreen()
+      GtkFileDialogs(taoWindow)
       AppWindowOverlays()
     }
   }
@@ -87,4 +93,45 @@ private fun ApplicationScope.TaoAppWindow() {
       }
     }
   }
+}
+
+@Composable
+private fun GtkFileDialogs(window: TaoWindow) {
+  val openDialog = simplexWindowState.openDialog
+  if (openDialog.isAwaiting) {
+    LaunchedEffect(openDialog.params) {
+      openDialog.onResult(chooseFiles(window, FileChooserAction.Open, openDialog.params).firstOrNull())
+    }
+  }
+  val openMultipleDialog = simplexWindowState.openMultipleDialog
+  if (openMultipleDialog.isAwaiting) {
+    LaunchedEffect(openMultipleDialog.params) {
+      openMultipleDialog.onResult(chooseFiles(window, FileChooserAction.Open, openMultipleDialog.params))
+    }
+  }
+  val saveDialog = simplexWindowState.saveDialog
+  if (saveDialog.isAwaiting) {
+    val action = if (saveDialog.params.filename != null) FileChooserAction.Save else FileChooserAction.SelectFolder
+    LaunchedEffect(saveDialog.params) {
+      saveDialog.onResult(chooseFiles(window, action, saveDialog.params).firstOrNull())
+    }
+  }
+}
+
+private suspend fun chooseFiles(window: TaoWindow, action: FileChooserAction, params: DialogParams): List<File> {
+  if (!LinuxNative.isLoaded) return emptyList()
+  val files = withContext(Dispatchers.Main) {
+    suspendCancellableCoroutine { continuation ->
+      LinuxNative.nativeChooseFiles(
+        window.linuxGtkWindowHandle,
+        FILE_DIALOG_TITLE,
+        action.gtkAction,
+        params.allowMultiple,
+        params.filename,
+        params.fileFilterDescription,
+        params.fileExtensions?.let(::fileChooserPatterns),
+      ) { paths -> continuation.resume(paths?.map(::fileFromNativePath) ?: emptyList()) }
+    }
+  }
+  return if (action == FileChooserAction.Open) files.filter { it.canRead() } else files
 }

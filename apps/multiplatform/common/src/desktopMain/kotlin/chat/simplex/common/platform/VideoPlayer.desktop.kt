@@ -15,7 +15,7 @@ import uk.co.caprica.vlcj.player.base.*
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent
 import uk.co.caprica.vlcj.player.component.MediaPlayerSpecs
-import java.awt.Component
+import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer
 import java.awt.image.BufferedImage
 import java.io.File
 import java.net.URI
@@ -37,8 +37,7 @@ actual class VideoPlayer actual constructor(
   override val duration: MutableState<Long> = mutableStateOf(defaultDuration)
   override val preview: MutableState<ImageBitmap> = mutableStateOf(defaultPreview)
 
-  val mediaPlayerComponent by lazy { getOrCreatePlayer() }
-  val player by lazy { mediaPlayerComponent.mediaPlayer() }
+  val player by lazy { getOrCreatePlayer() }
 
   init {
     setPreviewAndDuration()
@@ -177,7 +176,7 @@ actual class VideoPlayer actual constructor(
         player.stop()
       }
       if (usePool) {
-        putPlayer(mediaPlayerComponent)
+        putPlayer(player)
       } else {
         player.release()
       }
@@ -204,23 +203,21 @@ actual class VideoPlayer actual constructor(
   companion object {
     private val usePool = false
 
-    private fun Component.mediaPlayer() = when (this) {
-      is CallbackMediaPlayerComponent -> mediaPlayer()
-      is EmbeddedMediaPlayerComponent -> mediaPlayer()
-      else -> error("mediaPlayer() can only be called on vlcj player components")
+    private fun initializeMediaPlayer(): EmbeddedMediaPlayer = when {
+      desktopPlatform.isMac() -> CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcFactory) }).mediaPlayer()
+      desktopPlatform.isLinux() -> vlcFactory.mediaPlayers().newEmbeddedMediaPlayer()
+      else -> EmbeddedMediaPlayerComponent(MediaPlayerSpecs.embeddedMediaPlayerSpec().apply { withFactory(vlcFactory) }).mediaPlayer()
     }
 
-    private fun initializeMediaPlayerComponent(): Component {
-      return if (desktopPlatform.isMac()) {
-        CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcFactory) })
+    private fun initializeHelperPlayer(): EmbeddedMediaPlayer =
+      if (desktopPlatform.isLinux()) {
+        vlcPreviewFactory.mediaPlayers().newEmbeddedMediaPlayer()
       } else {
-        EmbeddedMediaPlayerComponent(MediaPlayerSpecs.embeddedMediaPlayerSpec().apply { withFactory(vlcFactory) })
+        CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcPreviewFactory) }).mediaPlayer()
       }
-    }
 
     suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration = withContext(previewThread.asCoroutineDispatcher()) {
-      val mediaComponent = getOrCreateHelperPlayer()
-      val player = mediaComponent.mediaPlayer()
+      val player = getOrCreateHelperPlayer()
       if (uri == null || !uri.toFile().exists()) {
         if (withAlertOnException) showVideoDecodingException()
 
@@ -247,7 +244,7 @@ actual class VideoPlayer actual constructor(
       val orientation = player.media().info().videoTracks().firstOrNull()?.orientation()
       if (orientation == null) {
         player.stop()
-        putHelperPlayer(mediaComponent)
+        putHelperPlayer(player)
         if (withAlertOnException) showVideoDecodingException()
 
         return@withContext VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
@@ -257,7 +254,7 @@ actual class VideoPlayer actual constructor(
       val preview: ImageBitmap? = snap?.toComposeImageBitmap()
       val duration = player.duration.toLong()
       player.stop()
-      putHelperPlayer(mediaComponent)
+      putHelperPlayer(player)
       return@withContext VideoPlayerInterface.PreviewAndDuration(preview = preview, timestamp = 0L, duration = duration)
     }
 
@@ -300,14 +297,14 @@ actual class VideoPlayer actual constructor(
 
     val playerThread = Executors.newSingleThreadExecutor()
     private val previewThread = Executors.newSingleThreadExecutor()
-    private val playersPool: ArrayList<Component> = ArrayList()
-    private val helperPlayersPool: ArrayList<CallbackMediaPlayerComponent> = ArrayList()
+    private val playersPool: ArrayList<EmbeddedMediaPlayer> = ArrayList()
+    private val helperPlayersPool: ArrayList<EmbeddedMediaPlayer> = ArrayList()
 
-    private fun getOrCreatePlayer(): Component = playersPool.removeFirstOrNull() ?: createNew()
+    private fun getOrCreatePlayer(): EmbeddedMediaPlayer = playersPool.removeFirstOrNull() ?: createNew()
 
-    private fun createNew(): Component =
-      initializeMediaPlayerComponent().apply {
-        mediaPlayer().events().addMediaPlayerEventListener(object: MediaPlayerEventAdapter() {
+    private fun createNew(): EmbeddedMediaPlayer =
+      initializeMediaPlayer().apply {
+        events().addMediaPlayerEventListener(object: MediaPlayerEventAdapter() {
           override fun mediaPlayerReady(mediaPlayer: MediaPlayer?) {
             playerThread.execute {
               // Do not call setVolume here: on Windows VLCJ routes it through WASAPI ISimpleAudioVolume,
@@ -323,9 +320,9 @@ actual class VideoPlayer actual constructor(
         })
       }
 
-    private fun putPlayer(player: Component) = playersPool.add(player)
+    private fun putPlayer(player: EmbeddedMediaPlayer) = playersPool.add(player)
 
-    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcPreviewFactory) })
-    private fun putHelperPlayer(player: CallbackMediaPlayerComponent) = helperPlayersPool.add(player)
+    private fun getOrCreateHelperPlayer(): EmbeddedMediaPlayer = helperPlayersPool.removeFirstOrNull() ?: initializeHelperPlayer()
+    private fun putHelperPlayer(player: EmbeddedMediaPlayer) = helperPlayersPool.add(player)
   }
 }

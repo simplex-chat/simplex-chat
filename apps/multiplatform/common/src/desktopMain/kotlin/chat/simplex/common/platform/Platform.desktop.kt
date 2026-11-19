@@ -6,6 +6,7 @@ import java.util.*
 private val home = System.getProperty("user.home")
 private val unixConfigPath = (System.getenv("XDG_CONFIG_HOME") ?: "$home/.config") + "/simplex"
 internal val unixDataHome = System.getenv("XDG_DATA_HOME") ?: "$home/.local/share"
+internal val unixCacheHome = System.getenv("XDG_CACHE_HOME") ?: "$home/.cache"
 private val unixDataPath = "$unixDataHome/simplex"
 // DesktopPlatform's constants read this file's paths, so an eager value is null when the enum initializes first.
 val desktopPlatform by lazy { detectDesktopPlatform() }

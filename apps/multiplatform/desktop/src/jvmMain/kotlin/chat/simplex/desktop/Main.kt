@@ -18,7 +18,6 @@ import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.showApp
 import chat.simplex.common.singleInstanceLock
 import chat.simplex.common.startShowFileWatcher
-import chat.simplex.common.useAppNativeLibraries
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.*
@@ -26,7 +25,7 @@ import java.io.File
 
 fun main(args: Array<String>) {
   try {
-    if (desktopPlatform.isLinux()) useAppNativeLibraries()
+    if (desktopPlatform.isLinux()) prepareLinuxRuntime()
     rejectBitmapFonts()
     val link = linkFromArgs(args)
     if (!acquireSingleInstance(link)) return
@@ -44,7 +43,7 @@ fun main(args: Array<String>) {
     initApp()
     registerLinkSchemes()
     tmpDir.deleteRecursively()
-    tmpDir.mkdir()
+    createTmpDir()
     // Only the owning instance cleans tmpDir on exit (see preferencesTmpDir above).
     tmpDir.deleteOnExit()
     // installOpenUriHandler and showApp stay inside the try: whichever touches AWT first makes the process's
