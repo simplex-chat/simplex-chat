@@ -43,7 +43,7 @@ import StoreService.Names.Store (CleanupKept (..), CreditAmount (..), LateAlert 
 import StoreService.Orders (cancelNameInvoices, decide, expireOverdue, publishRegistration, settleOrder, signalReceived)
 import StoreService.Providers (CryptoReceived (..), ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), expiresItself, isTimeout, providerErrorText, settleWindow, unitName)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, getInvoice, getInvoiceByProviderRef, overdueInvoices, paymentHolds, unpaidRefs)
-import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
+import StoreService.Waiters (Waiters, publishPayment, waitingCount, waitingCountSTM)
 import StoreService.Web.Http (providerNamed)
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM
@@ -471,11 +471,12 @@ forgetRates :: PollerEnv -> IO ()
 forgetRates PollerEnv {peRates} = atomically $ TM.clear peRates
 
 creditLate :: PollerEnv -> Provider -> UTCTime -> InvoiceId -> Text -> IO CreditOutcome
-creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) ref = do
+creditLate env@PollerEnv {peStore, peWaiters} p now invId@(InvoiceId invText) ref = do
   outcome <- creditLateInvoice peStore (cachedRate env p) invId now
   case outcome of
     CONothingDue -> pure ()
-    COCredited money LateCredit {lcAmount} ->
+    COCredited money LateCredit {lcAmount} -> do
+      atomically $ publishPayment peWaiters invId
       logNote $
         "names: invoice " <> ref <> credited money <> tshow (toInteger (creditCents lcAmount)) <> " cents" <> extra money <> " to its order's balance"
           <> case lcAmount of
