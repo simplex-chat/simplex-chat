@@ -6,7 +6,7 @@ module ChatTests.Names where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay, waitQueuedLinkUpdates)
+import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay, waitQueuedLinkUpdates, waitRosterApplied)
 import ChatTests.Utils
 import Control.Concurrent.Async (concurrently_)
 import Data.Int (Int64)
@@ -322,6 +322,8 @@ testChannelDomainVerify ps = withSmpServerAndNames ps $ \reg ->
         alice ##> "/_verify domain #1"
         alice <## "SimpleX name #team verified"
         memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
+        waitRosterApplied bob
+        waitQueuedLinkUpdates alice
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team verified"
         -- the name is re-pointed to a different link: verification fails

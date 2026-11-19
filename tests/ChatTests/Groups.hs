@@ -11089,6 +11089,16 @@ waitQueuedLinkUpdates cc = go (100 :: Int)
         then queued `shouldBe` 0
         else threadDelay 100000 >> go (n - 1)
 
+waitRosterApplied :: HasCallStack => TestCC -> IO ()
+waitRosterApplied cc = go (100 :: Int)
+  where
+    go n = do
+      [[unapplied]] <- withCCTransaction cc $ \db ->
+        DB.query_ db "SELECT COUNT(1) FROM groups WHERE roster_version IS NULL" :: IO [[Int]]
+      if unapplied == 0 || n == 0
+        then unapplied `shouldBe` 0
+        else threadDelay 100000 >> go (n - 1)
+
 -- The wire member id for a named member (look it up on a client that knows the name, e.g. the owner), used to
 -- find a member by id on a subscriber that only knows it by member-id hash (e.g. after roster recovery).
 getMemberIdByName :: TestCC -> T.Text -> IO ByteString
