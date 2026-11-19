@@ -54,10 +54,6 @@ LIMIT="sends more checkouts or cancels than the service takes from one client in
 AMOUNTS="expects the mock's coin amounts, a price at the invoice's rate, or its decimal text; the fake BTCPay answers its fixtures' amounts, written to 8 places as BTCPay writes them"
 PROFILES="expects the profiles the mock makes up for its links; the service reads a link's profile from the link's server, which these links are not on"
 MONERO="pays late in Monero, which the service credits only when BTCPay's Monero settled-confirmation threshold is 1 or more; the fake BTCPay's Monero fixture sets none"
-LATE_WAKE="expects a late payment's credit on the page within 15 seconds; the service wakes no long poll on a late credit, so the page reads it when its poll ends, after up to 30 seconds"
-REVERTED_EDIT="expects 409 record_reverted when another relayer's copy of the edit lands first; the service answers 200 with a null tx, as the records hold the edit"
-INVALID_LINK_KIND="expects an invalid_link refusal without kind; the service's has kind null, as tests/fixtures/api/store/preview-invalid-link.json records"
-SAME_SECOND="expects orders made within one second newest first; the service orders them by their whole-second time, then by registration id"
 
 EXCLUDED=(
   "a balance held by another browser's invoice whose payment is confirming past its expiry names that order, says so without a time, and is read at a pause" "$OVERDUE"
@@ -170,11 +166,6 @@ EXCLUDED=(
   "the balance's steps fit both windows, their heading, main button and link where every step's are" "$LIMIT"
   "a card invoice opened in place of a new Bitcoin one says why in the card page's one notice, above the form" "$LIMIT"
   "a whole payment after the close, once credited, says so and registers the same name with the balance" "$MONERO"
-  "a payment that arrives after expiry turns the open page into the late page, whose balance buys another name, and no new invoice is made" "$LATE_WAKE"
-  "a relayed link edit that reverts on chain still counts toward the name's yearly edits, as the service counts every relayed edit" "$REVERTED_EDIT"
-  "search answers a link whose data was not read now as unread with its deep link, and leaves out one the chat core cannot parse, whose preview is invalid_link" "$INVALID_LINK_KIND"
-  "find lists an owner's orders newest first, each with its label hash and sealed" "$SAME_SECOND"
-  "a balance pays a cheaper name at once and keeps the rest, an exact price spends it to 0, and find lists those orders without an invoice" "$SAME_SECOND"
 )
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
