@@ -6,7 +6,7 @@ module ChatTests.Names where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay, waitQueuedLinkUpdates, waitRosterApplied)
+import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay, waitConnectedContactsSettled, waitQueuedLinkUpdates, waitRosterApplied)
 import ChatTests.Utils
 import Control.Concurrent.Async (concurrently_)
 import Data.Int (Int64)
@@ -799,6 +799,7 @@ testPlanKnownNameMovedToKnownChat = withKnownAliceName $ \reg alice bob cath -> 
   concurrently_
     (bob <## "cath (Catherine): contact is connected")
     (cath <## "bob (Bob): contact is connected")
+  waitConnectedContactsSettled bob
   bob ##> "/_connect plan 1 @alice.simplex"
   knownContactPlan "cath" "alice.simplex" bob
   bob <## "known contact @alice"

@@ -11099,6 +11099,16 @@ waitRosterApplied cc = go (100 :: Int)
         then unapplied `shouldBe` 0
         else threadDelay 100000 >> go (n - 1)
 
+waitConnectedContactsSettled :: HasCallStack => TestCC -> IO ()
+waitConnectedContactsSettled cc = go (100 :: Int)
+  where
+    go n = do
+      [[unsettled]] <- withCCTransaction cc $ \db ->
+        DB.query_ db "SELECT COUNT(1) FROM connections WHERE conn_status = 'ready' AND contact_conn_initiated = 1" :: IO [[Int]]
+      if unsettled == 0 || n == 0
+        then unsettled `shouldBe` 0
+        else threadDelay 100000 >> go (n - 1)
+
 -- The wire member id for a named member (look it up on a client that knows the name, e.g. the owner), used to
 -- find a member by id on a subscriber that only knows it by member-id hash (e.g. after roster recovery).
 getMemberIdByName :: TestCC -> T.Text -> IO ByteString
