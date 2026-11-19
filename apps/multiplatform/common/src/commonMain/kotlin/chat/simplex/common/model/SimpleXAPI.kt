@@ -105,6 +105,8 @@ enum class CloseBehavior {
 class HintPref(val reset: () -> Unit, val isUnchanged: () -> Boolean)
 
 // Spec: spec/state.md#AppPreferences
+const val DEFAULT_BARS_BLUR_RADIUS = 50
+
 class AppPreferences {
   // deprecated, remove in 2024
   private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
@@ -144,7 +146,7 @@ class AppPreferences {
   val privacyMediaBlurRadius = mkIntPreference(SHARED_PREFS_PRIVACY_MEDIA_BLUR_RADIUS, 0)
   // Blur broken on Android 12, see https://github.com/chrisbanes/haze/issues/77. And not available before 12
   val deviceSupportsBlur = appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 32
-  val appearanceBarsBlurRadius = mkIntPreference(SHARED_PREFS_APPEARANCE_BARS_BLUR_RADIUS, if (deviceSupportsBlur) 50 else 0)
+  val appearanceBarsBlurRadius = mkIntPreference(SHARED_PREFS_APPEARANCE_BARS_BLUR_RADIUS, if (deviceSupportsBlur) DEFAULT_BARS_BLUR_RADIUS else 0)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
   val markdownFileTextView = mkBoolPreference(SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW, false)

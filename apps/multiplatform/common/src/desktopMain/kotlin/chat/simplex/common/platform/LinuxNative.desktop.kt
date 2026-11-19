@@ -53,6 +53,9 @@ internal object LinuxNative {
   external fun nativeGtkThemeName(): String?
 
   @JvmStatic
+  external fun nativeGlRenderer(): String?
+
+  @JvmStatic
   external fun nativeSecretLookup(alias: String): String?
 
   @JvmStatic

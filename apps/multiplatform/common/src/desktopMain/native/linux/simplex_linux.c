@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <jni.h>
 #include <dlfcn.h>
 #include <gtk/gtk.h>
@@ -17,6 +18,12 @@
 #define SECRET_APPLICATION "chat.simplex.app"
 #define ABSENT_EXCEPTION "chat/simplex/common/platform/SecretServiceAbsentException"
 #define FAILURE_EXCEPTION "chat/simplex/common/platform/SecretServiceException"
+
+#define GL_RENDERER_NAME 0x1F01
+
+typedef void *(*egl_current_context_fn)(void);
+typedef void *(*egl_proc_address_fn)(const char *);
+typedef const unsigned char *(*gl_get_string_fn)(unsigned int);
 
 typedef gchar *(*secret_lookup_fn)(const SecretSchema *, GHashTable *, GCancellable *, GError **);
 typedef gboolean (*secret_store_fn)(const SecretSchema *, GHashTable *, const gchar *, const gchar *,
@@ -197,6 +204,19 @@ Java_chat_simplex_common_platform_LinuxNative_nativeConfirm(
     gtk_widget_destroy(dialog);
     while (gtk_events_pending()) gtk_main_iteration();
     return response == GTK_RESPONSE_YES ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_LinuxNative_nativeGlRenderer(JNIEnv *env, jclass clazz)
+{
+    (void)clazz;
+    egl_current_context_fn current_context = (egl_current_context_fn)dlsym(RTLD_DEFAULT, "eglGetCurrentContext");
+    egl_proc_address_fn proc_address = (egl_proc_address_fn)dlsym(RTLD_DEFAULT, "eglGetProcAddress");
+    if (current_context == NULL || proc_address == NULL || current_context() == NULL) return NULL;
+    gl_get_string_fn get_string = (gl_get_string_fn)proc_address("glGetString");
+    if (get_string == NULL) return NULL;
+    const unsigned char *renderer = get_string(GL_RENDERER_NAME);
+    return renderer != NULL ? (*env)->NewStringUTF(env, (const char *)renderer) : NULL;
 }
 
 static gpointer load_secret_api(gpointer data) {

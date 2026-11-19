@@ -10,6 +10,7 @@ import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.NtfManager
 import chat.simplex.common.platform.FileChooserAction
 import chat.simplex.common.platform.LinuxNative
+import chat.simplex.common.platform.adjustToLinuxRenderer
 import chat.simplex.common.platform.fileChooserPatterns
 import chat.simplex.common.platform.fileFromNativePath
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
@@ -78,6 +79,11 @@ private fun ApplicationScope.TaoAppWindow() {
           if (focused) NtfManager.clearUrgency()
         }
         onDispose { simplexWindowState.raise = {} }
+      }
+      LaunchedEffect(Unit) {
+        withFrameNanos {}
+        withFrameNanos {}
+        adjustToLinuxRenderer(ChatController.appPrefs)
       }
       AppScreen()
       GtkFileDialogs(taoWindow)
