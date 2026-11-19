@@ -3,7 +3,9 @@ package chat.simplex.common.platform
 import java.io.File
 import java.util.*
 
-private val home = System.getProperty("user.home")
+internal fun homeDirectory(env: (String) -> String?, userHome: String): String = env("HOME")?.takeIf { it.isNotEmpty() } ?: userHome
+
+private val home = homeDirectory(System::getenv, System.getProperty("user.home"))
 private val unixConfigPath = (System.getenv("XDG_CONFIG_HOME") ?: "$home/.config") + "/simplex"
 internal val unixDataHome = System.getenv("XDG_DATA_HOME") ?: "$home/.local/share"
 internal val unixCacheHome = System.getenv("XDG_CACHE_HOME") ?: "$home/.cache"

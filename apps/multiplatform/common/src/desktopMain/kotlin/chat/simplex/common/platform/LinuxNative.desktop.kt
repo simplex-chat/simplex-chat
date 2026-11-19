@@ -7,6 +7,8 @@ import java.nio.charset.Charset
 private const val LINUX_LIBRARY = "libsimplex_linux.so"
 private const val COMPOSE_RESOURCES_DIR = "compose.application.resources.dir"
 private const val NUCLEUS_LIBRARY_PATH = "nucleus.native.libraryPath"
+private const val NUCLEUS_DESKTOP_ENTRY_ID = "nucleus.app.linux.desktop.entry.id"
+private const val NUCLEUS_STARTUP_WM_CLASS = "nucleus.app.linux.startup.wm.class"
 private const val GTK_USE_PORTAL = "GTK_USE_PORTAL"
 private const val GTK_USE_PORTAL_ON = "1"
 private const val KEEP_ENV = 0
@@ -67,6 +69,10 @@ internal object LinuxNative {
 
 fun prepareLinuxRuntime() {
   System.getProperty(COMPOSE_RESOURCES_DIR)?.let { System.setProperty(NUCLEUS_LIBRARY_PATH, it) }
+  linuxDesktopEntryId?.let {
+    System.setProperty(NUCLEUS_DESKTOP_ENTRY_ID, it)
+    System.setProperty(NUCLEUS_STARTUP_WM_CLASS, it)
+  }
   try {
     LibC.INSTANCE.setenv(GTK_USE_PORTAL, GTK_USE_PORTAL_ON, KEEP_ENV)
   } catch (e: LinkageError) {

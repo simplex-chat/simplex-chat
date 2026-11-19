@@ -3,6 +3,7 @@ package chat.simplex.app
 import chat.simplex.common.platform.fileChooserPatterns
 import chat.simplex.common.platform.fileFromNativePath
 import chat.simplex.common.platform.hasFileExtension
+import chat.simplex.common.platform.homeDirectory
 import chat.simplex.common.platform.imageFileExtensions
 import chat.simplex.common.platform.videoFileExtensions
 import org.junit.Assume.assumeTrue
@@ -28,6 +29,14 @@ class LinuxFilesTest {
   @Test
   fun chooserPatternsCoverBothCases() {
     assertEquals(listOf("*.png", "*.PNG", "*.jpeg", "*.JPEG"), fileChooserPatterns(listOf("png", "jpeg")).toList())
+  }
+
+  @Test
+  fun homeFollowsTheEnvironment() {
+    val portableHome = "/media/usb/SimpleX.AppImage.home"
+    assertEquals(portableHome, homeDirectory(mapOf("HOME" to portableHome)::get, "/home/user"), "AppImage portable mode sets HOME")
+    assertEquals("/home/user", homeDirectory(mapOf<String, String>()::get, "/home/user"))
+    assertEquals("/home/user", homeDirectory(mapOf("HOME" to "")::get, "/home/user"))
   }
 
   @Test

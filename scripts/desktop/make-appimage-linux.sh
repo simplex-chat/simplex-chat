@@ -65,8 +65,10 @@ sed -i -e '/^app\.classpath=/d' -e 's|^\[Application\]$|&\napp.classpath=$APPDIR
 # Set all files to fixed time
 find . -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
 
-../appimagetool-${ARCH}.AppImage --verbose --no-appstream --runtime-file ../runtime-${ARCH} .
-mv *imple*.AppImage ../../
+appimage_name="simplex-desktop-${ARCH}.AppImage"
+../appimagetool-${ARCH}.AppImage --verbose --no-appstream --runtime-file ../runtime-${ARCH} \
+  -u "gh-releases-zsync|simplex-chat|simplex-chat|latest|${appimage_name}.zsync" . "$appimage_name"
+mv "$appimage_name" "${appimage_name}.zsync" ../../
 
 # Just a safeguard
 strip-nondeterminism ../../*imple*.AppImage

@@ -53,6 +53,7 @@ sed -i "/Version/ s/\$/~$VERSION_CODENAME/" ./extracted/DEBIAN/control
 SCHEME_MIME_TYPE_LINE='MimeType=x-scheme-handler/simplexchat;x-scheme-handler/simplex;'
 sed -i -e '/%[uU]/!s|^Exec=.*|& %u|' -e "s|^MimeType=.*|$SCHEME_MIME_TYPE_LINE|" ./extracted/opt/*imple*/lib/*.desktop
 grep -qxF "$SCHEME_MIME_TYPE_LINE" ./extracted/opt/*imple*/lib/*.desktop || { echo "desktop entry does not register simplexchat: and simplex:" >&2; exit 1; }
+sed -i -e 's|^Name=.*|Name=SimpleX Chat|' -e 's|^Categories=.*|Categories=Network;Chat;InstantMessaging;|' -e '/^StartupWMClass=/d' -e '$a StartupWMClass=simplex-simplex' ./extracted/opt/*imple*/lib/*.desktop
 find ./extracted/ -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
 
 dpkg-deb --build --root-owner-group --uniform-compression ./extracted ./release/main/deb/simplex_${ARCH}.deb

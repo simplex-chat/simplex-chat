@@ -404,11 +404,11 @@ flowchart LR
 | `Categories` | `Network;Chat;InstantMessaging;` | `Network;Chat;InstantMessaging;` | `Network;Chat;InstantMessaging;` |
 | `StartupWMClass` | `simplex-simplex` | `chat.simplex.app` | `chat.simplex.simplex` |
 
-- deb control: `Maintainer` set.
-- AppStream: release list updated.
-- AppImage: `appimagetool -u "gh-releases-zsync|simplex-chat|simplex-chat|latest|simplex-desktop-<arch>.AppImage.zsync"`; the `.zsync` file uploaded with the release.
+- Window identity: `nucleus.app.linux.desktop.entry.id` and `nucleus.app.linux.startup.wm.class` set to the installation's entry ID before Tao starts; Flatpak's Wayland app ID is `FLATPAK_ID`.
+- deb control: `Maintainer` set through `debMaintainer`.
+- AppImage: built as `simplex-desktop-<arch>.AppImage` with `-u "gh-releases-zsync|simplex-chat|simplex-chat|latest|simplex-desktop-<arch>.AppImage.zsync"`; the `.zsync` file uploaded with the release.
 - Data and config paths on Linux: `$HOME`, else `user.home`.
-- Updater:
+- Updater (unchanged):
 
 ```mermaid
 flowchart LR
