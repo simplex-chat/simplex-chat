@@ -108,12 +108,10 @@ configure(subprojects) {
         }
     }
 
-    if (System.getProperty("os.name") == "Linux") {
-        configurations.configureEach {
-            resolutionStrategy.eachDependency {
-                if (requested.group == "org.jetbrains.skiko" && requested.version == "0.9.4.2") {
-                    useVersion("0.9.24")
-                }
+    configurations.configureEach {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.skiko" && requested.version == "0.9.4.2") {
+                useVersion("0.9.24")
             }
         }
     }
