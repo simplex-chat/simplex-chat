@@ -44,7 +44,7 @@ import StoreService.Service (ServiceState (..), newServiceState, storeService)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), currentSecond, getInvoice)
 import System.Environment (lookupEnv)
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec (Spec, describe, it, pendingWith)
 import Text.Read (readMaybe)
 
 namesPageServiceTests :: Spec
@@ -216,23 +216,23 @@ statusRead :: InvoiceStatus -> InvoiceRow -> Bool
 statusRead st InvoiceRow {irStatus} = irStatus == st
 
 webhook :: PageControls -> String -> [Header] -> LB.ByteString -> IO ()
-webhook PageControls {pcManager, pcWebhooks} provider headers body = do
-  req <- HTTP.parseRequest (pcWebhooks <> provider)
+webhook PageControls {pcManager, pcWebhooks} path headers body = do
+  req <- HTTP.parseRequest (pcWebhooks <> path)
   r <- HTTP.httpLbs req {HTTP.method = "POST", HTTP.requestHeaders = (hContentType, "application/json") : headers, HTTP.requestBody = HTTP.RequestBodyLBS body} pcManager
   let st = statusCode (HTTP.responseStatus r)
-  unless (st == 200) $ fail ("the service answered the " <> provider <> " webhook with " <> show st)
+  unless (st == 200) $ fail ("the service answered the " <> path <> " webhook with " <> show st)
 
 readByService :: PageControls -> InvoiceId -> (InvoiceRow -> Bool) -> IO J.Value
-readByService PageControls {pcService} invId done = (\ok -> J.object ["read" J..= ok]) <$> poll readAttempts
+readByService PageControls {pcService} invId done = (\ok -> J.object ["read" J..= ok]) <$> attempt readAttempts
   where
     st = chatStore pcService
-    poll :: Int -> IO Bool
-    poll left = do
+    attempt :: Int -> IO Bool
+    attempt left = do
       row <- getInvoice st invId
-      pending <- withTransaction st (`latePending` invId)
-      if maybe False done row && pending /= Just LPUncredited
+      late <- withTransaction st (`latePending` invId)
+      if maybe False done row && late /= Just LPUncredited
         then pure True
-        else if left <= 0 then pure False else threadDelay readIntervalMicros >> poll (left - 1)
+        else if left <= 0 then pure False else threadDelay readIntervalMicros >> attempt (left - 1)
 
 readAttempts, readIntervalMicros :: Int
 readAttempts = 100
