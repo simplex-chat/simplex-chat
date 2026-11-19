@@ -4,7 +4,7 @@ ARCH="$(uname -m)"
 
 [ -n "${SKIP_CORE_BUILD:-}" ] || scripts/desktop/build-lib-linux.sh
 scripts/desktop/build-native-linux.sh
-cd apps/multiplatform
+cd apps/multiplatform || exit 1
 if [ -n "${ASSETS_DIR:-}" ]; then
   set -- -Psimplex.assets.dir="$ASSETS_DIR"
 else
@@ -54,6 +54,10 @@ SCHEME_MIME_TYPE_LINE='MimeType=x-scheme-handler/simplexchat;x-scheme-handler/si
 sed -i -e '/%[uU]/!s|^Exec=.*|& %u|' -e "s|^MimeType=.*|$SCHEME_MIME_TYPE_LINE|" ./extracted/opt/*imple*/lib/*.desktop
 grep -qxF "$SCHEME_MIME_TYPE_LINE" ./extracted/opt/*imple*/lib/*.desktop || { echo "desktop entry does not register simplexchat: and simplex:" >&2; exit 1; }
 sed -i -e 's|^Name=.*|Name=SimpleX Chat|' -e 's|^Categories=.*|Categories=Network;Chat;InstantMessaging;|' -e '/^StartupWMClass=/d' -e '$a StartupWMClass=simplex-simplex' ./extracted/opt/*imple*/lib/*.desktop
+mkdir -p ./extracted/usr/share/applications
+cp ./extracted/opt/*imple*/lib/simplex-simplex.desktop ./extracted/usr/share/applications/
+sed -i '/xdg-desktop-menu/d' ./extracted/DEBIAN/postinst ./extracted/DEBIAN/prerm
+! grep -q xdg-desktop-menu ./extracted/DEBIAN/postinst ./extracted/DEBIAN/prerm || { echo "maintainer scripts still call xdg-desktop-menu" >&2; exit 1; }
 find ./extracted/ -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
 
 dpkg-deb --build --root-owner-group --uniform-compression ./extracted ./release/main/deb/simplex_${ARCH}.deb
