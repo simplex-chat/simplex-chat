@@ -154,10 +154,14 @@ kotlin {
         implementation("net.java.dev.jna:jna:5.14.0")
         implementation(project(":external:nanohttpd"))
         implementation("com.squareup.okhttp3:okhttp:4.12.0")
+        compileOnly(project(":external:nucleus"))
+        compileOnly(project(":external:composenativetray"))
       }
     }
     val desktopTest by getting {
       dependencies {
+        implementation(project(":external:nucleus"))
+        implementation(project(":external:composenativetray"))
         implementation(compose.desktop.currentOs)
         implementation("org.jetbrains.compose.ui:ui-test:${rootProject.extra["compose.version"] as String}")
       }

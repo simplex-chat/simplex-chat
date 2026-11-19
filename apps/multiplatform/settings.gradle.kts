@@ -8,6 +8,7 @@ pluginManagement {
     plugins {
         kotlin("multiplatform").version(extra["kotlin.version"] as String)
         kotlin("android").version(extra["kotlin.version"] as String)
+        kotlin("jvm").version(extra["kotlin.version"] as String)
         id("com.android.application").version(extra["gradle.plugin.version"] as String)
         id("com.android.library").version(extra["gradle.plugin.version"] as String)
         id("org.jetbrains.compose").version(extra["compose.version"] as String)
@@ -18,4 +19,4 @@ pluginManagement {
 
 rootProject.name = "app"
 
-include(":android", ":desktop", ":common", ":external:nanohttpd")
+include(":android", ":desktop", ":common", ":external:nanohttpd", ":external:nucleus", ":external:composenativetray")

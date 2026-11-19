@@ -16,6 +16,9 @@ ARG GHCUP_METADATA=https://raw.githubusercontent.com/haskell/ghcup-metadata/ff5a
 ARG JAVA_VER=17.0.21.0.10
 ARG JAVA_HASH_AMD64=8e7577ddeb5b17a13c73a6fe80b592f6e70299cd19f54d06976986b0bc7ada87
 ARG JAVA_HASH_ARM64=c400e8ae70ee9565c23667bc3b4dd0fe5f7c403629ebb2cf9648c1d756b6b926
+ARG RUSTUP_VER=1.29.3
+ARG RUSTUP_HASH_AMD64=b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55
+ARG RUSTUP_HASH_ARM64=9f608c142e0e38a78957d0661ba1dfaf0b6fb37184cfaa4b9a0aa57af6184282
 
 ENV TZ=Etc/UTC \
     DEBIAN_FRONTEND=noninteractive
@@ -61,6 +64,13 @@ RUN apt-get update --error-on=any && \
                        python3 \
                        python3-venv \
                        xz-utils \
+                       pkg-config \
+                       libgtk-3-dev \
+                       libdbus-1-dev \
+                       libsystemd-dev \
+                       libegl-dev \
+                       libwayland-dev \
+                       libsecret-1-dev \
                        unzip &&\
     ln -s /bin/fusermount /bin/fusermount3 || :
 
@@ -116,6 +126,20 @@ RUN case "$(uname -m)" in \
     ghcup config set url-source "${GHCUP_METADATA}" && \
     ghcup install ghc "${GHC}" --set && \
     ghcup install cabal "${CABAL}" --set
+
+ENV PATH="$HOME/.cargo/bin:$PATH"
+RUN case "$(uname -m)" in \
+        x86_64)  export RUSTUP_TARGET='x86_64-unknown-linux-gnu' RUSTUP_HASH="$RUSTUP_HASH_AMD64" ;; \
+        aarch64) export RUSTUP_TARGET='aarch64-unknown-linux-gnu' RUSTUP_HASH="$RUSTUP_HASH_ARM64" ;; \
+        *) echo "unknown arch $(uname -m)" && exit 1 ;; \
+    esac && \
+    curl --proto '=https' --tlsv1.2 -sSf \
+         "https://static.rust-lang.org/rustup/archive/${RUSTUP_VER}/${RUSTUP_TARGET}/rustup-init" \
+         -o rustup-init && \
+    echo "${RUSTUP_HASH}  rustup-init" | sha256sum -c - && \
+    chmod +x rustup-init && \
+    ./rustup-init -y --no-modify-path --profile minimal --default-toolchain none && \
+    rm rustup-init
 
 #=====================
 # Install Android SDK

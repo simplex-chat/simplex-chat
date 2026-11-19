@@ -3,6 +3,7 @@
 ARCH="$(uname -m)"
 
 scripts/desktop/build-lib-linux.sh
+scripts/desktop/build-native-linux.sh
 cd apps/multiplatform
 if [ -n "${ASSETS_DIR:-}" ]; then
   set -- -Psimplex.assets.dir="$ASSETS_DIR"

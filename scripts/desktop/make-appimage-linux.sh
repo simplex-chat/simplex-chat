@@ -13,6 +13,7 @@ root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
 multiplatform_dir=$root_dir/apps/multiplatform
 release_app_dir=$root_dir/apps/multiplatform/release/main/app
 
+$root_dir/scripts/desktop/build-native-linux.sh
 cd $multiplatform_dir
 libcrypto_path=$(ldd common/src/commonMain/cpp/desktop/libs/*/libHSdirect-sqlcipher-*.so | grep libcrypto | cut -d'=' -f 2 | cut -d ' ' -f 2)
 trap "rm common/src/commonMain/cpp/desktop/libs/*/`basename $libcrypto_path` 2> /dev/null || true" EXIT

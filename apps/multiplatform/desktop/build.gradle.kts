@@ -25,6 +25,10 @@ kotlin {
       dependencies {
         implementation(project(":common"))
         implementation(compose.desktop.currentOs)
+        if (System.getProperty("os.name", "generic").lowercase().contains("linux")) {
+          runtimeOnly(project(":external:nucleus"))
+          runtimeOnly(project(":external:composenativetray"))
+        }
       }
     }
     val jvmTest by getting
