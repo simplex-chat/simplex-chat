@@ -1707,6 +1707,11 @@
   <string name="database_is_not_encrypted">Your chat database is not encrypted - set passphrase to protect it.</string>
   <string name="keychain_is_storing_securely">Android Keystore%s is used to securely store passphrase - it allows notification service to work.</string>
   <string name="settings_is_storing_in_clear_text">The passphrase is stored in settings as plaintext.</string>
+  <string name="settings_is_storing_encrypted_with_keyring">The passphrase is stored in settings, encrypted with a key kept in the system keyring.</string>
+  <string name="keyring_unavailable_desc">The system keyring is locked or unavailable. Unlock it and try again, or restart the app.</string>
+  <string name="keyring_key_not_found_desc">The key of a saved passphrase or passcode is not found in the system keyring. Enter the database passphrase manually. This may happen after the keyring is reset or the app data is restored from a backup.</string>
+  <string name="keyring_migrated_title">Passphrase protected</string>
+  <string name="keyring_migrated_desc">The saved passphrase and passcodes are now encrypted with a key kept in the system keyring.</string>
   <string name="encrypted_with_random_passphrase">Database is encrypted using a random passphrase, you can change it.</string>
   <string name="impossible_to_recover_passphrase"><![CDATA[<b>Please note</b>: you will NOT be able to recover or change passphrase if you lose it.]]></string>
   <string name="keychain_allows_to_receive_ntfs">Android Keystore will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving notifications.</string>

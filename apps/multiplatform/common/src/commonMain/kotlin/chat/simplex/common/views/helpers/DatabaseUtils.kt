@@ -19,13 +19,23 @@ object DatabaseUtils {
   val ksSelfDestructPassword = KeyStoreItem(SELF_DESTRUCT_PASSWORD_ALIAS, appPreferences.encryptedSelfDestructPassphrase, appPreferences.initializationVectorSelfDestructPassphrase)
 
   class KeyStoreItem(private val alias: String, val passphrase: SharedPreference<String?>, val initVector: SharedPreference<String?>) {
-    fun get(): String? {
+    fun get(): String? =
+      try {
+        getChecked()
+      } catch (e: KeyUnavailableException) {
+        Log.e(TAG, "Key $alias is unavailable: ${e.message}")
+        null
+      }
+
+    fun getChecked(): String? {
       return cryptor.decryptData(
         passphrase.get()?.toByteArrayFromBase64ForPassphrase() ?: return null,
         initVector.get()?.toByteArrayFromBase64ForPassphrase() ?: return null,
         alias,
       )
     }
+
+    fun isPlaintext(): Boolean = passphrase.get().let { it != null && it == initVector.get() }
 
     fun set(key: String) {
       val data = cryptor.encryptText(key, alias)

@@ -35,6 +35,7 @@ fun main(args: Array<String>) {
     // Clean shared temp dirs only in the owning instance (not in a Files.desktop val
     // initializer, which a transient second instance would also run). Early: before settings writes.
     preferencesTmpDir.deleteRecursively()
+    restrictPreferencesDir()
     // Disable hardware acceleration
     //System.setProperty("skiko.renderApi", "SOFTWARE")
     initHaskell()

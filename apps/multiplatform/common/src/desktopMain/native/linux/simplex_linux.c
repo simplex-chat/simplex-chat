@@ -1,5 +1,7 @@
 #include <jni.h>
+#include <dlfcn.h>
 #include <gtk/gtk.h>
+#include <libsecret/secret.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +10,36 @@
 #define X11_BACKEND "x11"
 #define GNOME_INTERFACE_SCHEMA "org.gnome.desktop.interface"
 #define GTK_THEME_KEY "gtk-theme"
+#define LIBSECRET "libsecret-1.so.0"
+#define SECRET_SCHEMA_NAME "chat.simplex.app.Key"
+#define SECRET_APPLICATION_ATTRIBUTE "application"
+#define SECRET_ALIAS_ATTRIBUTE "alias"
+#define SECRET_APPLICATION "chat.simplex.app"
+#define ABSENT_EXCEPTION "chat/simplex/common/platform/SecretServiceAbsentException"
+#define FAILURE_EXCEPTION "chat/simplex/common/platform/SecretServiceException"
+
+typedef gchar *(*secret_lookup_fn)(const SecretSchema *, GHashTable *, GCancellable *, GError **);
+typedef gboolean (*secret_store_fn)(const SecretSchema *, GHashTable *, const gchar *, const gchar *,
+                                    const gchar *, GCancellable *, GError **);
+typedef gboolean (*secret_clear_fn)(const SecretSchema *, GHashTable *, GCancellable *, GError **);
+typedef void (*secret_free_fn)(gchar *);
+
+typedef struct {
+    secret_lookup_fn lookup;
+    secret_store_fn store;
+    secret_clear_fn clear;
+    secret_free_fn free_password;
+} secret_api;
+
+static const SecretSchema simplex_schema = {
+    SECRET_SCHEMA_NAME,
+    SECRET_SCHEMA_NONE,
+    {
+        { SECRET_APPLICATION_ATTRIBUTE, SECRET_SCHEMA_ATTRIBUTE_STRING },
+        { SECRET_ALIAS_ATTRIBUTE, SECRET_SCHEMA_ATTRIBUTE_STRING },
+        { NULL, 0 },
+    },
+};
 
 static JavaVM *g_vm = NULL;
 
@@ -165,4 +197,122 @@ Java_chat_simplex_common_platform_LinuxNative_nativeConfirm(
     gtk_widget_destroy(dialog);
     while (gtk_events_pending()) gtk_main_iteration();
     return response == GTK_RESPONSE_YES ? JNI_TRUE : JNI_FALSE;
+}
+
+static gpointer load_secret_api(gpointer data) {
+    (void)data;
+    void *library = dlopen(LIBSECRET, RTLD_NOW | RTLD_LOCAL);
+    if (library == NULL) return NULL;
+    secret_api *api = g_new0(secret_api, 1);
+    api->lookup = (secret_lookup_fn)dlsym(library, "secret_password_lookupv_sync");
+    api->store = (secret_store_fn)dlsym(library, "secret_password_storev_sync");
+    api->clear = (secret_clear_fn)dlsym(library, "secret_password_clearv_sync");
+    api->free_password = (secret_free_fn)dlsym(library, "secret_password_free");
+    if (api->lookup == NULL || api->store == NULL || api->clear == NULL || api->free_password == NULL) {
+        g_free(api);
+        dlclose(library);
+        return NULL;
+    }
+    return api;
+}
+
+static const secret_api *secret(void) {
+    static GOnce once = G_ONCE_INIT;
+    return g_once(&once, load_secret_api, NULL);
+}
+
+static gboolean service_absent(const GError *error) {
+    return error->domain == G_IO_ERROR ||
+           g_error_matches(error, G_DBUS_ERROR, G_DBUS_ERROR_SERVICE_UNKNOWN) ||
+           g_error_matches(error, G_DBUS_ERROR, G_DBUS_ERROR_NAME_HAS_NO_OWNER);
+}
+
+static void throw_secret_error(JNIEnv *env, const GError *error) {
+    jclass exception = (*env)->FindClass(env, error == NULL || service_absent(error) ? ABSENT_EXCEPTION : FAILURE_EXCEPTION);
+    if (exception != NULL) {
+        (*env)->ThrowNew(env, exception, error != NULL ? error->message : LIBSECRET);
+    }
+}
+
+static GHashTable *secret_attributes(const char *alias) {
+    GHashTable *attributes = g_hash_table_new(g_str_hash, g_str_equal);
+    g_hash_table_insert(attributes, SECRET_APPLICATION_ATTRIBUTE, SECRET_APPLICATION);
+    g_hash_table_insert(attributes, SECRET_ALIAS_ATTRIBUTE, (gpointer)alias);
+    return attributes;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_LinuxNative_nativeSecretLookup(JNIEnv *env, jclass clazz, jstring alias)
+{
+    (void)clazz;
+    const secret_api *api = secret();
+    if (api == NULL) {
+        throw_secret_error(env, NULL);
+        return NULL;
+    }
+    char *alias_utf8 = java_to_utf8(env, alias);
+    GHashTable *attributes = secret_attributes(alias_utf8);
+    GError *error = NULL;
+    gchar *value = api->lookup(&simplex_schema, attributes, NULL, &error);
+    g_hash_table_unref(attributes);
+    g_free(alias_utf8);
+    if (error != NULL) {
+        throw_secret_error(env, error);
+        g_error_free(error);
+        return NULL;
+    }
+    if (value == NULL) return NULL;
+    jstring result = (*env)->NewStringUTF(env, value);
+    api->free_password(value);
+    return result;
+}
+
+JNIEXPORT void JNICALL
+Java_chat_simplex_common_platform_LinuxNative_nativeSecretStore(
+    JNIEnv *env, jclass clazz, jstring alias, jstring label, jstring value)
+{
+    (void)clazz;
+    const secret_api *api = secret();
+    if (api == NULL) {
+        throw_secret_error(env, NULL);
+        return;
+    }
+    char *alias_utf8 = java_to_utf8(env, alias);
+    char *label_utf8 = java_to_utf8(env, label);
+    char *value_utf8 = java_to_utf8(env, value);
+    GHashTable *attributes = secret_attributes(alias_utf8);
+    GError *error = NULL;
+    api->store(&simplex_schema, attributes, SECRET_COLLECTION_DEFAULT, label_utf8, value_utf8, NULL, &error);
+    g_hash_table_unref(attributes);
+    g_free(alias_utf8);
+    g_free(label_utf8);
+    if (value_utf8 != NULL) {
+        memset(value_utf8, 0, strlen(value_utf8));
+        g_free(value_utf8);
+    }
+    if (error != NULL) {
+        throw_secret_error(env, error);
+        g_error_free(error);
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_chat_simplex_common_platform_LinuxNative_nativeSecretClear(JNIEnv *env, jclass clazz, jstring alias)
+{
+    (void)clazz;
+    const secret_api *api = secret();
+    if (api == NULL) {
+        throw_secret_error(env, NULL);
+        return;
+    }
+    char *alias_utf8 = java_to_utf8(env, alias);
+    GHashTable *attributes = secret_attributes(alias_utf8);
+    GError *error = NULL;
+    api->clear(&simplex_schema, attributes, NULL, &error);
+    g_hash_table_unref(attributes);
+    g_free(alias_utf8);
+    if (error != NULL) {
+        throw_secret_error(env, error);
+        g_error_free(error);
+    }
 }

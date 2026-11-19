@@ -22,12 +22,20 @@ private val ownerOnly = PosixFilePermissions.fromString("rwx------")
 
 fun createTmpDir() {
   tmpDir.mkdirs()
-  if (desktopPlatform.isLinux()) {
-    try {
-      Files.setPosixFilePermissions(tmpDir.parentFile.toPath(), ownerOnly)
-    } catch (e: IOException) {
-      Log.e(TAG, "Cannot restrict ${tmpDir.parentFile}: ${e.message}")
-    }
+  if (desktopPlatform.isLinux()) restrictToOwner(tmpDir.parentFile)
+}
+
+fun restrictPreferencesDir() {
+  if (!desktopPlatform.isLinux()) return
+  preferencesDir.mkdirs()
+  restrictToOwner(preferencesDir)
+}
+
+private fun restrictToOwner(dir: File) {
+  try {
+    Files.setPosixFilePermissions(dir.toPath(), ownerOnly)
+  } catch (e: IOException) {
+    Log.e(TAG, "Cannot restrict $dir: ${e.message}")
   }
 }
 actual val filesDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_files")

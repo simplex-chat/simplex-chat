@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.BackHandler
+import chat.simplex.common.platform.KeyUnavailableException
 import chat.simplex.common.views.localauth.LocalAuthView
 import chat.simplex.common.views.usersettings.LAMode
 import chat.simplex.res.*
@@ -45,7 +46,11 @@ fun authenticateWithPasscode(
   oneTime: Boolean,
   completed: (LAResult) -> Unit
 ) {
-  val password = DatabaseUtils.ksAppPassword.get() ?: return completed(LAResult.Unavailable(generalGetString(MR.strings.la_no_app_password)))
+  val password = try {
+    DatabaseUtils.ksAppPassword.getChecked()
+  } catch (e: KeyUnavailableException) {
+    return completed(LAResult.Error(generalGetString(MR.strings.keyring_unavailable_desc)))
+  } ?: return completed(LAResult.Unavailable(generalGetString(MR.strings.la_no_app_password)))
   ModalManager.fullscreen.showPasscodeCustomModal(oneTime) { close ->
     BackHandler {
       close()

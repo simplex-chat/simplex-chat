@@ -45,10 +45,10 @@ done
 java_home="${JAVA_HOME:-$(dirname "$(dirname "$(realpath "$(command -v javac)")")")}"
 gcc -shared -fPIC -O2 -Wall -Wextra \
   -I"$java_home/include" -I"$java_home/include/linux" \
-  $(pkg-config --cflags gtk+-3.0) \
+  $(pkg-config --cflags gtk+-3.0 libsecret-1) \
   "$root_dir/apps/multiplatform/common/src/desktopMain/native/linux/simplex_linux.c" \
   -o "$libs_dir/libsimplex_linux.so" \
-  $(pkg-config --libs gtk+-3.0)
+  $(pkg-config --libs gtk+-3.0) -ldl
 
 tray_out_dir="$(mktemp -d)"
 trap 'rm -rf "$tray_out_dir"' EXIT

@@ -32,7 +32,15 @@ fun initApp() {
   }
   applyAppLocale()
   deleteOldChatArchive()
-  if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+  if (desktopPlatform.isLinux() && migratePlaintextSecrets()) {
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.keyring_migrated_title), generalGetString(MR.strings.keyring_migrated_desc))
+  }
+  val selfDestructSet = try {
+    DatabaseUtils.ksSelfDestructPassword.getChecked() != null
+  } catch (e: KeyUnavailableException) {
+    true
+  }
+  if (!selfDestructSet) {
     initChatControllerOnStart()
   }
   // LALAL
