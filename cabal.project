@@ -35,8 +35,8 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://github.com/simplex-chat/sqlcipher-simple.git
-    tag: a46bd361a19376c5211f1058908fc0ae6bf42446
+    location: https://github.com/evgeny-simplex/sqlcipher-simple.git
+    tag: 720aba341a448e4f9b0b688b0c30579c81ff60f7
 
 source-repository-package
     type: git
