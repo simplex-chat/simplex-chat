@@ -597,8 +597,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
             sway xwayland grim wtype jq dbus gnome-keyring libsecret-tools python3-dbus python3-gi libwayland-dev libxkbcommon-dev pkg-config \
-            libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri flatpak xdg-desktop-portal xdg-desktop-portal-gtk fuse3
+            libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri flatpak xdg-desktop-portal xdg-desktop-portal-gtk fuse3 \
+            wmctrl xclip wl-clipboard libglib2.0-bin dconf-gsettings-backend gsettings-desktop-schemas
           dpkg-query -W sway grim wtype gnome-keyring libegl-mesa0 flatpak xdg-desktop-portal
+
+      - name: Install the CLI peer
+        env:
+          CLI_URL: https://github.com/simplex-chat/simplex-chat/releases/download/v7.1.4/simplex-chat-ubuntu-24_04-x86_64
+          CLI_SHA256: 15a64d3fe75782900b3686aed0f635569b1f3526c47139ff30ac1ce1a50189ca
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/simplex-chat" "$CLI_URL"
+          echo "$CLI_SHA256  $RUNNER_TEMP/simplex-chat" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/simplex-chat"
+          echo "SIMPLEX_CLI=$RUNNER_TEMP/simplex-chat" >> "$GITHUB_ENV"
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Build xdg-dbus-proxy

@@ -24,6 +24,11 @@
 #   ui avatar <text> [colour]     print how many pixels of the profile image left of a list row's name (the text) stand out
 #                                 from the background, and their mean colour, saving the area as UI_OUT/NN-avatar-<text>.png;
 #                                 with red, green or blue, fail unless that colour dominates
+#   ui copy <text>                put the text on the clipboard
+#   ui close                      ask the app window to close, as its close button does
+#   ui shown [secs]               wait up to secs (30) until the app window shows, and update UI_STATE/window-rect
+#   ui hidden [secs]              wait up to secs (30) until the app window is hidden
+#   ui luminance                  print the app window's mean brightness, from 0 (black) to 1 (white)
 #   ui type <text>                type into the focused field
 #   ui key <key>...               press keys named as in xdotool (Return, Escape, ctrl+a)
 #   ui do <command> [args] -- <command> [args] ...
@@ -247,10 +252,51 @@ x_window_rect() {
     END { print x, y, w, h }' | tee "$state/window-rect"
 }
 
-wait_for_window() {
+window_visible() {
   if [ "$session" = x11 ]; then
-    if ! timeout 120 xdotool search --sync --onlyvisible --name '^SimpleX$' > "$state/window"; then
-      echo "error: no app window after 120 s"
+    xdotool search --onlyvisible --name '^SimpleX$' > /dev/null
+  else
+    swaymsg -t get_tree | jq -e '[recurse(.nodes[]?, .floating_nodes[]?) | select(.name == "SimpleX" and .visible)] | length > 0' > /dev/null
+  fi
+}
+
+wait_for_hidden() {
+  local deadline=$((SECONDS + $1))
+  while window_visible; do
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 1
+  done
+}
+
+copy_text() {
+  case "$session" in
+    x11) printf '%s' "$1" | xclip -selection clipboard ;;
+    xwayland) printf '%s' "$1" | DISPLAY=$(cat "$state/x-display") xclip -selection clipboard ;;
+    wayland) printf '%s' "$1" | wl-copy ;;
+  esac
+}
+
+close_window() {
+  if [ "$session" = x11 ]; then
+    wmctrl -c SimpleX
+  else
+    swaymsg '[title="^SimpleX$"] kill' > /dev/null
+  fi
+}
+
+# mean brightness of the app window, from 0 (black) to 1 (white)
+window_luminance() {
+  local x y w h
+  read -r x y w h < "$state/window-rect"
+  screenshot "$state/ocr/screen.png"
+  convert "$state/ocr/screen.png" -crop "${w}x${h}+${x}+${y}" -colorspace Gray -format '%[fx:mean]' info:
+}
+
+wait_for_window() {
+  local secs=${1:-120}
+  if [ "$session" = x11 ]; then
+    if ! timeout "$secs" xdotool search --sync --onlyvisible --name '^SimpleX$' > "$state/window"; then
+      echo "error: no app window after $secs s"
       return 1
     fi
     xdotool getwindowgeometry "$(head -n 1 "$state/window")"
@@ -258,10 +304,10 @@ wait_for_window() {
     xprop -id "$(head -n 1 "$state/window")" WM_CLASS | tee "$state/window-identity"
     return 0
   fi
-  local deadline=$((SECONDS + 120)) node
-  until node=$(swaymsg -t get_tree | jq -ec '[recurse(.nodes[]?, .floating_nodes[]?) | select(.name == "SimpleX")][0] // empty'); do
+  local deadline=$((SECONDS + secs)) node
+  until node=$(swaymsg -t get_tree | jq -ec '[recurse(.nodes[]?, .floating_nodes[]?) | select(.name == "SimpleX" and .visible)][0] // empty'); do
     if [ "$SECONDS" -ge "$deadline" ]; then
-      echo "error: no app window after 120 s"
+      echo "error: no app window after $secs s"
       return 1
     fi
     sleep 1
@@ -484,6 +530,37 @@ case "${1:-}" in
     log "scroll $4 at $2,$3, ${5:-3} clicks"
     ;;
   avatar) avatar "$2" "${3:-}" ;;
+  copy)
+    copy_text "$2"
+    log "copy ${#2} characters"
+    ;;
+  close)
+    close_window
+    log "close"
+    ;;
+  shown)
+    secs=${2:-30}
+    number "$secs"
+    if ! wait_for_window "$secs"; then
+      log "shown: no window after $secs s"
+      exit 1
+    fi
+    log "shown"
+    ;;
+  hidden)
+    secs=${2:-30}
+    number "$secs"
+    if ! wait_for_hidden "$secs"; then
+      log "hidden: the window still shows after $secs s"
+      exit 1
+    fi
+    log "hidden"
+    ;;
+  luminance)
+    value=$(window_luminance)
+    log "luminance $value"
+    echo "$value"
+    ;;
   type)
     type_text "$2"
     log "type \"$2\""

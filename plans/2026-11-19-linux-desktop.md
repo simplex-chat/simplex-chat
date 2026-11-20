@@ -517,11 +517,14 @@ Checks per cell (`e2e.sh`):
 | no `gsettings` process | `pgrep -x gsettings` |
 | keyring | `settings.properties` holds the passphrase as ciphertext; `secret-tool lookup` finds the key; config directory mode 700 |
 | tray | `RegisterStatusNotifierItem` in the services log |
+| dark mode | window brightness below 0.4 after `color-scheme prefer-dark`, above 0.6 after `default` |
+| tray activation | window hidden after a close request, shown after `Activate` |
+| message notifications | CLI peer's link pasted from the clipboard; notification replaced per chat, titled with the peer, `desktop-entry` hint, default action opens the chat, closed when read; launcher entry urgent |
 
 Later iterations:
 
-- message and call notifications with clicks and withdrawal, through the test backend;
-- tray activation, dark mode switching, keyring absent;
+- call notifications;
+- keyring absent and migration;
 - clipboard image paste, file drop, video, voice;
 - second-launch links, crash recovery, dead keys and non-Latin layouts;
 - Debian, Fedora and Arch containers.

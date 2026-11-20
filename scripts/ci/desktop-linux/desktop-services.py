@@ -12,6 +12,8 @@ WATCHER_NAME = "org.kde.StatusNotifierWatcher"
 WATCHER_PATH = "/StatusNotifierWatcher"
 NOTIFICATIONS_NAME = "org.freedesktop.Notifications"
 NOTIFICATIONS_PATH = "/org/freedesktop/Notifications"
+NOTIFICATIONS_TEST = "chat.simplex.ci.Notifications"
+LAUNCHER_ENTRY = "com.canonical.Unity.LauncherEntry"
 PROPERTIES = "org.freedesktop.DBus.Properties"
 CAPABILITIES = ["body", "body-markup", "actions", "action-icons", "persistence"]
 
@@ -96,9 +98,23 @@ class Notifications(dbus.service.Object):
     def NotificationClosed(self, notification_id, reason):
         pass
 
+    @dbus.service.signal(NOTIFICATIONS_NAME, signature="us")
+    def ActionInvoked(self, notification_id, action_key):
+        pass
+
+    @dbus.service.method(NOTIFICATIONS_TEST, in_signature="us")
+    def Invoke(self, notification_id, action_key):
+        record("invoke", id=int(notification_id), action=str(action_key))
+        self.ActionInvoked(notification_id, action_key)
+
+
+def launcher_update(uri, properties):
+    record("launcher", uri=str(uri), urgent=bool(properties.get("urgent", False)))
+
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 session = dbus.SessionBus()
+session.add_signal_receiver(launcher_update, signal_name="Update", dbus_interface=LAUNCHER_ENTRY)
 names = [dbus.service.BusName(WATCHER_NAME, session), dbus.service.BusName(NOTIFICATIONS_NAME, session)]
 services = [Watcher(session), Notifications(session)]
 record("ready")

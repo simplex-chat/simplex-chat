@@ -64,12 +64,15 @@ The runners are free for this public repository. A Claude run spends the subscri
 
 With the input `e2e`, the job `packages` builds the deb and the AppImage with `scripts/desktop/make-deb-linux.sh` (`SKIP_CORE_BUILD=1`, with the job `core`'s library) and `make-appimage-linux.sh`, checks their metadata, and builds a Flatpak bundle from the AppImage with `scripts/flatpak/chat.simplex.simplex.yml` (GNOME runtime, without file system access). The job `e2e` installs each package and runs `e2e.sh` in nine jobs: deb, AppImage and Flatpak, each under Xvfb with openbox (`x11`), headless sway (`wayland`) and sway's XWayland (`xwayland`). The Flatpak runs with its data in `~/.var/app/chat.simplex.simplex`, which `e2e.sh` links into `UI_STATE`, and with xdg-desktop-portal (GTK back-end, gnome-keyring for secrets). Its D-Bus proxy is xdg-dbus-proxy 0.1.9, built in the job and passed in `FLATPAK_DBUSPROXY`: the tray library connects with sd-bus, which xdg-dbus-proxy supports since 0.1.6, and Ubuntu 24.04 ships 0.1.5.
 
-`e2e.sh <deb|appimage> <package> <session> <out dir>` runs inside `dbus-run-session`, with gnome-keyring unlocked and `desktop-services.py`, a StatusNotifierWatcher with a registered host and a notification server that log every call as JSON lines. It runs `smoke-test.sh` with "minimize to tray" set, then checks:
+`e2e.sh <deb|appimage|flatpak> <package> <session> <out dir>` runs inside `dbus-run-session`, with gnome-keyring unlocked, xdg-desktop-portal with the GTK back-end, and `desktop-services.py`: a StatusNotifierWatcher with a registered host, a notification server with a test method `chat.simplex.ci.Notifications.Invoke` that emits `ActionInvoked`, and a listener for launcher entry signals, all logged as JSON lines. A CLI peer, the released `simplex-chat` v7.1.4 (checksum pinned in the workflow), sends the messages. It runs `smoke-test.sh` with "minimize to tray" set, then checks:
 
 - the window: a native Wayland surface under `wayland`, an X11 window under `xwayland`, and its app_id or WM_CLASS equal to the installation's desktop entry ID (`simplex-simplex` for the deb, `chat.simplex.app` for the AppImage);
 - no `gsettings` process;
 - the OpenGL renderer in the app's log;
 - the database passphrase in `settings.properties` only as ciphertext, its key in the keyring (`secret-tool`; for the Flatpak, the Secret portal's keyring file in the sandbox), and the config directory with mode 700;
-- the tray item registered with the watcher.
+- the tray item registered with the watcher;
+- dark mode: the window's mean brightness drops below 0.4 after `gsettings set org.gnome.desktop.interface color-scheme prefer-dark`, which the portal's Settings report, and rises above 0.6 after `default`;
+- the tray: closing the window hides it, and the item's `Activate` shows it;
+- notifications: the peer's one-time link, pasted into the search field from the clipboard, connects; two messages to a chat that is not open show one notification, replaced by the second, titled with the peer's name, naming the desktop entry and offering the default action; the launcher entry is marked urgent; the default action opens the chat, and reading it closes the notification.
 
-Results are the artifacts `desktop-linux-e2e-<kind>-<session>` (screenshots, `app.log`, `checks.txt`, `e2e-checks.txt`, `desktop-services.log`); the packages are `desktop-linux-packages`, kept 14 days.
+Results are the artifacts `desktop-linux-e2e-<kind>-<session>` (screenshots, `app.log`, `checks.txt`, `e2e-checks.txt`, `desktop-services.log`, `peer.log`); the packages are `desktop-linux-packages`, kept 14 days.
