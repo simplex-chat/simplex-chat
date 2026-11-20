@@ -244,6 +244,7 @@ linkAnswer link = abiTuple [Dynamic $ abiBytes $ encodeUtf8 link]
 
 defaultCall :: (ByteString, ByteString) -> Maybe CallAnswer
 defaultCall (to, calldata)
+  | to == unAddress fakeBaseRegistrar && selector "disputeUntil(uint256)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
   | to == unAddress fakeController && calldata == selector "namePolicy()" = Just $ Returns $ addressWord fakeNamePolicy
   | to == unAddress fakeNamePolicy && selector "communityNames(bytes32)" `B.isPrefixOf` calldata = Just $ Returns $ uint256 (0 :: Int)
   | to == unAddress fakeNamePolicy && calldata == selector "generalTermsLink()" = Just $ Returns $ linkAnswer $ fakeTermsLink fakeGeneralTermsText

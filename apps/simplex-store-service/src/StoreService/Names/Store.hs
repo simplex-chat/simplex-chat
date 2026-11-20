@@ -134,7 +134,7 @@ import Simplex.Messaging.Util (maybeFirstRow, tshow)
 import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (DisputeDays, TermsAcceptance (..), maxDisputeDays, mkDisputeDays, unDisputeDays)
+import StoreService.Names.Registration (DisputeDays, TermsAcceptance (..), maxDisputeDays, minDisputeDays, mkDisputeDays, unDisputeDays)
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, note, textToCryptoCurrency, truncateToSecond, unfundedQuery)
@@ -547,7 +547,8 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
         OTBalance source _ seen _ -> Just (source, seen)
         OTInvoice {} -> Nothing
         OTCode _ -> Nothing
-  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held maxDisputeDays (orderHash nrgOwner nrgOrder terms) now
+  days <- orderDisputeDays db terms
+  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held days (orderHash nrgOwner nrgOrder terms) now
   if not inserted
     then pure $ Left RRLiveOrder
     else do
@@ -562,7 +563,9 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
 createCodeRegistration :: DB.Connection -> NewRegistration -> PrepaidCode -> UTCTime -> IO (Either RegistrationRefused ())
 createCodeRegistration db new@NewRegistration {nrgId = regId, nrgOwner, nrgOrder} PrepaidCode {pcId, pcCodeHash} now' = do
   let now = truncateToSecond now'
-  inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) Nothing maxDisputeDays (orderHash nrgOwner nrgOrder (OTCode pcCodeHash)) now
+      terms = OTCode pcCodeHash
+  days <- orderDisputeDays db terms
+  inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) Nothing days (orderHash nrgOwner nrgOrder terms) now
   if not inserted
     then pure $ Left RRLiveOrder
     else
@@ -574,7 +577,9 @@ createCodeRegistration db new@NewRegistration {nrgId = regId, nrgOwner, nrgOrder
 createBalanceRegistration :: DB.Connection -> NewRegistration -> RegistrationId -> Int -> Int -> UTCTime -> IO (Either RegistrationRefused ())
 createBalanceRegistration db new@NewRegistration {nrgId, nrgOwner, nrgOrder} source price seen now' = do
   let now = truncateToSecond now'
-  inserted <- insertRegistration db new PQueued price Nothing Nothing (Just (source, price)) maxDisputeDays (orderHash nrgOwner nrgOrder (OTBalance source price seen Nothing)) now
+      terms = OTBalance source price seen Nothing
+  days <- orderDisputeDays db terms
+  inserted <- insertRegistration db new PQueued price Nothing Nothing (Just (source, price)) days (orderHash nrgOwner nrgOrder terms) now
   if not inserted
     then pure $ Left RRLiveOrder
     else
@@ -585,6 +590,24 @@ createBalanceRegistration db new@NewRegistration {nrgId, nrgOwner, nrgOrder} sou
 -- | The name invoice row goes with it.
 deleteRegistration :: DB.Connection -> RegistrationId -> IO ()
 deleteRegistration db (RegistrationId rid) = DB.execute db "DELETE FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid)
+
+methodDisputeDays :: ServicePaymentMethod -> DisputeDays
+methodDisputeDays = \case
+  SPMCard _ -> maxDisputeDays
+  SPMCrypto _ -> minDisputeDays
+
+orderDisputeDays :: DB.Connection -> OrderTerms -> IO DisputeDays
+orderDisputeDays db = \case
+  OTInvoice method _ -> pure $ methodDisputeDays method
+  OTCode _ -> pure minDisputeDays
+  OTBalance source@(RegistrationId rid) _ _ method ->
+    getRegistration db source >>= \case
+      Just r -> pure $ max (maybe minDisputeDays methodDisputeDays method) (balanceDisputeDays r)
+      Nothing -> E.throwIO $ StoreDecodeError $ "name_registrations balance source: " <> rid
+  where
+    balanceDisputeDays = \case
+      NameRegistration {nrPhase = PUnpaid, nrPayment = RPInvoice paidBy _} -> methodDisputeDays paidBy
+      NameRegistration {nrDisputeDays} -> nrDisputeDays
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
 -- fromBalance: the order whose balance pays, and the cents it pays.

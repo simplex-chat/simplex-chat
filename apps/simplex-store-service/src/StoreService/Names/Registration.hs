@@ -1,3 +1,5 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -41,6 +43,7 @@ where
 import Control.Monad (unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Crypto.Number.Serialize (os2ip)
+import Data.Aeson (ToJSON)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Maybe (catMaybes)
@@ -86,6 +89,7 @@ data RegisterIntent = RegisterIntent
 
 newtype DisputeDays = DisputeDays Int
   deriving (Eq, Ord, Show)
+  deriving newtype (ToJSON)
 
 mkDisputeDays :: Int -> Maybe DisputeDays
 mkDisputeDays n
@@ -141,20 +145,21 @@ commitCalldata :: ByteString -> ByteString
 commitCalldata commitment = selector "commit(bytes32)" <> commitment
 
 registerWithCreditCalldata :: RegisterIntent -> ByteString
-registerWithCreditCalldata RegisterIntent {riRegistration, riNonce, riDeadline, riSignature} =
-  selector "registerWithCredit((string,address,uint256,bytes32,address,bytes[],uint8,bytes32),uint256,uint256,bytes)"
+registerWithCreditCalldata RegisterIntent {riRegistration, riDisputeDays, riNonce, riDeadline, riSignature} =
+  selector "registerWithCredit((string,address,uint256,bytes32,address,bytes[],uint8,bytes32),uint256,uint256,uint256,bytes)"
     <> abiTuple
       [ Dynamic $ registrationTuple riRegistration,
+        Static $ uint256 $ unDisputeDays riDisputeDays,
         Static $ uint256 riNonce,
         Static $ uint256 riDeadline,
         Dynamic $ abiBytes $ serializeSignature riSignature
       ]
 
 registerNameType :: ByteString
-registerNameType = "RegisterName(string label,address owner,uint256 duration,address resolver,bytes[] data,uint256 nonce,uint256 deadline)"
+registerNameType = "RegisterName(string label,address owner,uint256 duration,address resolver,bytes[] data,uint256 disputeDays,uint256 nonce,uint256 deadline)"
 
 registerIntentDigest :: Eip712Domain -> Registration -> DisputeDays -> Word64 -> Word64 -> ByteString
-registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver} _ nonce deadline =
+registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver} days nonce deadline =
   hashTypedData
     domain
     registerNameType
@@ -163,6 +168,7 @@ registerIntentDigest domain r@Registration {rLabel, rOwner, rDuration, rResolver
       VUint $ fromIntegral rDuration,
       VAddress rResolver,
       VArray $ map VBytes $ recordCalls r,
+      VUint $ fromIntegral $ unDisputeDays days,
       VUint $ fromIntegral nonce,
       VUint $ fromIntegral deadline
     ]

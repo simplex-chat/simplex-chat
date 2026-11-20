@@ -72,7 +72,7 @@ import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (agreedTermsHash, communityJSON, communityTermsPrefix, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, disputeUntil, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (abiWordSize, bytes32FromHex, hex)
@@ -376,15 +376,15 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
   runExceptT (landed mined) >>= \case
     Left e -> LUnread <$ logWarn ("names: a register check's chain read failed: " <> tshow e)
     Right Nothing -> pure LNotLanded
-    Right (Just (tx, expiry)) -> either (const LChanged) LRegistered <$> markRegistered tx expiry
+    Right (Just (tx, expiry, disputeEnd)) -> either (const LChanged) LRegistered <$> markRegistered tx expiry disputeEnd
   where
     landed mined = do
       confirmed <- ExceptT $ confirmedTag ct
       registerTx <- case mined of
         tx : _ -> pure $ Just $ Just tx
         [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken ct confirmed nrLabelHash)
-      forM registerTx $ \tx -> (tx,) <$> ExceptT (nameExpires ct confirmed nrLabelHash)
-    markRegistered tx expiry = do
+      forM registerTx $ \tx -> (tx,,) <$> ExceptT (nameExpires ct confirmed nrLabelHash) <*> ExceptT (disputeUntil ct confirmed nrLabelHash)
+    markRegistered tx expiry disputeEnd = do
       now <- clock
       let registered =
             r
@@ -393,6 +393,7 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
                 nrRegisterTx = fst <$> tx,
                 nrRegisterBlock = snd =<< tx,
                 nrExpiresAt = Just expiry,
+                nrDisputeUntil = disputeEnd,
                 nrRegisteredAt = Just now,
                 nrFailedAt = Nothing,
                 nrError = Nothing

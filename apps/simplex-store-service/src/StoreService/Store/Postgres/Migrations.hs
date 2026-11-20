@@ -544,6 +544,16 @@ m20261120_names_dispute_days =
 ALTER TABLE @name_registrations ADD COLUMN dispute_days INTEGER NOT NULL DEFAULT 120;
 
 ALTER TABLE @name_registrations ADD COLUMN dispute_until BIGINT;
+
+WITH RECURSIVE funding(registration_id, source, days) AS (
+  SELECT registration_id, balance_source, CASE WHEN method = 'card' THEN 120 ELSE 14 END
+  FROM @name_registrations
+  UNION ALL
+  SELECT f.registration_id, CASE WHEN s.phase <> 'unpaid' THEN s.balance_source END, CASE WHEN s.method = 'card' THEN 120 ELSE 14 END
+  FROM funding f JOIN @name_registrations s ON s.registration_id = f.source
+)
+UPDATE @name_registrations
+SET dispute_days = (SELECT MAX(f.days) FROM funding f WHERE f.registration_id = @name_registrations.registration_id);
 |]
 
 down_m20261120_names_dispute_days :: Text

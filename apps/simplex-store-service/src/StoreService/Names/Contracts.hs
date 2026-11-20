@@ -36,6 +36,7 @@ module StoreService.Names.Contracts
     confirmedTag,
     ownerOfToken,
     nameExpires,
+    disputeUntil,
     commitmentTime,
     controllerAvailable,
     commitmentAges,
@@ -380,6 +381,11 @@ ownerOfToken ct tag lh =
 
 nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError Word64)
 nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeWord64
+
+disputeUntil :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe Word64))
+disputeUntil ct tag lh = fmap nonZero <$> callAt ct tag (baseRegistrar ct) ("disputeUntil(uint256)", labelHashArg lh) decodeWord64
+  where
+    nonZero t = if t == 0 then Nothing else Just t
 
 -- | The block time of the commitment, Nothing when the controller holds none.
 commitmentTime :: Contracts -> ByteString -> IO (Either ChainError (Maybe Word64))
