@@ -76,8 +76,8 @@ The other sections are unchanged. A separate change, for the registry's upgradea
 
 ## After the merge
 
-The website publishes docs/*.md on each push to master (web.yml), so the text appears there at the merge; the merge is timed close to the governance batch. Holders accept the version linked on chain: the name policy's general and community terms links are set to this file at the merge commit of the later of this change and the change for the upgradeable contracts:
+The website publishes docs/*.md on each push to master (web.yml), so the text appears there at the merge; the merge is timed close to run 1 of the registry's v2 deployment. Holders accept the version linked on chain: the name policy's general and community terms links are set to this file at the merge commit of the later of this change and the change for the upgradeable contracts:
 
 1. tagged `general-terms-vN` and `community-terms-vN`;
 2. mirrored on git.simplex.chat;
-3. set in the same governance batch as the sponsor's upgrade to `disputeDays`, so that every registration with a dispute period is made under this version.
+3. set by run 1, which deploys the registry with the dispute period, so that every registration with a dispute period is made under this version.
