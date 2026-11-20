@@ -42,7 +42,8 @@ BaseRegistrarImplementation.disputeUntil(uint256 id)
 | Field | Value |
 |---|---|
 | `disputeDays` | integer, 14 to 120, every order |
-| `disputeUntil` | unix seconds once registered; null before, and for a registration without a dispute period |
+| `disputeUntil` | unix seconds once registered; null before, for a registration without a dispute period, and once ended |
+| `phase` | the new value `ended` for an order whose registration was ended by `unregister` |
 
 ## Dispute days of an order
 
@@ -93,6 +94,13 @@ StoreService.Names.Store
     nrDisputeUntil      Maybe Word64
   methodDisputeDays     ServicePaymentMethod -> DisputeDays
   orderDisputeDays      DB.Connection -> OrderTerms -> IO DisputeDays
+  NamePhase
+    PEnded              "ended"
+  disputableRegistrations  DB.Connection -> Word64 -> IO [RegistrationId]
+
+StoreService.Names.Worker
+  sweepEndedRegistrations  Worker -> IO ()
+  runEndedSweep            Worker -> IO (), a names lane
 
 StoreService.Names.Contracts
   disputeUntil          Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe Word64))
@@ -142,6 +150,24 @@ sequenceDiagram
   W-->>P: view: disputeUntil
 ```
 
+## Ended registrations
+
+```
+sweepEndedRegistrations, every hour
+  orders          phase registered, dispute_until after now - 7 days
+  read            registrar disputeUntil(id) at the confirmation depth
+  differs         phase ended, dispute_until NULL, version + 1, published
+  equal           unchanged
+  read failed     unchanged, logged
+```
+
+```mermaid
+stateDiagram-v2
+  registered --> ended: disputeUntil(id) at the confirmation depth differs from dispute_until
+  registered --> registered: disputeUntil(id) equal, or the read failed
+  ended --> ended: the name registered again
+```
+
 ## Tests
 
 | Test | Module |
@@ -154,6 +180,7 @@ sequenceDiagram
 | the days of card, BTC and XMR invoices, codes, balance chains and difference orders | NamesStoreTests |
 | the migration's days for each payment, equal to the days set at creation | NamesStoreTests |
 | `disputeDays` and `disputeUntil` in the view; `disputeUntil` read when registered | NamesOrdersTests, NamesWorkerTests |
+| an unregistered registration ended and kept ended; orders the sweep leaves | NamesWorkerTests |
 
 Expected encodings: viem 2.57.5, eth-account 0.14.0 and Foundry's cast 1.10.0 agree, run in CI on the branch `ab/names-dispute-days-vectors`, https://github.com/brenzi-agent/simplex-chat/actions/runs/44711063341. The same scripts reproduce the values pinned before this change.
 

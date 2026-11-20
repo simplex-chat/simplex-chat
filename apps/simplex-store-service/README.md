@@ -908,7 +908,7 @@ service running.
 | `simplex_store_badges_purchases{status}` | badge purchases by status: `acquiring`, `issued`, `superseded` or `failed`, each 0 when it has none |
 | `simplex_store_badges_subscriptions{state}` | App Store and Google Play subscriptions paying for badges, by state: `renewing`, `cancelled`, `billingRetry` or `ended`, each 0 when it has none |
 | `simplex_store_badges_codes_open` | badge codes paid or free, not revoked or expired, with redemptions left |
-| `simplex_store_names_orders{phase}` | name orders in the phase: `unpaid`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken` or `failed`; the queue is `queued` to `registering`, while `unpaid` also counts closed orders kept for 30 days and `failed` every failed order not tried again |
+| `simplex_store_names_orders{phase}` | name orders in the phase: `unpaid`, `queued`, `committing`, `committed`, `registering`, `registered`, `taken`, `failed` or `ended`; the queue is `queued` to `registering`, while `unpaid` also counts closed orders kept for 30 days and `failed` every failed order not tried again |
 | `simplex_store_names_queue_oldest_change_timestamp_seconds` | the last change, in Unix seconds, of the order unchanged longest among those the service moves on: `queued`, `committing`, `registering`, and `committed` with the page's reveal stored; absent when there is none |
 | `simplex_store_names_transactions_pending` | registrar transactions sent and not settled, one per nonce, so a fee replacement counts once |
 | `simplex_store_names_transactions_oldest_pending_timestamp_seconds` | when the oldest of them was first signed; absent when none is pending |
@@ -1143,6 +1143,12 @@ and the service sends in `registerWithCredit`; a reveal signed over other days i
 the name is registered, the view answers `disputeUntil`, the registrar's `disputeUntil(id)` read at
 the confirmation depth, or `null` for a registration without a dispute period. The migration
 `20261120_names_dispute_days` sets the days of the orders stored before it by the same rules.
+
+Every hour the service reads, at the confirmation depth, the registrar's `disputeUntil(id)` of each
+registered order whose dispute period has not ended or ended less than 7 days ago. When the value
+differs from the one read at the registration, the registration was ended by `unregister`: the
+service then sets the order's phase to `ended` and its `disputeUntil` to `null`, and the order stays
+`ended` when the name is registered again.
 
 This version runs against the contracts with the dispute period (ens-contracts #51): the service
 calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.
