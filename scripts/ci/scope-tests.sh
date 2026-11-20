@@ -35,7 +35,7 @@ case "${1:-}" in
     .venv/bin/pytest tests
     ;;
   names-page)
-    fixtures="$PWD/tests/fixtures/api/store"
+    fixtures="$PWD/tests/fixtures/store-service/rest-api"
     cd apps/simplex-domains/webapp
     npm ci --no-audit --no-fund
     STORE_FIXTURES="$fixtures" npm test

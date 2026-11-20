@@ -171,7 +171,7 @@ testAcceptanceDigest :: IO ()
 testAcceptanceDigest = do
   toHex (digest False) `shouldBe` "f486b536cdf4e28031b02fb4345f26678a088d84846a0a6c72896062af283065"
   toHex (digest True) `shouldBe` "6df583ad3bcbef3e4061599fa9d45174fcda5731764320cd08ade35c8324eef7"
-  writeFixture "store/vectors-acceptance" $
+  writeFixture "store-service/rest-api/vectors-acceptance" $
     J.object
       [ "chainId" .= fakeChainId,
         "policy" .= fakeNamePolicy,

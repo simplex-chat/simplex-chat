@@ -101,7 +101,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 - Globs:
   - apps/simplex-store-service/web/**, also in the core globs (apps/simplex-store-service/**); web/src/catalog.ts is read by core tests (tests/Bots/StoreService/CatalogTests.hs, WebTests.hs);
-  - tests/fixtures/api/store/**: the badge page's test/service-refusals.test.ts reads the refusals that WebTests.hs records there.
+  - tests/fixtures/store-service/rest-api/**: the badge page's test/service-refusals.test.ts reads the refusals that WebTests.hs records there.
 - CI, in build-linux: core build and tests, then `scope-tests.sh badge-web` (step "Test changed scopes").
 - Selected core tests: `/SimpleX store service/`, which includes `/SimpleX store service e2e/`.
 - Local:
@@ -176,9 +176,9 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 - Globs:
   - apps/simplex-domains
-  - tests/fixtures/api/store/**
-- CI, in build-linux: `scope-tests.sh names-page` (step "Test changed scopes"): `npm ci`, `npm test` and `npm run build` in apps/simplex-domains/webapp, at the commit the submodule pins, which build-linux checks out with the submodules. `npm test` runs with STORE_FIXTURES set to tests/fixtures/api/store, so the page's contract tests (webapp/test/contract) read the answers the store service's tests record there; without it they are skipped.
-- Store fixtures: the store service's tests write their answers to tests/fixtures/api/store and fail when an answer differs from the committed file; the rewritten files are committed.
+  - tests/fixtures/store-service/rest-api/**
+- CI, in build-linux: `scope-tests.sh names-page` (step "Test changed scopes"): `npm ci`, `npm test` and `npm run build` in apps/simplex-domains/webapp, at the commit the submodule pins, which build-linux checks out with the submodules. `npm test` runs with STORE_FIXTURES set to tests/fixtures/store-service/rest-api, so the page's contract tests (webapp/test/contract) read the answers the store service's tests record there; without it they are skipped.
+- Store fixtures: the store service's tests write their answers to tests/fixtures/store-service/rest-api and fail when an answer differs from the committed file; the rewritten files are committed.
 - The page's browser tests run in the CI of its own repository (simplex-chat/simplex.domains, webapp.yml), and against the store service in names-e2e.
 - Local: `scripts/ci/scope-tests.sh names-page`.
 
@@ -187,7 +187,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - Globs:
   - apps/simplex-store-service/**
   - tests/Bots/StoreService/**
-  - tests/fixtures/api/store/**
+  - tests/fixtures/store-service/rest-api/**
   - apps/simplex-domains
   - scripts/store-service/**
 

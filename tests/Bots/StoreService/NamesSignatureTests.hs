@@ -159,7 +159,7 @@ messageVectors =
 
 testVectorsFixture :: IO ()
 testVectorsFixture =
-  writeFixture "store/vectors-signatures" $
+  writeFixture "store-service/rest-api/vectors-signatures" $
     J.object
       [ "owner" .= ownerText,
         "order"

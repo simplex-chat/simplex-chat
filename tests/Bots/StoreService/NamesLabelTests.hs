@@ -20,7 +20,7 @@ namesLabelTests = describe "StoreService names: label" $ do
   describe "refuses as length" $ do
     mapM_ (refused LELength) lengthRefused
   it "records the label vectors the names page's tests read" $
-    writeFixture "store/vectors-labels" $
+    writeFixture "store-service/rest-api/vectors-labels" $
       J.toJSON [J.object ["label" J..= l, "valid" J..= valid] | (l, valid) <- map (,True) acceptedLabels <> map (,False) (charsRefused <> lengthRefused)]
   it "applies the same rule under the testing TLD" $ do
     validLabel TLDTesting "bakery" `shouldBe` Right "bakery"

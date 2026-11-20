@@ -426,7 +426,7 @@ namePrepaidCodeVectors =
 testNameCodeFixture :: IO ()
 testNameCodeFixture = do
   forM_ refused $ \typed -> (isNothing $ parseNameOwnerCode typed, isNothing $ parseNameCode typed) `shouldBe` (True, True)
-  writeFixture "store/vectors-codes" $
+  writeFixture "store-service/rest-api/vectors-codes" $
     J.object
       [ "ownerCodes" J..= [J.object ["entropy" J..= safeDecodeUtf8 entropy, "code" J..= code] | (entropy, code) <- nameOwnerCodeVectors],
         "prepaidCodes" J..= [J.object ["typed" J..= typed, "minLength" J..= len, "canonical" J..= canonical, "display" J..= display, "hash" J..= safeDecodeUtf8 hash] | (typed, len, canonical, display, hash) <- namePrepaidCodeVectors],

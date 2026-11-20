@@ -1572,7 +1572,7 @@ refusedWith status tag = (status, Just $ KM.fromList [("type", J.String tag)])
 
 storeFixture :: String -> Int -> Maybe J.Value -> Maybe ByteString -> IO ()
 storeFixture name status body retryAfter =
-  writeFixture ("store/" <> name) . J.object $ ["status" .= status, "body" .= body] <> maybe [] (\h -> ["retryAfter" .= safeDecodeUtf8 h]) retryAfter
+  writeFixture ("store-service/rest-api/" <> name) . J.object $ ["status" .= status, "body" .= body] <> maybe [] (\h -> ["retryAfter" .= safeDecodeUtf8 h]) retryAfter
 
 responseFixture :: String -> Response LB.ByteString -> IO ()
 responseFixture name r = storeFixture name (statusOf r) (J.decode $ responseBody r) (headerOf r "Retry-After")

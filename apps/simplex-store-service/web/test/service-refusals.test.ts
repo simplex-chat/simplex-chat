@@ -6,7 +6,7 @@ import { ApiError, cancelInvoice, createInvoice } from "../src/api.js";
 
 const refusalTest = timedTest(2000);
 
-const FIXTURES = join(process.cwd(), "../../../tests/fixtures/api/store");
+const FIXTURES = join(process.cwd(), "../../../tests/fixtures/store-service/rest-api");
 
 interface Recorded { status: number; body: { type: string }; retryAfter?: string }
 

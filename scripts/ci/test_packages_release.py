@@ -546,8 +546,8 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("apps/simplex-domains"), {"haskell"})
         self.assertEqual(self.values["scopes"], "names-page names-e2e")
 
-    def test_store_fixture_change_builds_the_core_and_tests_both_pages(self):
-        self.assertIn("haskell", self.builds("tests/fixtures/api/store/search.json"))
+    def test_store_fixture_change_builds_only_the_core_and_tests_both_pages(self):
+        self.assertEqual(self.builds("tests/fixtures/store-service/rest-api/search.json"), {"haskell"})
         self.assertEqual(self.values["scopes"], "badge-web names-page names-e2e")
 
     def test_store_service_change_builds_the_core_and_tests_the_names_page_against_it(self):

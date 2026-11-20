@@ -47,7 +47,7 @@ on:
       - "apps/simplex-support-bot/**"
       - "apps/simplex-support-bot-light/**"
       - "apps/simplex-domains"
-      - "tests/fixtures/api/store/**"
+      - "tests/fixtures/store-service/rest-api/**"
       - "tests/Bots/StoreService/**"
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
