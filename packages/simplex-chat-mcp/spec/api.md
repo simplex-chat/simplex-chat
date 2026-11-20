@@ -133,7 +133,7 @@ Tool errors:
 |---|---|---|
 | `Not a SimpleX link or name: TARGET` | whitespace in `target`, or `invalidConnReq` from `apiConnectPlan` | [`AgentTools.plan`](../src/tools.ts) |
 | an app error text, for example `Name not found: This SimpleX name is not registered. Please check the name.`, or `SimpleX error: CHAIN: DETAILS` | other errors of `apiConnectPlan`, or a plan of type `error` | [`AgentTools.plan`, `classifyPlan`](../src/tools.ts), [`chatErrorText`](../src/log.ts) |
-| the app text of a name warning, for example `Name expired: NAME expired on DATE.` | a plan whose SimpleX name lapsed (`nameChange` `lapsed`): expired, available, reserved or not registered | [`classifyPlan`](../src/tools.ts), [`nameWarningText`](../src/log.ts) |
+| the app text of a name warning, for example `Name expired: NAME expired on DATE.` | a plan with `nameChange` `lapsed`, for an expired name, an available name or a name reserved for community | [`classifyPlan`](../src/tools.ts), [`nameWarningText`](../src/log.ts) |
 | `TARGET can't be joined now: PLAN.` | `invitationLink` other than `ok` and `known`<br>`contactAddress` other than `ok`, `known`, `contactViaAddress` and `connectingConfirmReconnect`<br>`groupLink` other than `ok`, `known` and `connectingConfirmReconnect` | `notJoinable` in [`classifyPlan`](../src/tools.ts) |
 | `message: TARGET is not a contact or business address with short link data, or its contact exists without a connection.` | `message` given and the plan has `takesMessage: false` | [`AgentTools.connect`](../src/tools.ts) |
 | refusals | see [1.9](#19-action-refusals) | |
