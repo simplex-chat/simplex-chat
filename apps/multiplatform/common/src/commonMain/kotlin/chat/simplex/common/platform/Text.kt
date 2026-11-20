@@ -11,9 +11,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 
@@ -53,10 +53,19 @@ fun Text(
       overflow, softWrap, maxLines, minLines, onTextLayout, style
     )
   } else {
-    Text(
-      AnnotatedString(text), modifier, color, fontSize, fontStyle, fontWeight, fontFamily, letterSpacing, textDecoration, textAlign, lineHeight,
-      overflow, softWrap, maxLines, minLines, onTextLayout = onTextLayout ?: {}, style = style
-    )
+    val merged = mergedStyle(style, fontSize, fontStyle, fontWeight, fontFamily, letterSpacing, textDecoration, textAlign, lineHeight)
+    val laidOut = platformText(AnnotatedString(text), merged)
+    if (laidOut.text.spanStyles.isEmpty()) {
+      androidx.compose.material.Text(
+        text, modifier, color,
+        overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, onTextLayout = onTextLayout, style = laidOut.style
+      )
+    } else {
+      androidx.compose.material.Text(
+        laidOut.text, modifier, color,
+        overflow = overflow, softWrap = softWrap, maxLines = maxLines, minLines = minLines, onTextLayout = onTextLayout ?: {}, style = laidOut.style
+      )
+    }
   }
 }
 
@@ -87,16 +96,7 @@ fun Text(
       overflow, softWrap, maxLines, minLines, inlineContent, onTextLayout, style
     )
   } else {
-    val merged = style.merge(
-      fontSize = fontSize,
-      fontWeight = fontWeight,
-      textAlign = textAlign ?: TextAlign.Unspecified,
-      lineHeight = lineHeight,
-      fontFamily = fontFamily,
-      textDecoration = textDecoration,
-      fontStyle = fontStyle,
-      letterSpacing = letterSpacing
-    )
+    val merged = mergedStyle(style, fontSize, fontStyle, fontWeight, fontFamily, letterSpacing, textDecoration, textAlign, lineHeight)
     val laidOut = platformText(text, merged)
     androidx.compose.material.Text(
       laidOut.text, modifier, color,
@@ -105,3 +105,25 @@ fun Text(
     )
   }
 }
+
+private fun mergedStyle(
+  style: TextStyle,
+  fontSize: TextUnit,
+  fontStyle: FontStyle?,
+  fontWeight: FontWeight?,
+  fontFamily: FontFamily?,
+  letterSpacing: TextUnit,
+  textDecoration: TextDecoration?,
+  textAlign: TextAlign?,
+  lineHeight: TextUnit
+): TextStyle =
+  style.merge(
+    fontSize = fontSize,
+    fontWeight = fontWeight,
+    textAlign = textAlign ?: TextAlign.Unspecified,
+    lineHeight = lineHeight,
+    fontFamily = fontFamily,
+    textDecoration = textDecoration,
+    fontStyle = fontStyle,
+    letterSpacing = letterSpacing
+  )

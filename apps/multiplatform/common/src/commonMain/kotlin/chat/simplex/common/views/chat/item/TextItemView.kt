@@ -219,7 +219,8 @@ fun MarkdownText (
     val trailingEmptyLines = if (terminal) 0 else trailingEmptyLines(text, formattedText, markdownBlocks)
     val ruleMinWidth = if (terminal && meta != null && markdownBlocks.isNotEmpty() && markdownBlocks.all { it is MarkdownBlock.Rule }) {
       val copy = metaReserveCopy(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-      with(LocalDensity.current) { rememberTextMeasurer().measure(copy, style).size.width.toDp() }
+      val laidOut = platformText(copy, style)
+      with(LocalDensity.current) { rememberTextMeasurer().measure(laidOut.text, laidOut.style).size.width.toDp() }
     } else 0.dp
     CompositionLocalProvider(LocalLayoutDirection provides textLayoutDirection) {
       MarkdownBlocks(

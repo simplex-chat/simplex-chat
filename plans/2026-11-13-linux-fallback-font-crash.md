@@ -57,10 +57,10 @@ flowchart TD
 | Line height style | `R >= I` | `R < I` |
 |---|---|---|
 | Proportional | `H` | `(H - leading) * R / (descent - ascent)` |
-| Top, Center, Bottom | `H` | `H - I + R` |
+| Top, Center, Bottom, custom | `H` | `H - I + R` |
 
 - `R = round(descent - ascent + leading)`, `I` the exact value.
-- A result for `H` above the font size `F` stays at least `1.0001 * F`: Compose lays out a line height at or below the font size with `HeightMode.DISABLE_ALL`.
+- A result for `H` above the font size `F` stays at least `1.0001 * F`, and for `H` at or below `F` at most `F`: Compose lays out a line height at or below the font size with `HeightMode.DISABLE_ALL`.
 - An empty text keeps `H`: Compose lays it out from its own metrics.
 - A line height at or below the font size with a trim other than `Both` takes `H'` instead of the span.
 
@@ -73,18 +73,27 @@ flowchart TD
 - An empty text with Center alignment, outside text fields, takes Proportional alignment: m132 computed empty-paragraph metrics with the strut's proportional ratio.
 - An empty line is a segment between Skia's hard breaks (LF, VT, FF, U+2028, U+2029) that is empty or a single CR. Text fields skip the check.
 - Text fields take no zero-length span with a font size: Compose sizes the caret and the trimmed first and last lines from the paragraph's default font size (`SkiaParagraph.getCursorRect`). A field with a line height takes `H'`.
-- The font of a character mirrors Skia:
-  - the first installed font of the text's family that covers the character (`FontFamily.Default`, `SansSerif` and `Monospace` resolve to Compose's alias lists, `GenericFontFamiliesMapping`);
-  - otherwise an emoji sequence start (Unicode 15.1 Emoji and Emoji_Component, as ICU 74 in Skia m138) takes the emoji fallback (`und-Zsye`, Apple Color Emoji on macOS);
-  - otherwise the system fallback for the character's weight and slant;
+- The font of a grapheme (Skia's ICU character breaks) mirrors Skia's `OneLineShaper`; a font covers a grapheme when it covers each of its characters except controls and default ignorables:
+  - the first installed font of the text's family that covers the grapheme (`FontFamily.Default`, `SansSerif` and `Monospace` resolve to Compose's alias lists, `GenericFontFamiliesMapping`);
+  - otherwise the first fallback font already found in the same segment that covers it;
+  - otherwise the fallback for its first character that covers it: an emoji sequence start (Unicode 15.1 Emoji and Emoji_Component, as ICU 74 in Skia m138) takes the emoji fallback (`und-Zsye`, Apple Color Emoji on macOS), any other character the system fallback for its weight and slant;
   - when the system has none, Inter or the bundled emoji font, as Skiko's `TypefaceFontProviderWithFallback::fallbackForChar`.
+- Fonts are resolved once per text, for the dominant font and the fallback spans.
 - An emoji run (Windows) continues over ZWJ, variation selectors, keycap, tags, skin tones, hair components and the second regional indicator of a pair; a segment in a font with unknown metrics ends it.
-- Segments are found by one sweep over span bounds; spans merge in their original order.
+- The COLR v0 copy is made only when the font's COLR table has another version and v0 base glyph records.
+- Segments are found by one sweep over span bounds; active spans merge in the order of their starts, then of their indexes, as in `ParagraphBuilder.makeOps`.
+- Text fields keep the original visual transformation on Linux, where the transform adds no span, and for passwords, which Compose recognises by the `PasswordVisualTransformation` type (context menu, semantics).
+- `Text(String)` keeps Compose's String path when the transform adds no span.
+- Font copies are kept as native typefaces only.
 - The dominant font counts each segment in its own family and skips emoji continuation characters.
 - A text without a font family is measured with the typeface Skia finds for `sans-serif`; the default font size is 16 sp, as in Compose's `ParagraphBuilder`. Metrics take the first installed font of a family.
 - A copy without line gap is made only for fonts up to 8 MB; larger fonts take `H'`.
+- Font sizes and line heights in em resolve against 16 sp and the merged size; the app sets none in em.
 - Remaining differences:
   - a blank line in a text with a line height, by the rounding of `R`;
+  - Center alignment with a line height: a line without the dominant font, by the distance between the centres of the two fonts (0.35 px for Inter and Noto Color Emoji);
+  - texts with a blank line, and text fields: a line set entirely in a fallback font, by up to the difference of its height from the default font's;
+  - Proportional alignment with trim Both: Compose's first-line ascent and last-line descent (`getLineTop`, `getLineBottom`, cursor rects) are computed from the marker's font size; the drawing is unchanged;
   - macOS: glyphs of fonts with a `trak` table, half the tracking (0.17 px at 16 px) to the right;
   - Windows: emoji in bold text, by DirectWrite's bold simulation of the system emoji font; ❤️ in text set in the system font;
   - Linux glyph pixels.
