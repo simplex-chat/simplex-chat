@@ -335,11 +335,11 @@ The `text` extension on the enum returns the localized status string (resource k
 
 ## 5. AppPreferences
 
-Defined at [`SimpleXAPI.kt line 94`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L95) as `class AppPreferences`.
+Defined at [`SimpleXAPI.kt line 95`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L95) as `class AppPreferences`.
 
 Uses the `multiplatform-settings` library (`com.russhwolf.settings.Settings`) for cross-platform key-value storage (Android `SharedPreferences` / Desktop `java.util.prefs.Preferences`).
 
-The `AppPreferences` instance is created lazily in `ChatController` at [`SimpleXAPI.kt line 496`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L497):
+The `AppPreferences` instance is created lazily in `ChatController` at [`SimpleXAPI.kt line 497`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L497):
 ```kotlin
 val appPrefs: AppPreferences by lazy { AppPreferences() }
 ```

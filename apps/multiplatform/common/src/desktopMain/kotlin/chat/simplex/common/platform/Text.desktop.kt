@@ -48,8 +48,29 @@ import org.jetbrains.skia.paragraph.TextStyle as SkTextStyle
 @Composable
 actual fun platformText(text: AnnotatedString, style: TextStyle): PlatformText {
   val density = LocalDensity.current
-  return remember(text, style, density) { layOutDesktopText(text, style, density, field = false) }
+  return remember(text, style, density) {
+    val key = LayoutKey(text, style, density)
+    laidOutTexts[key] ?: layOutDesktopText(text, style, density, field = false).also { laidOutTexts[key] = it }
+  }
 }
+
+private data class LayoutKey(val text: AnnotatedString, val style: TextStyle, val density: Density)
+
+private class LruCache<K, V>(private val capacity: Int) {
+  private val map = object : LinkedHashMap<K, V>(16, 0.75f, true) {
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?): Boolean = size > capacity
+  }
+
+  @Synchronized
+  operator fun get(key: K): V? = map[key]
+
+  @Synchronized
+  operator fun set(key: K, value: V) {
+    map[key] = value
+  }
+}
+
+private val laidOutTexts = LruCache<LayoutKey, PlatformText>(LAID_OUT_TEXTS)
 
 @Composable
 actual fun platformTextFieldStyle(text: String, style: TextStyle, visualTransformation: VisualTransformation): PlatformTextFieldStyle {
@@ -85,6 +106,9 @@ private const val ROUNDED_UP_HEIGHT_OFFSET = 0.49f
 private const val NEGLIGIBLE_HEIGHT_FRACTION = 0.05f
 private const val ABOVE_FONT_SIZE = 1.0001f
 private const val MAX_COPIED_FONT_BYTES = 8 shl 20
+private const val LAID_OUT_TEXTS = 128
+private const val FALLBACK_TYPEFACES = 4096
+private const val MISSED_FALLBACKS = 4096
 private const val HHEA_LINE_GAP = 8
 private const val OS2_TYPO_LINE_GAP = 72
 private const val EMOJI_PRESENTATION = 0xFE0F
@@ -191,20 +215,19 @@ private fun centeredMarker(s: String, fonts: Array<Typeface?>, effective: TextSt
 }
 
 private fun dominantTypeface(s: String, fonts: Array<Typeface?>, typeface: Typeface): Typeface {
-  val counts = HashMap<Int, Int>()
-  val typefaces = HashMap<Int, Typeface>()
+  val counts = HashMap<Typeface, Int>()
+  val pairSeconds = regionalPairSeconds(s)
   var i = 0
   while (i < s.length) {
     val cp = s.codePointAt(i)
     val run = fonts[i]
-    if (run != null && !Character.isWhitespace(cp) && !isEmojiContinuation(s, i, cp)) {
-      typefaces[run.uniqueId] = run
-      counts[run.uniqueId] = (counts[run.uniqueId] ?: 0) + 1
+    if (run != null && !Character.isWhitespace(cp) && !isEmojiContinuation(cp, pairSeconds[i])) {
+      counts[run] = (counts[run] ?: 0) + 1
     }
     i += Character.charCount(cp)
   }
-  return counts.entries.sortedWith(compareByDescending<Map.Entry<Int, Int>> { it.value }.thenBy { if (it.key == typeface.uniqueId) 0 else 1 })
-    .firstOrNull()?.let { typefaces[it.key] } ?: typeface
+  return counts.entries.sortedWith(compareByDescending<Map.Entry<Typeface, Int>> { it.value }.thenBy { if (it.key == typeface) 0 else 1 })
+    .firstOrNull()?.key ?: typeface
 }
 
 private fun compensatedLineHeightPx(lineHeightPx: Float, fontSizePx: Float, typeface: Typeface, lineHeightStyle: LineHeightStyle): Float {
@@ -251,6 +274,7 @@ private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>)
   val fonts = arrayOfNulls<Typeface>(s.length)
   val inlined = BooleanArray(s.length)
   for (range in text.getStringAnnotations(INLINE_CONTENT_TAG, 0, s.length)) inlined.fill(true, range.start, range.end)
+  val missed = HashSet<Long>()
   val graphemeStarts by lazy {
     val starts = BooleanArray(s.length + 1)
     BreakIterator.makeCharacterInstance().use { graphemes ->
@@ -275,9 +299,10 @@ private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>)
       var end = start + 1
       while (end < segment.end && !graphemeStarts[end]) end++
       if (!inlined[start]) {
-        val typeface = segment.typefaces.firstOrNull { coversGrapheme(it, s, start, end, inlined) }
-          ?: fallbacks.firstOrNull { coversGrapheme(it, s, start, end, inlined) }
-          ?: graphemeFallback(s, start, end, segment.fontStyle, inlined, segment.typefaces + fallbacks)?.also { fallbacks += it }
+        val grapheme = Grapheme(s, start, end, inlined)
+        val typeface = segment.typefaces.firstOrNull { grapheme.coveredBy(it) }
+          ?: fallbacks.firstOrNull { grapheme.coveredBy(it) }
+          ?: graphemeFallback(grapheme, segment.fontStyle, segment.typefaces + fallbacks, missed)?.also { fallbacks += it }
         fonts.fill(typeface, start, end)
       }
       start = end
@@ -287,14 +312,15 @@ private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>)
   return fonts
 }
 
-private fun coversGrapheme(typeface: Typeface, s: String, start: Int, end: Int, inlined: BooleanArray): Boolean {
-  if (coversCharacters(typeface, s, start, end, inlined)) return true
-  if ((start until end).any { inlined[it] }) return false
-  val grapheme = s.substring(start, end)
-  return listOf(Normalizer.Form.NFC, Normalizer.Form.NFD).any { form ->
-    val normalized = Normalizer.normalize(grapheme, form)
-    normalized != grapheme && coversCharacters(typeface, normalized, 0, normalized.length, null)
+private class Grapheme(val s: String, val start: Int, val end: Int, val inlined: BooleanArray) {
+  private val normalizedForms: List<String> by lazy {
+    if ((start until end).any { inlined[it] }) return@lazy emptyList()
+    val text = s.substring(start, end)
+    listOf(Normalizer.Form.NFC, Normalizer.Form.NFD).map { Normalizer.normalize(text, it) }.filter { it != text }.distinct()
   }
+
+  fun coveredBy(typeface: Typeface): Boolean =
+    coversCharacters(typeface, s, start, end, inlined) || normalizedForms.any { coversCharacters(typeface, it, 0, it.length, null) }
 }
 
 private fun coversCharacters(typeface: Typeface, s: String, start: Int, end: Int, inlined: BooleanArray?): Boolean {
@@ -314,16 +340,17 @@ private fun shapes(typeface: Typeface, cp: Int): Boolean = when {
   else -> false
 }
 
-private fun graphemeFallback(s: String, start: Int, end: Int, fontStyle: FontStyle, inlined: BooleanArray, tried: List<Typeface>): Typeface? {
+private fun graphemeFallback(grapheme: Grapheme, fontStyle: FontStyle, tried: List<Typeface>, missed: MutableSet<Long>): Typeface? {
+  val s = grapheme.s
   val triedTypefaces = tried.toHashSet()
   val triedCodePoints = HashSet<Int>()
-  var i = start
-  while (i < end) {
+  var i = grapheme.start
+  while (i < grapheme.end) {
     val cp = s.codePointAt(i)
     val n = Character.charCount(cp)
     if (!isUnshaped(cp) && triedCodePoints.add(cp)) {
-      val typeface = fallbackTypeface(cp, fontStyle, i == start && isEmojiSequenceStart(s, i, cp, n))
-      if (typeface != null && triedTypefaces.add(typeface) && coversGrapheme(typeface, s, start, end, inlined)) return typeface
+      val typeface = fallbackTypeface(cp, fontStyle, i == grapheme.start && isEmojiSequenceStart(s, i, cp, n), missed)
+      if (typeface != null && triedTypefaces.add(typeface) && grapheme.coveredBy(typeface)) return typeface
     }
     i += n
   }
@@ -342,23 +369,23 @@ private fun isEmojiSequenceStart(s: String, i: Int, cp: Int, n: Int): Boolean {
   return next == EMOJI_PRESENTATION && afterNext == KEYCAP
 }
 
-private fun isEmojiContinuation(s: String, i: Int, cp: Int): Boolean = when {
+private fun isEmojiContinuation(cp: Int, secondOfPair: Boolean): Boolean = when {
   cp == ZERO_WIDTH_JOINER || cp == KEYCAP -> true
   cp in VARIATION_SELECTORS || cp in TAGS || cp in SKIN_TONES || cp in HAIR_COMPONENTS -> true
-  cp in REGIONAL_INDICATORS -> precedingRegionalIndicators(s, i) % 2 == 1
-  else -> false
+  else -> secondOfPair
 }
 
-private fun precedingRegionalIndicators(s: String, i: Int): Int {
-  var count = 0
-  var j = i
-  while (j > 0) {
-    val cp = s.codePointBefore(j)
-    if (cp !in REGIONAL_INDICATORS) break
-    count++
-    j -= Character.charCount(cp)
+private fun regionalPairSeconds(s: String): BooleanArray {
+  val seconds = BooleanArray(s.length)
+  var run = 0
+  var i = 0
+  while (i < s.length) {
+    val cp = s.codePointAt(i)
+    run = if (cp in REGIONAL_INDICATORS) run + 1 else 0
+    seconds[i] = run > 0 && run % 2 == 0
+    i += Character.charCount(cp)
   }
-  return count
+  return seconds
 }
 
 private fun inRanges(ranges: IntArray, cp: Int): Boolean {
@@ -380,6 +407,7 @@ private fun skiaFontStyle(style: SpanStyle): FontStyle =
 
 private fun fallbackStyles(s: String, segments: List<StyledSegment>, fonts: Array<Typeface?>, density: Density): List<AnnotatedString.Range<SpanStyle>> {
   val out = mutableListOf<AnnotatedString.Range<SpanStyle>>()
+  val pairSeconds by lazy { regionalPairSeconds(s) }
   var emojiStart = -1
   var trackStart = -1
   var trackPx = 0f
@@ -409,7 +437,7 @@ private fun fallbackStyles(s: String, segments: List<StyledSegment>, fonts: Arra
       val cp = s.codePointAt(i)
       val run = fonts[i]
       if (desktopPlatform.isWindows()) {
-        val emoji = (emojiStart >= 0 && isEmojiContinuation(s, i, cp)) ||
+        val emoji = (emojiStart >= 0 && isEmojiContinuation(cp, pairSeconds[i])) ||
           (run != null && run !in segment.typefaces && factsOf(run).windowsEmoji)
         if (emoji && emojiStart < 0) emojiStart = i
         if (!emoji) endEmoji(i)
@@ -459,17 +487,26 @@ private val fontMetrics = ConcurrentHashMap<Long, FontMetrics>()
 private fun metricsOf(typeface: Typeface, sizePx: Float): FontMetrics =
   fontMetrics.getOrPut(sizeKey(typeface, sizePx)) { SkFont(typeface, sizePx).use { it.metrics } }
 
-private val fallbackTypefaces = ConcurrentHashMap<Long, Typeface>()
+private val fallbackTypefaces = LruCache<Long, Typeface>(FALLBACK_TYPEFACES)
+
+private val missedFallbacks = LruCache<Long, Unit>(MISSED_FALLBACKS)
 
 private val macEmojiTypeface: Typeface? by lazy { FontMgr.default.matchFamilyStyle(MAC_EMOJI_FAMILY, FontStyle.NORMAL) }
 
-private fun fallbackTypeface(cp: Int, fontStyle: FontStyle, emoji: Boolean): Typeface? {
+private fun fallbackTypeface(cp: Int, fontStyle: FontStyle, emoji: Boolean, missed: MutableSet<Long>): Typeface? {
   val key = (if (emoji) 1L shl 48 else 0L) or (fontStyle.weight.toLong() shl 34) or (fontStyle.slant.ordinal.toLong() shl 32) or cp.toLong()
-  val system = fallbackTypefaces[key] ?: when {
+  val system = fallbackTypefaces[key] ?: if (key in missed || missedFallbacks[key] != null) null else when {
     emoji && desktopPlatform.isMac() -> macEmojiTypeface
     emoji -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, arrayOf(EMOJI_LOCALE), cp)
     else -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, null, cp)
-  }?.also { fallbackTypefaces[key] = it }
+  }.also {
+    if (it != null) {
+      fallbackTypefaces[key] = it
+    } else {
+      missed += key
+      missedFallbacks[key] = Unit
+    }
+  }
   return system ?: (listOfNotNull(interTypeface, emojiTypeface) + createdTypefaces).firstOrNull { covers(it, cp) }
 }
 

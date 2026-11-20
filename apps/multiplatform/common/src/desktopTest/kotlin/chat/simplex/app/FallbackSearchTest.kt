@@ -12,14 +12,23 @@ import kotlin.test.assertTrue
 import kotlin.time.measureTime
 
 class FallbackSearchTest {
+  private val style = TextStyle(
+    fontFamily = Inter, fontSize = 16.sp, lineHeight = 22.sp,
+    lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)
+  )
+
   @Test
   fun longGraphemeResolvesInLinearTime() {
     val text = "a" + Char(0x0301).toString().repeat(20_000) + String(Character.toChars(0x1E944))
-    val style = TextStyle(
-      fontFamily = Inter, fontSize = 16.sp, lineHeight = 22.sp,
-      lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)
-    )
     val elapsed = measureTime { layOutDesktopText(AnnotatedString(text), style, Density(1f), field = false) }
     assertTrue(elapsed.inWholeSeconds < 10, "layout took $elapsed")
+  }
+
+  @Test
+  fun missingCharactersQueryOnce() {
+    val text = (0xF0000 until 0xF0000 + 1000).joinToString("") { String(Character.toChars(it)) }
+    layOutDesktopText(AnnotatedString(text), style, Density(1f), field = false)
+    val elapsed = measureTime { layOutDesktopText(AnnotatedString(text), style, Density(1f), field = false) }
+    assertTrue(elapsed.inWholeMilliseconds < 1000, "second layout took $elapsed")
   }
 }

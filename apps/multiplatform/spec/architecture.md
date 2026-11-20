@@ -263,7 +263,7 @@ main(args)
 [`ChatController.startReceiver()`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L661) launches a coroutine on `Dispatchers.IO` that continuously polls for events from the Haskell core:
 
 ```kotlin
-// SimpleXAPI.kt line 660
+// SimpleXAPI.kt line 661
 private fun startReceiver() {
     if (receiverJob != null || chatCtrl == null) return  // guard against double-start
     receiverJob = CoroutineScope(Dispatchers.IO).launch {

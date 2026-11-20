@@ -83,7 +83,8 @@ flowchart TD
   - otherwise the first fallback font already found in the same segment that covers it;
   - otherwise the first fallback, for its characters in order, that covers it: an emoji sequence start (Unicode 15.1 Emoji and Emoji_Component, as ICU 74 in Skia m138) takes the emoji fallback (`und-Zsye`, Apple Color Emoji on macOS), any other character the system fallback for its weight and slant;
   - when the system has none, Inter, the bundled emoji font, then the typefaces the transform registered with Compose in the order it created them, as Skiko's `TypefaceFontProviderWithFallback::fallbackForChar`.
-- The fallback search for a grapheme skips typefaces and code points already tried, as Skia's `alreadyTriedTypefaces` and `alreadyTriedCodepoints`; only found typefaces are cached.
+- The fallback search for a grapheme skips typefaces and code points already tried, as Skia's `alreadyTriedTypefaces` and `alreadyTriedCodepoints`; found typefaces and misses are kept in LRU caches of 4096 keys each, and the transform's results for texts outside fields in an LRU cache of 128 texts, as Skia's paragraph cache (`ParagraphCache`, 128 entries).
+- Each grapheme is normalised at most once; runs of regional indicators are paired in one pass.
 - Fonts are resolved once per text, for the dominant font and the fallback spans; graphemes are found only for a segment that its first font does not cover entirely.
 - An emoji run (Windows) continues over ZWJ, variation selectors, keycap, tags, skin tones, hair components and the second regional indicator of a pair; a segment in a font with unknown metrics ends it.
 - A measured tracking below 1/4096 px counts as 0: Skia rounds HarfBuzz advances to 1/65536 px, and HarfBuzz applies `trak` only with a `STAT` table.
@@ -107,7 +108,7 @@ flowchart TD
   - Windows: emoji in bold text, by DirectWrite's bold simulation of the system emoji font; ❤️ in text set in the system font;
   - macOS: a tracked cluster of several glyphs (a base and an uncomposed mark), by the tracking for each extra glyph: Skia adds letter spacing per glyph, HarfBuzz tracking per cluster;
   - macOS: letter spacing at or below 0 in a font with negative tracking turns ligatures off (Skia adds `liga 0` for positive spacing after the span's features);
-  - the fallback search walks one grapheme at a time and keeps a fallback only when it covers the grapheme it was found for; Skia walks the whole unresolved block;
+  - the fallback search walks one grapheme at a time and keeps a fallback only when it covers the grapheme it was found for; Skia walks the whole unresolved block, offers every tried font to later blocks, also queries characters that need no glyph, and tests every position for an emoji sequence start;
   - the last-resort list has Inter Regular, not every Inter weight Compose loaded;
   - every inline-content annotation counts as a placeholder; Compose draws U+FFFD for an id missing from the map;
   - a fallback font reused across segments in Skia (same font attributes, different colour or link) is found again per segment here;
@@ -120,6 +121,6 @@ flowchart TD
   - `BubbleLayoutTest.timeDrawnOnTextBaseline` checks the drawn rows of text and time at font scales 0.7 to 1.5.
   - `BubbleLayoutTest.linesDrawnWholeLineHeightApart` checks that two lines are drawn the whole-pixel line height apart at the same scales.
   - `FieldCaretTest` checks that the caret keeps the font height in text fields.
-  - `FallbackSearchTest` lays out one grapheme of 20 000 combining marks and a mark no font covers with them within 10 s; the search without skipping tried fonts took 63 s.
+  - `FallbackSearchTest` lays out one grapheme of 20 000 combining marks and a mark no font covers with them within 10 s; the search without skipping tried fonts took 63 s. It also lays out 1000 distinct characters no font covers twice; without the miss cache the second layout took 2.1 s, with it under 1 s.
   - The desktop snapshots are compared with the references rendered with m132.
 - `Dockerfile.build` installs `fontconfig`, which provides `fc-cache` to the test in CI.

@@ -173,13 +173,13 @@ A foreground `Service` that keeps the app process alive for continuous message r
 
 **Service lifecycle:**
 
-- `startService()` ([line 128](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L129)): Waits for database migration, validates DB status, saves service state as STARTED. WakeLock acquisition is commented out -- the app relies on battery optimization whitelisting instead.
-- `onDestroy()` ([line 87](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L88)): Releases wakelocks, saves state as STOPPED, sends broadcast to `AutoRestartReceiver` if allowed.
-- `onTaskRemoved()` ([line 211](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L212)): Schedules restart via `AlarmManager` when the app is swiped from recents.
+- `startService()` ([line 129](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L129)): Waits for database migration, validates DB status, saves service state as STARTED. WakeLock acquisition is commented out -- the app relies on battery optimization whitelisting instead.
+- `onDestroy()` ([line 88](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L88)): Releases wakelocks, saves state as STOPPED, sends broadcast to `AutoRestartReceiver` if allowed.
+- `onTaskRemoved()` ([line 212](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L212)): Schedules restart via `AlarmManager` when the app is swiped from recents.
 
 **Notification:**
 
-- Channel: `SIMPLEX_SERVICE_NOTIFICATION` with `IMPORTANCE_LOW` and badge disabled ([line 165](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L166)).
+- Channel: `SIMPLEX_SERVICE_NOTIFICATION` with `IMPORTANCE_LOW` and badge disabled ([line 166](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L166)).
 - Shows a persistent notification with a "Hide notification" action that opens channel settings.
 - Service ID: `6789`.
 
@@ -194,9 +194,9 @@ A foreground `Service` that keeps the app process alive for continuous message r
 
 **Battery optimization:**
 
-- `isBackgroundAllowed()` ([line 681](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L682)): Checks both `isIgnoringBatteryOptimizations` and `!isBackgroundRestricted`.
-- `showBackgroundServiceNoticeIfNeeded()` ([line 430](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L431)): Shows alerts guiding users to disable battery optimization or background restriction. Includes Xiaomi-specific guidance.
-- `disableNotifications()` ([line 722](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L723)): Switches mode to OFF, disables receivers, cancels workers.
+- `isBackgroundAllowed()` ([line 682](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L682)): Checks both `isIgnoringBatteryOptimizations` and `!isBackgroundRestricted`.
+- `showBackgroundServiceNoticeIfNeeded()` ([line 431](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L431)): Shows alerts guiding users to disable battery optimization or background restriction. Includes Xiaomi-specific guidance.
+- `disableNotifications()` ([line 723](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L723)): Switches mode to OFF, disables receivers, cancels workers.
 
 ### 5.2 MessagesFetcherWorker.kt (100 lines)
 
