@@ -102,8 +102,6 @@ import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Bot.Store (withDB, withDB')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
-import Simplex.Chat.Options (CoreChatOpts (..))
-import Simplex.Chat.Options.DB (dbString)
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -139,10 +137,9 @@ newServiceState = do
 welcomeGetOpts :: IO StoreServiceOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@StoreServiceOpts {coreOptions, testing, serviceName} <- getStoreServiceOpts appDir "simplex_badge_service"
+  opts@StoreServiceOpts {testing, serviceName} <- getStoreServiceOpts appDir "simplex_badge_service"
   unless testing $ do
     putStrLn $ "SimpleX Store Service v" ++ versionNumber
-    putStrLn $ "db: " <> dbString (dbOptions coreOptions)
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
 

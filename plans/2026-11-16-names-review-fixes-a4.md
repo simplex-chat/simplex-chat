@@ -53,7 +53,7 @@ A4-24: Apple's signedDate is read by `.:` as milliseconds, converted by `fromMil
 
 ## Service
 
-A4-2: Postgres' `dbString` masks the password: a URI's user info and `password` parameter, and the `password` keyword in the keyword form, spaces around `=` and quoted values included; an unreadable string is not shown. redactPassword goes.
+A4-2: the store service prints no database line, since the connection string is on its command line; redactPassword goes, and Postgres' `dbString` stays as on `names`.
 
 A4-10, A4-11, one grammar and one dispatch of the commands:
 - `CmdSource` names a command's origin and moves to Group/Command; `CodeIssuer` goes, and the stored issuer `npcIssuer` is a `CmdSource`, written to `issued_in_group` as before; the grammar takes it: the console's commands arrive without their `//`, and take a payment status; the group's take `uses` and have `/bulk`; months are the keyword option in both, so the console's `//issue supporter 12` is `//issue supporter months 12`.

@@ -92,7 +92,6 @@ import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
 import System.Timeout (timeout)
 #if defined(dbPostgres)
-import Simplex.Chat.Options.DB (ChatDbOpts (..), dbString)
 import qualified Database.PostgreSQL.Simple as PSQL
 import Database.PostgreSQL.Simple (FromRow, Only (..), ToRow)
 #else
@@ -165,9 +164,6 @@ namesBootTests :: SpecWith TestParams
 namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
   it "refuses a node serving another chain than chain_id, and dev_keys unless the node answers, only warning without them" testNodeChain
-#if defined(dbPostgres)
-  it "masks the database password in the start line, in a URI's user info, a '?' in it included, or parameters, an encoded name included, or as a keyword" testRedactPassword
-#endif
   it "refuses unverified store receipts with an issuer key clients trust, and takes them with a dev key" testUnverifiedReceiptsKey
   it "refuses a second instance on the same Postgres database until the first ends, exits when the lock's connection fails, and takes no lock on SQLite" testInstanceLock
   it "exits before the chat core starts while a pending transaction was signed by another key" testOtherKeyPendingStops
@@ -242,21 +238,6 @@ testUnverifiedReceiptsKey _ = do
     `shouldBe` Left ("[dev] accept_unverified_store_receipts is refused: issuer key index " <> show testIssuerKeyIdx <> " is one clients trust, so any receipt would mint badges they accept")
   checkUnverifiedReceipts unverified cfg BadgeIssuerKey {keyIdx = 9, secretKey = sk} `shouldBe` Right ()
   checkUnverifiedReceipts (Just withDev) cfg BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk} `shouldBe` Right ()
-
-#if defined(dbPostgres)
-testRedactPassword :: HasCallStack => TestParams -> IO ()
-testRedactPassword _ = do
-  let shown s = dbString ChatDbOpts {dbConnstr = s, dbSchemaPrefix = "", dbPoolSize = 1, dbCreateSchema = False}
-  shown "postgresql://simplex:s3cr@t:x@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex:***@127.0.0.1:5432/badge_service"
-  shown "postgresql://simplex@127.0.0.1:5432/badge_service" `shouldBe` "postgresql://simplex@127.0.0.1:5432/badge_service"
-  shown "postgres://simplex@127.0.0.1/badge_service?sslmode=require&password=s3cret" `shouldBe` "postgres://simplex@127.0.0.1/badge_service?sslmode=require&password=***"
-  shown "postgresql://u:pa?ss@h/db" `shouldBe` "postgresql://u:***@h/db"
-  shown "postgresql://u:pa?ss@h:5432/db?sslmode=require&password=x" `shouldBe` "postgresql://u:***@h:5432/db?sslmode=require&password=***"
-  shown "postgresql://h/db?pass%77ord=s3cret" `shouldBe` "postgresql://h/db?password=***"
-  shown "host=127.0.0.1 user=simplex password=s3cret dbname=badge_service" `shouldBe` "host=127.0.0.1 user=simplex password=*** dbname=badge_service"
-  shown " host=127.0.0.1  password = 's3 \\'cret' dbname = badge_service" `shouldBe` "host=127.0.0.1 password=*** dbname = badge_service"
-  shown "host=127.0.0.1 password" `shouldBe` "(unreadable connection string)"
-#endif
 
 testNodeChain :: HasCallStack => TestParams -> IO ()
 testNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
