@@ -217,7 +217,7 @@ loadImageData path = case map toLower (takeExtension path) of
           bs <- B.readFile path
           if B.null bs
             then pure $ Left $ "image file is empty: " <> path
-            else first (\e -> "image file cannot be resized: " <> path <> " (" <> e <> ")") <$> (runExceptT (resize bs) `catchAll` (pure . Left . show))
+            else first (\e -> "image file cannot be resized: " <> path <> " (" <> e <> ")") <$> (runExceptT (resize bs) `catchOwn'` (pure . Left . show))
     resize bs = do
       (img, profile) <- ExceptT $ decodeResizable bs
       ImageData . safeDecodeUtf8 . LB.toStrict <$> ExceptT (resizeImageDataUri (fromIntegral maxProfileImageSize) (cropToSquare img) profile)
@@ -229,7 +229,7 @@ fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
 
 imagePreview :: CryptoFile -> IO ImageData
-imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . LB.toStrict) <$> (runExceptT preview `catchAll` (pure . Left . show))
+imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . LB.toStrict) <$> (runExceptT preview `catchOwn'` (pure . Left . show))
   where
     preview = do
       s <- withExceptT show $ CF.readFile f
@@ -3617,7 +3617,7 @@ processChatCommand cxt nm = \case
               Just XFTPRcvFile {agentRcvFileId} -> do
                 forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
                   fsFilePath <- lift $ toFSFilePath filePath
-                  liftIO $ removeFile fsFilePath `catchAll_` pure ()
+                  liftIO $ removeFile fsFilePath `catchOwn'` \_ -> pure ()
                 lift . forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                   withAgent' (`xftpDeleteRcvFile` aFileId)
                 aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation

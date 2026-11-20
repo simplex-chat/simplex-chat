@@ -1310,7 +1310,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         let newStatus = GSSError $ agentSndError err
         -- error cannot be AUTH error here
         withStore' $ \db -> forM_ msgIds $ \msgId ->
-          updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
+          updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchOwn'` \_ -> pure ()
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
       ERR err@(AGENT (A_DUPLICATE (Just DroppedMsg {brokerTs, attempts})))
         | isRelay membership ->

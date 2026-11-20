@@ -77,7 +77,7 @@ import Simplex.Messaging.Protocol (ErrorType (..))
 import Simplex.Messaging.SimplexName (SimplexNameInfo (..), SimplexNameType (..), shortNameInfoStr)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (eitherToMaybe, raceAny_, safeDecodeUtf8, tshow, unlessM, (<$$>))
+import Simplex.Messaging.Util (catchOwn', eitherToMaybe, raceAny_, safeDecodeUtf8, tshow, unlessM, (<$$>))
 import System.Directory (getAppUserDataDirectory, removeFile)
 import System.Exit (exitFailure)
 import System.Process (readProcess)
@@ -341,7 +341,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         SDRUser -> deUserCommand ct ciId cmd
         SDRAdmin -> deAdminCommand ct ciId cmd
         SDRSuperUser -> deSuperUserCommand ct ciId cmd
-    DEVoiceUploadEnded filePath -> void (try $ removeFile filePath :: IO (Either SomeException ()))
+    DEVoiceUploadEnded filePath -> removeFile filePath `catchOwn'` \_ -> pure ()
     DELogChatResponse r -> logInfo r
   where
     groupLinkText (CCLink cReq sLnk_) = maybe (strEncodeTxt $ simplexChatContact cReq) strEncodeTxt sLnk_
