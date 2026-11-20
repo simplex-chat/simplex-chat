@@ -390,7 +390,7 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
       now <- clock
       let registered =
             r
-              { nrPhase = PRegistered,
+              { nrPhase = if expiry == 0 then PEnded else PRegistered,
                 -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
                 nrRegisterTx = fst <$> tx,
                 nrRegisterBlock = snd =<< tx,
