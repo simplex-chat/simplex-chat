@@ -1132,8 +1132,8 @@ testEndedSweepUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
 testEndedSweepPastUnread :: IO ()
 testEndedSweepPastUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
   let disputeEnd = orderSeconds + 14 * 86400
-  unread <- paidIn ctx aliceOrder $ registeredUntil disputeEnd
-  unregistered <- paidIn ctx dynamisOrder $ registeredUntil (disputeEnd + 60)
+  unread <- paidIn ctx aliceOrder $ registeredUntil (disputeEnd - 60)
+  unregistered <- paidIn ctx dynamisOrder $ registeredUntil disputeEnd
   void $ confirmedBlockAt ctx $ orderSeconds + 1
   answerCall cNode (registrarOf cNode) (selector "disputeUntil(uint256)" <> labelBytes "alicebakery") $ Reverts ""
   answerDisputeUntil ctx "dynamis" 0
