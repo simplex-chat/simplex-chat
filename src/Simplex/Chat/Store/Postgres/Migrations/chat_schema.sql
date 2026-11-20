@@ -1241,6 +1241,15 @@ ALTER TABLE test_chat_schema.groups ALTER COLUMN group_id ADD GENERATED ALWAYS A
 
 
 
+CREATE TABLE test_chat_schema.handled_rcv_msgs (
+    connection_id bigint NOT NULL,
+    agent_msg_id bigint NOT NULL,
+    rcpt smallint NOT NULL,
+    created_at timestamp with time zone NOT NULL
+);
+
+
+
 CREATE TABLE test_chat_schema.invoices (
     invoice_id text NOT NULL,
     provider text NOT NULL,
@@ -2061,6 +2070,11 @@ ALTER TABLE ONLY test_chat_schema.groups
 
 ALTER TABLE ONLY test_chat_schema.groups
     ADD CONSTRAINT groups_user_id_local_display_name_key UNIQUE (user_id, local_display_name);
+
+
+
+ALTER TABLE ONLY test_chat_schema.handled_rcv_msgs
+    ADD CONSTRAINT handled_rcv_msgs_pkey PRIMARY KEY (connection_id, agent_msg_id);
 
 
 
@@ -3604,6 +3618,11 @@ ALTER TABLE ONLY test_chat_schema.groups
 
 ALTER TABLE ONLY test_chat_schema.groups
     ADD CONSTRAINT groups_user_id_local_display_name_fkey FOREIGN KEY (user_id, local_display_name) REFERENCES test_chat_schema.display_names(user_id, local_display_name) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.handled_rcv_msgs
+    ADD CONSTRAINT handled_rcv_msgs_connection_id_fkey FOREIGN KEY (connection_id) REFERENCES test_chat_schema.connections(connection_id) ON DELETE CASCADE;
 
 
 

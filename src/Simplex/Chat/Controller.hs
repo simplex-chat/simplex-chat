@@ -17,7 +17,7 @@
 
 module Simplex.Chat.Controller where
 
-import Control.Concurrent (ThreadId)
+import Control.Concurrent (ThreadId, myThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Exception (Exception)
 import qualified Control.Exception as E
@@ -357,7 +357,8 @@ data ChatController = ChatController
   }
 
 data StoreTx = StoreTx
-  { txConn :: DB.Connection,
+  { txThread :: ThreadId,
+    txConn :: DB.Connection,
     txAfterCommit :: TVar [CM' ()]
   }
 
@@ -1832,9 +1833,15 @@ toView_ = afterCommit . emitEvent
 
 afterCommit :: CM' () -> CM' ()
 afterCommit action =
-  asks storeTx >>= \case
+  ownStoreTx >>= \case
     Just StoreTx {txAfterCommit} -> atomically $ modifyTVar' txAfterCommit (action :)
     Nothing -> action
+
+ownStoreTx :: CM' (Maybe StoreTx)
+ownStoreTx =
+  asks storeTx >>= \case
+    Just tx@StoreTx {txThread} -> (\t -> if t == txThread then Just tx else Nothing) <$> liftIO myThreadId
+    Nothing -> pure Nothing
 
 emitEvent :: Either ChatError ChatEvent -> CM' ()
 emitEvent ev = do
@@ -1867,35 +1874,39 @@ withFastStore = withStorePriority True
 
 withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
 withStorePriority priority action = do
-  ChatController {chatStore, storeTx} <- ask
+  ChatController {chatStore} <- ask
+  tx_ <- lift ownStoreTx
   let run = runExceptT . withExceptT ChatErrorStore . action
-  liftIOEither $ case storeTx of
+  liftIOEither $ case tx_ of
     Just StoreTx {txConn} -> inSavepoint txConn (run txConn) `catchOwn'` handleDBErrors
     Nothing -> withTransactionPriority chatStore priority run `catchOwn'` handleDBErrors
 
 withStoreIsolation' :: IsolationLevel -> (DB.Connection -> IO a) -> CM a
 withStoreIsolation' isolation action = do
-  ChatController {chatStore, storeTx} <- ask
-  liftIOEither $ case storeTx of
+  ChatController {chatStore} <- ask
+  tx_ <- lift ownStoreTx
+  liftIOEither $ case tx_ of
     Just StoreTx {txConn} -> inSavepoint txConn (Right <$> action txConn) `catchOwn'` handleDBErrors
     Nothing -> withTransactionIsolation chatStore isolation (fmap Right . action) `catchOwn'` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
-  ChatController {chatStore, storeTx} <- ask
-  liftIO $ case storeTx of
+  ChatController {chatStore} <- ask
+  tx_ <- ownStoreTx
+  liftIO $ case tx_ of
     Just StoreTx {txConn} -> mapM ((`catchOwn'` handleDBErrors) . inSavepoint txConn) $ actions txConn
     Nothing -> withTransaction chatStore $ mapM (`catchOwn'` handleDBErrors) . actions
 
 withStoreTx :: (ChatError -> Bool) -> CM a -> CM a
 withStoreTx rollbackOn action = do
-  cc@ChatController {chatStore, storeTx} <- ask
-  case storeTx of
+  cc@ChatController {chatStore} <- ask
+  lift ownStoreTx >>= \case
     Just _ -> action
     Nothing -> do
       afterCommitQ <- newTVarIO []
+      tId <- liftIO myThreadId
       let run db = do
-            r <- runReaderT (runExceptT action) cc {storeTx = Just StoreTx {txConn = db, txAfterCommit = afterCommitQ}}
+            r <- runReaderT (runExceptT action) cc {storeTx = Just StoreTx {txThread = tId, txConn = db, txAfterCommit = afterCommitQ}}
             case r of
               Left e | rollbackOn e -> E.throwIO $ StoreTxRollback e
               _ -> pure r
