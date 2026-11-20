@@ -79,7 +79,7 @@ class MarkdownFileViewTest {
     try {
       setContent {
         CompositionLocalProvider(LocalClipboardManager provides clipboard) {
-          MarkdownFileCopyButton(document.text, fileSize)
+          MarkdownFileCopyButton(document.text, fileSize, null)
         }
         AlertManager.shared.showInView()
       }
@@ -95,6 +95,28 @@ class MarkdownFileViewTest {
     } finally {
       AlertManager.shared.hideAllAlerts()
       simplexWindowState.toasts.clear()
+    }
+  }
+
+  @Test
+  fun copyButtonRefusesAboveHardLimit() = runComposeUiTest {
+    var copied: String? = null
+    val clipboard = object : ClipboardManager {
+      override fun setText(annotatedString: AnnotatedString) { copied = annotatedString.text }
+      override fun getText(): AnnotatedString? = null
+    }
+    try {
+      setContent {
+        CompositionLocalProvider(LocalClipboardManager provides clipboard) {
+          MarkdownFileCopyButton("alpha", 524_289, 524_288)
+        }
+        AlertManager.shared.showInView()
+      }
+      onNodeWithContentDescription("Copy").performClick()
+      onNodeWithText("Only files up to 512 KB can be copied. Save the file to open it in another app.").assertExists()
+      assertNull(copied)
+    } finally {
+      AlertManager.shared.hideAllAlerts()
     }
   }
 }

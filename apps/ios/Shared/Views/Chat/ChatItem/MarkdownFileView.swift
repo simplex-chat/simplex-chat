@@ -248,3 +248,17 @@ struct MarkdownFileView: View {
         .navigationViewStyle(.stack)
     }
 }
+
+struct MarkdownFileView_Previews: PreviewProvider {
+    static var previews: some View {
+        let text = "# Release notes\n\n- markdown files in chats\n- a button to copy the file\n"
+        MarkdownFileView(
+            file: CIFile.getSample(fileName: "notes.md", fileSize: Int64(text.utf8.count), filePath: "notes.md"),
+            fileSource: CryptoFile.plain("notes.md"),
+            text: text,
+            lines: text.components(separatedBy: "\n"),
+            html: nil,
+            hasBidiControls: false
+        )
+    }
+}

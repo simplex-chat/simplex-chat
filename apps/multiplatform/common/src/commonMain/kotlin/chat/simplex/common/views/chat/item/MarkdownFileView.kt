@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.item
 
 import SectionBottomSpacer
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -28,6 +29,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
@@ -44,6 +46,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.ast.ASTNode
@@ -100,11 +103,7 @@ fun showMarkdownFile(file: CIFile) {
     val document = markdownDocument(bytes)
     withContext(Dispatchers.Main) {
       if (appPlatform.isDesktop && ModalManager.center.isTopModalOpen(ModalViewId.MARKDOWN_FILE)) ModalManager.center.closeModal()
-      ModalManager.center.showModal(id = ModalViewId.MARKDOWN_FILE, endButtons = {
-        MarkdownFileCopyButton(document.text, bytes.size)
-        if (document.formatted != null) MarkdownViewSwitch()
-        MarkdownFileSaveButton(file, bytes)
-      }) {
+      ModalManager.center.showModal(id = ModalViewId.MARKDOWN_FILE, endButtons = { MarkdownFileButtons(file, bytes, document) }) {
         key(this) { MarkdownFileView(file.fileName, document) }
       }
     }
@@ -162,7 +161,14 @@ private fun MarkdownViewSwitch() {
 }
 
 @Composable
-internal fun MarkdownFileCopyButton(text: String, fileSize: Int) {
+private fun MarkdownFileButtons(file: CIFile, bytes: ByteArray, document: MarkdownDocument) {
+  MarkdownFileCopyButton(document.text, bytes.size, if (appPlatform.isAndroid) MAX_ANDROID_COPY_SIZE else null)
+  if (document.formatted != null) MarkdownViewSwitch()
+  MarkdownFileSaveButton(file, bytes)
+}
+
+@Composable
+internal fun MarkdownFileCopyButton(text: String, fileSize: Int, maxSize: Int?) {
   val clipboard = LocalClipboardManager.current
   IconButton({
     val copy = {
@@ -170,9 +176,9 @@ internal fun MarkdownFileCopyButton(text: String, fileSize: Int) {
       showToast(generalGetString(MR.strings.copied))
     }
     when {
-      appPlatform.isAndroid && fileSize > MAX_ANDROID_COPY_SIZE -> AlertManager.shared.showAlertMsg(
+      maxSize != null && fileSize > maxSize -> AlertManager.shared.showAlertMsg(
         generalGetString(MR.strings.markdown_file_too_large),
-        String.format(generalGetString(MR.strings.markdown_file_copy_limit), formatBytes(MAX_ANDROID_COPY_SIZE.toLong()))
+        String.format(generalGetString(MR.strings.markdown_file_copy_limit), formatBytes(maxSize.toLong()))
       )
       fileSize > MAX_MARKDOWN_COPY_SIZE -> AlertManager.shared.showAlertDialog(
         title = generalGetString(MR.strings.markdown_file_too_large),
@@ -343,4 +349,16 @@ private class DataImageTransformer : ImageTransformer {
 private fun hasImageSignature(base64: String): Boolean {
   val header = runCatching { Base64.getDecoder().decode(base64.take(12)) }.getOrNull() ?: return false
   return IMAGE_TYPES.any { it.matches(header) }
+}
+
+@Preview
+@Composable
+fun PreviewMarkdownFileView() {
+  val bytes = remember { "# Release notes\n\n- markdown files in chats\n- a button to copy the file\n".encodeToByteArray() }
+  val document = remember { runBlocking { markdownDocument(bytes) } }
+  SimpleXTheme {
+    ModalView(close = {}, endButtons = { MarkdownFileButtons(CIFile.getSample(fileName = "notes.md"), bytes, document) }) {
+      MarkdownFileView("notes.md", document)
+    }
+  }
 }
