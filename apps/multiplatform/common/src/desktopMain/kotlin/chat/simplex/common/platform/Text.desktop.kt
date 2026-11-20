@@ -31,8 +31,11 @@ import org.jetbrains.skia.paragraph.ParagraphStyle
 import org.jetbrains.skia.paragraph.TypefaceFontProvider
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
+import java.text.Normalizer
 import java.util.TreeMap
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -65,8 +68,12 @@ actual fun platformTextFieldStyle(text: String, style: TextStyle, visualTransfor
     }
   }
   val empty = text.isEmpty()
-  val fieldStyle = remember(empty, style, density) {
-    layOutDesktopText(AnnotatedString(if (empty) "" else "x"), style, density, field = true).style
+  val fieldStyle = remember(empty, style, visualTransformation, density) {
+    val laidOutStyle = layOutDesktopText(AnnotatedString(if (empty) "" else "x"), style, density, field = true).style
+    val maskTracking = if (visualTransformation is PasswordVisualTransformation && desktopPlatform.isMac()) {
+      layOutDesktopText(AnnotatedString(visualTransformation.mask.toString()), style, density, field = true).text.spanStyles.firstOrNull()?.item
+    } else null
+    if (maskTracking == null) laidOutStyle else laidOutStyle.merge(maskTracking)
   }
   return PlatformTextFieldStyle(fieldStyle, fieldTransformation)
 }
@@ -88,7 +95,9 @@ private val REGIONAL_INDICATORS = 0x1F1E6..0x1F1FF
 private val SKIN_TONES = 0x1F3FB..0x1F3FF
 private val HAIR_COMPONENTS = 0x1F9B0..0x1F9B3
 private val UNSHAPED_TYPES = setOf(Character.CONTROL, Character.FORMAT, Character.LINE_SEPARATOR, Character.PARAGRAPH_SEPARATOR)
-private val SPACE_FALLBACKS = ((0x2000..0x200A) + listOf(0x202F, 0x205F, 0x3000)).toSet()
+private val SPACE_FALLBACKS = ((0x2000..0x200A) + listOf(0xA0, 0x202F, 0x205F, 0x3000)).toSet()
+private val FORMAT_SINCE_UNICODE_14 = intArrayOf(0x890, 0x891, 0x13439, 0x1343F)
+private const val NEGLIGIBLE_TRACKING_PX = 1f / 4096
 private const val NON_BREAKING_HYPHEN = 0x2011
 private const val HYPHEN = 0x2010
 private const val NO_LIGATURES = "liga 0"
@@ -97,9 +106,9 @@ private const val WINDOWS_EMOJI_FAMILY = "Segoe UI Emoji"
 private const val MAC_EMOJI_FAMILY = "Apple Color Emoji"
 private const val EMOJI_LOCALE = "und-Zsye"
 private val DEFAULT_FONT_SIZE = 16.sp
-private val LINE_BREAKS = Regex("[\\n\\x0B\\x0C\\x{2028}\\x{2029}]")
+private val HARD_BREAKS = setOf('\n', '\u000B', '\u000C', ' ', ' ')
 
-fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density, field: Boolean): PlatformText {
+internal fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density, field: Boolean): PlatformText {
   val s = text.text
   val effective = text.spanStyles.filter { it.start == 0 }.fold(style) { acc, range -> acc.merge(range.item) }
   val fontSizePx = fontSizePx(effective.fontSize, density)
@@ -112,7 +121,7 @@ fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density,
   val segments by lazy { styledSegments(text, style) }
   val fonts by lazy { characterFonts(text, segments) }
   val marker = when {
-    field || s.split(LINE_BREAKS).any { it.isEmpty() || it == "\r" } -> null
+    field || hasEmptyLine(s) -> null
     lineHeightPx == null -> SpanStyle(fontSize = with(density) { UNSET_LINE_HEIGHT_MARKER_PX.toSp() })
     typeface == null -> null
     proportional && (lineHeightPx > fontSizePx || trimBoth) -> SpanStyle(fontSize = with(density) { (PROPORTIONAL_MARKER_HEIGHT_PX / heightPerPx(typeface)).toSp() })
@@ -134,6 +143,18 @@ fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density,
   builder.addStyle(marker ?: SpanStyle(), 0, 0)
   for (range in fallbackStyles) builder.addStyle(range.item, range.start, range.end)
   return PlatformText(builder.toAnnotatedString(), laidOutStyle)
+}
+
+private fun hasEmptyLine(s: String): Boolean {
+  var lineStart = 0
+  for (i in 0..s.length) {
+    if (i == s.length || s[i] in HARD_BREAKS) {
+      val length = i - lineStart
+      if (length == 0 || (length == 1 && s[lineStart] == '\r')) return true
+      lineStart = i + 1
+    }
+  }
+  return false
 }
 
 private fun fontSizePx(fontSize: TextUnit, density: Density): Float = with(density) {
@@ -243,7 +264,7 @@ private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>)
   }
   for (segment in segments) {
     val first = segment.typefaces.firstOrNull() ?: continue
-    if (coversGrapheme(first, s, segment.start, segment.end, inlined)) {
+    if (coversCharacters(first, s, segment.start, segment.end, inlined)) {
       fonts.fill(first, segment.start, segment.end)
       continue
     }
@@ -266,10 +287,20 @@ private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>)
 }
 
 private fun coversGrapheme(typeface: Typeface, s: String, start: Int, end: Int, inlined: BooleanArray): Boolean {
+  if (coversCharacters(typeface, s, start, end, inlined)) return true
+  if ((start until end).any { inlined[it] }) return false
+  val grapheme = s.substring(start, end)
+  return listOf(Normalizer.Form.NFC, Normalizer.Form.NFD).any { form ->
+    val normalized = Normalizer.normalize(grapheme, form)
+    normalized != grapheme && coversCharacters(typeface, normalized, 0, normalized.length, null)
+  }
+}
+
+private fun coversCharacters(typeface: Typeface, s: String, start: Int, end: Int, inlined: BooleanArray?): Boolean {
   var i = start
   while (i < end) {
     val cp = s.codePointAt(i)
-    if (!inlined[i] && !isUnshaped(cp) && !shapes(typeface, cp)) return false
+    if (inlined?.get(i) != true && !isUnshaped(cp) && !shapes(typeface, cp)) return false
     i += Character.charCount(cp)
   }
   return true
@@ -297,7 +328,7 @@ private fun graphemeFallback(s: String, start: Int, end: Int, fontStyle: FontSty
 }
 
 private fun isUnshaped(cp: Int): Boolean =
-  Character.getType(cp).toByte() in UNSHAPED_TYPES || inRanges(DEFAULT_IGNORABLE_RANGES, cp)
+  Character.getType(cp).toByte() in UNSHAPED_TYPES || inRanges(DEFAULT_IGNORABLE_RANGES, cp) || inRanges(FORMAT_SINCE_UNICODE_14, cp)
 
 private fun isEmojiSequenceStart(s: String, i: Int, cp: Int, n: Int): Boolean {
   if (!inRanges(EMOJI_RANGES, cp)) return false
@@ -376,11 +407,11 @@ private fun fallbackStyles(s: String, segments: List<StyledSegment>, fonts: Arra
       val run = fonts[i]
       if (desktopPlatform.isWindows()) {
         val emoji = (emojiStart >= 0 && isEmojiContinuation(s, i, cp)) ||
-          (run != null && segment.typefaces.none { it.uniqueId == run.uniqueId } && run.familyName == WINDOWS_EMOJI_FAMILY)
+          (run != null && run !in segment.typefaces && factsOf(run).windowsEmoji)
         if (emoji && emojiStart < 0) emojiStart = i
         if (!emoji) endEmoji(i)
       } else {
-        val tracking = if (run != null && hasTracking(run)) trackingPx(run, fontSizePx) else 0f
+        val tracking = if (run != null && factsOf(run).tracked) trackingPx(run, fontSizePx) else 0f
         if (tracking != 0f) {
           val spacing = letterSpacingPx - tracking
           if (trackStart >= 0 && spacing != trackPx) endTracking(i)
@@ -404,10 +435,21 @@ private fun fallbackStyles(s: String, segments: List<StyledSegment>, fonts: Arra
 private fun sizeKey(typeface: Typeface, sizePx: Float): Long =
   (typeface.uniqueId.toLong() shl 32) or (sizePx.toRawBits().toLong() and 0xffffffffL)
 
-private val coverage = ConcurrentHashMap<Long, Boolean>()
+private fun covers(typeface: Typeface, cp: Int): Boolean = typeface.getUTF32Glyph(cp).toInt() != 0
 
-private fun covers(typeface: Typeface, cp: Int): Boolean =
-  coverage.getOrPut((typeface.uniqueId.toLong() shl 32) or cp.toLong()) { typeface.getUTF32Glyph(cp).toInt() != 0 }
+private class TypefaceFacts(val tracked: Boolean, val windowsEmoji: Boolean) {
+  val trackings = ConcurrentHashMap<Float, Float>()
+}
+
+private val typefaceFacts = ConcurrentHashMap<Typeface, TypefaceFacts>()
+
+private fun factsOf(typeface: Typeface): TypefaceFacts =
+  typefaceFacts.getOrPut(typeface) {
+    TypefaceFacts(
+      tracked = typeface.tableTags.contains("trak"),
+      windowsEmoji = desktopPlatform.isWindows() && typeface.familyName == WINDOWS_EMOJI_FAMILY
+    )
+  }
 
 private val fontMetrics = ConcurrentHashMap<Long, FontMetrics>()
 
@@ -425,20 +467,13 @@ private fun fallbackTypeface(cp: Int, fontStyle: FontStyle, emoji: Boolean): Typ
       else -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, null, cp)
     } ?: Unit
   } as? Typeface
-  return system ?: registeredTypefaces.firstOrNull { covers(it, cp) }
+  return system ?: (listOfNotNull(interTypeface, emojiTypeface) + createdTypefaces).firstOrNull { covers(it, cp) }
 }
 
-private val registeredTypefaces: List<Typeface> by lazy { listOfNotNull(interTypeface, emojiTypeface) }
-
-private val trackingTables = ConcurrentHashMap<Int, Boolean>()
-
-private fun hasTracking(typeface: Typeface): Boolean =
-  trackingTables.getOrPut(typeface.uniqueId) { typeface.tableTags.contains("trak") }
-
-private val trackings = ConcurrentHashMap<Long, Float>()
+private val createdTypefaces = CopyOnWriteArrayList<Typeface>()
 
 private fun trackingPx(typeface: Typeface, fontSizePx: Float): Float =
-  trackings.getOrPut(sizeKey(typeface, fontSizePx)) {
+  factsOf(typeface).trackings.getOrPut(fontSizePx) {
     val sample = trackingSample(typeface) ?: return@getOrPut 0f
     val advance = SkFont(typeface, fontSizePx).use { it.getWidths(shortArrayOf(typeface.getUTF32Glyph(sample)))[0] }
     TypefaceFontProvider().use { provider ->
@@ -454,7 +489,7 @@ private fun trackingPx(typeface: Typeface, fontSizePx: Float): Float =
               builder.addText(String(Character.toChars(sample)).repeat(4))
               builder.build().use { paragraph ->
                 paragraph.layout(Float.MAX_VALUE)
-                paragraph.maxIntrinsicWidth / 4 - advance
+                (paragraph.maxIntrinsicWidth / 4 - advance).takeIf { abs(it) >= NEGLIGIBLE_TRACKING_PX } ?: 0f
               }
             }
           }
@@ -508,7 +543,7 @@ private fun fontCopy(typeface: Typeface, maxBytes: Int, patch: (String, ByteArra
     patch(tag, data)
     tag to data
   }
-  val out = ByteArrayOutputStream()
+  val out = ByteArrayOutputStream(12 + tables.size * 16 + tables.sumOf { (it.second.size + 3) / 4 * 4 })
   val d = DataOutputStream(out)
   var searchRange = 1
   var entrySelector = 0
@@ -523,17 +558,13 @@ private fun fontCopy(typeface: Typeface, maxBytes: Int, patch: (String, ByteArra
   d.writeShort(tables.size * 16 - searchRange * 16)
   var offset = 12 + tables.size * 16
   for ((tag, data) in tables) {
-    val padded = data.copyOf((data.size + 3) / 4 * 4)
     var checksum = 0L
-    for (i in padded.indices step 4) {
-      val word = ((padded[i].toLong() and 255) shl 24) or ((padded[i + 1].toLong() and 255) shl 16) or ((padded[i + 2].toLong() and 255) shl 8) or (padded[i + 3].toLong() and 255)
-      checksum = (checksum + word) and 0xffffffffL
-    }
+    for (i in data.indices) checksum = (checksum + ((data[i].toLong() and 255) shl (24 - i % 4 * 8))) and 0xffffffffL
     d.write(tag.toByteArray(Charsets.US_ASCII))
     d.writeInt(checksum.toInt())
     d.writeInt(offset)
     d.writeInt(data.size)
-    offset += padded.size
+    offset += (data.size + 3) / 4 * 4
   }
   for ((_, data) in tables) {
     d.write(data)
@@ -545,7 +576,10 @@ private fun fontCopy(typeface: Typeface, maxBytes: Int, patch: (String, ByteArra
 private val fontFamilies = ConcurrentHashMap<Int, FontFamily>()
 
 private fun fontFamilyOf(typeface: Typeface): FontFamily =
-  fontFamilies.getOrPut(typeface.uniqueId) { FontFamily(androidx.compose.ui.text.platform.Typeface(typeface, "fallback ${typeface.uniqueId}")) }
+  fontFamilies.getOrPut(typeface.uniqueId) {
+    createdTypefaces += typeface
+    FontFamily(androidx.compose.ui.text.platform.Typeface(typeface, "fallback ${typeface.uniqueId}"))
+  }
 
 private fun heightPerPx(typeface: Typeface): Float =
   metricsOf(typeface, 100f).let { (it.descent - it.ascent + it.leading) / 100f }
