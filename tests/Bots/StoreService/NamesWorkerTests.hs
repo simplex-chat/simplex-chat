@@ -9,7 +9,7 @@ import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesBalancesTests (figures)
 import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, newPolicy, noncesCall, registrarOf, unhex)
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
+import Bots.StoreService.NamesOwnerTests (answerDisputeUntil, answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, genesisDisputeEnd, labelBytes, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, ownerA, paidOrder, reveal)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, stubCalls, webGet, withApp)
@@ -129,6 +129,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends an order only once its unregister is at the confirmation depth" testEndedAtDepth
     it "stops a sweep at a failed chain read, logging it once and changing nothing" testEndedSweepUnread
     it "ends an order whose expiry reads 0 at the confirmed block when its register lands, unregistered within the confirmation depth" testEndedWithinDepth
+    it "ends an order whose name was unregistered and registered again by another between its register and the confirmed block" testEndedByOtherRegistration
   describe "retry" $ do
     it "refuses Try again outside failed with bad_request, changing nothing, and answers an unknown order 404" testRetryNotFailed
     it "refuses Try again of a failed order whose links were refused with bad_request, changing nothing" testRetryLinksRefused
@@ -288,6 +289,12 @@ mineNewest w@W {wCtx = Ctx {cNode}, wSender} ok = do
 blockTime :: W -> Word64 -> IO Word64
 blockTime W {wChain} n = either (error . show) blockTimestamp <$> blockAt wChain n
 
+mineRegister :: W -> IO Word64
+mineRegister w@W {wCtx = ctx} = do
+  block <- mineNewest w True
+  t <- blockTime w block
+  block <$ answerDisputeUntil ctx "alicebakery" (t + 14 * 86400)
+
 commitmentsCall :: NameRegistration -> ByteString
 commitmentsCall NameRegistration {nrCommitment} = selector "commitments(bytes32)" <> nrCommitment
 
@@ -344,7 +351,7 @@ testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}}
 
 -- | A queued code order, committed, revealed and registered.
 commitWaitRegister :: W -> (NameRegistration, PrepaidCode) -> IO ()
-commitWaitRegister w@W {wCtx = ctx@Ctx {cNode, cClient}} (r, code) = do
+commitWaitRegister w@W {wCtx = ctx} (r, code) = do
   answerExpiry ctx "alicebakery" expiry
   answerCommitment w r 0
   void $ published w r $ steps w r >>= awaiting
@@ -370,15 +377,14 @@ commitWaitRegister w@W {wCtx = ctx@Ctx {cNode, cClient}} (r, code) = do
   registerTx <- newestHash w
   registering <- stored ctx r
   (nrPhase registering, nrRegisterTx registering) `shouldBe` (PRegistering, Just registerTx)
-  registerBlock <- mineNewest w True
+  registerBlock <- mineRegister w
   disputeEnd <- (+ 14 * 86400) <$> blockTime w registerBlock
-  answerCall cNode fakeBaseRegistrar (selector "disputeUntil(uint256)" <> labelBytes "alicebakery") $ Returns $ uint256 disputeEnd
   now <- nowOf ctx
   published w r (steps w r) >>= done
   x <- stored ctx r
   (nrPhase x, nrRegisterTx x, nrRegisterBlock x, nrExpiresAt x, nrDisputeUntil x, nrRegisteredAt x, nrLive x)
     `shouldBe` (PRegistered, Just registerTx, Just registerBlock, Just expiry, Just disputeEnd, Just now, False)
-  view <- jsonObject =<< webGet cClient (registrationPath $ nrId r)
+  view <- viewOf ctx r
   (field "disputeDays" view, field "disputeUntil" view) `shouldBe` (Just (J.Number 14), Just (J.toJSON disputeEnd))
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
   steps w r >>= done
@@ -558,7 +564,7 @@ testTwoWallets = withWorker $ \w@W {wCtx = ctx} -> do
   b <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} openPhase >>= revealed ctx keyB "alicebakery"
   answerExpiry ctx "alicebakery" expiry
   void $ steps w a >>= awaiting
-  void $ mineNewest w True
+  void $ mineRegister w
   steps w a >>= done
   nrPhase <$> stored ctx a `shouldReturn` PRegistered
   answerOwner ctx "alicebakery" (nrOwner a)
@@ -995,7 +1001,7 @@ testRestart = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}, wSender} -> do
   w3 <- started ctx
   steps w3 r >>= awaiting >>= (`shouldBe` ptHash register) . ptHash
   nrPhase <$> stored ctx r `shouldReturn` PRegistering
-  void $ mineNewest w3 True
+  void $ mineRegister w3
   w4 <- started ctx
   steps w4 r >>= done
   nrPhase <$> stored ctx r `shouldReturn` PRegistered
@@ -1040,22 +1046,19 @@ testCodeSweep = withWorker $ \W {wCtx = ctx, wWorker} -> do
   map pcReservedBy <$> mapM (codeOf ctx) [oldCode, recentCode, requeuedCode] `shouldReturn` [Nothing, Just (nrId recent), Just (nrId requeued)]
   mapM (stored ctx) [old, recent, requeued] `shouldReturn` [old, recent, requeued]
 
-disputeUntilCall :: Text -> ByteString
-disputeUntilCall label = selector "disputeUntil(uint256)" <> labelBytes label
-
-answerDisputeUntil :: Ctx -> Text -> Word64 -> IO ()
-answerDisputeUntil Ctx {cNode} label t = answerCall cNode fakeBaseRegistrar (disputeUntilCall label) $ Returns $ uint256 t
-
 registeredUntil :: Word64 -> NameRegistration -> NameRegistration
 registeredUntil t r = r {nrPhase = PRegistered, nrExpiresAt = Just expiry, nrDisputeUntil = Just t}
 
 confirmedBlockAt :: Ctx -> Word64 -> IO Word64
 confirmedBlockAt Ctx {cNode} t = 100 <$ (setBlock cNode 100 t >> replicateM_ 2 (mine cNode []))
 
+registrationFrom :: Ctx -> Word64 -> Word64 -> Word64 -> IO ()
+registrationFrom Ctx {cNode} block expires disputeEnd =
+  forM_ [("nameExpires(uint256)", expires), ("disputeUntil(uint256)", disputeEnd)] $ \(s, v) ->
+    answerCallFrom cNode block fakeBaseRegistrar (selector s <> labelBytes "alicebakery") $ Returns $ uint256 v
+
 unregisteredFrom :: Ctx -> Word64 -> IO ()
-unregisteredFrom Ctx {cNode} block =
-  forM_ ["nameExpires(uint256)", "disputeUntil(uint256)"] $ \s ->
-    answerCallFrom cNode block fakeBaseRegistrar (selector s <> labelBytes "alicebakery") $ Returns $ uint256 (0 :: Int)
+unregisteredFrom ctx block = registrationFrom ctx block 0 0
 
 minedRegister :: W -> IO (NameRegistration, Word64)
 minedRegister w@W {wCtx = ctx} = do
@@ -1063,7 +1066,7 @@ minedRegister w@W {wCtx = ctx} = do
   answerAvailable w True
   void $ steps w r >>= awaiting
   answerExpiry ctx "alicebakery" expiry
-  (r,) <$> mineNewest w True
+  (r,) <$> mineRegister w
 
 testEndedOnUnregister :: IO ()
 testEndedOnUnregister = withWorker $ \w@W {wCtx = ctx, wWorker} -> do
@@ -1136,11 +1139,19 @@ testEndedWithinDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   view <- viewOf ctx r
   (field "phase" view, field "expiresAt" view, field "disputeUntil" view) `shouldBe` (Just "ended", Just J.Null, Just J.Null)
 
+testEndedByOtherRegistration :: IO ()
+testEndedByOtherRegistration = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  (r, registerBlock) <- minedRegister w
+  t <- blockTime w registerBlock
+  registrationFrom ctx (registerBlock + 1) (expiry + 12) (t + 12 + 14 * 86400)
+  void $ mine cNode []
+  steps w r >>= done
+  nrPhase <$> stored ctx r `shouldReturn` PEnded
+
 testRegisterReadAtDepth :: IO ()
 testRegisterReadAtDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   (r, registerBlock) <- minedRegister w
   t <- blockTime w registerBlock
-  answerDisputeUntil ctx "alicebakery" $ t + 14 * 86400
   unregisteredFrom ctx $ registerBlock + 1
   registering <- stored ctx r
   setBlock cNode (registerBlock + 1) (t + 12)
@@ -1229,6 +1240,7 @@ testRetryLanded = withWorker $ \W {wCtx = ctx} -> do
   -- redeemed since its register mined: the name left the owner, and the register consumed its commitment
   (redeemed, code) <- codeIn ctx 8 aliceOrder failedPhase
   TxHash minedHash <- sentRegister ctx redeemed 1 TSMined
+  answerDisputeUntil ctx "alicebakery" genesisDisputeEnd
   answerExpiry ctx "alicebakery" expiry
   v <- retried ctx redeemed
   (field "phase" v, field "registerTx" v, field "expiresAt" v, field "error" v) `shouldBe` (Just "registered", Just (J.String $ hex minedHash), Just (J.toJSON expiry), Just J.Null)
@@ -1520,6 +1532,7 @@ testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
   answerUnowned ctx "dynamis"
   answerExpiry ctx "dynamis" expiry
   minedHash <- sentRegister ctx minedOrder 1 TSMined
+  answerDisputeUntil ctx "dynamis" genesisDisputeEnd
   closeOf ctx minedOrder `shouldReturn` CLRegistered (nrId minedOrder)
   y <- stored ctx minedOrder
   (nrPhase y, nrRegisterTx y, nrExpiresAt y) `shouldBe` (PRegistered, Just minedHash, Just expiry)

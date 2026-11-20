@@ -5,6 +5,7 @@
 
 module Bots.StoreService.NamesOwnerTests
   ( namesOwnerTests,
+    answerDisputeUntil,
     answerExpiry,
     answerFree,
     answerOwner,
@@ -15,6 +16,7 @@ module Bots.StoreService.NamesOwnerTests
     dynamisOrder,
     failedPhase,
     findBody,
+    genesisDisputeEnd,
     labelBytes,
     move,
     moveBody,
@@ -64,7 +66,7 @@ import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Abi (addressWord, hex, uint256)
+import StoreService.Names.Abi (addressWord, hex, selector, uint256)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..), movable, signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
@@ -175,12 +177,18 @@ answerOwner Ctx {cNode} label owner = answerCall cNode (registrarOf cNode) (owne
 answerExpiry :: Ctx -> Text -> Word64 -> IO ()
 answerExpiry Ctx {cNode} label expiry = answerCall cNode (registrarOf cNode) (nameExpiresSelector <> labelBytes label) $ Returns $ uint256 expiry
 
+answerDisputeUntil :: Ctx -> Text -> Word64 -> IO ()
+answerDisputeUntil Ctx {cNode} label t = answerCall cNode (registrarOf cNode) (selector "disputeUntil(uint256)" <> labelBytes label) $ Returns $ uint256 t
+
+genesisDisputeEnd :: Word64
+genesisDisputeEnd = genesisTime + 14 * 86400
+
 -- | A register transaction of the order as the sender saves it, then moved to this outcome.
 sentRegister :: Ctx -> NameRegistration -> Word8 -> TxStatus -> IO TxHash
 sentRegister Ctx {cStore} NameRegistration {nrId} n status = withTransaction cStore $ \db -> do
   let h = TxHash $ digestFixture n
   void $ insertTransaction db (TxRegister nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
-  recordTransactionOutcome db h TSPending status (Just 98) `shouldReturn` True
+  recordTransactionOutcome db h TSPending status (Just 1) `shouldReturn` True
   pure h
 
 -- | The chain answers the name as available and held by nobody.
@@ -589,6 +597,7 @@ testMoveLanded = withOwner $ \ctx -> do
   let expiry = seconds orderTime + 2 * 31536000
   forM_ ["alicebakery", "dynamis"] $ \label -> answerExpiry ctx label expiry
   TxHash minedHash <- sentRegister ctx minedOrder 1 TSMined
+  answerDisputeUntil ctx "alicebakery" genesisDisputeEnd
   answerOwner ctx "dynamis" (nrOwner ownedOrder)
   void $ sentRegister ctx notLanded 2 TSReverted
   answerOwner ctx "alicebakery" (nrOwner minedOrder)
