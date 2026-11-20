@@ -133,6 +133,16 @@
             # -fully-static uses each producer's registered static C libraries.
             "https://github.com/simplex-chat/simplexmq.git" =
               [ ./scripts/nix/simplexmq-static-libraries.patch ];
+          } // pkgs.lib.optionalAttrs (
+            # Linux glibc is the suite that stops the server. Darwin already
+            # returns from gracefulClose immediately, and this must not rebuild
+            # the Android, Windows, or musl outputs.
+            pkgs'.stdenv.hostPlatform.isLinux
+            && !pkgs'.stdenv.hostPlatform.isMusl
+            && !pkgs'.stdenv.hostPlatform.isAndroid
+          ) {
+            "https://github.com/simplex-chat/simplexmq.git" =
+              [ ./scripts/nix/simplexmq-close-listener-first.patch ];
           };
         };
         modules = [
