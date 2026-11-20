@@ -72,7 +72,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "lists code orders failed before the cutoff that still hold their code" testFailedCodeOrders
   describe "dispute days" $ do
     it "takes the days of the payment: card 120, crypto and prepaid codes 14, and the larger of a method's and a balance's" testOrderDays
-    it "sets each registration's days in the migration as at its creation" testMigrationDays
+    it "sets each registration's days in the migration as at its creation, and its down migration sets an ended registration registered" testMigrationDays
   describe "prepaid codes" $ do
     it "issues one code per hash" testIssueCode
     it "reserves only an unused code, releases and spends it only for its holder" testReserveReleaseSpend
@@ -685,9 +685,13 @@ testOrderDays = withServiceStore $ \st -> do
 testMigrationDays :: IO ()
 testMigrationDays = withServiceStore $ \st -> do
   funded <- placeFunded st
+  ended <- reg st "card"
+  write st ended {nrPhase = PEnded} `shouldReturn` Written (nrVersion ended + 1)
   let migration = [m | m@Migration {name = "20261120_names_dispute_days"} <- storeServiceSchemaMigrations]
   length migration `shouldBe` 1
   runMigrations st $ MTRDown (mapMaybe toDownMigration migration)
+  withTransaction st (\db -> DB.query db "SELECT phase FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only ("card" :: Text)))
+    `shouldReturn` [Only ("registered" :: Text)]
   runMigrations st $ MTRUp migration
   daysOf st (map fst funded) `shouldReturn` funded
 
