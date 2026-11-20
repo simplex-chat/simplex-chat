@@ -216,8 +216,8 @@ sequenceDiagram
   S-->>K: receipt at the confirmation depth (default 3)
   K->>D: phase committed, reveal window set
   P->>W: GET /api/registration/ID, held while the version is unchanged
-  W-->>P: committed, intentNonce, the terms acceptance to sign
-  P->>P: owner signs RegisterName and the terms acceptance (EIP-712)
+  W-->>P: committed, intentNonce, disputeDays, the terms acceptance to sign
+  P->>P: owner signs RegisterName with disputeDays and the terms acceptance (EIP-712)
   P->>W: POST /api/registration/ID/reveal: label, secret, links, signatures
   W->>E: sponsor nonce, current terms, policy nonce
   W->>D: reveal stored, version published
@@ -225,8 +225,8 @@ sequenceDiagram
   Note over K: register waits for the relay and for revealAfter
   K->>S: registerWithCredit to the sponsor, phase registering
   S-->>K: register receipt with status 1 at the depth
-  K->>D: phase registered, expiresAt read at the confirmed block
-  Note over P,W: the held GET answers registered with registerTx and expiresAt
+  K->>D: phase registered, expiresAt and disputeUntil read at the confirmed block
+  Note over P,W: the held GET answers registered with registerTx, expiresAt and disputeUntil
 ```
 
 Notes:

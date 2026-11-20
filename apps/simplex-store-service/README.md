@@ -1121,6 +1121,32 @@ launch price of a name of 8 letters or more, $100 for 2 years. One floor bounds 
 node answering the floor price for a 6- or 7-letter name passes the check even when those names
 cost more on chain. To lower prices on chain below the floor, lower the setting and restart first.
 
+### Dispute days
+
+Each name the sponsor registers has a dispute period, within which the guardian or the admin can
+end the registration when its payment is disputed or refunded. Its length in days is set when the
+order is made, by how the order is paid:
+
+| Payment | Days |
+|---|---|
+| card | 120 |
+| BTC, XMR or another BTCPay method | 14 |
+| prepaid code | 14 |
+| another order's balance | that balance's days |
+| an invoice for the difference to another order's balance | the larger of the method's days and that balance's days |
+
+A balance's days are its order's days, except for an order closed unpaid, whose balance holds only
+the money paid late on its invoice: its invoice method's days.
+
+The registration view answers the order's `disputeDays`, which the owner signs in `RegisterName`
+and the service sends in `registerWithCredit`; a reveal signed over other days is refused. Once
+the name is registered, the view answers `disputeUntil`, the registrar's `disputeUntil(id)` read at
+the confirmation depth, or `null` for a registration without a dispute period. The migration
+`20261120_names_dispute_days` sets the days of the orders stored before it by the same rules.
+
+This version runs against the contracts with the dispute period (ens-contracts #51): the service
+calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.
+
 ### Link edits
 
 Each "Edit links" save is one request, relayed by the service as one transaction whose gas it pays
