@@ -937,11 +937,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   then do
                     -- send the relay a roster (materializing version 0 for old channels with NULL roster_version);
                     -- the relay stays RSInvited (unpublishable) until it acks, so no joiner can impersonate a privileged member
-                    gInfo' <- case rosterVersion gInfo of
-                      Just _ -> pure gInfo
-                      Nothing -> do
+                    gInfo' <- case gInfo of
+                      GroupInfo {rosterVersion = Just _} -> pure gInfo
+                      _ -> do
                         withStore' $ \db -> setGroupRosterVersion db gInfo (VersionRoster 0)
-                        pure gInfo {rosterVersion = Just (VersionRoster 0)}
+                        pure (gInfo :: GroupInfo) {rosterVersion = Just (VersionRoster 0)}
                     sendGroupRosterToRelay user (GIK gInfo' gks) m
                   else do
                     -- a relay below groupRosterVersion can't ack a roster; publish it on connect as before
@@ -3535,7 +3535,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     -- fromMember is the relay that delivered THIS roster copy (the owner on a relay receiving directly,
     -- a relay on a member receiving a forward); author is the owner who signed it.
     xGrpRoster :: GroupInfo -> GroupMember -> GroupMember -> GroupRoster -> VerifiedMsg e -> Maybe SharedMsgId -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpRoster gInfo fromMember author GroupRoster {version = newVer, fileInv = InlineFileInvitation {fileSize, fileDigest}} verifiedMsg sharedMsgId_ brokerTs
+    xGrpRoster gInfo@GroupInfo {rosterVersion} fromMember author GroupRoster {version = newVer, fileInv = InlineFileInvitation {fileSize, fileDigest}} verifiedMsg sharedMsgId_ brokerTs
       -- only an owner may sign a roster; otherwise a relay could route it as a member whose key it controls
       | memberRole' author /= GROwner = messageError "x.grp.roster: not signed by an owner" $> Nothing
       | fileSize > maxGroupRosterBytes = messageError "x.grp.roster: roster blob size exceeds limit" $> Nothing
@@ -3549,7 +3549,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               pendingVer_ <- withStore' $ \db -> getRosterTransferVersion db gInfo (groupMemberId' fromMember)
               -- accept a version not below BOTH applied and this source's pending (>=, Nothing below 0): a preceding
               -- signed event may have already advanced rosterVersion to this blob's version; a lower one is a downgrade.
-              if newVer `notBelowRoster` rosterVersion gInfo && newVer `notBelowRoster` pendingVer_
+              if newVer `notBelowRoster` rosterVersion && newVer `notBelowRoster` pendingVer_
                 then startRosterTransfer sm sharedMsgId
                 else pure Nothing
       where
@@ -3686,12 +3686,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     sendRosterAck gInfo owner ackVer err = void $ sendGroupMessage' user gInfo [owner] (XGrpRosterAck ackVer err)
 
     xGrpRosterAck :: GroupInfoKeys -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
-    xGrpRosterAck g@(GIK gInfo _) m ackVer err = do
+    xGrpRosterAck g@(GIK gInfo@GroupInfo {rosterVersion} _) m ackVer err = do
       relay_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupRelayByGMId db (groupMemberId' m))
       case relay_ of
         Just relay@GroupRelay {relayStatus = RSAccepted} -> case err of
           Nothing
-            | rosterVersion gInfo == Just ackVer -> do
+            | rosterVersion == Just ackVer -> do
                 (relay', gLink) <- withStore $ \db -> do
                   relay' <- liftIO $ updateRelayStatus db relay RSAcknowledgedRoster
                   gLink <- getGroupLink db user gInfo

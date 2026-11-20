@@ -505,7 +505,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemRestrict :: MemberId -> MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
-  XGrpMemDel :: {removedMemberId :: MemberId, withMessages :: Bool, rosterVer :: Maybe VersionRoster, silent :: Bool, notice :: Maybe LinkNotice} -> ChatMsgEvent 'Json
+  XGrpMemDel :: {removedMemberId :: MemberId, messages :: Bool, rosterVersion :: Maybe VersionRoster, silent :: Bool, notice :: Maybe LinkNotice} -> ChatMsgEvent 'Json
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
