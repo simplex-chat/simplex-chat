@@ -1123,8 +1123,8 @@ cost more on chain. To lower prices on chain below the floor, lower the setting 
 
 ### Dispute days
 
-Each name the sponsor registers has a dispute period, within which the guardian or the admin can
-end the registration if a payment for it is disputed, reversed or refunded in full. Its length in
+Each name the sponsor registers has a dispute period, within which the guardian or the controller's
+owner can end the registration if a payment for it is disputed, reversed or refunded in full. Its length in
 days is set when the order is made, by how the order is paid:
 
 | Payment | Days |
@@ -1146,7 +1146,8 @@ The order's `disputeDays` are returned in the registration view, signed by the o
 refused. Once the name is registered, `disputeUntil` is returned in the view: the registrar's
 `disputeUntil(id)` read at the confirmation depth, or `null` for a registration without a dispute
 period. The days of the orders stored before the migration `20261120_names_dispute_days` are set by
-it with the same rules.
+it with the same rules. Its down migration sets `ended` orders `registered`, and an up migration
+after it does not set them `ended` again: they stay `registered`, with no dispute end stored.
 
 The registrar's `disputeUntil(id)` is changed only by `unregister`, which ends a registration within
 its dispute period, and by a later registration of the name. Every hour the service reads the block
@@ -1154,9 +1155,11 @@ at the confirmation depth and, at that block, `disputeUntil(id)` of each registe
 dispute period has not ended or ended less than 7 days ago, if its registration is older than that
 block. When the value differs from the one read at the registration, the order's phase is set to
 `ended`, and it stays `ended` when the name is registered again. The pass is stopped at a failed
-read, which is logged once. An order whose register lands with an expiry of 0 at the confirmed
-block, unregistered within the confirmation depth, is set `ended` at once; while the register's
-block is above the confirmed block, the order is checked again later. For an ended order, `null` is
+read, which is logged once. When an order's register lands, `disputeUntil(id)` at the confirmed
+block is compared with the end the register set, its block's timestamp plus the order's days; when
+the two differ, the registration was ended before the confirmed block, possibly followed by
+another, and the order is set `ended` at once. While the register's block is above the confirmed
+block, the order is checked again later. For an ended order, `null` is
 returned for `expiresAt` and `disputeUntil` in the view, and their stored values are kept.
 
 This version runs against the contracts with the dispute period (ens-contracts #51): the service
@@ -1852,7 +1855,7 @@ It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_S
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
 `dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
-`ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
+`ens-contracts` submodule (simplex-network/ens-contracts#51, ebf7698) of a simplex-namespace-contract checkout
 (brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
 as the terms, as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
 `dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's

@@ -82,6 +82,7 @@ StoreService.Names.Registration
   DisputeDays           newtype over Int, 14 to 120
   mkDisputeDays         Int -> Maybe DisputeDays
   unDisputeDays         DisputeDays -> Int
+  disputeSeconds        DisputeDays -> Word64
   minDisputeDays        14
   maxDisputeDays        120
   cardDisputeDays       120
@@ -108,7 +109,9 @@ StoreService.Names.Worker
 
 StoreService.Names.Contracts
   disputeUntil          Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe Word64))
+  confirmedBlockNumber  Contracts -> IO (Either ChainError Word64)
   confirmedBlock        Contracts -> IO (Either ChainError Block)
+  blockTimeAt           Contracts -> Word64 -> IO (Either ChainError Word64)
 
 StoreService.Names.Chain
   deepBlock             ChainClient -> Block -> IO (Either ChainError Block), moved from Records
@@ -153,8 +156,8 @@ sequenceDiagram
   W->>D: reveal stored
   K->>K: stored intent checked over the order's disputeDays
   K->>S: registerWithCredit(registration, disputeDays, nonce, deadline, sig)
-  K->>R: nameExpires(id), disputeUntil(id) at the confirmed block, once it reaches the register's block
-  K->>D: registered, or ended for expiry 0; expires_at, dispute_until (0 stored as NULL)
+  K->>R: nameExpires(id), disputeUntil(id) at the confirmed block, once it reaches the register's block; the register block's timestamp
+  K->>D: registered, or ended when disputeUntil(id) is not the register's own end; expires_at, dispute_until (0 stored as NULL)
   W-->>P: view: disputeUntil
 ```
 
@@ -172,8 +175,10 @@ sweepEndedRegistrations, every hour
 
 checkLanded, a register mined at block M
   M above the confirmed block     unread, checked again
-  expiry 0 at the confirmed block phase ended
+  own end                         timestamp of M + days * 86400
+  disputeUntil(id) at the confirmed block differs from the own end    phase ended
   otherwise                       phase registered
+  no register known to have mined, the owner holding the name         phase registered
 
 registration view of an ended order
   expiresAt       null
@@ -184,8 +189,8 @@ registration view of an ended order
 ```mermaid
 stateDiagram-v2
   registering --> registering: the register's block above the confirmed block
-  registering --> ended: expiry 0 at the confirmed block
-  registering --> registered: expiry above 0 at the confirmed block
+  registering --> ended: disputeUntil(id) at the confirmed block other than the register's own end
+  registering --> registered: disputeUntil(id) at the confirmed block equal to the register's own end
   registered --> ended: disputeUntil(id) at the confirmed block differs from dispute_until
   registered --> registered: disputeUntil(id) equal, the registration not before the confirmed block, or the read failed
   ended --> ended: the name registered again
@@ -205,7 +210,7 @@ stateDiagram-v2
 | `disputeDays` and `disputeUntil` in the view; `disputeUntil` read when registered | NamesOrdersTests, NamesWorkerTests |
 | an unregistered registration ended and kept ended, its times null in the view; orders the sweep leaves, a registration after the confirmed block included | NamesWorkerTests |
 | an unregister ending an order only at the confirmation depth; a failed read stopping the pass, logged once | NamesWorkerTests |
-| a register checked again while its block is above the confirmed block; an order ended when its register lands with expiry 0 | NamesWorkerTests |
+| a register checked again while its block is above the confirmed block; an order ended when its register lands with expiry 0, or after another registration of the name | NamesWorkerTests |
 
 Expected encodings: viem 2.57.5, eth-account 0.14.0 and Foundry's cast 1.10.0 agree, run in CI on the branch `ab/names-dispute-days-vectors`, deleted since, https://github.com/brenzi-agent/simplex-chat/actions/runs/44711063341. The same scripts reproduce the values pinned before this change.
 
