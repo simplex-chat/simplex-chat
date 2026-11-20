@@ -99,6 +99,7 @@ private val previewScenes = listOf(
   SnapshotScene("DeletedItemView.PreviewDeletedItemView", chatItemFontScales) { PreviewDeletedItemView() },
   SnapshotScene("IntegrityErrorItemView.IntegrityErrorItemViewPreview", chatItemFontScales) { IntegrityErrorItemViewPreview() },
   SnapshotScene("MarkedDeletedItemView.PreviewMarkedDeletedItemView", chatItemFontScales) { PreviewMarkedDeletedItemView() },
+  SnapshotScene("MarkdownFileView.PreviewMarkdownFileView") { PreviewMarkdownFileView() },
   SnapshotScene("ChatHelpView.PreviewChatHelpLayout") { PreviewChatHelpLayout() },
   SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkDirect") { PreviewChatListNavLinkDirect() },
   SnapshotScene("ChatListNavLinkView.PreviewChatListNavLinkGroup") { PreviewChatListNavLinkGroup() },

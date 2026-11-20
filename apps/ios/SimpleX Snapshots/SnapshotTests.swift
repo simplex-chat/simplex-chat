@@ -756,6 +756,7 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(IntegrityErrorItemView_Previews.self, allSizes: true),
         SnapshotScene(LargeLinkPreview_Previews.self, allSizes: true),
         SnapshotScene(LocalAuthView_Previews.self),
+        SnapshotScene(MarkdownFileView_Previews.self, device: true),
         SnapshotScene(MarkdownHelp_Previews.self),
         SnapshotScene(MarkedDeletedItemView_Previews.self, allSizes: true),
         SnapshotScene(MemberAdmissionView_Previews.self),
