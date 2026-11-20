@@ -576,18 +576,20 @@ Only you see this link: it never enters Claude's context or tool results. Scan t
 After the first owner joins, Claude posts the list of sessions in the Main group, after its greeting:
 
 ```
-🟠 3 · simplex-chat: working
-🔵 6 · website: waiting for you, 2 approvals
-🔵 7 · docs: waiting for you in Claude Code
-🟢 8 · app: idle
+🟢 3 · simplex-chat: working
+🟠 6 · website: waiting for you, 2 approvals
+⛔️ 7 · docs: waiting for you in Claude Code
+🔴 8 · app: idle
+⚙️ 9 · api: working in the background
 ⚪ Not running: 5 · bio, 4 · notes, 2 · openclaw, 1 · first
 ```
 
-- A session is running while its Claude Code runs, or while cards wait for a decision in its group. Each running session has a line, by number:
-  - `🔵 N · NAME: waiting for you, K approvals`: K cards wait in the session's group. A tool-use card counts only while Claude Code shows its permission dialog, or while Claude Code's state can't be read.
-  - `🔵 N · NAME: waiting for you in Claude Code`: Claude Code waits for an answer in its own window, such as a dialog.
-  - `🟠 N · NAME: working`: Claude Code works on a turn, or a subagent works for it.
-  - `🟢 N · NAME: idle`: Claude Code waits for the next prompt, also while a background command runs.
+- A session is running while its Claude Code runs, or while cards wait for a decision in its group. Each running session has a line, by number. Green is the state to keep:
+  - `🟢 N · NAME: working`: Claude Code works on a turn, or a subagent works for it.
+  - `🟠 N · NAME: waiting for you, K approvals`: K cards wait in the session's group, for a decision in the chat. A tool-use card counts only while Claude Code shows its permission dialog, or while Claude Code's state can't be read.
+  - `⛔️ N · NAME: waiting for you in Claude Code`: Claude Code waits for an answer in its own window, such as a dialog, which the chat can't give.
+  - `⚙️ N · NAME: working in the background`: Claude Code waits for the next prompt while a background command runs. The command's end starts a turn without a prompt.
+  - `🔴 N · NAME: idle`: Claude Code waits for the next prompt, and nothing runs.
   - `▶️ N · NAME: running`: Claude Code's state can't be read.
 - The last line names every other session of the data folder, newest first. Without any session, the list is `No sessions.`
 - The states are Claude Code's own: the plugin reads them from Claude Code's record of its process, `sessions/PID.json` in `CLAUDE_CONFIG_DIR` or `~/.claude`.
