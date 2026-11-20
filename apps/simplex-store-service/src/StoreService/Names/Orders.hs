@@ -139,6 +139,8 @@ data WriteRefusal = WRChanged | WRRefused OrderRefusal
 data Landing = LNotLanded | LRegistered Int64 | LEnded Int64 | LChanged | LUnread
   deriving (Eq, Show)
 
+data Landed = LandedRegistered Word64 (Maybe Word64) | LandedEnded Word64
+
 maxSealedChars :: Int
 maxSealedChars = 11095
 
@@ -378,7 +380,8 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
   runExceptT (landed mined) >>= \case
     Left warning -> LUnread <$ logWarn warning
     Right Nothing -> pure LNotLanded
-    Right (Just (outcome, tx, phase, expiry, disputeEnd)) -> either (const LChanged) outcome <$> markLanded tx phase expiry disputeEnd
+    Right (Just (tx, LandedRegistered expiry disputeEnd)) -> either (const LChanged) LRegistered <$> markLanded tx PRegistered expiry disputeEnd
+    Right (Just (tx, LandedEnded registerTime)) -> either (const LChanged) LEnded <$> markLanded tx PEnded (registerTime + nrDuration) (Just $ registerEnd registerTime)
   where
     landed mined = do
       confirmed <- chainRead $ confirmedBlockNumber ct
@@ -389,10 +392,10 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
       forM registerTx $ \tx -> do
         disputeEnd <- chainRead $ disputeUntil ct (AtBlock confirmed) nrLabelHash
         registerTime <- forM (snd =<< tx) $ chainRead . blockTimeAt ct
-        let registerEnd = (+ disputeSeconds nrDisputeDays) <$> registerTime
-        if any ((disputeEnd /=) . Just) registerEnd
-          then pure (LEnded, tx, PEnded, (+ nrDuration) <$> registerTime, registerEnd)
-          else (\expiry -> (LRegistered, tx, PRegistered, Just expiry, disputeEnd)) <$> chainRead (nameExpires ct (AtBlock confirmed) nrLabelHash)
+        (tx,) <$> case registerTime of
+          Just t | disputeEnd /= Just (registerEnd t) -> pure $ LandedEnded t
+          _ -> (\expiry -> LandedRegistered expiry disputeEnd) <$> chainRead (nameExpires ct (AtBlock confirmed) nrLabelHash)
+    registerEnd t = t + disputeSeconds nrDisputeDays
     chainRead = withExceptT (("names: a register check's chain read failed: " <>) . tshow) . ExceptT
     markLanded tx phase expiry disputeEnd = do
       now <- clock
@@ -402,7 +405,7 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
                 -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
                 nrRegisterTx = fst <$> tx,
                 nrRegisterBlock = snd =<< tx,
-                nrExpiresAt = expiry,
+                nrExpiresAt = Just expiry,
                 nrDisputeUntil = disputeEnd,
                 nrRegisteredAt = Just now,
                 nrFailedAt = Nothing,
