@@ -1691,18 +1691,18 @@ sequenceDiagram
   CC->>R: status busy
   D->>N: every 2 s: readRecord, the session attached
   N->>R: read status
-  D->>M: showList: 🟠 N · NAME: working, then the not running line
+  D->>M: showList: 🟢 N · NAME: working, then the not running line
   M->>C: no list yet, an owner in the group: apiSendMessages #35;M, priority -1
   M->>C: apiSetGroupCustomData #35;M {simplexMcpMain: true, simplexMcpList: {item, at}}
   C->>O: the list
   CC->>R: status waiting, a permission dialog
   CC->>S: permission_request
   S->>D: POST /permission
-  D->>M: showList: 🔵 N · NAME: waiting for you, 1 approval
+  D->>M: showList: 🟠 N · NAME: waiting for you, 1 approval
   M->>C: apiUpdateChatItem #35;M item
   C->>O: the list edited, no alert
   CC->>R: status idle
-  D->>M: showList: 🟢 N · NAME: idle
+  D->>M: showList: 🔴 N · NAME: idle
   M->>C: apiUpdateChatItem #35;M item
   Note over D,M: the list 23 hours old, or its edit refused
   M->>C: apiSendMessages #35;M the new list, priority -1, and its item saved
