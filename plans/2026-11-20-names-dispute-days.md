@@ -214,3 +214,5 @@ The tests are committed with the interface, before the implementation. CI runs t
 ## Deployment
 
 This version runs against contracts with #51 applied.
+
+The names site is built from `apps/simplex-domains` at simplex.domains #23 (0a9ccb6), whose webapp signs `RegisterName` with `disputeDays` and accepts the phase `ended`. With the webapp pinned before, every reveal is refused with 400, and the phase `ended` is rejected by the page's validators. The pin moves to #23's merge commit on simplex.domains `names` once #23 merges.
