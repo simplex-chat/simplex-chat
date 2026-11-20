@@ -344,7 +344,7 @@ sequenceDiagram
   participant D as PostgreSQL
   K->>S: registerWithCredit to the sponsor
   S-->>K: dry run reverted, or mined with status 0
-  K->>E: registered after all? ownerOf and nameExpires at the confirmed block
+  K->>E: registered after all? ownerOf, disputeUntil and nameExpires at the confirmed block
   alt InvalidNonce, TermsNotAccepted or TermsMismatch from the dry run
     K->>D: reveal cleared, phase stays committed, the page signs again
   else InsufficientAllowance
@@ -360,11 +360,11 @@ sequenceDiagram
 
 Notes:
 
-- Whether the name was registered after all is checked first: on a register mined with status 1, or with the name held by the owner at the confirmation depth, the order is set `registered` ([`Names/Orders.hs:367-408`](../src/StoreService/Names/Orders.hs#L367-L408), [`Names/Worker.hs:331-338`](../src/StoreService/Names/Worker.hs#L331-L338)).
-- An `InsufficientAllowance` revert waits for the registrar key's allowance on the sponsor to be raised outside the service, also past the commitment's lapse, as the sponsor checks the allowance before the commitment. The order fails once its intent's deadline passes ([`Names/Worker.hs:353`](../src/StoreService/Names/Worker.hs#L353), [`Names/Worker.hs:305-320`](../src/StoreService/Names/Worker.hs#L305-L320)).
-- `CommitmentTooOld` is reverted only after the intent's and the allowance's checks. The order is set `committing` with its reveal kept, or, while `revealBefore` has not passed by the service's clock, the dry run is tried again a second later; the commit is sent again, and the register follows once it has aged, with no new signature. The names page signs the intent and the acceptance with a deadline a week ahead, never before `revealBefore` ([`Names/Worker.hs:350-352`](../src/StoreService/Names/Worker.hs#L350-L352), [`Names/Worker.hs:203-214`](../src/StoreService/Names/Worker.hs#L203-L214)).
-- On `CommitmentTooNew` the register is retried 1 s later. While the name is taken only above the confirmation depth, or is reported gone by the dry run while `available(label)` is true, the order is retried every 15 s ([`Names/Worker.hs:342-354`](../src/StoreService/Names/Worker.hs#L342-L354)).
-- A code order set `taken` has its code released instead of a balance credited ([`Names/Worker.hs:363-370`](../src/StoreService/Names/Worker.hs#L363-L370)).
+- Whether the name was registered after all is checked first: on a register mined with status 1, or with the name held by the owner at the confirmation depth, the order is set `registered`, or `ended` when the registrar's `disputeUntil` at the confirmed block is not the end its register set ([`Names/Orders.hs:368-422`](../src/StoreService/Names/Orders.hs#L368-L422), [`Names/Worker.hs:338-345`](../src/StoreService/Names/Worker.hs#L338-L345)).
+- An `InsufficientAllowance` revert waits for the registrar key's allowance on the sponsor to be raised outside the service, also past the commitment's lapse, as the sponsor checks the allowance before the commitment. The order fails once its intent's deadline passes ([`Names/Worker.hs:354`](../src/StoreService/Names/Worker.hs#L354), [`Names/Worker.hs:305-320`](../src/StoreService/Names/Worker.hs#L305-L320)).
+- `CommitmentTooOld` is reverted only after the intent's and the allowance's checks. The order is set `committing` with its reveal kept, or, while `revealBefore` has not passed by the service's clock, the dry run is tried again a second later; the commit is sent again, and the register follows once it has aged, with no new signature. The names page signs the intent and the acceptance with a deadline a week ahead, never before `revealBefore` ([`Names/Worker.hs:351-353`](../src/StoreService/Names/Worker.hs#L351-L353), [`Names/Worker.hs:203-214`](../src/StoreService/Names/Worker.hs#L203-L214)).
+- On `CommitmentTooNew` the register is retried 1 s later. While the name is taken only above the confirmation depth, or is reported gone by the dry run while `available(label)` is true, the order is retried every 15 s ([`Names/Worker.hs:350-363`](../src/StoreService/Names/Worker.hs#L350-L363)).
+- A code order set `taken` has its code released instead of a balance credited ([`Names/Worker.hs:372-380`](../src/StoreService/Names/Worker.hs#L372-L380)).
 
 ---
 
@@ -435,7 +435,7 @@ sequenceDiagram
   participant E as Ethereum node
   participant V as BTCPay or Stripe
   participant L as Poller
-  P->>W: GET /api/registration/SOURCE, answered with its balance
+  P->>W: GET /api/registration/SOURCE, answered with its balance and the balance's dispute days
   P->>W: POST /api/registration/SOURCE/spend: signed order
   W->>D: source order read
   W->>W: its owner's signature checked, name and balance locks taken
@@ -540,7 +540,7 @@ sequenceDiagram
   C->>D: the order, under its name's lock
   C->>N: a mined register of the order, or the owner holding the name at the confirmation depth
   alt the register went through
-    C->>D: order set registered
+    C->>D: order set registered, or ended when its registration was ended in its dispute period
     C-->>O: Nothing refunded: the register of order ID went through
   else not registered
     C->>D: under the balance's lock, one transaction: order set taken, price credited, the whole balance recorded as refunded

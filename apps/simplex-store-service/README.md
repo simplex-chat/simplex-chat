@@ -1139,28 +1139,34 @@ The days of a balance are the days of its order. The balance of an order closed 
 money paid late on its invoice, so the days of its invoice method are used for it. Crypto paid in
 excess of an order's price is kept in its balance with the order's days, also when these are the 120
 days of a card payment that funded the order: a balance is never given fewer days than a payment in
-it requires.
+it requires. The registration view returns a balance's days in its `balance` as `disputeDays`, the
+days of an order paid from that balance alone.
 
 The order's `disputeDays` are returned in the registration view, signed by the owner in
 `RegisterName` and sent by the service in `registerWithCredit`; a reveal signed over other days is
 refused. Once the name is registered, `disputeUntil` is returned in the view: the registrar's
 `disputeUntil(id)` read at the confirmation depth, or `null` for a registration without a dispute
 period. The days of the orders stored before the migration `20261120_names_dispute_days` are set by
-it with the same rules. Its down migration sets `ended` orders `registered`, and an up migration
-after it does not set them `ended` again: they stay `registered`, with no dispute end stored.
+it with the same rules. Its down migration drops every stored dispute end and sets `ended` orders
+`registered`. An up migration after it sets the days again and leaves `dispute_until` `NULL` on
+every order: the view then returns `disputeUntil` `null` for every registered order, and the hourly
+pass below reads none of them, so none of them is set `ended` later.
 
 The registrar's `disputeUntil(id)` is changed only by `unregister`, which ends a registration within
 its dispute period, and by a later registration of the name. Every hour the service reads the block
 at the confirmation depth and, at that block, `disputeUntil(id)` of each registered order whose
 dispute period has not ended or ended less than 7 days ago, if its registration is older than that
 block. When the value differs from the one read at the registration, the order's phase is set to
-`ended`, and it stays `ended` when the name is registered again. The pass is stopped at a failed
-read, which is logged once. When an order's register lands, `disputeUntil(id)` at the confirmed
-block is compared with the end the register set, its block's timestamp plus the order's days; when
-the two differ, the registration was ended before the confirmed block, possibly followed by
-another, and the order is set `ended` at once. While the register's block is above the confirmed
-block, the order is checked again later. For an ended order, `null` is
-returned for `expiresAt` and `disputeUntil` in the view, and their stored values are kept.
+`ended`, and it stays `ended` when the name is registered again. An order whose read fails is read
+again at the next pass, and the pass reads the others; a failed read of the block stops the pass.
+Each pass logs its first failed read once. When the worker, Try again, a move or `//close` finds an
+order's register mined, `disputeUntil(id)` at the confirmed block is compared with the end the
+register set, its block's timestamp plus the order's days; when the two differ, the registration
+was ended before the confirmed block, possibly followed by another, and the order is set `ended` at
+once, with the end its register set stored as its dispute end and its expiry `NULL`. While the
+register's block is above the confirmed block, the order is checked again later, and a warning
+names both blocks. For an ended order, `null` is returned for `expiresAt` and `disputeUntil` in the
+view, and their stored values are kept.
 
 This version runs against the contracts with the dispute period (ens-contracts #51): the service
 calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.
@@ -1339,6 +1345,11 @@ reads, clears and logs its acceptance, as a community name's did:
 | `clearRecordsWithSig` | 80,312 | 80,312 | 0.0004 ETH |
 | `multicall`, two new links | 6,054,042 | 6,008,868 | 0.01 ETH |
 
+- The figures predate the dispute period (ens-contracts #51), whose `registerWithCredit` also writes
+  the name's `disputeUntil`. That write is estimated, not measured, at about 22,100 gas for a name
+  registered for the first time: a storage slot set from zero, 20,000 gas, and its first access in
+  the transaction, 2,100 (EIP-2200, EIP-2929). Each register's gas limit is then about 26,500
+  higher, the two-link register's about 6,818,000.
 - The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,
   and its max fee to at most `max_fee_per_gas` (default 5 gwei) and at most 0.01 ETH divided by its
   gas limit, so no transaction can cost more than 0.01 ETH. The node accepts a transaction only while
@@ -1354,8 +1365,8 @@ reads, clears and logs its acceptance, as a community name's did:
   with `max_fee_per_gas`.
 - A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
   transactions with links of 4096 bytes, and 28,082 less with short links.
-- `gas_limit_cap` (default 8,000,000) must be at least 6,791,417: a transaction whose estimate is
-  above it is not sent.
+- `gas_limit_cap` (default 8,000,000) must be at least 6,791,417, about 6,818,000 with the dispute
+  period's write: a transaction whose estimate is above it is not sent.
 - The 0.01 ETH bound applies above 2,000,000 gas at 5 gwei: registers and edits with long links. It
   also keeps every transaction under reth's and geth's `--rpc.txfeecap`, 1 ETH by default, above which
   the node refuses a transaction and every later one of the key waits behind it. A transaction it
@@ -1769,8 +1780,9 @@ needs `[names]` and `[chain]` in `store_service.ini`; without `[names]` it answe
 enabled. It:
 
 1. checks the chain first, as Try again does: when a register of the order mined, or its owner holds
-   the name at the confirmation depth, the order is set `registered`, nothing is refunded, and the
-   change is logged at note with its registration id;
+   the name at the confirmation depth, the order is set `registered`, or `ended` when that
+   registration was ended in its dispute period (see [Dispute days](#dispute-days)); nothing is
+   refunded, and the change is logged at note with its registration id;
 2. otherwise, in one transaction, sets the order `taken`, credits its price to its balance, which may
    already hold a move's difference or an overpayment, and records all of that balance as refunded,
    as `//record_refund` does.
