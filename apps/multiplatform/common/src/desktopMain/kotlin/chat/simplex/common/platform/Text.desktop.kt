@@ -17,8 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.takeOrElse
 import chat.simplex.common.ui.theme.EmojiFont
 import chat.simplex.common.ui.theme.Inter
-import chat.simplex.res.MR
-import chat.simplex.res.MRdesktopMain
+import chat.simplex.res.*
 import org.jetbrains.skia.FontMgr
 import org.jetbrains.skia.FontStyle
 import org.jetbrains.skia.Typeface
