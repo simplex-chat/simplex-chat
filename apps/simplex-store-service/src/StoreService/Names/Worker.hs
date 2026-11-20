@@ -52,9 +52,9 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
-import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient, ChainError (..), TxHash, blockAt)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), TxHash)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedBlock, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, blockTimeAt, commitmentAges, commitmentTime, communityName, confirmedBlock, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, unixSeconds, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, disputeSeconds, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
@@ -68,7 +68,6 @@ import StoreService.Safely (safely, safelyWith)
 
 data Worker = Worker
   { wkOrders :: OrdersEnv,
-    wkChain :: ChainClient,
     wkSender :: Sender,
     -- | the thread following each registration, kept by the scan
     wkThreads :: TVar (Map RegistrationId (Async ()))
@@ -118,8 +117,8 @@ sweepInterval = 86400 * 1000000
 notRegistered :: Text
 notRegistered = "The name could not be registered"
 
-newWorker :: OrdersEnv -> ChainClient -> Sender -> IO Worker
-newWorker wkOrders wkChain wkSender = Worker wkOrders wkChain wkSender <$> newTVarIO M.empty
+newWorker :: OrdersEnv -> Sender -> IO Worker
+newWorker wkOrders wkSender = Worker wkOrders wkSender <$> newTVarIO M.empty
 
 -- | A thread for each registration in the worker's phases, started by a scan every scanInterval; they stop with it.
 runWorkers :: Worker -> IO ()
@@ -229,12 +228,12 @@ toCommitted w now r CommitmentAges {caMin, caMax} t =
 
 -- | Among the signatures of the commit last sent, the one mined with status 1 at the commitment's time.
 ourCommit :: Worker -> NameRegistration -> Word64 -> IO (Either ChainError (Maybe (TxHash, Word64)))
-ourCommit Worker {wkOrders = OrdersEnv {oeStore}, wkChain} NameRegistration {nrId, nrCommitTx} t = do
+ourCommit Worker {wkOrders = OrdersEnv {oeStore, oeContracts}} NameRegistration {nrId, nrCommitTx} t = do
   txs <- withTransaction oeStore (`registrationTransactions` nrId)
   let commits = [tx | tx@NameTransaction {ntFor = TxCommit _} <- txs]
       lastSent = [ntNonce | NameTransaction {ntHash, ntNonce} <- commits, Just ntHash == nrCommitTx]
   case [(ntHash, block) | NameTransaction {ntHash, ntNonce, ntStatus = TSMined, ntMinedBlock = Just block} <- commits, ntNonce `elem` lastSent] of
-    (h, block) : _ -> fmap (\Block {blockTimestamp} -> if blockTimestamp == t then Just (h, block) else Nothing) <$> blockAt wkChain block
+    (h, block) : _ -> fmap (\blockTime -> if blockTime == t then Just (h, block) else Nothing) <$> blockTimeAt oeContracts block
     [] -> pure $ Right Nothing
 
 sendCommit :: Worker -> UTCTime -> NameRegistration -> IO Next
