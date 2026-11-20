@@ -45,7 +45,7 @@ module StoreService.Names.Orders
 where
 
 import qualified Control.Exception as E
-import Control.Logger.Simple (logError, logWarn)
+import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM, unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError, withExceptT)
 import qualified Data.Aeson as J
@@ -55,7 +55,7 @@ import Data.ByteString (ByteString)
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
-import Data.Maybe (catMaybes, isJust)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Scientific (toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -139,7 +139,7 @@ data WriteRefusal = WRChanged | WRRefused OrderRefusal
 data Landing = LNotLanded | LRegistered Int64 | LEnded Int64 | LChanged | LUnread
   deriving (Eq, Show)
 
-data Landed = LandedRegistered Word64 (Maybe Word64) | LandedEnded Word64
+data Landed = LandedRegistered Word64 (Maybe Word64) | LandedEnded Word64 (Maybe Word64)
 
 maxSealedChars :: Int
 maxSealedChars = 11095
@@ -381,7 +381,10 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
     Left warning -> LUnread <$ logWarn warning
     Right Nothing -> pure LNotLanded
     Right (Just (tx, LandedRegistered expiry disputeEnd)) -> either (const LChanged) LRegistered <$> markLanded tx PRegistered expiry disputeEnd
-    Right (Just (tx, LandedEnded registerTime)) -> either (const LChanged) LEnded <$> markLanded tx PEnded (registerTime + nrDuration) (Just $ registerEnd registerTime)
+    Right (Just (tx, LandedEnded registerTime disputeEnd)) ->
+      markLanded tx PEnded (registerTime + nrDuration) (Just $ registerEnd registerTime) >>= \case
+        Right v -> LEnded v <$ logNote ("names: registration " <> ridText nrId <> " set ended: disputeUntil(id) read at the confirmed block is " <> tshow (fromMaybe 0 disputeEnd) <> ", not its register's end " <> tshow (registerEnd registerTime))
+        Left _ -> pure LChanged
   where
     landed mined = do
       confirmed <- chainRead $ confirmedBlockNumber ct
@@ -393,7 +396,7 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
         disputeEnd <- chainRead $ disputeUntil ct (AtBlock confirmed) nrLabelHash
         registerTime <- forM (snd =<< tx) $ chainRead . blockTimeAt ct
         (tx,) <$> case registerTime of
-          Just t | disputeEnd /= Just (registerEnd t) -> pure $ LandedEnded t
+          Just t | disputeEnd /= Just (registerEnd t) -> pure $ LandedEnded t disputeEnd
           _ -> (\expiry -> LandedRegistered expiry disputeEnd) <$> chainRead (nameExpires ct (AtBlock confirmed) nrLabelHash)
     registerEnd t = t + disputeSeconds nrDisputeDays
     chainRead = withExceptT (("names: a register check's chain read failed: " <>) . tshow) . ExceptT

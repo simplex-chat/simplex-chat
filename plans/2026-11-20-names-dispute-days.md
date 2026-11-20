@@ -192,17 +192,17 @@ sweepEndedRegistrations, every hour
   equal           unchanged
   read failed     the order read again at the next pass, the pass going on
   block unread    the pass stopped
-  log             the pass's first failed read, once
+  log             the pass's first failed read, once; each order set ended, at note, with the value read
 
 checkLanded, a register mined at block M
   M above the confirmed block     unread, a warning naming both blocks, checked again
   own end                         timestamp of M + days * 86400
   own expiry                      timestamp of M + duration
-  disputeUntil(id) at the confirmed block differs from the own end    phase ended, expires_at the own expiry, dispute_until the own end; LEnded
+  disputeUntil(id) at the confirmed block differs from the own end    phase ended, expires_at the own expiry, dispute_until the own end, logged at note with the value read; LEnded
   otherwise                       phase registered, expires_at and dispute_until read at the confirmed block; LRegistered
   the owner holding the name, judged by ownerOf alone                  phase registered; LRegistered
 
-//close, LEnded     nothing refunded, answered and logged as ended
+//close, LEnded     nothing refunded, answered as ended
 
 registration view of an ended order
   expiresAt       null

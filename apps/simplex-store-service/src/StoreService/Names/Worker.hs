@@ -42,6 +42,7 @@ import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
@@ -601,7 +602,10 @@ sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oe
         withTransaction oeStore (`getRegistration` rid) >>= \case
           Just r@NameRegistration {nrPhase = PRegistered, nrLabelHash, nrDisputeDays, nrDisputeUntil = ours@(Just disputeEnd)}
             | disputeEnd < blockTimestamp + disputeSeconds nrDisputeDays ->
-                disputeUntil oeContracts (AtBlock blockNumber) nrLabelHash >>= traverse (\current -> when (current /= ours) $ void $ save w now r {nrPhase = PEnded})
+                disputeUntil oeContracts (AtBlock blockNumber) nrLabelHash >>= traverse (\current -> when (current /= ours) $ void $ inTurn w r $ do
+                  outcome@(v, _) <- store w now r {nrPhase = PEnded}
+                  when (isJust v) $ logNote $ "names ended sweep: registration " <> ridText <> " set ended: disputeUntil(id) read at block " <> tshow blockNumber <> " is " <> tshow (fromMaybe 0 current) <> ", not " <> tshow disputeEnd
+                  pure outcome)
           _ -> pure $ Right ()
 
 runEndedSweep :: Worker -> IO ()
