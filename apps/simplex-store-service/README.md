@@ -1179,9 +1179,10 @@ An order whose register landed while none of its register transactions is record
 `sx_badge_service_name_transactions`, as when each was marked `dropped` after its nonce was used, is
 judged by `ownerOf` alone. Once its name is unregistered, `ownerOf` reverts, and the order is read as
 not registered: the worker sets it `failed`, its Try again registers the name again at the sponsor's
-cost, and `//close` records a refund of a payment that was disputed. Before Try again or `//close` of such an order, read the
-registrar's `NameRegistered` and `NameUnregistered` events of its name, whose id is the order's
-`label_hash`, from the order's creation on, as in a block explorer or with `cast logs`.
+cost, and `//close` records a refund of a payment that was disputed. Before Try again or `//close`
+of such an order, read the registrar's `NameRegistered` and `NameUnregistered` events of its name,
+whose id is the order's `label_hash`, from the order's creation on, as in a block explorer or with
+`cast logs`.
 
 This version runs against the contracts with the dispute period (ens-contracts #51): the service
 calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.
