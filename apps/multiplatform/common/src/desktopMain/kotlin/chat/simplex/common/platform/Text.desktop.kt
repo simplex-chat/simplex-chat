@@ -80,7 +80,11 @@ fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density)
     builder.addStyle(SpanStyle(fontSize = with(density) { markerPx.toSp() }), 0, 0)
   } else {
     builder.addStyle(SpanStyle(), 0, 0)
-    if (s.isNotEmpty() && lineHeightPx != null && typeface != null) {
+    if (s.isEmpty()) {
+      if (lineHeightPx != null && !proportional) {
+        laidOutStyle = style.copy(lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Proportional, lineHeightStyle.trim))
+      }
+    } else if (lineHeightPx != null && typeface != null) {
       val compensated = compensatedLineHeightPx(lineHeightPx, fontSizePx, typeface, style.lineHeightStyle)
       laidOutStyle = style.copy(lineHeight = with(density) { compensated.toSp() })
     }
