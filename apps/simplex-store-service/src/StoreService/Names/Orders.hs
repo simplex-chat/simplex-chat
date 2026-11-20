@@ -47,7 +47,7 @@ where
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM, unless, when)
-import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
+import Control.Monad.Except (ExceptT (..), runExceptT, throwError, withExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
@@ -70,7 +70,7 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Chain (BlockTag (..), ChainError (..))
+import StoreService.Names.Chain (BlockTag (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (agreedTermsHash, communityJSON, communityTermsPrefix, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), blockTimeAt, chainPriceCents, confirmedBlockNumber, disputeUntil, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
@@ -136,7 +136,7 @@ data WriteRefusal = WRChanged | WRRefused OrderRefusal
 
 -- | What /retry's first check found on the order's current name: no register through, the order registered at a new version,
 -- the order changed since it was read, or a failed chain read.
-data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
+data Landing = LNotLanded | LRegistered Int64 | LEnded Int64 | LChanged | LUnread
   deriving (Eq, Show)
 
 maxSealedChars :: Int
@@ -376,36 +376,38 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
   txs <- withTransaction st (`registrationTransactions` nrId)
   let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
   runExceptT (landed mined) >>= \case
-    Left e -> LUnread <$ logWarn ("names: a register check's chain read failed: " <> tshow e)
+    Left warning -> LUnread <$ logWarn warning
     Right Nothing -> pure LNotLanded
-    Right (Just (tx, phase, expiry, disputeEnd)) -> either (const LChanged) LRegistered <$> markRegistered tx phase expiry disputeEnd
+    Right (Just (outcome, tx, phase, expiry, disputeEnd)) -> either (const LChanged) outcome <$> markLanded tx phase expiry disputeEnd
   where
     landed mined = do
-      confirmed <- ExceptT $ confirmedBlockNumber ct
+      confirmed <- chainRead $ confirmedBlockNumber ct
       registerTx <- case mined of
-        (_, Just block) : _ | block > confirmed -> throwError $ ChainUnavailable "the confirmed block is below the register's block"
+        (_, Just block) : _ | block > confirmed -> throwError $ "names: a register check waits for confirmation: the register's block " <> tshow block <> " is above the confirmed block " <> tshow confirmed
         tx : _ -> pure $ Just $ Just tx
-        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken ct (AtBlock confirmed) nrLabelHash)
+        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> chainRead (ownerOfToken ct (AtBlock confirmed) nrLabelHash)
       forM registerTx $ \tx -> do
-        expiry <- ExceptT $ nameExpires ct (AtBlock confirmed) nrLabelHash
-        disputeEnd <- ExceptT $ disputeUntil ct (AtBlock confirmed) nrLabelHash
-        registerEnd <- forM (snd =<< tx) $ fmap (+ disputeSeconds nrDisputeDays) . ExceptT . blockTimeAt ct
-        pure (tx, if any ((disputeEnd /=) . Just) registerEnd then PEnded else PRegistered, expiry, disputeEnd)
-    markRegistered tx phase expiry disputeEnd = do
+        disputeEnd <- chainRead $ disputeUntil ct (AtBlock confirmed) nrLabelHash
+        registerEnd <- forM (snd =<< tx) $ fmap (+ disputeSeconds nrDisputeDays) . chainRead . blockTimeAt ct
+        if any ((disputeEnd /=) . Just) registerEnd
+          then pure (LEnded, tx, PEnded, Nothing, registerEnd)
+          else (\expiry -> (LRegistered, tx, PRegistered, Just expiry, disputeEnd)) <$> chainRead (nameExpires ct (AtBlock confirmed) nrLabelHash)
+    chainRead = withExceptT (("names: a register check's chain read failed: " <>) . tshow) . ExceptT
+    markLanded tx phase expiry disputeEnd = do
       now <- clock
-      let registered =
+      let marked =
             r
               { nrPhase = phase,
                 -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
                 nrRegisterTx = fst <$> tx,
                 nrRegisterBlock = snd =<< tx,
-                nrExpiresAt = Just expiry,
+                nrExpiresAt = expiry,
                 nrDisputeUntil = disputeEnd,
                 nrRegisteredAt = Just now,
                 nrFailedAt = Nothing,
                 nrError = Nothing
               }
-          write db = versionWritten <$> updateRegistration db registered now
+          write db = versionWritten <$> updateRegistration db marked now
       case nrPayment of
         RPInvoice {} -> withTransaction st write
         RPBalance -> withTransaction st write

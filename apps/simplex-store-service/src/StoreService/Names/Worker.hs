@@ -340,8 +340,9 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
   inTurn w r $
     confirmLanded oe r >>= \case
       LRegistered v -> pure (Just v, Again)
+      LEnded v -> pure (Just v, Again)
       LChanged -> pure (Nothing, Again)
-      LUnread -> pure (Nothing, Retry (nrVersion r) "the register check's chain read failed")
+      LUnread -> pure (Nothing, Retry (nrVersion r) "its register could not be checked at the confirmed block")
       LNotLanded -> case reason of
         Just e | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch] -> do
           when (e == RNTermsNotAccepted) $ forgetNamePolicy oeContracts
@@ -434,6 +435,7 @@ retryRegistration oe@OrdersEnv {oeNow} current = do
     r@NameRegistration {nrPhase = PFailed} ->
       confirmLanded oe r >>= \case
         LRegistered v -> pure $ RTWritten v
+        LEnded v -> pure $ RTWritten v
         LChanged -> pure RTChanged
         LUnread -> pure $ RTRefused RFUnread
         LNotLanded ->
@@ -511,7 +513,7 @@ servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChai
       Right () | reusable cfg now (toInteger rvDeadline) -> fmap (\nonce -> if nonce == rvNonce then Just rv else Nothing) <$> sponsorNonce oeContracts nrOwner
       _ -> pure $ Right Nothing
 
-data Closed = CLRegistered RegistrationId | CLRefunded (Maybe UTCTime) RefundRecord | CLRefused CloseRefusal
+data Closed = CLRegistered RegistrationId | CLEnded RegistrationId | CLRefunded (Maybe UTCTime) RefundRecord | CLRefused CloseRefusal
   deriving (Eq, Show)
 
 data CloseRefusal = CFNoOrder | CFNotFailedPaid | CFUnread | CFChanged | CFWriteRefused OrderRefusal | CFHeld BalanceHold | CFBalanceChanged
@@ -539,6 +541,7 @@ closeRegistration st ct turns clock ref = do
       r@NameRegistration {nrId, nrPhase = PFailed} ->
         checkLanded st ct turns clock r >>= \case
           LRegistered _ -> pure $ CLRegistered nrId
+          LEnded _ -> pure $ CLEnded nrId
           LChanged -> refused CFChanged
           LUnread -> refused CFUnread
           LNotLanded -> either CLRefused (CLRefunded $ nrFailedAt current <|> lapseMoment current) <$> refundTaken st turns now r

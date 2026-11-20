@@ -152,7 +152,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "closes a failed paid order taken, not live, its price credited and refunded, then refuses Try again, a move and a second refund, and accepts a new order for the name" testCloseFailed
     it "closes a lapsed committed order, which reads failed, naming its lapse as its failure time" testCloseLapsed
     it "closes a failed order paid from a balance, its chain naming the paying order" testCloseFromBalance
-    it "registers a failed order whose owner holds the name, and one whose register row mined while the owner no longer holds it, refunding nothing" testCloseLanded
+    it "registers a failed order whose owner holds the name, and one whose register row mined while the owner no longer holds it, ends one whose mined registration was ended, refunding nothing" testCloseLanded
     it "refuses an unknown reference, an order not failed, a failed code order and a failed chain read, changing nothing" testCloseRefused
     it "refuses an order changed during its chain check as changed, writing nothing" testCloseLostRace
     it "refuses a balance another order holds, writing nothing, and refunds the whole balance once released" testCloseHeld
@@ -1554,6 +1554,13 @@ testCloseLanded = withWorker $ \W {wCtx = ctx} -> do
   y <- stored ctx minedOrder
   (nrPhase y, nrRegisterTx y, nrExpiresAt y) `shouldBe` (PRegistered, Just minedHash, Just expiry)
   figuresOf ctx minedOrder `shouldReturn` Nothing
+  answerFree ctx "alicebakers"
+  endedOrder <- paidIn ctx aliceOrder {oLabel = "alicebakers", oCommitment = commitmentOf 5, oSealed = "sealed-alicebakers-5"} failedPhase
+  void $ sentRegister ctx endedOrder 3 TSMined
+  closeOf ctx endedOrder `shouldReturn` CLEnded (nrId endedOrder)
+  z <- stored ctx endedOrder
+  (nrPhase z, nrExpiresAt z, nrDisputeUntil z) `shouldBe` (PEnded, Nothing, Just genesisDisputeEnd)
+  figuresOf ctx endedOrder `shouldReturn` Nothing
 
 testCloseRefused :: IO ()
 testCloseRefused = withWorker $ \W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeStore, oeContracts, oeTurns, oeNow}}} -> do

@@ -121,6 +121,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
                 True -> refuse ORBadRequest
                 False -> moveChecked now r fields
             LRegistered v -> written env rid v <$> registrationChangedResponse env rid
+            LEnded v -> written env rid v <$> registrationChangedResponse env rid
             LChanged -> changed
             LUnread -> refuse ORNameCheckUnavailable
       | otherwise = moveChecked now r fields
