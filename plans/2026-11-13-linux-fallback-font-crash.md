@@ -36,13 +36,17 @@ Changes in m138 and in its fonts, and what restores the m132 result:
 
 Compose merges every span that starts at offset 0 into the paragraph's default style (`ParagraphBuilder.makeOps`), and Skia takes the empty metrics from that style. A zero-length span at offset 0 ends at offset 0, so spans that start there merge into the style its end creates instead.
 
-With a line height and the alignment Top, Center or Bottom (Material's default style is Center), Skia sizes the empty metrics to the whole line height around the default font's own offset, so a minimal default font shifts them instead of shrinking them; such texts take `H'`.
+With a line height and Center alignment (Material's default style, trim None), Skia sizes the empty metrics to the whole line height around the default font's own offset, so a minimal default font shifts them instead of shrinking them. The zero-length span then takes the text's dominant font (the font of most characters) at the size where its height `I_d = ceil(I) - 0.49` rounds up; the empty metrics then lie inside that font's run box. A dominant font with a line gap is replaced by a copy whose `hhea` and `OS/2` line gaps are 0. Top and Bottom alignments take `H'`.
 
 ```mermaid
 flowchart TD
-  T["text, style"] --> E{"empty line, or line height with Top, Center or Bottom alignment"}
-  E -- no --> M["zero-length span at 0: font size with rounded height 1 px"]
+  T["text, style"] --> E{"empty line?"}
+  E -- no --> A{"line height and alignment"}
+  A -- "none, or Proportional" --> M["zero-length span at 0: font size with rounded height 1 px"]
+  A -- "Center, trim None" --> D["zero-length span at 0: dominant font, size with I rounded up"]
+  A -- "Top, Bottom" --> C
   E -- yes --> C["line height H' for the style merged with the spans at 0"]
+  D --> F
   M --> F["fallback spans: tracking (macOS), COLR v0 emoji (Windows)"]
   C --> F
   F --> B["BasicText / BasicTextField"]
@@ -66,9 +70,12 @@ flowchart TD
 
 - Desktop builds on all OSes use Skia m138; Android APKs are unchanged, and `Text` calls the Material one there.
 - Fonts with known metrics: Inter, the bundled emoji font, and the fonts Compose resolves for `FontFamily.Monospace` and `FontFamily.Default`. Other fonts take only the fallback spans.
+- An empty text with Center alignment takes Proportional alignment: m132 computed empty-paragraph metrics with the strut's proportional ratio.
+- On Windows, a character followed by U+FE0F that the text's font covers without the selector takes the fallback font of U+FE0F.
 - Remaining differences:
   - a blank line in a text with a line height, by the rounding of `R`;
-  - in texts with a line height and Top, Center or Bottom alignment, lines whose height a fallback font sets, by up to `(I - R) / 2`;
+  - macOS: glyphs of fonts with a `trak` table, half the tracking (0.17 px at 16 px) to the right;
+  - Windows: emoji in bold text, by DirectWrite's bold simulation of the system emoji font; ❤️ in text set in the system font;
   - Linux glyph pixels.
 - The rule applies only to 0.9.4.2, so a Compose update that brings another Skiko version is not overridden.
 - Tests:
