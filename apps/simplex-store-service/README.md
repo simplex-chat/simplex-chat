@@ -1164,8 +1164,8 @@ read, the pass is stopped. The first failed read of each pass is logged once. Wh
 register is found mined, by the worker, Try again, a move or `//close`, `disputeUntil(id)` at the
 confirmed block is compared with the end the register set, its block's timestamp plus the order's
 days; when the two differ, the registration was ended before the confirmed block, possibly followed
-by another, and the order is set `ended` at once, with the end its register set stored as its
-dispute end and its expiry `NULL`. While the register's block is above the confirmed block, the
+by another, and the order is set `ended` at once, with the expiry and the dispute end its register
+set stored: its block's timestamp plus the order's duration, and plus its days. While the register's block is above the confirmed block, the
 order is checked again later, and a warning naming both blocks is logged. For an ended order,
 `null` is returned for `expiresAt` and `disputeUntil` in the view, and their stored values are
 kept.

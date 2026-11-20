@@ -175,7 +175,7 @@ sequenceDiagram
     K->>R: nameExpires(id) at the confirmed block
     K->>D: registered; expires_at, and dispute_until with 0 stored as NULL
   else another value
-    K->>D: ended; dispute_until the register's own end, expires_at NULL
+    K->>D: ended; expires_at and dispute_until the register's own
   end
   W-->>P: view: disputeUntil
 ```
@@ -197,7 +197,8 @@ sweepEndedRegistrations, every hour
 checkLanded, a register mined at block M
   M above the confirmed block     unread, a warning naming both blocks, checked again
   own end                         timestamp of M + days * 86400
-  disputeUntil(id) at the confirmed block differs from the own end    phase ended, dispute_until the own end, expires_at NULL; LEnded
+  own expiry                      timestamp of M + duration
+  disputeUntil(id) at the confirmed block differs from the own end    phase ended, expires_at the own expiry, dispute_until the own end; LEnded
   otherwise                       phase registered, expires_at and dispute_until read at the confirmed block; LRegistered
   the owner holding the name, judged by ownerOf alone                  phase registered; LRegistered
 
@@ -234,7 +235,7 @@ stateDiagram-v2
 | a balance's `disputeDays`, the days of an order it pays for wholly | NamesStoreTests, NamesOrdersTests, NamesSpendTests |
 | an unregistered registration ended and kept ended, its times null in the view; orders the sweep leaves, a registration after the confirmed block included | NamesWorkerTests |
 | an unregister ending an order only at the confirmation depth; a failed block read stopping the pass, and one order's failed read leaving the others read, each logged once | NamesWorkerTests |
-| a register checked again while its block is above the confirmed block, with a warning naming both blocks; an order ended when its mined register is checked with expiry 0, or after another registration of the name, keeping its register's own dispute end and a NULL expiry | NamesWorkerTests |
+| a register checked again while its block is above the confirmed block, with a warning naming both blocks; an order ended when its mined register is checked with expiry 0, or after another registration of the name, keeping its register's own expiry and dispute end | NamesWorkerTests |
 | `//close` of an order whose mined registration was ended, answered and logged as ended | NamesWorkerTests, GroupIntegrationTests |
 
 Expected encodings: viem 2.57.5, eth-account 0.14.0 and Foundry's cast 1.10.0 agree, run in CI on the branch `ab/names-dispute-days-vectors`, deleted since, https://github.com/brenzi-agent/simplex-chat/actions/runs/44711063341. The same scripts reproduce the values pinned before this change.

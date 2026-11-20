@@ -372,7 +372,7 @@ confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeS
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
 -- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
-checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrDisputeDays} = do
+checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrDuration, nrDisputeDays} = do
   txs <- withTransaction st (`registrationTransactions` nrId)
   let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
   runExceptT (landed mined) >>= \case
@@ -388,9 +388,10 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
         [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> chainRead (ownerOfToken ct (AtBlock confirmed) nrLabelHash)
       forM registerTx $ \tx -> do
         disputeEnd <- chainRead $ disputeUntil ct (AtBlock confirmed) nrLabelHash
-        registerEnd <- forM (snd =<< tx) $ fmap (+ disputeSeconds nrDisputeDays) . chainRead . blockTimeAt ct
+        registerTime <- forM (snd =<< tx) $ chainRead . blockTimeAt ct
+        let registerEnd = (+ disputeSeconds nrDisputeDays) <$> registerTime
         if any ((disputeEnd /=) . Just) registerEnd
-          then pure (LEnded, tx, PEnded, Nothing, registerEnd)
+          then pure (LEnded, tx, PEnded, (+ nrDuration) <$> registerTime, registerEnd)
           else (\expiry -> (LRegistered, tx, PRegistered, Just expiry, disputeEnd)) <$> chainRead (nameExpires ct (AtBlock confirmed) nrLabelHash)
     chainRead = withExceptT (("names: a register check's chain read failed: " <>) . tshow) . ExceptT
     markLanded tx phase expiry disputeEnd = do
