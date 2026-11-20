@@ -3,8 +3,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
--- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, its acceptance relay, and its register;
--- and Try again, which queues a failed one again. A step starts from the stored registration, the sender's transactions in flight
+-- | Each registration from queued to registered, ended, taken or failed: its commit, the wait for the page's reveal, its acceptance relay, and its register;
+-- Try again, which queues a failed one again; and the hourly sweep, which sets a registered one ended once unregistered. A step starts from the stored registration, the sender's transactions in flight
 -- and the chain, so a restart resumes any phase.
 module StoreService.Names.Worker
   ( Worker,

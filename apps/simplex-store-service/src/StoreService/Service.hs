@@ -370,7 +370,7 @@ logNamePolicy NamesConfig {nCommunity} ct =
           False -> logWarn $ "names: the name policy's " <> what <> " are not a link the service takes, so " <> sold <> " cannot be ordered: " <> link
 
 -- | The workers resume every registration in their phases, the code sweep runs at the start and then daily, and the
--- terms fetch at the start and then hourly.
+-- ended sweep and the terms fetch at the start and then hourly.
 namesLanes :: NamesEnv -> IO [IO ()]
 namesLanes ne@NamesEnv {neChain, neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neChain neSender
