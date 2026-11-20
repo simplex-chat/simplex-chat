@@ -141,9 +141,9 @@ name_registrations
   dispute_until     INTEGER
 ```
 
-Up, after the columns are added, `dispute_days` of each registration is set to the largest days along its funding chain. The chain starts at the registration and follows `balance_source` from it and from each source past `unpaid`. A link with method `card` takes 120, any other 14.
+Up, after the columns are added, `dispute_days` of each registration is set to the largest days along its funding chain. The chain is the registration and the sources reached by `balance_source` from it and from each source past `unpaid`. A link with method `card` is given 120, any other 14.
 
-Down: `ended` registrations are set `registered`, then the two columns are dropped. After an up migration that follows it, `dispute_until` is NULL on every registration, so none of them is read by the sweep.
+Down: `ended` registrations are set `registered`, then the two columns are dropped. After an up migration that follows it, `dispute_until` is NULL on every registration, so the sweep reads only registrations landed after it.
 
 ```mermaid
 flowchart RL
@@ -215,6 +215,8 @@ stateDiagram-v2
   registering --> registering: the register's block above the confirmed block
   registering --> ended: disputeUntil(id) at the confirmed block other than the register's own end
   registering --> registered: disputeUntil(id) at the confirmed block equal to the register's own end
+  failed --> registered: Try again, a move or //close, with disputeUntil(id) at the confirmed block equal to the register's own end, or the owner holding the name by ownerOf alone
+  failed --> ended: Try again, a move or //close, with disputeUntil(id) at the confirmed block other than the register's own end
   registered --> ended: disputeUntil(id) at the confirmed block differs from dispute_until
   registered --> registered: disputeUntil(id) equal, the registration not before the confirmed block, or the read failed
   ended --> ended: the name registered again

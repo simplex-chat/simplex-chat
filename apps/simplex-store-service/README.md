@@ -1137,8 +1137,8 @@ days is set when the order is made, by how the order is paid:
 The days of a balance are the days of its order. The balance of an order closed unpaid contains only
 money paid late on its invoice, so the days of its invoice method are used for it. Crypto paid in
 excess of an order's price is kept in its balance with the order's days, also when these are the 120
-days of a card payment that funded the order: a balance is never given fewer days than a payment in
-it requires. A balance's days are returned in the registration view's `balance` as `disputeDays`,
+days of a card payment that funded the order: a balance is given at least the days of each payment
+in it. A balance's days are returned in the registration view's `balance` as `disputeDays`,
 the days of an order paid from that balance alone.
 
 The order's `disputeDays` are returned in the registration view, signed by the owner in
@@ -1149,8 +1149,8 @@ period. The days of the orders stored before the migration `20261120_names_dispu
 it with the same rules. By its down migration, every stored dispute end is dropped and `ended`
 orders are set `registered`. By an up migration after it, the days are set again and
 `dispute_until` is left `NULL` on every order: `disputeUntil` is then returned `null` for every
-registered order, and none of them is read by the service's hourly pass below, so none of them is
-set `ended` later.
+registered order, and the service's hourly pass below reads only orders with a stored dispute end,
+so these orders stay `registered` when their names are unregistered.
 
 The registrar's `disputeUntil(id)` is changed only by `unregister`, which ends a registration within
 its dispute period, and by a later registration of the name. Every hour the service reads the block
@@ -1161,15 +1161,27 @@ block. When the value differs from the one read at the registration, the order's
 again at the next pass, and the other orders are read in the same pass; when the block cannot be
 read, the pass is stopped. The first failed read of each pass is logged once. Each order set
 `ended`, by the pass or by the check below, is logged at note with its registration id, the
-`disputeUntil(id)` read and the end it was compared with. When an order's
-register is found mined, by the worker, Try again, a move or `//close`, `disputeUntil(id)` at the
-confirmed block is compared with the end the register set, its block's timestamp plus the order's
-days; when the two differ, the registration was ended before the confirmed block, possibly followed
-by another, and the order is set `ended` at once, with the expiry and the dispute end its register
-set stored: its block's timestamp plus the order's duration, and plus its days. While the register's block is above the confirmed block, the
-order is checked again later, and a warning naming both blocks is logged. For an ended order,
-`null` is returned for `expiresAt` and `disputeUntil` in the view, and their stored values are
-kept.
+`disputeUntil(id)` read and the end it was compared with.
+
+When an order's register is found mined, by the worker, Try again, a move or `//close`,
+`disputeUntil(id)` at the confirmed block is compared with the end the register set, its block's
+timestamp plus the order's days; when the two differ, the registration was ended before the
+confirmed block, possibly followed by another, and the order is set `ended` at once, with the expiry
+and the dispute end its register set stored: its block's timestamp plus the order's duration, and
+plus its days. While the register's block is above the confirmed block, a warning naming both
+blocks is logged and the order is left as it is. Then, as after a failed chain read, the worker
+checks the order again 15 seconds later, Try again is answered `503 provider_unavailable`, a move
+`503 name_check_unavailable`, and `//close` `Nothing recorded: the chain could not be read; run
+//close again.` For an ended order, `null` is returned for `expiresAt` and `disputeUntil` in the
+view, and their stored values are kept.
+
+An order whose register landed while none of its register transactions is recorded `mined` in
+`sx_badge_service_name_transactions`, as when each was marked `dropped` after its nonce was used, is
+judged by `ownerOf` alone. Once its name is unregistered, `ownerOf` reverts, and the order is read as
+not registered: the worker sets it `failed`, its Try again registers the name again at the sponsor's
+cost, and `//close` records a refund of a payment that was disputed. Before Try again or `//close` of such an order, read the
+registrar's `NameRegistered` and `NameUnregistered` events of its name, whose id is the order's
+`label_hash`, from the order's creation on, as in a block explorer or with `cast logs`.
 
 This version runs against the contracts with the dispute period (ens-contracts #51): the service
 calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.
@@ -1351,8 +1363,8 @@ reads, clears and logs its acceptance, as a community name's did:
 - The figures predate the dispute period (ens-contracts #51), whose `registerWithCredit` also writes
   the name's `disputeUntil`. That write is estimated, not measured, at about 22,100 gas for a name
   registered for the first time: a storage slot set from zero, 20,000 gas, and its first access in
-  the transaction, 2,100 (EIP-2200, EIP-2929). Each register's gas limit is then about 26,500
-  higher, the two-link register's about 6,818,000.
+  the transaction, 2,100 (EIP-2200, EIP-2929). Each register's figures are then about 22,100 higher,
+  the two-link register's limit about 6,813,500.
 - The service sets each transaction's gas limit a fifth above its estimate, within `gas_limit_cap`,
   and its max fee to at most `max_fee_per_gas` (default 5 gwei) and at most 0.01 ETH divided by its
   gas limit, so no transaction can cost more than 0.01 ETH. The node accepts a transaction only while
@@ -1362,13 +1374,14 @@ reads, clears and logs its acceptance, as a community name's did:
   blocks' median tips (`eth_feeHistory`), at least 0.05 gwei: reth's and geth's
   `eth_maxPriorityFeePerGas` sample each block's cheapest transactions and answer near zero.
 - An order is one commit, one acceptance relay and one register: 0.0108 ETH at the cap with two
-  links, 0.0036 ETH with none. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected Save of
+  links, 0.0036 ETH with none, and with none about 0.00013 ETH more for the dispute period's write,
+  its 22,100 gas and a fifth at 5 gwei. The expected orders × 0.0108 ETH, plus 0.01 ETH per expected Save of
   one or both links, pays for all of them even at the cap. A name's link edits are at most
   `record_edits_per_year` (3) a year, see [Link edits](#link-edits). Below 0.01 ETH the figures scale
   with `max_fee_per_gas`.
 - A Save of both links in one `multicall` uses 26,906 gas less than the same two edits sent as two
   transactions with links of 4096 bytes, and 28,082 less with short links.
-- `gas_limit_cap` (default 8,000,000) must be at least 6,791,417, about 6,818,000 with the dispute
+- `gas_limit_cap` (default 8,000,000) must be at least 6,791,417, about 6,813,500 with the dispute
   period's write: a transaction whose estimate is above it is not sent.
 - The 0.01 ETH bound applies above 2,000,000 gas at 5 gwei: registers and edits with long links. It
   also keeps every transaction under reth's and geth's `--rpc.txfeecap`, 1 ETH by default, above which
