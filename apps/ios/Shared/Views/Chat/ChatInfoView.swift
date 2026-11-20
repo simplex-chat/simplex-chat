@@ -1358,6 +1358,7 @@ struct KeepConversationDialog: View {
     var actionTitle: String
     var footer: Text?
     var confirmWord: String?
+    var toggleTitle: LocalizedStringKey = "Keep conversation"
     var close: CloseSheet
     var delete: (_ keepConversation: Bool) -> Void
     @State private var keepConversation = false
@@ -1367,7 +1368,7 @@ struct KeepConversationDialog: View {
         NavigationView {
             List {
                 Section {
-                    Toggle("Keep conversation", isOn: $keepConversation)
+                    Toggle(toggleTitle, isOn: $keepConversation)
                     if let confirmWord {
                         TextField(typeToConfirmPlaceholder(confirmWord), text: $typedWord)
                             .textInputAutocapitalization(.never)

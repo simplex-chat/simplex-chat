@@ -126,8 +126,8 @@ Wraps `ChatPreviewView` in a navigation link with tap and swipe behavior:
 ### Tap Behavior
 - Direct chat: navigates to `ChatView` via `ItemsModel.loadOpenChat(chatId)` -- [`contactNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L95)
 - Group chat: navigates to `ChatView` -- [`groupNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L192)
-- Contact request: shows `ContactRequestView` with accept/reject -- [`contactRequestNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L423)
-- Contact connection: shows `ContactConnectionInfo` -- [`contactConnectionNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L458)
+- Contact request: shows `ContactRequestView` with accept/reject -- [`contactRequestNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L508)
+- Contact connection: shows `ContactConnectionInfo` -- [`contactConnectionNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L543)
 - Notes folder: navigates to `ChatView` -- [`noteFolderNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L250)
 
 ### Navigation
@@ -141,7 +141,7 @@ When `groupInfo.useRelays == true`:
 
 | Change | Behavior |
 |--------|----------|
-| Swipe "Leave" | Hidden when `useRelays && isOwner` (`ChatListActions.group`) |
+| Swipe "Leave" | Hidden when `useRelays && isOwner` (`groupNavLink`) |
 | Context menu "Leave" | Hidden under same condition |
 | `deleteGroupAlert` label (`GroupChatInfoView.swift`) | "Delete channel?" |
 | `leaveGroupAlert` title | "Leave channel?" |
@@ -176,7 +176,7 @@ Filter matching is handled by [`presetTagMatchesChat()`](../../Shared/Views/Chat
 
 ### List Sheet
 
-The swipe "List" opens [`TagListView`](../../Shared/Views/ChatList/TagListView.swift#L20) with `chat` set, also when no lists exist ([`setTagChatSheet()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L375-L393); its height includes the Favorites section). With `chat` set the sheet starts with a Favorites section: [`favoritesRow()`](../../Shared/Views/ChatList/TagListView.swift#L144-L158) shows `star.fill` for a favorite and `star` otherwise; a tap calls `toggleChatFavorite` and closes the sheet. Without `chat` (long press on a list tab) the sheet is unchanged.
+The swipe "List" opens [`TagListView`](../../Shared/Views/ChatList/TagListView.swift#L20) with `chat` set, also when no lists exist ([`setTagChatSheet()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L423); its height includes the Favorites section). With `chat` set the sheet starts with a Favorites section: [`favoritesRow()`](../../Shared/Views/ChatList/TagListView.swift#L144-L158) shows `star.fill` for a favorite and `star` otherwise; a tap calls `toggleChatFavorite` and closes the sheet. Without `chat` (long press on a list tab) the sheet is unchanged.
 
 ### ChatTagsModel State
 
@@ -241,30 +241,30 @@ Search is available via pull-down gesture or search button in the navigation bar
 
 | Action | Icon | Handler | Tint |
 |--------|------|---------|------|
-| Read / Unread | checkmark / circlebadge.fill | [`markReadButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L281) | primary |
-| List | tag.fill | [`tagChatButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L366-L373) | green |
-| Mute / Unmute | `nextNtfMode.iconFilled` | [`toggleNtfsButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L301) | none |
+| Read / Unread | checkmark / circlebadge.fill | [`markReadButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L322) | primary |
+| List | tag.fill | [`tagChatButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L414) | green |
+| Mute / Unmute | `nextNtfMode.iconFilled` | [`toggleNtfsButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L342) | none |
 
 ### Trailing Swipe
 
-[`ChatListActions`](../../Shared/Views/ChatList/ChatListNavLink.swift#L608-L639) holds the actions of a row: `shown`, in code order, and `more`. Its `init` moves a single "More" action to the end of `shown`. [`trailingActions()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L313-L330) renders `shown`, the first action at the screen edge, so a full swipe performs it, then "More" when `more` is not empty. "More" sets `moreActions`, which [`ChatListMoreDialog`](../../Shared/Views/ChatList/ChatListNavLink.swift#L641-L658) shows as a confirmation dialog without a title. [`perform()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L332-L351) runs a [`ChatListAction`](../../Shared/Views/ChatList/ChatListNavLink.swift#L586-L606); its `label` gives the title, the icon, the tint and the destructive role in "More".
+In code order, the first action at the screen edge, so a full swipe performs it. "More" is shown when it holds two or more actions; a single action is shown in its place. [`moreOptionsButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L443) opens `moreActionSheet`, an action sheet titled with the chat name.
 
 ```
-contact                       ChatListActions.contact   Delete, Block, More (Clear, Archive)
-business chat, owner          ChatListActions.group     Delete, Block, More (Clear, Leave, Archive reports)
-group, channel, other         ChatListActions.group     Delete, Leave, More (Clear, Archive reports)
+contact                       Delete, Block, More (Clear, Archive)
+business chat, owner          Delete, Block, More (Clear, Leave, Archive reports)
+group, channel, other         Delete, Leave, More (Clear, Archive reports)
 ```
 
 | Action | Condition | Runs | Tint |
 |--------|-----------|------|------|
 | Delete | contacts; groups with `canDelete` | `deleteContactDialog`, `deleteGroupAlert` | red |
-| Block | `Contact.canDeleteAndBan`; `GroupInfo.isCustomerChatOwner` | `deleteAndBanContactDialog`; [`deleteAndBanCustomerIfAvailable()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L353-L364) | orange |
+| Block | `Contact.canDeleteAndBan`; `GroupInfo.isCustomerChatOwner` | `deleteAndBanContactDialog`; [`deleteAndBanCustomerIfAvailable()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L398) | orange |
 | Leave | `memberCurrentOrPending`, not a channel owner | `leaveGroupAlert` | yellow |
 | Clear | the chat has items | `clearChatAlert` | orange |
 | Archive | contacts | `archiveContact` | none |
 | Archive reports | `reportsCount > 0`, role moderator or above | `archiveAllReportsAlert` | none |
 
-`deleteAndBanCustomerIfAvailable()` loads the members with `apiListMembers`; it opens `deleteAndBanCustomerDialog` when `GroupInfo.canDeleteAndBanCustomer` holds (the customer passes `GroupMember.canBanAndRemove`: current or pending, role below moderator, `LINK_NOTICE_VERSION` supported), otherwise the "Can't block" alert, also for a customer with the moderator role or above ([`deleteAndBanUnavailableAlert()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L660-L665)).
+`deleteAndBanCustomerIfAvailable()` loads the members with `apiListMembers`; it shows "Error loading members" when they cannot be loaded, opens `deleteAndBanCustomerDialog` when `GroupInfo.canDeleteAndBanCustomer` holds (the customer passes `GroupMember.canBanAndRemove`: current or pending, role below moderator, `LINK_NOTICE_VERSION` supported), otherwise the "Can't block" alert, also for a customer with the moderator role or above ([`deleteAndBanUnavailableAlert()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L671)).
 
 Archived contacts (`ContactListNavLink.deletedChatNavLink`): Delete, and Block when `Contact.canDeleteAndBan`.
 

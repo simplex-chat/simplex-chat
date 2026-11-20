@@ -682,11 +682,10 @@ private func previewScenes() -> [SnapshotScene] {
         SnapshotScene(ChatItemInfoView_Previews.self),
         SnapshotScene(ChatItemView_NonMsgContentDeleted_Previews.self, allSizes: true),
         SnapshotScene(ChatItemView_Previews.self, allSizes: true),
-        SnapshotScene(ChatListMoreDialog_BusinessChat_Previews.self),
-        SnapshotScene(ChatListMoreDialog_Contact_Previews.self),
-        SnapshotScene(ChatListMoreDialog_Group_Previews.self),
+        SnapshotScene(ChatListMoreDialog_BusinessChat_Previews.self, alert: true),
+        SnapshotScene(ChatListMoreDialog_Contact_Previews.self, alert: true),
+        SnapshotScene(ChatListMoreDialog_Group_Previews.self, alert: true),
         SnapshotScene(ChatListNavLink_Previews.self),
-        SnapshotScene(ChatListSwipeActions_Previews.self),
         SnapshotScene(ChatListView_Previews.self),
         SnapshotScene(ChatPreviewView_Previews.self),
         SnapshotScene(ChatView_Previews.self, device: true),
@@ -1029,47 +1028,6 @@ struct ClassicOverviewChannel_Previews: PreviewProvider {
 struct ClassicParagraphs_Previews: PreviewProvider {
     static var previews: some View {
         SnapshotFixtures().paragraphs()
-    }
-}
-
-struct ChatListSwipeActions_Previews: PreviewProvider {
-    static var previews: some View {
-        SnapshotFixtures().swipeActions()
-    }
-}
-
-private struct SwipeActionsRow: View {
-    var title: String
-    var actions: ChatListActions
-    var systemImage: (ChatListAction) -> String = { $0.label.systemImage }
-
-    var body: some View {
-        VStack(alignment: .trailing, spacing: 4) {
-            Text(verbatim: title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            HStack(spacing: 0) {
-                if !actions.more.isEmpty {
-                    tile(NSLocalizedString("More", comment: "swipe action"), "ellipsis", nil)
-                }
-                ForEach(Array(actions.shown.reversed()), id: \.self) { action in
-                    let label = action.label
-                    tile(label.title, systemImage(action), label.tint)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .padding(.horizontal)
-    }
-
-    private func tile(_ title: String, _ systemImage: String, _ tint: Color?) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: systemImage)
-            Text(title).font(.subheadline.weight(.medium))
-        }
-        .foregroundColor(.white)
-        .frame(width: 80, height: 80)
-        .background(tint ?? Color(uiColor: .systemGray))
     }
 }
 
@@ -1764,44 +1722,6 @@ private final class SnapshotFixtures {
             msg(.groupRcv(groupMember: bob), "", -80, content: .voice(text: "", duration: 21), file: CIFile.getSample(fileId: id(), fileName: "voice.m4a", fileSize: 30_720, filePath: nil, fileStatus: .rcvInvitation)),
             msg(.groupRcv(groupMember: carol), "", -70, content: .file(""), file: CIFile.getSample(fileId: id(), fileName: "notes.txt", fileSize: 2_048, filePath: nil, fileStatus: .rcvInvitation))
         ], terminal: terminal)
-    }
-
-    func swipeActions() -> some View {
-        let items = [msg(.directRcv, "hello", -10)]
-        var bannable = contact
-        bannable.activeConn?.viaUserContactLink = 1
-        bannable.activeConn?.peerChatVRange = VersionRange(1, LINK_NOTICE_VERSION)
-        var archived = bannable
-        archived.chatDeleted = true
-        var customerChat = team
-        customerChat.businessChat = .sampleData
-        customerChat.membership.memberRole = .owner
-        var owner = team
-        owner.membership.memberRole = .owner
-        var channelOwner = news
-        channelOwner.membership.memberRole = .owner
-        var left = team
-        left.membership.memberStatus = .memLeft
-        let group = { (groupInfo: GroupInfo, chatItems: [ChatItem], chatStats: ChatStats) in
-            ChatListActions.group(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: chatItems, chatStats: chatStats), groupInfo)
-        }
-        return VStack(spacing: 16) {
-            SwipeActionsRow(title: "Contact", actions: .contact(Chat(chatInfo: .direct(contact: contact), chatItems: items), contact))
-            SwipeActionsRow(title: "Contact connected via your address", actions: .contact(Chat(chatInfo: .direct(contact: bannable), chatItems: items), bannable))
-            SwipeActionsRow(title: "Contact connected via your address, no messages", actions: .contact(Chat(chatInfo: .direct(contact: bannable)), bannable))
-            SwipeActionsRow(title: "Archived contacts: contact connected via your address", actions: ChatListActions([ChatListAction.deleteContact(archived)] + (archived.canDeleteAndBan ? [ChatListAction.banContact(archived)] : []), more: [])) { action in
-                if case .banContact = action { return "hand.raised" }
-                return "trash"
-            }
-            SwipeActionsRow(title: "Business chat owner", actions: group(customerChat, items, ChatStats()))
-            SwipeActionsRow(title: "Business chat owner, no messages", actions: group(customerChat, [], ChatStats()))
-            SwipeActionsRow(title: "Group owner", actions: group(owner, items, ChatStats()))
-            SwipeActionsRow(title: "Group owner, with reports", actions: group(owner, items, ChatStats(reportsCount: 1)))
-            SwipeActionsRow(title: "Channel owner", actions: group(channelOwner, items, ChatStats()))
-            SwipeActionsRow(title: "Member", actions: group(team, items, ChatStats()))
-            SwipeActionsRow(title: "Member who left", actions: group(left, items, ChatStats()))
-        }
-        .padding(.vertical)
     }
 
     func overviewChannel(terminal: Bool) -> ChatRows {

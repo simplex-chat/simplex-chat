@@ -320,6 +320,15 @@ data LinkNotice = LinkNotice
 
 $(JQ.deriveJSON defaultJSON ''LinkNotice)
 
+data GrpMemDel = GrpMemDel
+  { memberId :: MemberId,
+    messages :: Bool,
+    rosterVersion :: Maybe VersionRoster,
+    silent :: Bool,
+    notice :: Maybe LinkNotice
+  }
+  deriving (Eq, Show)
+
 data ChatMessage e = ChatMessage
   { chatVRange :: VersionRangeChat,
     msgId :: Maybe SharedMsgId,
@@ -505,7 +514,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemRestrict :: MemberId -> MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
-  XGrpMemDel :: {removedMemberId :: MemberId, messages :: Bool, rosterVersion :: Maybe VersionRoster, silent :: Bool, notice :: Maybe LinkNotice} -> ChatMsgEvent 'Json
+  XGrpMemDel :: GrpMemDel -> ChatMsgEvent 'Json
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
@@ -1487,7 +1496,7 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
       XGrpMemRestrict_ -> XGrpMemRestrict <$> p "memberId" <*> p "memberRestrictions"
       XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
       XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
-      XGrpMemDel_ -> XGrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages") <*> opt "rosterVersion" <*> Right (fromRight False $ p "silent") <*> Right (fromRight Nothing $ opt "notice")
+      XGrpMemDel_ -> fmap XGrpMemDel $ GrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages") <*> opt "rosterVersion" <*> Right (fromRight False $ p "silent") <*> Right (fromRight Nothing $ opt "notice")
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
@@ -1563,7 +1572,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpMemRestrict memId memRestrictions -> o ["memberId" .= memId, "memberRestrictions" .= memRestrictions]
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
-      XGrpMemDel memId messages rosterVersion silent notice -> o $ ("notice" .=? notice) $ ("silent" .=? justTrue silent) $ ("rosterVersion" .=? rosterVersion) $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
+      XGrpMemDel (GrpMemDel memId messages rosterVersion silent notice) -> o $ ("notice" .=? notice) $ ("silent" .=? justTrue silent) $ ("rosterVersion" .=? rosterVersion) $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]

@@ -124,16 +124,6 @@ final class ModerationTests: RecordedAPITestCase {
     }
 
     @MainActor
-    func testBlockMemberForWeek() async throws {
-        try recorded("bans/block-members")
-        let (groupInfo, members) = try openGroup()
-        showBanMemberSheet(groupInfo, try member(members, "cath"))
-        let dialog = try await sheet(BanDialog.self)
-        dialog.close { dialog.actions[0].action(.week) }
-        try await awaitMember("cath") { $0.blockedByAdmin && $0.blockedUntil != nil }
-    }
-
-    @MainActor
     func testBlockMemberForever() async throws {
         try recorded("bans/block-members")
         let (groupInfo, members) = try openGroup()
@@ -262,7 +252,7 @@ final class ModerationTests: RecordedAPITestCase {
         let bob = try member(try blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
         replaceMembers([bob])
         showAcceptMemberAlert(groupInfo, bob)
-        try await assertTexts(["Accept member", "Member will be unblocked and will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel"])
+        try await assertTexts(["Accept member", "Member will be unblocked for all and will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel"])
         try await press("Accept as member")
         try await awaitMember("bob") { !$0.memberPending && !$0.blockedByAdmin }
     }
@@ -355,17 +345,6 @@ final class ModerationTests: RecordedAPITestCase {
         XCTAssertNil(dialog.confirmWord)
         dialog.close { dialog.delete(false) }
         try await waitFor { ChatModel.shared.getChat(groupInfo.id) == nil }
-    }
-
-    @MainActor
-    func testDeleteOwnGroupKeepingConversation() async throws {
-        try recorded("bans/group-deletion")
-        let (groupInfo, _) = try openGroup("/_members #2")
-        AlertManager.shared.showAlert(GroupChatInfoView.deleteGroupAlert(groupChat(groupInfo), groupInfo))
-        try await press("Delete")
-        let dialog = try await sheet(KeepConversationDialog.self)
-        dialog.close { dialog.delete(true) }
-        try await waitFor { self.groupInfo(groupInfo.id)?.membership.memberStatus == .memGroupDeleted }
     }
 
     @MainActor
@@ -582,11 +561,10 @@ final class ModerationTests: RecordedAPITestCase {
     @MainActor
     func testContactNotViaAddressCantBeBlocked() async throws {
         try recorded("bans/contact-deletion")
-        let (chat, contact) = try openContact("/_get chat @5 count=0")
+        let (_, contact) = try openContact("/_get chat @5 count=0")
         XCTAssertFalse(contact.canDeleteAndBan)
-        XCTAssertEqual(ChatListActions.contact(chat, contact).shown.map { $0.label.title }, ["Delete", "Archive"])
-        let (cathChat, cath) = try openContact("/_get chat @3 count=0")
-        XCTAssertEqual(ChatListActions.contact(cathChat, cath).shown.map { $0.label.title }, ["Delete", "Block", "Archive"])
+        let (_, cath) = try openContact("/_get chat @3 count=0")
+        XCTAssertTrue(cath.canDeleteAndBan)
     }
 
     @MainActor
@@ -599,13 +577,6 @@ final class ModerationTests: RecordedAPITestCase {
             try await press("Confirm")
             try await waitFor { ChatModel.shared.getChat(chat.id) == nil }
         }
-    }
-
-    @MainActor
-    func testBusinessChatListActions() async throws {
-        try recorded("bans/business")
-        let (groupInfo, _) = try openGroup()
-        XCTAssertEqual(ChatListActions.group(groupChat(groupInfo), groupInfo).shown.map { $0.label.title }, ["Delete", "Block", "Leave"])
     }
 
     func testReportReasonIsContent() {

@@ -65,7 +65,7 @@ func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismis
     showAlert(
         NSLocalizedString("Accept member", comment: "alert title"),
         message: blocked
-            ? NSLocalizedString("Member will be unblocked and will join the group, accept member?", comment: "alert message")
+            ? NSLocalizedString("Member will be unblocked for all and will join the group, accept member?", comment: "alert message")
             : NSLocalizedString("Member will join the group, accept member?", comment: "alert message"),
         actions: {[
             UIAlertAction(

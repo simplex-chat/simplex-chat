@@ -39,7 +39,7 @@ import Simplex.Chat.Messages (AChatItemUpdate (..), CIMention (..), CIMentionMem
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), LinkNotice (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemDel, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpMemRestrict, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMemDel (..), GrpMsgForward (GrpMsgForward), LinkNotice (..), MsgContainer (..), MsgEncodingI, MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
 import Simplex.Chat.Store.Groups (getGroupRelayMembers)
 import Simplex.Chat.Store.Shared (getGroupInfoKeys)
 import Simplex.Chat.Types
@@ -3489,7 +3489,7 @@ testPlanGroupLinkForwardedRemovalNotice =
       cathMemId <- memberIdByName alice "cath"
       connId <- relayConnIdToMember alice "cath"
       ts <- getCurrentTime
-      let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") $ XGrpMemDel cathMemId False Nothing True (Just LinkNotice {ttl = Just 86400})
+      let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") $ XGrpMemDel (GrpMemDel cathMemId False Nothing True (Just LinkNotice {ttl = Just 86400}))
       agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
       cath <## "#team: bob removed you from the group"
       cath <## "use /d #team to delete the group"

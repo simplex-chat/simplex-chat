@@ -1110,6 +1110,7 @@ private func deleteGroupKeepDialog(_ groupInfo: GroupInfo, hasBusinessAddress: B
                ? Text("**\(groupInfo.displayName)** will be notified, and can reconnect via your address.")
                : Text("**\(groupInfo.displayName)** will be notified."))
             : nil,
+        toggleTitle: groupInfo.useRelays ? "Keep messages" : "Keep conversation",
         close: close,
         delete: delete
     )

@@ -298,10 +298,10 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
     if (!contact.chatDeleted) {
       ArchiveContactAction(chat, contact, chatModel, showMenu)
     }
+    DeleteContactAction(chat, chatModel, showMenu)
     if (contact.canDeleteAndBan) {
       DeleteAndBanAction(showMenu) { deleteAndBanContactDialog(chat, contact, chatModel) }
     }
-    DeleteContactAction(chat, chatModel, showMenu)
   }
 }
 
@@ -348,11 +348,11 @@ fun GroupMenuItems(
       if (groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
-      if (groupInfo.isCustomerChatOwner) {
-        DeleteAndBanAction(showMenu) { deleteAndBanCustomer(chat, groupInfo) }
-      }
       if (groupInfo.canDelete) {
         DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
+      }
+      if (groupInfo.isCustomerChatOwner) {
+        DeleteAndBanAction(showMenu) { deleteAndBanCustomer(chat, groupInfo) }
       }
     }
   }

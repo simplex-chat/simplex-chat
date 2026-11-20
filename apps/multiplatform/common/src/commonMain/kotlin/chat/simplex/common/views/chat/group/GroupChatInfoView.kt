@@ -271,7 +271,7 @@ private fun deleteOwnGroupDialog(rhId: Long?, groupInfo: GroupInfo, title: Strin
 }
 
 private fun keepGroupConversationDialog(rhId: Long?, groupInfo: GroupInfo, title: String, text: AnnotatedString?, close: (() -> Unit)?) {
-  showKeepConversationDialog(title, text, generalGetString(MR.strings.delete_verb), notify = true) { chatDeleteMode ->
+  showKeepConversationDialog(title, text, generalGetString(MR.strings.delete_verb), notify = true, keepLabel = if (groupInfo.useRelays) MR.strings.keep_messages else MR.strings.keep_conversation) { chatDeleteMode ->
     deleteGroupChat(rhId, groupInfo, chatDeleteMode, notice = null, close)
   }
 }
@@ -919,14 +919,14 @@ fun ModalData.GroupChatInfoLayout(
           ChannelRelaysButton(chat.remoteHostId, groupInfo, showMemberInfo)
         }
         ClearChatButton(clearChat)
-        if (canDeleteAndBanCustomer(groupInfo, activeSortedMembers)) {
-          DeleteAndBanButton(deleteAndBan)
-        }
         if (groupInfo.canDelete) {
           val titleId = if (groupInfo.useRelays) MR.strings.button_delete_channel
             else if (groupInfo.businessChat == null) MR.strings.button_delete_group
             else MR.strings.button_delete_chat
           DeleteGroupButton(titleId, deleteGroup)
+        }
+        if (canDeleteAndBanCustomer(groupInfo, activeSortedMembers)) {
+          DeleteAndBanButton(deleteAndBan)
         }
         if (groupInfo.membership.memberCurrentOrPending) {
           val hasOtherOwner = activeSortedMembers.any {
@@ -1206,9 +1206,9 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
   @Composable
   fun MemberInfo() {
     if (member.blockedByAdmin) {
-      Text(stringResource(MR.strings.member_info_member_banned), color = MaterialTheme.colors.secondary)
-    } else if (!member.memberSettings.showMessages) {
       Text(stringResource(MR.strings.member_info_member_blocked), color = MaterialTheme.colors.secondary)
+    } else if (!member.memberSettings.showMessages) {
+      Text(stringResource(MR.strings.member_info_member_hidden), color = MaterialTheme.colors.secondary)
     } else {
       val role = member.memberRole
       if (role in listOf(GroupMemberRole.Owner, GroupMemberRole.Admin, GroupMemberRole.Moderator, GroupMemberRole.Observer)) {
@@ -1303,7 +1303,7 @@ private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: G
             })
           } else {
             ItemAction(stringResource(MR.strings.block_for_all), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
-              banMemberDialog(rhId, groupInfo, member)
+              banMembersDialog(rhId, groupInfo, listOf(member))
               showMenu.value = false
             })
           }
@@ -1323,12 +1323,12 @@ private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: G
   } else if (!member.blockedByAdmin) {
     DefaultDropdownMenu(showMenu) {
       if (member.memberSettings.showMessages) {
-        ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_visibility_off), color = MaterialTheme.colors.error, onClick = {
+        ItemAction(stringResource(MR.strings.hide_messages_button), painterResource(MR.images.ic_visibility_off), color = MaterialTheme.colors.error, onClick = {
           blockMemberAlert(rhId, groupInfo, member)
           showMenu.value = false
         })
       } else {
-        ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_visibility), onClick = {
+        ItemAction(stringResource(MR.strings.show_messages_button), painterResource(MR.images.ic_visibility), onClick = {
           unblockMemberAlert(rhId, groupInfo, member)
           showMenu.value = false
         })

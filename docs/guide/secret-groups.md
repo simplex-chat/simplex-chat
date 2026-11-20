@@ -96,6 +96,8 @@ If an admin removed you with a block, the link shows "Not allowed" and when the 
 block is stored only in your app, for that link: no IDs are shared, and other
 links and invitations still work.
 
+The same applies to the address of a contact or business that deleted you with a block.
+
 ## Link to join group
 
 <img src="./images/groups-info.png" alt="Group page as seen by an admin, with Create group link" width="288">

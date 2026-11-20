@@ -1112,7 +1112,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XGrpMemRole memId memRole memberKey rosterVer -> fmap ctx <$> xGrpMemRole (GIK gInfo' gks) Nothing m'' memId memRole memberKey rosterVer msg brokerTs
               XGrpMemRestrict memId memRestrictions -> fmap ctx <$> xGrpMemRestrict gInfo' m'' memId memRestrictions msg brokerTs
               XGrpMemCon memId -> Nothing <$ xGrpMemCon gInfo' m'' memId
-              XGrpMemDel memId withMessages rosterVer silent notice_ -> case encoding @e of
+              XGrpMemDel (GrpMemDel memId withMessages rosterVer silent notice_) -> case encoding @e of
                 SJson -> fmap ctx <$> xGrpMemDel (GIK gInfo' gks) Nothing m'' memId withMessages rosterVer silent notice_ verifiedMsg msg brokerTs False
                 SBinary -> pure Nothing
               XGrpLeave -> fmap ctx <$> xGrpLeave (GIK gInfo' gks) m'' msg brokerTs
@@ -2334,6 +2334,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
 
     groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
     groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_
+      | maybe False (blockedForUser gInfo) m_ = Nothing <$ deleteRcvMsg msg
       | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
       | otherwise = do
@@ -2343,11 +2344,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             -- Chat item and update message which created it will have different sharedMsgId in this case...
             let timed_ = rcvGroupCITimed gInfo ttl_
                 showGroupAsSender = fromMaybe (isNothing m_) asGroup_
-            if
-              | maybe False (blockedForUser gInfo) m_ -> Nothing <$ deleteRcvMsg msg
-              | showGroupAsSender && maybe False (\m -> memberRole' m < GROwner) m_ ->
-                  messageError "x.msg.update: member attempted to update as group" $> Nothing
-              | otherwise -> do
+            if showGroupAsSender && maybe False (\m -> memberRole' m < GROwner) m_
+              then messageError "x.msg.update: member attempted to update as group" $> Nothing
+              else do
                 (gInfo', chatDir, mentions', scopeInfo) <-
                   if showGroupAsSender
                     then pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
@@ -2388,7 +2387,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
           case cci of
             CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
-              | isSender m' && maybe False (blockedForUser gInfo) m_ -> Nothing <$ deleteRcvMsg msg
               | isSender m' -> requireVerifiedEdit (CDGroupRcv gInfo scopeInfo m') itemVerified $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
             CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
@@ -4097,7 +4095,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew g author memInfo msgScope rcvMsg msgTs
             XGrpMemRole memId memRole memberKey rosterVer -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole g (Just m) author memId memRole memberKey rosterVer rcvMsg msgTs
             XGrpMemRestrict memId memRestrictions -> withAuthor XGrpMemRestrict_ $ \author -> void $ xGrpMemRestrict gInfo author memId memRestrictions rcvMsg msgTs
-            XGrpMemDel memId withMessages rosterVer silent notice_ -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel g (Just m) author memId withMessages rosterVer silent notice_ verifiedMsg rcvMsg msgTs True
+            XGrpMemDel (GrpMemDel memId withMessages rosterVer silent notice_) -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel g (Just m) author memId withMessages rosterVer silent notice_ verifiedMsg rcvMsg msgTs True
             XGrpLeave -> withAuthor XGrpLeave_ $ \author -> void $ xGrpLeave g author rcvMsg msgTs
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo g author p' rcvMsg msgTs

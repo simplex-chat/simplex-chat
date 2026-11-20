@@ -96,7 +96,7 @@ Contacts and groups the user is a member of; contact requests, contact cards, in
   | Business chat, owner on the business side | Delete, Block, More (Clear, Leave, Archive reports) |
   | Group, channel, other business chats | Delete, Leave, More (Clear, Archive reports) |
 
-- "More" is shown when it holds two or more actions; a single action is shown in its place, and "More" is an action sheet without a title
+- "More" is shown when it holds two or more actions; a single action is shown in its place, and "More" is an action sheet titled with the chat name
 - Delete: for contacts, and for groups the user can delete; Leave: while the membership is current or pending, except for channel owners; Clear: when the chat has messages; Archive reports: for moderators and above when the group has reports
 - Block (orange): opens "Delete and block?" for a contact connected via the user's address whose app supports blocks; for the owner of a business chat the customer is checked on tap, and "Can't block" is shown when the customer left, uses an older app version or has the moderator role or above
 - Archive: moves the contact to Archived contacts with the conversation and shows "Contact archived!"

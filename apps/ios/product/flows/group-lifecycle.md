@@ -77,7 +77,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 1. Group has admission settings configured via `MemberAdmissionView`.
 2. When a new member joins a group requiring approval, admins see pending members.
 3. Admin reviews pending member in the member list.
-4. To accept: `showAcceptMemberAlert`; for a member blocked for all it reads "Member will be unblocked and will join the group, accept member?", and each accept button unblocks the member for all, then accepts (a failed unblock shows its error and accepts nothing). Accept calls `apiAcceptMember(groupId:groupMemberId:memberRole:)`:
+4. To accept: `showAcceptMemberAlert`; for a member blocked for all it reads "Member will be unblocked for all and will join the group, accept member?", and each accept button unblocks the member for all, then accepts (a failed unblock shows its error and accepts nothing). Accept calls `apiAcceptMember(groupId:groupMemberId:memberRole:)`:
    ```swift
    func apiAcceptMember(_ groupId: Int64, _ groupMemberId: Int64, _ memberRole: GroupMemberRole) async throws -> (GroupInfo, GroupMember)
    ```
@@ -141,7 +141,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 ### 9. Delete Group
 
 1. Owner navigates to `GroupChatInfoView` -> taps "Delete group", or uses "Delete" in the chat list swipe; both show `deleteGroupAlert` (`GroupChatInfoView.swift`).
-2. For an active owner (`isOwner` and `membership.memberActive`) of a group or channel, and for the active owner of a business chat with a customer, a sheet with "Keep conversation", Delete and Cancel follows (`KeepConversationDialog`); a member who left or was removed, and an owner whose membership is not active (for example `memAccepted`), delete after the alert only, as the core keeps the conversation only for an active owner.
+2. For an active owner (`isOwner` and `membership.memberActive`) of a group or channel, and for the active owner of a business chat with a customer, a sheet with "Keep conversation" ("Keep messages" for a channel), Delete and Cancel follows (`KeepConversationDialog`); a member who left or was removed, and an owner whose membership is not active (for example `memAccepted`), delete after the alert only, as the core keeps the conversation only for an active owner.
 3. Calls `apiDeleteChat(type: .group, id: groupId, chatDeleteMode:)` through `deleteChat`; "Keep conversation" off sends `.full`, on sends `.entity`:
    ```swift
    func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true), notice: LinkNotice? = nil) async throws -> GroupInfo?

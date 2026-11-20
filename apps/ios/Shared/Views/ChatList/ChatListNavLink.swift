@@ -55,7 +55,6 @@ struct ChatListNavLink: View {
     @State private var showInvalidJSON = false
     @State private var alert: SomeAlert? = nil
     @State private var actionSheet: SomeActionSheet? = nil
-    @State private var moreActions: [ChatListAction]? = nil
     @State private var showConnectContactViaAddressDialog = false
     @State private var inProgress = false
     @State private var progressByTimeout = false
@@ -179,10 +178,28 @@ struct ChatListNavLink: View {
                             .tint(.red)
                         }
                     } else {
-                        trailingActions(.contact(chat, contact))
+                        Button {
+                            deleteContactDialog(
+                                chat,
+                                contact,
+                                dismissToChatList: false,
+                                showAlert: { alert = $0 },
+                                showActionSheet: { actionSheet = $0 }
+                            )
+                        } label: {
+                            deleteLabel
+                        }
+                        .tint(.red)
+                        if contact.canDeleteAndBan {
+                            banContactButton(contact)
+                        }
+                        if chat.chatItems.isEmpty {
+                            archiveContactButton(contact)
+                        } else {
+                            moreOptionsButton(clear: true, archive: contact)
+                        }
                     }
                 }
-                .modifier(ChatListMoreDialog(actions: $moreActions, perform: perform))
             }
         }
         .alert(item: $alert) { $0.alert }
@@ -240,9 +257,33 @@ struct ChatListNavLink: View {
                 toggleNtfsButton(chat: chat)
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                trailingActions(.group(chat, groupInfo))
+                let showReportsButton = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator
+                let showClearButton = !chat.chatItems.isEmpty
+                let showDeleteGroup = groupInfo.canDelete
+                let showLeaveGroup = groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)
+                let leaveInMore = groupInfo.isCustomerChatOwner && showLeaveGroup
+                let moreCount = [showClearButton, leaveInMore, showReportsButton].filter { $0 }.count
+
+                if showDeleteGroup {
+                    deleteGroupChatButton(groupInfo)
+                }
+
+                if groupInfo.isCustomerChatOwner {
+                    banCustomerButton(groupInfo)
+                } else if showLeaveGroup {
+                    leaveGroupChatButton(groupInfo)
+                }
+
+                if moreCount > 1 {
+                    moreOptionsButton(clear: showClearButton, leave: leaveInMore ? groupInfo : nil, archiveReports: showReportsButton)
+                } else if showClearButton {
+                    clearChatButton()
+                } else if leaveInMore {
+                    leaveGroupChatButton(groupInfo)
+                } else if showReportsButton {
+                    archiveAllReportsButton()
+                }
             }
-            .modifier(ChatListMoreDialog(actions: $moreActions, perform: perform))
         }
     }
 
@@ -310,43 +351,47 @@ struct ChatListNavLink: View {
         }
     }
 
-    @ViewBuilder private func trailingActions(_ actions: ChatListActions) -> some View {
-        ForEach(actions.shown, id: \.self) { action in
-            let label = action.label
-            Button {
-                perform(action)
-            } label: {
-                SwipeLabel(label.title, systemImage: label.systemImage, inverted: oneHandUI)
-            }
-            .tint(label.tint)
-        }
-        if !actions.more.isEmpty {
-            Button {
-                moreActions = actions.more
-            } label: {
-                SwipeLabel(NSLocalizedString("More", comment: "swipe action"), systemImage: "ellipsis", inverted: oneHandUI)
-            }
+    private func archiveAllReportsButton() -> some View {
+        Button {
+            AlertManager.shared.showAlert(archiveAllReportsAlert())
+        } label: {
+            SwipeLabel(NSLocalizedString("Archive reports", comment: "swipe action"), systemImage: "archivebox", inverted: oneHandUI)
         }
     }
 
-    private func perform(_ action: ChatListAction) {
-        switch action {
-        case let .deleteContact(contact):
-            deleteContactDialog(chat, contact, dismissToChatList: false, showAlert: { alert = $0 }, showActionSheet: { actionSheet = $0 })
-        case let .deleteGroup(groupInfo):
-            AlertManager.shared.showAlert(GroupChatInfoView.deleteGroupAlert(chat, groupInfo))
-        case let .banContact(contact):
-            deleteAndBanContactDialog(chat, contact, dismissToChatList: false, showAlert: { alert = $0 })
-        case let .banCustomer(groupInfo):
-            deleteAndBanCustomerIfAvailable(groupInfo)
-        case let .leave(groupInfo):
-            AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
-        case .clear:
+    // Spec: spec/client/chat-list.md#clearChatButton
+    private func clearChatButton() -> some View {
+        Button {
             AlertManager.shared.showAlert(clearChatAlert())
-        case let .archive(contact):
+        } label: {
+            SwipeLabel(NSLocalizedString("Clear", comment: "swipe action"), systemImage: "gobackward", inverted: oneHandUI)
+        }
+        .tint(Color.orange)
+    }
+
+    private func banContactButton(_ contact: Contact) -> some View {
+        Button {
+            deleteAndBanContactDialog(chat, contact, dismissToChatList: false, showAlert: { alert = $0 })
+        } label: {
+            SwipeLabel(NSLocalizedString("Block", comment: "swipe action"), systemImage: "hand.raised.fill", inverted: oneHandUI)
+        }
+        .tint(.orange)
+    }
+
+    private func banCustomerButton(_ groupInfo: GroupInfo) -> some View {
+        Button {
+            deleteAndBanCustomerIfAvailable(groupInfo)
+        } label: {
+            SwipeLabel(NSLocalizedString("Block", comment: "swipe action"), systemImage: "hand.raised.fill", inverted: oneHandUI)
+        }
+        .tint(.orange)
+    }
+
+    private func archiveContactButton(_ contact: Contact) -> some View {
+        Button {
             archiveContact(chat, contact)
-        case .archiveReports:
-            AlertManager.shared.showAlert(archiveAllReportsAlert())
+        } label: {
+            SwipeLabel(NSLocalizedString("Archive", comment: "swipe action"), systemImage: "archivebox", inverted: oneHandUI)
         }
     }
 
@@ -394,7 +439,44 @@ struct ChatListNavLink: View {
             fraction: fraction
         )
     }
-    
+
+    private func moreOptionsButton(clear: Bool, archive contact: Contact? = nil, leave groupInfo: GroupInfo? = nil, archiveReports: Bool = false) -> some View {
+        Button {
+            actionSheet = SomeActionSheet(
+                actionSheet: moreActionSheet(clear: clear, archive: contact, leave: groupInfo, archiveReports: archiveReports),
+                id: "other options"
+            )
+        } label: {
+            SwipeLabel(NSLocalizedString("More", comment: "swipe action"), systemImage: "ellipsis", inverted: oneHandUI)
+        }
+    }
+
+    func moreActionSheet(clear: Bool, archive contact: Contact?, leave groupInfo: GroupInfo?, archiveReports: Bool) -> ActionSheet {
+        var buttons: [ActionSheet.Button] = []
+        if clear {
+            buttons.append(.default(Text("Clear")) {
+                AlertManager.shared.showAlert(clearChatAlert())
+            })
+        }
+        if let contact {
+            buttons.append(.default(Text("Archive")) {
+                archiveContact(chat, contact)
+            })
+        }
+        if let groupInfo {
+            buttons.append(.destructive(Text("Leave")) {
+                AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
+            })
+        }
+        if archiveReports {
+            buttons.append(.default(Text("Archive reports")) {
+                AlertManager.shared.showAlert(archiveAllReportsAlert())
+            })
+        }
+        buttons.append(.cancel())
+        return ActionSheet(title: Text(chat.chatInfo.displayName), buttons: buttons)
+    }
+
     private func clearNoteFolderButton() -> some View {
         Button {
             AlertManager.shared.showAlert(clearNoteFolderAlert())
@@ -586,80 +668,6 @@ struct ChatListNavLink: View {
     }
 }
 
-enum ChatListAction: Hashable {
-    case deleteContact(Contact)
-    case deleteGroup(GroupInfo)
-    case banContact(Contact)
-    case banCustomer(GroupInfo)
-    case leave(GroupInfo)
-    case clear
-    case archive(Contact)
-    case archiveReports
-
-    var label: (title: String, systemImage: String, tint: Color?, destructive: Bool) {
-        switch self {
-        case .deleteContact, .deleteGroup: (NSLocalizedString("Delete", comment: "swipe action"), "trash.fill", .red, true)
-        case .banContact, .banCustomer: (NSLocalizedString("Block", comment: "swipe action"), "hand.raised.fill", .orange, true)
-        case .leave: (NSLocalizedString("Leave", comment: "swipe action"), "rectangle.portrait.and.arrow.right.fill", .yellow, true)
-        case .clear: (NSLocalizedString("Clear", comment: "swipe action"), "gobackward", .orange, false)
-        case .archive: (NSLocalizedString("Archive", comment: "swipe action"), "archivebox", nil, false)
-        case .archiveReports: (NSLocalizedString("Archive reports", comment: "swipe action"), "archivebox", nil, false)
-        }
-    }
-}
-
-struct ChatListActions {
-    var shown: [ChatListAction]
-    var more: [ChatListAction]
-
-    init(_ actions: [ChatListAction], more: [ChatListAction]) {
-        if more.count == 1 {
-            shown = actions + more
-            self.more = []
-        } else {
-            shown = actions
-            self.more = more
-        }
-    }
-
-    static func contact(_ chat: Chat, _ contact: Contact) -> ChatListActions {
-        let ban: [ChatListAction] = contact.canDeleteAndBan ? [.banContact(contact)] : []
-        let clear: [ChatListAction] = chat.chatItems.isEmpty ? [] : [.clear]
-        return ChatListActions([.deleteContact(contact)] + ban, more: clear + [.archive(contact)])
-    }
-
-    static func group(_ chat: Chat, _ groupInfo: GroupInfo) -> ChatListActions {
-        let delete: [ChatListAction] = groupInfo.canDelete ? [.deleteGroup(groupInfo)] : []
-        let leave: [ChatListAction] = groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner) ? [.leave(groupInfo)] : []
-        let clear: [ChatListAction] = chat.chatItems.isEmpty ? [] : [.clear]
-        let archiveReports: [ChatListAction] = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator ? [.archiveReports] : []
-        if groupInfo.isCustomerChatOwner {
-            return ChatListActions(delete + [.banCustomer(groupInfo)], more: clear + leave + archiveReports)
-        } else {
-            return ChatListActions(delete + leave, more: clear + archiveReports)
-        }
-    }
-}
-
-struct ChatListMoreDialog: ViewModifier {
-    @Binding var actions: [ChatListAction]?
-    var perform: (ChatListAction) -> Void
-
-    func body(content: Content) -> some View {
-        content.confirmationDialog(
-            Text(verbatim: ""),
-            isPresented: Binding(get: { actions != nil }, set: { if !$0 { actions = nil } }),
-            titleVisibility: .hidden,
-            presenting: actions
-        ) { more in
-            ForEach(more, id: \.self) { action in
-                let label = action.label
-                Button(label.title, role: label.destructive ? .destructive : nil) { perform(action) }
-            }
-        }
-    }
-}
-
 func deleteAndBanUnavailableAlert(_ groupInfo: GroupInfo) -> Alert {
     Alert(
         title: Text("Can't block"),
@@ -804,7 +812,9 @@ struct ChatListNavLink_Previews: PreviewProvider {
 struct ChatListMoreDialog_Contact_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [ChatItem.getSample(1, .directSnd, previewDate, "hello")])
-        return Color.clear.modifier(ChatListMoreDialog(actions: .constant(ChatListActions.contact(chat, Contact.sampleData).more), perform: { _ in }))
+        return Color.clear.actionSheet(isPresented: .constant(true)) {
+            ChatListNavLink(chat: chat, parentSheet: .constant(nil)).moreActionSheet(clear: true, archive: Contact.sampleData, leave: nil, archiveReports: false)
+        }
     }
 }
 
@@ -816,7 +826,9 @@ struct ChatListMoreDialog_BusinessChat_Previews: PreviewProvider {
             chatItems: [ChatItem.getSample(1, .groupSnd, previewDate, "hello")],
             chatStats: ChatStats(reportsCount: 1)
         )
-        return Color.clear.modifier(ChatListMoreDialog(actions: .constant(ChatListActions.group(chat, groupInfo).more), perform: { _ in }))
+        return Color.clear.actionSheet(isPresented: .constant(true)) {
+            ChatListNavLink(chat: chat, parentSheet: .constant(nil)).moreActionSheet(clear: true, archive: nil, leave: groupInfo, archiveReports: true)
+        }
     }
 }
 
@@ -829,7 +841,9 @@ struct ChatListMoreDialog_Group_Previews: PreviewProvider {
             chatItems: [ChatItem.getSample(1, .groupSnd, previewDate, "hello")],
             chatStats: ChatStats(reportsCount: 1)
         )
-        return Color.clear.modifier(ChatListMoreDialog(actions: .constant(ChatListActions.group(chat, groupInfo).more), perform: { _ in }))
+        return Color.clear.actionSheet(isPresented: .constant(true)) {
+            ChatListNavLink(chat: chat, parentSheet: .constant(nil)).moreActionSheet(clear: true, archive: nil, leave: nil, archiveReports: true)
+        }
     }
 }
 

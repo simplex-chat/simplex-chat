@@ -146,10 +146,10 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
 
 @Composable
 private fun ContactDeleteActions(chat: Chat, contact: Contact, contactType: ContactType, showMenu: MutableState<Boolean>) {
+    DeleteContactAction(chat, chatModel, showMenu)
     if (contactType == ContactType.CHAT_DELETED && contact.canDeleteAndBan) {
         DeleteAndBanAction(showMenu) { deleteAndBanContactDialog(chat, contact, chatModel) }
     }
-    DeleteContactAction(chat, chatModel, showMenu)
 }
 
 @Composable

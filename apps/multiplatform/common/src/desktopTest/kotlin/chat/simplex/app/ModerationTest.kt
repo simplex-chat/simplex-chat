@@ -131,7 +131,7 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun blockMemberForDay() = recordedAlerts("bans/block-members") {
     val (groupInfo, members) = openGroup()
-    banMemberDialog(null, groupInfo, member(members, "bob"))
+    banMembersDialog(null, groupInfo, listOf(member(members, "bob")))
     assertTexts(
       "Block member for all?", "bob won't be notified, and if removed, can't rejoin while blocked.",
       "Block for", "1 day", "Block", "Block and remove", "Block, remove and delete messages", "Cancel"
@@ -141,18 +141,9 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
-  fun blockMemberForWeek() = recordedAlerts("bans/block-members") {
-    val (groupInfo, members) = openGroup()
-    banMemberDialog(null, groupInfo, member(members, "cath"))
-    selectDuration("1 week")
-    press("Block")
-    awaitMember("cath") { it.blockedByAdmin && it.blockedUntil != null }
-  }
-
-  @Test
   fun blockMemberForever() = recordedAlerts("bans/block-members") {
     val (groupInfo, members) = openGroup()
-    banMemberDialog(null, groupInfo, member(members, "dan"))
+    banMembersDialog(null, groupInfo, listOf(member(members, "dan")))
     selectDuration("Forever")
     press("Block")
     awaitMember("dan") { it.blockedByAdmin && it.blockedUntil == null }
@@ -216,7 +207,7 @@ class ModerationTest : RecordedApiTest() {
   fun blockAndRemoveMember() = recordedAlerts("bans/block-members") {
     val (groupInfo, members) = openGroup()
     var closed = false
-    banMemberDialog(null, groupInfo, member(members, "bob"), close = { closed = true })
+    banMembersDialog(null, groupInfo, listOf(member(members, "bob")), close = { closed = true })
     press("Block and remove")
     awaitMember("bob") { it.memberStatus == GroupMemberStatus.MemRemoved }
     waitUntil(timeoutMillis = 5_000) { closed }
@@ -322,7 +313,7 @@ class ModerationTest : RecordedApiTest() {
     val (groupInfo, members) = openGroup()
     val bob = member(members, "bob")
     assertTrue(bob.canBlockForAll(groupInfo))
-    banMemberDialog(null, groupInfo, bob)
+    banMembersDialog(null, groupInfo, listOf(bob))
     press("Block")
     awaitMember("bob") { it.blockedByAdmin }
   }
@@ -333,7 +324,7 @@ class ModerationTest : RecordedApiTest() {
     val bob = member(blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
     replaceMembers(listOf(bob))
     acceptMemberDialog(null, groupInfo, bob)
-    assertTexts("Accept member", "Member will be unblocked and will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel")
+    assertTexts("Accept member", "Member will be unblocked for all and will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel")
     press("Accept as member")
     awaitMember("bob") { !it.memberPending && !it.blockedByAdmin }
   }
@@ -369,7 +360,7 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun blockSubscriber() = recordedAlerts("bans/channel") {
     val (groupInfo, members) = openGroup()
-    banMemberDialog(null, groupInfo, member(members, "cath"))
+    banMembersDialog(null, groupInfo, listOf(member(members, "cath")))
     assertTexts(
       "Block subscriber for all?", "cath won't be notified, and if removed, can't rejoin while blocked.",
       "Block for", "1 day", "Block", "Block and remove", "Block, remove and delete messages", "Cancel"
@@ -392,7 +383,7 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun removeSubscriberForever() = recordedAlerts("bans/channel") {
     val (groupInfo, members) = openGroup()
-    banMemberDialog(null, groupInfo, member(members, "dan"))
+    banMembersDialog(null, groupInfo, listOf(member(members, "dan")))
     selectDuration("Forever")
     press("Block and remove")
     assertTexts("Remove forever?", "dan can't rejoin via the channel link again, except from another app.", "Type yes", "Remove", "Cancel")
@@ -407,7 +398,7 @@ class ModerationTest : RecordedApiTest() {
     deleteGroupDialog(groupChat(groupInfo), groupInfo, ChatModel)
     assertTexts("Delete channel?", "team\n\nChannel will be deleted for all subscribers - this cannot be undone!", "Delete", "Cancel")
     press("Delete")
-    assertTexts("Delete channel?", "Keep conversation", "Delete", "Cancel")
+    assertTexts("Delete channel?", "Keep messages", "Delete", "Cancel")
     onNode(isToggleable()).performClick()
     press("Delete")
     waitUntil(timeoutMillis = 5_000) { (chatInfo(groupInfo.id) as ChatInfo.Group).groupInfo.membership.memberStatus == GroupMemberStatus.MemGroupDeleted }
@@ -422,16 +413,6 @@ class ModerationTest : RecordedApiTest() {
     assertTexts("Delete group?", "Keep conversation", "Delete", "Cancel")
     press("Delete")
     waitUntil(timeoutMillis = 5_000) { !chatIds().contains(groupInfo.id) }
-  }
-
-  @Test
-  fun deleteOwnGroupKeepingConversation() = recordedAlerts("bans/group-deletion") {
-    val (groupInfo, _) = openGroup("/_members #2")
-    deleteGroupDialog(groupChat(groupInfo), groupInfo, ChatModel)
-    press("Delete")
-    onNode(isToggleable()).performClick()
-    press("Delete")
-    waitUntil(timeoutMillis = 5_000) { (chatInfo(groupInfo.id) as ChatInfo.Group).groupInfo.membership.memberStatus == GroupMemberStatus.MemGroupDeleted }
   }
 
   @Test

@@ -316,14 +316,14 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, notify: Bool
 }
 
 @Composable
-private fun KeepConversationToggle(contactDeleteMode: MutableState<ContactDeleteMode>) {
+private fun KeepConversationToggle(contactDeleteMode: MutableState<ContactDeleteMode>, label: StringResource = MR.strings.keep_conversation) {
   SectionItemView {
     Row(
       Modifier.fillMaxWidth(),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.Center
     ) {
-      Text(stringResource(MR.strings.keep_conversation))
+      Text(stringResource(label))
       Spacer(Modifier.width(DEFAULT_PADDING))
       DefaultSwitch(
         checked = contactDeleteMode.value is ContactDeleteMode.Entity,
@@ -336,11 +336,11 @@ private fun KeepConversationToggle(contactDeleteMode: MutableState<ContactDelete
   }
 }
 
-fun showKeepConversationDialog(title: String, text: AnnotatedString?, confirmText: String, notify: Boolean, confirm: (ChatDeleteMode) -> Unit) {
+fun showKeepConversationDialog(title: String, text: AnnotatedString?, confirmText: String, notify: Boolean, keepLabel: StringResource = MR.strings.keep_conversation, confirm: (ChatDeleteMode) -> Unit) {
   val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
   val buttons: @Composable () -> Unit = {
     Column {
-      KeepConversationToggle(contactDeleteMode)
+      KeepConversationToggle(contactDeleteMode, keepLabel)
       SectionItemView({
         AlertManager.shared.hideAlert()
         confirm(contactDeleteMode.value.toChatDeleteMode(notify))
@@ -671,10 +671,10 @@ fun ChatInfoLayout(
 
     SectionView {
       ClearChatButton(clearChat)
+      DeleteContactButton(deleteContact)
       if (contact.canDeleteAndBan) {
         DeleteAndBanButton(deleteAndBan)
       }
-      DeleteContactButton(deleteContact)
     }
 
     if (developerTools) {

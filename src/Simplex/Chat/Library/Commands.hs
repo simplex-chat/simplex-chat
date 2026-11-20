@@ -3261,7 +3261,7 @@ processChatCommand cxt nm = \case
         Nothing -> pure ([], [], [], False)
         Just memsToDelete' -> do
           let chatScope = toChatScope <$> chatScopeInfo
-              events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages rosterVer (isJust notice) notice) memsToDelete'
+              events = L.map (\GroupMember {memberId} -> XGrpMemDel (GrpMemDel memberId withMessages rosterVer (isJust notice) notice)) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user g chatScope False recipients False events
           let signed = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) msgs_
               itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)

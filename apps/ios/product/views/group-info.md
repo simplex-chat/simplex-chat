@@ -95,7 +95,7 @@ Member list is sorted by role (owners first) and filtered to exclude `memLeft` a
 |---|---|
 | Clear chat | Deletes all messages locally (with confirmation alert) |
 | Leave group | Leave the group (with confirmation alert) |
-| Delete group | Delete entire group -- only for owners (with confirmation alert); for an active owner of a group or channel, and for the active owner of a business chat with a customer, a sheet with "Keep conversation" follows ([group lifecycle 9](../flows/group-lifecycle.md#9-delete-group)) |
+| Delete group | Delete entire group -- only for owners (with confirmation alert); for an active owner of a group or channel, and for the active owner of a business chat with a customer, a sheet with "Keep conversation" ("Keep messages" for a channel) follows ([group lifecycle 9](../flows/group-lifecycle.md#9-delete-group)) |
 | Delete and block | Active owner of a business chat with a customer, when the customer passes `GroupMember.canBanAndRemove`, as a current or pending member with a role below moderator that supports blocks (`GroupInfo.canDeleteAndBanCustomer`): the Delete and block dialogs of contacts with the customer's name and "Chat with **<name>** will be deleted for all members - this cannot be undone!" |
 
 ### Developer Section
