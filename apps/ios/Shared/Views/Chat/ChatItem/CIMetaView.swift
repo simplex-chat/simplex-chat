@@ -15,6 +15,7 @@ struct CIMetaView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
     @Environment(\.showTimestamp) var showTimestamp: Bool
+    @Environment(\.terminalLayout) private var terminal
     var chatItem: ChatItem
     var metaColor: Color
     var paleMetaColor = Color(uiColor: .tertiaryLabel)
@@ -40,7 +41,7 @@ struct CIMetaView: View {
                     colorMode: invertedMaterial
                         ? .invertedMaterial
                         : .normal,
-                    showStatus: showStatus,
+                    showStatus: statusShown,
                     showEdited: showEdited,
                     showViaProxy: showSentViaProxy,
                     showTimesamp: showTimestamp,
@@ -55,7 +56,7 @@ struct CIMetaView: View {
                         encrypted: chatItem.encryptedFile,
                         colorMode: .normal,
                         onlyOverrides: true,
-                        showStatus: showStatus,
+                        showStatus: statusShown,
                         showEdited: showEdited,
                         showViaProxy: showSentViaProxy,
                         showTimesamp: showTimestamp,
@@ -66,6 +67,10 @@ struct CIMetaView: View {
                 }
             }
         }
+    }
+
+    private var statusShown: Bool {
+        showStatus && (!terminal || terminalShowsStatus(chatItem.meta.itemStatus, showTimestamp: showTimestamp))
     }
 }
 
