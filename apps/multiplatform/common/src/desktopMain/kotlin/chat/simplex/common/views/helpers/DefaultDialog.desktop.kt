@@ -1,13 +1,8 @@
 package chat.simplex.common.views.helpers
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.key.*
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.*
+import androidx.compose.ui.awt.AwtWindow
+import androidx.compose.ui.window.FrameWindowScope
 import chat.simplex.common.DialogParams
 import chat.simplex.common.platform.desktopPlatform
 import chat.simplex.common.platform.hasFileExtension
@@ -20,33 +15,6 @@ import javax.swing.JFileChooser
 import javax.swing.JOptionPane
 import javax.swing.filechooser.FileFilter
 import javax.swing.filechooser.FileNameExtensionFilter
-
-@Composable
-actual fun DefaultDialog(
-  onDismissRequest: () -> Unit,
-  content: @Composable () -> Unit
-) {
-  Dialog(
-    undecorated = true,
-    transparent = true,
-    resizable = false,
-    title = "",
-    onCloseRequest = onDismissRequest,
-    onPreviewKeyEvent = { event ->
-      if (event.key == Key.Escape && event.type == KeyEventType.KeyUp) {
-        onDismissRequest(); true
-      } else false
-    }
-  ) {
-    Surface(
-      Modifier
-        .border(border = BorderStroke(1.dp, MaterialTheme.colors.secondary.copy(alpha = 0.3F)), shape = RoundedCornerShape(8)),
-      contentColor = LocalContentColor.current
-    ) {
-      content()
-    }
-  }
-}
 
 @Composable
 fun FrameWindowScope.FileDialogChooser(

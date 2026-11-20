@@ -291,7 +291,6 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/helpers/DragAndDrop.kt` | PC10 | Low | Drag-and-drop file handling |
 | `views/helpers/ProcessedErrors.kt` | — | Low | Error aggregation |
 | `views/helpers/AnimationUtils.kt` | PC24 | Low | Animation helpers |
-| `views/helpers/DefaultDialog.kt` | — | Low | Dialog composable primitives |
 | `views/helpers/DefaultDropdownMenu.kt` | — | Low | Dropdown menu composable |
 | `views/helpers/Section.kt` | — | Low | Settings section composable |
 | `views/helpers/SimpleButton.kt` | — | Low | Button composable |
@@ -387,7 +386,6 @@ Path prefix: `common/src/androidMain/kotlin/chat/simplex/common/`
 | `views/helpers/GetImageView.android.kt` | PC10, PC19 | Low | Android image capture |
 | `views/helpers/CustomTimePicker.android.kt` | PC8 | Low | Android time picker |
 | `views/helpers/Utils.android.kt` | — | Low | Android utility extensions |
-| `views/helpers/DefaultDialog.android.kt` | — | Low | Android dialog extensions |
 | `views/helpers/WorkaroundFocusSearchLayout.kt` | — | Low | Android focus workaround |
 | `views/newchat/QRCode.android.kt` | PC12 | Low | Android QR code rendering |
 | `views/newchat/QRCodeScanner.android.kt` | PC12 | Low | Android camera QR scanner |
@@ -474,7 +472,7 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `views/helpers/GetImageView.desktop.kt` | PC10, PC19 | Low | Desktop image file picker |
 | `views/helpers/CustomTimePicker.desktop.kt` | PC8 | Low | Desktop time picker |
 | `views/helpers/Utils.desktop.kt` | — | Low | Desktop utility extensions |
-| `views/helpers/DefaultDialog.desktop.kt` | — | Low | Desktop dialog extensions |
+| `views/helpers/DefaultDialog.desktop.kt` | — | Low | Desktop file dialogs (AWT and Swing) |
 | `views/newchat/QRCode.desktop.kt` | PC12 | Low | Desktop QR code rendering |
 | `views/newchat/QRCodeScanner.desktop.kt` | PC12 | Low | Desktop QR code scanner (screen/clipboard) |
 | `views/onboarding/SimpleXInfo.desktop.kt` | PC1 | Low | Desktop onboarding extensions |
