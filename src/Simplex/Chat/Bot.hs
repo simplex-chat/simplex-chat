@@ -10,6 +10,7 @@ module Simplex.Chat.Bot where
 
 import Control.Concurrent.Async
 import Control.Concurrent.STM
+import Control.Exception (throwIO, try)
 import Control.Monad
 import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty (..))
@@ -29,11 +30,29 @@ import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..))
 import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Encoding.String (strEncode)
 import System.Exit (exitFailure)
+import System.IO (hIsTerminalDevice, stdin)
+import System.IO.Error (isEOFError)
+
+-- A terminal stops the bot on Ctrl-D. A pipe that was open stops it when the
+-- pipe closes. Stdin that is already at EOF, as under Nix where the test
+-- process has /dev/null, must not end the race: the first getLine would be
+-- EOF and cancel the controller before it can accept a contact.
+waitUntilStdinCloses :: IO ()
+waitUntilStdinCloses = do
+  tty <- hIsTerminalDevice stdin
+  if tty
+    then forever $ void getLine
+    else do
+      line <- try getLine
+      case line of
+        Left e | isEOFError e -> atomically retry
+        Left e -> throwIO e
+        Right _ -> forever $ void getLine
 
 chatBotRepl :: String -> (Contact -> String -> IO String) -> User -> ChatController -> IO ()
 chatBotRepl welcome answer _user cc = do
   initializeBotAddress cc
-  race_ (forever $ void getLine) . forever $ do
+  race_ waitUntilStdinCloses . forever $ do
     (_, event) <- atomically . readTBQueue $ outputQ cc
     case event of
       Right (CEvtContactConnected _ contact _) -> do
