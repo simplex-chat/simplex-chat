@@ -235,7 +235,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Badges (BadgeProof, BadgeRow, ProofPresHeader, acceptedBadge, badgeProofToRow, badgeToRow, sameBadgeProof, verifyBadge)
-import Simplex.Chat.Names (SimplexDomainClaim (..), mkDomainClaim)
+import Simplex.Chat.Names (mkDomainClaim)
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol hiding (Binary)
