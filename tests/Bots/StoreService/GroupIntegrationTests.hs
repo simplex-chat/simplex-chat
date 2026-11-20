@@ -562,6 +562,7 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     write st unpaidG {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
     answerCall node registrar (ownerOfSelector <> labelBytes "g") $ Returns $ addressWord ownerA
     answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "g") $ Returns $ uint256 (2000000000 :: Int)
+    answerCall node registrar (selector "disputeUntil(uint256)" <> labelBytes "g") $ Returns $ uint256 (0 :: Int)
     registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
     registeredLogs `shouldSatisfy` T.isInfixOf "names: order g set registered by //close, as its register went through"
     Balances.figures st "g" t0 `shouldReturn` Nothing
