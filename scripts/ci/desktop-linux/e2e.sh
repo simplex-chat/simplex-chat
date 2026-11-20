@@ -82,6 +82,10 @@ luminance_drop=0.25
 luminance_tolerance=0.05
 scheme_wait=20
 pane_right_offset=390
+# the peer reaches the app through the preset servers: it stays online after each message until it is sent
+peer_online=15
+delivery_wait=90
+connect_wait=180
 
 eventually() {
   local secs=$1 deadline
@@ -209,14 +213,14 @@ notify_messages() {
   "$ui" click-text "Open new chat" 10 || true
   "$ui" click-text "Connect" 20 || true
   "$ui" shot connecting
-  check "the CLI peer connects to the app" eventually 120 peer_connected
+  check "the CLI peer connects to the app" eventually "$connect_wait" peer_connected
   "$ui" key Escape
   "$ui" click-text "$other_chat" 10 || true
   "$ui" shot other-chat-open
-  peer 5 "@$app_user first message"
-  peer 5 "@$app_user second message"
-  check "a message notification is shown" eventually 30 notified "first message"
-  check "the chat's next message replaces its notification" eventually 30 replaced
+  peer "$peer_online" "@$app_user first message"
+  check "a message notification is shown" eventually "$delivery_wait" notified "first message"
+  peer "$peer_online" "@$app_user second message"
+  check "the chat's next message replaces its notification" eventually "$delivery_wait" replaced
   notification=$(notification_with "second message")
   echo "notification: $notification"
   check "the notification is titled with the contact's name" grep -q "$peer_name" <<< "$(jq -r .summary <<< "$notification")"
@@ -229,8 +233,8 @@ notify_messages() {
   check "clicking the notification opens its chat" eventually 20 right_pane_shows "second message"
   "$ui" shot notification-opened
   "$ui" click-text "$other_chat" 10 || true
-  peer 5 "@$app_user third message"
-  check "a message to a chat that is not open is notified again" eventually 30 notified "third message"
+  peer "$peer_online" "@$app_user third message"
+  check "a message to a chat that is not open is notified again" eventually "$delivery_wait" notified "third message"
   "$ui" click-text "$peer_name" 10 || true
   "$ui" shot chat-read
   check "reading the chat in the app withdraws its notification" eventually 20 closed_after "third message"
