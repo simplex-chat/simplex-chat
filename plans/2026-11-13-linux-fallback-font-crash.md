@@ -83,7 +83,9 @@ flowchart TD
   - otherwise the first fallback font already found in the same segment that covers it;
   - otherwise the first fallback, for its characters in order, that covers it: an emoji sequence start (Unicode 15.1 Emoji and Emoji_Component, as ICU 74 in Skia m138) takes the emoji fallback (`und-Zsye`, Apple Color Emoji on macOS), any other character the system fallback for its weight and slant;
   - when the system has none, Inter, the bundled emoji font, then the typefaces the transform registered with Compose in the order it created them, as Skiko's `TypefaceFontProviderWithFallback::fallbackForChar`.
-- The fallback search for a grapheme skips typefaces and code points already tried, as Skia's `alreadyTriedTypefaces` and `alreadyTriedCodepoints`; found typefaces and misses are kept in LRU caches of 4096 keys each, and the transform's results for texts outside fields in an LRU cache of 128 texts, as Skia's paragraph cache (`ParagraphCache`, 128 entries).
+- The fallback search for a grapheme skips typefaces and code points already tried, as Skia's `alreadyTriedTypefaces` and `alreadyTriedCodepoints`; found typefaces are kept in an LRU cache of 4096 keys and misses in one of 16384 keys.
+- A text makes at most 64 system fallback queries; characters past that take no predicted font, so no span. Results are memoised per text.
+- The transform's results for texts outside fields, up to 16384 characters and 512 spans, are kept in an LRU cache of 128 texts, as Skia's paragraph cache (`ParagraphCache`, 128 entries).
 - Each grapheme is normalised at most once; runs of regional indicators are paired in one pass.
 - Fonts are resolved once per text, for the dominant font and the fallback spans; graphemes are found only for a segment that its first font does not cover entirely.
 - An emoji run (Windows) continues over ZWJ, variation selectors, keycap, tags, skin tones, hair components and the second regional indicator of a pair; a segment in a font with unknown metrics ends it.
@@ -121,6 +123,16 @@ flowchart TD
   - `BubbleLayoutTest.timeDrawnOnTextBaseline` checks the drawn rows of text and time at font scales 0.7 to 1.5.
   - `BubbleLayoutTest.linesDrawnWholeLineHeightApart` checks that two lines are drawn the whole-pixel line height apart at the same scales.
   - `FieldCaretTest` checks that the caret keeps the font height in text fields.
-  - `FallbackSearchTest` lays out one grapheme of 20 000 combining marks and a mark no font covers with them within 10 s; the search without skipping tried fonts took 63 s. It also lays out 1000 distinct characters no font covers twice; without the miss cache the second layout took 2.1 s, with it under 1 s.
+  - `FallbackSearchTest` lays out one grapheme of 20 000 combining marks and a mark no font covers with them within 10 s; the search without skipping tried fonts took 63 s. It also lays out 6000 distinct characters no font covers twice: the first layout within 3 s (13.6 s without the query limit), the second within 1 s.
   - The desktop snapshots are compared with the references rendered with m132.
 - `Dockerfile.build` installs `fontconfig`, which provides `fc-cache` to the test in CI.
+
+## Implementation steps
+
+1. `build.gradle.kts`: resolve `org.jetbrains.skiko` 0.9.4.2 to 0.9.24.
+2. `platform/Text.kt`: `Text` wrappers with Material's parameters, `platformText`, `platformTextFieldStyle`; Android actuals return their inputs.
+3. `platform/Text.desktop.kt`: the transform.
+4. Every file that calls `Text` imports `chat.simplex.common.platform.Text`; Android files that import both packages import Material's `Text`.
+5. `ClickableText`, `SelectableText`, the time-width measurement and every text field call the transform.
+6. Tests: `SkikoVersionTest`, `FallbackFontTest`, `BubbleLayoutTest`, `FieldCaretTest`, `FallbackSearchTest`.
+7. `spec/`: line references follow the shifted source lines.

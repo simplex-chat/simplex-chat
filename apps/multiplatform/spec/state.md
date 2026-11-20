@@ -346,7 +346,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 
 ### Preference Categories
 
-#### Notifications (lines 96-103)
+#### Notifications (lines 97-104)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -357,7 +357,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `backgroundServiceBatteryNoticeShown` | `Boolean` | `false` | Battery notice already shown |
 | `autoRestartWorkerVersion` | `Int` | `0` | Worker version for periodic restart |
 
-#### Calls (lines 105-111)
+#### Calls (lines 106-112)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -366,7 +366,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `webrtcIceServers` | `String?` | `null` | Custom ICE servers |
 | `experimentalCalls` | `Boolean` | `false` | Enable experimental call features |
 
-#### Authentication (lines 107-110)
+#### Authentication (lines 108-111)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -375,7 +375,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `laLockDelay` | `Int` | `30` | Seconds before re-auth required |
 | `laNoticeShown` | `Boolean` | `false` | LA notice shown |
 
-#### Privacy (lines 112-128)
+#### Privacy (lines 113-129)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -391,7 +391,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `privacyAskToApproveRelays` | `Boolean` | `true` | Ask before using relays |
 | `privacyMediaBlurRadius` | `Int` | `0` | Blur radius for media |
 
-#### Network (lines 140-175)
+#### Network (lines 141-176)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -415,7 +415,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `networkTCPKeepIntvl` | `Int` | default | Keep-alive interval |
 | `networkTCPKeepCnt` | `Int` | default | Keep-alive count |
 
-#### Appearance (lines 213-233)
+#### Appearance (lines 214-234)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -431,7 +431,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `inAppBarsAlpha` | `Float` | varies | Bar transparency |
 | `appearanceBarsBlurRadius` | `Int` | 50 or 0 | Bar blur radius (device-dependent) |
 
-#### Developer (lines 135-139)
+#### Developer (lines 136-140)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -441,7 +441,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `showSlowApiCalls` | `Boolean` | `false` | Alert on slow API calls |
 | `terminalAlwaysVisible` | `Boolean` | `false` | Floating terminal window (desktop) |
 
-#### Database (lines 188-208)
+#### Database (lines 189-209)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -457,7 +457,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `selfDestruct` | `Boolean` | `false` | Self-destruct enabled |
 | `selfDestructDisplayName` | `String?` | null | Display name for self-destruct profile |
 
-#### UI Preferences (lines 255-257)
+#### UI Preferences (lines 256-258)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -465,7 +465,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `chatBottomBar` | `Boolean` | `true` | Bottom bar in chat |
 | `chatLayout` | `ChatLayoutMode` | `Classic` | App chat layout (`activeChatLayout`) |
 
-#### Remote Access (lines 238-243)
+#### Remote Access (lines 239-244)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -475,14 +475,14 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `connectRemoteViaMulticastAuto` | `Boolean` | `true` | Auto-connect via multicast |
 | `offerRemoteMulticast` | `Boolean` | `true` | Offer multicast connection |
 
-#### Migration (lines 189-190)
+#### Migration (lines 190-191)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
 | `migrationToStage` | `String?` | null | Migration-to-device progress |
 | `migrationFromStage` | `String?` | null | Migration-from-device progress |
 
-#### Updates and Versioning (lines 184-186, 235-237)
+#### Updates and Versioning (lines 185-187, 236-238)
 
 | Key | Type | Default | Purpose |
 |---|---|---|---|
@@ -509,7 +509,7 @@ Factory methods: `mkBoolPreference`, `mkIntPreference`, `mkLongPreference`, `mkF
 | File | Path | Key Contents |
 |---|---|---|
 | ChatModel.kt | [`common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt) | `ChatModel` singleton (line 86), `ChatsContext` (line 339), `Chat` (line 1328), `ChatInfo` (line 1391), `ChatStats` (line 1370), helper methods |
-| SimpleXAPI.kt | [`common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt) | `AppPreferences` (line 94), `ChatController` (line 493), `startReceiver` (line 660), `sendCmd` (line 804), `recvMsg` (line 829), `processReceivedMsg` (line 2568) |
+| SimpleXAPI.kt | [`common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt) | `AppPreferences` (line 95), `ChatController` (line 494), `startReceiver` (line 661), `sendCmd` (line 805), `recvMsg` (line 830), `processReceivedMsg` (line 2569) |
 | ChatItemsMerger.kt | [`common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatItemsMerger.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatItemsMerger.kt) | `ActiveChatState` (line 196), chat item merge/diff logic |
 | Core.kt | [`common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt) | `initChatController` (line 62), state initialization flow |
-| App.kt | [`common/src/commonMain/kotlin/chat/simplex/common/App.kt`](../common/src/commonMain/kotlin/chat/simplex/common/App.kt) | `AppScreen` (line 47), `MainScreen` (line 84), top-level UI state reads |
+| App.kt | [`common/src/commonMain/kotlin/chat/simplex/common/App.kt`](../common/src/commonMain/kotlin/chat/simplex/common/App.kt) | `AppScreen` (line 48), `MainScreen` (line 85), top-level UI state reads |

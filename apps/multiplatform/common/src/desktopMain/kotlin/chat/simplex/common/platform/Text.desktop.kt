@@ -49,8 +49,12 @@ import org.jetbrains.skia.paragraph.TextStyle as SkTextStyle
 actual fun platformText(text: AnnotatedString, style: TextStyle): PlatformText {
   val density = LocalDensity.current
   return remember(text, style, density) {
-    val key = LayoutKey(text, style, density)
-    laidOutTexts[key] ?: layOutDesktopText(text, style, density, field = false).also { laidOutTexts[key] = it }
+    if (text.length > MAX_CACHED_TEXT_LENGTH || text.spanStyles.size > MAX_CACHED_TEXT_SPANS) {
+      layOutDesktopText(text, style, density, field = false)
+    } else {
+      val key = LayoutKey(text, style, density)
+      laidOutTexts[key] ?: layOutDesktopText(text, style, density, field = false).also { laidOutTexts[key] = it }
+    }
   }
 }
 
@@ -108,7 +112,10 @@ private const val ABOVE_FONT_SIZE = 1.0001f
 private const val MAX_COPIED_FONT_BYTES = 8 shl 20
 private const val LAID_OUT_TEXTS = 128
 private const val FALLBACK_TYPEFACES = 4096
-private const val MISSED_FALLBACKS = 4096
+private const val MISSED_FALLBACKS = 16384
+private const val MAX_FALLBACK_QUERIES = 64
+private const val MAX_CACHED_TEXT_LENGTH = 16384
+private const val MAX_CACHED_TEXT_SPANS = 512
 private const val HHEA_LINE_GAP = 8
 private const val OS2_TYPO_LINE_GAP = 72
 private const val EMOJI_PRESENTATION = 0xFE0F
@@ -215,7 +222,7 @@ private fun centeredMarker(s: String, fonts: Array<Typeface?>, effective: TextSt
 }
 
 private fun dominantTypeface(s: String, fonts: Array<Typeface?>, typeface: Typeface): Typeface {
-  val counts = HashMap<Typeface, Int>()
+  val counts = LinkedHashMap<Typeface, Int>()
   val pairSeconds = regionalPairSeconds(s)
   var i = 0
   while (i < s.length) {
@@ -274,7 +281,7 @@ private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>)
   val fonts = arrayOfNulls<Typeface>(s.length)
   val inlined = BooleanArray(s.length)
   for (range in text.getStringAnnotations(INLINE_CONTENT_TAG, 0, s.length)) inlined.fill(true, range.start, range.end)
-  val missed = HashSet<Long>()
+  val queries = FallbackQueries()
   val graphemeStarts by lazy {
     val starts = BooleanArray(s.length + 1)
     BreakIterator.makeCharacterInstance().use { graphemes ->
@@ -302,7 +309,7 @@ private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>)
         val grapheme = Grapheme(s, start, end, inlined)
         val typeface = segment.typefaces.firstOrNull { grapheme.coveredBy(it) }
           ?: fallbacks.firstOrNull { grapheme.coveredBy(it) }
-          ?: graphemeFallback(grapheme, segment.fontStyle, segment.typefaces + fallbacks, missed)?.also { fallbacks += it }
+          ?: graphemeFallback(grapheme, segment.fontStyle, segment.typefaces + fallbacks, queries)?.also { fallbacks += it }
         fonts.fill(typeface, start, end)
       }
       start = end
@@ -340,7 +347,7 @@ private fun shapes(typeface: Typeface, cp: Int): Boolean = when {
   else -> false
 }
 
-private fun graphemeFallback(grapheme: Grapheme, fontStyle: FontStyle, tried: List<Typeface>, missed: MutableSet<Long>): Typeface? {
+private fun graphemeFallback(grapheme: Grapheme, fontStyle: FontStyle, tried: List<Typeface>, queries: FallbackQueries): Typeface? {
   val s = grapheme.s
   val triedTypefaces = tried.toHashSet()
   val triedCodePoints = HashSet<Int>()
@@ -349,7 +356,7 @@ private fun graphemeFallback(grapheme: Grapheme, fontStyle: FontStyle, tried: Li
     val cp = s.codePointAt(i)
     val n = Character.charCount(cp)
     if (!isUnshaped(cp) && triedCodePoints.add(cp)) {
-      val typeface = fallbackTypeface(cp, fontStyle, i == grapheme.start && isEmojiSequenceStart(s, i, cp, n), missed)
+      val typeface = fallbackTypeface(cp, fontStyle, i == grapheme.start && isEmojiSequenceStart(s, i, cp, n), queries)
       if (typeface != null && triedTypefaces.add(typeface) && grapheme.coveredBy(typeface)) return typeface
     }
     i += n
@@ -493,21 +500,25 @@ private val missedFallbacks = LruCache<Long, Unit>(MISSED_FALLBACKS)
 
 private val macEmojiTypeface: Typeface? by lazy { FontMgr.default.matchFamilyStyle(MAC_EMOJI_FAMILY, FontStyle.NORMAL) }
 
-private fun fallbackTypeface(cp: Int, fontStyle: FontStyle, emoji: Boolean, missed: MutableSet<Long>): Typeface? {
+private class FallbackQueries {
+  val results = HashMap<Long, Typeface?>()
+  var remaining = MAX_FALLBACK_QUERIES
+}
+
+private fun fallbackTypeface(cp: Int, fontStyle: FontStyle, emoji: Boolean, queries: FallbackQueries): Typeface? {
   val key = (if (emoji) 1L shl 48 else 0L) or (fontStyle.weight.toLong() shl 34) or (fontStyle.slant.ordinal.toLong() shl 32) or cp.toLong()
-  val system = fallbackTypefaces[key] ?: if (key in missed || missedFallbacks[key] != null) null else when {
-    emoji && desktopPlatform.isMac() -> macEmojiTypeface
-    emoji -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, arrayOf(EMOJI_LOCALE), cp)
-    else -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, null, cp)
-  }.also {
-    if (it != null) {
-      fallbackTypefaces[key] = it
-    } else {
-      missed += key
-      missedFallbacks[key] = Unit
-    }
+  if (key in queries.results) return queries.results[key]
+  val system = fallbackTypefaces[key] ?: if (missedFallbacks[key] != null || queries.remaining <= 0) null else {
+    queries.remaining--
+    when {
+      emoji && desktopPlatform.isMac() -> macEmojiTypeface
+      emoji -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, arrayOf(EMOJI_LOCALE), cp)
+      else -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, null, cp)
+    }.also { if (it != null) fallbackTypefaces[key] = it else missedFallbacks[key] = Unit }
   }
-  return system ?: (listOfNotNull(interTypeface, emojiTypeface) + createdTypefaces).firstOrNull { covers(it, cp) }
+  val typeface = system ?: (listOfNotNull(interTypeface, emojiTypeface) + createdTypefaces).firstOrNull { covers(it, cp) }
+  queries.results[key] = typeface
+  return typeface
 }
 
 private val createdTypefaces = CopyOnWriteArrayList<Typeface>()

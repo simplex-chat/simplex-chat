@@ -27,10 +27,10 @@ SimpleX Chat navigation is a platform-adaptive system implemented in `App.kt`. T
 ## 1. Overview
 
 ```
-AppScreen (line 46)
+AppScreen (line 47)
 +-- SimpleXTheme
     +-- Surface
-        +-- MainScreen (line 82)
+        +-- MainScreen (line 83)
             |-- [Migration in progress]     -> DefaultProgressView
             |-- [Database opening]          -> DefaultProgressView
             |-- [Database error]            -> DatabaseErrorView
@@ -39,11 +39,11 @@ AppScreen (line 46)
             |-- [Onboarding complete]
             |   |-- [Android]
             |   |   +-- AndroidWrapInCallLayout
-            |   |       +-- AndroidScreen (line 293)
+            |   |       +-- AndroidScreen (line 294)
             |   |           |-- StartPartOfScreen (ChatListView)
             |   |           +-- ChatView (slide-in panel)
             |   +-- [Desktop]
-            |       +-- DesktopScreen (line 406)
+            |       +-- DesktopScreen (line 407)
             |           |-- StartPartOfScreen + UserPicker (left column)
             |           |-- ModalManager.start (overlay on left)
             |           |-- CenterPartOfScreen / ChatView (center column)

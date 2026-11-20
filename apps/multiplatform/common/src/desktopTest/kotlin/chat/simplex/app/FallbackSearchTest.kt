@@ -25,10 +25,11 @@ class FallbackSearchTest {
   }
 
   @Test
-  fun missingCharactersQueryOnce() {
-    val text = (0xF0000 until 0xF0000 + 1000).joinToString("") { String(Character.toChars(it)) }
-    layOutDesktopText(AnnotatedString(text), style, Density(1f), field = false)
-    val elapsed = measureTime { layOutDesktopText(AnnotatedString(text), style, Density(1f), field = false) }
-    assertTrue(elapsed.inWholeMilliseconds < 1000, "second layout took $elapsed")
+  fun missingCharactersQueryBounded() {
+    val text = (0xF0000 until 0xF0000 + 6000).joinToString("") { String(Character.toChars(it)) }
+    val first = measureTime { layOutDesktopText(AnnotatedString(text), style, Density(1f), field = false) }
+    assertTrue(first.inWholeMilliseconds < 3000, "first layout took $first")
+    val second = measureTime { layOutDesktopText(AnnotatedString(text), style, Density(1f), field = false) }
+    assertTrue(second.inWholeMilliseconds < 1000, "second layout took $second")
   }
 }
