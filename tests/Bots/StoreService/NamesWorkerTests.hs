@@ -127,7 +127,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends a registered order whose registration was unregistered in its dispute period, publishing it, keeping its stored times out of the view, and keeps it ended after the name is registered again" testEndedOnUnregister
     it "ends an order whose name was registered again before the sweep read it, leaving an order without a dispute period, past it or registered after the confirmed block" testEndedSweepBounds
     it "ends an order only once its unregister is at the confirmation depth" testEndedAtDepth
-    it "stops a sweep at a failed chain read, logging it once and changing nothing" testEndedSweepUnread
+    it "changes nothing when the block or every order's dispute end cannot be read, logging the failure once" testEndedSweepUnread
     it "reads the orders after one whose dispute end cannot be read, logging the failure once" testEndedSweepPastUnread
     it "ends an order unregistered within the confirmation depth once its mined register is judged, storing its register's dispute end and no expiry" testEndedWithinDepth
     it "ends an order whose name was unregistered and registered again by another before the confirmed block, storing its register's dispute end and none of the other registration's times" testEndedByOtherRegistration

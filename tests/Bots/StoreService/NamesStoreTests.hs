@@ -704,10 +704,9 @@ testMigrationDays = withServiceStore $ \st -> do
 testBalanceDays :: IO ()
 testBalanceDays = withServiceStore $ \st -> do
   void $ placeFunded st
-  forM_ [("fromcard", "cardsource"), ("frombtc", "btcsource"), ("twostep", "fromcard"), ("fromlate", "lateorder")] $ \(spender, funder) -> do
-    days <- nrDisputeDays <$> reg st spender
+  forM_ [("cardsource", 120), ("btcsource", 14), ("fromcard", 120), ("lateorder", 14)] $ \(funder, days) -> do
     stated <- withTransaction st $ \db -> (statedDays =<<) <$> getBalance db (RegistrationId funder) t0
-    (funder, stated) `shouldBe` (funder, Just $ J.toJSON days)
+    (funder, stated) `shouldBe` (funder, Just $ J.toJSON (days :: Int))
   where
     statedDays b = case balanceJSON b of
       J.Object o -> KM.lookup "disputeDays" o
