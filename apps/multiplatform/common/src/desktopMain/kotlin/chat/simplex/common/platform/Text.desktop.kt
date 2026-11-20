@@ -28,6 +28,8 @@ import org.jetbrains.skia.paragraph.TypefaceFontProvider
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.roundToInt
 import org.jetbrains.skia.Font as SkFont
@@ -67,17 +69,20 @@ fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density)
   val lineHeightStyle = style.lineHeightStyle ?: LineHeightStyle.Default
   val trimBoth = lineHeightStyle.trim == LineHeightStyle.Trim.Both
   val proportional = lineHeightStyle.alignment == LineHeightStyle.Alignment.Proportional
+  val centered = lineHeightStyle.alignment == LineHeightStyle.Alignment.Center && lineHeightStyle.trim == LineHeightStyle.Trim.None
   val hasEmptyLine = s.isEmpty() || s.startsWith('\n') || s.endsWith('\n') || s.contains("\n\n")
-  val markerPx = when {
+  val marker = when {
     hasEmptyLine -> null
-    lineHeightPx == null -> MARKER_PX
-    typeface == null || !proportional || (lineHeightPx <= fontSizePx && !trimBoth) -> null
-    else -> MARKER_HEIGHT_PX / heightPerPx(typeface)
+    lineHeightPx == null -> SpanStyle(fontSize = with(density) { MARKER_PX.toSp() })
+    typeface == null -> null
+    proportional && (lineHeightPx > fontSizePx || trimBoth) -> SpanStyle(fontSize = with(density) { (MARKER_HEIGHT_PX / heightPerPx(typeface)).toSp() })
+    centered -> centeredMarker(text, effective, typeface, fontSizePx, lineHeightPx, density)
+    else -> null
   }
   val builder = AnnotatedString.Builder(text)
   var laidOutStyle = style
-  if (markerPx != null) {
-    builder.addStyle(SpanStyle(fontSize = with(density) { markerPx.toSp() }), 0, 0)
+  if (marker != null) {
+    builder.addStyle(marker, 0, 0)
   } else {
     builder.addStyle(SpanStyle(), 0, 0)
     if (s.isEmpty()) {
@@ -92,6 +97,41 @@ fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density)
   if (desktopPlatform.isMac() || desktopPlatform.isWindows()) addFallbackStyles(builder, text, style, density)
   return PlatformText(builder.toAnnotatedString(), laidOutStyle)
 }
+
+private fun centeredMarker(text: AnnotatedString, effective: TextStyle, typeface: Typeface, fontSizePx: Float, lineHeightPx: Float, density: Density): SpanStyle? {
+  val dominant = dominantTypeface(text.text, typeface)
+  if (SkFont(dominant, fontSizePx).use { it.metrics.leading } > 0f) return null
+  val exactHeight = heightPerPx(dominant) * fontSizePx
+  val fraction = exactHeight - floor(exactHeight)
+  val markerPx = if (fraction >= 0.5f || fraction < 0.05f) fontSizePx else fontSizePx * (ceil(exactHeight) - 0.49f) / exactHeight
+  if (lineHeightPx <= markerPx) return null
+  val family = when {
+    dominant.uniqueId == typeface.uniqueId -> effective.fontFamily
+    desktopPlatform.isWindows() && dominant.familyName == WINDOWS_EMOJI_FAMILY -> flatEmojiFamily
+    else -> fontFamilyOf(dominant)
+  }
+  return SpanStyle(fontSize = with(density) { markerPx.toSp() }, fontFamily = family)
+}
+
+private fun dominantTypeface(s: String, typeface: Typeface): Typeface {
+  val counts = HashMap<Int, Int>()
+  val typefaces = HashMap<Int, Typeface>()
+  var i = 0
+  while (i < s.length) {
+    val cp = s.codePointAt(i)
+    i += Character.charCount(cp)
+    if (Character.isWhitespace(cp) || isEmojiJoiner(cp)) continue
+    val run = if (covers(typeface, cp)) typeface else fallbackTypeface(cp) ?: continue
+    typefaces[run.uniqueId] = run
+    counts[run.uniqueId] = (counts[run.uniqueId] ?: 0) + 1
+  }
+  return counts.maxByOrNull { it.value }?.let { typefaces[it.key] } ?: typeface
+}
+
+private val fontFamilies = ConcurrentHashMap<Int, FontFamily>()
+
+private fun fontFamilyOf(typeface: Typeface): FontFamily =
+  fontFamilies.getOrPut(typeface.uniqueId) { FontFamily(androidx.compose.ui.text.platform.Typeface(typeface)) }
 
 private fun compensatedLineHeightPx(lineHeightPx: Float, fontSizePx: Float, typeface: Typeface, lineHeightStyle: LineHeightStyle?): Float {
   val metrics = SkFont(typeface, fontSizePx).use { it.metrics }
