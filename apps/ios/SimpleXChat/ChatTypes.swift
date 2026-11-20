@@ -3587,30 +3587,6 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         memberCurrent || memberPending
     }
 
-    public var memberRemoved: Bool {
-        switch memberStatus {
-        case .memRejected: return true
-        case .memRemoved: return true
-        case .memLeft: return true
-        case .memGroupDeleted: return true
-        case .memUnknown: return false
-        case .memInvited: return false
-        case .memPendingApproval: return false
-        case .memPendingReview: return false
-        case .memIntroduced: return false
-        case .memIntroInvited: return false
-        case .memAccepted: return false
-        case .memAnnounced: return false
-        case .memConnected: return false
-        case .memComplete: return false
-        case .memCreator: return false
-        }
-    }
-
-    public var supportsLinkNotice: Bool {
-        versionRange.maxVersion >= LINK_NOTICE_VERSION
-    }
-
     public func canBeRemoved(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
         return userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
@@ -3631,11 +3607,11 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         let userRole = groupInfo.membership.memberRole
         return memberRole != .relay && memberRole < .moderator
             && userRole >= .moderator && userRole >= memberRole && groupInfo.membership.memberActive
-            && !memberRemoved
+            && ![.memRejected, .memRemoved, .memLeft, .memGroupDeleted].contains(memberStatus)
     }
 
     public func canBanAndRemove(groupInfo: GroupInfo) -> Bool {
-        canBeRemoved(groupInfo: groupInfo) && memberCurrentOrPending && memberRole < .moderator && supportsLinkNotice
+        canBeRemoved(groupInfo: groupInfo) && memberCurrentOrPending && memberRole < .moderator && versionRange.maxVersion >= LINK_NOTICE_VERSION
     }
 
     public var canReceiveReports: Bool {
@@ -6205,17 +6181,6 @@ public enum ReportReason: Hashable {
 
     public static var supportedReasons: [ReportReason] = [.spam, .content, .community, .profile, .other]
 
-    public var rawValue: String {
-        switch self {
-        case .spam: "spam"
-        case .content: "content"
-        case .community: "community"
-        case .profile: "profile"
-        case .other: "other"
-        case let .unknown(type): type
-        }
-    }
-
     public var text: String {
         switch self {
         case .spam: return NSLocalizedString("Spam", comment: "report reason")
@@ -6239,7 +6204,14 @@ public enum ReportReason: Hashable {
 extension ReportReason: Encodable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(rawValue)
+        switch self {
+        case .spam: try container.encode("spam")
+        case .content: try container.encode("content")
+        case .community: try container.encode("community")
+        case .profile: try container.encode("profile")
+        case .other: try container.encode("other")
+        case let .unknown(type): try container.encode(type)
+        }
     }
 }
 

@@ -92,7 +92,7 @@ Accept also unblocks a blocked member who waits for approval.
 
 <img src="./images/groups-not-allowed.png" alt="Not allowed: blocked by the admins of this group until a date" width="288">
 
-If you are blocked, the link shows "Not allowed" and when the block ends. The
+If an admin removed you with a block, the link shows "Not allowed" and when the block ends. The
 block is stored only in your app, for that link: no IDs are shared, and other
 links and invitations still work.
 

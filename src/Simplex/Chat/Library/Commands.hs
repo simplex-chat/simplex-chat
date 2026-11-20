@@ -1411,9 +1411,7 @@ processChatCommand cxt nm = \case
           deleteAgentConnectionsAsync' contactConnIds doSendDel
     CTContactConnection -> withConnectionLock "deleteChat contactConnection" chatId $ do
       when (isJust notice_) $ throwCmdError "notice is not supported for pending connections"
-      case cdm of
-        CDMArchive -> throwCmdError "archive is not supported for pending connections"
-        _ -> pure ()
+      when (cdm == CDMArchive) $ throwCmdError "archive is not supported for pending connections"
       conn@PendingContactConnection {pccAgentConnId = AgentConnId acId} <- withFastStore $ \db -> getPendingContactConnection db userId chatId
       deleteAgentConnectionAsync acId
       withFastStore' $ \db -> deletePendingContactConnection db userId chatId
@@ -1423,7 +1421,9 @@ processChatCommand cxt nm = \case
       let isOwner = memberRole' membership == GROwner
           canDelete = isOwner || not (memberCurrent membership)
           doSendDel = memberActive membership && isOwner
-          sendDelDeleteConns = do
+      unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
+      filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
+      let sendDelDeleteConns = do
             (members, recipients) <- getRecipients gInfo
             msgSigned <-
               if doSendDel
@@ -1432,10 +1432,7 @@ processChatCommand cxt nm = \case
             deleteGroupLinkIfExists user gInfo
             deleteMembersConnections' user members doSendDel
             updateCIGroupInvitationStatus user gInfo CIGISRejected `catchAllErrors` \_ -> pure ()
-            withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
             pure msgSigned
-      unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
-      filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       case cdm of
         CDMFull _ -> do
           removeCustomer gInfo businessChat
@@ -1445,6 +1442,7 @@ processChatCommand cxt nm = \case
             cleanupGroupRosterFile user gInfo
             msgSigned <- sendDelDeleteConns
             withFastStore' $ \db -> deleteGroupChatItems db user gInfo
+            withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
             withFastStore' $ \db -> deleteGroupMembers db user gInfo
             withFastStore' $ \db -> deleteGroup db user gInfo
             pure $ CRGroupDeletedUser user gInfo msgSigned (not doSendDel)
@@ -1454,6 +1452,7 @@ processChatCommand cxt nm = \case
               withGroupLock "deleteChat group" chatId $ do
                 cancelFilesInProgress user filesInfo
                 msgSigned <- sendDelDeleteConns
+                withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
                 withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
                 pure $ CRGroupDeletedUser user gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} msgSigned False
           | otherwise -> throwCmdError "keeping the conversation requires an active owner"
@@ -4870,7 +4869,7 @@ processChatCommand cxt nm = \case
     contactRequestPlan :: User -> ConnReqContact -> Maybe ContactShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
     contactRequestPlan user cReq cld ov = do
       let cReqSchemas = contactCReqSchemas cReq
-          cReqHashes = contactCReqHashes cReq
+          cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
           plan p = pure $ CPContactAddress p Nothing
       ts <- liftIO getCurrentTime
       withFastStore' (\db -> (,) <$> getUserContactLinkByConnReq db user cReqSchemas <*> getLinkNotice db ts cReqHashes) >>= \case
@@ -4897,7 +4896,7 @@ processChatCommand cxt nm = \case
     groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> Maybe OwnerVerification -> [GroupLinkOwner] -> CM ConnectionPlan
     groupJoinRequestPlan user cReq linkInfo gld ov glOwners = do
       let cReqSchemas = contactCReqSchemas cReq
-          cReqHashes = contactCReqHashes cReq
+          cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
           plan p = pure $ CPGroupLink p Nothing
       ts <- liftIO getCurrentTime
       withFastStore' (\db -> (,) <$> getGroupInfoByUserContactLinkConnReq db cxt user cReqSchemas <*> getLinkNotice db ts cReqHashes) >>= \case

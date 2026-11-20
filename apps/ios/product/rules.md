@@ -158,5 +158,5 @@
 
 ### RULE-25: Delete and block only for peers that apply the block
 **Rule:** "Delete and block" MUST be offered only for a ready, active contact connected via the user's address whose app supports `LINK_NOTICE_VERSION`, and for the customer of a business chat whose active owner is the user, when the customer passes `GroupMember.canBanAndRemove`: a current or pending member with a role below moderator whose app supports that version.
-**Enforced by:** `ChatTypes.swift` (`Contact.canDeleteAndBan`, `GroupInfo.canDeleteAndBanCustomer`); `Commands.hs` (`APIDeleteChat` and `APIRemoveMembers` refuse a notice otherwise).
+**Enforced by:** `ChatTypes.swift` (`Contact.canDeleteAndBan`, `GroupInfo.canDeleteAndBanCustomer`); `Commands.hs` (`APIDeleteChat` refuses a notice for a contact that is not ready, not active or on an earlier version; `APIRemoveMembers` refuses it for moderators and above, relays, earlier versions and members not in the group).
 **Spec:** [spec/client/chat-view.md](../spec/client/chat-view.md) | [spec/client/chat-list.md](../spec/client/chat-list.md)

@@ -1096,9 +1096,9 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
 
 class BanDialogAction(val title: String, val action: (BanDuration) -> Unit)
 
-fun showBanDialog(title: String, text: AnnotatedString, actions: List<BanDialogAction>, initialDuration: BanDuration = BanDuration.Day, warning: String? = null) {
+fun showBanDialog(title: String, text: AnnotatedString, actions: List<BanDialogAction>, warning: String? = null) {
   AlertManager.shared.showAlertDialogButtonsColumn(title) {
-    val duration = remember { mutableStateOf(initialDuration) }
+    val duration = remember { mutableStateOf(BanDuration.Day) }
     Column(Modifier.verticalScroll(rememberScrollState())) {
       BanDialogText(text)
       if (warning != null) {
@@ -1150,7 +1150,7 @@ fun previousVersionWarningText(members: List<GroupMember>, one: StringResource, 
     else -> String.format(generalGetString(many), count)
   }
 
-fun banMemberDialog(rhId: Long?, gInfo: GroupInfo, mem: GroupMember, close: (() -> Unit)? = null, initialDuration: BanDuration = BanDuration.Day) {
+fun banMemberDialog(rhId: Long?, gInfo: GroupInfo, mem: GroupMember, close: (() -> Unit)? = null) {
   val canRemove = mem.canBanAndRemove(gInfo)
   val ban = BanDialogAction(generalGetString(MR.strings.ban_verb)) { blockMemberForAll(rhId, gInfo, listOf(mem.groupMemberId), true, it.ttl) }
   val actions = if (canRemove) {
@@ -1164,7 +1164,7 @@ fun banMemberDialog(rhId: Long?, gInfo: GroupInfo, mem: GroupMember, close: (() 
   }
   val title = generalGetString(if (gInfo.useRelays) MR.strings.block_subscriber_for_all_question else MR.strings.block_for_all_question)
   val text = formatWithBoldName(generalGetString(if (canRemove) MR.strings.ban_member_desc_ban_and_remove else MR.strings.ban_member_desc), mem.displayName)
-  showBanDialog(title, text, actions, initialDuration)
+  showBanDialog(title, text, actions)
 }
 
 fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, onSuccess: () -> Unit = {}) {
@@ -1190,7 +1190,7 @@ fun banMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, 
   showBanDialog(title, AnnotatedString(generalGetString(textId)), actions, warning = warning)
 }
 
-fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, initialDuration: BanDuration = BanDuration.Day, onSuccess: () -> Unit = {}) {
+fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<GroupMember>, onSuccess: () -> Unit = {}) {
   val title = generalGetString(
     if (members.size == 1) {
       if (gInfo.useRelays) MR.strings.button_remove_subscriber_question else MR.strings.button_remove_member_question
@@ -1210,8 +1210,7 @@ fun removeBannedMembersDialog(rhId: Long?, gInfo: GroupInfo, members: List<Group
     listOf(
       BanDialogAction(generalGetString(MR.strings.remove_member_confirmation)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = false, onSuccess) },
       BanDialogAction(generalGetString(MR.strings.remove_member_delete_messages_confirmation)) { removeBannedMembers(rhId, gInfo, members, it, withMessages = true, onSuccess) }
-    ),
-    initialDuration
+    )
   )
 }
 
@@ -1352,152 +1351,64 @@ private val previewBannedMembers = listOf(previewBanMember.copy(blockedByAdmin =
 
 @Preview
 @Composable
-fun PreviewBanMemberDialog() {
-  SimpleXTheme {
-    AlertPreview { banMemberDialog(null, previewOwnerGroupInfo, previewBanMember) }
-  }
-}
+fun PreviewBanMemberDialog() = AlertPreview { banMemberDialog(null, previewOwnerGroupInfo, previewBanMember) }
 
 @Preview
 @Composable
-fun PreviewBanMemberDialogModerator() {
-  SimpleXTheme {
-    AlertPreview { banMemberDialog(null, previewModeratorGroupInfo, previewBanMember) }
-  }
-}
+fun PreviewBanMemberDialogModerator() = AlertPreview { banMemberDialog(null, previewModeratorGroupInfo, previewBanMember) }
 
 @Preview
 @Composable
-fun PreviewBanMembersDialog() {
-  SimpleXTheme {
-    AlertPreview { banMembersDialog(null, previewOwnerGroupInfo, listOf(previewBanMember, previewBanMember.copy(groupMemberId = 3))) }
-  }
-}
+fun PreviewBanMembersDialog() = AlertPreview { banMembersDialog(null, previewOwnerGroupInfo, listOf(previewBanMember, previewBanMember.copy(groupMemberId = 3))) }
 
 @Preview
 @Composable
-fun PreviewBanMembersDialogPreviousVersion() {
-  SimpleXTheme {
-    AlertPreview { banMembersDialog(null, previewOwnerGroupInfo, listOf(previewBanMember) + previewPreviousVersionMembers) }
-  }
-}
+fun PreviewBanMembersDialogPreviousVersion() = AlertPreview { banMembersDialog(null, previewOwnerGroupInfo, listOf(previewBanMember) + previewPreviousVersionMembers) }
 
 @Preview
 @Composable
-fun PreviewRemoveBannedMemberDialog() {
-  SimpleXTheme {
-    AlertPreview { removeBannedMembersDialog(null, previewOwnerGroupInfo, previewBannedMembers.take(1)) }
-  }
-}
+fun PreviewRemoveBannedMemberDialog() = AlertPreview { removeBannedMembersDialog(null, previewOwnerGroupInfo, previewBannedMembers.take(1)) }
 
 @Preview
 @Composable
-fun PreviewRemoveBannedMembersDialog() {
-  SimpleXTheme {
-    AlertPreview { removeBannedMembersDialog(null, previewOwnerGroupInfo, previewBannedMembers) }
-  }
-}
+fun PreviewRemoveBannedMembersDialog() = AlertPreview { removeBannedMembersDialog(null, previewOwnerGroupInfo, previewBannedMembers) }
 
 @Preview
 @Composable
-fun PreviewRemoveForeverDialog() {
-  SimpleXTheme {
-    AlertPreview { removeBannedMembers(null, previewOwnerGroupInfo, previewBannedMembers.take(1), BanDuration.Forever, withMessages = false) }
-  }
-}
+fun PreviewRemoveForeverDialog() = AlertPreview { removeBannedMembers(null, previewOwnerGroupInfo, previewBannedMembers.take(1), BanDuration.Forever, withMessages = false) }
 
 @Preview
 @Composable
-fun PreviewLiftBanAlert() {
-  SimpleXTheme {
-    AlertPreview { unblockForAllAlert(null, previewOwnerGroupInfo, previewBannedMembers.first()) }
-  }
-}
+fun PreviewLiftBanAlert() = AlertPreview { unblockForAllAlert(null, previewOwnerGroupInfo, previewBannedMembers.first()) }
 
 @Preview
 @Composable
-fun PreviewLiftBanMembersAlert() {
-  SimpleXTheme {
-    AlertPreview { unblockForAllAlert(null, previewOwnerGroupInfo, previewBannedMembers.map { it.groupMemberId }) }
-  }
-}
+fun PreviewLiftBanMembersAlert() = AlertPreview { unblockForAllAlert(null, previewOwnerGroupInfo, previewBannedMembers.map { it.groupMemberId }) }
 
 @Preview
 @Composable
-fun PreviewHideMessagesAlert() {
-  SimpleXTheme {
-    AlertPreview { blockMemberAlert(null, GroupInfo.sampleData, previewBanMember) }
-  }
-}
+fun PreviewHideMessagesAlert() = AlertPreview { blockMemberAlert(null, GroupInfo.sampleData, previewBanMember) }
 
 @Preview
 @Composable
-fun PreviewShowMessagesAlert() {
-  SimpleXTheme {
-    AlertPreview { unblockMemberAlert(null, GroupInfo.sampleData, previewBanMember.copy(memberSettings = GroupMemberSettings(showMessages = false))) }
-  }
-}
+fun PreviewShowMessagesAlert() = AlertPreview { unblockMemberAlert(null, GroupInfo.sampleData, previewBanMember.copy(memberSettings = GroupMemberSettings(showMessages = false))) }
 
 @Preview
 @Composable
-fun PreviewBanMemberDialogForever() {
-  SimpleXTheme {
-    AlertPreview { banMemberDialog(null, previewOwnerGroupInfo, previewBanMember, initialDuration = BanDuration.Forever) }
-  }
-}
+fun PreviewBanSubscriberDialog() = AlertPreview { banMemberDialog(null, previewChannelInfo, previewBanMember) }
 
 @Preview
 @Composable
-fun PreviewBanMemberDialogModeratorForever() {
-  SimpleXTheme {
-    AlertPreview { banMemberDialog(null, previewModeratorGroupInfo, previewBanMember, initialDuration = BanDuration.Forever) }
-  }
-}
+fun PreviewBanSubscriberDialogModerator() = AlertPreview { banMemberDialog(null, previewChannelModeratorInfo, previewBanMember) }
 
 @Preview
 @Composable
-fun PreviewRemoveBannedMemberDialogForever() {
-  SimpleXTheme {
-    AlertPreview { removeBannedMembersDialog(null, previewOwnerGroupInfo, previewBannedMembers.take(1), initialDuration = BanDuration.Forever) }
-  }
-}
+fun PreviewRemoveBannedSubscriberDialog() = AlertPreview { removeBannedMembersDialog(null, previewChannelInfo, previewBannedMembers.take(1)) }
 
 @Preview
 @Composable
-fun PreviewBanSubscriberDialog() {
-  SimpleXTheme {
-    AlertPreview { banMemberDialog(null, previewChannelInfo, previewBanMember) }
-  }
-}
+fun PreviewRemoveSubscriberForeverDialog() = AlertPreview { removeBannedMembers(null, previewChannelInfo, previewBannedMembers.take(1), BanDuration.Forever, withMessages = false) }
 
 @Preview
 @Composable
-fun PreviewBanSubscriberDialogModerator() {
-  SimpleXTheme {
-    AlertPreview { banMemberDialog(null, previewChannelModeratorInfo, previewBanMember) }
-  }
-}
-
-@Preview
-@Composable
-fun PreviewRemoveBannedSubscriberDialog() {
-  SimpleXTheme {
-    AlertPreview { removeBannedMembersDialog(null, previewChannelInfo, previewBannedMembers.take(1)) }
-  }
-}
-
-@Preview
-@Composable
-fun PreviewRemoveSubscriberForeverDialog() {
-  SimpleXTheme {
-    AlertPreview { removeBannedMembers(null, previewChannelInfo, previewBannedMembers.take(1), BanDuration.Forever, withMessages = false) }
-  }
-}
-
-@Preview
-@Composable
-fun PreviewLiftBanSubscriberAlert() {
-  SimpleXTheme {
-    AlertPreview { unblockForAllAlert(null, previewChannelInfo, previewBannedMembers.first()) }
-  }
-}
+fun PreviewLiftBanSubscriberAlert() = AlertPreview { unblockForAllAlert(null, previewChannelInfo, previewBannedMembers.first()) }

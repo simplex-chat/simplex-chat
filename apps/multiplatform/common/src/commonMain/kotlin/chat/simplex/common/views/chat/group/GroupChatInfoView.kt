@@ -229,22 +229,12 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
     }
   val title = generalGetString(titleId)
   val text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}"
+  val customerNotifiedId = if (chatModel.userAddress.value?.addressSettings?.businessAddress == true) MR.strings.contact_will_be_notified_can_connect_again else MR.strings.contact_will_be_notified
   when {
     groupInfo.isOwner && groupInfo.membership.memberActive && groupInfo.businessChat == null ->
       deleteOwnGroupDialog(chat.remoteHostId, groupInfo, title, text, keepConversationText = null, close)
-    groupInfo.isCustomerChatOwner -> {
-      val keepConversationTextId =
-        if (chatModel.userAddress.value?.addressSettings?.businessAddress == true) MR.strings.contact_will_be_notified_can_connect_again
-        else MR.strings.contact_will_be_notified
-      deleteOwnGroupDialog(
-        chat.remoteHostId,
-        groupInfo,
-        title,
-        text,
-        keepConversationText = formatWithBoldName(generalGetString(keepConversationTextId), groupInfo.displayName),
-        close
-      )
-    }
+    groupInfo.isCustomerChatOwner ->
+      deleteOwnGroupDialog(chat.remoteHostId, groupInfo, title, text, formatWithBoldName(generalGetString(customerNotifiedId), groupInfo.displayName), close)
     else ->
       AlertManager.shared.showAlertDialog(
         title = title,
@@ -1642,76 +1632,42 @@ private fun previewGroupChat(groupInfo: GroupInfo) = Chat(remoteHostId = null, c
 
 @Preview
 @Composable
-fun PreviewDeleteGroupDialog() {
-  SimpleXTheme {
-    AlertPreview { deleteGroupDialog(previewGroupChat(previewOwnerGroupInfo), previewOwnerGroupInfo, ChatModel) }
-  }
-}
+fun PreviewDeleteGroupDialog() = AlertPreview { deleteGroupDialog(previewGroupChat(previewOwnerGroupInfo), previewOwnerGroupInfo, ChatModel) }
 
 @Preview
 @Composable
-fun PreviewDeleteGroupKeepConversationDialog() {
-  SimpleXTheme {
-    AlertPreview { keepGroupConversationDialog(null, previewOwnerGroupInfo, generalGetString(MR.strings.delete_group_question), text = null, close = null) }
-  }
-}
+fun PreviewDeleteGroupKeepConversationDialog() = AlertPreview { keepGroupConversationDialog(null, previewOwnerGroupInfo, generalGetString(MR.strings.delete_group_question), text = null, close = null) }
 
 @Preview
 @Composable
-fun PreviewDeleteChannelDialog() {
-  SimpleXTheme {
-    AlertPreview { deleteGroupDialog(previewGroupChat(previewChannelInfo), previewChannelInfo, ChatModel) }
-  }
-}
+fun PreviewDeleteChannelDialog() = AlertPreview { deleteGroupDialog(previewGroupChat(previewChannelInfo), previewChannelInfo, ChatModel) }
 
 @Preview
 @Composable
-fun PreviewDeleteChannelKeepConversationDialog() {
-  SimpleXTheme {
-    AlertPreview { keepGroupConversationDialog(null, previewChannelInfo, generalGetString(MR.strings.delete_channel_question), text = null, close = null) }
-  }
-}
+fun PreviewDeleteChannelKeepConversationDialog() = AlertPreview { keepGroupConversationDialog(null, previewChannelInfo, generalGetString(MR.strings.delete_channel_question), text = null, close = null) }
 
 @Preview
 @Composable
-fun PreviewDeleteBusinessChatDialog() {
-  SimpleXTheme {
-    AlertPreview { deleteGroupDialog(previewGroupChat(previewBusinessChatInfo), previewBusinessChatInfo, ChatModel) }
-  }
-}
+fun PreviewDeleteBusinessChatDialog() = AlertPreview { deleteGroupDialog(previewGroupChat(previewBusinessChatInfo), previewBusinessChatInfo, ChatModel) }
 
 @Preview
 @Composable
 fun PreviewDeleteBusinessChatKeepConversationDialog() {
   val canConnectAgain = formatWithBoldName(generalGetString(MR.strings.contact_will_be_notified_can_connect_again), previewBusinessChatInfo.displayName)
-  SimpleXTheme {
-    AlertPreview { keepGroupConversationDialog(null, previewBusinessChatInfo, generalGetString(MR.strings.delete_chat_question), canConnectAgain, close = null) }
-  }
+  AlertPreview { keepGroupConversationDialog(null, previewBusinessChatInfo, generalGetString(MR.strings.delete_chat_question), canConnectAgain, close = null) }
 }
 
 @Preview
 @Composable
-fun PreviewDeleteAndBanCustomerDialog() {
-  SimpleXTheme {
-    AlertPreview { deleteAndBanCustomerDialog(previewGroupChat(previewBusinessChatInfo), previewBusinessChatInfo) }
-  }
-}
+fun PreviewDeleteAndBanCustomerDialog() = AlertPreview { deleteAndBanCustomerDialog(previewGroupChat(previewBusinessChatInfo), previewBusinessChatInfo) }
 
 @Preview
 @Composable
-fun PreviewCantBanCustomerAlert() {
-  SimpleXTheme {
-    AlertPreview { showCantBanCustomerAlert(previewBusinessChatInfo) }
-  }
-}
+fun PreviewCantBanCustomerAlert() = AlertPreview { showCantBanCustomerAlert(previewBusinessChatInfo) }
 
 @Preview
 @Composable
-fun PreviewRemoveMembersPreviousVersion() {
-  SimpleXTheme {
-    AlertPreview { removeMembersAlert(null, previewOwnerGroupInfo, (listOf(previewBanMember) + previewPreviousVersionMembers).map { it.copy(blockedByAdmin = true) }) }
-  }
-}
+fun PreviewRemoveMembersPreviousVersion() = AlertPreview { removeMembersAlert(null, previewOwnerGroupInfo, (listOf(previewBanMember) + previewPreviousVersionMembers).map { it.copy(blockedByAdmin = true) }) }
 
 @Composable
 private fun MemberMenuPreview(groupInfo: GroupInfo, member: GroupMember) {

@@ -162,7 +162,7 @@ Delete (`deleteContactDialog`):
 3. Dialog 2 (`KeepConversationDialog`): "Keep conversation", Delete, Cancel; the footer "**<name>** will be notified." or "**<name>** won't be notified."; with the user's address: "**<name>** will be notified, and can reconnect via your address." or "won't be notified, and …".
 4. "Keep conversation" off: `apiDeleteChat` with `.full(notify:)`; on: `.entity(notify:)`, and an archived contact stays in Archived contacts.
 5. After `.entity`, "Contact deleted!" with "Don't show again" (`showDeleteContactNoticeDefault`): "You can still view conversation with <name> in the list of chats." or, for an archived contact, "You can still view conversation with <name> in Archived contacts."
-6. Other contacts: "Confirm contact deletion?" with Confirm, as before.
+6. Other contacts: "Confirm contact deletion?" with Confirm.
 
 Archive (`archiveContact`):
 1. `apiDeleteChat` with `.archive`: the contact moves to Archived contacts and keeps the conversation.

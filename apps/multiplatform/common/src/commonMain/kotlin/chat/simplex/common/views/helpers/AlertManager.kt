@@ -553,7 +553,7 @@ private fun HostDeviceTitle(hostDevice: Pair<Long?, String>?, extraPadding: Bool
 }
 
 @Composable
-fun AlertPreview(alertManager: AlertManager = AlertManager.shared, show: () -> Unit) {
+fun AlertPreview(alertManager: AlertManager = AlertManager.shared, show: () -> Unit) = SimpleXTheme {
   remember { show() }
   DisposableEffect(Unit) {
     onDispose { alertManager.hideAllAlerts() }

@@ -951,15 +951,11 @@ testPlanChannelNameNotice = withChannelChats $ \reg alice cath bob -> do
   alice ##> "/rm #team bob notice={\"ttl\":86400}"
   alice <## "#team: you removed bob from the group (signed)"
   cath <## "#team: alice removed bob from the group (signed)"
-  waitLinkNoticesCount bob 1
+  linkNoticesCount bob `shouldEventuallyReturn` 1
   bob <// 50000
-  bob ##> "/l #team"
-  bob <## "#team: you left the group"
-  bob <## "use /d #team to delete the group"
-  bob ##> "/d #team"
-  bob <## "#team: you deleted your local copy of the group"
+  leaveDeleteGroup bob "team"
   bob ##> "/_connect plan 1 team.simplex"
-  bannedLine bob "group link: "
+  bob <##. "group link: blocked until "
   bob <## "You can also connect to @team.simplex in direct chat"
   apiFixture "names/plan-channel-notice" bob [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
 

@@ -1275,43 +1275,16 @@ private func deleteContactMaybeErrorAlert(
 }
 
 func deleteAndBanContactDialog(_ chat: Chat, _ contact: Contact, dismissToChatList: Bool, showAlert: @escaping (SomeAlert) -> Void) {
-    showDeleteAndBanDialog(.contact(contact)) { keepConversation, notice in
+    showDeleteAndBanDialog(contact.displayName, deleteContactMessage(contact)) { keepConversation, notice in
         deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: ChatDeleteMode(keepConversation: keepConversation, notify: false), notice: notice, dismissToChatList, showAlert)
     }
 }
 
-enum DeleteAndBanTarget {
-    case contact(Contact)
-    case customer(GroupInfo)
-
-    var name: String {
-        switch self {
-        case let .contact(contact): contact.displayName
-        case let .customer(groupInfo): groupInfo.displayName
-        }
-    }
-
-    var deletionText: Text {
-        switch self {
-        case .contact: Text("Contact with **\(name)** will be deleted - this cannot be undone!")
-        case .customer: Text("Chat with **\(name)** will be deleted for all members - this cannot be undone!")
-        }
-    }
-
-    func timedBanText(_ duration: BanDuration) -> Text {
-        Text("**\(name)** won't be notified, and can't connect to you for \(duration.text).")
-    }
-
-    var foreverText: Text {
-        Text("**\(name)** won't be notified, and can't connect via your address again, except from another app.")
-    }
-}
-
-func showDeleteAndBanDialog(_ target: DeleteAndBanTarget, delete: @escaping (_ keepConversation: Bool, _ notice: LinkNotice) -> Void) {
+func showDeleteAndBanDialog(_ name: String, _ deletionText: Text, delete: @escaping (_ keepConversation: Bool, _ notice: LinkNotice) -> Void) {
     showClosableAppSheet { close in
-        deleteAndBanDialog(target, close: close) { duration in
+        deleteAndBanDialog(deletionText, close: close) { duration in
             showClosableAppSheet { close in
-                deleteAndBanKeepDialog(target, duration, close: close) { keepConversation in
+                deleteAndBanKeepDialog(name, duration, close: close) { keepConversation in
                     delete(keepConversation, duration.notice)
                 }
             }
@@ -1319,19 +1292,19 @@ func showDeleteAndBanDialog(_ target: DeleteAndBanTarget, delete: @escaping (_ k
     }
 }
 
-private func deleteAndBanDialog(_ target: DeleteAndBanTarget, close: @escaping CloseSheet, ban: @escaping (BanDuration) -> Void) -> BanDialog {
+private func deleteAndBanDialog(_ deletionText: Text, close: @escaping CloseSheet, ban: @escaping (BanDuration) -> Void) -> BanDialog {
     BanDialog(
         title: NSLocalizedString("Delete and block?", comment: "delete and ban dialog title"),
         actions: [BanDialogAction(title: NSLocalizedString("Delete and block", comment: "delete and ban dialog action"), action: ban)],
-        footer: target.deletionText,
+        footer: deletionText,
         close: close
     )
 }
 
-private func deleteAndBanKeepDialog(_ target: DeleteAndBanTarget, _ duration: BanDuration, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
+private func deleteAndBanKeepDialog(_ name: String, _ duration: BanDuration, close: @escaping CloseSheet, delete: @escaping (_ keepConversation: Bool) -> Void) -> KeepConversationDialog {
     let (title, footer, confirmWord): (String, Text, String?) = switch duration {
-    case .day, .week: (NSLocalizedString("Delete and block?", comment: "delete and ban dialog title"), target.timedBanText(duration), nil)
-    case .forever: (NSLocalizedString("Delete and block forever?", comment: "delete and ban dialog title"), target.foreverText, foreverConfirmationWord)
+    case .day, .week: (NSLocalizedString("Delete and block?", comment: "delete and ban dialog title"), Text("**\(name)** won't be notified, and can't connect to you for \(duration.text)."), nil)
+    case .forever: (NSLocalizedString("Delete and block forever?", comment: "delete and ban dialog title"), Text("**\(name)** won't be notified, and can't connect via your address again, except from another app."), foreverConfirmationWord)
     }
     return KeepConversationDialog(
         title: title,
@@ -1661,26 +1634,27 @@ struct ChatInfoView_DeleteAndBan_Previews: PreviewProvider {
 
 struct DeleteAndBanContactDialog_Previews: PreviewProvider {
     static var previews: some View {
-        deleteAndBanDialog(.contact(Contact.sampleData), close: { _ in }) { _ in }
-        deleteAndBanKeepDialog(.contact(Contact.sampleData), .day, close: { _ in }) { _ in }
+        deleteAndBanDialog(deleteContactMessage(Contact.sampleData), close: { _ in }) { _ in }
+        deleteAndBanKeepDialog(Contact.sampleData.displayName, .day, close: { _ in }) { _ in }
     }
 }
 
 struct DeleteAndBanContactForeverDialog_Previews: PreviewProvider {
     static var previews: some View {
-        deleteAndBanKeepDialog(.contact(Contact.sampleData), .forever, close: { _ in }) { _ in }
+        deleteAndBanKeepDialog(Contact.sampleData.displayName, .forever, close: { _ in }) { _ in }
     }
 }
 
 struct DeleteAndBanCustomerDialog_Previews: PreviewProvider {
     static var previews: some View {
-        deleteAndBanDialog(.customer(previewCustomerChat()), close: { _ in }) { _ in }
-        deleteAndBanKeepDialog(.customer(previewCustomerChat()), .week, close: { _ in }) { _ in }
+        let name = previewCustomerChat().displayName
+        deleteAndBanDialog(Text("Chat with **\(name)** will be deleted for all members - this cannot be undone!"), close: { _ in }) { _ in }
+        deleteAndBanKeepDialog(name, .week, close: { _ in }) { _ in }
     }
 }
 
 struct DeleteAndBanCustomerForeverDialog_Previews: PreviewProvider {
     static var previews: some View {
-        deleteAndBanKeepDialog(.customer(previewCustomerChat()), .forever, close: { _ in }) { _ in }
+        deleteAndBanKeepDialog(previewCustomerChat().displayName, .forever, close: { _ in }) { _ in }
     }
 }

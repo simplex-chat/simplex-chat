@@ -43,7 +43,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.group.BanDialogAction
 import chat.simplex.common.views.chat.group.ChatTTLOption
 import chat.simplex.common.views.chat.group.FOREVER_CONFIRMATION_WORD
-import chat.simplex.common.views.chat.group.previewBusinessChatInfo
 import chat.simplex.common.views.chat.group.showBanDialog
 import chat.simplex.common.views.chat.group.showTypedConfirmationDialog
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
@@ -313,11 +312,26 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, notify: Bool
     text = formatWithBoldName(generalGetString(textId), contact.displayName),
     confirmText = generalGetString(MR.strings.delete_verb),
     notify = notify
-  ) { chatDeleteMode ->
-    deleteContact(chat, chatModel, close, chatDeleteMode) {
-      if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
-        showDeleteContactNotice(contact)
-      }
+  ) { deleteContact(chat, chatModel, close, it) }
+}
+
+@Composable
+private fun KeepConversationToggle(contactDeleteMode: MutableState<ContactDeleteMode>) {
+  SectionItemView {
+    Row(
+      Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.Center
+    ) {
+      Text(stringResource(MR.strings.keep_conversation))
+      Spacer(Modifier.width(DEFAULT_PADDING))
+      DefaultSwitch(
+        checked = contactDeleteMode.value is ContactDeleteMode.Entity,
+        onCheckedChange = {
+          contactDeleteMode.value =
+            if (it) ContactDeleteMode.Entity() else ContactDeleteMode.Full()
+        },
+      )
     }
   }
 }
@@ -344,27 +358,6 @@ fun showKeepConversationDialog(title: String, text: AnnotatedString?, confirmTex
     AlertManager.shared.showAlertDialogButtonsColumn(title = title, text = text, buttons = buttons)
   } else {
     AlertManager.shared.showAlertDialogButtonsColumn(title = title, parseHtml = false, buttons = buttons)
-  }
-}
-
-@Composable
-private fun KeepConversationToggle(contactDeleteMode: MutableState<ContactDeleteMode>) {
-  SectionItemView {
-    Row(
-      Modifier.fillMaxWidth(),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.Center
-    ) {
-      Text(stringResource(MR.strings.keep_conversation))
-      Spacer(Modifier.width(DEFAULT_PADDING))
-      DefaultSwitch(
-        checked = contactDeleteMode.value is ContactDeleteMode.Entity,
-        onCheckedChange = {
-          contactDeleteMode.value =
-            if (it) ContactDeleteMode.Entity() else ContactDeleteMode.Full()
-        },
-      )
-    }
   }
 }
 
@@ -418,7 +411,7 @@ private fun showDeleteContactNotice(contact: Contact) {
   )
 }
 
-fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null, onSuccess: () -> Unit = {}) {
+fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null) {
   val chatInfo = chat.chatInfo
   withBGApi {
     val chatRh = chat.remoteHostId
@@ -441,26 +434,19 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
       }
       ntfManager.cancelNotificationsForChat(chatInfo.id)
       close?.invoke()
-      onSuccess()
+      when {
+        chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get() -> showDeleteContactNotice(ct)
+        chatDeleteMode is ChatDeleteMode.Archive && chatModel.controller.appPrefs.showDeleteConversationNotice.get() -> showDeleteConversationNotice(ct)
+      }
     }
   }
 }
 
-fun archiveContact(chat: Chat, contact: Contact, chatModel: ChatModel) {
-  deleteContact(chat, chatModel, close = null, chatDeleteMode = ChatDeleteMode.Archive()) {
-    if (chatModel.controller.appPrefs.showDeleteConversationNotice.get()) {
-      showDeleteConversationNotice(contact)
-    }
-  }
-}
+fun archiveContact(chat: Chat, chatModel: ChatModel) = deleteContact(chat, chatModel, close = null, chatDeleteMode = ChatDeleteMode.Archive())
 
 fun deleteAndBanContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)? = null) {
   deleteAndBanDialog(contact.displayName, MR.strings.delete_contact_with_cannot_undo_warning) { chatDeleteMode, notice ->
-    deleteContact(chat, chatModel, close, chatDeleteMode, notice) {
-      if (chatDeleteMode is ChatDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
-        showDeleteContactNotice(contact)
-      }
-    }
+    deleteContact(chat, chatModel, close, chatDeleteMode, notice)
   }
 }
 
@@ -1595,80 +1581,36 @@ private fun ChatInfoLayoutPreview(contact: Contact) {
 
 @Preview
 @Composable
-fun PreviewDeleteContactDialogNotify() {
-  SimpleXTheme {
-    AlertPreview { confirmActiveContactDeletion(Chat.sampleData, Contact.sampleData, ContactDeletion.Notify, hasAddress = true, ChatModel, close = null) }
-  }
-}
+fun PreviewDeleteContactDialogNotify() = AlertPreview { confirmActiveContactDeletion(Chat.sampleData, Contact.sampleData, ContactDeletion.Notify, hasAddress = true, ChatModel, close = null) }
 
 @Preview
 @Composable
-fun PreviewDeleteContactDialogAsk() {
-  SimpleXTheme {
-    AlertPreview { confirmActiveContactDeletion(Chat.sampleData, Contact.sampleData, ContactDeletion.Ask, hasAddress = true, ChatModel, close = null) }
-  }
-}
+fun PreviewDeleteContactDialogAsk() = AlertPreview { confirmActiveContactDeletion(Chat.sampleData, Contact.sampleData, ContactDeletion.Ask, hasAddress = true, ChatModel, close = null) }
 
 @Preview
 @Composable
-fun PreviewDeleteContactKeepConversationDialog() {
-  SimpleXTheme {
-    AlertPreview { deleteActiveContactDialog(Chat.sampleData, Contact.sampleData, notify = true, hasAddress = true, ChatModel) }
-  }
-}
+fun PreviewDeleteContactKeepConversationDialog() = AlertPreview { deleteActiveContactDialog(Chat.sampleData, Contact.sampleData, notify = true, hasAddress = true, ChatModel) }
 
 @Preview
 @Composable
-fun PreviewContactArchivedAlert() {
-  SimpleXTheme {
-    AlertPreview { showDeleteConversationNotice(Contact.sampleData) }
-  }
-}
+fun PreviewContactArchivedAlert() = AlertPreview { showDeleteConversationNotice(Contact.sampleData) }
 
 @Preview
 @Composable
-fun PreviewDeletedContactArchivedAlert() {
-  SimpleXTheme {
-    AlertPreview { showDeleteConversationNotice(Contact.sampleData.copy(contactStatus = ContactStatus.DeletedByUser)) }
-  }
-}
+fun PreviewDeletedContactArchivedAlert() = AlertPreview { showDeleteConversationNotice(Contact.sampleData.copy(contactStatus = ContactStatus.DeletedByUser)) }
 
 @Preview
 @Composable
-fun PreviewContactDeletedFromArchiveAlert() {
-  SimpleXTheme {
-    AlertPreview { showDeleteContactNotice(Contact.sampleData.copy(chatDeleted = true)) }
-  }
-}
+fun PreviewContactDeletedFromArchiveAlert() = AlertPreview { showDeleteContactNotice(Contact.sampleData.copy(chatDeleted = true)) }
 
 @Preview
 @Composable
-fun PreviewDeleteAndBanContactDialog() {
-  SimpleXTheme {
-    AlertPreview { deleteAndBanContactDialog(Chat.sampleData, Contact.sampleData, ChatModel) }
-  }
-}
+fun PreviewDeleteAndBanContactDialog() = AlertPreview { deleteAndBanContactDialog(Chat.sampleData, Contact.sampleData, ChatModel) }
 
 @Preview
 @Composable
-fun PreviewDeleteAndBanKeepConversationDialog() {
-  SimpleXTheme {
-    AlertPreview { deleteAndBanKeepConversationDialog(Contact.sampleData.displayName, BanDuration.Day) {} }
-  }
-}
+fun PreviewDeleteAndBanKeepConversationDialog() = AlertPreview { deleteAndBanKeepConversationDialog(Contact.sampleData.displayName, BanDuration.Day) {} }
 
 @Preview
 @Composable
-fun PreviewDeleteAndBanContactForeverDialog() {
-  SimpleXTheme {
-    AlertPreview { deleteAndBanForeverDialog(Contact.sampleData.displayName) {} }
-  }
-}
-
-@Preview
-@Composable
-fun PreviewDeleteAndBanCustomerForeverDialog() {
-  SimpleXTheme {
-    AlertPreview { deleteAndBanForeverDialog(previewBusinessChatInfo.displayName) {} }
-  }
-}
+fun PreviewDeleteAndBanContactForeverDialog() = AlertPreview { deleteAndBanForeverDialog(Contact.sampleData.displayName) {} }

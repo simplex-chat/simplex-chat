@@ -570,7 +570,7 @@ WallpaperSetupView        image scale type, scale slider and wallpaper tint hidd
 
 Rows of the group member list (`GroupChatInfoView` `MemberRowView.memberInfo`) show "blocked" for a member blocked by admin, "hidden" for a member whose messages the user hid, and the role badge otherwise.
 
-Members below moderator get "Hide messages" / "Show messages" (`blockMemberAlert`, `unblockMemberAlert`), which change only the user's `memberSettings.showMessages`. Moderators and above get "Block for all" (`showBanMemberSheet`, which presents `banMemberDialog`), a sheet with "Block for" (`BanDuration`: 1 day, 1 week, Forever) and "Block"; admins and owners also get "Block and remove" and "Block, remove and delete messages" when `GroupMember.canBanAndRemove` (removal allowed, member current or pending, member below moderator, member supports `LINK_NOTICE_VERSION`). The sheet is closed before the chosen action runs. "Unblock for all" (`unblockForAllAlert`) ends a block; member info shows "Blocked until <time>" from `GroupMember.blockedUntil`, or "Blocked by admin". Removal of a blocked member that supports `LINK_NOTICE_VERSION` uses `showRemoveBannedMemberSheet` (`removeBannedMemberDialog`); every removal with a block goes through `removeBannedMember`, where Forever asks to type "yes" in "Remove forever?" (`removeForeverAlert`, built by `typedConfirmationAlert`), and calls `removeMember` with a `LinkNotice`.
+Members below moderator get "Hide messages" / "Show messages" (`blockMemberAlert`, `unblockMemberAlert`), which change only the user's `memberSettings.showMessages`. Moderators and above get "Block for all" (`showBanMemberSheet`, which presents `banMemberDialog`), a sheet with "Block for" (`BanDuration`: 1 day, 1 week, Forever) and "Block"; admins and owners also get "Block and remove" and "Block, remove and delete messages" when `GroupMember.canBanAndRemove` (removal allowed, member current or pending, member below moderator, member supports `LINK_NOTICE_VERSION`). The sheet is closed before the chosen action runs. "Unblock for all" (`unblockForAllAlert`) ends a block; member info shows "Blocked until <time>" from `GroupMember.blockedUntil`, or "Blocked by admin". Removal of a blocked member that supports `LINK_NOTICE_VERSION` uses `showRemoveBannedMemberSheet` (`removeBannedMemberDialog`); every removal with a block goes through `removeBannedMember`, where Forever asks to type "yes" in "Remove forever?" (`removeForeverAlert`), and calls `removeMember` with a `LinkNotice`.
 
 ---
 
@@ -606,12 +606,12 @@ otherwise           deleteNotReadyContact: Confirm contact deletion?
 
 Archive (`archiveContact`): `deleteContactChat` with `.archive` (`/_delete @<id> archive`), then `deleteConversationNotice` through `AlertManager`: "Contact archived!", with the text for an active contact or for a deleted one. For `.entity` and `.archive`, `deleteContactChat` updates the contact in place (`ChatModel.updateContact`), so the chat keeps its items, stats, position and wallpaper files, and moves the chat's preset tag counts from the previous contact to the returned one.
 
-Delete and block (`showDeleteAndBanDialog`), for a `DeleteAndBanTarget` (`.contact` or `.customer`), which gives the name and the deletion line:
+Delete and block (`showDeleteAndBanDialog`), with the name and the deletion line of the contact or the customer:
 
 ```
-dialog 1        deleteAndBanDialog: BanDialog "Delete and block?", "Block for", Delete and block, Cancel; deletionText
-1 day, 1 week   deleteAndBanKeepDialog: "Delete and block?", Keep conversation; timedBanText
-Forever         deleteAndBanKeepDialog: "Delete and block forever?", Keep conversation, field "Type yes"; foreverText
+dialog 1        deleteAndBanDialog: BanDialog "Delete and block?", "Block for", Delete and block, Cancel; the deletion line
+1 day, 1 week   deleteAndBanKeepDialog: "Delete and block?", Keep conversation; "won't be notified, and can't connect to you for <duration>."
+Forever         deleteAndBanKeepDialog: "Delete and block forever?", Keep conversation, field "Type yes"; "won't be notified, and can't connect via your address again, except from another app."
 result          delete(keepConversation, duration.notice)
 ```
 
@@ -621,7 +621,7 @@ result          delete(keepConversation, duration.notice)
 Group deletion (`deleteGroupAlert`, `GroupChatInfoView.swift`, also used by the chat list):
 
 ```
-alert           title and message as before
+alert           "Delete group?", "Delete channel?" or "Delete chat?"; name and deleteGroupAlertMessage
 owner           (isOwner && membership.memberActive && businessChat == nil) || isCustomerChatOwner:
                 deleteGroupKeepDialog, Delete; footer for isCustomerChatOwner "**<name>** will be notified.",
                 with ", and can reconnect via your address." when userAddress.addressSettings.businessAddress

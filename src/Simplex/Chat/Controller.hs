@@ -1174,7 +1174,7 @@ data ChatDeleteMode
   | CDMEntity {notify :: Bool} -- delete contact (connection), keep conversation
   | CDMMessages -- delete conversation, keep contact - can be re-opened from Contacts view
   | CDMArchive
-  deriving (Show)
+  deriving (Eq, Show)
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}

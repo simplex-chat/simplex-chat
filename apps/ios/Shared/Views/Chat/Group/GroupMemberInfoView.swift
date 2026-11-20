@@ -1016,14 +1016,22 @@ func removeForeverAlert(_ gInfo: GroupInfo, _ mem: GroupMember, withMessages: Bo
     let format = gInfo.useRelays
         ? NSLocalizedString("%@ can't rejoin via the channel link again, except from another app.", comment: "remove forever alert")
         : NSLocalizedString("%@ can't rejoin via the group link again, except from another app.", comment: "remove forever alert")
-    return typedConfirmationAlert(
-        NSLocalizedString("Remove forever?", comment: "alert title"),
-        message: String.localizedStringWithFormat(format, mem.displayName),
-        word: foreverConfirmationWord,
-        confirmTitle: NSLocalizedString("Remove", comment: "alert action")
-    ) {
+    let alert = UIAlertController(title: NSLocalizedString("Remove forever?", comment: "alert title"), message: String.localizedStringWithFormat(format, mem.displayName), preferredStyle: .alert)
+    let remove = UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
         removeMember(gInfo, mem, withMessages: withMessages, notice: BanDuration.forever.notice, dismiss: dismiss)
     }
+    remove.isEnabled = false
+    alert.addTextField { field in
+        field.placeholder = typeToConfirmPlaceholder(foreverConfirmationWord)
+        field.autocapitalizationType = .none
+        field.autocorrectionType = .no
+        field.addAction(UIAction { [weak field] _ in
+            remove.isEnabled = typedWordConfirms(field?.text, foreverConfirmationWord)
+        }, for: .editingChanged)
+    }
+    alert.addAction(cancelAlertAction)
+    alert.addAction(remove)
+    return alert
 }
 
 func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool, ttl: Int64? = nil, onSuccess: @escaping () -> Void = {}) {

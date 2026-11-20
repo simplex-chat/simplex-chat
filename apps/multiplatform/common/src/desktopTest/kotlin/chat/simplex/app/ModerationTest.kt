@@ -518,7 +518,7 @@ class ModerationTest : RecordedApiTest() {
   @Test
   fun archiveContactFails() = recordedAlerts("bans/contact-deletion") {
     val chat = openContact("/_get chat @3 count=0")
-    archiveContact(chat, (chat.chatInfo as ChatInfo.Direct).contact, ChatModel)
+    archiveContact(chat, ChatModel)
     assertRequested("/_delete @3 archive")
     assertEquals("Error archiving contact", shownTexts().first())
   }
@@ -536,7 +536,7 @@ class ModerationTest : RecordedApiTest() {
   fun archiveContact() = recordedAlerts("bans/contact-deletion") {
     ChatController.appPrefs.showDeleteConversationNotice.set(true)
     val chat = openContact("/_get chat @2 count=0")
-    archiveContact(chat, (chat.chatInfo as ChatInfo.Direct).contact, ChatModel)
+    archiveContact(chat, ChatModel)
     assertTexts("Contact archived!", "You can send messages to bob from Archived contacts.", "Don't show again", "OK")
     assertTrue((chatInfo(chat.id) as ChatInfo.Direct).contact.chatDeleted)
   }

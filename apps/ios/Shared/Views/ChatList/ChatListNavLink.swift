@@ -334,7 +334,7 @@ struct ChatListNavLink: View {
         case let .deleteContact(contact):
             deleteContactDialog(chat, contact, dismissToChatList: false, showAlert: { alert = $0 }, showActionSheet: { actionSheet = $0 })
         case let .deleteGroup(groupInfo):
-            AlertManager.shared.showAlert(deleteGroupAlert(chat, groupInfo))
+            AlertManager.shared.showAlert(GroupChatInfoView.deleteGroupAlert(chat, groupInfo))
         case let .banContact(contact):
             deleteAndBanContactDialog(chat, contact, dismissToChatList: false, showAlert: { alert = $0 })
         case let .banCustomer(groupInfo):
@@ -415,7 +415,7 @@ struct ChatListNavLink: View {
 
     private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
         Button {
-            AlertManager.shared.showAlert(deleteGroupAlert(chat, groupInfo))
+            AlertManager.shared.showAlert(GroupChatInfoView.deleteGroupAlert(chat, groupInfo))
         } label: {
             deleteLabel
         }

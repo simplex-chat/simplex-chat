@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.chat.item.bansGuideLink
 import chat.simplex.common.views.chat.item.openBrowserAlert
 import chat.simplex.common.views.chat.subscriberCountStr
@@ -991,16 +990,8 @@ fun ownerVerificationMessage(ov: OwnerVerification?): String? = when (ov) {
 
 @Preview
 @Composable
-fun PreviewLinkNoticeAlertGroup() {
-  SimpleXTheme {
-    AlertPreview(AlertManager.privacySensitive) { showLinkNoticeAlert(LinkNoticeTarget.Group, Instant.parse("2026-11-08T12:00:00Z")) }
-  }
-}
+fun PreviewLinkNoticeAlertGroup() = AlertPreview(AlertManager.privacySensitive) { showLinkNoticeAlert(LinkNoticeTarget.Group, Instant.parse("2026-11-08T12:00:00Z")) }
 
 @Preview
 @Composable
-fun PreviewLinkNoticeAlertContact() {
-  SimpleXTheme {
-    AlertPreview(AlertManager.privacySensitive) { showLinkNoticeAlert(LinkNoticeTarget.Contact, expiresAt = null) }
-  }
-}
+fun PreviewLinkNoticeAlertContact() = AlertPreview(AlertManager.privacySensitive) { showLinkNoticeAlert(LinkNoticeTarget.Contact, expiresAt = null) }

@@ -299,7 +299,7 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
       ArchiveContactAction(chat, contact, chatModel, showMenu)
     }
     if (contact.canDeleteAndBan) {
-      DeleteAndBanContactAction(chat, contact, chatModel, showMenu)
+      DeleteAndBanAction(showMenu) { deleteAndBanContactDialog(chat, contact, chatModel) }
     }
     DeleteContactAction(chat, chatModel, showMenu)
   }
@@ -349,7 +349,7 @@ fun GroupMenuItems(
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.isCustomerChatOwner) {
-        DeleteAndBanCustomerAction(chat, groupInfo, showMenu)
+        DeleteAndBanAction(showMenu) { deleteAndBanCustomer(chat, groupInfo) }
       }
       if (groupInfo.canDelete) {
         DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
@@ -454,19 +454,19 @@ fun ArchiveContactAction(chat: Chat, contact: Contact, chatModel: ChatModel, sho
     stringResource(MR.strings.archive_verb),
     painterResource(MR.images.ic_inventory_2),
     onClick = {
-      archiveContact(chat, contact, chatModel)
+      archiveContact(chat, chatModel)
       showMenu.value = false
     }
   )
 }
 
 @Composable
-fun DeleteAndBanContactAction(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun DeleteAndBanAction(showMenu: MutableState<Boolean>, deleteAndBan: () -> Unit) {
   ItemAction(
     stringResource(MR.strings.delete_and_ban),
     painterResource(MR.images.ic_back_hand),
     onClick = {
-      deleteAndBanContactDialog(chat, contact, chatModel)
+      deleteAndBan()
       showMenu.value = false
     },
     color = Color.Red
@@ -480,19 +480,6 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
     painterResource(MR.images.ic_delete),
     onClick = {
       deleteContactDialog(chat, chatModel)
-      showMenu.value = false
-    },
-    color = Color.Red
-  )
-}
-
-@Composable
-fun DeleteAndBanCustomerAction(chat: Chat, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
-  ItemAction(
-    stringResource(MR.strings.delete_and_ban),
-    painterResource(MR.images.ic_back_hand),
-    onClick = {
-      deleteAndBanCustomer(chat, groupInfo)
       showMenu.value = false
     },
     color = Color.Red

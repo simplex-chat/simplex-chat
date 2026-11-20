@@ -3265,6 +3265,7 @@ updateGroupMemberSettings db User {userId} gId gMemberId GroupMemberSettings {sh
 updateGroupMemberBlocked :: DB.Connection -> User -> GroupInfo -> MemberRestrictions -> Bool -> GroupMember -> IO GroupMember
 updateGroupMemberBlocked db User {userId} GroupInfo {groupId} mrs@MemberRestrictions {restriction} byUser m@GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
+  let blockedUntil = blockExpiry mrs
   DB.execute
     db
     [sql|
@@ -3274,8 +3275,6 @@ updateGroupMemberBlocked db User {userId} GroupInfo {groupId} mrs@MemberRestrict
     |]
     (restriction, blockedUntil, BI byUser, currentTs, userId, groupId, groupMemberId)
   pure m {blockedByAdmin = blockedAt currentTs (Just restriction) blockedUntil, blockedUntil}
-  where
-    blockedUntil = blockExpiry mrs
 
 getHostConnId :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupMemberId
 getHostConnId db user@User {userId} groupId = do

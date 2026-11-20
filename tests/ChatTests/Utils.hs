@@ -701,27 +701,6 @@ linkNoticesCount cc =
   withCCTransaction cc $ \db ->
     fromMaybe 0 <$> maybeFirstRow fromOnly (DB.query_ db "SELECT count(1) FROM link_notices")
 
-waitLinkNoticesCount :: HasCallStack => TestCC -> Int -> Expectation
-waitLinkNoticesCount cc n = go (50 :: Int)
-  where
-    go attempts = do
-      count <- linkNoticesCount cc
-      if count == n || attempts <= 0
-        then count `shouldBe` n
-        else threadDelay 100000 >> go (attempts - 1)
-
-permanentLinkNoticesCount :: TestCC -> IO Int
-permanentLinkNoticesCount cc =
-  withCCTransaction cc $ \db ->
-    fromMaybe 0 <$> maybeFirstRow fromOnly (DB.query_ db "SELECT count(1) FROM link_notices WHERE expires_at IS NULL")
-
-bannedLine :: HasCallStack => TestCC -> String -> Expectation
-bannedLine cc prefix = do
-  l <- getTermLine' (Just $ "blocked: " <> prefix) cc
-  let banned = (prefix <> "blocked until ") `isPrefixOf` l
-  unless banned $ print ("expected blocked line: " <> prefix <> "..., got: " <> l)
-  banned `shouldBe` True
-
 shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation
 shouldEventuallyReturn action expected = go (200 :: Int)
   where
@@ -878,6 +857,14 @@ createGroup2' gName cc1 (cc2, role2) doConnectUsers = do
     (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
     (cc2 <## ("#" <> gName <> ": you joined the group"))
 
+leaveDeleteGroup :: HasCallStack => TestCC -> String -> IO ()
+leaveDeleteGroup cc gName = do
+  cc ##> ("/l #" <> gName)
+  cc <## ("#" <> gName <> ": you left the group")
+  cc <## ("use /d #" <> gName <> " to delete the group")
+  cc ##> ("/d #" <> gName)
+  cc <## ("#" <> gName <> ": you deleted your local copy of the group")
+
 disableFullDeletion2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
 disableFullDeletion2 gName cc1 cc2 = do
   cc1 ##> ("/set delete #" <> gName <> " off")
@@ -1025,6 +1012,9 @@ data FixtureRequests = FixtureRequests {frMarkdown :: [String], frUris :: [Strin
 
 nameFixture :: String -> TestCC -> String -> IO ()
 nameFixture fixture cc name = apiFixture ("names/" <> fixture) cc [] FixtureRequests {frMarkdown = [name], frUris = [], frCommands = ["/_connect plan 1 " <> name]}
+
+bansFixture :: String -> TestCC -> [String] -> IO ()
+bansFixture fixture cc cmds = apiFixture ("bans/" <> fixture) cc [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = cmds}
 
 apiFixture :: String -> TestCC -> [(String, String)] -> FixtureRequests -> IO ()
 apiFixture fixture tc@TestCC {chatController = cc} placeholders FixtureRequests {frMarkdown, frUris, frCommands} = do

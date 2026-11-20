@@ -82,29 +82,6 @@ func typedWordConfirms(_ typed: String?, _ word: String) -> Bool {
     typed?.trimmingCharacters(in: .whitespaces).lowercased() == word
 }
 
-func typedConfirmationAlert(
-    _ title: String,
-    message: String,
-    word: String,
-    confirmTitle: String,
-    confirm: @escaping () -> Void
-) -> UIAlertController {
-    let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-    let confirmAction = UIAlertAction(title: confirmTitle, style: .destructive) { _ in confirm() }
-    confirmAction.isEnabled = false
-    alert.addTextField { field in
-        field.placeholder = typeToConfirmPlaceholder(word)
-        field.autocapitalizationType = .none
-        field.autocorrectionType = .no
-        field.addAction(UIAction { [weak field] _ in
-            confirmAction.isEnabled = typedWordConfirms(field?.text, word)
-        }, for: .editingChanged)
-    }
-    alert.addAction(cancelAlertAction)
-    alert.addAction(confirmAction)
-    return alert
-}
-
 func showSheet(
     _ title: String?,
     message: String? = nil,

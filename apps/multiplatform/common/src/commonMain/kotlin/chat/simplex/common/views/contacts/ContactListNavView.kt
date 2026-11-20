@@ -78,7 +78,28 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                 },
                 dropdownMenuItems = {
                     tryOrShowError("${chat.id}ContactListNavLinkDropdown", error = {}) {
-                        ContactListMenuItems(chat, chat.chatInfo.contact, contactType, showMenu)
+                        if (contactType == ContactType.CONTACT_WITH_REQUEST) {
+                            if (chat.chatInfo.contact.contactRequestId != null) {
+                                ContactRequestMenuItems(
+                                    rhId = chat.remoteHostId,
+                                    contactRequestId = chat.chatInfo.contact.contactRequestId,
+                                    chatModel = chatModel,
+                                    showMenu = showMenu,
+                                    onSuccess = { onRequestAccepted(it) }
+                                )
+                            } else if (chat.chatInfo.contact.groupDirectInv != null && !chat.chatInfo.contact.groupDirectInv.memberRemoved) {
+                                MemberContactRequestMenuItems(
+                                    rhId = chat.remoteHostId,
+                                    contact = chat.chatInfo.contact,
+                                    showMenu = showMenu,
+                                    onSuccess = { onRequestAccepted(it) }
+                                )
+                            } else {
+                                DeleteContactAction(chat, chatModel, showMenu)
+                            }
+                        } else {
+                            ContactDeleteActions(chat, chat.chatInfo.contact, contactType, showMenu)
+                        }
                     }
                 },
                 showMenu,
@@ -124,32 +145,11 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
 }
 
 @Composable
-private fun ContactListMenuItems(chat: Chat, contact: Contact, contactType: ContactType, showMenu: MutableState<Boolean>) {
-    if (contactType == ContactType.CONTACT_WITH_REQUEST) {
-        if (contact.contactRequestId != null) {
-            ContactRequestMenuItems(
-                rhId = chat.remoteHostId,
-                contactRequestId = contact.contactRequestId,
-                chatModel = chatModel,
-                showMenu = showMenu,
-                onSuccess = { onRequestAccepted(it) }
-            )
-        } else if (contact.groupDirectInv != null && !contact.groupDirectInv.memberRemoved) {
-            MemberContactRequestMenuItems(
-                rhId = chat.remoteHostId,
-                contact = contact,
-                showMenu = showMenu,
-                onSuccess = { onRequestAccepted(it) }
-            )
-        } else {
-            DeleteContactAction(chat, chatModel, showMenu)
-        }
-    } else {
-        if (contactType == ContactType.CHAT_DELETED && contact.canDeleteAndBan) {
-            DeleteAndBanContactAction(chat, contact, chatModel, showMenu)
-        }
-        DeleteContactAction(chat, chatModel, showMenu)
+private fun ContactDeleteActions(chat: Chat, contact: Contact, contactType: ContactType, showMenu: MutableState<Boolean>) {
+    if (contactType == ContactType.CHAT_DELETED && contact.canDeleteAndBan) {
+        DeleteAndBanAction(showMenu) { deleteAndBanContactDialog(chat, contact, chatModel) }
     }
+    DeleteContactAction(chat, chatModel, showMenu)
 }
 
 @Composable
@@ -176,7 +176,7 @@ fun PreviewArchivedContactMenu() {
             ChatListNavLinkLayout(
                 chatLinkPreview = { ContactPreviewView(chat, disabled = false, showDeletedChatIcon = true) },
                 click = {},
-                dropdownMenuItems = { ContactListMenuItems(chat, contact, ContactType.CHAT_DELETED, showMenu) },
+                dropdownMenuItems = { ContactDeleteActions(chat, contact, ContactType.CHAT_DELETED, showMenu) },
                 showMenu = showMenu,
                 disabled = false,
                 selectedChat = remember { mutableStateOf(false) },

@@ -333,7 +333,7 @@ final class ModerationTests: RecordedAPITestCase {
     func testDeleteChannelKeepingConversation() async throws {
         try recorded("bans/channel")
         let (groupInfo, _) = try openGroup()
-        AlertManager.shared.showAlert(deleteGroupAlert(groupChat(groupInfo), groupInfo))
+        AlertManager.shared.showAlert(GroupChatInfoView.deleteGroupAlert(groupChat(groupInfo), groupInfo))
         try await assertTexts(["Delete channel?", "team\n\nChannel will be deleted for all subscribers - this cannot be undone!", "Delete", "Cancel"])
         try await press("Delete")
         let dialog = try await sheet(KeepConversationDialog.self)
@@ -346,7 +346,7 @@ final class ModerationTests: RecordedAPITestCase {
     func testDeleteOwnGroup() async throws {
         try recorded("bans/group-deletion")
         let (groupInfo, _) = try openGroup()
-        AlertManager.shared.showAlert(deleteGroupAlert(groupChat(groupInfo), groupInfo))
+        AlertManager.shared.showAlert(GroupChatInfoView.deleteGroupAlert(groupChat(groupInfo), groupInfo))
         try await assertTexts(["Delete group?", "team\n\nGroup will be deleted for all members - this cannot be undone!", "Delete", "Cancel"])
         try await press("Delete")
         let dialog = try await sheet(KeepConversationDialog.self)
@@ -361,7 +361,7 @@ final class ModerationTests: RecordedAPITestCase {
     func testDeleteOwnGroupKeepingConversation() async throws {
         try recorded("bans/group-deletion")
         let (groupInfo, _) = try openGroup("/_members #2")
-        AlertManager.shared.showAlert(deleteGroupAlert(groupChat(groupInfo), groupInfo))
+        AlertManager.shared.showAlert(GroupChatInfoView.deleteGroupAlert(groupChat(groupInfo), groupInfo))
         try await press("Delete")
         let dialog = try await sheet(KeepConversationDialog.self)
         dialog.close { dialog.delete(true) }
@@ -372,7 +372,7 @@ final class ModerationTests: RecordedAPITestCase {
     func testDeleteGroupAsMember() async throws {
         try recorded("bans/group-deletion-member")
         let (groupInfo, _) = try openGroup()
-        AlertManager.shared.showAlert(deleteGroupAlert(groupChat(groupInfo), groupInfo))
+        AlertManager.shared.showAlert(GroupChatInfoView.deleteGroupAlert(groupChat(groupInfo), groupInfo))
         try await assertTexts(["Delete group?", "team\n\nGroup will be deleted for you - this cannot be undone!", "Delete", "Cancel"])
         try await press("Delete")
         try await waitFor { ChatModel.shared.getChat(groupInfo.id) == nil }
@@ -383,7 +383,7 @@ final class ModerationTests: RecordedAPITestCase {
         try recorded("bans/business")
         try loadAddress()
         let (groupInfo, _) = try openGroup("/_members #2")
-        AlertManager.shared.showAlert(deleteGroupAlert(groupChat(groupInfo), groupInfo))
+        AlertManager.shared.showAlert(GroupChatInfoView.deleteGroupAlert(groupChat(groupInfo), groupInfo))
         try await assertTexts(["Delete chat?", "cath\n\nChat will be deleted for all members - this cannot be undone!", "Delete", "Cancel"])
         try await press("Delete")
         let dialog = try await sheet(KeepConversationDialog.self)
