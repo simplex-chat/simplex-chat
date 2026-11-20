@@ -10,7 +10,7 @@ import Control.Concurrent.STM
 import Control.DeepSeq
 import qualified Control.Exception as E
 import Control.Monad (unless, void)
-import Data.List (dropWhileEnd, sort)
+import Data.List (dropWhileEnd, nub, sort)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, isJust)
 import Data.Text (Text)
@@ -187,7 +187,7 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
     updatePlans plansFile statsSel createStore prepareStore = do
       savedPlans <- ifM (doesFileExist plansFile) (T.readFile plansFile) (pure "")
       savedPlans `deepseq` pure ()
-      queries <- sort . M.keys <$> readTVarIO statsSel
+      queries <- sort . nub . map normalizeQuery . M.keys <$> readTVarIO statsSel
       Right st <- createStore
       plans' <- withConnection st $ \db -> do
         void $ prepareStore db
@@ -195,6 +195,19 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
       let savedPlans' = T.unlines plans'
       T.writeFile plansFile savedPlans'
       pure (savedPlans, savedPlans')
+    -- Badge group tests embed the live shared_msg_id. The plan is a scan
+    -- either way; one placeholder keeps the golden stable across runs.
+    normalizeQuery :: Query -> Query
+    normalizeQuery (Query t) = Query (go t)
+      where
+        needle = "hex(shared_msg_id) = '"
+        go s = case T.breakOn needle s of
+          (pre, rest)
+            | T.null rest -> s
+            | otherwise ->
+                let afterOpen = T.drop (T.length needle) rest
+                    (_hex, afterQuote) = T.breakOn "'" afterOpen
+                 in pre <> "hex(shared_msg_id) = '?'" <> go (T.drop 1 afterQuote)
     getQueryPlan :: DB.Connection -> Query -> IO Text
     getQueryPlan db q =
       (("Query: " <> fromQuery q) <>) . result <$> E.try (DB.query_ db $ "explain query plan " <> q)

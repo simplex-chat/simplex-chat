@@ -1,0 +1,65 @@
+--- a/src/Simplex/Messaging/Transport/Server.hs
++++ b/src/Simplex/Messaging/Transport/Server.hs
+@@ -32,7 +32,6 @@
+   )
+ where
+ 
+-import Control.Applicative ((<|>))
+ import Control.Logger.Simple
+ import Control.Monad
+ import qualified Crypto.Store.X509 as SX
+@@ -41,7 +40,7 @@
+ import Data.IntMap.Strict (IntMap)
+ import qualified Data.IntMap.Strict as IM
+ import Data.List (find)
+-import Data.Maybe (fromJust, fromMaybe, maybeToList)
++import Data.Maybe (fromMaybe, maybeToList)
+ import qualified Data.X509 as X
+ import Data.X509.Validation (Fingerprint (..))
+ import qualified Data.X509.Validation as XV
+@@ -241,18 +240,33 @@
+   where
+     resolve =
+       let hints = defaultHints {addrFlags = [AI_PASSIVE], addrSocketType = Stream}
+-       in select <$> getAddrInfo (Just hints) host (Just port)
+-    select as = fromJust $ family AF_INET6 <|> family AF_INET
+-      where
+-        family f = find ((== f) . addrFamily) as
+-    open addr = do
+-      sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
+-      setSocketOption sock ReuseAddr 1
+-      withFdSocket sock setCloseOnExecIfNeeded
+-      logNote $ "binding to " <> tshow (addrAddress addr)
+-      bind sock $ addrAddress addr
+-      listen sock 1024
+-      pure sock
++       in preferV6 <$> getAddrInfo (Just hints) host (Just port)
++    -- getAddrInfo still returns the IPv6 wildcard when the kernel has no
++    -- IPv6. socket() then fails with EAFNOSUPPORT. Try IPv6 first, and use
++    -- IPv4 when that is the failure.
++    preferV6 as =
++      filter ((== AF_INET6) . addrFamily) as ++ filter ((== AF_INET) . addrFamily) as
++    open [] = fail "startTCPServer: no TCP address"
++    open (addr : as) =
++      E.try (openAddr addr) >>= \case
++        Right sock -> pure sock
++        Left e
++          | not (null as) && unsupportedFamily e -> open as
++          | otherwise -> E.throwIO e
++    unsupportedFamily e = case ioe_errno e of
++      Just n -> Errno n == eAFNOSUPPORT
++      Nothing -> False
++    openAddr addr =
++      E.bracketOnError
++        (socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr))
++        close
++        $ \sock -> do
++          setSocketOption sock ReuseAddr 1
++          withFdSocket sock setCloseOnExecIfNeeded
++          logNote $ "binding to " <> tshow (addrAddress addr)
++          bind sock $ addrAddress addr
++          listen sock 1024
++          pure sock
+     setStarted sock = atomically (tryPutTMVar started True) >> pure sock
+ 
+ loadServerCredential :: ServerCredentials -> IO T.Credential
