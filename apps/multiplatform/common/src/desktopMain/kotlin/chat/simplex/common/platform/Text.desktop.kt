@@ -49,11 +49,13 @@ import org.jetbrains.skia.paragraph.TextStyle as SkTextStyle
 actual fun platformText(text: AnnotatedString, style: TextStyle): PlatformText {
   val density = LocalDensity.current
   return remember(text, style, density) {
-    if (text.length > MAX_CACHED_TEXT_LENGTH || text.spanStyles.size > MAX_CACHED_TEXT_SPANS) {
-      layOutDesktopText(text, style, density, field = false)
-    } else {
-      val key = LayoutKey(text, style, density)
-      laidOutTexts[key] ?: layOutDesktopText(text, style, density, field = false).also { laidOutTexts[key] = it }
+    val key = LayoutKey(text, style, density)
+    laidOutTexts[key] ?: layOut(text, style, density, field = false).let { layout ->
+      val laidOut = layout.platformText
+      if (layout.complete && laidOut.text.length <= MAX_CACHED_TEXT_LENGTH && laidOut.text.spanStyles.size <= MAX_CACHED_TEXT_SPANS) {
+        laidOutTexts[key] = laidOut
+      }
+      laidOut
     }
   }
 }
@@ -140,7 +142,12 @@ private const val EMOJI_LOCALE = "und-Zsye"
 private val DEFAULT_FONT_SIZE = 16.sp
 private val HARD_BREAKS = setOf('\n', '\u000B', '\u000C', Char(0x2028), Char(0x2029))
 
-internal fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density, field: Boolean): PlatformText {
+internal fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density, field: Boolean): PlatformText =
+  layOut(text, style, density, field).platformText
+
+private class DesktopLayout(val platformText: PlatformText, val complete: Boolean)
+
+private fun layOut(text: AnnotatedString, style: TextStyle, density: Density, field: Boolean): DesktopLayout {
   val s = text.text
   val effective = text.spanStyles.filter { it.start == 0 }.fold(style) { acc, range -> acc.merge(range.item) }
   val fontSizePx = fontSizePx(effective.fontSize, density)
@@ -151,7 +158,8 @@ internal fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density:
   val proportional = lineHeightStyle.alignment == LineHeightStyle.Alignment.Proportional
   val centered = lineHeightStyle.alignment == LineHeightStyle.Alignment.Center && lineHeightStyle.trim == LineHeightStyle.Trim.None
   val segments by lazy { styledSegments(text, style) }
-  val fonts by lazy { characterFonts(text, segments) }
+  val queries = FallbackQueries()
+  val fonts by lazy { characterFonts(text, segments, queries) }
   val marker = when {
     field || hasEmptyLine(s) -> null
     lineHeightPx == null -> SpanStyle(fontSize = with(density) { UNSET_LINE_HEIGHT_MARKER_PX.toSp() })
@@ -170,11 +178,12 @@ internal fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density:
     }
   }
   val fallbackStyles = if (desktopPlatform.isMac() || desktopPlatform.isWindows()) fallbackStyles(s, segments, fonts, density) else emptyList()
-  if (marker == null && fallbackStyles.isEmpty()) return PlatformText(text, laidOutStyle)
+  val complete = !queries.limited
+  if (marker == null && fallbackStyles.isEmpty()) return DesktopLayout(PlatformText(text, laidOutStyle), complete)
   val builder = AnnotatedString.Builder(text)
   builder.addStyle(marker ?: SpanStyle(), 0, 0)
   for (range in fallbackStyles) builder.addStyle(range.item, range.start, range.end)
-  return PlatformText(builder.toAnnotatedString(), laidOutStyle)
+  return DesktopLayout(PlatformText(builder.toAnnotatedString(), laidOutStyle), complete)
 }
 
 private fun hasEmptyLine(s: String): Boolean {
@@ -276,12 +285,11 @@ private fun styledSegments(text: AnnotatedString, style: TextStyle): List<Styled
   return out
 }
 
-private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>): Array<Typeface?> {
+private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>, queries: FallbackQueries): Array<Typeface?> {
   val s = text.text
   val fonts = arrayOfNulls<Typeface>(s.length)
   val inlined = BooleanArray(s.length)
   for (range in text.getStringAnnotations(INLINE_CONTENT_TAG, 0, s.length)) inlined.fill(true, range.start, range.end)
-  val queries = FallbackQueries()
   val graphemeStarts by lazy {
     val starts = BooleanArray(s.length + 1)
     BreakIterator.makeCharacterInstance().use { graphemes ->
@@ -294,22 +302,33 @@ private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>)
     }
     starts
   }
+  var fallbacks = mutableListOf<Typeface>()
+  var resolved = HashMap<String, Typeface>()
+  var fontAttributes: List<Any?>? = null
   for (segment in segments) {
+    val attributes = segment.style.let { listOf(it.fontFamily, it.fontWeight, it.fontStyle, it.fontSize, it.baselineShift) }
+    if (attributes != fontAttributes) {
+      fallbacks = mutableListOf()
+      resolved = HashMap()
+      fontAttributes = attributes
+    }
     val first = segment.typefaces.firstOrNull() ?: continue
     if (coversCharacters(first, s, segment.start, segment.end, inlined)) {
       fonts.fill(first, segment.start, segment.end)
       continue
     }
-    val fallbacks = mutableListOf<Typeface>()
     var start = segment.start
     while (start < segment.end) {
       var end = start + 1
       while (end < segment.end && !graphemeStarts[end]) end++
       if (!inlined[start]) {
-        val grapheme = Grapheme(s, start, end, inlined)
-        val typeface = segment.typefaces.firstOrNull { grapheme.coveredBy(it) }
-          ?: fallbacks.firstOrNull { grapheme.coveredBy(it) }
-          ?: graphemeFallback(grapheme, segment.fontStyle, segment.typefaces + fallbacks, queries)?.also { fallbacks += it }
+        val key = if ((start until end).none { inlined[it] }) s.substring(start, end) else null
+        val typeface = key?.let { resolved[it] } ?: run {
+          val grapheme = Grapheme(s, start, end, inlined)
+          segment.typefaces.firstOrNull { grapheme.coveredBy(it) }
+            ?: fallbacks.firstOrNull { grapheme.coveredBy(it) }
+            ?: graphemeFallback(grapheme, segment.fontStyle, segment.typefaces + fallbacks, queries)?.also { fallbacks += it }
+        }?.also { if (key != null) resolved[key] = it }
         fonts.fill(typeface, start, end)
       }
       start = end
@@ -451,7 +470,7 @@ private fun fallbackStyles(s: String, segments: List<StyledSegment>, fonts: Arra
       } else {
         val tracking = if (run != null && factsOf(run).tracked) trackingPx(run, fontSizePx) else 0f
         if (tracking != 0f) {
-          val spacing = letterSpacingPx - tracking
+          val spacing = letterSpacingPx - tracking - NEGLIGIBLE_TRACKING_PX
           if (trackStart >= 0 && spacing != trackPx) endTracking(i)
           if (trackStart < 0) {
             trackStart = i
@@ -503,12 +522,16 @@ private val macEmojiTypeface: Typeface? by lazy { FontMgr.default.matchFamilySty
 private class FallbackQueries {
   val results = HashMap<Long, Typeface?>()
   var remaining = MAX_FALLBACK_QUERIES
+  var limited = false
 }
 
 private fun fallbackTypeface(cp: Int, fontStyle: FontStyle, emoji: Boolean, queries: FallbackQueries): Typeface? {
   val key = (if (emoji) 1L shl 48 else 0L) or (fontStyle.weight.toLong() shl 34) or (fontStyle.slant.ordinal.toLong() shl 32) or cp.toLong()
   if (key in queries.results) return queries.results[key]
-  val system = fallbackTypefaces[key] ?: if (missedFallbacks[key] != null || queries.remaining <= 0) null else {
+  val system = fallbackTypefaces[key] ?: if (missedFallbacks[key] != null) null else if (queries.remaining <= 0) {
+    queries.limited = true
+    null
+  } else {
     queries.remaining--
     when {
       emoji && desktopPlatform.isMac() -> macEmojiTypeface
@@ -568,7 +591,7 @@ private val flatEmojiFamily: FontFamily? by lazy {
 private val gaplessFamilies = ConcurrentHashMap<Int, Any>()
 
 private fun gaplessFamily(typeface: Typeface): FontFamily? =
-  gaplessFamilies.getOrPut(typeface.uniqueId) {
+  gaplessFamilies.computeIfAbsent(typeface.uniqueId) {
     patchedFamily(typeface, MAX_COPIED_FONT_BYTES) { tag, data ->
       if (tag == "hhea" && data.size >= HHEA_LINE_GAP + 2) {
         data[HHEA_LINE_GAP] = 0
@@ -627,7 +650,7 @@ private fun fontCopy(typeface: Typeface, maxBytes: Int, patch: (String, ByteArra
 private val fontFamilies = ConcurrentHashMap<Int, FontFamily>()
 
 private fun fontFamilyOf(typeface: Typeface): FontFamily =
-  fontFamilies.getOrPut(typeface.uniqueId) {
+  fontFamilies.computeIfAbsent(typeface.uniqueId) {
     createdTypefaces += typeface
     FontFamily(androidx.compose.ui.text.platform.Typeface(typeface, "fallback ${typeface.uniqueId}"))
   }

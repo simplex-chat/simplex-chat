@@ -84,12 +84,14 @@ flowchart TD
   - otherwise the first fallback, for its characters in order, that covers it: an emoji sequence start (Unicode 15.1 Emoji and Emoji_Component, as ICU 74 in Skia m138) takes the emoji fallback (`und-Zsye`, Apple Color Emoji on macOS), any other character the system fallback for its weight and slant;
   - when the system has none, Inter, the bundled emoji font, then the typefaces the transform registered with Compose in the order it created them, as Skiko's `TypefaceFontProviderWithFallback::fallbackForChar`.
 - The fallback search for a grapheme skips typefaces and code points already tried, as Skia's `alreadyTriedTypefaces` and `alreadyTriedCodepoints`; found typefaces are kept in an LRU cache of 4096 keys and misses in one of 16384 keys.
-- A text makes at most 64 system fallback queries; characters past that take no predicted font, so no span. Results are memoised per text.
-- The transform's results for texts outside fields, up to 16384 characters and 512 spans, are kept in an LRU cache of 128 texts, as Skia's paragraph cache (`ParagraphCache`, 128 entries).
+- A text makes at most 64 system fallback queries; characters past that take only the registered typefaces of the last-resort step, and such a text is not cached. Results are memoised per text.
+- Fallback fonts found in a segment are tried first in the following segments with the same family, weight, slant, size and baseline shift, as Skia joins blocks with equal font attributes.
+- The transform's results for texts outside fields, when the output has at most 16384 characters and 512 spans, are kept in an LRU cache of 128 texts, as Skia's paragraph cache (`ParagraphCache`, 128 entries).
 - Each grapheme is normalised at most once; runs of regional indicators are paired in one pass.
 - Fonts are resolved once per text, for the dominant font and the fallback spans; graphemes are found only for a segment that its first font does not cover entirely.
 - An emoji run (Windows) continues over ZWJ, variation selectors, keycap, tags, skin tones, hair components and the second regional indicator of a pair; a segment in a font with unknown metrics ends it.
 - A measured tracking below 1/4096 px counts as 0: Skia rounds HarfBuzz advances to 1/65536 px, and HarfBuzz applies `trak` only with a `STAT` table.
+- A tracking span takes 1/4096 px per glyph more than the tracking: the measurement carries up to about 1e-5 px of rounding per glyph, and Compose rounds a paragraph width up, so a line of whole-pixel advances (CJK) would otherwise come out 1 px wider than m132's.
 - On macOS, a tracking span on text with positive letter spacing whose spacing becomes 0 or negative also sets `liga 0`: Skia turns ligatures off only for positive spacing.
 - The COLR v0 copy is made only when the font's COLR table has another version and v0 base glyph records.
 - Segments are found by one sweep over span bounds; active spans merge in the order of their starts, then of their indexes, as in `ParagraphBuilder.makeOps`.
@@ -113,7 +115,6 @@ flowchart TD
   - the fallback search walks one grapheme at a time and keeps a fallback only when it covers the grapheme it was found for; Skia walks the whole unresolved block, offers every tried font to later blocks, also queries characters that need no glyph, and tests every position for an emoji sequence start;
   - the last-resort list has Inter Regular, not every Inter weight Compose loaded;
   - every inline-content annotation counts as a placeholder; Compose draws U+FFFD for an id missing from the map;
-  - a fallback font reused across segments in Skia (same font attributes, different colour or link) is found again per segment here;
   - a zero-length span at offset 0 in the input text cancels the marker; the app creates none;
   - Linux glyph pixels;
   - labels of Compose's text context menu (Copy, Cut, Paste, Select all), drawn by foundation's own `BasicText`.
@@ -126,6 +127,28 @@ flowchart TD
   - `FallbackSearchTest` lays out one grapheme of 20 000 combining marks and a mark no font covers with them within 10 s; the search without skipping tried fonts took 63 s. It also lays out 6000 distinct characters no font covers twice: the first layout within 3 s (13.6 s without the query limit), the second within 1 s.
   - The desktop snapshots are compared with the references rendered with m132.
 - `Dockerfile.build` installs `fontconfig`, which provides `fc-cache` to the test in CI.
+
+## Threat model
+
+A contact controls the text of messages, profiles and group names, and with them:
+- length: up to 15602 bytes per message, 65536 bytes after decompression;
+- markdown spans;
+- code points: characters no installed font covers, long graphemes, runs of regional indicators;
+- updates of live messages.
+
+Bounds that apply to such text:
+
+| Cost | Bound |
+|---|---|
+| system fallback queries | 64 per text; found typefaces in an LRU of 4096 keys, misses in one of 16384 |
+| fallback search in one grapheme | each typeface and code point tried once |
+| repeated graphemes | resolved once per run of segments with equal font attributes |
+| normalisation | once per grapheme |
+| regional indicators | paired in one pass |
+| laid-out texts | LRU of 128, each at most 16384 characters and 512 spans |
+| font copies | fonts up to 8 MB, once per typeface |
+
+The fix removes a crash a contact could cause by sending a character whose fallback font is a bitmap or WOFF2 font. The transform reads only installed fonts and the app's bundled fonts, and shares no data.
 
 ## Implementation steps
 
