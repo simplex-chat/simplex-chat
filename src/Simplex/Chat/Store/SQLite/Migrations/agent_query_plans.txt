@@ -1371,6 +1371,10 @@ Query: SELECT 1 FROM snd_message_deliveries WHERE conn_id = ? AND failed = 0 LIM
 Plan:
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
 
+Query: SELECT 1 FROM snd_queues WHERE host = ? AND port = ? AND snd_id = ? AND status != ? LIMIT 1
+Plan:
+SEARCH snd_queues USING PRIMARY KEY (host=? AND port=? AND snd_id=?)
+
 Query: SELECT conn_id FROM connections WHERE deleted = 0
 Plan:
 SEARCH connections USING COVERING INDEX idx_connections_deleted (deleted=?)

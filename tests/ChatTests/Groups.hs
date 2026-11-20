@@ -9682,15 +9682,8 @@ testConnectChannelCLI ps =
           mName <- userName dan
           mFullName <- showName dan
           dan ##> ("/c " <> shortLink)
-          dan <## "#team: connection started"
           concurrentlyN_ $
-            [ dan
-                <### concat
-                  [ [ ConsoleString ("#team: joining the group (connecting to relay " <> rName <> ")..."),
-                      ConsoleString ("#team: you joined the group (connected to relay " <> rName <> ")")
-                    ]
-                  | rName <- relayNames
-                  ]
+            [ dan <### connectionStarted "#team" relayNames
             ]
               <> [ do
                      relay <## (mFullName <> ": accepting request to join group #team...")
@@ -9967,6 +9960,18 @@ prepareChannel2Relays gName owner relay1 relay2 = do
 memberJoinChannel :: String -> [TestCC] -> [TestCC] -> String -> String -> TestCC -> IO ()
 memberJoinChannel gName = memberJoinChannel' gName 1 0 0 0
 
+-- Command response and subscriber join lines share one terminal queue.
+-- "connection started" is not ordered ahead of the relay join lines.
+connectionStarted :: String -> [String] -> [ConsoleResponse]
+connectionStarted groupPrefix relayNames =
+  ConsoleString (groupPrefix <> ": connection started")
+    : concat
+      [ [ ConsoleString (groupPrefix <> ": joining the group (connecting to relay " <> rName <> ")..."),
+          ConsoleString (groupPrefix <> ": you joined the group (connected to relay " <> rName <> ")")
+        ]
+      | rName <- relayNames
+      ]
+
 -- | sfx params: relaySfx - how relay/owner see the member, memberRelaySfx - how member sees relay
 memberJoinChannel' :: String -> Int -> Int -> Int -> Int -> [TestCC] -> [TestCC] -> String -> String -> TestCC -> IO ()
 memberJoinChannel' gName gId relaySfx ownerSfx memberRelaySfx relays owners shortLink fullLink member = do
@@ -9985,15 +9990,10 @@ memberJoinChannel' gName gId relaySfx ownerSfx memberRelaySfx relays owners shor
   member <## ("#" <> gName <> ": group is prepared")
 
   member ##> ("/_connect group #" <> show gId)
-  member <## ("#" <> gName <> ": connection started")
+  -- connectToRelay returns the command response only after the invitation is
+  -- sent. The subscriber thread can print the relay join lines first.
   concurrentlyN_ $
-    [ member
-        <### concat
-          [ [ ConsoleString ("#" <> gName <> ": joining the group (connecting to relay " <> rName <> ")..."),
-              ConsoleString ("#" <> gName <> ": you joined the group (connected to relay " <> rName <> ")")
-            ]
-          | rName <- relayNames
-          ]
+    [ member <### connectionStarted ("#" <> gName) relayNames
     ]
       <> [ do
              relay <## (sfxName relaySfx <> ": accepting request to join group #" <> gName <> "...")
@@ -10793,9 +10793,8 @@ testChannelJoinAppliesLinkProfile ps =
         withCCTransaction cath $ \db ->
           DB.execute_ db "UPDATE group_profiles SET short_descr = 'earlier copy'"
         cath ##> "/_connect group #1"
-        cath <## "#team: connection started"
         concurrentlyN_
-          [ cath <### ["#team: joining the group (connecting to relay bob)...", "#team: you joined the group (connected to relay bob)"],
+          [ cath <### connectionStarted "#team" ["bob"],
             do
               bob <## "cath (Catherine): accepting request to join group #team..."
               bob <## "#team: cath joined the group",

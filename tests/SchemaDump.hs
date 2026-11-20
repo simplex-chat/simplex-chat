@@ -187,7 +187,7 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
     updatePlans plansFile statsSel createStore prepareStore = do
       savedPlans <- ifM (doesFileExist plansFile) (T.readFile plansFile) (pure "")
       savedPlans `deepseq` pure ()
-      queries <- sort . nub . map normalizeQuery . M.keys <$> readTVarIO statsSel
+      queries <- sort . nub . map normalizeQuery . filter (not . retryQuery) . M.keys <$> readTVarIO statsSel
       Right st <- createStore
       plans' <- withConnection st $ \db -> do
         void $ prepareStore db
@@ -208,6 +208,10 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
                 let afterOpen = T.drop (T.length needle) rest
                     (_hex, afterQuote) = T.breakOn "'" afterOpen
                  in pre <> "hex(shared_msg_id) = '?'" <> go (T.drop 1 afterQuote)
+    -- XFTP workers record this update only after a chunk download fails and
+    -- retries. A loaded builder hits it; a quiet one does not.
+    retryQuery :: Query -> Bool
+    retryQuery (Query t) = "retries = retries + 1" `T.isInfixOf` t
     getQueryPlan :: DB.Connection -> Query -> IO Text
     getQueryPlan db q =
       (("Query: " <> fromQuery q) <>) . result <$> E.try (DB.query_ db $ "explain query plan " <> q)
