@@ -2,7 +2,7 @@
   description = "nix flake for simplex-chat";
   # Same compiler and boot libraries on every target. fd0b59fd plus the
   # x86_64 Darwin TLV linker (stable-ghc-9.14-hn e108745df4).
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/8dff34867c433fb30c74f31fe29131a1ce1b7263";
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/e590ee295ea4ca130e8428ef07a0e583c792387b";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs";
   inputs.mac2ios.url = "github:zw3rk/mobile-core-tools";
   inputs.hackage = {
