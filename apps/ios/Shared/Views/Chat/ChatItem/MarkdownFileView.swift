@@ -167,6 +167,26 @@ private func openMarkdownFileLink(_ url: URL) {
     }
 }
 
+func copyMarkdownFile(_ file: CIFile, _ text: String) {
+    if file.fileSize > MAX_MARKDOWN_COPY_SIZE {
+        showAlert(
+            NSLocalizedString("File too large", comment: "alert title"),
+            message: String.localizedStringWithFormat(
+                NSLocalizedString("Your file is %@. Do you want to copy it?", comment: "alert message"),
+                ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
+            ),
+            actions: {[
+                cancelAlertAction,
+                UIAlertAction(title: NSLocalizedString("Copy", comment: "alert button"), style: .default) { _ in
+                    UIPasteboard.general.string = text
+                }
+            ]}
+        )
+    } else {
+        UIPasteboard.general.string = text
+    }
+}
+
 struct MarkdownFileView: View {
     @AppStorage(DEFAULT_MARKDOWN_FILE_TEXT_VIEW) private var textView = false
     let file: CIFile
@@ -206,23 +226,7 @@ struct MarkdownFileView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button {
-                        if file.fileSize > MAX_MARKDOWN_COPY_SIZE {
-                            showAlert(
-                                NSLocalizedString("File too large", comment: "alert title"),
-                                message: String.localizedStringWithFormat(
-                                    NSLocalizedString("Your file is %@. Do you want to copy it?", comment: "alert message"),
-                                    ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
-                                ),
-                                actions: {[
-                                    cancelAlertAction,
-                                    UIAlertAction(title: NSLocalizedString("Copy", comment: "alert button"), style: .default) { _ in
-                                        UIPasteboard.general.string = text
-                                    }
-                                ]}
-                            )
-                        } else {
-                            UIPasteboard.general.string = text
-                        }
+                        copyMarkdownFile(file, text)
                     } label: {
                         Image(systemName: "doc.on.doc")
                     }
