@@ -8,10 +8,10 @@ module Bots.StoreService.NamesRecordsTests (namesRecordsTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (alice, gracePeriod, minPriceCentsPerYear, otherResolver, registry)
 import Bots.StoreService.NamesStoreTests (t0)
-import Bots.StoreService.WebTests (bounded, refusedWith, storeFixture, withServiceStore)
+import Bots.StoreService.WebTests (bounded, capturingStderr, refusedWith, storeFixture, withServiceStore)
 import qualified Bots.StoreService.WebTests as WT
 import Bots.StoreService.WebUIMock (EphemeralWallet (..), newEphemeralWallet, walletFromCode)
-import Control.Concurrent.Async (Async, async, concurrently, wait)
+import Control.Concurrent.Async (Async, async, cancel, concurrently, wait)
 import Control.Concurrent.STM
 import Control.Monad (forM, forM_, when)
 import Crypto.Random (ChaChaDRG)
@@ -84,6 +84,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "answers provider_unavailable and stores nothing when the re-read after a dry run's revert fails" $ testDryRunReReadFails g
     it "lets a concurrent twin lose the unique insert before any signing, and answers both" $ testConcurrentTwin g
     it "answers edit_pending at once when the chain stops answering after the send" $ testChainStopsAfterSend g
+    it "logs a round whose read of the pending edits fails, and the next round follows them" $ testRoundFails g
     it "bounds the wait for edit_pending from the request's arrival, counting the checks and the send" $ testPendingFromArrival g
   describe "two edits" $ do
     it "relays two edits as one multicall transaction with one row, and answers its hash once mined" $ testTwoMined g
@@ -468,6 +469,20 @@ testPendingFromArrival g = withSetup g $ \s@Setup {node, records} -> do
   where
     slowBlock = 1500000
     waitFromArrival = 2500000
+
+testRoundFails :: TVar ChaChaDRG -> IO ()
+testRoundFails g = withSetup g $ \s@Setup {store, records} -> do
+  let rename from to = withTransaction store $ \db -> DB.execute_ db $ "ALTER TABLE " <> from <> " RENAME TO " <> to
+  req <- ownerEdit s viemChannelLink
+  r <- relay s req
+  _ <- sentBy s 1
+  rename "sx_badge_service_name_record_edits" "name_record_edits_away"
+  logged <- capturingStderr $ recordsRound records
+  rename "name_record_edits_away" "sx_badge_service_name_record_edits"
+  logged `shouldSatisfy` T.isInfixOf "names records: the round failed; the next pass will run: "
+  h <- mineSent s 1 True
+  relayEdit records req `shouldReturn` EASettled (EOApplied $ Just h)
+  cancel r
 
 testChainStopsAfterSend :: TVar ChaChaDRG -> IO ()
 testChainStopsAfterSend g = withSetup g $ \s@Setup {node, records} -> do

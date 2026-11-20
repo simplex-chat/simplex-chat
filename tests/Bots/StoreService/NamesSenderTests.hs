@@ -303,7 +303,8 @@ testFailedRound g = withSetup g $ \s@Setup {node, store} -> do
   mineHash node (ptHash p)
   _ <- mine node []
   renameTransactions store "sx_badge_service_name_transactions" "name_transactions_away"
-  senderRound sender
+  logged <- capturingStderr $ senderRound sender
+  logged `shouldSatisfy` T.isInfixOf "names sender: the round failed; the next pass will run: "
   settled sender (TxRegistration RTCommit r1) `shouldReturn` False
   renameTransactions store "name_transactions_away" "sx_badge_service_name_transactions"
   senderRound sender

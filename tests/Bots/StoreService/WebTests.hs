@@ -74,6 +74,7 @@ import Bots.StoreService.BotTests (codeCounts, newPurchaseKeys)
 import Bots.StoreService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
 import Bots.StoreService.ConfigTests (chainSection, namesSection, parsedNames, resolverAddr, sponsorAddr)
 import Bots.StoreService.FakeBTCPay
+import Bots.StoreService.FakeHttp (withResetServer)
 import Bots.StoreService.FakeStripe (FakeStripe (..), fakeIntentStatus, setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
 import ChatTests.Utils (writeFixture)
 import Control.Concurrent (forkIO, forkOn, getNumCapabilities, threadDelay)
@@ -351,6 +352,8 @@ badgeWebTests = do
     it "reads no invoice past the settle window of a provider whose read failed in the pass" testSweepSkipsPastTheWindowWhileReadsFail
     it "reads the invoices past the settle window that never failed first, and expires one unreadable for a day while its provider answers" testSweepGivesUpAnUnreadableInvoice
     it "expires a given-up invoice at the next pass when it is still open" testSweepExpiresAGivenUpInvoiceAgain
+    it "logs a pass that fails on the store, and the poller runs on" testPassFailureLogged
+    it "runs the rest of the pass when a provider's list resets while its answer is read" testListResetPassRuns
     it "gives up no invoice while every read fails, and counts no failure from a pass in which its provider answered nothing" testSweepCountsAnsweredFailures
     it "reads the invoice whose last failure is oldest first, so one unreadable invoice delays the others by one pass" testSweepReadsOldestFailureFirst
     it "sweeps around an overdue invoice whose provider this build does not know, leaving it open" testSweepSkipsAnUnknownProvider
@@ -3543,6 +3546,27 @@ testSweepExpiresAGivenUpInvoiceAgain = bounded "sweep expires a given-up invoice
   logged <- capturingStderr (runOnePass poller)
   mapM (invoiceStatus (weStore env)) [bad, next] `shouldReturn` [ISExpired, ISExpired]
   loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
+
+testPassFailureLogged :: IO ()
+testPassFailureLogged = bounded "a failed pass" $ withStubPoller raceHold $ \_ poller env _ -> do
+  let rename from to = withConnection (weStore env) $ \db -> DB.execute_ db $ "ALTER TABLE " <> from <> " RENAME TO " <> to
+  rename "sx_badge_service_invoices" "invoices_away"
+  logged <- capturingStderr $ Async.withAsync (runPoller poller) $ \lane -> do
+    threadDelay 500000
+    Async.poll lane >>= (`shouldSatisfy` isNothing)
+  rename "invoices_away" "sx_badge_service_invoices"
+  logged `shouldSatisfy` T.isInfixOf "badge poller: the pass failed; the next pass will run: "
+  runOnePass poller
+
+testListResetPassRuns :: IO ()
+testListResetPassRuns = bounded "a list reset" $ withFakeBTCPay $ \fake -> withResetServer $ \url -> withServiceStore $ \st -> do
+  provider <- btcpayProvider (fbConfig fake) {bHost = T.pack url}
+  waiters <- newWaiters
+  hints <- newReadHints
+  poller <- newPollerEnv st waiters Nothing hints [provider] PollConfig {pWaitingSeconds = 1, pIdleSeconds = 1}
+  logged <- capturingStderr $ runOnePass poller
+  isJust <$> readTVarIO (peCreditPassAt poller) `shouldReturn` True
+  logged `shouldSatisfy` T.isInfixOf "list failed; every invoice waits for the next pass"
 
 testSweepCountsAnsweredFailures :: IO ()
 testSweepCountsAnsweredFailures = bounded "sweep counts answered failures" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
