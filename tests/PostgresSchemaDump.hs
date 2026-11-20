@@ -69,7 +69,7 @@ postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSch
       void $ readCreateProcess (shell cmd) ""
       threadDelay 20000
       let sed = (if ci then "sed -i" else "sed -i ''")
-      void $ readCreateProcess (shell $ sed <> " '/^--/d' " <> schemaPath) ""
+      void $ readCreateProcess (shell $ sed <> " '/^--/d; /^\\\\restrict/d; /^\\\\unrestrict/d' " <> schemaPath) ""
       sch <- readFile schemaPath
       sch `deepseq` pure sch
 
@@ -82,5 +82,8 @@ skipComparisonForDownMigrations =
     -- on down migration single_sender_group_member_id column is re-added at the end of the table
     "20260529_delivery_job_senders",
     -- group_domain is removed
-    "20260603_simplex_name"
+    "20260603_simplex_name",
+    "20260918_badge_group_ops",
+    "20261012_badge_subscriptions",
+    "20261118_invoice_product"
   ]

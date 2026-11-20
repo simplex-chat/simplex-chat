@@ -67,12 +67,14 @@ import Control.Exception (bracket_, finally)
 import PostgresSchemaDump
 import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropDatabaseAndUser)
+import StoreService.Store.Postgres.Migrations (storeServiceSchemaMigrations)
 #else
 import APIDocs
 import ChatTests.Names (chatNamesTests)
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
 import SchemaDump
+import StoreService.Store.SQLite.Migrations (storeServiceSchemaMigrations)
 import WebRTCTests
 #endif
 
@@ -93,8 +95,20 @@ main = do
             migrations
             schemaDumpDBOpts
             "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
+      sequential $
+        describe "Store service Postgres schema dump" $
+          postgresSchemaDumpTest
+            storeServiceSchemaMigrations
+            serviceSchemaDumpDBOpts
+            "apps/simplex-store-service/src/StoreService/Store/Postgres/store_service_schema.sql"
 #else
       sequential $ describe "Schema dump" schemaDumpTest
+      sequential $
+        describe "Store service schema dump" $
+          sqliteSchemaDumpTest
+            storeServiceSchemaMigrations
+            serviceSchemaDumpDBOpts
+            "apps/simplex-store-service/src/StoreService/Store/SQLite/store_service_schema.sql"
 #if MIN_VERSION_base(4,18,0)
       sequential $ describe "Bot API docs" apiDocsTest
 #endif

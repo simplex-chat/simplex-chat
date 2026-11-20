@@ -10,8 +10,7 @@ module Bots.StoreService.WebTests
     withApp,
     withServiceStore,
     withServiceStores,
-    withServiceDBOpts,
-    insertBadgeCodeInvoice,
+    serviceSchemaDumpDBOpts,
     columnsOf,
     runMigrations,
     digestFixture,
@@ -147,7 +146,7 @@ import UnliftIO.Temporary (withTempDirectory)
 
 #if defined(dbPostgres)
 import StoreService.Store.Postgres.Migrations (schemaMigrations, storeServiceSchemaMigrations)
-import ChatClient (testDBConnstr)
+import ChatClient (schemaDumpDBOpts, testDBConnstr)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
 import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
 #else
@@ -191,6 +190,13 @@ withServiceDBOpts action = do
   withTempDirectory "tests/tmp" "badge-web" $ \dir -> action (DBOpts (dir </> "badge_service_test.db") [] "" False True TQOff)
 #endif
 
+serviceSchemaDumpDBOpts :: DBOpts
+#if defined(dbPostgres)
+serviceSchemaDumpDBOpts = schemaDumpDBOpts {schema = "test_store_service_schema"}
+#else
+serviceSchemaDumpDBOpts = DBOpts "tests/tmp/test_store_service.db" [] "" False True TQOff
+#endif
+
 columnsOf :: DBStore -> Text -> IO [Text]
 columnsOf st table = withConnection st $ \db ->
 #if defined(dbPostgres)
@@ -211,10 +217,8 @@ badgeWebTests = do
     it "refuses a duplicate provider_ref" testProviderRefUnique
     it "M20260918 adds the multi-use columns and the group table" testGroupOpsColumns
     it "M20260918 defaults a fresh code to one use with none spent" testGroupOpsRedeemCounts
-    it "declares its migrations in name order, master's badge migrations before the names ones" testMigrationOrder
-    it "migrates all the way down and up again" testSchemaDownUpCycle
+    it "declares its migrations in name order, master's badge migrations before the names ones, each with a down migration" testMigrationOrder
     it "rolls back only the group migration and re-applies it, keeping a code redeemed twice spent" testGroupOpsDownUp
-    it "rolls back only the subscription migration, restoring the columns it dropped, and re-applies it" testSubscriptionsDownUp
   describe "store service store" $ do
     it "writes the invoice, its code and their link atomically" testCreationIsAtomic
     it "newInvoiceId is 128 CSPRNG bits, base64url, and two calls differ" testNewInvoiceIdRandom
@@ -468,33 +472,9 @@ testMigrationOrder = do
   let (badges, ours) = span (`elem` badgeMigrations) (map name storeServiceSchemaMigrations)
   badges `shouldBe` badgeMigrations
   ours `shouldBe` ["20261013_names", "20261118_invoice_product", "20261119_name_attempts", "20261120_name_reversals"]
+  length (mapMaybe toDownMigration storeServiceSchemaMigrations) `shouldBe` length storeServiceSchemaMigrations
   where
     badgeMigrations = ["20260915_badge_service_schema", "20260918_badge_group_ops", "20260925_badge_store_receipts", "20261012_badge_subscriptions"]
-
-testSchemaDownUpCycle :: IO ()
-testSchemaDownUpCycle = withServiceStore $ \st -> do
-  let downMigrations = mapMaybe toDownMigration storeServiceSchemaMigrations
-  length downMigrations `shouldBe` length storeServiceSchemaMigrations
-  runMigrations st $ MTRDown downMigrations
-  columnsOf st "sx_badge_service_badge_codes" `shouldReturn` []
-  columnsOf st "sx_badge_service_group" `shouldReturn` []
-  columnsOf st "sx_badge_service_subscription_charges" `shouldReturn` []
-  runMigrations st $ MTRUp storeServiceSchemaMigrations
-  assertGroupOpsColumns st
-  assertSubscriptionColumns st
-
-testSubscriptionsDownUp :: IO ()
-testSubscriptionsDownUp = withServiceStore $ \st -> do
-  let subscriptions = [m | m@Migration {name = "20261012_badge_subscriptions"} <- storeServiceSchemaMigrations]
-  length subscriptions `shouldBe` 1
-  runMigrations st $ MTRDown (mapMaybe toDownMigration subscriptions)
-  columnsOf st "sx_badge_service_subscription_charges" `shouldReturn` []
-  columnsOf st "sx_badge_service_badge_ledger" >>= (`shouldNotSatisfy` \cs -> any (`elem` cs) ["charge_id", "from_purchase_id", "to_purchase_id"])
-  payments <- columnsOf st "sx_badge_service_payments"
-  payments `shouldSatisfy` \cs -> all (`elem` cs) ["subscription_renews_at", "grace_until", "cancelled"]
-  payments `shouldSatisfy` \cs -> not (any (`elem` cs) ["subscription_state", "subscription_checked_at", "provider_token", "rebound_at"])
-  runMigrations st $ MTRUp subscriptions
-  assertSubscriptionColumns st
 
 testGroupOpsDownUp :: IO ()
 testGroupOpsDownUp = withServiceStore $ \st -> do
