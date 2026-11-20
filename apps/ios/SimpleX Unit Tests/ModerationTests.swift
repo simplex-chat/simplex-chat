@@ -262,8 +262,29 @@ final class ModerationTests: RecordedAPITestCase {
         let bob = try member(try blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
         replaceMembers([bob])
         showAcceptMemberAlert(groupInfo, bob)
-        try await assertTexts(["Unblock first", "Unblock bob for all before accepting them.", "Unblock", "Cancel"])
-        try await press("Unblock")
+        try await assertTexts(["Accept member", "Member will be unblocked and will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel"])
+        try await press("Accept as member")
+        try await awaitMember("bob") { !$0.memberPending && !$0.blockedByAdmin }
+    }
+
+    @MainActor
+    func testAcceptBlockedPendingMemberUnblockFails() async throws {
+        try recorded("bans/pending-member")
+        let (groupInfo, members) = try openGroup()
+        var other = try member(members, "bob")
+        other.groupMemberId = 3
+        other.blockedByAdmin = true
+        showAcceptMemberAlert(groupInfo, other)
+        try await press("Accept as member")
+        try await assertRequested { $0 == "/_block #1 3 blocked=off" }
+        try await waitFor { self.shownTexts().contains("Error blocking member for all") }
+    }
+
+    @MainActor
+    func testAcceptPendingMember() async throws {
+        try recorded("bans/pending-member")
+        let (groupInfo, members) = try openGroup()
+        showAcceptMemberAlert(groupInfo, try member(members, "bob"))
         try await assertTexts(["Accept member", "Member will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel"])
         try await press("Accept as member")
         try await awaitMember("bob") { !$0.memberPending }

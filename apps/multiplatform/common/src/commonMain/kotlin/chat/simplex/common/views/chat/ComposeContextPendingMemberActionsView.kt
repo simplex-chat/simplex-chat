@@ -83,38 +83,30 @@ fun rejectMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
 }
 
 fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: (() -> Unit)? = null) {
-  val current = chatModel.getGroupMember(member.groupMemberId) ?: member
-  if (current.blockedByAdmin) {
-    AlertManager.shared.showAlertDialog(
-      title = generalGetString(MR.strings.unblock_first_alert_title),
-      text = generalGetString(MR.strings.unblock_before_accepting_desc).format(current.displayName),
-      confirmText = generalGetString(MR.strings.unblock_verb),
-      onConfirm = {
-        blockMemberForAll(rhId, groupInfo, listOf(current.groupMemberId), false) { acceptRoleDialog(rhId, groupInfo, member, close) }
-      },
-    )
-  } else {
-    acceptRoleDialog(rhId, groupInfo, member, close)
+  val blocked = (chatModel.getGroupMember(member.groupMemberId) ?: member).blockedByAdmin
+  val accept: (GroupMemberRole) -> Unit = { role ->
+    if (blocked) {
+      blockMemberForAll(rhId, groupInfo, listOf(member.groupMemberId), false) { acceptMember(rhId, groupInfo, member, role, close) }
+    } else {
+      acceptMember(rhId, groupInfo, member, role, close)
+    }
   }
-}
-
-private fun acceptRoleDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_pending_member_alert_title),
-    text = generalGetString(MR.strings.accept_pending_member_alert_question),
+    text = generalGetString(if (blocked) MR.strings.accept_blocked_pending_member_alert_question else MR.strings.accept_pending_member_alert_question),
     buttons = {
       Column {
         // Accept as member
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptMember(rhId, groupInfo, member, GroupMemberRole.Member, close)
+          accept(GroupMemberRole.Member)
         }) {
           Text(generalGetString(MR.strings.accept_pending_member_alert_confirmation_as_member), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         // Accept as observer
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptMember(rhId, groupInfo, member, GroupMemberRole.Observer, close)
+          accept(GroupMemberRole.Observer)
         }) {
           Text(generalGetString(MR.strings.accept_pending_member_alert_confirmation_as_observer), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }

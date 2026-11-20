@@ -84,11 +84,11 @@ role.
 Tap a member on the group page and tap "Block for all". Choose for how long:
 1 day, 1 week or forever.
 
-- **Block**: members don't see their messages. The member is not told.
+- **Block**: other members don't see the member's messages. The member is not told.
 - **Block and remove** (admins and owners): the member also can't rejoin via
   the group link while blocked.
 
-To accept a blocked member waiting for approval, tap Accept, then Unblock.
+Accept also unblocks a blocked member who waits for approval.
 
 <img src="./images/groups-not-allowed.png" alt="Not allowed: blocked by the admins of this group until a date" width="288">
 

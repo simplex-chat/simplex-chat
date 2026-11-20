@@ -218,7 +218,7 @@ suspend fun apiAcceptMember(rh: Long?, groupId: Long, groupMemberId: Long, membe
 
 1. When admission review is enabled, new members joining via link arrive in a pending state.
 2. Owner or Admin sees pending members in the member support chat / member list.
-3. User selects "Accept" and optionally adjusts the role. For a member blocked for all, `acceptMemberDialog` first shows "Unblock first" / "Unblock <name> for all before accepting them." with Unblock and Cancel; Unblock lifts the block and then shows the accept dialog.
+3. User selects "Accept" and optionally adjusts the role. For a member blocked for all, `acceptMemberDialog` reads "Member will be unblocked and will join the group, accept member?", and each accept button unblocks the member for all, then accepts (a failed unblock shows its error and accepts nothing).
 4. `CC.ApiAcceptMember(groupId, groupMemberId, memberRole)` is sent.
 5. `CR.MemberAccepted` returns the updated `GroupInfo` and accepted `GroupMember`.
 6. The member is now fully connected and can participate in the group.

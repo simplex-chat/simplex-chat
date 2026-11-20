@@ -131,9 +131,9 @@ Swipe a contact left (iOS), tap and hold it (Android) or right-click it
 (desktop). Delete and Delete and block are also on the contact page.
 
 - **Archive**: moves the conversation to Archived contacts (the pencil button).
-  The contact is not told, and you can still message them.
+  The contact is not told, and you can still send messages from there.
 - **Delete**: turn on **Keep conversation** to keep the messages. Whether the
   contact is notified is set in [Contact deletion](./app-settings.md#contact-deletion).
 - **Delete and block** (**Block** in the iOS swipe): for a contact who connected
-  via your address. They are not notified, and can't reconnect via your address
-  for 1 day, 1 week or forever.
+  via your address. The contact is not notified, and can't reconnect via your
+  address for 1 day, 1 week or forever.

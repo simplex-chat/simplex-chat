@@ -333,8 +333,15 @@ class ModerationTest : RecordedApiTest() {
     val bob = member(blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
     replaceMembers(listOf(bob))
     acceptMemberDialog(null, groupInfo, bob)
-    assertTexts("Unblock first", "Unblock bob for all before accepting them.", "Cancel", "Unblock")
-    press("Unblock")
+    assertTexts("Accept member", "Member will be unblocked and will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel")
+    press("Accept as member")
+    awaitMember("bob") { !it.memberPending && !it.blockedByAdmin }
+  }
+
+  @Test
+  fun acceptPendingMember() = recordedAlerts("bans/pending-member") {
+    val (groupInfo, members) = openGroup()
+    acceptMemberDialog(null, groupInfo, member(members, "bob"))
     assertTexts("Accept member", "Member will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel")
     press("Accept as member")
     awaitMember("bob") { !it.memberPending }

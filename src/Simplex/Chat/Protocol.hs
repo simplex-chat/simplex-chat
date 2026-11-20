@@ -483,7 +483,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XInfo :: {profile :: Profile, memberKey :: Maybe MemberKey} -> ChatMsgEvent 'Json
   XContact :: {profile :: Profile, memberKey :: Maybe MemberKey, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
   XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey, viaRelay :: Maybe MemberId} -> ChatMsgEvent 'Json
-  XDirectDel :: Bool -> Maybe LinkNotice -> ChatMsgEvent 'Json
+  XDirectDel :: {silent :: Bool, notice :: Maybe LinkNotice} -> ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> Maybe MemberKey -> Maybe Profile -> ChatMsgEvent 'Json
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
@@ -505,7 +505,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemRestrict :: MemberId -> MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
-  XGrpMemDel :: MemberId -> Bool -> Maybe VersionRoster -> Bool -> Maybe LinkNotice -> ChatMsgEvent 'Json
+  XGrpMemDel :: {removedMemberId :: MemberId, withMessages :: Bool, rosterVer :: Maybe VersionRoster, silent :: Bool, notice :: Maybe LinkNotice} -> ChatMsgEvent 'Json
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
