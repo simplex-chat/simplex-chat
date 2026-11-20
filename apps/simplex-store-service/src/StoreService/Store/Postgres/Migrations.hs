@@ -561,6 +561,8 @@ down_m20261120_names_dispute_days =
   withPrefix
     servicePrefix
     [r|
+UPDATE @name_registrations SET phase = 'registered' WHERE phase = 'ended';
+
 ALTER TABLE @name_registrations DROP COLUMN dispute_until;
 
 ALTER TABLE @name_registrations DROP COLUMN dispute_days;
