@@ -57,7 +57,7 @@ fun filePathForShare(fileSource: CryptoFile): String? {
     val tmpFile = File(tmpDir, fileSource.filePath)
     tmpFile.deleteOnExit()
     try {
-      decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs ?: return null, tmpFile.absolutePath)
+      decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
     } catch (e: Exception) {
       Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
       AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())

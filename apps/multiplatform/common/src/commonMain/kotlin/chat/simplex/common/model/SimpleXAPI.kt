@@ -7929,7 +7929,7 @@ data class GroupLink(
         )
       },
       restore = { saved ->
-        val list = saved as? List<*> ?: return@Saver null
+        val list = saved
 
         val userContactLinkId = list.getOrNull(0) as? Long ?: return@Saver null
         val connPair = list.getOrNull(1) as? Pair<*, *> ?: return@Saver null

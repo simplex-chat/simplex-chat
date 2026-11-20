@@ -185,6 +185,7 @@ actual fun PlatformTextField(
     if (showKeyboard) {
       it.requestFocus()
       val imm: InputMethodManager = androidAppContext.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+      @Suppress("DEPRECATION")
       imm.showSoftInput(it, InputMethodManager.SHOW_IMPLICIT)
       showKeyboard = false
     }
