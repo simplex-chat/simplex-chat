@@ -2,13 +2,21 @@
 
 ## Problem
 
-From v7.1.2, scripts/simplex-chat-reproduce-builds.sh reports a sha256 mismatch for every Linux artifact of a release:
+For v7.1.2, v7.1.3 and v7.1.4, scripts/simplex-chat-reproduce-builds.sh reports a sha256 mismatch for every Linux artifact of the release:
 
 - simplex-chat-ubuntu-22_04-x86_64 and simplex-chat-ubuntu-24_04-x86_64, with their .deb packages;
 - simplex-desktop-ubuntu-22_04-x86_64.deb and simplex-desktop-ubuntu-24_04-x86_64.deb;
 - simplex-desktop-x86_64.AppImage.
 
-The scheduled workflow "Reproduce latest release" fails on each run since 2026-09-30. For v7.0.3, only the AppImage differed.
+The scheduled workflow "Reproduce latest release" has failed on each run since 2026-09-30, for three causes:
+
+| Runs | Latest release | Failure |
+|---|---|---|
+| 2026-09-30 to 2026-11-07 | v7.0.3 | the AppImage only differs |
+| 2026-11-08 to 2026-11-15 | v7.1.2 to v7.1.4 | all seven artifacts differ |
+| from 2026-11-16 | v7.1.4 | the AppImage is not built: `ubuntu-latest` is ubuntu-26.04, where FUSE inside the container fails (`fusermount3: mount failed: Permission denied`), so no hash is compared |
+
+This change addresses the second and third causes. The first is outside it: the AppImage of v7.1.4 differs only as the second cause implies (see Cause).
 
 ## Cause
 
@@ -22,19 +30,27 @@ The binaries contain the absolute paths of the cabal store:
 | release, build.yml | `/home/builder/.cabal/store`, from `-e CABAL_DIR=/home/builder/.cabal` of `docker run` |
 | reproduce script | `/home/builder/.local/state/cabal/store`, the XDG default of cabal 3.10 without `~/.cabal` |
 
-Dockerfile.build of 7.1 installs ghcup without its bootstrap script, which left `~/.cabal` in the image before, so the script's builds moved to the XDG paths.
+Dockerfile.build of 7.1 installs ghcup without its bootstrap script, which wrote `/home/builder/.cabal/config` into the image before, so the script's builds moved to the XDG paths.
 
-For v7.1.4, all other bytes of the artifacts depend on these paths: the sections of the CLI other than `.rodata` have equal sizes; the files of the AppImage and the desktop .deb differ only in the Haskell libraries, whose strings differ only in the store path; the AppImage runtime differs only in `.digest_md5`.
+The differences in the v7.1.4 artifacts are consistent with these paths alone:
+
+- CLI: `.rodata` is 0x40 bytes longer, five paths of 12 more bytes; the other sections have equal sizes;
+- CLI .deb: only `usr/bin/simplex-chat` differs;
+- desktop .deb and AppImage: only the Haskell libraries differ, and their strings differ only in the store path; the AppImage runtime differs only in `.digest_md5`.
 
 ## Change
 
 1. scripts/simplex-chat-reproduce-builds.sh: `docker run` sets `CABAL_DIR=/home/builder/.cabal`, as build.yml does.
-2. .github/workflows/reproduce-schedule.yml: the checkout is the commit of the workflow run, not the release tag, so that the fixed script reproduces the releases made before the fix; the script builds the tag from its own clone, as before.
-3. Dockerfile.build: `ENV CABAL_DIR="$HOME/.cabal"`, so that every build in the image of a later release uses the store path of releases, also without `-e CABAL_DIR`; `PATH` of the image already contains `$HOME/.cabal/bin`.
+2. .github/workflows/reproduce-schedule.yml:
+   - the checkout is the commit of the workflow run, not the release tag, so that the fixed script reproduces the releases made before the fix. #6485 set the tag; docs/REPRODUCE.md tells users to run the script of master against a tag, and the workflow now does the same. The script builds the tag from its own clone, as before.
+   - `runs-on: ubuntu-24.04`, the image of the runs that built the AppImage until 2026-11-15.
+3. Dockerfile.build: `ENV CABAL_DIR="$HOME/.cabal"`, so that a build in the image of a later release uses the store path of releases also without `-e CABAL_DIR`, as a person running `docker run` by hand; `PATH` of the image already contains `$HOME/.cabal/bin`.
+
+Scheduled runs use the workflow of the default branch, stable: the fix applies to them after master is merged into stable. Until then, a dispatch of the workflow on master runs it.
 
 ```mermaid
 flowchart LR
-  W["reproduce-schedule.yml"] -->|"checkout: workflow commit"| S["simplex-chat-reproduce-builds.sh"]
+  W["reproduce-schedule.yml<br>ubuntu-24.04"] -->|"checkout: workflow commit"| S["simplex-chat-reproduce-builds.sh"]
   S -->|"git clone, checkout TAG"| B["build in Dockerfile.build of TAG<br>CABAL_DIR=/home/builder/.cabal"]
   B --> C["sha256 of each artifact"]
   R["release assets of TAG"] --> C
@@ -42,4 +58,4 @@ flowchart LR
 
 ## Verification
 
-"Reproduce latest release", dispatched on the fork branch, reproduces v7.1.4: the step "Check if build has been reproduced" finds `_sha256sums`.
+"Reproduce latest release", dispatched on the head of this branch in the fork, reproduces v7.1.4: the step "Check if build has been reproduced" finds `_sha256sums`.
