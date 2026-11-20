@@ -25,27 +25,6 @@ xcode=(
 
 xcodebuild build-for-testing -quiet "${xcode[@]}"
 
-voip=(
-  -project apps/ios/SimpleX.xcodeproj
-  -scheme "SimpleX (iOS)"
-  -configuration Debug
-  -destination "id=$SIM_UDID"
-  -derivedDataPath "$derived"
-  -onlyUsePackageVersionsFromResolvedFile
-  -skipPackagePluginValidation
-  -skipMacroValidation
-  -only-testing:"SimpleX Snapshots/SnapshotTests/testVoIPPushForAnswerBeforeChatStartsSuspendsChat"
-  -only-testing:"SimpleX Snapshots/SnapshotTests/testVoIPPushForAnswerWithoutInvitationSuspendsChat"
-  -test-iterations 30
-  -run-tests-until-failure
-  ARCHS=arm64
-  CODE_SIGN_STYLE=Manual
-  CODE_SIGN_IDENTITY=-
-  DEVELOPMENT_TEAM=
-  PROVISIONING_PROFILE_SPECIFIER=
-)
-xcodebuild test-without-building -testLanguage en -testRegion US "${voip[@]}" || true
-
 for size in large extra-extra-extra-large accessibility-medium; do
   xcrun simctl ui "$SIM_UDID" content_size "$size"
   TEST_RUNNER_SNAPSHOT_DIR="$out" TEST_RUNNER_SNAPSHOT_SIZE="$size" xcodebuild test-without-building -testLanguage en -testRegion US "${xcode[@]}"

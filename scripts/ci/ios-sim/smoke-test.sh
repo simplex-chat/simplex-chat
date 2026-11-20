@@ -38,7 +38,7 @@ xcrun simctl boot "$SIM_UDID"
 xcrun simctl bootstatus "$SIM_UDID" -b
 open -a Simulator --args -CurrentDeviceUDID "$SIM_UDID"
 
-xcrun simctl spawn "$SIM_UDID" log stream --level debug --style compact --predicate 'process == "SimpleX" OR process == "callservicesd" OR process == "InCallService" OR process == "SpringBoard" OR subsystem BEGINSWITH "com.apple.calls" OR subsystem BEGINSWITH "com.apple.telephonyutilities"' > "$UI_OUT/app.log" 2>&1 &
+xcrun simctl spawn "$SIM_UDID" log stream --level debug --style compact --predicate 'process == "SimpleX"' > "$UI_OUT/app.log" 2>&1 &
 log_pid=$!
 
 finish() {
