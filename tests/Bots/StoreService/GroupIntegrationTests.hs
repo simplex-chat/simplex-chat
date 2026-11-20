@@ -576,7 +576,8 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "e") $ Returns $ uint256 (2000000000 :: Int)
     answerCall node registrar (selector "disputeUntil(uint256)" <> labelBytes "e") $ Returns $ uint256 (0 :: Int)
     endedLogs <- capturingStderr $ closeRaw cc "inv-e" `shouldReturn` Left "Nothing refunded: the register of order e went through and its registration was ended in its dispute period, so the order is ended now."
-    endedLogs `shouldSatisfy` T.isInfixOf "names: order e set ended by //close, as its register went through and its registration was ended in its dispute period"
+    endedLogs `shouldSatisfy` T.isInfixOf "names: registration e set ended: disputeUntil(id) read at the confirmed block is 0, not its register's end "
+    T.count "set ended" endedLogs `shouldBe` 1
     nrPhase <$> reg st "e" `shouldReturn` PEnded
     Balances.figures st "e" t0 `shouldReturn` Nothing
 

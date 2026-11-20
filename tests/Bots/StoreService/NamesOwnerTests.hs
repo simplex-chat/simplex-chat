@@ -99,7 +99,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "answers the fourth move move_limit with the current view, changing nothing" testMoveLimit
     it "refuses a move meeting another live order of the wallet's or the commitment with a bare order_exists, before the price" testMoveMeetsOrder
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken, name_check_unavailable" testMoveOrderChecks
-    it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code" testMoveLanded
+    it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code, and ends one whose mined registration was ended" testMoveLanded
     it "spends a released code still unused when its failed order turns out registered, and alerts once when it was spent elsewhere meanwhile" testMoveLandedReleasedCode
     it "answers a dearer name price_too_high with its price, one priced under the floor name_check_unavailable crediting nothing, and moves to a cheaper one at its price, crediting the difference to its balance" testMovePrice
     it "keeps fromBalance through a move to a cheaper name" testMoveKeepsFromBalance
@@ -611,6 +611,18 @@ testMoveLanded = withOwner $ \ctx -> do
     fieldsIn view [("phase", "registered"), ("expiresAt", J.toJSON expiry), ("moves", J.Number 0), ("error", J.Null), ("registerTx", maybe J.Null (J.String . hex) hash)]
     written <- stored ctx r
     (nrPhase written, nrLive written, nrVersion written, nrLabelHash written) `shouldBe` (PRegistered, False, nrVersion r + 1, nrLabelHash r)
+  answerFree ctx "dynamic"
+  endedOrder <- paidIn ctx dynamisOrder {oLabel = "dynamic", oCommitment = commitmentOf 6, oSealed = "sealed-dynamic-6"} failedPhase
+  void $ sentRegister ctx endedOrder 3 TSMined
+  poll <- held ctx endedOrder
+  endedTo <- moveTo ctx "alicebakers" 12
+  answer <- move ctx keyA endedOrder endedTo
+  view <- getView ctx endedOrder
+  answer `shouldBe` refusedWithView "registration_changed" view
+  woken poll `shouldReturn` (200, view)
+  fieldsIn view [("phase", "ended"), ("expiresAt", J.Null), ("disputeUntil", J.Null), ("moves", J.Number 0)]
+  ended <- stored ctx endedOrder
+  (nrPhase ended, nrExpiresAt ended, nrDisputeUntil ended, nrLabelHash ended) `shouldBe` (PEnded, Just $ genesisTime + nrDuration endedOrder, Just genesisDisputeEnd, nrLabelHash endedOrder)
   pcSpentAt <$> codeRow ctx code `shouldReturn` Just orderTime
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyB notLanded to
