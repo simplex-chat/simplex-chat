@@ -356,7 +356,7 @@ const connectOutput: Schema = {
     action: actionField,
     status: {type: "string", enum: ["done", "failed", "rejected", "expired", "known"], description: "done: performed after approval; known: you are already connected, no action was needed; rejected or expired: the owner rejected it or did not decide in time; failed: see error."},
     ...chatFieldSchemas,
-    moved_from: {type: "string", description: "Chat reference of your chat that this SimpleX name led to before it moved to this link."},
+    moved_from: {type: "string", description: "Chat reference of your chat that had this SimpleX name before the name was moved to this link."},
     messages: {type: "array", items: messageSchema, description: "Up to 50 messages of the chat at the connection, then those that arrived until none arrived for idle seconds, oldest first: a welcome message, a bot's answer, a channel's recent posts."},
     error: errorField,
   },

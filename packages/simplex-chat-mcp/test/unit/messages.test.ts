@@ -961,7 +961,7 @@ describe("connect", () => {
     expect(await lapsed({type: "available", price: {amount: 2000, years: 2}})).toBe("Name no longer registered: ridgeline.simplex is available for registration for $20 for 2 years.")
   })
 
-  it("reports the chat that a SimpleX name led to before it moved", () => {
+  it("reports the chat that had a SimpleX name before the name was moved", () => {
     const connectionPlan = {type: "contactAddress", contactAddressPlan: {type: "ok"}, nameChange: {type: "moved", knownChat: direct(contact(7, "Ridgeline"))}} as T.ConnectionPlan
     const moved = classifyPlan([connectionPlan, {connFullLink: link}], {target: "@ridgeline.simplex"})
     expect(moved).toMatchObject({join: {simplexName: "@ridgeline.simplex", movedFrom: "@7"}})

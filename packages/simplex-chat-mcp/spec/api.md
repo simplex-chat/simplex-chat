@@ -123,7 +123,7 @@ Output fields by case:
 | `role` | | the agent's member role |
 | `connected` | active connection status `ready` | membership status `connected` or `complete` |
 
-`moved_from`: the chat reference of the agent's chat that the SimpleX name of `target` led to before it moved (`nameChange` `moved` of the plan), in each case with a plan ([`classifyPlan`, `planFields`](../src/tools.ts)).
+`moved_from`: the chat reference of the agent's chat that had the SimpleX name of `target` before the name was moved to the link of the plan (`nameChange` `moved`), in each case with a plan ([`classifyPlan`, `planFields`](../src/tools.ts)).
 
 `messages`: message items among the last 50 items of the chat when the result is built, replaced by their collected copies, followed by the items collected since the connection; live items are left out; new items are marked read ([`AgentTools.connectedChat`](../src/tools.ts)).
 
