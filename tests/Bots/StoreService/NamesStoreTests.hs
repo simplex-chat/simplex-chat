@@ -453,7 +453,7 @@ testOrderLive = withServiceStore $ \st -> do
   let code = paid {nrPayment = RPCode 1}
       liveIn r phase = (phase, orderLive r {nrPhase = phase})
   map (liveIn paid) [minBound .. maxBound]
-    `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True)]
+    `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True), (PEnded, False)]
   map (liveIn code) [PTaken, PFailed, PRegistered] `shouldBe` [(PTaken, False), (PFailed, True), (PRegistered, False)]
   orderLive paid {nrLive = False} `shouldBe` False
   orderLive paid {nrLive = False, nrPhase = PQueued} `shouldBe` True

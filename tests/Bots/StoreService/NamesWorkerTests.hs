@@ -122,6 +122,9 @@ workerTests = describe "StoreService names: worker" $ do
     it "releases the codes of code orders failed for 30 days, and no others" testCodeSweep
   describe "confirmation depth" $
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
+  describe "dispute period" $ do
+    it "ends a registered order whose registration was unregistered in its dispute period, publishing it, and keeps it ended after the name is registered again" testEndedOnUnregister
+    it "ends an order whose name was registered again before the sweep read it, leaving an order without a dispute period, past it or unread" testEndedSweepBounds
   describe "retry" $ do
     it "refuses Try again outside failed with bad_request, changing nothing, and answers an unknown order 404" testRetryNotFailed
     it "refuses Try again of a failed order whose links were refused with bad_request, changing nothing" testRetryLinksRefused
@@ -1032,6 +1035,47 @@ testCodeSweep = withWorker $ \W {wCtx = ctx, wWorker} -> do
   sweepFailedCodes wWorker
   map pcReservedBy <$> mapM (codeOf ctx) [oldCode, recentCode, requeuedCode] `shouldReturn` [Nothing, Just (nrId recent), Just (nrId requeued)]
   mapM (stored ctx) [old, recent, requeued] `shouldReturn` [old, recent, requeued]
+
+disputeUntilCall :: Text -> ByteString
+disputeUntilCall label = selector "disputeUntil(uint256)" <> labelBytes label
+
+answerDisputeUntil :: Ctx -> Text -> Word64 -> IO ()
+answerDisputeUntil Ctx {cNode} label t = answerCall cNode fakeBaseRegistrar (disputeUntilCall label) $ Returns $ uint256 t
+
+registeredUntil :: Word64 -> NameRegistration -> NameRegistration
+registeredUntil t r = r {nrPhase = PRegistered, nrDisputeUntil = Just t}
+
+testEndedOnUnregister :: IO ()
+testEndedOnUnregister = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}, wWorker} -> do
+  let disputeEnd = orderSeconds + 14 * 86400
+  r <- paidIn ctx aliceOrder $ registeredUntil disputeEnd
+  answerDisputeUntil ctx "alicebakery" disputeEnd
+  sweepEndedRegistrations wWorker
+  stored ctx r `shouldReturn` r
+  answerDisputeUntil ctx "alicebakery" 0
+  published w r $ sweepEndedRegistrations wWorker
+  ended <- stored ctx r
+  (nrPhase ended, nrDisputeUntil ended, nrVersion ended) `shouldBe` (PEnded, Nothing, nrVersion r + 1)
+  view <- jsonObject =<< webGet cClient (registrationPath $ nrId r)
+  (field "phase" view, field "disputeUntil" view) `shouldBe` (Just "ended", Just J.Null)
+  answerDisputeUntil ctx "alicebakery" (disputeEnd + 3600)
+  sweepEndedRegistrations wWorker
+  stored ctx r `shouldReturn` ended
+
+testEndedSweepBounds :: IO ()
+testEndedSweepBounds = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
+  let disputeEnd = orderSeconds + 14 * 86400
+  plain <- paidIn ctx aliceOrder $ \x -> x {nrPhase = PRegistered}
+  again <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} $ registeredUntil disputeEnd
+  past <- paidIn ctx dynamisOrder $ registeredUntil (orderSeconds - 8 * 86400)
+  answerDisputeUntil ctx "alicebakery" (disputeEnd + 3600)
+  answerDisputeUntil ctx "dynamis" 0
+  setFault cNode "eth_call" HttpFailure
+  sweepEndedRegistrations wWorker
+  mapM (stored ctx) [plain, again, past] `shouldReturn` [plain, again, past]
+  clearFault cNode "eth_call"
+  sweepEndedRegistrations wWorker
+  map nrPhase <$> mapM (stored ctx) [plain, again, past] `shouldReturn` [PRegistered, PEnded, PRegistered]
 
 testLandedAtDepth :: IO ()
 testLandedAtDepth = withOrders $ \ctx@Ctx {cNode, cOrders} -> do

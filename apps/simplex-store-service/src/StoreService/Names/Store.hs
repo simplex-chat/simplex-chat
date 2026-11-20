@@ -156,6 +156,7 @@ data NamePhase
   | PRegistered
   | PTaken
   | PFailed
+  | PEnded
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding NamePhase where
@@ -168,6 +169,7 @@ instance TextEncoding NamePhase where
     PRegistered -> "registered"
     PTaken -> "taken"
     PFailed -> "failed"
+    PEnded -> "ended"
   textDecode t = lookup t [(textEncode p, p) | p <- [minBound .. maxBound]]
 
 instance FromField NamePhase where fromField = fromTextField_ textDecode
@@ -798,6 +800,7 @@ orderLive NameRegistration {nrPhase, nrLive} = case nrPhase of
   PFailed -> True
   PTaken -> False
   PRegistered -> False
+  PEnded -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
 -- A closed order is never made live again, and a write that would make the order meet another live one changes nothing.

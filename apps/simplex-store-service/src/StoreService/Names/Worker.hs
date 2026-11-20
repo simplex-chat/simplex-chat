@@ -22,6 +22,7 @@ module StoreService.Names.Worker
     closeRegistration,
     maxSendsPerKind,
     sendsUsedUp,
+    sweepEndedRegistrations,
   )
 where
 
@@ -580,3 +581,6 @@ sweepFailedCodes Worker {wkOrders = OrdersEnv {oeStore, oeTurns, oeNow}} = do
 
 runCodeSweep :: Worker -> IO ()
 runCodeSweep w = forever $ safely "names code sweep" (sweepFailedCodes w) >> threadDelay sweepInterval
+
+sweepEndedRegistrations :: Worker -> IO ()
+sweepEndedRegistrations _ = pure ()
