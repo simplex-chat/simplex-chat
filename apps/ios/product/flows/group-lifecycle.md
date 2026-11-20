@@ -77,7 +77,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 1. Group has admission settings configured via `MemberAdmissionView`.
 2. When a new member joins a group requiring approval, admins see pending members.
 3. Admin reviews pending member in the member list.
-4. To accept: `apiAcceptMember(groupId:groupMemberId:memberRole:)`:
+4. To accept: for a member blocked for all, `showAcceptMemberAlert` first shows "Unblock first" / "Unblock <name> for all before accepting them." with Unblock and Cancel; Unblock lifts the block and then shows the accept alert. Accept calls `apiAcceptMember(groupId:groupMemberId:memberRole:)`:
    ```swift
    func apiAcceptMember(_ groupId: Int64, _ groupMemberId: Int64, _ memberRole: GroupMemberRole) async throws -> (GroupInfo, GroupMember)
    ```

@@ -179,6 +179,7 @@
   <string name="error_creating_message">Error creating message</string>
   <string name="error_creating_report">Error creating report</string>
   <string name="error_loading_details">Error loading details</string>
+  <string name="error_loading_members">Error loading members</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
   <string name="error_accepting_member">Error accepting member</string>
@@ -2096,6 +2097,9 @@
   <string name="unblock_for_all_question">Unblock member for all?</string>
   <string name="unblock_members_for_all_question">Unblock members for all?</string>
   <string name="unblock_for_all">Unblock for all</string>
+  <string name="unblock_verb">Unblock</string>
+  <string name="unblock_first_alert_title">Unblock first</string>
+  <string name="unblock_before_accepting_desc">Unblock %s for all before accepting them.</string>
   <string name="unblock_member_desc">Messages from %s will be shown!</string>
   <string name="unblock_members_desc">Messages from these members will be shown for all members.</string>
   <string name="unblock_subscribers_desc">Messages from these subscribers will be shown for all subscribers.</string>

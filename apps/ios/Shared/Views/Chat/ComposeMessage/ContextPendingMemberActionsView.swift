@@ -54,6 +54,24 @@ func showRejectMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismis
 }
 
 func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismiss: DismissAction? = nil) {
+    let current = ChatModel.shared.getGroupMember(member.groupMemberId)?.wrapped ?? member
+    if current.blockedByAdmin {
+        showAlert(
+            NSLocalizedString("Unblock first", comment: "alert title"),
+            message: String.localizedStringWithFormat(NSLocalizedString("Unblock %@ for all before accepting them.", comment: "alert message"), current.displayName),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Unblock", comment: "alert action"), style: .default) { _ in
+                    blockMemberForAll(groupInfo, current, false) { showAcceptRoleAlert(groupInfo, member, dismiss: dismiss) }
+                },
+                cancelAlertAction
+            ]}
+        )
+    } else {
+        showAcceptRoleAlert(groupInfo, member, dismiss: dismiss)
+    }
+}
+
+private func showAcceptRoleAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismiss: DismissAction?) {
     showAlert(
         NSLocalizedString("Accept member", comment: "alert title"),
         message: NSLocalizedString("Member will join the group, accept member?", comment: "alert message"),

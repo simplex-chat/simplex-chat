@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.views.chat.acceptMemberDialog
 import chat.simplex.common.views.chat.archiveContact
 import chat.simplex.common.views.chat.deleteAndBanContactDialog
 import chat.simplex.common.views.chat.deleteContactDialog
@@ -97,8 +98,10 @@ class ModerationTest : RecordedApiTest() {
 
   @Test
   fun channelNameNoticePlan() = recordedAlerts("names/plan-channel-notice") {
-    connect("#team.simplex")
-    assertTexts("Not allowed", "Blocked by the owners of this channel until $UNTIL.", "OK", "How it works")
+    connect("team.simplex")
+    assertTexts("Not allowed", "Blocked by the owners of this channel until $UNTIL.", "OK", "Connect to @team.simplex", "How it works")
+    press("Connect to @team.simplex")
+    waitUntil(timeoutMillis = 5_000) { shownTexts().contains("alice") }
   }
 
   @Test
@@ -325,6 +328,19 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
+  fun acceptBlockedPendingMember() = recordedAlerts("bans/pending-member") {
+    val (groupInfo, _) = openGroup()
+    val bob = member(blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
+    replaceMembers(listOf(bob))
+    acceptMemberDialog(null, groupInfo, bob)
+    assertTexts("Unblock first", "Unblock bob for all before accepting them.", "Cancel", "Unblock")
+    press("Unblock")
+    assertTexts("Accept member", "Member will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel")
+    press("Accept as member")
+    awaitMember("bob") { !it.memberPending }
+  }
+
+  @Test
   fun bulkBlockDisabledForPendingAmongSeveral() = recorded("bans/pending-member") {
     val (groupInfo, members) = openGroup()
     val bob = member(members, "bob")
@@ -501,14 +517,12 @@ class ModerationTest : RecordedApiTest() {
   }
 
   @Test
-  fun customerLoadFailureShowsNothing() = recordedAlerts("bans/business") {
+  fun customerLoadFailureShowsError() = recordedAlerts("bans/business") {
     val (groupInfo, _) = openGroup()
     val unknown = groupInfo.copy(groupId = 9)
     deleteAndBanCustomer(groupChat(unknown), unknown)
-    waitUntil(timeoutMillis = 5_000) { synchronized(unrecorded) { unrecorded == listOf("/_members #9") } }
-    synchronized(unrecorded) { unrecorded.clear() }
-    waitForIdle()
-    assertTexts()
+    assertRequested("/_members #9")
+    assertTexts("Error loading members", "OK")
   }
 
   @Test

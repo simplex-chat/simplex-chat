@@ -350,9 +350,12 @@ struct ChatListNavLink: View {
         }
     }
 
-    private func deleteAndBanCustomerIfAvailable(_ groupInfo: GroupInfo) {
+    func deleteAndBanCustomerIfAvailable(_ groupInfo: GroupInfo) {
         Task {
-            guard let members = await apiListMembers(groupInfo.groupId) else { return }
+            guard let members = await apiListMembers(groupInfo.groupId) else {
+                await MainActor.run { showAlert(NSLocalizedString("Error loading members", comment: "alert title")) }
+                return
+            }
             await MainActor.run {
                 if groupInfo.canDeleteAndBanCustomer(members) {
                     deleteAndBanCustomerDialog(chat, groupInfo)

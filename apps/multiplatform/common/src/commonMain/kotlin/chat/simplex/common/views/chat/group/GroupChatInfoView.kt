@@ -318,8 +318,10 @@ fun deleteAndBanCustomerDialog(chat: Chat, groupInfo: GroupInfo, close: (() -> U
 
 fun deleteAndBanCustomer(chat: Chat, groupInfo: GroupInfo) {
   withBGApi {
-    val members = chatModel.controller.apiListMembers(chat.remoteHostId, groupInfo.groupId) ?: return@withBGApi
-    if (canDeleteAndBanCustomer(groupInfo, members)) {
+    val members = chatModel.controller.apiListMembers(chat.remoteHostId, groupInfo.groupId)
+    if (members == null) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_loading_members))
+    } else if (canDeleteAndBanCustomer(groupInfo, members)) {
       deleteAndBanCustomerDialog(chat, groupInfo)
     } else {
       showCantBanCustomerAlert(groupInfo)

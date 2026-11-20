@@ -943,11 +943,11 @@ enum LinkNoticeTarget {
     }
 }
 
-func showLinkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() -> Void)? = nil) {
-    getTopViewController()?.present(linkNoticeAlert(target, expiresAt: expiresAt, cleanup: cleanup), animated: true)
+func showLinkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() -> Void)? = nil, connectOther: (title: String, action: () -> Void)? = nil) {
+    getTopViewController()?.present(linkNoticeAlert(target, expiresAt: expiresAt, cleanup: cleanup, connectOther: connectOther), animated: true)
 }
 
-func linkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() -> Void)?) -> UIAlertController {
+func linkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() -> Void)?, connectOther: (title: String, action: () -> Void)? = nil) -> UIAlertController {
     let (banned, bannedUntil) = switch target {
     case .group: (
         NSLocalizedString("Blocked by the admins of this group.", comment: "alert message"),
@@ -971,11 +971,12 @@ func linkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, cleanup: (() 
         message: expiresAt.map { String.localizedStringWithFormat(bannedUntil, $0.formatted(date: .abbreviated, time: .shortened)) } ?? banned,
         actions: [
             okCleanupAlertAction(cleanup: cleanup),
+            connectOther.map { c in UIAlertAction(title: c.title, style: .default) { _ in c.action() } },
             UIAlertAction(title: NSLocalizedString("How it works", comment: "alert button"), style: .default) { _ in
                 cleanup?()
                 UIApplication.shared.open(bansGuideLink)
             }
-        ]
+        ].compactMap { $0 }
     )
 }
 
@@ -1647,7 +1648,7 @@ func planAndConnect(
                     case let .linkNotice(expiresAt, contactSLinkData_):
                         logger.debug("planAndConnect, .contactAddress, .linkNotice")
                         await MainActor.run {
-                            showLinkNoticeAlert(contactSLinkData_?.business == true ? .business : .contact, expiresAt: expiresAt, cleanup: cleanup)
+                            showLinkNoticeAlert(contactSLinkData_?.business == true ? .business : .contact, expiresAt: expiresAt, cleanup: cleanup, connectOther: connectOther)
                         }
                     }
                 case let .groupLink(glp, _):
@@ -1793,7 +1794,7 @@ func planAndConnect(
                             else if planSimplexName?.nameType == .publicGroup { .channel }
                             else { .group }
                         await MainActor.run {
-                            showLinkNoticeAlert(target, expiresAt: expiresAt, cleanup: cleanup)
+                            showLinkNoticeAlert(target, expiresAt: expiresAt, cleanup: cleanup, connectOther: connectOther)
                         }
                     }
                 case let .error(chatError):

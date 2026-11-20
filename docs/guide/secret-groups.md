@@ -83,7 +83,9 @@ Moderators, admins and owners can block a member for all, for a set time or fore
 
 Admins and owners can also block and remove a member. The member's app does not show the removal, and it does not allow joining the group via the same link until the block ends. Contacts and businesses can delete and block a contact or a customer, with the same effect for their address.
 
-When you try to join or connect via a link you are blocked from, the app shows "Not allowed" with the time when the block ends.
+When you try to join or connect via a link you are blocked from, the app shows "Not allowed" with the time when the block ends. When you used a SimpleX name that also has a contact address or a channel, the alert offers to connect to it.
+
+A member waiting for approval can be blocked too. To accept a blocked member, unblock them first: Accept offers to unblock.
 
 No IDs are shared to apply a block: it is sent only to the blocked member's app, which stores it for the link this member used. You can still join the same group or connect to the same contact via another link or an invitation.
 

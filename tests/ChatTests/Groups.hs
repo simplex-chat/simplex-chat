@@ -8810,15 +8810,6 @@ testBlockPendingMember =
             bob <## "#team: you joined the group, pending approval"
         ]
 
-      apiFixture
-        "bans/pending-member"
-        alice
-        []
-        FixtureRequests
-          { frMarkdown = [],
-            frUris = [],
-            frCommands = ["/_members #1", "/_block #1 2 blocked=on ttl=86400", "/_accept member #1 2 member", "/_block #1 2 blocked=off"]
-          }
       alice ##> "/block for all #team bob"
       alice <##. "#team: you blocked bob"
       bob <// 50000
@@ -8827,11 +8818,17 @@ testBlockPendingMember =
 
       alice ##> "/unblock for all #team bob"
       alice <##. "#team: you unblocked bob"
-      alice ##> "/_accept member #1 2 member"
-      concurrentlyN_
-        [ alice <## "#team: bob accepted",
-          bob <## "#team: you joined the group"
-        ]
+      apiFixture
+        "bans/pending-member"
+        alice
+        []
+        FixtureRequests
+          { frMarkdown = [],
+            frUris = [],
+            frCommands = ["/_members #1", "/_block #1 2 blocked=on ttl=86400", "/_block #1 2 blocked=off", "/_accept member #1 2 member"]
+          }
+      bob <## "#team: you joined the group"
+      dropOutputs [alice, bob]
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
 

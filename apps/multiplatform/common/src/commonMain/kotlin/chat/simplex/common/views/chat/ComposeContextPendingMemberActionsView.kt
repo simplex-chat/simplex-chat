@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.chat.group.blockMemberForAll
 import chat.simplex.common.views.chat.group.removeMember
 import chat.simplex.common.views.chat.group.removeMemberDialog
 import chat.simplex.common.views.helpers.*
@@ -82,6 +83,22 @@ fun rejectMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
 }
 
 fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: (() -> Unit)? = null) {
+  val current = chatModel.getGroupMember(member.groupMemberId) ?: member
+  if (current.blockedByAdmin) {
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.unblock_first_alert_title),
+      text = generalGetString(MR.strings.unblock_before_accepting_desc).format(current.displayName),
+      confirmText = generalGetString(MR.strings.unblock_verb),
+      onConfirm = {
+        blockMemberForAll(rhId, groupInfo, listOf(current.groupMemberId), false) { acceptRoleDialog(rhId, groupInfo, member, close) }
+      },
+    )
+  } else {
+    acceptRoleDialog(rhId, groupInfo, member, close)
+  }
+}
+
+private fun acceptRoleDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_pending_member_alert_title),
     text = generalGetString(MR.strings.accept_pending_member_alert_question),

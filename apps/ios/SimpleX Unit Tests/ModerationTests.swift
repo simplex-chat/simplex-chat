@@ -76,8 +76,10 @@ final class ModerationTests: RecordedAPITestCase {
     @MainActor
     func testChannelNameNoticePlan() async throws {
         try recorded("names/plan-channel-notice")
-        connect("#team.simplex")
-        try await assertTexts(["Not allowed", "Blocked by the owners of this channel until \(Self.until).", "Ok", "How it works"])
+        connect("team.simplex")
+        try await assertTexts(["Not allowed", "Blocked by the owners of this channel until \(Self.until).", "Ok", "Connect to @team.simplex", "How it works"])
+        try await press("Connect to @team.simplex")
+        try await waitFor { self.presented() != nil && self.shownTexts().contains("alice") }
     }
 
     @MainActor
@@ -251,6 +253,20 @@ final class ModerationTests: RecordedAPITestCase {
         let dialog = try await sheet(BanDialog.self)
         dialog.close { dialog.actions[0].action(.day) }
         try await awaitMember("bob") { $0.blockedByAdmin }
+    }
+
+    @MainActor
+    func testAcceptBlockedPendingMember() async throws {
+        try recorded("bans/pending-member")
+        let (groupInfo, _) = try openGroup()
+        let bob = try member(try blockedMembers("/_block #1 2 blocked=on ttl=86400"), "bob")
+        replaceMembers([bob])
+        showAcceptMemberAlert(groupInfo, bob)
+        try await assertTexts(["Unblock first", "Unblock bob for all before accepting them.", "Unblock", "Cancel"])
+        try await press("Unblock")
+        try await assertTexts(["Accept member", "Member will join the group, accept member?", "Accept as member", "Accept as observer", "Cancel"])
+        try await press("Accept as member")
+        try await awaitMember("bob") { !$0.memberPending }
     }
 
     @MainActor
@@ -437,6 +453,16 @@ final class ModerationTests: RecordedAPITestCase {
         archiveContact(chat, contact)
         try await assertRequested { $0 == "/_delete @3 archive" }
         try await waitFor { self.shownTexts().contains("Error archiving contact") }
+    }
+
+    @MainActor
+    func testCustomerLoadFailureShowsError() async throws {
+        try recorded("bans/business")
+        var (groupInfo, _) = try openGroup()
+        groupInfo.groupId = 9
+        ChatListNavLink(chat: groupChat(groupInfo), parentSheet: .constant(nil)).deleteAndBanCustomerIfAvailable(groupInfo)
+        try await assertRequested { $0 == "/_members #9" }
+        try await assertTexts(["Error loading members", "Ok"])
     }
 
     @MainActor

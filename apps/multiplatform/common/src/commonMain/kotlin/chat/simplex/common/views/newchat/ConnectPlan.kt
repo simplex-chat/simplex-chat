@@ -53,7 +53,14 @@ enum class LinkNoticeTarget {
   }
 }
 
-fun showLinkNoticeAlert(target: LinkNoticeTarget, expiresAt: Instant?, cleanup: (() -> Unit)? = null) {
+fun showLinkNoticeAlert(
+  target: LinkNoticeTarget,
+  expiresAt: Instant?,
+  cleanup: (() -> Unit)? = null,
+  hostDevice: Pair<Long?, String>? = null,
+  connectOtherButton: String? = null,
+  onConnectOther: (() -> Unit)? = null,
+) {
   val (banned, bannedUntil) = when (target) {
     LinkNoticeTarget.Group -> MR.strings.link_notice_banned_group to MR.strings.link_notice_banned_group_until
     LinkNoticeTarget.Channel -> MR.strings.link_notice_banned_channel to MR.strings.link_notice_banned_channel_until
@@ -64,7 +71,8 @@ fun showLinkNoticeAlert(target: LinkNoticeTarget, expiresAt: Instant?, cleanup: 
   AlertManager.privacySensitive.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.link_notice_alert_title),
     text = AnnotatedString(text),
-    onDismissRequest = { cleanup?.invoke() }
+    onDismissRequest = { cleanup?.invoke() },
+    hostDevice = hostDevice,
   ) {
     val uriHandler = LocalUriHandler.current
     Column {
@@ -73,6 +81,14 @@ fun showLinkNoticeAlert(target: LinkNoticeTarget, expiresAt: Instant?, cleanup: 
         cleanup?.invoke()
       }) {
         Text(generalGetString(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+      if (connectOtherButton != null && onConnectOther != null) {
+        SectionItemView({
+          AlertManager.privacySensitive.hideAlert()
+          onConnectOther()
+        }) {
+          Text(connectOtherButton, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
       }
       SectionItemView({
         AlertManager.privacySensitive.hideAlert()
@@ -232,6 +248,14 @@ private suspend fun planAndConnectTask(
       val label = if (it.nameType == SimplexNameType.publicGroup) MR.strings.connect_plan_join_name else MR.strings.connect_plan_connect_to_name
       generalGetString(label).format(it.shortStr)
     }
+    val showNoticeAlert: (LinkNoticeTarget, Instant?) -> Unit = { noticeTarget, expiresAt ->
+      showLinkNoticeAlert(
+        noticeTarget, expiresAt, cleanup,
+        hostDevice = hostDevice(rhId),
+        connectOtherButton = connectOtherButton,
+        onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup) } } },
+      )
+    }
     val nameWarning = (connectionPlan.nameChange as? NameChange.Lapsed)?.nameWarning
     val nameDomain = planSimplexName?.nameDomain
     if (nameWarning != null && nameDomain != null) {
@@ -390,7 +414,7 @@ private suspend fun planAndConnectTask(
         is ContactAddressPlan.LinkNotice -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .LinkNotice")
           val plan = connectionPlan.contactAddressPlan
-          showLinkNoticeAlert(if (plan.contactSLinkData_?.business == true) LinkNoticeTarget.Business else LinkNoticeTarget.Contact, plan.expiresAt, cleanup)
+          showNoticeAlert(if (plan.contactSLinkData_?.business == true) LinkNoticeTarget.Business else LinkNoticeTarget.Contact, plan.expiresAt)
         }
       }
       is ConnectionPlan.GroupLink -> when (connectionPlan.groupLinkPlan) {
@@ -542,7 +566,7 @@ private suspend fun planAndConnectTask(
             planSimplexName?.nameType == SimplexNameType.publicGroup -> LinkNoticeTarget.Channel
             else -> LinkNoticeTarget.Group
           }
-          showLinkNoticeAlert(noticeTarget, connectionPlan.groupLinkPlan.expiresAt, cleanup)
+          showNoticeAlert(noticeTarget, connectionPlan.groupLinkPlan.expiresAt)
         }
       }
       is ConnectionPlan.Error -> {

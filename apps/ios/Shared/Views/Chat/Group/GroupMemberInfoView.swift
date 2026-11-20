@@ -1026,7 +1026,7 @@ func removeForeverAlert(_ gInfo: GroupInfo, _ mem: GroupMember, withMessages: Bo
     }
 }
 
-func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool, ttl: Int64? = nil) {
+func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool, ttl: Int64? = nil, onSuccess: @escaping () -> Void = {}) {
     Task {
         do {
             let updatedMembers = try await apiBlockMembersForAll(gInfo.groupId, [member.groupMemberId], blocked, ttl: ttl)
@@ -1034,6 +1034,7 @@ func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Boo
                 updatedMembers.forEach { updatedMember in
                     _ = ChatModel.shared.upsertGroupMember(gInfo, updatedMember)
                 }
+                onSuccess()
             }
         } catch let error {
             logger.error("apiBlockMembersForAll error: \(responseError(error))")

@@ -940,7 +940,14 @@ testPlanNameChannelNoRelays = withChannelChats $ \reg alice cath bob -> do
 
 testPlanChannelNameNotice :: HasCallStack => TestParams -> IO ()
 testPlanChannelNameNotice = withChannelChats $ \reg alice cath bob -> do
-  _ <- joinVerifiedTeam reg alice cath bob
+  (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
+  alice ##> "/ad"
+  (contactLink, _) <- getContactLinks alice True
+  registerName reg teamSimplexName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack shortLink))
+  setChannelDomain alice cath "alice" "team" "team.simplex"
+  alice ##> "/_set domain 1 team.simplex"
+  alice <## "new contact address set"
+  memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
   alice ##> "/rm #team bob notice={\"ttl\":86400}"
   alice <## "#team: you removed bob from the group (signed)"
   cath <## "#team: alice removed bob from the group (signed)"
@@ -951,9 +958,10 @@ testPlanChannelNameNotice = withChannelChats $ \reg alice cath bob -> do
   bob <## "use /d #team to delete the group"
   bob ##> "/d #team"
   bob <## "#team: you deleted your local copy of the group"
-  bob ##> "/_connect plan 1 #team.simplex"
+  bob ##> "/_connect plan 1 team.simplex"
   bannedLine bob "group link: "
-  apiFixture "names/plan-channel-notice" bob [] FixtureRequests {frMarkdown = ["#team.simplex"], frUris = [], frCommands = ["/_connect plan 1 #team.simplex"]}
+  bob <## "You can also connect to @team.simplex in direct chat"
+  apiFixture "names/plan-channel-notice" bob [] FixtureRequests {frMarkdown = ["team.simplex", "@team.simplex"], frUris = [], frCommands = ["/_connect plan 1 team.simplex", "/_connect plan 1 @team.simplex"]}
 
 testPlanNameLinkKeyHash :: HasCallStack => TestParams -> IO ()
 testPlanNameLinkKeyHash = withTeamChats $ \reg contactLink channelLink _alice bob -> do
