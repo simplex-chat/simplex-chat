@@ -9,6 +9,8 @@ import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM, forM_, void)
+import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import Data.List (sort)
 import Data.Maybe (fromJust, mapMaybe)
 import Data.Text (Text)
@@ -30,6 +32,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (DisputeDays, TermsAcceptance (..), minDisputeDays, mkDisputeDays)
 import StoreService.Names.Signatures (OrderFields (..), parseAnyCaseAddress, parseSignature)
 import StoreService.Names.Store
+import StoreService.Names.View (balanceJSON)
 import StoreService.Store (RevokeResult (..))
 import Test.Hspec
 
@@ -73,6 +76,7 @@ namesStoreTests = describe "StoreService names: store" $ do
   describe "dispute days" $ do
     it "takes the days of the payment: card 120, crypto and prepaid codes 14, and the larger of a method's and a balance's" testOrderDays
     it "sets each registration's days in the migration as at its creation, and its down migration sets an ended registration registered" testMigrationDays
+    it "states each balance's days in its JSON, the days of an order it pays for wholly" testBalanceDays
   describe "prepaid codes" $ do
     it "issues one code per hash" testIssueCode
     it "reserves only an unused code, releases and spends it only for its holder" testReserveReleaseSpend
@@ -696,6 +700,18 @@ testMigrationDays = withServiceStore $ \st -> do
     `shouldReturn` [Only ("registered" :: Text)]
   runMigrations st $ MTRUp migration
   daysOf st (map fst funded) `shouldReturn` funded
+
+testBalanceDays :: IO ()
+testBalanceDays = withServiceStore $ \st -> do
+  void $ placeFunded st
+  forM_ [("fromcard", "cardsource"), ("frombtc", "btcsource"), ("twostep", "fromcard"), ("fromlate", "lateorder")] $ \(spender, funder) -> do
+    days <- nrDisputeDays <$> reg st spender
+    stated <- withTransaction st $ \db -> (statedDays =<<) <$> getBalance db (RegistrationId funder) t0
+    (funder, stated) `shouldBe` (funder, Just $ J.toJSON days)
+  where
+    statedDays b = case balanceJSON b of
+      J.Object o -> KM.lookup "disputeDays" o
+      _ -> Nothing
 
 testIssueCode :: IO ()
 testIssueCode = withServiceStore $ \st -> do

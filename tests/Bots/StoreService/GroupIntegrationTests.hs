@@ -16,8 +16,8 @@ import StoreService.Group.Command (maxUses)
 import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Chain (SignedTx (..), TxRequest (..), newChainClient, signTransaction)
-import StoreService.Names.Store (CodeIssuer (..), NamePhase (PFailed), NameRegistration (nrFailedAt, nrPhase), NewTransaction (..), PrepaidCode (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
+import StoreService.Names.Chain (SignedTx (..), TxHash (..), TxRequest (..), newChainClient, signTransaction)
+import StoreService.Names.Store (CodeIssuer (..), NamePhase (PEnded, PFailed), NameRegistration (nrFailedAt, nrPhase), NewTransaction (..), PrepaidCode (..), TxFor (..), TxStatus (..), VersionWrite (Written), getPrepaidCode, insertTransaction, recordTransactionOutcome, spendLandedPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))
@@ -28,7 +28,7 @@ import StoreService.Store.Migrate (withInstanceLock)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection, registrarAddr, withRpcUrl)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, plainTerms, setFault, withFakeEthNode)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), address, answerCall, awaitSent, fakeNamePolicy, linkTermsOnNode, mine, plainTerms, setFault, withFakeEthNode)
 import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, rentPriceCall, reservedNamesCall)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
@@ -566,6 +566,19 @@ testCloseRecorded ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
     registeredLogs <- capturingStderr $ closeRaw cc "inv-g" `shouldReturn` Left "Nothing refunded: the register of order g went through, so the order is registered now."
     registeredLogs `shouldSatisfy` T.isInfixOf "names: order g set registered by //close, as its register went through"
     Balances.figures st "g" t0 `shouldReturn` Nothing
+    Balances.placeOrderRow st "e" False 10000 (addUTCTime 3600 now)
+    unpaidE <- reg st "e"
+    write st unpaidE {nrPhase = PFailed, nrFailedAt = Just t0} `shouldReturn` Written 2
+    withTransaction st $ \db -> do
+      void $ insertTransaction db (TxRegister $ RegistrationId "e") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ digestFixture 5, ntxNonce = 5} t0
+      recordTransactionOutcome db (TxHash $ digestFixture 5) TSPending TSMined (Just 1) `shouldReturn` True
+    replicateM_ 2 $ mine node []
+    answerCall node registrar (selector "nameExpires(uint256)" <> labelBytes "e") $ Returns $ uint256 (2000000000 :: Int)
+    answerCall node registrar (selector "disputeUntil(uint256)" <> labelBytes "e") $ Returns $ uint256 (0 :: Int)
+    endedLogs <- capturingStderr $ closeRaw cc "inv-e" `shouldReturn` Left "Nothing refunded: the register of order e went through and its registration was ended in its dispute period, so the order is ended now."
+    endedLogs `shouldSatisfy` T.isInfixOf "names: order e set ended by //close, as its register went through and its registration was ended in its dispute period"
+    nrPhase <$> reg st "e" `shouldReturn` PEnded
+    Balances.figures st "e" t0 `shouldReturn` Nothing
 
 testGroupMoneyCmds :: HasCallStack => TestParams -> IO ()
 testGroupMoneyCmds ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do

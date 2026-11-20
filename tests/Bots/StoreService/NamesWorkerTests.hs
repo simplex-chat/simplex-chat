@@ -128,8 +128,9 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends an order whose name was registered again before the sweep read it, leaving an order without a dispute period, past it or registered after the confirmed block" testEndedSweepBounds
     it "ends an order only once its unregister is at the confirmation depth" testEndedAtDepth
     it "stops a sweep at a failed chain read, logging it once and changing nothing" testEndedSweepUnread
-    it "ends an order whose expiry reads 0 at the confirmed block when its register lands, unregistered within the confirmation depth" testEndedWithinDepth
-    it "ends an order whose name was unregistered and registered again by another between its register and the confirmed block" testEndedByOtherRegistration
+    it "reads the orders after one whose dispute end cannot be read, logging the failure once" testEndedSweepPastUnread
+    it "ends an order unregistered within the confirmation depth once its mined register is judged, storing its register's dispute end and no expiry" testEndedWithinDepth
+    it "ends an order whose name was unregistered and registered again by another before the confirmed block, storing its register's dispute end and none of the other registration's times" testEndedByOtherRegistration
   describe "retry" $ do
     it "refuses Try again outside failed with bad_request, changing nothing, and answers an unknown order 404" testRetryNotFailed
     it "refuses Try again of a failed order whose links were refused with bad_request, changing nothing" testRetryLinksRefused
@@ -1128,14 +1129,28 @@ testEndedSweepUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
   sweepEndedRegistrations wWorker
   map nrPhase <$> mapM (stored ctx) rs `shouldReturn` [PEnded, PEnded]
 
+testEndedSweepPastUnread :: IO ()
+testEndedSweepPastUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
+  let disputeEnd = orderSeconds + 14 * 86400
+  unread <- paidIn ctx aliceOrder $ registeredUntil disputeEnd
+  unregistered <- paidIn ctx dynamisOrder $ registeredUntil (disputeEnd + 60)
+  void $ confirmedBlockAt ctx $ orderSeconds + 1
+  answerCall cNode (registrarOf cNode) (selector "disputeUntil(uint256)" <> labelBytes "alicebakery") $ Reverts ""
+  answerDisputeUntil ctx "dynamis" 0
+  logs <- capturingStderr $ sweepEndedRegistrations wWorker
+  T.count "names ended sweep" logs `shouldBe` 1
+  stored ctx unread `shouldReturn` unread
+  nrPhase <$> stored ctx unregistered `shouldReturn` PEnded
+
 testEndedWithinDepth :: IO ()
 testEndedWithinDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   (r, registerBlock) <- minedRegister w
+  t <- blockTime w registerBlock
   unregisteredFrom ctx $ registerBlock + 1
   void $ mine cNode []
   steps w r >>= done
   x <- stored ctx r
-  (nrPhase x, nrRegisterBlock x) `shouldBe` (PEnded, Just registerBlock)
+  (nrPhase x, nrRegisterBlock x, nrExpiresAt x, nrDisputeUntil x) `shouldBe` (PEnded, Just registerBlock, Nothing, Just $ t + 14 * 86400)
   view <- viewOf ctx r
   (field "phase" view, field "expiresAt" view, field "disputeUntil" view) `shouldBe` (Just "ended", Just J.Null, Just J.Null)
 
@@ -1146,7 +1161,8 @@ testEndedByOtherRegistration = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   registrationFrom ctx (registerBlock + 1) (expiry + 12) (t + 12 + 14 * 86400)
   void $ mine cNode []
   steps w r >>= done
-  nrPhase <$> stored ctx r `shouldReturn` PEnded
+  x <- stored ctx r
+  (nrPhase x, nrExpiresAt x, nrDisputeUntil x) `shouldBe` (PEnded, Nothing, Just $ t + 14 * 86400)
 
 testRegisterReadAtDepth :: IO ()
 testRegisterReadAtDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
@@ -1155,7 +1171,8 @@ testRegisterReadAtDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   unregisteredFrom ctx $ registerBlock + 1
   registering <- stored ctx r
   setBlock cNode (registerBlock + 1) (t + 12)
-  steps w r >>= retrying
+  logs <- capturingStderr $ steps w r >>= retrying
+  logs `shouldSatisfy` T.isInfixOf ("names: a register check waits for confirmation: the register's block " <> tshow registerBlock <> " is above the confirmed block " <> tshow (registerBlock - 1))
   stored ctx r `shouldReturn` registering
   void $ mine cNode []
   steps w r >>= done
