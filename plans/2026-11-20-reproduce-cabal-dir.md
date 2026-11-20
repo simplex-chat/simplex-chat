@@ -30,6 +30,7 @@ For v7.1.4, all other bytes of the artifacts depend on these paths: the sections
 
 1. scripts/simplex-chat-reproduce-builds.sh: `docker run` sets `CABAL_DIR=/home/builder/.cabal`, as build.yml does.
 2. .github/workflows/reproduce-schedule.yml: the checkout is the commit of the workflow run, not the release tag, so that the fixed script reproduces the releases made before the fix; the script builds the tag from its own clone, as before.
+3. Dockerfile.build: `ENV CABAL_DIR="$HOME/.cabal"`, so that every build in the image of a later release uses the store path of releases, also without `-e CABAL_DIR`; `PATH` of the image already contains `$HOME/.cabal/bin`.
 
 ```mermaid
 flowchart LR
