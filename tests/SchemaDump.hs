@@ -208,10 +208,12 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
                 let afterOpen = T.drop (T.length needle) rest
                     (_hex, afterQuote) = T.breakOn "'" afterOpen
                  in pre <> "hex(shared_msg_id) = '?'" <> go (T.drop 1 afterQuote)
-    -- XFTP workers record this update only after a chunk download fails and
-    -- retries. A loaded builder hits it; a quiet one does not.
+    -- These run only after a failed chunk download or a duplicate delivery.
+    -- A loaded builder records them; a quiet one does not.
     retryQuery :: Query -> Bool
-    retryQuery (Query t) = "retries = retries + 1" `T.isInfixOf` t
+    retryQuery (Query t) =
+      "retries = retries + 1" `T.isInfixOf` t
+        || "receive_attempts = receive_attempts + 1" `T.isInfixOf` t
     getQueryPlan :: DB.Connection -> Query -> IO Text
     getQueryPlan db q =
       (("Query: " <> fromQuery q) <>) . result <$> E.try (DB.query_ db $ "explain query plan " <> q)
