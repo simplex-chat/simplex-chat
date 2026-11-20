@@ -203,6 +203,18 @@ class NameAlertsTest : RecordedApiTest() {
   }
 
   @Test
+  fun groupLinkAsAddress() = recordedAlerts("connect/group-link-as-address") {
+    connect("GROUP_LINK")
+    assertTexts("Invalid connection link", "Please check that you used the correct link or ask your contact to send you another one.", "OK")
+  }
+
+  @Test
+  fun groupLinkAsChannel() = recordedAlerts("connect/group-link-as-channel") {
+    connect("GROUP_LINK")
+    assertTexts("Invalid connection link", "Please check that you used the correct link or ask your contact to send you another one.", "OK")
+  }
+
+  @Test
   fun connectByNameRowShowsLocalChats() = recorded("names/plan-known") {
     val searchText = mutableStateOf(TextFieldValue("alice"))
     val candidate = mutableStateOf<String?>("@alice.simplex")
@@ -252,6 +264,23 @@ class NameAlertsTest : RecordedApiTest() {
     waitUntil(timeoutMillis = 5_000) { names.all { onAllNodesWithText(it).fetchSemanticsNodes().size > shownBefore.getValue(it) } }
     assertEquals(setOf("@2", "#1"), chatIds().toSet())
     onNodeWithText("Connect to team.simplex").assertExists()
+  }
+
+  @Test
+  fun rejectedContactInChatList() = recorded("connect/request-rejected") {
+    ChatModel.chatRunning.value = true
+    runBlocking {
+      val chats = ChatController.apiGetChats(null)
+      withContext(Dispatchers.Main) { ChatModel.chatsContext.updateChats(chats) }
+    }
+    setContent {
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        ChatListView(ChatModel, MutableStateFlow(AnimatedViewState.GONE), {}, false)
+      }
+    }
+    assertEquals(listOf("@2"), chatIds())
+    assertFalse((chatInfo("@2") as ChatInfo.Direct).contact.active)
+    waitUntil(timeoutMillis = 5_000) { onAllNodesWithText("alice").fetchSemanticsNodes().isNotEmpty() }
   }
 
   @Test

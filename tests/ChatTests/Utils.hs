@@ -1096,10 +1096,10 @@ stableJSON value = stable value
       J.Array a -> J.Array $ fmap stable a
       v -> v
     stableField k v
-      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs"] = J.String "1970-01-01T00:00:00Z"
+      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs", "deletedTs", "fileExpires"] = J.String "1970-01-01T00:00:00Z"
       | k `elem` ["expiresAt", "blockedUntil"], J.String _ <- v = J.String "2099-01-01T12:00:00Z"
       | k `elem` memberIdKeys, J.String s <- v = J.String $ maybe (JK.toText k) (\i -> "memberId" <> T.pack (show i)) (elemIndex s memberIds)
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberPubKey", "publicGroupId", "groupLinkId", "relayLink", "itemSharedMsgId"], J.String _ <- v = J.String $ JK.toText k
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberPubKey", "publicGroupId", "groupLinkId", "relayLink", "itemSharedMsgId", "fileDescrText"], J.String _ <- v = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stable v
     memberIdKeys = ["memberId", "businessId", "customerId"]
