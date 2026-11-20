@@ -525,7 +525,7 @@ closeOrderCmd source turns (tld, minPriceCentsPerYear, chain) ChatController {ch
       logNote $ "names: order " <> rid <> " set registered by " <> spelledCmd source "close" <> ", as its register went through"
       pure $ Left $ "Nothing refunded: the register of order " <> rid <> " went through, so the order is registered now."
     Right (CLEnded (RegistrationId rid)) ->
-      pure $ Left $ "Nothing refunded:the register of order " <> rid <> " went through and its registration was ended in its dispute period, so the order is ended now."
+      pure $ Left $ "Nothing refunded: the register of order " <> rid <> " went through and its registration was ended in its dispute period, so the order is ended now."
     Right (CLRefused refusal) -> pure $ Left $ "Nothing recorded: " <> refusalText refusal <> "."
     Left e -> Left "The order could not be closed." <$ logError ("names: closing an order failed: " <> tshow e)
   where
