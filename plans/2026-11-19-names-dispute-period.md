@@ -80,4 +80,4 @@ The website publishes docs/*.md on each push to master (web.yml), so the text ap
 
 1. tagged `general-terms-vN` and `community-terms-vN`;
 2. mirrored on git.simplex.chat;
-3. set in the same governance batch as `setSponsor` of the sponsor that takes `disputeDays`, so that every registration with a dispute period is made under this version.
+3. set in the same governance batch as the sponsor's upgrade to `disputeDays`, so that every registration with a dispute period is made under this version.
