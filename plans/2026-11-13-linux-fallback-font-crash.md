@@ -70,13 +70,19 @@ flowchart TD
 
 - Desktop builds on all OSes use Skia m138; Android APKs are unchanged, and `Text` calls the Material one there.
 - Fonts with known metrics: Inter, the bundled emoji font, and the fonts Compose resolves for `FontFamily.Monospace` and `FontFamily.Default`. Other fonts take only the fallback spans.
-- An empty text with Center alignment takes Proportional alignment: m132 computed empty-paragraph metrics with the strut's proportional ratio.
-- An empty line is any empty segment between hard breaks: CRLF, LF, CR, VT, FF, U+0085, U+2028, U+2029.
+- An empty text with Center alignment, outside text fields, takes Proportional alignment: m132 computed empty-paragraph metrics with the strut's proportional ratio.
+- An empty line is a segment between Skia's hard breaks (LF, VT, FF, U+2028, U+2029) that is empty or a single CR. Text fields skip the check.
 - Text fields take no zero-length span with a font size: Compose sizes the caret and the trimmed first and last lines from the paragraph's default font size (`SkiaParagraph.getCursorRect`). A field with a line height takes `H'`.
-- The font of a character mirrors Skia: the text's font when it covers the character; an emoji sequence start (Unicode 15.1 Emoji and Emoji_Component, as ICU 74 in Skia m138) takes the emoji fallback (`und-Zsye`, Apple Color Emoji on macOS); any other character takes the system fallback for its weight and slant.
-- A text without a font family is measured with the typeface Skia finds for `sans-serif`; the default font size is 16 sp, as in Compose's `ParagraphBuilder`.
+- The font of a character mirrors Skia:
+  - the first installed font of the text's family that covers the character (`FontFamily.Default`, `SansSerif` and `Monospace` resolve to Compose's alias lists, `GenericFontFamiliesMapping`);
+  - otherwise an emoji sequence start (Unicode 15.1 Emoji and Emoji_Component, as ICU 74 in Skia m138) takes the emoji fallback (`und-Zsye`, Apple Color Emoji on macOS);
+  - otherwise the system fallback for the character's weight and slant;
+  - when the system has none, Inter or the bundled emoji font, as Skiko's `TypefaceFontProviderWithFallback::fallbackForChar`.
+- An emoji run (Windows) continues over ZWJ, variation selectors, keycap, tags, skin tones, hair components and the second regional indicator of a pair; a segment in a font with unknown metrics ends it.
+- Segments are found by one sweep over span bounds; spans merge in their original order.
+- The dominant font counts each segment in its own family and skips emoji continuation characters.
+- A text without a font family is measured with the typeface Skia finds for `sans-serif`; the default font size is 16 sp, as in Compose's `ParagraphBuilder`. Metrics take the first installed font of a family.
 - A copy without line gap is made only for fonts up to 8 MB; larger fonts take `H'`.
-- On Windows, a character followed by U+FE0F that the text's font covers without the selector takes the fallback font of U+FE0F.
 - Remaining differences:
   - a blank line in a text with a line height, by the rounding of `R`;
   - macOS: glyphs of fonts with a `trak` table, half the tracking (0.17 px at 16 px) to the right;

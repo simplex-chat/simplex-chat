@@ -28,6 +28,7 @@ import org.jetbrains.skia.paragraph.ParagraphStyle
 import org.jetbrains.skia.paragraph.TypefaceFontProvider
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
+import java.util.TreeMap
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -52,8 +53,9 @@ actual fun platformTextFieldStyle(text: String, style: TextStyle, visualTransfor
       TransformedText(layOutDesktopText(transformed.text, style, density, field = true).text, transformed.offsetMapping)
     }
   }
-  val fieldStyle = remember(text, style, visualTransformation, density) {
-    layOutDesktopText(visualTransformation.filter(AnnotatedString(text)).text, style, density, field = true).style
+  val empty = text.isEmpty()
+  val fieldStyle = remember(empty, style, density) {
+    layOutDesktopText(AnnotatedString(if (empty) "" else "x"), style, density, field = true).style
   }
   return PlatformTextFieldStyle(fieldStyle, fieldTransformation)
 }
@@ -68,35 +70,40 @@ private const val HHEA_LINE_GAP = 8
 private const val OS2_TYPO_LINE_GAP = 72
 private const val EMOJI_PRESENTATION = 0xFE0F
 private const val KEYCAP = 0x20E3
+private const val ZERO_WIDTH_JOINER = 0x200D
+private val VARIATION_SELECTORS = 0xFE00..0xFE0F
+private val TAGS = 0xE0020..0xE007F
+private val REGIONAL_INDICATORS = 0x1F1E6..0x1F1FF
+private val SKIN_TONES = 0x1F3FB..0x1F3FF
+private val HAIR_COMPONENTS = 0x1F9B0..0x1F9B3
 private const val WINDOWS_EMOJI_FAMILY = "Segoe UI Emoji"
 private const val MAC_EMOJI_FAMILY = "Apple Color Emoji"
 private const val EMOJI_LOCALE = "und-Zsye"
 private val DEFAULT_FONT_SIZE = 16.sp
-private val LINE_BREAKS = Regex("\r\n|[\n\r\u000B\u000C\u0085  ]")
+private val LINE_BREAKS = Regex("[\\n\\x0B\\x0C\\x{2028}\\x{2029}]")
 
 fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density, field: Boolean): PlatformText {
   val s = text.text
   val effective = text.spanStyles.filter { it.start == 0 }.fold(style) { acc, range -> acc.merge(range.item) }
   val fontSizePx = fontSizePx(effective.fontSize, density)
   val lineHeightPx = lineHeightPx(style.lineHeight, fontSizePx, density)
-  val typeface = typefaceOf(effective.fontFamily)
+  val typeface = typefacesOf(effective.fontFamily).firstOrNull()
   val lineHeightStyle = style.lineHeightStyle ?: LineHeightStyle.Default
   val trimBoth = lineHeightStyle.trim == LineHeightStyle.Trim.Both
   val proportional = lineHeightStyle.alignment == LineHeightStyle.Alignment.Proportional
   val centered = lineHeightStyle.alignment == LineHeightStyle.Alignment.Center && lineHeightStyle.trim == LineHeightStyle.Trim.None
-  val hasEmptyLine = s.split(LINE_BREAKS).any { it.isEmpty() }
   val marker = when {
-    field || hasEmptyLine -> null
+    field || s.split(LINE_BREAKS).any { it.isEmpty() || it == "\r" } -> null
     lineHeightPx == null -> SpanStyle(fontSize = with(density) { UNSET_LINE_HEIGHT_MARKER_PX.toSp() })
     typeface == null -> null
     proportional && (lineHeightPx > fontSizePx || trimBoth) -> SpanStyle(fontSize = with(density) { (PROPORTIONAL_MARKER_HEIGHT_PX / heightPerPx(typeface)).toSp() })
-    centered -> centeredMarker(s, effective, typeface, fontSizePx, lineHeightPx, density)
+    centered -> centeredMarker(text, style, effective, typeface, fontSizePx, lineHeightPx, density)
     else -> null
   }
   var laidOutStyle = style
   if (marker == null && lineHeightPx != null) {
     if (s.isEmpty()) {
-      if (!proportional) laidOutStyle = style.copy(lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Proportional, lineHeightStyle.trim))
+      if (!proportional && !field) laidOutStyle = style.copy(lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Proportional, lineHeightStyle.trim))
     } else if (typeface != null) {
       val compensated = compensatedLineHeightPx(lineHeightPx, fontSizePx, typeface, lineHeightStyle)
       laidOutStyle = style.copy(lineHeight = with(density) { compensated.toSp() })
@@ -126,8 +133,8 @@ private fun lineHeightPx(lineHeight: TextUnit, fontSizePx: Float, density: Densi
   }
 }
 
-private fun centeredMarker(s: String, effective: TextStyle, typeface: Typeface, fontSizePx: Float, lineHeightPx: Float, density: Density): SpanStyle? {
-  val dominant = dominantTypeface(s, typeface)
+private fun centeredMarker(text: AnnotatedString, style: TextStyle, effective: TextStyle, typeface: Typeface, fontSizePx: Float, lineHeightPx: Float, density: Density): SpanStyle? {
+  val dominant = dominantTypeface(text, style, typeface)
   val metrics = SkFont(dominant, fontSizePx).use { it.metrics }
   val exactHeight = metrics.descent - metrics.ascent
   val fraction = exactHeight - floor(exactHeight)
@@ -142,21 +149,27 @@ private fun centeredMarker(s: String, effective: TextStyle, typeface: Typeface, 
   return SpanStyle(fontSize = with(density) { markerPx.toSp() }, fontFamily = family)
 }
 
-private fun dominantTypeface(s: String, typeface: Typeface): Typeface {
+private fun dominantTypeface(text: AnnotatedString, style: TextStyle, typeface: Typeface): Typeface {
+  val s = text.text
   val counts = HashMap<Int, Int>()
   val typefaces = HashMap<Int, Typeface>()
-  var i = 0
-  while (i < s.length) {
-    val cp = s.codePointAt(i)
-    val n = Character.charCount(cp)
-    if (!Character.isWhitespace(cp) && !isEmojiJoiner(cp)) {
-      val run = runTypeface(s, i, cp, n, typeface, FontStyle.NORMAL)
-      if (run != null) {
-        typefaces[run.uniqueId] = run
-        counts[run.uniqueId] = (counts[run.uniqueId] ?: 0) + 1
+  for (segment in styledSegments(text, style)) {
+    val segTypefaces = typefacesOf(segment.style.fontFamily)
+    if (segTypefaces.isEmpty()) continue
+    val fontStyle = skiaFontStyle(segment.style.toSpanStyle())
+    var i = segment.start
+    while (i < segment.end) {
+      val cp = s.codePointAt(i)
+      val n = Character.charCount(cp)
+      if (!Character.isWhitespace(cp) && !isEmojiContinuation(s, i, cp)) {
+        val run = runTypeface(s, i, cp, n, segTypefaces, fontStyle)
+        if (run != null) {
+          typefaces[run.uniqueId] = run
+          counts[run.uniqueId] = (counts[run.uniqueId] ?: 0) + 1
+        }
       }
+      i += n
     }
-    i += n
   }
   return counts.entries.sortedWith(compareByDescending<Map.Entry<Int, Int>> { it.value }.thenBy { if (it.key == typeface.uniqueId) 0 else 1 })
     .firstOrNull()?.let { typefaces[it.key] } ?: typeface
@@ -175,21 +188,59 @@ private fun compensatedLineHeightPx(lineHeightPx: Float, fontSizePx: Float, type
   return if (lineHeightPx > fontSizePx) max(adjustedPx, fontSizePx * ABOVE_FONT_SIZE) else adjustedPx
 }
 
-private fun runTypeface(s: String, i: Int, cp: Int, n: Int, segTypeface: Typeface, fontStyle: FontStyle): Typeface? {
-  val next = if (i + n < s.length) s.codePointAt(i + n) else -1
-  val presentation = next == EMOJI_PRESENTATION && covers(segTypeface, cp) && !covers(segTypeface, EMOJI_PRESENTATION)
-  if (covers(segTypeface, cp) && !presentation) return segTypeface
-  return if (isEmojiSequenceStart(s, i, cp, n)) emojiFallbackTypeface(cp, fontStyle)
-  else fallbackTypeface(if (presentation) EMOJI_PRESENTATION else cp, fontStyle)
+private class StyledSegment(val start: Int, val end: Int, val style: TextStyle)
+
+private fun styledSegments(text: AnnotatedString, style: TextStyle): List<StyledSegment> {
+  val length = text.length
+  val spans = text.spanStyles.mapIndexedNotNull { index, range ->
+    val start = range.start.coerceIn(0, length)
+    val end = range.end.coerceIn(0, length)
+    if (start < end) Triple(index, start, end) else null
+  }
+  val starts = spans.groupBy { it.second }
+  val ends = spans.groupBy { it.third }
+  val bounds = (spans.flatMap { listOf(it.second, it.third) } + listOf(0, length)).distinct().sorted()
+  val active = TreeMap<Int, SpanStyle>()
+  val out = mutableListOf<StyledSegment>()
+  for (k in 0 until bounds.size - 1) {
+    val bound = bounds[k]
+    ends[bound]?.forEach { active.remove(it.first) }
+    starts[bound]?.forEach { active[it.first] = text.spanStyles[it.first].item }
+    out += StyledSegment(bound, bounds[k + 1], active.values.fold(style) { acc, item -> acc.merge(item) })
+  }
+  return out
 }
+
+private fun runTypeface(s: String, i: Int, cp: Int, n: Int, typefaces: List<Typeface>, fontStyle: FontStyle): Typeface? =
+  typefaces.firstOrNull { covers(it, cp) }
+    ?: if (isEmojiSequenceStart(s, i, cp, n)) emojiFallbackTypeface(cp, fontStyle) else fallbackTypeface(cp, fontStyle)
 
 private fun isEmojiSequenceStart(s: String, i: Int, cp: Int, n: Int): Boolean {
   if (!inRanges(EMOJI_RANGES, cp)) return false
   if (!inRanges(EMOJI_COMPONENT_RANGES, cp)) return true
   val next = if (i + n < s.length) s.codePointAt(i + n) else -1
-  if (cp in 0x1F1E6..0x1F1FF) return next in 0x1F1E6..0x1F1FF
+  if (cp in REGIONAL_INDICATORS) return next in REGIONAL_INDICATORS
   val afterNext = if (next != -1 && i + n + Character.charCount(next) < s.length) s.codePointAt(i + n + Character.charCount(next)) else -1
   return next == EMOJI_PRESENTATION && afterNext == KEYCAP
+}
+
+private fun isEmojiContinuation(s: String, i: Int, cp: Int): Boolean = when {
+  cp == ZERO_WIDTH_JOINER || cp == KEYCAP -> true
+  cp in VARIATION_SELECTORS || cp in TAGS || cp in SKIN_TONES || cp in HAIR_COMPONENTS -> true
+  cp in REGIONAL_INDICATORS -> precedingRegionalIndicators(s, i) % 2 == 1
+  else -> false
+}
+
+private fun precedingRegionalIndicators(s: String, i: Int): Int {
+  var count = 0
+  var j = i
+  while (j > 0) {
+    val cp = s.codePointBefore(j)
+    if (cp !in REGIONAL_INDICATORS) break
+    count++
+    j -= Character.charCount(cp)
+  }
+  return count
 }
 
 private fun inRanges(ranges: IntArray, cp: Int): Boolean {
@@ -212,7 +263,6 @@ private fun skiaFontStyle(style: SpanStyle): FontStyle =
 private fun fallbackStyles(text: AnnotatedString, style: TextStyle, density: Density): List<AnnotatedString.Range<SpanStyle>> {
   val s = text.text
   val out = mutableListOf<AnnotatedString.Range<SpanStyle>>()
-  val bounds = (text.spanStyles.flatMap { listOf(it.start, it.end) } + listOf(0, s.length)).filter { it in 0..s.length }.distinct().sorted()
   var emojiStart = -1
   var trackStart = -1
   var trackPx = 0f
@@ -227,32 +277,34 @@ private fun fallbackStyles(text: AnnotatedString, style: TextStyle, density: Den
     }
     emojiStart = -1
   }
-  for (k in 0 until bounds.size - 1) {
-    val segStart = bounds[k]
-    val segEnd = bounds[k + 1]
-    if (segStart == segEnd) continue
-    val segStyle = text.spanStyles.filter { it.start <= segStart && it.end >= segEnd && it.start < it.end }.fold(style) { acc, range -> acc.merge(range.item) }
-    val segTypeface = typefaceOf(segStyle.fontFamily) ?: continue
-    val fontStyle = skiaFontStyle(segStyle.toSpanStyle())
-    val fontSizePx = fontSizePx(segStyle.fontSize, density)
+  for (segment in styledSegments(text, style)) {
+    val segTypefaces = typefacesOf(segment.style.fontFamily)
+    if (segTypefaces.isEmpty()) {
+      endEmoji(segment.start)
+      continue
+    }
+    val fontStyle = skiaFontStyle(segment.style.toSpanStyle())
+    val fontSizePx = fontSizePx(segment.style.fontSize, density)
     val letterSpacingPx = with(density) {
       when {
-        segStyle.letterSpacing.isSp -> segStyle.letterSpacing.toPx()
-        segStyle.letterSpacing.isEm -> segStyle.letterSpacing.value * fontSizePx
+        segment.style.letterSpacing.isSp -> segment.style.letterSpacing.toPx()
+        segment.style.letterSpacing.isEm -> segment.style.letterSpacing.value * fontSizePx
         else -> 0f
       }
     }
-    var i = segStart
-    while (i < segEnd) {
+    var i = segment.start
+    while (i < segment.end) {
       val cp = s.codePointAt(i)
       val n = Character.charCount(cp)
       if (desktopPlatform.isWindows()) {
-        val emoji = if (emojiStart >= 0 && (isEmojiJoiner(cp) || inRanges(EMOJI_COMPONENT_RANGES, cp))) true
-        else runTypeface(s, i, cp, n, segTypeface, fontStyle).let { it != null && it.uniqueId != segTypeface.uniqueId && it.familyName == WINDOWS_EMOJI_FAMILY }
+        val emoji = if (emojiStart >= 0 && isEmojiContinuation(s, i, cp)) true
+        else runTypeface(s, i, cp, n, segTypefaces, fontStyle).let { run ->
+          run != null && segTypefaces.none { it.uniqueId == run.uniqueId } && run.familyName == WINDOWS_EMOJI_FAMILY
+        }
         if (emoji && emojiStart < 0) emojiStart = i
         if (!emoji) endEmoji(i)
       } else {
-        val run = runTypeface(s, i, cp, n, segTypeface, fontStyle)
+        val run = runTypeface(s, i, cp, n, segTypefaces, fontStyle)
         val tracking = if (run != null && hasTracking(run)) trackingPx(run, fontSizePx) else 0f
         if (tracking != 0f) {
           val spacing = letterSpacingPx - tracking
@@ -267,37 +319,41 @@ private fun fallbackStyles(text: AnnotatedString, style: TextStyle, density: Den
       }
       i += n
     }
-    endTracking(segEnd)
+    endTracking(segment.end)
   }
   endEmoji(s.length)
   return out
 }
-
-private fun isEmojiJoiner(cp: Int) = cp == 0x200D || cp in 0xFE00..0xFE0F || cp == KEYCAP || cp in 0xE0020..0xE007F
 
 private val coverage = ConcurrentHashMap<Long, Boolean>()
 
 private fun covers(typeface: Typeface, cp: Int): Boolean =
   coverage.getOrPut((typeface.uniqueId.toLong() shl 32) or cp.toLong()) { typeface.getUTF32Glyph(cp).toInt() != 0 }
 
+private fun fallbackKey(cp: Int, fontStyle: FontStyle): Long =
+  (fontStyle.weight.toLong() shl 33) or (fontStyle.slant.ordinal.toLong() shl 32) or cp.toLong()
+
 private val fallbackTypefaces = ConcurrentHashMap<Long, Any>()
 
 private fun fallbackTypeface(cp: Int, fontStyle: FontStyle): Typeface? =
-  fallbackTypefaces.getOrPut((fontStyle.weight.toLong() shl 33) or (fontStyle.slant.ordinal.toLong() shl 32) or cp.toLong()) {
+  (fallbackTypefaces.getOrPut(fallbackKey(cp, fontStyle)) {
     FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, null, cp) ?: Unit
-  } as? Typeface
+  } as? Typeface) ?: registeredFallbackTypeface(cp)
 
 private val emojiFallbackTypefaces = ConcurrentHashMap<Long, Any>()
 
 private fun emojiFallbackTypeface(cp: Int, fontStyle: FontStyle): Typeface? =
-  emojiFallbackTypefaces.getOrPut((fontStyle.weight.toLong() shl 33) or (fontStyle.slant.ordinal.toLong() shl 32) or cp.toLong()) {
+  (emojiFallbackTypefaces.getOrPut(fallbackKey(cp, fontStyle)) {
     val typeface = if (desktopPlatform.isMac()) {
       FontMgr.default.matchFamilyStyle(MAC_EMOJI_FAMILY, FontStyle.NORMAL)
     } else {
       FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, arrayOf(EMOJI_LOCALE), cp)
     }
     typeface ?: Unit
-  } as? Typeface
+  } as? Typeface) ?: registeredFallbackTypeface(cp)
+
+private fun registeredFallbackTypeface(cp: Int): Typeface? =
+  listOfNotNull(interTypeface, emojiTypeface).firstOrNull { covers(it, cp) }
 
 private val trackingTables = ConcurrentHashMap<Int, Boolean>()
 
@@ -402,44 +458,40 @@ private val interTypeface: Typeface? by lazy { FontMgr.default.makeFromFile(MR.f
 
 private val emojiTypeface: Typeface? by lazy { FontMgr.default.makeFromFile(MRdesktopMain.fonts.notocoloremoji_regular.file.absolutePath) }
 
-private val unsetFamilyTypeface: Typeface? by lazy {
-  FontCollection().apply { setDefaultFontManager(FontMgr.default) }.findTypefaces(arrayOf("sans-serif"), FontStyle.NORMAL).firstOrNull()
-}
+private val systemFonts: FontCollection by lazy { FontCollection().apply { setDefaultFontManager(FontMgr.default) } }
 
-private val monospaceTypeface: Typeface? by lazy {
-  firstInstalledTypeface(
-    linux = listOf("Noto Sans Mono", "DejaVu Sans Mono", "Consolas"),
-    windows = listOf("Consolas"),
-    mac = listOf(".AppleSystemUIFontMonospaced", "Menlo", "Courier")
+private val unsetFamilyTypefaces: List<Typeface> by lazy { installedTypefaces(listOf("sans-serif")) }
+
+private val monospaceTypefaces: List<Typeface> by lazy {
+  installedTypefaces(
+    when {
+      desktopPlatform.isLinux() -> listOf("Noto Sans Mono", "DejaVu Sans Mono", "Consolas")
+      desktopPlatform.isWindows() -> listOf("Consolas")
+      else -> listOf(".AppleSystemUIFontMonospaced", "Menlo", "Courier")
+    }
   )
 }
 
-private val sansSerifTypeface: Typeface? by lazy {
-  firstInstalledTypeface(
-    linux = listOf("Noto Sans", "DejaVu Sans", "Arial"),
-    windows = listOf("Segoe UI", "Arial"),
-    mac = listOf(".AppleSystemUIFont", "Helvetica Neue", "Helvetica")
+private val sansSerifTypefaces: List<Typeface> by lazy {
+  installedTypefaces(
+    when {
+      desktopPlatform.isLinux() -> listOf("Noto Sans", "DejaVu Sans", "Arial")
+      desktopPlatform.isWindows() -> listOf("Segoe UI", "Arial")
+      else -> listOf(".AppleSystemUIFont", "Helvetica Neue", "Helvetica")
+    }
   )
 }
 
-private fun firstInstalledTypeface(linux: List<String>, windows: List<String>, mac: List<String>): Typeface? {
-  val families = when {
-    desktopPlatform.isLinux() -> linux
-    desktopPlatform.isWindows() -> windows
-    else -> mac
-  }
-  return families.firstNotNullOfOrNull { family ->
-    FontMgr.default.matchFamily(family).use { set -> if (set.count() > 0) set.matchStyle(FontStyle.NORMAL) else null }
-  }
-}
+private fun installedTypefaces(families: List<String>): List<Typeface> =
+  systemFonts.findTypefaces(families.toTypedArray(), FontStyle.NORMAL).filterNotNull()
 
-private fun typefaceOf(family: FontFamily?): Typeface? = when (family) {
-  null -> unsetFamilyTypeface
-  Inter -> interTypeface
-  FontFamily.Monospace -> monospaceTypeface
-  FontFamily.Default, FontFamily.SansSerif -> sansSerifTypeface
-  EmojiFont -> emojiTypeface
-  else -> null
+private fun typefacesOf(family: FontFamily?): List<Typeface> = when (family) {
+  null -> unsetFamilyTypefaces
+  Inter -> listOfNotNull(interTypeface)
+  FontFamily.Monospace -> monospaceTypefaces
+  FontFamily.Default, FontFamily.SansSerif -> sansSerifTypefaces
+  EmojiFont -> listOfNotNull(emojiTypeface)
+  else -> emptyList()
 }
 
 private val EMOJI_RANGES = intArrayOf(
