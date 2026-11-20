@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -80,7 +81,7 @@ fun YourNetworkView(chatModel: ChatModel) {
                 style = MaterialTheme.typography.h1,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                lineHeight = desktopLineHeight(MaterialTheme.typography.h1.fontSize, 42.sp),
+                lineHeight = 42.sp,
                 modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
               )
               Text(
@@ -88,7 +89,7 @@ fun YourNetworkView(chatModel: ChatModel) {
                 style = MaterialTheme.typography.h3,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colors.secondary,
-                lineHeight = desktopLineHeight(MaterialTheme.typography.h3.fontSize, 25.sp),
+                lineHeight = 25.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 14.dp)
               )
@@ -144,7 +145,7 @@ private fun YourNetworkDesktop(
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.onboarding_your_network), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
           }
-          Text(stringResource(MR.strings.onboarding_network_routers_cannot_know), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary, lineHeight = desktopLineHeight(MaterialTheme.typography.h3.fontSize, 25.sp), textAlign = TextAlign.Center)
+          Text(stringResource(MR.strings.onboarding_network_routers_cannot_know), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary, lineHeight = 25.sp, textAlign = TextAlign.Center)
           Spacer(Modifier.height(DEFAULT_PADDING))
           ConfigureRoutersButton(serverOperators, selectedOperatorIds) {
             ModalManager.fullscreen.showCustomModal(forceAnimated = true) { close ->

@@ -92,6 +92,7 @@ actual fun PlatformTextField(
   var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message.text, selection = cs.message.selection)) }
   val textFieldValue = textFieldValueState.copy(text = cs.message.text, selection = cs.message.selection)
   val clipboard = LocalClipboardManager.current
+  val field = platformTextFieldStyle(cs.message.text, textStyle.value)
   BasicTextField(
     value = textFieldValue,
     onValueChange = onValueChange@ {
@@ -109,7 +110,8 @@ actual fun PlatformTextField(
         onMessageChange(ComposeMessage(it.text, it.selection))
       }
     },
-    textStyle = textStyle.value,
+    textStyle = field.style,
+    visualTransformation = field.visualTransformation,
     maxLines = 16,
     keyboardOptions = KeyboardOptions.Default.copy(
       capitalization = KeyboardCapitalization.Sentences,

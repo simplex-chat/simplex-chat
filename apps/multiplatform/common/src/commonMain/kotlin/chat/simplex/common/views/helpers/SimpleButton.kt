@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment

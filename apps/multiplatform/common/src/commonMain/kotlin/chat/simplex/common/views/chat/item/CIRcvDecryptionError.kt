@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.item
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -12,7 +13,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.ui.theme.appColors
 import chat.simplex.common.views.helpers.AlertManager
@@ -147,7 +147,7 @@ fun DecryptionErrorItemFixButton(
           buildAnnotatedString {
             withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
           },
-          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red)).withDesktopLineHeight()
+          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red))
         )
         Row {
           Icon(
@@ -166,7 +166,7 @@ fun DecryptionErrorItemFixButton(
               }
             },
             color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-            style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT)).withDesktopLineHeight()
+            style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT))
           )
         }
       }
@@ -189,7 +189,7 @@ fun DecryptionErrorItem(
             withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true, breakBefore = true)) }
           }
         },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red)).withDesktopLineHeight()
+        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(bubbleTextStyle(16.sp, Color.Red))
       )
     }
   }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.desktopLineHeight
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.parseRTCIceServers
 import chat.simplex.common.views.helpers.*
@@ -117,7 +117,7 @@ fun RTCServersLayout(
       }
 
       if (!isUserRTCServers) {
-        Text(stringResource(MR.strings.using_simplex_chat_servers), lineHeight = desktopLineHeight(LocalTextStyle.current.fontSize, 22.sp))
+        Text(stringResource(MR.strings.using_simplex_chat_servers), lineHeight = 22.sp)
       } else {
         Text(stringResource(MR.strings.enter_one_ICE_server_per_line))
         if (editRTCServers) {

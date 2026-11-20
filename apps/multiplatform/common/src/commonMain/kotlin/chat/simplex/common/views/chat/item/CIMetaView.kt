@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.Composable
@@ -25,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPreferences
-import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.*
 
@@ -51,7 +51,7 @@ fun CIMetaView(
   showViaProxy: Boolean,
   lineHeightColor: Color = metaColor,
 ) {
-  val timeStyle = LocalTextStyle.current.merge(chatTextStyle(12.sp, lineHeightColor)).copy(fontSize = 12.sp).withDesktopLineHeight()
+  val timeStyle = LocalTextStyle.current.merge(chatTextStyle(12.sp, lineHeightColor))
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
       Text(

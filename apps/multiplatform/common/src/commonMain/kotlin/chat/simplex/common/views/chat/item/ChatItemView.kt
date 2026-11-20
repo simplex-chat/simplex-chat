@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -658,7 +659,7 @@ fun ChatItemView(
                   withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(cInfo.isChannel)) }
                 },
                 Modifier.padding(chatEventPadding()),
-                style = chatEventTextStyle().withDesktopLineHeight()
+                style = chatEventTextStyle()
               )
             }
 
@@ -689,7 +690,7 @@ fun ChatItemView(
                   withStyle(chatEventStyle) { append(annotatedStringResource(sId)) }
                 },
                 Modifier.padding(chatEventPadding()),
-                style = chatEventTextStyle().withDesktopLineHeight()
+                style = chatEventTextStyle()
               )
             }
 

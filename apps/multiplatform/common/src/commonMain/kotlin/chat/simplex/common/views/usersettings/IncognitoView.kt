@@ -3,6 +3,7 @@ package chat.simplex.common.views.usersettings
 import SectionBottomSpacer
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource

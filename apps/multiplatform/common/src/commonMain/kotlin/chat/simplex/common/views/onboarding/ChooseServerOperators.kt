@@ -11,6 +11,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,7 +78,7 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
                 style = MaterialTheme.typography.h1,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                lineHeight = desktopLineHeight(MaterialTheme.typography.h1.fontSize, 42.sp),
+                lineHeight = 42.sp,
                 modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
               )
               Column(
@@ -89,13 +90,13 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
                 Text(
                   stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
                   style = MaterialTheme.typography.body2,
-                  lineHeight = desktopLineHeight(MaterialTheme.typography.body2.fontSize, 22.sp)
+                  lineHeight = 22.sp
                 )
                 Spacer(Modifier.height(DEFAULT_PADDING))
                 Text(
                   stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
                   style = MaterialTheme.typography.body2,
-                  lineHeight = desktopLineHeight(MaterialTheme.typography.body2.fontSize, 22.sp)
+                  lineHeight = 22.sp
                 )
                 Spacer(Modifier.height(DEFAULT_PADDING))
                 Text(

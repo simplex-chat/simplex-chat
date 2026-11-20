@@ -2,14 +2,10 @@ package chat.simplex.common.platform
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import com.russhwolf.settings.Settings
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -42,10 +38,3 @@ expect fun desktopExpandWindowToWidth(width: Dp)
 expect fun isRtl(text: CharSequence): Boolean
 
 expect fun ImageResource.toComposeImageBitmap(): ImageBitmap?
-
-@Composable
-expect fun desktopLineHeight(fontSize: TextUnit, lineHeight: TextUnit, fontFamily: FontFamily? = null, lineHeightStyle: LineHeightStyle? = null): TextUnit
-
-@Composable
-fun TextStyle.withDesktopLineHeight(): TextStyle =
-  copy(lineHeight = desktopLineHeight(fontSize, lineHeight, fontFamily, lineHeightStyle))

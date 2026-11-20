@@ -2,14 +2,13 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.*
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
 import chat.simplex.res.*
@@ -54,7 +53,7 @@ fun CIMemberCreatedContactView(
         fun open(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Open", start = offset, end = offset).isNotEmpty()
         ClickableText(
           annotatedText,
-          style = chatEventTextStyle(TextStyle(fontFamily = FontFamily.Default, fontSize = 14.sp)).withDesktopLineHeight(),
+          style = chatEventTextStyle(TextStyle.Default),
           onClick = {
             if (open(it)) {
               openDirectChat(chatItem.chatDir.groupMember.memberContactId)
@@ -68,7 +67,7 @@ fun CIMemberCreatedContactView(
           append(separator)
           withStyle(chatEventStyle) { append(ts) }
         }
-        Text(annotatedText, style = chatEventTextStyle().withDesktopLineHeight())
+        Text(annotatedText, style = chatEventTextStyle())
       }
     }
   }

@@ -12,12 +12,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import chat.simplex.common.model.AppPreferences
@@ -68,6 +65,3 @@ actual fun isRtl(text: CharSequence): Boolean = BidiFormatter.getInstance().isRt
 
 actual fun ImageResource.toComposeImageBitmap(): ImageBitmap? =
   getDrawable(androidAppContext)?.toBitmap()?.asImageBitmap()
-
-@Composable
-actual fun desktopLineHeight(fontSize: TextUnit, lineHeight: TextUnit, fontFamily: FontFamily?, lineHeightStyle: LineHeightStyle?): TextUnit = lineHeight

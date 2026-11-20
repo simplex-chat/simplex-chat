@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -25,7 +24,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.platform.withDesktopLineHeight
+import chat.simplex.common.platform.Text
 import chat.simplex.common.ui.theme.HighOrLowlight
 import chat.simplex.common.ui.theme.Inter
 import chat.simplex.common.views.chat.item.*
@@ -155,9 +154,9 @@ class BubbleLayoutTest {
                 buildAnnotatedString { append("11"); withStyle(SpanStyle(fontSize = 12.sp)) { append("11") } },
                 Modifier.alignByBaseline().record(placed, "text"),
                 Color.Black,
-                style = textStyle().withDesktopLineHeight()
+                style = textStyle()
               )
-              Text("11", Modifier.alignByBaseline().record(placed, "time"), Color.Black, style = TextStyle(fontFamily = Inter, fontSize = 12.sp).merge(chatTextStyle(12.sp, HighOrLowlight)).withDesktopLineHeight())
+              Text("11", Modifier.alignByBaseline().record(placed, "time"), Color.Black, style = TextStyle(fontFamily = Inter, fontSize = 12.sp).merge(chatTextStyle(12.sp, HighOrLowlight)))
             }
           }
         }
@@ -169,9 +168,9 @@ class BubbleLayoutTest {
   @Test
   fun linesDrawnWholeLineHeightApart() {
     val texts = listOf<Pair<TextUnit, @Composable () -> TextStyle>>(
-      22.sp to { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleLineHeight(22.sp)).withDesktopLineHeight() },
-      18.sp to { TextStyle(fontFamily = Inter, fontSize = 13.sp).merge(bubbleLineHeight(18.sp)).withDesktopLineHeight() },
-      16.sp * INTER_LINE_HEIGHT to { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT)).withDesktopLineHeight() },
+      22.sp to { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleLineHeight(22.sp)) },
+      18.sp to { TextStyle(fontFamily = Inter, fontSize = 13.sp).merge(bubbleLineHeight(18.sp)) },
+      16.sp * INTER_LINE_HEIGHT to { TextStyle(fontFamily = Inter, fontSize = 16.sp).merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT)) },
     )
     for (fontScale in listOf(0.7f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f)) {
       texts.forEachIndexed { i, (lineHeight, textStyle) ->

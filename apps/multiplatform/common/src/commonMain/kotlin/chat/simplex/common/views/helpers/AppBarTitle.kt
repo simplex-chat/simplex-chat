@@ -2,6 +2,7 @@ package chat.simplex.common.views.helpers
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -10,7 +11,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.*
-import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.*
@@ -55,7 +55,7 @@ fun AppBarTitle(
           alpha = bottomTitleAlpha(connection)
         },
       overflow = TextOverflow.Ellipsis,
-      style = MaterialTheme.typography.h1.copy(brush = brush, lineHeight = lineHeight).withDesktopLineHeight(),
+      style = MaterialTheme.typography.h1.copy(brush = brush, lineHeight = lineHeight),
       color = MaterialTheme.colors.primaryVariant,
       textAlign = textAlign
     )

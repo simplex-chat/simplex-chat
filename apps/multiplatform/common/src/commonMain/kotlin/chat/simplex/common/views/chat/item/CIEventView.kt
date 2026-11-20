@@ -4,18 +4,18 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
-import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.*
 
 @Composable
 fun CIEventView(text: AnnotatedString) {
-  Text(text, Modifier.padding(chatEventPadding()), style = chatEventTextStyle(MaterialTheme.typography.body1.copy(lineHeight = 22.sp)).withDesktopLineHeight(), maxLines = if (LocalTerminalLayout.current) Int.MAX_VALUE else 4)
+  Text(text, Modifier.padding(chatEventPadding()), style = chatEventTextStyle(MaterialTheme.typography.body1.copy(lineHeight = 22.sp)), maxLines = if (LocalTerminalLayout.current) Int.MAX_VALUE else 4)
 }
 
 @Composable

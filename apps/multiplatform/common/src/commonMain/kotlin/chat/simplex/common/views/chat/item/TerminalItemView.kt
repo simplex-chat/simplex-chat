@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
-import androidx.compose.material.Text
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
-import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -424,7 +423,7 @@ fun TerminalChatItemRow(
       }
       Box {
         if (sender != null) {
-          ProvideTextStyle(LocalTextStyle.current.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize)).withDesktopLineHeight()) {
+          ProvideTextStyle(LocalTextStyle.current.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize))) {
             SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING))
           }
         }

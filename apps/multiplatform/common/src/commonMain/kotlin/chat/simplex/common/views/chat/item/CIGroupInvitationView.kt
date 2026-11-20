@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -16,8 +17,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.platform.desktopLineHeight
-import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
@@ -122,7 +121,7 @@ fun CIGroupInvitationView(
                   Text(if (sent) String.format(stringResource(MR.strings.group_invitation_for_member_only), groupInvitation.localDisplayName) else stringResource(MR.strings.group_invitation_for_you_only), fontSize = 12.sp, color = secondaryColor)
                 }
                 if (action) {
-                  Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = desktopLineHeight(13.sp, 18.sp))
+                  Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = 18.sp)
                   Text(
                     buildAnnotatedString {
                       append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
@@ -134,7 +133,7 @@ fun CIGroupInvitationView(
                       MaterialTheme.colors.secondary
                     else
                       if (chatIncognito) Indigo else MaterialTheme.colors.primary,
-                    style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT)).withDesktopLineHeight()
+                    style = LocalTextStyle.current.merge(bubbleLineHeight(16.sp * INTER_LINE_HEIGHT))
                   )
                 } else {
                   Text(
@@ -145,7 +144,7 @@ fun CIGroupInvitationView(
                       }
                     },
                     fontSize = 13.sp,
-                    style = LocalTextStyle.current.copy(lineHeight = 18.sp).merge(bubbleLineHeight(18.sp)).copy(fontSize = 13.sp).withDesktopLineHeight(),
+                    style = LocalTextStyle.current.copy(lineHeight = 18.sp).merge(bubbleLineHeight(18.sp)),
                   )
                 }
               }

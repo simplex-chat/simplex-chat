@@ -2,15 +2,14 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.*
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
 import chat.simplex.res.*
@@ -45,13 +44,13 @@ fun CIFeaturePreferenceView(
         fun accept(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Accept", start = offset, end = offset).isNotEmpty()
         ClickableText(
           annotatedText,
-          style = chatEventTextStyle(TextStyle(fontFamily = FontFamily.Default, fontSize = 14.sp)).withDesktopLineHeight(),
+          style = chatEventTextStyle(TextStyle.Default),
           onClick = { if (accept(it)) { acceptFeature(contact, feature, param) } },
           shouldConsumeEvent = ::accept
         )
       } else {
         Text(AnnotatedString(chatItem.content.text) + separator + ts,
-          fontSize = 12.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colors.secondary, style = chatEventTextStyle().copy(fontSize = 12.sp).withDesktopLineHeight())
+          fontSize = 12.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colors.secondary, style = chatEventTextStyle())
       }
     }
   }

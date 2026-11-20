@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -219,17 +220,19 @@ private fun CodeField(code: MutableState<TextFieldValue>, submitting: Boolean, a
     focusedIndicatorColor = Color.Unspecified,
     unfocusedIndicatorColor = Color.Unspecified,
   )
+  val field = platformTextFieldStyle(code.value.text, TextStyle.Default.copy(
+    color = MaterialTheme.colors.onBackground,
+    fontFamily = FontFamily.Monospace,
+    fontSize = MaterialTheme.typography.body1.fontSize,
+    textAlign = TextAlign.Center
+  ))
   BasicTextField(
     value = code.value,
     onValueChange = applyCodeInput,
     enabled = !submitting,
     singleLine = true,
-    textStyle = TextStyle.Default.copy(
-      color = MaterialTheme.colors.onBackground,
-      fontFamily = FontFamily.Monospace,
-      fontSize = MaterialTheme.typography.body1.fontSize,
-      textAlign = TextAlign.Center
-    ),
+    textStyle = field.style,
+    visualTransformation = field.visualTransformation,
     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, autoCorrect = false),
     cursorBrush = SolidColor(colors.cursorColor(false).value),
     modifier = Modifier

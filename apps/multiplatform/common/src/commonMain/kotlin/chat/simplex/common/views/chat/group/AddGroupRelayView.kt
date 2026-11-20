@@ -8,6 +8,7 @@ import SectionView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -129,7 +130,7 @@ private fun AddGroupRelayLayout(
           if (count == 0) generalGetString(MR.strings.no_relays_selected)
           else String.format(generalGetString(MR.strings.num_relays_selected), count),
           color = MaterialTheme.colors.secondary,
-          lineHeight = desktopLineHeight(14.sp, 18.sp),
+          lineHeight = 18.sp,
           fontSize = 14.sp
         )
       }

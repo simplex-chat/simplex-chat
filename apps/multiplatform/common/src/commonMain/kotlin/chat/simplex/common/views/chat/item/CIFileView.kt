@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -243,7 +244,7 @@ fun CIFileView(
             color = secondaryColor,
             fontSize = 14.sp,
             maxLines = 1,
-            style = LocalTextStyle.current.merge(bubbleLineHeight(14.sp * INTER_LINE_HEIGHT)).copy(fontSize = 14.sp).withDesktopLineHeight()
+            style = LocalTextStyle.current.merge(bubbleLineHeight(14.sp * INTER_LINE_HEIGHT))
           )
         }
       } else {

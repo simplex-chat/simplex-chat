@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -247,7 +247,6 @@ fun MarkdownText (
     }
     return
   }
-  val drawnStyle = style.withDesktopLineHeight()
   val reserve = meta?.let {
     if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current)) {
       AnnotatedString("\n")
@@ -308,9 +307,9 @@ fun MarkdownText (
       }
       val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
       if (textSelection != null) {
-        SelectableText(annotatedText, style = drawnStyle, modifier = modifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = textSelection.onTextLayoutResult)
+        SelectableText(annotatedText, style = style, modifier = modifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = textSelection.onTextLayoutResult)
       } else {
-        Text(annotatedText, style = drawnStyle, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
       }
     } else {
       var selectableEnd = 0
@@ -476,7 +475,7 @@ fun MarkdownText (
         })
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
-        ClickableText(annotatedText, style = drawnStyle, selectionRange = clampedRange, modifier = textModifier.pointerHoverIcon(icon.value), softWrap = softWrap, maxLines = maxLines, overflow = overflow,
+        ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = textModifier.pointerHoverIcon(icon.value), softWrap = softWrap, maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
             if (hasLinks) {
               val withAnnotation: (String, (Range<String>) -> Unit) -> Unit = { tag, f ->
@@ -537,9 +536,9 @@ fun MarkdownText (
         )
       } else {
         if (textSelection != null) {
-          SelectableText(annotatedText, style = drawnStyle, modifier = textModifier, softWrap = softWrap, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayout)
+          SelectableText(annotatedText, style = style, modifier = textModifier, softWrap = softWrap, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayout)
         } else {
-          Text(annotatedText, style = drawnStyle, modifier = textModifier, softWrap = softWrap, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf(), onTextLayout = onTextLayout)
+          Text(annotatedText, style = style, modifier = textModifier, softWrap = softWrap, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf(), onTextLayout = onTextLayout)
         }
       }
     }
@@ -628,11 +627,12 @@ fun ClickableText(
     }
   }
 
+  val laidOut = platformText(text, style)
   BasicText(
-    text = text,
+    text = laidOut.text,
     modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)).then(pressIndicator)
       .onGloballyPositioned { textCoordinates.value = it },
-    style = style,
+    style = laidOut.style,
     softWrap = softWrap,
     overflow = overflow,
     maxLines = maxLines,
@@ -655,11 +655,12 @@ private fun SelectableText(
   onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
 ) {
   val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+  val laidOut = platformText(text, style)
 
   BasicText(
-    text = text,
+    text = laidOut.text,
     modifier = modifier.pointerHoverIcon(PointerIcon.Text).then(selectionHighlight(selectionRange, text.length, layoutResult)),
-    style = style,
+    style = laidOut.style,
     softWrap = softWrap,
     maxLines = maxLines,
     overflow = overflow,

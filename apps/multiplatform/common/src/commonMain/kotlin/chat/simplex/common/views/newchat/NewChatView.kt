@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -720,11 +721,13 @@ fun LinkTextView(link: String, share: Boolean) {
       chatModel.markShowingInvitationUsed()
       clipboard.shareText(link)
     }) {
+      val field = platformTextFieldStyle(link, TextStyle(fontSize = 16.sp, color = MaterialTheme.colors.onBackground))
       BasicTextField(
         value = link,
         onValueChange = {  },
         enabled = false,
-        textStyle = TextStyle(fontSize = 16.sp, color = MaterialTheme.colors.onBackground),
+        textStyle = field.style,
+        visualTransformation = field.visualTransformation,
         singleLine = true,
         decorationBox = @Composable { innerTextField ->
           TextFieldDefaults.TextFieldDecorationBox(

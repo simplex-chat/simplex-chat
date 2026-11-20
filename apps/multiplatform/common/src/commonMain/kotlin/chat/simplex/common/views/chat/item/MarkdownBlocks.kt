@@ -15,7 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -125,7 +125,7 @@ fun MarkdownBlocks(
           entries.forEachIndexed { j, (entry, level) ->
             if (j > 0) Spacer(Modifier.height(emptyLinesHeight(entries[j - 1].first.content.to, entry.content.from, between = true)))
             Row(Modifier.padding(start = 20.dp * level)) {
-              Text(entry.number ?: "•", Modifier.widthIn(min = 14.dp), style = style.withDesktopLineHeight())
+              Text(entry.number ?: "•", Modifier.widthIn(min = 14.dp), style = style)
               Spacer(Modifier.width(6.dp))
               BlockText(start + j, entry.content, style, Modifier.weight(1f, fill = false))
             }

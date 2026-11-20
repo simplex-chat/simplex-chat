@@ -5,6 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.painter.Painter
@@ -96,7 +97,7 @@ fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, descr
         Modifier.align(Alignment.CenterHorizontally),
         fontSize = 15.sp,
         color = MaterialTheme.colors.onBackground,
-        lineHeight = desktopLineHeight(15.sp, 24.sp),
+        lineHeight = 24.sp,
         textAlign = TextAlign.Center
       )
     }

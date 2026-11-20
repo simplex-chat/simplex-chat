@@ -3,6 +3,7 @@ package chat.simplex.common.views.chatlist
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,7 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.platform.desktopLineHeight
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.helpers.annotatedStringResource
 import chat.simplex.common.views.onboarding.ReadableTextWithLink
@@ -25,11 +25,10 @@ val bold = SpanStyle(fontWeight = FontWeight.Bold)
 
 @Composable
 fun ChatHelpView(addContact: (() -> Unit)? = null) {
-  val lineHeight = desktopLineHeight(LocalTextStyle.current.fontSize, 22.sp)
   Column(
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
-    Text(stringResource(MR.strings.thank_you_for_installing_simplex), lineHeight = lineHeight)
+    Text(stringResource(MR.strings.thank_you_for_installing_simplex), lineHeight = 22.sp)
     ReadableTextWithLink(MR.strings.you_can_connect_to_simplex_chat_founder, simplexTeamUri, simplexLink = true)
     Column(
       Modifier.padding(top = 24.dp),
@@ -38,7 +37,7 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
       Text(
         stringResource(MR.strings.to_start_a_new_chat_help_header),
         style = MaterialTheme.typography.h2,
-        lineHeight = desktopLineHeight(MaterialTheme.typography.h2.fontSize, 22.sp)
+        lineHeight = 22.sp
       )
       Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -52,8 +51,8 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
         )
         Text(stringResource(MR.strings.above_then_preposition_continuation))
       }
-      Text(annotatedStringResource(MR.strings.add_contact_button_to_create_link_or_connect_via_link), lineHeight = lineHeight)
-      Text(annotatedStringResource(MR.strings.create_group_button_to_create_new_group), lineHeight = lineHeight)
+      Text(annotatedStringResource(MR.strings.add_contact_button_to_create_link_or_connect_via_link), lineHeight = 22.sp)
+      Text(annotatedStringResource(MR.strings.create_group_button_to_create_new_group), lineHeight = 22.sp)
     }
 
     Column(
@@ -61,9 +60,9 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       Text(stringResource(MR.strings.to_connect_via_link_title), style = MaterialTheme.typography.h2)
-      Text(stringResource(MR.strings.if_you_received_simplex_invitation_link_you_can_open_in_browser), lineHeight = lineHeight)
-      Text(annotatedStringResource(MR.strings.desktop_scan_QR_code_from_app_via_scan_QR_code), lineHeight = lineHeight)
-      Text(annotatedStringResource(MR.strings.mobile_tap_open_in_mobile_app_then_tap_connect_in_app), lineHeight = lineHeight)
+      Text(stringResource(MR.strings.if_you_received_simplex_invitation_link_you_can_open_in_browser), lineHeight = 22.sp)
+      Text(annotatedStringResource(MR.strings.desktop_scan_QR_code_from_app_via_scan_QR_code), lineHeight = 22.sp)
+      Text(annotatedStringResource(MR.strings.mobile_tap_open_in_mobile_app_then_tap_connect_in_app), lineHeight = 22.sp)
     }
 
     Column(

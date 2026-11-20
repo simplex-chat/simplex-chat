@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -866,7 +867,7 @@ fun ServersErrorFooter(errStr: String) {
     Text(
       errStr,
       color = MaterialTheme.colors.secondary,
-      lineHeight = desktopLineHeight(14.sp, 18.sp),
+      lineHeight = 18.sp,
       fontSize = 14.sp
     )
   }
@@ -890,7 +891,7 @@ fun ServersWarningFooter(warnStr: String) {
     Text(
       warnStr,
       color = MaterialTheme.colors.secondary,
-      lineHeight = desktopLineHeight(14.sp, 18.sp),
+      lineHeight = 18.sp,
       fontSize = 14.sp
     )
   }

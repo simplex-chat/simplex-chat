@@ -3,7 +3,7 @@ package chat.simplex.common.views.chatlist
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import chat.simplex.common.platform.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,7 +13,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.platform.withDesktopLineHeight
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.model.PendingContactConnection
 import chat.simplex.common.model.getTimestampText
@@ -48,7 +47,7 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
           fontSize = 15.sp,
           color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight,
           lineHeight = 21.sp
-        ).withDesktopLineHeight()
+        )
       )
     }
     Box(
