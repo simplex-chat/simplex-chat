@@ -1642,7 +1642,7 @@ updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe Simp
 updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_
   | profileChanged || countChanged || verifyResolved = do
       cxt <- chatStoreCxt
-      (gInfo', moved) <- withNameLock user resolvedDomain_ $ withStore $ \db -> do
+      (gInfo', moved) <- withNameLockMovedToView user resolvedDomain_ $ withStore $ \db -> do
         g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
         g' <- case publicGroupData of
           Just PublicGroupData {publicMemberCount} | countChanged ->
@@ -1665,7 +1665,7 @@ updateContactFromLinkData :: User -> Contact -> ProofPresHeader -> Profile -> CM
 updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} presHeader linkProfile@Profile {contactDomain = newClaim}
   | profileChanged || verifyChanged = do
       cxt <- chatStoreCxt
-      withNameLock user (claimDomain <$> newClaim) $ withFastStore $ \db -> do
+      withNameLockMovedToView user (claimDomain <$> newClaim) $ withFastStore $ \db -> do
         ct' <- updateContactProfile db cxt user ct (Just presHeader) linkProfile
         if verifyChanged
           then liftIO $ setContactDomainVerified db user ct' True
@@ -1676,8 +1676,8 @@ updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {conta
     claimChanged = (claimDomain <$> prevClaim) /= (claimDomain <$> newClaim)
     verifyChanged = contactDomainVerified /= Just DVVerified || claimChanged
 
-withNameLock :: User -> Maybe SimplexDomain -> CM (a, MovedChats) -> CM (a, MovedChats)
-withNameLock user@User {userId} domain_ action =
+withNameLockMovedToView :: User -> Maybe SimplexDomain -> CM (a, MovedChats) -> CM (a, MovedChats)
+withNameLockMovedToView user@User {userId} domain_ action =
   maybe id (withEntityLock "withNameLock" . CLSimplexName userId . fullDomainName) domain_ $ do
     r@(_, (ctIds, gIds)) <- action
     unless (null ctIds && null gIds) $ toView $ CEvtNameMoved user ctIds gIds
