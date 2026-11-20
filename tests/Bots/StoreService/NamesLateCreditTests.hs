@@ -8,7 +8,7 @@ module Bots.StoreService.NamesLateCreditTests (namesLateCreditTests) where
 
 import Bots.StoreService.NamesBalancesTests (coveredSpend, figures, holder, invariantHolds, placeOrderRow, source)
 import Bots.StoreService.NamesStoreTests (at, ownerA, reg, t0)
-import Bots.StoreService.WebTests (StubCall (..), StubState (..), capturingStderr, newStubState, sampleProviderInvoice, setSignals, stubCalls, stubProvider, stubRate, withServiceStore)
+import Bots.StoreService.WebTests (StubCall (..), StubState (..), capturingStderr, newStubState, renameTable, sampleProviderInvoice, setSignals, stubCalls, stubProvider, stubRate, withServiceStore)
 import qualified Control.Exception as E
 import Control.Monad (void)
 import qualified Data.Aeson as J
@@ -373,14 +373,13 @@ testMoneroZero = withLate $ \l@Late {lStore = st} -> do
 
 testCreditPassFails :: IO ()
 testCreditPassFails = withLate $ \Late {lStore = st, lPoller} -> do
-  let rename from to = withTransaction st $ \db -> DB.execute_ db $ "ALTER TABLE " <> from <> " RENAME TO " <> to
   started <- readTVarIO (peCreditPassAt lPoller)
-  rename "sx_badge_service_name_invoices" "name_invoices_away"
+  renameTable st "sx_badge_service_name_invoices" "name_invoices_away"
   passLog <- capturingStderr $ runOnePass lPoller
   passLog `shouldSatisfy` T.isInfixOf "names: the late credit pass failed; the next pass will run: "
   let pastAlert = addUTCTime 601 started
   (E.try (creditPass lPoller pastAlert) :: IO (Either E.SomeException ())) >>= (`shouldSatisfy` either (const True) (const False))
-  rename "name_invoices_away" "sx_badge_service_name_invoices"
+  renameTable st "name_invoices_away" "sx_badge_service_name_invoices"
   readTVarIO (peCreditPassAt lPoller) `shouldReturn` started
   diffUTCTime pastAlert <$> readTVarIO (peCreditPassAt lPoller) >>= (`shouldSatisfy` (> 600))
   let later = addUTCTime 2 pastAlert

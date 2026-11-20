@@ -16,6 +16,7 @@ module Bots.StoreService.WebTests
     runMigrations,
     digestFixture,
     capturingStderr,
+    renameTable,
     overdueOf,
     StubState (..),
     StubCall (..),
@@ -102,6 +103,7 @@ import Data.Int (Int64)
 import Data.List (isInfixOf, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, isJust, isNothing, fromMaybe, mapMaybe)
+import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -150,7 +152,6 @@ import Database.PostgreSQL.Simple (Only (..), (:.) (..))
 import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
 #else
 import StoreService.Store.SQLite.Migrations (schemaMigrations, storeServiceSchemaMigrations)
-import Data.String (fromString)
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Messaging.Agent.Store.DB (TrackQueries (..))
@@ -1634,6 +1635,9 @@ reopenRow st (InvoiceId iid) = withConnection st $ \db ->
 breakStore :: DBStore -> IO ()
 breakStore st = withConnection st $ \db ->
   DB.execute_ db "DROP TABLE sx_badge_service_badge_code_invoices"
+
+renameTable :: DBStore -> String -> String -> IO ()
+renameTable st from to = withTransaction st $ \db -> DB.execute_ db $ fromString $ "ALTER TABLE " <> from <> " RENAME TO " <> to
 
 readsPerMinute :: Int
 readsPerMinute = lmPerMinute readLimit
@@ -3549,12 +3553,11 @@ testSweepExpiresAGivenUpInvoiceAgain = bounded "sweep expires a given-up invoice
 
 testPassFailureLogged :: IO ()
 testPassFailureLogged = bounded "a failed pass" $ withStubPoller raceHold $ \_ poller env _ -> do
-  let rename from to = withConnection (weStore env) $ \db -> DB.execute_ db $ "ALTER TABLE " <> from <> " RENAME TO " <> to
-  rename "sx_badge_service_invoices" "invoices_away"
+  renameTable (weStore env) "sx_badge_service_invoices" "invoices_away"
   logged <- capturingStderr $ Async.withAsync (runPoller poller) $ \lane -> do
     threadDelay 500000
     Async.poll lane >>= (`shouldSatisfy` isNothing)
-  rename "invoices_away" "sx_badge_service_invoices"
+  renameTable (weStore env) "invoices_away" "sx_badge_service_invoices"
   logged `shouldSatisfy` T.isInfixOf "badge poller: the pass failed; the next pass will run: "
   runOnePass poller
 

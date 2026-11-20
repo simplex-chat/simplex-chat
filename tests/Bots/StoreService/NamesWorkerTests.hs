@@ -12,7 +12,7 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, linksRefusedPhase, move, moveTo, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (btc, hashFixture, insertInvoiceRow, ownerA, paidOrder, reveal)
-import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, phaseOf, phaseValue, refusedWith, statusOf, stubCalls, webGet, withApp)
+import Bots.StoreService.WebTests (answerOf, capturingStderr, fieldOf, jsonObject, phaseOf, phaseValue, refusedWith, renameTable, statusOf, stubCalls, webGet, withApp)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -26,7 +26,6 @@ import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
 import Data.IORef (readIORef, writeIORef)
 import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
-import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
@@ -34,7 +33,7 @@ import Simplex.Chat.Badges.Ledger (addMonths)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word8, Word64)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
-import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
@@ -1228,9 +1227,6 @@ testMonthPassFails = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wWorker}
   diffUTCTime now <$> readTVarIO passAt >>= (`shouldSatisfy` (> 1200))
   withAsync (runMonthEnds passAt wWorker) $ \_ ->
     timeout prompt (atomically $ readTVar passAt >>= \t -> if t == serviceStart then retry else pure t) `shouldReturn` Just now
-
-renameTable :: DBStore -> String -> String -> IO ()
-renameTable st from to = withTransaction st $ \db -> DB.execute_ db $ fromString $ "ALTER TABLE " <> from <> " RENAME TO " <> to
 
 testUnregisteredAlert :: IO ()
 testUnregisteredAlert = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
