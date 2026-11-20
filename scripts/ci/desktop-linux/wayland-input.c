@@ -15,8 +15,11 @@
 #include "wlr-virtual-pointer-unstable-v1-client-protocol.h"
 
 #define SCROLL_STEP 15
+#define EVDEV_OFFSET 8
+#define NO_MODIFIERS "none"
 
 static struct wl_seat *seat;
+static struct xkb_keymap *keymap;
 static struct zwlr_virtual_pointer_manager_v1 *pointer_manager;
 static struct zwp_virtual_keyboard_manager_v1 *keyboard_manager;
 
@@ -48,7 +51,7 @@ static uint32_t now_ms(void) {
 
 static int send_keymap(struct zwp_virtual_keyboard_v1 *keyboard) {
     struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-    struct xkb_keymap *keymap = context ? xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS) : NULL;
+    keymap = context ? xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS) : NULL;
     char *text = keymap ? xkb_keymap_get_as_string(keymap, XKB_KEYMAP_FORMAT_TEXT_V1) : NULL;
     if (text == NULL) {
         fprintf(stderr, "wayland-input: no keymap\n");
@@ -63,9 +66,48 @@ static int send_keymap(struct zwp_virtual_keyboard_v1 *keyboard) {
     zwp_virtual_keyboard_v1_keymap(keyboard, WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1, fd, (uint32_t)size);
     close(fd);
     free(text);
-    xkb_keymap_unref(keymap);
     xkb_context_unref(context);
     return 0;
+}
+
+static int evdev_code(const char *name) {
+    xkb_keysym_t keysym = xkb_keysym_from_name(name, XKB_KEYSYM_CASE_INSENSITIVE);
+    if (keysym == XKB_KEY_NoSymbol) return -1;
+    for (xkb_keycode_t code = xkb_keymap_min_keycode(keymap); code <= xkb_keymap_max_keycode(keymap); code++) {
+        const xkb_keysym_t *syms;
+        int count = xkb_keymap_key_get_syms_by_level(keymap, code, 0, 0, &syms);
+        for (int i = 0; i < count; i++) {
+            if (syms[i] == keysym) return (int)code - EVDEV_OFFSET;
+        }
+    }
+    return -1;
+}
+
+static uint32_t modifier_mask(char *names) {
+    uint32_t mask = 0;
+    if (strcmp(names, NO_MODIFIERS) == 0) return 0;
+    for (char *name = strtok(names, "+"); name != NULL; name = strtok(NULL, "+")) {
+        const char *xkb_name = strcmp(name, "ctrl") == 0 ? XKB_MOD_NAME_CTRL
+            : strcmp(name, "shift") == 0 ? XKB_MOD_NAME_SHIFT
+            : strcmp(name, "alt") == 0 ? XKB_MOD_NAME_ALT
+            : name;
+        xkb_mod_index_t index = xkb_keymap_mod_get_index(keymap, xkb_name);
+        if (index != XKB_MOD_INVALID) mask |= 1u << index;
+    }
+    return mask;
+}
+
+static void press_key(struct zwp_virtual_keyboard_v1 *keyboard, const char *name, char *modifiers) {
+    int code = evdev_code(name);
+    if (code < 0) {
+        fprintf(stderr, "wayland-input: unknown key: %s\n", name);
+        return;
+    }
+    uint32_t mask = modifier_mask(modifiers);
+    zwp_virtual_keyboard_v1_modifiers(keyboard, mask, 0, 0, 0);
+    zwp_virtual_keyboard_v1_key(keyboard, now_ms(), (uint32_t)code, WL_KEYBOARD_KEY_STATE_PRESSED);
+    zwp_virtual_keyboard_v1_key(keyboard, now_ms(), (uint32_t)code, WL_KEYBOARD_KEY_STATE_RELEASED);
+    zwp_virtual_keyboard_v1_modifiers(keyboard, 0, 0, 0, 0);
 }
 
 static uint32_t linux_button(int button) {
@@ -76,9 +118,14 @@ static uint32_t linux_button(int button) {
     }
 }
 
-static void run_command(struct zwlr_virtual_pointer_v1 *pointer, const char *line, uint32_t width, uint32_t height) {
+static void run_command(struct zwlr_virtual_pointer_v1 *pointer, struct zwp_virtual_keyboard_v1 *keyboard,
+                        const char *line, uint32_t width, uint32_t height) {
     int x, y, button;
-    char state[16];
+    char state[16], key[64], modifiers[64];
+    if (sscanf(line, "key %63s %63s", key, modifiers) == 2) {
+        press_key(keyboard, key, modifiers);
+        return;
+    }
     if (sscanf(line, "move %d %d", &x, &y) == 2) {
         zwlr_virtual_pointer_v1_motion_absolute(pointer, now_ms(), (uint32_t)x, (uint32_t)y, width, height);
     } else if (sscanf(line, "button %d %15s", &button, state) == 2) {
@@ -128,7 +175,7 @@ int main(int argc, char **argv) {
     fflush(stdout);
     char line[256];
     while (fgets(line, sizeof(line), commands) != NULL) {
-        run_command(pointer, line, width, height);
+        run_command(pointer, keyboard, line, width, height);
         if (wl_display_roundtrip(display) < 0) return 1;
     }
     return 0;

@@ -489,7 +489,7 @@ Sessions (`UI_SESSION` of `ui`):
 
 | Session | Display | Input and capture |
 |---|---|---|
-| wayland | headless sway: `WLR_BACKENDS=headless`, `WLR_RENDERER=pixman`, Mesa llvmpipe for EGL | grim, wtype, `wayland-input` (virtual pointer and keyboard held for the session) |
+| wayland | headless sway: `WLR_BACKENDS=headless`, `WLR_RENDERER=pixman`, Mesa llvmpipe for EGL | grim, wtype for text, `wayland-input` (virtual pointer and keyboard held for the session: clicks, scrolls, keys with modifiers) |
 | xwayland | headless sway with `xwayland force`, the app with `DISPLAY` of Xwayland and `GDK_BACKEND=x11` | grim, wtype, `wayland-input` |
 | x11 | Xvfb with openbox | `import`, xdotool |
 
@@ -519,7 +519,7 @@ Checks per cell (`e2e.sh`):
 | tray | `RegisterStatusNotifierItem` in the services log |
 | dark mode | light window above 0.6 mean brightness; 0.25 darker after `color-scheme prefer-dark`; back within 0.05 after `default` |
 | tray activation | window hidden after a close request, shown after `Activate` |
-| message notifications | CLI peer's link pasted from the clipboard; notification replaced per chat, titled with the peer, `desktop-entry` hint, default action opens the chat, closed when read; launcher entry urgent |
+| message notifications | CLI peer's link pasted from the clipboard; notification replaced per chat, titled with the peer, `desktop-entry` hint, default action opens the chat, closed when the chat is opened from the list; launcher entry urgent |
 
 Later iterations:
 

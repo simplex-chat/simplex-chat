@@ -150,17 +150,9 @@ press_key() {
     xdotool key --delay 100 -- "$1"
     return
   fi
-  local -a parts args=()
-  IFS=+ read -r -a parts <<< "$1"
-  local last=$((${#parts[@]} - 1))
-  for part in "${parts[@]:0:last}"; do
-    args+=(-M "$part")
-  done
-  args+=(-k "${parts[last]}")
-  for part in "${parts[@]:0:last}"; do
-    args+=(-m "$part")
-  done
-  wtype "${args[@]}"
+  local key=${1##*+} modifiers=none
+  [ "$key" = "$1" ] || modifiers=${1%+*}
+  printf 'key %s %s\n' "$key" "$modifiers" > "$state/input"
   sleep 0.1
 }
 

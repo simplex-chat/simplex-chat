@@ -167,8 +167,11 @@ replaced() {
   [ "$(jq -r .replaces_id <<< "$second")" = "$first" ] || jq -e --argjson id "$first" 'select(.event == "close" and .id == $id)' "$services_log" > /dev/null
 }
 
-closed() {
-  jq -e --argjson id "$1" 'select(.event == "close" and .id == $id)' "$services_log" > /dev/null
+# the notification of the message is closed after it was shown: notification IDs are reused
+closed_after() {
+  jq -se --arg text "$1" '
+    (to_entries | map(select(.value.event == "notify" and (.value.body | contains($text)))) | last) as $shown
+    | $shown != null and any(.[$shown.key + 1:][]; .event == "close" and .id == $shown.value.id)' "$services_log" > /dev/null
 }
 
 urgent() {
@@ -176,10 +179,11 @@ urgent() {
 }
 
 right_pane_shows() {
-  local window_x line
+  local window_x line text
   read -r window_x _ < "$UI_STATE/window-rect"
   while IFS= read -r line; do
-    [ "${line%%,*}" -gt $((window_x + pane_right_offset)) ] && [[ "${line#* }" == *"$1"* ]] && return 0
+    text=${line#* }
+    [ "${line%%,*}" -gt $((window_x + pane_right_offset)) ] && [[ "${text,,}" == *"${1,,}"* ]] && return 0
   done < <("$ui" text)
   return 1
 }
@@ -224,7 +228,12 @@ notify_messages() {
     --method chat.simplex.ci.Notifications.Invoke "$id" default || true
   check "clicking the notification opens its chat" eventually 20 right_pane_shows "second message"
   "$ui" shot notification-opened
-  check "reading the chat withdraws its notification" eventually 20 closed "$id"
+  "$ui" click-text "$other_chat" 10 || true
+  peer 5 "@$app_user third message"
+  check "a message to a chat that is not open is notified again" eventually 30 notified "third message"
+  "$ui" click-text "$peer_name" 10 || true
+  "$ui" shot chat-read
+  check "reading the chat in the app withdraws its notification" eventually 20 closed_after "third message"
 }
 
 eval "$(printf '\n' | gnome-keyring-daemon --unlock --components=secrets)"
