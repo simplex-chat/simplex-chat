@@ -383,15 +383,14 @@ nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError Word6
 nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeWord64
 
 disputeUntil :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe Word64))
-disputeUntil ct tag lh = fmap nonZero <$> callAt ct tag (baseRegistrar ct) ("disputeUntil(uint256)", labelHashArg lh) decodeWord64
-  where
-    nonZero t = if t == 0 then Nothing else Just t
+disputeUntil ct tag lh = fmap unlessZero <$> callAt ct tag (baseRegistrar ct) ("disputeUntil(uint256)", labelHashArg lh) decodeWord64
 
 -- | The block time of the commitment, Nothing when the controller holds none.
 commitmentTime :: Contracts -> ByteString -> IO (Either ChainError (Maybe Word64))
-commitmentTime ct commitment = fmap nonZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeWord64
-  where
-    nonZero t = if t == 0 then Nothing else Just t
+commitmentTime ct commitment = fmap unlessZero <$> call ct (controller ct) ("commitments(bytes32)", commitment) decodeWord64
+
+unlessZero :: Word64 -> Maybe Word64
+unlessZero t = if t == 0 then Nothing else Just t
 
 controllerAvailable :: Contracts -> BlockTag -> Text -> IO (Either ChainError Bool)
 controllerAvailable ct tag label = callAt ct tag (controller ct) ("available(string)", abiTuple [Dynamic $ abiBytes $ encodeUtf8 label]) decodeBool
