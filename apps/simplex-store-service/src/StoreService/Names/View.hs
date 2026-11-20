@@ -131,8 +131,8 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
 
 -- | The holder is not named, so an order's link discloses no other order. A funded hold has no end time.
 balanceJSON :: Balance -> J.Value
-balanceJSON b@Balance {blAmount, blRefunded} =
-  J.object ["amount" .= blAmount, "held" .= isJust hold, "heldUntil" .= (bhUntil <$> (hold >>= unfunded)), "refunded" .= blRefunded]
+balanceJSON b@Balance {blAmount, blRefunded, blDisputeDays} =
+  J.object ["amount" .= blAmount, "held" .= isJust hold, "heldUntil" .= (bhUntil <$> (hold >>= unfunded)), "refunded" .= blRefunded, "disputeDays" .= blDisputeDays]
   where
     hold = heldBy b
     unfunded h@BalanceHold {bhFunded} = if bhFunded then Nothing else Just h

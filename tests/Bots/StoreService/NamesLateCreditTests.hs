@@ -657,7 +657,7 @@ balanceAt :: DBStore -> Text -> UTCTime -> IO (Maybe J.Value)
 balanceAt st r now = fmap balanceJSON <$> withTransaction st (\db -> getBalance db (RegistrationId r) now)
 
 balanceObject :: Int -> Bool -> Maybe UTCTime -> Int -> J.Value
-balanceObject amount held heldUntil refunded = J.object ["amount" J..= amount, "held" J..= held, "heldUntil" J..= heldUntil, "refunded" J..= refunded]
+balanceObject amount held heldUntil refunded = J.object ["amount" J..= amount, "held" J..= held, "heldUntil" J..= heldUntil, "refunded" J..= refunded, "disputeDays" J..= (14 :: Int)]
 
 testHeldUntil :: IO ()
 testHeldUntil = withLate $ \l@Late {lStore = st} -> do

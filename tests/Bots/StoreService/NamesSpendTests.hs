@@ -300,7 +300,7 @@ testDifferenceSpend = withSpend $ \ctx -> do
   nrOrderHash holder `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance src 10000 6000 (Just btc))
   nrAgreedTerms holder `shouldBe` oTerms aliceOrder
   fmap irAmount <$> getInvoice (cStore ctx) invId `shouldReturn` Just (CurrencyAmount 4000)
-  field "balance" <$> viewOf ctx src `shouldReturn` Just (J.object ["amount" J..= (6000 :: Int), "held" J..= True, "heldUntil" J..= expiry, "refunded" J..= (0 :: Int)])
+  field "balance" <$> viewOf ctx src `shouldReturn` Just (J.object ["amount" J..= (6000 :: Int), "held" J..= True, "heldUntil" J..= expiry, "refunded" J..= (0 :: Int), "disputeDays" J..= (14 :: Int)])
 
 testDifferenceLimitedPerNetwork :: IO ()
 testDifferenceLimitedPerNetwork = withSpend $ \ctx@Ctx {cClient, cWeb, cStub} -> do
@@ -733,7 +733,7 @@ balanceView ctx rid = field "balance" <$> viewOf ctx rid
 
 -- | A balance nothing holds.
 balanceObject :: Int -> Int -> Maybe J.Value
-balanceObject amount refunded = Just $ J.object ["amount" J..= amount, "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= refunded]
+balanceObject amount refunded = Just $ J.object ["amount" J..= amount, "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= refunded, "disputeDays" J..= (14 :: Int)]
 
 ridText :: RegistrationId -> Text
 ridText (RegistrationId t) = t

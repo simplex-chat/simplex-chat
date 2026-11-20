@@ -277,7 +277,8 @@ data Balance = Balance
     blCredited :: Int,
     blRefunded :: Int,
     blHold :: Maybe BalanceHold,
-    blRefundedAt :: Maybe UTCTime
+    blRefundedAt :: Maybe UTCTime,
+    blDisputeDays :: DisputeDays
   }
   deriving (Eq, Show)
 
@@ -550,7 +551,7 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
         OTBalance source _ seen _ -> Just (source, seen)
         OTInvoice {} -> Nothing
         OTCode _ -> Nothing
-  days <- orderDisputeDays db terms
+  days <- orderDisputeDays db now terms
   inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held days (orderHash nrgOwner nrgOrder terms) now
   if not inserted
     then pure $ Left RRLiveOrder
@@ -567,7 +568,7 @@ createCodeRegistration :: DB.Connection -> NewRegistration -> PrepaidCode -> UTC
 createCodeRegistration db new@NewRegistration {nrgId = regId, nrgOwner, nrgOrder} PrepaidCode {pcId, pcCodeHash} now' = do
   let now = truncateToSecond now'
       terms = OTCode pcCodeHash
-  days <- orderDisputeDays db terms
+  days <- orderDisputeDays db now terms
   inserted <- insertRegistration db new PQueued 0 Nothing (Just pcId) Nothing days (orderHash nrgOwner nrgOrder terms) now
   if not inserted
     then pure $ Left RRLiveOrder
@@ -581,7 +582,7 @@ createBalanceRegistration :: DB.Connection -> NewRegistration -> RegistrationId 
 createBalanceRegistration db new@NewRegistration {nrgId, nrgOwner, nrgOrder} source price seen now' = do
   let now = truncateToSecond now'
       terms = OTBalance source price seen Nothing
-  days <- orderDisputeDays db terms
+  days <- orderDisputeDays db now terms
   inserted <- insertRegistration db new PQueued price Nothing Nothing (Just (source, price)) days (orderHash nrgOwner nrgOrder terms) now
   if not inserted
     then pure $ Left RRLiveOrder
@@ -599,18 +600,19 @@ methodDisputeDays = \case
   SPMCard _ -> cardDisputeDays
   SPMCrypto _ -> cryptoDisputeDays
 
-orderDisputeDays :: DB.Connection -> OrderTerms -> IO DisputeDays
-orderDisputeDays db = \case
+orderDisputeDays :: DB.Connection -> UTCTime -> OrderTerms -> IO DisputeDays
+orderDisputeDays db now = \case
   OTInvoice method _ -> pure $ methodDisputeDays method
   OTCode _ -> pure codeDisputeDays
   OTBalance source@(RegistrationId rid) _ _ method ->
-    getRegistration db source >>= \case
-      Just r -> pure $ maybe id (max . methodDisputeDays) method $ balanceDisputeDays r
-      Nothing -> E.throwIO $ StoreDecodeError $ "name_registrations balance source: " <> rid
-  where
-    balanceDisputeDays = \case
-      NameRegistration {nrPhase = PUnpaid, nrPayment = RPInvoice paidBy _} -> methodDisputeDays paidBy
-      NameRegistration {nrDisputeDays} -> nrDisputeDays
+    getBalance db source now >>= \case
+      Just Balance {blDisputeDays} -> pure $ maybe id (max . methodDisputeDays) method blDisputeDays
+      Nothing -> E.throwIO $ StoreDecodeError $ "name_balances balance source: " <> rid
+
+balanceDisputeDays :: NamePhase -> Maybe ServicePaymentMethod -> DisputeDays -> DisputeDays
+balanceDisputeDays phase method days = case (phase, method) of
+  (PUnpaid, Just paidBy) -> methodDisputeDays paidBy
+  _ -> days
 
 -- | False when the registration would be a second live one for its commitment, or for its owner and label hash.
 -- fromBalance: the order whose balance pays, and the cents it pays.
@@ -994,8 +996,9 @@ getBalance db (RegistrationId rid) now =
           <> holdOverdue
           <> " THEN 1 ELSE 0 END, CASE WHEN i.invoice_id IS NOT NULL"
           <> unfunded
-          <> " THEN 0 ELSE 1 END, b.refunded_at"
+          <> " THEN 0 ELSE 1 END, b.refunded_at, o.phase, o.method, o.dispute_days"
           <> " FROM sx_badge_service_name_balances b"
+          <> " JOIN sx_badge_service_name_registrations o ON o.registration_id = b.registration_id"
           <> " LEFT JOIN sx_badge_service_name_registrations h ON h.registration_id = b.reserved_by"
           <> " LEFT JOIN sx_badge_service_name_invoices ni ON ni.registration_id = b.reserved_by"
           <> " LEFT JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id"
@@ -1003,13 +1006,15 @@ getBalance db (RegistrationId rid) now =
       )
       (PUnpaid, invoiceStatusText ISPaid, truncateToSecond now, rid)
 
-toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
-toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI bhOverdue, BI bhFunded, blRefundedAt) = do
+toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) :. (NamePhase, Maybe Text, Int) -> Either Text Balance
+toBalance ((rid, blAmount, blCredited, blRefunded, holder_, until_, BI bhOverdue, BI bhFunded, blRefundedAt) :. (phase, method_, days_)) = do
   blHold <- case (holder_, until_) of
     (Nothing, _) -> Right Nothing
     (Just holder, Just bhUntil) -> Right $ Just BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue, bhFunded}
     (Just _, Nothing) -> Left $ "name_balances holder without an invoice: " <> rid
-  pure Balance {blRegistration = RegistrationId rid, blAmount, blCredited, blRefunded, blHold, blRefundedAt}
+  method <- mapM (\m -> note ("name_registrations.method: " <> m) $ textMethod m) method_
+  days <- note ("name_registrations.dispute_days: " <> tshow days_) $ mkDisputeDays days_
+  pure Balance {blRegistration = RegistrationId rid, blAmount, blCredited, blRefunded, blHold, blRefundedAt, blDisputeDays = balanceDisputeDays phase method days}
 
 -- | The order holding the balance, when its hold is overdue, for the next spend to close.
 overdueHolder :: DB.Connection -> RegistrationId -> UTCTime -> IO (Maybe NameRegistration)

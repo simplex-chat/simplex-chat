@@ -1721,7 +1721,7 @@ testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       balanceOf :: J.Object -> (Maybe J.Value, Maybe J.Value)
       balanceOf v = (field "balance" v, field "fromBalance" v)
       balance :: Int -> Bool -> Maybe UTCTime -> Int -> J.Value
-      balance amount held heldUntil refunded = J.object ["amount" .= amount, "held" .= held, "heldUntil" .= heldUntil, "refunded" .= refunded]
+      balance amount held heldUntil refunded = J.object ["amount" .= amount, "held" .= held, "heldUntil" .= heldUntil, "refunded" .= refunded, "disputeDays" .= (14 :: Int)]
   Right () <- placePaid st "source" ownerA (order "alicebakery" 1) holderExpiry
   withTransaction st $ \db -> creditBalance db (RegistrationId "source") 15000 t0
   balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 False Nothing 0, Just $ J.Number 0)

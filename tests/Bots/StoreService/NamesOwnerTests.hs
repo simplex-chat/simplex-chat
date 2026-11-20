@@ -662,7 +662,7 @@ testMovePrice = withOwner $ \ctx -> do
   balanceOf ctx dear `shouldReturn` Nothing
   v <- moved ctx keyB dear toCheaper
   (field "price" v, field "phase" v, field "fromBalance" v) `shouldBe` (Just (J.Number 10000), Just "queued", Just (J.Number 0))
-  field "balance" v `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int)])
+  field "balance" v `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int), "disputeDays" J..= (14 :: Int)])
   nrPrice <$> stored ctx dear `shouldReturn` 10000
   balanceOf ctx dear `shouldReturn` Just (10000, 10000)
 
