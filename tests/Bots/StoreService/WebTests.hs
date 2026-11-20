@@ -3564,8 +3564,10 @@ testListResetPassRuns = bounded "a list reset" $ withFakeBTCPay $ \fake -> withR
   waiters <- newWaiters
   hints <- newReadHints
   poller <- newPollerEnv st waiters Nothing hints [provider] PollConfig {pWaitingSeconds = 1, pIdleSeconds = 1}
+  hourAgo <- addUTCTime (-3600) <$> getCurrentTime
+  atomically $ writeTVar (peCreditPassAt poller) hourAgo
   logged <- capturingStderr $ runOnePass poller
-  isJust <$> readTVarIO (peCreditPassAt poller) `shouldReturn` True
+  readTVarIO (peCreditPassAt poller) >>= (`shouldSatisfy` (> hourAgo))
   logged `shouldSatisfy` T.isInfixOf "list failed; every invoice waits for the next pass"
 
 testSweepCountsAnsweredFailures :: IO ()

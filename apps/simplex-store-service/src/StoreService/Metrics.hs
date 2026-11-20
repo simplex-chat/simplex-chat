@@ -65,8 +65,8 @@ data MetricsEnv = MetricsEnv
     meWebhookAt :: TMap PaymentProvider UTCTime,
     -- | @Nothing@ when the ini has no @[names]@ section.
     meNames :: Maybe Contracts,
-    meMonthPassAt :: TVar (Maybe UTCTime),
-    meCreditPassAt :: TVar (Maybe UTCTime),
+    meMonthPassAt :: TVar UTCTime,
+    meCreditPassAt :: TVar UTCTime,
     meReport :: Text -> IO ()
   }
 
@@ -85,7 +85,7 @@ noChainRead = ChainRead {crFunds = Nothing, crHead = Nothing, crTerms = [], crRe
 
 data ProviderTimes = ProviderTimes {ptListedOk :: Map PaymentProvider UTCTime, ptWebhookAt :: Map PaymentProvider UTCTime}
 
-data PassTimes = PassTimes {ptMonthPass :: Maybe UTCTime, ptCreditPass :: Maybe UTCTime}
+data PassTimes = PassTimes {ptMonthPass :: UTCTime, ptCreditPass :: UTCTime}
 
 chainReadInterval :: Int
 chainReadInterval = 60 * 1000000
@@ -195,8 +195,8 @@ namesText maxFeePerGas NamesCounts {ncPhases, ncQueueOldestChange, ncPendingTran
       gauge "simplex_store_names_terms_held" "1 when the service holds the text of the terms the name policy links, by kind, as last read" [labelled "kind" k (value $ fromEnum held) | (k, held) <- crTerms],
       gauge "simplex_store_names_chain_read_timestamp_seconds" "When every part of the chain read last succeeded" (timestamp <$> crReadAt),
       gauge "simplex_store_names_chain_read_ok" "1 when the last chain read succeeded in every part, 0 when a part failed or none was made" (Just $ value $ fromEnum crOk),
-      gauge "simplex_store_names_month_pass_timestamp_seconds" "When the last month pass that completed started" (timestamp <$> ptMonthPass),
-      gauge "simplex_store_names_credit_pass_timestamp_seconds" "When the last late credit pass that completed started" (timestamp <$> ptCreditPass)
+      gauge "simplex_store_names_month_pass_timestamp_seconds" "When the last month pass that completed started, or the service started before the first one completed" (Just $ timestamp ptMonthPass),
+      gauge "simplex_store_names_credit_pass_timestamp_seconds" "When the last late credit pass that completed started, or the service started before the first one completed" (Just $ timestamp ptCreditPass)
     ]
 
 value :: Show a => a -> (Text, Text)

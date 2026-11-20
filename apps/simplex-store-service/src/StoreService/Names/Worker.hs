@@ -704,11 +704,11 @@ endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow, oe
           OPCode _ -> "its code released"
           _ -> "the money paid for it added to its balance"
 
-runMonthEnds :: TVar (Maybe UTCTime) -> Worker -> IO ()
+runMonthEnds :: TVar UTCTime -> Worker -> IO ()
 runMonthEnds passAt w@Worker {wkOrders = OrdersEnv {oeNow}} =
   forever $ (monthPass `catchOwn'` \e -> logError ("names month pass failed; the next pass will run: " <> tshow e)) >> threadDelay monthCheckInterval
   where
     monthPass = do
       started <- oeNow
       endMonths w
-      atomically $ writeTVar passAt $ Just started
+      atomically $ writeTVar passAt started

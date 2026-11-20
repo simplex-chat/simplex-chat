@@ -989,8 +989,8 @@ warning. When the metrics port cannot be listened on, the failure is logged as a
 | `simplex_store_names_terms_held{kind}` | 1 when the service holds the text of the `general` or `community` terms the name policy links, 0 while it cannot fetch it, so names of that kind cannot be ordered; absent while the policy links none |
 | `simplex_store_names_chain_read_timestamp_seconds` | when every part of the read last succeeded |
 | `simplex_store_names_chain_read_ok` | 1 when the last read succeeded in every part, 0 when a part failed or none has finished |
-| `simplex_store_names_month_pass_timestamp_seconds` | when the last month pass that completed started, every 5 minutes; absent until the first one completes |
-| `simplex_store_names_credit_pass_timestamp_seconds` | when the last late credit pass that completed started, every `idle_seconds`; absent until the first one completes |
+| `simplex_store_names_month_pass_timestamp_seconds` | when the last month pass that completed started, every 5 minutes; the service's start until the first one completes |
+| `simplex_store_names_credit_pass_timestamp_seconds` | when the last late credit pass that completed started, every `idle_seconds`; the service's start until the first one completes |
 
 With `[names]`, the service also counts every name on chain, however it was registered, at start and
 then every 5 minutes, under the metric names of the former `simplex-names-exporter`. At the latest
@@ -1035,7 +1035,8 @@ up == 0
 ```
 
 `up` is the scrape's own metric, for the job that scrapes the service. The names are counted every
-5 minutes, so more than 2 failures in 20 minutes means most counts failed.
+5 minutes, so more than 2 failures in 20 minutes means most counts failed. A pass that fails from the
+service's start ages from that start, so its alert fires too.
 
 The overdue count can be above 0 for a few seconds between an invoice's grace ending and the next
 poller pass, so its alert waits, as with `for: 10m`. Mainnet makes a block every 12 seconds, so a

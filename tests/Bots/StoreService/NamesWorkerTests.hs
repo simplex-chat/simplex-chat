@@ -131,7 +131,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "keeps a registration's worker after an exception in its step, logging it once as a wait, and tries the step again at a version change" testStepException
     it "logs a scan that fails, and the next scan starts the registration's worker" testScanFails
     it "logs a check of unregistered paid orders that fails, claiming no alert, so the next check alerts" testUnregisteredAlertsFail
-    it "logs a month pass that fails, leaving the time of the last completed pass, which the next pass sets" testMonthPassFails
+    it "logs a month pass that fails, so a pass failing from the start keeps the start's time past the alert's age, until a pass completes" testMonthPassFails
     it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
@@ -1214,16 +1214,20 @@ testUnregisteredAlertsFail = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, 
   length <$> readTVarIO reports `shouldReturn` 1
 
 testMonthPassFails :: IO ()
-testMonthPassFails = withWorker $ \W {wCtx = Ctx {cStore, cOrders}, wWorker} -> do
-  passAt <- newTVarIO Nothing
+testMonthPassFails = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wWorker} -> do
+  serviceStart <- oeNow cOrders
+  passAt <- newTVarIO serviceStart
   renameTable cStore "sx_badge_service_name_registrations" "name_registrations_away"
   logged <- capturingStderr $ withAsync (runMonthEnds passAt wWorker) $ \_ -> threadDelay 500000
+  advance ctx 1201
+  withAsync (runMonthEnds passAt wWorker) $ \_ -> threadDelay 500000
   renameTable cStore "name_registrations_away" "sx_badge_service_name_registrations"
   logged `shouldSatisfy` T.isInfixOf "names month pass failed; the next pass will run: "
-  readTVarIO passAt `shouldReturn` Nothing
+  readTVarIO passAt `shouldReturn` serviceStart
   now <- oeNow cOrders
+  diffUTCTime now <$> readTVarIO passAt >>= (`shouldSatisfy` (> 1200))
   withAsync (runMonthEnds passAt wWorker) $ \_ ->
-    timeout prompt (atomically $ readTVar passAt >>= maybe retry pure) `shouldReturn` Just now
+    timeout prompt (atomically $ readTVar passAt >>= \t -> if t == serviceStart then retry else pure t) `shouldReturn` Just now
 
 renameTable :: DBStore -> String -> String -> IO ()
 renameTable st from to = withTransaction st $ \db -> DB.execute_ db $ fromString $ "ALTER TABLE " <> from <> " RENAME TO " <> to

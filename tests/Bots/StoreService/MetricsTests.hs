@@ -91,8 +91,8 @@ testPortTaken = withServiceStore $ \st -> Warp.testWithApplication (pure $ \_ re
   listedOk <- TM.emptyIO
   webhookAt <- TM.emptyIO
   reports <- newTVarIO []
-  monthPassAt <- newTVarIO Nothing
-  creditPassAt <- newTVarIO Nothing
+  monthPassAt <- newTVarIO t0
+  creditPassAt <- newTVarIO t0
   let env = MetricsEnv {meStore = st, meProviders = [], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing, meMonthPassAt = monthPassAt, meCreditPassAt = creditPassAt, meReport = \r -> atomically $ modifyTVar' reports (r :)}
       lc = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesSite = Nothing, lTrustForwardedFor = False, lNamesSite = Nothing, lMetricsPort = Just port}
   ended <- timeout 2000000 (runMetrics lc port env)
@@ -289,7 +289,7 @@ testNamesCounts = withServiceStore $ \st -> do
     settleRecordEdit db mined (EOApplied Nothing) `shouldReturn` True
   withTransaction st $ \db -> forM_ [("c1", 2), ("rg", 1), ("f", 0), ("me", -1)] $ \(rid, minute) -> setPaidAt db (RegistrationId rid) (at minute)
   counts <- withTransaction st namesCounts
-  typedSamples (namesText fakeMaxFeePerGas counts noChainRead PassTimes {ptMonthPass = Just (at 10), ptCreditPass = Just (at 11)})
+  typedSamples (namesText fakeMaxFeePerGas counts noChainRead PassTimes {ptMonthPass = at 10, ptCreditPass = at 11})
     `shouldBe` [ "simplex_store_names_orders{phase=\"unpaid\"} 2",
                  "simplex_store_names_orders{phase=\"closed\"} 0",
                  "simplex_store_names_orders{phase=\"queued\"} 1",
@@ -358,8 +358,8 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   webhookAt <- TM.emptyIO
   v <- newTVarIO noChainRead
   census <- newTVarIO noRegisteredNamesRead
-  monthPassAt <- newTVarIO Nothing
-  creditPassAt <- newTVarIO Nothing
+  monthPassAt <- newTVarIO t0
+  creditPassAt <- newTVarIO t0
   let badgesOnly = MetricsEnv {meStore = st, meProviders = [PPCrypto], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing, meMonthPassAt = monthPassAt, meCreditPassAt = creditPassAt, meReport = \_ -> pure ()}
   withApp (metricsApp badgesOnly v census) $ \client -> do
     r <- webGet client "/metrics"
@@ -372,7 +372,7 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
     statusOf <$> webRequestBody client "POST" "/metrics" [] "" `shouldReturn` 405
   (reads', _) <- pausedAt node "eth_getBalance" (runChainReads ct v)
   passedAt <- getCurrentTime
-  atomically $ writeTVar monthPassAt $ Just passedAt
+  atomically $ writeTVar monthPassAt passedAt
   (`finally` cancel reads') $ withApp (metricsApp badgesOnly {meNames = Just ct} v census) $ \client -> do
     r <- timeout scrapeMicros (webGet client "/metrics") >>= maybe (fail "the scrape waited for the node") pure
     let samples = typedSamples $ bodyText r
@@ -380,7 +380,8 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       samples `shouldContain` [s]
     filter ("simplex_store_names_chain_" `T.isPrefixOf`) samples `shouldBe` ["simplex_store_names_chain_read_ok 0"]
     filter ("simplex_names{" `T.isPrefixOf`) samples `shouldBe` []
-    filter ("_pass_timestamp_seconds" `T.isInfixOf`) samples `shouldBe` ["simplex_store_names_month_pass_timestamp_seconds " <> seconds passedAt]
+    filter ("_pass_timestamp_seconds" `T.isInfixOf`) samples
+      `shouldBe` ["simplex_store_names_month_pass_timestamp_seconds " <> seconds passedAt, "simplex_store_names_credit_pass_timestamp_seconds " <> seconds t0]
 
 scrapeMicros :: Int
 scrapeMicros = 2000000
@@ -397,7 +398,7 @@ typedSamples text = [l | l <- ls, not (T.null l || "#" `T.isPrefixOf` l), descri
 chainSamples :: ChainRead -> [Text]
 chainSamples = filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_registrar_", "simplex_store_names_sponsor_", "simplex_store_names_chain_", "simplex_store_names_terms_"]) . typedSamples . (\cr -> namesText fakeMaxFeePerGas noCounts cr noPasses)
   where
-    noPasses = PassTimes {ptMonthPass = Nothing, ptCreditPass = Nothing}
+    noPasses = PassTimes {ptMonthPass = t0, ptCreditPass = t0}
     noCounts = NamesCounts {ncPhases = [], ncQueueOldestChange = Nothing, ncPendingTransactions = 0, ncOldestPending = Nothing, ncOpenInvoices = 0, ncHeldBalances = 0, ncHeldCents = 0, ncPendingEdits = 0, ncOldestEdit = Nothing, ncOldestUnregisteredPaid = []}
 
 seconds :: UTCTime -> Text

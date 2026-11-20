@@ -139,7 +139,7 @@ data PollerEnv = PollerEnv
     -- | The orders of the day's cleanup not read yet.
     peCleanupLeft :: TVar [(RegistrationId, InvoiceId, Text)],
     peCreditedAt :: TVar (Maybe UTCTime),
-    peCreditPassAt :: TVar (Maybe UTCTime),
+    peCreditPassAt :: TVar UTCTime,
     -- | The rates read in this pass or hinted read, by provider and coin.
     peRates :: TMap (PaymentProvider, CryptoCurrency) (Either ProviderError Rate)
   }
@@ -154,7 +154,7 @@ newPollerEnv peStore peWaiters pePhases peHints peProviders pePoll = do
   peCleanedAt <- newTVarIO Nothing
   peCleanupLeft <- newTVarIO []
   peCreditedAt <- newTVarIO Nothing
-  peCreditPassAt <- newTVarIO Nothing
+  peCreditPassAt <- newTVarIO =<< currentSecond
   peRates <- TM.emptyIO
   pure PollerEnv {peStore, peWaiters, pePhases, peHints, peProviders, pePoll, peSkipped, peListedAt, peListedOk, peStrayEvery = strayListInterval, peCancelFailed, peReadFailed, peCleanedAt, peCleanupLeft, peCreditedAt, peCreditPassAt, peRates}
 
@@ -459,7 +459,7 @@ creditPass env@PollerEnv {peStore, peProviders, peCreditPassAt} now = do
           _ -> do
             due' <- dueToWarn env now ("no rate provider: " <> invText)
             when due' $ logWarn ("names: invoice " <> ref <> " has late money to credit, but no provider is configured to read its rate")
-    atomically $ writeTVar peCreditPassAt $ Just now
+    atomically $ writeTVar peCreditPassAt now
 
 -- | The pass's rate of a coin at a provider, read at most once.
 cachedRate :: PollerEnv -> Provider -> CryptoCurrency -> IO (Either ProviderError Rate)

@@ -9,13 +9,14 @@ module Bots.StoreService.NamesLateCreditTests (namesLateCreditTests) where
 import Bots.StoreService.NamesBalancesTests (coveredSpend, figures, holder, invariantHolds, placeOrderRow, source)
 import Bots.StoreService.NamesStoreTests (at, ownerA, reg, t0)
 import Bots.StoreService.WebTests (StubCall (..), StubState (..), capturingStderr, newStubState, sampleProviderInvoice, setSignals, stubCalls, stubProvider, stubRate, withServiceStore)
+import qualified Control.Exception as E
 import Control.Monad (void)
 import qualified Data.Aeson as J
 import Data.Int (Int64)
 import Data.IORef (IORef, atomicModifyIORef', newIORef)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -63,7 +64,7 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "alerts a part credit with an unconfirmed rest once, naming its units" testPartCreditAlerted
     it "logs Monero's zero figure as pending and does not alert it within the window" testMoneroZero
     it "credits nothing while the rate read fails, warning once, then credits at the next pass" testRateFails
-    it "logs a credit pass that fails, leaving the time of the last completed pass, which the next pass sets" testCreditPassFails
+    it "logs a credit pass that fails, so a pass failing from the start keeps the start's time past the alert's age, until a pass completes" testCreditPassFails
     it "credits nothing below the rate floor and never after, logging an error once while the price moves below it, and alerts support naming both rates" testRateFloor
     it "alerts confirmed money waiting on the rate read as such, whatever reason was stored before" testWaitingOutranksStoredReason
     it "warns once of an invoice no provider reads a rate for, and names an invoice with no recorded rate" testRateProblemsNamed
@@ -373,14 +374,18 @@ testMoneroZero = withLate $ \l@Late {lStore = st} -> do
 testCreditPassFails :: IO ()
 testCreditPassFails = withLate $ \Late {lStore = st, lPoller} -> do
   let rename from to = withTransaction st $ \db -> DB.execute_ db $ "ALTER TABLE " <> from <> " RENAME TO " <> to
+  started <- readTVarIO (peCreditPassAt lPoller)
   rename "sx_badge_service_name_invoices" "name_invoices_away"
   passLog <- capturingStderr $ runOnePass lPoller
-  rename "name_invoices_away" "sx_badge_service_name_invoices"
   passLog `shouldSatisfy` T.isInfixOf "names: the late credit pass failed; the next pass will run: "
-  readTVarIO (peCreditPassAt lPoller) `shouldReturn` Nothing
-  later <- addUTCTime 2 <$> getCurrentTime
+  let pastAlert = addUTCTime 601 started
+  (E.try (creditPass lPoller pastAlert) :: IO (Either E.SomeException ())) >>= (`shouldSatisfy` either (const True) (const False))
+  rename "name_invoices_away" "sx_badge_service_name_invoices"
+  readTVarIO (peCreditPassAt lPoller) `shouldReturn` started
+  diffUTCTime pastAlert <$> readTVarIO (peCreditPassAt lPoller) >>= (`shouldSatisfy` (> 600))
+  let later = addUTCTime 2 pastAlert
   creditPass lPoller later
-  readTVarIO (peCreditPassAt lPoller) `shouldReturn` Just later
+  readTVarIO (peCreditPassAt lPoller) `shouldReturn` later
 
 testRateFails :: IO ()
 testRateFails = withLate $ \l@Late {lStore = st} -> do
