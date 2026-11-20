@@ -125,21 +125,15 @@ messages and audio/video calls.
 
 ## Deleting and archiving contacts
 
-Swipe the contact left in the list of conversations (iOS), tap and hold it
-(Android) or right-click it (desktop):
+<img src="./images/making-connections-delete-contact.png" alt="Delete contact, with the Keep conversation toggle" width="288">
 
-- "Archive" (under "More" on iOS when the conversation has messages) moves the
-  conversation with its messages to Archived contacts, which you open with the
-  pencil button. The contact is not told, and you can still send messages from
-  there.
-- "Delete" asks whether to keep the conversation. With [Contact
-  deletion](./app-settings.md#contact-deletion) set to Ask, you also choose
-  "Delete and notify" or "Delete silently".
-- "Delete and block" ("Block" in the iOS swipe) is shown for a contact who
-  connected via your SimpleX address, when the contact's app supports it. The
-  contact is not notified, and cannot connect to you via your address for the
-  time you choose in "Block for": 1 day, 1 week or forever. See
-  [Blocking members](./secret-groups.md#blocking-members).
+Swipe a contact left (iOS), tap and hold it (Android) or right-click it
+(desktop). Delete and Delete and block are also on the contact page.
 
-"Delete contact" and "Delete and block" are also at the bottom of the contact
-page, and "Delete" and "Delete and block" are offered in Archived contacts.
+- **Archive**: moves the conversation to Archived contacts (the pencil button).
+  The contact is not told, and you can still message them.
+- **Delete**: turn on **Keep conversation** to keep the messages. Whether the
+  contact is notified is set in [Contact deletion](./app-settings.md#contact-deletion).
+- **Delete and block** (**Block** in the iOS swipe): for a contact who connected
+  via your address. They are not notified, and can't reconnect via your address
+  for 1 day, 1 week or forever.

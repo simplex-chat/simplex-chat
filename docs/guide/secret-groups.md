@@ -79,15 +79,22 @@ role.
 
 ## Blocking members
 
-Moderators, admins and owners can block a member for all, for a set time or forever. Other members do not see the messages of a blocked member, and moderators, admins and owners see them hidden. The blocked member is not told.
+<img src="./images/groups-block-member.png" alt="Block member for all, with Block for 1 day" width="288">
 
-Admins and owners can also block and remove a member. The member's app does not show the removal, and it does not allow joining the group via the same link until the block ends. Contacts and businesses can delete and block a contact or a customer, with the same effect for their address.
+Tap a member on the group page and tap "Block for all". Choose for how long:
+1 day, 1 week or forever.
 
-When you try to join or connect via a link you are blocked from, the app shows "Not allowed" with the time when the block ends. When you used a SimpleX name that also has a contact address or a channel, the alert offers to connect to it.
+- **Block**: members don't see their messages. The member is not told.
+- **Block and remove** (admins and owners): the member also can't rejoin via
+  the group link while blocked.
 
-A member waiting for approval can be blocked too. To accept a blocked member, unblock them first: Accept offers to unblock.
+To accept a blocked member waiting for approval, tap Accept, then Unblock.
 
-No IDs are shared to apply a block: it is sent only to the blocked member's app, which stores it for the link this member used. You can still join the same group or connect to the same contact via another link or an invitation.
+<img src="./images/groups-not-allowed.png" alt="Not allowed: blocked by the admins of this group until a date" width="288">
+
+If you are blocked, the link shows "Not allowed" and when the block ends. The
+block is stored only in your app, for that link: no IDs are shared, and other
+links and invitations still work.
 
 ## Link to join group
 

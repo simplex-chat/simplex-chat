@@ -228,12 +228,11 @@ link preview from the website. The first time you type a link, the app asks
 
 #### Contact deletion
 
-This option chooses whether the contact is notified when you delete it:
+Choose whether a contact you delete is notified: _Notify_, or _Ask_ each time.
 
-- _Notify_ (default for new users): the contact is notified.
-- _Ask_ (default when you update the app): the app asks each time, with "Delete and notify" and "Delete silently".
-
-See [Deleting and archiving contacts](./making-connections.md#deleting-and-archiving-contacts).
+- [Open the app settings](#opening-the-app-settings).
+- Tap on "Your privacy".
+- Choose "Contact deletion".
 
 #### SimpleX Links
 
