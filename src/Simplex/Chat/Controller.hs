@@ -1925,7 +1925,7 @@ inSavepoint db action = do
   DB.execute_ db "RELEASE SAVEPOINT store_call" `E.onException` rollback
   pure r
   where
-    rollback = DB.execute_ db "ROLLBACK TO SAVEPOINT store_call" >> DB.execute_ db "RELEASE SAVEPOINT store_call"
+    rollback = (DB.execute_ db "ROLLBACK TO SAVEPOINT store_call" >> DB.execute_ db "RELEASE SAVEPOINT store_call") `catchOwn'` \_ -> pure ()
 
 handleDBErrors :: E.SomeException -> IO (Either ChatError a)
 handleDBErrors e = pure $ Left $ ChatErrorStore $ case E.fromException e of
