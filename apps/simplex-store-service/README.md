@@ -1124,8 +1124,8 @@ cost more on chain. To lower prices on chain below the floor, lower the setting 
 ### Dispute days
 
 Each name the sponsor registers has a dispute period, within which the guardian or the admin can
-end the registration when its payment is disputed or refunded. Its length in days is set when the
-order is made, by how the order is paid:
+end the registration if a payment for it is disputed, reversed or refunded in full. Its length in
+days is set when the order is made, by how the order is paid:
 
 | Payment | Days |
 |---|---|
@@ -1135,20 +1135,29 @@ order is made, by how the order is paid:
 | another order's balance | that balance's days |
 | an invoice for the difference to another order's balance | the larger of the method's days and that balance's days |
 
-A balance's days are its order's days, except for an order closed unpaid, whose balance holds only
-the money paid late on its invoice: its invoice method's days.
+The days of a balance are the days of its order. The balance of an order closed unpaid contains only
+money paid late on its invoice, so the days of its invoice method are used for it. Crypto paid in
+excess of an order's price is kept in its balance with the order's days, also when these are the 120
+days of a card payment that funded the order: a balance is never given fewer days than a payment in
+it requires.
 
-The registration view answers the order's `disputeDays`, which the owner signs in `RegisterName`
-and the service sends in `registerWithCredit`; a reveal signed over other days is refused. Once
-the name is registered, the view answers `disputeUntil`, the registrar's `disputeUntil(id)` read at
-the confirmation depth, or `null` for a registration without a dispute period. The migration
-`20261120_names_dispute_days` sets the days of the orders stored before it by the same rules.
+The order's `disputeDays` are returned in the registration view, signed by the owner in
+`RegisterName` and sent by the service in `registerWithCredit`; a reveal signed over other days is
+refused. Once the name is registered, `disputeUntil` is returned in the view: the registrar's
+`disputeUntil(id)` read at the confirmation depth, or `null` for a registration without a dispute
+period. The days of the orders stored before the migration `20261120_names_dispute_days` are set by
+it with the same rules.
 
-Every hour the service reads, at the confirmation depth, the registrar's `disputeUntil(id)` of each
-registered order whose dispute period has not ended or ended less than 7 days ago. When the value
-differs from the one read at the registration, the registration was ended by `unregister`: the
-service then sets the order's phase to `ended` and its `disputeUntil` to `null`, and the order stays
-`ended` when the name is registered again.
+The registrar's `disputeUntil(id)` is changed only by `unregister`, which ends a registration within
+its dispute period, and by a later registration of the name. Every hour the service reads the block
+at the confirmation depth and, at that block, `disputeUntil(id)` of each registered order whose
+dispute period has not ended or ended less than 7 days ago, if its registration is older than that
+block. When the value differs from the one read at the registration, the order's phase is set to
+`ended`, and it stays `ended` when the name is registered again. The pass is stopped at a failed
+read, which is logged once. An order whose register lands with an expiry of 0 at the confirmed
+block, unregistered within the confirmation depth, is set `ended` at once; while the register's
+block is above the confirmed block, the order is checked again later. For an ended order, `null` is
+returned for `expiresAt` and `disputeUntil` in the view, and their stored values are kept.
 
 This version runs against the contracts with the dispute period (ens-contracts #51): the service
 calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.

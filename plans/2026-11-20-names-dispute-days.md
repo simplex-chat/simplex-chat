@@ -43,6 +43,7 @@ BaseRegistrarImplementation.disputeUntil(uint256 id)
 |---|---|
 | `disputeDays` | integer, 14 to 120, every order |
 | `disputeUntil` | unix seconds once registered; null before, for a registration without a dispute period, and once ended |
+| `expiresAt` | null once ended |
 | `phase` | the new value `ended` for an order whose registration was ended by `unregister` |
 
 ## Dispute days of an order
@@ -62,7 +63,7 @@ Balance days of an order:
 | closed unpaid | the days of its invoice's method |
 | any other | its dispute days |
 
-`orderDisputeDays` computes the days from the order's terms and, for a balance, the paying order's row, before the order's row is written. A move to another name and Try again keep them.
+`orderDisputeDays` computes the days from the order's terms and, for a balance, the paying order's row, before the order's row is written. The days are kept on a move to another name and on Try again.
 
 ```mermaid
 flowchart RL
@@ -83,6 +84,9 @@ StoreService.Names.Registration
   unDisputeDays         DisputeDays -> Int
   minDisputeDays        14
   maxDisputeDays        120
+  cardDisputeDays       120
+  cryptoDisputeDays     14
+  codeDisputeDays       14
   registerNameType      the RegisterName type string
   RegisterIntent
     riDisputeDays       DisputeDays
@@ -104,6 +108,10 @@ StoreService.Names.Worker
 
 StoreService.Names.Contracts
   disputeUntil          Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe Word64))
+  confirmedBlock        Contracts -> IO (Either ChainError Block)
+
+StoreService.Names.Chain
+  deepBlock             ChainClient -> Block -> IO (Either ChainError Block), moved from Records
 ```
 
 ## Schema
@@ -118,7 +126,7 @@ name_registrations
 
 Up, after the columns are added, `dispute_days` of each registration is set to the largest days along its funding chain. The chain starts at the registration and follows `balance_source` from it and from each source past `unpaid`. A link with method `card` takes 120, any other 14.
 
-Down: the two columns are dropped.
+Down: `ended` registrations are set `registered`, then the two columns are dropped.
 
 ```mermaid
 flowchart RL
@@ -145,8 +153,8 @@ sequenceDiagram
   W->>D: reveal stored
   K->>K: stored intent checked over the order's disputeDays
   K->>S: registerWithCredit(registration, disputeDays, nonce, deadline, sig)
-  K->>R: nameExpires(id), disputeUntil(id) at the confirmation depth
-  K->>D: registered, expires_at, dispute_until (0 stored as NULL)
+  K->>R: nameExpires(id), disputeUntil(id) at the confirmed block, once it reaches the register's block
+  K->>D: registered, or ended for expiry 0; expires_at, dispute_until (0 stored as NULL)
   W-->>P: view: disputeUntil
 ```
 
@@ -155,16 +163,31 @@ sequenceDiagram
 ```
 sweepEndedRegistrations, every hour
   orders          phase registered, dispute_until after now - 7 days
-  read            registrar disputeUntil(id) at the confirmation depth
-  differs         phase ended, dispute_until NULL, version + 1, published
+  block           the confirmed block, read once per pass
+  skipped         dispute_until - days * 86400 not before the block's timestamp
+  read            registrar disputeUntil(id) at the block
+  differs         phase ended, version + 1, published
   equal           unchanged
-  read failed     unchanged, logged
+  read failed     the pass stopped, logged once
+
+checkLanded, a register mined at block M
+  M above the confirmed block     unread, checked again
+  expiry 0 at the confirmed block phase ended
+  otherwise                       phase registered
+
+registration view of an ended order
+  expiresAt       null
+  disputeUntil    null
+  stored values   kept
 ```
 
 ```mermaid
 stateDiagram-v2
-  registered --> ended: disputeUntil(id) at the confirmation depth differs from dispute_until
-  registered --> registered: disputeUntil(id) equal, or the read failed
+  registering --> registering: the register's block above the confirmed block
+  registering --> ended: expiry 0 at the confirmed block
+  registering --> registered: expiry above 0 at the confirmed block
+  registered --> ended: disputeUntil(id) at the confirmed block differs from dispute_until
+  registered --> registered: disputeUntil(id) equal, the registration not before the confirmed block, or the read failed
   ended --> ended: the name registered again
 ```
 
@@ -178,11 +201,13 @@ stateDiagram-v2
 | an intent signed over other dispute days is refused | NameRegistrationTests |
 | a reveal signed over other dispute days is refused; the page's signature, computed with viem | NamesRevealTests |
 | the days of card, BTC and XMR invoices, codes, balance chains and difference orders | NamesStoreTests |
-| the migration's days for each payment, equal to the days set at creation | NamesStoreTests |
+| the migration's days for each payment, equal to the days set at creation; an ended registration set registered by the down migration | NamesStoreTests |
 | `disputeDays` and `disputeUntil` in the view; `disputeUntil` read when registered | NamesOrdersTests, NamesWorkerTests |
-| an unregistered registration ended and kept ended; orders the sweep leaves | NamesWorkerTests |
+| an unregistered registration ended and kept ended, its times null in the view; orders the sweep leaves, a registration after the confirmed block included | NamesWorkerTests |
+| an unregister ending an order only at the confirmation depth; a failed read stopping the pass, logged once | NamesWorkerTests |
+| a register checked again while its block is above the confirmed block; an order ended when its register lands with expiry 0 | NamesWorkerTests |
 
-Expected encodings: viem 2.57.5, eth-account 0.14.0 and Foundry's cast 1.10.0 agree, run in CI on the branch `ab/names-dispute-days-vectors`, https://github.com/brenzi-agent/simplex-chat/actions/runs/44711063341. The same scripts reproduce the values pinned before this change.
+Expected encodings: viem 2.57.5, eth-account 0.14.0 and Foundry's cast 1.10.0 agree, run in CI on the branch `ab/names-dispute-days-vectors`, deleted since, https://github.com/brenzi-agent/simplex-chat/actions/runs/44711063341. The same scripts reproduce the values pinned before this change.
 
 The tests are committed with the interface, before the implementation. CI runs them on both commits: they fail on the first and pass on the second.
 
