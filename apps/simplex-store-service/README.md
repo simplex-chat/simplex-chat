@@ -1480,7 +1480,7 @@ at its dry run, last: <reason>`, and support closes it with `//close` (see
 failure that keeps an order waiting, such as a node that does not answer, funds, the fee cap, the
 allowance or an exception in its step, is posted in the group once failures of its class, temporary
 or for the operator, have kept the order waiting for 10 minutes in a row; an exception is logged at
-error and retried in 15 seconds.
+error and retried in 15 seconds, or once the order changes.
 `CommitmentNotFound` commits the order again, and `CommitmentTooOld` past the commitment's lapse
 commits it again, posted in the group as `names worker: registration <id> is committed again: its
 commitment lapsed`. An order whose stored signature was cleared, and whose
