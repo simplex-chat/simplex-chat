@@ -92,8 +92,9 @@ let
 
   # .schema --indent must round-trip chat_schema.sql. nixpkgs sqlite.bin is
   # 3.53 on this pin and mis-prints that dump. See sqlite-schema-cli.nix.
-  # python3 is the voice-captcha mock. The Darwin sandbox has /usr/bin/env
-  # and does not have python3 on PATH, so those three examples wait 20s.
+  # python3 is the voice-captcha mock. The mock is a /bin/sh script that
+  # execs python3: the Linux guest has no /usr/bin/env, and the Darwin
+  # sandbox has no python3 until it is a build input.
   #
   # On the nix-linux-builder guests, getaddrinfo("localhost") fails with
   # EAI_NONAME, so the suite cannot open its SMP server. nss_wrapper is
