@@ -350,6 +350,7 @@ badgeWebTests = do
     it "reads a self-expiring invoice past the settle window before it expires it, keeping it open while the read fails" testSweepReadsPastTheWindow
     it "reads no invoice past the settle window of a provider whose read failed in the pass" testSweepSkipsPastTheWindowWhileReadsFail
     it "reads the invoices past the settle window that never failed first, and expires one unreadable for a day while its provider answers" testSweepGivesUpAnUnreadableInvoice
+    it "expires a given-up invoice at the next pass when it is still open" testSweepExpiresAGivenUpInvoiceAgain
     it "gives up no invoice while every read fails, and counts no failure from a pass in which its provider answered nothing" testSweepCountsAnsweredFailures
     it "reads the invoice whose last failure is oldest first, so one unreadable invoice delays the others by one pass" testSweepReadsOldestFailureFirst
     it "sweeps around an overdue invoice whose provider this build does not know, leaving it open" testSweepSkipsAnUnknownProvider
@@ -1622,6 +1623,10 @@ markPaidAndPublish WebEnv {weStore, weWaiters} iid = do
 expireRow :: DBStore -> InvoiceId -> IO ()
 expireRow st (InvoiceId iid) = withConnection st $ \db ->
   DB.execute db "UPDATE sx_badge_service_invoices SET status = 'expired' WHERE invoice_id = ?" (Only iid)
+
+reopenRow :: DBStore -> InvoiceId -> IO ()
+reopenRow st (InvoiceId iid) = withConnection st $ \db ->
+  DB.execute db "UPDATE sx_badge_service_invoices SET status = 'open' WHERE invoice_id = ?" (Only iid)
 
 breakStore :: DBStore -> IO ()
 breakStore st = withConnection st $ \db ->
@@ -3520,7 +3525,24 @@ testSweepGivesUpAnUnreadableInvoice = bounded "sweep gives up an unreadable invo
   logged <- capturingStderr (runOnePass poller)
   mapM (invoiceStatus (weStore env)) [bad, newer] `shouldReturn` [ISExpired, ISExpired]
   loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
+  runOnePass poller
   TM.memberIO "p-bad" (peReadFailed poller) `shouldReturn` False
+
+testSweepExpiresAGivenUpInvoiceAgain :: IO ()
+testSweepExpiresAGivenUpInvoiceAgain = bounded "sweep expires a given-up invoice again" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  bad <- seedPastWindow (weStore env) 1 "p-bad" PPCrypto
+  first <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  dayAgo <- addUTCTime (negate readGiveUpDelay) <$> currentSecond
+  readFailedAt poller "p-bad" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [bad, first] `shouldReturn` [ISExpired, ISExpired]
+  reopenRow (weStore env) bad
+  next <- seedPastWindow (weStore env) 3 "p-new" PPCrypto
+  logged <- capturingStderr (runOnePass poller)
+  mapM (invoiceStatus (weStore env)) [bad, next] `shouldReturn` [ISExpired, ISExpired]
+  loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
 
 testSweepCountsAnsweredFailures :: IO ()
 testSweepCountsAnsweredFailures = bounded "sweep counts answered failures" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do

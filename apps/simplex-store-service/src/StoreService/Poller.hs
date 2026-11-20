@@ -376,7 +376,7 @@ sweepPastWindow env@PollerEnv {peStore, peProviders, peReadFailed} now providerR
       failure answered = ReadFailure {rfLast = now, rfAnswered = if answered then Just now else Nothing}
       recordFailure new old = old {rfLast = rfLast new, rfAnswered = rfAnswered old <|> rfAnswered new}
   atomically $ modifyTVar' peReadFailed $ \m ->
-    M.restrictKeys (M.unionWith recordFailure (M.fromList [(oiProviderRef oi, failure $ answeredBy prUp oi) | oi <- failing]) m) (refs kept)
+    M.restrictKeys (M.unionWith recordFailure (M.fromList [(oiProviderRef oi, failure $ answeredBy prUp oi) | oi <- failing]) m) (refs (givenUp <> kept))
   forM_ givenUp $ \OverdueInvoice {oiProvider, oiProviderRef} ->
     logError ("badge poller: overdue " <> tshow oiProvider <> " invoice " <> oiProviderRef <> " could not be read for " <> tshow readGiveUpHours <> " hours while its provider answered, so it was expired here only; check it in the provider's dashboard")
   sweepExpired env now $ missed <> refs kept
