@@ -337,10 +337,10 @@ final class SnapshotTests: XCTestCase {
         let callUUID = UUID()
         let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
         setAppState(.activating)
-        let answer = RecordedAnswerCallAction(call: callUUID)
+        let answer = RecordingAnswerCallAction(call: callUUID)
         CallController.shared.provider(provider, perform: answer)
         let answered = await waitUntil(40) { answer.completed }
-        let suspended = await waitUntil(50) { appStateGroupDefault.get().inactive }
+        let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
         provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
         await activateChatAfterCallPush()
         XCTAssertTrue(handled)
@@ -357,7 +357,7 @@ final class SnapshotTests: XCTestCase {
         defer { callKit.restore() }
         let callUUID = UUID()
         let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
-        let answer = RecordedAnswerCallAction(call: callUUID)
+        let answer = RecordingAnswerCallAction(call: callUUID)
         CallController.shared.provider(provider, perform: answer)
         let answered = await waitUntil(40) { answer.completed }
         let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
@@ -575,17 +575,17 @@ private final class CallKitFailingEndCallActions: NSObject, CXProviderDelegate {
     }
 }
 
-private final class RecordedAnswerCallAction: CXAnswerCallAction {
+private final class RecordingAnswerCallAction: CXAnswerCallAction {
     private(set) var completed = false
 
     override func fulfill() {
-        completed = true
         super.fulfill()
+        DispatchQueue.main.async { self.completed = true }
     }
 
     override func fail() {
-        completed = true
         super.fail()
+        DispatchQueue.main.async { self.completed = true }
     }
 }
 
