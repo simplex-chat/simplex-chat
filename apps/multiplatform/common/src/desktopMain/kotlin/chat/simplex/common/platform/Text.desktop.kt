@@ -181,8 +181,15 @@ private fun addFallbackStyles(builder: AnnotatedString.Builder, text: AnnotatedS
     while (i < segEnd) {
       val cp = s.codePointAt(i)
       val n = Character.charCount(cp)
-      val covered = segTypeface != null && covers(segTypeface, cp)
-      val runTypeface = if (covered) segTypeface else if (segTypeface == null) null else fallbackTypeface(cp)
+      val presentationFallback = segTypeface != null && i + n < s.length && s.codePointAt(i + n) == EMOJI_PRESENTATION &&
+        covers(segTypeface, cp) && !covers(segTypeface, EMOJI_PRESENTATION)
+      val covered = segTypeface != null && covers(segTypeface, cp) && !presentationFallback
+      val runTypeface = when {
+        covered -> segTypeface
+        segTypeface == null -> null
+        presentationFallback -> fallbackTypeface(EMOJI_PRESENTATION)
+        else -> fallbackTypeface(cp)
+      }
       if (desktopPlatform.isWindows()) {
         val emoji = if (isEmojiJoiner(cp)) emojiStart >= 0 else !covered && runTypeface?.familyName == WINDOWS_EMOJI_FAMILY
         if (emoji && emojiStart < 0) emojiStart = i
@@ -203,6 +210,8 @@ private fun addFallbackStyles(builder: AnnotatedString.Builder, text: AnnotatedS
   }
   endEmoji(s.length)
 }
+
+private const val EMOJI_PRESENTATION = 0xFE0F
 
 private fun isEmojiJoiner(cp: Int) = cp == 0x200D || cp in 0xFE00..0xFE0F || cp == 0x20E3 || cp in 0xE0020..0xE007F
 
