@@ -4,10 +4,12 @@ Branch `ep/names-fixes-a6`, from `ep/names-review-fixes` at 16114b784. Decisions
 
 ## A1 leftovers
 
-simplexmq: cabal.project pins simplex-chat/simplexmq b7339d94b, where simplex-chat/simplexmq#2083 is merged, which adds:
+simplexmq: cabal.project pins simplex-chat/simplexmq b7339d94b. It includes simplex-chat/simplexmq#2080, with:
 - USDCents: Num, Enum, Real, Integral, FromField and ToField;
 - FromField and ToField for Address, LabelHash and RecoverableSignature;
-- Ord LabelHash.
+- Ord LabelHash;
+
+and simplex-chat/simplexmq#2083, with ToJSON and FromJSON for RecoverableSignature.
 
 scripts/nix/sha256map.nix holds the hash of b7339d94b; the reduced build reads no Nix map.
 
