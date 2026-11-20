@@ -138,7 +138,7 @@ suspend fun apiBlockMembersForAll(rh: Long?, groupId: Long, memberIds: List<Long
 4. `blocked = true` blocks; `blocked = false` unblocks.
 5. `CR.MembersBlockedForAllUser` returns the updated member list; `GroupMember.blockedUntil` is the end time.
 6. Blocked members' messages are hidden from all group members; only moderators and above see placeholders.
-7. The blocked member can still see the group but their messages are not delivered.
+7. The blocked member can still see the group; the apps of members below moderator delete the member's messages on receipt.
 
 ---
 

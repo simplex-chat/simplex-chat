@@ -124,11 +124,11 @@ Renders a single row in the chat list. Shows:
 Wraps `ChatPreviewView` in a navigation link with tap and swipe behavior:
 
 ### Tap Behavior
-- Direct chat: navigates to `ChatView` via `ItemsModel.loadOpenChat(chatId)` -- [`contactNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L95)
-- Group chat: navigates to `ChatView` -- [`groupNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L192)
+- Direct chat: navigates to `ChatView` via `ItemsModel.loadOpenChat(chatId)` -- [`contactNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L94)
+- Group chat: navigates to `ChatView` -- [`groupNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L209)
 - Contact request: shows `ContactRequestView` with accept/reject -- [`contactRequestNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L508)
 - Contact connection: shows `ContactConnectionInfo` -- [`contactConnectionNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L543)
-- Notes folder: navigates to `ChatView` -- [`noteFolderNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L250)
+- Notes folder: navigates to `ChatView` -- [`noteFolderNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L291)
 
 ### Navigation
 - Uses `NavigationLink` (iOS 15) or programmatic navigation (iOS 16+)
@@ -260,7 +260,7 @@ group, channel, other         Delete, Leave, More (Clear, Archive reports)
 | Delete | contacts; groups with `canDelete` | `deleteContactDialog`, `deleteGroupAlert` | red |
 | Block | `Contact.canDeleteAndBan`; `GroupInfo.isCustomerChatOwner` | `deleteAndBanContactDialog`; [`deleteAndBanCustomerIfAvailable()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L398) | orange |
 | Leave | `memberCurrentOrPending`, not a channel owner | `leaveGroupAlert` | yellow |
-| Clear | the chat has items | `clearChatAlert` | orange |
+| Clear | the chat has items | [`clearChatButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L363), `clearChatAlert` | orange |
 | Archive | contacts | `archiveContact` | none |
 | Archive reports | `reportsCount > 0`, role moderator or above | `archiveAllReportsAlert` | none |
 

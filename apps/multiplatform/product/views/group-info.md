@@ -109,8 +109,8 @@ Displays `activeSortedMembers` (excluding left/removed members, sorted by role d
 | Security code | Verification code for the member connection |
 | Role change | Change member role (admin+ only) |
 | Remove member | Remove from group (admin+ only); for a blocked member that supports `LINK_NOTICE_VERSION`, a dialog with "Block for" and removal without notification |
-| Hide messages | Hide a member's messages for self (below moderator) |
-| Block for all | Moderators: "Block for" 1 day, 1 week or Forever; admins and owners also "Block and remove" and "Block, remove and delete messages"; Forever removal asks to type "yes" |
+| Hide messages | Hide a member's messages for self (below moderator); "Show messages" shows them again |
+| Block for all | Moderators: "Block for" 1 day, 1 week or Forever; admins and owners also "Block and remove" and "Block, remove and delete messages"; Forever removal asks to type "yes"; "Unblock for all" ends a block |
 | Direct message | Open direct chat with member |
 
 ### Developer Tools Section
@@ -127,8 +127,8 @@ Shown when `developerTools` preference is enabled:
 |---|---|---|
 | Clear chat | Any member | Deletes all messages locally (`clearChatDialog`) |
 | Leave group | Non-owner | Leave the group (`leaveGroupDialog`) |
+| Delete group | Owner or non-current member | Delete group for all (owner) or for self (`deleteGroupDialog`); an owner with an active membership, also of the business side of a business chat, then chooses "Keep conversation" ("Keep messages" for a channel; see [flows/group-lifecycle.md](../flows/group-lifecycle.md) 7.1) |
 | Delete and block | Active owner of the business side of a business chat (`GroupInfo.isCustomerChatOwner`), while the customer member can be removed with a block (`canDeleteAndBanCustomer`: current or pending, below moderator, supports `LINK_NOTICE_VERSION`) | `deleteAndBanCustomerDialog`: the dialogs of "Delete and block" for a contact ([contact-info.md](contact-info.md)) with "Chat with <name> will be deleted for all members - this cannot be undone!"; the customer is removed with the `LinkNotice` of the duration and the chat is deleted (`ChatDeleteMode.Entity` with "Keep conversation", else `Full`) |
-| Delete group | Owner or non-current member | Delete group for all (owner) or for self (`deleteGroupDialog`); an owner with an active membership, also of the business side of a business chat, then chooses "Keep conversation" (see [flows/group-lifecycle.md](../flows/group-lifecycle.md) 7.1) |
 
 Business chats use alternative labels: "Delete chat" instead of "Delete group".
 

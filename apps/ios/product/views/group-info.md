@@ -85,7 +85,7 @@ Header shows total member count (e.g., "25 members").
 | Search field | Filter members by name (`searchText`) |
 | Member rows | Each shows: avatar, display name, role badge (owner/admin/moderator/observer) or in its place "blocked" (blocked by admin) or "hidden" (messages hidden by the user), online status indicator, connection status |
 | Member tap | Navigates to `GroupMemberInfoView` |
-| Member swipe actions | Hide/show messages (below moderator), block/unblock for all (moderators) |
+| Member swipe actions | Hide/show messages (below moderator), block/unblock for all (moderators), remove member (admins) |
 
 Member list is sorted by role (owners first) and filtered to exclude `memLeft` and `memRemoved` statuses.
 
@@ -224,8 +224,8 @@ Owner sees relay status from `apiGetGroupRelays`; non-owner sees connection stat
 | Block section | Hidden for non-moderator users |
 | Remove button | Hidden for relay members |
 | "Remove member" label | "Remove subscriber" |
-| "Block for all?" sheet | "Block subscriber for all?", "subscribers" and "channel link" in the texts |
-| "Unblock for all?" alert | "Unblock subscriber for all?", "Messages from <name> will be shown for all subscribers." |
+| "Block member for all?" sheet | "Block subscriber for all?", "subscribers" and "channel link" in the texts |
+| "Unblock member for all?" alert | "Unblock subscriber for all?", "Messages from <name> will be shown for all subscribers." |
 | Relay link info row | Shown when `member.relayLink` exists, displays `hostFromRelayLink(link)` |
 | Relay address info row | Shown when `groupRelay?.userChatRelay.address` exists, with "Share relay address" button |
 | Status row (rejected) | Shown when `groupRelay?.relayStatus == .rsRejected`: "Status: rejected by relay operator". The relay rejected the invitation to rejoin this channel after a prior `/leave`; the owner-side `GroupMember.memberStatus` is also set to `.memLeft` so the relay renders identically to one that explicitly left. Clearable only by the relay operator running `/group allow #<channel>`. |

@@ -93,8 +93,8 @@ Shown when `developerTools` preference is enabled:
 | Action | Description |
 |---|---|
 | Clear chat | Deletes all messages in chat (with confirmation via `clearChatDialog`) |
-| Delete and block | Shown when `Contact.canDeleteAndBan`; see Delete and Block below |
 | Delete contact | Removes the contact (with confirmation via `deleteContactDialog`); see Contact Deletion below |
+| Delete and block | Shown when `Contact.canDeleteAndBan`; see Delete and Block below |
 
 ### Contact Deletion
 

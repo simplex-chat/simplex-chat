@@ -328,6 +328,7 @@ final class ModerationTests: RecordedAPITestCase {
         try await press("Delete")
         let dialog = try await sheet(KeepConversationDialog.self)
         XCTAssertNil(dialog.footer)
+        XCTAssertEqual(dialog.toggleTitle, "Keep messages")
         dialog.close { dialog.delete(true) }
         try await waitFor { self.groupInfo(groupInfo.id)?.membership.memberStatus == .memGroupDeleted }
     }

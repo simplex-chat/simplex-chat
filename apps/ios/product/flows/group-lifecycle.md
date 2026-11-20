@@ -117,7 +117,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 
 ### 7. Block Member for All
 
-1. Admin can block a member's messages from being visible to all group members.
+1. Moderators, admins and owners can block a member's messages from being visible to all group members.
 2. "Block member for all?" (`showBanMemberSheet`) offers "Block for" 1 day (default), 1 week or Forever; admins and owners also get "Block and remove" and "Block, remove and delete messages". The footer: "**<name>** won't be notified, and the messages will be hidden for all." for moderators, "**<name>** won't be notified, and if removed, can't rejoin while blocked." for admins and owners.
 3. Calls `apiBlockMembersForAll(groupId:memberIds:blocked:ttl:)`; `ttl` is absent for Forever:
    ```swift
