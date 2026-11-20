@@ -109,9 +109,9 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "intentNonce" .= vrIntentNonce,
       "acceptance" .= (acceptanceJSON <$> vrAcceptance),
       "unread" .= vrUnread,
-      "expiresAt" .= nrExpiresAt,
+      "expiresAt" .= unlessEnded nrExpiresAt,
       "disputeDays" .= nrDisputeDays,
-      "disputeUntil" .= nrDisputeUntil,
+      "disputeUntil" .= unlessEnded nrDisputeUntil,
       "error" .= nrError,
       "community" .= communityJSON cfg (nrLabelHash r) (isJust $ agreedTermsHash nrAgreedTerms),
       "terms" .= (if T.null nrAgreedTerms then Nothing else Just nrAgreedTerms)
@@ -120,6 +120,7 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
     NameRegistration {nrYears, nrDuration, nrPrice, nrBalanceUsed, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrDisputeDays, nrDisputeUntil, nrError, nrAgreedTerms} = r
     txText (TxHash h) = hex h
+    unlessEnded t = if nrPhase == PEnded then Nothing else t
     acceptanceJSON AcceptanceAsked {acCommunity, acPolicy, acTermsHash, acNonce} =
       J.object ["kind" .= (if acCommunity then "community" else "general" :: Text), "policy" .= addressText acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce]
     waitingText :: LateWait -> Text
