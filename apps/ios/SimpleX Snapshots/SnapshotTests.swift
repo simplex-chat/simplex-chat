@@ -337,7 +337,9 @@ final class SnapshotTests: XCTestCase {
         let callUUID = UUID()
         let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
         setAppState(.activating)
-        let answered = await answerCall(callUUID)
+        let answer = CXAnswerCallAction(call: callUUID)
+        CallController.shared.provider(provider, perform: answer)
+        let answered = await waitUntil(40) { answer.isComplete }
         let suspended = await waitUntil(50) { appStateGroupDefault.get().inactive }
         provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
         await activateChatAfterCallPush()
@@ -355,7 +357,9 @@ final class SnapshotTests: XCTestCase {
         defer { callKit.restore() }
         let callUUID = UUID()
         let handled = await receiveCallPush(callUUID: callUUID, callTs: Date.now)
-        let answered = await answerCall(callUUID)
+        let answer = CXAnswerCallAction(call: callUUID)
+        CallController.shared.provider(provider, perform: answer)
+        let answered = await waitUntil(40) { answer.isComplete }
         let suspended = await waitUntil(20) { appStateGroupDefault.get().inactive }
         provider.reportCall(with: callUUID, endedAt: nil, reason: .remoteEnded)
         await activateChatAfterCallPush()
@@ -566,10 +570,6 @@ private final class CallKitFailingEndCallActions: NSObject, CXProviderDelegate {
 
     func providerDidReset(_ provider: CXProvider) {}
 
-    func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
-        CallController.shared.provider(provider, perform: action)
-    }
-
     func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
         action.fail()
     }
@@ -591,13 +591,6 @@ private func receiveCallPush(callUUID: UUID = UUID(), callTs: Date) async -> Boo
         handled = true
     }
     return await waitUntil(10) { handled }
-}
-
-@MainActor
-private func answerCall(_ callUUID: UUID) async -> Bool {
-    let controller = CXCallController()
-    let answered: Void? = try? await controller.request(CXTransaction(action: CXAnswerCallAction(call: callUUID)))
-    return answered != nil
 }
 
 @MainActor
