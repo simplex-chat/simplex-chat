@@ -9,6 +9,7 @@ module StoreService.Names.Registration
     DisputeDays,
     mkDisputeDays,
     unDisputeDays,
+    disputeSeconds,
     minDisputeDays,
     maxDisputeDays,
     cardDisputeDays,
@@ -103,6 +104,9 @@ mkDisputeDays n
 
 unDisputeDays :: DisputeDays -> Int
 unDisputeDays (DisputeDays n) = n
+
+disputeSeconds :: DisputeDays -> Word64
+disputeSeconds (DisputeDays n) = fromIntegral n * 86400
 
 minDisputeDays, maxDisputeDays :: DisputeDays
 minDisputeDays = DisputeDays 14

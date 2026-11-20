@@ -56,7 +56,7 @@ import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, res
 import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedBlock, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, unixSeconds, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, unDisputeDays, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, disputeSeconds, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
@@ -596,7 +596,7 @@ sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oe
       safelyWith ("names ended sweep: registration " <> ridText) (Right ()) $
         withTransaction oeStore (`getRegistration` rid) >>= \case
           Just r@NameRegistration {nrPhase = PRegistered, nrLabelHash, nrDisputeDays, nrDisputeUntil = ours@(Just disputeEnd)}
-            | disputeEnd < blockTimestamp + fromIntegral (unDisputeDays nrDisputeDays) * 86400 ->
+            | disputeEnd < blockTimestamp + disputeSeconds nrDisputeDays ->
                 disputeUntil oeContracts (AtBlock blockNumber) nrLabelHash >>= traverse (\current -> when (current /= ours) $ void $ save w now r {nrPhase = PEnded})
           _ -> pure $ Right ()
 
