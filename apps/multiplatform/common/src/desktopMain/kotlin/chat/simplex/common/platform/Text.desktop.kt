@@ -87,6 +87,12 @@ private val TAGS = 0xE0020..0xE007F
 private val REGIONAL_INDICATORS = 0x1F1E6..0x1F1FF
 private val SKIN_TONES = 0x1F3FB..0x1F3FF
 private val HAIR_COMPONENTS = 0x1F9B0..0x1F9B3
+private val UNSHAPED_TYPES = setOf(Character.CONTROL, Character.FORMAT, Character.LINE_SEPARATOR, Character.PARAGRAPH_SEPARATOR)
+private val SPACE_FALLBACKS = ((0x2000..0x200A) + listOf(0x202F, 0x205F, 0x3000)).toSet()
+private const val NON_BREAKING_HYPHEN = 0x2011
+private const val HYPHEN = 0x2010
+private const val NO_LIGATURES = "liga 0"
+private const val INLINE_CONTENT_TAG = "androidx.compose.foundation.text.inlineContent"
 private const val WINDOWS_EMOJI_FAMILY = "Segoe UI Emoji"
 private const val MAC_EMOJI_FAMILY = "Apple Color Emoji"
 private const val EMOJI_LOCALE = "und-Zsye"
@@ -104,7 +110,7 @@ fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density,
   val proportional = lineHeightStyle.alignment == LineHeightStyle.Alignment.Proportional
   val centered = lineHeightStyle.alignment == LineHeightStyle.Alignment.Center && lineHeightStyle.trim == LineHeightStyle.Trim.None
   val segments by lazy { styledSegments(text, style) }
-  val fonts by lazy { characterFonts(s, segments) }
+  val fonts by lazy { characterFonts(text, segments) }
   val marker = when {
     field || s.split(LINE_BREAKS).any { it.isEmpty() || it == "\r" } -> null
     lineHeightPx == null -> SpanStyle(fontSize = with(density) { UNSET_LINE_HEIGHT_MARKER_PX.toSp() })
@@ -218,53 +224,72 @@ private fun styledSegments(text: AnnotatedString, style: TextStyle): List<Styled
   return out
 }
 
-private fun characterFonts(s: String, segments: List<StyledSegment>): Array<Typeface?> {
+private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>): Array<Typeface?> {
+  val s = text.text
   val fonts = arrayOfNulls<Typeface>(s.length)
-  if (s.isEmpty()) return fonts
-  val graphemeStarts = BooleanArray(s.length + 1)
-  BreakIterator.makeCharacterInstance().use { graphemes ->
-    graphemes.setText(s)
-    var boundary = graphemes.first()
-    while (boundary != BreakIterator.DONE) {
-      graphemeStarts[boundary] = true
-      boundary = graphemes.next()
+  val inlined = BooleanArray(s.length)
+  for (range in text.getStringAnnotations(INLINE_CONTENT_TAG, 0, s.length)) inlined.fill(true, range.start, range.end)
+  val graphemeStarts by lazy {
+    val starts = BooleanArray(s.length + 1)
+    BreakIterator.makeCharacterInstance().use { graphemes ->
+      graphemes.setText(s)
+      var boundary = graphemes.first()
+      while (boundary != BreakIterator.DONE) {
+        starts[boundary] = true
+        boundary = graphemes.next()
+      }
     }
+    starts
   }
   for (segment in segments) {
-    if (segment.typefaces.isEmpty()) continue
+    val first = segment.typefaces.firstOrNull() ?: continue
+    if (coversGrapheme(first, s, segment.start, segment.end, inlined)) {
+      fonts.fill(first, segment.start, segment.end)
+      continue
+    }
     val fallbacks = mutableListOf<Typeface>()
     var start = segment.start
     while (start < segment.end) {
       var end = start + 1
       while (end < segment.end && !graphemeStarts[end]) end++
-      val typeface = segment.typefaces.firstOrNull { coversGrapheme(it, s, start, end) }
-        ?: fallbacks.firstOrNull { coversGrapheme(it, s, start, end) }
-        ?: graphemeFallback(s, start, end, segment.fontStyle)?.also { fallbacks += it }
-      fonts.fill(typeface, start, end)
+      if (!inlined[start]) {
+        val typeface = segment.typefaces.firstOrNull { coversGrapheme(it, s, start, end, inlined) }
+          ?: fallbacks.firstOrNull { coversGrapheme(it, s, start, end, inlined) }
+          ?: graphemeFallback(s, start, end, segment.fontStyle, inlined)?.also { fallbacks += it }
+        fonts.fill(typeface, start, end)
+      }
       start = end
     }
   }
+  for (i in inlined.indices) if (inlined[i]) fonts[i] = null
   return fonts
 }
 
-private fun coversGrapheme(typeface: Typeface, s: String, start: Int, end: Int): Boolean {
+private fun coversGrapheme(typeface: Typeface, s: String, start: Int, end: Int, inlined: BooleanArray): Boolean {
   var i = start
   while (i < end) {
     val cp = s.codePointAt(i)
-    if (!isUnshaped(cp) && !covers(typeface, cp)) return false
+    if (!inlined[i] && !isUnshaped(cp) && !shapes(typeface, cp)) return false
     i += Character.charCount(cp)
   }
   return true
 }
 
-private fun graphemeFallback(s: String, start: Int, end: Int, fontStyle: FontStyle): Typeface? {
+private fun shapes(typeface: Typeface, cp: Int): Boolean = when {
+  covers(typeface, cp) -> true
+  cp in SPACE_FALLBACKS -> covers(typeface, ' '.code)
+  cp == NON_BREAKING_HYPHEN -> covers(typeface, HYPHEN)
+  else -> false
+}
+
+private fun graphemeFallback(s: String, start: Int, end: Int, fontStyle: FontStyle, inlined: BooleanArray): Typeface? {
   var i = start
   while (i < end) {
     val cp = s.codePointAt(i)
     val n = Character.charCount(cp)
     if (!isUnshaped(cp)) {
       val typeface = fallbackTypeface(cp, fontStyle, i == start && isEmojiSequenceStart(s, i, cp, n))
-      if (typeface != null && coversGrapheme(typeface, s, start, end)) return typeface
+      if (typeface != null && coversGrapheme(typeface, s, start, end, inlined)) return typeface
     }
     i += n
   }
@@ -272,7 +297,7 @@ private fun graphemeFallback(s: String, start: Int, end: Int, fontStyle: FontSty
 }
 
 private fun isUnshaped(cp: Int): Boolean =
-  Character.getType(cp) == Character.CONTROL.toInt() || inRanges(DEFAULT_IGNORABLE_RANGES, cp)
+  Character.getType(cp).toByte() in UNSHAPED_TYPES || inRanges(DEFAULT_IGNORABLE_RANGES, cp)
 
 private fun isEmojiSequenceStart(s: String, i: Int, cp: Int, n: Int): Boolean {
   if (!inRanges(EMOJI_RANGES, cp)) return false
@@ -324,8 +349,11 @@ private fun fallbackStyles(s: String, segments: List<StyledSegment>, fonts: Arra
   var emojiStart = -1
   var trackStart = -1
   var trackPx = 0f
+  var trackLigatures: String? = null
   fun endTracking(at: Int) {
-    if (trackStart >= 0 && at > trackStart) out += AnnotatedString.Range(SpanStyle(letterSpacing = with(density) { trackPx.toSp() }), trackStart, at)
+    if (trackStart >= 0 && at > trackStart) {
+      out += AnnotatedString.Range(SpanStyle(letterSpacing = with(density) { trackPx.toSp() }, fontFeatureSettings = trackLigatures), trackStart, at)
+    }
     trackStart = -1
   }
   fun endEmoji(at: Int) {
@@ -359,6 +387,7 @@ private fun fallbackStyles(s: String, segments: List<StyledSegment>, fonts: Arra
           if (trackStart < 0) {
             trackStart = i
             trackPx = spacing
+            trackLigatures = if (letterSpacingPx > 0f && spacing <= 0f) NO_LIGATURES else null
           }
         } else {
           endTracking(i)
@@ -388,7 +417,7 @@ private fun metricsOf(typeface: Typeface, sizePx: Float): FontMetrics =
 private val fallbackTypefaces = ConcurrentHashMap<Long, Any>()
 
 private fun fallbackTypeface(cp: Int, fontStyle: FontStyle, emoji: Boolean): Typeface? {
-  val key = (if (emoji) 1L shl 48 else 0L) or (fontStyle.weight.toLong() shl 33) or (fontStyle.slant.ordinal.toLong() shl 32) or cp.toLong()
+  val key = (if (emoji) 1L shl 48 else 0L) or (fontStyle.weight.toLong() shl 34) or (fontStyle.slant.ordinal.toLong() shl 32) or cp.toLong()
   val system = fallbackTypefaces.getOrPut(key) {
     when {
       emoji && desktopPlatform.isMac() -> FontMgr.default.matchFamilyStyle(MAC_EMOJI_FAMILY, FontStyle.NORMAL)
@@ -411,13 +440,27 @@ private val trackings = ConcurrentHashMap<Long, Float>()
 private fun trackingPx(typeface: Typeface, fontSizePx: Float): Float =
   trackings.getOrPut(sizeKey(typeface, fontSizePx)) {
     val sample = trackingSample(typeface) ?: return@getOrPut 0f
-    val provider = TypefaceFontProvider().apply { registerTypeface(typeface, "tracking") }
-    val fonts = FontCollection().apply { setAssetFontManager(provider) }
-    val textStyle = SkTextStyle().setFontSize(fontSizePx).setFontFamilies(arrayOf("tracking"))
-    val paragraphStyle = ParagraphStyle().apply { this.textStyle = textStyle }
-    val paragraph = ParagraphBuilder(paragraphStyle, fonts).apply { pushStyle(textStyle); addText(String(Character.toChars(sample)).repeat(4)) }.build().apply { layout(Float.MAX_VALUE) }
     val advance = SkFont(typeface, fontSizePx).use { it.getWidths(shortArrayOf(typeface.getUTF32Glyph(sample)))[0] }
-    paragraph.maxIntrinsicWidth / 4 - advance
+    TypefaceFontProvider().use { provider ->
+      provider.registerTypeface(typeface, "tracking")
+      FontCollection().use { fonts ->
+        fonts.setAssetFontManager(provider)
+        SkTextStyle().use { textStyle ->
+          textStyle.setFontSize(fontSizePx).setFontFamilies(arrayOf("tracking"))
+          ParagraphStyle().use { paragraphStyle ->
+            paragraphStyle.textStyle = textStyle
+            ParagraphBuilder(paragraphStyle, fonts).use { builder ->
+              builder.pushStyle(textStyle)
+              builder.addText(String(Character.toChars(sample)).repeat(4))
+              builder.build().use { paragraph ->
+                paragraph.layout(Float.MAX_VALUE)
+                paragraph.maxIntrinsicWidth / 4 - advance
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
 private fun trackingSample(typeface: Typeface): Int? =
@@ -426,7 +469,7 @@ private fun trackingSample(typeface: Typeface): Int? =
 private val flatEmojiFamily: FontFamily? by lazy {
   if (!desktopPlatform.isWindows()) return@lazy null
   val typeface = FontMgr.default.matchFamilyStyle(WINDOWS_EMOJI_FAMILY, FontStyle.NORMAL) ?: return@lazy null
-  val colr = typeface.getTableData("COLR")?.bytes ?: return@lazy null
+  val colr = typeface.getTableData("COLR")?.use { it.bytes } ?: return@lazy null
   if (colr.size < 4 || (colr[0].toInt() == 0 && colr[1].toInt() == 0) || (colr[2].toInt() == 0 && colr[3].toInt() == 0)) return@lazy null
   patchedFamily(typeface, Int.MAX_VALUE) { tag, data ->
     if (tag == "COLR" && data.size >= 2) {
@@ -461,7 +504,7 @@ private fun fontCopy(typeface: Typeface, maxBytes: Int, patch: (String, ByteArra
   val tags = typeface.tableTags.sorted()
   if (tags.sumOf { typeface.getTableSize(it).toLong() } > maxBytes) return null
   val tables = tags.map { tag ->
-    val data = typeface.getTableData(tag)?.bytes ?: return null
+    val data = typeface.getTableData(tag)?.use { it.bytes } ?: return null
     patch(tag, data)
     tag to data
   }
@@ -577,9 +620,9 @@ private val EMOJI_RANGES = intArrayOf(
 )
 
 private val DEFAULT_IGNORABLE_RANGES = intArrayOf(
-  0xAD, 0xAD, 0x34F, 0x34F, 0x61C, 0x61C, 0x115F, 0x1160, 0x17B4, 0x17B5, 0x180B, 0x180F,
-  0x200B, 0x200F, 0x202A, 0x202E, 0x2060, 0x206F, 0x3164, 0x3164, 0xFE00, 0xFE0F, 0xFEFF, 0xFEFF,
-  0xFFA0, 0xFFA0, 0xFFF0, 0xFFF8, 0x1BCA0, 0x1BCA3, 0x1D173, 0x1D17A, 0xE0000, 0xE0FFF,
+  0xAD, 0xAD, 0x34F, 0x34F, 0x61C, 0x61C, 0x17B4, 0x17B5, 0x180B, 0x180E,
+  0x200B, 0x200F, 0x202A, 0x202E, 0x2060, 0x206F, 0xFE00, 0xFE0F, 0xFEFF, 0xFEFF,
+  0xFFF0, 0xFFF8, 0x1D173, 0x1D17A, 0xE0000, 0xE0FFF,
 )
 
 private val EMOJI_COMPONENT_RANGES = intArrayOf(
