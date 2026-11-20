@@ -1,7 +1,8 @@
 {
   description = "nix flake for simplex-chat";
-  # Same compiler and boot libraries on every target. This pin is master.
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/fd0b59fda8b794de053cdf2e8f6cc3a54371ccc1";
+  # Same compiler and boot libraries on every target. fd0b59fd plus the
+  # x86_64 Darwin TLV linker (stable-ghc-9.14-hn e108745df4).
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/8dff34867c433fb30c74f31fe29131a1ce1b7263";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs";
   inputs.mac2ios.url = "github:zw3rk/mobile-core-tools";
   inputs.hackage = {
