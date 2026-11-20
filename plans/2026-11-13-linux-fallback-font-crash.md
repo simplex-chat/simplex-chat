@@ -148,7 +148,7 @@ Bounds that apply to such text:
 | laid-out texts | LRU of 128, each at most 16384 characters and 512 spans |
 | font copies | fonts up to 8 MB, once per typeface |
 
-The fix removes a crash a contact could cause by sending a character whose fallback font is a bitmap or WOFF2 font. The transform reads only installed fonts and the app's bundled fonts, and shares no data.
+The transform reads only installed fonts and the app's bundled fonts, and sends no data.
 
 ## Implementation steps
 
