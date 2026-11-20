@@ -43,7 +43,7 @@ kotlin {
 
 val upstreamSources = sourceSets.main.get().allSource.matching { include("dev/nucleusframework/**") }
 
-val checkUpstreamSources by tasks.registering {
+val checkUpstreamSources = tasks.register("checkUpstreamSources") {
   doFirst {
     if (upstreamSources.isEmpty) {
       throw GradleException("ComposeNativeTray sources are missing, run: git submodule update --init --recursive")

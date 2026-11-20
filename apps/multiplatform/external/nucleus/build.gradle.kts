@@ -22,7 +22,7 @@ val nucleusModules = listOf(
   "launcher-linux",
 )
 
-val composeStubs: SourceSet by sourceSets.creating {
+val composeStubs: SourceSet = sourceSets.create("composeStubs") {
   java.setSrcDirs(listOf(upstream.dir("decorated-window-tao/src/composeStubs/java")))
 }
 
@@ -65,7 +65,7 @@ kotlin {
 
 val upstreamSources = sourceSets.main.get().allSource.matching { include("dev/nucleusframework/**") }
 
-val checkUpstreamSources by tasks.registering {
+val checkUpstreamSources = tasks.register("checkUpstreamSources") {
   doFirst {
     if (upstreamSources.isEmpty) {
       throw GradleException("Nucleus sources are missing, run: git submodule update --init --recursive")

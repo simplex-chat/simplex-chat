@@ -30,7 +30,7 @@ val upstreamSources = sourceSets.main.get().java.matching { include("org/nanohtt
 
 // compileJava and jar silently succeed without the sources, so the check needs its own task.
 // It cannot run during configuration, Android builds must work without the submodule.
-val checkUpstreamSources by tasks.registering {
+val checkUpstreamSources = tasks.register("checkUpstreamSources") {
   doFirst {
     if (upstreamSources.isEmpty) {
       throw GradleException("nanohttpd sources are missing, run: git submodule update --init --recursive")

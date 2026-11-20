@@ -65,7 +65,7 @@ kotlin {
       }
     }
 
-    val commonMain by getting {
+    getByName("commonMain") {
       dependencies {
         api("org.jetbrains.compose.runtime:runtime:${rootProject.extra["compose.version"] as String}")
         api("org.jetbrains.compose.foundation:foundation:${rootProject.extra["compose.version"] as String}")
@@ -91,7 +91,7 @@ kotlin {
         implementation("com.mikepenz:multiplatform-markdown-renderer-m2:0.34.0")
       }
     }
-    val commonTest by getting {
+    getByName("commonTest") {
       dependencies {
         implementation(kotlin("test"))
         implementation(kotlin("test-junit"))
@@ -99,7 +99,7 @@ kotlin {
         implementation(kotlin("test-annotations-common"))
       }
     }
-    val androidMain by getting {
+    getByName("androidMain") {
       dependencies {
         implementation("androidx.activity:activity-compose:1.9.1")
         val workVersion = "2.9.1"
@@ -139,7 +139,7 @@ kotlin {
         implementation("androidx.lifecycle:lifecycle-process:2.8.4")
       }
     }
-    val desktopMain by getting {
+    getByName("desktopMain") {
       dependencies {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.11.0")
         implementation("com.github.Dansoftowner:jSystemThemeDetector:3.8") {
@@ -158,7 +158,7 @@ kotlin {
         compileOnly(project(":external:composenativetray"))
       }
     }
-    val desktopTest by getting {
+    getByName("desktopTest") {
       dependencies {
         implementation(project(":external:nucleus"))
         implementation(project(":external:composenativetray"))
@@ -215,7 +215,7 @@ afterEvaluate {
       dependsOn("cleanSimplexAssets")
     }
   }
-  tasks.create("adjustFormatting") {
+  tasks.register("adjustFormatting") {
     doLast {
       val debug = false
       val stringRegex = Regex(".*<string .*</string>.*")

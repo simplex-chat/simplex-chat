@@ -21,7 +21,7 @@ kotlin {
     }
   }
   sourceSets {
-    val jvmMain by getting {
+    getByName("jvmMain") {
       dependencies {
         implementation(project(":common"))
         implementation(compose.desktop.currentOs)
@@ -31,7 +31,6 @@ kotlin {
         }
       }
     }
-    val jvmTest by getting
   }
 }
 
@@ -174,7 +173,7 @@ cmake {
   val compileMachineTargets = arrayListOf<com.github.tomtzook.gcmake.targets.TargetMachine>(machines.host)
   compileMachineTargets.addAll(machines.customMachines)
   targets {
-    val main by creating {
+    create("main") {
       cmakeLists.set(file("$cppPath/desktop/CMakeLists.txt"))
       targetMachines.addAll(compileMachineTargets.toSet())
       //if (machines.host.name.contains("win")) {
@@ -204,7 +203,7 @@ tasks.withType<AbstractJPackageTask>().configureEach {
   }
 }
 afterEvaluate {
-  tasks.create("cmakeBuildAndCopy") {
+  tasks.register("cmakeBuildAndCopy") {
     dependsOn("cmakeBuild")
     doLast {
       copy {

@@ -205,7 +205,7 @@ dependencies {
 }
 
 tasks {
-    val compressApk by registering {
+    val compressApk = register("compressApk") {
         doLast {
             val javaHome = System.getProperties()["java.home"] ?: org.gradle.internal.jvm.Jvm.current().javaHome
             val sdkDir = android.sdkDirectory.absolutePath
