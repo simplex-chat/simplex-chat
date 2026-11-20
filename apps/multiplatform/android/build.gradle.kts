@@ -8,8 +8,26 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// The release key, as simplex-chat-build.py passes it; android.injected.signing.* properties take precedence
+val releaseSigningEnv = listOf("ANDROID_KEYSTORE", "ANDROID_KEYSTORE_PASSWORD", "ANDROID_KEY_ALIAS", "ANDROID_KEY_PASSWORD")
+    .associateWith { System.getenv(it) }
+if (releaseSigningEnv.values.any { it != null } && releaseSigningEnv.values.any { it == null }) {
+    throw GradleException("Set all of ${releaseSigningEnv.keys.joinToString()} to sign, or none")
+}
+
 android {
     compileSdk = 36
+
+    if (releaseSigningEnv.values.all { it != null }) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(releaseSigningEnv.getValue("ANDROID_KEYSTORE")!!)
+                storePassword = releaseSigningEnv.getValue("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = releaseSigningEnv.getValue("ANDROID_KEY_ALIAS")
+                keyPassword = releaseSigningEnv.getValue("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "chat.simplex.app"
@@ -61,6 +79,7 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
     kotlinOptions {
@@ -156,6 +175,11 @@ gradle.taskGraph.whenReady {
     if (hasTask("$projectPath:packageFossReleaseBundle")) {
         throw GradleException("An app bundle must include Play Billing, use bundleGoogleRelease or assembleFossRelease")
     }
+    val releaseTasks = listOf("packageFossRelease", "packageGoogleReleaseBundle").map { "$projectPath:$it" }
+    val signed = android.signingConfigs.findByName("release") != null || project.hasProperty("android.injected.signing.key.alias")
+    if (releaseTasks.any { hasTask(it) } && !signed) {
+        logger.warn("warning: the release is unsigned, set ${releaseSigningEnv.keys.joinToString()} to sign it")
+    }
     // `isBundle` above is derived from the whole invocation, so a bundle in it disables abi splits
     if (apkTaskPaths.any { hasTask(it) } && bundleTaskPaths.any { hasTask(it) }) {
         throw GradleException("Build the apks and the bundle in separate invocations, the bundle disables abi splits")
@@ -192,76 +216,16 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.4")
 }
 
-tasks {
-    val compressApk by creating {
-        doLast {
-            val javaHome = System.getProperties()["java.home"] ?: org.gradle.internal.jvm.Jvm.current().javaHome
-            val sdkDir = android.sdkDirectory.absolutePath
-            // A single invocation can package more than one variant, for example assembleDebug
-            gradle.taskGraph.allTasks.filter { it.path in apkTaskPaths }.forEach { packageTask ->
-                val variant = packageTask.name.removePrefix("package")
-                val buildType: String = if (variant.endsWith("Release")) "release" else "debug"
-                val keyAlias: String
-                val keyPassword: String
-                val storeFile: String
-                val storePassword: String
-                if (project.properties["android.injected.signing.key.alias"] != null) {
-                    keyAlias = project.properties["android.injected.signing.key.alias"] as String
-                    keyPassword = project.properties["android.injected.signing.key.password"] as String
-                    storeFile = project.properties["android.injected.signing.store.file"] as String
-                    storePassword = project.properties["android.injected.signing.store.password"] as String
-                } else {
-                    try {
-                        val gradleConfig = android.signingConfigs.getByName(buildType)
-                        keyAlias = gradleConfig.keyAlias!!
-                        keyPassword = gradleConfig.keyPassword!!
-                        storeFile = gradleConfig.storeFile!!.absolutePath
-                        storePassword = gradleConfig.storePassword!!
-                    } catch (e: UnknownDomainObjectException) {
-                        // There is no signing config for current build type, can"t sign the apk
-                        println("No signing configs for this build type: $buildType")
-                        return@forEach
-                    }
-                }
-                val outputDir = packageTask.outputs.files.files.last()
-                exec {
-                    workingDir("../../scripts/android")
-                    environment = mapOf(
-                      "JAVA_HOME" to "$javaHome",
-                      "PATH" to "${System.getenv("PATH")}:$javaHome/bin"
-                    )
-                    commandLine = listOf(
-                        "./compress-and-sign-apk.sh",
-                        "${rootProject.extra["compression.level"]}",
-                        "$outputDir",
-                        sdkDir,
-                        storeFile,
-                        storePassword,
-                        keyAlias,
-                        keyPassword
-                    )
-                }
-
-                if (project.properties["android.injected.signing.key.alias"] != null && buildType == "release") {
-                    val flavor = variant.removeSuffix("Release").lowercase()
-                    mapOf("arm64-v8a" to "simplex.apk", "armeabi-v7a" to "simplex-armv7a.apk").forEach { (abi, name) ->
-                        if (!File(outputDir, "android-$flavor-$abi-release.apk").renameTo(File(outputDir, name))) {
-                            logger.warn("No $abi apk to rename to $name")
-                        }
-                    }
-                }
-            }
-            // View all gradle properties set
-            // project.properties.each { k, v -> println "$k -> $v" }
+// Release apks keep the names of the released files
+tasks.matching { it.path == "$projectPath:packageFossRelease" }.configureEach {
+    doLast {
+        val outputDir = outputs.files.files.last()
+        val renamed = mapOf("arm64-v8a" to "simplex.apk", "armeabi-v7a" to "simplex-armv7a.apk").filter { (abi, name) ->
+            listOf("release", "release-unsigned").map { File(outputDir, "android-foss-$abi-$it.apk") }
+                .find { it.exists() }?.renameTo(File(outputDir, name)) == true
         }
-    }
-
-    // Don"t do anything if no compression is needed
-    if (rootProject.extra["compression.level"] as Int != 0) {
-        whenTaskAdded {
-            if (name in apkTasks) {
-                finalizedBy(compressApk)
-            }
+        if (renamed.isEmpty()) {
+            throw GradleException("No release apk in $outputDir to rename")
         }
     }
 }

@@ -22,7 +22,7 @@ runs:
     - name: Set Swap
       shell: bash
       run: |
-          export SWAP_FILE=$(swapon --show=NAME | tail -n 1)
+          export SWAP_FILE=$(swapon --show=NAME,TYPE --noheadings | awk '$2 == "file" { name = $1 } END { print name }')
           echo "Swap file: $SWAP_FILE"
           if [ -z "$SWAP_FILE" ]; then
             SWAP_FILE=/opt/swapfile

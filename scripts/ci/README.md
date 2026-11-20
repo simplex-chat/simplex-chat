@@ -35,7 +35,7 @@ Results:
 
 ### Scopes
 
-The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for every scope except ios, and one macOS job, build-ios (macos-latest), for ios.
+The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for every scope except ios, and one macOS job, build-ios (macos-26), for ios.
 
 #### core
 
@@ -159,6 +159,14 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - CI, in build-linux: `scope-tests.sh support-bot-light` (step "Test changed scopes"): the Python library of the branch and the bot installed in a virtual environment, then ruff, pyright and pytest. The tests use a fake API, without libsimplex.
 - Local: `scripts/ci/scope-tests.sh support-bot-light`.
 
+#### build-tool
+
+- Globs:
+  - scripts/simplex-chat-build.py
+  - scripts/simplex_build/**
+- CI, in build-linux: `scope-tests.sh build-tool` (step "Test changed scopes"): the unit tests of the build tool, then mypy 1.18.2 with `--strict` on its modules other than the tests, and ruff 0.14.0 with its default rules.
+- Local: `scripts/ci/scope-tests.sh build-tool`; Python 3.12 or newer is required.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |
@@ -221,3 +229,7 @@ Each run uploads the app it built, for manual tests, as an artifact kept 14 days
 ## The Claude job
 
 It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OAUTH_TOKEN`, a Claude subscription token. The environment's branch rule alone decides which branches may use it: on a branch it doesn't allow, a run that asks for Claude fails at the Claude job's environment check, and the scripted test runs as usual. Each run spends the subscription's usage limits; the job summary gives its tokens and cost estimated at API prices.
+
+## Builds for signing
+
+`build-apps.yml`, also started only by hand, builds the Android APKs, the Play bundle and the iOS archive of a commit without signing them, and uploads them as artifacts for signing outside CI: [details](build-apps/README.md).
