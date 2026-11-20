@@ -337,7 +337,7 @@ readHint env@PollerEnv {peStore, peProviders} now ref =
           Right Nothing -> pure ()
           Right (Just signal) -> settleMoved env irProvider now (ref, signal)
 
-sweepExpired :: PollerEnv -> UTCTime -> Set Text -> IO ()
+sweepExpired :: PollerEnv -> UTCTime -> Set Text -> IO [InvoiceId]
 sweepExpired env@PollerEnv {peStore, peWaiters, pePhases, peCancelFailed} now missed = do
   let cutoff = addUTCTime (negate expiryGrace) now
   (selfExpiring, payable) <- partition (expiresItself . oiProvider) . filter ((`S.notMember` missed) . oiProviderRef) <$> overdueInvoices peStore cutoff
@@ -346,12 +346,13 @@ sweepExpired env@PollerEnv {peStore, peWaiters, pePhases, peCancelFailed} now mi
   cancelled <- filterM (closedAtProvider env now) (take readsPerPass payable)
   expired <- expireOverdue peStore peWaiters pePhases now cutoff (selfExpiring <> cancelled)
   unless (null expired) $ logNote ("badge poller: expired " <> tshow (length expired) <> " invoice(s) past their window")
+  pure expired
 
 sweepRead :: PollerEnv -> UTCTime -> IO ()
 sweepRead env@PollerEnv {peStore} now = do
   (reading, rest) <- splitAt readsPerPass <$> overdueInvoices peStore (addUTCTime (negate expiryGrace) now)
   failed <- readRows env now [(oiProvider, oiProviderRef) | OverdueInvoice {oiProvider, oiProviderRef} <- reading]
-  sweepExpired env now $ failed <> S.fromList (map oiProviderRef rest)
+  void $ sweepExpired env now $ failed <> S.fromList (map oiProviderRef rest)
 
 data ProviderReads = ProviderReads {prDown :: Set PaymentProvider, prUp :: Set PaymentProvider}
 
@@ -379,9 +380,9 @@ sweepPastWindow env@PollerEnv {peStore, peProviders, peReadFailed} now providerR
       recordFailure new old = old {rfLast = rfLast new, rfAnswered = rfAnswered old <|> rfAnswered new}
   atomically $ modifyTVar' peReadFailed $ \m ->
     M.restrictKeys (M.unionWith recordFailure (M.fromList [(oiProviderRef oi, failure $ answeredBy prUp oi) | oi <- failing]) m) (refs (givenUp <> kept))
-  forM_ givenUp $ \OverdueInvoice {oiProvider, oiProviderRef} ->
+  expired <- sweepExpired env now $ missed <> refs kept
+  forM_ (filter ((`elem` expired) . oiInvoiceId) givenUp) $ \OverdueInvoice {oiProvider, oiProviderRef} ->
     logError ("badge poller: overdue " <> tshow oiProvider <> " invoice " <> oiProviderRef <> " could not be read for " <> tshow readGiveUpHours <> " hours while its provider answered, so it was expired here only; check it in the provider's dashboard")
-  sweepExpired env now $ missed <> refs kept
   where
     isPastWindow OverdueInvoice {oiProvider, oiProviderRef, oiCreatedAt} =
       expiresItself oiProvider && any ((== oiProvider) . pProvider) peProviders && diffUTCTime now oiCreatedAt > settleWindow && S.notMember oiProviderRef missed

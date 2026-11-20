@@ -353,6 +353,7 @@ badgeWebTests = do
     it "reads no invoice past the settle window of a provider whose read failed in the pass" testSweepSkipsPastTheWindowWhileReadsFail
     it "reads the invoices past the settle window that never failed first, and expires one unreadable for a day while its provider answers" testSweepGivesUpAnUnreadableInvoice
     it "expires a given-up invoice at the next pass when it is still open" testSweepExpiresAGivenUpInvoiceAgain
+    it "logs a given-up invoice as expired only once its expiry succeeds" testSweepLogsAGivenUpInvoiceOnceExpired
     it "logs a pass that fails on the store, and the poller runs on" testPassFailureLogged
     it "runs the rest of the pass when a provider's list resets while its answer is read" testListResetPassRuns
     it "gives up no invoice while every read fails, and counts no failure from a pass in which its provider answered nothing" testSweepCountsAnsweredFailures
@@ -3550,6 +3551,21 @@ testSweepExpiresAGivenUpInvoiceAgain = bounded "sweep expires a given-up invoice
   logged <- capturingStderr (runOnePass poller)
   mapM (invoiceStatus (weStore env)) [bad, next] `shouldReturn` [ISExpired, ISExpired]
   loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
+
+testSweepLogsAGivenUpInvoiceOnceExpired :: IO ()
+testSweepLogsAGivenUpInvoiceOnceExpired = bounded "sweep logs a given-up invoice once expired" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  bad@(InvoiceId badId) <- seedPastWindow (weStore env) 1 "p-bad" PPCrypto
+  first <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  dayAgo <- addUTCTime (negate readGiveUpDelay) <$> currentSecond
+  readFailedAt poller "p-bad" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
+  withConnection (weStore env) $ \db -> DB.execute db "DELETE FROM sx_badge_service_badge_code_invoices WHERE invoice_id = ?" (Only badId)
+  logged <- capturingStderr (runOnePass poller)
+  independentStatus (weStore env) bad `shouldReturn` Just "open"
+  invoiceStatus (weStore env) first `shouldReturn` ISExpired
+  loggedError "expiring invoice p-bad failed; the next pass tries it again" logged `shouldBe` True
+  loggedError "invoice p-bad could not be read for 24 hours" logged `shouldBe` False
 
 testPassFailureLogged :: IO ()
 testPassFailureLogged = bounded "a failed pass" $ withStubPoller raceHold $ \_ poller env _ -> do
