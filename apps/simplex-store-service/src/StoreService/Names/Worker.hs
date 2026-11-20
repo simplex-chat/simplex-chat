@@ -23,6 +23,7 @@ module StoreService.Names.Worker
     maxSendsPerKind,
     sendsUsedUp,
     sweepEndedRegistrations,
+    runEndedSweep,
   )
 where
 
@@ -52,7 +53,7 @@ import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, forgetNamePolicy, namePolicy, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, unixSeconds, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
@@ -583,4 +584,25 @@ runCodeSweep :: Worker -> IO ()
 runCodeSweep w = forever $ safely "names code sweep" (sweepFailedCodes w) >> threadDelay sweepInterval
 
 sweepEndedRegistrations :: Worker -> IO ()
-sweepEndedRegistrations _ = pure ()
+sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oeNow}} = do
+  now <- oeNow
+  disputable <- withTransaction oeStore (`disputableRegistrations` fromInteger (unixSeconds now - disputeReadMargin))
+  forM_ disputable $ \rid@(RegistrationId ridText) ->
+    safely ("names ended sweep: registration " <> ridText) $
+      withTransaction oeStore (`getRegistration` rid) >>= \case
+        Just r@NameRegistration {nrPhase = PRegistered, nrLabelHash, nrDisputeUntil = ours@(Just _)} ->
+          runExceptT (ExceptT (confirmedTag oeContracts) >>= \tag -> ExceptT (disputeUntil oeContracts tag nrLabelHash)) >>= \case
+            Right current
+              | current /= ours -> void $ save w now r {nrPhase = PEnded, nrDisputeUntil = Nothing}
+              | otherwise -> pure ()
+            Left e -> logWarn $ "names ended sweep: registration " <> ridText <> ": its dispute end could not be read, " <> tshow e
+        _ -> pure ()
+
+runEndedSweep :: Worker -> IO ()
+runEndedSweep w = forever $ safely "names ended sweep" (sweepEndedRegistrations w) >> threadDelay endedSweepInterval
+
+disputeReadMargin :: Integer
+disputeReadMargin = 7 * 86400
+
+endedSweepInterval :: Int
+endedSweepInterval = 3600 * 1000000

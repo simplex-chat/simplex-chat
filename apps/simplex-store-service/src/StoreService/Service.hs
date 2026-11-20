@@ -64,7 +64,7 @@ import StoreService.Names.Sender (checkPendingSignatures, runSender)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), CodeIssuer (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
-import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runWorkers)
+import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runCodeSweep, runEndedSweep, runWorkers)
 import StoreService.Options
 import StoreService.Poller (PollerEnv (peListedOk), expiryGrace, newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider (pProvider))
@@ -374,7 +374,7 @@ logNamePolicy NamesConfig {nCommunity} ct =
 namesLanes :: NamesEnv -> IO [IO ()]
 namesLanes ne@NamesEnv {neChain, neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neChain neSender
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runTermsFetch neContracts]
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker, runEndedSweep worker, runTermsFetch neContracts]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do

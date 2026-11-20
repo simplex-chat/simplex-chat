@@ -61,6 +61,7 @@ module StoreService.Names.Store
     unpaidCleanupCandidates,
     deleteUnpaidRegistration,
     failedCodeOrdersBefore,
+    disputableRegistrations,
     heldBy,
     getBalance,
     overdueHolder,
@@ -963,6 +964,14 @@ failedCodeOrdersBefore db cutoff =
         ORDER BY r.failed_at, r.registration_id
       |]
       (PFailed, truncateToSecond cutoff)
+
+disputableRegistrations :: DB.Connection -> Word64 -> IO [RegistrationId]
+disputableRegistrations db endedAfter =
+  map (RegistrationId . fromOnly)
+    <$> DB.query
+      db
+      "SELECT registration_id FROM sx_badge_service_name_registrations WHERE phase = ? AND dispute_until > ? ORDER BY dispute_until, registration_id"
+      (PRegistered, int64 endedAfter)
 
 -- | The hold, unless it is overdue, which reads as none.
 heldBy :: Balance -> Maybe BalanceHold
