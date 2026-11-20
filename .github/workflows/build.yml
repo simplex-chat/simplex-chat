@@ -403,6 +403,7 @@ jobs:
         with:
           path: dist-newstyle/src
           key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+          restore-keys: src-${{ runner.os }}-
 
       - name: Warn if source repositories not in cache
         if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
@@ -1123,6 +1124,7 @@ jobs:
         with:
           path: dist-newstyle/src
           key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+          restore-keys: src-${{ runner.os }}-
 
       - name: Warn if source repositories not in cache
         if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
@@ -1505,6 +1507,7 @@ jobs:
         with:
           path: dist-newstyle/src
           key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+          restore-keys: src-${{ runner.os }}-
 
       - name: Warn if source repositories not in cache
         if: env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
