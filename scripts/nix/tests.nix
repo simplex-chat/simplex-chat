@@ -94,9 +94,19 @@ let
   # 3.53 on this pin and mis-prints that dump. See sqlite-schema-cli.nix.
   # python3 is the voice-captcha mock. The Darwin sandbox has /usr/bin/env
   # and does not have python3 on PATH, so those three examples wait 20s.
+  #
+  # On the nix-linux-builder guests, getaddrinfo("localhost") fails with
+  # EAI_NONAME, so the suite cannot open its SMP server. nss_wrapper is
+  # marked broken on Darwin, where that name already resolves.
   sqliteSchemaCli = pkgs.callPackage ./sqlite-schema-cli.nix {};
   cabalTest = (haskellLib.check nativeProject.simplex-chat.components.tests.simplex-chat-test).overrideAttrs (old: {
-    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ sqliteSchemaCli pkgs.python3 ];
+    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ sqliteSchemaCli pkgs.python3 ]
+      ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.nss_wrapper ];
+    preCheck = (old.preCheck or "") + lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
+      echo "127.0.0.1 localhost" > nss-hosts
+      export LD_PRELOAD="${pkgs.nss_wrapper}/lib/libnss_wrapper.so''${LD_PRELOAD:+:$LD_PRELOAD}"
+      export NSS_WRAPPER_HOSTS="$PWD/nss-hosts"
+    '';
   });
 
   xcodetest = pkgs.runCommand "xcodetest" {
