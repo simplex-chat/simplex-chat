@@ -64,12 +64,14 @@ fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density)
   val fontSizePx = with(density) { effective.fontSize.takeOrElse { DEFAULT_FONT_SIZE }.toPx() }
   val lineHeightPx = if (style.lineHeight.isSp) with(density) { style.lineHeight.toPx() } else null
   val typeface = typefaceOf(effective.fontFamily)
-  val trimBoth = (style.lineHeightStyle ?: LineHeightStyle.Default).trim == LineHeightStyle.Trim.Both
+  val lineHeightStyle = style.lineHeightStyle ?: LineHeightStyle.Default
+  val trimBoth = lineHeightStyle.trim == LineHeightStyle.Trim.Both
+  val proportional = lineHeightStyle.alignment == LineHeightStyle.Alignment.Proportional
   val hasEmptyLine = s.isEmpty() || s.startsWith('\n') || s.endsWith('\n') || s.contains("\n\n")
   val markerPx = when {
     hasEmptyLine -> null
     lineHeightPx == null -> MARKER_PX
-    typeface == null || (lineHeightPx <= fontSizePx && !trimBoth) -> null
+    typeface == null || !proportional || (lineHeightPx <= fontSizePx && !trimBoth) -> null
     else -> MARKER_HEIGHT_PX / heightPerPx(typeface)
   }
   val builder = AnnotatedString.Builder(text)

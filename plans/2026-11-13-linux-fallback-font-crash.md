@@ -23,32 +23,48 @@ Fontconfig lists such a font only from a cache written with the system FreeType,
 
 0.9.24 keeps the `SkiaLayerProperties` constructor that Compose 1.8.2 calls for every window; 0.9.37.3 removes it.
 
-## Line heights on Skia m138
+## Text layout on Skia m138
 
-m138 adds the paragraph's empty metrics, computed from the text's default style, to every line. They are scaled by the rounded font height `R = round(descent - ascent + leading)` of a font without the text's rasterization settings. When `R` is below the exact height `I`, they exceed the runs' metrics and the line is laid out unlike m132: taller, with another baseline.
+Changes in m138 and in its fonts, and what restores the m132 result:
 
-`desktopLineHeight` returns the line height for which m138 lays out the line as m132 did with the requested one.
+| Change | Effect | Restored by |
+|---|---|---|
+| Every line also takes the empty metrics of the paragraph's default style (`breakShapedTextIntoLines`, `TextWrapper::breakTextIntoLines`) | lines with fallback fonts, smaller spans or a line height are laid out taller or shifted | a zero-length span at offset 0 with a font size whose rounded height is 1 px |
+| HarfBuzz applies the `trak` table (macOS: PingFang, the system font) | wider glyphs | letter spacing minus the tracking, on characters set in such a font |
+| Segoe UI Emoji is drawn from its COLR v1 table (Windows) | emoji in text have gradients | a span with a copy of the font whose COLR version is 0 |
+| FreeType 702e4a1d (Linux) | other pixels in `ñ`, `ç`, `Ц`, `Щ` and dots | none |
+
+Compose merges every span that starts at offset 0 into the paragraph's default style (`ParagraphBuilder.makeOps`), and Skia takes the empty metrics from that style. A zero-length span at offset 0 ends at offset 0, so spans that start there merge into the style its end creates instead.
+
+```mermaid
+flowchart TD
+  T["text, style"] --> E{"empty, or an empty line"}
+  E -- no --> M["zero-length span at 0: font size with rounded height 1 px"]
+  E -- yes --> C["line height H' for the style merged with the spans at 0"]
+  M --> F["fallback spans: tracking (macOS), COLR v0 emoji (Windows)"]
+  C --> F
+  F --> B["BasicText / BasicTextField"]
+```
+
+`H'` (empty lines take the empty metrics, so a minimal default would collapse them):
 
 | Line height style | `R >= I` | `R < I` |
 |---|---|---|
 | Proportional | `H` | `(H - leading) * R / (descent - ascent)` |
 | Top, Center, Bottom | `H` | `H - I + R` |
 
-A result for `H` above the font size `F` stays above `F`, at least `1.0001 * F`: Compose lays out a line height at or below the font size with `HeightMode.DISABLE_ALL` (`ParagraphBuilder.skiko.kt`), the same in m132 and m138.
+- `R = round(descent - ascent + leading)`, `I` the exact value.
+- A result for `H` above the font size `F` stays at least `1.0001 * F`: Compose lays out a line height at or below the font size with `HeightMode.DISABLE_ALL`.
+- An empty text keeps `H`: Compose lays it out from its own metrics.
+- A line height at or below the font size with a trim other than `Both` takes `H'` instead of the span.
 
-```mermaid
-flowchart LR
-  S["styles and values derived from them: unchanged"] --> T["each Text: lineHeight = desktopLineHeight(fontSize, lineHeight, fontFamily, lineHeightStyle)"]
-  T --> K["Skia m138: m132 line geometry"]
-```
-
-The adjusted value is passed only to `Text`, `BasicText` and `BasicTextField`; spacers, heading and code line heights in `MarkdownBlocks` keep using the unadjusted style.
+`Text` in `chat.simplex.common.platform` applies the transform with the parameters of `androidx.compose.material.Text`; every file that calls `Text` imports it. `ClickableText`, `SelectableText` and the text fields (`platformTextFieldStyle`, through a visual transformation) apply it too.
 
 ## Scope
 
-- Desktop builds on all OSes use Skia m138; Android APKs are unchanged.
-- `desktopLineHeight` returns the line height unchanged on Android, and on desktop for fonts other than Inter and the fonts Compose resolves for `FontFamily.Monospace` and `FontFamily.Default`.
-- Every text that sets a line height uses it.
+- Desktop builds on all OSes use Skia m138; Android APKs are unchanged, and `Text` calls the Material one there.
+- Fonts with known metrics: Inter, the bundled emoji font, and the fonts Compose resolves for `FontFamily.Monospace` and `FontFamily.Default`. Other fonts take only the fallback spans.
+- Remaining differences: a blank line in a text with a line height, by the rounding of `R`; Linux glyph pixels.
 - The rule applies only to 0.9.4.2, so a Compose update that brings another Skiko version is not overridden.
 - Tests:
   - `FallbackFontTest` builds a fontconfig cache for one BDF font with `fc-cache`, then lays out U+2603 in a child JVM.
