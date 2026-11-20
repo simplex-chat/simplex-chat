@@ -208,8 +208,9 @@ struct MarkdownFileView: View {
                     Button {
                         if file.fileSize > MAX_MARKDOWN_COPY_SIZE {
                             showAlert(
-                                String.localizedStringWithFormat(
-                                    NSLocalizedString("Your file is %@. Do you want to copy it?", comment: "alert title"),
+                                NSLocalizedString("File too large", comment: "alert title"),
+                                message: String.localizedStringWithFormat(
+                                    NSLocalizedString("Your file is %@. Do you want to copy it?", comment: "alert message"),
                                     ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
                                 ),
                                 actions: {[

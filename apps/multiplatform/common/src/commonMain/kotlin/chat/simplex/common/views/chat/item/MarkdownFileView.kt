@@ -171,11 +171,12 @@ internal fun MarkdownFileCopyButton(text: String, fileSize: Int) {
     }
     when {
       appPlatform.isAndroid && fileSize > MAX_ANDROID_COPY_SIZE -> AlertManager.shared.showAlertMsg(
-        generalGetString(MR.strings.markdown_file_too_large_to_copy),
+        generalGetString(MR.strings.markdown_file_too_large),
         String.format(generalGetString(MR.strings.markdown_file_copy_limit), formatBytes(MAX_ANDROID_COPY_SIZE.toLong()))
       )
       fileSize > MAX_MARKDOWN_COPY_SIZE -> AlertManager.shared.showAlertDialog(
-        title = String.format(generalGetString(MR.strings.markdown_file_copy_large), formatBytes(fileSize.toLong())),
+        title = generalGetString(MR.strings.markdown_file_too_large),
+        text = String.format(generalGetString(MR.strings.markdown_file_copy_large), formatBytes(fileSize.toLong())),
         confirmText = generalGetString(MR.strings.copy_verb),
         onConfirm = copy
       )
