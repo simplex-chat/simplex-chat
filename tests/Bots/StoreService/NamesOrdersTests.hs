@@ -1612,7 +1612,8 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   sort (KM.keys v)
     `shouldBe` sort
       [ "id", "version", "moves", "linksRefused", "phase", "labelHash", "label", "owner", "commitment", "sealed", "resolver", "sponsor", "chainId", "tld",
-        "years", "duration", "price", "fromBalance", "balance", "latePayment", "commitTx", "registerTx", "revealAfter", "revealBefore", "intentNonce", "acceptance", "unread", "expiresAt", "error", "community", "terms"
+        "years", "duration", "price", "fromBalance", "balance", "latePayment", "commitTx", "registerTx", "revealAfter", "revealBefore", "intentNonce", "acceptance", "unread", "expiresAt", "error", "community", "terms",
+        "disputeDays", "disputeUntil"
       ]
   field "latePayment" v `shouldBe` Just J.Null
   let waiting w = field "latePayment" $ objectOf $ viewJSON (testNamesConfig node) r Nothing (Just w) ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
@@ -1623,7 +1624,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       acceptanceJSON kind h = Just (J.object ["kind" .= kind, "policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex h, "nonce" .= (2 :: Int)])
   acceptanceOf (acceptance False fakeGeneralTerms) `shouldBe` acceptanceJSON "general" fakeGeneralTerms
   acceptanceOf (acceptance True fakeCommunityTerms) `shouldBe` acceptanceJSON "community" fakeCommunityTerms
-  map (`field` v) ["id", "phase", "owner", "tld", "chainId", "linksRefused", "label", "unread", "sponsor", "fromBalance", "balance", "community", "terms"]
+  map (`field` v) ["id", "phase", "owner", "tld", "chainId", "linksRefused", "label", "unread", "sponsor", "fromBalance", "balance", "community", "terms", "disputeDays", "disputeUntil"]
     `shouldBe` map
       Just
       [ "r1",
@@ -1638,8 +1639,12 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         J.Number 0,
         J.Null,
         J.Null,
-        J.String plainTerms
+        J.String plainTerms,
+        J.Number 14,
+        J.Null
       ]
+  field "disputeUntil" (objectOf $ viewJSON (testNamesConfig node) r {nrDisputeUntil = Just 1803116100} Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing})
+    `shouldBe` Just (J.Number 1803116100)
 
 testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do

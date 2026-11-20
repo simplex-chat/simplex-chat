@@ -12,6 +12,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
+import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
@@ -29,8 +30,10 @@ namesSignatureTests = describe "StoreService names: signatures" $ do
   describe "EIP-712" $ do
     it "commits to a registration with one contact link" $
       makeCommitment dynamis `shouldBe` commitment
+    it "hashes the RegisterName type as the sponsor's REGISTER_TYPEHASH" $
+      keccak256 registerNameType `shouldBe` hx "0x799a78e785584cefb5f76cae6faf2327553af45ef5da9491d690f7d4b851e444"
     it "hashes RegisterName" $
-      registerIntentDigest (sponsorDomain chainId sponsor) dynamis 0 1800000000 `shouldBe` hx "0x4b0bcc282db581446f6c25e0e3fbe2839409acbc011bb3e082523dd9eab85a6a"
+      registerIntentDigest (sponsorDomain chainId sponsor) dynamis maxDisputeDays 0 1800000000 `shouldBe` hx "0x6e2dce655c34df0e1009fa20673a51c5fb81347127b850fab6db9813dba5429c"
     it "hashes SetText" $
       setTextDigest (resolverDomain chainId resolver) (namehash TLDSimplex "dynamis") "simplex.contact" "https://x" 3 99 `shouldBe` hx "0xa62d4320889eed3713462d725dc298cd96885572b8e6b424e93a205a96b96fb5"
     it "hashes ClearRecords" $

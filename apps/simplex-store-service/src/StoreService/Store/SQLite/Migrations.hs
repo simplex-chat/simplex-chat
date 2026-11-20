@@ -22,7 +22,8 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261012_badge_subscriptions", m20261012_badge_subscriptions, Just down_m20261012_badge_subscriptions),
-    ("20261013_names", m20261013_names, Just down_m20261013_names)
+    ("20261013_names", m20261013_names, Just down_m20261013_names),
+    ("20261120_names_dispute_days", m20261120_names_dispute_days, Just down_m20261120_names_dispute_days)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -535,6 +536,26 @@ UPDATE @name_prepaid_codes SET reserved_by = NULL;
 DROP TABLE @name_registrations;
 
 DROP TABLE @name_prepaid_codes;
+|]
+
+m20261120_names_dispute_days :: Query
+m20261120_names_dispute_days =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @name_registrations ADD COLUMN dispute_days INTEGER NOT NULL DEFAULT 120;
+
+ALTER TABLE @name_registrations ADD COLUMN dispute_until INTEGER;
+|]
+
+down_m20261120_names_dispute_days :: Query
+down_m20261120_names_dispute_days =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @name_registrations DROP COLUMN dispute_until;
+
+ALTER TABLE @name_registrations DROP COLUMN dispute_days;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

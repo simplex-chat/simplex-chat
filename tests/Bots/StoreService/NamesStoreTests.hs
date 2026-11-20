@@ -27,7 +27,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (TermsAcceptance (..))
+import StoreService.Names.Registration (DisputeDays, TermsAcceptance (..), maxDisputeDays, minDisputeDays)
 import StoreService.Names.Signatures (OrderFields (..), parseAnyCaseAddress, parseSignature)
 import StoreService.Names.Store
 import StoreService.Store (RevokeResult (..))
@@ -70,6 +70,9 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "lists the registrations a worker moves on" testActive
     it "lists unpaid orders whose invoice expired before the cutoff without a payment, and deletes one with its invoice" testUnpaidCleanup
     it "lists code orders failed before the cutoff that still hold their code" testFailedCodeOrders
+  describe "dispute days" $ do
+    it "takes the days of the payment: card 120, crypto and prepaid codes 14, and the larger of a method's and a balance's" testOrderDays
+    it "sets each registration's days in the migration as at its creation" testMigrationDays
   describe "prepaid codes" $ do
     it "issues one code per hash" testIssueCode
     it "reserves only an unused code, releases and spends it only for its holder" testReserveReleaseSpend
@@ -178,7 +181,7 @@ testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
   let names = dropWhile ((/= "20261013_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  map name names `shouldBe` ["20261013_names"]
+  map name names `shouldBe` ["20261013_names", "20261120_names_dispute_days"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
@@ -260,6 +263,8 @@ testCreatePaid = withServiceStore $ \st -> do
         nrRevealAfter = Nothing,
         nrRevealBefore = Nothing,
         nrExpiresAt = Nothing,
+        nrDisputeDays = minDisputeDays,
+        nrDisputeUntil = Nothing,
         nrRegisteredAt = Nothing,
         nrFailedAt = Nothing,
         nrError = Nothing,
@@ -407,6 +412,7 @@ testRoundTrip = withServiceStore $ \st -> do
             nrRevealAfter = Just 1792828800,
             nrRevealBefore = Just 1792915140,
             nrExpiresAt = Just 1861833600,
+            nrDisputeUntil = Just 1803116100,
             nrRegisteredAt = Just (at 3),
             nrFailedAt = Just (at 2),
             nrError = Just "The name was not signed in time",
@@ -605,6 +611,85 @@ testFailedCodeOrders = withServiceStore $ \st -> do
   failAt "released" (at 1)
   withTransaction st (\db -> releasePrepaidCode db (pcId releasedCode) (RegistrationId "released")) `shouldReturn` True
   withTransaction st (\db -> failedCodeOrdersBefore db (at 10)) `shouldReturn` [(RegistrationId "old", pcId oldCode)]
+
+card, xmr :: ServicePaymentMethod
+card = SPMCard CPStripe
+xmr = SPMCrypto CCXmr
+
+placeFunded :: DBStore -> IO [(Text, DisputeDays)]
+placeFunded st = do
+  paid "card" card 1
+  paid "btc" btc 2
+  paid "xmr" xmr 3
+  paidCode <- issue st 1 usable
+  freeCode <- issue st 2 usable {npcPaymentStatus = CPSFree}
+  placeCode st "paidcode" ownerA (order "paidcode" 4) paidCode `shouldReturn` Right ()
+  placeCode st "freecode" ownerA (order "freecode" 5) freeCode `shouldReturn` Right ()
+  forM_ (zip3 ["cardsource", "btcsource", "cardheld", "btcheld", "btcheld2", "cardlate"] [card, btc, card, btc, btc, card] [6 ..]) $ \(rid, method, n) -> do
+    paid rid method n
+    takenWith rid price
+  covered "fromcard" "cardsource" price 12
+  covered "frombtc" "btcsource" price 13
+  difference "btcovercard" btc "cardheld" (at 60) 14
+  difference "cardoverbtc" card "btcheld" (at 60) 15
+  difference "btcoverbtc" btc "btcheld2" (at 60) 16
+  takenWith "fromcard" price
+  covered "twostep" "fromcard" price 17
+  difference "lateorder" btc "cardlate" (at 1) 18
+  lateOrder <- reg st "lateorder"
+  withTransaction st (\db -> closeOverdue db lateOrder (at 2)) `shouldReturn` Just 2
+  withTransaction st $ \db -> creditBalance db (RegistrationId "lateorder") 5000 t0
+  covered "fromlate" "lateorder" 5000 19
+  pure
+    [ ("card", maxDisputeDays),
+      ("btc", minDisputeDays),
+      ("xmr", minDisputeDays),
+      ("paidcode", minDisputeDays),
+      ("freecode", minDisputeDays),
+      ("cardsource", maxDisputeDays),
+      ("btcsource", minDisputeDays),
+      ("cardheld", maxDisputeDays),
+      ("btcheld", minDisputeDays),
+      ("btcheld2", minDisputeDays),
+      ("cardlate", maxDisputeDays),
+      ("fromcard", maxDisputeDays),
+      ("frombtc", minDisputeDays),
+      ("btcovercard", maxDisputeDays),
+      ("cardoverbtc", maxDisputeDays),
+      ("btcoverbtc", minDisputeDays),
+      ("twostep", maxDisputeDays),
+      ("lateorder", maxDisputeDays),
+      ("fromlate", minDisputeDays)
+    ]
+  where
+    invoiced rid method terms expiresAt n = withTransaction st $ \db -> do
+      insertInvoiceRow db ("inv-" <> rid) expiresAt "open"
+      createPaidRegistration db (newReg rid ownerA (order rid n)) terms (paidOrder $ "inv-" <> rid) {poMethod = method} t0
+    paid rid method n = invoiced rid method (OTInvoice method price) (at 60) n `shouldReturn` Right ()
+    difference rid method source expiresAt n = invoiced rid method (OTBalance (RegistrationId source) (2 * price) price (Just method)) expiresAt n `shouldReturn` Right ()
+    covered rid source cents n =
+      withTransaction st (\db -> createBalanceRegistration db (newReg rid ownerA (order rid n)) (RegistrationId source) cents cents t0) `shouldReturn` Right ()
+    takenWith rid cents = do
+      r <- reg st rid
+      write st r {nrPhase = PTaken} `shouldReturn` Written (nrVersion r + 1)
+      withTransaction st $ \db -> creditBalance db (RegistrationId rid) cents t0
+
+daysOf :: DBStore -> [Text] -> IO [(Text, DisputeDays)]
+daysOf st = mapM $ \rid -> (,) rid . nrDisputeDays <$> reg st rid
+
+testOrderDays :: IO ()
+testOrderDays = withServiceStore $ \st -> do
+  funded <- placeFunded st
+  daysOf st (map fst funded) `shouldReturn` funded
+
+testMigrationDays :: IO ()
+testMigrationDays = withServiceStore $ \st -> do
+  funded <- placeFunded st
+  let migration = [m | m@Migration {name = "20261120_names_dispute_days"} <- storeServiceSchemaMigrations]
+  length migration `shouldBe` 1
+  runMigrations st $ MTRDown (mapMaybe toDownMigration migration)
+  runMigrations st $ MTRUp migration
+  daysOf st (map fst funded) `shouldReturn` funded
 
 testIssueCode :: IO ()
 testIssueCode = withServiceStore $ \st -> do

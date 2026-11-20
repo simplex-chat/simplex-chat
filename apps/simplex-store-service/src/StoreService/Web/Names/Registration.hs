@@ -88,7 +88,7 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
               Nothing -> pure $ RDRefused RVBadRequest Nothing
               Just fields -> either (\refusal -> pure $ RDRefused refusal Nothing) (signedReveal now r signed fields) $ committedRegistration oeConfig r signed fields
     signedReveal now r SignedLabel {slSignature} RevealFields {rfNonce, rfDeadline, rfAcceptance} registration = do
-      let intent = RegisterIntent {riRegistration = registration, riNonce = rfNonce, riDeadline = rfDeadline, riSignature = slSignature}
+      let intent = RegisterIntent {riRegistration = registration, riDisputeDays = nrDisputeDays r, riNonce = rfNonce, riDeadline = rfDeadline, riSignature = slSignature}
       runExceptT (ExceptT (checkIntent oeConfig oeContracts now (nrRevealBefore r) intent) >> ExceptT (checkAcceptance oeConfig oeContracts r rfDeadline rfAcceptance)) >>= \case
         Left refusal -> pure $ RDRefused refusal Nothing
         Right ()

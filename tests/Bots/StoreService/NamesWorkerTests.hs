@@ -210,8 +210,8 @@ openPhase r = (committedPhase r) {nrRevealAfter = Just (orderSeconds - minAge), 
 -- | The reveal the page sends, its intent signed with the owner's key.
 signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
 signedReveal Ctx {cRandom, cOrders} key rv r = do
-  let RegisterIntent {riRegistration} = intentOf (oeConfig cOrders) r rv
-  sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration (rvNonce rv) (rvDeadline rv))
+  let RegisterIntent {riRegistration, riDisputeDays} = intentOf (oeConfig cOrders) r rv
+  sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration riDisputeDays (rvNonce rv) (rvDeadline rv))
   pure rv {rvSignature = sig}
 
 -- | The registration with the page's reveal of the label accepted.
@@ -337,7 +337,7 @@ testCodesOnlyRegister = withWorkerAs codesOnly $ \w@W {wCtx = ctx@Ctx {cClient}}
 
 -- | A queued code order, committed, revealed and registered.
 commitWaitRegister :: W -> (NameRegistration, PrepaidCode) -> IO ()
-commitWaitRegister w@W {wCtx = ctx} (r, code) = do
+commitWaitRegister w@W {wCtx = ctx@Ctx {cNode, cClient}} (r, code) = do
   answerExpiry ctx "alicebakery" expiry
   answerCommitment w r 0
   void $ published w r $ steps w r >>= awaiting
@@ -364,10 +364,15 @@ commitWaitRegister w@W {wCtx = ctx} (r, code) = do
   registering <- stored ctx r
   (nrPhase registering, nrRegisterTx registering) `shouldBe` (PRegistering, Just registerTx)
   registerBlock <- mineNewest w True
+  disputeEnd <- (+ 14 * 86400) <$> blockTime w registerBlock
+  answerCall cNode fakeBaseRegistrar (selector "disputeUntil(uint256)" <> labelBytes "alicebakery") $ Returns $ uint256 disputeEnd
   now <- nowOf ctx
   published w r (steps w r) >>= done
   x <- stored ctx r
-  (nrPhase x, nrRegisterTx x, nrRegisterBlock x, nrExpiresAt x, nrRegisteredAt x, nrLive x) `shouldBe` (PRegistered, Just registerTx, Just registerBlock, Just expiry, Just now, False)
+  (nrPhase x, nrRegisterTx x, nrRegisterBlock x, nrExpiresAt x, nrDisputeUntil x, nrRegisteredAt x, nrLive x)
+    `shouldBe` (PRegistered, Just registerTx, Just registerBlock, Just expiry, Just disputeEnd, Just now, False)
+  view <- jsonObject =<< webGet cClient (registrationPath $ nrId r)
+  (field "disputeDays" view, field "disputeUntil" view) `shouldBe` (Just (J.Number 14), Just (J.toJSON disputeEnd))
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
   steps w r >>= done
 
