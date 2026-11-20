@@ -68,7 +68,7 @@ class MarkdownFileViewTest {
   }
 
   @Test
-  fun copyButtonCopiesFileUpTo128KB() = runComposeUiTest {
+  fun copyButtonWarnsAbove128KB() = runComposeUiTest {
     var copied: String? = null
     val clipboard = object : ClipboardManager {
       override fun setText(annotatedString: AnnotatedString) { copied = annotatedString.text }
@@ -88,8 +88,10 @@ class MarkdownFileViewTest {
       copied = null
       fileSize = 131_073
       onNodeWithContentDescription("Copy").performClick()
-      onNodeWithText("File too large to copy").assertExists()
+      onNodeWithText("Your file is 128 KB. Do you want to copy it?").assertExists()
       assertNull(copied)
+      onNodeWithText("Copy").performClick()
+      assertEquals("alpha\n\ngamma", copied)
     } finally {
       AlertManager.shared.hideAllAlerts()
       simplexWindowState.toasts.clear()

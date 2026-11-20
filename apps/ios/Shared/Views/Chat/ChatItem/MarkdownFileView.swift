@@ -208,11 +208,16 @@ struct MarkdownFileView: View {
                     Button {
                         if file.fileSize > MAX_MARKDOWN_COPY_SIZE {
                             showAlert(
-                                NSLocalizedString("File too large to copy", comment: "alert title"),
-                                message: String.localizedStringWithFormat(
-                                    NSLocalizedString("Files up to %@ can be copied. Save the file to open it in another app.", comment: "alert message"),
-                                    ByteCountFormatter.string(fromByteCount: MAX_MARKDOWN_COPY_SIZE, countStyle: .binary)
-                                )
+                                String.localizedStringWithFormat(
+                                    NSLocalizedString("Your file is %@. Do you want to copy it?", comment: "alert title"),
+                                    ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
+                                ),
+                                actions: {[
+                                    cancelAlertAction,
+                                    UIAlertAction(title: NSLocalizedString("Copy", comment: "alert button"), style: .default) { _ in
+                                        UIPasteboard.general.string = text
+                                    }
+                                ]}
                             )
                         } else {
                             UIPasteboard.general.string = text

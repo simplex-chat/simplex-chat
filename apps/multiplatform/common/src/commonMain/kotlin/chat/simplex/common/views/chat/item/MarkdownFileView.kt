@@ -60,6 +60,7 @@ private const val DATA_IMAGE = "data:image/"
 private val IMAGE_TYPES = listOf(ImageFileType.JPEG, ImageFileType.PNG)
 private const val MAX_MARKDOWN_VIEW_SIZE: Long = 1_048_576
 private const val MAX_MARKDOWN_COPY_SIZE = 131_072
+private const val MAX_ANDROID_COPY_SIZE = 524_288
 private const val MAX_MARKDOWN_LINE_LENGTH = 15_000
 private const val MAX_MARKDOWN_DEPTH = 32
 private const val MAX_MARKDOWN_TABLE_ROWS = 200
@@ -164,14 +165,21 @@ private fun MarkdownViewSwitch() {
 internal fun MarkdownFileCopyButton(text: String, fileSize: Int) {
   val clipboard = LocalClipboardManager.current
   IconButton({
-    if (fileSize > MAX_MARKDOWN_COPY_SIZE) {
-      AlertManager.shared.showAlertMsg(
-        generalGetString(MR.strings.markdown_file_too_large_to_copy),
-        String.format(generalGetString(MR.strings.markdown_file_copy_limit), formatBytes(MAX_MARKDOWN_COPY_SIZE.toLong()))
-      )
-    } else {
+    val copy = {
       clipboard.setText(AnnotatedString(text))
       showToast(generalGetString(MR.strings.copied))
+    }
+    when {
+      appPlatform.isAndroid && fileSize > MAX_ANDROID_COPY_SIZE -> AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.markdown_file_too_large_to_copy),
+        String.format(generalGetString(MR.strings.markdown_file_copy_limit), formatBytes(MAX_ANDROID_COPY_SIZE.toLong()))
+      )
+      fileSize > MAX_MARKDOWN_COPY_SIZE -> AlertManager.shared.showAlertDialog(
+        title = String.format(generalGetString(MR.strings.markdown_file_copy_large), formatBytes(fileSize.toLong())),
+        confirmText = generalGetString(MR.strings.copy_verb),
+        onConfirm = copy
+      )
+      else -> copy()
     }
   }) {
     Icon(painterResource(MR.images.ic_content_copy), stringResource(MR.strings.copy_verb), tint = MaterialTheme.colors.primary)
