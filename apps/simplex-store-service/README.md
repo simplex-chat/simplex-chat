@@ -989,6 +989,8 @@ warning. When the metrics port cannot be listened on, the failure is logged as a
 | `simplex_store_names_terms_held{kind}` | 1 when the service holds the text of the `general` or `community` terms the name policy links, 0 while it cannot fetch it, so names of that kind cannot be ordered; absent while the policy links none |
 | `simplex_store_names_chain_read_timestamp_seconds` | when every part of the read last succeeded |
 | `simplex_store_names_chain_read_ok` | 1 when the last read succeeded in every part, 0 when a part failed or none has finished |
+| `simplex_store_names_month_pass_timestamp_seconds` | when the last month pass that completed started, every 5 minutes; absent until the first one completes |
+| `simplex_store_names_credit_pass_timestamp_seconds` | when the last late credit pass that completed started, every `idle_seconds`; absent until the first one completes |
 
 With `[names]`, the service also counts every name on chain, however it was registered, at start and
 then every 5 minutes, under the metric names of the former `simplex-names-exporter`. At the latest
@@ -1010,8 +1012,9 @@ failed read keeps the last one and is counted.
 Every metric is a gauge, but for the names' histogram and counter. A stuck order, a paid order not
 registered 3 hours after its payment, a registrar key that cannot pay for a register with links, a
 base fee above the fee cap, a stuck transaction or record edit, a node that cannot be read or
-has stopped following the chain, terms that cannot be shown and a payment provider that cannot be
-read show as:
+has stopped following the chain, terms that cannot be shown, a payment provider that cannot be
+read, names on chain that cannot be counted, a month pass or late credit pass that stopped
+completing and a scrape that fails, such as while the database cannot be read, show as:
 
 ```
 time() - simplex_store_names_queue_oldest_change_timestamp_seconds > 1200
@@ -1025,7 +1028,14 @@ time() - simplex_store_names_chain_head_timestamp_seconds > 120
 simplex_store_names_terms_held == 0
 time() - simplex_store_provider_list_ok_timestamp_seconds > 600
 simplex_store_invoices_overdue > 0
+increase(simplex_names_refresh_failures_total[20m]) > 2
+time() - simplex_store_names_month_pass_timestamp_seconds > 1200
+time() - simplex_store_names_credit_pass_timestamp_seconds > 600
+up == 0
 ```
+
+`up` is the scrape's own metric, for the job that scrapes the service. The names are counted every
+5 minutes, so more than 2 failures in 20 minutes means most counts failed.
 
 The overdue count can be above 0 for a few seconds between an invoice's grace ending and the next
 poller pass, so its alert waits, as with `for: 10m`. Mainnet makes a block every 12 seconds, so a

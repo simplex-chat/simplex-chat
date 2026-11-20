@@ -28,7 +28,8 @@ import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns)
 import StoreService.Names.View (balanceView)
 import StoreService.Orders (cancelOpenInvoice, settleOrder)
-import StoreService.Poller (PollerEnv, ReadHints, cleanupUnpaid, creditPass, drainHints, forgetRates, newPollerEnv, newReadHints, queueReadHint)
+import Control.Concurrent.STM (readTVarIO)
+import StoreService.Poller (PollerEnv (..), ReadHints, cleanupUnpaid, creditPass, drainHints, forgetRates, newPollerEnv, newReadHints, queueReadHint, runOnePass)
 import StoreService.Providers (Confirmation (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), Uncreditable (..), settleWindow)
 import StoreService.Store.Invoices (unpaidRefs)
 import StoreService.Waiters (Waiters, newWaiters)
@@ -62,6 +63,7 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "alerts a part credit with an unconfirmed rest once, naming its units" testPartCreditAlerted
     it "logs Monero's zero figure as pending and does not alert it within the window" testMoneroZero
     it "credits nothing while the rate read fails, warning once, then credits at the next pass" testRateFails
+    it "logs a credit pass that fails, leaving the time of the last completed pass, which the next pass sets" testCreditPassFails
     it "credits nothing below the rate floor and never after, logging an error once while the price moves below it, and alerts support naming both rates" testRateFloor
     it "alerts confirmed money waiting on the rate read as such, whatever reason was stored before" testWaitingOutranksStoredReason
     it "warns once of an invoice no provider reads a rate for, and names an invoice with no recorded rate" testRateProblemsNamed
@@ -367,6 +369,18 @@ testMoneroZero = withLate $ \l@Late {lStore = st} -> do
   now <- getCurrentTime
   alertsAt l (Right stubRate) (addUTCTime 3600 now) >>= (`shouldNotSatisfy` T.isInfixOf "invoice ref-inv-monero:")
   balanceOf st "monero" `shouldReturn` Nothing
+
+testCreditPassFails :: IO ()
+testCreditPassFails = withLate $ \Late {lStore = st, lPoller} -> do
+  let rename from to = withTransaction st $ \db -> DB.execute_ db $ "ALTER TABLE " <> from <> " RENAME TO " <> to
+  rename "sx_badge_service_name_invoices" "name_invoices_away"
+  passLog <- capturingStderr $ runOnePass lPoller
+  rename "name_invoices_away" "sx_badge_service_name_invoices"
+  passLog `shouldSatisfy` T.isInfixOf "names: the late credit pass failed; the next pass will run: "
+  readTVarIO (peCreditPassAt lPoller) `shouldReturn` Nothing
+  later <- addUTCTime 2 <$> getCurrentTime
+  creditPass lPoller later
+  readTVarIO (peCreditPassAt lPoller) `shouldReturn` Just later
 
 testRateFails :: IO ()
 testRateFails = withLate $ \l@Late {lStore = st} -> do

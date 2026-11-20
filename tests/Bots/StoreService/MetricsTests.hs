@@ -6,9 +6,9 @@ module Bots.StoreService.MetricsTests (storeMetricsTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (minPriceCentsPerYear)
 import Bots.StoreService.NamesStoreTests (at, commitFixture, hashFixture, insertInvoiceRow, insertProviderInvoice, newEdit, newReg, order, ownerA, ownerB, paidOrder, price, reveal, setChannel, t0)
-import Bots.StoreService.WebTests (digestFixture, statusOf, webGet, webRequestBody, withApp, withServiceStore)
-import Control.Concurrent.Async (cancel)
-import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO)
+import Bots.StoreService.WebTests (capturingStderr, digestFixture, statusOf, webGet, webRequestBody, withApp, withServiceStore)
+import Control.Concurrent.Async (cancel, withAsync)
+import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Exception (finally)
 import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
@@ -61,13 +61,39 @@ storeMetricsTests = describe "StoreService: metrics" $ do
   it "answers GET /metrics with the service metrics alone without names, and with the names metrics while the node holds the chain read" $ testScrape g
   it "counts live names and owned subnames by level and records, with their label lengths, and keeps the last read while one fails" $ testRegisteredNames g
   it "runs on when its port is taken, and reports the failure once" testPortTaken
+  it "sets chain_read_ok to 0 when the chain read throws, keeping the time of the last full read, and logs it" $ testChainReadThrows g
+  it "counts a registered names read that throws as a refresh failure, keeping the last read, and logs it" $ testRegisteredNamesThrows g
+
+testChainReadThrows :: TVar ChaChaDRG -> IO ()
+testChainReadThrows g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< throwingChain =<< fakeChainClient g node
+  readAt <- getCurrentTime
+  v <- newTVarIO noChainRead {crReadAt = Just readAt, crOk = True}
+  logged <- capturingStderr $ withAsync (runChainReads ct v) $ \_ ->
+    timeout 5000000 (atomically $ readTVar v >>= check . not . crOk) >>= maybe (fail "the chain read did not fail") pure
+  (\ChainRead {crReadAt, crOk} -> (crReadAt, crOk)) <$> readTVarIO v `shouldReturn` (Just readAt, False)
+  logged `shouldSatisfy` T.isInfixOf "store metrics: the chain read failed; the next pass will run: "
+
+testRegisteredNamesThrows :: TVar ChaChaDRG -> IO ()
+testRegisteredNamesThrows g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< throwingChain =<< fakeChainClient g node
+  readAt <- getCurrentTime
+  v <- newTVarIO noRegisteredNamesRead {rrNames = Just (RegisteredNames {rgBlock = 7, rgNames = []}, readAt)}
+  logged <- capturingStderr $ withAsync (runRegisteredNames ct v) $ \_ ->
+    timeout 5000000 (atomically $ readTVar v >>= check . (> 0) . rrFailures) >>= maybe (fail "the names read did not fail") pure
+  counted <- readTVarIO v
+  (fmap (rgBlock . fst) (rrNames counted), rrFailures counted) `shouldBe` (Just 7, 1)
+  typedSamples (registeredNamesText counted) `shouldContain` ["simplex_names_refresh_failures_total 1"]
+  logged `shouldSatisfy` T.isInfixOf "store metrics: the registered names read failed; the next pass will run: "
 
 testPortTaken :: IO ()
 testPortTaken = withServiceStore $ \st -> Warp.testWithApplication (pure $ \_ respond -> respond $ responseLBS status404 [] "") $ \port -> do
   listedOk <- TM.emptyIO
   webhookAt <- TM.emptyIO
   reports <- newTVarIO []
-  let env = MetricsEnv {meStore = st, meProviders = [], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing, meReport = \r -> atomically $ modifyTVar' reports (r :)}
+  monthPassAt <- newTVarIO Nothing
+  creditPassAt <- newTVarIO Nothing
+  let env = MetricsEnv {meStore = st, meProviders = [], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing, meMonthPassAt = monthPassAt, meCreditPassAt = creditPassAt, meReport = \r -> atomically $ modifyTVar' reports (r :)}
       lc = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesSite = Nothing, lTrustForwardedFor = False, lNamesSite = Nothing, lMetricsPort = Just port}
   ended <- timeout 2000000 (runMetrics lc port env)
   isJust ended `shouldBe` False
@@ -263,7 +289,7 @@ testNamesCounts = withServiceStore $ \st -> do
     settleRecordEdit db mined (EOApplied Nothing) `shouldReturn` True
   withTransaction st $ \db -> forM_ [("c1", 2), ("rg", 1), ("f", 0), ("me", -1)] $ \(rid, minute) -> setPaidAt db (RegistrationId rid) (at minute)
   counts <- withTransaction st namesCounts
-  typedSamples (namesText fakeMaxFeePerGas counts noChainRead)
+  typedSamples (namesText fakeMaxFeePerGas counts noChainRead PassTimes {ptMonthPass = Just (at 10), ptCreditPass = Just (at 11)})
     `shouldBe` [ "simplex_store_names_orders{phase=\"unpaid\"} 2",
                  "simplex_store_names_orders{phase=\"closed\"} 0",
                  "simplex_store_names_orders{phase=\"queued\"} 1",
@@ -288,7 +314,9 @@ testNamesCounts = withServiceStore $ \st -> do
                  "simplex_store_names_record_edits_pending 1",
                  "simplex_store_names_record_edits_oldest_pending_timestamp_seconds " <> seconds (at 9),
                  "simplex_store_names_max_fee_per_gas_wei 100000000000",
-                 "simplex_store_names_chain_read_ok 0"
+                 "simplex_store_names_chain_read_ok 0",
+                 "simplex_store_names_month_pass_timestamp_seconds " <> seconds (at 10),
+                 "simplex_store_names_credit_pass_timestamp_seconds " <> seconds (at 11)
                ]
 
 testChainRead :: TVar ChaChaDRG -> IO ()
@@ -330,7 +358,9 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   webhookAt <- TM.emptyIO
   v <- newTVarIO noChainRead
   census <- newTVarIO noRegisteredNamesRead
-  let badgesOnly = MetricsEnv {meStore = st, meProviders = [PPCrypto], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing, meReport = \_ -> pure ()}
+  monthPassAt <- newTVarIO Nothing
+  creditPassAt <- newTVarIO Nothing
+  let badgesOnly = MetricsEnv {meStore = st, meProviders = [PPCrypto], meListedOk = listedOk, meWebhookAt = webhookAt, meNames = Nothing, meMonthPassAt = monthPassAt, meCreditPassAt = creditPassAt, meReport = \_ -> pure ()}
   withApp (metricsApp badgesOnly v census) $ \client -> do
     r <- webGet client "/metrics"
     (statusOf r, lookup hContentType (responseHeaders r)) `shouldBe` (200, Just "text/plain; version=0.0.4; charset=utf-8")
@@ -341,6 +371,8 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
     statusOf <$> webGet client "/" `shouldReturn` 404
     statusOf <$> webRequestBody client "POST" "/metrics" [] "" `shouldReturn` 405
   (reads', _) <- pausedAt node "eth_getBalance" (runChainReads ct v)
+  passedAt <- getCurrentTime
+  atomically $ writeTVar monthPassAt $ Just passedAt
   (`finally` cancel reads') $ withApp (metricsApp badgesOnly {meNames = Just ct} v census) $ \client -> do
     r <- timeout scrapeMicros (webGet client "/metrics") >>= maybe (fail "the scrape waited for the node") pure
     let samples = typedSamples $ bodyText r
@@ -348,6 +380,7 @@ testScrape g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       samples `shouldContain` [s]
     filter ("simplex_store_names_chain_" `T.isPrefixOf`) samples `shouldBe` ["simplex_store_names_chain_read_ok 0"]
     filter ("simplex_names{" `T.isPrefixOf`) samples `shouldBe` []
+    filter ("_pass_timestamp_seconds" `T.isInfixOf`) samples `shouldBe` ["simplex_store_names_month_pass_timestamp_seconds " <> seconds passedAt]
 
 scrapeMicros :: Int
 scrapeMicros = 2000000
@@ -362,8 +395,9 @@ typedSamples text = [l | l <- ls, not (T.null l || "#" `T.isPrefixOf` l), descri
     described name = any (("# TYPE " <> name <> " ") `T.isPrefixOf`) ls && any (("# HELP " <> name <> " ") `T.isPrefixOf`) ls
 
 chainSamples :: ChainRead -> [Text]
-chainSamples = filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_registrar_", "simplex_store_names_sponsor_", "simplex_store_names_chain_", "simplex_store_names_terms_"]) . typedSamples . namesText fakeMaxFeePerGas noCounts
+chainSamples = filter (\l -> any (`T.isPrefixOf` l) ["simplex_store_names_registrar_", "simplex_store_names_sponsor_", "simplex_store_names_chain_", "simplex_store_names_terms_"]) . typedSamples . (\cr -> namesText fakeMaxFeePerGas noCounts cr noPasses)
   where
+    noPasses = PassTimes {ptMonthPass = Nothing, ptCreditPass = Nothing}
     noCounts = NamesCounts {ncPhases = [], ncQueueOldestChange = Nothing, ncPendingTransactions = 0, ncOldestPending = Nothing, ncOpenInvoices = 0, ncHeldBalances = 0, ncHeldCents = 0, ncPendingEdits = 0, ncOldestEdit = Nothing, ncOldestUnregisteredPaid = []}
 
 seconds :: UTCTime -> Text

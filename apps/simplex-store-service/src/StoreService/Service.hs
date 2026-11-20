@@ -61,7 +61,7 @@ import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (CloseRefusal (..), Closed (..), closeRegistration, newWorker, runMonthEnds, runUnregisteredAlerts, runWorkers)
 import StoreService.Options
-import StoreService.Poller (PollerEnv (peListedOk), expiryGrace, newPollerEnv, newReadHints, runPoller)
+import StoreService.Poller (PollerEnv (peCreditPassAt, peListedOk), expiryGrace, newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider (pProvider), minorDecimal)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
@@ -304,8 +304,9 @@ storeService opts serviceCfg baseCfg env = do
       namesEnv <- forM (names sc) (startNames cc turns ws providers report)
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
-      nameLanes <- maybe (pure []) namesLanes namesEnv
-      let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map pProvider providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = neContracts <$> namesEnv, meReport = report}
+      monthPassAt <- newTVarIO Nothing
+      nameLanes <- maybe (pure []) (namesLanes monthPassAt) namesEnv
+      let metricsEnv = MetricsEnv {meStore = chatStore, meProviders = map pProvider providers, meListedOk = peListedOk pollerEnv, meWebhookAt = weWebhookAt webEnv, meNames = neContracts <$> namesEnv, meMonthPassAt = monthPassAt, meCreditPassAt = peCreditPassAt pollerEnv, meReport = report}
           metricsLane = [runMetrics (listener sc) port metricsEnv | Just port <- [lMetricsPort $ listener sc]]
       pure $ [runWebListeners webEnv, runPoller pollerEnv] <> nameLanes <> metricsLane
 
@@ -343,10 +344,10 @@ logNamePolicy NamesConfig {nCommunity} ct =
       Just Terms {tmLink, tmHash} -> logNote $ "names: " <> what <> " " <> tmLink <> ", hash " <> safeDecodeUtf8 (strEncode tmHash)
 
 -- | The workers resume every registration in their phases, and the terms fetch runs at the start and then hourly.
-namesLanes :: NamesEnv -> IO [IO ()]
-namesLanes ne@NamesEnv {neContracts, neSender, neRecords} = do
+namesLanes :: TVar (Maybe UTCTime) -> NamesEnv -> IO [IO ()]
+namesLanes monthPassAt ne@NamesEnv {neContracts, neSender, neRecords} = do
   worker <- newWorker (ordersEnv ne) neSender
-  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runUnregisteredAlerts worker, runMonthEnds worker, runTermsFetch neContracts]
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runUnregisteredAlerts worker, runMonthEnds monthPassAt worker, runTermsFetch neContracts]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do

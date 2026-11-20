@@ -139,6 +139,7 @@ data PollerEnv = PollerEnv
     -- | The orders of the day's cleanup not read yet.
     peCleanupLeft :: TVar [(RegistrationId, InvoiceId, Text)],
     peCreditedAt :: TVar (Maybe UTCTime),
+    peCreditPassAt :: TVar (Maybe UTCTime),
     -- | The rates read in this pass or hinted read, by provider and coin.
     peRates :: TMap (PaymentProvider, CryptoCurrency) (Either ProviderError Rate)
   }
@@ -153,8 +154,9 @@ newPollerEnv peStore peWaiters pePhases peHints peProviders pePoll = do
   peCleanedAt <- newTVarIO Nothing
   peCleanupLeft <- newTVarIO []
   peCreditedAt <- newTVarIO Nothing
+  peCreditPassAt <- newTVarIO Nothing
   peRates <- TM.emptyIO
-  pure PollerEnv {peStore, peWaiters, pePhases, peHints, peProviders, pePoll, peSkipped, peListedAt, peListedOk, peStrayEvery = strayListInterval, peCancelFailed, peReadFailed, peCleanedAt, peCleanupLeft, peCreditedAt, peRates}
+  pure PollerEnv {peStore, peWaiters, pePhases, peHints, peProviders, pePoll, peSkipped, peListedAt, peListedOk, peStrayEvery = strayListInterval, peCancelFailed, peReadFailed, peCleanedAt, peCleanupLeft, peCreditedAt, peCreditPassAt, peRates}
 
 -- | Read providers before the sweep, and leave out of the sweep every invoice whose read or settlement failed,
 -- so an invoice with money in it is never expired. After a list that cannot account for every invoice, only overdue
@@ -446,7 +448,7 @@ creditDue PollerEnv {peCreditedAt, pePoll = PollConfig {pIdleSeconds}} now = ato
 -- | Credits every closed order's confirmed money, and every overpaid invoice's confirmed extra, not all credited, so a crash or a failed
 -- rate read after a settlement loses nothing.
 creditPass :: PollerEnv -> UTCTime -> IO ()
-creditPass env@PollerEnv {peStore, peProviders} now = do
+creditPass env@PollerEnv {peStore, peProviders, peCreditPassAt} now = do
   due <- creditDue env now
   when due $ do
     invoices <- withTransaction peStore uncreditedLateInvoices
@@ -457,6 +459,7 @@ creditPass env@PollerEnv {peStore, peProviders} now = do
           _ -> do
             due' <- dueToWarn env now ("no rate provider: " <> invText)
             when due' $ logWarn ("names: invoice " <> ref <> " has late money to credit, but no provider is configured to read its rate")
+    atomically $ writeTVar peCreditPassAt $ Just now
 
 -- | The pass's rate of a coin at a provider, read at most once.
 cachedRate :: PollerEnv -> Provider -> CryptoCurrency -> IO (Either ProviderError Rate)

@@ -13,6 +13,7 @@ module Bots.StoreService.FakeEthNode
     withFakeEthNode,
     fakeChainConfig,
     fakeChainClient,
+    throwingChain,
     answerCall,
     answerCallOnce,
     answerCallFrom,
@@ -74,6 +75,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel)
 import Control.Concurrent.STM
 import Control.Exception (finally)
+import qualified Control.Exception as E
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
@@ -319,6 +321,12 @@ fakeChainClient g node@FakeEthNode {fnPort} = do
   connect <- HTTP.managerRawConnection HTTP.defaultManagerSettings
   let toNode hostAddress _ _ = connect hostAddress "127.0.0.1" fnPort
   ccManager <- HTTP.newManager HTTP.defaultManagerSettings {HTTP.managerRawConnection = pure toNode, HTTP.managerTlsConnection = pure toNode}
+  pure c {ccManager}
+
+throwingChain :: ChainClient -> IO ChainClient
+throwingChain c = do
+  let throwing _ _ _ = E.throwIO $ E.ErrorCall "the test's connection threw"
+  ccManager <- HTTP.newManager HTTP.defaultManagerSettings {HTTP.managerRawConnection = pure throwing, HTTP.managerTlsConnection = pure throwing}
   pure c {ccManager}
 
 answerCall :: FakeEthNode -> Address -> ByteString -> CallAnswer -> IO ()

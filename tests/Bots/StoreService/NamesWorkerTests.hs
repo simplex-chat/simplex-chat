@@ -20,12 +20,13 @@ import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.Async (wait, withAsync)
 import qualified Control.Exception as E
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVarIO)
+import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, retry)
 import Control.Monad (forM_, replicateM_, void, when)
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
 import Data.IORef (readIORef, writeIORef)
-import Data.Maybe (fromJust, fromMaybe, isJust)
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
+import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
@@ -33,7 +34,7 @@ import Simplex.Chat.Badges.Ledger (addMonths)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word8, Word64)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
-import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
@@ -128,6 +129,9 @@ workerTests = describe "StoreService names: worker" $ do
   describe "lanes" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
     it "keeps a registration's worker after an exception in its step, logging it once as a wait" testStepException
+    it "logs a scan that fails, and the next scan starts the registration's worker" testScanFails
+    it "logs a check of unregistered paid orders that fails, claiming no alert, so the next check alerts" testUnregisteredAlertsFail
+    it "logs a month pass that fails, leaving the time of the last completed pass, which the next pass sets" testMonthPassFails
     it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
@@ -1175,6 +1179,48 @@ testRunWorkers = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} ->
     namePhase . nrPhase <$> stored ctx r `shouldReturn` PCommitting
   nrPhase <$> invoiceRegistration ctx unpaid `shouldReturn` OUnpaid unpaid
   length <$> sent w `shouldReturn` 1
+
+testScanFails :: IO ()
+testScanFails = withWorker $ \w@W {wCtx = ctx@Ctx {cStore, cNode}, wWorker} -> do
+  r <- paidIn ctx aliceOrder id
+  answerCommitment w r 0
+  renameTable cStore "sx_badge_service_name_registrations" "name_registrations_away"
+  logged <- capturingStderr $ withAsync (runWorkers wWorker) $ \_ -> do
+    threadDelay 1000000
+    renameTable cStore "name_registrations_away" "sx_badge_service_name_registrations"
+    timeout (5000000 + prompt) (awaitSent cNode 1) >>= maybe (fail "no commit was sent after the next scan") (const $ pure ())
+  logged `shouldSatisfy` T.isInfixOf "names worker: the scan failed; the next pass will run: "
+
+testUnregisteredAlertsFail :: IO ()
+testUnregisteredAlertsFail = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  worker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
+  _ <- paidIn ctx aliceOrder id
+  advance ctx $ 3 * 3600 + 1
+  renameTable cStore "sx_badge_service_name_registrations" "name_registrations_away"
+  logged <- capturingStderr $ withAsync (runUnregisteredAlerts worker) $ \lane -> do
+    threadDelay 500000
+    Async.poll lane >>= (`shouldSatisfy` isNothing)
+  renameTable cStore "name_registrations_away" "sx_badge_service_name_registrations"
+  logged `shouldSatisfy` T.isInfixOf "names: the check of unregistered paid orders failed; the next pass will run: "
+  readTVarIO reports `shouldReturn` []
+  alertUnregisteredPaid worker
+  length <$> readTVarIO reports `shouldReturn` 1
+
+testMonthPassFails :: IO ()
+testMonthPassFails = withWorker $ \W {wCtx = Ctx {cStore, cOrders}, wWorker} -> do
+  passAt <- newTVarIO Nothing
+  renameTable cStore "sx_badge_service_name_registrations" "name_registrations_away"
+  logged <- capturingStderr $ withAsync (runMonthEnds passAt wWorker) $ \_ -> threadDelay 500000
+  renameTable cStore "name_registrations_away" "sx_badge_service_name_registrations"
+  logged `shouldSatisfy` T.isInfixOf "names month pass failed; the next pass will run: "
+  readTVarIO passAt `shouldReturn` Nothing
+  now <- oeNow cOrders
+  withAsync (runMonthEnds passAt wWorker) $ \_ ->
+    timeout prompt (atomically $ readTVar passAt >>= maybe retry pure) `shouldReturn` Just now
+
+renameTable :: DBStore -> String -> String -> IO ()
+renameTable st from to = withTransaction st $ \db -> DB.execute_ db $ fromString $ "ALTER TABLE " <> from <> " RENAME TO " <> to
 
 testUnregisteredAlert :: IO ()
 testUnregisteredAlert = withWorker $ \W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
