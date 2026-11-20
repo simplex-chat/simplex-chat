@@ -68,10 +68,11 @@ actual fun platformTextFieldStyle(text: String, style: TextStyle, visualTransfor
     }
   }
   val empty = text.isEmpty()
-  val fieldStyle = remember(empty, style, visualTransformation, density) {
+  val mask = (visualTransformation as? PasswordVisualTransformation)?.mask
+  val fieldStyle = remember(empty, style, mask, density) {
     val laidOutStyle = layOutDesktopText(AnnotatedString(if (empty) "" else "x"), style, density, field = true).style
-    val maskTracking = if (visualTransformation is PasswordVisualTransformation && desktopPlatform.isMac()) {
-      layOutDesktopText(AnnotatedString(visualTransformation.mask.toString()), style, density, field = true).text.spanStyles.firstOrNull()?.item
+    val maskTracking = if (mask != null && desktopPlatform.isMac()) {
+      layOutDesktopText(AnnotatedString(mask.toString()), style, density, field = true).text.spanStyles.firstOrNull { it.end > it.start }?.item
     } else null
     if (maskTracking == null) laidOutStyle else laidOutStyle.merge(maskTracking)
   }
@@ -106,7 +107,7 @@ private const val WINDOWS_EMOJI_FAMILY = "Segoe UI Emoji"
 private const val MAC_EMOJI_FAMILY = "Apple Color Emoji"
 private const val EMOJI_LOCALE = "und-Zsye"
 private val DEFAULT_FONT_SIZE = 16.sp
-private val HARD_BREAKS = setOf('\n', '\u000B', '\u000C', ' ', ' ')
+private val HARD_BREAKS = setOf('\n', '\u000B', '\u000C', Char(0x2028), Char(0x2029))
 
 internal fun layOutDesktopText(text: AnnotatedString, style: TextStyle, density: Density, field: Boolean): PlatformText {
   val s = text.text
@@ -276,7 +277,7 @@ private fun characterFonts(text: AnnotatedString, segments: List<StyledSegment>)
       if (!inlined[start]) {
         val typeface = segment.typefaces.firstOrNull { coversGrapheme(it, s, start, end, inlined) }
           ?: fallbacks.firstOrNull { coversGrapheme(it, s, start, end, inlined) }
-          ?: graphemeFallback(s, start, end, segment.fontStyle, inlined)?.also { fallbacks += it }
+          ?: graphemeFallback(s, start, end, segment.fontStyle, inlined, segment.typefaces + fallbacks)?.also { fallbacks += it }
         fonts.fill(typeface, start, end)
       }
       start = end
@@ -313,14 +314,16 @@ private fun shapes(typeface: Typeface, cp: Int): Boolean = when {
   else -> false
 }
 
-private fun graphemeFallback(s: String, start: Int, end: Int, fontStyle: FontStyle, inlined: BooleanArray): Typeface? {
+private fun graphemeFallback(s: String, start: Int, end: Int, fontStyle: FontStyle, inlined: BooleanArray, tried: List<Typeface>): Typeface? {
+  val triedTypefaces = tried.toHashSet()
+  val triedCodePoints = HashSet<Int>()
   var i = start
   while (i < end) {
     val cp = s.codePointAt(i)
     val n = Character.charCount(cp)
-    if (!isUnshaped(cp)) {
+    if (!isUnshaped(cp) && triedCodePoints.add(cp)) {
       val typeface = fallbackTypeface(cp, fontStyle, i == start && isEmojiSequenceStart(s, i, cp, n))
-      if (typeface != null && coversGrapheme(typeface, s, start, end, inlined)) return typeface
+      if (typeface != null && triedTypefaces.add(typeface) && coversGrapheme(typeface, s, start, end, inlined)) return typeface
     }
     i += n
   }
@@ -446,7 +449,7 @@ private val typefaceFacts = ConcurrentHashMap<Typeface, TypefaceFacts>()
 private fun factsOf(typeface: Typeface): TypefaceFacts =
   typefaceFacts.getOrPut(typeface) {
     TypefaceFacts(
-      tracked = typeface.tableTags.contains("trak"),
+      tracked = typeface.tableTags.let { "trak" in it && "STAT" in it },
       windowsEmoji = desktopPlatform.isWindows() && typeface.familyName == WINDOWS_EMOJI_FAMILY
     )
   }
@@ -456,17 +459,17 @@ private val fontMetrics = ConcurrentHashMap<Long, FontMetrics>()
 private fun metricsOf(typeface: Typeface, sizePx: Float): FontMetrics =
   fontMetrics.getOrPut(sizeKey(typeface, sizePx)) { SkFont(typeface, sizePx).use { it.metrics } }
 
-private val fallbackTypefaces = ConcurrentHashMap<Long, Any>()
+private val fallbackTypefaces = ConcurrentHashMap<Long, Typeface>()
+
+private val macEmojiTypeface: Typeface? by lazy { FontMgr.default.matchFamilyStyle(MAC_EMOJI_FAMILY, FontStyle.NORMAL) }
 
 private fun fallbackTypeface(cp: Int, fontStyle: FontStyle, emoji: Boolean): Typeface? {
   val key = (if (emoji) 1L shl 48 else 0L) or (fontStyle.weight.toLong() shl 34) or (fontStyle.slant.ordinal.toLong() shl 32) or cp.toLong()
-  val system = fallbackTypefaces.getOrPut(key) {
-    when {
-      emoji && desktopPlatform.isMac() -> FontMgr.default.matchFamilyStyle(MAC_EMOJI_FAMILY, FontStyle.NORMAL)
-      emoji -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, arrayOf(EMOJI_LOCALE), cp)
-      else -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, null, cp)
-    } ?: Unit
-  } as? Typeface
+  val system = fallbackTypefaces[key] ?: when {
+    emoji && desktopPlatform.isMac() -> macEmojiTypeface
+    emoji -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, arrayOf(EMOJI_LOCALE), cp)
+    else -> FontMgr.default.matchFamilyStyleCharacter(null, fontStyle, null, cp)
+  }?.also { fallbackTypefaces[key] = it }
   return system ?: (listOfNotNull(interTypeface, emojiTypeface) + createdTypefaces).firstOrNull { covers(it, cp) }
 }
 
@@ -486,10 +489,10 @@ private fun trackingPx(typeface: Typeface, fontSizePx: Float): Float =
             paragraphStyle.textStyle = textStyle
             ParagraphBuilder(paragraphStyle, fonts).use { builder ->
               builder.pushStyle(textStyle)
-              builder.addText(String(Character.toChars(sample)).repeat(4))
+              builder.addText(String(Character.toChars(sample)))
               builder.build().use { paragraph ->
                 paragraph.layout(Float.MAX_VALUE)
-                (paragraph.maxIntrinsicWidth / 4 - advance).takeIf { abs(it) >= NEGLIGIBLE_TRACKING_PX } ?: 0f
+                (paragraph.maxIntrinsicWidth - advance).takeIf { abs(it) >= NEGLIGIBLE_TRACKING_PX } ?: 0f
               }
             }
           }

@@ -30,7 +30,7 @@ Changes in m138 and in its fonts, and what restores the m132 result:
 | Change | Effect | Restored by |
 |---|---|---|
 | Every line also takes the empty metrics of the paragraph's default style (`breakShapedTextIntoLines`, `TextWrapper::breakTextIntoLines`) | lines with fallback fonts, smaller spans or a line height are laid out taller or shifted | a zero-length span at offset 0 with a font size whose rounded height is 1 px |
-| HarfBuzz applies the `trak` table (macOS: PingFang, the system font) | wider glyphs | letter spacing minus the tracking, on characters set in such a font |
+| HarfBuzz applies the `trak` table of fonts that also have `STAT` (macOS: PingFang, the system font) | wider glyphs | letter spacing minus the tracking, measured on one sample glyph, on characters set in such a font |
 | Segoe UI Emoji is drawn from its COLR v1 table (Windows) | emoji in text have gradients | a span with a copy of the font whose COLR version is 0 |
 | FreeType 702e4a1d (Linux) | other pixels in `ñ`, `ç`, `Ц`, `Щ` and dots | none |
 
@@ -83,6 +83,7 @@ flowchart TD
   - otherwise the first fallback font already found in the same segment that covers it;
   - otherwise the first fallback, for its characters in order, that covers it: an emoji sequence start (Unicode 15.1 Emoji and Emoji_Component, as ICU 74 in Skia m138) takes the emoji fallback (`und-Zsye`, Apple Color Emoji on macOS), any other character the system fallback for its weight and slant;
   - when the system has none, Inter, the bundled emoji font, then the typefaces the transform registered with Compose in the order it created them, as Skiko's `TypefaceFontProviderWithFallback::fallbackForChar`.
+- The fallback search for a grapheme skips typefaces and code points already tried, as Skia's `alreadyTriedTypefaces` and `alreadyTriedCodepoints`; only found typefaces are cached.
 - Fonts are resolved once per text, for the dominant font and the fallback spans; graphemes are found only for a segment that its first font does not cover entirely.
 - An emoji run (Windows) continues over ZWJ, variation selectors, keycap, tags, skin tones, hair components and the second regional indicator of a pair; a segment in a font with unknown metrics ends it.
 - A measured tracking below 1/4096 px counts as 0: Skia rounds HarfBuzz advances to 1/65536 px, and HarfBuzz applies `trak` only with a `STAT` table.
@@ -101,7 +102,8 @@ flowchart TD
   - Center alignment with a line height: a line without the dominant font, by the distance between the centres of the two fonts (0.35 px for Inter and Noto Color Emoji);
   - texts with a blank line, and text fields: a line set entirely in a fallback font, by up to the difference of its height from the default font's;
   - Proportional alignment with trim Both: Compose's first-line ascent and last-line descent (`getLineTop`, `getLineBottom`, cursor rects) are computed from the marker's font size; the drawing is unchanged;
-  - macOS: glyphs of fonts with a `trak` table, half the tracking (0.17 px at 16 px) to the right;
+  - macOS: glyphs of fonts with `trak` and `STAT` tables, half the tracking (0.17 px at 16 px) to the right;
+  - normalisation cases HarfBuzz handles otherwise: shortest partial decompositions, Hebrew presentation forms, Indic characters it does not decompose, clusters with a variation selector;
   - Windows: emoji in bold text, by DirectWrite's bold simulation of the system emoji font; ❤️ in text set in the system font;
   - macOS: a tracked cluster of several glyphs (a base and an uncomposed mark), by the tracking for each extra glyph: Skia adds letter spacing per glyph, HarfBuzz tracking per cluster;
   - macOS: letter spacing at or below 0 in a font with negative tracking turns ligatures off (Skia adds `liga 0` for positive spacing after the span's features);
@@ -117,5 +119,7 @@ flowchart TD
   - `FallbackFontTest` builds a fontconfig cache for one BDF font with `fc-cache`, then lays out U+2603 in a child JVM.
   - `BubbleLayoutTest.timeDrawnOnTextBaseline` checks the drawn rows of text and time at font scales 0.7 to 1.5.
   - `BubbleLayoutTest.linesDrawnWholeLineHeightApart` checks that two lines are drawn the whole-pixel line height apart at the same scales.
+  - `FieldCaretTest` checks that the caret keeps the font height in text fields.
+  - `FallbackSearchTest` lays out one grapheme of 20 000 combining marks and a mark no font covers with them within 10 s; the search without skipping tried fonts took 63 s.
   - The desktop snapshots are compared with the references rendered with m132.
 - `Dockerfile.build` installs `fontconfig`, which provides `fc-cache` to the test in CI.

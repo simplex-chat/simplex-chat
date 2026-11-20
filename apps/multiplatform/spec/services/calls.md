@@ -68,12 +68,12 @@ State transitions are driven by `WCallResponse` messages from the WebRTC layer. 
 
 A dedicated `ComponentActivity` that hosts the call UI. Key responsibilities:
 
-- **Intent handling** ([line 65](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L65)): On `AcceptCallAction` intent, looks up the matching `RcvCallInvitation` and calls `callManager.acceptIncomingCall()`.
-- **Lock screen support** ([line 161](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L161)): `unlockForIncomingCall()` uses `setShowWhenLocked(true)` / `setTurnScreenOn(true)` on API 27+, falls back to window flags on older versions. `lockAfterIncomingCall()` reverses these settings.
-- **Picture-in-Picture** ([line 100](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L100)): `setPipParams()` configures PiP aspect ratio and source rect hint. On Android 12+ (`Build.VERSION_CODES.S`), auto-enter PiP is enabled for video calls. `onPictureInPictureModeChanged` toggles `activeCallViewIsCollapsed` and sends a `WCallCommand.Layout` command.
-- **Permission checks** ([line 123](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L123)): Checks `RECORD_AUDIO` and conditionally `CAMERA` permissions.
-- **Service binding** ([line 182](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L182)): Binds to `CallService` as a workaround for Android 12 background activity launch restrictions.
-- **CallActivityView composable** ([line 209](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L209)): Renders `ActiveCallView()` when permissions are granted and a call is active. Shows `CallPermissionsView` when permissions are needed. Shows `IncomingCallLockScreenAlert` for incoming calls on the lock screen.
+- **Intent handling** ([line 65](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L66)): On `AcceptCallAction` intent, looks up the matching `RcvCallInvitation` and calls `callManager.acceptIncomingCall()`.
+- **Lock screen support** ([line 161](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L162)): `unlockForIncomingCall()` uses `setShowWhenLocked(true)` / `setTurnScreenOn(true)` on API 27+, falls back to window flags on older versions. `lockAfterIncomingCall()` reverses these settings.
+- **Picture-in-Picture** ([line 100](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L101)): `setPipParams()` configures PiP aspect ratio and source rect hint. On Android 12+ (`Build.VERSION_CODES.S`), auto-enter PiP is enabled for video calls. `onPictureInPictureModeChanged` toggles `activeCallViewIsCollapsed` and sends a `WCallCommand.Layout` command.
+- **Permission checks** ([line 123](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L124)): Checks `RECORD_AUDIO` and conditionally `CAMERA` permissions.
+- **Service binding** ([line 182](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L183)): Binds to `CallService` as a workaround for Android 12 background activity launch restrictions.
+- **CallActivityView composable** ([line 209](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L210)): Renders `ActiveCallView()` when permissions are granted and a call is active. Shows `CallPermissionsView` when permissions are needed. Shows `IncomingCallLockScreenAlert` for incoming calls on the lock screen.
 
 ### 3.2 CallService.kt (207 lines)
 
@@ -94,15 +94,15 @@ An Android foreground `Service` that keeps the call alive when the app is backgr
 
 The `actual` platform implementation of `ActiveCallView()` and supporting composables:
 
-- **ActiveCallState** ([line 74](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L74)): Manages proximity lock (screen-off wake lock), `CallAudioDeviceManager` for audio routing (earpiece/speaker/bluetooth), `CallSoundsPlayer` for ringtones and vibration. Implements `Closeable` to clean up resources on call end.
-- **ActiveCallView** ([line 114](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L114)): Renders `WebRTCView` plus `ActiveCallOverlay`. Handles `WCallResponse` messages and dispatches corresponding API calls. Manages volume control stream (`STREAM_VOICE_CALL`), screen keep-on, and call command lifecycle.
-- **WebRTCView** ([line 691](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L691)): Creates/reuses a static `WebView` via `AndroidView`. Configures `WebViewAssetLoader` for local asset loading. Sets up `WebRTCInterface` JavaScript bridge. Loads `file:android_asset/www/android/call.html`. Processes `WCallCommand` queue by evaluating `processCommand()` JavaScript.
-- **ActiveCallOverlayLayout** ([line 329](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L329)): Full overlay with mic toggle, speaker/device selector, end call, video toggle, and camera flip buttons. Adapts layout for video vs audio calls.
-- **CallPermissionsView** ([line 569](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L569)): Handles runtime permission requests for microphone and camera with a fallback to settings if the system dialog is not shown.
+- **ActiveCallState** ([line 74](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L75)): Manages proximity lock (screen-off wake lock), `CallAudioDeviceManager` for audio routing (earpiece/speaker/bluetooth), `CallSoundsPlayer` for ringtones and vibration. Implements `Closeable` to clean up resources on call end.
+- **ActiveCallView** ([line 114](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L115)): Renders `WebRTCView` plus `ActiveCallOverlay`. Handles `WCallResponse` messages and dispatches corresponding API calls. Manages volume control stream (`STREAM_VOICE_CALL`), screen keep-on, and call command lifecycle.
+- **WebRTCView** ([line 691](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L692)): Creates/reuses a static `WebView` via `AndroidView`. Configures `WebViewAssetLoader` for local asset loading. Sets up `WebRTCInterface` JavaScript bridge. Loads `file:android_asset/www/android/call.html`. Processes `WCallCommand` queue by evaluating `processCommand()` JavaScript.
+- **ActiveCallOverlayLayout** ([line 329](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L330)): Full overlay with mic toggle, speaker/device selector, end call, video toggle, and camera flip buttons. Adapts layout for video vs audio calls.
+- **CallPermissionsView** ([line 569](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L570)): Handles runtime permission requests for microphone and camera with a fallback to settings if the system dialog is not shown.
 
 ### 3.4 ActiveCallState
 
-[`ActiveCallState`](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L74) (line 74 of `CallView.android.kt`):
+[`ActiveCallState`](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt#L75) (line 74 of `CallView.android.kt`):
 
 | Component | Purpose |
 |---|---|
@@ -138,14 +138,14 @@ Defined in [`SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/com
 
 | Function | Line | Description |
 |---|---|---|
-| `apiGetCallInvitations` | [L1842](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1842) | Retrieve pending call invitations from the backend |
-| `apiSendCallInvitation` | [L1849](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1849) | Send call invitation to a contact with `CallType` |
-| `apiRejectCall` | [L1854](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1854) | Reject an incoming call |
-| `apiSendCallOffer` | [L1859](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1859) | Send SDP offer with ICE candidates and capabilities |
-| `apiSendCallAnswer` | [L1866](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1866) | Send SDP answer with ICE candidates |
-| `apiSendCallExtraInfo` | [L2156](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2156) | Send additional ICE candidates discovered after initial exchange, or ICE restart offer/answer in `rtcSession` |
-| `apiEndCall` | [L1878](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1878) | Terminate a call |
-| `apiCallStatus` | [L1883](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1883) | Report WebRTC connection status to the backend |
+| `apiGetCallInvitations` | [L1843](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1843) | Retrieve pending call invitations from the backend |
+| `apiSendCallInvitation` | [L1850](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1850) | Send call invitation to a contact with `CallType` |
+| `apiRejectCall` | [L1855](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1855) | Reject an incoming call |
+| `apiSendCallOffer` | [L1860](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1860) | Send SDP offer with ICE candidates and capabilities |
+| `apiSendCallAnswer` | [L1867](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1867) | Send SDP answer with ICE candidates |
+| `apiSendCallExtraInfo` | [L2157](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2157) | Send additional ICE candidates discovered after initial exchange, or ICE restart offer/answer in `rtcSession` |
+| `apiEndCall` | [L1879](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1879) | Terminate a call |
+| `apiCallStatus` | [L1884](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1884) | Report WebRTC connection status to the backend |
 
 All functions send commands via `sendCmd()` to the chat core and return `Boolean` success status (except `apiGetCallInvitations` which returns `List<RcvCallInvitation>`).
 
@@ -159,9 +159,9 @@ All functions send commands via `sendCmd()` to the chat core and return `Boolean
 
 An in-app notification banner shown when a call invitation arrives while the app is in the foreground:
 
-- **IncomingCallAlertView** ([line 27](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/IncomingCallAlertView.kt#L27)): Starts `SoundPlayer` for the ringtone (suppressed if already in a call view). Shows `IncomingCallAlertLayout`.
-- **IncomingCallAlertLayout** ([line 49](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/IncomingCallAlertView.kt#L49)): Colored banner with `ProfilePreview` of the caller, call type icon (audio/video), and three action buttons: Reject (red), Ignore (primary), Accept (green).
-- **IncomingCallInfo** ([line 74](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/IncomingCallAlertView.kt#L74)): Shows the user profile image (for multi-user), call media type icon, and call type text (encrypted/unencrypted audio/video).
+- **IncomingCallAlertView** ([line 27](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/IncomingCallAlertView.kt#L28)): Starts `SoundPlayer` for the ringtone (suppressed if already in a call view). Shows `IncomingCallAlertLayout`.
+- **IncomingCallAlertLayout** ([line 49](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/IncomingCallAlertView.kt#L50)): Colored banner with `ProfilePreview` of the caller, call type icon (audio/video), and three action buttons: Reject (red), Ignore (primary), Accept (green).
+- **IncomingCallInfo** ([line 74](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/IncomingCallAlertView.kt#L75)): Shows the user profile image (for multi-user), call media type icon, and call type text (encrypted/unencrypted audio/video).
 
 ---
 
