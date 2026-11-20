@@ -226,7 +226,7 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 - **Service key:** one parser that accepts both cases, as `names` does (`Config.hs:754-759`).
 - **Console commands:** one chain connection made at start, shared by the console and the group.
 - **Configuration:** strict numbers with bounded messages; `credit_test_purchases` with `accept_unverified_store_receipts` refused at start; a new `--execute` option.
-- **Loop failures:** one helper in simplexmq `Util` logs "… failed; the next pass will run" at 11 sites (the user's A3-7).
+- **Loop failures:** each of the 12 lanes handles its own failure at the site, with `catchOwn'` and a handler that logs "… failed; the next pass will run". Where the lane uses the outcome (the metrics' chain read and registered names read, and the cleanup's read of unpaid orders), its handler returns the failure. No shared helper logs and discards an error: whether logging is enough is decided at each site (the user).
 - **Configuration `Show`:** on `names`, a hand-written `Show` hides the chain configuration's RPC URL and key (`Names/Chain.hs:126-128`). Final: a configuration that holds a secret (the key, an RPC URL that can hold a provider key) has no `Show` instance; its tests compare with `Eq`; a log line renders only the parts it needs, locally (the user's A1-35: "either use stock Show, or parse and log locally").
 - No comments in code.
 

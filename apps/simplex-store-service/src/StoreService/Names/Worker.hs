@@ -50,7 +50,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (catchOwn', tryOwnLogged, tshow, ($>>=))
+import Simplex.Messaging.Util (catchOwn', tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..), ChainSeconds, RevertName (..), RevertReason (..), TxHash, blockAt, chainSeconds, chainTime, revertText)
@@ -163,7 +163,7 @@ newWorker wkOrders wkSender = Worker wkOrders wkSender <$> TM.emptyIO
 -- | A thread for each registration in the worker's phases, started by a scan every scanInterval; they stop with it.
 runWorkers :: Worker -> IO ()
 runWorkers w@Worker {wkThreads} =
-  forever (tryOwnLogged "names worker: the scan failed; the next pass will run: " (startWorkers w) >> threadDelay scanInterval)
+  forever ((startWorkers w `catchOwn'` \e -> logError ("names worker: the scan failed; the next pass will run: " <> tshow e)) >> threadDelay scanInterval)
     `finally` (readTVarIO wkThreads >>= mapM_ cancel)
 
 startWorkers :: Worker -> IO ()
@@ -661,7 +661,7 @@ alertUnregisteredPaid Worker {wkOrders = OrdersEnv {oeStore, oeNow, oeReport}} =
       oeReport alert
 
 runUnregisteredAlerts :: Worker -> IO ()
-runUnregisteredAlerts w = forever $ tryOwnLogged "names: the check of unregistered paid orders failed; the next pass will run: " (alertUnregisteredPaid w) >> threadDelay unregisteredCheckInterval
+runUnregisteredAlerts w = forever $ (alertUnregisteredPaid w `catchOwn'` \e -> logError ("names: the check of unregistered paid orders failed; the next pass will run: " <> tshow e)) >> threadDelay unregisteredCheckInterval
 
 shortestMonth :: NominalDiffTime
 shortestMonth = 28 * 86400
@@ -699,4 +699,4 @@ endMonths Worker {wkOrders = oe@OrdersEnv {oeStore, oeTurns, oePhases, oeNow, oe
           _ -> "the money paid for it added to its balance"
 
 runMonthEnds :: Worker -> IO ()
-runMonthEnds w = forever $ tryOwnLogged "names month pass failed; the next pass will run: " (endMonths w) >> threadDelay monthCheckInterval
+runMonthEnds w = forever $ (endMonths w `catchOwn'` \e -> logError ("names month pass failed; the next pass will run: " <> tshow e)) >> threadDelay monthCheckInterval

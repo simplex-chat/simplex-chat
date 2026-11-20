@@ -90,7 +90,7 @@ import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (catchOwn', eitherToMaybe, toChunks, tryOwnLogged, tshow)
+import Simplex.Messaging.Util (catchOwn', eitherToMaybe, toChunks, tshow)
 import StoreService.Config (ChainConfig (..), boundedDecimal, localChainId)
 import StoreService.Names.Chain (AbiError (..), AbiValue (..), Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, Hex32 (..), RevertReason (..), abiBytes, abiTuple, abiWordSize, addressWord, confirmedNumber, decodeAddress, decodeBool, decodeBytes32, decodeLabels, decodeString, decodeUint256, decodeWord64, ethCallAt, httpFailure, latestBlock, lowerHexP, nodeChainId, parseText, registrarBalance, selector, uint256)
 import StoreService.Names.Registration (Commitment, CommunityName, LinkKind (..), TermsHash, childNode, labelNode, nodeBytes, recordKey, termsKindText)
@@ -357,7 +357,7 @@ fetchCurrentTerms ct =
     Left e -> logWarn $ "names: the terms links could not be read to fetch their texts: " <> tshow e
 
 runTermsFetch :: Contracts -> IO ()
-runTermsFetch ct = forever $ tryOwnLogged "names terms fetch failed; the next pass will run: " (fetchCurrentTerms ct) >> threadDelay termsFetchInterval
+runTermsFetch ct = forever $ (fetchCurrentTerms ct `catchOwn'` \e -> logError ("names terms fetch failed; the next pass will run: " <> tshow e)) >> threadDelay termsFetchInterval
 
 fetchTerms :: Contracts -> Terms -> IO (Either TermsRefusal Text)
 fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBackoff} Terms {tmLink, tmHash, tmFetch = (url, digest)} =

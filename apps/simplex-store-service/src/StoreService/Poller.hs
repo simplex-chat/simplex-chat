@@ -63,7 +63,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (catchOwn', stateTVar', tryOwnLogged, tshow)
+import Simplex.Messaging.Util (catchOwn', stateTVar', tshow)
 
 -- | Allows for our clock running ahead of the provider's; an expired invoice can still be marked paid.
 expiryGrace :: NominalDiffTime
@@ -183,10 +183,13 @@ runPass env@PollerEnv {peStore, peProviders} = do
         pure (Just missed)
   pruneSkipLog env now
   -- the cleanup runs whatever the sweep met
-  unless (null peProviders) $ void $ tryOwnLogged "badge poller: the sweep failed; the next pass will run: " $ case missed of
-    Nothing -> sweepRead env now
-    Just m -> sweepPastWindow env now (readsBy rows m) m
-  void $ tryOwnLogged "names: the late credit pass failed; the next pass will run: " $ creditPass env now
+  unless (null peProviders) $
+    ( case missed of
+        Nothing -> sweepRead env now
+        Just m -> sweepPastWindow env now (readsBy rows m) m
+    )
+      `catchOwn'` \e -> logError ("badge poller: the sweep failed; the next pass will run: " <> tshow e)
+  creditPass env now `catchOwn'` \e -> logError ("names: the late credit pass failed; the next pass will run: " <> tshow e)
   cleanupUnpaid env now
 
 passProvider :: Provider -> IO Provider
@@ -405,8 +408,8 @@ cleanupUnpaid env@PollerEnv {peStore, pePhases, peCleanedAt, peCleanupLeft} now 
   due <- cleanupDue env now
   when due $ do
     listed <-
-      isJust <$> tryOwnLogged "names cleanup: the unpaid orders read failed; the next pass will run: "
-        (withTransaction peStore (`unpaidCleanupCandidates` addUTCTime (negate unpaidRetention) now) >>= atomically . writeTVar peCleanupLeft)
+      (True <$ (withTransaction peStore (`unpaidCleanupCandidates` addUTCTime (negate unpaidRetention) now) >>= atomically . writeTVar peCleanupLeft))
+        `catchOwn'` \e -> False <$ logError ("names cleanup: the unpaid orders read failed; the next pass will run: " <> tshow e)
     -- stamped only after a successful read, so a failed one runs again at the next pass
     when listed $ do
       atomically $ writeTVar peCleanedAt (Just now)
@@ -698,7 +701,7 @@ drainHints :: PollerEnv -> IO ()
 drainHints env@PollerEnv {peHints = ReadHints q _} = serveHints env (isEmptyTBQueue q >>= check)
 
 passSafely :: PollerEnv -> IO ()
-passSafely env = void $ tryOwnLogged "badge poller: the pass failed; the next pass will run: " $ runOnePass env
+passSafely env = runOnePass env `catchOwn'` \e -> logError ("badge poller: the pass failed; the next pass will run: " <> tshow e)
 
 hintSafely :: PollerEnv -> UTCTime -> Text -> IO ()
 hintSafely env now ref = readHint env now ref `catchOwn'` \e -> logError ("badge poller: the hinted read of " <> ref <> " failed: " <> tshow e)

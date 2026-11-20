@@ -4,7 +4,7 @@ Branch `ep/names-fixes-a6`, from `ep/names-review-fixes` at 16114b784. Decisions
 
 ## A1 leftovers
 
-simplexmq: cabal.project pins evgeny-simplex/simplexmq 6a1e2aefc, the commit of simplex-chat/simplexmq#2083, which adds:
+simplexmq: cabal.project pins evgeny-simplex/simplexmq 7c11d32ce, the head of simplex-chat/simplexmq#2083, which adds:
 - USDCents: Num, Enum, Real, Integral, FromField and ToField;
 - FromField and ToField for Address, LabelHash and RecoverableSignature;
 - Ord LabelHash.
