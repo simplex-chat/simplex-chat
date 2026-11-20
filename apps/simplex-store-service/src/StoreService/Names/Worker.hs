@@ -96,6 +96,7 @@ data StepFailure
   | SFTakenAboveDepth
   | SFGoneButAvailable
   | SFRefused RegistrationTx (Maybe RevertReason)
+  | SFException Text
   deriving (Eq, Show)
 
 data FailureClass = FCTemporary | FCOperator | FCPermanent
@@ -119,24 +120,26 @@ stepClass = \case
   SFTakenAboveDepth -> FCTemporary
   SFGoneButAvailable -> FCTemporary
   SFRefused _ reason -> maybe FCOperator revertClass reason
+  SFException _ -> FCOperator
   where
     chainClass = \case
       ChainUnavailable _ -> FCTemporary
       ChainReverted reason -> revertClass reason
       _ -> FCOperator
 
-temporaryReportAt :: Int
-temporaryReportAt = 5
+reportAfter :: NominalDiffTime
+reportAfter = 600
 
-failureNotice :: Maybe (StepFailure, Int) -> StepFailure -> (Int, Bool)
-failureNotice lastFailure reason = (times, Just times == reportAt)
+type FailureStreak = (StepFailure, UTCTime, Bool)
+
+failureNotice :: UTCTime -> Maybe FailureStreak -> StepFailure -> (FailureStreak, Bool, Bool)
+failureNotice now streak reason = ((reason, since, reported || report), logged, report)
   where
-    times = case lastFailure of
-      Just (lastReason, n) | lastReason == reason -> n + 1
-      _ -> 1
-    reportAt = case stepClass reason of
-      FCPermanent -> Nothing
-      _ -> Just temporaryReportAt
+    (since, reported) = case streak of
+      Just (lastReason, at, done) | stepClass lastReason == stepClass reason -> (at, done)
+      _ -> (now, False)
+    logged = maybe True (\(lastReason, _, _) -> lastReason /= reason) streak
+    report = not reported && stepClass reason /= FCPermanent && diffUTCTime now since >= reportAfter
 
 -- | How often the stored registrations are scanned for one without a thread, such as an order just paid or requeued.
 scanInterval :: Int
@@ -178,24 +181,27 @@ work :: Worker -> RegistrationId -> IO ()
 work w rid@(RegistrationId ridText) = follow w rid Nothing `catchOwn'` \e -> logError ("names worker: registration " <> ridText <> " failed; the next scan starts it again: " <> tshow e)
 
 -- | Steps until the registration leaves the worker's phases, logging a lasting failure once and reporting it as its class says.
-follow :: Worker -> RegistrationId -> Maybe (StepFailure, Int) -> IO ()
-follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow, oeReport}} rid@(RegistrationId ridText) lastFailure =
-  stepRegistration w rid >>= \case
-    Done -> pure ()
-    Again -> follow w rid Nothing
-    WaitUntil v t -> waitFor v t >> follow w rid Nothing
-    Retry v reason -> waitAgain logWarn v reason
-    Stalled v reason -> waitAgain logError v reason
-    Await p -> awaitOutcome outcomeWait p >> follow w rid Nothing
+follow :: Worker -> RegistrationId -> Maybe FailureStreak -> IO ()
+follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow, oeReport}} rid@(RegistrationId ridText) streak =
+  ((Right <$> stepRegistration w rid) `catchOwn'` (pure . Left)) >>= \case
+    Left e -> waitAgain logError (SFException $ tshow e) $ \_ -> threadDelay $ ceiling $ retryInterval * 1000000
+    Right next -> case next of
+      Done -> pure ()
+      Again -> follow w rid Nothing
+      WaitUntil v t -> waitFor v t >> follow w rid Nothing
+      Retry v reason -> waitAgain logWarn reason $ waitFor v
+      Stalled v reason -> waitAgain logError reason $ waitFor v
+      Await p -> awaitOutcome outcomeWait p >> follow w rid Nothing
   where
-    waitAgain logAt v reason = do
-      let (times, reported) = failureNotice lastFailure reason
-          waits = "names worker: registration " <> ridText <> " waits: " <> stepFailureText reason
-      when (times == 1) $ logAt waits
-      when reported $ oeReport $ waits <> if times > 1 then ", " <> tshow times <> " times in a row" else ""
+    waitAgain :: (Text -> IO ()) -> StepFailure -> (UTCTime -> IO ()) -> IO ()
+    waitAgain logAt reason wait = do
       now <- oeNow
-      waitFor v $ addUTCTime retryInterval now
-      follow w rid $ Just (reason, times)
+      let (streak', logged, reported) = failureNotice now streak reason
+          waits = "names worker: registration " <> ridText <> " waits: " <> stepFailureText reason
+      when logged $ logAt waits
+      when reported $ oeReport $ waits <> ", failing for 10 minutes"
+      wait $ addUTCTime retryInterval now
+      follow w rid $ Just streak'
     waitFor v t = do
       now <- oeNow
       let micros = max 0 $ ceiling $ min maxWait (diffUTCTime t now) * 1000000
@@ -209,6 +215,7 @@ follow w@Worker {wkOrders = OrdersEnv {oeStore, oePhases, oeNow, oeReport}} rid@
       SFTakenAboveDepth -> "the name reads taken only above the confirmation depth, where a reorg can undo it"
       SFGoneButAvailable -> "the dry run reverted the name as gone, but it reads available"
       SFRefused tx reason -> "the " <> textEncode tx <> " reverts while the name is available, " <> maybe "without a reason" reasonText reason
+      SFException e -> "its step failed: " <> e
 
 stepRegistration :: Worker -> RegistrationId -> IO Next
 stepRegistration w@Worker {wkOrders = OrdersEnv {oeStore, oeNow}} rid = do

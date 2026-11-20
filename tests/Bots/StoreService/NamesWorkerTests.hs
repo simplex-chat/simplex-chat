@@ -106,7 +106,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "commits again with its reveal when the dry run reverts CommitmentNotFound, and when it reverts CommitmentTooOld past the lapse, reporting that" testCommitAgain
     it "classes the contracts' errors as permanent, or temporary with an operator alert" testRevertClasses
-    it "reports a temporary failure, one an operator fixes included, at its fifth time in a row, and a permanent one never" testFailureNotice
+    it "reports failures of one class, temporary or for the operator, an exception for the operator, once they have failed in a row for 10 minutes, and a permanent one never" testFailureNotice
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
     it "sends a register again only once none can still be mined, and writes registered when the owner holds the name" testFailedOnlySettled
   describe "terms acceptance" $ do
@@ -127,6 +127,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
   describe "lanes" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
+    it "keeps a registration's worker after an exception in its step, logging it once as a wait" testStepException
     it "reports once each paid or code order not registered 3 hours after its payment, a failed one included" testUnregisteredAlert
     it "fails each order queued, committed or failed a calendar month after its payment or its code's reservation, once, reporting it, its name released, the money paid for a paid order added to its balance and a code order's code released" testMonthEnds
     it "ends the month on the last day of a shorter month" testMonthClipped
@@ -978,12 +979,38 @@ testRevertClasses = do
 
 testFailureNotice :: IO ()
 testFailureNotice = do
-  let unread = SFChain $ ChainUnavailable "timeout"
-      notices reason = take 6 $ map snd $ tail $ scanl (\(prev, _) _ -> let (n, reported) = failureNotice prev reason in (Just (reason, n), reported)) (Nothing, False) [1 .. 6 :: Int]
-  notices unread `shouldBe` [False, False, False, False, True, False]
-  notices SFAllowanceUsedUp `shouldBe` [False, False, False, False, True, False]
-  notices (SFRefused RTRegister $ Just $ RRNamed RNLabelTooLong) `shouldBe` replicate 6 False
-  failureNotice (Just (SFAllowanceUsedUp, 4)) unread `shouldBe` (1, False)
+  let timedOut = SFChain $ ChainUnavailable "eth_call: timed out"
+      resetRead = SFChain $ ChainUnavailable "eth_call: request failed"
+      thrown = SFException "SQLite3 returned ErrorIO"
+      labelTooLong = SFRefused RTRegister $ Just $ RRNamed RNLabelTooLong
+      everyRetry = [0, 15 .. 660]
+      atTenMinutes = replicate 40 False <> [True] <> replicate 4 False
+  notices (zip everyRetry $ cycle [timedOut, resetRead]) `shouldBe` (replicate 45 True, atTenMinutes)
+  notices (zip everyRetry $ cycle [SFAllowanceUsedUp, thrown]) `shouldBe` (replicate 45 True, atTenMinutes)
+  notices (map (,timedOut) everyRetry) `shouldBe` (True : replicate 44 False, atTenMinutes)
+  notices (map (,labelTooLong) everyRetry) `shouldBe` (True : replicate 44 False, replicate 45 False)
+  failureNotice (sinceStart 600) (Just (timedOut, t0, False)) SFAllowanceUsedUp `shouldBe` ((SFAllowanceUsedUp, sinceStart 600, False), True, False)
+  failureNotice (sinceStart 900) (Just (thrown, t0, True)) SFAllowanceUsedUp `shouldBe` ((SFAllowanceUsedUp, t0, True), True, False)
+  where
+    t0 = posixSecondsToUTCTime 1795000000
+    sinceStart s = addUTCTime s t0
+    notices failures = unzip $ go Nothing failures
+      where
+        go _ [] = []
+        go streak ((s, reason) : rest) =
+          let (streak', logged, reported) = failureNotice (sinceStart s) streak reason
+           in (logged, reported) : go (Just streak') rest
+
+testStepException :: IO ()
+testStepException = withWorker $ \W {wCtx = ctx@Ctx {cStore, cOrders}, wSender} -> do
+  reports <- newTVarIO []
+  worker <- newWorker cOrders {oeReport = \t -> atomically $ modifyTVar' reports (t :)} wSender
+  NameRegistration {nrId = RegistrationId rid} <- paidIn ctx aliceOrder id
+  withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET commit_block = 1 WHERE registration_id = ?" [rid]
+  logged <- capturingStderr $ withAsync (runWorkers worker) $ \_ -> threadDelay 6000000
+  T.count ("names worker: registration " <> rid <> " waits: its step failed: ") logged `shouldBe` 1
+  logged `shouldNotSatisfy` T.isInfixOf "the next scan starts it again"
+  readTVarIO reports `shouldReturn` []
 
 testMinedRevertTaken :: IO ()
 testMinedRevertTaken = withWorker $ \w@W {wCtx = ctx} -> do

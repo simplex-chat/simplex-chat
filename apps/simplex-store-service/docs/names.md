@@ -385,7 +385,7 @@ sequenceDiagram
   else name available, dry run reverted for a permanent reason
     K->>D: attempt stored, counted; retried every 15 s; failed at max_dry_run_failures
   else name available, dry run reverted for any other reason, InsufficientAllowance included
-    K->>D: attempt stored, uncounted; retried every 15 s, logged once, reported at its fifth time in a row
+    K->>D: attempt stored, uncounted; retried every 15 s, logged once, reported after 10 minutes of failures in a row
   end
 ```
 
@@ -398,7 +398,7 @@ Notes:
 - On `CommitmentTooNew` the register is retried 1 s later. While the name is taken only above the confirmation depth, or is reported gone by the dry run while `available(label)` is true, the order is retried every 15 s ([`Names/Worker.hs:340-352`](../src/StoreService/Names/Worker.hs#L340-L352)).
 - A code order set `taken` has its code released instead of a balance credited ([`Names/Worker.hs:361-368`](../src/StoreService/Names/Worker.hs#L361-L368)).
 - The permanent reasons are `InvalidSignature`, `DurationTooLong`, `DurationTooShort`, `ResolverRequiredWhenDataSupplied`, `ReverseRecordNotSupported`, `NameTooShort`, `LabelTooLong` and `ReentrantCall`. Both caps count per commitment, so a move starts them again; at a cap the order fails with the reason `registryRefused`, logged as an error and reported in the managed group (`revertClass` and `failedAttempt` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)).
-- A failure that keeps the order waiting is logged once and reported at its fifth time in a row, an unanswered node read as one an operator fixes, such as funds, the fee cap, the allowance or an unexpected revert (`failureNotice` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)).
+- A failure that keeps the order waiting is logged at the first time of its reason in a row. It is reported once when failures of its class have kept the order waiting for 10 minutes in a row: temporary, such as an unanswered node read, or for the operator, such as funds, the fee cap, the allowance, an unexpected revert or an exception in the step. An exception is retried as such a failure, in 15 s (`failureNotice` and `follow` in [`Names/Worker.hs`](../src/StoreService/Names/Worker.hs)).
 - The order's view gives the last failed attempt of its commitment in `lastAttempt`: its `transaction` (`commit`, `accept` or `register`), its `stage` (`dryRun` or `sent`), its `reason` and its time `at` (`registrationView` in [`Names/View.hs`](../src/StoreService/Names/View.hs)).
 
 ---
