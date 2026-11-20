@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
@@ -16,7 +15,6 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -75,9 +73,7 @@ private val bidiControlChar = Regex("[\\u061C\\u200E\\u200F\\u202A-\\u202E\\u206
 
 private val invisibleCharMarkerStyle = SpanStyle(color = WarningOrange)
 
-internal class MarkdownLine(val text: String, val lineBreak: Boolean)
-
-internal class MarkdownDocument(val text: String, val lines: List<MarkdownLine>, val formatted: State.Success?, val hasBidiControls: Boolean)
+internal class MarkdownDocument(val text: String, val lines: List<String>, val formatted: State.Success?, val hasBidiControls: Boolean)
 
 fun isMarkdownFile(file: CIFile): Boolean =
   file.fileSize <= MAX_MARKDOWN_VIEW_SIZE && file.fileName.substringAfterLast('.', "").lowercase() in listOf("md", "markdown")
@@ -116,10 +112,7 @@ internal suspend fun markdownDocument(bytes: ByteArray): MarkdownDocument {
   val formatted = if (lines.all { it.length <= MAX_MARKDOWN_LINE_LENGTH }) formattedWithinLimits(text) else null
   return MarkdownDocument(
     text,
-    lines.flatMapIndexed { i, line ->
-      val chunks = line.chunked(MAX_MARKDOWN_LINE_LENGTH).ifEmpty { listOf("") }
-      chunks.mapIndexed { j, chunk -> MarkdownLine(chunk, lineBreak = i < lines.lastIndex && j == chunks.lastIndex) }
-    },
+    lines.flatMap { line -> line.chunked(MAX_MARKDOWN_LINE_LENGTH).ifEmpty { listOf("") } },
     formatted,
     bidiControlChar.containsMatchIn(text)
   )
@@ -211,21 +204,13 @@ internal fun MarkdownFileView(fileName: String, document: MarkdownDocument) {
     SelectionContainer {
       MarkdownFileColumn(fileName, document.hasBidiControls) {
         items(document.lines) { line ->
-          Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-            Text(remember(line) { withInvisibleCharMarkers(line.text) }, fontFamily = FontFamily.Monospace)
-            if (line.lineBreak) SelectableLineBreak()
-          }
+          Text(remember(line) { withInvisibleCharMarkers(line) }, Modifier.padding(horizontal = DEFAULT_PADDING), fontFamily = FontFamily.Monospace)
         }
       }
     }
   } else {
     FormattedMarkdown(fileName, formatted, document.hasBidiControls)
   }
-}
-
-@Composable
-private fun BoxScope.SelectableLineBreak() {
-  Text("\n", Modifier.align(Alignment.BottomEnd).height(1.dp).clearAndSetSemantics {})
 }
 
 private fun withInvisibleCharMarkers(line: String): AnnotatedString = buildAnnotatedString {
