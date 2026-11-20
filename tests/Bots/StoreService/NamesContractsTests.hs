@@ -33,7 +33,9 @@ module Bots.StoreService.NamesContractsTests
 where
 
 import Bots.StoreService.FakeEthNode
+import Bots.StoreService.FakeHttp (withResetServer)
 import Bots.StoreService.WebTests (capturingStderr, withServiceStore, withServiceStores)
+import Network.HTTP.Client.TLS (newTlsManager)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (wait)
 import Control.Concurrent.STM (TVar)
@@ -93,6 +95,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "logs a terms link the service does not take once, when it is read, and asks no acceptance of it" $ testRefusedLinkLogged g
     it "logs such a link once when two reads at its block overlap" $ testRefusedLinkLoggedOnce g
     it "fetches a terms text once, keeping it by its link's hash" $ testTermsTextKept g
+    it "waits after a terms text whose connection resets while it is read" $ testTermsTextReset g
     it "answers a stored terms text after a restart while its host answers 404 and while fetches wait, fetching again one stored with another SHA-256 and logging it" $ testTermsTextStored g
     it "fetches both current terms texts, storing them, and logs links it cannot read" $ testCurrentTermsFetched g
     it "answers a fetched terms text from memory when it cannot be stored, logging the failure" $ testTermsTextNotStored g
@@ -210,6 +213,14 @@ termsLinkTexts :: Contracts -> IO (Either ChainError (T.Text, T.Text))
 termsLinkTexts ct = fmap (\(general, community) -> (linkText general, linkText community)) <$> termsLinks ct
   where
     linkText = maybe "" tmLink
+
+testTermsTextReset :: TVar ChaChaDRG -> IO ()
+testTermsTextReset g = withContracts g $ \_ ct -> withResetServer $ \url -> do
+  manager <- newTlsManager
+  let direct = ct {ctChain = (ctChain ct) {ccManager = manager}}
+      terms = Terms {tmLink = "reset", tmHash = Hex32 $ B.replicate 32 7, tmFetch = (url, Nothing)}
+  logged <- capturingStderr $ termsText direct terms >>= (`shouldSatisfy` either (const True) (const False))
+  logged `shouldSatisfy` T.isInfixOf "names: the terms text of reset could not be fetched, request failed"
 
 testTermsTextKept :: TVar ChaChaDRG -> IO ()
 testTermsTextKept g = withContracts g $ \node ct -> do

@@ -110,6 +110,7 @@ import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAdd
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), decodeEip1559Tx, eip1559SigningHash, signEip1559Tx)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (tshow)
+import StoreService.Providers (withResponseWrapped)
 import System.Timeout (timeout)
 
 data ChainConfig = ChainConfig
@@ -326,7 +327,7 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
           | otherwise = Left $ unavailable $ "not a JSON-RPC response" <> maybe "" ((": " <>) . T.pack) parseError
     post = do
       req <- HTTP.parseRequest cRpcUrl
-      HTTP.withResponse
+      withResponseWrapped
         req
           { HTTP.method = methodPost,
             HTTP.redirectCount = 0,

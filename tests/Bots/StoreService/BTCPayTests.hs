@@ -21,6 +21,7 @@ import StoreService.Providers
     Uncreditable (..),
     WebhookError (..),
     WebhookEvent (..),
+    providerCall,
     providerErrorText,
     receivedAmount,
     settleWindow,
@@ -28,6 +29,8 @@ import StoreService.Providers
 import StoreService.Providers.BTCPay (AdditionalStatus (..), BTCPayStatus (..), btcMethodId, btcpayProvider, listSignals, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
 import StoreService.Config (SpeedPolicy (..))
 import Bots.StoreService.FakeBTCPay
+import Bots.StoreService.FakeHttp (withResetServer)
+import Network.HTTP.Client.TLS (newTlsManager)
 import Control.Exception (evaluate)
 import Control.Monad (forM_, join)
 import Data.Aeson ((.=))
@@ -129,6 +132,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "refuses an answer past the size it will hold, and reads again after" testFakeOversizeAnswer
     it "ends a call whose answer stalls in its body after the configured timeout, a create after the longer checkout one, and reads again after" testFakeStalledAnswer
     it "makes a 500 on a read a ProviderError the next read recovers from" testFakeRead500
+    it "makes a connection reset while an answer is read a ProviderError" testProviderCallReset
     it "verifies a webhook with the secret it was configured with" testFakeWebhookSecretWiring
     it "keeps totalPaid distinguishable in every fixture an amount is asserted from" testFixturesGuardTotalPaid
     it "keeps due distinguishable from paymentMethodFee, so the wrong field cannot be read" testFixturesGuardDue
@@ -917,6 +921,13 @@ testFakeRead500 = withProvider $ \fake p -> do
   r <- pReadInvoice p invRef
   r `shouldSatisfy` namesInError "500"
   pReadInvoice p invRef `shouldReturn` Right (Just (SigSettled halfMilliBtc fixtureSettledAt))
+
+testProviderCallReset :: IO ()
+testProviderCallReset = withResetServer $ \url -> do
+  manager <- newTlsManager
+  (headers, r) <- providerCall manager 5000000 "read invoice" (T.pack url) id
+  headers `shouldBe` []
+  either providerErrorText (const "answered") r `shouldSatisfy` \e -> "read invoice failed: " `T.isPrefixOf` e && "InternalException" `T.isInfixOf` e
 
 testFakeWebhookSecretWiring :: IO ()
 testFakeWebhookSecretWiring = withProvider $ \fake p -> do

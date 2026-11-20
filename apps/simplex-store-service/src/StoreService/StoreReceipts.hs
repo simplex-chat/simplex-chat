@@ -32,12 +32,13 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
-import Network.HTTP.Client (HttpException (..), Manager, Request, Response (..), brReadSome, parseRequest, withResponse)
+import Network.HTTP.Client (HttpException (..), Manager, Request, Response (..), brReadSome, parseRequest)
 import Network.HTTP.Types (Status (..))
 import Simplex.Chat.StoreService (SubscriptionState)
 import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount, PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Messaging.Util (catchOwn', tshow)
+import StoreService.Providers (withResponseWrapped)
 import System.Timeout (timeout)
 
 -- | What a store vouches for about one completed transaction.
@@ -215,7 +216,7 @@ askStore limit what call = do
 -- the request, whose URL can hold a purchase token, so only their kind is kept.
 storeRequest :: Manager -> Text -> (Request -> Request) -> Text -> IO (Either StoreRefusal (Int, LB.ByteString))
 storeRequest manager store prepare url =
-  try (parseRequest (T.unpack url) >>= \req -> withResponse (prepare req) manager readBody) >>= \case
+  try (parseRequest (T.unpack url) >>= \req -> withResponseWrapped (prepare req) manager readBody) >>= \case
     Left (e :: HttpException) -> pure $ Left $ SRUnreachable $ "request to " <> store <> " failed: " <> failureKind e
     Right (code, body)
       | LB.length body > maxStoreBytes -> pure $ Left $ SRVerifierFailed $ store <> " answered HTTP " <> tshow code <> " with over " <> tshow maxStoreBytes <> " bytes"

@@ -95,6 +95,7 @@ import StoreService.Config (ChainConfig (..), boundedDecimal, localChainId)
 import StoreService.Names.Chain (AbiError (..), AbiValue (..), Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, Hex32 (..), RevertReason (..), abiBytes, abiTuple, abiWordSize, addressWord, confirmedNumber, decodeAddress, decodeBool, decodeBytes32, decodeLabels, decodeString, decodeUint256, decodeWord64, ethCallAt, httpFailure, latestBlock, lowerHexP, nodeChainId, parseText, registrarBalance, selector, uint256)
 import StoreService.Names.Registration (Commitment, CommunityName, LinkKind (..), TermsHash, childNode, labelNode, nodeBytes, recordKey, termsKindText)
 import StoreService.Names.Store (getTermsText, setTermsText)
+import StoreService.Providers (withResponseWrapped)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
@@ -401,7 +402,7 @@ fetchText ChainClient {ccManager, ccTimeout} maxBytes url =
   where
     get = do
       req <- HTTP.parseRequest url
-      HTTP.withResponse req {HTTP.redirectCount = 0} ccManager $ \resp -> answer (HTTP.responseStatus resp) (HTTP.responseHeaders resp) (HTTP.responseBody resp)
+      withResponseWrapped req {HTTP.redirectCount = 0} ccManager $ \resp -> answer (HTTP.responseStatus resp) (HTTP.responseHeaders resp) (HTTP.responseBody resp)
     answer status headers body
       | statusCode status /= 200 = pure $ Left ("HTTP " <> tshow (statusCode status), retryAfter =<< lookup "Retry-After" headers)
       | otherwise = within <$> HTTP.brReadSome body (maxBytes + 1)

@@ -5,6 +5,7 @@
 module Bots.StoreService.NamesChainTests (namesChainTests) where
 
 import Bots.StoreService.FakeEthNode
+import Bots.StoreService.FakeHttp (withResetServer)
 import Control.Concurrent.STM (TVar)
 import Control.Exception (toException, try)
 import Control.Monad (forM_)
@@ -33,6 +34,7 @@ namesChainTests = describe "StoreService names: chain" $ do
     it "reads eth_call faults: a bare revert as one without data, a revert reason by its message, an RPC error without the URL, an underfunded key by its own error, a 2xx answer not JSON without quoting it, and a long message cut" $ testCallFaults g
     it "gives up on a node that does not answer within the call's timeout" $ testTimeout g
     it "reads a refused connection as unavailable, without the URL" $ testRefused g
+    it "reads a connection reset while the answer is read as unavailable, without the URL" $ testResetWhileRead g
     it "refuses an answer over the size bound" $ testOversized g
     it "reads a quantity's digits in either case, refuses one over 256 bits and one not in hex, each by its reason, and a long one within the call's timeout" $ testLongQuantity g
     it "keeps an HTTP failure's detail for the log, with the URL's host, path and query redacted" testFailureDetail
@@ -153,6 +155,11 @@ testRefused g = withFakeEthNode $ \node -> do
   -- port 1 is privileged and nothing listens on it in the test container
   c <- newChainClient g (fakeChainConfig node) {cRpcUrl = "http://127.0.0.1:1" <> secretPath}
   latestBlock c `shouldReturn` Left (ChainUnavailable "eth_getBlockByNumber: connection failed")
+
+testResetWhileRead :: TVar ChaChaDRG -> IO ()
+testResetWhileRead g = withFakeEthNode $ \node -> withResetServer $ \url -> do
+  c <- newChainClient g (fakeChainConfig node) {cRpcUrl = url}
+  latestBlock c `shouldReturn` Left (ChainUnavailable "eth_getBlockByNumber: request failed")
 
 testOversized :: TVar ChaChaDRG -> IO ()
 testOversized g = withChain g $ \node c -> do

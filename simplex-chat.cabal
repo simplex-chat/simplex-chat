@@ -528,6 +528,7 @@ executable simplex-store-service
     , simplexmq >=6.3
     , stm ==2.5.*
     , time ==1.12.*
+    , tls >=1.9.0 && <1.10
     , wai ==3.2.*
     , warp ==3.3.*
   default-language: Haskell2010
@@ -936,6 +937,7 @@ test-suite simplex-chat-test
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
+    , tls >=1.9.0 && <1.10
     , unicode-transforms ==0.4.*
     , unliftio ==0.2.*
     , uri-bytestring >=0.3.3.1 && <0.4
