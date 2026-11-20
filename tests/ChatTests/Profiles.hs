@@ -15,10 +15,11 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently, concurrently_, wait, withAsync)
-import Control.Concurrent.STM (atomically, putTMVar, takeTMVar)
+import Control.Concurrent.Async (concurrently, concurrently_, poll, wait, withAsync)
+import Control.Concurrent.STM (atomically, newEmptyTMVarIO, putTMVar, takeTMVar)
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
@@ -28,12 +29,13 @@ import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
-import Simplex.Chat.Controller (CM, ChatCommand (APIConnectPreparedContact, APISetConnectionIncognito), ChatConfig (..), ChatController (ChatController, chatLock, smpAgent), ChatHooks (..), ChatResponse (CRConnectionIncognitoUpdated, CRContactAlreadyExists), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Controller (CM, ChatCommand (APIAddMyAddressShortLink, APIConnectPreparedContact, APIRotateAddressRatchetKeys, APISetAddressSettings, APISetConnectionIncognito), ChatConfig (..), ChatController (ChatController, chatLock, smpAgent), ChatHooks (..), ChatResponse (CRConnectionIncognitoUpdated, CRContactAlreadyExists), defaultChatHooks, storeCxt, withAgent)
 import Simplex.Chat.Library.Commands (execChatCommand')
-import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
+import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage', withUserProfileLock)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XOk), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
+import Simplex.Chat.Store.Profiles (AddressSettings (..))
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
 import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), ImageData (..), Profile (..), GroupRejectionReason (..), ShortLinkContact, User (..), aUserId, fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
@@ -108,6 +110,7 @@ chatProfileTests = do
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "rotate address ratchet keys" testRotateAddressRatchetKeys
+    it "address link data changes wait for the profile lock" testAddressDataProfileLock
     it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "retry connecting via address in contact profile after address keys rotation" testRetryConnectingContactViaAddress
@@ -1431,6 +1434,33 @@ testRotateAddressRatchetKeys =
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
     alice <##> bob
+
+testAddressDataProfileLock :: HasCallStack => TestParams -> IO ()
+testAddressDataProfileLock =
+  testChat aliceProfile $ \alice -> do
+    alice ##> "/ad"
+    _ <- getContactLink alice True
+    let settings = AddressSettings {businessAddress = False, autoAccept = Nothing, chatLayout = Nothing, autoReply = Just $ MCText "hello"}
+    forM_ [APIAddMyAddressShortLink 1 Nothing, APISetAddressSettings 1 Nothing settings, APIRotateAddressRatchetKeys 1] $
+      waitsForProfileLock alice
+  where
+    waitsForProfileLock alice cmd = do
+      held <- newEmptyTMVarIO
+      release <- newEmptyTMVarIO
+      let cc = chatController alice
+          holdLock = runExceptT (withUserProfileLock "test" . liftIO $ atomically (putTMVar held ()) >> atomically (takeTMVar release)) `runReaderT` cc
+      withAsync holdLock $ \h -> do
+        atomically $ takeTMVar held
+        withAsync (execChatCommand' cmd 0 `runReaderT` cc) $ \a -> do
+          threadDelay 1000000
+          poll a >>= \case
+            Nothing -> pure ()
+            Just _ -> expectationFailure "address command does not wait for the profile lock"
+          atomically $ putTMVar release ()
+          void $ wait h
+          wait a >>= \case
+            Right _ -> pure ()
+            Left e -> expectationFailure $ show e
 
 testCreateAddressOnServer :: HasCallStack => TestParams -> IO ()
 testCreateAddressOnServer ps = testChat aliceProfile test ps

@@ -2546,11 +2546,11 @@ processChatCommand cxt nm = \case
     CRUserContactLink user <$> withFastStore (`getUserAddress` user)
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand cxt nm $ APIShowMyAddress userId
-  APIAddMyAddressShortLink userId pqRatchet_ -> withUserId' userId $ \user -> do
+  APIAddMyAddressShortLink userId pqRatchet_ -> withUserProfileLock "addMyAddressShortLink" $ withUserId' userId $ \user -> do
     -- TODO [address DR] remove the option, and use IKUsePQ
     let pqInitKeys = (\case True -> IKUsePQ; False -> IKPQOn) <$> pqRatchet_
     CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData False pqInitKeys user)
-  APIRotateAddressRatchetKeys userId -> withUserId' userId $ \user ->
+  APIRotateAddressRatchetKeys userId -> withUserProfileLock "rotateAddressRatchetKeys" $ withUserId' userId $ \user ->
     CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData True (Just IKUsePQ) user)
   APISetProfileAddress userId False -> withUserProfileLock "setProfileAddress" $ withUserId userId $ \user@User {profile = p} -> do
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing, contactDomain = Nothing}
@@ -2562,7 +2562,7 @@ processChatCommand cxt nm = \case
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APISetProfileAddress userId onOff
-  APISetAddressSettings userId pqRatchet_ settings@AddressSettings {businessAddress, autoAccept} -> withUserId userId $ \user -> do
+  APISetAddressSettings userId pqRatchet_ settings@AddressSettings {businessAddress, autoAccept} -> withUserProfileLock "setAddressSettings" $ withUserId userId $ \user -> do
     ucl@UserContactLink {userContactLinkId, shortLinkDataSet, addressSettings} <- withFastStore (`getUserAddress` user)
     forM_ autoAccept $ \AutoAccept {acceptIncognito} -> do
       when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
