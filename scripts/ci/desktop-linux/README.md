@@ -71,8 +71,8 @@ With the input `e2e`, the job `packages` builds the deb and the AppImage with `s
 - the OpenGL renderer in the app's log;
 - the database passphrase in `settings.properties` only as ciphertext, its key in the keyring (`secret-tool`; for the Flatpak, the Secret portal's keyring file in the sandbox), and the config directory with mode 700;
 - the tray item registered with the watcher;
-- dark mode: the window's mean brightness drops below 0.4 after `gsettings set org.gnome.desktop.interface color-scheme prefer-dark`, which the portal's Settings report, and rises above 0.6 after `default`;
+- dark mode: the light window's mean brightness is above 0.6; it drops by 0.25 after `gsettings set org.gnome.desktop.interface color-scheme prefer-dark`, which the portal's Settings report, and returns within 0.05 after `default`;
 - the tray: closing the window hides it, and the item's `Activate` shows it;
-- notifications: the peer's one-time link, pasted into the search field from the clipboard, connects; two messages to a chat that is not open show one notification, replaced by the second, titled with the peer's name, naming the desktop entry and offering the default action; the launcher entry is marked urgent; the default action opens the chat, and reading it closes the notification.
+- notifications: the peer's one-time link, pasted into the search field from the clipboard, shows the peer's profile, and "Open new chat" then "Connect" connect; two messages to a chat that is not open show one notification, replaced by the second, titled with the peer's name, naming the desktop entry and offering the default action; the launcher entry is marked urgent; the default action opens the chat, and reading it closes the notification.
 
 Results are the artifacts `desktop-linux-e2e-<kind>-<session>` (screenshots, `app.log`, `checks.txt`, `e2e-checks.txt`, `desktop-services.log`, `peer.log`); the packages are `desktop-linux-packages`, kept 14 days.

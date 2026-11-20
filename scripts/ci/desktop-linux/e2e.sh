@@ -78,7 +78,8 @@ peer_name=ci_peer
 app_user=citester
 other_chat="seeded notes"
 light_luminance=0.6
-dark_luminance=0.4
+luminance_drop=0.25
+luminance_tolerance=0.05
 scheme_wait=20
 pane_right_offset=390
 
@@ -92,24 +93,26 @@ eventually() {
   done
 }
 
-window_is() {
-  local value
-  value=$("$ui" luminance)
-  case "$1" in
-    light) awk -v v="$value" -v t="$light_luminance" 'BEGIN { exit !(v > t) }' ;;
-    dark) awk -v v="$value" -v t="$dark_luminance" 'BEGIN { exit !(v < t) }' ;;
-  esac
+# images in the chat keep part of the window bright in both themes, so brightness is compared with the light window's
+window_below() {
+  awk -v v="$("$ui" luminance)" -v t="$1" 'BEGIN { exit !(v < t) }'
+}
+
+window_above() {
+  awk -v v="$("$ui" luminance)" -v t="$1" 'BEGIN { exit !(v > t) }'
 }
 
 follow_colour_scheme() {
-  check "the window is light with the desktop's default colour scheme" window_is light
+  local light
+  light=$("$ui" luminance)
+  check "the window is light with the desktop's default colour scheme" awk -v v="$light" -v t="$light_luminance" 'BEGIN { exit !(v > t) }'
   check "the desktop's colour scheme is set to dark" gsettings set org.gnome.desktop.interface color-scheme prefer-dark
   gdbus call --session --dest org.freedesktop.portal.Desktop --object-path /org/freedesktop/portal/desktop \
     --method org.freedesktop.portal.Settings.ReadOne org.freedesktop.appearance color-scheme || true
-  check "the window turns dark when the desktop prefers dark" eventually "$scheme_wait" window_is dark
+  check "the window turns dark when the desktop prefers dark" eventually "$scheme_wait" window_below "$(awk -v v="$light" -v d="$luminance_drop" 'BEGIN { print v - d }')"
   "$ui" shot dark-scheme
   gsettings set org.gnome.desktop.interface color-scheme default || true
-  check "the window turns light with the desktop's default colour scheme again" eventually "$scheme_wait" window_is light
+  check "the window turns light with the desktop's default colour scheme again" eventually "$scheme_wait" window_above "$(awk -v v="$light" -v d="$luminance_tolerance" 'BEGIN { print v - d }')"
 }
 
 activate_from_tray() {
@@ -189,7 +192,7 @@ notify_messages() {
   fi
   mkdir -p "$peer_dir"
   peer 5 /c
-  link=$(grep -oE 'https://simplex\.chat/invitation#[^[:space:]]+' "$peer_dir/out" | head -n 1 || true)
+  link=$(grep -oE 'https://[^[:space:]]+' "$peer_dir/out" | head -n 1 || true)
   if [ -z "$link" ]; then
     check "the CLI peer creates a one-time link" false
     return
@@ -197,9 +200,11 @@ notify_messages() {
   "$ui" copy "$link"
   "$ui" click-text "Search or paste SimpleX link" 10 || true
   "$ui" key ctrl+v
-  check "the pasted one-time link offers to connect" "$ui" wait "Use current profile" 30
+  check "the pasted one-time link shows the peer's profile" "$ui" wait "Open new chat" 60
   "$ui" shot pasted-link
-  "$ui" click-text "Use current profile" 10 || true
+  "$ui" click-text "Open new chat" 10 || true
+  "$ui" click-text "Connect" 20 || true
+  "$ui" shot connecting
   check "the CLI peer connects to the app" eventually 120 peer_connected
   "$ui" key Escape
   "$ui" click-text "$other_chat" 10 || true

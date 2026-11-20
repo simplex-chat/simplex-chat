@@ -517,7 +517,7 @@ Checks per cell (`e2e.sh`):
 | no `gsettings` process | `pgrep -x gsettings` |
 | keyring | `settings.properties` holds the passphrase as ciphertext; `secret-tool lookup` finds the key; config directory mode 700 |
 | tray | `RegisterStatusNotifierItem` in the services log |
-| dark mode | window brightness below 0.4 after `color-scheme prefer-dark`, above 0.6 after `default` |
+| dark mode | light window above 0.6 mean brightness; 0.25 darker after `color-scheme prefer-dark`; back within 0.05 after `default` |
 | tray activation | window hidden after a close request, shown after `Activate` |
 | message notifications | CLI peer's link pasted from the clipboard; notification replaced per chat, titled with the peer, `desktop-entry` hint, default action opens the chat, closed when read; launcher entry urgent |
 

@@ -558,7 +558,7 @@ case "${1:-}" in
     ;;
   luminance)
     value=$(window_luminance)
-    log "luminance $value"
+    log "luminance $value" > /dev/null
     echo "$value"
     ;;
   type)
