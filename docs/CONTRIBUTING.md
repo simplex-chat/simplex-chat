@@ -21,6 +21,8 @@ Please discuss the problem you want to solve and your detailed implementation pl
 
 ./contributing/CODE.md has details about general requirements common for `simplexmq` and `simplex-chat` repositories.
 
+./contributing/TESTS.md has the testing approaches of this repository: the tests required for a change, how they are written and run, and where CI runs them.
+
 CLAUDE.md in the repository root imports these files, this guide and ../scripts/ci/README.md for Claude Code; apps/ios/CLAUDE.md and apps/multiplatform/CLAUDE.md import the README of each app.
 
 ## Compiling with SQLCipher encryption enabled
@@ -93,6 +95,7 @@ For some complex features we create feature branches that will be merged once re
 4. Mark the pull request ready for review once it is ready. CI then runs the full matrix on each push, and the code owners are requested for review.
 5. Mark it as a draft again when more work is needed. After the approval, the pull request is merged by squash once CI passes.
 6. A change to a scope without CI tests adds its build and tests to CI in the same pull request.
+7. A change of the apps' code adds, in the same pull request, app tests of all its changes on the core's real responses: core tests record the responses and events in tests/fixtures/api, and the Kotlin and iOS tests run the app code on them, with any platform service the code calls mocked (CI guide: "App test fixtures").
 
 ## Differences between GHC 8.10.7 and GHC 9.6.3
 
