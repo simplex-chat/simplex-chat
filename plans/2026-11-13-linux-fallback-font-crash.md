@@ -71,6 +71,11 @@ flowchart TD
 - Desktop builds on all OSes use Skia m138; Android APKs are unchanged, and `Text` calls the Material one there.
 - Fonts with known metrics: Inter, the bundled emoji font, and the fonts Compose resolves for `FontFamily.Monospace` and `FontFamily.Default`. Other fonts take only the fallback spans.
 - An empty text with Center alignment takes Proportional alignment: m132 computed empty-paragraph metrics with the strut's proportional ratio.
+- An empty line is any empty segment between hard breaks: CRLF, LF, CR, VT, FF, U+0085, U+2028, U+2029.
+- Text fields take no zero-length span with a font size: Compose sizes the caret and the trimmed first and last lines from the paragraph's default font size (`SkiaParagraph.getCursorRect`). A field with a line height takes `H'`.
+- The font of a character mirrors Skia: the text's font when it covers the character; an emoji sequence start (Unicode 15.1 Emoji and Emoji_Component, as ICU 74 in Skia m138) takes the emoji fallback (`und-Zsye`, Apple Color Emoji on macOS); any other character takes the system fallback for its weight and slant.
+- A text without a font family is measured with the typeface Skia finds for `sans-serif`; the default font size is 16 sp, as in Compose's `ParagraphBuilder`.
+- A copy without line gap is made only for fonts up to 8 MB; larger fonts take `H'`.
 - On Windows, a character followed by U+FE0F that the text's font covers without the selector takes the fallback font of U+FE0F.
 - Remaining differences:
   - a blank line in a text with a line height, by the rounding of `R`;
