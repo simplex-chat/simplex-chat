@@ -47,7 +47,7 @@ import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recor
 import StoreService.Names.Chain (AbiValue (..), Block (..), ChainClient, ChainError (..), Hex32 (..), RevertName (..), RevertReason (..), TxHash (..), abiBytes, abiTuple, addressWord, blockAt, decodeSignedTx, newChainClient, selector, uint256)
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
-import StoreService.Names.Phases (awaitChange, publish)
+import StoreService.Names.Phases (awaitChange, phasesWaiting, publish)
 import StoreService.Names.Registration (OrderFields (..), RegisterIntent (..), RegistrationId (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Sender
@@ -127,7 +127,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
   describe "lanes" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
-    it "keeps a registration's worker after an exception in its step, logging it once as a wait, and tries the step again at a version change" testStepException
+    it "keeps a registration's worker after an exception in its step, logging it once as a wait, reports it after 10 minutes of failures, and tries the step again at a version change" testStepException
     it "logs a scan that fails, and the next scan starts the registration's worker" testScanFails
     it "logs a check of unregistered paid orders that fails, claiming no alert, so the next check alerts" testUnregisteredAlertsFail
     it "logs a month pass that fails, so a pass failing from the start keeps the start's time past the alert's age, until a pass completes" testMonthPassFails
@@ -1014,12 +1014,19 @@ testStepException = withWorker $ \w@W {wCtx = ctx@Ctx {cStore, cOrders, cNode}, 
   logged <- capturingStderr $ withAsync (runWorkers worker) $ \_ -> do
     threadDelay 6000000
     length <$> sent w `shouldReturn` 0
+    readTVarIO reports `shouldReturn` []
+    advance ctx 600
+    atomically $ publish (oePhases cOrders) (nrId r) (nrVersion r)
+    timeout 3000000 (atomically $ readTVar reports >>= check . not . null) >>= maybe (fail "the step failing for 10 minutes was not reported") pure
+    atomically $ phasesWaiting (oePhases cOrders) >>= check . (> 0)
     withTransaction cStore $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET commit_block = NULL WHERE registration_id = ?" [rid]
     atomically $ publish (oePhases cOrders) (nrId r) (nrVersion r + 1)
     timeout 3000000 (awaitSent cNode 1) >>= maybe (fail "the step was not tried again at the version change") (const $ pure ())
   T.count ("names worker: registration " <> rid <> " waits: its step failed: ") logged `shouldBe` 1
   logged `shouldNotSatisfy` T.isInfixOf "the next scan starts it again"
-  readTVarIO reports `shouldReturn` []
+  readTVarIO reports >>= (`shouldSatisfy` \case
+    [report] -> ("names worker: registration " <> rid <> " waits: its step failed: ") `T.isPrefixOf` report && ", failing for 10 minutes" `T.isSuffixOf` report
+    _ -> False)
 
 testMinedRevertTaken :: IO ()
 testMinedRevertTaken = withWorker $ \w@W {wCtx = ctx} -> do
