@@ -1139,18 +1139,19 @@ The days of a balance are the days of its order. The balance of an order closed 
 money paid late on its invoice, so the days of its invoice method are used for it. Crypto paid in
 excess of an order's price is kept in its balance with the order's days, also when these are the 120
 days of a card payment that funded the order: a balance is never given fewer days than a payment in
-it requires. The registration view returns a balance's days in its `balance` as `disputeDays`, the
-days of an order paid from that balance alone.
+it requires. A balance's days are returned in the registration view's `balance` as `disputeDays`,
+the days of an order paid from that balance alone.
 
 The order's `disputeDays` are returned in the registration view, signed by the owner in
 `RegisterName` and sent by the service in `registerWithCredit`; a reveal signed over other days is
 refused. Once the name is registered, `disputeUntil` is returned in the view: the registrar's
 `disputeUntil(id)` read at the confirmation depth, or `null` for a registration without a dispute
 period. The days of the orders stored before the migration `20261120_names_dispute_days` are set by
-it with the same rules. Its down migration drops every stored dispute end and sets `ended` orders
-`registered`. An up migration after it sets the days again and leaves `dispute_until` `NULL` on
-every order: the view then returns `disputeUntil` `null` for every registered order, and the hourly
-pass below reads none of them, so none of them is set `ended` later.
+it with the same rules. By its down migration, every stored dispute end is dropped and `ended`
+orders are set `registered`. By an up migration after it, the days are set again and
+`dispute_until` is left `NULL` on every order: `disputeUntil` is then returned `null` for every
+registered order, and none of them is read by the service's hourly pass below, so none of them is
+set `ended` later.
 
 The registrar's `disputeUntil(id)` is changed only by `unregister`, which ends a registration within
 its dispute period, and by a later registration of the name. Every hour the service reads the block
@@ -1158,15 +1159,16 @@ at the confirmation depth and, at that block, `disputeUntil(id)` of each registe
 dispute period has not ended or ended less than 7 days ago, if its registration is older than that
 block. When the value differs from the one read at the registration, the order's phase is set to
 `ended`, and it stays `ended` when the name is registered again. An order whose read fails is read
-again at the next pass, and the pass reads the others; a failed read of the block stops the pass.
-Each pass logs its first failed read once. When the worker, Try again, a move or `//close` finds an
-order's register mined, `disputeUntil(id)` at the confirmed block is compared with the end the
-register set, its block's timestamp plus the order's days; when the two differ, the registration
-was ended before the confirmed block, possibly followed by another, and the order is set `ended` at
-once, with the end its register set stored as its dispute end and its expiry `NULL`. While the
-register's block is above the confirmed block, the order is checked again later, and a warning
-names both blocks. For an ended order, `null` is returned for `expiresAt` and `disputeUntil` in the
-view, and their stored values are kept.
+again at the next pass, and the other orders are read in the same pass; when the block cannot be
+read, the pass is stopped. The first failed read of each pass is logged once. When an order's
+register is found mined, by the worker, Try again, a move or `//close`, `disputeUntil(id)` at the
+confirmed block is compared with the end the register set, its block's timestamp plus the order's
+days; when the two differ, the registration was ended before the confirmed block, possibly followed
+by another, and the order is set `ended` at once, with the end its register set stored as its
+dispute end and its expiry `NULL`. While the register's block is above the confirmed block, the
+order is checked again later, and a warning naming both blocks is logged. For an ended order,
+`null` is returned for `expiresAt` and `disputeUntil` in the view, and their stored values are
+kept.
 
 This version runs against the contracts with the dispute period (ens-contracts #51): the service
 calls the sponsor's `registerWithCredit` with `disputeDays` and the registrar's `disputeUntil`.

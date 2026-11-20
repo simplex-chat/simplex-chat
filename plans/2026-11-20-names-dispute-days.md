@@ -66,7 +66,7 @@ Balance days of an order:
 | closed unpaid | the days of its invoice's method |
 | any other | its dispute days |
 
-`balanceDisputeDays` computes a balance's days when `getBalance` reads it, from its order's phase, method and days. `orderDisputeDays` computes an order's days from its terms and, for a balance, the paying balance's days, before the order's row is written. The days are kept on a move to another name and on Try again.
+A balance's days are computed by `balanceDisputeDays` from its order's phase, method and days, when the balance is read by `getBalance`. An order's days are computed by `orderDisputeDays` from its terms and, for a balance, from the paying balance's days, before the order's row is written. The days are kept on a move to another name and on Try again.
 
 ```mermaid
 flowchart RL
@@ -143,7 +143,7 @@ name_registrations
 
 Up, after the columns are added, `dispute_days` of each registration is set to the largest days along its funding chain. The chain starts at the registration and follows `balance_source` from it and from each source past `unpaid`. A link with method `card` takes 120, any other 14.
 
-Down: `ended` registrations are set `registered`, then the two columns are dropped. An up migration after it leaves `dispute_until` NULL on every registration, so the sweep reads none of them.
+Down: `ended` registrations are set `registered`, then the two columns are dropped. After an up migration that follows it, `dispute_until` is NULL on every registration, so none of them is read by the sweep.
 
 ```mermaid
 flowchart RL

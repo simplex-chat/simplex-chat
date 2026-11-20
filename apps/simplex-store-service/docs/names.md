@@ -521,7 +521,7 @@ sequenceDiagram
 Notes:
 
 - The refund must equal the whole balance, and a held balance is refused, overdue or not. `//record_refund` closes no holder: its answer asks support to start the service, whose poller closes an overdue holder 10 minutes after its expiry, then to run the command again ([`Names/Balances.hs:40-65`](../src/StoreService/Names/Balances.hs#L40-L65), [`Names/Store.hs:1120-1132`](../src/StoreService/Names/Store.hs#L1120-L1132), [`Service.hs:543-555`](../src/StoreService/Service.hs#L543-L555)).
-- The provider interface offers create, read, cancel, list, rate and webhook verification, so the money is paid back by hand ([`Providers.hs:132-142`](../src/StoreService/Providers.hs#L132-L142)). The buyer's email to chat@simplex.chat is described in the README; the page code is in the submodule ([`README.md:1701-1717`](../README.md#L1701-L1717)).
+- The provider interface offers create, read, cancel, list, rate and webhook verification, so the money is paid back by hand ([`Providers.hs:132-142`](../src/StoreService/Providers.hs#L132-L142)). The buyer's email to chat@simplex.chat is described in the README; the page code is in the submodule ([`README.md:1703-1719`](../README.md#L1703-L1719)).
 - The console starts only while the service is stopped, as the database lock is held by one process ([`Store/Migrate.hs:46-54`](../src/StoreService/Store/Migrate.hs#L46-L54)).
 - While the service runs, a group owner sends the same commands with one slash, `/balance`, `/record_refund` and `/close`. The group lane runs the console's handlers in the service's per-name and per-balance locks and answers in the group; the answers name the one-slash commands, and a held balance's answer names the running poller ([`Service.hs:453-467`](../src/StoreService/Service.hs#L453-L467), [`Group.hs:320`](../src/StoreService/Group.hs#L320)).
 
@@ -550,7 +550,7 @@ sequenceDiagram
 ```
 
 - Only a failed order paid by invoice or balance is closed, and a lapsed committed order reads failed. A balance an order holds refuses the close and writes nothing ([`Names/Worker.hs:527-566`](../src/StoreService/Names/Worker.hs#L527-L566), [`Names/View.hs:155-159`](../src/StoreService/Names/View.hs#L155-L159), [`Names/Orders.hs:368-422`](../src/StoreService/Names/Orders.hs#L368-L422)).
-- The answer names the failure time, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:515-541`](../src/StoreService/Service.hs#L515-L541), [`README.md:1790-1801`](../README.md#L1790-L1801)).
+- The answer names the failure time, as failed orders were refunded at the provider by hand before `//close` existed ([`Service.hs:515-541`](../src/StoreService/Service.hs#L515-L541), [`README.md:1792-1803`](../README.md#L1792-L1803)).
 
 ---
 
