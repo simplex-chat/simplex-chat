@@ -1799,8 +1799,8 @@ jobs:
         if: steps.plan.outputs.nodejs_version
         working-directory: packages/simplex-chat-nodejs
         run: |
-          (cd ../simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
-          npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript
+          (cd ../simplex-chat-client/types/typescript && "$GITHUB_WORKSPACE/scripts/ci/npm-install.sh" && npx tsc)
+          "$GITHUB_WORKSPACE/scripts/ci/npm-install.sh" --ignore-scripts --no-save ../simplex-chat-client/types/typescript
           npx tsc && cp src/simplex.* dist
           npx jest tests/libs.test.ts tests/api.unit.test.ts
 
@@ -1816,7 +1816,7 @@ jobs:
           VERSION: ${{ steps.plan.outputs.types_version }}
           DIST_TAG: ${{ steps.plan.outputs.types_dist_tag }}
         run: |
-          npm install --no-audit --no-fund
+          "$GITHUB_WORKSPACE/scripts/ci/npm-install.sh"
           npm publish --provenance --access public --tag "$DIST_TAG"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
