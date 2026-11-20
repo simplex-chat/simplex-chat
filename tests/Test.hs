@@ -93,12 +93,17 @@ main = do
         describe "Postgres schema dump" $
           postgresSchemaDumpTest
             migrations
+            skipComparisonForDownMigrations
             schemaDumpDBOpts
             "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
       sequential $
         describe "Store service Postgres schema dump" $
           postgresSchemaDumpTest
             storeServiceSchemaMigrations
+            [ "20260918_badge_group_ops",
+              "20261012_badge_subscriptions",
+              "20261118_invoice_product"
+            ]
             serviceSchemaDumpDBOpts
             "apps/simplex-store-service/src/StoreService/Store/Postgres/store_service_schema.sql"
 #else
@@ -107,6 +112,12 @@ main = do
         describe "Store service schema dump" $
           sqliteSchemaDumpTest
             storeServiceSchemaMigrations
+            [ "20260915_badge_service_schema",
+              "20260918_badge_group_ops",
+              "20260925_badge_store_receipts",
+              "20261012_badge_subscriptions",
+              "20261118_invoice_product"
+            ]
             serviceSchemaDumpDBOpts
             "apps/simplex-store-service/src/StoreService/Store/SQLite/store_service_schema.sql"
 #if MIN_VERSION_base(4,18,0)

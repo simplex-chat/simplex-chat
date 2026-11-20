@@ -55,14 +55,14 @@ testSchema = "tests/tmp/test_agent_schema.sql"
 
 schemaDumpTest :: Spec
 schemaDumpTest = do
-  sqliteSchemaDumpTest Store.migrations (DBOpts testDB chatDBFunctions "" False True TQOff) appSchema
+  sqliteSchemaDumpTest Store.migrations skipComparisonForDownMigrations (DBOpts testDB chatDBFunctions "" False True TQOff) appSchema
   it "verify .lint fkey-indexes" testVerifyLintFKeyIndexes
   it "verify strict tables" testVerifyStrict
 
-sqliteSchemaDumpTest :: [Migration] -> DBOpts -> FilePath -> Spec
-sqliteSchemaDumpTest migrations testDBOpts srcSchemaPath = do
+sqliteSchemaDumpTest :: [Migration] -> [String] -> DBOpts -> FilePath -> Spec
+sqliteSchemaDumpTest migrations skipComparisonForDown testDBOpts srcSchemaPath = do
   it "verify and overwrite schema dump" $ testVerifySchemaDump migrations testDBOpts srcSchemaPath
-  it "verify schema down migrations" $ testSchemaMigrations migrations testDBOpts
+  it "verify schema down migrations" $ testSchemaMigrations migrations skipComparisonForDown testDBOpts
 
 testVerifySchemaDump :: [Migration] -> DBOpts -> FilePath -> IO ()
 testVerifySchemaDump migrations testDBOpts@DBOpts {dbFilePath} srcSchemaPath = do
@@ -80,8 +80,8 @@ testVerifyLintFKeyIndexes = do
   getLintFKeyIndexes testDB "tests/tmp/chat_lint.sql" `shouldReturn` savedLint
   removeFile testDB
 
-testSchemaMigrations :: [Migration] -> DBOpts -> IO ()
-testSchemaMigrations migrations testDBOpts@DBOpts {dbFilePath} = do
+testSchemaMigrations :: [Migration] -> [String] -> DBOpts -> IO ()
+testSchemaMigrations migrations skipComparisonForDown testDBOpts@DBOpts {dbFilePath} = do
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) migrations
   Right st <- createDBStore testDBOpts noDownMigrations (MigrationConfig MCError Nothing)
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) migrations
@@ -98,7 +98,7 @@ testSchemaMigrations migrations testDBOpts@DBOpts {dbFilePath} = do
       unless (name m `elem` skipComparisonForUpMigrations) $
         schema' `shouldNotBe` schema
       Migrations.run st Nothing True $ MTRDown [downMigr]
-      unless (name m `elem` skipComparisonForDownMigrations) $ do
+      unless (name m `elem` skipComparisonForDown) $ do
         schema'' <- getSchema dbFilePath testSchema
         schema'' `shouldBe` schema
       Migrations.run st Nothing True $ MTRUp [m]
@@ -151,12 +151,7 @@ skipComparisonForDownMigrations =
     "20260529_delivery_job_senders",
     -- group_domain is removed
     "20260603_simplex_name",
-    "20261018_autoincrement_ids",
-    "20260915_badge_service_schema",
-    "20260918_badge_group_ops",
-    "20260925_badge_store_receipts",
-    "20261012_badge_subscriptions",
-    "20261118_invoice_product"
+    "20261018_autoincrement_ids"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String

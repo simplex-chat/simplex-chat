@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module PostgresSchemaDump (postgresSchemaDumpTest) where
+module PostgresSchemaDump (postgresSchemaDumpTest, skipComparisonForDownMigrations) where
 
 import ChatTests.Utils hiding (it)
 import Control.Concurrent (threadDelay)
@@ -24,8 +24,8 @@ testSchemaPath :: FilePath
 testSchemaPath = "tests/tmp/test_schema.sql"
 
 -- copied from simplexmq
-postgresSchemaDumpTest :: [Migration] -> DBOpts -> FilePath -> Spec
-postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
+postgresSchemaDumpTest :: [Migration] -> [String] -> DBOpts -> FilePath -> Spec
+postgresSchemaDumpTest migrations skipComparisonForDown testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
   it "verify and overwrite schema dump" testVerifySchemaDump
   it "verify schema down migrations" testSchemaMigrations
   where
@@ -52,7 +52,7 @@ postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSch
           schema' <- getSchema testSchemaPath
           schema' `shouldNotBe` schema
           Migrations.run st Nothing $ MTRDown [downMigr]
-          unless (name m `elem` skipComparisonForDownMigrations) $ do
+          unless (name m `elem` skipComparisonForDown) $ do
             schema'' <- getSchema testSchemaPath
             schema'' `shouldBe` schema
           Migrations.run st Nothing $ MTRUp [m]
@@ -82,8 +82,5 @@ skipComparisonForDownMigrations =
     -- on down migration single_sender_group_member_id column is re-added at the end of the table
     "20260529_delivery_job_senders",
     -- group_domain is removed
-    "20260603_simplex_name",
-    "20260918_badge_group_ops",
-    "20261012_badge_subscriptions",
-    "20261118_invoice_product"
+    "20260603_simplex_name"
   ]
