@@ -355,6 +355,7 @@ badgeWebTests = do
     it "expires a given-up invoice at the next pass when it is still open" testSweepExpiresAGivenUpInvoiceAgain
     it "logs a given-up invoice as expired only once its expiry succeeds" testSweepLogsAGivenUpInvoiceOnceExpired
     it "logs a pass that fails on the store, and the poller runs on" testPassFailureLogged
+    it "logs a sweep that fails on the store, and the late credit pass and the cleanup still run" testSweepFailureLogged
     it "runs the rest of the pass when a provider's list resets while its answer is read" testListResetPassRuns
     it "gives up no invoice while every read fails, and counts no failure from a pass in which its provider answered nothing" testSweepCountsAnsweredFailures
     it "reads the invoice whose last failure is oldest first, so one unreadable invoice delays the others by one pass" testSweepReadsOldestFailureFirst
@@ -3576,6 +3577,15 @@ testPassFailureLogged = bounded "a failed pass" $ withStubPoller raceHold $ \_ p
   renameTable (weStore env) "invoices_away" "sx_badge_service_invoices"
   logged `shouldSatisfy` T.isInfixOf "badge poller: the pass failed; the next pass will run: "
   runOnePass poller
+
+testSweepFailureLogged :: IO ()
+testSweepFailureLogged = bounded "a failed sweep" $ withStubPoller raceHold $ \_ poller env _ -> do
+  renameTable (weStore env) "sx_badge_service_payments" "payments_away"
+  logged <- capturingStderr $ runOnePass poller
+  renameTable (weStore env) "payments_away" "sx_badge_service_payments"
+  logged `shouldSatisfy` T.isInfixOf "badge poller: the sweep failed; the next pass will run: "
+  logged `shouldSatisfy` T.isInfixOf "names: the late credit pass failed; the next pass will run: "
+  logged `shouldSatisfy` T.isInfixOf "names cleanup: the unpaid orders read failed; the next pass will run: "
 
 testListResetPassRuns :: IO ()
 testListResetPassRuns = bounded "a list reset" $ withFakeBTCPay $ \fake -> withResetServer $ \url -> withServiceStore $ \st -> do
