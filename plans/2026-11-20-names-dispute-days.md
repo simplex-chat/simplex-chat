@@ -1,0 +1,164 @@
+# Names: dispute days of sponsored registrations
+
+Repository: simplex-chat/simplex-chat, apps/simplex-store-service.
+Branch: `ab/names-dispute-days`.
+Base: `names`.
+Contracts: simplex-network/ens-contracts#51, the dispute period.
+
+## Contract interface
+
+```
+SimplexSponsor.registerWithCredit(
+  Registration registration,
+  uint256 disputeDays,
+  uint256 nonce,
+  uint256 deadline,
+  bytes sig
+)
+
+RegisterName(
+  string label,
+  address owner,
+  uint256 duration,
+  address resolver,
+  bytes[] data,
+  uint256 disputeDays,
+  uint256 nonce,
+  uint256 deadline
+)
+  domain    SimplexSponsor, version 1
+
+SimplexController.registerSponsored
+  14 <= disputeDays <= 120    else DisputeDaysOutOfRange
+
+BaseRegistrarImplementation.disputeUntil(uint256 id)
+  unix seconds, 0 for none
+```
+
+## Registration view
+
+`GET /api/registration/:id`:
+
+| Field | Value |
+|---|---|
+| `disputeDays` | integer, 14 to 120, every order |
+| `disputeUntil` | unix seconds once registered; null before, and for a registration without a dispute period |
+
+## Dispute days of an order
+
+| Payment | Days |
+|---|---|
+| invoice by card | 120 |
+| invoice by BTC, XMR or another BTCPay method | 14 |
+| prepaid code | 14 |
+| another order's balance | the balance days of that order |
+| invoice for the difference to another order's balance | the larger of the method's days and the balance days of that order |
+
+Balance days of an order:
+
+| Order | Balance days |
+|---|---|
+| closed unpaid | the days of its invoice's method |
+| any other | its dispute days |
+
+`orderDisputeDays` computes the days from the order's terms and, for a balance, the paying order's row, before the order's row is written. A move to another name and Try again keep them.
+
+```mermaid
+flowchart RL
+  method["invoice method<br>card 120, crypto 14"] --> own["the order's payment"]
+  code["prepaid code<br>14"] --> own
+  source["paying order's balance days"] -->|"max"| days["order's dispute days"]
+  own -->|"max"| days
+  days --> view["registration view<br>disputeDays"]
+  days --> intent["RegisterName and<br>registerWithCredit"]
+```
+
+## Types
+
+```
+StoreService.Names.Registration
+  DisputeDays           newtype over Int, 14 to 120
+  mkDisputeDays         Int -> Maybe DisputeDays
+  unDisputeDays         DisputeDays -> Int
+  minDisputeDays        14
+  maxDisputeDays        120
+  registerNameType      the RegisterName type string
+  RegisterIntent
+    riDisputeDays       DisputeDays
+  registerIntentDigest  domain, registration, dispute days, nonce, deadline
+
+StoreService.Names.Store
+  NameRegistration
+    nrDisputeDays       DisputeDays
+    nrDisputeUntil      Maybe Word64
+  methodDisputeDays     ServicePaymentMethod -> DisputeDays
+  orderDisputeDays      DB.Connection -> OrderTerms -> IO DisputeDays
+
+StoreService.Names.Contracts
+  disputeUntil          Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe Word64))
+```
+
+## Schema
+
+Migration `20261120_names_dispute_days`, SQLite and Postgres.
+
+```
+name_registrations
+  dispute_days      INTEGER NOT NULL DEFAULT 120
+  dispute_until     INTEGER
+```
+
+Up, after the columns are added, `dispute_days` of each registration is set to the largest days along its funding chain. The chain starts at the registration and follows `balance_source` from it and from each source past `unpaid`. A link with method `card` takes 120, any other 14.
+
+Down: the two columns are dropped.
+
+```mermaid
+flowchart RL
+  C["registration C<br>own payment's days"] -->|"balance_source"| B["source B<br>own payment's days"]
+  B -->|"balance_source, B past unpaid"| A["source A<br>own payment's days"]
+  C -.->|"max of the chain"| days["C.dispute_days"]
+```
+
+## Registration
+
+```mermaid
+sequenceDiagram
+  participant P as Names page
+  participant W as Web API
+  participant D as Database
+  participant K as Names worker
+  participant S as SimplexSponsor
+  participant R as BaseRegistrar
+  W->>D: order created with its dispute days
+  W-->>P: view: disputeDays
+  P->>P: owner signs RegisterName with disputeDays
+  P->>W: POST /api/registration/ID/reveal
+  W->>W: signer recovered over the order's disputeDays, else bad_request
+  W->>D: reveal stored
+  K->>K: stored intent checked over the order's disputeDays
+  K->>S: registerWithCredit(registration, disputeDays, nonce, deadline, sig)
+  K->>R: nameExpires(id), disputeUntil(id) at the confirmation depth
+  K->>D: registered, expires_at, dispute_until (0 stored as NULL)
+  W-->>P: view: disputeUntil
+```
+
+## Tests
+
+| Test | Module |
+|---|---|
+| `REGISTER_TYPEHASH` of the type string | NamesSignatureTests |
+| `RegisterName` digest with dispute days | NamesSignatureTests |
+| `registerWithCredit` calldata, with and without records | NameRegistrationTests |
+| an intent signed over other dispute days is refused | NameRegistrationTests |
+| a reveal signed over other dispute days is refused; the page's signature, computed with viem | NamesRevealTests |
+| the days of card, BTC and XMR invoices, codes, balance chains and difference orders | NamesStoreTests |
+| the migration's days for each payment, equal to the days set at creation | NamesStoreTests |
+| `disputeDays` and `disputeUntil` in the view; `disputeUntil` read when registered | NamesOrdersTests, NamesWorkerTests |
+
+Expected encodings: viem 2.57.5, eth-account 0.14.0 and Foundry's cast 1.10.0 agree, run in CI on the branch `ab/names-dispute-days-vectors`, https://github.com/brenzi-agent/simplex-chat/actions/runs/44711063341. The same scripts reproduce the values pinned before this change.
+
+The tests are committed with the interface, before the implementation. CI runs them on both commits: they fail on the first and pass on the second.
+
+## Deployment
+
+This version runs against contracts with #51 applied.
