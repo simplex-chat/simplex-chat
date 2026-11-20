@@ -7,7 +7,7 @@ module Bots.StoreService.NamesSenderTests (namesSenderTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesStoreTests (hashFixture, issue, order, ownerA, placeCode, t0, usable)
-import Bots.StoreService.WebTests (capturingStderr, withServiceStore)
+import Bots.StoreService.WebTests (capturingStderr, renameTable, withServiceStore)
 import Control.Concurrent.Async (concurrently)
 import Control.Concurrent.STM
 import Control.Monad (forM_, replicateM_)
@@ -18,12 +18,10 @@ import qualified Data.ByteString as B
 import Data.Either (isLeft)
 import Data.List (sort)
 import Data.Maybe (isNothing)
-import Data.String (fromString)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64, Word8)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
@@ -302,16 +300,14 @@ testFailedRound g = withSetup g $ \s@Setup {node, store} -> do
   Right p <- submitTransaction sender (TxRegistration RTCommit r1) fakeController (commit 1)
   mineHash node (ptHash p)
   _ <- mine node []
-  renameTransactions store "sx_badge_service_name_transactions" "name_transactions_away"
+  renameTable store "sx_badge_service_name_transactions" "name_transactions_away"
   logged <- capturingStderr $ senderRound sender
   logged `shouldSatisfy` T.isInfixOf "names sender: the round failed; the next pass will run: "
   settled sender (TxRegistration RTCommit r1) `shouldReturn` False
-  renameTransactions store "name_transactions_away" "sx_badge_service_name_transactions"
+  renameTable store "name_transactions_away" "sx_badge_service_name_transactions"
   senderRound sender
   outcomeOf p >>= (`shouldSatisfy` confirmedAs (ptHash p))
   map (minedTx . snd) <$> statuses store r1 `shouldReturn` [True]
-  where
-    renameTransactions store from to = withTransaction store $ \db -> DB.execute_ db $ fromString $ "ALTER TABLE " <> from <> " RENAME TO " <> to
 
 testRefusedSendLogged :: TVar ChaChaDRG -> IO ()
 testRefusedSendLogged g = withSetup g $ \s@Setup {node} -> do

@@ -1713,9 +1713,9 @@ testCleanupReadFails = withOrders $ \ctx@Ctx {cStore = st} -> do
   placePaid st "old" ownerA (order "alicebakery" 1) t0 `shouldReturn` Right ()
   poller <- newPollerEnv st (weWaiters $ cWeb ctx) Nothing (weHints $ cWeb ctx) (weProviders $ cWeb ctx) (poll $ weConfig $ cWeb ctx)
   -- the candidates query reads the payments table, so without it the read fails
-  withConnection st $ \db -> DB.execute_ db "ALTER TABLE sx_badge_service_payments RENAME TO sx_badge_service_payments_away"
+  renameTable st "sx_badge_service_payments" "sx_badge_service_payments_away"
   logs <- capturingStderr $ void (E.try (cleanupUnpaid poller due) :: IO (Either E.SomeException ()))
-  withConnection st $ \db -> DB.execute_ db "ALTER TABLE sx_badge_service_payments_away RENAME TO sx_badge_service_payments"
+  renameTable st "sx_badge_service_payments_away" "sx_badge_service_payments"
   let present = isJust <$> withTransaction st (`getRegistration` RegistrationId "old")
   present `shouldReturn` True
   cleanupUnpaid poller (addUTCTime 1 due)
