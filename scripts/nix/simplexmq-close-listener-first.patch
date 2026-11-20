@@ -1,0 +1,12 @@
+diff --git a/src/Simplex/Messaging/Transport/Server.hs b/src/Simplex/Messaging/Transport/Server.hs
+--- a/src/Simplex/Messaging/Transport/Server.hs
++++ b/src/Simplex/Messaging/Transport/Server.hs
+@@ -230,7 +230,10 @@ closeServer :: TMVar Bool -> TVar (IntMap (Weak ThreadId)) -> Socket -> IO ()
+ closeServer started clients sock = do
+   close sock
++  -- gracefulClose polls for the peer FIN for its whole timeout (5s). The
++  -- test waits that same 5s for this signal. On Linux the poll runs to the
++  -- end, so publish the signal once the listener is closed, then join clients.
++  void . atomically $ tryPutTMVar started False
+   readTVarIO clients >>= mapM_ (deRefWeak >=> mapM_ killThread)
+-  void . atomically $ tryPutTMVar started False

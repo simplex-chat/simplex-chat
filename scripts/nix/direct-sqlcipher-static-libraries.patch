@@ -1,0 +1,44 @@
+diff --git a/direct-sqlcipher.cabal b/direct-sqlcipher.cabal
+--- a/direct-sqlcipher.cabal
++++ b/direct-sqlcipher.cabal
+@@ -1,9 +1,11 @@
++cabal-version: 3.8
++
+ name:               direct-sqlcipher
+ version:            2.3.28
+ synopsis:           Low-level binding to SQLCipher. Includes UTF8 and BLOB support.
+ description:        This package is forked from direct-sqlite by Irene Knapp.
+                     https://github.com/IreneKnapp/direct-sqlite
+-license:            BSD3
++license:            BSD-3-Clause
+ license-file:       LICENSE
+ copyright:          Copyright (c) 2012 - 2014 Irene Knapp,
+                     2014 - 2018 Janne Hellsten,
+@@ -20,7 +22,6 @@
+                     cbits/sqlite3.h
+                     cbits/sqlite3ext.h
+                     changelog
+-cabal-version:      >= 1.10
+
+ source-repository head
+   type:     git
+@@ -90,9 +91,11 @@
+                   -DSQLITE_HAS_CODEC
+
+     extra-libraries: dl
++    extra-libraries-static: dl
+
+     if !os(windows) && !os(android)
+       extra-libraries: pthread
++      extra-libraries-static: pthread
+
+     if flag(fulltextsearch)
+       cc-options: -DSQLITE_ENABLE_FTS3 -DSQLITE_ENABLE_FTS3_PARENTHESIS
+@@ -115,6 +118,7 @@
+     if flag(openssl)
+       cc-options: -DSQLCIPHER_CRYPTO_OPENSSL
+       extra-libraries: crypto
++      extra-libraries-static: crypto
+
+     if flag(tomcrypt)
+       cc-options: -DSQLCIPHER_CRYPTO_LIBTOMCRYPT

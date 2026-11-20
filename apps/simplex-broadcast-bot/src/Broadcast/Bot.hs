@@ -36,7 +36,7 @@ welcomeGetOpts = do
 broadcastBot :: BroadcastBotOpts -> User -> ChatController -> IO ()
 broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _user cc = do
   initializeBotAddress cc
-  race_ (forever $ void getLine) . forever $ do
+  race_ waitUntilStdinCloses . forever $ do
     (_, evt) <- atomically . readTBQueue $ outputQ cc
     case evt of
       Right (CEvtContactConnected _ ct _) -> do
