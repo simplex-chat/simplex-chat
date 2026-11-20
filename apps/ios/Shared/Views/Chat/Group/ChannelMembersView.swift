@@ -77,12 +77,19 @@ private struct ChannelMemberRow: View {
                 .font(.caption).baselineOffset(2).kerning(-2)
                 .foregroundColor(theme.colors.secondary) + nameText
             : nameText
+        let shortDescr = member.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines)
         let row = HStack {
             MemberProfileImage(member, size: 38)
                 .padding(.trailing, 2)
             VStack(alignment: .leading) {
                 NameWithBadge(displayName, member.nameBadge)
                     .lineLimit(1)
+                if let shortDescr = shortDescr, shortDescr != "" {
+                    Text(shortDescr)
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                        .lineLimit(1)
+                }
                 if user {
                     Text("you")
                         .font(.caption)
