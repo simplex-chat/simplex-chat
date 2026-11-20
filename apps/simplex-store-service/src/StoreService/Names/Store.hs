@@ -135,7 +135,7 @@ import Simplex.Messaging.Util (maybeFirstRow, tshow)
 import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (DisputeDays, TermsAcceptance (..), maxDisputeDays, minDisputeDays, mkDisputeDays, unDisputeDays)
+import StoreService.Names.Registration (DisputeDays, TermsAcceptance (..), cardDisputeDays, codeDisputeDays, cryptoDisputeDays, mkDisputeDays, unDisputeDays)
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, note, textToCryptoCurrency, truncateToSecond, unfundedQuery)
@@ -596,16 +596,16 @@ deleteRegistration db (RegistrationId rid) = DB.execute db "DELETE FROM sx_badge
 
 methodDisputeDays :: ServicePaymentMethod -> DisputeDays
 methodDisputeDays = \case
-  SPMCard _ -> maxDisputeDays
-  SPMCrypto _ -> minDisputeDays
+  SPMCard _ -> cardDisputeDays
+  SPMCrypto _ -> cryptoDisputeDays
 
 orderDisputeDays :: DB.Connection -> OrderTerms -> IO DisputeDays
 orderDisputeDays db = \case
   OTInvoice method _ -> pure $ methodDisputeDays method
-  OTCode _ -> pure minDisputeDays
+  OTCode _ -> pure codeDisputeDays
   OTBalance source@(RegistrationId rid) _ _ method ->
     getRegistration db source >>= \case
-      Just r -> pure $ max (maybe minDisputeDays methodDisputeDays method) (balanceDisputeDays r)
+      Just r -> pure $ maybe id (max . methodDisputeDays) method $ balanceDisputeDays r
       Nothing -> E.throwIO $ StoreDecodeError $ "name_registrations balance source: " <> rid
   where
     balanceDisputeDays = \case

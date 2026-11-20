@@ -27,7 +27,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (DisputeDays, TermsAcceptance (..), maxDisputeDays, minDisputeDays)
+import StoreService.Names.Registration (DisputeDays, TermsAcceptance (..), minDisputeDays, mkDisputeDays)
 import StoreService.Names.Signatures (OrderFields (..), parseAnyCaseAddress, parseSignature)
 import StoreService.Names.Store
 import StoreService.Store (RevokeResult (..))
@@ -640,27 +640,29 @@ placeFunded st = do
   withTransaction st (\db -> closeOverdue db lateOrder (at 2)) `shouldReturn` Just 2
   withTransaction st $ \db -> creditBalance db (RegistrationId "lateorder") 5000 t0
   covered "fromlate" "lateorder" 5000 19
-  pure
-    [ ("card", maxDisputeDays),
-      ("btc", minDisputeDays),
-      ("xmr", minDisputeDays),
-      ("paidcode", minDisputeDays),
-      ("freecode", minDisputeDays),
-      ("cardsource", maxDisputeDays),
-      ("btcsource", minDisputeDays),
-      ("cardheld", maxDisputeDays),
-      ("btcheld", minDisputeDays),
-      ("btcheld2", minDisputeDays),
-      ("cardlate", maxDisputeDays),
-      ("fromcard", maxDisputeDays),
-      ("frombtc", minDisputeDays),
-      ("btcovercard", maxDisputeDays),
-      ("cardoverbtc", maxDisputeDays),
-      ("btcoverbtc", minDisputeDays),
-      ("twostep", maxDisputeDays),
-      ("lateorder", maxDisputeDays),
-      ("fromlate", minDisputeDays)
-    ]
+  pure $
+    map
+      (fmap $ fromJust . mkDisputeDays)
+      [ ("card", 120),
+        ("btc", 14),
+        ("xmr", 14),
+        ("paidcode", 14),
+        ("freecode", 14),
+        ("cardsource", 120),
+        ("btcsource", 14),
+        ("cardheld", 120),
+        ("btcheld", 14),
+        ("btcheld2", 14),
+        ("cardlate", 120),
+        ("fromcard", 120),
+        ("frombtc", 14),
+        ("btcovercard", 120),
+        ("cardoverbtc", 120),
+        ("btcoverbtc", 14),
+        ("twostep", 120),
+        ("lateorder", 120),
+        ("fromlate", 14)
+      ]
   where
     invoiced rid method terms expiresAt n = withTransaction st $ \db -> do
       insertInvoiceRow db ("inv-" <> rid) expiresAt "open"

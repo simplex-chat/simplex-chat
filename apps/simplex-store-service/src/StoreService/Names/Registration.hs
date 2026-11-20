@@ -11,6 +11,9 @@ module StoreService.Names.Registration
     unDisputeDays,
     minDisputeDays,
     maxDisputeDays,
+    cardDisputeDays,
+    cryptoDisputeDays,
+    codeDisputeDays,
     TermsAcceptance (..),
     TermsKind (..),
     termsKind,
@@ -104,6 +107,11 @@ unDisputeDays (DisputeDays n) = n
 minDisputeDays, maxDisputeDays :: DisputeDays
 minDisputeDays = DisputeDays 14
 maxDisputeDays = DisputeDays 120
+
+cardDisputeDays, cryptoDisputeDays, codeDisputeDays :: DisputeDays
+cardDisputeDays = DisputeDays 120
+cryptoDisputeDays = DisputeDays 14
+codeDisputeDays = DisputeDays 14
 
 sponsorDomain :: Word64 -> Address -> Eip712Domain
 sponsorDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexSponsor", edVersion = "1", edChainId, edVerifyingContract}
