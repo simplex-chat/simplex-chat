@@ -331,7 +331,7 @@ struct ChatListNavLink: View {
 
     // Spec: spec/client/chat-list.md#markReadButton
     @ViewBuilder private func markReadButton() -> some View {
-        if chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat {
+        if chat.unreadStats.unreadCount > 0 || chat.chatStats.unreadChat {
             Button {
                 Task { await markChatRead(ItemsModel.shared, chat) }
             } label: {

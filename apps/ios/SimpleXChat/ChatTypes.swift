@@ -2388,6 +2388,10 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var inMainChatList: Bool {
+        groupChatScope() == nil || groupInfo?.membership.memberPending == true
+    }
+
     public var sendAsGroup: Bool {
         if let g = groupInfo, g.useRelays && g.membership.memberRole >= .owner {
             switch groupChatScope() {
@@ -2402,6 +2406,10 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public func ntfsEnabled(chatItem: ChatItem) -> Bool {
         ntfsEnabled(chatItem.meta.userMention)
+    }
+
+    public func countsInUserUnread(_ chatItem: ChatItem) -> Bool {
+        chatItem.isRcvNew && inMainChatList && ntfsEnabled(chatItem: chatItem)
     }
 
     public func ntfsEnabled(_ userMention: Bool) -> Bool {

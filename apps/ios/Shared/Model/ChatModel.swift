@@ -86,6 +86,13 @@ class ItemsModel: ObservableObject {
 
     let chatState = ActiveChatState()
 
+    var sentItemUpdates: [ChatItem.ID: ChatItem] = [:]
+
+    func takeSentItemUpdate(_ cItem: ChatItem) -> ChatItem? {
+        guard let update = sentItemUpdates.removeValue(forKey: cItem.id), update.meta.createdAt == cItem.meta.createdAt else { return nil }
+        return update
+    }
+
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
     @Published var isLoading = false
@@ -613,6 +620,10 @@ final class ChatModel: ObservableObject {
             addChat_(chat, at: 0)
         }
         ChatTagsModel.shared.addPresetChatTags(chat.chatInfo, chat.chatStats)
+        ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: false)
+        if chat.userUnreadCount > 0 {
+            updateNtfBadgeCount()
+        }
         popChatCollector.throttlePopChat(chat.chatInfo.id, currentPosition: 0)
     }
 
@@ -623,12 +634,21 @@ final class ChatModel: ObservableObject {
     // Spec: spec/state.md#updateChatInfo
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
+            let wasUnread = chats[i].unreadTag
+            let wasUserUnreadCount = chats[i].userUnreadCount
             if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
                 chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: nil)
             } else {
                 chats[i].chatInfo = cInfo
             }
             chats[i].created = Date.now
+            ChatTagsModel.shared.updateChatTagRead(chats[i], wasUnread: wasUnread)
+            if chats[i].unreadTag != wasUnread {
+                objectWillChange.send()
+            }
+            if chats[i].userUnreadCount != wasUserUnreadCount {
+                updateNtfBadgeCount()
+            }
         }
     }
 
@@ -674,10 +694,20 @@ final class ChatModel: ObservableObject {
     // Spec: spec/state.md#replaceChat
     func replaceChat(_ id: String, _ chat: Chat) {
         if let i = getChatIndex(id) {
+            let wasUnread = chats[i].unreadTag
+            let wasUserUnreadCount = chats[i].userUnreadCount
             chats[i] = chat
+            ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
+            if chat.userUnreadCount != wasUserUnreadCount {
+                updateNtfBadgeCount()
+            }
         } else {
             // invalid state, correcting
             chats.insert(chat, at: 0)
+            ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: false)
+            if chat.userUnreadCount > 0 {
+                updateNtfBadgeCount()
+            }
         }
     }
 
@@ -699,6 +729,7 @@ final class ChatModel: ObservableObject {
 //    }
 
     func addChatItem(_ chatInfo: ChatInfo, _ cItem: ChatItem) {
+        let cItem = getCIItemsModel(chatInfo, cItem)?.takeSentItemUpdate(cItem) ?? cItem
         // updates membersRequireAttention
         let cInfo: ChatInfo
         if case let .direct(contact) = chatInfo, contact.chatDeleted {
@@ -713,7 +744,7 @@ final class ChatModel: ObservableObject {
         // update chat list
         if let i = getChatIndex(cInfo.id) {
             // update preview
-            if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
+            if cInfo.inMainChatList {
                 chats[i].chatItems = switch cInfo {
                 case .group:
                     if let currentPreviewItem = chats[i].chatItems.first {
@@ -728,15 +759,17 @@ final class ChatModel: ObservableObject {
                 default:
                     [cItem]
                 }
-                if case .rcvNew = cItem.meta.itemStatus {
-                    unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
-                }
+            }
+            if cInfo.groupChatScope() == nil, case .rcvNew = cItem.meta.itemStatus {
+                unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
             }
             // pop chat
             popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
         } else {
             if cInfo.groupChatScope() == nil {
-                addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
+                let unread = cItem.isRcvNew ? 1 : 0
+                let mentions = cItem.isRcvNew && cItem.meta.userMention ? 1 : 0
+                addChat(Chat(chatInfo: cInfo, chatItems: [cItem], chatStats: ChatStats(unreadCount: unread, unreadMentions: mentions)))
             } else {
                 addChat(Chat(chatInfo: cInfo, chatItems: []))
             }
@@ -770,57 +803,33 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
-        // update chat list
-        var itemAdded: Bool = false
-        if cInfo.groupChatScope() == nil {
-            if let chat = getChat(cInfo.id) {
-                if let pItem = chat.chatItems.last {
-                    if pItem.id == cItem.id || (chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
-                        chat.chatItems = [cItem]
-                    }
-                } else {
-                    chat.chatItems = [cItem]
-                }
-            } else {
-                addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
-                itemAdded = true
+    func replaceChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        if cInfo.inMainChatList {
+            if let chat = getChat(cInfo.id), chat.chatItems.last?.id == cItem.id {
+                chat.chatItems = [cItem]
             }
             if cItem.isDeletedContent || cItem.meta.itemDeleted != nil {
                 VoiceItemState.stopVoiceInChatView(cInfo, cItem)
             }
         }
-        // update current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
-            itemAdded = _upsertChatItem(ciIM, cInfo, cItem)
+            if let i = getChatItemIndex(ciIM, cItem) {
+                _replaceChatItem(ciIM, at: i, with: cItem)
+            } else if cItem.chatDir.sent {
+                ciIM.sentItemUpdates[cItem.id] = cItem
+            }
         }
-        return itemAdded
     }
 
-    func applyChatItemUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ prevItem: ChatItem) -> Bool {
-        var chatAdded = false
+    func applyChatItemUpdate(_ cInfo: ChatInfo, _ cItem: ChatItem, _ prevItem: ChatItem) {
         if cInfo.groupChatScope() == nil {
-            if let chat = getChat(cInfo.id) {
-                if chat.chatItems.last?.id == cItem.id {
-                    chat.chatItems = [cItem]
-                }
-                let unread = unreadCountChange(prevItem, cItem) { $0.isRcvNew }
-                let mentions = unreadCountChange(prevItem, cItem) { $0.isRcvNew && $0.meta.userMention }
-                if unread != 0 || mentions != 0 {
-                    unreadCollector.changeUnreadCounter(cInfo.id, by: unread, unreadMentions: mentions)
-                }
-            } else {
-                addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
-                chatAdded = true
-            }
-            if cItem.isDeletedContent || cItem.meta.itemDeleted != nil {
-                VoiceItemState.stopVoiceInChatView(cInfo, cItem)
+            let unread = unreadCountChange(prevItem, cItem) { $0.isRcvNew }
+            let mentions = unreadCountChange(prevItem, cItem) { $0.isRcvNew && $0.meta.userMention }
+            if unread != 0 || mentions != 0 {
+                unreadCollector.changeUnreadCounter(cInfo.id, by: unread, unreadMentions: mentions)
             }
         }
-        if let ciIM = getCIItemsModel(cInfo, cItem), let i = getChatItemIndex(ciIM, cItem) {
-            _replaceChatItem(ciIM, at: i, with: cItem)
-        }
-        return chatAdded
+        replaceChatItem(cInfo, cItem)
     }
 
     private func _replaceChatItem(_ ciIM: ItemsModel, at i: Int, with cItem: ChatItem) {
@@ -874,10 +883,10 @@ final class ChatModel: ObservableObject {
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update chat list
-        if cInfo.groupChatScope() == nil {
-            if cItem.isRcvNew {
-                unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
-            }
+        if cInfo.groupChatScope() == nil && cItem.isRcvNew {
+            unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
+        }
+        if cInfo.inMainChatList {
             // update previews
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last, pItem.id == cItem.id {
@@ -1029,10 +1038,11 @@ final class ChatModel: ObservableObject {
     func markAllChatItemsRead(_ chatIM: ItemsModel, _ cInfo: ChatInfo) {
         // update preview
         _updateChat(cInfo.id) { chat in
-            self.decreaseUnreadCounter(user: self.currentUser!, chat: chat)
-            ChatTagsModel.shared.markChatTagRead(chat)
+            let wasUnread = chat.unreadTag
             chat.chatStats = ChatStats()
+            ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
         }
+        updateNtfBadgeCount()
         // update current chat
         if chatId == cInfo.id {
             var i = 0
@@ -1054,11 +1064,12 @@ final class ChatModel: ObservableObject {
     func clearChat(_ cInfo: ChatInfo) {
         // clear preview
         if let chat = getChat(cInfo.id) {
-            self.decreaseUnreadCounter(user: self.currentUser!, chat: chat)
+            let wasUnread = chat.unreadTag
             chat.chatItems = []
-            ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
             chat.chatInfo = cInfo
+            ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
+            updateNtfBadgeCount()
         }
         // clear current chat
         if chatId == cInfo.id {
@@ -1083,7 +1094,9 @@ final class ChatModel: ObservableObject {
             }
             chatIM.chatState.itemsRead(unreadItemIds, chatIM.reversedChatItems.reversed())
         }
-        self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count, unreadMentions: -mentionsRead)
+        if cInfo.groupChatScope() == nil {
+            self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count, unreadMentions: -mentionsRead)
+        }
     }
 
     private let unreadCollector = UnreadCollector()
@@ -1191,21 +1204,17 @@ final class ChatModel: ObservableObject {
     func changeUnreadCounter(_ chatIndex: Int, by count: Int, unreadMentions: Int) {
         let wasUnread = chats[chatIndex].unreadTag
         let stats = chats[chatIndex].chatStats
-        chats[chatIndex].chatStats.unreadCount = stats.unreadCount + count
-        chats[chatIndex].chatStats.unreadMentions = stats.unreadMentions + unreadMentions
+        chats[chatIndex].chatStats.unreadCount = max(0, stats.unreadCount + count)
+        chats[chatIndex].chatStats.unreadMentions = max(0, stats.unreadMentions + unreadMentions)
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
-        changeUnreadCounter(user: currentUser!, by: count)
+        if chats[chatIndex].unreadTag != wasUnread {
+            objectWillChange.send()
+        }
+        updateNtfBadgeCount()
     }
 
     func increaseUnreadCounter(user: any UserLike) {
         changeUnreadCounter(user: user, by: 1)
-    }
-
-    func decreaseUnreadCounter(user: any UserLike, chat: Chat) {
-        let by = chat.chatInfo.chatSettings?.enableNtfs == .mentions
-                ? chat.chatStats.unreadMentions
-                : chat.chatStats.unreadCount
-        decreaseUnreadCounter(user: user, by: by)
     }
 
     func decreaseUnreadCounter(user: any UserLike, by: Int = 1) {
@@ -1216,18 +1225,18 @@ final class ChatModel: ObservableObject {
         if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
             users[i].unreadCount += by
         }
-        NtfManager.shared.changeNtfBadgeCount(by: by)
+        updateNtfBadgeCount()
+    }
+
+    func updateNtfBadgeCount() {
+        NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
     }
 
     // Spec: spec/state.md#totalUnreadCountForAllUsers
     func totalUnreadCountForAllUsers() -> Int {
         var unread: Int = 0
         for chat in chats {
-            switch chat.chatInfo.chatSettings?.enableNtfs {
-            case .all: unread += chat.chatStats.unreadCount
-            case .mentions: unread += chat.chatStats.unreadMentions
-            default: ()
-            }
+            unread += chat.userUnreadCount
         }
         for u in users {
             if !u.user.activeUser {
@@ -1360,7 +1369,11 @@ final class ChatModel: ObservableObject {
                 let removed = chats.remove(at: i)
                 groupId = removed.chatInfo.groupInfo?.groupId
                 ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
+                ChatTagsModel.shared.markChatTagRead(removed)
                 removeWallpaperFilesFromChat(removed)
+                if removed.userUnreadCount > 0 {
+                    updateNtfBadgeCount()
+                }
             }
         }
         if chatId == id {
@@ -1472,10 +1485,30 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
 
     var unreadTag: Bool {
         switch chatInfo.chatSettings?.enableNtfs {
-        case .all: chatStats.unreadChat || chatStats.unreadCount > 0
-        case .mentions: chatStats.unreadChat || chatStats.unreadMentions > 0
-        default: chatStats.unreadChat
+        case .all: unreadStats.unreadChat || unreadStats.unreadCount > 0 || supportUnreadCount > 0
+        case .mentions: unreadStats.unreadChat || unreadStats.unreadMentions > 0 || supportUnreadCount > 0
+        default: unreadStats.unreadChat
         }
+    }
+
+    var userUnreadCount: Int {
+        switch chatInfo.chatSettings?.enableNtfs {
+        case .all: unreadStats.unreadCount
+        case .mentions: unreadStats.unreadMentions
+        default: 0
+        }
+    }
+
+    var pendingSupportChat: GroupSupportChat? {
+        if let membership = chatInfo.groupInfo?.membership, membership.memberPending { membership.supportChat } else { nil }
+    }
+
+    var unreadStats: ChatStats {
+        guard let supportChat = pendingSupportChat else { return chatStats }
+        var stats = chatStats
+        stats.unreadCount += supportChat.unread
+        stats.unreadMentions += supportChat.mentions
+        return stats
     }
 
     var id: ChatId { get { chatInfo.id } }

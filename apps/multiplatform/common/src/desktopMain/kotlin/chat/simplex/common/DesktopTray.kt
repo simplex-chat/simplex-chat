@@ -51,12 +51,16 @@ val trayIsAvailable: Boolean by lazy {
 fun ApplicationScope.SimplexTray() {
   if (!trayIsAvailable) return
   if (remember { appPrefs.closeBehavior.state }.value != CloseBehavior.MinimizeToTray) return
-  // Sum of per-profile unread (UserInfo.unreadCount, the same field UserPicker renders
-  // per row). Skip muted profiles unless they're the active one.
+  // Sum of per-profile unread: the active profile's from its chat rows, other profiles' from
+  // UserInfo.unreadCount (the same field UserPicker renders per row). Skip muted other profiles.
   val unread by remember {
     derivedStateOf {
       ChatModel.users.sumOf {
-        if (!it.user.showNtfs && !it.user.activeUser) 0 else it.unreadCount
+        when {
+          it.user.activeUser -> ChatModel.activeUserUnreadCount
+          !it.user.showNtfs -> 0
+          else -> it.unreadCount
+        }
       }
     }
   }

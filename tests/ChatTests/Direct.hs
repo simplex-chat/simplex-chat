@@ -71,6 +71,7 @@ chatDirectTests = do
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "updated item event has the previous item" testDirectMessageUpdatePrevItem
+    it "unread counts of a muted chat, its statuses and its page" testUnreadCountsDirect
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
     it "direct message delete multiple" testDirectMessageDeleteMultiple
@@ -827,6 +828,27 @@ testDirectMessageUpdatePrevItem ps = do
       readTVarIO updates `shouldReturn` [("hello there", "hello"), ("hello, alice", "hello there")]
       J.Object evt : _ <- readTVarIO encoded
       KM.member "chatItemUpdate" evt `shouldBe` True
+
+testUnreadCountsDirect :: HasCallStack => TestParams -> IO ()
+testUnreadCountsDirect ps = do
+  aliceEvents <- newTVarIO []
+  bobEvents <- newTVarIO []
+  let recording events = testCfg {chatHooks = defaultChatHooks {eventHook = Just $ \_ evt -> evt <$ recordItemEvent events evt}}
+  withNewTestChatCfgOpts ps (recording aliceEvents) testOpts {markRead = False} "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps (recording bobEvents) testOpts "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice ##> "/mute @bob"
+      alice <## "ok"
+      eventsFixture "counts/direct-muted" aliceEvents $ do
+        eventsFixture "counts/direct-statuses" bobEvents $ do
+          apiFixture "counts/direct-send" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_send @2 text hello"]}
+          alice <# "bob> hello <muted>"
+          (length <$> readTVarIO bobEvents) `shouldEventuallyReturn` 2
+        apiFixture "counts/chat-page" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat @2 initial=100"]}
+        bob #> "@alice how are you"
+        alice <# "bob> how are you <muted>"
+      alice ##> "/users"
+      alice <## "alice (Alice) (active)"
 
 testDirectMessageDelete :: HasCallStack => TestParams -> IO ()
 testDirectMessageDelete =

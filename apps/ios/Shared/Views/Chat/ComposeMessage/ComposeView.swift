@@ -1627,7 +1627,7 @@ struct ComposeView: View {
                             live: live
                         )
                         await MainActor.run {
-                            _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                            self.chatModel.replaceChatItem(self.chat.chatInfo, chatItem)
                         }
                         return chatItem
                     } else {

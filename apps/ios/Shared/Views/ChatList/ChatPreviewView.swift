@@ -204,7 +204,7 @@ struct ChatPreviewView: View {
 
     private func chatPreviewLayout(_ text: Text?, draft: Bool = false, hasFilePreview: Bool = false, hasSecrets: Bool) -> some View {
         ZStack(alignment: .topTrailing) {
-            let s = chat.chatStats
+            let s = chat.unreadStats
             let mentionWidth: CGFloat = if s.unreadMentions > 0 && s.unreadCount > 1 { dynamicSize(userFont).unreadCorner } else { 0 }
             let t = text
                 .lineLimit(userFont <= .xxxLarge ? 2 : 1)
@@ -225,7 +225,7 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder private func chatInfoIcon(_ chat: Chat) -> some View {
-        let s = chat.chatStats
+        let s = chat.unreadStats
         if s.unreadCount > 0 || s.unreadChat {
             let mentionColor = mentionColor(chat)
             HStack(alignment: .center, spacing: 2) {

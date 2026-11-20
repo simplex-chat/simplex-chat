@@ -36,8 +36,8 @@ import kotlinx.coroutines.*
 @Composable
 fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
-  val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
-    chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+  val showMarkRead = remember(chat.unreadStats.unreadCount, chat.chatStats.unreadChat) {
+    chat.unreadStats.unreadCount > 0 || chat.chatStats.unreadChat
   }
   val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)
   val linkMode by remember { chatModel.controller.appPrefs.simplexLinkMode.state }
@@ -657,6 +657,16 @@ fun markChatRead(c: Chat) {
       )
       chat = chatModel.getChat(chat.id) ?: return@withApi
     }
+    val supportChat = chat.pendingSupportChat
+    if (supportChat != null && supportChat.unread > 0) {
+      val r = chatModel.controller.apiSupportChatRead(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, GroupChatScope.MemberSupport(groupMemberId_ = null))
+      if (r != null) {
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(chat.remoteHostId, r.first)
+        }
+      }
+      chat = chatModel.getChat(chat.id) ?: return@withApi
+    }
     if (chat.chatStats.unreadChat) {
       val success = chatModel.controller.apiChatUnread(
         chat.remoteHostId,
@@ -667,7 +677,6 @@ fun markChatRead(c: Chat) {
       if (success) {
         withContext(Dispatchers.Main) {
           chatModel.chatsContext.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
-          chatModel.chatsContext.markChatTagRead(chat)
         }
       }
     }
@@ -679,7 +688,6 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
   if (chat.chatStats.unreadChat) return
 
   withApi {
-    val wasUnread = chat.unreadTag
     val success = chatModel.controller.apiChatUnread(
       chat.remoteHostId,
       chat.chatInfo.chatType,
@@ -689,7 +697,6 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     if (success) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
-        chatModel.chatsContext.updateChatTagReadInPrimaryContext(chat, wasUnread)
       }
     }
   }
@@ -980,8 +987,6 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       else -> false
     }
     if (res && newChatInfo != null) {
-      val chat = chatModel.getChat(chatInfo.id)
-      val wasUnread = chat?.unreadTag ?: false
       val wasFavorite = chatInfo.chatSettings?.favorite ?: false
       chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
       withContext(Dispatchers.Main) {
@@ -989,12 +994,6 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       }
       if (chatSettings.enableNtfs == MsgFilter.None) {
         ntfManager.cancelNotificationsForChat(chatInfo.id)
-      }
-      val updatedChat = chatModel.getChat(chatInfo.id)
-      if (updatedChat != null) {
-        withContext(Dispatchers.Main) {
-          chatModel.chatsContext.updateChatTagReadInPrimaryContext(updatedChat, wasUnread)
-        }
       }
     }
   }

@@ -3091,7 +3091,7 @@ object ChatController {
             chatModel.chatsContext.updateChatInfo(rhId, r.chatInfo)
           }
         }
-      is CR.NewChatItems -> withBGApi {
+      is CR.NewChatItems -> {
         r.chatItems.forEach { chatItem ->
           val cInfo = chatItem.chatInfo
           val cItem = chatItem.chatItem
@@ -3103,22 +3103,28 @@ object ChatController {
               }
               chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
             }
-          } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
+          } else if (cInfo.countsInUserUnread(cItem)) {
             withContext(Dispatchers.Main) {
               chatModel.chatsContext.increaseUnreadCounter(rhId, r.user)
             }
           }
-          val file = cItem.file
-          val mc = cItem.content.msgContent
-          if (file != null &&
-            appPrefs.privacyAcceptImages.get() &&
-            ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
-                || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
-                || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))
-          ) {
-            receiveFile(rhId, r.user, file.fileId, auto = true)
+        }
+        withBGApi {
+          r.chatItems.forEach { chatItem ->
+            val cInfo = chatItem.chatInfo
+            val cItem = chatItem.chatItem
+            val file = cItem.file
+            val mc = cItem.content.msgContent
+            if (file != null &&
+              appPrefs.privacyAcceptImages.get() &&
+              ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
+                  || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
+                  || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))
+            ) {
+              receiveFile(rhId, r.user, file.fileId, auto = true)
+            }
+            ntfManager.notifyMessageReceived(rhId, r.user, cInfo, cItem)
           }
-          ntfManager.notifyMessageReceived(rhId, r.user, cInfo, cItem)
         }
       }
       is CR.ChatItemsStatusesUpdated ->
@@ -3127,15 +3133,15 @@ object ChatController {
           val cItem = chatItem.chatItem
           if (!cItem.isDeletedContent && active(r.user)) {
             withContext(Dispatchers.Main) {
-              chatModel.chatsContext.upsertChatItem(rhId, cInfo, cItem)
+              chatModel.chatsContext.replaceChatItem(rhId, cInfo, cItem)
             }
             withContext(Dispatchers.Main) {
-              chatModel.secondaryChatsContext.value?.upsertChatItem(rhId, cInfo, cItem)
+              chatModel.secondaryChatsContext.value?.replaceChatItem(rhId, cInfo, cItem)
             }
           }
         }
       is CR.ChatItemUpdated ->
-        if (r.chatItemUpdate != null) chatItemUpdateNotify(rhId, r.user, r.chatItemUpdate)
+        if (r.chatItemUpdate != null) chatItemUpdate(rhId, r.user, r.chatItemUpdate)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
@@ -3149,7 +3155,7 @@ object ChatController {
       is CR.ChatItemsDeleted -> {
         if (!active(r.user)) {
           r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
-            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem)) {
+            if (toChatItem == null && deletedChatItem.chatInfo.countsInUserUnread(deletedChatItem.chatItem)) {
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.decreaseUnreadCounter(rhId, r.user)
               }
@@ -3178,7 +3184,7 @@ object ChatController {
             if (toChatItem == null) {
               chatModel.chatsContext.removeChatItem(rhId, cInfo, cItem)
             } else {
-              chatModel.chatsContext.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+              chatModel.chatsContext.applyChatItemUpdate(rhId, cInfo, toChatItem.chatItem, cItem)
             }
             if (cItem.isActiveReport) {
               chatModel.chatsContext.decreaseGroupReportsCounter(rhId, cInfo.id)
@@ -3188,7 +3194,7 @@ object ChatController {
             if (toChatItem == null) {
               chatModel.secondaryChatsContext.value?.removeChatItem(rhId, cInfo, cItem)
             } else {
-              chatModel.secondaryChatsContext.value?.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+              chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rhId, cInfo, toChatItem.chatItem, cItem)
             }
           }
         }
@@ -3781,10 +3787,10 @@ object ChatController {
       val cInfo = aChatItem.chatInfo
       val cItem = aChatItem.chatItem
       withContext(Dispatchers.Main) {
-        chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem)
+        chatModel.chatsContext.replaceChatItem(rh, cInfo, cItem)
       }
       withContext(Dispatchers.Main) {
-        chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
+        chatModel.secondaryChatsContext.value?.replaceChatItem(rh, cInfo, cItem)
       }
     }
   }
@@ -3821,7 +3827,7 @@ object ChatController {
         } else {
           CIDeleted.Deleted(Clock.System.now())
         }
-        chatsCtx.upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+        chatsCtx.replaceChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
       }
     }
     withContext(Dispatchers.Main) {
@@ -3838,31 +3844,31 @@ object ChatController {
           } else {
             CIDeleted.Deleted(Clock.System.now())
           }
-          chatsCtx.upsertChatItem(rhId, cInfo.copy(groupChatScope = chatsCtx.groupScopeInfo), cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+          chatsCtx.replaceChatItem(rhId, cInfo.copy(groupChatScope = chatsCtx.groupScopeInfo), cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
         }
       }
     }
   }
 
-  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, update: AChatItemUpdate) {
+  private suspend fun chatItemUpdate(rh: Long?, user: UserLike, update: AChatItemUpdate) {
     val cInfo = update.chatInfo
     val cItem = update.chatItem
     val prevItem = update.prevChatItem
     if (!activeUser(rh, user)) {
-      val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && cInfo.ntfsEnabled(it) }
+      val unreadChange = unreadCountChange(prevItem, cItem) { cInfo.countsInUserUnread(it) }
       if (unreadChange > 0) {
         withContext(Dispatchers.Main) { chatModel.chatsContext.increaseUnreadCounter(rh, user) }
       } else if (unreadChange < 0) {
         withContext(Dispatchers.Main) { chatModel.chatsContext.decreaseUnreadCounter(rh, user) }
       }
     } else {
-      val createdChat = withContext(Dispatchers.Main) {
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateChatInfo(rh, cInfo)
         chatModel.chatsContext.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
       withContext(Dispatchers.Main) {
         chatModel.secondaryChatsContext.value?.applyChatItemUpdate(rh, cInfo, cItem, prevItem)
       }
-      if (createdChat) ntfManager.notifyMessageReceived(rh, user, cInfo, cItem)
     }
   }
 

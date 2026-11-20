@@ -97,7 +97,9 @@ in [Appearance](./app-settings.md#appearance), and the app keeps running in the
 system tray. The first time you close the window, the app asks **Minimize to
 tray?** with **Close the app** and **Minimize to tray**. Messages are not
 received after the app is closed. The tray icon shows a dot when there are
-unread messages, and its tooltip shows how many. Its menu has **Show SimpleX**
+unread messages, and its tooltip shows how many: chats with notifications off
+are not counted, and only mentions are counted in chats with notifications for
+mentions. Its menu has **Show SimpleX**
 and **Quit SimpleX**. **Close to tray** is available when the system has a tray.
 
 ## Notifications and the database passphrase

@@ -22,6 +22,7 @@ import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVa
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
+import qualified Data.Aeson as J
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -280,6 +281,9 @@ chatGroupTests = do
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
     it "should not read support chat items when reading group without scope" testScopedSupportUnreadStatsGroupReadNoScope
+    it "unread counts of deleted group items" testUnreadCountsGroupDeletions
+    it "unread counts of a moderator's support chat" testUnreadCountsModeratorSupport
+    it "unread counts of a pending member's chat with admins" testUnreadCountsPendingMember
     it "should remove support chat with member when member is removed" testScopedSupportMemberRemoved
     it "should remove support chat with member when user removes member" testScopedSupportUserRemovesMember
     it "should remove support chat with member when member leaves" testScopedSupportMemberLeaves
@@ -9432,6 +9436,105 @@ testScopedSupportUnreadStatsOnDelete =
       testOpts
         { markRead = False
         }
+
+itemEventsCfg :: TVar [J.Value] -> ChatConfig
+itemEventsCfg events = testCfg {chatHooks = defaultChatHooks {eventHook = Just $ \_ evt -> evt <$ recordItemEvent events evt}}
+
+testUnreadCountsGroupDeletions :: HasCallStack => TestParams -> IO ()
+testUnreadCountsGroupDeletions ps = do
+  events <- newTVarIO []
+  withNewTestChatCfgOpts ps (itemEventsCfg events) testOpts {markRead = False} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      eventsFixture "counts/group-marked" events $ do
+        bob #> "#team hello @alice"
+        alice <# "#team bob!> hello @alice"
+        bob #> "#team hi"
+        alice <# "#team bob> hi"
+        bob ##> "\\ #team hi"
+        bob <## "message marked deleted"
+        alice <# "#team bob> [marked deleted] hi"
+      alice ##> "/set delete #team on"
+      alice <## "updated group preferences:"
+      alice <## "Full deletion: on"
+      bob <## "alice updated group #team: (signed)"
+      bob <## "updated group preferences:"
+      bob <## "Full deletion: on"
+      eventsFixture "counts/group-removed" events $ do
+        bob ##> "\\ #team hello @alice"
+        bob <## "message deleted"
+        alice <# "#team bob> [deleted] hello @alice"
+      alice ##> "/users"
+      alice <## "alice (Alice) (active, unread: 1)"
+
+testUnreadCountsModeratorSupport :: HasCallStack => TestParams -> IO ()
+testUnreadCountsModeratorSupport ps = do
+  events <- newTVarIO []
+  withNewTestChatCfgOpts ps (itemEventsCfg events) testOpts {markRead = False} "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      eventsFixture "counts/moderator-support" events $ do
+        bob #> "#team (support) hi"
+        alice <# "#team (support: bob) bob> hi"
+        bob #> "#team hello"
+        alice <# "#team bob> hello"
+      alice ##> "/users"
+      alice <## "alice (Alice) (active, unread: 1)"
+      supportItemId <- itemIdByText alice "hi"
+      apiFixture "counts/moderator-read" alice [] FixtureRequests {frMarkdown = [""], frUris = [], frCommands = ["/_read chat items #1(_support:2) " <> supportItemId]}
+      alice ##> "/member support chats #team"
+      alice <## "members require attention: 0"
+      alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+
+testUnreadCountsPendingMember :: HasCallStack => TestParams -> IO ()
+testUnreadCountsPendingMember ps = do
+  events <- newTVarIO []
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfgOpts ps (itemEventsCfg events) testOpts {markRead = False} "cath" cathProfile $ \cath -> do
+        createGroup2' "team" alice (bob, GRMember) True
+        alice ##> "/set delete #team on"
+        alice <## "updated group preferences:"
+        alice <## "Full deletion: on"
+        bob <## "alice updated group #team: (signed)"
+        bob <## "updated group preferences:"
+        bob <## "Full deletion: on"
+        alice ##> "/set admission review #team all"
+        alice <## "changed member admission rules"
+        bob <## "alice updated group #team: (signed)"
+        bob <## "changed member admission rules"
+        alice ##> "/create link #team"
+        gLink <- getGroupLink alice "team" GRMember True
+        cath ##> ("/c " <> gLink)
+        cath <## "connection request sent!"
+        alice <## "cath (Catherine): accepting request to join group #team..."
+        concurrentlyN_
+          [ alice <## "#team: cath connected and pending review",
+            cath
+              <### [ "#team: alice accepted you to the group, pending review",
+                     "#team: joining the group...",
+                     "#team: you joined the group, connecting to group moderators for admission to group"
+                   ]
+          ]
+        eventsFixture "counts/pending-support" events $ do
+          alice ##> "/_send #1(_support:3) text 5"
+          alice <# "#team (support: cath) 5"
+          cath <# "#team (support) alice> 5"
+          itemId5 <- itemIdByText alice "5"
+          alice ##> ("/_update item #1(_support:3) " <> itemId5 <> " json {\"msgContent\": {\"type\": \"text\", \"text\": \"@cath 5\"}, \"mentions\": {\"cath\": 3}}")
+          alice <# "#team (support: cath) [edited] @cath 5"
+          cath <# "#team (support) alice> [edited] @cath 5"
+          alice ##> "/_send #1(_support:3) text 6"
+          alice <# "#team (support: cath) 6"
+          cath <# "#team (support) alice> 6"
+          itemId6 <- itemIdByText alice "6"
+          alice #$> ("/_delete item #1(_support:3) " <> itemId6 <> " broadcast", id, "message deleted")
+          cath <# "#team (support) alice> [deleted] 6"
+        cath ##> "/users"
+        cath <## "cath (Catherine) (active, unread: 1)"
+        apiFixture "counts/pending-read" cath [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_read chat #1(_support)"]}
+        cath ##> "/users"
+        cath <## "cath (Catherine) (active)"
 
 testScopedSupportUnreadStatsCorrectOnOpen :: HasCallStack => TestParams -> IO ()
 testScopedSupportUnreadStatsCorrectOnOpen =

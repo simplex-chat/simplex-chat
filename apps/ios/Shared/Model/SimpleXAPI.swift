@@ -1896,6 +1896,10 @@ func markChatRead(_ im: ItemsModel, _ chat: Chat) async {
                 withAnimation { ChatModel.shared.markAllChatItemsRead(im, cInfo) }
             }
         }
+        if let supportChat = chat.pendingSupportChat, supportChat.unread > 0 {
+            let (groupInfo, _) = try await apiSupportChatRead(type: .group, id: chat.chatInfo.apiId, scope: .memberSupport(groupMemberId_: nil))
+            await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
+        }
         if chat.chatStats.unreadChat {
             await markChatUnread(chat, unreadChat: false)
         }
@@ -2729,7 +2733,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
-                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
+                } else if cInfo.countsInUserUnread(cItem) {
                     m.increaseUnreadCounter(user: user)
                 }
             }
@@ -2747,7 +2751,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             let cInfo = chatItem.chatInfo
             let cItem = chatItem.chatItem
             if !cItem.isDeletedContent && active(user) {
-                _ = await MainActor.run { m.upsertChatItem(cInfo, cItem) }
+                await MainActor.run { m.replaceChatItem(cInfo, cItem) }
             }
             if let endTask = m.messageDelivery[cItem.id] {
                 switch cItem.meta.itemStatus {
@@ -2775,7 +2779,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if !active(user) {
             for item in items {
                 let d = item.deletedChatItem
-                if item.toChatItem == nil && d.chatItem.isRcvNew && d.chatInfo.ntfsEnabled(chatItem: d.chatItem) {
+                if item.toChatItem == nil && d.chatInfo.countsInUserUnread(d.chatItem) {
                     await MainActor.run {
                         m.decreaseUnreadCounter(user: user)
                     }
@@ -2787,7 +2791,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         await MainActor.run {
             for item in items {
                 if let toChatItem = item.toChatItem {
-                    _ = m.upsertChatItem(toChatItem.chatInfo, toChatItem.chatItem)
+                    m.applyChatItemUpdate(toChatItem.chatInfo, toChatItem.chatItem, item.deletedChatItem.chatItem)
                 } else {
                     m.removeChatItem(item.deletedChatItem.chatInfo, item.deletedChatItem.chatItem)
                 }
@@ -3230,11 +3234,7 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
     if active(user) {
-        if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
-            if cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
-            }
-        }
+        await MainActor.run { m.replaceChatItem(cInfo, cItem) }
     }
 }
 
@@ -3244,13 +3244,12 @@ func chatItemUpdate(_ user: any UserLike, _ update: AChatItemUpdate) async {
     let cItem = update.chatItem
     let prevItem = update.prevChatItem
     if active(user) {
-        if await MainActor.run(body: { m.applyChatItemUpdate(cInfo, cItem, prevItem) }) {
-            if cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
-            }
+        await MainActor.run {
+            m.updateChatInfo(cInfo)
+            m.applyChatItemUpdate(cInfo, cItem, prevItem)
         }
     } else {
-        let change = unreadCountChange(prevItem, cItem) { $0.isRcvNew && cInfo.ntfsEnabled(chatItem: $0) }
+        let change = unreadCountChange(prevItem, cItem) { cInfo.countsInUserUnread($0) }
         if change > 0 {
             await MainActor.run { m.increaseUnreadCounter(user: user) }
         } else if change < 0 {
@@ -3288,7 +3287,7 @@ func groupChatItemsDeleted(_ user: UserRef, _ groupInfo: GroupInfo, _ chatItemID
             await MainActor.run {
                 var newItem = ci
                 newItem.meta.itemDeleted = deleted
-                _ = m.upsertChatItem(cInfo, newItem)
+                m.replaceChatItem(cInfo, newItem)
             }
             notFound -= 1
             if notFound == 0 { break }

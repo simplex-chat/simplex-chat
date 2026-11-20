@@ -288,14 +288,14 @@ The app icon badge shows the total unread message count:
 // 1. App enters background:
 NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
 
-// 2. Messages are read:
-// Badge is recalculated and updated
+// 2. A row's counts or notification setting change, or a chat is added or removed:
+ChatModel.updateNtfBadgeCount()
 
 // 3. NSE receives notification:
 // NSE updates badge based on its count
 ```
 
-`totalUnreadCountForAllUsers()` sums unread counts across all user profiles (not just the active user).
+`totalUnreadCountForAllUsers()` sums the active profile's rows by their notifications (`Chat.userUnreadCount`: all - unread, mentions - unread mentions, off - 0) and the unread counts of the other profiles.
 
 ### NSE Badge Handling
 
@@ -303,7 +303,6 @@ NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
 |--------|---------|------|
 | [`setBadgeCount()`](../../SimpleX NSE/NotificationService.swift#L592) | Increments badge via `ntfBadgeCountGroupDefault` | [592](../../SimpleX NSE/NotificationService.swift#L592) |
 | [`setNtfBadgeCount(_:)`](../../Shared/Model/NtfManager.swift#L264) | Sets badge on `UIApplication` | [264](../../Shared/Model/NtfManager.swift#L264) |
-| [`changeNtfBadgeCount(by:)`](../../Shared/Model/NtfManager.swift#L270) | Adjusts badge by delta | [270](../../Shared/Model/NtfManager.swift#L270) |
 
 ---
 

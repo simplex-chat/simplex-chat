@@ -2839,14 +2839,15 @@ updateGroupCIMentions db g ci@ChatItem {mentions} mentions'
     deleteMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
     createMentions = createGroupCIMentions db g ci mentions'
 
-updateGroupCIUserMention :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
+updateGroupCIUserMention :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> ChatItem 'CTGroup 'MDRcv -> IO (GroupInfo, ChatItem 'CTGroup 'MDRcv)
 updateGroupCIUserMention db cxt user@User {userId} g@GroupInfo {membership} scopeInfo_ ci@ChatItem {chatDir, quotedItem, mentions, meta = meta@CIMeta {itemId, itemStatus, userMention}}
-  | userMention' == userMention = pure ci
+  | userMention' == userMention = pure (g, ci)
   | otherwise = do
       DB.execute db "UPDATE chat_items SET user_mention = ? WHERE user_id = ? AND chat_item_id = ?" (BI userMention', userId, itemId)
-      when (itemStatus == CISRcvNew) $
-        forM_ scopeInfo_ $ \scopeInfo -> updateGroupScopeUnreadStats db cxt user g scopeInfo (0, 0, fromEnum userMention - fromEnum userMention')
-      pure ci {meta = meta {userMention = userMention'}}
+      g' <- case scopeInfo_ of
+        Just scopeInfo | itemStatus == CISRcvNew -> updateGroupScopeUnreadStats db cxt user g scopeInfo (0, 0, fromEnum userMention - fromEnum userMention')
+        _ -> pure g
+      pure (g', ci {meta = meta {userMention = userMention'}})
   where
     userMention' = userMentioned membership senderBlocked userReply mentions
     senderBlocked = case chatDir of

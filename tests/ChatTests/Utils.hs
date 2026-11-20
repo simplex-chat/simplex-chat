@@ -30,7 +30,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems), storeCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtChatItemsDeleted, CEvtChatItemsStatusesUpdated, CEvtNameMoved, CEvtNewChatItems), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Mobile (chatParseMarkdown, chatParseUri, chatSendCmd, eitherToResult)
@@ -1027,6 +1027,8 @@ recordItemEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
 recordItemEvent events evt = case evt of
   Right CEvtNewChatItems {} -> record
   Right CEvtChatItemUpdated {} -> record
+  Right CEvtChatItemsDeleted {} -> record
+  Right CEvtChatItemsStatusesUpdated {} -> record
   _ -> pure ()
   where
     record = atomically $ modifyTVar' events (<> [J.toJSON $ eitherToResult Nothing evt])
@@ -1055,7 +1057,7 @@ stableJSON = \case
   v -> v
   where
     stableField k v
-      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs", "deletedTs", "fileExpires"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText"] = J.String $ JK.toText k
+      | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs", "deletedTs", "fileExpires", "lastMsgFromMemberTs"] = J.String "1970-01-01T00:00:00Z"
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText", "groupLinkId"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stableJSON v

@@ -51,6 +51,7 @@ func apiLoadMessages(
         }
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
+            im.sentItemUpdates = [:]
             if im.secondaryIMFilter == nil {
                 chatModel.updateChatInfo(chat.chatInfo)
             }

@@ -2974,7 +2974,7 @@ struct ChatView: View {
                             await MainActor.run {
                                 deletingItem = nil
                                 if let toItem = itemDeletion.toChatItem {
-                                    _ = m.upsertChatItem(chat.chatInfo, toItem.chatItem)
+                                    m.applyChatItemUpdate(chat.chatInfo, toItem.chatItem, itemDeletion.deletedChatItem.chatItem)
                                 } else {
                                     m.removeChatItem(chat.chatInfo, itemDeletion.deletedChatItem.chatItem)
                                 }
@@ -3176,7 +3176,7 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                 await MainActor.run {
                     for di in deletedItems {
                         if let toItem = di.toChatItem {
-                            _ = ChatModel.shared.upsertChatItem(chatInfo, toItem.chatItem)
+                            ChatModel.shared.applyChatItemUpdate(chatInfo, toItem.chatItem, di.deletedChatItem.chatItem)
                         } else {
                             ChatModel.shared.removeChatItem(chatInfo, di.deletedChatItem.chatItem)
                         }
@@ -3214,7 +3214,7 @@ func archiveReports(_ chat: Chat, _ itemIds: [Int64], _ forAll: Bool, _ onSucces
                 await MainActor.run {
                     for di in deleted {
                         if let toItem = di.toChatItem {
-                            _ = ChatModel.shared.upsertChatItem(chatInfo, toItem.chatItem)
+                            ChatModel.shared.applyChatItemUpdate(chatInfo, toItem.chatItem, di.deletedChatItem.chatItem)
                         } else {
                             ChatModel.shared.removeChatItem(chatInfo, di.deletedChatItem.chatItem)
                         }
@@ -3388,7 +3388,6 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
             await MainActor.run {
                 let wasFavorite = chat.chatInfo.chatSettings?.favorite ?? false
                 ChatTagsModel.shared.updateChatFavorite(favorite: chatSettings.favorite, wasFavorite: wasFavorite)
-                let wasUnread = chat.unreadTag
                 switch chat.chatInfo {
                 case var .direct(contact):
                     contact.chatSettings = chatSettings
@@ -3398,7 +3397,6 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
                     ChatModel.shared.updateGroup(groupInfo)
                 default: ()
                 }
-                ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
             }
         } catch let error {
             logger.error("apiSetChatSettings error \(responseError(error))")

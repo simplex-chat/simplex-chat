@@ -15,6 +15,8 @@ import androidx.compose.ui.window.WindowState
 import boofcv.alg.fiducial.qrcode.QrCode
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.chatParseMarkdown
+import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.PreviewTerminalLayout
@@ -176,9 +178,13 @@ class SnapshotTest {
     val appearanceBarsBlurRadius = appPrefs.appearanceBarsBlurRadius.get()
     val inAppBarsAlpha = appPrefs.inAppBarsAlpha.get()
     val appBarMaxHeightPx = AppBarHandler.appBarMaxHeightPx
+    val sendCmd = chatSendCmdRetry
+    val parseMarkdown = chatParseMarkdown
     val index = mutableListOf<Snapshot>()
     val failures = mutableListOf<String>()
     try {
+      chatSendCmdRetry = { _, _, _ -> "{}" }
+      chatParseMarkdown = { "{}" }
       Locale.setDefault(Locale.US)
       TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
       simplexWindowState.windowState = WindowState(size = DpSize(SCENE_WIDTH.dp, SCENE_MAX_HEIGHT.dp))
@@ -225,6 +231,8 @@ class SnapshotTest {
       appPrefs.inAppBarsAlpha.set(inAppBarsAlpha)
       AppBarHandler.appBarMaxHeightPx = appBarMaxHeightPx
       ThemeManager.applyTheme(theme)
+      chatSendCmdRetry = sendCmd
+      chatParseMarkdown = parseMarkdown
     }
     assertEquals(emptyList(), failures)
   }
