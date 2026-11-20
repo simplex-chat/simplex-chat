@@ -19,6 +19,7 @@ module StoreService.Names.Chain
     nodeChainId,
     blockAt,
     confirmedNumber,
+    deepBlock,
     transactionReceipt,
     transactionKnown,
     transactionCount,
@@ -155,6 +156,14 @@ blockAt c = blockByNumber c . blockTagParam . AtBlock
 -- | The newest block at the configured confirmation depth below this latest one, as the sender counts it.
 confirmedNumber :: ChainClient -> Word64 -> Word64
 confirmedNumber ChainClient {ccConfig = ChainConfig {cConfirmations}} latest = latest - min latest (fromIntegral (max 1 cConfirmations) - 1)
+
+-- | The newest block at the configured confirmation depth, as the sender counts it.
+deepBlock :: ChainClient -> Block -> IO (Either ChainError Block)
+deepBlock c tip@Block {blockNumber}
+  | deep == blockNumber = pure $ Right tip
+  | otherwise = blockAt c deep
+  where
+    deep = confirmedNumber c blockNumber
 
 blockByNumber :: ChainClient -> J.Value -> IO (Either ChainError Block)
 blockByNumber c tag =

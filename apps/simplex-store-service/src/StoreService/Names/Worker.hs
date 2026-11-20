@@ -34,7 +34,7 @@ import Control.Concurrent.STM
 import Control.Exception (finally, mask_)
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
-import Control.Monad (forM, forM_, forever, void, when)
+import Control.Monad (forM, forM_, forever, unless, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Functor ((<&>))
@@ -53,10 +53,10 @@ import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Balances (RefundRecord (..))
 import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient, ChainError (..), TxHash, blockAt)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
-import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy, sponsorNonce)
+import StoreService.Names.Contracts (CommitmentAges (..), Contracts, acceptedTerms, commitmentAges, commitmentTime, communityName, confirmedBlock, confirmedTag, controllerAvailable, disputeUntil, forgetNamePolicy, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrderRefusal, OrdersEnv (..), WriteRefusal (..), checkLanded, confirmLanded, unixSeconds, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, termsKind, unDisputeDays, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
@@ -587,16 +587,18 @@ sweepEndedRegistrations :: Worker -> IO ()
 sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oeNow}} = do
   now <- oeNow
   disputable <- withTransaction oeStore (`disputableRegistrations` fromInteger (unixSeconds now - disputeReadMargin))
-  forM_ disputable $ \rid@(RegistrationId ridText) ->
-    safely ("names ended sweep: registration " <> ridText) $
-      withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just r@NameRegistration {nrPhase = PRegistered, nrLabelHash, nrDisputeUntil = ours@(Just _)} ->
-          runExceptT (ExceptT (confirmedTag oeContracts) >>= \tag -> ExceptT (disputeUntil oeContracts tag nrLabelHash)) >>= \case
-            Right current
-              | current /= ours -> void $ save w now r {nrPhase = PEnded, nrDisputeUntil = Nothing}
-              | otherwise -> pure ()
-            Left e -> logWarn $ "names ended sweep: registration " <> ridText <> ": its dispute end could not be read, " <> tshow e
-        _ -> pure ()
+  unless (null disputable) $
+    runExceptT (ExceptT (confirmedBlock oeContracts) >>= \confirmed -> forM_ disputable $ ExceptT . endIfUnregistered now confirmed) >>= \case
+      Left e -> logWarn $ "names ended sweep: a chain read failed; the next pass will run: " <> tshow e
+      Right () -> pure ()
+  where
+    endIfUnregistered now Block {blockNumber, blockTimestamp} rid@(RegistrationId ridText) =
+      safelyWith ("names ended sweep: registration " <> ridText) (Right ()) $
+        withTransaction oeStore (`getRegistration` rid) >>= \case
+          Just r@NameRegistration {nrPhase = PRegistered, nrLabelHash, nrDisputeDays, nrDisputeUntil = ours@(Just disputeEnd)}
+            | disputeEnd < blockTimestamp + fromIntegral (unDisputeDays nrDisputeDays) * 86400 ->
+                disputeUntil oeContracts (AtBlock blockNumber) nrLabelHash >>= traverse (\current -> when (current /= ours) $ void $ save w now r {nrPhase = PEnded})
+          _ -> pure $ Right ()
 
 runEndedSweep :: Worker -> IO ()
 runEndedSweep w = forever $ safely "names ended sweep" (sweepEndedRegistrations w) >> threadDelay endedSweepInterval

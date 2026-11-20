@@ -47,7 +47,7 @@ where
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM, unless, when)
-import Control.Monad.Except (ExceptT (..), runExceptT)
+import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
@@ -70,9 +70,10 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Config (NamesConfig (..))
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainError (..))
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (agreedTermsHash, communityJSON, communityTermsPrefix, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, disputeUntil, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedBlock, disputeUntil, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (abiWordSize, bytes32FromHex, hex)
@@ -379,11 +380,12 @@ checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nr
     Right (Just (tx, expiry, disputeEnd)) -> either (const LChanged) LRegistered <$> markRegistered tx expiry disputeEnd
   where
     landed mined = do
-      confirmed <- ExceptT $ confirmedTag ct
+      Block {blockNumber = confirmed} <- ExceptT $ confirmedBlock ct
       registerTx <- case mined of
+        (_, Just block) : _ | block > confirmed -> throwError $ ChainUnavailable "the confirmed block is below the register's block"
         tx : _ -> pure $ Just $ Just tx
-        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken ct confirmed nrLabelHash)
-      forM registerTx $ \tx -> (tx,,) <$> ExceptT (nameExpires ct confirmed nrLabelHash) <*> ExceptT (disputeUntil ct confirmed nrLabelHash)
+        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken ct (AtBlock confirmed) nrLabelHash)
+      forM registerTx $ \tx -> (tx,,) <$> ExceptT (nameExpires ct (AtBlock confirmed) nrLabelHash) <*> ExceptT (disputeUntil ct (AtBlock confirmed) nrLabelHash)
     markRegistered tx expiry disputeEnd = do
       now <- clock
       let registered =
