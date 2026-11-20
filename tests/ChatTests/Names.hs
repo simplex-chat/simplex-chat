@@ -322,6 +322,7 @@ testChannelDomainVerify ps = withSmpServerAndNames ps $ \reg ->
         alice ##> "/_verify domain #1"
         alice <## "SimpleX name #team verified"
         memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
+        settleTeamJoin alice cath bob
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team verified"
         -- the name is re-pointed to a different link: verification fails
@@ -1007,9 +1008,17 @@ joinVerifiedTeam reg alice cath bob = do
   registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
   setChannelDomain alice cath "alice" "team" "team.simplex"
   memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
+  settleTeamJoin alice cath bob
   bob ##> "/_verify domain #1"
   bob <## "SimpleX name #team verified"
   pure shortLink
+
+settleTeamJoin :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
+settleTeamJoin alice cath bob = do
+  alice #> "#team hi"
+  cath <# "#team> hi"
+  bob <# "#team> hi [>>]"
+  waitQueuedLinkUpdates alice
 
 knownGroupPlan :: HasCallStack => String -> String -> TestCC -> IO ()
 knownGroupPlan g name cc = do
@@ -1099,6 +1108,7 @@ withTeamChats test = withChannelChats $ \reg alice cath bob -> do
   alice <## "new contact address set"
   connectBobByName "@team.simplex" alice bob
   joinChannelByName "team" alice cath bob
+  settleTeamJoin alice cath bob
   test reg contactLink channelLink alice bob
 
 testNameRecordOrWarning :: IO ()
