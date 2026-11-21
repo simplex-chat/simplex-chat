@@ -297,7 +297,7 @@ const [guardian, rival] = [1, 4].map((addressIndex) => mnemonicToAccount(ANVIL_M
 const ALLOWANCE = 1_000_000n * 10n ** 18n
 const TAKE_SECONDS = 60
 const SEARCH_RESET = { chainDown: false, limitSeconds: 0, invoiceError: null, findLimitSeconds: 0 }
-const RUNNER_CONTROL = /^\/control\/(code|rate|(settle|partial|confirming|expire|refund)\/[^/]+)$/
+const RUNNER_CONTROL = /^\/control\/(code|(settle|partial|confirming|expire|refund)\/[^/]+)$/
 
 writeFileSync(rivalChainFile, JSON.stringify({ ...JSON.parse(readFileSync(chainFile, "utf8")), registrarKey: toHex(rival.getHdKey().privateKey) }))
 process.env.LOCAL_CHAIN_OUT = rivalChainFile

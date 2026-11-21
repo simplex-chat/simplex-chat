@@ -11,7 +11,6 @@ module Bots.StoreService.FakeBTCPay
     fakeExpiryMinutes,
     setInvoiceState,
     setRates,
-    fixtureRates,
     failNextCalls,
     failAfterCalls,
     useListFixture,
@@ -275,9 +274,6 @@ patchMethods InvoiceState {isStatus, isPaid, isDue, isAmount, isPayments} = \cas
 settledDate :: Int
 settledDate = 1700003600
 
-fixtureRates :: [(Text, Text)]
-fixtureRates = [("BTC_USD", "108000.12"), ("XMR_USD", "168.25")]
-
 isZero :: Text -> Bool
 isZero t = (J.decodeStrict (TE.encodeUtf8 t) :: Maybe Scientific) == Just 0
 
@@ -426,6 +422,7 @@ fakeApp stv req respond = do
       let asked = [TE.decodeUtf8 pair | ("currencyPair", Just pair) <- queryString req]
       respond . jsonResponse ok200 $ fromMaybe (J.toJSON (map fixtureRate asked)) answer
     fixtureRate pair = J.object ["currencyPair" J..= pair, "errors" J..= ([] :: [Text]), "rate" J..= lookup pair fixtureRates]
+    fixtureRates = [("BTC_USD", "108000.12"), ("XMR_USD", "168.25") :: (Text, Text)]
 
     listInvoices = do
       st <- readTVarIO stv

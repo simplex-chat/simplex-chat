@@ -5,7 +5,7 @@
 
 module Bots.StoreService.NamesPageService (namesPageServiceTests) where
 
-import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), fixtureRates, setInvoiceState, setRates, webhookEvent, webhookSigHeader, withFakeBTCPay)
+import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, webhookEvent, webhookSigHeader, withFakeBTCPay)
 import Bots.StoreService.FakeStripe (FakeStripe (..), setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race_)
@@ -98,7 +98,6 @@ controlApp pc req respond = do
     json st = responseLBS st [(hContentType, "application/json")] . J.encode
     control body = case (requestMethod req, pathInfo req) of
       ("POST", ["control", "code"]) -> withObject body (codeControl pc)
-      ("POST", ["control", "rate"]) -> withObject body (rateControl pc)
       ("POST", ["control", "refund", ref]) -> withObject body (refundControl pc ref)
       ("POST", ["control", action, invId])
         | action `elem` ["settle", "partial", "confirming", "expire"] -> withObject body (invoiceControl pc action (InvoiceId invId))
@@ -125,17 +124,6 @@ codeControl PageControls {pcService, pcTurns} o = case JT.parseEither fields o o
   where
     fields v = (,,) <$> v J..: "minLength" <*> v J..:? "years" <*> v J..:? "state"
     answered code = Right $ J.object ["code" J..= formatNameCode code]
-
-rateControl :: PageControls -> J.Object -> IO ControlAnswer
-rateControl PageControls {pcBTCPay} o = case JT.parseEither fields o of
-  Left e -> pure $ Left (badRequest400, T.pack e)
-  Right (btc, xmr) -> do
-    setRates pcBTCPay $ J.toJSON [rate "BTC_USD" btc, rate "XMR_USD" xmr]
-    pure $ Right $ J.object ["ok" J..= True]
-  where
-    fields v = (,) <$> v J..:? "btc" <*> v J..:? "xmr"
-    rate :: Text -> Maybe Int -> J.Value
-    rate pair dollars = J.object ["currencyPair" J..= pair, "errors" J..= ([] :: [Text]), "rate" J..= maybe (lookup pair fixtureRates) (Just . T.pack . show) dollars]
 
 refundControl :: PageControls -> Text -> J.Object -> IO ControlAnswer
 refundControl PageControls {pcService} ref o = case JT.parseEither (J..:? "cents") o of

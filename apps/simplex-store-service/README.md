@@ -1966,7 +1966,6 @@ the Stripe key, so the dev server shows its stand-in card form. Its controls:
 | `/control/partial/<invoice>` | half the invoice's coin reaches it, unconfirmed |
 | `/control/confirming/<invoice>` | BTCPay processes the invoice paid in full; Stripe processes the card payment |
 | `/control/expire/<invoice>` | BTCPay expires the invoice; Stripe cancels the payment intent |
-| `/control/rate` `{"btc", "xmr"}` | BTCPay's rate source answers these rates; `null` answers the fixtures' rate |
 | `/control/take` `{"label"}` | the mock's own: the holder registers the name, through a registrar of its own |
 | `/control/general-terms`, `/control/community-terms` | the mock's own: the contracts' owner sets the terms |
 | `/control/search` with the reset that `search.spec.ts` sends after each case | answered as done |
