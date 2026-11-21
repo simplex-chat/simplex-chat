@@ -127,8 +127,8 @@ workerTests = describe "StoreService names: worker" $ do
     it "ends a registered order whose registration was unregistered in its dispute period, publishing it, keeping its stored times out of the view, and keeps it ended after the name is registered again" testEndedOnUnregister
     it "ends an order whose name was registered again before the sweep read it, leaving an order without a dispute period, past it or registered after the confirmed block" testEndedSweepBounds
     it "ends an order only once its unregister is at the confirmation depth" testEndedAtDepth
-    it "changes nothing when the block or every order's dispute end cannot be read, logging the failure once" testEndedSweepUnread
-    it "reads the orders after one whose dispute end cannot be read, logging the failure once" testEndedSweepPastUnread
+    it "changes nothing when the block or every order's dispute end cannot be read, logging once the stopped pass or an order read again" testEndedSweepUnread
+    it "reads the orders after one whose dispute end cannot be read, logging that order's failed read once" testEndedSweepPastUnread
     it "ends an order unregistered within the confirmation depth once its mined register is judged, storing the expiry and dispute end its register set" testEndedWithinDepth
     it "ends an order whose name was unregistered and registered again by another before the confirmed block, storing the expiry and dispute end its register set, not the other registration's" testEndedByOtherRegistration
   describe "retry" $ do
@@ -1122,10 +1122,11 @@ testEndedSweepUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> do
   void $ confirmedBlockAt ctx $ orderSeconds + 1
   answerDisputeUntil ctx "alicebakery" 0
   answerDisputeUntil ctx "dynamis" 0
-  forM_ ["eth_getBlockByNumber", "eth_call"] $ \method -> do
+  forM_ [("eth_getBlockByNumber", ["names ended sweep: a chain read failed, the pass is stopped: "]), ("eth_call", map readAgainLine rs)] $ \(method, expected) -> do
     setFault cNode method HttpFailure
     logs <- capturingStderr $ sweepEndedRegistrations wWorker
-    T.count "names ended sweep: a chain read failed" logs `shouldBe` 1
+    T.count "a chain read failed" logs `shouldBe` 1
+    logs `shouldSatisfy` \l -> any (`T.isInfixOf` l) expected
     mapM (stored ctx) rs `shouldReturn` rs
     clearFault cNode method
   sweepEndedRegistrations wWorker
@@ -1140,9 +1141,13 @@ testEndedSweepPastUnread = withWorker $ \W {wCtx = ctx@Ctx {cNode}, wWorker} -> 
   answerCall cNode (registrarOf cNode) (selector "disputeUntil(uint256)" <> labelBytes "alicebakery") $ Reverts ""
   answerDisputeUntil ctx "dynamis" 0
   logs <- capturingStderr $ sweepEndedRegistrations wWorker
-  T.count "names ended sweep: a chain read failed" logs `shouldBe` 1
+  T.count "a chain read failed" logs `shouldBe` 1
+  logs `shouldSatisfy` T.isInfixOf (readAgainLine unread)
   stored ctx unread `shouldReturn` unread
   nrPhase <$> stored ctx unregistered `shouldReturn` PEnded
+
+readAgainLine :: NameRegistration -> Text
+readAgainLine NameRegistration {nrId = RegistrationId rid} = "names ended sweep: registration " <> rid <> ": a chain read failed, read again at the next pass: "
 
 testEndedWithinDepth :: IO ()
 testEndedWithinDepth = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
