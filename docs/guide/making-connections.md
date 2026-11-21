@@ -122,3 +122,13 @@ Open one of your conversations, tap the contact's name in the chat toolbar and
 tap "Contact preferences". Here you can choose whether you wish to allow
 disappearing messages, deleting messages for everyone, message reactions, voice
 messages and audio/video calls.
+
+## Deleting and archiving contacts
+
+<img src="./images/making-connections-delete-contact.png" alt="Delete contact, with the Keep conversation toggle" width="288">
+
+Swipe a contact left on iOS, tap and hold it on Android, or right-click it on desktop:
+
+- **Archive** to hide the chat without telling the contact. You can find it in Archived contacts, under the pencil button.
+- **Delete**, and turn on **Keep conversation** to keep the messages.
+- **Delete and block** a contact who connected via your address. The contact is not notified and can't connect via your address again for 1 day, 1 week or forever. On iOS this button is called **Block**.

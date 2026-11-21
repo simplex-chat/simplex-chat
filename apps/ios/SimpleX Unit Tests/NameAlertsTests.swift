@@ -4,14 +4,15 @@ import UIKit
 @testable import SimpleX
 @testable import SimpleXChat
 
-final class NameAlertsTests: XCTestCase {
+class RecordedAPITestCase: XCTestCase {
     private let sendCmd = sendSimpleXCmdStr
     private let parseMarkdown = parseSimpleXMarkdownText
     private let parseUri = parseSanitizeUri
     private let lock = NSLock()
     private var unrecorded: [String] = []
-    private var shownLocalChats: [String] = []
-    private var opened = 0
+    private var commands: [String: Any] = [:]
+    var shownLocalChats: [String] = []
+    var opened = 0
 
     @MainActor
     override func setUp() async throws {
@@ -32,7 +33,9 @@ final class NameAlertsTests: XCTestCase {
         parseSanitizeUri = parseUri
         XCTAssertEqual(requests(), [], "requests without recorded responses")
     }
+}
 
+final class NameAlertsTests: RecordedAPITestCase {
     @MainActor
     func testKnownNameExpired() async throws {
         try recorded("names/plan-known-expired")
@@ -274,12 +277,15 @@ final class NameAlertsTests: XCTestCase {
         try await waitFor { state.filtered == ["@2", "#1"] }
         XCTAssertEqual(Set(ChatModel.shared.chats.map(\.id)), ["@2", "#1"])
     }
+}
 
-    private func recorded(_ fixture: String) throws {
+extension RecordedAPITestCase {
+    func recorded(_ fixture: String) throws {
         let responses = try XCTUnwrap(try fixtureJSON(fixture) as? [String: [String: Any]])
         let commands = responses["commands"] ?? [:]
         let markdown = responses["markdown"] ?? [:]
         let uris = responses["uris"] ?? [:]
+        self.commands = commands
         sendSimpleXCmdStr = { [unowned self] cmd, _, _ in
             guard let response = commands[cmd] else { self.unrecordedRequest(cmd); return nil }
             return try? JSONSerialization.data(withJSONObject: singleFieldJSON(response))
@@ -294,11 +300,18 @@ final class NameAlertsTests: XCTestCase {
         }
     }
 
+    func recordedResult<R: ChatAPIResult>(_ cmd: String) throws -> R {
+        let response = try XCTUnwrap(commands[cmd], "no recorded response to \(cmd)")
+        let r: APIResult<R> = decodeAPIResult(try JSONSerialization.data(withJSONObject: singleFieldJSON(response)))
+        guard case let .result(res) = r else { throw RecordedResponseError(cmd: cmd, responseType: r.responseType) }
+        return res
+    }
+
     private func unrecordedRequest(_ request: String) {
         locked { unrecorded.append(request) }
     }
 
-    private func requests() -> [String] {
+    func requests() -> [String] {
         locked { unrecorded }
     }
 
@@ -309,12 +322,12 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
-    private func connect(_ name: String) {
+    func connect(_ name: String) {
         planAndConnect(name, theme: CurrentColors.toAppTheme(), dismiss: false, showLocalChats: { [unowned self] chats in self.shownLocalChats += chats.map(\.id) }, onOpen: { [unowned self] in self.opened += 1 })
     }
 
     @MainActor
-    private func assertRequested(_ expected: (String) -> Bool, file: StaticString = #filePath, line: UInt = #line) async throws {
+    func assertRequested(_ expected: (String) -> Bool, file: StaticString = #filePath, line: UInt = #line) async throws {
         try? await waitFor { !self.requests().isEmpty }
         let shown = requests()
         XCTAssertEqual(shown.count, 1, "\(shown)", file: file, line: line)
@@ -323,14 +336,15 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
-    private func assertTexts(_ texts: [String], file: StaticString = #filePath, line: UInt = #line) async throws {
+    func assertTexts(_ texts: [String], file: StaticString = #filePath, line: UInt = #line) async throws {
         try? await waitFor { self.shownTexts().sorted() == texts.sorted() }
         let shown = shownTexts()
         XCTAssertEqual(shown.sorted(), texts.sorted(), "\(shown)", file: file, line: line)
     }
 
     @MainActor
-    private func press(_ title: String, file: StaticString = #filePath, line: UInt = #line) async throws {
+    func press(_ title: String, file: StaticString = #filePath, line: UInt = #line) async throws {
+        try? await waitFor { self.presented() != nil }
         let shown = try XCTUnwrap(presented(), file: file, line: line)
         if let alert = shown as? UIAlertController {
             let action = try XCTUnwrap(alert.actions.first { $0.title == title }, file: file, line: line)
@@ -344,12 +358,12 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
-    private func presented() -> UIViewController? {
+    func presented() -> UIViewController? {
         if let shown = getTopViewController(), shown.presentingViewController != nil, !shown.isBeingPresented, !shown.isBeingDismissed { shown } else { nil }
     }
 
     @MainActor
-    private func dismissPresented() async throws {
+    func dismissPresented() async throws {
         for _ in 0..<600 {
             guard let shown = getTopViewController(), shown.presentingViewController != nil else { return }
             if shown.isBeingPresented || shown.isBeingDismissed {
@@ -361,12 +375,12 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
-    private func dismiss(_ shown: UIViewController) async {
+    func dismiss(_ shown: UIViewController) async {
         await withCheckedContinuation { done in shown.dismiss(animated: false) { done.resume() } }
     }
 
     @MainActor
-    private func shownTexts() -> [String] {
+    func shownTexts() -> [String] {
         guard let shown = presented() else { return [] }
         return if let alert = shown as? UIAlertController {
             [alert.title, alert.message].compactMap { $0 } + alert.actions.compactMap(\.title)
@@ -415,6 +429,11 @@ private struct SearchHost: View {
         .environmentObject(ChatTagsModel.shared)
         .environmentObject(CurrentColors.toAppTheme())
     }
+}
+
+private struct RecordedResponseError: Error {
+    var cmd: String
+    var responseType: String
 }
 
 func fixtureJSON(_ fixture: String) throws -> Any {

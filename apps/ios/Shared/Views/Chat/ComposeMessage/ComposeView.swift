@@ -1232,7 +1232,8 @@ struct ComposeView: View {
             await sending()
             let mc = connectCheckLinkPreview()
             let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
-            if let (groupInfo, relayResults) = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
+            let noticeTarget = chat.chatInfo.groupInfo.map(LinkNoticeTarget.init) ?? .group
+            if let (groupInfo, relayResults) = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, noticeTarget: noticeTarget, incognito: incognito, msg: mc) {
                 await MainActor.run {
                     self.chatModel.updateGroup(groupInfo)
                     self.chatModel.channelRelayHostnames.removeValue(forKey: groupInfo.groupId)
@@ -1445,7 +1446,7 @@ struct ComposeView: View {
         case .spam: NSLocalizedString("Report spam: only group moderators will see it.", comment: "report reason")
         case .profile: NSLocalizedString("Report member profile: only group moderators will see it.", comment: "report reason")
         case .community: NSLocalizedString("Report violation: only group moderators will see it.", comment: "report reason")
-        case .illegal: NSLocalizedString("Report content: only group moderators will see it.", comment: "report reason")
+        case .content: NSLocalizedString("Report content: only group moderators will see it.", comment: "report reason")
         case .other: NSLocalizedString("Report other: only group moderators will see it.", comment: "report reason")
         case .unknown: "" // Should never happen
         }

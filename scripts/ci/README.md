@@ -45,7 +45,7 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - caches (the steps "Restore ... from cache");
   - `cabal build -j --enable-tests --ghc-options=-O0` (step "Build CLI");
   - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed.
-- App test fixtures: core tests write the core's responses and events that the app tests use to tests/fixtures/api (`/names tests/` to tests/fixtures/api/names; `/contact via address/`, `/should validate link type/` and `/reject contact and notify the sender/` to tests/fixtures/api/connect; `/updated item event has the previous item/`, `/should send updated item with mentions added and removed by edit/` and `/mark call invitation missed when the caller ends the call/` to tests/fixtures/api/updates), and fail when a recording differs from the committed file; the rewritten files are committed, and the kotlin and ios scopes run for them.
+- App test fixtures: core tests write the core's responses and events that the app tests use to tests/fixtures/api (`/names tests/` to tests/fixtures/api/names; `/contact via address/`, `/should validate link type/` and `/reject contact and notify the sender/` to tests/fixtures/api/connect; `/updated item event has the previous item/`, `/should send updated item with mentions added and removed by edit/` and `/mark call invitation missed when the caller ends the call/` to tests/fixtures/api/updates; `/app fixtures/`, `/should prevent removed member with notice from re-joining/` and `/blocked pending member can't be accepted/` to tests/fixtures/api/bans), and fail when a recording differs from the committed file; the rewritten files are committed, and the kotlin and ios scopes run for them.
 - Local:
   ```sh
   cp scripts/cabal.project.local.linux cabal.project.local
@@ -208,6 +208,8 @@ gh workflow run android-emu.yml --ref <branch> -f claude=true
 A newer run of a workflow on the same branch cancels the older one.
 
 Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
+
+`scripts/ci/wait-runs.py [<commit>]` waits until every run for a commit, HEAD by default, has completed, then prints each run and the jobs that did not succeed. If the commit has no runs, it waits for the first one, without a time limit.
 
 ## How long a run takes
 

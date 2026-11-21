@@ -64,10 +64,22 @@ func showAlert(
     actions: () -> [UIAlertAction] = { [okAlertAction] }
 ) {
     if let topController = getTopViewController() {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        for action in actions() { alert.addAction(action) }
-        topController.present(alert, animated: true)
+        topController.present(alertController(title, message: message, actions: actions()), animated: true)
     }
+}
+
+func alertController(_ title: String, message: String?, actions: [UIAlertAction]) -> UIAlertController {
+    let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+    for action in actions { alert.addAction(action) }
+    return alert
+}
+
+func typeToConfirmPlaceholder(_ word: String) -> String {
+    String.localizedStringWithFormat(NSLocalizedString("Type %@", comment: "confirmation field placeholder"), word)
+}
+
+func typedWordConfirms(_ typed: String?, _ word: String) -> Bool {
+    typed?.trimmingCharacters(in: .whitespaces).lowercased() == word
 }
 
 func showSheet(

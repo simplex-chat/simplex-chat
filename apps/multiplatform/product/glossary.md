@@ -108,7 +108,7 @@ Metadata for a group conversation. Fields: `groupId`, `localDisplayName`, `group
 *See:* `ChatModel.kt:2004` -- `data class GroupInfo`
 
 ### GroupMember
-A member of a group. Fields: `groupMemberId`, `groupId`, `memberId`, `memberRole` (GroupMemberRole), `memberCategory` (GroupMemberCategory), `memberStatus` (GroupMemberStatus), `memberSettings` (GroupMemberSettings), `blockedByAdmin`, `invitedBy`, `localDisplayName`, `memberProfile`, `memberContactId`, `memberContactProfileId`, `activeConn` (Connection?), `supportChat` (GroupSupportChat?).
+A member of a group. Fields: `groupMemberId`, `groupId`, `memberId`, `memberRole` (GroupMemberRole), `memberCategory` (GroupMemberCategory), `memberStatus` (GroupMemberStatus), `memberSettings` (GroupMemberSettings), `blockedByAdmin`, `blockedUntil` (Instant? -- end time of a timed block), `invitedBy`, `localDisplayName`, `memberProfile`, `memberContactId`, `memberContactProfileId`, `activeConn` (Connection?), `supportChat` (GroupSupportChat?).
 
 *See:* `ChatModel.kt:2177` -- `data class GroupMember`
 
@@ -118,7 +118,7 @@ Enumeration of group roles, ordered for comparison: `Observer` < `Author` < `Mem
 *See:* `ChatModel.kt:2369` -- `enum class GroupMemberRole`
 
 ### Connection
-An active or pending cryptographic connection to a peer. Fields: `connId`, `agentConnId`, `peerChatVRange` (VersionRange), `connStatus` (ConnStatus), `connLevel`, `viaGroupLink`, `customUserProfileId`, `connectionCode` (SecurityCode?), `pqSupport`, `pqEncryption`, `pqSndEnabled`, `pqRcvEnabled`, `connectionStats`, `authErrCounter`, `quotaErrCounter`.
+An active or pending cryptographic connection to a peer. Fields: `connId`, `agentConnId`, `peerChatVRange` (VersionRange), `connStatus` (ConnStatus), `connLevel`, `viaGroupLink`, `viaUserContactLink` (Long? -- set when the contact connected via the user's address), `customUserProfileId`, `connectionCode` (SecurityCode?), `pqSupport`, `pqEncryption`, `pqSndEnabled`, `pqRcvEnabled`, `connectionStats`, `authErrCounter`, `quotaErrCounter`.
 
 *See:* `ChatModel.kt:1882` -- `data class Connection`
 
