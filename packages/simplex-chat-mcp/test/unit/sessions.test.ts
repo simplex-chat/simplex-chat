@@ -595,6 +595,139 @@ describe("session channel", () => {
     expect(sentTo(chat, 20)).toHaveLength(3)
   })
 
+  it("posts a card for a subagent's tool prompt from the PermissionRequest hook, returns the verdict, and keeps the card pending at the turn's end", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const prompt = {id: id1, kind: "tool" as const, tool: "Bash", description: "Run the unit tests", preview: "npm test", agent: "reviewer"}
+    const approved = session.ask(prompt, new AbortController().signal)
+    const rejected = session.ask(prompt, new AbortController().signal)
+    await until(() => sentTo(chat, 20).length === 2)
+    const card = "Subagent `reviewer` asks to use `Bash`: `Run the unit tests`\n`npm test`"
+    expect(sentTo(chat, 20)).toEqual([1, 2].map(n => `${card}\n/'approve ${n}', /'approve ${n} all' or /'reject ${n}'`))
+    await session.turn({id: id1, answer: ""})
+    expect(session.actions.pending()).toHaveLength(2)
+    await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})
+    await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "2"})
+    expect([await approved, await rejected]).toEqual([{behavior: "allow"}, {behavior: "deny", message: "Alice rejected this in the SimpleX group."}])
+  })
+
+  it("links the PermissionRequest hook of a main-conversation prompt to the channel's card of its tool, without a second card or a decision", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    expect(await session.ask({id: id1, at: Date.now(), kind: "tool", tool: "Bash", description: "", preview: "ls"}, new AbortController().signal)).toBeUndefined()
+    await until(() => sentTo(chat, 20).length === 1)
+    expect(session.actions.all()).toHaveLength(1)
+  })
+
+  it("posts a reject-only card for an Artifact prompt of the main conversation 3 s after no channel request came, and ends it at the turn's end", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const asked = session.ask({id: id1, at: Date.now(), kind: "tool", tool: "Artifact", description: "", preview: "action: read\nurl: https://claude.ai/artifact/abc", terminalOnly: true}, new AbortController().signal)
+    await new Promise(resolve => setTimeout(resolve, 3_000))
+    await until(() => sentTo(chat, 20).length === 1)
+    const card = "I want to use `Artifact`, and Claude Code takes its approval only in its terminal:\n`action: read`\n`url: https://claude.ai/artifact/abc`"
+    expect(sentTo(chat, 20)).toEqual([`${card}\nApprove it there, or /'reject 1' here.`])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBe("Action 1 is approved only in Claude Code's terminal.")
+    await session.turn({id: id1, answer: ""})
+    expect(await asked).toBeUndefined()
+    await until(() => chat.updates.length === 1)
+    expect(chat.updates[0].text).toBe(`${card}\nEnded.`)
+  }, 10_000)
+
+  it("posts Claude's question as a card, answers it by /answer N K and by a reply of an approver, and declines it by /reject N", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const signal = new AbortController().signal
+    const one = {question: "Which library should we use for dates?", options: [{label: "date-fns", description: "Small modular functions"}, {label: "Luxon", description: "Immutable time zones"}], multiSelect: false}
+    const two = {question: "Which features should we enable?", options: [{label: "Auth", description: ""}, {label: "Billing", description: ""}], multiSelect: true}
+    const tapped = session.ask({id: id1, kind: "question", questions: [one]}, signal)
+    const replied = session.ask({id: id1, kind: "question", questions: [one, two]}, signal)
+    const declined = session.ask({id: id1, kind: "question", questions: [two]}, signal)
+    await until(() => [1, 2, 3].every(n => session.actions.get(n)?.card !== undefined))
+    expect(sentTo(chat, 20)).toEqual([
+      "❓ Which library should we use for dates?\n1. date-fns: Small modular functions /'answer 1 1'\n2. Luxon: Immutable time zones /'answer 1 2'\nReply to this message to answer in your own words, or /'reject 1'.",
+      "❓ Claude Code asks 2 questions:\n1. Which library should we use for dates?\n   date-fns: Small modular functions\n   Luxon: Immutable time zones\n2. Which features should we enable? (any of them)\n   Auth\n   Billing\nReply to this message with your answers, or /'reject 2'.",
+      "❓ Which features should we enable? (any of them)\n1. Auth\n2. Billing\nReply to this message with your answers, or /'reject 3'.",
+    ])
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "answer", params: "3 1"})).toBe("Action 3 has no option 1.")
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})).toBe("Action 1 is a question; reply to its card to answer it.")
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "answer", params: "1 1"})).toBeUndefined()
+    session.onMessage(event(sessionGroup, item(50, "React, and both", from(invitedAlice), {quoted: session.actions.get(2)!.card})))
+    expect(await session.control.ownerCommand(invitedAlice, {keyword: "reject", params: "3"})).toBeUndefined()
+    expect([await tapped, await replied, await declined]).toEqual([
+      {behavior: "allow", answers: {[one.question]: "date-fns"}},
+      {behavior: "allow", answers: {[one.question]: "React, and both", [two.question]: "React, and both"}},
+      {behavior: "deny", message: "Alice declined to answer in the SimpleX group."},
+    ])
+    await until(() => chat.updates.length === 3)
+    expect(chat.updates.map(({text}) => text.split("\n").at(-1)).sort()).toEqual(["Answered by Alice in a reply.", "Answered by Alice: date-fns.", "Rejected by Alice."])
+  })
+
+  it("posts a plan and its card as a reply to it, keeps Claude planning at a reply of an approver, and approves the next plan by /approve N", async () => {
+    const chat = new FakeChat()
+    const {session, lines} = await channel(chat)
+    const signal = new AbortController().signal
+    const planned = session.ask({id: id1, kind: "plan", plan: "## Retry failed uploads\n1. Retry 3 times."}, signal)
+    await until(() => session.actions.get(1)?.card !== undefined)
+    expect(answers(chat)).toEqual([[{text: "## Retry failed uploads\n1. Retry 3 times.", quotedItemId: undefined}], [{text: "📋 Claude Code asks to approve this plan.\n/'approve 1' to start, or reply to this message to keep planning with your changes; /'reject 1'", quotedItemId: chat.nextItemId - 2}]])
+    session.onMessage(event(sessionGroup, item(60, "Retry on 503 too.", from(invitedAlice), {quoted: session.actions.get(1)!.card})))
+    expect(await planned).toEqual({behavior: "deny", message: "Keep planning. Alice wrote in the SimpleX group: Retry on 503 too."})
+    await until(() => chat.updates.length === 1)
+    expect(chat.updates[0].text).toBe("📋 Claude Code asks to approve this plan.\nAnswered by Alice in a reply.")
+    const approved = session.ask({id: id1, kind: "plan", plan: "## Retry failed uploads, also on 503"}, signal)
+    await until(() => session.actions.get(2)?.card !== undefined)
+    await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "2"})
+    expect(await approved).toEqual({behavior: "allow"})
+    expect(lines).toEqual([])
+  })
+
+  it("posts an MCP server's link as a card, accepts it by /approve N, and ends a pending one at the turn's end", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const signal = new AbortController().signal
+    const link = {id: id1, kind: "link" as const, server: "tracker", message: "Sign in to continue.", url: "https://tracker.example/oauth"}
+    const accepted = session.ask(link, signal)
+    const ended = session.ask(link, signal)
+    await until(() => [1, 2].every(n => session.actions.get(n)?.card !== undefined))
+    expect(sentTo(chat, 20)[0]).toBe("🔗 MCP server `tracker` asks you to open: https://tracker.example/oauth\nSign in to continue.\nOpen it, then /'approve 1', or /'reject 1' to decline.")
+    await session.control.ownerCommand(invitedAlice, {keyword: "approve", params: "1"})
+    expect(await accepted).toEqual({behavior: "allow"})
+    await session.turn({id: id1, answer: ""})
+    expect(await ended).toBeUndefined()
+  })
+
+  it("posts a line when a turn fails, once per text until an answer or a member's prompt, completes the turn's opening message, and posts the lines of Claude Code's notifications unless a card came in the 30 s before", async () => {
+    const chat = new FakeChat()
+    const {session} = await channel(chat)
+    const failure = {error: "rate_limit", text: "You've hit your weekly limit · resets Nov 18, 3am (UTC)", autoContinue: false, menu: true}
+    await ownerPrompt(session, 70, "Run the unit tests.")
+    await session.turn({id: id1, at: Date.now(), prompt: "Run the unit tests."})
+    await session.turn({id: id1, at: Date.now(), failure})
+    await session.turn({id: id1, at: Date.now(), failure: {...failure, menu: false}})
+    await session.turn({id: id1, answer: ""})
+    await session.turn({id: id1, at: Date.now(), failure: {...failure, autoContinue: true, menu: false}})
+    await session.turn({id: id1, at: Date.now(), failure: {error: "authentication_failed", text: "Please run /login · API Error: 401", autoContinue: false, menu: false}})
+    await session.turn({id: id1, at: Date.now(), failure: {error: "overloaded", text: "API Error: Repeated 529 Overloaded errors", autoContinue: false, menu: false}})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "quota_auto_resume_stale", text: ""}})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "quota_auto_resume_disabled", text: ""}})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "elicitation_dialog", text: "Session paused"}})
+    session.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "permission_prompt", text: "Claude needs your permission"}})
+    await session.turn({id: id1, at: Date.now(), waiting: {kind: "idle_prompt", text: "Claude is waiting for your input"}})
+    await until(() => chat.updates.some(({text}) => text === "⏹️ Stopped"))
+    expect(sentTo(chat, 20).filter(text => !text.startsWith("I want to use"))).toEqual([
+      "",
+      "⛔ Claude Code stopped: You've hit your weekly limit · resets Nov 18, 3am (UTC)\nSend a message here when the limit is lifted.\nClaude Code shows its usage menu in its terminal. It holds messages from this group until someone closes the menu there.",
+      "⛔ Claude Code stopped: You've hit your weekly limit · resets Nov 18, 3am (UTC)\nClaude Code continues by itself at the reset. When the limit is lifted earlier, send a message here.",
+      "⛔ Claude Code stopped: Please run /login · API Error: 401\nSign in again in a terminal on this computer, with `/login` in Claude Code or with `claude auth login`, then send a message here.",
+      "⛔ Claude Code stopped: API Error: Repeated 529 Overloaded errors\nSend a message here to try again.",
+      "🔄 The usage limit has reset. Send a message here to continue.",
+      "⛔ Claude Code will not continue by itself after the usage limit. Send a message here when the limit has reset.",
+      "⏸️ Claude Code waits in its terminal: Session paused",
+    ])
+  })
+
   it("leaves the tool-use and mode cards out of the actions that list returns to the session", async () => {
     const chat = new FakeChat()
     const {session} = await channel(chat)

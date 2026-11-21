@@ -1,11 +1,12 @@
-import {open} from "fs/promises"
-import {isAbsolute, relative} from "path"
+import {open, readFile} from "fs/promises"
+import {homedir} from "os"
+import {isAbsolute, join, relative} from "path"
 import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError, oneLine} from "./log"
 import {duration} from "./messages"
-import {Step, TitleReply, TurnRequest} from "./protocol"
+import {AskLine, Decision, Failure, Prompt, Question, Step, TitleReply, TurnRequest} from "./protocol"
 import {qrCodeText} from "./qr"
 import {claudePid} from "./service-request"
 import {SocketError, isNotRunning} from "./socket"
@@ -47,6 +48,14 @@ const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammat
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
 const pluginTools = "mcp__plugin_simplex_simplex__"
 const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
+// spec: spec/architecture.md#hook-ask
+const maxPreview = 15_000
+// spec: spec/architecture.md#hook-ask
+const artifactUrl = /^https:\/\/claude\.ai\/(?:code\/)?artifact\//
+// spec: spec/architecture.md#hook-failureof
+const recordReadFactor = 10
+// spec: spec/architecture.md#hook-failureof
+const continueNotice = "continuing automatically"
 
 // spec: spec/api.md#plugin-options
 interface SessionStartInput {
@@ -74,6 +83,23 @@ interface TurnInput {
   tool_use_id?: string
   duration_ms?: number
   is_interrupt?: boolean
+  error?: string
+  notification_type?: string
+  message?: string
+}
+
+// spec: spec/api.md#plugin-options
+interface AskInput {
+  session_id: string
+  hook_event_name?: string
+  tool_name?: string
+  tool_input?: {[field: string]: unknown}
+  agent_id?: string
+  agent_type?: string
+  mcp_server_name?: string
+  message?: string
+  mode?: string
+  url?: string
 }
 
 // spec: spec/api.md#plugin-options
@@ -93,6 +119,7 @@ interface TranscriptEntry {
   timestamp?: unknown
   compactMetadata?: {trigger?: unknown; preTokens?: unknown; postTokens?: unknown}
   isSidechain?: unknown
+  isApiErrorMessage?: unknown
   promptId?: unknown
   origin?: Origin | null
   turnOrigin?: unknown
@@ -131,8 +158,13 @@ export interface HookOutput {
   systemMessage?: string
 }
 
+// spec: spec/api.md#plugin-options
+export interface AskOutput {
+  hookSpecificOutput: {hookEventName: "PermissionRequest"; decision: {behavior: "allow"; updatedInput?: object} | {behavior: "deny"; message: string}} | {hookEventName: "Elicitation"; action: "accept" | "decline"}
+}
+
 export interface HookDeps {
-  client: Pick<ServiceClient, "ensureService" | "request">
+  client: Pick<ServiceClient, "ensureService" | "request" | "stream">
   nodeVersion: string
 }
 
@@ -176,7 +208,7 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   if (!interactive(env)) return {}
   try {
     const input = JSON.parse(stdin) as TurnInput
-    const event = await eventFields(input, at, readMs)
+    const event = await eventFields(input, at, readMs, env)
     if (event === undefined) return {}
     const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model: input.to_model, switched: input.to_model === undefined ? undefined : true, effort: input.effort?.level, ...event}
     await client.ensureService(version)
@@ -195,13 +227,88 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
   return {}
 }
 
+// spec: spec/architecture.md#hook-ask
+export async function ask(stdin: string, env: NodeJS.ProcessEnv = process.env, client: HookDeps["client"] = ServiceClient.forRoot(dataRoot(env)), at = performance.timeOrigin): Promise<AskOutput | undefined> {
+  if (!interactive(env)) return undefined
+  try {
+    const input = JSON.parse(stdin) as AskInput
+    const prompt = promptOf(input)
+    if (prompt === undefined) return undefined
+    await client.ensureService(version)
+    let decision: Decision | undefined
+    await client.stream("/ask", {id: input.session_id, pid: claudePid(env), at, ...prompt}, line => (decision = (line as AskLine).decision))
+    return decision === undefined ? undefined : askOutput(input, prompt, decision)
+  } catch (error) {
+    logError("SimpleX MCP ask", error)
+    return undefined
+  }
+}
+
+// spec: spec/architecture.md#hook-ask
+function promptOf(input: AskInput): Prompt | undefined {
+  if (input.hook_event_name === "Elicitation") return input.mode === "url" && input.url !== undefined ? {kind: "link", server: input.mcp_server_name ?? "", message: input.message ?? "", url: input.url} : undefined
+  const {tool_name: tool, tool_input: fields = {}, agent_id: agentId, agent_type: agentType} = input
+  if (tool === undefined || tool.startsWith(pluginTools)) return undefined
+  const agent = agentId === undefined ? undefined : (agentType ?? agentId)
+  if (tool === "AskUserQuestion" || tool === "ExitPlanMode") return agent === undefined ? userPrompt(tool, fields) : undefined
+  const terminalOnly = tool === "Artifact" || (tool === "WebFetch" && artifactUrl.test(stringOf(fields.url) ?? ""))
+  if (terminalOnly && agent !== undefined) return undefined
+  return {kind: "tool", tool, description: stringOf(fields.description) ?? "", preview: cut(inputPreview(tool, fields), maxPreview), ...(agent === undefined ? {} : {agent}), ...(terminalOnly ? {terminalOnly} : {})}
+}
+
+// spec: spec/architecture.md#hook-ask
+function userPrompt(tool: "AskUserQuestion" | "ExitPlanMode", fields: {[field: string]: unknown}): Prompt | undefined {
+  if (tool === "ExitPlanMode") return {kind: "plan", plan: cut(stringOf(fields.plan) ?? "")}
+  const given: unknown[] = Array.isArray(fields.questions) ? fields.questions : []
+  const questions = given.flatMap(value => questionOf(value) ?? [])
+  return questions.length > 0 && questions.length === given.length ? {kind: "question", questions} : undefined
+}
+
+// spec: spec/architecture.md#hook-ask
+function questionOf(value: unknown): Question | undefined {
+  const {question, options: given, multiSelect} = (value ?? {}) as {question?: unknown; options?: unknown; multiSelect?: unknown}
+  const options = (Array.isArray(given) ? given : []).flatMap((option: {label?: unknown; description?: unknown} | null) => (typeof option?.label === "string" ? [{label: option.label, description: stringOf(option.description) ?? ""}] : []))
+  return typeof question === "string" && options.length > 0 ? {question, options, multiSelect: multiSelect === true} : undefined
+}
+
+// spec: spec/architecture.md#hook-ask
+function askOutput({tool_input: fields = {}}: AskInput, {kind}: Prompt, decision: Decision): AskOutput {
+  if (kind === "link") return {hookSpecificOutput: {hookEventName: "Elicitation", action: decision.behavior === "allow" ? "accept" : "decline"}}
+  if (decision.behavior === "deny" || kind === "tool") return {hookSpecificOutput: {hookEventName: "PermissionRequest", decision: decision.behavior === "deny" ? decision : {behavior: "allow"}}}
+  return {hookSpecificOutput: {hookEventName: "PermissionRequest", decision: {behavior: "allow", updatedInput: kind === "question" ? {...fields, answers: decision.answers ?? {}} : fields}}}
+}
+
+// spec: spec/architecture.md#hook-ask
+function inputPreview(tool: string, fields: {[field: string]: unknown}): string {
+  switch (tool) {
+    case "Bash":
+    case "PowerShell":
+      return stringOf(fields.command) ?? ""
+    case "Read":
+    case "Write":
+    case "Edit":
+      return stringOf(fields.file_path) ?? ""
+    case "NotebookEdit":
+      return stringOf(fields.notebook_path) ?? ""
+    default:
+      return Object.entries(fields)
+        .filter(([field]) => field !== "description")
+        .map(([field, value]) => `${field}: ${stringOf(value) ?? JSON.stringify(value)}`)
+        .join("\n")
+  }
+}
+
 // spec: spec/architecture.md#hook-turn
-async function eventFields(input: TurnInput, at: number, readMs: number): Promise<Partial<TurnRequest> | undefined> {
+async function eventFields(input: TurnInput, at: number, readMs: number, env: NodeJS.ProcessEnv): Promise<Partial<TurnRequest> | undefined> {
   switch (input.hook_event_name) {
     case "Stop": {
       const {model, usage} = await answerRecord(input, readMs)
       return {model: input.to_model ?? model, usage}
     }
+    case "StopFailure":
+      return {answer: undefined, failure: await failureOf(input, readMs, env)}
+    case "Notification":
+      return input.notification_type === undefined ? undefined : {waiting: {kind: input.notification_type, text: shortened(firstLine(input.message ?? ""))}}
     case "UserPromptSubmit":
       return promptKind(input, readMs)
     case "PreToolUse":
@@ -216,6 +323,34 @@ async function eventFields(input: TurnInput, at: number, readMs: number): Promis
     }
     default:
       return {}
+  }
+}
+
+// spec: spec/architecture.md#hook-failureof
+async function failureOf({error = "unknown", last_assistant_message: message = "", transcript_path: path}: TurnInput, readMs: number, env: NodeJS.ProcessEnv): Promise<Failure> {
+  const limit = error === "rate_limit"
+  const autoContinue = limit && path !== undefined && (await findInTranscript(path, "", answerReads, readMs, tail => (continued(tail.toString()) ? true : undefined))) === true
+  const menu = limit && !autoContinue && (await menuOpen(env, recordReadFactor * readMs))
+  return {error, text: shortened(firstLine(message)), autoContinue, menu}
+}
+
+// spec: spec/architecture.md#hook-failureof
+function continued(tail: string): boolean {
+  const entries = tail.split("\n").flatMap(line => transcriptEntry(line) ?? [])
+  const failed = entries.map(entry => entry.type === "assistant" && entry.isApiErrorMessage === true && entry.isSidechain !== true).lastIndexOf(true)
+  return failed !== -1 && entries.slice(failed + 1).some(entry => entry.type === "system" && typeof entry.content === "string" && entry.content.includes(continueNotice))
+}
+
+// spec: spec/architecture.md#hook-failureof
+async function menuOpen(env: NodeJS.ProcessEnv, ms: number): Promise<boolean> {
+  const pid = claudePid(env)
+  if (pid === undefined) return false
+  await new Promise(resolve => setTimeout(resolve, ms))
+  try {
+    const record = JSON.parse(await readFile(join(env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"), "sessions", `${pid}.json`), "utf8")) as {waitingFor?: unknown}
+    return record.waitingFor === "dialog open"
+  } catch {
+    return false
   }
 }
 
@@ -529,6 +664,8 @@ function textOf(content: unknown): string {
 }
 
 // spec: spec/api.md#plugin-commands
-function cut(text: string | undefined): string | undefined {
-  return text === undefined || text.length <= maxText ? text : `${text.slice(0, maxText).replace(/[\ud800-\udbff]$/, "")}…`
+function cut(text: string, max?: number): string
+function cut(text: string | undefined, max?: number): string | undefined
+function cut(text: string | undefined, max = maxText): string | undefined {
+  return text === undefined || text.length <= max ? text : `${text.slice(0, max).replace(/[\ud800-\udbff]$/, "")}…`
 }

@@ -81,6 +81,10 @@ function deps(root: string) {
           agent.modes.push(mode)
         },
         permission: request => agent.turns.push(request),
+        ask: async request => {
+          agent.turns.push(request)
+          return {behavior: "allow"}
+        },
         turn: async request => {
           agent.turns.push(request)
         },
@@ -645,6 +649,17 @@ describe("service", () => {
     expect(agents[0].turns).toEqual([permission, text, {id: id1, answer: "Done."}, "ended", "live posts ended"])
     expect(agents[0].onLine).toBeUndefined()
     await expect(post("/turn", {id: id2, answer: "x"})).rejects.toMatchObject({status: 409})
+  })
+
+  it("streams the session's decision of a prompt of the PermissionRequest hook", async () => {
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    await register(id1)
+    const prompt = {id: id1, kind: "tool" as const, tool: "Bash", description: "", preview: "ls", agent: "reviewer"}
+    const lines: unknown[] = []
+    await streamLines(socketPath(root), token, "/ask", prompt, line => lines.push(line))
+    expect(lines).toEqual([{decision: {behavior: "allow"}}])
+    expect(agents[0].turns).toEqual([prompt])
   })
 
   it("keeps the tool approvals of a session when its process attaches again, and ends them when another process registers the session and when the session closes", async () => {

@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-39.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-42.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -66,6 +66,9 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 37. [The texts of a turn](#37-the-texts-of-a-turn)
 38. [The status line command](#38-the-status-line-command)
 39. [An edit and a live message in the session group](#39-an-edit-and-a-live-message-in-the-session-group)
+40. [A tool prompt of the PermissionRequest hook](#40-a-tool-prompt-of-the-permissionrequest-hook)
+41. [Claude's question, a plan and an MCP server's link](#41-claudes-question-a-plan-and-an-mcp-servers-link)
+42. [A failed turn and a waiting Claude Code](#42-a-failed-turn-and-a-waiting-claude-code)
 
 ---
 
@@ -1876,3 +1879,109 @@ Notes:
 - A live message deleted before it is sent passes nothing, unless the member sends another message first.
 
 Source: [`Session.onMessage`, `onUpdate`, `pass`, `keepLive`, `passLive`, `replyTo`, `prompt`, `deliver`, `bounded`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).
+
+---
+
+## 40. A tool prompt of the PermissionRequest hook
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant HK as PermissionRequest hook
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  alt a subagent's prompt
+    CC->>HK: tool_name, tool_input, agent_id, agent_type, before the dialog
+  else a prompt of the main conversation
+    CC->>D: the channel's POST /permission, when the channel relays it (flow 22)
+    CC->>HK: tool_name, tool_input, beside the dialog
+  end
+  HK->>D: POST /ask {id, pid, at, tool, description, preview, agent?, terminalOnly?}, stream held
+  D->>N: ask
+  alt main conversation, a channel request of the tool from 5 s before the hook's start, waited for up to 3 s
+    N->>D: no decision
+    D->>HK: {}
+    HK->>CC: nothing; the channel's card answers
+  else
+    N->>O: card in #35;G
+    O->>N: /approve N, or /reject N
+    N->>D: allow, or deny: NAME rejected this in the SimpleX group.
+    D->>HK: {decision}
+    HK->>CC: hookSpecificOutput {hookEventName: PermissionRequest, decision}
+    N->>O: card edited: ... Approved by NAME. or Rejected by NAME.
+  end
+```
+
+Notes:
+
+- A subagent's card starts ``Subagent `TYPE` asks to use `TOOL`: `DESCRIPTION` ``, and the main conversation's ``I want to use `TOOL`: `DESCRIPTION` ``; the line ends with `:` for an input without `description`. The preview follows: the command, the file path, or a line `FIELD: VALUE` per field ([`inputPreview`](../src/hook.ts), [`requestLines`](../src/control.ts)).
+- A prompt of `Artifact`, or of `WebFetch` for a claude.ai artifact, in the main conversation gets a card ``I want to use `Artifact`, and Claude Code takes its approval only in its terminal:``, the preview and `Approve it there, or /'reject N' here.` Another request for it gets `Action N is approved only in Claude Code's terminal.` In a subagent, the hook returns at once, and Claude Code shows its dialog ([`askRequest`](../src/hook.ts), [`commandsLine`, `Control.ownerCommand`](../src/control.ts)).
+- A card of the main conversation ends as a channel's card does, at an answer, at a prompt that is not mid-turn and at the last detach; the hook then exits without a decision, and the terminal's answer applies. A subagent's card ends only at its decision, its expiry, the end of the hook's stream or a stop of the service ([`Session.endPermissions`, `ask`](../src/hub.ts)).
+- The hook prints nothing for the plugin's own tools. AskUserQuestion and ExitPlanMode get the cards of [flow 41](#41-claudes-question-a-plan-and-an-mcp-servers-link).
+
+Source: [`ask`, `promptOf`, `inputPreview`](../src/hook.ts), [`Service.onAsk`, `streamed`](../src/service.ts), [`Session.ask`, `relayed`, `endPermissions`](../src/hub.ts), [`requestLines`, `commandsLine`](../src/control.ts).
+
+---
+
+## 41. Claude's question, a plan and an MCP server's link
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant HK as PermissionRequest or Elicitation hook
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>HK: AskUserQuestion, ExitPlanMode with the plan, or an Elicitation of mode url
+  HK->>D: POST /ask {kind: question, plan or link}
+  D->>N: ask
+  opt a plan
+    N->>O: the plan's text in parts, silent
+  end
+  N->>O: card in #35;G, a plan's card as a reply to the plan's first part
+  alt /answer N K, or a reply of an approver to the card
+    O->>N: the option's label, or the reply's text
+    N->>D: allow with answers, or for a plan's reply deny: Keep planning. NAME wrote in the SimpleX group: TEXT
+  else /approve N of a plan or a link
+    N->>D: allow
+  else /reject N
+    N->>D: deny
+  end
+  D->>HK: {decision}
+  HK->>CC: a question: allow with the input and answers; a plan: allow with the input, or deny; a link: accept or decline
+  N->>O: card edited: Answered by NAME: LABEL., Answered by NAME in a reply., Approved by NAME. or Rejected by NAME.
+```
+
+Notes:
+
+- Claude Code shows the question and the plan in its terminal while the hook runs, and the first answer applies. It runs the Elicitation hook before its dialog, so the terminal shows the link only after the card ends without a decision; an accept from the card skips the dialog, and the person opens the link from the card ([`promptOf`, `askOutput`](../src/hook.ts)).
+- A form of an MCP server and the question or plan of a subagent get no card; the hook returns at once.
+- These cards end as the cards of the main conversation do ([`Session.endPermissions`](../src/hub.ts)).
+
+Source: [`ask`, `promptOf`, `userPrompt`, `questionOf`, `askOutput`](../src/hook.ts), [`Session.ask`, `promptAction`, `decisionOf`, `pass`, `repliedCard`](../src/hub.ts), [`Control.answer`, `reply`, `questionLines`, `answeredLine`, `commandsLine`](../src/control.ts).
+
+---
+
+## 42. A failed turn and a waiting Claude Code
+
+```mermaid
+sequenceDiagram
+  participant CC as Claude Code
+  participant HK as StopFailure or Notification hook
+  participant D as Service
+  participant N as Session N
+  participant O as Owner
+  CC->>HK: StopFailure {error, last_assistant_message}
+  HK->>HK: rate_limit: the continue notice after the error entry, read 20 times 100 ms apart; without it, Claude Code's record 1 s later
+  HK->>D: POST /turn {failure: {error, text, autoContinue, menu}}
+  D->>N: turn
+  N->>N: end the steps, cards and texts; the opening message gets ⏹️ Stopped
+  N->>O: ⛔ Claude Code stopped: TEXT, and what to do, unless the text is that of the last failure line
+  CC->>HK: Notification {notification_type, message}
+  HK->>D: POST /turn {waiting: {kind, text}}
+  D->>N: turn
+  N->>O: 🔄 or ⛔ line of the automatic continue, or ⏸️ Claude Code waits in its terminal: MESSAGE, without a card in the 30 s before
+```
+
+Source: [`eventFields`, `failureOf`, `continued`, `menuOpen`](../src/hook.ts), [`Session.turn`, `fail`, `waits`, `failureLine`](../src/hub.ts).
