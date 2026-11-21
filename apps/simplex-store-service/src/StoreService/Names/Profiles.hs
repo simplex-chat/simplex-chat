@@ -277,7 +277,7 @@ shortLinkHosts (CSLContact _ _ ProtocolServer {host} _) = host
 chatProfile :: ChatController -> User -> ProfileFetcher
 chatProfile cc user t sl = runReaderT (tryAllErrors' $ getShortLinkConnReq' NRMInteractive user sl >>= liftIO . linkData) cc
   where
-    linkData (_, cData, _) = case t of
+    linkData (_, cData, _, _) = case t of
       LKContact -> fmap LDContact <$> decodeLinkUserData cData
       LKChannel -> fmap LDChannel <$> decodeLinkUserData cData
 

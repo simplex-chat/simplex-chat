@@ -299,7 +299,7 @@ Six tools:
 |---|---|
 | `connect` | Joins a contact, bot, business, group or channel by a link or a SimpleX name, as the agent's profile or incognito. Returns the chat, its profile, welcome message, the commands a bot advertises, and the messages so far. |
 | `send` | Sends a message, with a file of this computer when asked, and returns every message received in that chat after it, until none arrives for `idle` seconds (30 by default). A directory bot's search results arrive this way. |
-| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. |
+| `receive` | Returns the chat's unread messages and those that arrive while it waits, waiting for one when asked. With `history`, it also returns up to 50 messages before the new ones, the agent's own included. |
 | `download` | Downloads the file of a received message to the data folder and returns its full path. |
 | `list` | Lists the agent's chats with unread counts and `approved: true` for chats approved for all messages, and its actions without a result. |
 | `leave` | Deletes a contact, or leaves a group, business chat or channel, and deletes the chat; the contact or the members are notified. |
@@ -348,6 +348,8 @@ answer each one in that chat, and call receive again after every answer, until I
 
 Approve the connection in "My Agent", and accept the request in the app if it asks. On the card of the agent's first answer, tap `all`: its later answers to you need no approval.
 
+In a new Claude Code session, give the same prompt again. The agent can recall the conversation: `receive` with `history` returns up to 50 earlier messages of that chat, its own answers included.
+
 ## Several agents
 
 Each agent is its own process, with its own data folder, port, agent control chat and Claude Code server:
@@ -367,6 +369,7 @@ Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorizat
 |---|---|
 | The server was not running when Claude Code started | Start the server, then run `/mcp reconnect all` in Claude Code (2.1.284 or later). |
 | The server restarted while Claude Code was running | Claude Code reconnects up to five times within about 30 seconds. After that, in an interactive session, run `/mcp reconnect all`; `claude -p` runs and Agent SDK sessions keep retrying for about half an hour. Open calls fail, and pending actions are cancelled; the agent's repeated call creates a new request. |
+| The Claude Code session ended or was compacted | Ask the agent to recall the chat: `receive` with `history` returns up to 50 messages before the new ones, the agent's own included. |
 | A second server was started on the same data folder | It exits with `Another server uses <folder> (PID N). If no server runs, remove <folder>/lock.` |
 | Every owner left the agent control chat or was removed | `connect`, `send`, `download` and `leave` fail. Without `--owners`, the server logs `No owners in the agent control chat.` and prints a new link; join with it. With an `--owners` list, the agent posts and the server logs `No owners remain: restart the server with --reset-owners --owners`. |
 | The agent was removed from the agent control chat, the chat was deleted, or the agent lost its owner role | `connect`, `send`, `download` and `leave` fail, and the server logs `The agent lost its control chat. Restart the server with --reset-owners.` |
@@ -576,18 +579,20 @@ Only you see this link: it never enters Claude's context or tool results. Scan t
 After the first owner joins, Claude posts the list of sessions in the Main group, after its greeting:
 
 ```
-🟠 3 · simplex-chat: working
-🔵 6 · website: waiting for you, 2 approvals
-🔵 7 · docs: waiting for you in Claude Code
-🟢 8 · app: idle
+🟢 3 · simplex-chat: working
+🟠 6 · website: waiting for you, 2 approvals
+⛔️ 7 · docs: waiting for you in Claude Code
+🔴 8 · app: idle
+⚙️ 9 · api: working in the background
 ⚪ Not running: 5 · bio, 4 · notes, 2 · openclaw, 1 · first
 ```
 
-- A session is running while its Claude Code runs, or while cards wait for a decision in its group. Each running session has a line, by number:
-  - `🔵 N · NAME: waiting for you, K approvals`: K cards wait in the session's group. A tool-use card counts only while Claude Code shows its permission dialog, or while Claude Code's state can't be read.
-  - `🔵 N · NAME: waiting for you in Claude Code`: Claude Code waits for an answer in its own window, such as a dialog.
-  - `🟠 N · NAME: working`: Claude Code works on a turn, or a subagent works for it.
-  - `🟢 N · NAME: idle`: Claude Code waits for the next prompt, also while a background command runs.
+- A session is running while its Claude Code runs, or while cards wait for a decision in its group. Each running session has a line, by number. Green is the state to keep:
+  - `🟢 N · NAME: working`: Claude Code works on a turn, or a subagent works for it.
+  - `🟠 N · NAME: waiting for you, K approvals`: K cards wait in the session's group, for a decision in the chat. A tool-use card counts only while Claude Code shows its permission dialog, or while Claude Code's state can't be read.
+  - `⛔️ N · NAME: waiting for you in Claude Code`: Claude Code waits for an answer in its own window, such as a dialog, which the chat can't give.
+  - `⚙️ N · NAME: working in the background`: Claude Code waits for the next prompt while a background command runs. The command's end starts a turn without a prompt.
+  - `🔴 N · NAME: idle`: Claude Code waits for the next prompt, and nothing runs.
   - `▶️ N · NAME: running`: Claude Code's state can't be read.
 - The last line names every other session of the data folder, newest first. Without any session, the list is `No sessions.`
 - The states are Claude Code's own: the plugin reads them from Claude Code's record of its process, `sessions/PID.json` in `CLAUDE_CONFIG_DIR` or `~/.claude`.

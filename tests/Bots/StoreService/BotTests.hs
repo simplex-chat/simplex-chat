@@ -3207,6 +3207,7 @@ testRestoreMovesBack ps =
         nextClaimCheck env
         bob `send` restoredCmd 1 subscriptionPlay
         waitShownBadge (chatController bob) (Just 1)
+        waitWakeArmed (chatController bob)
         setClockAt bsClock renewalAt
         alice `send` "/_app activate"
         waitShownBadge (chatController alice) Nothing
