@@ -360,7 +360,7 @@ CREATE UNIQUE INDEX @idx_name_registrations_live_commitment ON @name_registratio
 
 CREATE UNIQUE INDEX @idx_name_registrations_live_owner_label ON @name_registrations(owner, label_hash) WHERE live = 1;
 
-CREATE UNIQUE INDEX @idx_name_registrations_held_label ON @name_registrations(label_hash) WHERE live = 1 AND phase <> 'unpaid';
+CREATE UNIQUE INDEX @idx_name_registrations_held_label ON @name_registrations(label_hash) WHERE CASE WHEN live = 1 THEN phase <> 'unpaid' END;
 
 CREATE INDEX @idx_name_registrations_label_phase ON @name_registrations(label_hash, phase);
 
@@ -441,7 +441,7 @@ CREATE TABLE @name_record_edits(
 ) STRICT;
 
 -- A reverted edit keeps its row for its repeats while a new body reuses the nonce.
-CREATE UNIQUE INDEX @idx_name_record_edits_owner_nonce ON @name_record_edits(owner, nonce) WHERE state IN ('pending', 'mined');
+CREATE UNIQUE INDEX @idx_name_record_edits_owner_nonce ON @name_record_edits(owner, nonce) WHERE state <> 'reverted';
 
 CREATE INDEX @idx_name_record_edits_body_hash ON @name_record_edits(body_hash);
 
