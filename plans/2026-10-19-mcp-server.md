@@ -184,6 +184,7 @@ item          where
 nextAction    custom data of the agent control chat: {simplexMcp: {control: true, nextAction: N}}
 approval      custom data of the contact or group: {simplexMcp: {approvedBy, approvedById, approvedAt}}; deleted with the chat
 files approval custom data of the contact or group: {simplexMcpFiles: {approvedBy, approvedById, approvedAt}}; deleted with the chat
+copies off    custom data of the contact or group: {simplexMcpCopies: false}; deleted with the chat
 actions       memory: they end with the process
 open calls    memory
 downloads     memory: one per file ID, until the file is received or fails
@@ -443,7 +444,7 @@ Each card is edited by the agent's profile; the commands are removed:
 outcome             card
 done                "I connected to ...", "I sent a message to ...", "I downloaded a file from ...", "I left ..." or "I deleted ..." + the request's other lines + "Approved by Alice."
 done, not connected "I asked to connect to ..." + the request's other lines + "Approved by Alice."
-standing            a send under a standing approval, posted after the send: "I sent a message to ..." + the request's other lines + "Approved for this chat by Alice. /'revoke @4'"
+standing            a send under a standing approval, posted after the send unless its chat's copies are off: "I sent a message to ..." + the request's other lines + "Approved for this chat by Alice. /'revoke @4' or /'copies @4 off'"
 standing, failed    the request's lines + "Approved for this chat by Alice; failed: `<error>`."
 failed              the request's lines except the commands line + "Approved by Alice; failed: `<error>`."
 rejected            the request's lines except the commands line + "Rejected by Alice."
@@ -479,6 +480,8 @@ command             result
 /reject [CHAT] N    the card is edited
 /approve CHAT all   the standing approval of CHAT by the sender; its pending sends are approved
 /revoke CHAT        the standing approval of CHAT is removed
+/copies CHAT off    the outcome cards of CHAT's done sends under a standing approval are not posted; failed ones are
+/copies CHAT on     they are posted again
 /receive [CHAT] N   download N is performed: the agent receives the file; the card is edited
 /receive CHAT N all download N is performed, and the files approval of CHAT by the sender, for its later downloads of files on known servers; its other pending downloads stay pending
 /receive CHAT off   the files approval of CHAT is removed
@@ -493,7 +496,7 @@ command             result
 
 ```
 @4  bot SimpleX Directory
-#9  business Ridgeline, approved for this chat by Alice
+#9  business Ridgeline, approved for this chat by Alice, copies off
 #3  group Builders, files approved by Alice
 @2  contact Ask SimpleX Team, not connected
 ```
@@ -506,6 +509,7 @@ sender is not an approver                   Only owners approve actions. (--owne
 N unknown, decided or from an earlier run   Action 9 is not pending.
 CHAT not the action's chat                  Action 10 is not for #3.
 /approve CHAT all                           Approved for business Ridgeline (#9) by Alice. /'revoke #9'
+/approve CHAT all, copies off               the same, then the line "Copies are off: /'copies #9 on'"
 /approve [CHAT] N, N a download             Action 7 is a download: /'receive #3 7', /'receive #3 7 all', /'forward #3 7' or /'reject #3 7'.
 /receive [CHAT] N                           none; the card is edited at the outcome
 /receive CHAT N all                         Files approved for group Builders (#3) by Alice. /'receive #3 off'
@@ -516,6 +520,9 @@ CHAT not the agent's
 /revoke CHAT, no standing approval          Messages to #9 have no standing approval.
 /receive CHAT off                           Files from group Builders (#3) need approval again.
 /receive CHAT off, no files approval        Files from #3 have no standing approval.
+/copies CHAT off                            Copies of messages to business Ridgeline (#9) are off. /'copies #9 on'
+/copies CHAT on                             Copies of messages to business Ridgeline (#9) are on.
+/copies CHAT on | off, CHAT not the agent's No chat #13. /list shows the agent's chats.
 /forward [CHAT] N                           none; the file is a reply to the card when the message fits
 /receive | /forward [CHAT] N, N not a       Action 10 is not a download.
 download
@@ -526,7 +533,7 @@ of the file fails
 /delete CHAT files                          Deleted 3 files from #9, 2.1 MB. ("1 file")
 /delete CHAT files, no files                No files from #9.
 /list, no chats                             No chats.
-other one-line text starting with "/"       Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands.
+other one-line text starting with "/"       Commands: /approve, /reject, /receive, /forward, /revoke, /copies, /leave, /delete, /pending, /list. Each card shows its commands.
 ```
 
 After `/leave CHAT`, after its reply, and after the outcome of a leave action in state done, when the folder of CHAT has files:
@@ -542,6 +549,7 @@ Files from business Ridgeline (#9) are kept in `/home/alice/.simplex-mcp/my-agen
 - A files approval covers downloads only, and ends as a standing approval does.
 - `/leave CHAT` applies in both modes. Its reply is logged, with names on one line.
 - A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals, and `/approve CHAT all` stores none.
+- `/copies CHAT off` sets `simplexMcpCopies: false` in the chat's custom data, keeping its other keys; `/copies CHAT on` removes it, and `/revoke CHAT` keeps it. In mode `host`, `/list` does not show it.
 
 ### Membership messages
 
@@ -982,7 +990,7 @@ newChatItems, groupRcv, main scope       text starts with "/"                   
 
 ```
 command = parseCommand(text)                      # steward src/commands.ts; undefined: ignore
-not one of the commands below: reply "Commands: /approve, /reject, /receive, /forward, /revoke, /leave, /delete, /pending, /list. Each card shows its commands."
+not one of the commands below: reply "Commands: /approve, /reject, /receive, /forward, /revoke, /copies, /leave, /delete, /pending, /list. Each card shows its commands."
 sender not an approver: reply "Only owners approve actions." (--owners: "Only the owners listed in --owners approve actions.")
 approve | reject | receive | forward [CHAT] N, receive CHAT N all, action N not pending in memory, or its card unset: reply "Action N is not pending."
 the same with CHAT, action N a connect or for another chat: reply "Action N is not for CHAT."
@@ -991,10 +999,11 @@ reject [CHAT] N:  decidedBy = sender; state rejected; edit the card
 receive | forward [CHAT] N, receive CHAT N all, action N not a download: reply "Action N is not a download."
 receive [CHAT] N: as approve, for a download
 approve CHAT all: mode host: reply "Approvals apply in mode requests; this server runs in mode host."; CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise set the chat's custom data simplexMcp = {approvedBy: sender name, approvedById: sender groupMemberId, approvedAt}, keeping its other keys
-                  (/_set custom @C or #G); each pending send of CHAT: approve as above; reply "Approved for ... /'revoke CHAT'"
+                  (/_set custom @C or #G); each pending send of CHAT: approve as above; reply "Approved for ... /'revoke CHAT'", then the line "Copies are off: /'copies CHAT on'" when simplexMcpCopies = false
 revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT have no standing approval."; otherwise remove simplexMcp from it; reply "Messages to ... need approval again."
 receive CHAT N all: as approve CHAT all, with the key simplexMcpFiles, approving action N while it is pending; the other pending downloads of CHAT stay pending; reply "Files approved for ... by NAME. /'receive CHAT off'"
 receive CHAT off: as revoke CHAT, with the key simplexMcpFiles; replies "Files from CHAT have no standing approval.", "Files from ... need approval again."
+copies CHAT off | on: CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise set simplexMcpCopies = false (off) or remove it (on), keeping the other keys; reply "Copies of messages to ... are off. /'copies CHAT on'" or "Copies of messages to ... are on."
 forward [CHAT] N: forwardFile(action N), not awaited: downloadTo DIR/forwarded/FOLDER/<fileId><extension>, or the file already received; then a copy under the file's name in DIR/files/sent/;
                   then /_send #group json [{fileSource: {filePath: the copy}, msgContent: the file's type and preview, no text, quotedItemId: card}];
                   quotedItemId left out when the message, with the card as its quote, is over 15602 bytes by the length rule of send;
@@ -1052,7 +1061,7 @@ field       value
 n           number
 tool        connect | send | download | leave
 input       tool input
-standing    performed under a standing approval: no pending card; the outcome card is posted, except for downloads
+standing    performed under a standing approval: no pending card; the outcome card is posted, except for downloads and for done sends to a chat whose copies are off
 state       state
 created     ISO time
 expires     created + --expire
@@ -1090,7 +1099,7 @@ action(tool, input, ctx):
     no approvers: tool error, the no-approver message
     N = nextAction; nextAction = N + 1; create action N; log "Action N: ..."
     /_set custom #group {simplexMcp: {control: true, nextAction}}, queued after earlier writes, awaited
-    mode requests, a send to a chat whose approval applies: standing; decidedBy = approvedBy; start perform(N); its end posts the outcome card
+    mode requests, a send to a chat whose approval applies: standing; decidedBy = approvedBy; start perform(N); its end posts the outcome card, unless the send is done and the chat has simplexMcpCopies = false
     mode requests, a download of a file on known servers, not in rejected files, from a chat whose files approval applies: standing; decidedBy = approvedBy; start perform(N); no card
     mode requests otherwise: /_send #group text <card>; card = its item ID; post failed: state failed, error "SimpleX error"
     mode host: start perform(N); its end posts the outcome card, except for downloads
@@ -1514,7 +1523,7 @@ sequenceDiagram
   S->>A: {action: 10, status: done, chat: "#9", item: 50, responses: [...]}
   A->>S: send {chat: "#9", text: "Thanks, I'll order."}
   S->>V: item 52
-  S->>O: My Agent: "I sent a message to business Ridgeline, where I am incognito: ... Approved for this chat by Alice. /revoke #9"
+  S->>O: My Agent: "I sent a message to business Ridgeline, where I am incognito: ... Approved for this chat by Alice. /revoke #9 or /copies #9 off"
   S->>A: {action: 11, status: done, chat: "#9", item: 52, responses: [...]}
   O->>S: /revoke #9
   S->>O: "Messages to business Ridgeline (#9) need approval again."
@@ -1562,7 +1571,7 @@ Unit:
 ```
 test        covers
 options     defaults, ranges, --stop-wait from 0 to 60, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; the wait at stop with cancelled cards, skipped without them, and ended by a second signal; /receive CHAT N all and /receive CHAT off beside the approval of messages; /copies CHAT off and on with /list, no outcome card of a done standing send while off, failed ones posted; /approve of a download and /receive or /forward of other actions refused; /forward with its reply and failure, the file outside the chat's folder; download cards with the preview, resized to fit 15000 bytes; a refused file posted and logged; an image send card with its preview
 actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
 cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters; download forms with sizes and the servers line; the attaching line of sends
 messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop; the file field of each file status and rejected, a forwarded file offered and then received; download: attach, performing at wait, a received file, a forwarded file kept outside the chat's folder and moved there at the approval, failures by events, a files approval, the wait for the file description and its end at wait, unknown servers without passwords and of disabled operators; send with file: the type and preview by extension, the resized copy deleted at sndFileCompleteXFTP and after a failed send, the fixed preview when the core can't resize or ffmpeg is absent, ffmpeg and ffprobe output, refused paths with symbolic links, a file changed after the request
