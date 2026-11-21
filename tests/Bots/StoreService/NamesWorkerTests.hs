@@ -435,7 +435,8 @@ testUnexpiredCommitment = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   dryRunsRevert w "UnexpiredCommitmentExists(bytes32)" (unHex32 $ nrCommitment r)
   steps w r >>= retrying
   sent w `shouldReturn` []
-  stored ctx r `shouldReturn` r
+  revertedAt <- nowOf ctx
+  stored ctx r `shouldReturn` r {nrLastAttempt = Just NameAttempt {naTx = RTCommit, naStage = ASDryRun, naReason = "UnexpiredCommitmentExists", naAt = revertedAt}}
   dryRunsPass w
   steps w r >>= waitingUntil >>= (`shouldBe` at (t + maxAge + 1))
   x <- stored ctx r
@@ -503,7 +504,8 @@ testLapseSecond = withWorker $ \w@W {wCtx = ctx} -> do
   dryRunsRevert w "UnexpiredCommitmentExists(bytes32)" (unHex32 $ nrCommitment r)
   steps w r >>= retrying
   sent w `shouldReturn` []
-  stored ctx r `shouldReturn` r
+  revertedAt <- nowOf ctx
+  stored ctx r `shouldReturn` r {nrLastAttempt = Just NameAttempt {naTx = RTCommit, naStage = ASDryRun, naReason = "UnexpiredCommitmentExists", naAt = revertedAt}}
   dryRunsPass w
   advance ctx 1
   void $ steps w r >>= awaiting
@@ -717,7 +719,8 @@ testRevertFailed = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
   answerAvailable w True
   dryRunsRevert w "InvalidSignature()" ""
   replicateM_ 4 $ steps w r >>= stalled >>= (`shouldBe` SFRefused RTRegister (Just $ RRNamed RNInvalidSignature))
-  stored ctx r `shouldReturn` r
+  revertedAt <- nowOf ctx
+  stored ctx r `shouldReturn` r {nrLastAttempt = Just NameAttempt {naTx = RTRegister, naStage = ASDryRun, naReason = "InvalidSignature", naAt = revertedAt}}
   attemptsOf ctx r `shouldReturn` (4, 0, Just (RTRegister, ASDryRun, "InvalidSignature"))
   steps w r >>= done
   now <- nowOf ctx
@@ -766,7 +769,8 @@ testAllowanceAcrossLapse = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}} -
   void $ steps w r >>= stalled
   advance ctx 11
   void $ steps w r >>= stalled
-  stored ctx r `shouldReturn` r
+  stalledAt <- nowOf ctx
+  stored ctx r `shouldReturn` r {nrLastAttempt = Just NameAttempt {naTx = RTRegister, naStage = ASDryRun, naReason = "InsufficientAllowance", naAt = stalledAt}}
   revertDryRun cNode registerCall $ Just $ selector "CommitmentTooOld(bytes32,uint256,uint256)"
   void $ steps w r >>= awaiting
   committing <- stored ctx r

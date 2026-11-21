@@ -601,7 +601,8 @@ testRetarget = withServiceStore $ \st -> do
         nrPhase = OQueued,
         nrReveal = Just moved,
         nrMoves = 1,
-        nrUpdatedAt = at 6
+        nrUpdatedAt = at 6,
+        nrLastAttempt = Just attempt
       }
   withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o reveal 10000 (at 7)) `shouldReturn` VersionChanged
 
