@@ -46,6 +46,7 @@ tour_settle=1
 tour_scroll=10
 tour_label_scrolls=4
 tour_label_wait=5
+app_version=$(sed -n 's/^desktop.version_name=//p' "$(dirname "$0")/../../../apps/multiplatform/gradle.properties")
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -488,7 +489,8 @@ tour() {
   visit your-servers open_settings "Network" "Your servers"
   visit advanced-network open_settings "Network" "Advanced network settings"
   visit calls open_settings "Audio"
-  visit developer-tools open_settings "Developer tools"
+  visit version open_settings "$app_version"
+  visit developer-tools open_settings "$app_version" "Developer tools"
   visit address open_user_menu "SimpleX address"
   visit chat-preferences open_user_menu "Chat preferences"
   visit chat-profiles open_user_menu "Your chat profiles"

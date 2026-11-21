@@ -32,6 +32,7 @@ tour_scroll=10
 tour_label_scrolls=4
 tour_label_wait=5
 tour_clock=1200
+app_version=$(sed -n 's/^android.version_name=//p' "$(dirname "$0")/../../../apps/multiplatform/gradle.properties")
 search_field="Search or paste SimpleX link"
 ui=$(dirname "$0")/ui
 fixtures=$(dirname "$0")/../../../tests/fixtures
@@ -402,7 +403,8 @@ tour() {
   visit advanced-network open_settings "Network & servers" "Advanced network settings"
   visit notifications open_settings "Notifications"
   visit calls open_settings "Audio & video calls"
-  visit developer-tools open_settings "Developer tools"
+  visit version open_settings "$app_version"
+  visit developer-tools open_settings "$app_version" "Developer tools"
   visit address open_user_menu "SimpleX address"
   visit chat-preferences open_user_menu "Chat preferences"
   visit chat-profiles open_user_menu "Your chat profiles"

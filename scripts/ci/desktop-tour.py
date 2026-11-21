@@ -40,6 +40,8 @@ LOCAL_CHAT = "seeded notes"
 PROFILE_NAME = "citester"
 SEARCH_FIELD = "Search or paste SimpleX link"
 LEFT_PANE_SCREENS = ("Settings", "Chat preferences", "Network", "New chat")
+GRADLE_PROPERTIES = Path(__file__).resolve().parents[2] / "apps" / "multiplatform" / "gradle.properties"
+APP_VERSION = re.search(r"^desktop\.version_name=(.+)$", GRADLE_PROPERTIES.read_text(), re.MULTILINE).group(1).strip()
 
 pyautogui.PAUSE = 0.2
 
@@ -310,7 +312,8 @@ class App:
         self.visit("your-servers", self.open_settings, "Network", "Your servers")
         self.visit("advanced-network", self.open_settings, "Network", "Advanced network settings")
         self.visit("calls", self.open_settings, "Audio")
-        self.visit("developer-tools", self.open_settings, "Developer tools")
+        self.visit("version", self.open_settings, APP_VERSION)
+        self.visit("developer-tools", self.open_settings, APP_VERSION, "Developer tools")
         self.visit("address", self.open_user_menu, "SimpleX address")
         self.visit("chat-preferences", self.open_user_menu, "Chat preferences")
         self.visit("chat-profiles", self.open_user_menu, "Your chat profiles")
