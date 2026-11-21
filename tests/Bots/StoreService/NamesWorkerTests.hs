@@ -117,6 +117,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "registers, keeping the reveal, when the relay's dry run reverts while the policy holds the acceptance another sent first" testAcceptanceSentFirst
     it "registers, keeping the reveal, when the relay is mined with status 0 while the policy holds the acceptance another sent first" testAcceptanceMinedFailed
     it "fails an order at its fifth relay mined with status 0 for its commitment, sending nothing more" testRelaysCapped
+    it "counts no relay mined with status 0 before the commitment's newest commit, as an earlier commitment's after a move" testRelayOfEarlierCommitment
     it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
     it "clears the reveal of an acceptance signed for another policy or for the other kind of terms, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
     it "clears the reveal when a dry run reverts SignatureExpired, for the page to sign again" testAcceptanceExpired
@@ -870,6 +871,17 @@ testRelaysCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   now <- nowOf ctx
   nrPhase <$> stored ctx r `shouldReturn` OFailed now FRRegistryRefused
   attemptsOf ctx r `shouldReturn` (0, 5, Just (RTAccept, ASSent, "mined with status 0"))
+  length <$> sent w `shouldReturn` 1
+
+testRelayOfEarlierCommitment :: IO ()
+testRelayOfEarlierCommitment = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  withTransaction cStore $ \db -> forM_ [(RTAccept, 40, TSRevertedAt 90), (RTCommit, 41, TSMinedAt 100)] $ \(tx, n, settlement) -> do
+    let h = TxHash $ hashFixture n
+    void $ insertTransaction db (TxRegistration tx $ nrId r) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
+    recordTransactionOutcome db h TSPending settlement `shouldReturn` True
+  void $ steps w r >>= awaiting
+  attemptsOf ctx r `shouldReturn` (0, 0, Nothing)
   length <$> sent w `shouldReturn` 1
 
 testAcceptanceUnread :: IO ()

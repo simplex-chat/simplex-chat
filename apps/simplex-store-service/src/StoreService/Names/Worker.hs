@@ -249,10 +249,11 @@ commitReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId} h
   let nonces = [ntNonce | NameTransaction {ntHash, ntNonce} <- txs, ntHash == h]
   pure $ or [True | NameTransaction {ntNonce, ntState = TxSettled TSRevertedAt {}} <- txs, ntNonce `elem` nonces]
 
--- | The newest relay, by its signature's nonce, mined with status 0 and with no failed attempt stored since it was sent.
+-- | The newest relay of the current commitment, sent after its newest commit, by its signature's nonce, mined with status 0 and
+-- with no failed attempt stored since it was sent.
 relayReverted :: Worker -> NameRegistration -> IO Bool
 relayReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId, nrLastAttempt} = withTransaction oeStore $ \db -> do
-  relays <- filter (\NameTransaction {ntFor} -> ntFor == TxRegistration RTAccept nrId) <$> registrationTransactions db nrId
+  relays <- filter (sentFor RTAccept) . reverse . takeWhile (not . sentFor RTCommit) . reverse <$> registrationTransactions db nrId
   let newest = [ntNonce | NameTransaction {ntNonce} <- take 1 $ reverse relays]
       group = [t | t@NameTransaction {ntNonce} <- relays, ntNonce `elem` newest]
       reverted = or [True | NameTransaction {ntState = TxSettled TSRevertedAt {}} <- group]
@@ -260,6 +261,8 @@ relayReverted Worker {wkOrders = OrdersEnv {oeStore}} NameRegistration {nrId, nr
   pure $ case [ntSentAt | NameTransaction {ntSentAt} <- group] of
     [] -> False
     sent -> reverted && not (stored $ maximum sent)
+  where
+    sentFor tx NameTransaction {ntFor} = ntFor == TxRegistration tx nrId
 
 -- | At the lapse second a commitment can neither register nor be committed again, so the worker waits a second past it,
 -- then commits again with the stale fields cleared.
