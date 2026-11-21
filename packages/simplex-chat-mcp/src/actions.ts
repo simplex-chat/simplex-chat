@@ -13,7 +13,9 @@ export const maxPending = 20
 const maxPerforming = 20
 const expiryCheck = 60_000
 
+// spec: spec/api.md#tool-send
 export const lostMessage = "The agent lost its control chat. The person who runs it has to restart it with --reset-owners."
+// spec: spec/api.md#tool-send
 export const stoppingMessage = "The server is stopping."
 const pendingMessage = `${maxPending} actions are pending; wait for the owner's decisions.`
 const performingMessage = `${maxPerforming} actions are being performed; wait for their results.`

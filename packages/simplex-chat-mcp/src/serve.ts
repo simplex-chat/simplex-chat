@@ -8,6 +8,7 @@ import {Control, controlDataOf, createControlChat, findControlGroup, hasOutcomeC
 import {bufferEvents, prepareCore, updatedUser} from "./core"
 import {acquireLock, createDataFolder, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "./files"
 import {startHttp, stopHttp} from "./http"
+import {inferencePoller} from "./inference"
 import {ExitError, log, logError, shellPath} from "./log"
 import {ChatItemsWatch} from "./messages"
 import {AgentTools, instructions} from "./tools"
@@ -35,6 +36,7 @@ export interface ServeOptions {
   port: number
   qrCode: QrCodeSize
   stopWait: number
+  inference?: string
 }
 
 // spec: spec/architecture.md#serve-runningserver
@@ -68,6 +70,7 @@ export async function serve(options: ServeOptions): Promise<void> {
 // spec: spec/architecture.md#serve-startserver
 export async function startServer(options: ServeOptions): Promise<RunningServer> {
   const {name, data} = options
+  const inference = options.inference === undefined ? undefined : inferencePoller({url: options.inference, key: inferenceKey()})
   createDataFolder(data)
   acquireLock(data)
   try {
@@ -77,8 +80,9 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
     log(`SimpleX MCP server ${version}, agent "${name}"`)
     log(`Data folder: ${data}`)
     log(`Approval mode: ${options.approve}`)
+    if (options.inference !== undefined) log(`Inference endpoint: ${options.inference}`)
     try {
-      return await startAgent(chat, options, token)
+      return await startAgent(chat, options, token, inference)
     } catch (error) {
       await chat.close().catch(() => undefined)
       throw error
@@ -90,7 +94,7 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
 }
 
 // spec: spec/architecture.md#serve-startagent
-async function startAgent(chat: api.ChatApi, options: ServeOptions, token: string): Promise<RunningServer> {
+async function startAgent(chat: api.ChatApi, options: ServeOptions, token: string, inference: ReturnType<typeof inferencePoller> | undefined): Promise<RunningServer> {
   const {name, data, port, approve, expireHours} = options
   const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName: options.displayName ?? name, fullName: "", peerType: T.ChatPeerType.Agent}))
   await prepareCore(chat, data)
@@ -107,9 +111,10 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     perform: (action, signal) => tools.perform(action, signal),
   })
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data}, approve)
+  const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: (chatInfo, standing) => control.standingApprover(chatInfo, standing), refusedFile: (path, chatInfo, chat) => control.refusedFile(path, chatInfo, chat), data, inference}, approve)
   const control: Control = new Control(chat, group, {displayName, owners: options.owners, registerHint: registerHint(options), qrCode: options.qrCode}, actions, tools)
   await control.load()
+  await tools.deleteLeftoverStatuses().catch(error => logError("status messages", error))
   const factory = (): McpServer => {
     const mcp = new McpServer({name: "simplex-mcp", version}, {instructions: instructions(displayName)})
     tools.register(mcp)
@@ -152,7 +157,8 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
       await stopHttp(server)
       const cancelled = await cancelling
       if (cancelled.length > 0) log(`Cancelled ${cancelled.length} action${cancelled.length === 1 ? "" : "s"}.`)
-      await waitForCancelledCards(actions.lost ? [] : cancelled, options.stopWait, endWait)
+      const deletions = await tools.statuses.stop()
+      await waitForStopMessages(actions.lost ? [] : cancelled, options.stopWait, endWait, deletions)
       await chat.close()
       releaseLock(data)
       log("Stopped.")
@@ -165,11 +171,13 @@ export function registerHint({name, data, dataGiven}: ServeOptions): string {
   return `Add the agent to Claude Code:\n  npx -y @simplex-chat/mcp register ${name}${dataGiven ? ` --data ${shellPath(data)}` : ""}`
 }
 
-// spec: spec/architecture.md#serve-waitforcancelledcards
-export async function waitForCancelledCards(stopped: Action[], seconds: number, endWait: AbortSignal): Promise<void> {
+// spec: spec/architecture.md#serve-waitforstopmessages
+export async function waitForStopMessages(stopped: Action[], seconds: number, endWait: AbortSignal, deletions = 0): Promise<void> {
   const cards = stopped.filter(hasOutcomeCard).length
-  if (cards === 0 || seconds === 0) return
-  log(`Stopping: sending ${cards} cancelled card${cards === 1 ? "" : "s"}, up to ${seconds} s. Ctrl-C to stop now.`)
+  if (cards + deletions === 0 || seconds === 0) return
+  const cardsText = cards === 0 ? [] : [`${cards} cancelled card${cards === 1 ? "" : "s"}`]
+  const deletionsText = deletions === 0 ? [] : [`${deletions} status deletion${deletions === 1 ? "" : "s"}`]
+  log(`Stopping: sending ${[...cardsText, ...deletionsText].join(" and ")}, up to ${seconds} s. Ctrl-C to stop now.`)
   await new Promise<void>(resolve => {
     const end = (): void => {
       clearTimeout(timer)
@@ -180,6 +188,13 @@ export async function waitForCancelledCards(stopped: Action[], seconds: number, 
     if (endWait.aborted) end()
     else endWait.addEventListener("abort", end, {once: true})
   })
+}
+
+// spec: spec/architecture.md#serve-inferencekey
+function inferenceKey(): string | undefined {
+  const key = process.env.SIMPLEX_MCP_INFERENCE_KEY
+  if (key !== undefined && !/^[\x21-\x7e]+$/.test(key)) throw new ExitError("SIMPLEX_MCP_INFERENCE_KEY: visible ASCII characters expected.", 2)
+  return key
 }
 
 // spec: spec/architecture.md#serve-controlgroup

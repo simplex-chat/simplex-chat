@@ -4,7 +4,7 @@ import {McpServer} from "@modelcontextprotocol/server"
 import {Actions, Mode} from "../../src/actions"
 import {startHttp, stopHttp} from "../../src/http"
 import {ChatItemsWatch} from "../../src/messages"
-import {AgentTools} from "../../src/tools"
+import {AgentTools, instructions} from "../../src/tools"
 import {FakeChat, actionsWith, contact, data, direct, fakeHooks, user} from "./fixtures"
 
 const token = "secret-token"
@@ -135,8 +135,24 @@ describe("MCP", () => {
     expect(result.tools.map(({name}: {name: string}) => name)).toEqual(["connect", "send", "receive", "download", "list", "leave"])
     const send = result.tools.find(({name}: {name: string}) => name === "send")
     expect(send.inputSchema.properties.idle).toEqual({type: "number", minimum: 1, maximum: 300, description: "Seconds without a new response that end the wait once a response arrived. Default 30."})
-    expect(send.outputSchema.required).toEqual(["action", "status"])
+    expect(send.inputSchema.properties.live).toEqual({
+      type: "boolean",
+      description: "true: text is shown at once under the line of the live status message in this chat, until your next message there without live; status live is returned at once, and no action is created. Text only, at most 2000 characters, in a chat with a person, a group or a business chat that has approved: true in list. Default false.",
+    })
+    expect(send.outputSchema.required).toEqual(["status"])
+    expect(send.outputSchema.properties.status.enum).toEqual(["done", "failed", "rejected", "expired", "live"])
     expect(send._meta).toBeUndefined()
+    expect(send.description.split("\n")).toContain("With live: true, in a chat with a person, a group or a business chat that has approved: true in list, text is shown at once in the chat's live status message, and status live is returned without an action. Your next message there without live is sent as a new message, and the status message is then deleted.")
+    const receive = result.tools.find(({name}: {name: string}) => name === "receive")
+    expect(Object.keys(receive.inputSchema.properties)).toEqual(["chat", "wait", "limit"])
+    expect(receive.description.split("\n").at(-1)).toBe("In a chat with a person, a group or a business chat that has approved: true in list, a live status message is shown there while you work, from the returned messages until your next message there or a receive there that waits. In the chat where you receive prompts, send each answer without live, and call receive again only after it. For steps that take minutes, send a short note with live: true; it is shown in the status message.")
+  })
+
+  it("keeps each tool description, and the instructions for a 15-character name, within Claude Code's 2048 characters", async () => {
+    await start()
+    const {result} = await body(await post(modern("tools/list"), modernHeaders("tools/list")))
+    for (const {description} of result.tools) expect(description.length).toBeLessThanOrEqual(2048)
+    expect(instructions("Ridgeline Scout").length).toBeLessThanOrEqual(2048)
   })
 
   it("asks the host for each action in mode host", async () => {
@@ -163,6 +179,7 @@ describe("MCP", () => {
     expect(await text({chat: "@4", text: "😀".repeat(12001)})).toMatch(/data\/text must NOT have more than 12000 characters$/)
     expect(await text({chat: "@4", text: "x", mention: [44, 44]})).toMatch(/data\/mention must NOT have duplicate items/)
     expect(await text({chat: "@4", text: "x", wait: -1})).toMatch(/data\/wait must be >= 0$/)
+    expect(await text({chat: "@4", text: "x", live: "yes"})).toMatch(/data\/live must be boolean$/)
     expect(await text({chat: "@4", text: "x", colour: "red"})).toMatch(/data must NOT have additional properties$/)
     expect(await text({text: "x"})).toMatch(/data must have required property 'chat'$/)
     expect(actions.all()).toHaveLength(0)
