@@ -902,6 +902,73 @@ describe("session channel", () => {
     expect(answers(chat)).toEqual([57, 57, 58].map(quotedItemId => [{text: "This reaction is not supported.", quotedItemId}]))
   })
 
+  const received = (...items: T.ChatItem[]): ChatEvent => ({type: "newChatItems", user, chatItems: items.map(ci => event(sessionGroup, ci))}) as unknown as ChatEvent
+  const updated = (ci: T.ChatItem, edited = true): ChatEvent => ({type: "chatItemUpdated", user, chatItem: event(sessionGroup, {...ci, meta: {...ci.meta, itemEdited: edited}})}) as unknown as ChatEvent
+
+  it("passes an edit of a passed prompt with the same item and edited, with the quote line of a reply, once per new text, and nothing for an edit to a command, of a message not passed, of User's message or an update with the same text", async () => {
+    const chat = new FakeChat()
+    const {hub, session, lines} = await channel(chat)
+    hub.userContactId = 6
+    const sessionUser = {...member(1006, "User"), memberContactId: 6}
+    const reply = (text: string): T.ChatItem => ({...item(44, text, from(invitedAlice)), quotedItem: {chatDir: from(bob), itemId: 35, sentAt: "", content: {type: "text", text: "Meet at 9"}}}) as unknown as T.ChatItem
+    await hub["onEvent"](received(item(43, "Run the tests", from(invitedAlice)), reply("Who?"), item(47, "Fix the build", from(sessionUser))))
+    await until(() => lines.length === 2)
+    for (const update of [
+      updated(item(43, "Run the unit tests", from(invitedAlice))),
+      updated(item(43, "Run the unit tests", from(invitedAlice))),
+      updated(reply("Who said it?")),
+      updated(item(45, "Never passed", from(invitedAlice))),
+      updated(item(43, "/'approve 1'", from(invitedAlice))),
+      updated(item(47, "Fix the tests", from(sessionUser))),
+      updated(item(43, "Run the unit tests", from(invitedAlice)), false),
+    ]) await hub["onEvent"](update)
+    await until(() => lines.length === 4)
+    await session["delivery"]
+    expect(lines).toEqual([
+      {prompt: {text: "Run the tests", from: "Alice", item: 43}},
+      {prompt: {text: "> Meet at 9\nWho?", from: "Alice", item: 44, replyTo: {item: 35, from: "Bob"}}},
+      {prompt: {text: "Run the unit tests", from: "Alice", item: 43, edited: true}},
+      {prompt: {text: "> Meet at 9\nWho said it?", from: "Alice", item: 44, replyTo: {item: 35, from: "Bob"}, edited: true}},
+    ])
+    expect(answers(chat)).toEqual([])
+  })
+
+  it("passes a message typed in live mode once, at its final version, and an edit after it as edited", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    await hub["onEvent"](received(item(50, "Ru", from(invitedAlice), {live: true})))
+    await hub["onEvent"](updated(item(50, "Run th", from(invitedAlice), {live: true}), false))
+    await hub["onEvent"](updated(item(50, "Run the tests", from(invitedAlice), {live: false}), false))
+    await until(() => lines.length === 1)
+    await hub["onEvent"](updated(item(50, "Run all tests", from(invitedAlice), {live: false})))
+    await until(() => lines.length === 2)
+    expect(lines).toEqual([
+      {prompt: {text: "Run the tests", from: "Alice", item: 50}},
+      {prompt: {text: "Run all tests", from: "Alice", item: 50, edited: true}},
+    ])
+  })
+
+  it("passes the current text of a member's pending live message before that member's next message, not before another member's, and its later final version as an edit", async () => {
+    const chat = new FakeChat()
+    const {hub, lines} = await channel(chat)
+    await hub["onEvent"](received(item(60, "Ru", from(invitedAlice), {live: true})))
+    await hub["onEvent"](updated(item(60, "Run th", from(invitedAlice), {live: true}), false))
+    await hub["onEvent"](received(item(61, "Status?", from(invitedAlice))))
+    await hub["onEvent"](received(item(62, "Hel", from(invitedAlice), {live: true})))
+    await hub["onEvent"](received(item(63, "Hi", from(bob))))
+    await until(() => lines.length === 3)
+    await hub["onEvent"](updated(item(62, "Hello", from(invitedAlice), {live: false}), false))
+    await hub["onEvent"](updated(item(60, "Run the tests", from(invitedAlice), {live: false}), false))
+    await until(() => lines.length === 5)
+    expect(lines).toEqual([
+      {prompt: {text: "Run th", from: "Alice", item: 60}},
+      {prompt: {text: "Status?", from: "Alice", item: 61}},
+      {prompt: {text: "Hi", from: "Bob", item: 63}},
+      {prompt: {text: "Hello", from: "Alice", item: 62}},
+      {prompt: {text: "Run the tests", from: "Alice", item: 60, edited: true}},
+    ])
+  })
+
   it("quotes in the prompt of a reaction to a reply the reacted message, not the message that the reply quotes", async () => {
     const chat = new FakeChat()
     const {hub, lines} = await channel(chat)
@@ -1139,14 +1206,14 @@ describe("session channel", () => {
     await until(() => chat.updates.length === 2)
     await session.turn({id: id1, at: 10, step: {id: "toolu_4", text: "🤖 Agent: Review"}})
     await session.endLive()
-    await session.turn({id: id1, at: 11, step: {id: "toolu_5", text: "📝 Write rfcs/steps.md"}})
+    await session.turn({id: id1, at: 11, step: {id: "toolu_5", text: "✏️ Write rfcs/steps.md"}})
     await hub.stop()
     expect(chat.updates).toEqual([
       {chatId: 20, itemId: lines, text: "💻 Run the tests"},
       {chatId: 20, itemId: lines + 1, text: "📖 Read src/hook.ts"},
       {chatId: 20, itemId: lines + 2, text: "✏️ Edit src/hub.ts"},
       {chatId: 20, itemId: lines + 3, text: "🤖 Agent: Review"},
-      {chatId: 20, itemId: lines + 4, text: "📝 Write rfcs/steps.md"},
+      {chatId: 20, itemId: lines + 4, text: "✏️ Write rfcs/steps.md"},
     ])
     expect(sentTo(chat, 20)).toHaveLength(5)
   })
@@ -2539,7 +2606,7 @@ describe("Main group", () => {
     expect(chat.invitations.at(-1)).toEqual({groupId: 21, viaGroupId: 10, groupMemberId: 3, memberRole: T.GroupMemberRole.Owner})
   })
 
-  it("posts the list of every session after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, and the ⚪ line after an exit", async () => {
+  it("posts the list of every session after the greeting, silent, and edits it as Claude Code's records and the cards change: working, waiting for you, waiting for you in Claude Code, idle, working in the background, and the ⚪ line after an exit", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat, [self])
     const one = await openSession(hub, id1, stored(1, "one"))
@@ -2564,15 +2631,15 @@ describe("Main group", () => {
       await hub.showSessions()
       return chat.updates.length === edits ? undefined : chat.updates.at(-1)!.text
     }
-    expect(await shows("busy")).toBe("🟠 1 · one: working\n⚪ Not running: 2 · two")
+    expect(await shows("busy")).toBe("🟢 1 · one: working\n⚪ Not running: 2 · two")
     expect(chat.updates.at(-1)).toMatchObject({chatId: 10, itemId: list})
     expect(await shows("busy")).toBeUndefined()
-    expect(await shows("waiting")).toBe("🔵 1 · one: waiting for you in Claude Code\n⚪ Not running: 2 · two")
+    expect(await shows("waiting")).toBe("⛔️ 1 · one: waiting for you in Claude Code\n⚪ Not running: 2 · two")
     one.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
-    expect(await shows("waiting")).toBe("🔵 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
-    expect(await shows("busy")).toBe("🟠 1 · one: working\n⚪ Not running: 2 · two")
-    expect(await shows("idle")).toBe("🟢 1 · one: idle\n⚪ Not running: 2 · two")
-    expect(await shows("shell")).toBeUndefined()
+    expect(await shows("waiting")).toBe("🟠 1 · one: waiting for you, 1 approval\n⚪ Not running: 2 · two")
+    expect(await shows("busy")).toBe("🟢 1 · one: working\n⚪ Not running: 2 · two")
+    expect(await shows("idle")).toBe("🔴 1 · one: idle\n⚪ Not running: 2 · two")
+    expect(await shows("shell")).toBe("⚙️ 1 · one: working in the background\n⚪ Not running: 2 · two")
     one.endPermissions()
     one.onLine = undefined
     expect(await shows("idle")).toBe("⚪ Not running: 2 · two, 1 · one")
@@ -2589,18 +2656,18 @@ describe("Main group", () => {
     one.onLine = () => undefined
     one.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
     two.requestMode("host")
-    expect(hub.sessionsText()).toBe("🔵 1 · one: waiting for you, 1 approval\n🔵 2 · two: waiting for you, 1 approval")
+    expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 1 approval\n🟠 2 · two: waiting for you, 1 approval")
     one.record = join(root, "claude-1.json")
     writeFileSync(one.record, JSON.stringify({status: "busy"}))
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🟠 1 · one: working\n🔵 2 · two: waiting for you, 1 approval")
+    expect(hub.sessionsText()).toBe("🟢 1 · one: working\n🟠 2 · two: waiting for you, 1 approval")
     writeFileSync(one.record, JSON.stringify({status: "compacting"}))
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🔵 1 · one: waiting for you, 1 approval\n🔵 2 · two: waiting for you, 1 approval")
+    expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 1 approval\n🟠 2 · two: waiting for you, 1 approval")
     one.permission({id: id1, requestId: "fghij", toolName: "Write", description: "Write a file", inputPreview: "a.txt"})
     writeFileSync(one.record, JSON.stringify({status: "waiting"}))
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🔵 1 · one: waiting for you, 2 approvals\n🔵 2 · two: waiting for you, 1 approval")
+    expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 2 approvals\n🟠 2 · two: waiting for you, 1 approval")
     let stopped = false
     const stopping = hub.stop().then(() => (stopped = true))
     await until(() => chat.updates.filter(({chatId}) => chatId === 10).at(-1)?.text === "⚪ Not running: 2 · two, 1 · one")
@@ -2621,10 +2688,10 @@ describe("Main group", () => {
     expect(hub.sessionsText()).toBe("▶️ 1 · one: running")
     writeFileSync(one.record, JSON.stringify({status: "busy"}))
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🟠 1 · one: working")
+    expect(hub.sessionsText()).toBe("🟢 1 · one: working")
     writeFileSync(one.record, '{"pid": 100, "sta')
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🟠 1 · one: working")
+    expect(hub.sessionsText()).toBe("🟢 1 · one: working")
     writeFileSync(one.record, JSON.stringify({status: "compacting"}))
     await hub.showSessions()
     expect(hub.sessionsText()).toBe("▶️ 1 · one: running")
@@ -2653,7 +2720,7 @@ describe("Main group", () => {
     await hub.showSessions()
     expect(Date.now() - started).toBeLessThan(3_000)
     expect(opened).toHaveBeenCalledTimes(1)
-    expect(hub.sessionsText()).toBe("🟠 1 · one: working")
+    expect(hub.sessionsText()).toBe("🟢 1 · one: working")
   })
 
   it("deletes a new list whose item it could not save and posts it again at the next render, and does not send a text the core refused as too large again until the text changes", async () => {

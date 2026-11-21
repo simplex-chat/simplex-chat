@@ -581,7 +581,7 @@ describe("turn hooks", () => {
   const toolUse =(event: string, tool: string, input: object, extra: object = {}) => JSON.stringify({session_id: id, hook_event_name: event, cwd: "/p/app", prompt_id: "p1", effort: {level: "high"}, tool_name: tool, tool_input: input, tool_use_id: `toolu_${tool}`, ...extra})
   const steps = (requests: unknown[]) => requests.map(request => (request as {body: {step?: unknown}}).body.step)
 
-  it("send a step at the start of each tool use of the main conversation, with its text from the tool's input and paths relative to the session's folder", async () => {
+  it("send a step at the start of each tool use of the main conversation, with its text from the tool's input and paths relative to the session's folder, ✏️ for edits, notebook edits and writes, and 🔍 for searches, also of a tool whose name has search", async () => {
     const {client, requests} = turnClient()
     const started = (tool: string, input: object) => turn(toolUse("PreToolUse", tool, input), {CLAUDE_PID: "4321"}, client, 0, 1)
     await started("Bash", {command: "npm test\nnpm run lint", description: "Run the tests"})
@@ -597,8 +597,11 @@ describe("turn hooks", () => {
     await started("Glob", {pattern: "**/*.ts", path: "/p/app/src"})
     await started("Grep", {pattern: "endSteps", path: "/p/app/src/hub.ts", output_mode: "content"})
     await started("Grep", {pattern: "TODO"})
+    await started("mcp__claude_ai_Gmail__search_threads", {query: "from:alice"})
+    await started("mcp__research__fetch_page", {url: "https://example.com/search"})
     await started("TodoWrite", {todos: [{content: "Test", status: "pending"}]})
-    await started("NotebookEdit", {description: " \n", notebook_path: "/p/app/a.ipynb", url: "https://example.com/a"})
+    await started("NotebookEdit", {notebook_path: "/p/app/notes/a.ipynb", new_source: "print(1)", edit_mode: "replace"})
+    await started("SlackPost", {description: " \n", notebook_path: "/p/app/a.ipynb", url: "https://example.com/a"})
     await started("Task", {description: `Review‮ ${"x".repeat(300)}`})
     await started("Bash", {description: "Say hi!", command: "echo hi"})
     expect(requests[0]).toEqual({method: "POST", route: "/turn", body: {id, pid: 4321, at: 1, effort: "high", step: {id: "toolu_Bash", text: "!- 💻 Run the tests!"}}})
@@ -607,17 +610,20 @@ describe("turn hooks", () => {
       {id: "toolu_Bash", text: "!- 💻 git status!"},
       {id: "toolu_Read", text: "!- 📖 Read src/hook.ts!"},
       {id: "toolu_Edit", text: "!- ✏️ Edit /etc/hosts!"},
-      {id: "toolu_Write", text: "!- 📝 Write rfcs/2026-09-11-proof-of-work.md!"},
+      {id: "toolu_Write", text: "!- ✏️ Write rfcs/2026-09-11-proof-of-work.md!"},
       {id: "toolu_Read", text: "!- 📖 Read /p/app-old/src/hook.ts!"},
       {id: "toolu_WebFetch", text: "!- 🌐 Fetch https://spec.torproject.org/hspow-spec/common-protocol.html!"},
-      {id: "toolu_WebSearch", text: '!- 🔎 Search "hs_pow.c" tor source!'},
+      {id: "toolu_WebSearch", text: '!- 🔍 Search "hs_pow.c" tor source!'},
       {id: "toolu_Agent", text: "!- 🤖 Agent: Review pass 6 usage stats!"},
-      {id: "toolu_ToolSearch", text: "!- 🔧 ToolSearch: select:Monitor!"},
+      {id: "toolu_ToolSearch", text: "!- 🔍 ToolSearch: select:Monitor!"},
       {id: "toolu_Glob", text: "!- 🔍 Glob **/*.ts in src!"},
       {id: "toolu_Grep", text: "!- 🔍 Grep endSteps in src/hub.ts!"},
       {id: "toolu_Grep", text: "!- 🔍 Grep TODO!"},
+      {id: "toolu_mcp__claude_ai_Gmail__search_threads", text: "!- 🔍 mcp__claude_ai_Gmail__search_threads: from:alice!"},
+      {id: "toolu_mcp__research__fetch_page", text: "!- 🔧 mcp__research__fetch_page: https://example.com/search!"},
       {id: "toolu_TodoWrite", text: "!- 🔧 TodoWrite!"},
-      {id: "toolu_NotebookEdit", text: "!- 🔧 NotebookEdit: https://example.com/a!"},
+      {id: "toolu_NotebookEdit", text: "!- ✏️ Edit notes/a.ipynb!"},
+      {id: "toolu_SlackPost", text: "!- 🔧 SlackPost: https://example.com/a!"},
       {id: "toolu_Task", text: `!- 🔧 Task: Review  ${"x".repeat(199 - [..."🔧 Task: Review  "].length)}…!`},
       {id: "toolu_Bash", text: "!- 💻 Say hiǃ!"},
     ])

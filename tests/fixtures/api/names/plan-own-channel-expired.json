@@ -1,0 +1,282 @@
+{
+  "commands": {
+    "/_connect plan 1 #team.simplex": {
+      "result": {
+        "connLink": {
+          "connFullLink": "connFullLink",
+          "connShortLink": "connShortLink"
+        },
+        "connectionPlan": {
+          "groupLinkPlan": {
+            "groupInfo": {
+              "chatSettings": {
+                "enableNtfs": "all",
+                "favorite": false
+              },
+              "chatTags": [],
+              "chatTs": "1970-01-01T00:00:00Z",
+              "createdAt": "1970-01-01T00:00:00Z",
+              "fullGroupPreferences": {
+                "commands": [],
+                "comments": {
+                  "enable": "off"
+                },
+                "directMessages": {
+                  "enable": "on"
+                },
+                "files": {
+                  "enable": "on"
+                },
+                "fullDelete": {
+                  "enable": "off"
+                },
+                "history": {
+                  "enable": "on"
+                },
+                "reactions": {
+                  "enable": "on"
+                },
+                "reports": {
+                  "enable": "on"
+                },
+                "sessions": {
+                  "enable": "off"
+                },
+                "signMessages": {
+                  "enable": "off"
+                },
+                "simplexLinks": {
+                  "enable": "on"
+                },
+                "support": {
+                  "enable": "off"
+                },
+                "timedMessages": {
+                  "enable": "off",
+                  "ttl": 86400
+                },
+                "voice": {
+                  "enable": "on"
+                }
+              },
+              "groupDomainVerified": "verified",
+              "groupId": 1,
+              "groupProfile": {
+                "displayName": "team",
+                "fullName": "",
+                "groupPreferences": {
+                  "directMessages": {
+                    "enable": "on"
+                  },
+                  "history": {
+                    "enable": "on"
+                  },
+                  "support": {
+                    "enable": "off"
+                  }
+                },
+                "publicGroup": {
+                  "groupLink": "groupLink",
+                  "groupType": "channel",
+                  "publicGroupAccess": {
+                    "allowEmbedding": false,
+                    "domainWebPage": false,
+                    "groupDomainClaim": {
+                      "domain": "team.simplex"
+                    }
+                  },
+                  "publicGroupId": "publicGroupId"
+                }
+              },
+              "groupSummary": {
+                "currentMembers": 3,
+                "publicMemberCount": 2
+              },
+              "localAlias": "",
+              "localDisplayName": "team",
+              "membersRequireAttention": 0,
+              "membership": {
+                "blockedByAdmin": false,
+                "createdAt": "1970-01-01T00:00:00Z",
+                "groupId": 1,
+                "groupMemberId": 1,
+                "indexInGroup": 0,
+                "invitedBy": {
+                  "type": "user"
+                },
+                "localDisplayName": "alice",
+                "memberCategory": "user",
+                "memberChatVRange": {
+                  "maxVersion": 22,
+                  "minVersion": 9
+                },
+                "memberContactId": 1,
+                "memberContactProfileId": 1,
+                "memberId": "memberId",
+                "memberProfile": {
+                  "displayName": "alice",
+                  "fullName": "",
+                  "localAlias": "",
+                  "preferences": {
+                    "calls": {
+                      "allow": "yes"
+                    },
+                    "commands": [],
+                    "files": {
+                      "allow": "always"
+                    },
+                    "fullDelete": {
+                      "allow": "no"
+                    },
+                    "reactions": {
+                      "allow": "yes"
+                    },
+                    "sessions": {
+                      "allow": "no"
+                    },
+                    "timedMessages": {
+                      "allow": "yes"
+                    },
+                    "voice": {
+                      "allow": "yes"
+                    }
+                  },
+                  "profileId": 1,
+                  "shortDescr": "Alice"
+                },
+                "memberPubKey": "memberPubKey",
+                "memberRole": "owner",
+                "memberSettings": {
+                  "showMessages": true
+                },
+                "memberStatus": "creator",
+                "updatedAt": "1970-01-01T00:00:00Z"
+              },
+              "rosterVersion": 0,
+              "updatedAt": "1970-01-01T00:00:00Z",
+              "useRelays": true,
+              "userMemberProfileSentAt": "1970-01-01T00:00:00Z"
+            },
+            "type": "ownLink"
+          },
+          "nameChange": {
+            "nameWarning": {
+              "expiredAt": "2026-01-01T12:00:00Z",
+              "graceUntil": "2099-01-01T12:00:00Z",
+              "type": "expired"
+            },
+            "type": "lapsed"
+          },
+          "type": "groupLink"
+        },
+        "planSimplexName": {
+          "nameDomain": {
+            "domain": "team",
+            "nameTLD": "simplex",
+            "subDomain": []
+          },
+          "nameType": "publicGroup"
+        },
+        "type": "connectionPlan",
+        "user": {
+          "activeOrder": 1,
+          "activeUser": true,
+          "agentUserId": "1",
+          "autoAcceptGroupInvitations": false,
+          "autoAcceptMemberContacts": false,
+          "clientService": false,
+          "fullPreferences": {
+            "calls": {
+              "allow": "yes"
+            },
+            "commands": [],
+            "files": {
+              "allow": "always"
+            },
+            "fullDelete": {
+              "allow": "no"
+            },
+            "reactions": {
+              "allow": "yes"
+            },
+            "sessions": {
+              "allow": "no"
+            },
+            "timedMessages": {
+              "allow": "yes"
+            },
+            "voice": {
+              "allow": "yes"
+            }
+          },
+          "localDisplayName": "alice",
+          "profile": {
+            "displayName": "alice",
+            "fullName": "",
+            "localAlias": "",
+            "preferences": {
+              "calls": {
+                "allow": "yes"
+              },
+              "commands": [],
+              "files": {
+                "allow": "always"
+              },
+              "fullDelete": {
+                "allow": "no"
+              },
+              "reactions": {
+                "allow": "yes"
+              },
+              "sessions": {
+                "allow": "no"
+              },
+              "timedMessages": {
+                "allow": "yes"
+              },
+              "voice": {
+                "allow": "yes"
+              }
+            },
+            "profileId": 1,
+            "shortDescr": "Alice"
+          },
+          "sendRcptsContacts": true,
+          "sendRcptsSmallGroups": true,
+          "showNtfs": true,
+          "userChatRelay": false,
+          "userContactId": 1,
+          "userId": 1
+        }
+      }
+    }
+  },
+  "markdown": {
+    "#team.simplex": {
+      "formattedText": [
+        {
+          "format": {
+            "nameInfo": {
+              "nameDomain": {
+                "domain": "team",
+                "nameTLD": "simplex",
+                "subDomain": []
+              },
+              "nameType": "publicGroup"
+            },
+            "type": "simplexName"
+          },
+          "text": "#team.simplex"
+        }
+      ]
+    }
+  },
+  "uris": {
+    "https://simplex.domains/#testing": {
+      "parseError": "",
+      "uriInfo": {
+        "scheme": "https"
+      }
+    }
+  }
+}

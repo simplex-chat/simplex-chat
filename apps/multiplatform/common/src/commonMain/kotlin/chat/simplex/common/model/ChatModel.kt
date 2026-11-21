@@ -517,7 +517,7 @@ object ChatModel {
 
     suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo, groupChatScope = null))
 
-    private suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
+    suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
       if (hasChat(rhId, cInfo.id)) {
         updateChatInfo(rhId, cInfo)
       } else if (addMissing) {
@@ -691,28 +691,67 @@ object ChatModel {
       }
       // update current scope
       withContext(Dispatchers.Main) {
-        if (chatItemBelongsToScope(cInfo, cItem)) {
-          if (cItem.isDeletedContent || cItem.meta.itemDeleted != null) {
-            AudioPlayer.stop(cItem)
-          }
-          val items = chatItems.value
-          val itemIndex = items.indexOfFirst { it.id == cItem.id }
-          if (itemIndex >= 0) {
-            val oldStatus = items[itemIndex].meta.itemStatus
-            val newStatus = cItem.meta.itemStatus
-            val ci = if (shouldKeepOldSndCIStatus(oldStatus, newStatus)) {
-              cItem.copy(meta = cItem.meta.copy(itemStatus = oldStatus))
-            } else {
-              cItem
-            }
-            items[itemIndex] = ci
-          } else {
-            addToChatItems(cItem)
-            itemAdded = true
-          }
+        if (chatItemBelongsToScope(cInfo, cItem) && !replaceLoadedChatItem(cItem)) {
+          addToChatItems(cItem)
+          itemAdded = true
         }
       }
       return  itemAdded
+    }
+
+    suspend fun applyChatItemUpdate(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem, prevItem: ChatItem): Boolean {
+      var itemAdded = false
+      if (cInfo.groupChatScope() == null) {
+        val i = getChatIndex(rhId, cInfo.id)
+        if (i >= 0) {
+          val chat = chats[i]
+          val unreadChange = unreadCountChange(prevItem, cItem) { it.isRcvNew }
+          val mentionsChange = unreadCountChange(prevItem, cItem) { it.isRcvNew && it.meta.userMention }
+          val countersChanged = secondaryContextFilter == null && (unreadChange != 0 || mentionsChange != 0)
+          val wasUnread = chat.unreadTag
+          chats[i] = chat.copy(
+            chatItems = if (chat.chatItems.lastOrNull()?.id == cItem.id) arrayListOf(cItem) else chat.chatItems,
+            chatStats = if (countersChanged) {
+              chat.chatStats.copy(
+                unreadCount = maxOf(0, chat.chatStats.unreadCount + unreadChange),
+                unreadMentions = maxOf(0, chat.chatStats.unreadMentions + mentionsChange)
+              )
+            } else {
+              chat.chatStats
+            }
+          )
+          if (countersChanged) {
+            changeUnreadCounterInPrimaryContext(rhId, currentUser.value!!, unreadChange)
+            updateChatTagReadInPrimaryContext(chats[i], wasUnread)
+          }
+        } else {
+          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+          itemAdded = true
+        }
+      }
+      withContext(Dispatchers.Main) {
+        if (chatItemBelongsToScope(cInfo, cItem)) {
+          replaceLoadedChatItem(cItem)
+        }
+      }
+      return itemAdded
+    }
+
+    private fun replaceLoadedChatItem(cItem: ChatItem): Boolean {
+      if (cItem.isDeletedContent || cItem.meta.itemDeleted != null) {
+        AudioPlayer.stop(cItem)
+      }
+      val items = chatItems.value
+      val itemIndex = items.indexOfFirst { it.id == cItem.id }
+      if (itemIndex < 0) return false
+      val oldStatus = items[itemIndex].meta.itemStatus
+      val newStatus = cItem.meta.itemStatus
+      items[itemIndex] = if (shouldKeepOldSndCIStatus(oldStatus, newStatus)) {
+        cItem.copy(meta = cItem.meta.copy(itemStatus = oldStatus))
+      } else {
+        cItem
+      }
+      return true
     }
 
     suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {
@@ -2066,7 +2105,8 @@ enum class ConnectionMode {
 enum class ContactStatus {
   @SerialName("active") Active,
   @SerialName("deleted") Deleted,
-  @SerialName("deletedByUser") DeletedByUser;
+  @SerialName("deletedByUser") DeletedByUser,
+  @SerialName("rejected") Rejected;
 }
 
 @Serializable
@@ -2173,7 +2213,7 @@ data class LocalProfile(
   val peerType: ChatPeerType? = null,
   val localBadge: LocalBadge? = null,
   val contactDomain: SimplexDomainClaim? = null,
-  val contactDomainVerified: Boolean? = null
+  val contactDomainVerified: DomainVerification? = null
 ): NamedChat {
   override val profileDescription: String? get() = description
 
@@ -2613,7 +2653,7 @@ object BadgeAlertKindSerializer : KSerializer<BadgeAlertKind> {
   override fun serialize(encoder: Encoder, value: BadgeAlertKind) = encoder.encodeString(value.text)
 }
 
-private fun badgeDateText(date: Instant): String {
+fun badgeDateText(date: Instant): String {
   val ts = date.toLocalDateTime(TimeZone.currentSystemDefault())
   return ts.toJavaLocalDateTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
 }
@@ -2669,7 +2709,7 @@ data class GroupInfo (
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
-  val groupDomainVerified: Boolean? = null,
+  val groupDomainVerified: DomainVerification? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -2799,6 +2839,13 @@ data class SimplexDomainClaim(
   val proof: SimplexDomainProof? = null
 ) {
   val shortName: String get() = domain.removeSuffix(".simplex")
+}
+
+@Serializable
+enum class DomainVerification {
+  @SerialName("failed") Failed,
+  @SerialName("verified") Verified,
+  @SerialName("moved") Moved,
 }
 
 @Serializable
@@ -3501,6 +3548,13 @@ data class ChatItemDeletion (
 class AChatItem (
   val chatInfo: ChatInfo,
   val chatItem: ChatItem
+)
+
+@Serializable
+class AChatItemUpdate (
+  val chatInfo: ChatInfo,
+  val chatItem: ChatItem,
+  val prevChatItem: ChatItem
 )
 
 @Serializable
@@ -4238,6 +4292,9 @@ sealed class CIStatus {
     is Invalid -> "Invalid status" to this.text
   }
 }
+
+fun unreadCountChange(prevItem: ChatItem, cItem: ChatItem, counted: (ChatItem) -> Boolean): Int =
+  (if (counted(cItem)) 1 else 0) - (if (counted(prevItem)) 1 else 0)
 
 fun shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus): Boolean =
   when {

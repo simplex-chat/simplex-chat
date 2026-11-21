@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-38.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-39.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -65,6 +65,7 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 36. [The list of sessions](#36-the-list-of-sessions)
 37. [The texts of a turn](#37-the-texts-of-a-turn)
 38. [The status line command](#38-the-status-line-command)
+39. [An edit and a live message in the session group](#39-an-edit-and-a-live-message-in-the-session-group)
 
 ---
 
@@ -286,16 +287,17 @@ sequenceDiagram
   participant W as ChatItemsWatch
   participant C as Core
   participant D as Peer
-  A->>T: receive {chat: #35;12, wait: 3600, limit: 50}
+  A->>T: receive {chat: #35;12, wait: 3600, limit: 50, history: 20}
   T->>W: collect #35;12 into arrived
   T->>C: apiGetChat #35;12 initial 1
   C-->>T: chatStats.unreadCount 0
   T-->>A: progress: No new messages in #35;12, waiting until TIME.
   D->>C: post, item 40
   C->>W: newChatItems: arrived
+  T->>C: apiGetChat #35;12 before 40 count 100
   T->>C: apiChatItemsRead #35;12 [40]
   T->>W: stop collecting
-  T-->>A: {chat: #35;12, messages: [40], more: 0}
+  T-->>A: {chat: #35;12, messages: [40], more: 0, history}
 ```
 
 Notes:
@@ -305,8 +307,9 @@ Notes:
 - `more`: the arrived messages not returned, the overflow and the unread items not read ([`AgentTools.receive`](../src/tools.ts)).
 - Items received while the pages are read are returned once ([`AgentTools.receive`](../src/tools.ts)).
 - Exact progress text: `No new messages in CHAT; waiting until TIME.` ([`AgentTools.receive`](../src/tools.ts)).
+- With `history`, after the wait the server reads pages of 100 items: `before` the first returned message, or `last` when none is returned, then `before` the first item of the previous page, until it holds `history` message items that are not new or live and have no `itemDeleted`, or a page is short; the agent's own items are named as in `connect` ([`AgentTools.receive`, `historyMessages`](../src/tools.ts), [`historyItems`](../src/messages.ts)).
 
-Source: [`AgentTools.receive`](../src/tools.ts), [`unreadItems`, `isNewMessage`, `reportProgress`, `nextChange`, `awaitResponses`](../src/messages.ts).
+Source: [`AgentTools.receive`, `historyMessages`](../src/tools.ts), [`unreadItems`, `isNewMessage`, `historyItems`, `reportProgress`, `nextChange`, `awaitResponses`](../src/messages.ts).
 
 ---
 
@@ -1690,18 +1693,18 @@ sequenceDiagram
   CC->>R: status busy
   D->>N: every 2 s: readRecord, the session attached
   N->>R: read status
-  D->>M: showList: 🟠 N · NAME: working, then the not running line
+  D->>M: showList: 🟢 N · NAME: working, then the not running line
   M->>C: no list yet, an owner in the group: apiSendMessages #35;M, priority -1
   M->>C: apiSetGroupCustomData #35;M {simplexMcpMain: true, simplexMcpList: {item, at}}
   C->>O: the list
   CC->>R: status waiting, a permission dialog
   CC->>S: permission_request
   S->>D: POST /permission
-  D->>M: showList: 🔵 N · NAME: waiting for you, 1 approval
+  D->>M: showList: 🟠 N · NAME: waiting for you, 1 approval
   M->>C: apiUpdateChatItem #35;M item
   C->>O: the list edited, no alert
   CC->>R: status idle
-  D->>M: showList: 🟢 N · NAME: idle
+  D->>M: showList: 🔴 N · NAME: idle
   M->>C: apiUpdateChatItem #35;M item
   Note over D,M: the list 23 hours old, or its edit refused
   M->>C: apiSendMessages #35;M the new list, priority -1, and its item saved
@@ -1817,3 +1820,59 @@ Notes:
 - Claude Code runs `status-line.js` also when no service could start in the data folder, so that folder must be writable only by the user.
 
 Source: [`statusLine`, `limitParts`, `runStatusLine`](../src/status-line.ts), [`writeStatusLine`](../src/files.ts), [`Session.turn`, `endLine`](../src/hub.ts).
+
+---
+
+## 39. An edit and a live message in the session group
+
+```mermaid
+sequenceDiagram
+  participant O as Member
+  participant C as Core _hub
+  participant N as Session N
+  participant D as Service
+  participant S as Session process
+  participant CC as Claude Code
+  O->>C: a message typed in live mode, first fragment
+  C->>N: newChatItems, itemLive: Session.onMessage
+  N->>N: liveItems[item] = the message, nothing passed
+  O->>C: more fragments
+  C->>N: chatItemUpdated, itemLive: Session.onUpdate
+  N->>N: liveItems[item] = the message with its current text, nothing passed
+  alt the message sent
+    O->>C: the message sent
+    C->>N: chatItemUpdated, live off: Session.onUpdate
+    N->>N: liveItems -= item, pass: a new message
+  else no final version, and the member's next message
+    O->>C: the next message
+    C->>N: newChatItems: Session.onMessage
+    N->>N: passLive: liveItems -= item, pass at its current text, then the next message
+  end
+  N->>D: onLine {prompt: {text, from, item}}
+  D->>S: the line on /attach
+  S->>CC: notifications/claude/channel {content, meta: {from, item}}
+  N->>N: prompted[item] = text, the newest 100
+  O->>C: edits the message, or its final version arrives late
+  C->>N: chatItemUpdated: Session.onUpdate
+  alt a / command, the item not in prompted, or the same text
+    N->>N: nothing
+  else another text
+    N->>N: delivery = delivery then prompt: after the earlier messages of the session
+    N->>D: onLine {prompt: {text, from, item, replyTo?, edited: true}}
+    D->>S: the line on /attach
+    S->>CC: notifications/claude/channel {content, meta: {from, item, edited: "true"}}
+    N->>N: prompted[item] = new text
+  end
+  CC->>D: UserPromptSubmit hook: POST /turn {prompt}, the channel tag matched
+  N->>O: Claude: the opening message, quoting the edited message
+```
+
+Notes:
+
+- Claude gets an edit as a new prompt with the same item, `edited="true"` in the channel tag, and the new text, after the quote line of a reply. The earlier version is in Claude's context ([`Session.onUpdate`, `deliver`](../src/hub.ts), [`channelNotification`, `channelInstructions`](../src/session.ts)).
+- Only the edit of a message passed to Claude since the service started, among the newest 100, is passed, so an edit of `User`'s message or of a command passes nothing. An edit to a `/` command passes nothing, and gets no reply ([`maxPrompted`, `Session.prompted`, `onUpdate`, `bounded`](../src/hub.ts)).
+- An update with the same text, such as a file's status, passes nothing. The core marks no update of a live message as an edit, and the hub tells its final version by `liveItems` ([`Session.liveItems`, `onMessage`, `onUpdate`](../src/hub.ts)).
+- A live message that never gets its final version, as when the sender's app closes while they type, reaches Claude at its last text before that member's next message, and not before another member's. Its final version, when it arrives later, reaches Claude as an edit. The hub uses no timer ([`Session.passLive`, `keepLive`, `pass`](../src/hub.ts)).
+- A live message deleted before it is sent passes nothing, unless the member sends another message first.
+
+Source: [`Session.onMessage`, `onUpdate`, `pass`, `keepLive`, `passLive`, `replyTo`, `prompt`, `deliver`, `bounded`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).

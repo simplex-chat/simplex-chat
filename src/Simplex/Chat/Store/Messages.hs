@@ -64,6 +64,7 @@ module Simplex.Chat.Store.Messages
     updateChatItemSignedMsg,
     createGroupCIMentions,
     updateGroupCIMentions,
+    updateGroupCIUserMention,
     deleteGroupChatItem,
     updateGroupChatItemModerated,
     deleteMemberCIs,
@@ -118,6 +119,7 @@ module Simplex.Chat.Store.Messages
     getLocalChatItemIdByText',
     getChatItemByFileId,
     lookupChatItemByFileId,
+    updateFileChatItem,
     getChatItemByGroupId,
     updateDirectChatItemStatus,
     setDirectSndChatItemViaProxy,
@@ -164,6 +166,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Simplex.Chat.Badges (BadgeStatus)
 import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), PaginationByTime (..))
 import Simplex.Chat.Markdown
@@ -2230,11 +2233,7 @@ updateGroupScopeUnreadStats db cxt user g@GroupInfo {membership} scopeInfo (unre
         pure g {membership = membership'}
       Just member -> do
         member' <- updateGMStats member
-        let didRequire = gmRequiresAttention member
-            nowRequires = gmRequiresAttention member'
-        if (not nowRequires && didRequire)
-          then decreaseGroupMembersRequireAttention db user g
-          else pure g
+        updateGroupMembersRequireAttention db user g member member'
   where
     updateGMStats m@GroupMember {groupMemberId} = do
       currentTs <- getCurrentTime
@@ -2556,10 +2555,10 @@ setDirectSndChatItemViaProxy db User {userId} Contact {contactId} ci viaProxy = 
   DB.execute db "UPDATE chat_items SET via_proxy = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?" (BI viaProxy, userId, contactId, chatItemId' ci)
   pure ci {meta = (meta ci) {sentViaProxy = Just viaProxy}}
 
-updateDirectChatItem :: MsgDirectionI d => DB.Connection -> User -> Contact -> ChatItemId -> CIContent d -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
+updateDirectChatItem :: MsgDirectionI d => DB.Connection -> User -> Contact -> ChatItemId -> CIContent d -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d, ChatItem 'CTDirect d)
 updateDirectChatItem db user ct@Contact {contactId} itemId newContent edited live timed_ msgId_ = do
   ci <- liftEither . correctDir =<< getDirectCIWithReactions db user ct itemId
-  liftIO $ updateDirectChatItem' db user contactId ci newContent edited live timed_ msgId_
+  (ci,) <$> liftIO (updateDirectChatItem' db user contactId ci newContent edited live timed_ msgId_)
 
 getDirectCIWithReactions :: DB.Connection -> User -> Contact -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectCIWithReactions db user ct@Contact {contactId} itemId =
@@ -2824,13 +2823,13 @@ createGroupCIMentions db GroupInfo {groupId} ci mentions = do
     rows = map (\(name, CIMention {memberId}) -> (ciId, groupId, memberId, name)) $ M.assocs mentions
     ciId = chatItemId' ci
 
-updateGroupCIMentions :: DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> Map MemberName CIMention -> IO (ChatItem 'CTGroup d)
+updateGroupCIMentions :: forall d. DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> Map MemberName CIMention -> IO (ChatItem 'CTGroup d)
 updateGroupCIMentions db g ci@ChatItem {mentions} mentions'
   | mentions' == mentions = pure ci
   | otherwise = do
       unless (null mentions) deleteMentions
       if null mentions'
-        then pure ci
+        then pure (ci :: ChatItem 'CTGroup d) {mentions = mentions'}
         else -- This is a fallback for the error that should not happen in practice.
         -- In theory, it may happen in item mentions in database are different from item record.
           withSavepoint db "create_mentions" createMentions >>= \case
@@ -2839,6 +2838,23 @@ updateGroupCIMentions db g ci@ChatItem {mentions} mentions'
   where
     deleteMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
     createMentions = createGroupCIMentions db g ci mentions'
+
+updateGroupCIUserMention :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
+updateGroupCIUserMention db cxt user@User {userId} g@GroupInfo {membership} scopeInfo_ ci@ChatItem {chatDir, quotedItem, mentions, meta = meta@CIMeta {itemId, itemStatus, userMention}}
+  | userMention' == userMention = pure ci
+  | otherwise = do
+      DB.execute db "UPDATE chat_items SET user_mention = ? WHERE user_id = ? AND chat_item_id = ?" (BI userMention', userId, itemId)
+      when (itemStatus == CISRcvNew) $
+        forM_ scopeInfo_ $ \scopeInfo -> updateGroupScopeUnreadStats db cxt user g scopeInfo (0, 0, fromEnum userMention - fromEnum userMention')
+      pure ci {meta = meta {userMention = userMention'}}
+  where
+    userMention' = userMentioned membership senderBlocked userReply mentions
+    senderBlocked = case chatDir of
+      CIGroupRcv m -> memberBlocked m
+      CIChannelRcv -> False
+    userReply = case quotedItem of
+      Just CIQuote {chatDir = CIQGroupSnd} -> True
+      _ -> False
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
 deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci = do
@@ -3318,6 +3334,17 @@ lookupChatItemByFileId db cxt user fileId = do
   fmap Just (getChatItemByFileId db cxt user fileId) `catchError` \case
     SEChatItemNotFoundByFileId {} -> pure Nothing
     e -> throwError e
+
+updateFileChatItem :: DB.Connection -> StoreCxt -> User -> Int64 -> IO () -> ExceptT StoreError IO (Maybe AChatItemUpdate)
+updateFileChatItem db cxt user fileId update = do
+  prevAci_ <- lookupChatItemByFileId db cxt user fileId
+  liftIO update
+  aci_ <- lookupChatItemByFileId db cxt user fileId
+  case (prevAci_, aci_) of
+    (Nothing, Nothing) -> pure Nothing
+    (Just (AChatItem c' d' _ prevCi), Just (AChatItem c d chatInfo ci))
+      | Just Refl <- testEquality c c', Just Refl <- testEquality d d' -> pure $ Just $ AChatItemUpdate c d chatInfo ci prevCi
+    _ -> throwError $ SEInternalError $ "file update changed chat item presence, chat type or direction, file " <> show fileId
 
 getChatItemByGroupId :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO AChatItem
 getChatItemByGroupId db cxt user@User {userId} groupId = do
