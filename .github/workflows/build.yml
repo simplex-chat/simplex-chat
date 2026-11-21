@@ -1472,7 +1472,9 @@ jobs:
       - name: Prepare VLC
         if: runner.os != 'Windows'
         shell: bash
-        run: ${{ matrix.prepare }}
+        run: |
+          mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/${{ matrix.libs }}
+          ${{ matrix.prepare }}
 
       - name: Setup Python
         uses: actions/setup-python@v7
