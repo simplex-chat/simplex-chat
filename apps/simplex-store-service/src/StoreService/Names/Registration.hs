@@ -86,7 +86,8 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
-import StoreService.Names.Chain (AbiValue (..), Hex32 (..), abiArray, abiBytes, abiTuple, abiWordSize, addressWord, hex, lowerHexP, parseText, selector, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, abiWordSize, addressWord, hex, lowerHexP, parseText, selector, uint256)
+import StoreService.Names.Chain (Hex32 (..))
 
 newtype RegistrationId = RegistrationId Text
   deriving (Eq, Ord, Show)

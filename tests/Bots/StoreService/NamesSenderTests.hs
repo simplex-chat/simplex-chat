@@ -26,6 +26,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (mkPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.Util (tshow)
+import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain
 import StoreService.Names.Registration (RegistrationId (..), commitCalldata)
 import StoreService.Names.Sender

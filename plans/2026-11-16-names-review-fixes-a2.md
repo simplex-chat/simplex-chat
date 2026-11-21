@@ -154,17 +154,21 @@ A2-27, A2-28: Census.hs goes; its code is in Contracts.
 
 ## Modules
 
-A2-29: after the other areas merge, Abi and Revert move into Chain, and Signatures with RegistrationId into Registration.
+A2-29: after the other areas merge, Revert moves into Chain, and Signatures with RegistrationId into Registration. Abi stays a module of its own.
 
 - ChainConfig is defined in Chain; Config re-exports it.
 - A UTCTime is converted to seconds where it is used, by `systemSeconds $ utcToSystemTime t`, as simplexmq does.
-- Chain imports no service module.
+- Chain imports Abi and no other service module.
 - RegistrationId is imported from Registration; Phases does not export it.
-- Abi.hs, Revert.hs and Signatures.hs are out of the cabal module lists; their deletion waits for the user, as Census.hs.
+- Revert.hs and Signatures.hs are out of the cabal module lists; their deletion waits for the user, as Census.hs.
 
 ```mermaid
 graph LR
+  Config --> Abi
   Config --> Chain
+  Chain --> Abi
+  Registration --> Abi
+  Contracts --> Abi
   Config --> Registration
   Registration --> Chain
   Phases --> Registration

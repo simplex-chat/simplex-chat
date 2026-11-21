@@ -25,7 +25,8 @@ import Simplex.Messaging.Encoding.String (TextEncoding (..), strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
-import StoreService.Names.Chain (AbiError (..), AbiValue (..), Hex32 (..), abiBytes, abiTuple, decodeAddress, decodeBool, decodeBytes, decodeBytes32, decodeLabels, decodeString, decodeUint256, uint256)
+import StoreService.Names.Abi (AbiError (..), AbiValue (..), abiBytes, abiTuple, decodeAddress, decodeBool, decodeBytes, decodeBytes32, decodeLabels, decodeString, decodeUint256, uint256)
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Registration
 import Test.Hspec
 

@@ -45,6 +45,7 @@ import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
+import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Records

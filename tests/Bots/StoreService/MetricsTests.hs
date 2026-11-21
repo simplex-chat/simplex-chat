@@ -43,7 +43,8 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ListenerConfig (..))
 import StoreService.Metrics
-import StoreService.Names.Chain (AbiValue (..), TxHash (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
+import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Contracts (RegisteredNames (..), newContracts, termsOf, termsText)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store

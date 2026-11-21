@@ -457,6 +457,7 @@ executable simplex-store-service
       StoreService.Group
       StoreService.Group.Command
       StoreService.Metrics
+      StoreService.Names.Abi
       StoreService.Names.Balances
       StoreService.Names.Chain
       StoreService.Names.Codes
@@ -837,6 +838,7 @@ test-suite simplex-chat-test
       StoreService.Group
       StoreService.Group.Command
       StoreService.Metrics
+      StoreService.Names.Abi
       StoreService.Names.Balances
       StoreService.Names.Chain
       StoreService.Names.Codes

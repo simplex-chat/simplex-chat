@@ -21,6 +21,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
+import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain
 import Test.Hspec
 

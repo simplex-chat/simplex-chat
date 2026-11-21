@@ -58,6 +58,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import Simplex.Messaging.Util (tshow)
+import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Community (currentAcceptance)
 import StoreService.Names.Contracts

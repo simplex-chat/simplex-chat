@@ -36,27 +36,6 @@ module StoreService.Names.Chain
     sendRawTransaction,
     httpFailure,
     httpFailureDetail,
-    AbiValue (..),
-    AbiError (..),
-    abiWordSize,
-    abiTuple,
-    abiBytes,
-    abiArray,
-    uint256,
-    addressWord,
-    selector,
-    hex,
-    lowerHexP,
-    parseText,
-    decodeUint256,
-    decodeWord64,
-    decodeSeconds,
-    decodeAddress,
-    decodeBool,
-    decodeBytes32,
-    decodeBytes,
-    decodeString,
-    decodeLabels,
     RevertName (..),
     actedReverts,
     otherRevertSignatures,
@@ -70,28 +49,26 @@ where
 import Control.Concurrent.STM (TVar)
 import Control.Exception (evaluate, try)
 import Control.Logger.Simple (logWarn)
-import Control.Monad (unless, (>=>))
+import Control.Monad ((>=>))
 import Control.Monad.Except (ExceptT (..))
-import Crypto.Number.Serialize (i2ospOf_, os2ip)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.Bifunctor (first)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
-import Data.Char (isDigit, isHexDigit)
-import Data.List (foldl', mapAccumL, sort)
+import Data.Char (isHexDigit)
+import Data.List (foldl', sort)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
@@ -101,13 +78,12 @@ import Numeric (showHex)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), FromField (..), ToField (..), blobFieldDecoder)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey)
-import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..), StrJSON (..), TextEncoding (..))
-import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress, unAddress)
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), decodeEip1559Tx, eip1559SigningHash, signEip1559Tx)
-import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (AnyError (..), tryAllOwnErrors', tshow)
+import StoreService.Names.Abi (abiWordSize, decodeString, hex, lowerHexP, parseText, selector)
 import System.Timeout (timeout)
 
 data ChainConfig = ChainConfig
@@ -384,126 +360,6 @@ bytes = nodeHex "data" "not hex data" $ A.takeWhile isHexDigit >>= either fail p
 
 nodeHex :: String -> String -> A.Parser a -> J.Value -> JT.Parser a
 nodeHex name failure p = J.withText name $ either (const $ fail failure) pure . parseText (A.string "0x" *> p)
-
-data AbiValue = Static ByteString | Dynamic ByteString
-
-data AbiError
-  = AEShort
-  | AEOffset
-  | AENotAddress
-  | AENotBool
-  | AENotUtf8
-  | AERange
-  deriving (Eq, Show)
-
-abiWordSize :: Int
-abiWordSize = 32
-
-addressPadding :: Int
-addressPadding = 12
-
-abiTuple :: [AbiValue] -> ByteString
-abiTuple values = B.concat heads <> B.concat [tl | Dynamic tl <- values]
-  where
-    heads = snd $ mapAccumL encodeHead (abiWordSize * length values) values
-    encodeHead offset = \case
-      Static w -> (offset, w)
-      Dynamic tl -> (offset + B.length tl, uint256 offset)
-
-abiBytes :: ByteString -> ByteString
-abiBytes bs = uint256 (B.length bs) <> bs <> B.replicate (negate (B.length bs) `mod` abiWordSize) 0
-
-abiArray :: [ByteString] -> ByteString
-abiArray items = uint256 (length items) <> abiTuple (map Dynamic items)
-
-uint256 :: Integral a => a -> ByteString
-uint256 = i2ospOf_ abiWordSize . toInteger
-
-addressWord :: Address -> ByteString
-addressWord a = B.replicate addressPadding 0 <> unAddress a
-
-selector :: ByteString -> ByteString
-selector = B.take 4 . keccak256
-
--- | Data of any length as JSON-RPC takes it.
-hex :: ByteString -> Text
-hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
-
-lowerHexP :: Int -> A.Parser ByteString
-lowerHexP n = A.count (2 * n) (A.satisfy lowerHexDigit) >>= either fail pure . convertFromBase Base16 . BC.pack
-  where
-    lowerHexDigit c = isDigit c || (c >= 'a' && c <= 'f')
-
-parseText :: A.Parser a -> Text -> Either String a
-parseText p = parseAll p . encodeUtf8
-
-decodeUint256 :: ByteString -> Either AbiError Integer
-decodeUint256 = uintAt 0
-
-decodeWord64 :: ByteString -> Either AbiError Word64
-decodeWord64 = decodeBounded
-
-decodeSeconds :: ByteString -> Either AbiError SystemSeconds
-decodeSeconds = fmap RoundedSystemTime . decodeBounded
-
-decodeBounded :: forall a. (Integral a, Bounded a) => ByteString -> Either AbiError a
-decodeBounded ret = do
-  n <- decodeUint256 ret
-  if n <= toInteger (maxBound :: a) then Right (fromInteger n) else Left AERange
-
-decodeAddress :: ByteString -> Either AbiError Address
-decodeAddress ret = do
-  (padding, a) <- B.splitAt addressPadding <$> wordAt 0 ret
-  unless (B.all (== 0) padding) $ Left AENotAddress
-  first (const AENotAddress) $ smpDecode a
-
-decodeBool :: ByteString -> Either AbiError Bool
-decodeBool ret =
-  uintAt 0 ret >>= \case
-    0 -> Right False
-    1 -> Right True
-    _ -> Left AENotBool
-
-decodeBytes32 :: ByteString -> Either AbiError ByteString
-decodeBytes32 = wordAt 0
-
-decodeBytes :: ByteString -> Either AbiError ByteString
-decodeBytes ret = offsetAt 0 ret >>= bytesAt ret
-
-decodeString :: ByteString -> Either AbiError Text
-decodeString ret = decodeBytes ret >>= first (const AENotUtf8) . decodeUtf8'
-
--- | A return of a bytes32[] and a string[] of the same length, paired.
-decodeLabels :: ByteString -> Either AbiError [(ByteString, Text)]
-decodeLabels ret = do
-  (hashCount, hashesStart) <- offsetAt 0 ret >>= arrayAt
-  (labelCount, labelsStart) <- offsetAt abiWordSize ret >>= arrayAt
-  unless (hashCount == labelCount) $ Left AEOffset
-  hashes <- mapM (\i -> wordAt (hashesStart + i * abiWordSize) ret) [0 .. hashCount - 1]
-  labels <- mapM (\i -> offsetAt (labelsStart + i * abiWordSize) ret >>= bytesAt ret . (labelsStart +) >>= first (const AENotUtf8) . decodeUtf8') [0 .. labelCount - 1]
-  pure $ zip hashes labels
-  where
-    arrayAt o = (,o + abiWordSize) <$> offsetAt o ret
-
-wordAt :: Int -> ByteString -> Either AbiError ByteString
-wordAt o ret
-  | o + abiWordSize <= B.length ret = Right $ B.take abiWordSize $ B.drop o ret
-  | otherwise = Left AEShort
-
-uintAt :: Int -> ByteString -> Either AbiError Integer
-uintAt o ret = os2ip <$> wordAt o ret
-
--- an offset or a length, never more than the data's size, so it fits an Int
-offsetAt :: Int -> ByteString -> Either AbiError Int
-offsetAt o ret = do
-  n <- uintAt o ret
-  if n <= toInteger (B.length ret) then Right (fromInteger n) else Left AEOffset
-
-bytesAt :: ByteString -> Int -> Either AbiError ByteString
-bytesAt ret o = do
-  n <- offsetAt o ret
-  let start = o + abiWordSize
-  if start + n <= B.length ret then Right $ B.take n $ B.drop start ret else Left AEShort
 
 -- | The custom errors of SimplexController, SimplexSponsor, BaseRegistrarImplementation and SimplexResolver, and the reservation and terms errors of SimplexNamePolicy, that the service acts on, and RNOther for the others.
 -- The sponsor passes the controller's and the base registrar's reverts through, so any call can revert with any of them.
