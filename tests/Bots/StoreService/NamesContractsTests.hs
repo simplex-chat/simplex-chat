@@ -34,7 +34,7 @@ where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.FakeHttp (withResetServer)
-import Bots.StoreService.WebTests (capturingStderr, withServiceStore, withServiceStores)
+import Bots.StoreService.WebTests (capturingStderr, renameTable, withServiceStore, withServiceStores)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (poll, wait, withAsync)
@@ -225,11 +225,14 @@ testTermsTextReset g = withContracts g $ \_ ct -> withResetServer $ \url -> do
   logged `shouldSatisfy` T.isInfixOf "names: the terms text of reset could not be fetched, request failed"
 
 testTermsFetchThrows :: TVar ChaChaDRG -> IO ()
-testTermsFetchThrows g = withContracts g $ \_ ct -> do
-  throwing <- throwingChain (ctChain ct)
-  logged <- capturingStderr $ withAsync (runTermsFetch ct {ctChain = throwing}) $ \lane -> do
+testTermsFetchThrows g = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  ct <- newContracts st TLDSimplex minPriceCentsPerYear =<< fakeChainClient g node
+  linkTermsOnNode node
+  renameTable st "sx_badge_service_name_terms" "name_terms_away"
+  logged <- capturingStderr $ withAsync (runTermsFetch ct) $ \lane -> do
     threadDelay 500000
     poll lane >>= (`shouldSatisfy` isNothing)
+  renameTable st "name_terms_away" "sx_badge_service_name_terms"
   logged `shouldSatisfy` T.isInfixOf "names terms fetch failed; the next pass will run: "
 
 testTermsTextKept :: TVar ChaChaDRG -> IO ()

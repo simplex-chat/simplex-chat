@@ -13,7 +13,6 @@ module StoreService.Metrics
     readChain,
     runChainReads,
     readRegisteredNames,
-    runRegisteredNames,
     serviceText,
     namesText,
     registeredNamesText,

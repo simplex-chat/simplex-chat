@@ -1,14 +1,12 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module StoreService.Providers
   ( ProviderError (..),
     providerErrorText,
     isTimeout,
     providerCall,
-    withResponseWrapped,
     decodeAnswer,
     objectId,
     WebhookError (..),
@@ -37,7 +35,8 @@ module StoreService.Providers
   )
 where
 
-import Control.Exception (Exception, Handler (..), IOException, catches, throwIO, toException, try)
+import Control.Exception (try)
+import Control.Monad.Except (ExceptT (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.ByteString (ByteString)
@@ -47,18 +46,20 @@ import Data.Scientific (Scientific)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime)
-import Network.HTTP.Client (BodyReader, HttpException (..), HttpExceptionContent (..), Manager, Request, Response (..), brReadSome, parseRequest, withResponse)
+import Network.HTTP.Client (HttpException, Manager, Request, Response (..), brReadSome, parseRequest, withResponse)
 import Network.HTTP.Types (Status (..))
 import Network.HTTP.Types.Header (Header)
-import Network.TLS (TLSException)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), PaymentProvider (..), ServicePaymentDestination, ServicePaymentMethod)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (AnyError (..), safeDecodeUtf8, tryAllOwnErrors', tshow)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
 data ProviderError = ProviderError Text | ProviderTimeout Text
   deriving (Eq, Show)
+
+instance AnyError ProviderError where
+  fromSomeException = ProviderError . tshow
 
 providerErrorText :: ProviderError -> Text
 providerErrorText = \case
@@ -80,32 +81,25 @@ maxProviderBytes = 10 * 1024 * 1024
 
 providerCall :: Manager -> Int -> Text -> Text -> (Request -> Request) -> IO ([Header], Either ProviderError LB.ByteString)
 providerCall manager micros what url prepare = do
-  r <- timeout micros $ try $ do
+  r <- timeout micros $ tryAllOwnErrors' $ ExceptT $ fmap (either failed Right) $ try $ do
     req <- prepare <$> parseRequest (T.unpack url)
     -- Read to a bound, not the whole body, so an enormous response cannot exhaust the poller thread.
-    withResponseWrapped req manager $ \resp -> do
+    withResponse req manager $ \resp -> do
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
       pure (responseHeaders resp, statusCode (responseStatus resp), taken)
   pure $ case r of
     Nothing -> ([], Left (ProviderTimeout what))
-    -- http-client hides the Authorization header when showing a Request
-    Just (Left e) -> ([], Left (ProviderError (what <> " failed: " <> tshow (e :: HttpException))))
+    Just (Left e) -> ([], Left e)
     Just (Right (headers, code, taken)) -> (headers, answer code taken)
   where
+    -- http-client hides the Authorization header when showing a Request
+    failed e = Left (ProviderError (what <> " failed: " <> tshow (e :: HttpException)))
     answer code taken
       | LB.length taken > maxProviderBytes =
           Left . ProviderError $
             what <> " failed: HTTP " <> tshow code <> ", and the answer is over " <> tshow maxProviderBytes <> " bytes"
       | code >= 200 && code < 300 = Right taken
       | otherwise = Left . ProviderError $ what <> " failed: HTTP " <> tshow code <> " " <> safeDecodeUtf8 (LB.toStrict (LB.take maxErrorBytes taken))
-
-withResponseWrapped :: Request -> Manager -> (Response BodyReader -> IO a) -> IO a
-withResponseWrapped req manager readResponse =
-  withResponse req manager $ \resp ->
-    readResponse resp `catches` [Handler $ \(e :: IOException) -> wrapped e, Handler $ \(e :: TLSException) -> wrapped e]
-  where
-    wrapped :: Exception e => e -> IO b
-    wrapped = throwIO . HttpExceptionRequest req . InternalException . toException
 
 decodeAnswer :: J.FromJSON a => Text -> LB.ByteString -> Either ProviderError a
 decodeAnswer what body = case J.eitherDecode' body of

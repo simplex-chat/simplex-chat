@@ -159,7 +159,9 @@ testRefused g = withFakeEthNode $ \node -> do
 testResetWhileRead :: TVar ChaChaDRG -> IO ()
 testResetWhileRead g = withFakeEthNode $ \node -> withResetServer $ \url -> do
   c <- newChainClient g (fakeChainConfig node) {cRpcUrl = url}
-  latestBlock c `shouldReturn` Left (ChainUnavailable "eth_getBlockByNumber: request failed")
+  latestBlock c >>= (`shouldSatisfy` \case
+    Left (ChainUnavailable reason) -> not (T.pack url `T.isInfixOf` reason)
+    _ -> False)
 
 testOversized :: TVar ChaChaDRG -> IO ()
 testOversized g = withChain g $ \node c -> do

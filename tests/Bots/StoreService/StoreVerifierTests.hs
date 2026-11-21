@@ -267,7 +267,7 @@ signedBy chain@TestChain {rootCert, intermediateCert, leafCert} = signedTransact
 testStoreRequestReset :: IO ()
 testStoreRequestReset = withResetServer $ \url -> do
   manager <- newTlsManager
-  storeRequest manager "Apple" id (T.pack url) `shouldReturn` Left (SRUnreachable "request to Apple failed: InternalException")
+  storeRequest manager "Apple" id (T.pack url) `shouldReturn` Left (SRUnreachable "request to Apple failed")
 
 testAppleVerdict :: IO ()
 testAppleVerdict = do

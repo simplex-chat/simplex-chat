@@ -73,6 +73,7 @@ import Control.Concurrent.STM (TVar)
 import Control.Exception (evaluate, try)
 import Control.Logger.Simple (logWarn)
 import Control.Monad (unless, (>=>))
+import Control.Monad.Except (ExceptT (..))
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
@@ -109,8 +110,7 @@ import Simplex.Messaging.Encoding.String (StrEncoding (..), StrJSON (..), TextEn
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), decodeEip1559Tx, eip1559SigningHash, signEip1559Tx)
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Util (tshow)
-import StoreService.Providers (withResponseWrapped)
+import Simplex.Messaging.Util (AnyError (..), tryAllOwnErrors', tshow)
 import System.Timeout (timeout)
 
 data ChainConfig = ChainConfig
@@ -143,6 +143,9 @@ data ChainError
   | ChainUnderfunded Text
   | ChainGasAboveCap Word64
   deriving (Eq, Show)
+
+instance AnyError ChainError where
+  fromSomeException = ChainUnavailable . tshow
 
 -- | A 32-byte value whose text form is 0x and 64 lowercase hex digits, stored as its bytes.
 newtype Hex32 = Hex32 {unHex32 :: ByteString}
@@ -308,13 +311,13 @@ sendRawTransaction c raw = rpc c "eth_sendRawTransaction" [J.String $ hex raw] J
 -- | The answer is parsed within the timeout, so a slow parse is bounded too.
 rpc :: ChainClient -> Text -> [J.Value] -> (J.Value -> JT.Parser a) -> IO (Either ChainError a)
 rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method params parseResult =
-  timeout ccTimeout (try $ post >>= evaluate . answer) >>= \case
+  timeout ccTimeout (tryAllOwnErrors' $ ExceptT $ try post >>= either failed (evaluate . answer)) >>= \case
     Nothing -> pure $ Left $ unavailable "timed out"
-    Just (Left (e :: HTTP.HttpException)) -> do
+    Just r -> pure r
+  where
+    failed (e :: HTTP.HttpException) = do
       logWarn $ "chain RPC " <> method <> " failed: " <> httpFailureDetail cRpcUrl e
       pure $ Left $ unavailable $ httpFailure e
-    Just (Right r) -> pure r
-  where
     answer (status, body)
       | LB.length body > fromIntegral maxRpcResponseBytes = Left $ unavailable $ "response over " <> tshow maxRpcResponseBytes <> " bytes"
       | otherwise = case J.eitherDecode body of
@@ -327,7 +330,7 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
           | otherwise = Left $ unavailable $ "not a JSON-RPC response" <> maybe "" ((": " <>) . T.pack) parseError
     post = do
       req <- HTTP.parseRequest cRpcUrl
-      withResponseWrapped
+      HTTP.withResponse
         req
           { HTTP.method = methodPost,
             HTTP.redirectCount = 0,

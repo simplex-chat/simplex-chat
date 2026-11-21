@@ -90,12 +90,11 @@ import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (catchOwn', eitherToMaybe, toChunks, tshow)
+import Simplex.Messaging.Util (catchOwn', catchThrow, eitherToMaybe, toChunks, tshow)
 import StoreService.Config (ChainConfig (..), boundedDecimal, localChainId)
 import StoreService.Names.Chain (AbiError (..), AbiValue (..), Block (..), BlockTag (..), ChainClient (..), ChainError (..), ChainSeconds, Hex32 (..), RevertReason (..), abiBytes, abiTuple, abiWordSize, addressWord, confirmedNumber, decodeAddress, decodeBool, decodeBytes32, decodeLabels, decodeString, decodeUint256, decodeWord64, ethCallAt, httpFailure, latestBlock, lowerHexP, nodeChainId, parseText, registrarBalance, selector, uint256)
 import StoreService.Names.Registration (Commitment, CommunityName, LinkKind (..), TermsHash, childNode, labelNode, nodeBytes, recordKey, termsKindText)
 import StoreService.Names.Store (getTermsText, setTermsText)
-import StoreService.Providers (withResponseWrapped)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
@@ -395,14 +394,14 @@ fetchTerms Contracts {ctChain, ctStore, ctTermsTexts, ctFetchAfter, ctTermsBacko
 
 fetchText :: ChainClient -> Int -> String -> IO (Either (Text, Maybe Int) ByteString)
 fetchText ChainClient {ccManager, ccTimeout} maxBytes url =
-  timeout ccTimeout (try get) <&> \case
+  timeout ccTimeout (runExceptT $ ExceptT (either failed id <$> try get) `catchThrow` const ("request failed", Nothing)) <&> \case
     Nothing -> Left ("timed out", Nothing)
-    Just (Left (e :: HTTP.HttpException)) -> Left (httpFailure e, Nothing)
-    Just (Right r) -> r
+    Just r -> r
   where
+    failed (e :: HTTP.HttpException) = Left (httpFailure e, Nothing)
     get = do
       req <- HTTP.parseRequest url
-      withResponseWrapped req {HTTP.redirectCount = 0} ccManager $ \resp -> answer (HTTP.responseStatus resp) (HTTP.responseHeaders resp) (HTTP.responseBody resp)
+      HTTP.withResponse req {HTTP.redirectCount = 0} ccManager $ \resp -> answer (HTTP.responseStatus resp) (HTTP.responseHeaders resp) (HTTP.responseBody resp)
     answer status headers body
       | statusCode status /= 200 = pure $ Left ("HTTP " <> tshow (statusCode status), retryAfter =<< lookup "Retry-After" headers)
       | otherwise = within <$> HTTP.brReadSome body (maxBytes + 1)

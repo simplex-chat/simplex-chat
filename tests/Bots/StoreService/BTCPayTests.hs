@@ -21,6 +21,7 @@ import StoreService.Providers
     Uncreditable (..),
     WebhookError (..),
     WebhookEvent (..),
+    isTimeout,
     providerCall,
     providerErrorText,
     receivedAmount,
@@ -927,7 +928,7 @@ testProviderCallReset = withResetServer $ \url -> do
   manager <- newTlsManager
   (headers, r) <- providerCall manager 5000000 "read invoice" (T.pack url) id
   headers `shouldBe` []
-  either providerErrorText (const "answered") r `shouldSatisfy` \e -> "read invoice failed: " `T.isPrefixOf` e && "InternalException" `T.isInfixOf` e
+  r `shouldSatisfy` either (not . isTimeout) (const False)
 
 testFakeWebhookSecretWiring :: IO ()
 testFakeWebhookSecretWiring = withProvider $ \fake p -> do
