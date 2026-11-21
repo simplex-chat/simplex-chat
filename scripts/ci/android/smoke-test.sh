@@ -3,10 +3,11 @@
 # Installs the APK in the booted emulator (emulator.sh) and runs the scripted UI cases with the ui helper: onboarding to
 # the chat list, a local group, then the chat list with the reachable toolbar (the default) and with the top bar, then
 # tests/fixtures/test.jpg and logo-large-rgba.png picked in the system's image picker and sent in the group.
-# Usage: scripts/ci/android/smoke-test.sh <apk> <output dir> [start|onboarding|layouts|backend]
+# Usage: scripts/ci/android/smoke-test.sh <apk> <output dir> [start|onboarding|layouts|backend|tour]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list. "backend"
 # also adds the test SMP server (NAMES_SERVER, from backend.sh, reached through emulator.sh reverse) under Your servers
-# and tests it, before both layouts.
+# and tests it, before both layouts. "tour" creates the group and opens each screen reachable from the chat list,
+# saved as tour-<name>.
 # Each step saves a numbered screenshot, the accessibility tree and the text on screen to the output dir, prints the
 # text to the log, and adds a line to steps.log there; logcat is in app.log. What the screens show is checked without
 # stopping: every check is listed in checks.txt and the job summary, and the test fails at the end if any failed.
@@ -18,14 +19,16 @@ apk=$1
 export UI_OUT=$2
 cases=${3:-layouts}
 case "$cases" in
-  start | onboarding | layouts | backend) ;;
+  start | onboarding | layouts | backend | tour) ;;
   *)
-    echo "error: unknown case \"$cases\": start, onboarding, layouts (the default) or backend"
+    echo "error: unknown case \"$cases\": start, onboarding, layouts (the default), backend or tour"
     exit 1
     ;;
 esac
 package=chat.simplex.app
 local_chat="seeded notes"
+tour_settle=1
+tour_scroll=10
 search_field="Search or paste SimpleX link"
 ui=$(dirname "$0")/ui
 fixtures=$(dirname "$0")/../../../tests/fixtures
@@ -106,6 +109,10 @@ screen_height() {
   adb shell wm size | sed -n 's/^Physical size: [0-9]*x//p'
 }
 
+screen_width() {
+  adb shell wm size | sed -n 's/^Physical size: \([0-9]*\)x.*/\1/p'
+}
+
 # Back closes one screen at a time, here between the screens of Settings, which cover the chat list without removing it
 # from the tree: a restart is what returns to the chat list.
 back_to() {
@@ -173,8 +180,8 @@ open_settings() {
 
 # Green pixels of the test status left of a server's host name: SimplexGreen, the tick of a server that passed its test.
 green_before() {
-  local x y l t r b png
-  read -r x y l t r b < <("$ui" find "$1") || return 1
+  local x y l t b png
+  read -r x y l t _ b < <("$ui" find "$1") || return 1
   "$ui" shot "$2" > /dev/null || return 1
   png=$(find "$UI_OUT" -maxdepth 1 -name "*-$2.png" | sort | tail -n 1)
   convert "$png" -alpha off -crop "${l}x$((b - t))+0+$t" +repage -fuzz 20% -fill black +opaque 'rgb(77,218,103)' \
@@ -316,6 +323,75 @@ send_images() {
   send_image simplex-logo png
 }
 
+open_user_menu() {
+  "$ui" click-text "profile image placeholder" 10
+  "$ui" wait "Settings" 10
+}
+
+open_new_chat() {
+  "$ui" click-text "Start new chat" 10
+}
+
+open_local_chat() {
+  "$ui" click-text "$local_chat" 10
+  "$ui" wait Attach 10
+}
+
+open_group_info() {
+  open_local_chat || return 1
+  "$ui" click-text "$local_chat" 10
+}
+
+visit() {
+  local name=$1 opener=$2 label
+  shift 2
+  "$ui" relaunch
+  if ! "$opener"; then
+    check "tour: $name opens" false
+    return
+  fi
+  for label in "$@"; do
+    if ! "$ui" click-text "$label" 10; then
+      check "tour: $name opens" false
+      return
+    fi
+  done
+  sleep "$tour_settle"
+  "$ui" shot "tour-$name"
+  "$ui" scroll "$(($(screen_width) / 2))" "$(($(screen_height) / 2))" down "$tour_scroll"
+  sleep "$tour_settle"
+  "$ui" shot "tour-$name-end"
+  check "tour: $name opens" true
+}
+
+tour() {
+  visit user-menu open_user_menu
+  visit settings open_settings
+  visit appearance open_settings "Appearance"
+  visit privacy open_settings "Your privacy"
+  visit help open_settings "Help & support"
+  visit how-to-use open_settings "Help & support" "How to use it"
+  visit whats-new open_settings "Help & support" "What's new"
+  visit about open_settings "Help & support" "About SimpleX Chat"
+  visit chat-data open_settings "Chat data"
+  visit migrate open_settings "Migrate to another device"
+  visit support open_settings "Support SimpleX"
+  visit network open_settings "Network & servers"
+  visit your-servers open_settings "Network & servers" "Your servers"
+  visit advanced-network open_settings "Network & servers" "Advanced network settings"
+  visit notifications open_settings "Notifications"
+  visit calls open_settings "Audio & video calls"
+  visit developer-tools open_settings "Developer tools"
+  visit address open_user_menu "SimpleX address"
+  visit chat-preferences open_user_menu "Chat preferences"
+  visit chat-profiles open_user_menu "Your chat profiles"
+  visit new-chat open_new_chat
+  visit one-time-link open_new_chat "Create 1-time link"
+  visit local-chat open_local_chat
+  visit group-info open_group_info
+  visit attachment-menu open_local_chat "Attach"
+}
+
 # private routing to unknown servers only: the preset servers that would proxy to the test SMP server can't reach the
 # runner's 127.0.0.1; developer tools at the debug level put the app's debug log in logcat
 started=$SECONDS
@@ -349,10 +425,14 @@ if [ "$cases" != onboarding ]; then
     test_server
   fi
   create_local_chat
-  check_layout reachable
-  "$ui" layout top
-  check_layout top
-  send_images
+  if [ "$cases" = tour ]; then
+    tour
+  else
+    check_layout reachable
+    "$ui" layout top
+    check_layout top
+    send_images
+  fi
 fi
 check "the app is running and logged no crash" app_running
 
