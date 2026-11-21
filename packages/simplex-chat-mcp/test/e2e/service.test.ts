@@ -270,6 +270,14 @@ test("the Main group shows a message of each running session with its state from
   const idle = edited(message, "🔴 1 · one: idle")
   writeFileSync(record, JSON.stringify({status: "idle"}))
   await idle
+  const agentPosted = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🤖 Explore · find callers\n0 steps · 0:00")
+  const agentLine = edited(message, "🔴 1 · one: idle\n🤖 1 agent working")
+  await client.request("POST", "/turn", {id: one, agent: {id: "a1", start: {type: "Explore", description: "find callers", transcript: join(dir, "list", "agent-a1.jsonl")}}})
+  const agentItem = await agentPosted
+  await agentLine
+  const agentEnded = updated(alice.chat, ({chatItem}) => chatItem.meta.itemId === agentItem.chatItem.meta.itemId && chatItem.meta.itemText.startsWith("🤖 Explore · find callers · ✅ ") && chatItem.meta.itemText.endsWith("\nFound 6 callers."))
+  await client.request("POST", "/turn", {id: one, agent: {id: "a1", stop: "Found 6 callers."}})
+  await agentEnded
   const ended = Promise.all([edited(message, "⚪ 1 · one: stopped"), edited(summary, "1 session ⚪")])
   controller.abort()
   await ended
@@ -430,7 +438,7 @@ test("the hooks post a prompt typed in the terminal as User, also the session's 
   const fixed = updated(alice.chat, matches(`^Fixed\\.\\n!- Done in 2\\.0 s · 861 output tokens · 36K tokens in context${machine}`))
   const usage = {input_tokens: 3, cache_creation_input_tokens: 600, cache_read_input_tokens: 35_000, output_tokens: 861}
   appendFileSync(transcript, `${JSON.stringify({type: "assistant", timestamp: "2026-11-13T10:00:02.000Z", message: {id: "msg_1", model: "claude-opus-5", content: [{type: "text", text: "Fixed."}], usage}})}\n`)
-  const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupId && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
+  const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupId && toGroup.groupProfile.shortDescr === "claude-opus-5", 120_000)
   await hook({hook_event_name: "Stop", transcript_path: transcript, prompt_id: "p1", last_assistant_message: "Fixed."})
   await fixed
   expect((await described)?.toGroup.groupProfile.shortDescr).toBe("claude-opus-5")
@@ -718,7 +726,7 @@ test("a member of the Main group joins a session's group by /join as admin, prom
   await bob.chat.apiChatItemReaction(T.ChatType.Group, bobGroupOne, (await toolUse).chatItem.meta.itemId, true, {type: "emoji", emoji: "👍"})
   await until(() => attached.some(({prompt}) => prompt?.from === "Bob" && prompt.text.endsWith("\n👍")))
   expect((await alice.chat.apiListMembers(groupOne)).find(({memberProfile}) => memberProfile.displayName === "Bob")).toMatchObject({memberStatus: expect.stringMatching(/^(connected|complete)$/)})
-  const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupOne && toGroup.groupProfile.shortDescr === "claude-opus-5", 60_000)
+  const described = alice.chat.wait("groupUpdated", ({toGroup}) => toGroup.groupId === groupOne && toGroup.groupProfile.shortDescr === "claude-opus-5", 120_000)
   await turn(JSON.stringify({session_id: one, hook_event_name: "PostModelSwitch", to_model: "claude-opus-5"}), {}, client)
   expect((await described)?.toGroup.groupProfile.groupPreferences?.files?.enable).toBe(T.GroupFeatureEnabled.Off)
 

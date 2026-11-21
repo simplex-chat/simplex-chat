@@ -1,7 +1,7 @@
 import {appendFileSync, mkdtempSync, rmSync, utimesSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
-import {AccountReader, TranscriptReader} from "../../src/claude-code"
+import {AccountReader, TranscriptReader, lastUsage} from "../../src/claude-code"
 
 let folder: string
 
@@ -26,6 +26,15 @@ describe("Claude Code account", () => {
     writeFileSync(config, JSON.stringify({oauthAccount: {emailAddress: "bob@example.com"}}))
     utimesSync(config, new Date(), new Date(Date.now() + 2_000))
     expect([first, partial, await reader.read(config)]).toEqual(["alice@example.com", "alice@example.com", "bob@example.com"])
+  })
+})
+
+describe("Claude Code agent transcript", () => {
+  it("gives the tokens of the last request, its input, cache and output tokens, without a synthetic entry or a partly written line", async () => {
+    const transcript = join(folder, "agent-a1.jsonl")
+    const assistant = (model: string, usage: object): string => `${JSON.stringify({type: "assistant", message: {model, usage}})}\n`
+    writeFileSync(transcript, `${assistant("claude-opus-5", {input_tokens: 2, cache_creation_input_tokens: 700, cache_read_input_tokens: 110_000, output_tokens: 1_783})}${assistant("<synthetic>", {input_tokens: 0, output_tokens: 0})}{"type":"assistant","message":{"usage":`)
+    expect(await lastUsage(transcript)).toBe(112_485)
   })
 })
 

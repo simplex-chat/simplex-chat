@@ -54,6 +54,7 @@ async function hubWith(chat: FakeChat, mainMembers: T.GroupMember[] = [self, ali
   chat.members.set(10, mainMembers)
   const hub = new (Hub as unknown as HubConstructor)(chat.api(), user, root, 23, main, "SimpleX MCP")
   hub.machine = () => undefined
+  hub.profileMs = 0
   await hub.main.load()
   await hub.main.start()
   return hub
@@ -2833,6 +2834,44 @@ describe("Main group", () => {
     await hub.main.onEvent({type: "joinedGroupMember", groupInfo: group(21, "SimpleX MCP", self), member: carol} as unknown as ChatEvent)
     await hub.showSessions()
     expect(sentTo(chat, 21).slice(-2)).toEqual(["▶️ 1 · one: running", "1 session ▶️"])
+  })
+
+  it("posts a silent live message of a subagent at its start, ends it with its result at its stop and with the figures of its task, and drops the note of that task", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "one"))
+    await session.turn({id: id1, agent: {id: "a1", start: {type: "Explore", description: "find callers", toolUse: "toolu_1", transcript: join(root, "agent-a1.jsonl")}}})
+    expect(chat.sent.at(-1)).toMatchObject({chat: [T.ChatType.Group, 20], live: true, messages: [{msgContent: {text: "🤖 Explore · find callers\n0 steps · 0:00"}, priority: -1}]})
+    await session.turn({id: id1, agent: {id: "a1", stop: "Found 6 callers."}})
+    await session.turn({id: id1, prompt: "<task-notification>…</task-notification>", typed: false, note: "!- ✅ Agent finished!", task: {toolUse: "toolu_1", status: "completed", tokens: 61_500, steps: 22, ms: 160_000}})
+    await until(() => chat.updates.length === 2)
+    expect([chat.updates, sentTo(chat, 20).filter(text => text.includes("finished"))]).toEqual([[{chatId: 20, itemId: chat.nextItemId - 1, text: "🤖 Explore · find callers · ✅ 0:00 · 0 steps\nFound 6 callers."}, {chatId: 20, itemId: chat.nextItemId - 1, text: "🤖 Explore · find callers · ✅ 2:40 · 22 steps · 61.5k tokens\nFound 6 callers."}], []])
+  })
+
+  it("shows the working subagents in the session's board message, and ends their live messages with ⏹️ at the last detach", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    const session = await openSession(hub, id1, stored(1, "one"))
+    session.onLine = () => undefined
+    await session.turn({id: id1, agent: {id: "a1", start: {type: "Explore", description: "find callers", transcript: join(root, "agent-a1.jsonl")}}})
+    await hub.showSessions()
+    expect(sentTo(chat, 10).at(-2)).toBe("▶️ 1 · one: running\n🤖 1 agent working")
+    await session.endLive()
+    expect(chat.updates.at(-1)).toMatchObject({chatId: 20, text: "🤖 Explore · find callers · ⏹️ 0:00 · 0 steps"})
+  })
+
+  it("updates the descriptions of a session's group at most once a minute, with the latest values", async () => {
+    const chat = new FakeChat()
+    const hub = await hubWith(chat)
+    hub.profileMs = 200
+    const session = await openSession(hub, id1, stored(1, "one"))
+    await session.turn({id: id1, model: "claude-opus-5"})
+    await session.turn({id: id1, model: "claude-sonnet-5", switched: true})
+    await session.turn({id: id1, model: "claude-haiku-5", switched: true})
+    const described = () => chat.profiles.filter(({groupId}) => groupId === 20).map(({groupProfile}) => groupProfile.shortDescr)
+    expect(described()).toEqual(["claude-opus-5"])
+    await until(() => described().length === 2)
+    expect(described()).toEqual(["claude-opus-5", "claude-haiku-5"])
   })
 
   it("replaces the Main group at once also while owners exist, without a post there, and answers /approve reset and /reject reset as unknown commands", async () => {

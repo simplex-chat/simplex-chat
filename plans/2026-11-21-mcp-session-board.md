@@ -89,7 +89,7 @@ I mapped how to move …
 
 A stopped session's message is deleted for everyone 23 hours after its post, within the 30-hour window of deletion. A stopped session that starts again gets its message edited, or a new one when its message was deleted.
 
-A line of running subagents, such as `🤖 2 agents working · 1 stalled 2:10`, is left to the separate subagent work: the hooks skip the tool uses of subagents (`stepOf` returns no step with `agent_id`), and Claude Code's record has no count of them, so it needs new data.
+While subagents or workflows work, the message has a line `🤖 2 agents working · 1 stalled 2:10 · ⚙️ review-changes Verify 3/8` after the details, from the work of [2026-11-21-mcp-subagents.md](2026-11-21-mcp-subagents.md), which this pull request includes. The session group's descriptions are updated at most once a minute.
 
 `/sessions` replies as today: one line per running session and the ⚪ line of the others.
 

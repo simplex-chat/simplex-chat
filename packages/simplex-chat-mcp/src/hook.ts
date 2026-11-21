@@ -1,11 +1,11 @@
-import {open} from "fs/promises"
-import {isAbsolute, relative} from "path"
+import {open, readFile} from "fs/promises"
+import {isAbsolute, join, relative} from "path"
 import {ServiceClient} from "./client"
 import {interactive, interactiveEntrypoint, readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText, logError, oneLine} from "./log"
 import {duration} from "./messages"
-import {Step, TitleReply, TurnRequest} from "./protocol"
+import {Step, TaskEnd, TaskStatus, TitleReply, TurnRequest} from "./protocol"
 import {qrCodeText} from "./qr"
 import {claudePid} from "./service-request"
 import {SocketError, isNotRunning} from "./socket"
@@ -47,6 +47,20 @@ const teammatePrompt = /^Another Claude session sent a message[^:\n]*:\n<teammat
 const teammateMessage = /<teammate-message teammate_id="([^"]*)"([^>]*)>\n([\s\S]*?)\n<\/teammate-message>/g
 const pluginTools = "mcp__plugin_simplex_simplex__"
 const stepFields = ["description", "query", "url", "file_path", "path", "pattern", "command"]
+// spec: spec/architecture.md#hook-agentstart
+const handbackTool = "SubagentHandback"
+// spec: spec/architecture.md#hook-agentstart
+const agentRecordReads = 20
+// spec: spec/architecture.md#hook-agentstart
+const taskStatuses: TaskStatus[] = ["completed", "failed", "killed", "stopped"]
+
+// spec: spec/architecture.md#hook-agentstart
+interface AgentRecord {
+  agentType?: unknown
+  description?: unknown
+  toolUseId?: unknown
+  taskKind?: unknown
+}
 
 // spec: spec/api.md#plugin-options
 interface SessionStartInput {
@@ -70,6 +84,8 @@ interface TurnInput {
   effort?: {level?: string}
   cwd?: string
   agent_id?: string
+  agent_type?: string
+  tool_response?: {[field: string]: unknown}
   tool_name?: string
   tool_input?: {[field: string]: unknown}
   tool_use_id?: string
@@ -179,7 +195,8 @@ export async function turn(stdin: string, env: NodeJS.ProcessEnv = process.env, 
     const input = JSON.parse(stdin) as TurnInput
     const event = await eventFields(input, at, readMs)
     if (event === undefined) return {}
-    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: cut(input.last_assistant_message), model: input.to_model, switched: input.to_model === undefined ? undefined : true, effort: input.effort?.level, ...event}
+    const lead = input.agent_id === undefined
+    const request = {id: input.session_id, pid: claudePid(env), at, prompt: cut(input.prompt), answer: lead ? cut(input.last_assistant_message) : undefined, model: input.to_model, switched: input.to_model === undefined ? undefined : true, effort: lead ? input.effort?.level : undefined, ...event}
     await client.ensureService(version)
     for (let attempt = 1; ; attempt++) {
       try {
@@ -203,14 +220,23 @@ async function eventFields(input: TurnInput, at: number, readMs: number): Promis
       const {model, usage} = await answerRecord(input, readMs)
       return {model: input.to_model ?? model, usage}
     }
-    case "UserPromptSubmit":
-      return promptKind(input, readMs)
+    case "UserPromptSubmit": {
+      const kind = await promptKind(input, readMs)
+      const task = taskOf(input.prompt)
+      return task === undefined ? kind : {...kind, task}
+    }
     case "PreToolUse":
     case "PostToolUse":
     case "PostToolUseFailure": {
+      if (input.agent_id !== undefined) return agentStep(input)
+      if (input.tool_name === "Agent" || input.tool_name === "Workflow") return leadTask(input)
       const step = stepOf(input)
       return step === undefined ? undefined : {step}
     }
+    case "SubagentStart":
+      return agentStart(input, readMs)
+    case "SubagentStop":
+      return input.agent_id === undefined ? undefined : {agent: {id: input.agent_id, stop: shortened(firstLine(input.last_assistant_message ?? ""))}}
     case "PostCompact": {
       const note = await compactionNote(input, at, readMs)
       return note === undefined ? undefined : {note}
@@ -443,6 +469,58 @@ function stepOf({tool_use_id: id, tool_name: tool, agent_id: agent, hook_event_n
   if (event === "PostToolUse" && fields.run_in_background === true) return {id, text: small(`${text} (in background)`), end: true}
   const outcome = event === "PostToolUse" ? "" : interrupted === true ? " ⏹️" : " ❌"
   return {id, text: small(`${text}${outcome}${ms === undefined ? "" : ` ${duration(ms)}`}`), end: true}
+}
+
+// spec: spec/architecture.md#hook-agentstart
+async function agentStart({agent_id: id, agent_type: type, transcript_path: path}: TurnInput, readMs: number): Promise<Partial<TurnRequest> | undefined> {
+  if (id === undefined || !path) return undefined
+  const folder = join(path.replace(/\.jsonl$/, ""), "subagents")
+  for (let read = 1; read <= agentRecordReads; read++) {
+    const record = await readFile(join(folder, `agent-${id}.meta.json`), "utf8").then(text => (JSON.parse(text) as AgentRecord | null) ?? undefined).catch(() => undefined)
+    if (record !== undefined) {
+      if (record.taskKind !== undefined) return undefined
+      const description = typeof record.description === "string" ? shortened(firstLine(record.description)) : ""
+      return {agent: {id, start: {type: type ?? (typeof record.agentType === "string" ? record.agentType : "agent"), description, ...(typeof record.toolUseId === "string" ? {toolUse: record.toolUseId} : {}), transcript: join(folder, `agent-${id}.jsonl`)}}}
+    }
+    if (read < agentRecordReads) await new Promise(resolve => setTimeout(resolve, readMs))
+  }
+  return undefined
+}
+
+// spec: spec/architecture.md#hook-agentstart
+function agentStep({agent_id: id, tool_use_id: toolUse, tool_name: tool, hook_event_name: event, tool_input: fields = {}, cwd}: TurnInput): Partial<TurnRequest> | undefined {
+  if (id === undefined || toolUse === undefined || tool === undefined) return undefined
+  if (tool === handbackTool) return event === "PreToolUse" ? {agent: {id, report: shortened(firstLine(stringOf(fields.message) ?? ""))}} : undefined
+  return {agent: {id, step: {id: toolUse, text: shortened(stepText(tool, fields, cwd)), ...(event === "PreToolUse" ? {} : {end: true})}}}
+}
+
+// spec: spec/architecture.md#hook-agentstart
+function leadTask({hook_event_name: event, tool_name: tool, tool_use_id: toolUse, tool_response: response = {}, is_interrupt: interrupted}: TurnInput): Partial<TurnRequest> | undefined {
+  if (toolUse === undefined || event === "PreToolUse") return undefined
+  if (tool === "Workflow") {
+    const {runId: run, workflowName: name, transcriptDir: folder} = response
+    return event === "PostToolUse" && typeof run === "string" && typeof name === "string" && typeof folder === "string" ? {workflow: {toolUse, run, name, folder}} : undefined
+  }
+  if (event === "PostToolUseFailure") return {task: {toolUse, status: interrupted === true ? "killed" : "failed"}}
+  const {status, totalTokens: tokens, totalToolUseCount: steps, totalDurationMs: ms} = response
+  return status === "completed" ? {task: {toolUse, status, ...figures(tokens, steps, ms)}} : undefined
+}
+
+// spec: spec/architecture.md#hook-agentstart
+function taskOf(prompt: string | undefined): TaskEnd | undefined {
+  const block = prompt === undefined ? undefined : /<task-notification>([\s\S]*?)<\/task-notification>/.exec(prompt)?.[1]
+  if (block === undefined) return undefined
+  const field = (name: string): string | undefined => new RegExp(`<${name}>([^<]*)</${name}>`).exec(block)?.[1]?.trim()
+  const toolUse = field("tool-use-id")
+  const status = taskStatuses.find(known => known === field("status"))
+  if (toolUse === undefined || status === undefined) return undefined
+  return {toolUse, status, ...figures(Number(field("subagent_tokens")), Number(field("tool_uses")), Number(field("duration_ms")))}
+}
+
+// spec: spec/architecture.md#hook-agentstart
+function figures(tokens: unknown, steps: unknown, ms: unknown): Pick<TaskEnd, "tokens" | "steps" | "ms"> {
+  const of = (value: unknown): number | undefined => (typeof value === "number" && Number.isFinite(value) ? value : undefined)
+  return {tokens: of(tokens), steps: of(steps), ms: of(ms)}
 }
 
 // spec: spec/architecture.md#hook-stepof

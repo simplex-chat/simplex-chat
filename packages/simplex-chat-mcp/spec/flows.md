@@ -66,6 +66,7 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 37. [The texts of a turn](#37-the-texts-of-a-turn)
 38. [The status line command](#38-the-status-line-command)
 39. [An edit and a live message in the session group](#39-an-edit-and-a-live-message-in-the-session-group)
+40. [A subagent and a workflow in the session group](#40-a-subagent-and-a-workflow-in-the-session-group)
 
 ---
 
@@ -1879,3 +1880,57 @@ Notes:
 - A live message deleted before it is sent passes nothing, unless the member sends another message first.
 
 Source: [`Session.onMessage`, `onUpdate`, `pass`, `keepLive`, `passLive`, `replyTo`, `prompt`, `deliver`, `bounded`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).
+
+---
+
+## 40. A subagent and a workflow in the session group
+
+```mermaid
+sequenceDiagram
+  participant L as lead
+  participant A as subagent
+  participant K as hook turn
+  participant F as session folder
+  participant D as Service
+  participant N as Session N
+  participant G as session group
+  participant M as Main group
+  L->>K: PreToolUse Agent: no step line
+  A->>K: SubagentStart agent_id, agent_type
+  K->>F: read subagents/agent-ID.meta.json
+  K->>D: POST /turn agent.start {type, description, toolUse, transcript}
+  D->>N: turn
+  N->>G: live 🤖 TYPE · DESCRIPTION, priority -1
+  loop each tool use of A
+    A->>K: PreToolUse, PostToolUse with agent_id
+    K->>D: POST /turn agent.step
+  end
+  loop every 2 s, attached
+    N->>F: last 256 KiB of agent-ID.jsonl: tokens
+    N->>G: edit when the text changed, at most every 5 s
+    N->>M: the session's board message: 🤖 N agents working
+  end
+  A->>K: SubagentStop last_assistant_message
+  K->>D: POST /turn agent.stop
+  N->>G: edit, liveMessage false: ✅ M:SS · N steps · X tokens, result
+  L->>K: UserPromptSubmit task notification, or PostToolUse Agent
+  K->>D: POST /turn task {toolUse, status, tokens, steps, ms}, with its note
+  N->>G: edit with the figures; the note not posted
+  L->>K: PostToolUse Workflow {runId, workflowName, transcriptDir}
+  K->>D: POST /turn workflow
+  N->>G: live ⚙️ NAME
+  loop every 2 s
+    N->>F: journal.jsonl appended lines; tokens of its working agents
+    N->>G: edit phases, working agents, tokens, time
+  end
+  L->>K: the workflow's task notification
+  N->>G: edit final, liveMessage false
+```
+
+Notes:
+
+- Workflow agents, teammates and Claude Code's internal agents get no message: their SubagentStart finds no record beside the transcript, a record with `taskKind`, or none, so the service drops their steps ([`agentStart`](../src/hook.ts), [`Agents.step`](../src/agents.ts)).
+- The state is in memory: after a service restart, the messages keep their last edit. The last detach and the hub's stop end the live ones with ⏹️ ([`Session.endLive`](../src/hub.ts)).
+- Edits leave the messages where they were posted.
+
+Source: [`agentStart`, `agentStep`, `leadTask`, `taskOf`](../src/hook.ts), [`Agents`, `cardText`, `agentsLine`, `applyJournal`](../src/agents.ts), [`lastUsage`, `AppendedLines`](../src/claude-code.ts), [`Session.onAgents`, `readAgents`, `showCard`](../src/hub.ts).

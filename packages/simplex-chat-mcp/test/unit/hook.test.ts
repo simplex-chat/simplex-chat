@@ -1,4 +1,4 @@
-import {appendFileSync, mkdtempSync, rmSync, truncateSync, writeFileSync} from "fs"
+import {appendFileSync, mkdirSync, mkdtempSync, rmSync, truncateSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
 import {ServiceClient} from "../../src/client"
@@ -620,7 +620,6 @@ describe("turn hooks", () => {
       {id: "toolu_Read", text: "!- 📖 Read /p/app-old/src/hook.ts!"},
       {id: "toolu_WebFetch", text: "!- 🌐 Fetch https://spec.torproject.org/hspow-spec/common-protocol.html!"},
       {id: "toolu_WebSearch", text: '!- 🔍 Search "hs_pow.c" tor source!'},
-      {id: "toolu_Agent", text: "!- 🤖 Agent: Review pass 6 usage stats!"},
       {id: "toolu_ToolSearch", text: "!- 🔍 ToolSearch: select:Monitor!"},
       {id: "toolu_Glob", text: "!- 🔍 Glob **/*.ts in src!"},
       {id: "toolu_Grep", text: "!- 🔍 Grep endSteps in src/hub.ts!"},
@@ -635,7 +634,7 @@ describe("turn hooks", () => {
     ])
   })
 
-  it("send a step at the end of each tool use with its outcome and duration, or in background for a launch, and nothing for a tool use of a subagent or of this plugin, or without its ID or tool", async () => {
+  it("send a step at the end of each tool use with its outcome and duration, or in background for a launch, and nothing for a tool use of this plugin, a launch of an agent, or without its ID or tool", async () => {
     const {client, requests, ensured} = turnClient()
     const bash = {command: "npm test", description: "Run the tests"}
     const ended = (event: string, extra: object, tool = "Bash", input: object = bash) => turn(toolUse(event, tool, input, extra), {}, client, 0, 1)
@@ -650,8 +649,6 @@ describe("turn hooks", () => {
     await ended("PostToolUse", {duration_ms: 25}, "Bash", {...bash, run_in_background: true})
     await ended("PostToolUse", {duration_ms: 31}, "Agent", {description: "Review", prompt: "Review it.", run_in_background: true})
     await ended("PostToolUseFailure", {error: "Exit code 127", is_interrupt: false, duration_ms: 12}, "Bash", {...bash, run_in_background: true})
-    await turn(toolUse("PreToolUse", "Bash", bash, {agent_id: "af945fc18f2e2d0d9", agent_type: "general-purpose"}), {}, client, 0, 1)
-    await ended("PostToolUse", {agent_id: "af945fc18f2e2d0d9", duration_ms: 13})
     await turn(toolUse("PreToolUse", "mcp__plugin_simplex_simplex__send", {chat: "@1", text: "hi"}), {}, client, 0, 1)
     await ended("PostToolUse", {duration_ms: 120}, "mcp__plugin_simplex_simplex__send")
     await turn(JSON.stringify({session_id: id, hook_event_name: "PreToolUse", tool_input: bash, tool_use_id: "toolu_1"}), {}, client, 0, 1)
@@ -666,10 +663,54 @@ describe("turn hooks", () => {
       {id: "toolu_Bash", text: "!- 💻 Run the tests 42 ms!", end: true},
       {id: "toolu_Bash", text: "!- 💻 Run the tests 2.0 s!", end: true},
       {id: "toolu_Bash", text: "!- 💻 Run the tests (in background)!", end: true},
-      {id: "toolu_Agent", text: "!- 🤖 Agent: Review (in background)!", end: true},
       {id: "toolu_Bash", text: "!- 💻 Run the tests ❌ 12 ms!", end: true},
     ])
-    expect(ensured()).toBe(11)
+    expect(ensured()).toBe(10)
+  })
+
+  it("send the start of a subagent with its type, the description and tool use of its record and its transcript, and nothing for a teammate or without a record", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-agents-"))
+    try {
+      const subagents = join(folder, "s1", "subagents")
+      mkdirSync(subagents, {recursive: true})
+      writeFileSync(join(subagents, "agent-a1.meta.json"), JSON.stringify({agentType: "general-purpose", description: "Audit the call stack", toolUseId: "toolu_9"}))
+      writeFileSync(join(subagents, "agent-a2.meta.json"), JSON.stringify({agentType: "reviewer", description: "Review", taskKind: "in_process_teammate"}))
+      const {client, requests} = turnClient()
+      const started = (agent: string) => turn(JSON.stringify({session_id: id, hook_event_name: "SubagentStart", transcript_path: join(folder, "s1.jsonl"), agent_id: agent, agent_type: "Explore"}), {}, client, 0, 1, 1)
+      for (const agent of ["a1", "a2", "a3"]) await started(agent)
+      expect(requests).toEqual([{method: "POST", route: "/turn", body: {id, at: 1, agent: {id: "a1", start: {type: "Explore", description: "Audit the call stack", toolUse: "toolu_9", transcript: join(subagents, "agent-a1.jsonl")}}}}])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
+  })
+
+  it("send a subagent's tool uses as its steps, its hand-back as its report and its stop with the first line of its answer, without effort and answer", async () => {
+    const {client, requests} = turnClient()
+    const bash = {command: "npm test", description: "Run the tests"}
+    await turn(toolUse("PreToolUse", "Bash", bash, {agent_id: "a1"}), {}, client, 0, 1)
+    await turn(toolUse("PostToolUse", "Bash", bash, {agent_id: "a1"}), {}, client, 0, 1)
+    await turn(toolUse("PreToolUse", "SubagentHandback", {message: "Found 6 callers.\nDetails."}, {agent_id: "a1"}), {}, client, 0, 1)
+    await turn(JSON.stringify({session_id: id, hook_event_name: "SubagentStop", agent_id: "a1", last_assistant_message: "Done.\nMore.", effort: {level: "high"}}), {}, client, 0, 1)
+    expect(requests.map(request => (request as {body: unknown}).body)).toEqual([
+      {id, at: 1, agent: {id: "a1", step: {id: "toolu_Bash", text: "💻 Run the tests"}}},
+      {id, at: 1, agent: {id: "a1", step: {id: "toolu_Bash", text: "💻 Run the tests", end: true}}},
+      {id, at: 1, agent: {id: "a1", report: "Found 6 callers."}},
+      {id, at: 1, agent: {id: "a1", stop: "Done."}},
+    ])
+  })
+
+  it("send the end of an agent from its result or its task notification with the figures, a workflow's run from its result, and no step for either", async () => {
+    const {client, requests} = turnClient()
+    await turn(toolUse("PreToolUse", "Agent", {description: "Review"}), {}, client, 0, 1)
+    await turn(toolUse("PostToolUse", "Agent", {description: "Review"}, {tool_response: {status: "completed", agentId: "a1", totalTokens: 61_500, totalToolUseCount: 22, totalDurationMs: 160_000}}), {}, client, 0, 1)
+    await turn(toolUse("PostToolUse", "Workflow", {}, {tool_response: {status: "async_launched", runId: "wf_1", workflowName: "review", transcriptDir: "/t/wf_1"}}), {}, client, 0, 1)
+    const notification = "<task-notification>\n<task-id>a2</task-id>\n<tool-use-id>toolu_7</tool-use-id>\n<status>completed</status>\n<summary>Agent \"Map\" finished</summary>\n<usage><subagent_tokens>112485</subagent_tokens><tool_uses>27</tool_uses><duration_ms>165352</duration_ms></usage>\n</task-notification>"
+    await turn(JSON.stringify({session_id: id, hook_event_name: "UserPromptSubmit", prompt: notification}), {}, client, 0, 1)
+    expect(requests.map(request => (request as {body: {task?: unknown; workflow?: unknown}}).body).map(({task, workflow}) => task ?? workflow)).toEqual([
+      {toolUse: "toolu_Agent", status: "completed", tokens: 61_500, steps: 22, ms: 160_000},
+      {toolUse: "toolu_Workflow", run: "wf_1", name: "review", folder: "/t/wf_1"},
+      {toolUse: "toolu_7", status: "completed", tokens: 112_485, steps: 27, ms: 165_352},
+    ])
   })
 
   it("cut a prompt or an answer over 250,000 characters, so that the request fits the socket's 1 MiB", async () => {
