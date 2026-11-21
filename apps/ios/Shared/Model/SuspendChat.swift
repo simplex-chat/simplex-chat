@@ -29,7 +29,6 @@ private func _suspendChat(timeout: Int) {
     } else if ChatModel.ok {
         AppChatState.shared.set(.suspending)
         apiSuspendChat(timeoutMicroseconds: timeout * 1000000)
-        // the core stops the desktop session on suspension without sending remoteCtrlStopped
         DispatchQueue.main.async { clearRemoteCtrlSession() }
         let endTask = beginBGTask(chatSuspended)
         DispatchQueue.global().asyncAfter(deadline: .now() + Double(timeout) + 1, execute: endTask)

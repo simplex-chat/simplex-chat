@@ -106,7 +106,6 @@ struct ConnectDesktopView: View {
             }
         }
         .onDisappear {
-            // the app lock removes this view when the app is not active, ChatListView shows it again for a connected session
             if let session = m.remoteCtrlSession, AppSheetState.shared.scenePhaseActive || !session.active {
                 showConnectScreen = false
                 disconnectDesktop()

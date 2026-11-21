@@ -250,7 +250,6 @@ struct ChatListView: View {
             if #unavailable(iOS 16.0), !viewOnScreen {
                 viewOnScreen = true
             }
-            // the app lock removes the desktop sheet with this view, it has to be shown again while the session is connected
             if chatModel.activeRemoteCtrl {
                 activeUserPickerSheet = .useFromDesktop
             }

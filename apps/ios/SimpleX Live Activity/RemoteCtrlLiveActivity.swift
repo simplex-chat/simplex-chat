@@ -1,10 +1,3 @@
-//
-//  RemoteCtrlLiveActivity.swift
-//  SimpleX Live Activity
-//
-//  Copyright © 2026 SimpleX Chat. All rights reserved.
-//
-
 import ActivityKit
 import SwiftUI
 import WidgetKit
