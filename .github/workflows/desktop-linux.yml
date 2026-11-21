@@ -19,6 +19,10 @@ on:
         description: Also build the deb and the AppImage and test them under X11, Wayland and XWayland
         type: boolean
         default: false
+      compare:
+        description: Run ID of a desktop-linux run whose app the screen tour compares with, such as the base branch's
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -315,6 +319,38 @@ jobs:
           name: desktop-smoke-test
           path: ${{ runner.temp }}/smoke-test
           retention-days: 3
+          if-no-files-found: warn
+
+      - name: Download the compared app
+        id: compared
+        if: ${{ !cancelled() && inputs.compare != '' && steps.build.outcome == 'success' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-app
+          path: ${{ runner.temp }}/compared-app
+          run-id: ${{ inputs.compare }}
+          github-token: ${{ github.token }}
+
+      - name: Tour the compared app and this app
+        if: ${{ !cancelled() && steps.compared.outcome == 'success' }}
+        run: |
+          UI_OUT="$RUNNER_TEMP/smoke-test" scripts/ci/desktop-linux/ui stop || true
+          tar -xzf "$RUNNER_TEMP/compared-app/desktop-app.tar.gz" -C "$RUNNER_TEMP/compared-app"
+          for side in base head; do
+            app=apps/multiplatform/release/main/app/simplex
+            [ "$side" = base ] && app=$RUNNER_TEMP/compared-app/simplex
+            UI_STATE="$RUNNER_TEMP/tour-state-$side" scripts/ci/desktop-linux/smoke-test.sh "$app" "$RUNNER_TEMP/tour/$side" tour || true
+            UI_STATE="$RUNNER_TEMP/tour-state-$side" UI_OUT="$RUNNER_TEMP/tour/$side" scripts/ci/desktop-linux/ui stop || true
+          done
+          scripts/ci/tour-compare.sh "$RUNNER_TEMP/tour/base" "$RUNNER_TEMP/tour/head" "$RUNNER_TEMP/tour/pairs"
+
+      - name: Upload tour
+        if: ${{ !cancelled() && steps.compared.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-tour
+          path: ${{ runner.temp }}/tour
+          retention-days: 14
           if-no-files-found: warn
 
       - name: Upload desktop test report

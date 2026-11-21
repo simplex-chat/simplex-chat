@@ -3,8 +3,9 @@
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
 # tests/fixtures/test.jpg and logo-large-rgba.png picked in the GTK file dialog and sent in the group.
-# Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
+# Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend|tour]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
+# "tour" creates the group and opens each screen reachable from the chat list, saved as tour-<name>.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
 # "backend" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
 # Both need NAMES_SERVER, the test SMP server's address.
@@ -19,9 +20,9 @@ app_dir=$1
 export UI_OUT=$2
 cases=${3:-layouts}
 case "$cases" in
-  start | onboarding | layouts | setup | backend) ;;
+  start | onboarding | layouts | setup | backend | tour) ;;
   *)
-    echo "error: unknown case \"$cases\": start, onboarding, layouts (the default), setup or backend"
+    echo "error: unknown case \"$cases\": start, onboarding, layouts (the default), setup, backend or tour"
     exit 1
     ;;
 esac
@@ -41,6 +42,8 @@ pane_centre_offset=195
 pane_right_offset=390
 paperclip_offset=415
 send_offset=27
+tour_settle=1
+tour_scroll=10
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -386,6 +389,98 @@ send_images() {
   send_image logo-large-rgba.png png
 }
 
+open_user_menu() {
+  "$ui" click "$avatar_x" "$bottom_y"
+  "$ui" wait "Settings" 10
+}
+
+open_new_chat() {
+  "$ui" click "$pencil_x" "$bottom_y"
+  "$ui" wait "New chat" 10
+}
+
+open_local_chat() {
+  local x y
+  read -r x y < <(left_pane_position "$local_chat") || return 1
+  "$ui" click "$x" "$y"
+}
+
+# The open chat's name in its toolbar, in the right pane, opens the group's info.
+open_group_info() {
+  local target line
+  open_local_chat || return 1
+  sleep "$tour_settle"
+  target=$(normalise "$local_chat")
+  while IFS= read -r line; do
+    [ "${line%%,*}" -ge "$pane_right_x" ] || continue
+    if [ "$(normalise "${line#* }")" = "$target" ]; then
+      line=${line%% *}
+      "$ui" click "${line%%,*}" "${line#*,}"
+      return 0
+    fi
+  done < <("$ui" text)
+  return 1
+}
+
+# Opens a screen with the opener, then the labels clicked in turn, and saves "tour-<name>"; a screen that scrolls also
+# saves "tour-<name>-end", scrolled down.
+visit() {
+  local name=$1 opener=$2 label
+  shift 2
+  back_to_chat_list || true
+  if ! "$opener"; then
+    check "tour: $name opens" false
+    return
+  fi
+  for label in "$@"; do
+    if ! "$ui" click-text "$label" 10; then
+      check "tour: $name opens" false
+      return
+    fi
+  done
+  sleep "$tour_settle"
+  "$ui" shot "tour-$name"
+  "$ui" scroll "$pane_centre_x" $((window_y + 380)) down "$tour_scroll"
+  sleep "$tour_settle"
+  "$ui" shot "tour-$name-end"
+  check "tour: $name opens" true
+}
+
+tour() {
+  visit user-menu open_user_menu
+  visit settings open_settings
+  visit appearance open_settings "Appearance"
+  visit privacy open_settings "Your privacy"
+  visit help open_settings "Help & support"
+  visit how-to-use open_settings "Help & support" "How to use it"
+  visit whats-new open_settings "Help & support" "What's new"
+  visit about open_settings "Help & support" "About SimpleX Chat"
+  visit chat-data open_settings "Chat data"
+  visit migrate open_settings "Migrate to another device"
+  visit support open_settings "Support SimpleX"
+  visit network open_settings "Network"
+  visit your-servers open_settings "Network" "Your servers"
+  visit advanced-network open_settings "Network" "Advanced network settings"
+  visit calls open_settings "Audio"
+  visit developer-tools open_settings "Developer tools"
+  visit address open_user_menu "SimpleX address"
+  visit chat-preferences open_user_menu "Chat preferences"
+  visit chat-profiles open_user_menu "Your chat profiles"
+  visit link-mobile open_user_menu "Link a mobile"
+  visit new-chat open_new_chat
+  visit one-time-link open_new_chat "Create 1-time link"
+  visit local-chat open_local_chat
+  visit group-info open_group_info
+  back_to_chat_list || true
+  if open_local_chat; then
+    "$ui" click "$paperclip_x" "$bottom_y"
+    sleep "$tour_settle"
+    "$ui" shot tour-attachment-menu
+    "$ui" key Escape
+  fi
+  back_to_chat_list || true
+}
+
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 read -r -a extra_settings <<< "${SMOKE_SETTINGS:-}"
@@ -440,6 +535,14 @@ if [ "$cases" = onboarding ]; then
 fi
 
 create_local_chat
+if [ "$cases" = tour ]; then
+  tour
+  if grep -q '^FAIL' "$checks"; then
+    fail "the tour did not open $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks") screens"
+  fi
+  echo "tour done: $(grep -c '^PASS' "$checks") screens saved as tour-<name>"
+  exit 0
+fi
 if [ "$cases" = setup ] || [ "$cases" = backend ]; then
   : "${NAMES_SERVER:?NAMES_SERVER must be the test SMP server address}"
   use_names_server
