@@ -600,7 +600,7 @@ carol@example.com · claude-opus-4-7 · effort xhigh · goal failed
 - The summary has the state of each session on the board, by number. Claude only edits it, so messages posted later, such as a new session's message or an invitation, follow it.
 - A session is running while its Claude Code runs, or while cards wait for a decision in its group. Green is the state to keep:
   - `🟢 N · NAME: working`: Claude Code works on a turn, or a subagent works for it.
-  - `🟠 N · NAME: waiting for you, K approvals`: K cards wait in the session's group, for a decision in the chat. A tool-use card counts only while Claude Code shows its permission dialog, or while Claude Code's state can't be read.
+  - `🟠 N · NAME: waiting for you, K approvals`: K cards wait in the session's group, for a decision in the chat, whatever Claude Code's state. A tool-use card answered in the terminal stays until the turn ends.
   - `⛔️ N · NAME: waiting for you in Claude Code`: Claude Code waits for an answer in its own window, such as a dialog, which the chat can't give.
   - `⚙️ N · NAME: working in the background`: Claude Code waits for the next prompt while a background command runs. The command's end starts a turn without a prompt.
   - `🔴 N · NAME: idle`: Claude Code waits for the next prompt, and nothing runs.

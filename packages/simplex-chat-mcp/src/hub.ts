@@ -324,8 +324,7 @@ export class Session {
   // spec: spec/architecture.md#hub-session-readrecord
   private state(): [string, string] | undefined {
     const state = claudeStates.get(this.claudeStatus ?? "")
-    const dialog = state === undefined || this.claudeStatus === "waiting"
-    const cards = this.actions.pending().filter(({tool, interrupted}) => !interrupted && (dialog || tool !== "permission")).length
+    const cards = this.actions.pending().filter(({interrupted}) => !interrupted).length
     if (cards > 0) return ["🟠", `waiting for you, ${cards} approval${cards === 1 ? "" : "s"}`]
     if (!this.attached) return undefined
     return state ?? unknownState

@@ -269,6 +269,7 @@ test("the Main group shows a message of each running session with its state from
   await waiting
   const idle = edited(message, "🔴 1 · one: idle")
   writeFileSync(record, JSON.stringify({status: "idle"}))
+  await client.request("POST", "/turn", {id: one, answer: ""})
   await idle
   const agentPosted = received(alice.chat, ({chatItem}) => chatItem.meta.itemText === "🤖 Explore · find callers\n0 steps · 0:00")
   const agentLine = edited(message, "🔴 1 · one: idle\n🤖 1 agent working")

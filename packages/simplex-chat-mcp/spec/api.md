@@ -752,7 +752,7 @@ Posts:
 
 | Part | Text | Condition |
 |---|---|---|
-| a running session | `🟠 N · NAME: waiting for you, K approvals`, `1 approval` for one | K pending cards of the session, without those cancelled by a stop. A tool-use card counts while Claude Code's state is `waiting` or unknown |
+| a running session | `🟠 N · NAME: waiting for you, K approvals`, `1 approval` for one | K pending cards of the session, without those cancelled by a stop, whatever Claude Code's state: a subagent's tool-use card has no dialog in the terminal, so Claude Code's state stays `busy` while it waits |
 | | `⛔️ N · NAME: waiting for you in Claude Code` | no card; attached; state `waiting` |
 | | `🟢 N · NAME: working` | no card; attached; state `busy` |
 | | `🔴 N · NAME: idle` | no card; attached; state `idle` |

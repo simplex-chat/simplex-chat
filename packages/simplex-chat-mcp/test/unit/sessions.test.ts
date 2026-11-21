@@ -2635,10 +2635,11 @@ describe("Main group", () => {
     expect(await shows("waiting")).toEqual(["message: ⛔️ 1 · one: waiting for you in Claude Code", "summary: 1 session ⛔️"])
     one.permission({id: id1, requestId: "abcde", toolName: "Bash", description: "Run shell command", inputPreview: "ls"})
     expect(await shows("waiting")).toEqual(["message: 🟠 1 · one: waiting for you, 1 approval", "summary: 1 session 🟠"])
+    expect(await shows("busy")).toEqual([])
+    one.endPermissions()
     expect(await shows("busy")).toEqual(["message: 🟢 1 · one: working", "summary: 1 session 🟢"])
     expect(await shows("idle")).toEqual(["message: 🔴 1 · one: idle", "summary: 1 session 🔴"])
     expect(await shows("shell")).toEqual(["message: ⚙️ 1 · one: working in the background", "summary: 1 session ⚙️"])
-    one.endPermissions()
     one.onLine = undefined
     expect(await shows("idle")).toEqual(["message: ⚪ 1 · one: stopped", "summary: 1 session ⚪"])
     expect(sentTo(chat, 10).filter(text => text.includes("1 · one"))).toHaveLength(1)
@@ -2670,7 +2671,7 @@ describe("Main group", () => {
     expect(chat.updates).toEqual([{chatId: 10, itemId: 300, text: "No sessions."}])
   })
 
-  it("counts a tool-use card only while Claude Code shows its dialog or its state is unknown, every other card, and no card cancelled by a stop, whose list is edited before the wait for the cancelled cards", async () => {
+  it("counts every pending card, a tool-use card also while Claude Code's record says busy, as for a subagent's card without a dialog, and no card cancelled by a stop, whose board is edited before the wait for the cancelled cards", async () => {
     const chat = new FakeChat()
     const hub = await hubWith(chat)
     const one = await openSession(hub, id1, stored(1, "one"))
@@ -2684,7 +2685,7 @@ describe("Main group", () => {
     one.record = join(root, "claude-1.json")
     writeFileSync(one.record, JSON.stringify({status: "busy"}))
     await hub.showSessions()
-    expect(hub.sessionsText()).toBe("🟢 1 · one: working\n🟠 2 · two: waiting for you, 1 approval")
+    expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 1 approval\n🟠 2 · two: waiting for you, 1 approval")
     writeFileSync(one.record, JSON.stringify({status: "compacting"}))
     await hub.showSessions()
     expect(hub.sessionsText()).toBe("🟠 1 · one: waiting for you, 1 approval\n🟠 2 · two: waiting for you, 1 approval")
