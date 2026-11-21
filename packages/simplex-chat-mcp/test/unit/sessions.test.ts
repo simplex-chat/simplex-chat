@@ -2628,7 +2628,7 @@ describe("Main group", () => {
       writeFileSync(one.record!, JSON.stringify({pid: 100, status}))
       const edits = chat.updates.length
       await hub.showSessions()
-      return chat.updates.slice(edits).map(({itemId, text}) => `${itemId === message ? "message" : itemId === summary ? "summary" : itemId}: ${text}`)
+      return chat.updates.slice(edits).filter(({chatId}) => chatId === 10).map(({itemId, text}) => `${itemId === message ? "message" : itemId === summary ? "summary" : itemId}: ${text}`)
     }
     expect(await shows("busy")).toEqual([])
     expect(await shows("waiting")).toEqual(["message: ⛔️ 1 · one: waiting for you in Claude Code", "summary: 1 session ⛔️"])
