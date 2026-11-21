@@ -1833,7 +1833,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       logInfo $ label <> ": " <> eInfo
       tryAllErrors (withStoreTx criticalErr $ handleOnce eInfo) >>= \case
         Right (Right (withRcpt, shouldDelConns)) ->
-          unless shouldDelConns $ withLog (eInfo <> " ok") $ ackHandledMsg $ if withRcpt then Just "" else Nothing
+          unless shouldDelConns $ withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
         Right (Left e) -> ackError eInfo e
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
@@ -1853,11 +1853,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               r@(withRcpt, _) <- liftEither =<< tryAllErrors (action eInfo)
               when withRcpt $ withStore' $ \db -> setHandledRcvMsgRcpt db handledConnId aMsgId
               pure r
-        ackHandledMsg rcpt = do
-          ackMsg msgMeta rcpt
-          withStore' (\db -> deleteHandledRcvMsg db handledConnId aMsgId) `catchAllErrors` eToView
         ackError eInfo e = do
-          withLog (eInfo <> " error: " <> tshow e) $ ackHandledMsg Nothing
+          withLog (eInfo <> " error: " <> tshow e) $ ackMsg msgMeta Nothing
           throwError e
         eventInfo = do
           v <- asks eventSeq

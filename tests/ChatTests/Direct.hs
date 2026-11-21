@@ -14,7 +14,7 @@ module ChatTests.Direct where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (newEmptyMVar, putMVar, readMVar, threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
 import qualified Control.Exception as E
 import Control.Monad (forM_, void, (>=>))
@@ -87,6 +87,7 @@ chatDirectTests = do
     it "initial chat pagination" testChatPaginationInitial
     it "skip handled message redelivered after failed acknowledgement" testRedeliveredMessage
     it "skip handled message redelivered after chat stop" testRedeliveredHandledMessage
+    it "skip handled message redelivered after reconnection" testRedeliveredAfterReconnect
     it "skip handled batch redelivered after chat stop" testRedeliveredBatch
     it "skip integrity error of redelivered receipt" testRedeliveredReceiptIntegrity
     it "skip integrity error of handled message redelivered after chat stop" testRedeliveredHandledIntegrity
@@ -1544,6 +1545,25 @@ testRedeliveredHandledMessage ps = do
       bob <## "chat stopped"
       bob ##> "/_start"
       bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testRedeliveredAfterReconnect :: HasCallStack => TestParams -> IO ()
+testRedeliveredAfterReconnect ps = do
+  release <- newEmptyMVar
+  (received, cfg) <- blockFirstEventUntilCfg (readMVar release) $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice #> "@bob hello"
+      received
+      bob ##> "/reconnect"
+      bob <## "ok"
+      withCCAgentTransaction bob (`DB.query_` "SELECT count(1) FROM rcv_messages WHERE receive_attempts > 0") `shouldEventuallyReturn` [Only (1 :: Int)]
+      putMVar release ()
+      bob <# "alice> hello"
+      bob <### ["disconnected 1 connections on server localhost", "subscribed 1 connections on server localhost"]
       alice #> "@bob hi"
       bob <# "alice> hi"
       bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])

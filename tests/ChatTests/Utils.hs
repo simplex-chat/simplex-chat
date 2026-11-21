@@ -1054,12 +1054,15 @@ stableJSON = \case
       | otherwise = stableJSON v
 
 blockFirstEventCfg :: (ChatEvent -> Bool) -> IO (IO (), ChatConfig)
-blockFirstEventCfg blocks = do
+blockFirstEventCfg = blockFirstEventUntilCfg $ forever $ threadDelay 1000000
+
+blockFirstEventUntilCfg :: IO () -> (ChatEvent -> Bool) -> IO (IO (), ChatConfig)
+blockFirstEventUntilCfg released blocks = do
   blocked <- newEmptyMVar
   let hook _ ev = case ev of
         Right e | blocks e -> do
           isFirst <- tryPutMVar blocked ()
-          when isFirst $ forever $ threadDelay 1000000
+          when isFirst released
           pure ev
         _ -> pure ev
   pure (timeout 20000000 (readMVar blocked) `shouldReturn` Just (), testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
