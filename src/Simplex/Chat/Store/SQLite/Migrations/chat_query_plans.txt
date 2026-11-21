@@ -7024,6 +7024,18 @@ Plan:
 Query: CREATE TRIGGER fail_commit AFTER INSERT ON handled_rcv_msgs WHEN TRUE BEGIN INSERT INTO fail_commit VALUES (0); END
 Plan:
 
+Query: CREATE TRIGGER fail_commit AFTER INSERT ON messages WHEN NEW.chat_msg_event = 'x.direct.del' BEGIN INSERT INTO fail_commit VALUES (0); END
+Plan:
+
+Query: CREATE TRIGGER fail_commit AFTER INSERT ON messages WHEN NEW.chat_msg_event = 'x.grp.mem.fwd' BEGIN INSERT INTO fail_commit VALUES (0); END
+Plan:
+
+Query: CREATE TRIGGER fail_commit AFTER INSERT ON messages WHEN NEW.chat_msg_event = 'x.grp.mem.inv' BEGIN INSERT INTO fail_commit VALUES (0); END
+Plan:
+
+Query: CREATE TRIGGER fail_commit AFTER INSERT ON messages WHEN NEW.chat_msg_event = 'x.msg.file.descr' BEGIN INSERT INTO fail_commit VALUES (0); END
+Plan:
+
 Query: CREATE TRIGGER fail_commit AFTER INSERT ON rcv_file_chunks WHEN NEW.chunk_number = 2 BEGIN INSERT INTO fail_commit VALUES (0); END
 Plan:
 
@@ -8008,6 +8020,10 @@ Query: SELECT count(1) FROM group_members
 Plan:
 SCAN group_members USING COVERING INDEX idx_group_members_invited_via_group_member_id
 
+Query: SELECT count(1) FROM messages WHERE chat_msg_event = 'x.grp.mem.fwd'
+Plan:
+SCAN messages
+
 Query: SELECT count(1) FROM pending_group_messages
 Plan:
 SCAN pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id
@@ -8065,6 +8081,10 @@ SEARCH files USING INDEX idx_files_roster_transfer_id (roster_transfer_id=?)
 Query: SELECT file_id, file_path FROM files WHERE user_id = ? AND group_id = ? AND file_type = ?
 Plan:
 SEARCH files USING INDEX idx_files_group_id (group_id=?)
+
+Query: SELECT file_status FROM rcv_files WHERE file_id = 1
+Plan:
+SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT file_type FROM files WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? LIMIT 1
 Plan:
@@ -8950,6 +8970,10 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE handled_rcv_msgs SET rcpt = 1 WHERE connection_id = ? AND agent_msg_id = ?
 Plan:
 SEARCH handled_rcv_msgs USING INDEX sqlite_autoindex_handled_rcv_msgs_1 (connection_id=? AND agent_msg_id=?)
+
+Query: UPDATE msg_deliveries SET agent_msg_id = ?, delivery_status = ?, updated_at = ? WHERE msg_delivery_id = ?
+Plan:
+SEARCH msg_deliveries USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE note_folders SET chat_ts = ? WHERE user_id = ? AND note_folder_id = ?
 Plan:

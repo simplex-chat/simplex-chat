@@ -1441,6 +1441,10 @@ Query: SELECT count(1) FROM connections
 Plan:
 SCAN connections USING COVERING INDEX idx_connections_deleted
 
+Query: SELECT count(1) FROM rcv_files WHERE deleted = 0
+Plan:
+SCAN rcv_files
+
 Query: SELECT count(1) FROM rcv_messages WHERE receive_attempts > 0
 Plan:
 SCAN rcv_messages
