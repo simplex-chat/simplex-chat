@@ -26,7 +26,8 @@ SCROLL_CLICKS = -10
 LABEL_SCROLLS = 4
 LABEL_WAIT = 5
 LABEL_SCROLL_CLICKS = -3
-TYPE_ATTEMPTS = 2
+TYPE_ATTEMPTS = 3
+TITLE_LENGTH = 256
 BACK_PRESSES = 6
 AVATAR_OFFSET = 27
 BOTTOM_BAR_OFFSET = 30
@@ -200,11 +201,22 @@ class App:
             time.sleep(SETTLE)
         return self.on_chat_list()
 
+    def foreground_title(self):
+        if sys.platform != "win32":
+            return ""
+        user32 = ctypes.windll.user32
+        title = ctypes.create_unicode_buffer(TITLE_LENGTH)
+        user32.GetWindowTextW(user32.GetForegroundWindow(), title, TITLE_LENGTH)
+        return title.value
+
     def type_into(self, x, y, text):
         for _ in range(TYPE_ATTEMPTS):
+            self.window_rect()
             self.click(x, y)
             time.sleep(SETTLE)
             self.click(x, y)
+            time.sleep(SETTLE)
+            self.log(f"foreground window: {self.foreground_title()}")
             self.type(text)
             if self.wait(text, LABEL_WAIT):
                 return True
