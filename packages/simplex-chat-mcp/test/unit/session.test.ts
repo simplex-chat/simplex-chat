@@ -95,8 +95,8 @@ function listCall(client: LineClient): Promise<any> {
 
 const listed = {chats: [], actions: []}
 const listResult = {content: [{type: "text", text: JSON.stringify(listed)}], structuredContent: listed}
-const registration = (record: string): string => `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}, record})}`
-const registered = registration(join(homedir(), ".claude", "sessions", `${process.ppid}.json`))
+const registration = (record: string, globalConfig: string): string => `session ${JSON.stringify({id, pid: process.ppid, project: "/p/app", config: {mainGroup: "Claude Control", approve: "requests", expireHours: 23}, record, globalConfig})}`
+const registered = registration(join(homedir(), ".claude", "sessions", `${process.ppid}.json`), join(homedir(), ".claude.json"))
 const stdins: PassThrough[] = []
 
 beforeEach(() => {
@@ -308,11 +308,11 @@ describe("session server", () => {
     expect(seen).toEqual([registered, "attach", "call list"])
   })
 
-  it.each([["/c/claude", join("/c/claude", "sessions", `${process.ppid}.json`)], ["c/claude", resolve("c/claude", "sessions", `${process.ppid}.json`)]])("registers with the absolute path of Claude Code's record of its parent process, in CLAUDE_CONFIG_DIR %s, or in ~/.claude without it", async (folder, record) => {
+  it.each([["/c/claude", join("/c/claude", "sessions", `${process.ppid}.json`), join("/c/claude", ".claude.json")], ["c/claude", resolve("c/claude", "sessions", `${process.ppid}.json`), resolve("c/claude", ".claude.json")]])("registers with the absolute paths of Claude Code's record of its parent process and of its global config, in CLAUDE_CONFIG_DIR %s, or in ~/.claude and ~ without it", async (folder, record, globalConfig) => {
     await fakeService(async res => endWithResult(res, listResult))
     await session({CLAUDE_CONFIG_DIR: folder})
     await until(() => seen.length === 2)
-    expect(seen).toEqual([registration(record), "attach"])
+    expect(seen).toEqual([registration(record, globalConfig), "attach"])
   })
 
   it("uses the working folder as the project without CLAUDE_PROJECT_DIR", async () => {

@@ -43,7 +43,7 @@ describe("plugin", () => {
     expect(hooks.SessionStart[0].hooks[0]).toEqual({type: "command", command: cli("hook session-start"), timeout: 600})
     expect(hooks.PreToolUse[0].matcher).toBe("mcp__plugin_simplex_simplex__.*")
     expect(hooks.PreToolUse[0].hooks[0]).toEqual({type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/plugin/allow.js"'})
-    for (const event of ["UserPromptSubmit", "Stop", "PostModelSwitch", "PostCompact"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
+    for (const event of ["UserPromptSubmit", "Stop", "PostModelSwitch", "PostCompact", "SubagentStart", "SubagentStop"]) expect(hooks[event]).toEqual([{hooks: [{type: "command", command: cli("hook turn"), async: true}]}])
     const steps = {matcher: "*", hooks: [{type: "command", command: cli("hook turn"), async: true}]}
     expect(hooks.PreToolUse[1]).toEqual({...steps, hooks: [...steps.hooks, {type: "mcp_tool", server: "plugin:simplex:simplex", tool: "pre_tool_use", input: {tool: "${tool_name}"}, timeout: 5}]})
     for (const event of ["PostToolUse", "PostToolUseFailure"]) expect(hooks[event]).toEqual([steps])

@@ -731,13 +731,28 @@ Posts:
 |---|---|---|
 | the first owner joined | `I'm Claude. Each Claude Code session has its own group, and you get its invitation here. /sessions lists the sessions; /join N joins the group of session N.` | [`greeting`, `MainGroup.ownerJoined`](../src/main-group.ts) |
 | each `joinedGroupMember` or `connectedToGroupMember` of a human who is found among the members read again. For the first owner, it is posted after the greeting | `NAME joined. They can join the group of any Claude Code session here, prompt Claude and approve its actions.` | [`joinRights`, `MainGroup.handleEvent`](../src/main-group.ts) |
-| the first render of the list of sessions while the group has an owner, so after the greeting; a list 23 hours old, or one whose edit the core refuses with `invalidChatItemUpdate` or `chatItemNotFound` | the list of sessions, below, with `priority: -1`. A new list replaces an old one, which is then deleted for everyone; a refused deletion is logged as `old list of sessions: ERROR` | [`MainGroup.showList`, `replaceList`, `postList`](../src/main-group.ts) |
+| a running session without a message on the board, while the group has an owner, so after the greeting; a message whose edit the core refuses with `invalidChatItemUpdate` or `chatItemNotFound` | the session's message of the board, below, with `priority: -1` | [`MainGroup.showBoard`, `renderEntry`, `postEntry`](../src/main-group.ts) |
+| the first render with a session message while the group has an owner; a summary whose edit the core refuses | the summary of the board, below, with `priority: -1` | [`MainGroup.showBoard`, `renderSummary`](../src/main-group.ts) |
 
-<a id="list-of-sessions"></a>The list of sessions ([`Hub.sessionsText`, `Hub.showSessions`, `Session.stateLine`](../src/hub.ts)):
+<a id="session-board"></a>The board of sessions ([`Hub.showSessions`, `Session.boardSession`, `stoppedState`](../src/hub.ts), [`MainGroup.showBoard`, `BoardSession`, `summaryText`, `boardAge`](../src/main-group.ts)):
+
+- Each running session has one message, and each session that stopped keeps its message until the message is 23 hours old, when it is deleted for everyone. A session is running while it has a line in the list of sessions below.
+- The message of a session has these lines, the unknown ones left out:
+  - the state: the session's line of the list of sessions below, or `⚪ N · NAME: stopped`;
+  - the title: `*TITLE*`, Claude Code's title of the conversation, when it differs from NAME; without the bold marks when it has `*`;
+  - the details: the short description of the session group ([4.3](#43-session-groups));
+  - the agents line while subagents or workflows work ([4.3](#agent-messages));
+  - the recap: the description of the session group.
+- The summary is `N sessions` and the state emoji of each session with a message, by number, separated by spaces, as `4 sessions 🟠 🟢 ⛔️ ⚪`; `1 session` for one; `No sessions.` without a message.
+- Every 2 s, and once at the service's stop before the wait for the cancelled cards, the hub renders the board by session number. A message or the summary is edited only when its text differs from its text last posted or edited; the first render after a start edits each once. A message whose edit is refused is deleted for everyone and, for a running session, posted again; a refused summary is deleted and posted again. The summary is never posted again for another reason, so posts that follow it, such as a new session's message, an invitation or a reply, leave it above them. A refused deletion is logged as `old message of the board: ERROR` or `old summary of the board: ERROR`.
+- The items and their post times are kept in the Main group's custom data as `simplexMcpBoard`. When they can't be saved, the messages posted in that render are deleted for everyone, the failure is logged as `board of sessions: ERROR`, and the next render tries again. A message of a session the hub does not have is deleted.
+- The list of the earlier version, `simplexMcpList`, is deleted for everyone at the first render, and its key is removed with the save of the board.
+
+<a id="list-of-sessions"></a>The list of sessions, the reply to `/sessions` ([`Hub.sessionsText`, `Session.stateLine`](../src/hub.ts)):
 
 | Part | Text | Condition |
 |---|---|---|
-| a running session | `🟠 N · NAME: waiting for you, K approvals`, `1 approval` for one | K pending cards of the session, without those cancelled by a stop. A tool-use card counts while Claude Code's state is `waiting` or unknown |
+| a running session | `🟠 N · NAME: waiting for you, K approvals`, `1 approval` for one | K pending cards of the session, without those cancelled by a stop, whatever Claude Code's state: a subagent's tool-use card has no dialog in the terminal, so Claude Code's state stays `busy` while it waits |
 | | `⛔️ N · NAME: waiting for you in Claude Code` | no card; attached; state `waiting` |
 | | `🟢 N · NAME: working` | no card; attached; state `busy` |
 | | `🔴 N · NAME: idle` | no card; attached; state `idle` |
@@ -749,9 +764,6 @@ Posts:
 - A session is attached while its session server is attached and the service does not stop. Its state is the `status` of Claude Code's record of the session server's parent, `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions/PID.json`, read every 2 s for each attached session. A record that does not parse keeps the last state read; a path that is not a regular file, such as a FIFO, gives no state. A render waits at most 1 s for a read; a read that takes longer keeps the last state, and no new read of that record starts until it ends ([`Session.readRecord`, `recordStatus`](../src/hub.ts)). A status other than `busy`, `waiting`, `idle` and `shell` is unknown.
 - The lines of running sessions come by number, then the line of the other sessions. Lines are joined by line breaks.
 - The text fits one message, by `fitsMessage`. The lines of running sessions are kept whole. The last line keeps the most names, newest first, for which the text, with `, K older sessions` for the K left out (`1 older session` for one), still fits. When no name fits, it is `⚪ Not running: K older sessions`.
-- Every 2 s, and once at the service's stop before the wait for the cancelled cards, the hub renders the text, and Claude edits the list when the text differs from the text last posted or edited. The first render after a start always edits.
-- A text that the core refuses as too large, `errorStore largeMsg`, as with more lines of running sessions than one message holds, is logged as `list of sessions: ERROR` once, and not sent again until the text changes; the list keeps its last text.
-- When the item of a new list can't be saved in the Main group's custom data, the new list is deleted for everyone, the old one stays, and the next render tries again.
 
 The session groups stay as they are when the membership or a role in the Main group is changed, and when the Main group is replaced by a reset of the owners. Members invited through the old Main group keep their roles in the session groups, with the rights of those roles ([`MainGroup.handleEvent`, `replace`](../src/main-group.ts), [`Session.approves`](../src/hub.ts)).
 
@@ -765,7 +777,7 @@ The session groups stay as they are when the membership or a role in the Main gr
 | history | on |
 | direct messages | on for the role `owner` |
 | command menu | `/sessions` "Claude Code sessions"<br>`/join` "Join the group of a session", params `<session number>` |
-| custom data | `{simplexMcpMain: true}`, and `simplexMcpList: {item, at}`, the list of sessions and the time it was posted |
+| custom data | `{simplexMcpMain: true}`, and `simplexMcpBoard: {summary?: {item, at}, sessions: [{session, item, at}]}`, the items of the board and the times they were posted |
 
 Claude updates only the display name and the command menu, starting each time from the group's current profile in the chat database. So the short description, the description and the preferences that owners set stay ([`MainGroup.load`](../src/main-group.ts), [`updateGroupProfile`, `changeGroupProfile`](../src/control.ts)).
 
@@ -886,6 +898,22 @@ Posts:
 | Claude | files sent by `reply`, at once | [`AgentTools.reply`, `sendFile`](../src/tools.ts), the `replyChat` of the [`Session`](../src/hub.ts) constructor |
 | Claude | the rights of the member's role, below. They are posted once for each join and each role change of a member other than `User`, at its `joinedGroupMember`, `connectedToGroupMember` or `memberRole` | [`Session.announceRights`, `Hub.onEvent`](../src/hub.ts), [`approverRights`, `senderRights`, `observerRights`, `sessionApproverRoles`, `canSend`, `rightsText`](../src/control.ts) |
 
+<a id="agent-messages"></a>Subagents and workflows ([`Session.onAgents`, `readAgents`, `showCard`, `cardEditMs`](../src/hub.ts), [`Agents`, `cardText`, `agentsLine`](../src/agents.ts), [`agentStart`, `agentStep`, `leadTask`, `taskOf`](../src/hook.ts)):
+
+| State | Text | Live |
+|---|---|---|
+| a subagent working | `🤖 TYPE · DESCRIPTION`, then `N steps · X tokens · M:SS · now: STEP`, or `· last: STEP` with no open step | on |
+| stalled: no event for over 2 min with no open step, or 10 min with one | `🤖 TYPE · DESCRIPTION`, then `N steps · X tokens · M:SS · ⚠️ no step for M:SS · last: STEP` | on |
+| ended | `🤖 TYPE · DESCRIPTION · ✅ M:SS · N steps · X tokens`, then the first line of its hand-back or its answer; `❌` for a failure, `⏹️` for a kill, a stop, the last detach, the hub's stop or 23 hours | off |
+| a workflow working | `⚙️ NAME · PHASE d/t · … · K working · X tokens · M:SS`, d the ended agents of the phase and t its started ones, ` ✅` after a phase that is done when a later one started | on |
+| a workflow ended | `⚙️ NAME · ✅ M:SS · PHASE d/t · … · X tokens` | off |
+
+- Each subagent that SubagentStart reports with its record, and each workflow that the lead starts, get one message, with priority -1, sent live. Teammates and workflow agents get none; the lead's `Agent` and `Workflow` tool uses get no step line.
+- TYPE is `agent_type`; DESCRIPTION the record's; steps the subagent's tool uses; X the input, cache and output tokens of its latest request in its transcript, read every 2 s, and at the end the figures of the lead's result or task notification; M:SS the time since its start, in 5 s steps while live.
+- A live message is edited at most every 5 s while its text changes; its end is edited at once with `liveMessage: false`, and again when the task's figures arrive. The note of a task notification of a known agent or workflow is not posted. A subagent resumed after its end gets a new message.
+- Edits leave a message where it was posted.
+- While subagents or workflows work, the session's message on the board has a line `🤖 N agents working · K stalled M:SS · ⚙️ NAME PHASE d/t`. The session group's short description shows no counts.
+
 Rights posts, by the member's role in the session group:
 
 | Role | Post |
@@ -925,8 +953,8 @@ at = performance.timeOrigin of the hook process; absent: Infinity for an answer'
 | Field | Value |
 |---|---|
 | display name | `N · NAME`, folded to a valid display name, renamed at a new title |
-| description | `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set only when the group is created |
-| short description | `MODEL · effort LEVEL`, the parts known so far |
+| description | the latest recap of Claude Code, none before the first; a group is created without one |
+| short description | `ACCOUNT · MODEL · effort LEVEL · goal STATE`, the parts known so far: ACCOUNT the email of Claude Code's OAuth account, STATE `set`, `met` or `failed`, none without a goal |
 | history | on |
 | direct messages | off |
 | command menu | as in [2.5](#25-group-profile) |
@@ -934,7 +962,9 @@ at = performance.timeOrigin of the hook process; absent: Infinity for an answer'
 | members | `Claude`, the members invited through the Main group, the members others added directly, `User` |
 | peer types | `Claude` `agent`; `User` `human`, set at each service start ([`User.open`](../src/user.ts), [`updatedUser`](../src/core.ts)). A member who joined while `User` had `agent`, as in 0.3.0, gets `human` with `User`'s next post in the group, with the event `updated profile`: the core sends a member's profile to a group before the next message after a change of its name, full name, short description, description, image or peer type |
 
-Claude makes the profile updates one at a time. It starts each from the group's current profile in the chat database and changes only the display name, the short description or the command menu. So a rename and a model change that overlap both stay.
+Claude makes the profile updates one at a time. It starts each from the group's current profile in the chat database and changes only the display name, the short description, the description or the command menu. So a rename and a model change that overlap both stay. The short description and the description are set together, when the model, the effort level, the account, the goal state or the recap changes; so a description an owner wrote, or the one of an earlier version, is replaced then. After an update that changed the profile, the next one waits until a minute has passed and then sets the values of that time, because each update shows `updated group profile` to every member ([`Session.describe`, `profileEveryMs`](../src/hub.ts)).
+
+The hub reads the account, the goal state, the recap and the title of each attached session every 2 s, with its record, by `AccountReader` and `TranscriptReader` ([architecture](architecture.md#claude-code-transcriptreader)), and keeps them in the session's `session.json` ([`Session.readClaudeCode`](../src/hub.ts)).
 
 The hub takes the model and the effort level of a `/turn` only when its `at` is not older than the `at` of the value it took last. It keeps the two times apart, one for the model and one for the effort level. The model of a `/title` comes with the `at` of its SessionStart hook, as described in [4.6](#46-socket-protocol). A request without `at` counts as the current time. So when a Stop request that waited for its transcript entry arrives after a later model switch, the model of the switch stays ([`Session.turn`, `newer`](../src/hub.ts)). The model of a request with an answer that equals the shown model without a final `[1m]` counts as the shown model, because the transcript names the 1M context variant without that suffix ([`Session.turn`](../src/hub.ts)).
 
@@ -1013,8 +1043,8 @@ The prompts of a session, from the members of [4.3](#43-session-groups), are del
 
 | Route | Request | Reply | Code |
 |---|---|---|---|
-| `POST /session` | `{id, pid?, project, name?, config: {mainGroup, approve, expireHours}, record?}`, `pid` the session server's parent process, `record` the absolute path of Claude Code's record of that process, which the session's line in the list of sessions reads | `{number, displayName, version, protocol, owner: {owners}}`. For a `pid` marked unattended, the reply is status 403, see below. The mark is checked before and after the wait for the title of `pid` | [`Service.onSession`, `refuseUnattended`](../src/service.ts) |
-| `POST /title` | `{id, pid?, at?, name?, project, model?, config, unattended?}`, `pid` from `CLAUDE_PID`, `at` the `performance.timeOrigin` of the SessionStart hook | `{mainGroup, owner: {owners, link?}, version, protocol}`, after the title is applied, or at once for a held title. With `unattended: true`, the reply comes at once, and no session is opened. Marks 10 s old and older are removed, `pid` is marked, and a server's wait for its title ends | [`Service.onTitle`, `markUnattended`, `applyTitle`](../src/service.ts) |
+| `POST /session` | `{id, pid?, project, name?, config: {mainGroup, approve, expireHours}, record?, globalConfig?}`, `pid` the session server's parent process, `record` the absolute path of Claude Code's record of that process, which the session's line in the list of sessions reads, `globalConfig` the absolute path of Claude Code's global config, which holds the session's account | `{number, displayName, version, protocol, owner: {owners}}`. For a `pid` marked unattended, the reply is status 403, see below. The mark is checked before and after the wait for the title of `pid` | [`Service.onSession`, `refuseUnattended`](../src/service.ts) |
+| `POST /title` | `{id, pid?, at?, name?, project, model?, transcript?, config, unattended?}`, `pid` from `CLAUDE_PID`, `at` the `performance.timeOrigin` of the SessionStart hook, `transcript` its `transcript_path`, which replaces the session's transcript | `{mainGroup, owner: {owners, link?}, version, protocol}`, after the title is applied, or at once for a held title. With `unattended: true`, the reply comes at once, and no session is opened. Marks 10 s old and older are removed, `pid` is marked, and a server's wait for its title ends | [`Service.onTitle`, `markUnattended`, `applyTitle`](../src/service.ts) |
 | `POST /attach` | `{id, pid?}`, `pid` the session server's parent process | a stream held open: the first line `{version, protocol}`, then `{prompt: {text, from, item, file?, replyTo?: {item?, from?}}}`, `{permission}` and `{tools}` lines. `tools` is the full list of the session's approved tools, `[{tool, approvedBy}]`, sent when it changes and to each new attachment while it is not empty ([4.3](#43-session-groups)). An attachment whose `pid` is not the one of the session's last `/session` gets `{tools: []}` in place of each `{tools}` line | [`Service.onAttach`](../src/service.ts), [`AttachLine`, `ApprovedTool`, `AttachRequest`](../src/protocol.ts), [`Session.onLine`, `sendTools`](../src/hub.ts) |
 | `POST /call` | `{id, tool, input}` | lines `{progress: TEXT}`, then one line `{result: CallToolResult or null}`. The call is aborted when the request is closed | [`Service.onCall`](../src/service.ts) |
 | `POST /permission` | `{id, requestId, toolName, description, inputPreview}` | `{}` after the card's action is created | [`Service.routes`](../src/service.ts) |
@@ -1083,7 +1113,7 @@ on the next start:                               each one taken as a new /title
 | `simplex-mcp session` | `.mcp.json` | MCP over stdio |
 | `simplex-mcp service` | `spawnService`, through the launcher `node -e LAUNCHER COMMAND ARGS`, which spawns the service with fd 1, 2 and 3 of its own and exits at once, so the service is no descendant of the hook or session process. The launcher writes `error: TEXT` when the spawn fails ([`launcher`, `spawnService`](../src/client.ts)) | the ready line `ready`, `running` or `error: TEXT` on fd `SIMPLEX_MCP_READY_FD`, or on stdout when it is unset. The line is dropped when its reader is gone, and the service keeps running ([`readyChannel`, `writeReady`](../src/service.ts)). If another running process holds ROOT/service.lock, the service checks the lock and the socket up to 150 times, 100 ms apart. It starts again once the lock is released, and its ready line is `running` once the socket answers. The log is written to stdout and stderr |
 | `simplex-mcp hook session-start` | SessionStart hook | one JSON line, see [4.8](#48-plugin-options-files-and-hook-output) |
-| `simplex-mcp hook turn` | UserPromptSubmit, Stop, PostModelSwitch, PreToolUse, PostToolUse, PostToolUseFailure and PostCompact hooks | `{}`. A prompt or an answer over 250,000 characters is cut there and ends with `…` ([`maxText`, `cut`](../src/hook.ts)). The Stop hook sends the model of its answer and the usage of its turn, read from the transcript, and the PostModelSwitch hook sends its model with `switched`, see [4.8](#48-plugin-options-files-and-hook-output) ([`turn`, `eventFields`, `answerRecord`, `findInTranscript`, `readTail`, `lastAnswer`, `turnUsage`, `usageOf`](../src/hook.ts)). The UserPromptSubmit hook sends `typed`, `note` and `midTurn`, read from the prompt's record in the transcript ([`turn`, `promptKind`](../src/hook.ts)). The tool hooks send `step`, see [4.8](#48-plugin-options-files-and-hook-output), and nothing for a tool use of a subagent or of this plugin, or without `tool_use_id` or `tool_name` ([`turn`, `eventFields`, `stepOf`](../src/hook.ts)). The PostCompact hook sends `note` from the compaction's boundary in the transcript, and nothing for a subagent's compaction ([`eventFields`, `compactionNote`](../src/hook.ts), [flow 35](flows.md#35-a-summary-of-the-sessions-context)) |
+| `simplex-mcp hook turn` | UserPromptSubmit, Stop, PostModelSwitch, PreToolUse, PostToolUse, PostToolUseFailure, PostCompact, SubagentStart and SubagentStop hooks | `{}`. A prompt or an answer over 250,000 characters is cut there and ends with `…` ([`maxText`, `cut`](../src/hook.ts)). The Stop hook sends the model of its answer and the usage of its turn, read from the transcript, and the PostModelSwitch hook sends its model with `switched`, see [4.8](#48-plugin-options-files-and-hook-output) ([`turn`, `eventFields`, `answerRecord`, `findInTranscript`, `readTail`, `lastAnswer`, `turnUsage`, `usageOf`](../src/hook.ts)). The UserPromptSubmit hook sends `typed`, `note` and `midTurn`, read from the prompt's record in the transcript ([`turn`, `promptKind`](../src/hook.ts)). The tool hooks send `step`, see [4.8](#48-plugin-options-files-and-hook-output), and nothing for a tool use of a subagent or of this plugin, or without `tool_use_id` or `tool_name` ([`turn`, `eventFields`, `stepOf`](../src/hook.ts)). The PostCompact hook sends `note` from the compaction's boundary in the transcript, and nothing for a subagent's compaction ([`eventFields`, `compactionNote`](../src/hook.ts), [flow 35](flows.md#35-a-summary-of-the-sessions-context)) |
 | `node dist/display.js` | MessageDisplay hook | `{}`, after `POST /turn` with `text`, see [4.8](#48-plugin-options-files-and-hook-output) |
 | `node ROOT/status-line.js` | Claude Code's status line, with the person's `statusLine` setting | the status line, and then `POST /turn` with `effort` and `limits`, see [4.8](#48-plugin-options-files-and-hook-output) |
 | `simplex-mcp link` | people | with owners, `Owners of "MAIN": A, B. To replace them, run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` When the service reports neither owners nor a link, `The Main group has no link. Run npx -y @simplex-chat/mcp@VERSION reset-owners in a terminal.` Otherwise, on a terminal, `Join "MAIN" in the SimpleX app. The link works once:`, a QR code and the link, and elsewhere `Run npx -y @simplex-chat/mcp@VERSION link in a terminal to see the link to "MAIN".` |

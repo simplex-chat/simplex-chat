@@ -572,34 +572,44 @@ Only you see this link: it never enters Claude's context or tool results. Scan t
 - Owners can add people with a group link of their own or by inviting their contacts.
 - Observers can't send messages in the Main group, so they can't use `/join N`.
 - Owners of the Main group are invited to every session's group as owners. They get each invitation in the Main group.
-- `/sessions` replies with the text of the list of sessions, below. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner if you own the Main group.
+- `/sessions` replies with one line per running session, as the first line of its message on the board below, and a last line `⚪ Not running: 5 · bio, 4 · notes, 2 · openclaw, 1 · first` that names every other session, newest first, cut to one message with the count of the rest. `/join N` sends you an invitation to the group of session N, as an admin, or as an owner if you own the Main group.
 - Leaving the Main group, being removed from it, or getting another role there changes nothing in the session groups.
 - When no owner remains, the service creates a new link. In a terminal, `npx -y @simplex-chat/mcp@VERSION link` prints it with a QR code. While the group has owners, the command names them instead.
 
-After the first owner joins, Claude posts the list of sessions in the Main group, after its greeting:
+After the first owner joins, Claude posts the board of sessions in the Main group, after its greeting: one message per running session, and a summary.
 
 ```
 🟢 3 · simplex-chat: working
-🟠 6 · website: waiting for you, 2 approvals
-⛔️ 7 · docs: waiting for you in Claude Code
-🔴 8 · app: idle
-⚙️ 9 · api: working in the background
-⚪ Not running: 5 · bio, 4 · notes, 2 · openclaw, 1 · first
+*WebRTC device link architecture survey*
+alice@example.com · claude-opus-4-7 · effort high · goal set
+I mapped how to move desktop–mobile linking onto WebRTC through the Haskell core. Next I need your answers to the four decisions on the page.
+```
+```
+🟠 4 · mcp-board: waiting for you, 2 approvals
+bob@example.com · claude-sonnet-4-5 · effort medium
+```
+```
+⚪ 2 · webrtc: stopped
+carol@example.com · claude-opus-4-7 · effort xhigh · goal failed
+```
+```
+3 sessions 🟠 🟢 ⚪
 ```
 
-- A session is running while its Claude Code runs, or while cards wait for a decision in its group. Each running session has a line, by number. Green is the state to keep:
+- A session's message shows its state, Claude Code's title of the conversation when it differs from the session's name, the Claude account, the model, the effort level, whether a goal is set, met or failed, a line such as `🤖 2 agents working · 1 stalled 2:10 · ⚙️ review-changes Verify 3/8` while subagents or workflows work, and Claude Code's latest recap. The account is the email of the login in Claude Code's global config, `CLAUDE_CONFIG_DIR/.claude.json` or `~/.claude.json`; the goal, the recap and the title come from the session's transcript.
+- The summary has the state of each session on the board, by number. Claude only edits it, so messages posted later, such as a new session's message or an invitation, follow it.
+- A session is running while its Claude Code runs, or while cards wait for a decision in its group. Green is the state to keep:
   - `🟢 N · NAME: working`: Claude Code works on a turn, or a subagent works for it.
-  - `🟠 N · NAME: waiting for you, K approvals`: K cards wait in the session's group, for a decision in the chat. A tool-use card counts only while Claude Code shows its permission dialog, or while Claude Code's state can't be read.
+  - `🟠 N · NAME: waiting for you, K approvals`: K cards wait in the session's group, for a decision in the chat, whatever Claude Code's state. A tool-use card answered in the terminal stays until the turn ends.
   - `⛔️ N · NAME: waiting for you in Claude Code`: Claude Code waits for an answer in its own window, such as a dialog, which the chat can't give.
   - `⚙️ N · NAME: working in the background`: Claude Code waits for the next prompt while a background command runs. The command's end starts a turn without a prompt.
   - `🔴 N · NAME: idle`: Claude Code waits for the next prompt, and nothing runs.
   - `▶️ N · NAME: running`: Claude Code's state can't be read.
-- The last line names every other session of the data folder, newest first. Without any session, the list is `No sessions.`
+  - `⚪ N · NAME: stopped`: Claude Code of this session ended. Claude deletes the message 23 hours after its post.
 - The states are Claude Code's own: the plugin reads them from Claude Code's record of its process, `sessions/PID.json` in `CLAUDE_CONFIG_DIR` or `~/.claude`.
-- The list is one message. When it gets too long, the last line keeps the newest names that fit and ends with the count of the others, such as `190 older sessions`. The lines of running sessions are never cut.
-- Claude edits the list within 2 seconds of a change. An edit alerts nobody. The list moves up as messages, such as invitations to new sessions' groups, are posted after it.
-- SimpleX lets Claude edit a message only within 24 hours. When the list is 23 hours old, Claude posts a new list and deletes the old one for everyone.
-- When the service stops, Claude edits the list once more, with every session in the last line.
+- Claude edits a message within 2 seconds of a change. An edit alerts nobody. SimpleX lets Claude edit a message only within 24 hours; when an edit is refused, Claude posts the message again and deletes the old one for everyone.
+- When the service stops, Claude edits every message once more, with every session stopped.
+- The group of each session shows the same details as its short description, and the latest recap as its description, which stays empty until Claude Code writes a recap.
 
 To replace the owners, run `npx -y @simplex-chat/mcp@VERSION reset-owners` in a terminal. It replaces the Main group at once, without the owners' approval:
 
@@ -625,7 +635,7 @@ VERSION is the plugin's version, as in `npx -y @simplex-chat/mcp@0.3.0 link`. Th
   `User`'s messages are never prompts, commands or approvals.
 - When someone joins or their role changes, Claude posts their rights. For an admin the post is `Bob is an admin and can send prompts to Claude and the group's commands, and approve tool use. You can change role to observer to stop it: /'observer #G ID'`, with the group's and the member's IDs. For a moderator, member or author it is `NAME is a ROLE and can send prompts to Claude; the group's commands and approvals need the role admin or owner.`, followed by the same command. The posts for an owner and for an observer have no command: `NAME is an owner and can send prompts to Claude and the group's commands, and approve tool use.` and `NAME is an observer and can't send messages.` Claude posts nothing for `User`.
 - `/observer #G ID` makes that member an observer, and Claude replies `NAME is an observer and can't send messages.` Admins and owners can use it on a member whose role isn't above their own. Standing approvals that the observer gave, of all messages to a chat or all files from it, stop counting while they aren't an admin or owner, and count again if they become one. For a member who was invited and hasn't joined yet, Claude replies `No member ID in this group.` That member joins with the role of the invitation, which can be changed after the join.
-- The group's description is `The Claude Code session N. Members send it prompts; admins and owners also send the group's commands and approve tool use.`, set when the group is created. Its short description shows the model and effort, see [Model, effort and usage](#model-effort-and-usage).
+- The group's description is Claude Code's latest recap of the session, empty until the first. Its short description shows the account, the model, the effort and the goal state, see [Model, effort and usage](#model-effort-and-usage).
 - The group is created in the Flat layout, which SimpleX apps from v7.1.0 show. Each member can choose another layout for it in Group info › `Chat theme` › `Chat layout`, for their own app. The Main group is shown in each member's own layout.
 - The group has the commands of the agent control chat of `serve` (see [What the owner sees](#what-the-owner-sees)), without a session prefix, such as `/approve 7`, `/receive @3 9` and `/leave #2`. It also has `/give CHAT N`, `/observer #G ID`, and `/approve N all` and `/revoke TOOL` for tools, see [Tool use](#tool-use).
 - A chat belongs to the session that connected it, even when the other side accepts after `connect` returned. The tools of other sessions don't show it. Their `connect` to its address returns `The chat of LINK belongs to another session; an admin or owner of that session's group can give it to this session with /give.` For example, `/give @3 2` in the group of the session that owns chat @3 gives it to session 2.
@@ -672,17 +682,23 @@ With the channel, a message from a member of a session's group, other than `User
   - Read, Edit, NotebookEdit and Write: `📖 Read PATH`, `✏️ Edit PATH` for a file or a notebook, and `✏️ Write PATH`, with PATH relative to the session's folder when it is inside it;
   - Grep and Glob: `🔍 Grep PATTERN in PATH` and `🔍 Glob PATTERN in PATH`, with PATH as for Read, and without ` in PATH` when the search has no path;
   - WebFetch and WebSearch: `🌐 Fetch URL` and `🔍 Search QUERY`;
-  - Agent: `🤖 Agent: ` and the agent's description;
   - another tool: `🔧 TOOL`, and `: ` with the first of its description, query, URL, file path, path, pattern and command that is not blank. A tool whose name has `search`, such as ToolSearch or an MCP tool `search_threads`, gets `🔍` in place of `🔧`.
 
-  The line is a live message while the step runs. The whole line is in small print. When the step ends, Claude completes it with the step's duration, after ❌ for a failure or ⏹️ for an interruption, such as `!- 💻 Run the tests 2.0 s!`. A `!` in the text of a step is shown as `ǃ`, which looks the same, because `!` would end the small print. Claude Code reports the end of a command or an agent run in the background when it is started, so its line is completed with `(in background)`, such as `!- 💻 Run the tests (in background)!`; its completion is posted later as the line of its notification. The completed line has no edited mark. A step refused at approval has no end; its line is completed without an outcome when the turn ends, when a prompt starts the next turn, or when the session ends. A line still live 23 hours after its start is completed without an outcome, because SimpleX allows edits of a message for 24 hours; the step's later end is posted as a new line. The text of a step is cut at 200 characters. Tool uses of subagents and of this plugin get no line.
+  The line is a live message while the step runs. The whole line is in small print. When the step ends, Claude completes it with the step's duration, after ❌ for a failure or ⏹️ for an interruption, such as `!- 💻 Run the tests 2.0 s!`. A `!` in the text of a step is shown as `ǃ`, which looks the same, because `!` would end the small print. Claude Code reports the end of a command or an agent run in the background when it is started, so its line is completed with `(in background)`, such as `!- 💻 Run the tests (in background)!`; its completion is posted later as the line of its notification. The completed line has no edited mark. A step refused at approval has no end; its line is completed without an outcome when the turn ends, when a prompt starts the next turn, or when the session ends. A line still live 23 hours after its start is completed without an outcome, because SimpleX allows edits of a message for 24 hours; the step's later end is posted as a new line. The text of a step is cut at 200 characters. Tool uses of this plugin get no line, and the starts of subagents and workflows get their own messages, below.
+- Each subagent and each workflow has one live message, silent, edited as it works, at most every 5 seconds:
+
+  ```
+  🤖 Explore · find the suspend callers
+  14 steps · 38.2k tokens · 1:05 · now: 📖 Read SuspendChat.swift
+  ```
+  A subagent with no step for 2 minutes, or 10 minutes while a step runs, shows `⚠️ no step for 2:10 · last: 💻 cabal build` instead of `now:`. When it ends, the message is completed with its time, steps and tokens and the first line of its result, such as `🤖 Explore · find the suspend callers · ✅ 2:40 · 22 steps · 61.5k tokens`, with ❌ for a failure and ⏹️ for a stop. A workflow shows its phases, done agents of all started: `⚙️ review-changes · Review 4/4 ✅ · Verify 3/8 · 2 working · 412k tokens · 6:30`, and ends as `⚙️ review-changes · ✅ 6:30 · Review 4/4 · Verify 8/8 · 412k tokens`. The notification of a finished subagent or workflow gets no line, because its message shows the end. Tokens are those of the agent's latest request, as the terminal shows them, read from its transcript every 2 seconds. Teammates of an agent team, the agents of a workflow and Claude Code's internal agents get no message of their own. A message keeps its place in the chat when it is edited. Live messages still live when the session ends are completed with ⏹️.
 - Claude marks the turn's empty live message, its texts and answers, the lines of steps, and the lines of Claude Code's own prompts, of summaries of the context and of model and effort switches as silent. The answer's last message, with its line, is important, so a turn alerts once, at its end. When the line completes a live message or the turn's empty live message, the edit marks it important; SimpleX apps alert for such an edit once they support it. A SimpleX app that supports silent messages shows them without an alert; other apps alert for them as for any message.
 - A text too long for one message is posted as several messages, each as long as a message can be, measured as for `send`. The first part of an answer carries the quote. A part without a quote holds up to 14,962 Latin, 7,481 Cyrillic or 4,987 CJK characters. A prompt or an answer over 250,000 characters is cut there and ends with `…`.
 - The `reply` tool sends a file to the group at once, without approval, with its text as the caption, under the file rules of `send`. It returns the file's message as `item`. A caption too long for a message with the file's preview is refused with `text: too long for a message with this TYPE; shorten it.`
 
 ### Group preferences
 
-Owners set the group's preferences in the app, and SimpleX enforces them. Claude never overwrites them: it changes only the group's name, short description and commands, starting from the profile in the chat database.
+Owners set the group's preferences in the app, and SimpleX enforces them. Claude never overwrites them: it changes only the group's name, short description, description and commands, starting from the profile in the chat database.
 
 - While "Files and media" is off, `reply` returns `Files and media are off in the group of this session; its owners can turn them on in the group's preferences.` The cards of sends and downloads of images and videos are posted as text, without the preview, and the sends and downloads still work. `/forward` gets `Action N: Files and media are off in the group of this session; its owners can turn them on in the group's preferences.`
 - When another preference refuses one of Claude's posts, Claude posts a text that names it instead:
@@ -723,7 +739,7 @@ Claude: I want to use `Bash`: `List files`
 
 ### Model, effort and usage
 
-The short description of a session's group shows `MODEL · effort LEVEL`. The model is updated at the session start when Claude Code passes it, at each model change, and at the end of each turn from the model of the answer in the session's transcript. So the model shows from the first answer, also in a resumed session. An answer's model that is the shown model without `[1m]` keeps the shown model, because the transcript names the 1M context variant without that suffix. The effort level is updated at each tool step, at the end of each turn, and with the [status line](#status-line). Without the status line, a turn that runs at its own level, as after `ultrathink` in the prompt, shows that level until a later turn reports another. Once the status line reports in a session, the effort level comes only from the status line, which reports the session's level. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
+The short description of a session's group shows `ACCOUNT · MODEL · effort LEVEL · goal STATE`, the parts known so far. ACCOUNT is the email of the Claude login in Claude Code's global config, re-read when the file changes, so a `/login` shows within seconds. STATE is `set`, `met` or `failed`, from the goal entries of the transcript, and is left out without a goal or after `/goal clear`. The description is the latest recap that Claude Code wrote in the transcript; both are updated together, so a description an owner wrote is replaced at the next change. Each update shows `updated group profile` in the group, so after an update the next one waits for a minute and then shows the values of that time. The model is updated at the session start when Claude Code passes it, at each model change, and at the end of each turn from the model of the answer in the session's transcript. So the model shows from the first answer, also in a resumed session. An answer's model that is the shown model without `[1m]` keeps the shown model, because the transcript names the 1M context variant without that suffix. The effort level is updated at each tool step, at the end of each turn, and with the [status line](#status-line). Without the status line, a turn that runs at its own level, as after `ultrathink` in the prompt, shows that level until a later turn reports another. Once the status line reports in a session, the effort level comes only from the status line, which reports the session's level. Changes made in the terminal, or from the Claude app by Remote Control, show the same way.
 
 When the model switches, Claude posts `Model changed to MODEL` in small print. When a known effort level changes, Claude posts `Effort changed to LEVEL`. The first model and the first effort level of a session get no line. Both lines are silent.
 
