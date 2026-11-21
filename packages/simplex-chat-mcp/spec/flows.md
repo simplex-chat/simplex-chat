@@ -1,6 +1,6 @@
 # SimpleX MCP server: flows
 
-> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16, and the Claude Code plugin in flows 17-39.
+> Sequence diagrams of the main flows of `@simplex-chat/mcp` 0.3.0, each with notes and source locations. `serve` is shown in flows 1-16 and 40, and the Claude Code plugin in flows 17-39.
 >
 > Related specs: [README](README.md) | [Architecture](architecture.md) | [API](api.md)
 
@@ -17,8 +17,9 @@ Participants:
 | C | the SimpleX core behind `ChatApi` |
 | O | the owner in the SimpleX app |
 | D | a peer |
+| U | the audio API at URL of `--audio` |
 
-In flows 1-16, `#G` is the agent control chat, `USER` the agent's user ID, `DATA` the data folder. Calls to the core are shown as the `ChatApi` methods the server calls, with their arguments in short. Card and progress texts with a semicolon are shown with a comma in the diagrams; the exact texts are in [API](api.md).
+In flows 1-16 and 40, `#G` is the agent control chat, `USER` the agent's user ID, `DATA` the data folder. Calls to the core are shown as the `ChatApi` methods the server calls, with their arguments in short. Card and progress texts with a semicolon are shown with a comma in the diagrams; the exact texts are in [API](api.md).
 
 ---
 
@@ -66,6 +67,10 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 37. [The texts of a turn](#37-the-texts-of-a-turn)
 38. [The status line command](#38-the-status-line-command)
 39. [An edit and a live message in the session group](#39-an-edit-and-a-live-message-in-the-session-group)
+
+`serve`, continued:
+
+40. [A voice message at arrival](#40-a-voice-message-at-arrival)
 
 ---
 
@@ -268,10 +273,11 @@ sequenceDiagram
 
 Notes:
 
-- Checks before the action: `text` or `file`, the chat connected, role `observer` or `relay` refused, `reply_to` item a message, mentioned members present and the chat a group, and the message length with its quote ([`AgentTools.send`](../src/tools.ts)).
+- Checks before the action: `text`, `file` or `voice`, `voice` without `file`, the chat connected, role `observer` or `relay` refused, `reply_to` item a message, mentioned members present and the chat a group, and the message length with its quote ([`AgentTools.send`](../src/tools.ts)).
 - The server starts collecting before the send and, after it, drops items with IDs up to the sent item ([`AgentTools.performSend`](../src/tools.ts)).
 - Mentioned names missing from the text are prefixed as `@name` ([`messageText`](../src/tools.ts)).
-- While a collected message is live, the server waits for its final update; live items are left out of `responses` and counted in `more` ([`awaitResponses`](../src/messages.ts), [`AgentTools.sendResult`](../src/tools.ts)).
+- While a collected message is live, or held for its transcription, the server waits for its final update or its release; such items are left out of `responses` and counted in `more` ([`awaitResponses`](../src/messages.ts), [`AgentTools.sendResult`, `isFinal`](../src/tools.ts)).
+- With `voice`, `voice.m4a` is made first, with the audio API and `ffmpeg`, and sent as a voice message ([`AgentTools.performSend`, `spokenFile`](../src/tools.ts), [API 1.10](api.md#110-voice-messages)).
 - At most 100 replies are kept per action; later ones are counted as overflow ([`maxCollected`, `ChatItemsWatch.collect`](../src/messages.ts)).
 
 Source: [`AgentTools.send`, `sendResult`, `performSend`](../src/tools.ts), [`ChatItemsWatch.collect`, `awaitResponses`](../src/messages.ts), [`requestLines`](../src/control.ts).
@@ -301,13 +307,14 @@ sequenceDiagram
 
 Notes:
 
-- With unread items the server reads `around` the first unread item, `count` 0, then pages of `after` the last item, `count` 100, until it holds `limit + 1` unread, non-live messages or a page is short ([`unreadItems`, `isNewMessage`](../src/messages.ts)).
+- With unread items the server reads `around` the first unread item, `count` 0, then pages of `after` the last item, `count` 100, until it holds `limit + 1` unread messages that are neither live nor held for their transcription, or a page is short ([`unreadItems`](../src/messages.ts), [`AgentTools.isFinal`](../src/tools.ts)).
+- A message held for its transcription is returned after its release ([`AgentTools.receive`, `isFinal`](../src/tools.ts), [flow 40](#40-a-voice-message-at-arrival)).
 - Unread items other than messages in the read pages are marked read with the returned messages ([`AgentTools.receive`](../src/tools.ts)).
 - `more`: the arrived messages not returned, the overflow and the unread items not read ([`AgentTools.receive`](../src/tools.ts)).
 - Items received while the pages are read are returned once ([`AgentTools.receive`](../src/tools.ts)).
 - Exact progress text: `No new messages in CHAT; waiting until TIME.` ([`AgentTools.receive`](../src/tools.ts)).
 
-Source: [`AgentTools.receive`](../src/tools.ts), [`unreadItems`, `isNewMessage`, `reportProgress`, `nextChange`, `awaitResponses`](../src/messages.ts).
+Source: [`AgentTools.receive`, `isFinal`](../src/tools.ts), [`unreadItems`, `reportProgress`, `nextChange`, `awaitResponses`](../src/messages.ts).
 
 ---
 
@@ -491,7 +498,7 @@ Notes:
 
 - The key is made of the session number, `undefined` for `serve`, the tool name and the action fields ([`AgentTools.connect`, `send`, `leave`, `download`, `actionKey`](../src/tools.ts)):
   - `connect`: `target`, `incognito`, `message`
-  - `send`: `chat`, `text`, `file`, `as`, `reply_to`, `mention`
+  - `send`: `chat`, `text`, `file`, `as`, `reply_to`, `mention`, `voice`
   - `download`: `chat`, `item`
   - `leave`: `chat`
 - The `wait`, `idle` and `limit` of the attaching call are used ([`AgentTools.sendResult`](../src/tools.ts)).
@@ -639,6 +646,7 @@ Notes:
   - A refused edit of a card is replaced by `Action N OUTCOME; its card was not updated: ` and that text. OUTCOME is `was performed`, `failed`, `was rejected`, `expired` or `ended`.
   - After the decision, the action is not changed by a refused card.
 - A file the core receives without a request, a short voice message, also in a member chat of a group, is moved into the chat's folder at `rcvFileComplete`; one whose transfer started before a restart, only when it has its full size. Its message then shows it as `offered`, and `download` returns its path after the approval ([`AgentTools.onNewItems`, `onFile`, `onFileComplete`, `moveReceived`](../src/tools.ts), [`messageFile`, `receivedFileError`](../src/messages.ts)).
+- With `--audio`, a voice file of at most 300 s and 1500000 bytes is then transcribed in the perform, and `transcript` or `transcript_error` is added to the result ([`AgentTools.performDownload`, `downloadResult`](../src/tools.ts)).
 
 Source: [`AgentTools.download` to `settleDownload`, `AgentTools.onEvent`](../src/tools.ts), [`requestLines`, `commandsLine`](../src/control.ts).
 
@@ -709,7 +717,7 @@ sequenceDiagram
 Notes:
 
 - A refused file ends the call with an error, and the refusal is posted to the control chat and logged ([`AgentTools.attachment`](../src/tools.ts), [`Control.refusedFile`](../src/control.ts)).
-- A video's preview is the first frame from `ffmpeg` and its duration comes from `ffprobe`; a GIF or WebP gets the fixed preview ([`attachmentMedia`, `messagePreview`, `videoFrame`, `videoDuration`](../src/tools.ts)).
+- A video's preview is the first frame from `ffmpeg` and its duration comes from `ffprobe`; a GIF or WebP gets the fixed preview ([`attachmentMedia`, `messagePreview`, `videoFrame`, `mediaDuration`](../src/tools.ts)).
 - A changed file fails the perform: ``file: PATH changed after the request.`` ([`AgentTools.fileToSend`](../src/tools.ts)).
 - `sndFileError` deletes the copy too, and the failure is posted to the control chat and logged ([`AgentTools.onEvent`](../src/tools.ts), [`startAgent`](../src/serve.ts), [`Control.fileNotSent`](../src/control.ts)).
 
@@ -1874,3 +1882,51 @@ Notes:
 - A live message deleted before it is sent passes nothing, unless the member sends another message first.
 
 Source: [`Session.onMessage`, `onUpdate`, `pass`, `keepLive`, `passLive`, `replyTo`, `prompt`, `deliver`, `bounded`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).
+
+---
+
+## 40. A voice message at arrival
+
+The server runs with `--audio http://127.0.0.1:8080,stt,tts`, and an owner approved all files of #15.
+
+```mermaid
+sequenceDiagram
+  participant A as Agent
+  participant T as AgentTools
+  participant W as ChatItemsWatch
+  participant C as Core
+  participant U as Audio API
+  participant D as Peer
+  A->>T: receive {chat: #35;15, wait: 300}
+  T->>W: collect #35;15 into arrived
+  T->>C: apiGetChat #35;15 initial 1
+  D->>C: voice message, item 30, file 7, 12 s
+  C->>T: newChatItems: onNewItems, transcribing gets file 7
+  C->>W: newChatItems: arrived, item 30 held
+  T->>C: apiGetChatItemInfo #35;15 30: no servers yet
+  C->>T: rcvFileDescrReady
+  T->>C: apiGetChatItemInfo #35;15 30: fileXftpServers
+  T->>C: apiGetUserServers USER: no unknown servers
+  T->>C: apiGetChat #35;15 count 0: the files approval
+  T->>C: apiGetChat #35;15 around 30 count 0
+  T->>C: apiReceiveFile 7 DATA/files/group-15/7.m4a
+  C->>T: rcvFileComplete
+  T->>U: POST /v1/audio/transcriptions, model stt, file 7.m4a
+  U-->>T: {"text": "Grüezi."}
+  T->>T: DATA/files/group-15/7.m4a.transcript.json
+  T->>C: apiGetChat #35;15 around 30 count 0
+  T->>T: file 7 leaves transcribing
+  T->>W: update: item 30
+  T->>C: apiChatItemsRead #35;15 [30]
+  T-->>A: {chat: #35;15, messages: [30, file {status: received, path, transcript: "Grüezi."}], more: 0}
+```
+
+Notes:
+
+- Without a files approval, in mode `host`, in a member chat, above 300 s or 1500000 bytes, with 20 voice files in transcription, or with the control chat lost, the message is delivered at once with its file `offered` ([`AgentTools.transcribesAtArrival`](../src/tools.ts)).
+- No servers 60 s after the arrival, unknown servers, a removed files approval or a failed download: the message is released without a transcript. Each of them but the removed approval is logged as `voice message of file N: ERROR` ([`AgentTools.transcribeOnArrival`](../src/tools.ts)).
+- A failure of the audio API is written as `transcript_error` and logged as `transcription of file N: ERROR`; the requests of the process are sent one at a time ([`transcript`, `writeTranscript`](../src/audio.ts)).
+- During the run, its download is shared with a `download` of the item, and the run is awaited there, so one transcription request is sent ([`AgentTools.downloadTo`, `performDownload`](../src/tools.ts)).
+- The item is held in the responses of `send` in the same way ([`AgentTools.sendResult`](../src/tools.ts)).
+
+Source: [`AgentTools.onNewItems` to `transcribeOnArrival`, `onEvent`, `isFinal`](../src/tools.ts), [`transcript` to `send`](../src/audio.ts), [`messageFile`](../src/messages.ts).
