@@ -29,6 +29,39 @@ Two pull requests:
 - PR 1, hooks: every waiting state that Claude Code reports to plugins is posted in the session's group, and every one that a hook can answer is answered there.
 - PR 2, a mod in the plugin (Q4): Claude Code no longer opens its usage menu by itself, so the session takes messages from the group at a usage limit.
 
+## Revision 3: the build, on master `20ee7cb14`
+
+The user's answers to revision 2: Q4 B, Q5 A, Q6 A. PR 2 is dropped; the ⛔ line names the usage menu (section 2.1).
+
+Case of 2026-11-21: Claude Code 2.1.311 asked in its terminal to read a public artifact from outside the organization, from 17:17:44 to 17:50:52 UTC, and the group showed nothing. In 2.1.311 the relay skips a prompt marked `localDisplayOnly` (`qt`, at byte 272516270), and the PermissionRequest hooks run beside the dialog unless the prompt is `personOnly` (`if(!S&&y.personOnly!==!0)`, at byte 272520909). The plugin had no PermissionRequest hook.
+
+PR 1 is delivered in two pull requests:
+```
+stage   content                                                            sections
+1       tool prompts from the PermissionRequest hook: subagents' cards,    1.2 rows 5 to 7; decisions 32 to 35, 39, 40
+        the reject-only card of artifacts, cards without the channel
+2       questions, plans, MCP links, the StopFailure and Notification      the rest of PR 1; Q5 A in REFERENCE.md
+        lines
+```
+
+Deviations from revision 2:
+```
+#    revision 2                                     the build                                          reason
+D1   POST /ask carries tool_input; the service      the hook makes the preview, the description and   input parsed once at its boundary; a body
+     makes the preview                              terminalOnly, cut to 15,000 characters            stays under the socket's 1 MiB limit
+D2   tool cards: /approve N or /reject N            master's /approve N, /approve N all or            master's tool cards since #8180; all covers
+                                                    /reject N (question S1)                           subagents' uses (REFERENCE.md)
+D3   /approve N of a reject-only card: unstated     reply "Action N is approved only in Claude        a hook's allow of that read is refused by
+                                                    Code's terminal." (question S2)                   Claude Code (fact 6)
+D4   AskUserQuestion and ExitPlanMode cards         stage 1: no card, no decision                     an allow without updatedInput is ignored
+                                                                                                      (fact 5); stage 2 adds their cards
+D5   card's first line uses description              without a description, the line ends with ":"     inputs without a description field
+```
+
+Questions of the build:
+- S1. Do hook cards keep master's `/approve N all`? Recommended: yes, as every tool card since #8180.
+- S2. Is the reply to `/approve N` of a reject-only card `Action N is approved only in Claude Code's terminal.`? Recommended: yes.
+
 ## 1. Goal
 
 Proposed roadmap line, first in "In your sessions" of `ROADMAP.md`, removed by PR 1: "When a session waits for you in Claude Code, its group says what it waits for, and you answer there."
