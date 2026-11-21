@@ -165,18 +165,16 @@ running() {
 }
 
 stop_process() {
-  local name=$1 secs=$2 pid
-  if ! running "$name"; then
-    rm -f "$state/$name.pid"
-    return
-  fi
-  pid=$(cat "$state/$name.pid")
-  kill "$pid" 2> /dev/null || true
+  local name=$1 secs=$2 target
+  [ -f "$state/$name.pid" ] || return 0
+  target=$(cat "$state/$name.pid")
+  [ "${3:-}" = group ] && target=-$target
+  kill -- "$target" 2> /dev/null || true
   for _ in $(seq "$secs"); do
-    kill -0 "$pid" 2> /dev/null || break
+    kill -0 -- "$target" 2> /dev/null || break
     sleep 1
   done
-  kill -9 "$pid" 2> /dev/null || true
+  kill -9 -- "$target" 2> /dev/null || true
   rm -f "$state/$name.pid"
 }
 
@@ -584,7 +582,7 @@ case "${1:-}" in
     done
     ;;
   stop)
-    stop_process app 10
+    stop_process app 10 group
     stop_process openbox 2
     stop_process xvfb 2
     stop_process wayland-input 2
