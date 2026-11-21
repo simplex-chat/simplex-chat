@@ -2008,4 +2008,4 @@ unconfirmed.
 Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case
 is its own client for the service's per-client limits, as for the mock's code limit. The script stops
 everything it started, deletes its folder when the cases pass, and keeps it with the logs, the ini and
-Playwright's results when they fail, printing the last `LOG_LINES` lines of each log (100).
+Playwright's results when they fail, printing the last 100 lines of each log.

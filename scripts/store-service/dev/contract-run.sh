@@ -28,7 +28,6 @@ MOCK_URL="http://127.0.0.1:8099"
 PAGE_URL="http://127.0.0.1:5173"
 TERMS_URL="http://127.0.0.1:8098"
 STARTUP_SECONDS=120
-LOG_LINES="${LOG_LINES:-100}"
 # The test suite's public issuer secret (issuerSecret in tests/Bots/StoreService/ConfigTests.hs), trusted
 # through [issuer] dev_keys, which the service accepts only on chain 31337. Never use it elsewhere.
 DEV_ISSUER_INDEX=999
@@ -186,7 +185,7 @@ cleanup() {
   if [ "$status" -eq 0 ]; then
     rm -rf "$RUN_DIR"
   else
-    tail -n "$LOG_LINES" "$RUN_DIR"/*.log >&2 || true
+    tail -n 100 "$RUN_DIR"/*.log >&2 || true
     echo "failed; logs in $RUN_DIR" >&2
   fi
 }
