@@ -1,19 +1,58 @@
 package chat.simplex.app
 
+import androidx.compose.ui.graphics.toAwtImage
+import chat.simplex.common.model.CIFile
+import chat.simplex.common.platform.appFilesDir
+import chat.simplex.common.platform.base64ToBitmap
+import chat.simplex.common.platform.chatResizeImage
+import chat.simplex.common.platform.getWallpaperFilePath
+import chat.simplex.common.ui.theme.ThemeWallpaper
 import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
+import chat.simplex.common.views.helpers.getLoadedImage
 import chat.simplex.common.views.helpers.imageSampleSize
+import chat.simplex.common.views.helpers.removeWallpaperFile
 import chat.simplex.common.views.helpers.sourceDimensionsWithinLimits
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.IOException
+import java.util.Base64
+import java.util.UUID
+import javax.imageio.IIOImage
 import javax.imageio.ImageIO
+import javax.imageio.ImageWriteParam
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
+import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class ImageDecodeBoundsTest {
+  private val receivedFiles = mutableListOf<File>()
+  private val resizeImage = chatResizeImage
+
+  @AfterTest
+  fun deleteReceivedFiles() {
+    receivedFiles.forEach { it.delete() }
+  }
+
+  @AfterTest
+  fun restoreImageResize() {
+    chatResizeImage = resizeImage
+  }
+
   @Test
   fun testSampleSizeKeepsSmallerSideAtTarget() {
     // At or below the target on both sides -> no subsampling
@@ -33,7 +72,8 @@ class ImageDecodeBoundsTest {
     // Smaller-side semantics alone would keep these at full resolution (sampleSize 1, since the narrow side is below
     // the target), decoding ~131 MB (thumbnail) / ~566 MB (full-screen) rasters. The decoded-pixel ceiling forces
     // extra subsampling so memory stays bounded, even though the narrow side then drops below the target.
-    assertEquals(2, imageSampleSize(16384, 1999, 1000)) // 16384x1999 (~32.7 MP) -> 8192x999 (~8 MP)
+    assertEquals(4, imageSampleSize(16384, 1999, 1000))
+    assertEquals(4, imageSampleSize(16384, 1139, 1000))
     assertEquals(4, imageSampleSize(16384, 8639, 4320)) // 16384x8639 (~141 MP) -> 4096x2159 (~8.8 MP)
     // A large near-square image is bounded to the ceiling rather than left at the smaller-side target
     assertEquals(4, imageSampleSize(16384, 16384, 4320)) // 8192x8192 (~67 MP) would exceed the ceiling -> 4096x4096
@@ -41,7 +81,9 @@ class ImageDecodeBoundsTest {
 
   @Test
   fun testSourceDimensionsRejectAbsurdSizes() {
-    assertTrue(sourceDimensionsWithinLimits(16384, 16384)) // generous upper bound, downsampled later
+    assertTrue(sourceDimensionsWithinLimits(8192, 8192))
+    assertTrue(sourceDimensionsWithinLimits(16384, 4096))
+    assertFalse(sourceDimensionsWithinLimits(16384, 4097))
     assertFalse(sourceDimensionsWithinLimits(16385, 1))
     assertFalse(sourceDimensionsWithinLimits(0, 1))
   }
@@ -50,6 +92,181 @@ class ImageDecodeBoundsTest {
   fun testDecodeRejectsImageExceedingSourceLimit() {
     // Rejected at the dimension check before any full-size allocation
     assertFailsWith<IOException> { decodeBoundedBufferedImage(encodePng(16385, 1), 4320) }
+  }
+
+  @Test
+  fun testDecodeRejectsProgressiveJpegOverSourcePixelLimit() {
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(progressiveJpegHeaders(8193, 8192), 1000) }
+    assertEquals(16, decodeBoundedBufferedImage(progressiveJpegHeaders(16, 16), 1000).width)
+  }
+
+  @Test
+  fun testDecodeRendersLimitedNumberOfProgressiveJpegScans() {
+    fun pixel(data: ByteArray) = decodeBoundedBufferedImage(data, 1000).raster.getSample(0, 0, 0)
+    val unchanged = pixel(progressiveJpegChangedByLastScan(0, changed = false))
+    assertTrue(pixel(progressiveJpegChangedByLastScan(0)) < unchanged)
+    assertTrue(pixel(progressiveJpegChangedByLastScan(9)) < unchanged)
+    assertEquals(unchanged, pixel(progressiveJpegChangedByLastScan(1000)))
+  }
+
+  @Test
+  fun testBase64ImageRendersLimitedNumberOfProgressiveJpegScans() {
+    fun pixel(data: ByteArray) = base64ToBitmap(Base64.getEncoder().encodeToString(data)).toAwtImage().getRGB(0, 0)
+    val unchanged = pixel(progressiveJpegChangedByLastScan(0, changed = false))
+    assertNotEquals(unchanged, pixel(progressiveJpegChangedByLastScan(15)))
+    assertEquals(unchanged, pixel(progressiveJpegChangedByLastScan(16)))
+  }
+
+  @Test
+  fun testBase64ImagesAreCachedWithinMemoryLimit() {
+    val images = (0..16).map { Base64.getEncoder().encodeToString(encodeMarkedPng(1023, 1023, it)) }
+    val first = base64ToBitmap(images[0])
+    val second = base64ToBitmap(images[1])
+    assertSame(first, base64ToBitmap(images[0]))
+    images.drop(2).forEach { base64ToBitmap(it) }
+    assertSame(first, base64ToBitmap(images[0]))
+    assertNotSame(second, base64ToBitmap(images[1]))
+  }
+
+  @Test
+  fun testBase64ImagesAreCachedUpTo1000() {
+    val images = (0..1000).map { Base64.getEncoder().encodeToString(encodeMarkedPng(1, 1, it)) }
+    val bitmaps = images.map { base64ToBitmap(it) }
+    assertSame(bitmaps[1], base64ToBitmap(images[1]))
+    assertNotSame(bitmaps[0], base64ToBitmap(images[0]))
+  }
+
+  @Test
+  fun testDecodeRejectsMultiScanJpegOverLowerPixelLimit() {
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(progressiveJpegHeaders(4321, 4320), 1000) }
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(sequentialJpegHeaders(4321, 4320, scanComponents = 1), 1000) }
+    assertEquals(1080, decodeBoundedBufferedImage(progressiveJpegHeaders(4320, 4320), 1000).width)
+    assertEquals(1080, decodeBoundedBufferedImage(sequentialJpegHeaders(4320, 4321, scanComponents = 3), 1000).width)
+  }
+
+  @Test
+  fun testDecodeAcceptsSequentialJpegWithMetadataSegmentsOverMultiScanLimit() {
+    val headers = sequentialJpegHeaders(4320, 4321, scanComponents = 3)
+    val metadata = jpeg(
+      *segment(0xE0, *"JFIF".map { it.code }.toIntArray(), 0, 1, 1, 0, 0, 1, 0, 1, 0, 0),
+      *segment(0xE1, *"Exif".map { it.code }.toIntArray(), 0, 0),
+      *segment(0xFE, *"comment".map { it.code }.toIntArray()),
+      *segment(0xDD, 0, 0),
+    )
+    assertEquals(1080, decodeBoundedBufferedImage(headers.copyOf(2) + metadata + headers.copyOfRange(2, headers.size), 1000).width)
+  }
+
+  @Test
+  fun testDecodeRejectsProgressiveJpegAfterTablesOnlyImage() {
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(jpeg(0xFF, 0xD8, 0xFF, 0xD9) + progressiveJpegHeaders(4321, 4320), 1000) }
+  }
+
+  @Test
+  fun testDecodeRejectsProgressiveJpegAfterReservedMarker() {
+    val frame = segment(0xC2, 8, 0x10, 0xE0, 0x10, 0xE1, 3, 1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0)
+    val data = jpeg(
+      0xFF, 0xD8,
+      0xFF, 0xF0, 0, frame.size + 2,
+      *frame,
+      *segment(0xDB, 0, *IntArray(64) { 1 }),
+      *segment(0xC4, 0, 1, *IntArray(16)),
+      *segment(0xDA, 3, 1, 0, 2, 0, 3, 0, 0, 0, 0),
+    )
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(data, 1000) }
+  }
+
+  @Test
+  fun testBase64InterlacedImageIsRenderedInFull() {
+    val image = base64ToBitmap(Base64.getEncoder().encodeToString(encodeInterlacedPng(8, 8, 0xFF0000)))
+    assertEquals(0xFFFF0000.toInt(), image.toAwtImage().getRGB(1, 1))
+  }
+
+  @Test
+  fun testDecodeRejectsGifWithTooManyMetadataBlocks() {
+    assertEquals(2, decodeBoundedBufferedImage(gifWithComment(1000), 4320).width)
+    assertFailsWith<IOException> { decodeBoundedBufferedImage(gifWithComment(1025), 4320) }
+  }
+
+  @Test
+  fun testDecodeAcceptsGifWithManyExtensionHeaders() {
+    for (extension in listOf(graphicControlExtension, plainTextExtension + byteArrayOf(0), applicationExtension + byteArrayOf(0))) {
+      assertEquals(2, decodeBoundedBufferedImage(gifWithExtensions(extension * 1025), 4320).width)
+    }
+  }
+
+  @Test
+  fun testDecodeRejectsGifWithTooManyExtensionDataBlocks() {
+    for (extension in listOf(plainTextExtension, applicationExtension)) {
+      assertFailsWith<IOException> { decodeBoundedBufferedImage(gifWithExtensions(extension + oneByteSubBlocks(1025) + byteArrayOf(0)), 4320) }
+    }
+  }
+
+  @Test
+  fun testBase64ImageIsDecodedAtPreviewSize() {
+    assertEquals(500, base64ToBitmap(Base64.getEncoder().encodeToString(encodePng(500, 500))).width)
+    assertEquals(540, base64ToBitmap(Base64.getEncoder().encodeToString(encodePng(4320, 4320))).width)
+  }
+
+  @Test
+  fun testReceivedImageIsLoadedAtChatSize() = runBlocking {
+    assertEquals(1200, getLoadedImage(receivedFile(encodePng(2400, 2400)))?.first?.width)
+  }
+
+  @Test
+  fun testReceivedImageOverSourcePixelLimitIsNotLoaded() = runBlocking {
+    assertNull(getLoadedImage(receivedFile(progressiveJpegHeaders(8193, 8192))))
+  }
+
+  @Test
+  fun testReceivedImagesLoadedTogetherAreAllLoaded() = runBlocking {
+    val files = (1..4).map { receivedFile(encodePng(1000 + it, 1000)) }
+    assertEquals(listOf(1001, 1002, 1003, 1004), files.map { async(Dispatchers.IO) { getLoadedImage(it)?.first?.width } }.awaitAll())
+  }
+
+  @Test
+  fun testReceivedImageIsNotDecodedForCancelledLoad() = runBlocking {
+    val file = receivedFile(encodePng(100, 100))
+    var loaded = false
+    launch {
+      cancel()
+      getLoadedImage(file)
+      loaded = true
+    }.join()
+    assertFalse(loaded)
+    assertEquals(100, getLoadedImage(file)?.first?.width)
+  }
+
+  @Test
+  fun testReceivedImageLoadedTogetherIsDecodedOnce() = runBlocking {
+    val file = receivedFile(encodePng(2400, 2400))
+    val images = (1..8).map { async(Dispatchers.IO) { getLoadedImage(file)?.first } }.awaitAll()
+    assertTrue(images.all { it != null && it === images[0] })
+  }
+
+  @Test
+  fun testReceivedImageThatCannotBeDecodedIsNotDecodedAgain() = runBlocking {
+    val file = receivedFile(encodePng(100, 100).copyOf(8) + ByteArray(32))
+    assertNull(getLoadedImage(file))
+    File(appFilesDir, assertNotNull(file.fileSource).filePath).writeBytes(encodePng(100, 100))
+    assertNull(getLoadedImage(file))
+  }
+
+  @Test
+  fun testWallpaperThatCannotBeDecodedIsNotImported() {
+    assertEquals(ThemeWallpaper(), ThemeWallpaper(image = "data:image/png;base64,AAAA").importFromString())
+  }
+
+  @Test
+  fun testImportedWallpaperKeepsItsSize() {
+    chatResizeImage = { buffer, _, _ -> Base64.getEncoder().encodeToString(ByteArray(buffer.remaining()).also { buffer.get(it) }) }
+    val imported = ThemeWallpaper(image = "data:image/png;base64," + Base64.getEncoder().encodeToString(encodePng(1500, 1000))).importFromString()
+    val fileName = assertNotNull(imported.imageFile)
+    try {
+      val saved = ImageIO.read(File(getWallpaperFilePath(fileName)))
+      assertEquals(1500 to 1000, saved.width to saved.height)
+    } finally {
+      removeWallpaperFile(fileName)
+    }
   }
 
   @Test
@@ -85,7 +302,91 @@ class ImageDecodeBoundsTest {
     assertFailsWith<IOException> { decodeBoundedBufferedImage(bmp, 4320) }
   }
 
+  private fun receivedFile(data: ByteArray): CIFile {
+    val name = "received-image-test-${UUID.randomUUID()}"
+    appFilesDir.mkdirs()
+    receivedFiles += File(appFilesDir, name).also { it.writeBytes(data) }
+    return CIFile.getSample(fileName = name, fileSize = data.size.toLong(), filePath = name)
+  }
+
+  private fun progressiveJpegHeaders(width: Int, height: Int): ByteArray =
+    jpeg(
+      0xFF, 0xD8,
+      *segment(0xDB, 0, *IntArray(64) { 1 }),
+      *segment(0xC2, 8, height shr 8, height and 0xFF, width shr 8, width and 0xFF, 3, 1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0),
+      *segment(0xC4, 0, 1, *IntArray(16)),
+      *segment(0xDA, 3, 1, 0, 2, 0, 3, 0, 0, 0, 0),
+    )
+
+  private fun sequentialJpegHeaders(width: Int, height: Int, scanComponents: Int): ByteArray =
+    jpeg(
+      0xFF, 0xD8,
+      *segment(0xDB, 0, *IntArray(64) { 1 }),
+      *segment(0xC0, 8, height shr 8, height and 0xFF, width shr 8, width and 0xFF, 3, 1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0),
+      *segment(0xC4, 0, 1, *IntArray(16)),
+      *segment(0xC4, 0x10, 1, *IntArray(16)),
+      *segment(0xDA, scanComponents, *(1..scanComponents).flatMap { listOf(it, 0) }.toIntArray(), 0, 63, 0),
+    )
+
+  private fun gifWithComment(subBlocks: Int): ByteArray =
+    gifWithExtensions(byteArrayOf(0x21, 0xFE.toByte()) + oneByteSubBlocks(subBlocks) + byteArrayOf(0))
+
+  private fun gifWithExtensions(extensions: ByteArray): ByteArray {
+    val gif = encodeImage(2, 2, "gif")
+    val flags = gif[10].toInt()
+    val headerSize = 13 + if (flags and 0x80 != 0) 3 shl ((flags and 7) + 1) else 0
+    return gif.copyOf(headerSize) + extensions + gif.copyOfRange(headerSize, gif.size)
+  }
+
+  private fun oneByteSubBlocks(count: Int): ByteArray = ByteArray(count * 2) { if (it % 2 == 0) 1 else 'x'.code.toByte() }
+
+  private val graphicControlExtension = byteArrayOf(0x21, 0xF9.toByte(), 4, 0, 0, 0, 0, 0)
+
+  private val plainTextExtension = byteArrayOf(0x21, 0x01, 12) + ByteArray(12)
+
+  private val applicationExtension = byteArrayOf(0x21, 0xFF.toByte(), 11) + "SIMPLEXT1.0".toByteArray()
+
+  private operator fun ByteArray.times(count: Int): ByteArray = ByteArray(size * count) { this[it % size] }
+
+  private fun progressiveJpegChangedByLastScan(scansBefore: Int, changed: Boolean = true): ByteArray =
+    jpeg(
+      0xFF, 0xD8,
+      *segment(0xDB, 0, *IntArray(64) { 16 }),
+      *segment(0xC2, 8, 0, 8, 0, 8, 1, 1, 0x11, 0),
+      *segment(0xC4, 0, 1, *IntArray(15), 0),
+      *segment(0xC4, 1, 1, *IntArray(15), 4),
+      *IntArray(scansBefore).flatMap { segment(0xDA, 1, 1, 0, 0, 0, 0).asList() }.toIntArray(),
+      *segment(0xDA, 1, 1, if (changed) 0x10 else 0, 0, 0, 0),
+      0xFF, 0xD9,
+    )
+
+  private fun segment(marker: Int, vararg data: Int): IntArray = intArrayOf(0xFF, marker, 0, data.size + 2, *data)
+
+  private fun jpeg(vararg bytes: Int): ByteArray = bytes.map { it.toByte() }.toByteArray()
+
   private fun encodePng(width: Int, height: Int): ByteArray = encodeImage(width, height, "png")
+
+  private fun encodeInterlacedPng(width: Int, height: Int, rgb: Int): ByteArray {
+    val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+    for (x in 0 until width) for (y in 0 until height) image.setRGB(x, y, rgb)
+    val writer = ImageIO.getImageWritersByFormatName("png").next()
+    return ByteArrayOutputStream().use { out ->
+      ImageIO.createImageOutputStream(out).use { stream ->
+        writer.output = stream
+        writer.write(null, IIOImage(image, null, null), writer.defaultWriteParam.apply { progressiveMode = ImageWriteParam.MODE_DEFAULT })
+      }
+      writer.dispose()
+      out.toByteArray()
+    }
+  }
+
+  private fun encodeMarkedPng(width: Int, height: Int, mark: Int): ByteArray {
+    val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB).also { it.setRGB(0, 0, mark) }
+    return ByteArrayOutputStream().use { out ->
+      ImageIO.write(image, "png", out)
+      out.toByteArray()
+    }
+  }
 
   private fun encodeImage(width: Int, height: Int, format: String): ByteArray {
     val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)

@@ -75,18 +75,18 @@ A dedicated `ComponentActivity` that hosts the call UI. Key responsibilities:
 - **Service binding** ([line 182](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L182)): Binds to `CallService` as a workaround for Android 12 background activity launch restrictions.
 - **CallActivityView composable** ([line 209](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L209)): Renders `ActiveCallView()` when permissions are granted and a call is active. Shows `CallPermissionsView` when permissions are needed. Shows `IncomingCallLockScreenAlert` for incoming calls on the lock screen.
 
-### 3.2 CallService.kt (207 lines)
+### 3.2 CallService.kt (218 lines)
 
 [`CallService.kt`](../../android/src/main/java/chat/simplex/app/CallService.kt)
 
 An Android foreground `Service` that keeps the call alive when the app is backgrounded:
 
-- **Foreground notification** ([line 131](../../android/src/main/java/chat/simplex/app/CallService.kt#L131)): Shows contact name (respecting `NotificationPreviewMode`), call type (audio/video), a chronometer when connected, and an "End call" action button.
-- **WakeLock** ([line 66](../../android/src/main/java/chat/simplex/app/CallService.kt#L66)): Acquires `PARTIAL_WAKE_LOCK` to prevent CPU sleep during calls.
-- **Notification channel** ([line 121](../../android/src/main/java/chat/simplex/app/CallService.kt#L121)): Creates `CALL_NOTIFICATION_CHANNEL_ID` with `IMPORTANCE_DEFAULT`.
-- **Foreground service type** ([line 100](../../android/src/main/java/chat/simplex/app/CallService.kt#L100)): Uses `MEDIA_PLAYBACK | MICROPHONE` (+ `CAMERA` for video) on API 30+, `REMOTE_MESSAGING` on API 34+ when no active call.
-- **Binder** ([line 158](../../android/src/main/java/chat/simplex/app/CallService.kt#L158)): `CallServiceBinder` allows `CallActivity` to call `updateNotification()` when call state changes.
-- **CallActionReceiver** ([line 170](../../android/src/main/java/chat/simplex/app/CallService.kt#L170)): `BroadcastReceiver` that handles the `EndCallAction` from the notification.
+- **Foreground notification** ([line 142](../../android/src/main/java/chat/simplex/app/CallService.kt#L142)): Shows contact name (respecting `NotificationPreviewMode`), call type (audio/video), a chronometer when connected, and an "End call" action button.
+- **WakeLock** ([line 73](../../android/src/main/java/chat/simplex/app/CallService.kt#L73)): Acquires `PARTIAL_WAKE_LOCK` to prevent CPU sleep during calls.
+- **Notification channel** ([line 132](../../android/src/main/java/chat/simplex/app/CallService.kt#L132)): Creates `CALL_NOTIFICATION_CHANNEL_ID` with `IMPORTANCE_DEFAULT`.
+- **Foreground service type** ([line 111](../../android/src/main/java/chat/simplex/app/CallService.kt#L111)): Uses `MEDIA_PLAYBACK | MICROPHONE` (+ `CAMERA` for video) on API 30+, `REMOTE_MESSAGING` on API 34+ when no active call.
+- **Binder** ([line 169](../../android/src/main/java/chat/simplex/app/CallService.kt#L169)): `CallServiceBinder` allows `CallActivity` to call `updateNotification()` when call state changes.
+- **CallActionReceiver** ([line 181](../../android/src/main/java/chat/simplex/app/CallService.kt#L181)): `BroadcastReceiver` that handles the `EndCallAction` from the notification.
 
 ### 3.3 CallView.android.kt (891 lines)
 

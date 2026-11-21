@@ -254,6 +254,7 @@ testFilesFoldersSendImage =
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile (bobFiles </> "test.jpg")
       dest `shouldBe` src
+      apiFixture "files/received-image" bob [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_get chat @2 count=1"]}
       alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, ""), Just "test.jpg")])
       bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, ""), Just "test.jpg")])
       -- deleting contact with files folder set should remove file

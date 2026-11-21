@@ -17,12 +17,18 @@ import chat.simplex.common.model.NotificationPreviewMode
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
 class CallService: Service() {
   private var wakeLock: PowerManager.WakeLock? = null
   private var notificationManager: NotificationManager? = null
   private var serviceNotification: Notification? = null
+  private val pictureScope = MainScope()
+  private var pictureJob: Job? = null
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     Log.d(TAG, "onStartCommand startId: $startId")
@@ -49,6 +55,7 @@ class CallService: Service() {
 
   override fun onDestroy() {
     Log.d(TAG, "Call service destroyed")
+    pictureScope.cancel()
     try {
       wakeLock?.let {
         while (it.isHeld) it.release() // release all, in case acquired more than once
@@ -85,11 +92,15 @@ class CallService: Service() {
     else
       call?.contact?.profile?.displayName ?: ""
     val text = generalGetString(if (call?.hasVideo == true) MR.strings.call_service_notification_video_call else MR.strings.call_service_notification_audio_call)
-    val image = call?.contact?.image
-    val largeIcon = if (image == null || previewMode == NotificationPreviewMode.HIDDEN.name)
-      BitmapFactory.decodeResource(resources, R.drawable.icon)
-    else
-      base64ToBitmap(image).asAndroidBitmap()
+    val image = call?.contact?.image?.takeIf { previewMode != NotificationPreviewMode.HIDDEN.name }
+    val picture = image?.let(::cachedBase64Bitmap)
+    if (image != null && picture == null && pictureJob?.isActive != true) {
+      pictureJob = pictureScope.launch {
+        base64ToBitmapInBackground(image)
+        updateNotification()
+      }
+    }
+    val largeIcon = picture?.asAndroidBitmap() ?: BitmapFactory.decodeResource(resources, R.drawable.icon)
 
     val ntf = createNotification(title, text, largeIcon, call?.connectedAt)
     serviceNotification = ntf

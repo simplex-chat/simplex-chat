@@ -1,6 +1,7 @@
 package chat.simplex.app
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
@@ -13,7 +14,9 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.use
+import chat.simplex.common.platform.base64ImageDecoder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.skia.Image
 import kotlin.math.roundToInt
 
@@ -35,7 +38,16 @@ private object InstantMotion : MotionDurationScale {
 
 fun renderScene(direction: LayoutDirection = LayoutDirection.Ltr, width: Int = 400, height: Int = 400, frames: Int = 1, content: @Composable () -> Unit): Image =
   ImageComposeScene(width = width, height = height, density = Density(1f), layoutDirection = direction, coroutineContext = Dispatchers.Unconfined + InstantMotion, content = content).use { scene ->
-    (0 until frames).map { scene.render(it * 1_000_000_000L) }.last()
+    repeat(frames) {
+      scene.render(it * 1_000_000_000L)
+      awaitDecodedPictures()
+    }
+    scene.render((frames - 1) * 1_000_000_000L)
   }
+
+fun awaitDecodedPictures() {
+  runBlocking(base64ImageDecoder) {}
+  Snapshot.sendApplyNotifications()
+}
 
 fun Placed.relativeTo(origin: Placed) = Placed(x - origin.x, y - origin.y, width, height)

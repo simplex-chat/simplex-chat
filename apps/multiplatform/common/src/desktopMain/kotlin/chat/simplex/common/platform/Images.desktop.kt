@@ -6,6 +6,8 @@ import androidx.compose.ui.unit.IntSize
 import boofcv.io.image.ConvertBufferedImage
 import boofcv.struct.image.GrayU8
 import chat.simplex.common.views.helpers.decodeBoundedBufferedImage
+import chat.simplex.common.views.helpers.gifMetadataWithinLimits
+import chat.simplex.common.views.helpers.imageSampleSize
 import chat.simplex.res.*
 import org.jetbrains.skia.Image
 import java.awt.RenderingHints
@@ -17,16 +19,16 @@ import java.net.URI
 import java.util.*
 import javax.imageio.*
 import javax.imageio.stream.ImageInputStream
+import javax.imageio.stream.MemoryCacheImageInputStream
 import javax.imageio.stream.MemoryCacheImageOutputStream
 
-private fun errorBitmap(): ImageBitmap =
-  ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="))).toComposeImageBitmap()
-
-private val base64BitmapCache = Collections.synchronizedMap(object : LinkedHashMap<String, ImageBitmap>(200, 0.75f, true) {
-  override fun removeEldestEntry(eldest: Map.Entry<String, ImageBitmap>): Boolean = size > 200
-})
+internal actual val errorImageBitmap: ImageBitmap by lazy {
+  ImageIO.read(MemoryCacheImageInputStream(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg==")))).toComposeImageBitmap()
+}
 
 private const val MAX_IMAGE_DIMENSION = 4320
+private const val MAX_PREVIEW_DIMENSION = 512
+private const val MAX_PROGRESSIVE_PASSES = 16
 
 private val receivedImageFormats = setOf("png", "jpeg", "gif")
 
@@ -34,30 +36,56 @@ internal fun receivedImageReader(stream: ImageInputStream): ImageReader =
   ImageIO.getImageReaders(stream).asSequence().firstOrNull { it.formatName.lowercase() in receivedImageFormats }
     ?: throw IOException("Unsupported image format")
 
-actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
-  base64BitmapCache[base64ImageString]?.let { return it }
+internal fun receivedImageReadParam(reader: ImageReader, sampleSize: Int): ImageReadParam =
+  reader.defaultReadParam.apply {
+    if (reader.formatName.lowercase() == "jpeg") setSourceProgressivePasses(0, MAX_PROGRESSIVE_PASSES)
+    if (sampleSize > 1) setSourceSubsampling(sampleSize, sampleSize, 0, 0)
+  }
+
+internal fun ByteArray.byteAt(pos: Int): Int = if (pos < size) this[pos].toInt() and 0xFF else 0
+
+actual fun base64ToBitmap(base64ImageString: String): ImageBitmap =
+  try {
+    base64BitmapCache.getOrPut(base64ImageString) {
+      try {
+        readBase64Image(base64ImageString) { reader, sampleSize, _ ->
+          reader.read(0, receivedImageReadParam(reader, sampleSize)).toComposeImageBitmap()
+        } ?: errorImageBitmap
+      } catch (e: Exception) {
+        Log.e(TAG, "base64ToBitmap error: $e")
+        errorImageBitmap
+      }
+    }
+  } catch (e: Error) {
+    Log.e(TAG, "base64ToBitmap error: $e")
+    errorImageBitmap
+  }
+
+actual fun base64BitmapSize(base64ImageString: String): IntSize? =
+  try {
+    readBase64Image(base64ImageString) { _, _, size -> size }
+  } catch (e: Throwable) {
+    null
+  }
+
+private fun <T : Any> readBase64Image(base64ImageString: String, read: (reader: ImageReader, sampleSize: Int, size: IntSize) -> T): T? {
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
-  return try {
-    val bytes = Base64.getMimeDecoder().decode(imageString)
-    val stream = ImageIO.createImageInputStream(ByteArrayInputStream(bytes))
+  val bytes = Base64.getMimeDecoder().decode(imageString)
+  if (ImageFileType.GIF.matches(bytes) && !gifMetadataWithinLimits(bytes)) return null
+  return MemoryCacheImageInputStream(ByteArrayInputStream(bytes)).use { stream ->
     val reader = receivedImageReader(stream)
-    reader.setInput(stream)
-    val width = reader.getWidth(0)
-    val height = reader.getHeight(0)
-    if (width <= 0 || height <= 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || height > width * 256) {
+    try {
+      reader.setInput(stream)
+      val width = reader.getWidth(0)
+      val height = reader.getHeight(0)
+      if (width <= 0 || height <= 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || height > width * 256) return null
+      val sampleSize = imageSampleSize(width, height, MAX_PREVIEW_DIMENSION)
+      read(reader, sampleSize, IntSize((width + sampleSize - 1) / sampleSize, (height + sampleSize - 1) / sampleSize))
+    } finally {
       reader.dispose()
-      return errorBitmap()
     }
-    val image = reader.read(0)
-    reader.dispose()
-    image.toComposeImageBitmap().also {
-      base64BitmapCache[base64ImageString] = it
-    }
-  } catch (e: Throwable) {
-    Log.e(TAG, "base64ToBitmap error: $e")
-    errorBitmap()
   }
 }
 
@@ -129,6 +157,8 @@ actual fun ImageBitmap.hasAlpha(): Boolean {
   }
   return false
 }
+
+actual fun ImageBitmap.byteCount(): Long = width.toLong() * height * 4
 
 actual fun ImageBitmap.addLogo(size: Float): ImageBitmap {
   val radius = (width * size).toInt()

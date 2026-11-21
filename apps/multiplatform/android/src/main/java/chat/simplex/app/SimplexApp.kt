@@ -2,6 +2,7 @@ package chat.simplex.app
 
 import android.annotation.SuppressLint
 import android.app.*
+import android.content.ComponentCallbacks2
 import android.content.Context
 import chat.simplex.common.platform.Log
 import android.content.Intent
@@ -89,6 +90,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
       initChatControllerOnStart()
     }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
+  }
+
+  override fun onTrimMemory(level: Int) {
+    super.onTrimMemory(level)
+    if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) clearImageCaches()
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {

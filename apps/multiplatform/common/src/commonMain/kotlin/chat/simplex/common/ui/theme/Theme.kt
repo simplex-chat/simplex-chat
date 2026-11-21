@@ -271,7 +271,7 @@ data class ThemeWallpaper (
    if (preset == null && image != null) {
      // Need to save image from string and to save its path
      try {
-       val parsed = base64ToBitmap(image)
+       val parsed = decodeBase64Image(image.substringAfter("base64,"), 4320) ?: error("Unable to decode the image")
        val filename = saveWallpaperFile(parsed)
        copy(image = null, imageFile = filename)
      } catch (e: Exception) {

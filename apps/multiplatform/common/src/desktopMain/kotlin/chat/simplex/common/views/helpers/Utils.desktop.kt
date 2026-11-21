@@ -17,8 +17,12 @@ import java.io.IOException
 import java.net.URI
 import java.util.*
 import javax.imageio.ImageIO
+import javax.imageio.stream.MemoryCacheImageInputStream
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withContext
 
 private val bStyle = SpanStyle(fontWeight = FontWeight.Bold)
 private val iStyle = SpanStyle(fontStyle = FontStyle.Italic)
@@ -29,9 +33,9 @@ private const val MAX_IMAGE_DIMENSION = 4320
 private const val MAX_THUMBNAIL_DIMENSION = 1000
 // Source images larger than this on either side are rejected (bounds the decoder's per-scanline buffer)
 private const val MAX_SOURCE_IMAGE_DIMENSION = 16384
-// Hard ceiling on the decoded raster in pixels, independent of aspect ratio, so an extreme-aspect image within the
-// source cap can't blow up memory. Sized to the full-screen target's area (~18.7 MP -> ~75 MB at 4 bytes/px).
-private const val MAX_DECODED_PIXELS = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
+private const val MAX_SOURCE_IMAGE_PIXELS = 8192 * 8192
+private const val MAX_MULTI_SCAN_SOURCE_PIXELS = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
+private const val MAX_GIF_METADATA_SUB_BLOCKS = 1024
 private fun fontStyle(color: String) =
   SpanStyle(color = Color(color.replace("#", "ff").toLongOrNull(16) ?: Color.White.toArgb().toLong()))
 
@@ -129,8 +133,16 @@ private val loadedImageCache = Collections.synchronizedMap(object : LinkedHashMa
   override fun removeEldestEntry(eldest: Map.Entry<String, Pair<ImageBitmap, ByteArray>>): Boolean = size > 30
 })
 
+private val undecodableImageFiles = Collections.newSetFromMap(Collections.synchronizedMap(object : LinkedHashMap<String, Boolean>() {
+  override fun removeEldestEntry(eldest: Map.Entry<String, Boolean>): Boolean = size > 1000
+}))
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private val imageDecoder = Dispatchers.IO.limitedParallelism(1)
+
 actual fun clearImageCaches() {
   loadedImageCache.clear()
+  undecodableImageFiles.clear()
 }
 
 actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
@@ -140,14 +152,18 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
     filePath = getLoadedFilePath(file)
   }
   return if (filePath != null) {
-    loadedImageCache[filePath] ?: try {
-      val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
-      if (!isImageFile(data)) return null
-      val bitmap = decodeBoundedImage(data, MAX_THUMBNAIL_DIMENSION)
-      (bitmap to data).also { loadedImageCache[filePath] = it }
-    } catch (e: Throwable) {
-      Log.e(TAG, "Unable to load image: " + e.stackTraceToString())
-      null
+    loadedImageCache[filePath] ?: withContext(imageDecoder) {
+      if (filePath in undecodableImageFiles) return@withContext null
+      loadedImageCache[filePath] ?: try {
+        val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
+        if (!isImageFile(data)) return@withContext null
+        val bitmap = decodeBoundedImage(data, MAX_THUMBNAIL_DIMENSION)
+        (bitmap to data).also { loadedImageCache[filePath] = it }
+      } catch (e: Throwable) {
+        Log.e(TAG, "Unable to load image: " + e.stackTraceToString())
+        undecodableImageFiles += filePath
+        null
+      }
     }
   } else {
     null
@@ -190,19 +206,17 @@ private fun decodeBoundedImage(data: ByteArray, maxDimension: Int): ImageBitmap 
 // Decodes downloaded/auto-rendered image bytes with bounded memory: rejects absurd source dimensions,
 // then downsamples (like Android's inSampleSize) so even large legitimate images decode to a bounded raster.
 internal fun decodeBoundedBufferedImage(data: ByteArray, maxDimension: Int): BufferedImage {
-  val stream = ImageIO.createImageInputStream(ByteArrayInputStream(data))
-    ?: throw IOException("Unsupported image format")
-  stream.use {
+  if (ImageFileType.GIF.matches(data) && !gifMetadataWithinLimits(data)) throw IOException("Image metadata exceeds limit")
+  MemoryCacheImageInputStream(ByteArrayInputStream(data)).use {
     val reader = receivedImageReader(it)
     try {
       reader.input = it
       val width = reader.getWidth(0)
       val height = reader.getHeight(0)
-      if (!sourceDimensionsWithinLimits(width, height)) throw IOException("Image dimensions exceed limit")
-      val sampleSize = imageSampleSize(width, height, maxDimension)
-      val param = reader.defaultReadParam.apply {
-        if (sampleSize > 1) setSourceSubsampling(sampleSize, sampleSize, 0, 0)
+      if (!sourceDimensionsWithinLimits(width, height) || (jpegHasMultipleScans(data) && width * height > MAX_MULTI_SCAN_SOURCE_PIXELS)) {
+        throw IOException("Image dimensions exceed limit")
       }
+      val param = receivedImageReadParam(reader, imageSampleSize(width, height, maxDimension))
       return reader.read(0, param) ?: throw IOException("Unable to decode image")
     } finally {
       reader.dispose()
@@ -211,24 +225,50 @@ internal fun decodeBoundedBufferedImage(data: ByteArray, maxDimension: Int): Buf
 }
 
 internal fun sourceDimensionsWithinLimits(width: Int, height: Int): Boolean =
-  width in 1..MAX_SOURCE_IMAGE_DIMENSION && height in 1..MAX_SOURCE_IMAGE_DIMENSION
+  width in 1..MAX_SOURCE_IMAGE_DIMENSION && height in 1..MAX_SOURCE_IMAGE_DIMENSION && width * height <= MAX_SOURCE_IMAGE_PIXELS
 
-// Power-of-two subsampling factor for bounded decoding. First keeps the smaller side at or above maxDimension
-// (mirroring Android's calculateInSampleSize) so portrait images stay sharp instead of being over-subsampled by a
-// larger-side cap; then bounds the total decoded pixels so an extreme aspect ratio can't exceed the memory ceiling.
-internal fun imageSampleSize(width: Int, height: Int, maxDimension: Int): Int {
-  var sampleSize = 1
-  if (height > maxDimension || width > maxDimension) {
-    val halfHeight = height / 2
-    val halfWidth = width / 2
-    while (halfHeight / sampleSize >= maxDimension && halfWidth / sampleSize >= maxDimension) {
-      sampleSize *= 2
+internal fun gifMetadataWithinLimits(data: ByteArray): Boolean {
+  var subBlocks = 0
+  fun afterSubBlocks(start: Int): Int {
+    var pos = start
+    while (data.byteAt(pos) != 0 && subBlocks <= MAX_GIF_METADATA_SUB_BLOCKS) {
+      subBlocks++
+      pos += 1 + data.byteAt(pos)
+    }
+    return pos + 1
+  }
+  val flags = data.byteAt(10)
+  var pos = 13 + if (flags and 0x80 != 0) 3 shl ((flags and 7) + 1) else 0
+  while (data.byteAt(pos) == 0x21 && subBlocks <= MAX_GIF_METADATA_SUB_BLOCKS) {
+    pos = when (data.byteAt(pos + 1)) {
+      0xF9 -> pos + 8
+      0x01 -> afterSubBlocks(pos + 15)
+      0xFF -> afterSubBlocks(pos + 3 + data.byteAt(pos + 2))
+      else -> afterSubBlocks(pos + 2)
     }
   }
-  while ((width / sampleSize) * (height / sampleSize) > MAX_DECODED_PIXELS) {
-    sampleSize *= 2
+  return subBlocks <= MAX_GIF_METADATA_SUB_BLOCKS
+}
+
+private fun jpegHasMultipleScans(data: ByteArray): Boolean {
+  if (data.byteAt(0) != 0xFF || data.byteAt(1) != 0xD8) return false
+  var components = 0
+  var pos = 2
+  while (pos + 1 < data.size) {
+    val marker = data.byteAt(pos + 1)
+    if (data.byteAt(pos) != 0xFF || marker == 0xFF || marker == 0) {
+      pos++
+      continue
+    }
+    when (marker) {
+      0xC0, 0xC1 -> components = data.byteAt(pos + 9)
+      0xDA -> return data.byteAt(pos + 4) < components
+      0xC4, 0xCC, 0xDB, 0xDC, 0xDD, 0xFE, in 0xE0..0xEF -> {}
+      else -> return true
+    }
+    pos += 2 + (data.byteAt(pos + 2) shl 8 or data.byteAt(pos + 3))
   }
-  return sampleSize
+  return false
 }
 
 // LALAL implement to support animated drawable
