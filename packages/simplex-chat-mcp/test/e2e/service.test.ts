@@ -8,7 +8,7 @@ import {ServiceClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
 import {hubFolder, readSessionFile, sessionFolder} from "../../src/files"
 import {Hub} from "../../src/hub"
-import {sessionStart, turn} from "../../src/hook"
+import {ask, sessionStart, turn} from "../../src/hook"
 import {findMainGroup} from "../../src/main-group"
 import {resetOwners} from "../../src/owner"
 import {AttachLine, OwnerState, SessionReply, StatusReply, TitleReply} from "../../src/protocol"
@@ -589,6 +589,16 @@ test("a session keeps its group for hooks with a new ID from its process, relays
   await approvedAll
   await until(() => attached.some(({permission}) => permission?.requestId === "fghij"))
   expect(attached.filter(({tools}) => tools !== undefined)).toEqual([{tools: [{tool: "Bash", approvedBy: "Alice"}]}])
+
+  const relayed = card("I want to use `Edit`: `Edit a file`")
+  await client.request("POST", "/permission", {id: one, requestId: "kmnop", toolName: "Edit", description: "Edit a file", inputPreview: "a.txt"})
+  expect(await ask(JSON.stringify({session_id: one, tool_name: "Edit", tool_input: {file_path: "a.txt"}}), env, client)).toBeUndefined()
+  await ownerSends(`/approve ${cardNumber(await relayed)}`)
+  await until(() => attached.some(({permission}) => permission?.requestId === "kmnop"))
+  const subagentCard = card("Subagent `reviewer` asks to use `Write`: `Write the notes`")
+  const asked = ask(JSON.stringify({session_id: one, tool_name: "Write", tool_input: {file_path: "notes.md", content: "x", description: "Write the notes"}, agent_id: "a1", agent_type: "reviewer"}), env, client)
+  await ownerSends(`/approve ${cardNumber(await subagentCard)}`)
+  expect(await asked).toEqual({hookSpecificOutput: {hookEventName: "PermissionRequest", decision: {behavior: "allow"}}})
 
   const address = await bob.chat.apiCreateUserAddress(bob.user.userId)
   const requested = bob.chat.wait("receivedContactRequest", 60_000)

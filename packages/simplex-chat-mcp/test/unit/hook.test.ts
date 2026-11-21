@@ -2,7 +2,7 @@ import {appendFileSync, mkdirSync, mkdtempSync, rmSync, truncateSync, writeFileS
 import {tmpdir} from "os"
 import {join} from "path"
 import {ServiceClient} from "../../src/client"
-import {HookDeps, sessionStart, turn} from "../../src/hook"
+import {HookDeps, ask, sessionStart, turn} from "../../src/hook"
 import {linkText, resetOwners, resetOwnersText, showLink} from "../../src/owner"
 import {qrCodeText} from "../../src/qr"
 import {SocketError} from "../../src/socket"
@@ -129,6 +129,68 @@ describe("SessionStart hook", () => {
   })
 })
 
+describe("PermissionRequest hook", () => {
+  const id = "11111111-1111-4111-8111-111111111111"
+
+  function askClient(lines: unknown[]) {
+    const requests: unknown[] = []
+    const client = {
+      ensureService: async () => undefined,
+      stream: async (route: string, body: unknown, onLine: (line: unknown) => void) => {
+        requests.push({route, body})
+        lines.forEach(onLine)
+      },
+    } as unknown as HookDeps["client"]
+    return {client, requests}
+  }
+
+  const prompt = (tool: string, fields: object, extra: object = {}) => JSON.stringify({session_id: id, hook_event_name: "PermissionRequest", tool_name: tool, tool_input: fields, ...extra})
+
+  it("sends a tool prompt with its preview to the service and prints the decision of the stream", async () => {
+    const deny = {behavior: "deny", message: "Alice rejected this in the SimpleX group."}
+    const {client, requests} = askClient([{decision: deny}])
+    const bash = prompt("Bash", {command: "npm test", description: "Run the unit tests"}, {agent_id: "a1", agent_type: "reviewer"})
+    expect(await ask(bash, {CLAUDE_PID: "4321"}, client, 5)).toEqual({hookSpecificOutput: {hookEventName: "PermissionRequest", decision: deny}})
+    await ask(prompt("Artifact", {action: "read", url: "https://claude.ai/artifact/abc"}), {}, client, 6)
+    expect(requests).toEqual([
+      {route: "/ask", body: {id, pid: 4321, at: 5, kind: "tool", tool: "Bash", description: "Run the unit tests", preview: "npm test", agent: "reviewer"}},
+      {route: "/ask", body: {id, at: 6, kind: "tool", tool: "Artifact", description: "", preview: "action: read\nurl: https://claude.ai/artifact/abc", terminalOnly: true}},
+    ])
+  })
+
+  it("sends Claude's question, the plan and an MCP server's link, and answers them with the input, the answers or the link's action", async () => {
+    const questions = [{question: "Which library?", header: "Library", options: [{label: "date-fns", description: "Small"}, {label: "Luxon"}], multiSelect: false}]
+    const answered = askClient([{decision: {behavior: "allow", answers: {"Which library?": "date-fns"}}}])
+    expect(await ask(prompt("AskUserQuestion", {questions}), {}, answered.client, 1)).toEqual({hookSpecificOutput: {hookEventName: "PermissionRequest", decision: {behavior: "allow", updatedInput: {questions, answers: {"Which library?": "date-fns"}}}}})
+    expect(answered.requests).toEqual([{route: "/ask", body: {id, at: 1, kind: "question", questions: [{question: "Which library?", options: [{label: "date-fns", description: "Small"}, {label: "Luxon", description: ""}], multiSelect: false}]}}])
+    const approved = askClient([{decision: {behavior: "allow"}}])
+    const plan = {plan: "## Retry uploads", planFilePath: "/p/plan.md"}
+    expect(await ask(prompt("ExitPlanMode", plan), {}, approved.client, 2)).toEqual({hookSpecificOutput: {hookEventName: "PermissionRequest", decision: {behavior: "allow", updatedInput: plan}}})
+    const link = JSON.stringify({session_id: id, hook_event_name: "Elicitation", mcp_server_name: "tracker", mode: "url", message: "Sign in to continue.", url: "https://tracker.example/oauth"})
+    expect(await ask(link, {}, approved.client, 3)).toEqual({hookSpecificOutput: {hookEventName: "Elicitation", action: "accept"}})
+    expect(approved.requests).toEqual([
+      {route: "/ask", body: {id, at: 2, kind: "plan", plan: "## Retry uploads"}},
+      {route: "/ask", body: {id, at: 3, kind: "link", server: "tracker", message: "Sign in to continue.", url: "https://tracker.example/oauth"}},
+    ])
+    const declined = askClient([{decision: {behavior: "deny", message: "Alice rejected this in the SimpleX group."}}])
+    expect(await ask(link, {}, declined.client)).toEqual({hookSpecificOutput: {hookEventName: "Elicitation", action: "decline"}})
+  })
+
+  it("prints nothing without a decision, in a run that is not interactive, for the plugin's tools, a question without questions, a subagent's question, plan and artifact, a form, and on a failure", async () => {
+    const errors = captureStderr()
+    const {client, requests} = askClient([{}])
+    expect(await ask(prompt("Bash", {command: "ls"}), {}, client)).toBeUndefined()
+    expect(await ask(prompt("Bash", {command: "ls"}), {CLAUDE_CODE_ENTRYPOINT: "sdk-ts"}, client)).toBeUndefined()
+    for (const tool of ["mcp__plugin_simplex_simplex__send", "AskUserQuestion"]) expect(await ask(prompt(tool, {}), {}, client)).toBeUndefined()
+    const subagent = {agent_id: "a1", agent_type: "reviewer"}
+    for (const [tool, fields] of [["WebFetch", {url: "https://claude.ai/code/artifact/abc"}], ["ExitPlanMode", {plan: "Plan"}]] as const) expect(await ask(prompt(tool, fields, subagent), {}, client)).toBeUndefined()
+    expect(await ask(JSON.stringify({session_id: id, hook_event_name: "Elicitation", mcp_server_name: "tracker", mode: "form", message: "Your name"}), {}, client)).toBeUndefined()
+    expect(requests).toHaveLength(1)
+    expect(await ask("not json", {}, client)).toBeUndefined()
+    expect(errors).toEqual([expect.stringMatching(/^SimpleX MCP ask: /)])
+  })
+})
+
 describe("turn hooks", () => {
   const id = "11111111-1111-4111-8111-111111111111"
 
@@ -161,6 +223,31 @@ describe("turn hooks", () => {
     const stopped = {ensureService: async () => Promise.reject(Object.assign(new Error("connect ENOENT"), {code: "ENOENT"}))} as unknown as HookDeps["client"]
     expect(await turn(JSON.stringify({session_id: id, prompt: "x"}), {}, stopped)).toEqual({})
     expect(errors).toEqual(["SimpleX MCP turn: connect ENOENT"])
+  })
+
+  it("pass a failed turn without an answer, with the automatic continue noted after its error entry or the usage menu open in Claude Code's record, and a notification", async () => {
+    const folder = mkdtempSync(join(tmpdir(), "simplex-mcp-failure-"))
+    try {
+      const transcript = join(folder, "session.jsonl")
+      const limit = "You've hit your weekly limit · resets Nov 18, 3am (UTC)"
+      const errorEntry = {type: "assistant", isApiErrorMessage: true, message: {model: "<synthetic>", content: [{type: "text", text: limit}]}}
+      writeFileSync(transcript, `${JSON.stringify(errorEntry)}\n${JSON.stringify({type: "system", subtype: "informational", content: "Usage limit reached · continuing automatically at 1am · esc to cancel"})}\n`)
+      mkdirSync(join(folder, "sessions"))
+      writeFileSync(join(folder, "sessions", "4321.json"), JSON.stringify({status: "waiting", waitingFor: "dialog open"}))
+      const {client, requests} = turnClient()
+      const env = {CLAUDE_PID: "4321", CLAUDE_CONFIG_DIR: folder}
+      const failed = (path: string) => turn(JSON.stringify({session_id: id, hook_event_name: "StopFailure", error: "rate_limit", transcript_path: path, last_assistant_message: limit}), env, client, 0, 1, 1)
+      await failed(transcript)
+      await failed(join(folder, "missing.jsonl"))
+      await turn(JSON.stringify({session_id: id, hook_event_name: "Notification", notification_type: "permission_prompt", message: "Claude needs your permission"}), {}, client, 0, 1, 1)
+      expect(requests).toEqual([
+        {method: "POST", route: "/turn", body: {id, pid: 4321, at: 1, failure: {error: "rate_limit", text: limit, autoContinue: true, menu: false}}},
+        {method: "POST", route: "/turn", body: {id, pid: 4321, at: 1, failure: {error: "rate_limit", text: limit, autoContinue: false, menu: true}}},
+        {method: "POST", route: "/turn", body: {id, at: 1, waiting: {kind: "permission_prompt", text: "Claude needs your permission"}}},
+      ])
+    } finally {
+      rmSync(folder, {recursive: true, force: true})
+    }
   })
 
   it("pass the model of a Stop hook's answer from Claude's last entry in the tail of the transcript, after that entry is written, and no model for another answer, a synthetic message or a missing transcript", async () => {

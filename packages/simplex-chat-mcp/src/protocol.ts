@@ -55,6 +55,31 @@ export interface PermissionRequest {
   inputPreview: string
 }
 
+// spec: spec/architecture.md#protocol-askrequest
+export type AskRequest = {id: string; pid?: number; at?: number} & Prompt
+
+// spec: spec/architecture.md#protocol-askrequest
+export type Prompt =
+  | {kind: "tool"; tool: string; description: string; preview: string; agent?: string; terminalOnly?: boolean}
+  | {kind: "question"; questions: Question[]}
+  | {kind: "plan"; plan: string}
+  | {kind: "link"; server: string; message: string; url: string}
+
+// spec: spec/architecture.md#protocol-askrequest
+export interface Question {
+  question: string
+  options: {label: string; description: string}[]
+  multiSelect: boolean
+}
+
+// spec: spec/architecture.md#protocol-askrequest
+export type Decision = {behavior: "allow"; answers?: {[question: string]: string}} | {behavior: "deny"; message: string}
+
+// spec: spec/architecture.md#protocol-askrequest
+export interface AskLine {
+  decision?: Decision
+}
+
 // spec: spec/architecture.md#protocol-permissionrequest
 export interface TurnRequest {
   id: string
@@ -73,9 +98,25 @@ export interface TurnRequest {
   switched?: boolean
   limits?: Limits
   statusLine?: boolean
+  failure?: Failure
+  waiting?: Waiting
   agent?: AgentEvent
   task?: TaskEnd
   workflow?: WorkflowRun
+}
+
+// spec: spec/architecture.md#protocol-failure
+export interface Failure {
+  error: string
+  text: string
+  autoContinue: boolean
+  menu: boolean
+}
+
+// spec: spec/architecture.md#protocol-failure
+export interface Waiting {
+  kind: string
+  text: string
 }
 
 // spec: spec/architecture.md#protocol-agentevent
