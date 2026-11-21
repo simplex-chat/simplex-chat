@@ -11,61 +11,6 @@ import SwiftUI
 import SimpleXChat
 
 struct GroupLinkView: View {
-    var groupId: Int64
-    @Binding var groupLink: GroupLink?
-    @Binding var groupLinkMemberRole: GroupMemberRole
-    var showTitle: Bool = false
-    var creatingGroup: Bool = false
-    var isChannel: Bool = false
-    var groupInfo: GroupInfo? = nil
-    var composeState: Binding<ComposeState>? = nil
-    var linkCreatedCb: (() -> Void)? = nil
-    @State private var creatingLink = false
-    @State private var shouldCreate = true
-
-    var body: some View {
-        GroupLinkLayout(
-            groupId: groupId,
-            groupLink: $groupLink,
-            groupLinkMemberRole: $groupLinkMemberRole,
-            showTitle: showTitle,
-            creatingGroup: creatingGroup,
-            isChannel: isChannel,
-            groupInfo: groupInfo,
-            composeState: composeState,
-            linkCreatedCb: linkCreatedCb,
-            creatingLink: $creatingLink,
-            createGroupLink: createGroupLink
-        )
-            .onAppear {
-                if groupLink == nil && !creatingLink && shouldCreate {
-                    createGroupLink()
-                }
-                shouldCreate = false
-            }
-    }
-
-    private func createGroupLink() {
-        Task {
-            do {
-                creatingLink = true
-                let gLink = try await apiCreateGroupLink(groupId)
-                await MainActor.run {
-                    creatingLink = false
-                    groupLink = gLink
-                }
-            } catch let error {
-                logger.error("GroupLinkView apiCreateGroupLink: \(responseError(error))")
-                await MainActor.run {
-                    creatingLink = false
-                    showErrorAlert(error, NSLocalizedString("Error creating group link", comment: ""))
-                }
-            }
-        }
-    }
-}
-
-struct GroupLinkLayout: View {
     @EnvironmentObject var theme: AppTheme
     var groupId: Int64
     @Binding var groupLink: GroupLink?
@@ -76,11 +21,11 @@ struct GroupLinkLayout: View {
     var groupInfo: GroupInfo? = nil
     var composeState: Binding<ComposeState>? = nil
     var linkCreatedCb: (() -> Void)? = nil
-    @Binding var creatingLink: Bool
-    let createGroupLink: () -> Void
     @State private var showSharePicker = false
     @State private var showShortLink = true
+    @State private var creatingLink = false
     @State private var alert: GroupLinkAlert?
+    @State private var shouldCreate = true
 
     private enum GroupLinkAlert: Identifiable {
         case deleteLink
@@ -216,11 +161,36 @@ struct GroupLinkLayout: View {
                     }
                 }
             }
+            .onAppear {
+                if groupLink == nil && !creatingLink && shouldCreate {
+                    createGroupLink()
+                }
+                shouldCreate = false
+            }
         }
         .modifier(ThemedBackground(grouped: true))
         .sheet(isPresented: $showSharePicker) {
             if let gInfo = groupInfo {
                 shareChannelPicker(groupInfo: gInfo, composeState: composeState)
+            }
+        }
+    }
+
+    private func createGroupLink() {
+        Task {
+            do {
+                creatingLink = true
+                let gLink = try await apiCreateGroupLink(groupId)
+                await MainActor.run {
+                    creatingLink = false
+                    groupLink = gLink
+                }
+            } catch let error {
+                logger.error("GroupLinkView apiCreateGroupLink: \(responseError(error))")
+                await MainActor.run {
+                    creatingLink = false
+                    showErrorAlert(error, NSLocalizedString("Error creating group link", comment: ""))
+                }
             }
         }
     }
@@ -280,8 +250,8 @@ struct GroupLinkView_Previews: PreviewProvider {
         @State var noGroupLink: GroupLink? = nil
 
         return Group {
-            GroupLinkLayout(groupId: 1, groupLink: $groupLink, groupLinkMemberRole: Binding.constant(.member), creatingLink: Binding.constant(false), createGroupLink: {})
-            GroupLinkLayout(groupId: 1, groupLink: $noGroupLink, groupLinkMemberRole: Binding.constant(.member), creatingLink: Binding.constant(false), createGroupLink: {})
+            GroupLinkView(groupId: 1, groupLink: $groupLink, groupLinkMemberRole: Binding.constant(.member))
+            GroupLinkView(groupId: 1, groupLink: $noGroupLink, groupLinkMemberRole: Binding.constant(.member))
         }
     }
 }
