@@ -100,8 +100,11 @@ main = do
         describe "Store service Postgres schema dump" $
           postgresSchemaDumpTest
             storeServiceSchemaMigrations
-            [ "20260918_badge_group_ops",
+            [ -- the down restores the code index as not unique
+              "20260918_badge_group_ops",
+              -- the columns are re-added last
               "20261012_badge_subscriptions",
+              -- the column is re-added last
               "20261118_invoice_product"
             ]
             serviceSchemaDumpDBOpts
@@ -112,10 +115,15 @@ main = do
         describe "Store service schema dump" $
           sqliteSchemaDumpTest
             storeServiceSchemaMigrations
-            [ "20260915_badge_service_schema",
+            [ -- sqlite_sequence stays once an AUTOINCREMENT table exists
+              "20260915_badge_service_schema",
+              -- the down restores the code index as not unique
               "20260918_badge_group_ops",
+              -- the index is re-created last
               "20260925_badge_store_receipts",
+              -- the columns are re-added last
               "20261012_badge_subscriptions",
+              -- the column is re-added last, with DEFAULT ''
               "20261118_invoice_product"
             ]
             serviceSchemaDumpDBOpts

@@ -19,9 +19,10 @@ import Simplex.Messaging.Agent.Store.Common (DBStore)
 import Simplex.Messaging.Encoding.String (textEncode)
 import StoreService.Names.Codes (codeState, readPrepaidCode)
 import StoreService.Names.Store (PrepaidCode (..))
-import StoreService.Names.View (NameRefusal (..), refusalResponse)
+import StoreService.Names.View (NameRefusal (..))
 import StoreService.Store.Invoices (currentSecond)
 import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, readBoundedBody)
+import StoreService.Web.Names.Orders (refusalResponse)
 
 -- | It names no registration, even for a reserved code: holding a code proves nothing about an order.
 codeCheckHandler :: DBStore -> Request -> Respond -> IO ResponseReceived

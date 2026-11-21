@@ -9,6 +9,7 @@ module StoreService.Web.Names.Orders
     answerNow,
     refusalAnswer,
     sendAnswer,
+    refusalResponse,
     refused,
     nameInvoiceHandler,
     codeOrderHandler,
@@ -28,12 +29,13 @@ import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
+import qualified Data.ByteString.Char8 as B
 import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
-import Network.HTTP.Types (status200)
-import Network.Wai (Request, Response, ResponseReceived)
+import Network.HTTP.Types (status200, status400, status403, status404, status405, status409, status429, status500, status503, status504)
+import Network.Wai (Request, Response, ResponseReceived, responseLBS)
 import Simplex.Chat.Badges.Code (parseNameCode)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -52,12 +54,12 @@ import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), o
 import StoreService.Names.Reveal (RevealRequest, orderReveal)
 import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
-import StoreService.Names.View (NameRefusal (..), balanceView, refusalResponse, registrationView)
+import StoreService.Names.View (NameRefusal (..), balanceView, registrationView)
 import StoreService.Orders (cancelNameInvoices, publishRegistration)
-import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText)
+import StoreService.Providers (OrderDraft (..), Provider (..), ProviderInvoice (..), expiresItself, providerErrorText, providerNamed)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId)
 import StoreService.Waiters (Waiters, publish)
-import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, checkoutClient, confirmationsFor, invoiceAt, invoicePairs, invoiceWindow, jsonResponse, limitedCheckout, nameBodyBytes, providerFor, providerNamed, readBoundedBody)
+import StoreService.Web.Http (CheckoutClient, HttpEnv, Respond, apiHeaders, checkoutClient, confirmationsFor, invoiceAt, invoicePairs, invoiceWindow, jsonResponse, limitedCheckout, nameBodyBytes, providerFor, readBoundedBody)
 
 data InvoiceOrder = InvoiceOrder
   { ioOrder :: SentOrder,
@@ -98,6 +100,44 @@ refusalAnswer r = Answer {aResponse = Left r, aAfter = pure ()}
 
 sendAnswer :: Respond -> Answer -> IO ResponseReceived
 sendAnswer respond Answer {aResponse, aAfter} = aAfter >> respond (either refusalResponse id aResponse)
+
+refusalResponse :: NameRefusal -> Response
+refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encode r)
+  where
+    status = case r of
+      NRBadRequest -> status400
+      NRInvalidName -> status400
+      NRInvalidLink {} -> status400
+      NRNotFound -> status404
+      NRMethodNotAllowed -> status405
+      NRInternal -> status500
+      NROrderExists -> status409
+      NRNameTaken -> status409
+      NRNameCheckUnavailable -> status503
+      NRCatalogChanged {} -> status409
+      NRPriceTooHigh {} -> status409
+      NRBalanceChanged {} -> status409
+      NRTermsChanged {} -> status409
+      NRCodesOnly -> status403
+      NRCodeInvalid -> status400
+      NRCodeUsed -> status409
+      NRCodeReserved -> status409
+      NRCodeExpired -> status409
+      NRCodeNotCovering -> status409
+      NRPaymentPending -> status409
+      NRMoveLimit {} -> status409
+      NRRegistrationChanged {} -> status409
+      NRStaleNonce -> status409
+      NRRecordReverted -> status409
+      NREditLimit {} -> status409
+      NRRateLimited {} -> status429
+      NRProviderUnavailable -> status503
+      NRTermsUnavailable {} -> status503
+      NREditPending -> status504
+    retryAfterHeader = case r of
+      NRRateLimited {rfRetryAfter} -> [("Retry-After", B.pack $ show rfRetryAfter)]
+      NRTermsUnavailable {rfWait = Just seconds} -> [("Retry-After", B.pack $ show seconds)]
+      _ -> []
 
 -- | POST /api/invoice for a name, its body already read and its kind checked.
 nameInvoiceHandler :: OrdersEnv -> HttpEnv -> CheckoutClient -> ServiceConfig -> [Provider] -> Waiters -> J.Object -> Respond -> IO ResponseReceived

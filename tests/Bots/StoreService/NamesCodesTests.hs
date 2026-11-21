@@ -5,9 +5,8 @@
 
 module Bots.StoreService.NamesCodesTests (namesCodesTests) where
 
-import Bots.StoreService.FakeEthNode (lengthOf)
 import Bots.StoreService.NamesStoreTests (order, ownerA, ownerB, placeCode, placePaid, usable)
-import Bots.StoreService.WebTests (answerOf, refusedWith, responseFixture, withServiceStore, withApp)
+import Bots.StoreService.WebTests (answerOf, lengthOf, refusedWith, responseFixture, withServiceStore, withApp)
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently)

@@ -48,8 +48,6 @@ module Bots.StoreService.FakeEthNode
     fakeTermsPath,
     fakeTermsHash,
     plainTerms,
-    agreed,
-    lengthOf,
     fakeGeneralTerms,
     fakeGeneralTermsText,
     fakeNewGeneralTermsText,
@@ -87,7 +85,6 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
@@ -97,17 +94,15 @@ import Network.HTTP.Types (ResponseHeaders, Status, badGateway502, badRequest400
 import Network.Wai (Application, rawPathInfo, requestMethod, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
 import Numeric (readHex, showHex)
-import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
-import Simplex.Messaging.Encoding.String (strDecode, textDecode)
+import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..))
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Chain (AbiValue (..), ChainClient (..), abiBytes, abiTuple, addressWord, decodeSignedTx, hex, newChainClient, selector, uint256)
-import StoreService.Names.Registration (AgreedTerms)
 import System.Timeout (timeout)
 
 data FakeEthNode = FakeEthNode
@@ -206,12 +201,6 @@ fakeTermsHash = keccak256 . encodeUtf8 . fakeTermsLink
 
 plainTerms :: Text
 plainTerms = T.drop 2 $ hex fakeGeneralTerms
-
-agreed :: Text -> AgreedTerms
-agreed t = fromMaybe (error $ "agreed terms: " <> T.unpack t) $ textDecode t
-
-lengthOf :: Int -> NameLength
-lengthOf n = fromMaybe (error $ "name length " <> show n) $ nameLength n
 
 -- | The policy lists the name as a community name.
 listCommunityName :: FakeEthNode -> LabelHash -> IO ()

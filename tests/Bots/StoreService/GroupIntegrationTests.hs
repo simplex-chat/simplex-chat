@@ -12,11 +12,11 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 
 import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cChainId, cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, fmtTime, joinerAcceptance)
-import StoreService.Group.Command (CmdSource (..), maxUses)
+import StoreService.Group.Command (maxUses)
 import StoreService.Names.Codes (issueNameCode, prepaidCodeHash, reserveCode, revokeNameCode)
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Chain (SignedTx (..), addressWord, newChainClient, selector, signTransaction, uint256)
-import StoreService.Names.Store (FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
+import StoreService.Names.Store (CmdSource (..), FailReason (..), NameRegistration (nrPhase), NewTransaction (..), OrderPhase (OFailed), PrepaidCode (..), RegistrationTx (..), TxFor (..), VersionWrite (Written), getPrepaidCode, insertTransaction, spendLandedPrepaidCode)
 import StoreService.Names.Turns (codeTurnCount, newTurns, withCodeTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Options (StoreServiceOpts (..))

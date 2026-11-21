@@ -58,7 +58,7 @@ Each finding is one commit, `store: <change>`, or `core: <change>` for src/.
 
 A1-1, the order's phase with its data:
 - `NamePhase` stays the stored tag, an SQL parameter and the metrics key.
-- `NameRegistration.nrPhase :: OrderPhase` replaces nrPhase, nrLive, nrExpiresAt, nrRegisteredAt, nrFailedAt and nrError: `OUnpaid Live | OQueued | OCommitting | OCommitted | ORegistering | ORegistered Word64 UTCTime | OTaken | OFailed UTCTime FailReason`; `namePhase` gives the stored tag.
+- `NameRegistration.nrPhase :: OrderPhase` replaces nrPhase, nrLive, nrExpiresAt, nrRegisteredAt, nrFailedAt and nrError: `OUnpaid Live | OQueued | OCommitting | OCommitted | ORegistering | ORegistered SystemSeconds UTCTime | OTaken | OFailed UTCTime FailReason`; `namePhase` gives the stored tag.
 - The reveal, the commit and register transactions, the reveal window and the links refusal stay common fields: the view shows them in every phase, and a requeued order recognises its commit by its transaction.
 - `type Live = Bool` in the unpaid phase; `FailReason = FRNotSignedInTime | FRNotRegistered`, stored as today's error texts.
 - `toRegistration` decodes the columns once into the phase; retarget, requeue, lapse, landed, taken and failed construct the next phase; a taken order keeps no failure time.
@@ -154,7 +154,7 @@ A1-15: BTCPay invoice, payment and additional statuses as sums with an unknown c
 - A1-46: addresses in JSON through Address's ToJSON.
 - A1-47: one bounded HTTP call and one decode helper in Providers.hs.
 - A1-48: Stripe charges and intent statuses parsed by FromJSON; the cancel returns the closed signal directly.
-- A1-49: one unixSeconds in an existing shared module.
+- A1-49: seconds by simplexmq's SystemTime: chain times are `SystemSeconds`, and a UTCTime is converted where it is used.
 - A1-50: qOverdueInvoices only reads, with productJoins and providerRefColumn; the invoice is checked again before the Stripe cancel.
 - A1-51: names queries with the `@` prefix through mkQuery, and `prefixQuery` over the multi-line `sql` quotes.
 - A1-52: the order hash computed once and passed to existingOrder and the creator.

@@ -12,7 +12,6 @@ module StoreService.Names.View
     ToSign (..),
     AttemptView (..),
     NameRefusal (..),
-    refusalResponse,
     registrationView,
     phaseView,
     readToSign,
@@ -29,15 +28,12 @@ import Control.Concurrent.Async (concurrently)
 import Control.Logger.Simple (logWarn)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
-import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
-import Network.HTTP.Types (status400, status403, status404, status405, status409, status429, status500, status503, status504)
-import Network.Wai (Response, responseLBS)
 import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
@@ -54,7 +50,6 @@ import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponso
 import StoreService.Names.Profiles (deadlineIn, withSlot)
 import StoreService.Names.Registration (AgreedTerms (..), LinkKind, RegistrationId (..))
 import StoreService.Names.Store (AttemptStage, Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameAttempt (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), RegistrationTx, TxHistory (..), getBalance, getRegistration, heldBy, lateWait, lastAttempt, orderLive, paymentInvoice)
-import StoreService.Web.Http (apiHeaders)
 
 data PaidWith
   = PWInvoice {method :: Text}
@@ -161,44 +156,6 @@ data NameRefusal
   deriving (Eq, Show)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ J.camelTo2 '_' . dropPrefix "NR") {J.omitNothingFields = False, J.fieldLabelModifier = dropPrefix "rf"} ''NameRefusal)
-
-refusalResponse :: NameRefusal -> Response
-refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encode r)
-  where
-    status = case r of
-      NRBadRequest -> status400
-      NRInvalidName -> status400
-      NRInvalidLink {} -> status400
-      NRNotFound -> status404
-      NRMethodNotAllowed -> status405
-      NRInternal -> status500
-      NROrderExists -> status409
-      NRNameTaken -> status409
-      NRNameCheckUnavailable -> status503
-      NRCatalogChanged {} -> status409
-      NRPriceTooHigh {} -> status409
-      NRBalanceChanged {} -> status409
-      NRTermsChanged {} -> status409
-      NRCodesOnly -> status403
-      NRCodeInvalid -> status400
-      NRCodeUsed -> status409
-      NRCodeReserved -> status409
-      NRCodeExpired -> status409
-      NRCodeNotCovering -> status409
-      NRPaymentPending -> status409
-      NRMoveLimit {} -> status409
-      NRRegistrationChanged {} -> status409
-      NRStaleNonce -> status409
-      NRRecordReverted -> status409
-      NREditLimit {} -> status409
-      NRRateLimited {} -> status429
-      NRProviderUnavailable -> status503
-      NRTermsUnavailable {} -> status503
-      NREditPending -> status504
-    retryAfterHeader = case r of
-      NRRateLimited {rfRetryAfter} -> [("Retry-After", B.pack $ show rfRetryAfter)]
-      NRTermsUnavailable {rfWait = Just seconds} -> [("Retry-After", B.pack $ show seconds)]
-      _ -> []
 
 -- | The balance as it reads at the given time, when a hold may have become overdue, and what a closed order's late money waits on.
 registrationView :: DBStore -> NamesConfig -> Contracts -> UTCTime -> NameRegistration -> IO RegistrationView

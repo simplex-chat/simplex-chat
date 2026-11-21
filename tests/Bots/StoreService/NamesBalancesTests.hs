@@ -7,11 +7,11 @@
 
 module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, coveredSpend, credit, creditLate, figures, holdPrice, holder, invariantHolds, lateCredit, payment, placeOrderRow, settleHolder, source) where
 
-import Bots.StoreService.FakeEthNode (agreed, lengthOf, plainTerms)
+import Bots.StoreService.FakeEthNode (plainTerms)
 import Bots.StoreService.FakeStripe (FakeStripe (..), stripeObjectEvent, stripeSigHeader, withFakeStripe)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders, withOrdersVia)
 import Bots.StoreService.NamesStoreTests (at, btc, hashFixture, insertOrRollBack, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
-import Bots.StoreService.WebTests (StubCall (..), StubState (..), capturingStderr, invoiceStatus, overdueOf, rcv, statusOf, webRequestBody, withServiceStore, withServiceStores)
+import Bots.StoreService.WebTests (StubCall (..), StubState (..), agreed, capturingStderr, invoiceStatus, lengthOf, overdueOf, rcv, statusOf, webRequestBody, withServiceStore, withServiceStores)
 import Control.Concurrent.Async (async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
@@ -46,7 +46,7 @@ import StoreService.Names.Turns (balanceTurnCount, newTurns, turnsCount, withBal
 import StoreService.Names.View (addressText)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupUnpaid, newPollerEnv, unpaidRetention)
-import StoreService.Service (CmdSource (..), chainText, heldText)
+import StoreService.Service (chainText, heldText)
 import StoreService.Providers (Funded (..), PaymentSignal (..), Provider (..), Rate (..), Reversal (..))
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store.Invoices (getInvoice)

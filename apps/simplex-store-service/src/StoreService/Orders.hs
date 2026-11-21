@@ -20,10 +20,9 @@ import StoreService.Names.Phases (Phases)
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Registration (RegistrationId (..))
 import StoreService.Names.Store (BalanceUse (..), BrokenInvariant (..), InvoiceClose (..), LateSupport (..), NamePhase (..), NameRegistration (..), OrderPhase (..), VersionWrite (..), creditBalance, getRegistration, labelHolder, namePhase, openInvoicesOfHeldName, paymentBalance, releaseHeldBalance, reversalRecorded, setLateSupport, setPaidAt, spendHeldBalance, updateRegistration)
-import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), Received (..), providerErrorText, receivedAmount, receivedConfirmed)
+import StoreService.Providers (Confirmation (..), Confirmed (..), CryptoReceived (..), Funded (..), PaymentSignal (..), Provider (..), Received (..), providerErrorText, providerNamed, receivedAmount, receivedConfirmed)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), currentSecond, expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
-import StoreService.Web.Http (providerNamed)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Exception (Exception)
 import qualified Control.Exception as E

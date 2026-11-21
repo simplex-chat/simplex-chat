@@ -57,7 +57,6 @@ module StoreService.Web.Http
     confirmationsFor,
     invoiceWindow,
     providerFor,
-    providerNamed,
   )
 where
 
@@ -73,7 +72,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
-import Data.List (find, sortOn)
+import Data.List (sortOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
@@ -90,7 +89,7 @@ import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, stateTVar', tshow)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
-import StoreService.Providers (Provider (..))
+import StoreService.Providers (Provider (..), providerNamed)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), paymentHolds)
 
 data HttpEnv = HttpEnv
@@ -427,9 +426,6 @@ invoiceWindow cfg = \case
 
 providerFor :: [Provider] -> ServicePaymentMethod -> Maybe Provider
 providerFor providers method = providerNamed providers (providerOf method)
-
-providerNamed :: [Provider] -> PaymentProvider -> Maybe Provider
-providerNamed providers provider = find ((== provider) . pProvider) providers
 
 providerOf :: ServicePaymentMethod -> PaymentProvider
 providerOf = \case

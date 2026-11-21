@@ -9,6 +9,7 @@
 
 module BadgeTests (badgeTests) where
 
+import Bots.StoreService.WebTests (lengthOf)
 import Bots.StoreService.WebUIMock (formatNameOwnerCode, nameOwnerCodeEntropy, parseNameOwnerCode, randomNameOwnerCode)
 import StoreService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, serviceRequest, shownServiceRequest, survive)
 import StoreService.StoreReceipts (StoreCharge (..), StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), toStoreReceipt)
@@ -435,9 +436,6 @@ testNameCodeFixture = do
   where
     refused :: [T.Text]
     refused = ["SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BV", "SN-DWPHT-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5", "SN7-4K2P7-TQ9M1-ZX3RB-8HJ5X", "SN5-N0N9J-5D292-HPSYA-R911Q", "SN64-N0N9J-5D292-HPSYA-R911C", "SN07-BJTBP-29596-R3HJ8-25YM7"]
-
-lengthOf :: Int -> NameLength
-lengthOf n = fromMaybe (error $ "name length " <> show n) $ nameLength n
 
 testNameCodeRoundTrip :: IO ()
 testNameCodeRoundTrip = do

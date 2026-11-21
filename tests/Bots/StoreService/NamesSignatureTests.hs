@@ -3,7 +3,7 @@
 
 module Bots.StoreService.NamesSignatureTests (namesSignatureTests) where
 
-import Bots.StoreService.FakeEthNode (lengthOf)
+import Bots.StoreService.WebTests (lengthOf)
 import ChatTests.Utils (writeFixture)
 import Control.Monad (forM_)
 import Data.Aeson ((.=))

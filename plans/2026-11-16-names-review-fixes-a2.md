@@ -40,8 +40,8 @@ data StepFailure
 - A2-34: Contracts exports `ctChain`; Worker, the census, Metrics and Records take the client from it. NamesEnv's chain client and Metrics' NamesSource go.
 - A2-20: nameStatus and nameRecords read the latest block first and every call at it; resolverNonce takes the block tag.
 - A2-21: a cached chain read is `(generation, Maybe a)`; forgetNamePolicy increments the generation, and a read completed after it is not kept.
-- A2-22: commitment ages are Word64; fromCommitment adds them to the commitment's time, Nothing past 2^64 seconds.
-- A2-19: `type ChainSeconds = Word64`, `chainTime` and `chainSeconds` in Chain, at every chain time and every signed deadline; RegistrarFunds built by record syntax.
+- A2-22: commitment ages are Word64; fromCommitment adds them to the commitment's time, Nothing past 2^63 seconds.
+- A2-19: simplexmq's `SystemSeconds` at every chain time and every signed deadline; a comparison with the clock converts the chain side by `roundedToUTCTime`; RegistrarFunds built by record syntax.
 
 ## Transactions
 
@@ -156,7 +156,7 @@ A2-27, A2-28: Census.hs goes; its code is in Contracts.
 A2-29: after the other areas merge, Abi and Revert move into Chain, and Signatures with RegistrationId into Registration.
 
 - ChainConfig is defined in Chain; Config re-exports it.
-- unixSeconds is defined in Chain, and Store.Invoices re-exports it; chainSeconds is `fromInteger . unixSeconds`.
+- A UTCTime is converted to seconds where it is used, by `systemSeconds $ utcToSystemTime t`, as simplexmq does.
 - Chain imports no service module.
 - RegistrationId is imported from Registration; Phases does not export it.
 - Abi.hs, Revert.hs and Signatures.hs are out of the cabal module lists; their deletion waits for the user, as Census.hs.

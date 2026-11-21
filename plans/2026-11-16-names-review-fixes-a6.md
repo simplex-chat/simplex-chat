@@ -79,6 +79,7 @@ A6-6: NamesPhasesTests' held, woken and prompt stay; NamesOwnerTests' held, woke
 
 A6-7, each fixture once:
 - FakeEthNode: unhex and address.
+- WebTests: agreed and lengthOf, BadgeTests' lengthOf included.
 - NamesOrdersTests' exports: seconds, orderSeconds, keyA.
 - NamesContractsTests' exports: alice, gracePeriod, otherResolver, registry.
 

@@ -39,10 +39,9 @@ import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceInsertRe
 import StoreService.Names.Turns (Turns, withBalanceTurn, withRegistrationTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
-import StoreService.Providers (Provider (..), Reversal (..), providerErrorText)
+import StoreService.Providers (Provider (..), Reversal (..), providerErrorText, providerNamed)
 import StoreService.Store.Invoices (InvoiceRow (..), currentSecond, getInvoice)
 import StoreService.Waiters (Waiters)
-import StoreService.Web.Http (providerNamed)
 
 -- | RefundAmount: the balance's amount now, which is not the cents given. RefundHeld: an order holds it, overdue or not,
 -- since only the poller's sweep can close a holder and cancel its invoice at the provider.

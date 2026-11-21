@@ -5,7 +5,7 @@ Branch `ep/names-gaps-a6`, from `ep/names-fixes-a2` at 750589fef. Decisions: dec
 ## A1-1: the phase holds its transactions
 
 ```haskell
-data Commit = Commit {cmTx :: Maybe (TxHash, Word64), cmRevealAfter :: ChainSeconds, cmRevealBefore :: ChainSeconds}
+data Commit = Commit {cmTx :: Maybe (TxHash, Word64), cmRevealAfter :: SystemSeconds, cmRevealBefore :: SystemSeconds}
 
 data CommitStep = CSSent TxHash | CSCommitted Commit
 
@@ -15,7 +15,7 @@ data OrderPhase
   | OCommitting (Maybe TxHash)
   | OCommitted Commit
   | ORegistering Commit TxHash
-  | ORegistered (Maybe CommitStep) (Maybe (TxHash, Maybe Word64)) ChainSeconds UTCTime
+  | ORegistered (Maybe CommitStep) (Maybe (TxHash, Maybe Word64)) SystemSeconds UTCTime
   | OTaken (Maybe CommitStep) (Maybe TxHash)
   | OFailed (Maybe CommitStep) (Maybe TxHash) UTCTime FailReason
 ```

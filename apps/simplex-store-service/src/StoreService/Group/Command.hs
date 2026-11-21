@@ -6,7 +6,6 @@
 module StoreService.Group.Command
   ( GroupCmd (..),
     MoneyCmd (..),
-    CmdSource (..),
     spelledCmd,
     CmdAction (..),
     groupCmdAction,
@@ -34,6 +33,7 @@ import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (boundedDecimal)
+import StoreService.Names.Store (CmdSource (..))
 
 maxBulk, maxUses, maxMonths, maxNameYears :: Int
 maxBulk = 100
@@ -51,9 +51,6 @@ data GroupCmd
   deriving (Eq, Show)
 
 data MoneyCmd = MCBalance Text | MCRecordRefund Text USDCents | MCClose Text
-  deriving (Eq, Show)
-
-data CmdSource = FromConsole | FromGroup
   deriving (Eq, Show)
 
 spelledCmd :: CmdSource -> Text -> Text

@@ -34,7 +34,7 @@ where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.FakeHttp (withResetServer)
-import Bots.StoreService.WebTests (capturingStderr, renameTable, withServiceStore, withServiceStores)
+import Bots.StoreService.WebTests (capturingStderr, lengthOf, renameTable, withServiceStore, withServiceStores)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (poll, wait, withAsync)

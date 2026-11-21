@@ -53,11 +53,14 @@ module Bots.StoreService.WebTests
     sampleCode,
     sampleInvoice,
     seedBadgePrice,
+    agreed,
+    lengthOf,
   )
 where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel, providerCheckoutTimeoutMicros, providerTimeoutMicros)
+import StoreService.Names.Registration (AgreedTerms)
 import StoreService.Names.Store (BrokenInvariant (..))
 import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
 import StoreService.Poller
@@ -122,6 +125,7 @@ import Network.Wai (Application)
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
+import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Chat.Badges.Ledger (addMonths, debitEntry, emptyEntry, grantEntry, issueEntry)
 import Simplex.Chat.StoreService (BadgeOffer (..), BadgePrice (..), StatementCreditType (..), StatementDebitType (..), StatementEntry (..), SubscriptionState (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
@@ -2133,6 +2137,12 @@ codeHashText = T.filter (/= '=') . safeDecodeUtf8 . B64U.encode . codeDigest
 
 sampleCode :: Text
 sampleCode = "YDC8AYGQTMPUYZ92TUXP"
+
+agreed :: Text -> AgreedTerms
+agreed t = fromMaybe (error $ "agreed terms: " <> T.unpack t) $ textDecode t
+
+lengthOf :: Int -> NameLength
+lengthOf n = fromMaybe (error $ "name length " <> show n) $ nameLength n
 
 createBody :: Text -> Maybe Text -> Text -> Text -> LB.ByteString
 createBody priceId offerId method codeHash =

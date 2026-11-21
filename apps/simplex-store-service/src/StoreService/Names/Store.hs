@@ -54,6 +54,7 @@ module StoreService.Names.Store
     BrokenInvariant (..),
     PrepaidCode (..),
     NewPrepaidCode (..),
+    CmdSource (..),
     CodeHashTaken (..),
     TxFor (..),
     RegistrationTx (..),
@@ -181,7 +182,6 @@ import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', tshow)
-import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Chain (Hex32 (..), RevertName, TxHash (..))
 import StoreService.Names.Registration (AgreedTerms, Commitment, LinkKind, OrderFields (..), RegistrationId (..), TermsAcceptance (..), TermsHash)
 import StoreService.Providers (Rate, Reversal (..), Uncreditable (..), Units)
@@ -634,6 +634,9 @@ data NewPrepaidCode = NewPrepaidCode
     npcExpiresAt :: Maybe UTCTime,
     npcIssuer :: CmdSource
   }
+
+data CmdSource = FromConsole | FromGroup
+  deriving (Eq, Show)
 
 data CodeHashTaken = CodeHashTaken
   deriving (Eq, Show)

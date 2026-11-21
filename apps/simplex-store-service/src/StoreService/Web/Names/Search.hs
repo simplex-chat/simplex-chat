@@ -43,8 +43,9 @@ import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (EditsLeft, nameEditsLeft)
 import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink, parseChecksumAddress)
 import StoreService.Names.Store (labelHolder)
-import StoreService.Names.View (NameRefusal (..), ToSign (..), readToSign, refusalResponse)
+import StoreService.Names.View (NameRefusal (..), ToSign (..), readToSign)
 import StoreService.Web.Http (HttpEnv, Respond, jsonResponse, maxBodyBytes, readBoundedBody, searchSlot)
+import StoreService.Web.Names.Orders (refusalResponse)
 import System.Timeout (timeout)
 
 data Found

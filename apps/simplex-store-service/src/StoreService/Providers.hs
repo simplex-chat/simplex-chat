@@ -32,6 +32,7 @@ module StoreService.Providers
     settleWindow,
     expiresItself,
     Provider (..),
+    providerNamed,
   )
 where
 
@@ -42,6 +43,7 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
+import Data.List (find)
 import Data.Scientific (Scientific)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -256,3 +258,6 @@ data Provider = Provider
     pCurrentRate :: Maybe (CryptoCurrency -> IO (Either ProviderError Rate)),
     pVerifyWebhook :: UTCTime -> [Header] -> ByteString -> Either WebhookError (Maybe WebhookEvent)
   }
+
+providerNamed :: [Provider] -> PaymentProvider -> Maybe Provider
+providerNamed providers provider = find ((== provider) . pProvider) providers

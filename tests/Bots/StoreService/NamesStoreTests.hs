@@ -5,8 +5,8 @@
 
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, codeReg, commitFixture, hashFixture, insertInvoiceRow, insertOrRollBack, insertProviderInvoice, atNonce, issue, newEdit, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, setChannel, signature, t0, usable, write) where
 
-import Bots.StoreService.FakeEthNode (address, agreed, lengthOf, plainTerms)
-import Bots.StoreService.WebTests (columnsOf, digestFixture, invoiceStatus, runMigrations, sampleInvoice, seedBadgePrice, withServiceStore)
+import Bots.StoreService.FakeEthNode (address, plainTerms)
+import Bots.StoreService.WebTests (agreed, columnsOf, digestFixture, invoiceStatus, lengthOf, runMigrations, sampleInvoice, seedBadgePrice, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM, forM_, void)
 import qualified Data.ByteString as B
@@ -30,7 +30,6 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Names.Record (USDCents)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
-import StoreService.Group.Command (CmdSource (..))
 import StoreService.Names.Chain (Hex32 (..), RevertName (..), TxHash (..))
 import StoreService.Names.Registration (AgreedTerms (..), LinkKind (..), OrderFields (..), RegistrationId (..), TermsAcceptance (..), communityTermsPrefix, parseSignature)
 import StoreService.Names.Store
