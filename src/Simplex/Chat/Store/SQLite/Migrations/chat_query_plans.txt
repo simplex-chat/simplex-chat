@@ -7668,6 +7668,10 @@ Query: SELECT COUNT(*) FROM badge_store_receipts WHERE payment IS NOT NULL
 Plan:
 SCAN badge_store_receipts
 
+Query: SELECT COUNT(*) FROM chat_items WHERE item_sent = 0 AND item_text LIKE ?
+Plan:
+SCAN chat_items
+
 Query: SELECT COUNT(*) FROM groups WHERE relay_own_status IS NOT NULL
 Plan:
 SCAN groups
@@ -8150,6 +8154,10 @@ Plan:
 SCAN group_members
 
 Query: SELECT member_status FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
+Query: SELECT member_status FROM group_members WHERE member_category = 'user'
 Plan:
 SCAN group_members
 
