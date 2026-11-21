@@ -812,7 +812,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     withStore' $ \db -> do
                       setRelayLinkConfId db m confId relayLink
                       updateRelayCapabilities db m relayCap
-                    void $ getAgentConnShortLinkAsync user CFGetRelayDataAccept (Just conn') relayLink
+                    getAgentConnShortLinkAsync user CFGetRelayDataAccept conn' relayLink
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               XGrpRelayReject reason
                 | memberRole' membership == GROwner && isRelay m -> do
@@ -4615,8 +4615,8 @@ runRelayRequestWorker a Worker {doWork} = do
               memberPrivKey' <- case gks of
                 GKRelayRequest {memberPrivKey} -> pure memberPrivKey
                 _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: group is not a relay request"
-              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners}), _) <- getShortLinkConnReq' NRMBackground user reqGroupLink
-              liftIO (decodeLinkUserData cData) >>= \case
+              (FixedLinkData {linkEntityId, rootKey}, ContactLinkData _ UserContactData {owners}, _, sLinkData_) <- getShortLinkConnReq' NRMBackground user reqGroupLink
+              case shortLinkGroupData =<< sLinkData_ of
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup}} -> do
                   pg <- case (linkEntityId, publicGroup) of

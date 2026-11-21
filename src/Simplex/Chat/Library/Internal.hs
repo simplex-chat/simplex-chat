@@ -28,6 +28,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -1616,10 +1617,15 @@ connectToRelayAsync user gInfo relayLink = do
   relayMember@GroupMember {activeConn} <- withFastStore $ \db -> getCreateRelayForMember db cxt gVar user gInfo relayLink
   case activeConn of
     Just _ -> pure ()
-    Nothing -> do
-      subMode <- chatReadVar subscriptionMode
-      newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
-      withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
+    Nothing -> createRelayConnectionAsync user gInfo relayMember relayLink
+
+createRelayConnectionAsync :: User -> GroupInfo -> GroupMember -> ShortLinkContact -> CM ()
+createRelayConnectionAsync user gInfo relayMember relayLink = do
+  subMode <- chatReadVar subscriptionMode
+  newConnIds@(cmdId, connId) <- prepareAgentCreation user CFGetRelayDataJoin False SCMInvitation
+  withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
+  relayLink' <- restoreShortLink' relayLink
+  void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just connId) relayLink'
 
 updatePublicGroupData :: User -> GroupInfo -> GroupKeys -> CM GroupInfo
 updatePublicGroupData user gInfo gks
@@ -1721,14 +1727,35 @@ groupLinkData (GIK gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {p
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
 
-getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
+getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m, Maybe ShortLinkData)
 getShortLinkConnReq' nm user l = do
   l' <- restoreShortLink' l
-  withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  (fd, cData, cReq) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  linkData <- liftIO $ decodeLinkUserData cData
+  case JT.parseMaybe (shortLinkDataP l) (fromMaybe J.Null linkData) of
+    Just sLinkData_ -> pure (fd, cData, cReq, sLinkData_)
+    Nothing -> throwChatError CEInvalidConnReq
 
-getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
+shortLinkDataP :: ConnShortLink m -> J.Value -> JT.Parser (Maybe ShortLinkData)
+shortLinkDataP l v = case l of
+  CSLInvitation {} -> optionalData $ contact <|> group notChannel
+  CSLContact _ ct _ _ -> case ct of
+    CCTContact -> optionalData $ contact <|> relayAddress
+    CCTGroup -> optionalData $ group notChannel <|> relayLink
+    CCTChannel -> Just <$> group isJust
+    CCTRelay -> optionalData $ relayAddress <|> contact
+  where
+    optionalData :: JT.Parser ShortLinkData -> JT.Parser (Maybe ShortLinkData)
+    optionalData p = if v == J.Null then pure Nothing else Just <$> p
+    contact = SLDContact <$> J.parseJSON v
+    relayLink = SLDRelayLink <$> J.parseJSON v
+    relayAddress = SLDRelayAddress <$> J.parseJSON v
+    group ok = SLDGroup <$> mfilter (\GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} -> ok publicGroup) (J.parseJSON v)
+    notChannel = maybe True (\PublicGroupProfile {groupType} -> groupType /= GTChannel)
+
+getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m, Maybe ShortLinkData)
 getShortLinkConnReq nm user l = do
-  r@(_, cData, _) <- getShortLinkConnReq' nm user l
+  r@(_, cData, _, _) <- getShortLinkConnReq' nm user l
   case cData of
     ContactLinkData _ UserContactData {direct, relays}
       | not direct && null relays -> throwChatError CEUnsupportedConnReq
@@ -3202,12 +3229,11 @@ setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientDa
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetShortLink
   withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
 
-getAgentConnShortLinkAsync :: User -> CommandFunction -> Maybe Connection -> ShortLinkContact -> CM (CommandId, ConnId)
-getAgentConnShortLinkAsync user cmdFunc conn_ shortLink = do
+getAgentConnShortLinkAsync :: User -> CommandFunction -> Connection -> ShortLinkContact -> CM ()
+getAgentConnShortLinkAsync user cmdFunc conn@Connection {connId} shortLink = do
   shortLink' <- restoreShortLink' shortLink
-  cmdId <- withStore' $ \db -> createCommand db user (dbConnId <$> conn_) cmdFunc
-  connId <- withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (aConnId <$> conn_) shortLink'
-  pure (cmdId, connId)
+  cmdId <- withStore' $ \db -> createCommand db user (Just connId) cmdFunc
+  void $ withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (Just $ aConnId conn) shortLink'
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do
