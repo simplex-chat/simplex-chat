@@ -116,19 +116,20 @@ The `actual` platform implementation of `ActiveCallView()` and supporting compos
 
 ## 4. Desktop Implementation
 
-### 4.1 CallView.desktop.kt (308 lines)
+### 4.1 CallView.desktop.kt (393 lines)
 
 [`CallView.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt)
 
 Desktop calls run WebRTC in the system browser, not an embedded WebView:
 
-- **NanoWSD server** ([line 215](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L215)): `startServer()` creates a `NanoWSD` instance bound to `localhost:50395`. If that port is already in use it falls back to an OS-assigned free port (`port 0`); `WebRTCController` reads `server.listeningPort` for the browser URL. The server serves `call.html` from JAR resources at `/assets/www/desktop/call.html` for the path `/simplex/call/` when the request includes a valid `token` query parameter. All other paths serve resources from `/assets/www/`.
-- **Call token** ([line 271](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L271)): `newCallServerToken()` returns 32 random bytes, base64url-encoded. `hasValidCallServerToken()` ([line 277](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L277)) checks the `token` query parameter.
-- **WebSocket upgrade** ([line 238](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L238)): Each server instance accepts one WebSocket upgrade. The upgrade request must include `Origin: http://localhost:<listeningPort>` and a valid token. Other upgrade requests receive `401 Unauthorized`.
-- **WebSocket communication** ([line 283](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L283)): `MyWebSocket` handles WebSocket frames from the browser. `onMessage` deserializes JSON into `WVAPIMessage` and forwards to the response handler. `onClose` triggers `WCallResponse.End`.
-- **WebRTCController** ([line 157](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L157)): Generates the call token, starts the server, then opens `http://localhost:<listeningPort>/simplex/call/?token=<token>` (normally `50395`) via `LocalUriHandler`. Processes `WCallCommand` queue by sending JSON over the WebSocket. On dispose, sends `WCallCommand.End` and stops the server.
-- **SendStateUpdates** ([line 141](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L141)): Sends `WCallCommand.Description` with call state and encryption info text to the browser for display.
-- **ActiveCallView** ([line 32](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L32)): Handles `WCallResponse` messages identically to Android (same state machine), plus a `WCallCommand.Permission` message on `Capabilities` error for browser permission denial guidance.
+- **NanoWSD server** ([line 245](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L245)): `startServer()` creates a `NanoWSD` instance bound to `localhost:50395`. If that port is already in use it falls back to an OS-assigned free port (`port 0`); `WebRTCController` reads `server.listeningPort` for the browser URL. The server serves `call.html` from JAR resources at `/assets/www/desktop/call.html` for the path `/simplex/call/` when the request includes a valid `token` query parameter. All other paths serve resources from `/assets/www/`.
+- **Call token** ([line 314](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L314)): `newCallServerToken()` returns 32 random bytes, base64url-encoded. `hasValidCallServerToken()` ([line 320](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L320)) checks the `token` query parameter.
+- **Connection owner** ([line 253](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L253)): on Linux, `createClientHandler` serves a connection only when `isConnectedByProcessUser()` ([line 323](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L323)) finds the client socket in `/proc/net/tcp` or `/proc/net/tcp6` owned by the app's user; other connections are closed without a response.
+- **WebSocket upgrade** ([line 283](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L283)): Each server instance accepts one WebSocket upgrade. The upgrade request must include `Origin: http://localhost:<listeningPort>` and a valid token. Other upgrade requests receive `401 Unauthorized`.
+- **WebSocket communication** ([line 368](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L368)): `MyWebSocket` handles WebSocket frames from the browser. `onMessage` deserializes JSON into `WVAPIMessage` and forwards to the response handler. `onClose` triggers `WCallResponse.End`.
+- **WebRTCController** ([line 188](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L188)): Generates the call token, starts the server, then opens `http://localhost:<listeningPort>/simplex/call/?token=<token>` (normally `50395`) via `LocalUriHandler`. Processes `WCallCommand` queue by sending JSON over the WebSocket. On dispose, sends `WCallCommand.End` and stops the server.
+- **SendStateUpdates** ([line 172](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L172)): Sends `WCallCommand.Description` with call state and encryption info text to the browser for display.
+- **ActiveCallView** ([line 52](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L52)): Handles `WCallResponse` messages identically to Android (same state machine), plus a `WCallCommand.Permission` message on `Capabilities` error for browser permission denial guidance.
 
 ---
 
@@ -171,7 +172,7 @@ An in-app notification banner shown when a call invitation arrives while the app
 |---|---|---|---|
 | `CallView.kt` | [`common/src/commonMain/.../views/call/CallView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/CallView.kt) | 28 | `expect fun ActiveCallView()`, delivery receipt waiting |
 | `CallView.android.kt` | [`common/src/androidMain/.../views/call/CallView.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt) | 891 | Android WebView WebRTC, overlay, permissions |
-| `CallView.desktop.kt` | [`common/src/desktopMain/.../views/call/CallView.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt) | 308 | Desktop browser WebRTC via NanoWSD |
+| `CallView.desktop.kt` | [`common/src/desktopMain/.../views/call/CallView.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt) | 393 | Desktop browser WebRTC via NanoWSD |
 | `CallActivity.kt` | [`android/src/main/java/.../views/call/CallActivity.kt`](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt) | 472 | Android call Activity, PiP, lock screen |
 | `CallService.kt` | [`android/src/main/java/.../CallService.kt`](../../android/src/main/java/chat/simplex/app/CallService.kt) | 207 | Android foreground service for calls |
 | `CallManager.kt` | [`common/src/commonMain/.../views/call/CallManager.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/CallManager.kt) | 119 | Call lifecycle management |

@@ -264,6 +264,14 @@ flowchart LR
 
 - Temporary files on Linux are kept in `$XDG_CACHE_HOME/simplex/tmp`, a directory restricted to the user.
 - `coreTmpDir` stays `<dataDir>/tmp`.
+- The call server on Linux serves only connections of the user's own processes: the owner of the client socket is read from `/proc/net/tcp` or `/proc/net/tcp6`.
+
+```mermaid
+flowchart LR
+  Conn[connection to the call server] --> Owner{client socket owner = app's user}
+  Owner -->|yes| Serve[page and WebSocket with the token checks]
+  Owner -->|no or unreadable| Close[closed without a response]
+```
 
 ## Notifications
 
@@ -459,7 +467,8 @@ flowchart LR
   - `LinuxThemeTest`: GTK theme names;
   - `LinuxRenderingTest`: software and GPU renderer names;
   - `SingleInstanceTest`: activation token in the signal file;
-  - `FontsTest`: the fontconfig file that rejects bitmap fonts.
+  - `FontsTest`: the fontconfig file that rejects bitmap fonts;
+  - `CallServerPeerTest`: `/proc/net` address format, the client row's owner, a loopback connection of the process user.
 - CI:
   - `desktop-linux`: native libraries built on the runner; the X11 smoke test under Xvfb with Tao on X11, typing paths into the GTK file dialog;
   - `desktop-linux` with `e2e`: section End-to-end tests;
