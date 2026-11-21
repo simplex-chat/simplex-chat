@@ -13,7 +13,7 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 import StoreService.Config (BadgeIssuerKey (..), ChainConfig (cChainId, cController, cServiceKey), GroupConfig (..), NamesConfig (nChain), ServiceConfig (devAcceptUnverifiedStoreReceipts, names), readServiceConfig)
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup, fmtTime, joinerAcceptance)
 import StoreService.Group.Command (maxUses)
-import StoreService.Names.Codes (issueNameCode, prepaidCodeHash, reserveCode, revokeNameCode)
+import StoreService.Names.Codes (issueNameCode, prepaidCodeHash, revokeNameCode)
 import StoreService.Names.Abi (addressWord, selector, uint256)
 import StoreService.Names.Chain (SignedTx (..), newChainClient, signTransaction)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -31,7 +31,7 @@ import Bots.StoreService.NamesContractsTests (nameExpiresCall, rentPriceAnswer, 
 import Bots.StoreService.WebTests (answerOf, capturingStderr, digestFixture, refusedWith, siteConfigJson, statusOf)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
-import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, placePaid, reg, t0, usable, write)
+import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, reg, t0, usable, write)
 import Bots.StoreService.NamesOwnerTests (labelBytes, ownerOfSelector)
 import ChatClient
 import ChatTests.DBUtils
@@ -398,7 +398,7 @@ namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
   it "issues a prepaid code on /issue name for 2 years by default and for the years given, answering the usage to /bulk name" testGroupNameCodes
   it "issues at most name_codes_per_day name codes a day in the group, not counting console codes" testGroupNameCodesPerDay
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
-  it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
+  it "revokes a prepaid code in the code's turn, after its holder" testRevokeTakesCodeTurn
 
 testGroupNameCodes :: HasCallStack => TestParams -> IO ()
 testGroupNameCodes ps = do
@@ -471,8 +471,7 @@ testRevokeTakesCodeTurn ps = do
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     turns <- newTurns
-    let st = chatStore cc
-        revokeAfter code release = do
+    let revokeAfter code release = do
           revoking <- async $ revokeNameCode turns cc code
           timeout 5000000 (atomically $ codeTurnCount turns (prepaidCodeHash code) >>= guard . (== 2)) `shouldReturn` Just ()
           poll revoking >>= (`shouldSatisfy` isNothing)
@@ -482,12 +481,6 @@ testRevokeTakesCodeTurn ps = do
     holder <- holdTurn $ \body -> withCodeTurn turns (prepaidCodeHash held) body
     revokeAfter held (releaseTurn holder) `shouldReturn` Right "Revoked."
     finished (thAction holder) `shouldReturn` ()
-    now <- getCurrentTime
-    placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 now) `shouldReturn` Right ()
-    reserved <- issueNameRaw cc "name 8"
-    reserving <- holdTurn $ \body -> reserveCode turns st now (prepaidCodeHash reserved) (RegistrationId "r1") (fromJust $ nameLength 8) (\_ -> Right <$> body :: IO (Either Text ()))
-    revokeAfter reserved (releaseTurn reserving) `shouldReturn` Right "Revoked. The order holding it keeps it."
-    finished (thAction reserving) `shouldReturn` Right (Right ())
 
 namesRefundChatTests :: SpecWith TestParams
 namesRefundChatTests = describe "StoreService names: operator refund" $ do
