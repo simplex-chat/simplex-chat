@@ -9,7 +9,7 @@ diff --git a/src/Simplex/FileTransfer/Agent.hs b/src/Simplex/FileTransfer/Agent.
    let relPrefixPath = takeFileName prefixPath
        relTmpPath = relPrefixPath </> "xftp.encrypted"
        relSavePath = relPrefixPath </> "xftp.decrypted"
-@@ -174,8 +173,20 @@
+@@ -174,8 +173,21 @@
  getPrefixPath suffix = do
    workPath <- getXFTPWorkPath
    ts <- liftIO getCurrentTime
@@ -24,7 +24,8 @@ diff --git a/src/Simplex/FileTransfer/Agent.hs b/src/Simplex/FileTransfer/Agent.
 +    claim workPath base n = do
 +      let named = if n == 0 then base else base <> "_" <> show n
 +      path <- uniqueCombine workPath named
-+      liftIO (try @IOException $ createDirectory path) >>= \case
++      -- UnliftIO.try @IOException binds the monad, not the exception.
++      liftIO (E.try (createDirectory path) :: IO (Either IOException ())) >>= \case
 +        Right () -> pure path
 +        Left e
 +          | isAlreadyExistsError e, n < 100 -> claim workPath base (n + 1)
@@ -32,7 +33,7 @@ diff --git a/src/Simplex/FileTransfer/Agent.hs b/src/Simplex/FileTransfer/Agent.
  
  toFSFilePath :: FilePath -> AM' FilePath
  toFSFilePath f = (</> f) <$> getXFTPWorkPath
-@@ -376,7 +387,6 @@
+@@ -376,7 +388,6 @@
  xftpPrepareSendFile' c userId file numRecipients storageHours = do
    g <- asks random
    prefixPath <- lift $ getPrefixPath "snd.xftp"
@@ -40,7 +41,7 @@ diff --git a/src/Simplex/FileTransfer/Agent.hs b/src/Simplex/FileTransfer/Agent.
    let relPrefixPath = takeFileName prefixPath
    key <- atomically $ C.randomSbKey g
    nonce <- atomically $ C.randomCbNonce g
-@@ -392,7 +402,6 @@
+@@ -392,7 +403,6 @@
  xftpPrepareSendDescription' c userId (ValidFileDescription fdDirect@FileDescription {size, digest}) numRecipients = do
    g <- asks random
    prefixPath <- lift $ getPrefixPath "snd.xftp"
