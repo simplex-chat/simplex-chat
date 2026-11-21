@@ -234,6 +234,14 @@ describe("service", () => {
     expect(agents.map(({record}) => record)).toEqual([undefined, undefined])
   })
 
+  it("passes the global config of a registration and the transcript of a title to the session", async () => {
+    const {d, agents} = deps(root)
+    service = await Service.start(d, readDefaultConfig)
+    await post("/session", {id: id1, project: "/p/app", config: defaultConfig, globalConfig: "/h/.claude.json"})
+    await post("/title", {id: id1, project: "/p/app", transcript: "/c/projects/p/1.jsonl", config: defaultConfig})
+    expect(agents[0]).toMatchObject({globalConfig: "/h/.claude.json", transcript: "/c/projects/p/1.jsonl"})
+  })
+
   it("expires due actions at each request that touches sessions", async () => {
     const {d, expiryChecks} = deps(root)
     service = await Service.start(d, readDefaultConfig)

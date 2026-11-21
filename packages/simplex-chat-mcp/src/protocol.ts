@@ -30,6 +30,7 @@ export interface SessionRequest {
   name?: string
   config: Config
   record?: string
+  globalConfig?: string
 }
 
 // spec: spec/architecture.md#protocol-sessionrequest
@@ -40,6 +41,7 @@ export interface TitleRequest {
   name?: string
   project: string
   model?: string
+  transcript?: string
   config: Config
   unattended?: boolean
 }
@@ -98,6 +100,9 @@ export interface TurnRequest {
   statusLine?: boolean
   failure?: Failure
   waiting?: Waiting
+  agent?: AgentEvent
+  task?: TaskEnd
+  workflow?: WorkflowRun
 }
 
 // spec: spec/architecture.md#protocol-failure
@@ -112,6 +117,37 @@ export interface Failure {
 export interface Waiting {
   kind: string
   text: string
+}
+
+// spec: spec/architecture.md#protocol-agentevent
+export type AgentEvent = {id: string} & ({start: AgentStart} | {step: Step} | {report: string} | {stop: string})
+
+// spec: spec/architecture.md#protocol-agentevent
+export interface AgentStart {
+  type: string
+  description: string
+  toolUse?: string
+  transcript: string
+}
+
+// spec: spec/architecture.md#protocol-agentevent
+export type TaskStatus = "completed" | "failed" | "killed" | "stopped"
+
+// spec: spec/architecture.md#protocol-agentevent
+export interface TaskEnd {
+  toolUse: string
+  status: TaskStatus
+  tokens?: number
+  steps?: number
+  ms?: number
+}
+
+// spec: spec/architecture.md#protocol-agentevent
+export interface WorkflowRun {
+  toolUse: string
+  run: string
+  name: string
+  folder: string
 }
 
 // spec: spec/architecture.md#protocol-limits

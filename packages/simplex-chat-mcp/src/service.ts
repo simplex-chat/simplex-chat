@@ -45,6 +45,8 @@ export interface SessionLike {
   readonly displayName: string
   open: boolean
   record?: string
+  globalConfig?: string
+  transcript?: string
   onLine?: (line: AttachLine) => void
   busy(): boolean
   rename(name: string): Promise<void>
@@ -243,6 +245,7 @@ export class Service {
     if (request.pid !== undefined) this.registered.emit(String(request.pid))
     const agent = await entry.opening
     agent.record = request.record
+    agent.globalConfig = request.globalConfig
     if (previous.pid !== undefined && (previous.pid !== request.pid || started === undefined || previous.started !== started)) agent.endToolApprovals()
     if (entry.attached === 0) this.scheduleIdle(id, entry)
     await this.hub.configure(request.config)
@@ -286,7 +289,7 @@ export class Service {
   }
 
   // spec: spec/api.md#socket-protocol
-  private async applyTitle({id: given, pid, at, name, project, model, config}: TitleRequest): Promise<void> {
+  private async applyTitle({id: given, pid, at, name, project, model, transcript, config}: TitleRequest): Promise<void> {
     const id = await this.resolve(given, pid)
     const title = name?.trim() || undefined
     const entry = this.entry(id, {id, project, name: title, config})
@@ -295,6 +298,7 @@ export class Service {
       this.titled.emit(String(pid))
     }
     const agent = await entry.opening
+    if (transcript !== undefined) agent.transcript = transcript
     await this.hub.configure(config)
     if (title !== undefined) await this.rename(this.folder(id), agent, title)
     if (model !== undefined) await agent.turn({id, at, model})
