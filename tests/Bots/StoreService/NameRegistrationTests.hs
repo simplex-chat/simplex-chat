@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -5,12 +6,16 @@ module Bots.StoreService.NameRegistrationTests (badgeNameRegistrationTests) wher
 
 import StoreService.Names.Chain
 import StoreService.Names.Registration
-import StoreService.Names.Revert (RevertName (..))
-import Bots.StoreService.FakeEthNode hiding (address)
+import StoreService.Names.Revert (RevertName (..), RevertReason (..))
+import StoreService.Names.Signatures (parseSignature)
+import Bots.StoreService.FakeEthNode
 import Bots.StoreService.WebUIMock
+import ChatTests.Utils (writeFixture)
 import Control.Concurrent.STM (TVar)
 import Crypto.Random (ChaChaDRG)
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
+import Data.Aeson ((.=))
+import qualified Data.Aeson as J
+import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Text (Text)
@@ -18,12 +23,12 @@ import qualified Data.Text as T
 import Data.Word (Word64)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
-import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
-import StoreService.Names.Signatures (parseSignature)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds, roundedToUTCTime)
+import Data.Time.Clock (addUTCTime)
 import Test.Hspec
 
 badgeNameRegistrationTests :: Spec
@@ -37,7 +42,6 @@ badgeNameRegistrationTests = describe "StoreService names: registration" $ do
   describe "verifying the register intent" $ do
     it "rejects an intent signed by another wallet" $ testVerifyOtherSigner g
     it "rejects an intent past its deadline" $ testVerifyExpired g
-    it "rejects a secret that is not 32 bytes" $ testVerifyShortSecret g
   -- viem's hashTypedData and encodeFunctionData against the SimplexNamePolicy ABI of ens-contracts 6ccb5c5
   describe "terms acceptance" $ do
     it "hashes AcceptGeneralTerms and AcceptCommunityTerms as the policy does" testAcceptanceDigest
@@ -66,25 +70,20 @@ testVerifyOtherSigner :: TVar ChaChaDRG -> IO ()
 testVerifyOtherSigner g = do
   other <- newEphemeralWallet g
   intent <- signRegisterIntent g domain other knownRegistration deadline
-  verifyRegisterIntent domain deadline intent `shouldReturn` Left "intent is not signed by the owner"
+  verifyRegisterIntent domain (roundedToUTCTime deadline) intent `shouldReturn` Left "intent is not signed by the owner"
 
 testVerifyExpired :: TVar ChaChaDRG -> IO ()
 testVerifyExpired g = do
   intent <- knownIntent g knownRegistration
-  verifyRegisterIntent domain (deadline + 1) intent `shouldReturn` Left "intent expired"
-
-testVerifyShortSecret :: TVar ChaChaDRG -> IO ()
-testVerifyShortSecret g = do
-  intent <- knownIntent g knownRegistration {rSecret = B.replicate 31 0x11}
-  verifyRegisterIntent domain deadline intent `shouldReturn` Left "secret: expected 32 bytes"
+  verifyRegisterIntent domain (addUTCTime 1 $ roundedToUTCTime deadline) intent `shouldReturn` Left "intent expired"
 
 testRevertedDryRun :: TVar ChaChaDRG -> IO ()
 testRevertedDryRun g = withFakeEthNode $ \node -> do
   -- viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
-  setFault node "eth_estimateGas" $ revertFault $ fromHex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
+  setFault node "eth_estimateGas" $ revertFault $ unhex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
   intent <- knownIntent g knownRegistration
   c <- newChainClient g $ fakeChainConfig node
-  estimateGas c fakeSponsor (registerWithCreditCalldata intent) `shouldReturn` Left (ChainReverted $ Just RNInsufficientAllowance)
+  estimateGas c fakeSponsor (registerWithCreditCalldata intent) `shouldReturn` Left (ChainReverted $ RRNamed RNInsufficientAllowance)
 
 testCommitThenRegister :: TVar ChaChaDRG -> IO ()
 testCommitThenRegister g = withFakeEthNode $ \node -> do
@@ -94,12 +93,12 @@ testCommitThenRegister g = withFakeEthNode $ \node -> do
   let registration = knownRegistration {rOwner = ewAddress w}
       commitCall = commitCalldata $ makeCommitment registration
   commitTx <- expectedTransaction g 0 fakeController commitCall
-  send g c fakeController commitCall `shouldReturn` SignedTx commitTx (TxHash $ C.keccak256 commitTx)
+  send g c fakeController commitCall `shouldReturn` SignedTx commitTx (TxHash $ Hex32 $ C.keccak256 commitTx)
   intent <- signRegisterIntent g domain w registration deadline
-  verifyRegisterIntent domain deadline intent `shouldReturn` Right ()
+  verifyRegisterIntent domain (roundedToUTCTime deadline) intent `shouldReturn` Right ()
   let registerCall = registerWithCreditCalldata intent
   registerTx <- expectedTransaction g 1 fakeSponsor registerCall
-  send g c fakeSponsor registerCall `shouldReturn` SignedTx registerTx (TxHash $ C.keccak256 registerTx)
+  send g c fakeSponsor registerCall `shouldReturn` SignedTx registerTx (TxHash $ Hex32 $ C.keccak256 registerTx)
   sentTransactions node `shouldReturn` [commitTx, registerTx]
 
 -- | The dry run, the registrar's next nonce and the fees, then the signed transaction sent and its hash checked.
@@ -110,7 +109,7 @@ send g c@ChainClient {ccRegistrar} to calldata = do
   tip <- right' =<< recentTip c
   Block {blockBaseFee} <- right' =<< latestBlock c
   tx@SignedTx {stRaw, stHash} <-
-    right <$> signTransaction g c TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gas, trMaxFeePerGas = 2 * blockBaseFee + tip, trMaxPriorityFeePerGas = tip}
+    right <$> signTransaction g c Eip1559Tx {txChainId = fakeChainId, txNonce = nonce, txMaxPriorityFeePerGas = fromIntegral tip, txMaxFeePerGas = fromIntegral $ 2 * blockBaseFee + tip, txGasLimit = gas, txTo = to, txValue = 0, txData = calldata}
   sendRawTransaction c stRaw `shouldReturn` Right stHash
   pure tx
   where
@@ -125,7 +124,7 @@ knownRegistration =
       rTLD = TLDSimplex,
       rOwner = address "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
       rDuration = 63072000,
-      rSecret = B.replicate 32 0x11,
+      rSecret = Hex32 $ B.replicate 32 0x11,
       rResolver = address "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6",
       rContactLink = Just "https://smp.simplex.im/a#contact",
       rChannelLink = Just "https://smp1.simplex.im/c#one"
@@ -142,8 +141,8 @@ knownCode = "SN-00000-00000-00000-00000-00000-0VME2"
 domain :: Eip712Domain
 domain = sponsorDomain fakeChainId fakeSponsor
 
-deadline :: Word64
-deadline = 4102444800
+deadline :: SystemSeconds
+deadline = RoundedSystemTime 4102444800
 
 expectedTransaction :: TVar ChaChaDRG -> Word64 -> Address -> ByteString -> IO ByteString
 expectedTransaction g nonce to calldata =
@@ -166,22 +165,34 @@ acceptanceDomain :: Eip712Domain
 acceptanceDomain = policyDomain fakeChainId fakeNamePolicy
 
 -- viem: keccak256(toHex("SimpleX community terms v1")) and keccak256(toHex("alicebakery commitment"))
-acceptedHash, acceptedCommitment :: ByteString
-acceptedHash = fromHex "eed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac"
-acceptedCommitment = fromHex "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d"
+acceptedHash, acceptedCommitment :: Hex32
+acceptedHash = Hex32 $ unhex "eed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac"
+acceptedCommitment = Hex32 $ unhex "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d"
 
-acceptanceDeadline :: Word64
-acceptanceDeadline = 1767315600
+acceptanceDeadline :: SystemSeconds
+acceptanceDeadline = RoundedSystemTime 1767315600
 
 testAcceptanceDigest :: IO ()
 testAcceptanceDigest = do
-  toHex (acceptanceDigest acceptanceDomain (termsKind False) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "f486b536cdf4e28031b02fb4345f26678a088d84846a0a6c72896062af283065"
-  toHex (acceptanceDigest acceptanceDomain (termsKind True) acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "6df583ad3bcbef3e4061599fa9d45174fcda5731764320cd08ade35c8324eef7"
+  toHex (digest False) `shouldBe` "f486b536cdf4e28031b02fb4345f26678a088d84846a0a6c72896062af283065"
+  toHex (digest True) `shouldBe` "6df583ad3bcbef3e4061599fa9d45174fcda5731764320cd08ade35c8324eef7"
+  writeFixture "store-service/rest-api/vectors-acceptance" $
+    J.object
+      [ "chainId" .= fakeChainId,
+        "policy" .= fakeNamePolicy,
+        "commitment" .= acceptedCommitment,
+        "termsHash" .= acceptedHash,
+        "nonce" .= (3 :: Int),
+        "deadline" .= acceptanceDeadline,
+        "digests" .= J.object ["general" .= Hex32 (digest False), "community" .= Hex32 (digest True)]
+      ]
+  where
+    digest community = acceptanceDigest acceptanceDomain (termsKind community) acceptedCommitment acceptedHash 3 acceptanceDeadline
 
 testAcceptCalldata :: IO ()
 testAcceptCalldata = do
   sig <- either (fail . show) pure $ parseSignature $ "0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b"
-  let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
+  let acceptance = TermsAcceptance {termsHash = acceptedHash, nonce = 3, signature = sig}
       calldata community = toHex (acceptCalldata (termsKind community) acceptedCommitment (address "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955") acceptanceDeadline acceptance)
       args =
         "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5deed23f946d290583f5f55c2ae8255db70adac4fc4c5de714a920d35eed9c7dac\
@@ -197,21 +208,15 @@ testVerifyAcceptance g = do
   owner <- newEphemeralWallet g
   other <- newEphemeralWallet g
   sig <- signRecoverable g (ewKey owner) (acceptanceDigest acceptanceDomain (termsKind True) acceptedCommitment acceptedHash 3 acceptanceDeadline) >>= either fail pure
-  let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
+  let acceptance = TermsAcceptance {termsHash = acceptedHash, nonce = 3, signature = sig}
       verify community w = verifyAcceptance acceptanceDomain (termsKind community) (ewAddress w) acceptedCommitment
   verify True owner acceptanceDeadline acceptance `shouldReturn` Right ()
   verify True other acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
-  verify True owner (acceptanceDeadline + 1) acceptance `shouldReturn` Left "acceptance is not signed by the owner"
+  verify True owner (RoundedSystemTime $ roundedSeconds acceptanceDeadline + 1) acceptance `shouldReturn` Left "acceptance is not signed by the owner"
   verify False owner acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
-
-address :: ByteString -> Address
-address = right . strDecode
 
 toHex :: ByteString -> ByteString
 toHex = convertToBase Base16
-
-fromHex :: ByteString -> ByteString
-fromHex = right . convertFromBase Base16
 
 right :: Either String a -> a
 right = either (error . ("unexpected Left: " <>)) id

@@ -99,7 +99,9 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 
 #### badge-web
 
-- Globs: apps/simplex-store-service/web/**. These paths are also in the core globs (apps/simplex-store-service/**), and web/src/catalog.ts is read by core tests (tests/Bots/StoreService/CatalogTests.hs, WebTests.hs).
+- Globs:
+  - apps/simplex-store-service/web/**, also in the core globs (apps/simplex-store-service/**); web/src/catalog.ts is read by core tests (tests/Bots/StoreService/CatalogTests.hs, WebTests.hs);
+  - tests/fixtures/store-service/rest-api/**: the badge page's test/service-refusals.test.ts reads the refusals that WebTests.hs records there.
 - CI, in build-linux: core build and tests, then `scope-tests.sh badge-web` (step "Test changed scopes").
 - Selected core tests: `/SimpleX store service/`, which includes `/SimpleX store service e2e/`.
 - Local:
@@ -169,6 +171,33 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
   - packages/simplex-chat-python/**
 - CI, in build-linux: `scope-tests.sh support-bot-light` (step "Test changed scopes"): the Python library of the branch and the bot installed in a virtual environment, then ruff, pyright and pytest. The tests use a fake API, without libsimplex.
 - Local: `scripts/ci/scope-tests.sh support-bot-light`.
+
+#### names-page
+
+- Globs:
+  - apps/simplex-domains
+  - tests/fixtures/store-service/rest-api/**
+- CI, in build-linux: `scope-tests.sh names-page` (step "Test changed scopes"): `npm ci` in apps/simplex-domains/webapp, at the commit the submodule pins, which build-linux checks out with the submodules, then `npx vitest run test/contract test/terms-vectors.test.ts` with STORE_FIXTURES set to tests/fixtures/store-service/rest-api. These are the page's only tests that read STORE_FIXTURES: they read the answers and vectors the store service's tests record there, and without it they are skipped.
+- Store fixtures: the store service's tests write their answers to tests/fixtures/store-service/rest-api and fail when an answer differs from the committed file; the rewritten files are committed.
+- The page's other unit tests, its build and its browser tests run in the CI of its own repository (simplex-chat/simplex.domains, webapp.yml); its cases run against the store service in names-e2e.
+- Local: `scripts/ci/scope-tests.sh names-page`.
+
+#### names-e2e
+
+- Globs:
+  - apps/simplex-store-service/**
+  - tests/Bots/StoreService/**
+  - tests/fixtures/store-service/rest-api/**
+  - apps/simplex-domains
+  - scripts/store-service/**
+
+  These paths are also in the core globs, as the cases run against the service of the core build.
+- CI, in build-linux: core build, then `scope-tests.sh names-e2e` (step "Test changed scopes"):
+  - anvil and the compiled contracts from the `anvil` and `contracts` stages of the page's webapp/dev/Dockerfile, at the versions it pins;
+  - `npm ci` and Playwright's Chromium with its system packages, in apps/simplex-domains/webapp;
+  - scripts/store-service/dev/contract-run.sh with the job's simplex-chat-test: the page's end-to-end cases in Chromium against the service, with the fake BTCPay and Stripe of its tests (apps/simplex-store-service/README.md, "Running the webapp's cases against the service");
+  - on a failure, the run's folder (logs, the service's database, Playwright's results and traces) uploaded as the artifact `names-e2e`, kept 14 days (step "Names page cases' results").
+- Local: `scripts/ci/scope-tests.sh names-e2e`, with Docker; or contract-run.sh with anvil and the compiled contracts, as the README states.
 
 #### Scopes lacking CI tests
 

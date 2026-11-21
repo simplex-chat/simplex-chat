@@ -1,39 +1,47 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 
 -- | The requests only the owner code can sign: find and another name.
 module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
 
 import Control.Concurrent.STM (atomically)
 import Control.Logger.Simple (logError)
-import Data.Aeson ((.=))
+import Control.Monad.Except (ExceptT (..), runExceptT)
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.TH as JQ
+import qualified Data.Aeson.Types as JT
+import Data.Bifunctor (first)
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
 import Network.HTTP.Types (status200)
-import Network.Wai (Request, Response, ResponseReceived)
-import Simplex.Chat.PaymentService.Types (InvoiceId (..))
+import Network.Wai (Request, ResponseReceived)
+import Simplex.Chat.PaymentService.Types (InvoiceId)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
-import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Abi (hex)
+import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
-import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), RegistrationPayment (..), findRegistrations, getRegistration)
-import StoreService.Names.Turns (withLabelTurns)
-import StoreService.Names.View (registrationAt, registrationView)
-import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
-import StoreService.Names.Worker (sendsUsedUp)
-import StoreService.Web.Names.Orders (Answer (..), answerNow, firstRefusal, refused, sendAnswer)
-import StoreService.Web.Names.Registration (registrationChangedResponse, registrationRefusalResponse)
+import StoreService.Names.Reveal (RevealRequest, orderReveal)
+import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, retargetMessage)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), findRegistrations, getRegistration, namePhase, paymentInvoice)
+import StoreService.Names.Turns (withRegistrationTurns)
+import StoreService.Names.View (NameRefusal (..), registrationView)
+import StoreService.Web.Http (Respond, jsonResponse, maxBodyBytes, nameBodyBytes, readBoundedBody)
+import StoreService.Orders (cancelNameInvoices)
+import StoreService.Providers (Provider)
+import StoreService.Waiters (Waiters)
+import StoreService.Web.Names.Orders (Answer (..), answerNow, refusalAnswer, refused, sendAnswer)
+import StoreService.Web.Names.Registration (registrationChanged, registrationRefusal)
 
 data FindRequest = FindRequest
   { frOwner :: Address,
@@ -41,113 +49,105 @@ data FindRequest = FindRequest
     frSignature :: RecoverableSignature
   }
 
+instance J.FromJSON FindRequest where
+  parseJSON = J.withObject "find request" $ \o -> FindRequest <$> JT.explicitParseField (textWith $ first show . parseAnyCaseAddress) o "owner" <*> o J..: "timestamp" <*> o J..: "signature"
+
+newtype FindAnswer = FindAnswer {registrations :: [FoundOrder]}
+
+data FoundOrder = FoundOrder
+  { registrationId :: RegistrationId,
+    invoiceId :: Maybe InvoiceId,
+    phase :: NamePhase,
+    createdAt :: UTCTime,
+    labelHash :: Hex32,
+    sealed :: Text
+  }
+
+$(JQ.deriveToJSON defaultJSON {J.omitNothingFields = False} ''FoundOrder)
+
+$(JQ.deriveToJSON defaultJSON ''FindAnswer)
+
+data MoveRequest = MoveRequest {mvSigned :: SignedFields, mvReveal :: RevealRequest}
+
+instance J.FromJSON MoveRequest where
+  parseJSON = J.withObject "move" $ \o -> MoveRequest <$> J.parseJSON (J.Object o) <*> o J..: "reveal"
+
 -- | POST /api/registration/find, the owner's orders newest first.
 findHandler :: OrdersEnv -> Request -> Respond -> IO ResponseReceived
 findHandler OrdersEnv {oeStore, oeNow} req respond =
   readBoundedBody maxBodyBytes req >>= requested >>= sendAnswer respond
   where
     requested = \case
-      Just body | Just (J.Object o) <- J.decode body, Just request <- parseFind o -> found request
-      _ -> refuse ORBadRequest
+      Just body -> either (refuse . ORBadRequest . ("a malformed find request: " <>) . T.pack) found $ J.eitherDecode body
+      Nothing -> refuse $ ORBadRequest "a find request over the body cap"
     found FindRequest {frOwner, frTimestamp, frSignature} = do
       now <- oeNow
-      firstRefusal [checkSigner frOwner (findMessage frOwner frTimestamp) frSignature, pure $ checkTimestamp now frTimestamp] >>= \case
-        Just refusal -> refuse refusal
-        Nothing ->
-          withTransaction oeStore (\db -> findRegistrations db frOwner now) >>= \case
-            [] -> pure $ answerNow notFound
-            rs -> pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (\(r, holder) -> foundJSON (registrationAt now r) holder) rs]
+      runExceptT (mapM_ ExceptT [checkSigner frOwner (findMessage frOwner frTimestamp) frSignature, pure $ checkTimestamp now frTimestamp]) >>= \case
+        Left refusal -> refuse refusal
+        Right () -> do
+          rs <- withTransaction oeStore (`findRegistrations` frOwner)
+          pure $ answerNow $ jsonResponse status200 $ J.toJSON FindAnswer {registrations = map foundOrder rs}
     refuse = refused "POST /api/registration/find"
 
-parseFind :: J.Object -> Maybe FindRequest
-parseFind o = do
-  frOwner <- eitherToMaybe . parseAnyCaseAddress =<< textField o "owner"
-  frTimestamp <- integerField =<< KM.lookup "timestamp" o
-  frSignature <- eitherToMaybe . parseSignature =<< textField o "signature"
-  pure FindRequest {frOwner, frTimestamp, frSignature}
-
--- | balanceSource: the order whose balance paid this one; heldBy: the order whose invoice holds this one's balance.
-foundJSON :: NameRegistration -> Maybe RegistrationId -> J.Value
-foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed, nrBalanceSource} holder =
-  J.object
-    [ "registrationId" .= rid,
-      "invoiceId" .= invoiceId,
-      "phase" .= (textEncode nrPhase :: Text),
-      "createdAt" .= nrCreatedAt,
-      "labelHash" .= hex lh,
-      "sealed" .= nrSealed,
-      "balanceSource" .= (idText <$> nrBalanceSource),
-      "heldBy" .= (idText <$> holder)
-    ]
-  where
-    idText (RegistrationId t) = t
-    invoiceId = case nrPayment of
-      RPInvoice _ (InvoiceId t) -> Just t
-      RPCode _ -> Nothing
-      RPBalance -> Nothing
+foundOrder :: NameRegistration -> FoundOrder
+foundOrder NameRegistration {nrId, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} =
+  FoundOrder
+    { registrationId = nrId,
+      invoiceId = paymentInvoice nrPayment,
+      phase = namePhase nrPhase,
+      createdAt = nrCreatedAt,
+      labelHash = Hex32 lh,
+      sealed = nrSealed
+    }
 
 -- | POST /api/registration/:id/name, another name or other links, under the turns of both names.
-retargetHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
-retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} ridText req respond =
+retargetHandler :: OrdersEnv -> [Provider] -> Waiters -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow, oePhases} providers waiters rid@(RegistrationId ridText) req respond =
   readBoundedBody nameBodyBytes req >>= requested >>= sendAnswer respond
   where
-    rid = RegistrationId ridText
     requested = \case
-      Just body | Just (J.Object o) <- J.decode body, Just request@(fields, _, _) <- parseOrderFields o -> either refuse (const $ signed request) (checkLength fields)
-      _ -> refuse ORBadRequest
-    signed (fields, timestamp, signature) =
+      Just body | Just v <- J.decode body -> either refuse signed (parseBody "move" v >>= \MoveRequest {mvSigned, mvReveal} -> (,mvReveal) <$> signedFields mvSigned)
+      _ -> refuse $ ORBadRequest "a malformed move"
+    signed ((fields, timestamp, signature), reveal) =
       withTransaction oeStore (`getRegistration` rid) >>= \case
-        Nothing -> pure $ answerNow notFound
-        Just NameRegistration {nrOwner, nrLabelHash} ->
+        Nothing -> pure $ refusalAnswer NRNotFound
+        Just r@NameRegistration {nrOwner} ->
           checkSigner nrOwner (retargetMessage rid fields timestamp) signature >>= \case
             Left refusal -> refuse refusal
-            Right () -> withLabelTurns oeTurns nrLabelHash (ofLabelHash fields) $ inTurns [nrLabelHash, ofLabelHash fields] fields timestamp
-    -- another move can take the order to a name whose turn this request does not hold
-    inTurns held fields timestamp = do
+            Right () ->
+              withRegistrationTurns oeStore oeTurns r (ofLabelHash fields) (inTurns fields timestamp reveal)
+                >>= maybe (pure $ refusalAnswer NRNotFound) (either (const changed) pure)
+    inTurns fields timestamp reveal stored = do
       now <- oeNow
-      withTransaction oeStore (`getRegistration` rid) >>= \case
-        Nothing -> pure $ answerNow notFound
-        Just stored
-          | nrLabelHash stored `notElem` held -> changed
-          | otherwise -> moveTo now (registrationAt now stored) fields timestamp
-    moveTo now r@NameRegistration {nrPhase} fields timestamp
-      | orderFieldsOf r == fields = answerNow . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now r
+      moveTo now stored fields timestamp reveal
+    moveTo now r fields timestamp reveal
+      | orderFieldsOf r == fields = answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
-      | not (movable r) = refuse ORBadRequest
-      | nrPhase == PFailed =
-          confirmLanded env r >>= \case
-            LNotLanded ->
-              sendsUsedUp env r >>= \case
-                True -> refuse ORBadRequest
-                False -> moveChecked now r fields
-            LRegistered v -> written env rid v <$> registrationChangedResponse env rid
-            LChanged -> changed
-            LUnread -> refuse ORNameCheckUnavailable
-      | otherwise = moveChecked now r fields
-    moveChecked now r@NameRegistration {nrMoves, nrYears, nrPrice, nrPayment} fields@OrderFields {ofLabelHash, ofLength, ofDuration}
-      | nrMoves >= nMaxOrderMoves oeConfig = answerNow <$> registrationRefusalResponse env "move_limit" rid
+      | not (movable now r) = refuse $ ORBadRequest "the order is not movable"
+      | otherwise = moveChecked now r fields reveal
+    moveChecked now r@NameRegistration {nrOwner, nrMoves, nrYears, nrReveal} fields@OrderFields {ofLabelHash, ofDuration} reveal
+      | nrMoves >= nMaxOrderMoves oeConfig = refusalAnswer <$> registrationRefusal env NRMoveLimit rid
       | otherwise =
-          firstRefusal [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore ofLabelHash] >>= \case
-            Just refusal -> refuse refusal
-            Nothing -> case nrPayment of
-              RPInvoice {} -> checkMovePrice oeContracts r ofLength years >>= either refuse (write now r fields)
-              RPBalance -> checkMovePrice oeContracts r ofLength years >>= either refuse (write now r fields)
-              RPCode _ -> write now r fields nrPrice
+          runExceptT (mapM_ ExceptT [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now years ofDuration, checkTerms oeConfig oeContracts fields, checkNameFree oeContracts oeStore (Just rid) ofLabelHash] >> ExceptT (orderReveal oeConfig oeContracts now nrOwner fields nrReveal reveal)) >>= \case
+            Left refusal -> refuse refusal
+            Right rv -> write now r fields rv
       where
         years = orderYears fields nrYears
-    write now r fields price =
-      retargetOrder env r fields price >>= \case
+    write now r fields rv =
+      retargetOrder env r fields rv >>= \case
         Right v -> movedAnswer now v
         Left WRChanged -> changed
         Left (WRRefused refusal) -> refuse refusal
     movedAnswer now v =
       withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just r -> written env rid v . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now (registrationAt now r)
-        Nothing -> answerNow internalError <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
-    changed = answerNow <$> registrationChangedResponse env rid
-    refuse = refused "POST /api/registration/:id/name"
+        Just r -> heldAfter . written env rid v . answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
+        Nothing -> refusalAnswer NRInternal <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
+    changed = refusalAnswer <$> registrationChanged env rid
+    heldAfter a@Answer {aAfter} = a {aAfter = aAfter >> cancelNameInvoices oeStore waiters (Just oePhases) providers rid}
+    what = "POST /api/registration/:id/name"
+    refuse = refused what
 
 -- | Published after the turn, as the answer is sent.
-written :: OrdersEnv -> RegistrationId -> Int64 -> Response -> Answer
-written OrdersEnv {oePhases} rid v aResponse = Answer {aResponse, aAfter = atomically $ publish oePhases rid v}
+written :: OrdersEnv -> RegistrationId -> Int64 -> Answer -> Answer
+written OrdersEnv {oePhases} rid v a = a {aAfter = atomically $ publish oePhases rid v}
 

@@ -6,7 +6,7 @@ module ChatTests.Names where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay, waitQueuedLinkUpdates)
+import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel', prepareChannel1Relay, waitConnectedContactsSettled, waitQueuedLinkUpdates, waitRosterApplied)
 import ChatTests.Utils
 import Control.Concurrent.Async (concurrently_)
 import Data.Int (Int64)
@@ -322,6 +322,8 @@ testChannelDomainVerify ps = withSmpServerAndNames ps $ \reg ->
         alice ##> "/_verify domain #1"
         alice <## "SimpleX name #team verified"
         memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
+        waitRosterApplied bob
+        waitQueuedLinkUpdates alice
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team verified"
         -- the name is re-pointed to a different link: verification fails
@@ -797,6 +799,7 @@ testPlanKnownNameMovedToKnownChat = withKnownAliceName $ \reg alice bob cath -> 
   concurrently_
     (bob <## "cath (Catherine): contact is connected")
     (cath <## "bob (Bob): contact is connected")
+  waitConnectedContactsSettled bob
   bob ##> "/_connect plan 1 @alice.simplex"
   knownContactPlan "cath" "alice.simplex" bob
   bob <## "known contact @alice"
@@ -1007,6 +1010,8 @@ joinVerifiedTeam reg alice cath bob = do
   registerName reg teamSimplexName (channelNameRecord "team.simplex" (T.pack shortLink))
   setChannelDomain alice cath "alice" "team" "team.simplex"
   memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
+  waitRosterApplied bob
+  waitQueuedLinkUpdates alice
   bob ##> "/_verify domain #1"
   bob <## "SimpleX name #team verified"
   pure shortLink
@@ -1087,6 +1092,8 @@ joinChannelByName g alice cath bob = do
         cath <## ("#" <> g <> ": bob joined the group"),
       alice <### [EndsWith "(Bob) in the channel"]
     ]
+  waitRosterApplied bob
+  waitQueuedLinkUpdates alice
 
 withTeamChats :: HasCallStack => (NameRegistry -> String -> String -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
 withTeamChats test = withChannelChats $ \reg alice cath bob -> do

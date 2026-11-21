@@ -4,4 +4,4 @@
 [submodule "apps/simplex-domains"]
 	path = apps/simplex-domains
 	url = https://github.com/simplex-chat/simplex.domains
-	branch = sh/names-webapp
+	branch = names

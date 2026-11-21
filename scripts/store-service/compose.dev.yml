@@ -49,15 +49,7 @@ services:
       retries: 30
       start_period: 10s
 
-  # compose replaces a command whole, so this is compose.yml's with the dev database in place of BADGE_DB_CONN
   store-service:
-    command:
-      - "-d"
-      - "postgresql://simplex@127.0.0.1:5433/store_service"
-      - "--create-schema"
-      - "--yes-migrate"
-      - "--service-config"
-      - "/etc/simplex-store-service/store_service.ini"
     volumes:
       # compose creates every container before it starts any, so compose.yml's create_host_path: false would refuse a
       # first start before the chain writes ./config; this entry replaces that one by its target

@@ -10,10 +10,12 @@ module Bots.StoreService.WebTests
     withApp,
     withServiceStore,
     withServiceStores,
+    serviceSchemaDumpDBOpts,
     columnsOf,
     runMigrations,
     digestFixture,
     capturingStderr,
+    renameTable,
     overdueOf,
     StubState (..),
     StubCall (..),
@@ -22,6 +24,8 @@ module Bots.StoreService.WebTests
     stubCalls,
     setSignals,
     sampleProviderInvoice,
+    stubRate,
+    invoiceStatus,
     prepareStaticDir,
     testServiceConfig,
     testBTCPayConfig,
@@ -31,6 +35,15 @@ module Bots.StoreService.WebTests
     statusOf,
     jsonObject,
     fieldOf,
+    phaseOf,
+    phaseFieldOf,
+    phaseValue,
+    answerOf,
+    refusedWith,
+    storeFixture,
+    responseFixture,
+    answerFixture,
+    siteConfigJson,
     rcv,
     bounded,
     seedCheckoutCatalog,
@@ -38,27 +51,35 @@ module Bots.StoreService.WebTests
     supporterPriceId,
     codeHashText,
     sampleCode,
+    sampleInvoice,
+    seedBadgePrice,
+    agreed,
+    lengthOf,
   )
 where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel, providerCheckoutTimeoutMicros, providerTimeoutMicros)
+import StoreService.Names.Signatures (AgreedTerms)
+import StoreService.Names.Store (BrokenInvariant (..))
 import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
 import StoreService.Poller
 import StoreService.Providers
 import StoreService.Providers.BTCPay (btcpayProvider, listPageSize, maxListPages)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store (CreditedPurchase (..), FundingCredit (..), KeyPurchase (..), KeyRedemption (..), ManagedGroup (..), NewCodePurchase (..), NewStorePurchase (..), PaymentRebind (..), PurchaseSubscription (..), RevokeResult (..), appendLedgerPlan, createCodePurchase, createStorePurchase, getCodePurchaseForKey, getLedgerEntries, getLedgerTip, getManagedGroup, getMovedFromExpiry, getPurchaseByKey, getPurchaseSubscription, getStorePaymentCredit, insertBadgeCode, insertManagedGroup, insertSubscriptionCharge, markOwnerBootstrapped, rebindStorePayment, revokeCode)
-import StoreService.StoreReceipts (StoreCharge (..))
+import StoreService.StoreReceipts (StoreChecks (..), StoreCharge (..))
 import StoreService.Store.Invoices
 import StoreService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import StoreService.Web.Http
 import StoreService.Web.Server
 import Bots.StoreService.BotTests (codeCounts, newPurchaseKeys)
 import Bots.StoreService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
-import Bots.StoreService.ConfigTests (chainSection, namesSection, parsedNames)
+import Bots.StoreService.ConfigTests (chainSection, namesSection, parsedNames, resolverAddr, sponsorAddr)
 import Bots.StoreService.FakeBTCPay
+import Bots.StoreService.FakeHttp (withResetServer)
 import Bots.StoreService.FakeStripe (FakeStripe (..), fakeIntentStatus, setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
+import ChatTests.Utils (writeFixture)
 import Control.Concurrent (forkIO, forkOn, getNumCapabilities, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
@@ -79,11 +100,12 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (toLower)
 import Data.Either (isLeft)
 import Data.Functor ((<&>))
-import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef)
+import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Int (Int64)
 import Data.List (isInfixOf, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, isJust, isNothing, fromMaybe, mapMaybe)
+import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -103,6 +125,7 @@ import Network.Wai (Application)
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
+import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Chat.Badges.Ledger (addMonths, debitEntry, emptyEntry, grantEntry, issueEntry)
 import Simplex.Chat.StoreService (BadgeOffer (..), BadgePrice (..), StatementCreditType (..), StatementDebitType (..), StatementEntry (..), SubscriptionState (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
@@ -114,6 +137,7 @@ import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSignature (..))
 import Simplex.Messaging.Encoding.String (textDecode, textEncode)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Directory (createDirectoryIfMissing, createFileLink, doesFileExist, listDirectory)
 import System.FilePath ((</>))
@@ -126,13 +150,12 @@ import UnliftIO.Temporary (withTempDirectory)
 
 #if defined(dbPostgres)
 import StoreService.Store.Postgres.Migrations (schemaMigrations, storeServiceSchemaMigrations)
-import ChatClient (testDBConnstr)
-import Database.PostgreSQL.Simple (Only (..))
+import ChatClient (schemaDumpDBOpts, testDBConnstr)
+import Database.PostgreSQL.Simple (Only (..), (:.) (..))
 import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
 #else
 import StoreService.Store.SQLite.Migrations (schemaMigrations, storeServiceSchemaMigrations)
-import Data.String (fromString)
-import Database.SQLite.Simple (Only (..))
+import Database.SQLite.Simple (Only (..), (:.) (..))
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Messaging.Agent.Store.DB (TrackQueries (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
@@ -171,6 +194,13 @@ withServiceDBOpts action = do
   withTempDirectory "tests/tmp" "badge-web" $ \dir -> action (DBOpts (dir </> "badge_service_test.db") [] "" False True TQOff)
 #endif
 
+serviceSchemaDumpDBOpts :: DBOpts
+#if defined(dbPostgres)
+serviceSchemaDumpDBOpts = schemaDumpDBOpts {schema = "test_store_service_schema"}
+#else
+serviceSchemaDumpDBOpts = DBOpts "tests/tmp/test_store_service.db" [] "" False True TQOff
+#endif
+
 columnsOf :: DBStore -> Text -> IO [Text]
 columnsOf st table = withConnection st $ \db ->
 #if defined(dbPostgres)
@@ -191,10 +221,8 @@ badgeWebTests = do
     it "refuses a duplicate provider_ref" testProviderRefUnique
     it "M20260918 adds the multi-use columns and the group table" testGroupOpsColumns
     it "M20260918 defaults a fresh code to one use with none spent" testGroupOpsRedeemCounts
-    it "declares its migrations in name order, master's badge migrations before the names ones" testMigrationOrder
-    it "migrates all the way down and up again" testSchemaDownUpCycle
+    it "declares its migrations in name order, master's badge migrations before the names ones, each with a down migration" testMigrationOrder
     it "rolls back only the group migration and re-applies it, keeping a code redeemed twice spent" testGroupOpsDownUp
-    it "rolls back only the subscription migration, restoring the columns it dropped, and re-applies it" testSubscriptionsDownUp
   describe "store service store" $ do
     it "writes the invoice, its code and their link atomically" testCreationIsAtomic
     it "newInvoiceId is 128 CSPRNG bits, base64url, and two calls differ" testNewInvoiceIdRandom
@@ -257,7 +285,7 @@ badgeWebTests = do
     it "holds ?wait=open, and is woken by publish rather than polled" testHoldIsWokenNotPolled
     it "refuses over sixty reads a minute from one IP" testReadRateLimit
     it "takes the client from X-Forwarded-For only when it is trusted" testForwardedForOnlyWhenTrusted
-    it "uses a forwarded client only when it parses as an IP address" testForwardedForMustBeAnAddress
+    it "uses a forwarded client only when it parses as an IP address, an IPv4 one in its canonical form" testForwardedForMustBeAnAddress
     it "keys an IPv6 client by its /64 and an IPv4-mapped one by its IPv4 address" testIPv6ClientKey
     it "caps checkouts of every client together, counting only those that reach the provider" testInvoicesLimitForAll
     it "caps checkouts per IPv4 /24 and IPv6 /48 before the shared cap, so the refused ones take none of it" testCheckoutLimitPerNetwork
@@ -272,7 +300,7 @@ badgeWebTests = do
     it "answers a handler exception with 500 internal, and keeps serving" testHandlerExceptionIsContained
     it "logs a handler exception as one service log record, never a bare line" testHandlerExceptionIsLogged
   describe "StoreService names: sites" $ do
-    it "answers GET /api/config on both ports with the names mode and the publishable key, never cached" testServesSiteConfig
+    it "answers GET /api/config on both ports with the publishable key and the names deployment, never cached" testServesSiteConfig
     it "serves both shells as built, whatever the mode and the key" testServesShellsAsBuilt
     it "serves each site on its own port only, whatever the Host, and the API on both" testEachPortServesItsSite
     it "listens on the badges port alone without the names site" testOneListenerWithoutTheNamesSite
@@ -293,7 +321,7 @@ badgeWebTests = do
     it "publishes what it found when it loses the status guard" testLosingTheStatusGuardStillWakesTheHold
     it "never downgrades a settled payment row" testSettledPaymentIsNotDowngraded
     it "fills in a crypto amount that only arrived later" testCryptoAmountFillsInFromNull
-    it "answers Left for an invoice this service does not hold" testUnknownInvoiceSettlesNothing
+    it "throws BrokenInvariant for an invoice this service does not hold, writing no payment" testUnknownInvoiceSettlesNothing
     it "publishes after the commit, so a woken reader finds the row" testPublishIsAfterCommit
     it "wakes a request the listener is holding, from settleOrder itself" testSettlementWakesAHeldRequest
     it "reports settledAt from the payment row, not from the invoice" testSettledAtIsThePaymentRow
@@ -324,6 +352,7 @@ badgeWebTests = do
     it "cancels at a provider that keeps its invoice payable, then expires it" testSweepCancelsBeforeExpiring
     it "keeps an invoice open while its provider refuses the cancel" testSweepKeepsOpenWhenCancelFails
     it "settles an invoice past the settle window whose cancel is refused" testSweepSettlesWhatItCannotCancel
+    it "leaves uncancelled an invoice paid after the sweep listed it" testSweepSkipsAnInvoicePaidMeanwhile
     it "expires an invoice whose cancel answer was lost, from the read that follows" testSweepExpiresWhatAReadShowsCancelled
     it "expires an invoice past the settle window once its cancel has failed for an hour, and reports it" testSweepGivesUpPastTheWindow
     it "cancels overdue invoices oldest first, keeping the failures of those left for later" testSweepKeepsFailuresBeyondTheCap
@@ -331,9 +360,15 @@ badgeWebTests = do
     it "reads a self-expiring invoice past the settle window before it expires it, keeping it open while the read fails" testSweepReadsPastTheWindow
     it "reads no invoice past the settle window of a provider whose read failed in the pass" testSweepSkipsPastTheWindowWhileReadsFail
     it "reads the invoices past the settle window that never failed first, and expires one unreadable for a day while its provider answers" testSweepGivesUpAnUnreadableInvoice
+    it "expires a given-up invoice at the next pass when it is still open" testSweepExpiresAGivenUpInvoiceAgain
+    it "logs a given-up invoice as expired only once its expiry succeeds" testSweepLogsAGivenUpInvoiceOnceExpired
+    it "logs a pass that fails on the store, and the poller runs on" testPassFailureLogged
+    it "logs a sweep that fails on the store, and the late credit pass and the cleanup still run" testSweepFailureLogged
+    it "runs the rest of the pass when a provider's list resets while its answer is read" testListResetPassRuns
     it "gives up no invoice while every read fails, and counts no failure from a pass in which its provider answered nothing" testSweepCountsAnsweredFailures
     it "reads the invoice whose last failure is oldest first, so one unreadable invoice delays the others by one pass" testSweepReadsOldestFailureFirst
     it "sweeps around an overdue invoice whose provider this build does not know, leaving it open" testSweepSkipsAnUnknownProvider
+    it "warns once an hour of an unpaid invoice whose provider this build does not know" testUnpaidUnknownProviderWarnedHourly
     it "warns once per order while a cancel keeps failing" testSweepWarnsOncePerOrder
     it "cancels at most a pass-sized batch, leaving the rest for the next pass" testSweepCapsCancelsPerPass
     it "reports a skipped invoice once, and again only after the interval" testSkipWarningsAreRateLimited
@@ -441,33 +476,9 @@ testMigrationOrder = do
   let (badges, ours) = span (`elem` badgeMigrations) (map name storeServiceSchemaMigrations)
   badges `shouldBe` badgeMigrations
   ours `shouldBe` ["20261013_names"]
+  length (mapMaybe toDownMigration storeServiceSchemaMigrations) `shouldBe` length storeServiceSchemaMigrations
   where
     badgeMigrations = ["20260915_badge_service_schema", "20260918_badge_group_ops", "20260925_badge_store_receipts", "20261012_badge_subscriptions"]
-
-testSchemaDownUpCycle :: IO ()
-testSchemaDownUpCycle = withServiceStore $ \st -> do
-  let downMigrations = mapMaybe toDownMigration storeServiceSchemaMigrations
-  length downMigrations `shouldBe` length storeServiceSchemaMigrations
-  runMigrations st $ MTRDown downMigrations
-  columnsOf st "sx_badge_service_badge_codes" `shouldReturn` []
-  columnsOf st "sx_badge_service_group" `shouldReturn` []
-  columnsOf st "sx_badge_service_subscription_charges" `shouldReturn` []
-  runMigrations st $ MTRUp storeServiceSchemaMigrations
-  assertGroupOpsColumns st
-  assertSubscriptionColumns st
-
-testSubscriptionsDownUp :: IO ()
-testSubscriptionsDownUp = withServiceStore $ \st -> do
-  let subscriptions = [m | m@Migration {name = "20261012_badge_subscriptions"} <- storeServiceSchemaMigrations]
-  length subscriptions `shouldBe` 1
-  runMigrations st $ MTRDown (mapMaybe toDownMigration subscriptions)
-  columnsOf st "sx_badge_service_subscription_charges" `shouldReturn` []
-  columnsOf st "sx_badge_service_badge_ledger" >>= (`shouldNotSatisfy` \cs -> any (`elem` cs) ["charge_id", "from_purchase_id", "to_purchase_id"])
-  payments <- columnsOf st "sx_badge_service_payments"
-  payments `shouldSatisfy` \cs -> all (`elem` cs) ["subscription_renews_at", "grace_until", "cancelled"]
-  payments `shouldSatisfy` \cs -> not (any (`elem` cs) ["subscription_state", "subscription_checked_at", "provider_token", "rebound_at"])
-  runMigrations st $ MTRUp subscriptions
-  assertSubscriptionColumns st
 
 testGroupOpsDownUp :: IO ()
 testGroupOpsDownUp = withServiceStore $ \st -> do
@@ -508,8 +519,8 @@ seedInvoice :: DBStore -> Text -> IO ()
 seedInvoice st invoiceId = withConnection st $ \db ->
   DB.execute
     db
-    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-    (invoiceId, "btcpay" :: Text, 500 :: Int, 500 :: Int, "usd" :: Text, "2030-01-01T00:00:00Z" :: Text, "open" :: Text, "2026-08-31T00:00:00Z" :: Text, "2026-08-31T00:00:00Z" :: Text)
+    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, provider_ref, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
+    ((invoiceId, "btcpay" :: Text, "ref-" <> invoiceId, 500 :: Int, 500 :: Int) :. ("usd" :: Text, "2030-01-01T00:00:00Z" :: Text, "open" :: Text, "2026-08-31T00:00:00Z" :: Text, "2026-08-31T00:00:00Z" :: Text))
 
 seedBadgePrice :: DBStore -> Text -> IO ()
 seedBadgePrice st priceId = withConnection st $ \db ->
@@ -1142,7 +1153,7 @@ stubProvider ref =
       pCurrentRate = Just $ \cc -> do
         record ref (StubRate cc)
         ssRate <$> readIORef ref,
-      pVerifyWebhook = const (verifyRecording ref)
+      pVerifyWebhook = \_ hdrs body -> fmap WEPayment <$> verifyRecording ref hdrs body
     }
 
 -- | 'pVerifyWebhook' is pure by design, so recording its arguments needs 'unsafePerformIO',
@@ -1153,7 +1164,7 @@ verifyRecording ref hdrs body = unsafePerformIO $ do
   atomicModifyIORef' ref $ \s -> (s {ssWebhooks = ssWebhooks s ++ [(hdrs, body)]}, ())
   stub <- readIORef ref
   if ssVerifyThrows stub
-    then E.throwIO (userError "the adapter threw while verifying")
+    then E.throwIO E.StackOverflow
     else pure (ssVerifyResult stub)
 {-# NOINLINE verifyRecording #-}
 
@@ -1237,7 +1248,7 @@ buildHash :: FilePath
 buildHash = "d95503da54ee228f"
 
 notFoundBody :: LB.ByteString
-notFoundBody = "{\"error\":\"not_found\"}"
+notFoundBody = "{\"type\":\"not_found\"}"
 
 prepareStaticDir :: FilePath -> IO FilePath
 prepareStaticDir root = do
@@ -1254,7 +1265,7 @@ prepareStaticDir root = do
 testServiceConfig :: FilePath -> Bool -> ServiceConfig
 testServiceConfig staticDir trustForwarded =
   ServiceConfig
-    { listener = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesStaticDir = staticDir, lServeWebapp = True, lTrustForwardedFor = trustForwarded, lNamesStaticDir = Nothing, lNamesPort = Nothing, lMetricsPort = Nothing},
+    { listener = ListenerConfig {lHost = "127.0.0.1", lBadgesPort = 0, lBadgesSite = Just staticDir, lTrustForwardedFor = trustForwarded, lNamesSite = Nothing, lMetricsPort = Nothing},
       btcpay = Nothing,
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
@@ -1266,7 +1277,7 @@ testServiceConfig staticDir trustForwarded =
       serviceLogLevel = defaultLogLevel,
       names = Nothing,
       devAcceptUnverifiedStoreReceipts = False,
-      devCheckStoreDuringCoverage = False,
+      devStoreChecks = ChecksAfterCoverage,
       devCreditTestPurchases = False
     }
 
@@ -1277,7 +1288,7 @@ testServeWebappOff =
     withTempDirectory "tests/tmp" "badge-static" $ \root -> do
       staticDir <- prepareStaticDir root
       let base = testServiceConfig staticDir False
-          cfg = base {listener = (listener base) {lServeWebapp = False}}
+          cfg = base {listener = (listener base) {lBadgesSite = Nothing}}
       withListener [] True holdMicros st cfg $ \_env client -> do
         (statusOf <$> webGet client "/") >>= (`shouldBe` 404)
         (statusOf <$> webGet client "/sw.js") >>= (`shouldBe` 404)
@@ -1318,7 +1329,7 @@ withBothSitesAs settings action =
       staticDir <- prepareStaticDir root
       namesDir <- prepareNamesDir root
       let base = testServiceConfig staticDir True
-          cfg = settings base {listener = (listener base) {lBadgesPort = 8080, lNamesStaticDir = Just namesDir, lNamesPort = Just 8081}}
+          cfg = settings base {listener = (listener base) {lBadgesPort = 8080, lNamesSite = Just (8081, namesDir)}}
       withListener [] True holdMicros st cfg $ \env badges@(mgr, _) -> do
         map fst (webListeners env) `shouldBe` [8080, 8081]
         [_, (_, namesSite)] <- pure (webListeners env)
@@ -1333,8 +1344,18 @@ namesWithCodesOnly on = parsedNames (namesSection <> ["codes_only = " <> if on t
 configOf :: WebClient -> IO (Int, Maybe ByteString, Maybe J.Value)
 configOf client = (\r -> (statusOf r, headerOf r hCacheControl, J.decode (responseBody r))) <$> webGet client "/api/config"
 
-siteConfigJson :: Text -> Maybe Text -> Maybe J.Value
-siteConfigJson mode key = Just $ J.object ["mode" J..= mode, "stripePublishableKey" J..= key]
+siteConfigJson :: Maybe Bool -> Maybe Text -> Maybe J.Value
+siteConfigJson codesOnly key = Just $ J.object ["stripePublishableKey" J..= key, "names" J..= (namesSiteJson <$> codesOnly)]
+  where
+    namesSiteJson on =
+      J.object
+        [ "codesOnly" J..= on,
+          "chainId" J..= (31337 :: Int),
+          "resolver" J..= resolverAddr,
+          "sponsor" J..= sponsorAddr,
+          "tld" J..= ("testing" :: Text),
+          "termStart" J..= (1798761600 :: Int)
+        ]
 
 testServesSiteConfig :: IO ()
 testServesSiteConfig = bounded "site config" $ do
@@ -1342,10 +1363,13 @@ testServesSiteConfig = bounded "site config" $ do
   open <- namesWithCodesOnly False
   let answers settings expected = withBothSitesAs settings $ \badges namesSite ->
         forM_ [badges, namesSite] $ \client -> configOf client `shouldReturn` (200, Just "no-store", expected)
-  answers (\cfg -> cfg {names = Just codesOnly}) (siteConfigJson "codes" Nothing)
-  answers (\cfg -> cfg {names = Just codesOnly, stripe = Just publishTestStripe}) (siteConfigJson "codes" (Just "pk_test_injected"))
-  answers (\cfg -> cfg {names = Just open, stripe = Just publishTestStripe}) (siteConfigJson "open" (Just "pk_test_injected"))
-  answers (\cfg -> cfg {names = Nothing}) (siteConfigJson "open" Nothing)
+  answers (\cfg -> cfg {names = Just codesOnly}) (siteConfigJson (Just True) Nothing)
+  answers (\cfg -> cfg {names = Just codesOnly, stripe = Just publishTestStripe}) (siteConfigJson (Just True) (Just "pk_test_injected"))
+  answers (\cfg -> cfg {names = Just open, stripe = Just publishTestStripe}) (siteConfigJson (Just False) (Just "pk_test_injected"))
+  answers (\cfg -> cfg {names = Nothing}) (siteConfigJson Nothing Nothing)
+  let fixture name settings = withBothSitesAs settings $ \_ namesSite -> webGet namesSite "/api/config" >>= responseFixture name
+  fixture "config" (\cfg -> cfg {names = Just open, stripe = Just publishTestStripe})
+  fixture "config-codes-only" (\cfg -> cfg {names = Just codesOnly})
 
 testServesShellsAsBuilt :: IO ()
 testServesShellsAsBuilt = bounded "shells as built" $ do
@@ -1393,7 +1417,7 @@ testOneListenerWithoutTheNamesSite =
     withTempDirectory "tests/tmp" "badge-static" $ \root -> do
       staticDir <- prepareStaticDir root
       let base = testServiceConfig staticDir False
-          apiOnly = base {listener = (listener base) {lBadgesPort = 8080, lServeWebapp = False}}
+          apiOnly = base {listener = (listener base) {lBadgesPort = 8080, lBadgesSite = Nothing}}
       forM_ [base {listener = (listener base) {lBadgesPort = 8080}}, apiOnly] $ \cfg ->
         withListener [] True holdMicros st cfg $ \env _ -> map fst (webListeners env) `shouldBe` [8080]
 
@@ -1433,12 +1457,11 @@ testSiteDirsMustExist = do
         lc = listener (testServiceConfig staticDir False)
         missing site dir = Left ("listener." <> site <> "_static_dir = " <> dir <> " is not a directory; set it to the " <> site <> " build, since the default is the Docker image's path")
     checkSiteDirs lc `shouldReturn` Right ()
-    checkSiteDirs lc {lNamesStaticDir = Just namesDir, lNamesPort = Just 8081} `shouldReturn` Right ()
-    checkSiteDirs lc {lBadgesStaticDir = absent} `shouldReturn` missing "badges" absent
-    checkSiteDirs lc {lBadgesStaticDir = absent, lServeWebapp = False} `shouldReturn` Right ()
-    checkSiteDirs lc {lNamesStaticDir = Just absent, lNamesPort = Just 8081} `shouldReturn` missing "names" absent
-    checkSiteDirs lc {lServeWebapp = False, lNamesStaticDir = Just absent} `shouldReturn` Right ()
-    checkSiteDirs lc {lBadgesStaticDir = root </> "secret.txt"} `shouldReturn` missing "badges" (root </> "secret.txt")
+    checkSiteDirs lc {lNamesSite = Just (8081, namesDir)} `shouldReturn` Right ()
+    checkSiteDirs lc {lBadgesSite = Just absent} `shouldReturn` missing "badges" absent
+    checkSiteDirs lc {lBadgesSite = Nothing} `shouldReturn` Right ()
+    checkSiteDirs lc {lNamesSite = Just (8081, absent)} `shouldReturn` missing "names" absent
+    checkSiteDirs lc {lBadgesSite = Just (root </> "secret.txt")} `shouldReturn` missing "badges" (root </> "secret.txt")
 
 type WebClient = (Manager, String)
 
@@ -1514,6 +1537,37 @@ jsonObject r = case J.decode (responseBody r) of
 fieldOf :: J.Object -> Text -> Maybe J.Value
 fieldOf o k = KM.lookup (K.fromText k) o
 
+phaseOf :: J.Object -> Maybe J.Value
+phaseOf v = phaseFieldOf v "type"
+
+phaseFieldOf :: J.Object -> Text -> Maybe J.Value
+phaseFieldOf v k = case fieldOf v "phase" of
+  Just (J.Object p) -> fieldOf p k
+  _ -> Nothing
+
+phaseValue :: Text -> [(K.Key, J.Value)] -> J.Value
+phaseValue t fields = J.object $ ("type" J..= t) : fields
+
+answerOf :: J.FromJSON a => Response LB.ByteString -> (Int, Maybe a)
+answerOf r = (statusOf r, J.decode (responseBody r))
+
+refusedWith :: Int -> Text -> (Int, Maybe J.Object)
+refusedWith status tag = (status, Just $ KM.fromList [("type", J.String tag)])
+
+storeFixture :: String -> Int -> Maybe J.Value -> Maybe ByteString -> IO ()
+storeFixture name status body retryAfter =
+  writeFixture ("store-service/rest-api/" <> name) . J.object $ ["status" .= status, "body" .= body] <> maybe [] (\h -> ["retryAfter" .= safeDecodeUtf8 h]) retryAfter
+
+responseFixture :: String -> Response LB.ByteString -> IO ()
+responseFixture name r = storeFixture name (statusOf r) (J.decode $ responseBody r) (headerOf r "Retry-After")
+
+answerFixture :: String -> (Int, Maybe J.Object) -> IO ()
+answerFixture name (status, body) = storeFixture name status (J.Object . KM.mapWithKey stableId <$> body) Nothing
+  where
+    stableId k = \case
+      J.Object v | k == "registration" -> J.Object $ KM.insert "id" "registration" v
+      v -> v
+
 timedGet :: WebClient -> String -> IO (NominalDiffTime, Response LB.ByteString)
 timedGet client target = do
   started <- getCurrentTime
@@ -1560,9 +1614,16 @@ expireRow :: DBStore -> InvoiceId -> IO ()
 expireRow st (InvoiceId iid) = withConnection st $ \db ->
   DB.execute db "UPDATE sx_badge_service_invoices SET status = 'expired' WHERE invoice_id = ?" (Only iid)
 
+reopenRow :: DBStore -> InvoiceId -> IO ()
+reopenRow st (InvoiceId iid) = withConnection st $ \db ->
+  DB.execute db "UPDATE sx_badge_service_invoices SET status = 'open' WHERE invoice_id = ?" (Only iid)
+
 breakStore :: DBStore -> IO ()
 breakStore st = withConnection st $ \db ->
   DB.execute_ db "DROP TABLE sx_badge_service_badge_code_invoices"
+
+renameTable :: DBStore -> String -> String -> IO ()
+renameTable st from to = withTransaction st $ \db -> DB.execute_ db $ fromString $ "ALTER TABLE " <> from <> " RENAME TO " <> to
 
 readsPerMinute :: Int
 readsPerMinute = lmPerMinute readLimit
@@ -1678,7 +1739,7 @@ testInvoiceView = bounded "invoice view" $ withWebApp $ \env client -> do
   case fieldOf o "expiresAt" of
     Just (J.String t) -> T.unpack t `shouldStartWith` "2030-01-01T00:00:00"
     other -> expectationFailure ("expiresAt is " <> show other)
-  settle (weStore env) iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) detectedAt `shouldReturn` Right ISPaid
+  settle (weStore env) iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) detectedAt `shouldReturn` ISPaid
   settled <- webGet client (invoicePath iid)
   po <- jsonObject settled
   fieldOf po "status" `shouldBe` Just (J.String "paid")
@@ -1767,7 +1828,7 @@ testWaitAnswersAtOnce = bounded "wait answers at once" $ withWebApp $ \env clien
 testHoldAnswersAPaymentThePageHasNotSeen :: IO ()
 testHoldAnswersAPaymentThePageHasNotSeen = bounded "hold sees the payment" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
-  settle (weStore env) iid (SigFunded (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` Right ISOpen
+  settle (weStore env) iid (SigFunded (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` ISOpen
   (staleElapsed, stale) <- timedGet client (invoicePath iid <> "?wait=open&seenPaid=")
   statusOf stale `shouldBe` 200
   staleElapsed `shouldSatisfy` (< 1)
@@ -1782,7 +1843,7 @@ testHoldAnswersAPaymentThePageHasNotSeen = bounded "hold sees the payment" $ wit
 testHoldAnswersAVerdictWithNoFigure :: IO ()
 testHoldAnswersAVerdictWithNoFigure = bounded "hold sees the verdict" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
-  settle (weStore env) iid (SigFunded (rcv 0 Nothing) PaidInFull) settleAt `shouldReturn` Right ISOpen
+  settle (weStore env) iid (SigFunded (rcv 0 Nothing) PaidInFull) settleAt `shouldReturn` ISOpen
   (elapsed, r) <- timedGet client (invoicePath iid <> "?wait=open&seenPaid=&seenFull=0")
   statusOf r `shouldBe` 200
   elapsed `shouldSatisfy` (< 1)
@@ -1808,7 +1869,7 @@ testReadRateLimit = bounded "read rate limit" $ withWebApp $ \_ client -> do
   allowed `shouldSatisfy` all (== 404)
   refused <- webGet client target
   statusOf refused `shouldBe` 429
-  responseBody refused `shouldBe` "{\"error\":\"rate_limited\"}"
+  responseBody refused `shouldBe` "{\"type\":\"rate_limited\"}"
   case headerOf refused "Retry-After" >>= (readMaybe . BC.unpack) of
     Just seconds -> seconds `shouldSatisfy` \s -> s >= (1 :: Int) && s <= 60
     Nothing -> expectationFailure ("Retry-After is " <> show (headerOf refused "Retry-After"))
@@ -1847,13 +1908,13 @@ testForwardedForMustBeAnAddress = bounded "forwarded-for is an address" $ withWe
         r <- webRequest client "GET" target [("X-Forwarded-For", v)]
         (v, statusOf r) `shouldBe` (v, 429)
     )
-    ["", "not-an-address", "010.0.0.1", "1.2.3.4.5", "256.1.1.1", "1.2.3", "::1%eth0", "1:2:3:4:5:6:7", "[2001:db8::1]", "1.2.3.4:5678", "gggg::1", "12345::1"]
+    ["", "not-an-address", "010.0.0.1", "1.2.3.4.5", "256.1.1.1", "1.2.3.300", "1.2.3", "::1%eth0", "1:2:3:4:5:6:7", "1.2.3.4:5678", "gggg::1", "12345::1"]
   mapM_
     ( \v -> do
         r <- webRequest client "GET" target [("X-Forwarded-For", v)]
         (v, statusOf r) `shouldBe` (v, 404)
     )
-    ["192.0.2.7", "2001:db8::1", "::1", "::", "::ffff:192.0.2.1", "1:2:3:4:5:6:7:8"]
+    ["192.0.2.7", "2001:db8::1", "[2001:db8::2]", "::1", "::", "::ffff:192.0.2.1", "1:2:3:4:5:6:7:8"]
 
 testIPv6ClientKey :: IO ()
 testIPv6ClientKey = bounded "IPv6 client key" $ withWebAppForwarded True $ \_ client -> do
@@ -2012,7 +2073,7 @@ testHandlerExceptionIsContained = bounded "handler exception" $ withWebAppExpect
   breakStore (weStore env)
   r <- webGet client (invoicePath iid)
   statusOf r `shouldBe` 500
-  responseBody r `shouldBe` "{\"error\":\"internal\"}"
+  responseBody r `shouldBe` "{\"type\":\"internal\"}"
   headerOf r hCacheControl `shouldBe` Just "no-store"
   shell <- webGet client "/"
   statusOf shell `shouldBe` 200
@@ -2077,6 +2138,12 @@ codeHashText = T.filter (/= '=') . safeDecodeUtf8 . B64U.encode . codeDigest
 sampleCode :: Text
 sampleCode = "YDC8AYGQTMPUYZ92TUXP"
 
+agreed :: Text -> AgreedTerms
+agreed t = fromMaybe (error $ "agreed terms: " <> T.unpack t) $ textDecode t
+
+lengthOf :: Int -> NameLength
+lengthOf n = fromMaybe (error $ "name length " <> show n) $ nameLength n
+
 createBody :: Text -> Maybe Text -> Text -> Text -> LB.ByteString
 createBody priceId offerId method codeHash =
   J.encode . J.object $
@@ -2129,7 +2196,7 @@ stringField o k = case fieldOf o k of
   other -> failWith (T.unpack k <> " is " <> show other)
 
 errorBody :: Text -> LB.ByteString
-errorBody code = "{\"error\":\"" <> LB.pack (T.unpack code) <> "\"}"
+errorBody code = "{\"type\":\"" <> LB.pack (T.unpack code) <> "\"}"
 
 testCreateInvoice :: IO ()
 testCreateInvoice = bounded "create invoice" $ withCheckout $ \ref env client -> do
@@ -2230,6 +2297,7 @@ testCatalogRefusalCostsNothing = bounded "catalog refusals" $ withCheckout $ \re
         r <- postCreateAs client i (createBody priceId offerId "btc" (codeHashText sampleCode))
         (label, statusOf r) `shouldBe` (label, 400)
         (label, responseBody r) `shouldBe` (label, errorBody "catalog_changed")
+        when (i == 30) $ responseFixture "invoice-catalog-changed" r
     )
     (zip [30 ..] cases)
   stubCalls ref `shouldReturn` []
@@ -2244,6 +2312,7 @@ testCodeConflictCostsNothing = bounded "code conflict" $ withCheckout $ \ref env
   again <- postCreateAs client 2 (createBody supporterPriceId Nothing "btc" (codeHashText sampleCode))
   statusOf again `shouldBe` 409
   responseBody again `shouldBe` errorBody "code_conflict"
+  responseFixture "invoice-code-conflict" again
   stubCalls ref `shouldReturn` sold
   invoiceCount (weStore env) `shouldReturn` 1
 
@@ -2280,6 +2349,7 @@ testStoreLostAfterTheProviderCreated = bounded "orphan at the provider" $ do
     r <- postCreateAs client 1 (createBody supporterPriceId Nothing "btc" (codeHashText sampleCode))
     statusOf r `shouldBe` 500
     responseBody r `shouldBe` errorBody "internal"
+    responseFixture "invoice-internal" r
     headerOf r hCacheControl `shouldBe` Just "no-store"
     length <$> stubCalls ref `shouldReturn` 1
     invoiceCount (weStore env) `shouldReturn` 0
@@ -2329,6 +2399,7 @@ testOversizedBodyCostsNothing = bounded "oversized body" $ withCheckout $ \ref e
   r <- postCreateAs client 1 padded
   statusOf r `shouldBe` 400
   responseBody r `shouldBe` errorBody "bad_request"
+  responseFixture "invoice-bad-request" r
   stubCalls ref `shouldReturn` []
   invoiceCount (weStore env) `shouldReturn` 0
   small <- postCreateAs client 2 (J.encode (J.object ["priceId" .= supporterPriceId, "method" .= ("btc" :: Text), "codeHash" .= codeHashText sampleCode, "padding" .= T.replicate 16 "x"]))
@@ -2339,6 +2410,7 @@ testCardUnconfigured503 = bounded "card is unavailable" $ withCheckout $ \ref en
   r <- postCreateAs client 1 (createBody supporterPriceId Nothing "card" (codeHashText sampleCode))
   statusOf r `shouldBe` 503
   responseBody r `shouldBe` errorBody "provider_unavailable"
+  responseFixture "invoice-provider-unavailable" r
   stubCalls ref `shouldReturn` []
   invoiceCount (weStore env) `shouldReturn` 0
 
@@ -2471,6 +2543,7 @@ testCreateRateLimit = bounded "create rate limit" $ withCheckoutProvider distinc
   refused <- attempt (createsPerMinute + 1)
   statusOf refused `shouldBe` 429
   responseBody refused `shouldBe` errorBody "rate_limited"
+  storeFixture "invoice-rate-limited" (statusOf refused) (J.decode $ responseBody refused) Nothing
   headerOf refused hCacheControl `shouldBe` Just "no-store"
   case headerOf refused "Retry-After" >>= (readMaybe . BC.unpack) of
     Just seconds -> seconds `shouldSatisfy` \s -> s >= (1 :: Int) && s <= 60
@@ -2489,21 +2562,23 @@ replayAt = addUTCTime 3600 settleAt
 detectedAt :: UTCTime
 detectedAt = addUTCTime 300 settleAt
 
--- | Nothing confirmed and no units, as the badge paths read it.
+-- | Nothing confirmed and no units, as the badge paths read it: card money, or crypto when its amount is given.
 rcv :: Word32 -> Maybe Text -> Received
-rcv amount crypto =
-  Received
-    { rcvAmount = CurrencyAmount amount,
-      rcvCrypto = crypto,
-      rcvDue = Nothing,
-      rcvUnits = Nothing,
-      rcvInvoicedUnits = Nothing,
-      rcvRate = Nothing,
-      rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Nothing},
-      rcvUncreditable = Nothing
-    }
+rcv amount = \case
+  Nothing -> RCard {rcAmount = CurrencyAmount amount, rcConfirmed = CurrencyAmount 0}
+  Just crypto ->
+    RCrypto
+      CryptoReceived
+        { crAmount = CurrencyAmount amount,
+          crPaid = Just crypto,
+          crDue = Nothing,
+          crUnits = Nothing,
+          crInvoicedUnits = Nothing,
+          crRate = Rate {rateText = "62500", rateValue = 62500},
+          crConfirmation = CryptoConfirmed 0 (CurrencyAmount 0)
+        }
 
-settle :: DBStore -> InvoiceId -> PaymentSignal -> UTCTime -> IO (Either Text InvoiceStatus)
+settle :: DBStore -> InvoiceId -> PaymentSignal -> UTCTime -> IO InvoiceStatus
 settle st iid signal at = newWaiters >>= \waiters -> settleOrder st waiters Nothing iid signal at
 
 seedOpen :: HasCallStack => DBStore -> IO InvoiceId
@@ -2587,7 +2662,7 @@ expireOnNextPayment st = withConnection st $ \db ->
 testSettlesAnOpenInvoice :: IO ()
 testSettlesAnOpenInvoice = bounded "settles an open invoice" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) detectedAt `shouldReturn` Right ISPaid
+  settle st iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) detectedAt `shouldReturn` ISPaid
   invoiceStatus st iid `shouldReturn` ISPaid
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 500)
@@ -2607,7 +2682,7 @@ testLateSettlementIsLegal = bounded "late settlement" $ withServiceStore $ \st -
   iid <- seedOpen st
   expireRow st iid
   invoiceStatus st iid `shouldReturn` ISExpired
-  settle st iid (SigSettled (rcv 500 Nothing) settleAt) detectedAt `shouldReturn` Right ISPaid
+  settle st iid (SigSettled (rcv 500 Nothing) settleAt) detectedAt `shouldReturn` ISPaid
   invoiceStatus st iid `shouldReturn` ISPaid
   ipStatus <$> paymentRow st iid `shouldReturn` "settled"
   bcPaymentStatus <$> settledCode st iid `shouldReturn` CPSPaid
@@ -2615,7 +2690,7 @@ testLateSettlementIsLegal = bounded "late settlement" $ withServiceStore $ \st -
 testFundedRecordsWithoutMoving :: IO ()
 testFundedRecordsWithoutMoving = bounded "funded records only" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigFunded (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` Right ISOpen
+  settle st iid (SigFunded (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` ISOpen
   invoiceStatus st iid `shouldReturn` ISOpen
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 200)
@@ -2624,7 +2699,7 @@ testFundedRecordsWithoutMoving = bounded "funded records only" $ withServiceStor
   bcPaymentStatus code `shouldBe` CPSUnpaid
   bcExpiresAt code `shouldBe` Nothing
   expireRow st iid
-  settle st iid (SigFunded (rcv 300 (Just "0.00030000")) PaidInPart) replayAt `shouldReturn` Right ISExpired
+  settle st iid (SigFunded (rcv 300 (Just "0.00030000")) PaidInPart) replayAt `shouldReturn` ISExpired
   invoiceStatus st iid `shouldReturn` ISExpired
   ipAmount <$> paymentRow st iid `shouldReturn` Just (CurrencyAmount 300)
   bcPaymentStatus <$> settledCode st iid `shouldReturn` CPSUnpaid
@@ -2632,7 +2707,7 @@ testFundedRecordsWithoutMoving = bounded "funded records only" $ withServiceStor
 testClosedExpiresAnOpenInvoice :: IO ()
 testClosedExpiresAnOpenInvoice = bounded "closed expires" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` ISExpired
   invoiceStatus st iid `shouldReturn` ISExpired
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 200)
@@ -2642,7 +2717,7 @@ testClosedExpiresAnOpenInvoice = bounded "closed expires" $ withServiceStore $ \
 testClosedWithNothingWritesNoPayment :: IO ()
 testClosedWithNothingWritesNoPayment = bounded "closed on nothing" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigClosed (rcv 0 Nothing) PaidInPart) settleAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 0 Nothing) PaidInPart) settleAt `shouldReturn` ISExpired
   invoiceStatus st iid `shouldReturn` ISExpired
   Just row <- getInvoice st iid
   irPayment row `shouldBe` Nothing
@@ -2651,8 +2726,8 @@ testClosedWithNothingWritesNoPayment = bounded "closed on nothing" $ withService
 testClosedReplayIsIdempotent :: IO ()
 testClosedReplayIsIdempotent = bounded "closed replay" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` Right ISExpired
-  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) replayAt `shouldReturn` Right ISExpired
+  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) settleAt `shouldReturn` ISExpired
+  settle st iid (SigClosed (rcv 200 (Just "0.00020000")) PaidInPart) replayAt `shouldReturn` ISExpired
   invoiceStatus st iid `shouldReturn` ISExpired
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 200)
@@ -2663,12 +2738,12 @@ testClosedReplayIsIdempotent = bounded "closed replay" $ withServiceStore $ \st 
 testPaidRefusesEverySignal :: IO ()
 testPaidRefusesEverySignal = bounded "paid refuses" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) detectedAt `shouldReturn` Right ISPaid
+  settle st iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) detectedAt `shouldReturn` ISPaid
   settled <- paymentRow st iid
   deadline <- bcExpiresAt <$> settledCode st iid
   mapM_
     ( \signal -> do
-        settle st iid signal replayAt `shouldReturn` Right ISPaid
+        settle st iid signal replayAt `shouldReturn` ISPaid
         (signal, ) <$> paymentRow st iid `shouldReturn` (signal, settled)
     )
     [ SigSettled (rcv 900 (Just "0.00090000")) replayAt,
@@ -2681,15 +2756,15 @@ testPaidRefusesEverySignal = bounded "paid refuses" $ withServiceStore $ \st -> 
 testAmountIsMonotonic :: IO ()
 testAmountIsMonotonic = bounded "monotonic amount" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigFunded (rcv 40000 (Just "0.734")) PaidInPart) settleAt `shouldReturn` Right ISOpen
-  settle st iid (SigFunded (rcv 10000 (Just "0.180")) PaidInPart) replayAt `shouldReturn` Right ISOpen
+  settle st iid (SigFunded (rcv 40000 (Just "0.734")) PaidInPart) settleAt `shouldReturn` ISOpen
+  settle st iid (SigFunded (rcv 10000 (Just "0.180")) PaidInPart) replayAt `shouldReturn` ISOpen
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 40000)
   ipCryptoPaid p `shouldBe` Just "0.734"
-  settle st iid (SigFunded (rcv 40000 (Just "0.734")) PaidInPart) replayAt `shouldReturn` Right ISOpen
-  settle st iid (SigFunded (rcv 40000 (Just "0.734")) PaidInPart) replayAt `shouldReturn` Right ISOpen
+  settle st iid (SigFunded (rcv 40000 (Just "0.734")) PaidInPart) replayAt `shouldReturn` ISOpen
+  settle st iid (SigFunded (rcv 40000 (Just "0.734")) PaidInPart) replayAt `shouldReturn` ISOpen
   ipAmount <$> paymentRow st iid `shouldReturn` Just (CurrencyAmount 40000)
-  settle st iid (SigFunded (rcv 50000 (Just "0.900")) PaidInPart) replayAt `shouldReturn` Right ISOpen
+  settle st iid (SigFunded (rcv 50000 (Just "0.900")) PaidInPart) replayAt `shouldReturn` ISOpen
   p' <- paymentRow st iid
   ipAmount p' `shouldBe` Just (CurrencyAmount 50000)
   ipCryptoPaid p' `shouldBe` Just "0.900"
@@ -2697,7 +2772,7 @@ testAmountIsMonotonic = bounded "monotonic amount" $ withServiceStore $ \st -> d
 testDeadlineIsFromTheFirstSettlement :: IO ()
 testDeadlineIsFromTheFirstSettlement = bounded "deadline from the first settlement" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigSettled (rcv 500 Nothing) settleAt) detectedAt `shouldReturn` Right ISPaid
+  settle st iid (SigSettled (rcv 500 Nothing) settleAt) detectedAt `shouldReturn` ISPaid
   let firstDeadline = addUTCTime codeLifetime settleAt
   bcExpiresAt <$> settledCode st iid `shouldReturn` Just firstDeadline
   withTransaction st $ \db -> markCodePaid db (niCodeHash sampleInvoice) (addUTCTime codeLifetime replayAt)
@@ -2720,8 +2795,7 @@ testStatusGuardRefusesAStaleObservation = bounded "stale observation" $ withServ
 testUnknownInvoiceSettlesNothing :: IO ()
 testUnknownInvoiceSettlesNothing = bounded "unknown invoice" $ withServiceStore $ \st -> do
   _ <- seedOpen st
-  r <- settle st (InvoiceId "no-such-invoice") (SigSettled (rcv 500 Nothing) settleAt) settleAt
-  r `shouldSatisfy` isLeft
+  settle st (InvoiceId "no-such-invoice") (SigSettled (rcv 500 Nothing) settleAt) settleAt `shouldThrow` (\(BrokenInvariant _) -> True)
   paymentIdentity st (InvoiceId "no-such-invoice") `shouldReturn` []
 
 testPublishIsAfterCommit :: IO ()
@@ -2734,7 +2808,7 @@ testPublishIsAfterCommit = bounded "publish after commit" $ withServiceStore $ \
     visible <- independentStatus st iid
     putMVar seen (woken, visible)
   threadDelay 100000
-  settleOrder st waiters Nothing iid (SigSettled (rcv 500 Nothing) settleAt) settleAt `shouldReturn` Right ISPaid
+  settleOrder st waiters Nothing iid (SigSettled (rcv 500 Nothing) settleAt) settleAt `shouldReturn` ISPaid
   takeMVar seen `shouldReturn` (ISPaid, Just "paid")
 
 waitCeiling :: Int
@@ -2745,7 +2819,7 @@ testSettlementWakesAHeldRequest = bounded "settlement wakes a hold" $ withWebApp
   iid <- seedOpenInvoice env
   let settled =
         settleOrder (weStore env) (weWaiters env) Nothing iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
-          `shouldReturn` Right ISPaid
+          `shouldReturn` ISPaid
   o <- wokenBy client iid settled "paid"
   fieldOf o "amountPaid" `shouldBe` Just (J.Number 500)
 
@@ -2754,7 +2828,7 @@ testFutureSettledInstantIsRefused = bounded "future settled instant" $ withWebAp
   iid <- seedOpenInvoice env
   let inMilliseconds = posixSecondsToUTCTime (1000 * utcTimeToPOSIXSeconds detectedAt)
   settle (weStore env) iid (SigSettled (rcv 500 (Just "0.00050000")) inMilliseconds) detectedAt
-    `shouldReturn` Right ISPaid
+    `shouldReturn` ISPaid
   code <- settledCode (weStore env) iid
   bcPaymentStatus code `shouldBe` CPSPaid
   bcExpiresAt code `shouldBe` Just (addUTCTime codeLifetime detectedAt)
@@ -2766,7 +2840,7 @@ testAbsurdSettledInstantIsRefused = bounded "absurd settled instant" $ withWebAp
   iid <- seedOpenInvoice env
   let epochZero = posixSecondsToUTCTime 0
   settle (weStore env) iid (SigSettled (rcv 500 (Just "0.00050000")) epochZero) detectedAt
-    `shouldReturn` Right ISPaid
+    `shouldReturn` ISPaid
   code <- settledCode (weStore env) iid
   bcPaymentStatus code `shouldBe` CPSPaid
   bcExpiresAt code `shouldSatisfy` maybe False (> detectedAt)
@@ -2777,7 +2851,7 @@ testAbsurdSettledInstantIsRefused = bounded "absurd settled instant" $ withWebAp
 testSettledAtIsThePaymentRow :: IO ()
 testSettledAtIsThePaymentRow = bounded "settledAt" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
-  settle (weStore env) iid (SigSettled (rcv 500 Nothing) settleAt) detectedAt `shouldReturn` Right ISPaid
+  settle (weStore env) iid (SigSettled (rcv 500 Nothing) settleAt) detectedAt `shouldReturn` ISPaid
   o <- jsonObject =<< webGet client (invoicePath iid)
   fieldOf o "status" `shouldBe` Just (J.String "paid")
   fieldOf o "settledAt" `shouldBe` Just (J.toJSON settleAt)
@@ -2797,7 +2871,7 @@ testLosingTheStatusGuardStillWakesTheHold = bounded "losing the guard" $ withWeb
 settledIntoAnExpiredRow :: HasCallStack => WebEnv -> InvoiceId -> IO ()
 settledIntoAnExpiredRow env iid = do
   settleOrder (weStore env) (weWaiters env) Nothing iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
-    `shouldReturn` Right ISExpired
+    `shouldReturn` ISExpired
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
   code <- settledCode (weStore env) iid
   bcPaymentStatus code `shouldBe` CPSUnpaid
@@ -2830,9 +2904,9 @@ testSettledPaymentIsNotDowngraded = bounded "settled is not downgraded" $ withSe
 testCryptoAmountFillsInFromNull :: IO ()
 testCryptoAmountFillsInFromNull = bounded "crypto fills in" $ withServiceStore $ \st -> do
   iid <- seedOpen st
-  settle st iid (SigFunded (rcv 500 Nothing) PaidInPart) settleAt `shouldReturn` Right ISOpen
+  settle st iid (SigFunded (rcv 500 Nothing) PaidInPart) settleAt `shouldReturn` ISOpen
   ipCryptoPaid <$> paymentRow st iid `shouldReturn` Nothing
-  settle st iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) detectedAt `shouldReturn` Right ISPaid
+  settle st iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) detectedAt `shouldReturn` ISPaid
   ipCryptoPaid <$> paymentRow st iid `shouldReturn` Just "0.00050000"
   ipAmount <$> paymentRow st iid `shouldReturn` Just (CurrencyAmount 500)
 
@@ -2958,12 +3032,12 @@ testPassReadsWhatItAwaits = bounded "reads what it awaits" $ withStubPoller race
   b <- seedOpenRef (weStore env) 2 "p-2" someExpiry
   c <- seedOpenRef (weStore env) 3 "p-3" someExpiry
   setSignals ref [("p-1", settledSignal), ("p-2", settledSignal), ("p-3", settledSignal)]
-  passStarted <- getCurrentTime
+  passStarted <- currentSecond
   runOnePass poller
   stubCalls ref `shouldReturn` [StubRead "p-1", StubRead "p-2", StubRead "p-3", StubListOpen]
   mapM (invoiceStatus (weStore env)) [a, b, c] `shouldReturn` [ISPaid, ISPaid, ISPaid]
   listed <- readTVarIO (peListedOk poller)
-  Map.keys listed `shouldBe` ["crypto"]
+  Map.keys listed `shouldBe` [PPCrypto]
   all (>= passStarted) listed `shouldBe` True
 
 testIdlePassAsksNothing :: IO ()
@@ -3103,7 +3177,7 @@ testListTimeoutKeepsTheReads = bounded "list timeout" $ withStubPoller raceHold 
   seedBadgePrice (weStore env) "price1"
   overdue <- seedOpenRef (weStore env) 1 "p-overdue" (addUTCTime (-3600) now)
   mapM_ (\i -> seedOpenRef (weStore env) i ("p-bulk-" <> tshow i) someExpiry) [2 .. readsPerPass + 2]
-  failList ref (Just (timeoutError "list invoices"))
+  failList ref (Just (ProviderTimeout "list invoices"))
   runOnePass poller
   stubCalls ref `shouldReturn` [StubListOpen, StubRead "p-overdue"]
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
@@ -3349,6 +3423,23 @@ testSweepSettlesWhatItCannotCancel = bounded "sweep settles uncancelled" $ withP
   invoiceStatus (weStore env) iid `shouldReturn` ISPaid
   stubCalls ref `shouldReturn` [StubCancel "p-old", StubRead "p-old"]
 
+testSweepSkipsAnInvoicePaidMeanwhile :: IO ()
+testSweepSkipsAnInvoicePaidMeanwhile = do
+  onCancel <- newIORef (pure ())
+  let stripeCancelling ref =
+        let p = (stubProvider ref) {pProvider = PPStripe}
+         in p {pCancelInvoice = \r -> join (readIORef onCancel) >> pCancelInvoice p r}
+  bounded "sweep skips an invoice paid meanwhile" $ withStubPollerOf stripeCancelling raceHold $ \ref poller env _ -> do
+    passListing ref poller
+    seedBadgePrice (weStore env) "price1"
+    older <- seedPastWindow (weStore env) 1 "p-cancelled" PPStripe
+    paidMeanwhile <- seedPastWindow (weStore env) 2 "p-paid-meanwhile" PPStripe
+    writeIORef onCancel $ void $ settleOrder (weStore env) (weWaiters env) Nothing paidMeanwhile settledSignal settleAt
+    runOnePass poller
+    invoiceStatus (weStore env) older `shouldReturn` ISExpired
+    invoiceStatus (weStore env) paidMeanwhile `shouldReturn` ISPaid
+    (\calls -> [r | StubCancel r <- calls]) <$> stubCalls ref `shouldReturn` ["p-cancelled"]
+
 testSweepExpiresWhatAReadShowsCancelled :: IO ()
 testSweepExpiresWhatAReadShowsCancelled = bounded "sweep reads a cancel" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
   now <- getCurrentTime
@@ -3363,16 +3454,16 @@ testSweepGivesUpPastTheWindow :: IO ()
 testSweepGivesUpPastTheWindow = bounded "sweep gives up" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
   passListing ref poller
   seedBadgePrice (weStore env) "price1"
-  iid <- seedPastWindow (weStore env) 1 "p-old" PPStripe
+  iid <- seedPastWindow (weStore env) 1 "p-gives-up" PPStripe
   failCancels ref
   firstLog <- capturingStderr (runOnePass poller >> runOnePass poller)
   invoiceStatus (weStore env) iid `shouldReturn` ISOpen
-  firstLog `shouldNotSatisfy` T.isInfixOf "expired here only"
-  failedAnHourAgo poller "p-old"
+  firstLog `shouldNotSatisfy` T.isInfixOf "invoice p-gives-up could not be cancelled"
+  failedAnHourAgo poller "p-gives-up"
   lastLog <- capturingStderr (runOnePass poller)
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
-  loggedError "invoice p-old could not be cancelled at the provider, so it was expired here only" lastLog `shouldBe` True
-  let attempt = [StubCancel "p-old", StubRead "p-old"]
+  loggedError "invoice p-gives-up could not be cancelled at the provider, so it was expired here only" lastLog `shouldBe` True
+  let attempt = [StubCancel "p-gives-up", StubRead "p-gives-up"]
   stubCalls ref `shouldReturn` concat (replicate 3 attempt)
   runOnePass poller
   stubCalls ref `shouldReturn` concat (replicate 3 attempt)
@@ -3428,12 +3519,75 @@ testSweepGivesUpAnUnreadableInvoice = bounded "sweep gives up an unreadable invo
   runOnePass poller
   mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISExpired]
   newer <- seedPastWindow (weStore env) 3 "p-new" PPCrypto
-  dayAgo <- addUTCTime (negate readGiveUpDelay) <$> getCurrentTime
+  dayAgo <- addUTCTime (negate readGiveUpDelay) <$> currentSecond
   readFailedAt poller "p-bad" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
   logged <- capturingStderr (runOnePass poller)
   mapM (invoiceStatus (weStore env)) [bad, newer] `shouldReturn` [ISExpired, ISExpired]
   loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
-  Map.member "p-bad" <$> readTVarIO (peReadFailed poller) `shouldReturn` False
+  runOnePass poller
+  TM.memberIO "p-bad" (peReadFailed poller) `shouldReturn` False
+
+testSweepExpiresAGivenUpInvoiceAgain :: IO ()
+testSweepExpiresAGivenUpInvoiceAgain = bounded "sweep expires a given-up invoice again" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  bad <- seedPastWindow (weStore env) 1 "p-bad" PPCrypto
+  first <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  dayAgo <- addUTCTime (negate readGiveUpDelay) <$> currentSecond
+  readFailedAt poller "p-bad" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
+  runOnePass poller
+  mapM (invoiceStatus (weStore env)) [bad, first] `shouldReturn` [ISExpired, ISExpired]
+  reopenRow (weStore env) bad
+  next <- seedPastWindow (weStore env) 3 "p-new" PPCrypto
+  logged <- capturingStderr (runOnePass poller)
+  mapM (invoiceStatus (weStore env)) [bad, next] `shouldReturn` [ISExpired, ISExpired]
+  loggedError "invoice p-bad could not be read for 24 hours while its provider answered" logged `shouldBe` True
+
+testSweepLogsAGivenUpInvoiceOnceExpired :: IO ()
+testSweepLogsAGivenUpInvoiceOnceExpired = bounded "sweep logs a given-up invoice once expired" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  bad@(InvoiceId badId) <- seedPastWindow (weStore env) 1 "p-bad" PPCrypto
+  first <- seedPastWindow (weStore env) 2 "p-old" PPCrypto
+  dayAgo <- addUTCTime (negate readGiveUpDelay) <$> currentSecond
+  readFailedAt poller "p-bad" ReadFailure {rfLast = dayAgo, rfAnswered = Just dayAgo}
+  withConnection (weStore env) $ \db -> DB.execute db "DELETE FROM sx_badge_service_badge_code_invoices WHERE invoice_id = ?" (Only badId)
+  logged <- capturingStderr (runOnePass poller)
+  independentStatus (weStore env) bad `shouldReturn` Just "open"
+  invoiceStatus (weStore env) first `shouldReturn` ISExpired
+  loggedError "expiring invoice p-bad failed; the next pass tries it again" logged `shouldBe` True
+  loggedError "invoice p-bad could not be read for 24 hours" logged `shouldBe` False
+
+testPassFailureLogged :: IO ()
+testPassFailureLogged = bounded "a failed pass" $ withStubPoller raceHold $ \_ poller env _ -> do
+  renameTable (weStore env) "sx_badge_service_invoices" "invoices_away"
+  logged <- capturingStderr $ Async.withAsync (runPoller poller) $ \lane -> do
+    threadDelay 500000
+    Async.poll lane >>= (`shouldSatisfy` isNothing)
+  renameTable (weStore env) "invoices_away" "sx_badge_service_invoices"
+  logged `shouldSatisfy` T.isInfixOf "badge poller: the pass failed; the next pass will run: "
+  runOnePass poller
+
+testSweepFailureLogged :: IO ()
+testSweepFailureLogged = bounded "a failed sweep" $ withStubPoller raceHold $ \_ poller env _ -> do
+  renameTable (weStore env) "sx_badge_service_payments" "payments_away"
+  logged <- capturingStderr $ runOnePass poller
+  renameTable (weStore env) "payments_away" "sx_badge_service_payments"
+  logged `shouldSatisfy` T.isInfixOf "badge poller: the sweep failed; the next pass will run: "
+  logged `shouldSatisfy` T.isInfixOf "names: the late credit pass failed; the next pass will run: "
+  logged `shouldSatisfy` T.isInfixOf "names cleanup: the unpaid orders read failed; the next pass will run: "
+
+testListResetPassRuns :: IO ()
+testListResetPassRuns = bounded "a list reset" $ withFakeBTCPay $ \fake -> withResetServer $ \url -> withServiceStore $ \st -> do
+  provider <- btcpayProvider (fbConfig fake) {bHost = T.pack url}
+  waiters <- newWaiters
+  hints <- newReadHints
+  poller <- newPollerEnv st waiters Nothing hints [provider] PollConfig {pWaitingSeconds = 1, pIdleSeconds = 1}
+  hourAgo <- addUTCTime (-3600) <$> getCurrentTime
+  atomically $ writeTVar (peCreditPassAt poller) hourAgo
+  logged <- capturingStderr $ runOnePass poller
+  readTVarIO (peCreditPassAt poller) >>= (`shouldSatisfy` (> hourAgo))
+  logged `shouldSatisfy` T.isInfixOf "list failed; every invoice waits for the next pass"
 
 testSweepCountsAnsweredFailures :: IO ()
 testSweepCountsAnsweredFailures = bounded "sweep counts answered failures" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
@@ -3448,7 +3602,7 @@ testSweepCountsAnsweredFailures = bounded "sweep counts answered failures" $ wit
   readFailedAt poller "p-bad" ReadFailure {rfLast = longAgo, rfAnswered = Nothing}
   runOnePass poller
   mapM (invoiceStatus (weStore env)) [bad, old] `shouldReturn` [ISOpen, ISExpired]
-  isJust . (rfAnswered =<<) . Map.lookup "p-bad" <$> readTVarIO (peReadFailed poller) `shouldReturn` True
+  isJust . (rfAnswered =<<) <$> TM.lookupIO "p-bad" (peReadFailed poller) `shouldReturn` True
 
 testSweepReadsOldestFailureFirst :: IO ()
 testSweepReadsOldestFailureFirst = bounded "sweep reads the oldest failure first" $ withStubPollerOf unreadableBad raceHold $ \ref poller env _ -> do
@@ -3469,7 +3623,7 @@ unreadableBad ref = stub {pReadInvoice = \r -> if r == "p-bad" then pure (Left (
     stub = stubProvider ref
 
 readFailedAt :: PollerEnv -> Text -> ReadFailure -> IO ()
-readFailedAt PollerEnv {peReadFailed} providerRef failure = atomically $ modifyTVar' peReadFailed (Map.insert providerRef failure)
+readFailedAt PollerEnv {peReadFailed} providerRef failure = atomically $ TM.insert providerRef failure peReadFailed
 
 testSweepSkipsAnUnknownProvider :: IO ()
 testSweepSkipsAnUnknownProvider = bounded "sweep around an unknown provider" $ withStubPoller raceHold $ \_ poller env _ -> do
@@ -3483,6 +3637,16 @@ testSweepSkipsAnUnknownProvider = bounded "sweep around an unknown provider" $ w
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
   independentStatus (weStore env) unknown `shouldReturn` Just "open"
   logged `shouldSatisfy` loggedError "store: overdue invoice p-unknown names provider nonsense"
+
+testUnpaidUnknownProviderWarnedHourly :: IO ()
+testUnpaidUnknownProviderWarnedHourly = bounded "unpaid invoice of an unknown provider" $ withStubPoller raceHold $ \_ poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  InvoiceId unknownId <- seedOpenRef (weStore env) 1 "p-unknown" (addUTCTime 3600 now)
+  withConnection (weStore env) $ \db ->
+    DB.execute db "UPDATE sx_badge_service_invoices SET provider = ? WHERE invoice_id = ?" ("nonsense" :: Text, unknownId)
+  logged <- capturingStderr (runOnePass poller >> runOnePass poller)
+  length (filter (loggedError "badge poller: invoice p-unknown names provider nonsense") (T.lines logged)) `shouldBe` 1
 
 testSweepKeepsFailuresBeyondTheCap :: IO ()
 testSweepKeepsFailuresBeyondTheCap = bounded "sweep keeps failures past the cap" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
@@ -3500,7 +3664,7 @@ testSweepKeepsFailuresBeyondTheCap = bounded "sweep keeps failures past the cap"
 -- | Pretends the first cancel failure was an hour ago, so the test doesn't have to wait.
 failedAnHourAgo :: PollerEnv -> Text -> IO ()
 failedAnHourAgo PollerEnv {peCancelFailed} ref = do
-  now <- getCurrentTime
+  now <- currentSecond
   atomically $ modifyTVar' peCancelFailed (Map.insert ref (addUTCTime (negate cancelGiveUpDelay) now))
 
 testSweepWarnsOncePerOrder :: IO ()
@@ -3719,7 +3883,7 @@ testWebhookVerifiesARealSignature = bounded "real signature" $ withFakePoller $ 
   statusOf delivered `shouldBe` 200
   responseBody delivered `shouldBe` ""
   verifiedAt <- readTVarIO (weWebhookAt env)
-  Map.keys verifiedAt `shouldBe` ["crypto"]
+  Map.keys verifiedAt `shouldBe` [PPCrypto]
   tampered <- postWebhook client (webhookSigHeader secret body) (body <> " ")
   statusOf tampered `shouldBe` 400
   responseBody tampered `shouldBe` ""
@@ -4123,6 +4287,7 @@ testCancelIsRefusedOnceItIsNotOpen = bounded "cancel not open" $ withCancel $ \r
   r <- webPost client (cancelPath iid)
   statusOf r `shouldBe` 409
   responseBody r `shouldBe` errorBody "not_open"
+  responseFixture "cancel-not-open" r
   stubCalls ref `shouldReturn` []
   reread <- webGet client (invoicePath iid)
   ao <- jsonObject reread
@@ -4143,6 +4308,7 @@ testCancelIsOpaqueForAnUnknownInvoice = bounded "cancel unknown" $ withCancel $ 
   r <- webPost client "/api/invoice/no-such-invoice/cancel"
   statusOf r `shouldBe` 404
   responseBody r `shouldBe` notFoundBody
+  responseFixture "cancel-not-found" r
   stubCalls ref `shouldReturn` []
 
 testCancelRefusesOtherMethods :: IO ()
@@ -4150,6 +4316,7 @@ testCancelRefusesOtherMethods = bounded "cancel verb" $ withCancel $ \_ _ client
   r <- webGet client (cancelPath (niInvoiceId sampleInvoice))
   statusOf r `shouldBe` 405
   headerOf r "Allow" `shouldBe` Just "POST"
+  responseFixture "cancel-method-not-allowed" r
 
 testExpireOverdueSparesAFundedInvoice :: IO ()
 testExpireOverdueSparesAFundedInvoice = withServiceStore $ \st -> do
@@ -4160,12 +4327,12 @@ testExpireOverdueSparesAFundedInvoice = withServiceStore $ \st -> do
       empty' = sampleInvoice {niInvoiceId = InvoiceId "inv-empty", niProviderRef = "p-empty", niCodeHash = digestFixture 15, niExpiresAt = pastExpiry}
   createInvoiceRows st funded `shouldReturn` Right ()
   createInvoiceRows st empty' `shouldReturn` Right ()
-  settle st (niInvoiceId funded) (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) now `shouldReturn` Right ISOpen
+  settle st (niInvoiceId funded) (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) now `shouldReturn` ISOpen
   moved <- expireAllOverdue st now
   moved `shouldBe` [niInvoiceId empty']
   Just fundedRow <- getInvoice st (niInvoiceId funded)
   irStatus fundedRow `shouldBe` ISOpen
-  settle st (niInvoiceId funded) (SigSettled (rcv 500 (Just "0.00050000")) now) now `shouldReturn` Right ISPaid
+  settle st (niInvoiceId funded) (SigSettled (rcv 500 (Just "0.00050000")) now) now `shouldReturn` ISPaid
 
 testCancelExpiresAFundedInvoice :: IO ()
 testCancelExpiresAFundedInvoice = withServiceStore $ \st -> do
@@ -4173,7 +4340,7 @@ testCancelExpiresAFundedInvoice = withServiceStore $ \st -> do
   now <- getCurrentTime
   let iid = niInvoiceId sampleInvoice
   createInvoiceRows st sampleInvoice `shouldReturn` Right ()
-  settle st iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) now `shouldReturn` Right ISOpen
+  settle st iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) now `shouldReturn` ISOpen
   newWaiters >>= \waiters -> cancelOpenInvoice st waiters Nothing iid now `shouldReturn` True
   Just row <- getInvoice st iid
   irStatus row `shouldBe` ISExpired
@@ -4182,10 +4349,11 @@ testCancelExpiresAFundedInvoice = withServiceStore $ \st -> do
 testCancelIsRefusedOnceItIsFunded :: IO ()
 testCancelIsRefusedOnceItIsFunded = bounded "cancel funded" $ withCancel $ \ref env client -> do
   let iid = niInvoiceId sampleInvoice
-  settle (weStore env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated `shouldReturn` Right ISOpen
+  settle (weStore env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated `shouldReturn` ISOpen
   r <- webPost client (cancelPath iid)
   statusOf r `shouldBe` 409
   responseBody r `shouldBe` errorBody "funded"
+  responseFixture "cancel-funded" r
   stubCalls ref `shouldReturn` []
   reread <- webGet client (invoicePath iid)
   ao <- jsonObject reread
@@ -4213,7 +4381,7 @@ testHeldWaitWakesOnAPaymentThatDoesNotSettle = bounded "funded wakes a hold" $ w
   awaitWaitingCount env 1
   waitingCount (weWaiters env) `shouldReturn` 1
   settleOrder (weStore env) (weWaiters env) Nothing iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
-    `shouldReturn` Right ISOpen
+    `shouldReturn` ISOpen
   r <- wait held
   statusOf r `shouldBe` 200
   o <- jsonObject r
@@ -4224,18 +4392,18 @@ testARepeatedSignalDoesNotWakeAHold :: IO ()
 testARepeatedSignalDoesNotWakeAHold = bounded "repeat signal" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
   let funded = SigFunded (rcv 500 (Just "0.00050000")) PaidInPart
-  settleOrder (weStore env) (weWaiters env) Nothing iid funded settleAt `shouldReturn` Right ISOpen
+  settleOrder (weStore env) (weWaiters env) Nothing iid funded settleAt `shouldReturn` ISOpen
   held <- async $ webGet client (invoicePath iid <> "?wait=open&seenPaid=0.00050000&seenFull=0")
   threadDelay holdParkDelay
   Async.poll held >>= (`shouldSatisfy` isNothing)
 
-  settleOrder (weStore env) (weWaiters env) Nothing iid funded settleAt `shouldReturn` Right ISOpen
+  settleOrder (weStore env) (weWaiters env) Nothing iid funded settleAt `shouldReturn` ISOpen
   threadDelay holdParkDelay
   stillParked <- Async.poll held
   stillParked `shouldSatisfy` isNothing
 
   settleOrder (weStore env) (weWaiters env) Nothing iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
-    `shouldReturn` Right ISPaid
+    `shouldReturn` ISPaid
   r <- wait held
   statusOf r `shouldBe` 200
   o <- jsonObject r
@@ -4247,7 +4415,7 @@ testHeldWaitIsNotWokenByAPassThatWroteNothing = bounded "no churn" $ withCheckou
   markPaid (weStore env) iid
   waitingBefore <- waitingCount (weWaiters env)
   settleOrder (weStore env) (weWaiters env) Nothing iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
-    `shouldReturn` Right ISPaid
+    `shouldReturn` ISPaid
   waitingAfter <- waitingCount (weWaiters env)
   waitingAfter `shouldBe` waitingBefore
 
@@ -4255,7 +4423,7 @@ testViewCarriesTheProvidersPaidVerdict :: IO ()
 testViewCarriesTheProvidersPaidVerdict = bounded "paid in full" $ withCheckout $ \_ env client -> do
   iid <- seedOpenInvoice env
   settleOrder (weStore env) (weWaiters env) Nothing iid (SigFunded (rcv 400 (Just "0.00040000")) PaidInFull) someCreated
-    `shouldReturn` Right ISOpen
+    `shouldReturn` ISOpen
   o <- jsonObject =<< webGet client (invoicePath iid)
   fieldOf o "status" `shouldBe` Just (J.String "open")
   fieldOf o "paidInFull" `shouldBe` Just (J.Bool True)
@@ -4265,9 +4433,9 @@ testPaidVerdictIsNotWithdrawnByALaterRead :: IO ()
 testPaidVerdictIsNotWithdrawnByALaterRead = bounded "verdict sticks" $ withCheckout $ \_ env client -> do
   iid <- seedOpenInvoice env
   settleOrder (weStore env) (weWaiters env) Nothing iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInFull) someCreated
-    `shouldReturn` Right ISOpen
+    `shouldReturn` ISOpen
   settleOrder (weStore env) (weWaiters env) Nothing iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
-    `shouldReturn` Right ISOpen
+    `shouldReturn` ISOpen
   o <- jsonObject =<< webGet client (invoicePath iid)
   fieldOf o "paidInFull" `shouldBe` Just (J.Bool True)
 
@@ -4276,10 +4444,10 @@ testViewCarriesAClosedPaidVerdict = bounded "closed in full" $ withCheckout $ \_
   iid <- seedOpenInvoice env
   let readVerdict = (\o -> (fieldOf o "status", fieldOf o "paidInFull", fieldOf o "amountPaid")) <$> (jsonObject =<< webGet client (invoicePath iid))
   settleOrder (weStore env) (weWaiters env) Nothing iid (SigClosed (rcv 250 (Just "0.00025000")) PaidInPart) someCreated
-    `shouldReturn` Right ISExpired
+    `shouldReturn` ISExpired
   readVerdict `shouldReturn` (Just (J.String "expired"), Just (J.Bool False), Just (J.Number 250))
   settleOrder (weStore env) (weWaiters env) Nothing iid (SigClosed (rcv 500 (Just "0.00050000")) PaidInFull) someCreated
-    `shouldReturn` Right ISExpired
+    `shouldReturn` ISExpired
   readVerdict `shouldReturn` (Just (J.String "expired"), Just (J.Bool True), Just (J.Number 500))
 
 testExpireOverdueSparesAZeroAmount :: IO ()
@@ -4291,8 +4459,8 @@ testExpireOverdueSparesAZeroAmount = withServiceStore $ \st -> do
       verdict = sampleInvoice {niInvoiceId = InvoiceId "inv-verdict", niProviderRef = "p-verdict", niCodeHash = digestFixture 16, niExpiresAt = pastExpiry}
   createInvoiceRows st dust `shouldReturn` Right ()
   createInvoiceRows st verdict `shouldReturn` Right ()
-  settle st (niInvoiceId dust) (SigFunded (rcv 0 (Just "0.00000001")) PaidInPart) now `shouldReturn` Right ISOpen
-  settle st (niInvoiceId verdict) (SigFunded (rcv 0 Nothing) PaidInFull) now `shouldReturn` Right ISOpen
+  settle st (niInvoiceId dust) (SigFunded (rcv 0 (Just "0.00000001")) PaidInPart) now `shouldReturn` ISOpen
+  settle st (niInvoiceId verdict) (SigFunded (rcv 0 Nothing) PaidInFull) now `shouldReturn` ISOpen
   expireAllOverdue st now `shouldReturn` []
   mapM_ (\iid ->
     getInvoice st iid >>= \case

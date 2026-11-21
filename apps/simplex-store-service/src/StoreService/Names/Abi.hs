@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Abi
@@ -11,12 +12,13 @@ module StoreService.Names.Abi
     abiArray,
     uint256,
     addressWord,
-    addressFromBytes,
     selector,
     hex,
-    bytes32FromHex,
+    lowerHexP,
+    parseText,
     decodeUint256,
     decodeWord64,
+    decodeSeconds,
     decodeAddress,
     decodeBool,
     decodeBytes32,
@@ -28,20 +30,22 @@ where
 
 import Control.Monad (unless)
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import Data.Char (isAsciiLower, isDigit, isHexDigit)
+import qualified Data.ByteString.Char8 as BC
+import Data.Char (isDigit)
 import Data.List (mapAccumL)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, decodeUtf8', encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
-import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Eth.Address (Address, unAddress)
-import Simplex.Messaging.Util (eitherToMaybe)
+import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 
 data AbiValue = Static ByteString | Dynamic ByteString
 
@@ -83,34 +87,37 @@ addressWord a = B.replicate addressPadding 0 <> unAddress a
 selector :: ByteString -> ByteString
 selector = B.take 4 . keccak256
 
+-- | Data of any length as JSON-RPC takes it.
 hex :: ByteString -> Text
 hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
 
--- | A hash as 'hex' writes it, and only so: upper-case digits would give a second spelling of one hash.
-bytes32FromHex :: Text -> Maybe ByteString
-bytes32FromHex t = case T.stripPrefix "0x" t of
-  Just h | T.length h == 2 * abiWordSize && T.all lowerHex h -> eitherToMaybe $ convertFromBase Base16 $ encodeUtf8 h
-  _ -> Nothing
+lowerHexP :: Int -> A.Parser ByteString
+lowerHexP n = A.count (2 * n) (A.satisfy lowerHexDigit) >>= either fail pure . convertFromBase Base16 . BC.pack
   where
-    lowerHex c = isDigit c || (isAsciiLower c && isHexDigit c)
+    lowerHexDigit c = isDigit c || (c >= 'a' && c <= 'f')
+
+parseText :: A.Parser a -> Text -> Either String a
+parseText p = parseAll p . encodeUtf8
 
 decodeUint256 :: ByteString -> Either AbiError Integer
 decodeUint256 = uintAt 0
 
 decodeWord64 :: ByteString -> Either AbiError Word64
-decodeWord64 ret = do
+decodeWord64 = decodeBounded
+
+decodeSeconds :: ByteString -> Either AbiError SystemSeconds
+decodeSeconds = fmap RoundedSystemTime . decodeBounded
+
+decodeBounded :: forall a. (Integral a, Bounded a) => ByteString -> Either AbiError a
+decodeBounded ret = do
   n <- decodeUint256 ret
-  if n <= toInteger (maxBound :: Word64) then Right (fromInteger n) else Left AERange
+  if n <= toInteger (maxBound :: a) then Right (fromInteger n) else Left AERange
 
 decodeAddress :: ByteString -> Either AbiError Address
 decodeAddress ret = do
   (padding, a) <- B.splitAt addressPadding <$> wordAt 0 ret
   unless (B.all (== 0) padding) $ Left AENotAddress
-  maybe (Left AENotAddress) Right $ addressFromBytes a
-
--- | Address has no exported constructor; its parser takes lowercase hex without the EIP-55 check.
-addressFromBytes :: ByteString -> Maybe Address
-addressFromBytes = eitherToMaybe . strDecode . convertToBase Base16
+  first (const AENotAddress) $ smpDecode a
 
 decodeBool :: ByteString -> Either AbiError Bool
 decodeBool ret =

@@ -9,9 +9,12 @@
 
 module BadgeTests (badgeTests) where
 
-import StoreService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, shownServiceRequest, survive)
+import Bots.StoreService.WebTests (lengthOf)
+import Bots.StoreService.WebUIMock (formatNameOwnerCode, nameOwnerCodeEntropy, parseNameOwnerCode, randomNameOwnerCode)
+import StoreService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, serviceRequest, shownServiceRequest, survive)
 import StoreService.StoreReceipts (StoreCharge (..), StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), toStoreReceipt)
 import StoreService.StoreReceipts.Mock (newMockStoreVerifier)
+import ChatTests.Utils (writeFixture)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically)
@@ -78,6 +81,7 @@ badgeTests = do
     it "encodes an owner code's entropy and its checksum" testNameOwnerCodeVectors
     it "rejects an owner code with a wrong character" testNameOwnerCodeChecksum
     it "reads the webapp's prepaid codes: length, canonical form, display and hash, and refuses lengths outside 6 to 63" testNamePrepaidCodeVectors
+    it "records the name code vectors the names page's tests read" testNameCodeFixture
     it "reads random codes of both kinds back, as typed, and never a prepaid code as an owner code" testNameCodeRoundTrip
     it "refuses a prepaid code with one character changed or two adjacent swapped, except 0 and Z" testNamePrepaidCodeCheck
     it "refuses a prepaid code whose length is not plain ASCII digits" testNamePrepaidCodeLengthDigits
@@ -136,7 +140,7 @@ badgeTests = do
     it "reads an Apple transaction's id, purchase and expiry dates, revocation and type from its unverified payload" testAppleTransactionFacts
     it "resumes a retired subscription only with an Apple charge whose paid period runs, dated less than a day ahead" testResumableCharge
     it "refuses a store charge once its period has ended, as a sandbox's five-minute one does" testChargePeriodOver
-    it "shows a service request in the terminal as its type alone" testShownServiceRequest
+    it "shows a service request in the terminal as its command's name alone, and a refused one as nothing" testShownServiceRequest
     it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
     it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
     it "has the dev mock vouch for the transaction its claim names, as a production purchase" testMockVouchesForClaim
@@ -380,12 +384,12 @@ testNameOwnerCodeVectors =
     let code = parseNameOwnerCode formatted
     formatNameOwnerCode <$> code `shouldBe` Just formatted
     convertToBase Base16 . unEntropy . nameOwnerCodeEntropy <$> code `shouldBe` Just entropy
-    formatNameCode <$> parseNameCode (T.toLower formatted) `shouldBe` Just formatted
+    formatNameOwnerCode <$> parseNameOwnerCode (T.toLower formatted) `shouldBe` Just formatted
 
 testNameOwnerCodeChecksum :: IO ()
 testNameOwnerCodeChecksum = do
   formatNameOwnerCode <$> parseNameOwnerCode "SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BV" `shouldBe` Nothing
-  parseNameCode "SN-DWPHT-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5" `shouldBe` Nothing
+  parseNameOwnerCode "SN-DWPHT-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5" `shouldBe` Nothing
 
 -- entropy and its name code, computed by a separate Python implementation of the format,
 -- and the webapp's fixture from simplex.domains webapp/test/crypto.test.ts
@@ -400,8 +404,8 @@ nameOwnerCodeVectors =
 testNamePrepaidCodeVectors :: IO ()
 testNamePrepaidCodeVectors = do
   forM_ namePrepaidCodeVectors $ \(typed, len, canonical, display, hash) -> do
-    Just (NCPrepaid code) <- pure $ parseNameCode typed
-    (namePrepaidCodeLength code, namePrepaidCodeText code, formatNameCode (NCPrepaid code)) `shouldBe` (len, canonical, display)
+    Just code <- pure $ parseNameCode typed
+    (nameLengthInt $ namePrepaidCodeLength code, namePrepaidCodeText code, formatNameCode code) `shouldBe` (len, canonical, display)
     convertToBase Base64URLUnpadded (namePrepaidCodeHash code) `shouldBe` (hash :: ByteString)
   -- the webapp's typo vector
   parseNameCode "SN7-4K2P7-TQ9M1-ZX3RB-8HJ5X" `shouldBe` Nothing
@@ -420,18 +424,32 @@ namePrepaidCodeVectors =
     ("SN63-N0N9J-5D292-HPSYA-R911D", 63, "SN63N0N9J5D292HPSYAR911D", "SN63-N0N9J-5D292-HPSYA-R911D", "U-Nh_Kw3-xDlQuFJffkuCAyolK5m9EfN3QuYiJ28A0A")
   ]
 
+testNameCodeFixture :: IO ()
+testNameCodeFixture = do
+  forM_ refused $ \typed -> (isNothing $ parseNameOwnerCode typed, isNothing $ parseNameCode typed) `shouldBe` (True, True)
+  writeFixture "store-service/rest-api/vectors-codes" $
+    J.object
+      [ "ownerCodes" J..= [J.object ["entropy" J..= safeDecodeUtf8 entropy, "code" J..= code] | (entropy, code) <- nameOwnerCodeVectors],
+        "prepaidCodes" J..= [J.object ["typed" J..= typed, "minLength" J..= len, "canonical" J..= canonical, "display" J..= display, "hash" J..= safeDecodeUtf8 hash] | (typed, len, canonical, display, hash) <- namePrepaidCodeVectors],
+        "refused" J..= refused
+      ]
+  where
+    refused :: [T.Text]
+    refused = ["SN-KT45V-59ATD-HCNTT-EZRTA-HT8VT-8A0BV", "SN-DWPHT-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5", "SN7-4K2P7-TQ9M1-ZX3RB-8HJ5X", "SN5-N0N9J-5D292-HPSYA-R911Q", "SN64-N0N9J-5D292-HPSYA-R911C", "SN07-BJTBP-29596-R3HJ8-25YM7"]
+
 testNameCodeRoundTrip :: IO ()
 testNameCodeRoundTrip = do
   drg <- C.newRandom
-  owner <- NCOwner <$> randomNameOwnerCode drg
-  forM_ (typings $ formatNameCode owner) $ \typed -> parseNameCode typed `shouldBe` Just owner
+  owner <- randomNameOwnerCode drg
+  forM_ (typings $ formatNameOwnerCode owner) $ \typed -> parseNameOwnerCode typed `shouldBe` Just owner
   forM_ [6 .. 63] $ \len -> do
-    prepaid <- randomNamePrepaidCode drg len
-    let display = formatNameCode (NCPrepaid prepaid)
+    prepaid <- randomNamePrepaidCode drg (lengthOf len)
+    let display = formatNameCode prepaid
     T.length display `shouldBe` T.length (namePrepaidCodeText prepaid) + 4 -- four separators
     T.isPrefixOf ("SN" <> tshow len <> "-") display `shouldBe` True
     parseNameOwnerCode (namePrepaidCodeText prepaid) `shouldBe` Nothing
-    forM_ (namePrepaidCodeText prepaid : typings display) $ \typed -> parseNameCode typed `shouldBe` Just (NCPrepaid prepaid)
+    parseNameCode (formatNameOwnerCode owner) `shouldBe` Nothing
+    forM_ (namePrepaidCodeText prepaid : typings display) $ \typed -> parseNameCode typed `shouldBe` Just prepaid
   where
     typings display = [display, T.toLower display, T.replace "-" " " display, misreadAfterLength display]
     -- folding never applies to a prepaid code's length, which is refused when misread
@@ -445,7 +463,7 @@ testNamePrepaidCodeCheck :: IO ()
 testNamePrepaidCodeCheck = do
   drg <- C.newRandom
   forM_ [6, 9, 10, 63] $ \len -> do
-    code <- randomNamePrepaidCode drg len
+    code <- randomNamePrepaidCode drg (lengthOf len)
     let canonical = namePrepaidCodeText code
         (prefix, rest) = T.splitAt 2 canonical
         changed =
@@ -472,9 +490,9 @@ testNamePrepaidCodeCheck = do
 testNamePrepaidCodeLengthDigits :: IO ()
 testNamePrepaidCodeLengthDigits = do
   drg <- C.newRandom
-  code <- randomNamePrepaidCode drg 10
-  let display = formatNameCode (NCPrepaid code)
-  parseNameCode display `shouldBe` Just (NCPrepaid code)
+  code <- randomNamePrepaidCode drg (lengthOf 10)
+  let display = formatNameCode code
+  parseNameCode display `shouldBe` Just code
   -- O and I fold to 0 and 1 in the 20 characters, never in the length
   parseNameCode (T.replace "SN10-" "SN1O-" display) `shouldBe` Nothing
   parseNameCode (T.replace "SN10-" "SNI0-" display) `shouldBe` Nothing
@@ -1328,12 +1346,13 @@ testShownServiceRequest = do
   mk <- generateMasterKey drg
   (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
   let shown request = case J.toJSON StoreServiceRequest {version = Version 1, purchaseKey = Just k, request} of
-        J.Object o -> J.Object (shownServiceRequest o)
+        J.Object o -> J.Object (shownServiceRequest (serviceRequest (Just k) o))
         _ -> J.Null
       typeOnly t = J.object ["request" J..= J.object ["type" J..= (t :: T.Text)]]
-  shown STCPurchaseBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}, upgrade = Nothing} `shouldBe` typeOnly "purchaseBadge"
+  shown STCPurchaseBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}, upgrade = Nothing} `shouldBe` typeOnly "purchaseBadge (App Store)"
   shown STCRedeemBadgeCode {masterKey = mk, code = "SB-00000-00000-00000-00001"} `shouldBe` typeOnly "redeemBadgeCode"
-  shown STCTransferBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}} `shouldBe` typeOnly "transferBadge"
+  shown STCTransferBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}} `shouldBe` typeOnly "transferBadge (App Store)"
+  J.Object (shownServiceRequest (serviceRequest Nothing (KM.singleton "request" (J.String "redeemBadgeCode")))) `shouldBe` J.object []
 
 testGoogleProductIdPath :: IO ()
 testGoogleProductIdPath = do

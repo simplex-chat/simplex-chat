@@ -41,6 +41,7 @@ import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Bifunctor (bimap)
 import Data.Char (toLower)
 import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
@@ -48,7 +49,7 @@ import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (isInfixOf, isPrefixOf, stripPrefix)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.String (fromString)
 import System.Timeout (timeout)
 import Data.Text (Text)
@@ -86,6 +87,7 @@ import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Data.X509 (encodeSignedObject)
+import qualified Options.Applicative as O
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (takeDirectory, (</>))
 import UnliftIO.Temporary (withTempDirectory)
@@ -115,6 +117,7 @@ storeServiceTests = do
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
+  it "should set the chat command to the console command given by --execute" testExecuteOption
   it "should refuse to start when the [issuer] key is not one clients trust" testIssuerIniKeyMustBeTrusted
   it "should trust [issuer] dev_keys beside the clients' keys, and refuse one at a trusted index" testDevKeysTrusted
   it "should credit a code's months and issue one credential per month" testCodeMonthsRenew
@@ -201,7 +204,7 @@ storeServiceTests = do
     describe "the store lane" $ do
       it "should answer other requests while a Play receipt is with the store, and credit it once Play answers" testPlayHoldsNoOtherRequest
       it "should route each request to its lane, judging a minute ahead" testStoreRouting
-      it "should check the store at every request only with check_store_during_coverage beside the mock or credit_test_purchases, and credit test purchases only from a real store" testStoreChecksConfigured
+      it "should take the store checks from the config, beside the mock or a real store, and credit test purchases only from a real store" testStoreChecksConfigured
       it "should answer other requests while a renewal check is with the store, and the renewal once the store answers" testRenewalHoldsNoOtherRequest
       it "should answer a renewal check while a Play purchase is with the store" testPurchaseHoldsNoRenewal
       it "should answer other requests while an App Store subscription is with the store, and credit it once the store answers" testAppleSubscriptionHoldsNoOtherRequest
@@ -346,8 +349,9 @@ mkStoreServiceOpts ps secretKey =
       clientService = True,
       noAddress = False,
       runCLI = False,
+      consoleCommand = Nothing,
       serviceConfigFile = Nothing,
-      issuerKey = Right (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey}),
+      issuerKey = Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey},
       testing = True
     }
   where
@@ -426,7 +430,12 @@ issueCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
 issueCode cc badgeType months = issueCodeAs cc badgeType months "free"
 
 revokeCodeAs :: HasCallStack => ChatController -> BadgeCode -> IO (Either T.Text T.Text)
-revokeCodeAs cc code = revokeRaw cc (formatBadgeCode code)
+revokeCodeAs cc = revokeNamed cc . formatBadgeCode
+
+revokeNamed :: HasCallStack => ChatController -> T.Text -> IO (Either T.Text T.Text)
+revokeNamed cc shown = bimap outcome outcome <$> revokeRaw cc shown
+  where
+    outcome t = fromMaybe (error $ "the answer does not name the code: " <> T.unpack t) $ T.stripPrefix (shown <> ": ") t
 
 revokeRaw :: HasCallStack => ChatController -> T.Text -> IO (Either T.Text T.Text)
 revokeRaw cc args = operatorCmd cc ("//revoke " <> args)
@@ -441,7 +450,7 @@ operatorCmd cc cmd =
 
 issueCodeAs :: HasCallStack => ChatController -> BadgeType -> Int -> String -> IO BadgeCode
 issueCodeAs cc badgeType months status =
-  sendChatCmdStr cc ("//issue " <> T.unpack (textEncode badgeType) <> " " <> show months <> " " <> status) >>= \case
+  sendChatCmdStr cc ("//issue " <> T.unpack (textEncode badgeType) <> " months " <> show months <> " " <> status) >>= \case
     Right (CRCustomChatResponse _ response) -> case T.stripPrefix "Code: " response of
       Just c | Just code <- parseBadgeCode c -> pure code
       _ -> error $ "unexpected issue response: " <> T.unpack response
@@ -546,14 +555,17 @@ testMasterKeyB64 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 testIssueRejectsBadArguments :: HasCallStack => TestParams -> IO ()
 testIssueRejectsBadArguments ps =
   withStoreService ps $ \_ _ cc -> do
-    let refuses arg = issueRaw cc arg >>= (`shouldSatisfy` isLeft)
+    let refuses arg = (arg,) <$> issueRaw cc arg `shouldReturn` (arg, Left consoleIssueUsage)
     refuses "suporter"
-    refuses "supporter 0"
-    refuses "supporter 13"
-    refuses "supporter 18446744073709551617"
-    refuses "supporter 1 gratis"
+    refuses "supporter months 0"
+    refuses "supporter months 13"
+    refuses "supporter months 18446744073709551617"
+    refuses "supporter months 1 gratis"
+    refuses "supporter 12"
+    refuses "supporter uses 2"
     refuses ""
-    issueRaw cc "supporter 12 paid" >>= (`shouldSatisfy` isRight)
+    issueRaw cc "supporter months 12 paid" >>= (`shouldSatisfy` isRight)
+    operatorCmd cc "//issued supporter" `shouldReturn` Left badgeCmdUsage
 
 -- | Left is a refusal or a failure the service answers as a command error.
 issueRaw :: HasCallStack => ChatController -> String -> IO (Either T.Text ())
@@ -604,12 +616,12 @@ testRedeemSameCodeOtherProfile ps =
 
 serviceCmd :: HasCallStack => StoreServiceEnv -> C.PublicKeyEd25519 -> StoreServiceCommand -> IO StoreServiceResponse
 serviceCmd StoreServiceEnv {bsIssuerKey, bsController, bsVerifier, bsPurchaseChecks} purchaseKey request =
-  storeServiceResponse bsIssuerKey bsVerifier bsPurchaseChecks bsController Nothing (Just purchaseKey) (requestObject purchaseKey request)
+  storeServiceResponse bsIssuerKey bsVerifier bsPurchaseChecks bsController Nothing (serviceRequest (Just purchaseKey) (requestObject purchaseKey request))
 
 serviceCmdWith :: HasCallStack => BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> C.PublicKeyEd25519 -> StoreServiceCommand -> IO StoreServiceResponse
 serviceCmdWith key cc trackerQ_ purchaseKey request = do
   checks <- newPurchaseChecks
-  storeServiceResponse key noStoreVerifier checks cc trackerQ_ (Just purchaseKey) (requestObject purchaseKey request)
+  storeServiceResponse key noStoreVerifier checks cc trackerQ_ (serviceRequest (Just purchaseKey) (requestObject purchaseKey request))
 
 requestObject :: HasCallStack => C.PublicKeyEd25519 -> StoreServiceCommand -> J.Object
 requestObject purchaseKey request = case J.toJSON StoreServiceRequest {version = currentStoreServiceVersion, purchaseKey = Just purchaseKey, request} of
@@ -1737,8 +1749,22 @@ testIssuerKeyMustMatchConfig ps = do
   checkIssuerKey (optsFor sk) Nothing cfg >>= (`shouldSatisfy` isRight)
   checkIssuerKey (optsFor otherSk) Nothing cfg >>= (`shouldSatisfy` isLeft)
   checkIssuerKey (optsFor sk) Nothing testCfg {badgePublicKeys = M.empty} >>= (`shouldSatisfy` isLeft)
-  let halfGiven = (optsFor sk) {issuerKey = Left "--issuer-key-idx and --issuer-secret are given together or not at all"}
-  checkIssuerKey halfGiven Nothing cfg >>= (`shouldSatisfy` isLeft)
+  let parsed args = issuerKey <$> parsedOpts args
+      secret = B.unpack (strEncode sk)
+  parsed ["--issuer-key-idx", show testIssuerKeyIdx, "--issuer-secret", secret] `shouldBe` Just (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk})
+  parsed [] `shouldBe` Just Nothing
+  parsed ["--issuer-key-idx", show testIssuerKeyIdx] `shouldBe` Nothing
+  parsed ["--issuer-secret", secret] `shouldBe` Nothing
+
+parsedOpts :: [String] -> Maybe StoreServiceOpts
+parsedOpts = O.getParseResult . O.execParserPure O.defaultPrefs (O.info (storeServiceOpts "." "test") mempty)
+
+testExecuteOption :: HasCallStack => TestParams -> IO ()
+testExecuteOption _ = do
+  let chatCmdOf args = chatCmd . mkChatOpts <$> parsedOpts args
+  chatCmdOf ["-e", "//issue name 6"] `shouldBe` Just "//issue name 6"
+  chatCmdOf ["--execute", "//revoke SN6-X"] `shouldBe` Just "//revoke SN6-X"
+  chatCmdOf [] `shouldBe` Just ""
 
 testIssuerIniKeyMustBeTrusted :: HasCallStack => TestParams -> IO ()
 testIssuerIniKeyMustBeTrusted ps = do
@@ -1746,7 +1772,7 @@ testIssuerIniKeyMustBeTrusted ps = do
   Right (_, untrusted) <- bbsKeyGen
   let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
       fromCli = mkStoreServiceOpts ps sk
-      fromIni = fromCli {issuerKey = Right Nothing}
+      fromIni = fromCli {issuerKey = Nothing}
       iniWith idx k = withIssuer ["index = " <> tshow idx, "private_key = " <> safeDecodeUtf8 (strEncode k)] readServiceConfig
   Right trusted <- iniWith testIssuerKeyIdx sk
   checkIssuerKey fromIni (Just trusted) cfg `shouldReturn` Right (BadgeIssuerKey testIssuerKeyIdx sk)
@@ -1765,7 +1791,7 @@ testDevKeysTrusted ps = do
   Right (_, devSk) <- bbsKeyGen
   let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
       devIdx = testIssuerKeyIdx + 8
-      fromIni = (mkStoreServiceOpts ps sk) {issuerKey = Right Nothing}
+      fromIni = (mkStoreServiceOpts ps sk) {issuerKey = Nothing}
   Right withDev <- devKeysIni chainSection devIdx devSk [(devIdx, devSk)]
   checkIssuerKey fromIni (Just withDev) cfg >>= (`shouldSatisfy` isLeft)
   Right trusted <- trustDevKeys (Just withDev) cfg
@@ -1881,11 +1907,14 @@ testRevokeRejectsTrailingInput ps =
     refused <- revokeRaw cc (formatBadgeCode code <> " junk")
     -- If the refused call revoked the code anyway, this fails with "Already revoked.".
     revokeCodeAs cc code `shouldReturn` Right "Revoked."
-    refused `shouldBe` Left badgeCmdUsage
+    refused `shouldBe` Left "Usage: //revoke <code>"
 
 -- The text is spelled out rather than taken from the service, so a change there fails here.
 badgeCmdUsage :: Text
-badgeCmdUsage = "Usage: //issue supporter|legend|investor [months 1-12] [paid|unpaid|free], //issue name <length 6-63> [years 2-10] [paid|free], //revoke <code>, //balance <reference>, //record_refund <reference> <cents>, or //close <reference>"
+badgeCmdUsage = "Usage:\n//issue <name <length>|supporter|legend|investor> [years|months <N>] [paid|unpaid|free]\n//revoke <code>\n//balance <reference>\n//record_refund <reference> <cents>\n//close <reference>"
+
+consoleIssueUsage :: Text
+consoleIssueUsage = "Usage: //issue <kind> [<length>] [years <Y> | months <M>] [paid|unpaid|free]\nname <length>: length 6–63, years 2–10, paid|free\nsupporter, legend, investor: months 1–12, paid|unpaid|free\ne.g. //issue name 6 years 5 · //issue supporter months 12"
 
 purchaseCmd :: BadgeMasterKey -> ServicePayment -> StoreServiceCommand
 purchaseCmd masterKey payment = STCPurchaseBadge {masterKey, payment, upgrade = Nothing}
@@ -2791,7 +2820,7 @@ testUpgradeRequestRefused ps =
     let appleTip = last $ fst $ statementOf apple
         refused key cmd = refusalOf <$> serviceCmd env key cmd
     -- signed by another key than the purchase it names
-    refusalOf <$> storeServiceResponse bsIssuerKey bsVerifier bsPurchaseChecks cc Nothing (Just playKey) (requestObject appleKey $ upgradeCmdWith appleLegendSubscriptionJWS appleTip)
+    refusalOf <$> storeServiceResponse bsIssuerKey bsVerifier bsPurchaseChecks cc Nothing (serviceRequest (Just playKey) (requestObject appleKey $ upgradeCmdWith appleLegendSubscriptionJWS appleTip))
       `shouldReturn` (STEBadRequest, Nothing)
     refused unknownKey (upgradeCmdWith appleLegendSubscriptionJWS appleTip) `shouldReturn` (STEUnknownPurchaseKey, Nothing)
     -- another purchase's subscription, and another subscription for this purchase
@@ -4022,7 +4051,7 @@ testAnnualAsksBeforeEachMonth ps =
   withStoreServiceEnv ps $ \env@StoreServiceEnv {bsClock, bsController = cc, bsStore = store} -> do
     (purchaseKey, firstStart, purchased) <- subscribedTo env "subscr-badge-supporter-year-01" 12
     let issue = STCIssueBadge {balance = BadgeBalance {lastEntry = last purchased}}
-        routedAt t = setClockAt bsClock t >> requestLane ChecksAfterCoverage cc (Just purchaseKey) (requestObject purchaseKey issue)
+        routedAt t = setClockAt bsClock t >> requestLane ChecksAfterCoverage cc (serviceRequest (Just purchaseKey) (requestObject purchaseKey issue))
     checks <- subscriptionChecks store
     -- inside the issued month no month is due, so the store is not asked
     routedAt (addUTCTime (10 * nominalDay) firstStart) `shouldReturn` MainLane
@@ -5924,25 +5953,23 @@ testStoreChecksConfigured _ = do
     Right cfg <- readServiceConfig (d </> "store_service.ini")
     let checksFor c = (\ServiceState {storeVerifier} -> storeChecks storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
         creditsFor c = (\ServiceState {storeVerifier} -> creditTestPurchases storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
-        dev accept during credit = Just cfg {devAcceptUnverifiedStoreReceipts = accept, devCheckStoreDuringCoverage = during, devCreditTestPurchases = credit}
+        dev accept checks credit = Just cfg {devAcceptUnverifiedStoreReceipts = accept, devStoreChecks = checks, devCreditTestPurchases = credit}
     checksFor Nothing `shouldReturn` ChecksAfterCoverage
-    checksFor (dev False False False) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev True False False) `shouldReturn` ChecksAfterCoverage
-    -- refused by the parser, and still not armed if set by hand
-    checksFor (dev False True False) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev True True False) `shouldReturn` ChecksAtEveryRequest
-    checksFor (dev False False True) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev False True True) `shouldReturn` ChecksAtEveryRequest
+    checksFor (dev False ChecksAfterCoverage False) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev True ChecksAfterCoverage False) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev True ChecksAtEveryRequest False) `shouldReturn` ChecksAtEveryRequest
+    checksFor (dev False ChecksAfterCoverage True) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev False ChecksAtEveryRequest True) `shouldReturn` ChecksAtEveryRequest
     creditsFor Nothing `shouldReturn` False
-    creditsFor (dev False False False) `shouldReturn` False
-    creditsFor (dev False False True) `shouldReturn` True
+    creditsFor (dev False ChecksAfterCoverage False) `shouldReturn` False
+    creditsFor (dev False ChecksAfterCoverage True) `shouldReturn` True
     -- the mock never reports a test purchase
-    creditsFor (dev True False True) `shouldReturn` False
+    creditsFor (dev True ChecksAfterCoverage True) `shouldReturn` False
 
 testStoreRouting :: HasCallStack => TestParams -> IO ()
 testStoreRouting ps =
   withStoreServiceEnv ps $ \env@StoreServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS, appleSupporterJWS}} -> do
-    let routedAs signer key cmd = requestLane ChecksAfterCoverage cc (Just signer) (requestObject key cmd)
+    let routedAs signer key cmd = requestLane ChecksAfterCoverage cc (serviceRequest (Just signer) (requestObject key cmd))
         routed key = routedAs key key
     (purchaseKey, masterKey) <- newPurchaseKeys
     let purchase payment = routed purchaseKey $ purchaseCmd masterKey payment

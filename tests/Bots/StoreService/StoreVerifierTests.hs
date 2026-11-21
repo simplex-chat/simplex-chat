@@ -24,7 +24,9 @@ import StoreService.StoreReceipts
 import StoreService.StoreReceipts.Apple (appleSubscriptionChecker, readAppleRoot, verifyAppleTransaction)
 import StoreService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier)
 import Bots.StoreService.FakeAppStore
+import Bots.StoreService.FakeHttp (withResetServer)
 import Bots.StoreService.FakePlay
+import Network.HTTP.Client.TLS (newTlsManager)
 import Control.Concurrent.STM (readTVarIO)
 import Control.Exception (throwIO)
 import Control.Monad (forM_)
@@ -61,6 +63,7 @@ import UnliftIO.Temporary (withTempDirectory)
 
 badgeStoreVerifierTests :: Spec
 badgeStoreVerifierTests = describe "badge store verifiers" $ do
+  it "makes a connection reset while a store's answer is read the store unreachable" testStoreRequestReset
   describe "App Store signed transactions" $ do
     it "vouches for a transaction a chain to the trusted root signed, naming the transaction it was claimed by" testAppleVerdict
     it "vouches for a subscription renewal by its original transaction id, the ref it is claimed by" testAppleRenewalVerdict
@@ -260,6 +263,11 @@ es256 = J.object ["alg" J..= ("ES256" :: Text)]
 
 signedBy :: TestChain -> J.Value -> IO Text
 signedBy chain@TestChain {rootCert, intermediateCert, leafCert} = signedTransaction chain [leafCert, intermediateCert, rootCert] es256
+
+testStoreRequestReset :: IO ()
+testStoreRequestReset = withResetServer $ \url -> do
+  manager <- newTlsManager
+  storeRequest manager "Apple" id (T.pack url) `shouldReturn` Left (SRUnreachable "request to Apple failed")
 
 testAppleVerdict :: IO ()
 testAppleVerdict = do

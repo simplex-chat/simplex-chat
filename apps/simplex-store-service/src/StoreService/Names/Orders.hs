@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
 -- | The checks every order runs, by paid invoice or prepaid code, in the contract's order.
@@ -15,14 +16,15 @@ module StoreService.Names.Orders
     Landing (..),
     maxSealedChars,
     signedRequestSeconds,
-    unixSeconds,
-    parseOrderRequest,
-    parseOrderFields,
-    textField,
-    integerField,
-    checkLength,
+    SignedOrderFields,
+    SentFields (..),
+    SignedFields (..),
+    SentOrder (..),
+    orderRequest,
+    signedFields,
+    parseBody,
+    textWith,
     checkSigner,
-    checkOrderSigner,
     existingOrder,
     placeOrder,
     placeCodeOrder,
@@ -34,9 +36,9 @@ module StoreService.Names.Orders
     checkNameFree,
     checkPrice,
     movable,
+    noteRead,
     orderFieldsOf,
     checkMoveMeets,
-    checkMovePrice,
     retargetOrder,
     versionWritten,
     confirmLanded,
@@ -49,36 +51,41 @@ import Control.Logger.Simple (logError, logWarn)
 import Control.Monad (forM, unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.TH as JQ
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
-import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
-import Data.Maybe (catMaybes, isJust)
-import Data.Scientific (toBoundedInteger)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Word (Word64)
-import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
+import Simplex.Chat.Badges.Code (NameLength, nameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
+import Simplex.Messaging.Names.Record (USDCents)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix)
 import Simplex.Messaging.SimplexName (LabelHash (..))
-import Simplex.Messaging.Util (eitherToMaybe, tshow)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
-import StoreService.Names.Community (agreedTermsHash, communityJSON, communityTermsPrefix, nameTerms, readableTerms, termsFor, termsJSON, yearsFor)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
+import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveRefusal, spendLandedCode)
+import StoreService.Names.Community (Community, communityOf, nameTerms, readableTerms, termsFor, yearsFor)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), Terms, chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
-import StoreService.Names.Abi (abiWordSize, bytes32FromHex, hex)
-import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (Balance, LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Chain (Hex32 (..), TxHash)
+import StoreService.Names.Registration (Commitment, LinkKind)
+import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), parseChecksumAddress, personalDigest)
+import StoreService.Names.Store (CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, retargetRegistration, spendBalance, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
+import StoreService.Names.View (movableUntil)
+import StoreService.Store.Invoices (currentSecond)
 
 data OrdersEnv = OrdersEnv
   { oeStore :: DBStore,
@@ -86,12 +93,13 @@ data OrdersEnv = OrdersEnv
     oeContracts :: Contracts,
     oeTurns :: Turns,
     oePhases :: Phases,
-    oeNow :: IO UTCTime
+    oeNow :: IO UTCTime,
+    oeReport :: Text -> IO ()
   }
 
 ordersEnv :: NamesEnv -> OrdersEnv
-ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases} =
-  OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = getCurrentTime}
+ordersEnv NamesEnv {neStore, neConfig, neContracts, neTurns, nePhases, neReport} =
+  OrdersEnv {oeStore = neStore, oeConfig = neConfig, oeContracts = neContracts, oeTurns = neTurns, oePhases = nePhases, oeNow = currentSecond, oeReport = neReport}
 
 -- | The fields both kinds of order carry, with the owner's signature over them.
 data OrderRequest = OrderRequest
@@ -102,17 +110,17 @@ data OrderRequest = OrderRequest
   }
 
 data OrderRefusal
-  = ORBadRequest
+  = ORBadRequest Text
   | ORInvalidName
+  | ORInvalidLink LinkKind
   | OROrderExists
   | ORNameTaken
   | ORNameCheckUnavailable
-  | ORCatalogChanged Int
+  | ORCatalogChanged USDCents
   | ORCode CodeRefusal
-  | ORPriceTooHigh Int
-  | ORBalanceChanged (Maybe Balance)
-  | -- | the current terms and the name's community entry, as the answer carries them
-    ORTermsChanged J.Value J.Value
+  | ORPriceTooHigh USDCents
+  | -- | the current terms and the name's community entry
+    ORTermsChanged Terms (Maybe Community)
   | ORTermsUnavailable (Maybe Int)
   | ORCodesOnly
   deriving (Eq, Show)
@@ -122,8 +130,9 @@ newtype OrderRefused = OrderRefused OrderRefusal
 
 instance E.Exception OrderRefused
 
--- | An exact resend of a stored order, live or not; or the overdue orders of the same wallet and name the new order closes.
-data ExistingOrder = EOResent NameRegistration | EONew [NameRegistration] | EOMeets
+-- | An exact resend of a stored order, live or not; a new order, which closes the overdue orders of the same wallet and name;
+-- or one meeting another live order.
+data ExistingOrder = EOResent NameRegistration | EONew | EOMeets
 
 -- | An overdue order a new order closed, at its new version; its invoice is now expired.
 data ClosedOrder = ClosedOrder {coRegistration :: NameRegistration, coVersion :: Int64}
@@ -132,78 +141,76 @@ data ClosedOrder = ClosedOrder {coRegistration :: NameRegistration, coVersion ::
 data WriteRefusal = WRChanged | WRRefused OrderRefusal
   deriving (Eq, Show)
 
--- | What /retry's first check found on the order's current name: no register through, the order registered at a new version,
+-- | What the register check found on the order's current name: no register through, the order registered at a new version,
 -- the order changed since it was read, or a failed chain read.
 data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
   deriving (Eq, Show)
 
+data Landed = LandedByReceipt TxHash | LandedByOwner
+
 maxSealedChars :: Int
 maxSealedChars = 11095
-
-maxAgreedTermsChars :: Int
-maxAgreedTermsChars = T.length communityTermsPrefix + 2 * abiWordSize
 
 -- | How far a signed request's timestamp may be from the service's clock.
 signedRequestSeconds :: Integer
 signedRequestSeconds = 600
 
--- | Every format check; the length's range is checkLength's, after the formats a kind of order adds.
-parseOrderRequest :: J.Object -> Maybe OrderRequest
-parseOrderRequest o = do
-  orOwner <- eitherToMaybe . parseChecksumAddress =<< textField o "owner"
-  (orFields, orTimestamp, orSignature) <- parseOrderFields o
-  pure OrderRequest {orOwner, orFields, orTimestamp, orSignature}
-
 -- | The signed fields of an order, or of another name for one, with their timestamp and signature.
-parseOrderFields :: J.Object -> Maybe (OrderFields, Word64, RecoverableSignature)
-parseOrderFields o = do
-  ofLabelHash <- LabelHash <$> (bytes32FromHex =<< textField o "labelHash")
-  ofLength <- integerField =<< KM.lookup "length" o
-  ofDuration <- integerField =<< KM.lookup "duration" o
-  ofCommitment <- bytes32FromHex =<< textField o "commitment"
-  ofSealed <- textField o "sealed"
-  unless (T.length ofSealed <= maxSealedChars) Nothing
-  ofAgreedTerms <- textField o "terms"
-  unless (agreedTermsFormat ofAgreedTerms) Nothing
-  timestamp <- integerField =<< KM.lookup "timestamp" o
-  signature <- eitherToMaybe . parseSignature =<< textField o "signature"
-  pure (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
+type SignedOrderFields = (OrderFields, Word64, RecoverableSignature)
 
-agreedTermsFormat :: Text -> Bool
-agreedTermsFormat t = not (T.null t) && T.length t <= maxAgreedTermsChars && T.all termsChar t
-  where
-    termsChar c = isAsciiUpper c || isAsciiLower c || isDigit c || c `elem` ("._/-" :: String)
+data SentFields = SentFields
+  { sfLabelHash :: Hex32,
+    sfLength :: Int,
+    sfDuration :: Word64,
+    sfCommitment :: Commitment,
+    sfSealed :: Text,
+    sfTerms :: AgreedTerms
+  }
 
-textField :: J.Object -> J.Key -> Maybe Text
-textField o k = case KM.lookup k o of
-  Just (J.String t) -> Just t
-  _ -> Nothing
+data SignedFields = SignedFields
+  { fields :: SentFields,
+    timestamp :: Word64,
+    signature :: RecoverableSignature
+  }
 
--- | A JSON integer within the type's range; a fraction, an exponent past it, or any other value is Nothing.
-integerField :: (Integral a, Bounded a) => J.Value -> Maybe a
-integerField = \case
-  J.Number n -> toBoundedInteger n
-  _ -> Nothing
+data SentOrder = SentOrder {soOwner :: Address, soSigned :: SignedFields}
 
-checkLength :: OrderFields -> Either OrderRefusal ()
-checkLength OrderFields {ofLength} =
-  unless (ofLength >= minNameLength && ofLength <= maxNameLength) $ Left ORInvalidName
+$(JQ.deriveFromJSON defaultJSON {J.fieldLabelModifier = dropPrefix "sf"} ''SentFields)
+
+$(JQ.deriveFromJSON defaultJSON ''SignedFields)
+
+instance J.FromJSON SentOrder where
+  parseJSON = J.withObject "order" $ \o -> SentOrder <$> JT.explicitParseField (textWith $ first show . parseChecksumAddress) o "owner" <*> J.parseJSON (J.Object o)
+
+orderRequest :: SentOrder -> Either OrderRefusal OrderRequest
+orderRequest SentOrder {soOwner, soSigned} = (\(orFields, orTimestamp, orSignature) -> OrderRequest {orOwner = soOwner, orFields, orTimestamp, orSignature}) <$> signedFields soSigned
+
+-- | Every format check; the length's range refuses after the formats a kind of order adds.
+signedFields :: SignedFields -> Either OrderRefusal SignedOrderFields
+signedFields SignedFields {fields = SentFields {sfLabelHash, sfLength, sfDuration, sfCommitment, sfSealed, sfTerms}, timestamp, signature}
+  | T.length sfSealed > maxSealedChars = Left $ ORBadRequest "a malformed order: the sealed name is longer than its limit"
+  | otherwise = case nameLength sfLength of
+      Just ofLength -> Right (OrderFields {ofLabelHash = LabelHash $ unHex32 sfLabelHash, ofLength, ofDuration = sfDuration, ofCommitment = sfCommitment, ofSealed = sfSealed, ofAgreedTerms = sfTerms}, timestamp, signature)
+      Nothing -> Left ORInvalidName
+
+parseBody :: J.FromJSON a => Text -> J.Value -> Either OrderRefusal a
+parseBody what = first (\e -> ORBadRequest $ "a malformed " <> what <> ": " <> T.pack e) . JT.parseEither J.parseJSON
+
+textWith :: (Text -> Either String a) -> J.Value -> JT.Parser a
+textWith f = J.withText "string" $ either fail pure . f
 
 -- | The owner's EIP-191 signature over the message.
 checkSigner :: Address -> ByteString -> RecoverableSignature -> IO (Either OrderRefusal ())
 checkSigner owner msg signature =
   recoverAddress signature (personalDigest msg) >>= \case
     Right signer | signer == owner -> pure $ Right ()
-    _ -> pure $ Left ORBadRequest
+    _ -> pure $ Left $ ORBadRequest "the signature is not the owner's"
 
-checkOrderSigner :: OrderRequest -> IO (Either OrderRefusal ())
-checkOrderSigner OrderRequest {orOwner, orFields, orTimestamp, orSignature} = checkSigner orOwner (orderMessage orFields orTimestamp) orSignature
-
-existingOrder :: DB.Connection -> OrderRequest -> ByteString -> UTCTime -> IO ExistingOrder
+existingOrder :: DB.Connection -> OrderRequest -> OrderHash -> UTCTime -> IO ExistingOrder
 existingOrder db req hash now =
   getRegistrationByOrderHash db hash >>= \case
     Just r -> pure $ EOResent r
-    Nothing -> maybe EOMeets EONew <$> overdueOrdersMet db req now
+    Nothing -> maybe EOMeets (const EONew) <$> overdueOrdersMet db req now
 
 -- | The live orders of the request's commitment, or of its owner and label hash, when all are overdue orders of the same wallet and name;
 -- Nothing when any other live order holds them.
@@ -215,70 +222,57 @@ overdueOrdersMet db OrderRequest {orOwner, orFields = OrderFields {ofLabelHash, 
     closable LiveOrder {loRegistration = NameRegistration {nrOwner, nrLabelHash}, loOverdue} =
       loOverdue && nrOwner == orOwner && nrLabelHash == ofLabelHash
 
--- | In one transaction, the overdue orders the request meets and the balance holders the caller names are closed, then the order is inserted.
--- A named holder no longer live is skipped, and one still live that cannot be closed refuses with the balance it holds.
+-- | In one transaction, the overdue orders the request meets are closed, then the order is inserted.
 -- Refused, changing nothing, when it meets an order it cannot close, or the insert refuses.
-placeOrder :: OrdersEnv -> OrderRequest -> [NameRegistration] -> (DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
-placeOrder OrdersEnv {oeStore, oeNow} req holders insert = do
-  now <- oeNow
-  first (\(OrderRefused refusal) -> refusal) <$> E.try (withTransaction oeStore $ \db -> transaction db now)
+placeOrder :: OrdersEnv -> UTCTime -> OrderRequest -> (DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
+placeOrder OrdersEnv {oeStore} now req insert =
+  first (\(OrderRefused refusal) -> refusal) <$> E.try (withTransaction oeStore $ \db -> transaction db)
   where
-    transaction db now =
+    transaction db =
       overdueOrdersMet db req now >>= \case
         Just overdue -> do
-          closed <- mapM (close db now) overdue
-          closedHolders <- catMaybes <$> mapM (closeHolder db now) holders
-          insert db now >>= either (E.throwIO . OrderRefused) (const $ pure $ closed <> closedHolders)
+          closed <- mapM (close db) overdue
+          insert db now >>= either (E.throwIO . OrderRefused) (const $ pure closed)
         Nothing -> E.throwIO $ OrderRefused OROrderExists
-    close db now r =
+    close db r =
       closeOverdue db r now >>= \case
         Just v -> pure ClosedOrder {coRegistration = r, coVersion = v}
         Nothing -> E.throwIO $ OrderRefused OROrderExists
-    -- read again here, since another order of its own name may have closed it meanwhile
-    closeHolder db now NameRegistration {nrId} =
-      getRegistration db nrId >>= \case
-        Just holder@NameRegistration {nrLive = True, nrBalanceSource} ->
-          closeOverdue db holder now >>= \case
-            Just v -> pure $ Just ClosedOrder {coRegistration = holder, coVersion = v}
-            Nothing -> E.throwIO . OrderRefused . ORBalanceChanged =<< maybe (pure Nothing) (\source -> getBalance db source now) nrBalanceSource
-        _ -> pure Nothing
 
 -- | In the code's turn, the code as it reads there must pay for the name; the order's insert then reserves it.
-placeCodeOrder :: OrdersEnv -> OrderRequest -> RegistrationId -> PrepaidCode -> IO (Either OrderRefusal [ClosedOrder])
-placeCodeOrder env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orOwner, orFields = fields@OrderFields {ofLength}} rid PrepaidCode {pcCodeHash, pcYears} =
+placeCodeOrder :: OrdersEnv -> OrderRequest -> NameReveal -> OrderHash -> RegistrationId -> PrepaidCode -> IO (Either OrderRefusal [ClosedOrder])
+placeCodeOrder env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orOwner, orFields = fields@OrderFields {ofLength}} reveal hash rid PrepaidCode {pcCodeHash, pcYears} =
   withCodeTurn oeTurns pcCodeHash $ do
     now <- oeNow
     withTransaction oeStore (`getPrepaidCode` pcCodeHash) >>= \case
       Nothing -> pure $ Left $ ORCode CRInvalid
       Just code
         | Just refusal <- codeRefusal now rid ofLength code -> pure $ Left $ ORCode refusal
-        | otherwise -> placeOrder env req [] $ codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = fields, nrgYears = pcYears} code
+        | otherwise -> placeOrder env now req $ codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = fields, nrgReveal = reveal, nrgYears = pcYears, nrgOrderHash = hash} code
 
 -- | The code was checked in its turn, so only a writer outside this process can make its reservation fail.
 codeOrderInsert :: NewRegistration -> PrepaidCode -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())
 codeOrderInsert new@NewRegistration {nrgId, nrgOrder = OrderFields {ofLength}} code@PrepaidCode {pcCodeHash} db now =
   createCodeRegistration db new code now >>= \case
     Right () -> pure $ Right ()
-    Left RRLiveOrder -> pure $ Left OROrderExists
-    Left RRCodeNotReservable -> Left . ORCode <$> reserveRefusal db now pcCodeHash nrgId ofLength
-    -- a code order holds no balance
-    Left RRBalanceChanged -> pure $ Left OROrderExists
+    Left CIRLiveOrder -> pure $ Left OROrderExists
+    Left CIRCodeNotReservable -> Left . ORCode <$> reserveRefusal db now pcCodeHash nrgId ofLength
 
 checkTimestamp :: UTCTime -> Word64 -> Either OrderRefusal ()
 checkTimestamp now timestamp =
-  unless (abs (toInteger timestamp - unixSeconds now) <= signedRequestSeconds) $ Left ORBadRequest
+  unless (abs (diffUTCTime (roundedToUTCTime $ RoundedSystemTime $ fromIntegral timestamp) now) <= fromInteger signedRequestSeconds) $ Left $ ORBadRequest "the timestamp is outside the window"
 
 -- | The paid years plus the free days until the term starts, by the service's clock, within the slack.
 checkDuration :: NamesConfig -> UTCTime -> Int -> Word64 -> Either OrderRefusal ()
 checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = do
   let free = toInteger duration - toInteger years * secondsPerYear
-      expected = max 0 (unixSeconds nTermStart - unixSeconds now)
-  when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left ORBadRequest
+      expected = max 0 (floor $ diffUTCTime nTermStart now)
+  when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left $ ORBadRequest "the duration is not the paid years with the free days"
 
 -- | The years the payment covers, or communityYears for an order signing community terms; 'checkTerms' refuses those terms
 -- for any other name.
 orderYears :: OrderFields -> Int -> Int
-orderYears OrderFields {ofAgreedTerms} = yearsFor (isJust $ agreedTermsHash ofAgreedTerms)
+orderYears OrderFields {ofAgreedTerms = AgreedTerms {communityName}} = yearsFor communityName
 
 -- | The terms the order signed must be the current ones for its name, the community terms for a name the policy lists,
 -- which cannot be ordered while a buyer cannot read them.
@@ -286,23 +280,23 @@ checkTerms :: NamesConfig -> Contracts -> OrderFields -> IO (Either OrderRefusal
 checkTerms cfg ct OrderFields {ofLabelHash, ofAgreedTerms} =
   nameTerms ct ofLabelHash >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's terms check failed: " <> tshow e)
-    Right (listed, terms) ->
+    Right (community, terms) ->
       readableTerms ct terms <&> \case
         Left wait -> Left $ ORTermsUnavailable wait
-        Right t -> unless (ofAgreedTerms == termsFor listed t) $ Left $ ORTermsChanged (termsJSON $ Just t) (communityJSON cfg ofLabelHash listed)
+        Right t -> unless (ofAgreedTerms == termsFor community t) $ Left $ ORTermsChanged t (communityOf cfg ofLabelHash community)
 
 -- | A name being registered here searches as available, so it is checked here too.
-checkNameFree :: Contracts -> DBStore -> LabelHash -> IO (Either OrderRefusal ())
-checkNameFree ct st lh =
+checkNameFree :: Contracts -> DBStore -> Maybe RegistrationId -> LabelHash -> IO (Either OrderRefusal ())
+checkNameFree ct st moved lh =
   nameStatus ct lh >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's name check failed: " <> tshow e)
     Right NSAvailable -> do
-      registering <- withTransaction st (`isLabelRegistering` lh)
-      pure $ if registering then Left ORNameTaken else Right ()
+      holder <- withTransaction st (`labelHolder` lh)
+      pure $ if isJust holder && holder /= moved then Left ORNameTaken else Right ()
     Right _ -> pure $ Left ORNameTaken
 
 -- | The chain price for the length and years, which must be the price the order saw.
-checkPrice :: Contracts -> Int -> Int -> Int -> IO (Either OrderRefusal ())
+checkPrice :: Contracts -> NameLength -> Int -> USDCents -> IO (Either OrderRefusal ())
 checkPrice ct len years price =
   chainPriceCents ct len years >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's price read failed: " <> tshow e)
@@ -310,15 +304,16 @@ checkPrice ct len years price =
       | chainPrice /= price -> pure $ Left $ ORCatalogChanged chainPrice
       | otherwise -> pure $ Right ()
 
-unixSeconds :: UTCTime -> Integer
-unixSeconds = floor . utcTimeToPOSIXSeconds
+-- | Only a taken order paid by invoice can move to another name, within the month from its payment.
+movable :: UTCTime -> NameRegistration -> Bool
+movable now = maybe False (now <) . movableUntil
 
--- | A failed order, and one whose reveal was refused for its links, can move to another name.
-movable :: NameRegistration -> Bool
-movable NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
-  PFailed -> True
-  PCommitted -> isJust nrLinksRefusedAt
-  _ -> False
+readNoteSeconds :: NominalDiffTime
+readNoteSeconds = 3600
+
+noteRead :: DBStore -> UTCTime -> NameRegistration -> IO ()
+noteRead st now NameRegistration {nrId, nrReadAt} =
+  when (diffUTCTime now nrReadAt >= readNoteSeconds) $ withTransaction st $ \db -> markRead db nrId (addUTCTime (negate readNoteSeconds) now) now
 
 orderFieldsOf :: NameRegistration -> OrderFields
 orderFieldsOf NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed, nrAgreedTerms} =
@@ -330,83 +325,73 @@ checkMoveMeets st NameRegistration {nrId = rid, nrOwner} OrderFields {ofLabelHas
   orders <- withTransaction st $ \db -> getLiveOrders db ofCommitment nrOwner ofLabelHash now
   pure $ if any ((/= rid) . nrId . loRegistration) orders then Left OROrderExists else Right ()
 
--- | The new name's chain price for its years, at most what the order is worth, becomes its price.
-checkMovePrice :: Contracts -> NameRegistration -> Int -> Int -> IO (Either OrderRefusal Int)
+-- | The new name's chain price for its years must be the order's price.
+checkMovePrice :: Contracts -> NameRegistration -> NameLength -> Int -> IO (Either OrderRefusal ())
 checkMovePrice ct NameRegistration {nrPrice} len years =
   chainPriceCents ct len years >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a move's price read failed: " <> tshow e)
     Right price
-      | price > nrPrice -> pure $ Left $ ORPriceTooHigh price
-      | otherwise -> pure $ Right price
+      | price /= nrPrice -> pure $ Left $ ORPriceTooHigh price
+      | otherwise -> pure $ Right ()
 
--- | The move's write, a compare-and-set on the version read. A code order's code is checked and reserved again in the code's turn.
--- A paid order moved to a cheaper name keeps the difference as its balance, credited in the move's transaction and the balance's turn.
-retargetOrder :: OrdersEnv -> NameRegistration -> OrderFields -> Int -> IO (Either WriteRefusal Int64)
-retargetOrder OrdersEnv {oeStore, oeTurns, oeNow} r@NameRegistration {nrId, nrPayment, nrPrice} fields@OrderFields {ofLength} price = do
+-- | The move's write, a compare-and-set on the version read, keeping the order's price, which is spent from its own balance
+-- in the move's transaction and the balance's turn.
+retargetOrder :: OrdersEnv -> NameRegistration -> OrderFields -> NameReveal -> IO (Either WriteRefusal Int64)
+retargetOrder OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrPrice, nrYears} fields@OrderFields {ofLength} reveal = do
   now <- oeNow
-  let write db = versionWritten <$> retargetRegistration db r fields price now
-      paidMove
-        | price < nrPrice = withBalanceTurn oeTurns nrId $ withTransaction oeStore $ \db -> write db >>= traverse (\v -> v <$ creditBalance db nrId (nrPrice - price) now)
-        | otherwise = withTransaction oeStore write
-  case nrPayment of
-    RPInvoice {} -> paidMove
-    RPBalance -> paidMove
-    RPCode codeId ->
-      withTransaction oeStore (`getPrepaidCodeById` codeId) >>= \case
-        Nothing -> pure $ Left $ WRRefused $ ORCode CRInvalid
-        Just PrepaidCode {pcCodeHash} -> either (Left . WRRefused . ORCode) id <$> reserveCode oeTurns oeStore now pcCodeHash nrId ofLength write
+  let write db = versionWritten <$> retargetRegistration db r fields reveal nrPrice now
+      spent db v =
+        spendBalance db nrId nrPrice now >>= \case
+          True -> pure v
+          False -> E.throwIO $ OrderRefused $ ORBadRequest "the order's balance does not hold its price"
+  checkMovePrice oeContracts r ofLength (orderYears fields nrYears) >>= \case
+    Left refusal -> pure $ Left $ WRRefused refusal
+    Right () -> withBalanceTurn oeTurns nrId $ either (\(OrderRefused refusal) -> Left $ WRRefused refusal) id <$> E.try (withTransaction oeStore $ \db -> write db >>= traverse (spent db))
 
 versionWritten :: VersionWrite -> Either WriteRefusal Int64
 versionWritten = \case
   Written v -> Right v
   VersionChanged -> Left WRChanged
   LiveOrderExists -> Left $ WRRefused OROrderExists
-  NotLive -> Left $ WRRefused ORBadRequest
+  NotLive -> Left $ WRRefused $ ORBadRequest "the order is closed"
 
 confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} = checkLanded oeStore oeContracts oeTurns oeNow
 
--- | /retry's first check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
+-- | The register check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
--- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
+-- The caller holds the turn of the order's label hash.
 checkLanded :: DBStore -> Contracts -> Turns -> IO UTCTime -> NameRegistration -> IO Landing
-checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
+checkLanded st ct turns clock r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrHistory} = do
   txs <- withTransaction st (`registrationTransactions` nrId)
-  let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
+  let mined = [ntHash | NameTransaction {ntFor = TxRegistration RTRegister _, ntState = TxSettled TSMinedAt {}, ntHash} <- txs]
   runExceptT (landed mined) >>= \case
     Left e -> LUnread <$ logWarn ("names: a register check's chain read failed: " <> tshow e)
     Right Nothing -> pure LNotLanded
-    Right (Just (tx, expiry)) -> either (const LChanged) LRegistered <$> markRegistered tx expiry
+    Right (Just (how, expiry)) -> either (const LChanged) LRegistered <$> markRegistered how expiry
   where
     landed mined = do
       confirmed <- ExceptT $ confirmedTag ct
-      registerTx <- case mined of
-        tx : _ -> pure $ Just $ Just tx
-        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken ct confirmed nrLabelHash)
-      forM registerTx $ \tx -> (tx,) <$> ExceptT (nameExpires ct confirmed nrLabelHash)
-    markRegistered tx expiry = do
+      how <- case mined of
+        tx : _ -> pure $ Just $ LandedByReceipt tx
+        [] -> (\holder -> if holder == Just nrOwner then Just LandedByOwner else Nothing) <$> ExceptT (ownerOfToken ct confirmed nrLabelHash)
+      forM how $ \l -> (l,) <$> ExceptT (nameExpires ct confirmed nrLabelHash)
+    markRegistered how expiry = do
       now <- clock
-      let registered =
-            r
-              { nrPhase = PRegistered,
-                -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
-                nrRegisterTx = fst <$> tx,
-                nrRegisterBlock = snd =<< tx,
-                nrExpiresAt = Just expiry,
-                nrRegisteredAt = Just now,
-                nrFailedAt = Nothing,
-                nrError = Nothing
-              }
+      let registerTx = case how of
+            LandedByReceipt tx -> Just tx
+            -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
+            LandedByOwner -> Nothing
+          registered = r {nrPhase = ORegistered expiry now, nrHistory = nrHistory {thRegisterTx = registerTx}}
           write db = versionWritten <$> updateRegistration db registered now
       case nrPayment of
-        RPInvoice {} -> withTransaction st write
-        RPBalance -> withTransaction st write
-        RPCode codeId -> spendLandedCode turns st now codeId nrId write >>= traverse (paidWith codeId)
+        OPInvoice {} -> withTransaction st write
+        OPCode codeId -> spendLandedCode turns st now codeId nrId write >>= traverse (paidWith codeId)
     paidWith codeId (v, spent) = do
       unless spent $ do
-        code <- withTransaction st (`getPrepaidCodeById` codeId)
+        PrepaidCode {pcCodeHash} <- withTransaction st (`getPrepaidCodeById` codeId)
         logError $
-          "names: registration " <> ridText nrId <> " turned out registered with prepaid code " <> maybe (tshow codeId) (hex . pcCodeHash) code
+          "names: registration " <> ridText nrId <> " turned out registered with prepaid code " <> safeDecodeUtf8 (strEncode pcCodeHash)
             <> ", which was released and then spent, revoked or expired: the name was paid with it"
       pure v
     ridText (RegistrationId t) = t
