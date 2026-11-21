@@ -93,7 +93,7 @@
                 }
               },
               "groupSummary": {
-                "currentMembers": 2,
+                "currentMembers": 3,
                 "publicMemberCount": 1
               },
               "localAlias": "",
@@ -165,6 +165,7 @@
                   "connShortLink": "connShortLink"
                 }
               },
+              "rosterVersion": 0,
               "updatedAt": "1970-01-01T00:00:00Z",
               "useRelays": true,
               "userMemberProfileSentAt": "1970-01-01T00:00:00Z",

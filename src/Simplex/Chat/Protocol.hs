@@ -1696,3 +1696,20 @@ data RelayAddressLinkData = RelayAddressLinkData {relayProfile :: RelayProfile}
 
 $(JQ.deriveJSON defaultJSON ''RelayAddressLinkData)
 
+data ShortLinkData
+  = SLDContact ContactShortLinkData
+  | SLDGroup GroupShortLinkData
+  | SLDRelayLink RelayShortLinkData
+  | SLDRelayAddress RelayAddressLinkData
+  deriving (Show)
+
+shortLinkContactData :: ShortLinkData -> Maybe ContactShortLinkData
+shortLinkContactData = \case
+  SLDContact d -> Just d
+  _ -> Nothing
+
+shortLinkGroupData :: ShortLinkData -> Maybe GroupShortLinkData
+shortLinkGroupData = \case
+  SLDGroup d -> Just d
+  _ -> Nothing
+

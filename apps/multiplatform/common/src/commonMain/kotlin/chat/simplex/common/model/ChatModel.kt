@@ -2165,7 +2165,8 @@ enum class ConnectionMode {
 enum class ContactStatus {
   @SerialName("active") Active,
   @SerialName("deleted") Deleted,
-  @SerialName("deletedByUser") DeletedByUser;
+  @SerialName("deletedByUser") DeletedByUser,
+  @SerialName("rejected") Rejected;
 }
 
 @Serializable

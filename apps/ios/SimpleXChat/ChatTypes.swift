@@ -2779,6 +2779,7 @@ public enum ContactStatus: String, Decodable, Hashable {
     case active = "active"
     case deleted = "deleted"
     case deletedByUser = "deletedByUser"
+    case rejected = "rejected"
 }
 
 public struct ContactRef: Decodable, Equatable, Hashable {

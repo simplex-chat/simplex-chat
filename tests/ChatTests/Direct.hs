@@ -368,7 +368,7 @@ testRetryConnectingClientTimeout ps = do
               { quotaExceededTimeout = 1,
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               },
-          presetServers = presetSrvs {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 10 10}}
+          presetServers = presetSrvs {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 0 0}}
         }
     opts' =
       testOpts
@@ -1089,17 +1089,18 @@ testRepeatAuthErrorsDisableContact =
     threadDelay 500000
     bob ##> "/_delete @2 notify=off"
     bob <## "alice: contact is deleted"
-    forM_ [1 .. authErrDisableCount] $ \_ -> sendAuth alice
-    alice <## "[bob] connection is disabled, to enable: /enable bob, to delete: /d bob"
+    (withCCAgentTransaction bob $ \db -> DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
+    forM_ [1 .. authErrDisableCount - 1] $ \_ -> sendAuth alice []
+    sendAuth alice ["[bob] connection is disabled, to enable: /enable bob, to delete: /d bob"]
     alice ##> "@bob hey"
     alice <## "bob: disabled, to enable: /enable bob, to delete: /d bob"
     alice ##> "/enable bob"
     alice <## "ok"
-    sendAuth alice
+    sendAuth alice []
   where
-    sendAuth alice = do
-      alice #> "@bob hey"
-      alice <## "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+    sendAuth alice disabled = do
+      alice `send` "@bob hey"
+      alice <### (WithTime "@bob hey" : "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection" : disabled)
 
 testMultilineMessage :: HasCallStack => TestParams -> IO ()
 testMultilineMessage = testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
