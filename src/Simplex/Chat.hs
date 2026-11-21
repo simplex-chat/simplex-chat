@@ -211,6 +211,7 @@ newChatController
         cleanupManagerAsync <- newTVarIO Nothing
         timedItemThreads <- TM.emptyIO
         chatActivated <- newTVarIO True
+        openStoreTxs <- newTVarIO 0
         showLiveItems <- newTVarIO False
         encryptLocalFiles <- newTVarIO False
         tempDirectory <- newTVarIO optTempDirectory
@@ -260,6 +261,7 @@ newChatController
               cleanupManagerAsync,
               timedItemThreads,
               chatActivated,
+              openStoreTxs,
               showLiveItems,
               encryptLocalFiles,
               tempDirectory,

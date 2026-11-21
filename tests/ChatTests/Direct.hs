@@ -59,6 +59,13 @@ import Database.PostgreSQL.Simple (Only (..))
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Options.DB
 #endif
+#if defined(test_hooks)
+import Control.Concurrent.Async (async)
+import Control.Concurrent.STM (swapTVar, writeTVar)
+import Simplex.Messaging.Agent (getConnectionsVerifyCodes)
+import Simplex.Messaging.Util (whenM)
+import System.Timeout (timeout)
+#endif
 
 chatDirectTests :: SpecWith TestParams
 chatDirectTests = do
@@ -97,6 +104,9 @@ chatDirectTests = do
     it "receive contact deletion again after its handling failed to commit" testRedeliveredUncommittedContactDeletion
 #if !defined(dbPostgres)
     it "roll back store transaction after a failed savepoint rollback" testStoreTxAborted
+#endif
+#if defined(test_hooks)
+    it "suspend chat after the open message transaction ends" testSuspendDuringHandling
 #endif
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
@@ -1697,6 +1707,37 @@ testStoreTxAborted =
       withStore' (`DB.execute_` "UPDATE contact_profiles SET local_alias = 'changed' WHERE display_name = 'alice'")
     isLeft r `shouldBe` True
     aliceAlias bob `shouldReturn` [Only ("" :: T.Text)]
+#endif
+
+#if defined(test_hooks)
+testSuspendDuringHandling :: HasCallStack => TestParams -> IO ()
+testSuspendDuringHandling ps = do
+  armed <- newTVarIO False
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  let hook ChatController {smpAgent} = whenM (atomically $ swapTVar armed False) $ do
+        putMVar entered ()
+        readMVar release
+        void . runExceptT $ getConnectionsVerifyCodes smpAgent []
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {storeTxHook = Just hook}} "bob" bobProfile $ \bob -> do
+      connectUsers bob alice
+      atomically $ writeTVar armed True
+      alice #> "@bob hello"
+      timeout 20000000 (readMVar entered) `shouldReturn` Just ()
+      bob ##> "/_app suspend 0"
+      bob <// 500000
+      putMVar release ()
+      bob <### ["ok", WithTime "alice> hello"]
+      handling <- async $ runInStoreTx bob False (pure ())
+      threadDelay 500000
+      (isNothing <$> poll handling) `shouldReturn` True
+      bob ##> "/_app activate"
+      bob <## "ok"
+      (either (const False) isRight <$> wait handling) `shouldReturn` True
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
 #endif
 
 runInStoreTx :: TestCC -> Bool -> CM a -> IO (Either ChatError (Either ChatError a))

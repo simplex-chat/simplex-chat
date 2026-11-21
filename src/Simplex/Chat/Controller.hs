@@ -352,6 +352,7 @@ data ChatController = ChatController
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     chatActivated :: TVar Bool,
+    openStoreTxs :: TVar Int,
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
@@ -1912,7 +1913,7 @@ withStoreBatch actions = do
 
 withStoreTx :: (ChatError -> Bool) -> CM a -> CM (Either ChatError a)
 withStoreTx rollbackOn action = do
-  cc@ChatController {chatStore} <- ask
+  cc@ChatController {chatStore, chatActivated, openStoreTxs} <- ask
   lift ownStoreTx >>= \case
     Just _ -> Right <$> action
     Nothing -> do
@@ -1929,7 +1930,9 @@ withStoreTx rollbackOn action = do
               Left e | rollbackOn e -> E.throwIO $ StoreTxRollback e
               _ -> pure r
           rolledBack (StoreTxRollback e) = pure $ Left e
-      committed <- liftIO $ ((Right <$> withTransaction chatStore run) `E.catch` rolledBack) `catchOwn'` handleDBErrors
+          beginStoreTx = atomically $ readTVar chatActivated >>= checkSTM >> modifyTVar' openStoreTxs (+ 1)
+          endStoreTx = atomically $ modifyTVar' openStoreTxs (subtract 1)
+      committed <- liftIO $ E.bracket_ beginStoreTx endStoreTx $ ((Right <$> withTransaction chatStore run) `E.catch` rolledBack) `catchOwn'` handleDBErrors
       case committed of
         Right r -> do
           lift . sequence_ . reverse =<< readTVarIO afterCommitQ
