@@ -582,11 +582,15 @@ jobs:
           if-no-files-found: error
 
   tour:
-    name: tour of this app and the compared run's
+    name: tour of the ${{ matrix.side }} app
     needs: app
     if: ${{ !cancelled() && inputs.compare != '' && needs.app.result != 'cancelled' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        side: [base, head]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -597,35 +601,60 @@ jobs:
           sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr sqlite3 fonts-dejavu-core jq \
             libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri
 
-      - name: Download this app
+      - name: Download this run's app
+        if: matrix.side == 'head'
         uses: actions/download-artifact@v8
         with:
           name: desktop-app
-          path: ${{ runner.temp }}/apps/head
+          path: ${{ runner.temp }}/app
 
-      - name: Download the compared app
+      - name: Download the compared run's app
+        if: matrix.side == 'base'
         uses: actions/download-artifact@v8
         with:
           name: desktop-app
-          path: ${{ runner.temp }}/apps/base
+          path: ${{ runner.temp }}/app
           run-id: ${{ inputs.compare }}
           github-token: ${{ github.token }}
 
-      - name: Tour the compared app and this app
+      - name: Tour the app
         run: |
-          for side in base head; do
-            tar -xzf "$RUNNER_TEMP/apps/$side/desktop-app.tar.gz" -C "$RUNNER_TEMP/apps/$side"
-            UI_STATE="$RUNNER_TEMP/tour-state-$side" scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/apps/$side/simplex" "$RUNNER_TEMP/tour/$side" tour || true
-            UI_STATE="$RUNNER_TEMP/tour-state-$side" UI_OUT="$RUNNER_TEMP/tour/$side" scripts/ci/desktop-linux/ui stop || true
-          done
-          scripts/ci/tour-compare.sh "$RUNNER_TEMP/tour/base" "$RUNNER_TEMP/tour/head" "$RUNNER_TEMP/tour/pairs"
+          tar -xzf "$RUNNER_TEMP/app/desktop-app.tar.gz" -C "$RUNNER_TEMP/app"
+          scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/app/simplex" "$RUNNER_TEMP/tour" tour || true
 
       - name: Upload tour
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: desktop-tour
+          name: desktop-tour-${{ matrix.side }}
           path: ${{ runner.temp }}/tour
+          retention-days: 14
+          if-no-files-found: warn
+
+  tour-compare:
+    name: compare the tours
+    needs: tour
+    if: ${{ !cancelled() && needs.tour.result != 'skipped' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download the tours
+        uses: actions/download-artifact@v8
+        with:
+          pattern: desktop-tour-*
+          path: ${{ runner.temp }}/tour
+
+      - name: Compare the tours
+        run: scripts/ci/tour-compare.sh "$RUNNER_TEMP/tour/desktop-tour-base" "$RUNNER_TEMP/tour/desktop-tour-head" "$RUNNER_TEMP/pairs"
+
+      - name: Upload the comparison
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-tour-pairs
+          path: ${{ runner.temp }}/pairs
           retention-days: 14
           if-no-files-found: warn
 

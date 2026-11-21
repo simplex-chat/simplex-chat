@@ -168,16 +168,36 @@ scroll_to() {
 
 # Escape closes one screen at a time, and clears the search field
 back_to_chat_list() {
-  for _ in 1 2 3 4 5 6; do
+  local attempt
+  for attempt in 1 2 3 4 5 6; do
     on_chat_list && return 0
-    "$ui" key Escape
+    if [ $((attempt % 2)) -eq 0 ]; then
+      "$ui" click "$avatar_x" "$bottom_y"
+    else
+      "$ui" key Escape
+    fi
   done
   on_chat_list
 }
 
+left_pane_phrases() {
+  local line
+  while IFS= read -r line; do
+    if [ "${line%%,*}" -lt "$pane_right_x" ]; then
+      normalise "${line#* }"
+      echo
+    fi
+  done < <("$ui" text)
+}
+
 # New chat has the same search field
 on_chat_list() {
-  not_on_screen "Settings" && not_on_screen "Chat preferences" && not_on_screen "Network" && not_on_screen "New chat" && on_screen "Search or paste SimpleX link"
+  local phrases title
+  phrases=$(left_pane_phrases)
+  for title in "Settings" "Chat preferences" "Network" "New chat"; do
+    [[ "$phrases" == *"$(normalise "$title")"* ]] && return 1
+  done
+  [[ "$phrases" == *"$(normalise "Search or paste SimpleX link")"* ]]
 }
 
 # Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
