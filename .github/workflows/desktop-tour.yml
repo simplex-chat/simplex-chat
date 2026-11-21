@@ -8,9 +8,9 @@ on:
         type: string
         default: ""
       libraries:
-        description: Release whose native libraries both apps get
+        description: Release whose native libraries both apps get; LIBRARIES_RELEASE when empty
         type: string
-        default: v7.1.4
+        default: ""
 
 permissions:
   contents: read
@@ -22,6 +22,7 @@ concurrency:
 env:
   JAVA_VER: 17
   PYTHON_VER: "3.12"
+  LIBRARIES_RELEASE: v7.1.4
 
 jobs:
   tour:
@@ -87,7 +88,7 @@ jobs:
 
       - name: Download the release's app
         env:
-          RELEASE: ${{ inputs.libraries }}
+          RELEASE: ${{ inputs.libraries || env.LIBRARIES_RELEASE }}
           ASSET: ${{ matrix.asset }}
         run: |
           url=$GITHUB_SERVER_URL/simplex-chat/simplex-chat/releases/download/$RELEASE
