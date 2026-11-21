@@ -640,7 +640,7 @@ sequenceDiagram
   else a dispute or a refund, its event recorded before
     W->>D: nothing written
   else a dispute or a refund
-    W->>D: under the name's lock, one transaction: the event recorded, the order's row locked
+    W->>D: under the name's lock, one transaction: the invoice's row locked, as settlement locks it, the event recorded, the order's row locked
     alt unpaid, its payment not recorded yet
       W->>D: nothing more written; its settlement later closes it as reversed
     else live past unpaid, no register transaction of its current name saved

@@ -35,7 +35,7 @@ import StoreService.Names.Turns (Turns, withBalanceTurn, withRegistrationTurn)
 import StoreService.Names.View (addressText)
 import StoreService.Orders (RegistrationChanged (..))
 import StoreService.Providers (Reversal (..))
-import StoreService.Store.Invoices (InvoiceRow (..))
+import StoreService.Store.Invoices (InvoiceRow (..), lockInvoice)
 
 -- | RefundAmount: the balance's amount now, which is not the cents given.
 data RefundRefusal = RefundNoOrder | RefundNoBalance | RefundAmount USDCents
@@ -85,7 +85,8 @@ reversalCase r@NameRegistration {nrPhase} sent refunded
 reverseOrder :: OrdersEnv -> InvoiceRow -> RegistrationId -> Text -> Reversal -> IO ()
 reverseOrder oe@OrdersEnv {oeNow} row@InvoiceRow {irInvoiceId} rid event reversal = do
   now <- oeNow
-  inOrderTurn oe row rid what $ \db r ->
+  inOrderTurn oe row rid what $ \db r -> do
+    lockInvoice db irInvoiceId now
     recordReversal db event irInvoiceId reversal >>= traverse (reversed db now r)
   where
     what = case reversal of
