@@ -8,10 +8,13 @@ module Bots.StoreService.NamesCodesTests (namesCodesTests) where
 import Bots.StoreService.NamesStoreTests (order, ownerA, ownerB, placeCode, placePaid, usable)
 import Bots.StoreService.WebTests (answerOf, lengthOf, refusedWith, responseFixture, withServiceStore, withApp)
 import Control.Arrow ((&&&))
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (concurrently)
 import Control.Monad (forM_)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import Data.Time.Calendar (fromGregorian)
@@ -28,12 +31,15 @@ import StoreService.Config (ListenerConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction)
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Codes
+import StoreService.Names.Orders (OrderRefusal (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, insertPrepaidCode)
+import StoreService.Names.Store (NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, insertPrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, newTurns)
+import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (codeLimit, newHttpEnv, notFound)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Codes (codeCheckHandler)
+import StoreService.Web.Names.Orders (orderRefusal)
 import Test.Hspec
 
 namesCodesTests :: Spec
@@ -45,14 +51,21 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
     it "answers code_invalid to an unknown code, an owner code or other text" testCheckInvalid
     it "answers bad_request to a body that is not an object with a code text" testCheckBadBody
   describe "reservations" $ do
+    it "reserves an unused code after the registration's write, in its transaction" testReserve
+    it "refuses each unusable code with its tag, a code spent by the reserving registration itself as used, before the write runs" testReserveRefusals
+    it "keeps a code its registration holds even if revoked or expired since, still checking the length" testReserveHeld
+    it "reserves nothing when the write refuses" testReserveWriteRefused
+    it "rolls the write back when the code's reservation is refused after it" testReserveRollsBack
+    it "lets one of two concurrent reservations of a code win, the other answered code_reserved" testConcurrentReserve
     it "releases and spends a code only after the write, and only for its holder" testReleaseSpend
   describe "group commands" $ do
     it "parses /issue name with the length only, answering the usage to years and to /bulk name" testGroupNameCommands
     it "answers the usage to a bad length, years or count, or a badge option" testGroupNameCommandsRefused
     it "parses /revoke of a prepaid code, telling a moderator it was not revoked" testGroupRevokeNameCommand
 
-r1 :: RegistrationId
+r1, r2 :: RegistrationId
 r1 = RegistrationId "r1"
+r2 = RegistrationId "r2"
 
 tNow :: UTCTime
 tNow = UTCTime (fromGregorian 2026 10 21) 3600
@@ -161,15 +174,103 @@ testCheckBadBody = withCodeCheck $ \_ client -> do
   let overCap = "{\"code\": \"SN7-BJTBP-29596-R3HJ8-25YM7\", \"pad\": \"" <> LB.replicate 8192 'x' <> "\"}"
   answerOf <$> postCheck client overCap `shouldReturn` badRequest
 
--- | A paid order that holds no code.
+-- | Two paid orders, so a code can be reserved for either.
 withOrders :: (Turns -> DBStore -> IO a) -> IO a
 withOrders action = withServiceStore $ \st -> do
   placePaid st "r1" ownerA (order "alicebakery" 1) tNow `shouldReturn` Right ()
+  placePaid st "r2" ownerB (order "bobsbakery" 2) tNow `shouldReturn` Right ()
   turns <- newTurns
   action turns st
 
 writeOk :: DB.Connection -> IO (Either Text ())
 writeOk _ = pure $ Right ()
+
+testReserve :: IO ()
+testReserve = withOrders $ \turns st -> do
+  code <- newCode 8
+  PrepaidCode {pcCodeHash} <- issueAs st code usable
+  let holderInWrite db = Right . (pcReservedBy =<<) <$> getPrepaidCode db pcCodeHash :: IO (Either Text (Maybe RegistrationId))
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 8) holderInWrite `shouldReturn` Right (Right Nothing)
+  (pcReservedBy =<<) <$> withTransaction st (`getPrepaidCode` pcCodeHash) `shouldReturn` Just r1
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 11) holderInWrite `shouldReturn` Right (Right (Just r1))
+
+testReserveRefusals :: IO ()
+testReserveRefusals = withOrders $ \turns st -> do
+  [reserved, used, own, revoked, expired, unpaid, unknown, short] <- mapM newCode [8, 8, 8, 8, 8, 8, 8, 8]
+  reservedRow <- issueAs st reserved usable
+  usedRow <- issueAs st used usable
+  ownRow <- issueAs st own usable
+  revokedRow <- issueAs st revoked usable
+  expiredRow <- issueAs st expired usable {npcExpiresAt = Just tNow}
+  unpaidRow <- issueAs st unpaid usable {npcPaymentStatus = CPSUnpaid}
+  shortRow <- issueAs st short usable
+  placeCode st "r5" ownerA (order "erinsbakery" 5) reservedRow `shouldReturn` Right ()
+  placeCode st "r3" ownerB (order "carolsbakery" 4) usedRow `shouldReturn` Right ()
+  withTransaction st (\db -> spendLandedPrepaidCode db (pcId usedRow) (RegistrationId "r3") tNow) `shouldReturn` True
+  placeCode st "r6" ownerB (order "franksbakery" 6) ownRow `shouldReturn` Right ()
+  withTransaction st (\db -> spendLandedPrepaidCode db (pcId ownRow) (RegistrationId "r6") tNow) `shouldReturn` True
+  fst <$> withTransaction st (\db -> revokePrepaidCode db (pcCodeHash revokedRow) tNow) `shouldReturn` Revoked (pcId revokedRow)
+  wrote <- newIORef False
+  let reserveFor rid hash len = reserveCode turns st tNow hash rid (lengthOf len) (\_ -> Right () <$ writeIORef wrote True :: IO (Either Text ()))
+      reserve = reserveFor r1
+      rows = [reservedRow, usedRow, ownRow, revokedRow, expiredRow, unpaidRow, shortRow]
+  rowsBefore <- mapM (readCode st) rows
+  reserve (pcCodeHash reservedRow) 8 `shouldReturn` Left CRReserved
+  reserve (pcCodeHash usedRow) 8 `shouldReturn` Left CRUsed
+  reserveFor (RegistrationId "r6") (pcCodeHash ownRow) 8 `shouldReturn` Left CRUsed
+  reserve (pcCodeHash revokedRow) 8 `shouldReturn` Left CRInvalid
+  reserve (pcCodeHash expiredRow) 8 `shouldReturn` Left CRExpired
+  reserve (pcCodeHash unpaidRow) 8 `shouldReturn` Left CRPaymentPending
+  reserve (prepaidCodeHash unknown) 8 `shouldReturn` Left CRInvalid
+  reserve (pcCodeHash shortRow) 7 `shouldReturn` Left CRNotCovering
+  reserve (pcCodeHash revokedRow) 7 `shouldReturn` Left CRInvalid
+  readIORef wrote `shouldReturn` False
+  mapM (readCode st) rows `shouldReturn` rowsBefore
+  map (J.toJSON . orderRefusal . ORCode) [CRInvalid, CRUsed, CRReserved, CRExpired, CRPaymentPending, CRNotCovering]
+    `shouldBe` map (\t -> J.object ["type" J..= (t :: Text)]) ["code_invalid", "code_used", "code_reserved", "code_expired", "payment_pending", "code_not_covering"]
+
+testReserveHeld :: IO ()
+testReserveHeld = withOrders $ \turns st -> do
+  code <- newCode 8
+  row@PrepaidCode {pcCodeHash} <- issueAs st code usable
+  placeCode st "r3" ownerB (order "carolsbakery" 3) row `shouldReturn` Right ()
+  let r3 = RegistrationId "r3"
+  fst <$> withTransaction st (\db -> revokePrepaidCode db pcCodeHash tNow) `shouldReturn` Revoked (pcId row)
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (tNow, pcCodeHash)
+  held <- readCode st row
+  reserveCode turns st tNow pcCodeHash r3 (lengthOf 9) writeOk `shouldReturn` Right (Right ())
+  reserveCode turns st tNow pcCodeHash r3 (lengthOf 7) writeOk `shouldReturn` Left CRNotCovering
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 9) writeOk `shouldReturn` Left CRInvalid
+  readCode st row `shouldReturn` held
+
+testReserveWriteRefused :: IO ()
+testReserveWriteRefused = withOrders $ \turns st -> do
+  code <- newCode 8
+  row@PrepaidCode {pcCodeHash} <- issueAs st code usable
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 8) (\_ -> pure (Left "registration_changed" :: Either Text ())) `shouldReturn` Right (Left "registration_changed")
+  (pcReservedBy =<<) <$> readCode st row `shouldReturn` Nothing
+  reserveCode turns st tNow pcCodeHash r2 (lengthOf 8) writeOk `shouldReturn` Right (Right ())
+  (pcReservedBy =<<) <$> readCode st row `shouldReturn` Just r2
+
+-- | The write reserves the code for another registration, as a writer outside this process could between the check and the reservation.
+testReserveRollsBack :: IO ()
+testReserveRollsBack = withOrders $ \turns st -> do
+  code <- newCode 8
+  row@PrepaidCode {pcId, pcCodeHash} <- issueAs st code usable
+  let takenMeanwhile db = Right () <$ reservePrepaidCode db pcId r2 tNow :: IO (Either Text ())
+  reserveCode turns st tNow pcCodeHash r1 (lengthOf 8) takenMeanwhile `shouldReturn` Left CRReserved
+  readCode st row `shouldReturn` Just row
+
+testConcurrentReserve :: IO ()
+testConcurrentReserve = withOrders $ \turns st -> do
+  code <- newCode 8
+  row@PrepaidCode {pcCodeHash} <- issueAs st code usable
+  let slowWrite _ = Right () <$ threadDelay 100000 :: IO (Either Text ())
+      reserveFor rid = reserveCode turns st tNow pcCodeHash rid (lengthOf 8) slowWrite
+  outcomes <- concurrently (reserveFor r1) (reserveFor r2)
+  outcomes `shouldSatisfy` (`elem` [(Right (Right ()), Left CRReserved), (Left CRReserved, Right (Right ()))])
+  holder <- (pcReservedBy =<<) <$> readCode st row
+  holder `shouldBe` Just (if fst outcomes == Right (Right ()) then r1 else r2)
 
 testReleaseSpend :: IO ()
 testReleaseSpend = withOrders $ \turns st -> do
