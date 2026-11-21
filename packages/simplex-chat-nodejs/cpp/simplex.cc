@@ -126,7 +126,7 @@ void haskell_init() {
       "-xn",   // non-moving GC
       "--install-signal-handlers=no",
 #if defined(__APPLE__) && defined(__x86_64__)
-      "-xb0x500000000000",
+      "-xb0x500000000000", // heap above V8's addresses: GHC < 9.12.4 can loop reserving the heap on Intel macOS
 #endif
       nullptr};
   int argc = static_cast<int>(sizeof(argv) / sizeof(argv[0])) - 1;
