@@ -24,7 +24,7 @@ import qualified Data.Text as T
 import Network.HTTP.Types.URI (urlEncode)
 import Data.Time.Clock (addUTCTime, getCurrentTime, nominalDay)
 import Simplex.Chat.Badges (BadgeProof, BadgeStatus (..), BadgeType (..), FileSizeLimits (..), ProofPresHeader (..), badgeProof, defaultFileSizeLimits)
-import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtRcvFileDescrReady), ChatHooks (..), ChatPagination (CPLast), ChatResponse (CRApiChat, CRNewChatItems), defaultChatHooks)
+import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatController (smpAgent), ChatEvent (CEvtChatItemUpdated, CEvtRcvFileDescrReady), ChatHooks (..), ChatPagination (CPLast), ChatResponse (CRApiChat, CRNewChatItems), defaultChatHooks)
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Commands (execChatCommand')
 import Simplex.Chat.Library.Internal (badgeProofStatus, roundedFDCount)
@@ -33,12 +33,16 @@ import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), 
 import Simplex.Chat.Messages.CIContent (MsgDirectionI, ciMsgContent)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Protocol (MsgContent (MCImage, MCText))
-import Simplex.Chat.Types (ImageData (..))
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XMsgNew), EncodedChatMessage (..), FileChunk (FileChunk), MsgContainer (file), MsgContent (MCImage, MCText, MCVoice), MsgEncodingI, encodeChatMessage, maxEncodedMsgLength, mcSimple, supportedChatVRange)
+import Simplex.Chat.Types (Connection (Connection, pqEncryption), FileInvitation (..), ImageData (..), InlineFileMode (..), SharedMsgId (..), aConnId)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
+import Simplex.Messaging.Agent (sendMessages, vrValue)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, bbsKeyGen)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Protocol (MsgFlags (..))
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
 import System.FilePath ((</>))
 import System.Timeout (timeout)
@@ -58,6 +62,8 @@ chatFileTests = do
     it "image reply to voice message has quote parsed from its full text" testImageReplyToVoiceMessage
     it "send and receive image to group" testGroupSendImage
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
+    it "receive inline file chunk again after its handling failed to commit" testRedeliveredUncommittedInlineChunk
+    it "receive final chunk of encrypted inline file again after its handling failed to commit" testRedeliveredUncommittedEncryptedFinalChunk
   describe "batch send messages with files" $ do
     it "with files folder: send multiple files to contact" testSendMultiFilesDirect
     it "with files folder: send multiple files to group" testSendMultiFilesGroup
@@ -1232,6 +1238,69 @@ testXFTPRedeliveredDescription ps = do
   where
     descrReady CEvtRcvFileDescrReady {} = True
     descrReady _ = False
+
+testRedeliveredUncommittedInlineChunk :: HasCallStack => TestParams -> IO ()
+testRedeliveredUncommittedInlineChunk =
+  testChatCfg2 inlineChunksCfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    let bobFiles = tmpFile bob "app_files"
+    bob #$> ("/_files_folder " <> bobFiles, id, "ok")
+    sendChunk <- sendInlineVoice alice bob
+    withFailingCommits bob "rcv_file_chunks" "NEW.chunk_number = 2" $ do
+      sendChunk 1
+      bob <## "started receiving file 1 (voice.m4a) from alice"
+      sendChunk 2
+      bob <##. "critical error: "
+      bob <## "please restart the app"
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 1 connections on server localhost"]
+    sendChunk 3
+    bob <## "completed receiving file 1 (voice.m4a) from alice"
+    B.readFile (bobFiles </> "voice.m4a") `shouldReturn` B.concat voiceChunks
+
+testRedeliveredUncommittedEncryptedFinalChunk :: HasCallStack => TestParams -> IO ()
+testRedeliveredUncommittedEncryptedFinalChunk =
+  testChatCfg2 inlineChunksCfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    let bobFiles = tmpFile bob "app_files"
+    bob #$> ("/_files_folder " <> bobFiles, id, "ok")
+    bob #$> ("/_files_encrypt on", id, "ok")
+    sendChunk <- sendInlineVoice alice bob
+    sendChunk 1
+    bob <## "started receiving file 1 (voice.m4a) from alice"
+    sendChunk 2
+    withFailingCommits bob "rcv_file_chunks" "NEW.chunk_number = 3" $ do
+      sendChunk 3
+      bob <##. "critical error: "
+      bob <## "please restart the app"
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 1 connections on server localhost", "completed receiving file 1 (voice.m4a) from alice", StartsWith "{"]
+    [(key, nonce)] <- withCCTransaction bob (`DB.query_` "SELECT file_crypto_key, file_crypto_nonce FROM files WHERE file_id = 1") :: IO [(C.SbKey, C.CbNonce)]
+    chatReadFile (bobFiles </> "voice.m4a") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict $ B.concat voiceChunks)
+
+inlineChunksCfg :: ChatConfig
+inlineChunksCfg = testCfg {fileChunkSize = 100}
+
+voiceChunks :: [B.ByteString]
+voiceChunks = [B.replicate 100 'a', B.replicate 100 'b', B.replicate 50 'c']
+
+sendInlineVoice :: HasCallStack => TestCC -> TestCC -> IO (Integer -> IO ())
+sendInlineVoice alice bob = do
+  conn@Connection {pqEncryption} <- getCtConn alice 2
+  let sendChatMsg :: MsgEncodingI e => ChatMessage e -> IO ()
+      sendChatMsg msg = case encodeChatMessage maxEncodedMsgLength msg of
+        ECMEncoded body -> runExceptT (sendMessages (smpAgent $ chatController alice) [(aConnId conn, pqEncryption, MsgFlags False, vrValue body)]) >>= either (fail . show) (\_ -> pure ())
+        ECMLarge -> fail "large message"
+      sharedMsgId = SharedMsgId "voice"
+      fInv = FileInvitation {fileName = "voice.m4a", fileSize = fromIntegral $ sum $ map B.length voiceChunks, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Just IFMSent, fileDescr = Nothing, fileBadge = Nothing}
+  sendChatMsg $ ChatMessage supportedChatVRange (Just sharedMsgId) $ XMsgNew (mcSimple (MCVoice "" 5) :: MsgContainer) {file = Just fInv}
+  bob <# "alice> voice message (00:05)"
+  bob <# "alice> sends file voice.m4a (250 bytes / 250 bytes)"
+  pure $ \n -> sendChatMsg $ ChatMessage supportedChatVRange Nothing $ BFileChunk sharedMsgId $ FileChunk n $ voiceChunks !! (fromIntegral n - 1)
 
 testXFTPRcvError :: HasCallStack => TestParams -> IO ()
 testXFTPRcvError ps = do
