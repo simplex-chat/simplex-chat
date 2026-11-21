@@ -1792,7 +1792,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         vwCommunity = Nothing,
         vwTerms = agreed plainTerms
       }
-  vwLabel (toRegistrationView (testNamesConfig node) r {nrPaidAt = Just t0} Nothing Nothing PVTaken) `shouldBe` Just "alicebakery"
+  vwLabel (toRegistrationView (testNamesConfig node) r {nrPaidAt = Just t0} Nothing Nothing (PVTaken Nothing)) `shouldBe` Just "alicebakery"
   map (\w -> J.toJSON (vwLatePayment $ viewWith (Just w) PVUnpaid)) [LWConfirming, LWCrediting, LWSupport] `shouldBe` ["confirming", "crediting", "support"]
   let acceptance c h = AcceptanceAsked {community = c, policy = fakeNamePolicy, termsHash = Hex32 h, nonce = 2}
       committed = PVCommitted (RoundedSystemTime 1) (RoundedSystemTime 2)
@@ -1843,7 +1843,7 @@ testViewStates = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   viewOf requeued `shouldReturn` view [("version", J.Number 3), ("phase", J.object ["type" .= ("queued" :: Text)]), ("registerTx", J.Null), ("balance", J.Null)]
   taken <- written $ \r -> r {nrPhase = OTaken}
   withTransaction st $ \db -> creditBalance db rid 20000 t0
-  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", J.object ["type" .= ("taken" :: Text)]), ("registerTx", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "refunded" .= (0 :: Int)])]
+  viewOf taken `shouldReturn` view [("version", J.Number 4), ("phase", J.object ["type" .= ("taken" :: Text), "heldUntil" .= addMonths 1 t0]), ("registerTx", J.Null), ("balance", J.object ["amount" .= (20000 :: Int), "refunded" .= (0 :: Int)])]
   where
     o = order "alicebakery" 1
     rid = RegistrationId "r1"
@@ -1900,7 +1900,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   setFault node "eth_call" HttpFailure
   phaseView ct t0 committed {nrReveal = Just reveal} `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SSigned
   phaseView ct (addUTCTime 1 $ roundedToUTCTime $ cmRevealBefore commitFixture) committed `shouldReturn` PVCommitted (cmRevealAfter commitFixture) (cmRevealBefore commitFixture) SLapsed
-  phaseView ct t0 taken `shouldReturn` PVTaken
+  phaseView ct t0 taken `shouldReturn` PVTaken Nothing
   phaseView ct t0 committed `shouldReturn` awaiting TSUnread
 
 readToSignOf :: Contracts -> NameRegistration -> IO ToSign

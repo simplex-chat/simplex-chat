@@ -123,7 +123,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow, o
     moveTo now r fields timestamp reveal
       | orderFieldsOf r == fields = answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
-      | not (movable r) = refuse $ ORBadRequest "the order is not movable"
+      | not (movable now r) = refuse $ ORBadRequest "the order is not movable"
       | otherwise = moveChecked now r fields reveal
     moveChecked now r@NameRegistration {nrOwner, nrMoves, nrYears, nrReveal} fields@OrderFields {ofLabelHash, ofDuration} reveal
       | nrMoves >= nMaxOrderMoves oeConfig = refusalAnswer <$> registrationRefusal env NRMoveLimit rid

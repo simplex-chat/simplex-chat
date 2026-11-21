@@ -1,7 +1,0 @@
-{
-  "body": {
-    "price": 10000,
-    "type": "catalog_changed"
-  },
-  "status": 409
-}

@@ -48,7 +48,7 @@ stateDiagram-v2
   committed --> failed: permanent reason at its cap; signature refused by the configuration; no read by its page for 3 days
   registering --> failed: permanent reason at its cap
   failed --> queued: Continue of an unread order
-  taken --> queued: a move to another name of its price, a paid order's price spent from its balance
+  taken --> queued: a paid order's move to another name of its price, within the month from payment, its price spent from its balance
   failed --> registered: a close finds the register landed
   failed --> taken: support's close of a paid order
   queued --> monthEnded: 1 month from payment, no register pending, money to the balance
@@ -62,7 +62,7 @@ stateDiagram-v2
 
 ### 1.1 Payment holds the name
 - **names:** another buyer's order is refused only while an order of the name has its register in flight (`Names/Orders.hs:295-302`, `Names/Store.hs:864-869`); search shows the name as available otherwise (`Web/Names/Search.hs:59, 69-70`). Two buyers can pay for one name; the loser ends `taken`, its price kept as a balance (`Names/Worker.hs:352-356, 369-383`).
-- **Final:** a paid order holds its name against every order through the service, from payment until it is registered, cancelled, or the month from payment ends (1.3); a failure inside the month does not end the hold. Search answers such a name `taken`, and the page shows "Taken". An open invoice holds only its price. A payment that settles while another paid order holds the name ends its own order `taken`, its price kept as its balance, which pays that order's move to another name of its price, or is refunded.
+- **Final:** a paid order holds its name against every order through the service, from payment until it is registered, cancelled, or the month from payment ends (1.3); a failure inside the month does not end the hold. Search answers such a name `taken`, and the page shows "Taken". An open invoice holds only its price. A payment that settles while another paid order holds the name ends its own order `taken`, its price kept as its balance, which pays that order's move to another name of its price within the month from payment (1.3), or is refunded.
 - **Why:** money from a second buyer for a name already paid for must not be taken; opening an invoice costs nothing, so it cannot hold a name.
 
 ### 1.2 Other invoices of a paid name are cancelled
@@ -71,7 +71,7 @@ stateDiagram-v2
 
 ### 1.3 One month from payment
 - **names:** a failed order holds its place with no end; it stays live, refusing only orders of the same owner code (`Names/Store.hs:760-772`).
-- **Final:** the name stays reserved for the buyer for 1 month from payment acceptance. Only an order whose name was taken moves to another name, at exactly its price, its balance spent on it; failed and lapsed orders are refunded by support. An order not registered by then fails, the name returns to sale, and the price goes to the order's balance; refunds from the balance are manual. An order with a register transaction sent and not settled is ended only after it settles.
+- **Final:** the name stays reserved for the buyer for 1 month from payment acceptance. Only a paid order whose name was taken moves to another name, within the month from payment, at exactly its price, its balance spent on it; each take credits its price again, so it moves again after another take, up to `max_order_moves`; the view gives the month's end in the taken phase's `heldUntil`. A dearer or a cheaper name is refused `409 price_too_high` with the name's price. A code order does not move: its code is released at the take, for a new order of another name. Failed and lapsed orders are refunded by support. An order not registered by then fails, the name returns to sale, and the price goes to the order's balance; refunds from the balance are manual. An order with a register transaction sent and not settled is ended only after it settles.
 - **Why:** a hold extends the name's registration period; a month resolves every case that can be resolved.
 
 ### 1.4 Card disputes and payment reversals

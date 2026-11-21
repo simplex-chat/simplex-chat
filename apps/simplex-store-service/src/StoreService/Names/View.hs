@@ -20,6 +20,7 @@ module StoreService.Names.View
     addressText,
     lapsedAt,
     lapseMoment,
+    movableUntil,
     registrationVersion,
   )
 where
@@ -69,7 +70,7 @@ data PhaseView
   | PVCommitted {revealAfter :: SystemSeconds, revealBefore :: SystemSeconds, signature :: Signing}
   | PVRegistering
   | PVRegistered {expiresAt :: SystemSeconds}
-  | PVTaken
+  | PVTaken {heldUntil :: Maybe UTCTime}
   | PVFailed {reason :: FailReason, heldUntil :: Maybe UTCTime}
   deriving (Eq, Show)
 
@@ -166,7 +167,7 @@ phaseView ct now r@NameRegistration {nrPhase, nrReveal} = case nrPhase of
   OCommitted Commit {cmRevealAfter, cmRevealBefore} -> PVCommitted cmRevealAfter cmRevealBefore <$> signing
   ORegistering {} -> pure PVRegistering
   ORegistered expiry _ -> pure PVRegistered {expiresAt = expiry}
-  OTaken -> pure PVTaken
+  OTaken -> pure PVTaken {heldUntil = movableUntil r}
   OFailed _ why -> pure PVFailed {reason = why, heldUntil = if orderLive r then addMonths 1 <$> nrPaidAt r else Nothing}
   where
     signing
@@ -235,4 +236,9 @@ lapsedAt now = maybe False (now >) . lapseMoment
 lapseMoment :: NameRegistration -> Maybe UTCTime
 lapseMoment = \case
   NameRegistration {nrPhase = OCommitted Commit {cmRevealBefore}, nrReveal = Nothing} -> Just $ roundedToUTCTime cmRevealBefore
+  _ -> Nothing
+
+movableUntil :: NameRegistration -> Maybe UTCTime
+movableUntil = \case
+  NameRegistration {nrPhase = OTaken, nrPayment = OPInvoice {}, nrPaidAt} -> addMonths 1 <$> nrPaidAt
   _ -> Nothing
