@@ -19,7 +19,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         removePasscodesIfReinstalled()
         prepareForLaunch()
         deleteOldChatArchive()
-        _ = seSubscriber
         return true
     }
 

@@ -91,7 +91,7 @@ public func chatInitControllerRemovingDatabases() throws {
 }
 
 
-public var chatCloseStore: () -> Void = {
+public func chatCloseStore() {
     // Prevent crash when exiting the app with already closed store (for example, after changing a database passpharase)
     guard hasChatCtrl() else {
         logger.error("chatCloseStore: already closed, chatCtrl is nil")

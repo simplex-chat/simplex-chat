@@ -2,7 +2,7 @@
 
 On iOS, with simplexmq PR #2010, the agent completes suspension only after the agent file of each upload started in foreground is deleted by the chat or TTL cleanup, or when the chat is stopped, or at the suspend timeout. Files with rows absent or flagged deleted or failed at the start of the suspension are not awaited. On master, the chat skipped this deletion on several paths of `SFDONE` and `SFERR`, handling errors among them.
 The deletions in the branches of `processAgentMsgSndFile` are replaced by one deletion after the handling of each `SFDONE` or `SFERR` with a file ID, also when an error is thrown. On `SFDONE` of an undeleted sent item with a shared message ID, the file descriptions are queued before it in the direct and group branches.
-A suspending app yields to the share extension. The share extension signals the other processes at setup and, when the app is suspending at setup, waits for them before it starts or activates its chat. The app subscribes to this signal at launch and suspends at once on it while suspending.
+The iOS app holds a background task for each XFTP file it sends, from the send until the upload ends, so that iOS suspends the app later while the upload runs.
 
 Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
 
@@ -60,49 +60,6 @@ Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
   - other chat type or direction, or a direct sent item without transfers (:322; `sft : _` is required by the direct branch at :274);
   - item deleted or without a shared message ID (:323).
 - iOS spec, the same text in each of two files: "While the chat is suspending, the agent continues the XFTP uploads started in foreground by this app process. The chat deletes the agent file of each upload after handling its completion or error, queueing the file descriptions of a completed upload first. The core sends `chatSuspended` after these deletions and the delivery of the queued messages, or at the suspend timeout. Uploads started while suspending or resumed from an earlier process are not awaited."
-- Share extension states:
-
-  ```
-  setup         SEState .sendingMessage; app state .suspending -> wait for the app and the NSE to suspend, at most 2 s; chat started or activated
-  send()        SEState .sendingMessage; wait for the app and the NSE to suspend, at most 2 s; message sent
-  completion    chat suspended; SEState .inactive
-  ```
-
-- The app's share extension subscriber is created at launch, in `application(_:didFinishLaunchingWithOptions:)`.
-- App, on a share extension state:
-
-  | Share extension state | App state | Action |
-  |---|---|---|
-  | `.sendingMessage` | `.suspending` | instant suspension |
-  | `.sendingMessage` | other states | none |
-  | `.inactive` | any | none |
-
-- Instant suspension, under `suspendLockQueue`, also by `terminateChat` in `.suspending`:
-
-  ```
-  apiSuspendChat(timeout 0)      when ChatModel.ok; the core sends no suspension events
-  _chatSuspended()               app state .suspended; ChatReceiver stopped while the chat is running; stores closed
-  ```
-
-  ```mermaid
-  sequenceDiagram
-    participant SE as Share extension
-    participant App
-    SE->>App: .sendingMessage, at setup
-    Note over App: app state .suspending: apiSuspendChat 0, then _chatSuspended
-    Note over SE: app state .suspending at setup: wait for the app and the NSE, at most 2 s
-    Note over SE: chat started or activated
-    SE->>App: .sendingMessage, before sending
-    Note over SE: wait for the app and the NSE, at most 2 s; message sent
-    SE->>App: .inactive, at completion
-  ```
-
-- The app chat is activated by the scene phase handling when the app is opened, as on master.
-- A chunk upload of the app in flight at the instant suspension is not stopped; the share extension can upload the same replica at the same time, as on master.
-- An agent event queued or in handling at the instant suspension can be handled after the stores are closed:
-  - `SFDONE`: the file descriptions are not sent, since the agent sends no further `SFDONE` for a complete file; the agent file is deleted at the next activation;
-  - `SFERR`: the error status of the item is not recorded.
-- The NSE's share extension subscriber: unchanged. The NSE does not act on `.sendingMessage` (its subscriber is never created). The wait therefore ends at the first check, every 100 ms, at which both stored states equal `.suspended`, or after 2 s; the stored NSE state is `.suspended` before the first NSE start and after the NSE suspends on its own. `.created` is stored at the first use of `NSEChatState.shared` in an NSE process, at a start without a chat controller, and after a failed start; in this state the wait lasts the full 2 s. The app's instant suspension can start the chat of an NSE instance waiting for the app, and that chat then runs concurrently with the share extension.
 - App, upload background tasks:
   - one task per XFTP file of a sent item, in direct and group chats, keyed by file ID;
   - begun on the response to a send or a forward;
@@ -151,18 +108,6 @@ Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
     - :363, `sendFileError`.
 - `apps/ios/spec/architecture.md` (:137), "Background Task Protection": the text.
 - `apps/ios/spec/services/files.md` (:274), "Sending": the text.
-- `apps/ios/spec/architecture.md` (:263), "Share Extension (SE)": the signal at setup and before sending; the wait at setup when the app state read at setup is `.suspending`, and before sending in any app state; the NSE, which does not act on the signal; the end of the wait at the first check at which both stored states equal `.suspended`; the cases in which `.created` is stored, and the full 2 s wait in this state; the instant suspension of the app in `.suspending`, with the conditions `ChatModel.ok` and `chatRunning == true`.
-- `apps/ios/spec/database.md` (:79) and `apps/ios/spec/architecture.md` (:8): the `AppDelegate.swift` line ranges.
-- `apps/ios/SimpleX SE/SEChatState.swift`, new: `prepareToStartChat` (:41-46): `SEChatState.shared.set(.sendingMessage)`, then `await waitForOtherProcessesToSuspend()` when `appStateGroupDefault.get() == .suspending`.
-- `apps/ios/SimpleX SE/ShareModel.swift`, `setup(with:)` (:97): `await prepareToStartChat()`, before `initChat`.
-- `apps/ios/SimpleXChat/API.swift`, `chatCloseStore` (:94): a `var` holding the closure, replaced by the app tests.
-- `apps/ios/Shared/AppDelegate.swift`, `application(_:didFinishLaunchingWithOptions:)` (:22): `_ = seSubscriber`.
-- `apps/ios/Shared/Model/SuspendChat.swift`:
-  - `seSubscriber` (:39-53):
-    - `.inactive` (:43-44): no action;
-    - `.sendingMessage` (:45-50): under `suspendLockQueue`, `_suspendChatInstantly()` when the app state is `.suspending`.
-  - `terminateChat`, `.suspending` (:73-75): `_suspendChatInstantly()`.
-  - new: `_suspendChatInstantly` (:87-91): `apiSuspendChat(timeoutMicroseconds: 0)` when `ChatModel.ok`, with its comment from `terminateChat`, then `_chatSuspended()`.
 - `apps/ios/Shared/Model/ChatModel.swift`, `fileUploads` (:470).
 - `apps/ios/Shared/Model/SimpleXAPI.swift`:
   - `processSendMessageCmd`: `beginFileUploadTasks(cItems)` in the direct (:584) and group (:598) branches;
@@ -215,19 +160,6 @@ Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
 - "send and receive small standalone file" (:1404): `checkNoAgentSndFiles src` after the upload (:1418).
 - "send and receive large standalone file" (:1460): `checkNoAgentSndFiles src` after the upload and its redirect upload (:1477).
 
-`tests/ChatTests/Files.hs`, "suspend chat instantly during upload": during the 60 s suspension with an upload pending, the response to `/_app suspend 0` is recorded in `tests/fixtures/api/suspend/suspend-instantly.json`.
-
-`apps/ios/SimpleX Unit Tests/SuspendChatTests.swift`, with `sendSimpleXCmdStr` replaced by the recorded response and `chatCloseStore` by a counter; the share extension's message is written to its shared file and passed to the file presenter registered at launch:
-
-| Test | App state | Asserted |
-|---|---|---|
-| `testShareWhileSuspendingSuspendsAtOnce` | `.suspending`, `.sendingMessage` | `/_app suspend 0` sent in `.suspending`; `.suspended`; stores closed once |
-| `testShareWhileActiveIsIgnored` | `.active`, `.sendingMessage` | no command; `.active`; stores open |
-| `testShareEndWhileSuspendingIsIgnored` | `.suspending`, `.inactive` | no command; `.suspending`; stores open |
-| `testTerminateWhileSuspendingSuspendsCoreFirst` | `.suspending`, `terminateChat` | `/_app suspend 0` sent in `.suspending`; `.suspended`; stores closed once |
-| `testShareSetupWaitsForSuspendingApp` | `.suspending`, NSE `.suspended`, `prepareToStartChat` | `.sendingMessage` stored; the app suspended before it returns |
-| `testShareSetupDoesNotWaitForActiveApp` | `.active`, NSE `.active`, `prepareToStartChat` | `.sendingMessage` stored; returns within 1 s |
-
 `tests/ChatTests/Files.hs`, "record upload: …", one recording in `tests/fixtures/api/files` each:
 - "send text", "send file", "send group file": the responses to a direct text send (`send-text`), a direct file send (`send-file`) and a group file send (`send-group-file`).
 - With file 1 sent while the XFTP server is down, and its item received by bob (`withSndFileEvents`):
@@ -251,8 +183,3 @@ Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
 
 Device tests, run by the user:
 - A 20 MB file is sent, and the app leaves the foreground at once: the upload completes and the recipient receives the file, when the upload takes less than the background time iOS grants.
-- During a 20 MB upload, the app leaves the foreground; within 15 s, a link is shared through the share sheet; then the app is opened:
-  - both sends complete, unless a chunk upload of the app was in flight when the share sheet opened; then the app's file can fail with an upload error, as on master;
-  - the app log shows `_chatSuspended` right after the share sheet opens.
-- The share sheet is opened over the app in foreground, and a file is sent: the app's chat stays active.
-- After iOS suspends the app, a link is shared through the share sheet: the device console is checked for "was still registered at the time this application was suspended".
