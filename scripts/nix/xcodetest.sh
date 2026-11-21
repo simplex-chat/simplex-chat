@@ -4,10 +4,9 @@
 # CoreSimulator cannot subscribe and that run is skipped.
 #
 # SwiftPM compiles each Package.swift under /usr/bin/sandbox-exec with a
-# profile that imports system.sb. On this OS that import is permitted for a
-# normal login user and refused for nixbld (sandbox_apply: EPERM). The job
-# still attempts the build; a builder whose build users can apply the profile
-# produces the bundles.
+# profile that imports system.sb. nixbld cannot apply that profile
+# (sandbox_apply: EPERM). These two Xcode defaults skip that sandbox.
+# CoreSimulator still cannot subscribe, so the simulator run stays optional.
 set -euo pipefail
 
 src=${1:?source tree}
@@ -54,6 +53,8 @@ xcodebuild build-for-testing \
   -onlyUsePackageVersionsFromResolvedFile \
   -skipPackagePluginValidation \
   -skipMacroValidation \
+  -IDEPackageSupportDisableManifestSandbox YES \
+  -IDEPackageSupportDisablePluginExecutionSandbox YES \
   ARCHS="$archs" \
   CODE_SIGNING_ALLOWED=NO
 
@@ -98,6 +99,8 @@ PY
     -onlyUsePackageVersionsFromResolvedFile \
     -skipPackagePluginValidation \
     -skipMacroValidation \
+    -IDEPackageSupportDisableManifestSandbox YES \
+    -IDEPackageSupportDisablePluginExecutionSandbox YES \
     CODE_SIGNING_ALLOWED=NO \
     | tee "$out/xcodebuild-test.txt"
   echo "ran $destination" > "$out/simulator-tests.txt"
