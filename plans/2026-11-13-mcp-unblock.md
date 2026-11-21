@@ -56,11 +56,24 @@ D3   /approve N of a reject-only card: unstated     reply "Action N is approved 
 D4   AskUserQuestion and ExitPlanMode cards         stage 1: no card, no decision                     an allow without updatedInput is ignored
                                                                                                       (fact 5); stage 2 adds their cards
 D5   card's first line uses description              without a description, the line ends with ":"     inputs without a description field
+D6   ⛔ line once per text until an answer           also until a prompt that gets an opening          the render's recommended branch: a member's
+                                                    message                                           message after a stop gets its line
+D7   failure ends cards and steps (decision 39)      also the opening message: ⏹️ Stopped              the render's recommended branch (#8183)
+D8   login line: /login and claude auth login        both as code spans (question S3)                  /login is a command link in a group with
+     as text                                                                                          commands; a tap gets "Unknown command."
+D9   /approve N of a question: unstated              "Action N is a question; reply to its card to     a question has no approval
+                                                    answer it."; /answer N K of no option: "Action
+                                                    N has no option K." (question S4)
+D10  question and plan cards of every prompt          none for a subagent's or a teammate's: the hook   a teammate's plan goes to its lead (fact 2)
+                                                    returns at once
+D11  lines without a priority                        ⛔, ⏸️ and 🔄 lines with priority 1, as an answer  they need the person
 ```
 
 Questions of the build:
 - S1. Do hook cards keep master's `/approve N all`? Recommended: yes, as every tool card since #8180.
 - S2. Is the reply to `/approve N` of a reject-only card `Action N is approved only in Claude Code's terminal.`? Recommended: yes.
+- S3. Does the login line show `/login` and `claude auth login` as code spans? Recommended: yes.
+- S4. Are the replies of D9 right? Recommended: yes.
 
 ## 1. Goal
 
