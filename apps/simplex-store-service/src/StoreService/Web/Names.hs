@@ -6,14 +6,14 @@ module StoreService.Web.Names (Route (..), namesRoutes, namesApp) where
 
 import Data.Text (Text)
 import Network.HTTP.Types (Method)
-import Network.Wai (Request, ResponseReceived, mapResponseHeaders, pathInfo)
+import Network.Wai (Request, ResponseReceived, pathInfo)
 import StoreService.Config (ServiceConfig)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Store.Invoices (currentSecond)
 import StoreService.Names.View (NameRefusal (..))
-import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, createLimit, findLimit, holdMicros, limitedWith, onlyWith, previewLimit, readLimit, recordsLimit, searchLimit)
+import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, createLimit, findLimit, holdMicros, limitedWith, only, previewLimit, readLimit, recordsLimit, searchLimit)
 import StoreService.Web.Names.Codes (codeCheckHandler)
 import StoreService.Web.Names.Orders (codeOrderHandler, refusalResponse, spendHandler)
 import StoreService.Web.Names.Owner (findHandler, retargetHandler)
@@ -51,5 +51,4 @@ namesApp :: HttpEnv -> ([Text] -> Maybe Route) -> Request -> Respond -> Maybe (I
 namesApp http routes req respond = serve <$> routes (pathInfo req)
   where
     serve Route {rMethod, rLimit, rHandler} =
-      onlyWith methodNotAllowed rMethod req respond $ limitedWith (refusalResponse . NRRateLimited) http rLimit req respond $ rHandler req respond
-    methodNotAllowed allow = mapResponseHeaders (("Allow", allow) :) $ refusalResponse NRMethodNotAllowed
+      only rMethod req respond $ limitedWith (refusalResponse . NRRateLimited) http rLimit req respond $ rHandler req respond

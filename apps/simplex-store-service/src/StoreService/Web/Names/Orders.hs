@@ -34,7 +34,7 @@ import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
-import Network.HTTP.Types (status200, status400, status403, status404, status405, status409, status429, status500, status503, status504)
+import Network.HTTP.Types (status200, status400, status403, status404, status409, status429, status500, status503, status504)
 import Network.Wai (Request, Response, ResponseReceived, responseLBS)
 import Simplex.Chat.Badges.Code (parseNameCode)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
@@ -110,7 +110,6 @@ refusalResponse r = responseLBS status (retryAfterHeader <> apiHeaders) (J.encod
       NRInvalidName -> status400
       NRInvalidLink {} -> status400
       NRNotFound -> status404
-      NRMethodNotAllowed -> status405
       NRInternal -> status500
       NROrderExists -> status409
       NRNameTaken -> status409

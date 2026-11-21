@@ -13,7 +13,6 @@ module StoreService.Web.Http
     limited,
     limitedWith,
     only,
-    onlyWith,
     CheckoutClient,
     checkoutClient,
     sockHost,
@@ -235,12 +234,9 @@ limitedCheckout env (CheckoutClient client) method refuse action =
   takeTokens env [(checkoutLimit, client), (invoicesLimit method, "")] >>= maybe action refuse
 
 only :: Method -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
-only = onlyWith methodNotAllowed
-
-onlyWith :: (Method -> Response) -> Method -> Request -> Respond -> IO ResponseReceived -> IO ResponseReceived
-onlyWith refuse method req respond action
+only method req respond action
   | requestMethod req == method = action
-  | otherwise = respond (refuse method)
+  | otherwise = respond (methodNotAllowed method)
 
 data KeyPrefix = KeyPrefix {kpOctets :: Int, kpGroups :: Int}
 

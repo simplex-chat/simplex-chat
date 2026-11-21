@@ -131,7 +131,6 @@ data NameRefusal
   | NRInvalidName
   | NRInvalidLink {kind :: Maybe LinkKind}
   | NRNotFound
-  | NRMethodNotAllowed
   | NRInternal
   | NROrderExists
   | NRNameTaken
