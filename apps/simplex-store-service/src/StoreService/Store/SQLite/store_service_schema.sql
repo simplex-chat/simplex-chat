@@ -165,11 +165,12 @@ CREATE TABLE sx_badge_service_name_prepaid_codes(
   expires_at TEXT,
   created_at TEXT NOT NULL,
   issued_in_group INTEGER NOT NULL DEFAULT 0,
-  reserved_by TEXT REFERENCES sx_badge_service_name_registrations,
+  reserved_by TEXT REFERENCES sx_badge_service_name_registrations(registration_id),
   UNIQUE(code_hash)
 ) STRICT;
 CREATE TABLE sx_badge_service_name_registrations(
-  registration_id TEXT NOT NULL PRIMARY KEY,
+  name_registration_id INTEGER PRIMARY KEY,
+  registration_id TEXT NOT NULL,
   version INTEGER NOT NULL,
   label_hash BLOB NOT NULL,
   length INTEGER NOT NULL,
@@ -182,8 +183,8 @@ CREATE TABLE sx_badge_service_name_registrations(
   years INTEGER NOT NULL,
   price INTEGER NOT NULL,
   method TEXT,
-  name_prepaid_code_id INTEGER REFERENCES sx_badge_service_name_prepaid_codes,
-  balance_source TEXT REFERENCES sx_badge_service_name_registrations,
+  name_prepaid_code_id INTEGER REFERENCES sx_badge_service_name_prepaid_codes(name_prepaid_code_id),
+  balance_source TEXT REFERENCES sx_badge_service_name_registrations(registration_id),
   balance_used INTEGER NOT NULL,
   label TEXT,
   secret BLOB,
@@ -220,37 +221,36 @@ CREATE TABLE sx_badge_service_name_registrations(
   last_attempt_at TEXT,
   read_at TEXT NOT NULL,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  UNIQUE(registration_id)
 ) STRICT;
 CREATE TABLE sx_badge_service_name_balances(
-  registration_id TEXT NOT NULL PRIMARY KEY REFERENCES sx_badge_service_name_registrations,
+  registration_id TEXT NOT NULL PRIMARY KEY REFERENCES sx_badge_service_name_registrations(registration_id),
   amount INTEGER NOT NULL CHECK(amount >= 0),
   credited INTEGER NOT NULL DEFAULT 0 CHECK(credited >= 0),
   refunded INTEGER NOT NULL DEFAULT 0 CHECK(refunded >= 0),
-  reserved_by TEXT REFERENCES sx_badge_service_name_registrations,
+  reserved_by TEXT REFERENCES sx_badge_service_name_registrations(registration_id),
   refunded_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 ) STRICT;
 CREATE TABLE sx_badge_service_name_invoices(
-  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES sx_badge_service_invoices ON DELETE CASCADE,
-  registration_id TEXT NOT NULL REFERENCES sx_badge_service_name_registrations ON DELETE CASCADE,
+  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES sx_badge_service_invoices(invoice_id) ON DELETE CASCADE,
+  registration_id TEXT NOT NULL REFERENCES sx_badge_service_name_registrations(registration_id) ON DELETE CASCADE,
   late_alerted_at TEXT,
   late_alerted_units INTEGER,
   late_support TEXT,
   reversal_count INTEGER NOT NULL DEFAULT 0,
   last_reversal_event TEXT,
-  last_reversal_kind TEXT,
-  last_reversal_at TEXT,
   last_reversal_cents INTEGER,
   reversed_cents INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 ) STRICT;
 CREATE TABLE sx_badge_service_name_late_credits(
   name_late_credit_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  invoice_id TEXT NOT NULL REFERENCES sx_badge_service_invoices,
+  invoice_id TEXT NOT NULL REFERENCES sx_badge_service_invoices(invoice_id),
   credit_no INTEGER NOT NULL,
-  registration_id TEXT NOT NULL REFERENCES sx_badge_service_name_registrations,
+  registration_id TEXT NOT NULL REFERENCES sx_badge_service_name_registrations(registration_id),
   units INTEGER,
   invoice_rate TEXT,
   current_rate TEXT,
@@ -271,7 +271,7 @@ CREATE TABLE sx_badge_service_name_record_edits(
   created_at TEXT NOT NULL
 ) STRICT;
 CREATE TABLE sx_badge_service_name_record_changes(
-  name_record_edit_id INTEGER NOT NULL REFERENCES sx_badge_service_name_record_edits ON DELETE CASCADE,
+  name_record_edit_id INTEGER NOT NULL REFERENCES sx_badge_service_name_record_edits(name_record_edit_id) ON DELETE CASCADE,
   nonce INTEGER NOT NULL,
   record_key TEXT NOT NULL,
   record_value TEXT NOT NULL,
@@ -281,8 +281,8 @@ CREATE TABLE sx_badge_service_name_record_changes(
 ) STRICT;
 CREATE TABLE sx_badge_service_name_transactions(
   name_transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  registration_id TEXT REFERENCES sx_badge_service_name_registrations,
-  name_record_edit_id INTEGER REFERENCES sx_badge_service_name_record_edits,
+  registration_id TEXT REFERENCES sx_badge_service_name_registrations(registration_id),
+  name_record_edit_id INTEGER REFERENCES sx_badge_service_name_record_edits(name_record_edit_id),
   kind TEXT NOT NULL,
   raw BLOB NOT NULL,
   tx_hash BLOB NOT NULL,

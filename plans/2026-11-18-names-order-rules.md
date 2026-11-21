@@ -82,7 +82,7 @@ stateDiagram-v2
   - a disputed order's price is never credited to its balance, a late credit concurrent with the dispute included; an order whose price is already in its balance (taken, month ended) has it taken back from the balance, as far as the balance holds it; an order not cancelled whose refund support recorded is alerted only;
   - a balance that another order's open invoice holds is released first: that invoice is cancelled at its provider and in the service, and the alert names its order.
   - Events: `charge.dispute.created` and `charge.refunded` as reversals, `radar.early_fraud_warning.created` alerted only; badge card payments unchanged.
-  - Records: the order's invoice row counts the reversals and keeps the total reversed and the last event's Stripe id, kind, time and cents; a repeated delivery of the last event changes nothing; single events are read in Stripe.
+  - Records: the order's invoice row counts the reversals and keeps the total reversed and the last event's Stripe id and cents; a repeated delivery of the last event changes nothing; single events are read in Stripe.
 - **Facts from Stripe's documentation:**
   - a buyer can usually dispute within 120 days of the payment; card networks allow longer in some cases, and for a future event or service the window starts at its date;
   - when a dispute opens, Stripe takes the disputed amount and a dispute fee from the balance at once; outside Mexico the fee is not refunded;
@@ -213,6 +213,7 @@ Answers are the service's types encoded as derived JSON, and the page reads thos
 - **Late credits:** the query computes the two values the code needs.
 - **Edit reverts:** the contract error's name, stored by its tag.
 - **Times:** one whole-second clock for every time names reads, in place of truncations at 25 writes; one time per order request.
+- **Registration keys:** `name_registration_id`, an integer primary key on both backends, and `registration_id`, the order's public id, TEXT NOT NULL UNIQUE, which the other tables reference. Orders of one second are listed, and an exact resend's order found, by `created_at DESC, name_registration_id DESC`. Every reference in the names migration names its column.
 - **Schema boundaries:** the names product uses the generic tables and its own, never a badge table.
   - **names:** names code reads and writes the generic `invoices` and `payments` and its own `name_*` tables (`Names/Store.hs`); none of the names modules mentions a badge table. The names migration creates only `name_*` tables and adds five columns to the generic `payments` (`confirmed_amount`, `received_units`, `confirmed_units`, `invoiced_units`, `invoice_rate`: a payment's crypto amounts and rate). The generic invoice read joins both products' tables to tell an invoice's product (`Store/Invoices.hs:212-222`). Every table carries the badge service's prefix `sx_badge_service_`, the names tables included.
   - **Final:** as `names`: the names migration changes no badge table. It also adds `product` and `provider_ref` to the generic `invoices`, the reference copied from `badge_code_invoices`; it creates only names' own tables and is the service's only names migration.

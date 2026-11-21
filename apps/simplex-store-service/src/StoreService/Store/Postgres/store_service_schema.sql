@@ -219,8 +219,6 @@ CREATE TABLE test_store_service_schema.sx_badge_service_name_invoices (
     late_support text,
     reversal_count integer DEFAULT 0 NOT NULL,
     last_reversal_event text,
-    last_reversal_kind text,
-    last_reversal_at timestamp with time zone,
     last_reversal_cents integer,
     reversed_cents integer DEFAULT 0 NOT NULL,
     created_at timestamp with time zone NOT NULL
@@ -320,6 +318,7 @@ ALTER TABLE test_store_service_schema.sx_badge_service_name_record_edits ALTER C
 
 
 CREATE TABLE test_store_service_schema.sx_badge_service_name_registrations (
+    name_registration_id bigint NOT NULL,
     registration_id text NOT NULL,
     version bigint NOT NULL,
     label_hash bytea NOT NULL,
@@ -371,14 +370,13 @@ CREATE TABLE test_store_service_schema.sx_badge_service_name_registrations (
     last_attempt_at timestamp with time zone,
     read_at timestamp with time zone NOT NULL,
     created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL,
-    created_seq bigint NOT NULL
+    updated_at timestamp with time zone NOT NULL
 );
 
 
 
-ALTER TABLE test_store_service_schema.sx_badge_service_name_registrations ALTER COLUMN created_seq ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME test_store_service_schema.sx_badge_service_name_registrations_created_seq_seq
+ALTER TABLE test_store_service_schema.sx_badge_service_name_registrations ALTER COLUMN name_registration_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_store_service_schema.sx_badge_service_name_registrations_name_registration_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -564,7 +562,12 @@ ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_record_edits
 
 
 ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_registrations
-    ADD CONSTRAINT sx_badge_service_name_registrations_pkey PRIMARY KEY (registration_id);
+    ADD CONSTRAINT sx_badge_service_name_registrations_pkey PRIMARY KEY (name_registration_id);
+
+
+
+ALTER TABLE ONLY test_store_service_schema.sx_badge_service_name_registrations
+    ADD CONSTRAINT sx_badge_service_name_registrations_registration_id_key UNIQUE (registration_id);
 
 
 

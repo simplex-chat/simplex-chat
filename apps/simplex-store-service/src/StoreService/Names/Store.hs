@@ -983,7 +983,7 @@ getRegistration db (RegistrationId rid) =
 getRegistrationByOrderHash :: DB.Connection -> OrderHash -> IO (Maybe NameRegistration)
 getRegistrationByOrderHash db hash =
   firstDecoded toRegistration $
-    DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, " <> insertionOrder <> " DESC LIMIT 1") (Only hash)
+    DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, r.name_registration_id DESC LIMIT 1") (Only hash)
 
 -- | Overdue whatever status the poller has marked, as long as the invoice is not paid and holds no money, as the sweep decides.
 getLiveOrders :: DB.Connection -> Commitment -> Address -> LabelHash -> UTCTime -> IO [LiveOrder]
@@ -1161,15 +1161,8 @@ findRegistrations db owner now = do
     holdParams = (PUnpaid, ISPaid, now)
     found :: RegistrationRow :. Only (Maybe Text) -> Either Text (NameRegistration, Maybe RegistrationId)
     found (row :. Only holder) = (\r -> (r, RegistrationId <$> holder)) <$> toRegistration row
-    newestFirst = " ORDER BY r.created_at DESC, " <> insertionOrder <> " DESC"
+    newestFirst = " ORDER BY r.created_at DESC, r.name_registration_id DESC"
     withBalance = mkQuery " AND EXISTS (SELECT 1 FROM @name_balances b WHERE b.registration_id = r.registration_id AND b.amount > 0)"
-
-insertionOrder :: Query
-#if defined(dbPostgres)
-insertionOrder = "r.created_seq"
-#else
-insertionOrder = "r.rowid"
-#endif
 
 labelHolder :: DB.Connection -> LabelHash -> IO (Maybe RegistrationId)
 labelHolder db lh =
@@ -1461,8 +1454,8 @@ refundBalance db (RegistrationId rid) cents now =
       )
       (cents, now, now, rid, cents)
 
-recordReversal :: DB.Connection -> Text -> InvoiceId -> Reversal -> UTCTime -> IO (Maybe USDCents)
-recordReversal db event (InvoiceId invId) reversal now =
+recordReversal :: DB.Connection -> Text -> InvoiceId -> Reversal -> IO (Maybe USDCents)
+recordReversal db event (InvoiceId invId) reversal =
   DB.query db (mkQuery "SELECT last_reversal_event, reversed_cents FROM @name_invoices WHERE invoice_id = ?") (Only invId) >>= \case
     [(lastEvent, reversedBefore)] | lastEvent /= Just event -> do
       let cents = case reversal of
@@ -1470,15 +1463,10 @@ recordReversal db event (InvoiceId invId) reversal now =
             RVRefund _ (CurrencyAmount total) -> max 0 $ fromIntegral total - reversedBefore
       DB.execute
         db
-        (mkQuery "UPDATE @name_invoices SET reversal_count = reversal_count + 1, last_reversal_event = ?, last_reversal_kind = ?, last_reversal_at = ?, last_reversal_cents = ?, reversed_cents = reversed_cents + ? WHERE invoice_id = ?")
-        (event, kind, now, cents, cents, invId)
+        (mkQuery "UPDATE @name_invoices SET reversal_count = reversal_count + 1, last_reversal_event = ?, last_reversal_cents = ?, reversed_cents = reversed_cents + ? WHERE invoice_id = ?")
+        (event, cents, cents, invId)
       pure $ Just cents
     _ -> pure Nothing
-  where
-    kind :: Text
-    kind = case reversal of
-      RVDispute {} -> "dispute"
-      RVRefund {} -> "refund"
 
 takeBackBalance :: DB.Connection -> InvoiceId -> RegistrationId -> USDCents -> UTCTime -> IO USDCents
 takeBackBalance db invId@(InvoiceId inv) (RegistrationId rid) cents now = do

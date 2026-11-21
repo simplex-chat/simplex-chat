@@ -344,8 +344,8 @@ A dispute or a refund of a name order's payment is acted on at its delivery, as 
   it is taken or its month ends, and a late credit concurrent with a dispute of its order is
   written after it.
 
-The order's invoice row counts them and keeps the total reversed and the last one's event id, kind,
-time and cents, a refund as the rise of `amount_refunded`; a repeated delivery of the last event
+The order's invoice row counts them and keeps the total reversed and the last one's event id and
+cents, a refund as the rise of `amount_refunded`; a repeated delivery of the last event
 changes nothing. Every dispute, refund and early fraud warning of a name order is logged at
 error and posted in the managed group as `names: <event> on payment <pi_...> of order <id>:
 <outcome>. Evidence: <payment>; <owner and order hash>; <signed registration>; <commit and register

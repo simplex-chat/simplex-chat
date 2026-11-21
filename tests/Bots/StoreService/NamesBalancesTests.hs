@@ -1006,7 +1006,7 @@ testConcurrentCreditDispute = withServiceStores $ \open -> do
       together
         st
         other
-        (\db -> lockRegistration db order >> recordReversal db ("evt_" <> r) inv (RVDispute "dp_1" $ CurrencyAmount 20000) t0 >>= mapM_ (\cents -> takeBackBalance db inv rid cents t0))
+        (\db -> lockRegistration db order >> recordReversal db ("evt_" <> r) inv (RVDispute "dp_1" $ CurrencyAmount 20000) >>= mapM_ (\cents -> takeBackBalance db inv rid cents t0))
         (\db -> creditLatePayment db (lateCredit r 1 Nothing 3000) t0)
     (n,) . fmap (\(amount, _, _, _) -> amount) <$> figures st r t0 >>= (`shouldSatisfy` (`elem` [Nothing, Just 0]) . snd)
 #endif

@@ -122,7 +122,7 @@ reverseOrder oe@OrdersEnv {oeNow, oeStore, oePhases} providers waiters row@Invoi
   released <- releaseHold
   now <- oeNow
   inOrderTurn oe row rid what $ \db r ->
-    recordReversal db event irInvoiceId reversal now >>= traverse (fmap (fmap (<> released)) . reversed db now r)
+    recordReversal db event irInvoiceId reversal >>= traverse (fmap (fmap (<> released)) . reversed db now r)
   where
     what = case reversal of
       RVDispute dispute (CurrencyAmount amount) -> "card dispute " <> dispute <> " of " <> tshow amount <> " cents"

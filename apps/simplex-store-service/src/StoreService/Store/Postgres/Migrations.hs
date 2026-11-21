@@ -299,7 +299,8 @@ CREATE TABLE @name_prepaid_codes(
 );
 
 CREATE TABLE @name_registrations(
-  registration_id TEXT NOT NULL PRIMARY KEY,
+  name_registration_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  registration_id TEXT NOT NULL,
   version BIGINT NOT NULL,
   label_hash BYTEA NOT NULL,
   length INTEGER NOT NULL,
@@ -312,8 +313,8 @@ CREATE TABLE @name_registrations(
   years INTEGER NOT NULL,
   price INTEGER NOT NULL,
   method TEXT,
-  name_prepaid_code_id BIGINT REFERENCES @name_prepaid_codes,
-  balance_source TEXT REFERENCES @name_registrations,
+  name_prepaid_code_id BIGINT REFERENCES @name_prepaid_codes(name_prepaid_code_id),
+  balance_source TEXT REFERENCES @name_registrations(registration_id),
   balance_used INTEGER NOT NULL,
   label TEXT,
   secret BYTEA,
@@ -351,10 +352,10 @@ CREATE TABLE @name_registrations(
   read_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
-  created_seq BIGINT GENERATED ALWAYS AS IDENTITY
+  UNIQUE(registration_id)
 );
 
-ALTER TABLE @name_prepaid_codes ADD COLUMN reserved_by TEXT REFERENCES @name_registrations;
+ALTER TABLE @name_prepaid_codes ADD COLUMN reserved_by TEXT REFERENCES @name_registrations(registration_id);
 
 CREATE UNIQUE INDEX @idx_name_prepaid_codes_reserved_by ON @name_prepaid_codes(reserved_by);
 
@@ -377,11 +378,11 @@ CREATE INDEX @idx_name_registrations_prepaid_code ON @name_registrations(name_pr
 CREATE INDEX @idx_name_registrations_balance_source ON @name_registrations(balance_source);
 
 CREATE TABLE @name_balances(
-  registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations,
+  registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations(registration_id),
   amount INTEGER NOT NULL CHECK (amount >= 0),
   credited INTEGER NOT NULL DEFAULT 0 CHECK (credited >= 0),
   refunded INTEGER NOT NULL DEFAULT 0 CHECK (refunded >= 0),
-  reserved_by TEXT REFERENCES @name_registrations,
+  reserved_by TEXT REFERENCES @name_registrations(registration_id),
   refunded_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL
@@ -392,15 +393,13 @@ CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by
 -- late_support says why a closed order's late money will not be credited by itself:
 -- high_speed, units, rate_floor, unconfirmed or no_confirmation. It is never cleared.
 CREATE TABLE @name_invoices(
-  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
-  registration_id TEXT NOT NULL REFERENCES @name_registrations ON DELETE CASCADE,
+  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices(invoice_id) ON DELETE CASCADE,
+  registration_id TEXT NOT NULL REFERENCES @name_registrations(registration_id) ON DELETE CASCADE,
   late_alerted_at TIMESTAMPTZ,
   late_alerted_units BIGINT,
   late_support TEXT,
   reversal_count INTEGER NOT NULL DEFAULT 0,
   last_reversal_event TEXT,
-  last_reversal_kind TEXT,
-  last_reversal_at TIMESTAMPTZ,
   last_reversal_cents INTEGER,
   reversed_cents INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL
@@ -423,9 +422,9 @@ CREATE INDEX @idx_payments_overpaid ON @payments(invoice_id) WHERE received_unit
 
 CREATE TABLE @name_late_credits(
   name_late_credit_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  invoice_id TEXT NOT NULL REFERENCES @invoices,
+  invoice_id TEXT NOT NULL REFERENCES @invoices(invoice_id),
   credit_no INTEGER NOT NULL,
-  registration_id TEXT NOT NULL REFERENCES @name_registrations,
+  registration_id TEXT NOT NULL REFERENCES @name_registrations(registration_id),
   units BIGINT,
   invoice_rate TEXT,
   current_rate TEXT,
@@ -458,7 +457,7 @@ CREATE INDEX @idx_name_record_edits_label_created ON @name_record_edits(label_ha
 
 -- An edit is one request of the page, relayed as one transaction; its signed changes are its rows here, one per nonce.
 CREATE TABLE @name_record_changes(
-  name_record_edit_id BIGINT NOT NULL REFERENCES @name_record_edits ON DELETE CASCADE,
+  name_record_edit_id BIGINT NOT NULL REFERENCES @name_record_edits(name_record_edit_id) ON DELETE CASCADE,
   nonce BIGINT NOT NULL,
   record_key TEXT NOT NULL,
   record_value TEXT NOT NULL,
@@ -469,8 +468,8 @@ CREATE TABLE @name_record_changes(
 
 CREATE TABLE @name_transactions(
   name_transaction_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  registration_id TEXT REFERENCES @name_registrations,
-  name_record_edit_id BIGINT REFERENCES @name_record_edits,
+  registration_id TEXT REFERENCES @name_registrations(registration_id),
+  name_record_edit_id BIGINT REFERENCES @name_record_edits(name_record_edit_id),
   kind TEXT NOT NULL,
   raw BYTEA NOT NULL,
   tx_hash BYTEA NOT NULL,
