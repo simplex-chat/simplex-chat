@@ -85,7 +85,7 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   cd apps/multiplatform
   ./gradlew --no-daemon --max-workers=1 :common:desktopTest :desktop:compileKotlinJvm -x :desktop:cmakeBuildAndCopy :android:compileGoogleDebugKotlin :android:testFossDebugUnitTest
   ```
-  JDK 17 and an Android SDK in ANDROID_HOME are required, as installed by Dockerfile.build.
+  JDK 17 and an Android SDK in ANDROID_HOME are required, and on Linux fontconfig's `fc-cache` for `FallbackFontTest`, as installed by Dockerfile.build.
 
 #### ios
 
