@@ -127,13 +127,8 @@ messages and audio/video calls.
 
 <img src="./images/making-connections-delete-contact.png" alt="Delete contact, with the Keep conversation toggle" width="288">
 
-Swipe a contact left (iOS), tap and hold it (Android) or right-click it
-(desktop). Delete and Delete and block are also on the contact page.
+Swipe a contact left on iOS, tap and hold it on Android, or right-click it on desktop:
 
-- **Archive**: moves the conversation to Archived contacts (the pencil button).
-  The contact is not told, and you can still send messages from there.
-- **Delete**: turn on **Keep conversation** to keep the messages. Whether the
-  contact is notified is set in [Contact deletion](./app-settings.md#contact-deletion).
-- **Delete and block** (**Block** in the iOS swipe): for a contact who connected
-  via your address. The contact is not notified, and can't reconnect via your
-  address for 1 day, 1 week or forever.
+- **Archive** to hide the chat without telling the contact. You can find it in Archived contacts, under the pencil button.
+- **Delete**, and turn on **Keep conversation** to keep the messages.
+- **Delete and block** a contact who connected via your address. The contact is not notified and can't connect via your address again for 1 day, 1 week or forever. On iOS this button is called **Block**.
