@@ -57,7 +57,9 @@ When installed, the app generates a random passphrase for the chat database and
 stores it securely in Keychain (iOS) or using Keystore (Android, secure hardware
 is used when available). The desktop app offers to set your own passphrase when
 you create your first profile and, if you skip it, stores the random passphrase
-in the app settings as plaintext. You can set your own passphrase and also
+in the app settings: on Linux encrypted with a key kept in the system keyring
+(such as GNOME Keyring or KWallet) when one is available, otherwise as
+plaintext. The app passcode is stored the same way. You can set your own passphrase and also
 remove it from the device, in which case you will need to enter it every time
 you start the app, and notifications may be limited, in the [Database
 passphrase & export](./managing-data.md#database-passphrase) settings.

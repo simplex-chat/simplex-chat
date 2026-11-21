@@ -140,7 +140,7 @@ fun GroupSimplexNameView(groupInfo: GroupInfo, verifiable: Boolean = true) {
   if (groupInfo.businessChat == null) {
     val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
     val domain = access?.groupDomainClaim?.shortName
-    if (domain != null && (groupInfo.groupDomainVerified != null || access.groupDomainClaim?.proof != null)) {
+    if (domain != null && (groupInfo.groupDomainVerified != null || access.groupDomainClaim.proof != null)) {
       SimplexNameView(
         simplexName = "#${domain}",
         verified = groupInfo.groupDomainVerified,
@@ -155,7 +155,7 @@ fun GroupSimplexNameView(groupInfo: GroupInfo, verifiable: Boolean = true) {
       )
     }
   } else {
-    val businessClaim = groupInfo.businessChat?.businessDomain
+    val businessClaim = groupInfo.businessChat.businessDomain
     if (businessClaim != null && (groupInfo.groupDomainVerified != null || businessClaim.proof != null)) {
       // A business presents as a contact, so the name retains its .simplex suffix; it cannot be re-verified.
       SimplexNameView(

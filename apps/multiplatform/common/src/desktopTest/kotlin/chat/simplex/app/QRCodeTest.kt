@@ -8,7 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.v2.runComposeUiTest
 import boofcv.alg.fiducial.qrcode.QrCode
 import chat.simplex.common.model.*
 import chat.simplex.common.views.chat.ChatInfoView

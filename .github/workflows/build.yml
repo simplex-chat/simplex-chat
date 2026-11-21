@@ -632,9 +632,14 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
         shell: bash
         run: |
-          path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/*imple*.AppImage)
-          echo "appimage_path=$path" >> $GITHUB_OUTPUT
-          echo "appimage_hash=$(echo SHA2-256\(simplex-desktop-${{ matrix.arch }}.AppImage\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          paths=("${{ github.workspace }}"/apps/multiplatform/release/main/*imple*.AppImage)
+          path=${paths[0]}
+          {
+            echo "appimage_path=$path"
+            echo "appimage_hash=SHA2-256(simplex-desktop-${{ matrix.arch }}.AppImage)= $(openssl sha256 "$path" | cut -d' ' -f 2)"
+            echo "zsync_path=$path.zsync"
+            echo "zsync_hash=SHA2-256(simplex-desktop-${{ matrix.arch }}.AppImage.zsync)= $(openssl sha256 "$path.zsync" | cut -d' ' -f 2)"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Upload AppImage
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
@@ -643,6 +648,16 @@ jobs:
           bin_path: ${{ steps.linux_appimage_build.outputs.appimage_path }}
           bin_name: "simplex-desktop-${{ matrix.arch }}.AppImage"
           bin_hash: ${{ steps.linux_appimage_build.outputs.appimage_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload AppImage update file
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_path: ${{ steps.linux_appimage_build.outputs.zsync_path }}
+          bin_name: "simplex-desktop-${{ matrix.arch }}.AppImage.zsync"
+          bin_hash: ${{ steps.linux_appimage_build.outputs.zsync_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -1672,7 +1687,7 @@ jobs:
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
           scripts/desktop/build-lib-windows.sh
           cd apps/multiplatform
-          ./gradlew -Psimplex.assets.dir=../../assets packageMsi
+          ./gradlew -Psimplex.assets.dir=../../assets :desktop:packageMsi
           rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe*
           path=$(echo $PWD/release/main/msi/*imple*.msi | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
           echo "package_path=$path" >> $GITHUB_OUTPUT

@@ -814,7 +814,7 @@ private fun setCiTTL(
   progressIndicator: MutableState<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
 ) {
-  Log.d(TAG, "DatabaseView setChatItemTTL ${chatItemTTL.value.seconds ?: -1}")
+  Log.d(TAG, "DatabaseView setChatItemTTL ${chatItemTTL.value.seconds}")
   progressIndicator.value = true
   withBGApi {
     try {

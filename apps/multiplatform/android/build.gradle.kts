@@ -1,5 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.compose")
@@ -8,8 +10,28 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.fromTarget(providers.gradleProperty("kotlin.jvm.target").get()))
+        optIn.addAll(
+            "kotlinx.coroutines.DelicateCoroutinesApi",
+            "androidx.compose.foundation.ExperimentalFoundationApi",
+            "androidx.compose.ui.text.ExperimentalTextApi",
+            "androidx.compose.material.ExperimentalMaterialApi",
+            "com.google.accompanist.insets.ExperimentalAnimatedInsets",
+            "com.google.accompanist.permissions.ExperimentalPermissionsApi",
+            "kotlinx.serialization.InternalSerializationApi",
+            "kotlinx.serialization.ExperimentalSerializationApi",
+        )
+    }
+}
+
 android {
-    compileSdk = 36
+    compileSdk = 37
+    compileOptions {
+        sourceCompatibility = JavaVersion.toVersion(providers.gradleProperty("kotlin.jvm.target").get())
+        targetCompatibility = JavaVersion.toVersion(providers.gradleProperty("kotlin.jvm.target").get())
+    }
 
     defaultConfig {
         applicationId = "chat.simplex.app"
@@ -18,8 +40,8 @@ android {
         targetSdk = 36
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
-        versionCode = (extra["android.version_code"] as String).toInt()
-        versionName = extra["android.version_name"] as String
+        versionCode = (project.extra["android.version_code"] as String).toInt()
+        versionName = project.extra["android.version_name"] as String
 
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -62,16 +84,6 @@ android {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
-    }
-    kotlinOptions {
-        freeCompilerArgs += "-opt-in=kotlinx.coroutines.DelicateCoroutinesApi"
-        freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
-        freeCompilerArgs += "-opt-in=androidx.compose.ui.text.ExperimentalTextApi"
-        freeCompilerArgs += "-opt-in=androidx.compose.material.ExperimentalMaterialApi"
-        freeCompilerArgs += "-opt-in=com.google.accompanist.insets.ExperimentalAnimatedInsets"
-        freeCompilerArgs += "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi"
-        freeCompilerArgs += "-opt-in=kotlinx.serialization.InternalSerializationApi"
-        freeCompilerArgs += "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
     }
     externalNativeBuild {
         cmake {
@@ -193,7 +205,7 @@ dependencies {
 }
 
 tasks {
-    val compressApk by creating {
+    val compressApk = register("compressApk") {
         doLast {
             val javaHome = System.getProperties()["java.home"] ?: org.gradle.internal.jvm.Jvm.current().javaHome
             val sdkDir = android.sdkDirectory.absolutePath
@@ -205,11 +217,11 @@ tasks {
                 val keyPassword: String
                 val storeFile: String
                 val storePassword: String
-                if (project.properties["android.injected.signing.key.alias"] != null) {
-                    keyAlias = project.properties["android.injected.signing.key.alias"] as String
-                    keyPassword = project.properties["android.injected.signing.key.password"] as String
-                    storeFile = project.properties["android.injected.signing.store.file"] as String
-                    storePassword = project.properties["android.injected.signing.store.password"] as String
+                if (project.findProperty("android.injected.signing.key.alias") != null) {
+                    keyAlias = project.findProperty("android.injected.signing.key.alias") as String
+                    keyPassword = project.findProperty("android.injected.signing.key.password") as String
+                    storeFile = project.findProperty("android.injected.signing.store.file") as String
+                    storePassword = project.findProperty("android.injected.signing.store.password") as String
                 } else {
                     try {
                         val gradleConfig = android.signingConfigs.getByName(buildType)
@@ -224,7 +236,7 @@ tasks {
                     }
                 }
                 val outputDir = packageTask.outputs.files.files.last()
-                exec {
+                providers.exec {
                     workingDir("../../scripts/android")
                     environment = mapOf(
                       "JAVA_HOME" to "$javaHome",
@@ -240,9 +252,9 @@ tasks {
                         keyAlias,
                         keyPassword
                     )
-                }
+                }.result.get()
 
-                if (project.properties["android.injected.signing.key.alias"] != null && buildType == "release") {
+                if (project.findProperty("android.injected.signing.key.alias") != null && buildType == "release") {
                     val flavor = variant.removeSuffix("Release").lowercase()
                     mapOf("arm64-v8a" to "simplex.apk", "armeabi-v7a" to "simplex-armv7a.apk").forEach { (abi, name) ->
                         if (!File(outputDir, "android-$flavor-$abi-release.apk").renameTo(File(outputDir, name))) {

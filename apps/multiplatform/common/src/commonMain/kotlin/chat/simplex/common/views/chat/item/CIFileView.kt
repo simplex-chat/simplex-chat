@@ -243,7 +243,7 @@ fun CIFileView(
             color = secondaryColor,
             fontSize = 14.sp,
             maxLines = 1,
-            style = LocalTextStyle.current.merge(bubbleLineHeight(14.sp * INTER_LINE_HEIGHT))
+            style = LocalTextStyle.current.merge(bubbleLineHeight(14.sp * INTER_LINE_HEIGHT, 14.sp))
           )
         }
       } else {

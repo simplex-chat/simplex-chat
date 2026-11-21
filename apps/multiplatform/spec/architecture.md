@@ -233,10 +233,13 @@ Entry: [`main()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L26
 
 ```
 main(args)
+  +-- prepareLinuxRuntime()              // Linux: Nucleus library path, window identity
+  +-- rejectBitmapFonts()                // FONTCONFIG_FILE that rejects PCF and BDF fonts
   +-- linkFromArgs(args)                 // A simplexchat: or simplex: link passed by the OS
   +-- acquireSingleInstance(link)        // Or forward the link to the running instance and exit
   +-- appOpenUrl = link                  // Stored before the watcher can forward a newer link
   +-- startShowFileWatcher()             // Only while holding the single-instance lock
+  +-- restrictPreferencesDir()           // Linux: config directory mode 700
   +-- initHaskell()                      // Load native lib from resources dir, call initHS()
   |     +-- System.load(libapp-lib.so/dll/dylib)
   |     +-- initHS()
@@ -244,13 +247,14 @@ main(args)
   +-- setupUpdateChecker()
   +-- initApp()                          // Set ntfManager, applyAppLocale, initChatControllerOnStart
   +-- registerLinkSchemes()              // Background thread, per-OS registration and detection
+  +-- createTmpDir()                     // Linux: $XDG_CACHE_HOME/simplex/tmp, parent mode 700
   +-- installOpenUriHandler()            // macOS only: links arrive as Apple Events
   +-- showApp()                          // Compose window with AppScreen()
 ```
 
-[`showApp()`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt#L33) creates a Compose `Window` with error recovery -- if a crash occurs, it closes the offending modal/view and re-opens the window.
+[`showApp()`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt#L34) creates a Compose `Window` with error recovery -- if a crash occurs, it closes the offending modal/view and re-opens the window. On Linux it calls [`showTaoApp()`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopTaoApp.kt#L37) instead: a Nucleus Tao `DecoratedWindow` with system decorations, a native Wayland surface under Wayland and an X11 window otherwise, rendered with EGL. Its `WindowExceptionHandlerFactory` shows the crash alert and recreates the window; `Dispatchers.Main` is the Tao event loop thread.
 
-[`showWindow()`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt#L258) un-minimizes and raises the window when a second launch or a link reaches the running app. On Linux it also sends `_NET_ACTIVE_WINDOW` through [`requestX11Activation()`](../common/src/desktopMain/kotlin/chat/simplex/common/WindowActivation.kt#L17), because wlroots compositors such as Sway ignore the raise that AWT's `toFront()` sends under XWayland. On Windows the second process, which the browser left holding the foreground right, calls `AllowSetForegroundWindow` before it signals so that the running instance may raise its window. During a crash restart `showWindow()` skips the disposed window, so it does not come back; the new window opens visible.
+[`showWindow()`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt#L293) un-minimizes and raises the window when a second launch, a link, a tray click or a notification click reaches the running app. On Linux the activation token comes with the request (`XDG_ACTIVATION_TOKEN` or `DESKTOP_STARTUP_ID` of the second launch, forwarded in the signal file, or the token of the tray or notification click) and is passed to Tao's `focus()` through Nucleus's `ActivationToken`. On Windows the second process, which the browser left holding the foreground right, calls `AllowSetForegroundWindow` before it signals so that the running instance may raise its window. During a crash restart `showWindow()` skips the disposed window, so it does not come back; the new window opens visible.
 
 [`initApp()`](../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppCommon.desktop.kt#L21) sets the `ntfManager` implementation (desktop notifications via `NtfManager` in `common/model/`) and calls `initChatControllerOnStart()`.
 
@@ -433,7 +437,9 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | Main.kt | [`desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt) | Desktop `main()` |
 | DesktopApp.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt) | `showApp()`, `SimplexWindowState` |
 | SingleInstance.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt) | `acquireSingleInstance()`, `startShowFileWatcher()`, signal file hand-over |
-| WindowActivation.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/WindowActivation.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/WindowActivation.kt) | `requestX11Activation()`, `sendActivation()`, `activationEvent()` |
+| DesktopTaoApp.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/DesktopTaoApp.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopTaoApp.kt) | `showTaoApp()`: the Linux window on Nucleus Tao, GTK file dialogs |
+| LinuxTray.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/LinuxTray.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/LinuxTray.kt) | `LinuxTray()`: StatusNotifierItem through ComposeNativeTray; in the Flatpak, the Background portal request at the first hide |
+| LinuxNative.desktop.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxNative.desktop.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxNative.desktop.kt) | JNI to `libsimplex_linux.so`: GTK file chooser (through the portal when `org.freedesktop.portal.FileChooser` answers before the first dialog) and confirmation, Background portal request, GTK theme name, GL renderer, Secret Service; `prepareLinuxRuntime()` |
 
 ### Theme
 

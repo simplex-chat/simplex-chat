@@ -4,6 +4,7 @@ import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.dataDir
 import chat.simplex.common.platform.desktopPlatform
+import chat.simplex.common.platform.linuxConfirm
 import chat.simplex.res.*
 import com.sun.jna.NativeLibrary
 import java.io.IOException
@@ -18,7 +19,8 @@ import java.nio.file.StandardOpenOption.WRITE
 import java.nio.file.attribute.FileTime
 import java.time.Duration
 import java.time.Instant
-import javax.swing.SwingUtilities
+import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.concurrent.thread
 
 private var lockHandle: FileLock? = null
@@ -38,7 +40,17 @@ private val lockPath get() = dataDir.resolve("simplex.started").toPath()
 var singleInstanceLock = false
   private set
 
-internal class ShowSignal(val link: String?)
+internal class ShowSignal(val link: String?, val activationToken: String? = null)
+
+internal const val MAX_ACTIVATION_TOKEN_BYTES = 1024
+private const val SIGNAL_SEPARATOR = '\n'
+private val activationTokenEnv = listOf("XDG_ACTIVATION_TOKEN", "DESKTOP_STARTUP_ID")
+
+internal fun isAcceptedActivationToken(token: String): Boolean =
+  token.isNotEmpty() && token.length <= MAX_ACTIVATION_TOKEN_BYTES && token.all { it in '!'..'~' }
+
+private fun launchActivationToken(): String? =
+  activationTokenEnv.firstNotNullOfOrNull { System.getenv(it)?.takeIf(::isAcceptedActivationToken) }
 
 private sealed interface LockResult {
   class Acquired(val lock: FileLock) : LockResult
@@ -61,7 +73,7 @@ fun acquireSingleInstance(link: String?): Boolean {
     }
     LockResult.Taken -> {
       if (desktopPlatform.isWindows()) allowPrimaryForeground()
-      return startDespiteRunningInstance(dataDir.toPath(), link, SIGNAL_WAIT_MILLIS, ::showSingleInstanceAlert)
+      return startDespiteRunningInstance(dataDir.toPath(), link, SIGNAL_WAIT_MILLIS, launchActivationToken(), ::showSingleInstanceAlert)
     }
   }
 }
@@ -91,8 +103,8 @@ private fun tryAcquireLock(): LockResult {
 }
 
 // A signal still present after the wait means the running instance is hung, so the user decides.
-internal fun startDespiteRunningInstance(dir: Path, link: String?, waitMillis: Long, askToStart: () -> Boolean): Boolean {
-  signalRunningInstance(dir, link)
+internal fun startDespiteRunningInstance(dir: Path, link: String?, waitMillis: Long, activationToken: String? = null, askToStart: () -> Boolean): Boolean {
+  signalRunningInstance(dir, link, activationToken)
   val show = dir.resolve(SHOW_FILE)
   val deadline = System.currentTimeMillis() + waitMillis
   while (Files.exists(show) && System.currentTimeMillis() < deadline) {
@@ -136,11 +148,12 @@ internal fun deleteStaleSignalFiles(dir: Path, lockAttemptTime: FileTime) {
 }
 
 // The temp file is owner-only on POSIX, as the link is a bearer secret, and the rename makes it appear whole.
-internal fun signalRunningInstance(dir: Path, link: String?) {
+internal fun signalRunningInstance(dir: Path, link: String?, activationToken: String? = null) {
   var tmp: Path? = null
+  val content = if (activationToken != null) "$activationToken$SIGNAL_SEPARATOR${link ?: ""}" else link ?: ""
   try {
     tmp = Files.createTempFile(dir, SHOW_FILE, SHOW_TMP_SUFFIX)
-    Files.write(tmp, (link ?: "").toByteArray(Charsets.UTF_8))
+    Files.write(tmp, content.toByteArray(Charsets.UTF_8))
     Files.move(tmp, dir.resolve(SHOW_FILE), ATOMIC_MOVE)
   } catch (e: IOException) {
     Log.w(TAG, "single-instance: cannot signal running instance: ${e.message}")
@@ -168,14 +181,21 @@ internal fun takeSignal(dir: Path, move: (Path, Path) -> Unit = ::moveAtomically
     return ShowSignal(null)
   }
   val bytes = try {
-    Files.newInputStream(taken).use { it.readNBytes(MAX_LINK_BYTES + 1) }
+    Files.newInputStream(taken).use { it.readNBytes(MAX_ACTIVATION_TOKEN_BYTES + 1 + MAX_LINK_BYTES + 1) }
   } catch (e: IOException) {
     Log.w(TAG, "single-instance: cannot read signal file: ${e.message}")
     null
   } finally {
     deleteSignalFile(taken)
   }
-  return ShowSignal(bytes?.toString(Charsets.UTF_8)?.takeIf(::isAcceptedLink))
+  return parseSignal(bytes?.toString(Charsets.UTF_8) ?: "")
+}
+
+internal fun parseSignal(content: String): ShowSignal {
+  val separator = content.indexOf(SIGNAL_SEPARATOR)
+  val token = if (separator < 0) null else content.substring(0, separator).takeIf(::isAcceptedActivationToken)
+  val link = if (separator < 0) content else content.substring(separator + 1)
+  return ShowSignal(link.takeIf(::isAcceptedLink), token)
 }
 
 private fun moveAtomically(from: Path, to: Path) {
@@ -216,6 +236,7 @@ private fun allowPrimaryForeground() {
 private fun showSingleInstanceAlert(): Boolean {
   val title = chat.simplex.common.views.helpers.generalGetString(chat.simplex.res.MR.strings.another_instance_title)
   val message = chat.simplex.common.views.helpers.generalGetString(chat.simplex.res.MR.strings.another_instance_not_responding)
+  if (desktopPlatform.isLinux()) return linuxConfirm(title, message)
   val result = javax.swing.JOptionPane.showConfirmDialog(
     null, message, title,
     javax.swing.JOptionPane.YES_NO_OPTION,
@@ -237,8 +258,8 @@ fun startShowFileWatcher() {
   watcher = ws
   thread(name = "simplex-single-instance", isDaemon = true) {
     watchShowSignals(ws, dir) { signal ->
-      SwingUtilities.invokeLater {
-        if (signal.link != null) openDesktopLink(signal.link) else showWindow()
+      Dispatchers.Main.dispatch(EmptyCoroutineContext) {
+        if (signal.link != null) openDesktopLink(signal.link, signal.activationToken) else showWindow(signal.activationToken)
       }
     }
   }

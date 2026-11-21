@@ -7,5 +7,5 @@ Keywords=chat;message;private;secure;simplex;
 Categories=Utility;Chat;InstantMessaging;
 Exec=simplex %U
 Icon=chat.simplex.simplex
-StartupWMClass=simplex-chat
+StartupWMClass=chat.simplex.simplex
 MimeType=x-scheme-handler/simplexchat;x-scheme-handler/simplex;

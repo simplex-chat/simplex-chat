@@ -15,6 +15,10 @@ on:
         description: Also test the latest released app, to tell a branch's failure from the runner's
         type: boolean
         default: false
+      e2e:
+        description: Also build the deb and the AppImage and test them under X11, Wayland and XWayland
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -40,6 +44,7 @@ jobs:
       run-claude: ${{ steps.jobs.outputs.claude }}
       run-backend: ${{ steps.jobs.outputs.backend }}
       run-release: ${{ steps.jobs.outputs.release }}
+      run-e2e: ${{ steps.jobs.outputs.e2e }}
       claude-backend: ${{ steps.scope.outputs.backend }}
       core: ${{ steps.names.outputs.core }}
       core-run: ${{ steps.core.outputs.run-id }}
@@ -52,10 +57,12 @@ jobs:
           CLAUDE: ${{ inputs.claude }}
           BACKEND: ${{ inputs.backend }}
           RELEASE: ${{ inputs.release }}
+          E2E: ${{ inputs.e2e }}
         run: |
           echo "claude=$CLAUDE" | tee -a "$GITHUB_OUTPUT"
           echo "backend=$BACKEND" | tee -a "$GITHUB_OUTPUT"
           echo "release=$RELEASE" | tee -a "$GITHUB_OUTPUT"
+          echo "e2e=$E2E" | tee -a "$GITHUB_OUTPUT"
 
       - name: Checkout code
         uses: actions/checkout@v6
@@ -83,7 +90,7 @@ jobs:
       - name: Artifact names
         id: names
         run: |
-          echo "core=desktop-linux-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/desktop/build-lib-linux.sh', 'scripts/ci/desktop-linux/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "core=desktop-linux-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/desktop/build-lib-linux.sh', 'scripts/desktop/zstd-symbols.map', 'scripts/ci/desktop-linux/build-core.sh') }}" >> "$GITHUB_OUTPUT"
           echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Find core library
@@ -204,8 +211,9 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
-          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
+          sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
+            pkg-config libgtk-3-dev libdbus-1-dev libsystemd-dev libegl-dev libwayland-dev libsecret-1-dev libegl-mesa0 libgl1-mesa-dri
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core libgtk-3-dev libsecret-1-dev libegl-mesa0
 
       - name: Download core library
         uses: actions/download-artifact@v8
@@ -248,6 +256,7 @@ jobs:
         if: ${{ !cancelled() && steps.core.outcome == 'success' }}
         working-directory: apps/multiplatform
         run: |
+          ../../scripts/desktop/build-native-linux.sh
           ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :desktop:createDistributable
           app=release/main/app/simplex
           ls -la "$app/bin" "$app/lib/app/resources"
@@ -367,8 +376,9 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
-          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core
+          sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
+            libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri
+          dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr sqlite3 fonts-dejavu-core libgtk-3-0 libegl-mesa0
 
       - name: Download app
         uses: actions/download-artifact@v8
@@ -473,7 +483,7 @@ jobs:
       - name: Install UI tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool openbox imagemagick tesseract-ocr
+          sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr
           dpkg-query -W xvfb xdotool openbox imagemagick tesseract-ocr
 
       - name: Run smoke test
@@ -486,4 +496,163 @@ jobs:
           name: desktop-release-smoke-test
           path: ${{ runner.temp }}/smoke-test
           retention-days: 3
+          if-no-files-found: warn
+
+  packages:
+    name: deb and AppImage
+    needs: [plan, core]
+    if: ${{ !cancelled() && !failure() && needs.plan.outputs.run-e2e == 'true' && needs.core.result != 'cancelled' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libgtk-3-dev libdbus-1-dev libsystemd-dev libegl-dev libwayland-dev \
+            libsecret-1-dev strip-nondeterminism dpkg-dev fakeroot wget
+
+      - name: Download core library
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.core }}
+          path: ~/core
+          run-id: ${{ needs.plan.outputs.core-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Install core library
+        run: scripts/ci/desktop-linux/install-core.sh ~/core/${{ env.CORE_PKG }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+
+      - name: Build deb
+        env:
+          SKIP_CORE_BUILD: 1
+          ASSETS_DIR: ../../assets
+        run: scripts/desktop/make-deb-linux.sh
+
+      - name: Build AppImage
+        env:
+          ASSETS_DIR: ../../assets
+        run: scripts/desktop/make-appimage-linux.sh
+
+      - name: Check packages
+        run: |
+          deb=apps/multiplatform/release/main/deb/simplex_x86_64.deb
+          appimage=apps/multiplatform/release/main/simplex-desktop-x86_64.AppImage
+          dpkg-deb -I "$deb"
+          dpkg-deb -I "$deb" | grep -q '^ Maintainer: SimpleX Chat <chat@simplex.chat>$'
+          dpkg-deb --fsys-tarfile "$deb" | tar -xO ./opt/simplex/lib/simplex-simplex.desktop | tee desktop-entry
+          grep -qx 'Name=SimpleX Chat' desktop-entry
+          grep -qx 'StartupWMClass=simplex-simplex' desktop-entry
+          test -s "$appimage.zsync"
+          grep -a -q 'gh-releases-zsync|simplex-chat|simplex-chat|latest|simplex-desktop-x86_64.AppImage.zsync' "$appimage"
+          mkdir -p "$RUNNER_TEMP/packages"
+          cp "$deb" "$appimage" "$appimage.zsync" "$RUNNER_TEMP/packages/"
+
+      - name: Build Flatpak
+        run: |
+          sudo apt-get install -y flatpak flatpak-builder
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.gnome.Platform//51 org.gnome.Sdk//51
+          flatpak-builder --user --force-clean --repo="$RUNNER_TEMP/flatpak-repo" "$RUNNER_TEMP/flatpak-build" scripts/flatpak/chat.simplex.simplex.yml
+          flatpak build-bundle --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo "$RUNNER_TEMP/flatpak-repo" "$RUNNER_TEMP/packages/simplex.flatpak" chat.simplex.simplex
+          ls -la "$RUNNER_TEMP/packages"
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-linux-packages
+          path: ${{ runner.temp }}/packages
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+
+  e2e:
+    name: ${{ matrix.kind }} under ${{ matrix.session }}
+    needs: packages
+    if: ${{ !cancelled() && needs.packages.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [deb, appimage, flatpak]
+        session: [x11, wayland, xwayland]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr sqlite3 fonts-dejavu-core \
+            sway xwayland grim wtype jq dbus gnome-keyring libsecret-tools python3-dbus python3-gi libwayland-dev libxkbcommon-dev pkg-config \
+            libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri flatpak xdg-desktop-portal xdg-desktop-portal-gtk fuse3 \
+            wmctrl xclip wl-clipboard libglib2.0-bin dconf-gsettings-backend gsettings-desktop-schemas
+          sudo apt-get install -y --no-install-recommends xdg-desktop-portal-gnome
+          dpkg-query -W sway grim wtype gnome-keyring libegl-mesa0 flatpak xdg-desktop-portal xdg-desktop-portal-gnome
+
+      - name: Install the CLI peer
+        env:
+          CLI_URL: https://github.com/simplex-chat/simplex-chat/releases/download/v7.1.4/simplex-chat-ubuntu-24_04-x86_64
+          CLI_SHA256: 15a64d3fe75782900b3686aed0f635569b1f3526c47139ff30ac1ce1a50189ca
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/simplex-chat" "$CLI_URL"
+          echo "$CLI_SHA256  $RUNNER_TEMP/simplex-chat" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/simplex-chat"
+          echo "SIMPLEX_CLI=$RUNNER_TEMP/simplex-chat" >> "$GITHUB_ENV"
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Build xdg-dbus-proxy
+        if: ${{ matrix.kind == 'flatpak' }}
+        env:
+          VERSION: 0.1.9
+          SHA256: 5450dda586ec3bb3ca709d311e845487883faa3b09cf562608d7e84f4311dced
+        run: |
+          sudo apt-get install -y meson ninja-build libglib2.0-dev
+          curl -fsSL -o "$RUNNER_TEMP/xdg-dbus-proxy.tar.xz" \
+            "https://github.com/flatpak/xdg-dbus-proxy/releases/download/$VERSION/xdg-dbus-proxy-$VERSION.tar.xz"
+          echo "$SHA256  $RUNNER_TEMP/xdg-dbus-proxy.tar.xz" | sha256sum -c -
+          tar -xJf "$RUNNER_TEMP/xdg-dbus-proxy.tar.xz" -C "$RUNNER_TEMP"
+          meson setup "$RUNNER_TEMP/xdg-dbus-proxy-build" "$RUNNER_TEMP/xdg-dbus-proxy-$VERSION" \
+            --prefix=/usr/local -Dman=disabled -Dtests=false
+          ninja -C "$RUNNER_TEMP/xdg-dbus-proxy-build"
+          sudo ninja -C "$RUNNER_TEMP/xdg-dbus-proxy-build" install
+          echo "FLATPAK_DBUSPROXY=/usr/local/bin/xdg-dbus-proxy" >> "$GITHUB_ENV"
+
+      - name: Download packages
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-linux-packages
+          path: ${{ runner.temp }}/packages
+
+      - name: Run end-to-end test
+        env:
+          KIND: ${{ matrix.kind }}
+          SESSION: ${{ matrix.session }}
+        run: |
+          case "$KIND" in
+            deb) package=$RUNNER_TEMP/packages/simplex_x86_64.deb ;;
+            appimage) package=$RUNNER_TEMP/packages/simplex-desktop-x86_64.AppImage ;;
+            flatpak) package=$RUNNER_TEMP/packages/simplex.flatpak ;;
+          esac
+          dbus-run-session -- scripts/ci/desktop-linux/e2e.sh "$KIND" "$package" "$SESSION" "$RUNNER_TEMP/e2e"
+
+      - name: Upload results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-linux-e2e-${{ matrix.kind }}-${{ matrix.session }}
+          path: ${{ runner.temp }}/e2e
+          retention-days: 7
           if-no-files-found: warn

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
   kotlin("multiplatform")
   id("org.jetbrains.compose")
@@ -37,8 +39,16 @@ if (simplexAssetsDir != null) {
 }
 
 kotlin {
-  androidTarget()
-  jvm("desktop")
+  androidTarget {
+    compilerOptions {
+      jvmTarget.set(JvmTarget.fromTarget(providers.gradleProperty("kotlin.jvm.target").get()))
+    }
+  }
+  jvm("desktop") {
+    compilerOptions {
+      jvmTarget.set(JvmTarget.fromTarget(providers.gradleProperty("desktop.jvm.target").get()))
+    }
+  }
   applyDefaultHierarchyTemplate()
   sourceSets {
     all {
@@ -55,12 +65,12 @@ kotlin {
       }
     }
 
-    val commonMain by getting {
+    getByName("commonMain") {
       dependencies {
-        api(compose.runtime)
-        api(compose.foundation)
-        api(compose.material)
-        api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+        api("org.jetbrains.compose.runtime:runtime:${rootProject.extra["compose.version"] as String}")
+        api("org.jetbrains.compose.foundation:foundation:${rootProject.extra["compose.version"] as String}")
+        api("org.jetbrains.compose.material:material:${rootProject.extra["compose.version"] as String}")
+        api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
         api("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
         api("com.russhwolf:multiplatform-settings:1.1.1")
         api("com.charleskorn.kaml:kaml:0.59.0")
@@ -81,7 +91,7 @@ kotlin {
         implementation("com.mikepenz:multiplatform-markdown-renderer-m2:0.34.0")
       }
     }
-    val commonTest by getting {
+    getByName("commonTest") {
       dependencies {
         implementation(kotlin("test"))
         implementation(kotlin("test-junit"))
@@ -89,7 +99,7 @@ kotlin {
         implementation(kotlin("test-annotations-common"))
       }
     }
-    val androidMain by getting {
+    getByName("androidMain") {
       dependencies {
         implementation("androidx.activity:activity-compose:1.9.1")
         val workVersion = "2.9.1"
@@ -129,9 +139,9 @@ kotlin {
         implementation("androidx.lifecycle:lifecycle-process:2.8.4")
       }
     }
-    val desktopMain by getting {
+    getByName("desktopMain") {
       dependencies {
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.11.0")
         implementation("com.github.Dansoftowner:jSystemThemeDetector:3.8") {
           exclude("net.java.dev.jna")
         }
@@ -144,10 +154,14 @@ kotlin {
         implementation("net.java.dev.jna:jna:5.14.0")
         implementation(project(":external:nanohttpd"))
         implementation("com.squareup.okhttp3:okhttp:4.12.0")
+        compileOnly(project(":external:nucleus"))
+        compileOnly(project(":external:composenativetray"))
       }
     }
-    val desktopTest by getting {
+    getByName("desktopTest") {
       dependencies {
+        implementation(project(":external:nucleus"))
+        implementation(project(":external:composenativetray"))
         implementation(compose.desktop.currentOs)
         implementation("org.jetbrains.compose.ui:ui-test:${rootProject.extra["compose.version"] as String}")
       }
@@ -157,7 +171,11 @@ kotlin {
 
 android {
   namespace = "chat.simplex.common"
-  compileSdk = 36
+  compileSdk = 37
+  compileOptions {
+    sourceCompatibility = JavaVersion.toVersion(providers.gradleProperty("kotlin.jvm.target").get())
+    targetCompatibility = JavaVersion.toVersion(providers.gradleProperty("kotlin.jvm.target").get())
+  }
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
     minSdk = 26
@@ -179,11 +197,11 @@ multiplatformResources {
 
 buildConfig {
   forClass("BuildConfigCommon") {
-    buildConfigField("String", "ANDROID_VERSION_NAME", "\"${extra["android.version_name"]}\"")
-    buildConfigField("int", "ANDROID_VERSION_CODE", "${extra["android.version_code"]}")
-    buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
-    buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
-    buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
+    buildConfigField("String", "ANDROID_VERSION_NAME", "\"${project.extra["android.version_name"]}\"")
+    buildConfigField("int", "ANDROID_VERSION_CODE", "${project.extra["android.version_code"]}")
+    buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${project.extra["desktop.version_name"]}\"")
+    buildConfigField("int", "DESKTOP_VERSION_CODE", "${project.extra["desktop.version_code"]}")
+    buildConfigField("String", "DATABASE_BACKEND", "\"${project.extra["database.backend"]}\"")
     buildConfigField("Boolean", "SIMPLEX_ASSETS", "$hasSimplexAssets")
   }
 }
@@ -197,7 +215,7 @@ afterEvaluate {
       dependsOn("cleanSimplexAssets")
     }
   }
-  tasks.create("adjustFormatting") {
+  tasks.register("adjustFormatting") {
     doLast {
       val debug = false
       val stringRegex = Regex(".*<string .*</string>.*")

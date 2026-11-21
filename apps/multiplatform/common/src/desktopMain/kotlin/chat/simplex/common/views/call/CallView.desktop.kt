@@ -12,13 +12,22 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
+import org.nanohttpd.protocols.http.ClientHandler
 import org.nanohttpd.protocols.http.IHTTPSession
 import org.nanohttpd.protocols.http.response.Response
 import org.nanohttpd.protocols.http.response.Response.newFixedLengthResponse
 import org.nanohttpd.protocols.http.response.Status
 import org.nanohttpd.protocols.websockets.*
+import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.net.BindException
+import java.net.Inet4Address
+import java.net.Socket
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.file.Files
+import java.nio.file.Path
 import java.security.SecureRandom
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicBoolean
@@ -26,6 +35,16 @@ import java.util.concurrent.atomic.AtomicBoolean
 private const val SERVER_HOST = "localhost"
 private const val SERVER_PORT = 50395
 private const val CALL_SERVER_TOKEN_BYTES = 32
+private const val PROC_SELF = "/proc/self"
+private const val PROC_NET_TCP = "/proc/net/tcp"
+private const val PROC_NET_TCP6 = "/proc/net/tcp6"
+private const val PROC_NET_LOCAL_COLUMN = 1
+private const val PROC_NET_REMOTE_COLUMN = 2
+private const val PROC_NET_UID_COLUMN = 7
+private const val UNIX_UID_ATTRIBUTE = "unix:uid"
+private const val IPV4_MAPPED_PREFIX_BYTES = 10
+private const val IPV4_MAPPED_MARKER = 0xFF.toByte()
+private val procNetColumnSeparator = Regex("\\s+")
 val connections = ArrayList<WebSocket>()
 
 // Spec: spec/services/calls.md#ActiveCallView
@@ -231,6 +250,19 @@ fun startServer(
   val server = object: NanoWSD(SERVER_HOST, port) {
     override fun openWebSocket(session: IHTTPSession): WebSocket = MyWebSocket(onResponse, session)
 
+    override fun createClientHandler(finalAccept: Socket, inputStream: InputStream): ClientHandler =
+      if (!desktopPlatform.isLinux() || isConnectedByProcessUser(finalAccept)) {
+        super.createClientHandler(finalAccept, inputStream)
+      } else {
+        Log.w(TAG, "Call server refused a connection of another user")
+        object: ClientHandler(this, inputStream, finalAccept) {
+          override fun run() {
+            close()
+            asyncRunner.closed(this)
+          }
+        }
+      }
+
     fun resourcesToResponse(path: String): Response {
       val uri = Class.forName("chat.simplex.common.AppKt").getResource("/assets/www$path") ?: return resourceNotFound
       val response = newFixedLengthResponse(
@@ -287,6 +319,48 @@ internal fun newCallServerToken(): String {
 
 internal fun hasValidCallServerToken(parameters: Map<String, List<String>>, token: String): Boolean =
   token.isNotEmpty() && parameters["token"]?.any { it == token } == true
+
+internal fun isConnectedByProcessUser(client: Socket): Boolean =
+  try {
+    clientSocketUid(client) == processUid
+  } catch (e: IOException) {
+    Log.e(TAG, "Cannot read the owner of a call server connection: ${e.message}")
+    false
+  }
+
+private val processUid: Int by lazy { Files.getAttribute(Path.of(PROC_SELF), UNIX_UID_ATTRIBUTE) as Int }
+
+private fun clientSocketUid(client: Socket): Int? {
+  val clientAddress = client.inetAddress.address
+  val serverAddress = client.localAddress.address
+  return if (client.inetAddress is Inet4Address) {
+    socketUid(PROC_NET_TCP, clientAddress, client.port, serverAddress, client.localPort)
+      ?: socketUid(PROC_NET_TCP6, ipv4Mapped(clientAddress), client.port, ipv4Mapped(serverAddress), client.localPort)
+  } else {
+    socketUid(PROC_NET_TCP6, clientAddress, client.port, serverAddress, client.localPort)
+  }
+}
+
+private fun socketUid(table: String, local: ByteArray, localPort: Int, remote: ByteArray, remotePort: Int): Int? =
+  procNetSocketUid(File(table).readLines(), procNetAddress(local, localPort), procNetAddress(remote, remotePort))
+
+internal fun procNetSocketUid(rows: List<String>, local: String, remote: String): Int? =
+  rows.asSequence()
+    .map { it.trim().split(procNetColumnSeparator) }
+    .firstOrNull { it.size > PROC_NET_UID_COLUMN && it[PROC_NET_LOCAL_COLUMN] == local && it[PROC_NET_REMOTE_COLUMN] == remote }
+    ?.get(PROC_NET_UID_COLUMN)
+    ?.toIntOrNull()
+
+internal fun procNetAddress(address: ByteArray, port: Int): String {
+  val words = ByteBuffer.wrap(address).order(ByteOrder.nativeOrder())
+  return buildString {
+    repeat(address.size / Int.SIZE_BYTES) { append("%08X".format(words.int)) }
+    append(":%04X".format(port))
+  }
+}
+
+internal fun ipv4Mapped(address: ByteArray): ByteArray =
+  ByteArray(IPV4_MAPPED_PREFIX_BYTES) + byteArrayOf(IPV4_MAPPED_MARKER, IPV4_MAPPED_MARKER) + address
 
 private fun unauthorizedResponse(): Response =
   newFixedLengthResponse(Status.UNAUTHORIZED, "text/plain", "Unauthorized")

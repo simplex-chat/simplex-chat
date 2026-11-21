@@ -13,6 +13,7 @@ root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
 multiplatform_dir=$root_dir/apps/multiplatform
 release_app_dir=$root_dir/apps/multiplatform/release/main/app
 
+$root_dir/scripts/desktop/build-native-linux.sh
 cd $multiplatform_dir
 libcrypto_path=$(ldd common/src/commonMain/cpp/desktop/libs/*/libHSdirect-sqlcipher-*.so | grep libcrypto | cut -d'=' -f 2 | cut -d ' ' -f 2)
 trap "rm common/src/commonMain/cpp/desktop/libs/*/`basename $libcrypto_path` 2> /dev/null || true" EXIT
@@ -23,7 +24,7 @@ if [ -n "${ASSETS_DIR:-}" ]; then
 else
   set --
 fi
-./gradlew "$@" createDistributable
+./gradlew "$@" :desktop:createDistributable
 rm common/src/commonMain/cpp/desktop/libs/*/`basename $libcrypto_path`
 
 rm -rf $release_app_dir/AppDir 2>/dev/null
@@ -59,13 +60,15 @@ export SOURCE_DATE_EPOCH=1704067200
 
 # Delete redundant jar file and modify cfg
 rm -f ./usr/lib/app/*skiko-awt-runtime-linux*
-sed -i -e '/skiko-awt-runtime-linux/d' ./usr/lib/app/simplex.cfg
+sed -i -e '/^app\.classpath=/d' -e 's|^\[Application\]$|&\napp.classpath=$APPDIR/*|' ./usr/lib/app/simplex.cfg
 
 # Set all files to fixed time
 find . -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
 
-../appimagetool-${ARCH}.AppImage --verbose --no-appstream --runtime-file ../runtime-${ARCH} .
-mv *imple*.AppImage ../../
+appimage_name="simplex-desktop-${ARCH}.AppImage"
+../appimagetool-${ARCH}.AppImage --verbose --no-appstream --runtime-file ../runtime-${ARCH} \
+  -u "gh-releases-zsync|simplex-chat|simplex-chat|latest|${appimage_name}.zsync" . "$appimage_name"
+mv "$appimage_name" "${appimage_name}.zsync" ../../
 
 # Just a safeguard
 strip-nondeterminism ../../*imple*.AppImage

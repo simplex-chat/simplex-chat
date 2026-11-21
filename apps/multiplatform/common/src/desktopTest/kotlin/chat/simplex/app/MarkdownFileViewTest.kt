@@ -20,7 +20,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.test.pressKey
-import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.text.AnnotatedString
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.simplexWindowState
@@ -130,5 +130,6 @@ private class RecordingClipboard : Clipboard {
     text = (clipEntry?.nativeClipEntry as Transferable).getTransferData(DataFlavor.stringFlavor) as String
   }
 
+  @Suppress("OVERRIDE_DEPRECATION")
   override val nativeClipboard: NativeClipboard get() = this
 }

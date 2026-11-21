@@ -110,6 +110,7 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   }
 }
 
+@Suppress("DEPRECATION")
 class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   private val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
   override val devices: MutableState<List<AudioDeviceInfo>> = mutableStateOf(emptyList())
@@ -162,7 +163,7 @@ class PreSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
     val isExternalDevice = device != null && device.type != AudioDeviceInfo.TYPE_BUILTIN_EARPIECE && device.type != AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
     if (isExternalDevice) {
       am.isSpeakerphoneOn = false
-      if (device?.type == AudioDeviceInfo.TYPE_WIRED_HEADSET || device?.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES) {
+      if (device.type == AudioDeviceInfo.TYPE_WIRED_HEADSET || device.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES) {
         am.isWiredHeadsetOn = true
         am.stopBluetoothSco()
         am.isBluetoothScoOn = false

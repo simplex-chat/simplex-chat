@@ -83,7 +83,7 @@ fun usesChatTypography(): Boolean = LocalTerminalLayout.current || LocalBubbleLa
 fun chatTextStyle(fontSize: TextUnit, color: Color = messageTextColor()): TextStyle =
   if (usesChatTypography()) {
     val lineHeight = fontSize * (CHAT_LINE_HEIGHT_RATIO * contrastLineHeightFactor(color))
-    TextStyle(lineHeight = lineHeight, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE).merge(bubbleLineHeight(lineHeight))
+    TextStyle(lineHeight = lineHeight, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE).merge(bubbleLineHeight(lineHeight, fontSize))
   } else {
     TextStyle.Default
   }
@@ -93,9 +93,13 @@ fun bubbleTextStyle(fontSize: TextUnit, color: Color): TextStyle =
   if (LocalBubbleLayout.current) chatTextStyle(fontSize, color) else TextStyle.Default
 
 @Composable
-fun bubbleLineHeight(lineHeight: TextUnit): TextStyle =
+fun bubbleLineHeight(lineHeight: TextUnit, fontSize: TextUnit): TextStyle =
   if (LocalBubbleLayout.current && appPlatform.isDesktop) {
-    TextStyle(lineHeight = with(LocalDensity.current) { lineHeight.toPx().roundToInt().toSp() }, lineHeightStyle = CHAT_LINE_HEIGHT_STYLE)
+    with(LocalDensity.current) {
+      val fontHeight = fontSize.toPx() * INTER_LINE_HEIGHT
+      val emptyLineScale = min(1f, fontHeight.roundToInt() / fontHeight)
+      TextStyle(lineHeight = (lineHeight.toPx().roundToInt() * emptyLineScale).toSp(), lineHeightStyle = CHAT_LINE_HEIGHT_STYLE)
+    }
   } else {
     TextStyle.Default
   }

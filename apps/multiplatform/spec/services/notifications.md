@@ -125,39 +125,51 @@ Channel creation happens in `createNtfChannelsMaybeShowAlert()` ([line 298](../.
 
 ## 4. Desktop Notification Manager
 
-[`NtfManager.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt) (193 lines)
+[`NtfManager.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt) (188 lines), [`LinuxNotifications.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/model/LinuxNotifications.kt) (141 lines)
 
-Implemented as a Kotlin `object` using the [TwoSlices](https://github.com/sshtools/two-slices) library (`Toast` builder API) for cross-platform desktop notifications.
+| Platform | Back-end |
+|---|---|
+| Linux | Nucleus `notification-linux`: `org.freedesktop.Notifications`, or the notification portal inside Flatpak |
+| macOS | [TwoSlices](https://github.com/sshtools/two-slices) `NotificationCenterToaster` |
+| Windows | TwoSlices `AWTToaster` |
 
 ### displayNotification
 
-[Line 97](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt#L97):
+[Line 110](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt#L110):
 
 - Suppresses if `!user.showNotifications`.
 - Respects `NotificationPreviewMode` for title and content.
-- Calls `displayNotificationViaLib()` ([line 114](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt#L114)) which builds a `Toast` with title, content, icon, action buttons, and default action.
-- Icon images are written to a temporary PNG file via `prepareIconPath()` ([line 150](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt#L150)).
-- Default action on click opens the relevant chat via `openChatAction()`.
+- Calls `displayNotificationViaLib()` ([line 131](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt#L131)): on Linux `LinuxNotifications.show()`, on macOS and Windows a TwoSlices `Toast` with title, content, icon, action buttons and default action.
+- On macOS and Windows icon images are written to a temporary PNG file via `prepareIconPath()` ([line 178](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt#L178)).
+- Default action on click raises the window and opens the relevant chat via `openChatAction()`.
 
 ### notifyCallInvitation
 
-[Line 22](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt#L22):
+[Line 32](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt#L32):
 
 - Returns `false` if the SimpleX window is focused (in-app alert used instead).
 - Creates a notification with Accept and Reject action buttons.
 - Default click action opens the chat.
 
-### OS-native fallbacks
+### Linux notifications
 
-[Line 162](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt#L162): The `displayNotification` private method dispatches based on `desktopPlatform`:
+[`LinuxNotifications`](../../common/src/desktopMain/kotlin/chat/simplex/common/model/LinuxNotifications.kt#L66) makes every call on one daemon executor thread.
 
-| Platform | Method |
+| Field | Value |
 |---|---|
-| Linux | `notify-send` command with optional `-i` icon |
-| Windows | `SystemTray` with `TrayIcon.displayMessage()` |
-| macOS | `osascript -e 'display notification ...'` |
+| key | `NotificationKey(userId, chatId, isCall)` |
+| state | `shown`: key → notification ID; `handlers`: ID → action key → action; `iconFiles`: ID → avatar file inside Flatpak |
+| replacement | the key's shown ID as `replaces_id`: one notification per chat, and one per call |
+| actions | `default` opens the chat; `action-<n>` runs the n-th button |
+| hints | `urgency` critical for calls, `category` `call.incoming` or `im.received`, `desktop-entry` from `linuxDesktopEntryId`, `resident` for calls, the avatar as `image-data` (RGBA), or inside Flatpak as a file in the app's temporary directory |
+| body | escaped (`&`, `<`, `>`) when the server lists `body-markup` |
+| launcher | a message notification sets the launcher entry's urgency; window focus clears it |
 
-### Notification tracking
+- `cancelNotificationsForChat`, `cancelNotificationsForUser`, `cancelAllNotifications` and `cancelCallNotification` close the matching notifications; `hasNotificationsForChat` reads `shown`.
+- An action invoked by the server runs on `Dispatchers.Main`; the activation token arrives first and raises the window.
+- A closed notification is removed from the state and its avatar file deleted.
+
+### Notification tracking on macOS and Windows
 
 Previous notifications are tracked in `prevNtfs: ArrayList<Pair<Pair<Long, ChatId>, Slice>>` with a `Mutex` for thread safety. Cancel operations remove entries from this list.
 

@@ -2,13 +2,11 @@ package chat.simplex.common.platform
 
 import java.net.URI
 
-fun isVideo(uri: URI): Boolean {
-  val path = uri.toFile().path.lowercase()
-  return path.endsWith(".mov") ||
-      path.endsWith(".avi") ||
-      path.endsWith(".mp4") ||
-      path.endsWith(".mpg") ||
-      path.endsWith(".mpeg") ||
-      path.endsWith(".mkv") ||
-      path.endsWith(".webm")
+internal val videoFileExtensions = listOf("mov", "avi", "mp4", "mpg", "mpeg", "mkv", "webm")
+
+fun isVideo(uri: URI): Boolean = hasFileExtension(uri.toFile().path, videoFileExtensions)
+
+internal fun hasFileExtension(path: String, extensions: List<String>): Boolean {
+  val lowercased = path.lowercase()
+  return extensions.any { lowercased.endsWith(".$it") }
 }

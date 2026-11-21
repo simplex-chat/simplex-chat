@@ -2,7 +2,7 @@
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
-# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
+# tests/fixtures/test.jpg and logo-large-rgba.png picked in the GTK file dialog and sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
@@ -31,13 +31,16 @@ local_chat="seeded notes"
 ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
 # switches are at the right of the left pane, where Settings open
-switch_x=335
+switch_offset=335
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
 state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
-compose_y=730
-paperclip_x=415
-message_x=700
-compose_area=976x200+390+500
+bottom_bar_offset=30
+avatar_offset=27
+pencil_offset=363
+pane_centre_offset=195
+pane_right_offset=390
+paperclip_offset=415
+send_offset=27
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -102,7 +105,7 @@ left_pane_position() {
     x=${line%%,*}
     y=${line#*,}
     y=${y%% *}
-    [ "$x" -lt 390 ] || continue
+    [ "$x" -lt "$pane_right_x" ] || continue
     case "$(normalise "${line#* }")" in
       "$target")
         echo "$x $y"
@@ -150,10 +153,10 @@ in_line_with() {
 scroll_to() {
   local y
   for _ in 1 2 3 4 5 6 7 8; do
-    if y=$(y_of "$1") && [ "$y" -lt 640 ]; then
+    if y=$(y_of "$1") && [ "$y" -lt $((bottom_y - 90)) ]; then
       return 0
     fi
-    "$ui" scroll 195 400 down
+    "$ui" scroll "$pane_centre_x" $((window_y + 380)) down
   done
   return 1
 }
@@ -174,7 +177,7 @@ on_chat_list() {
 
 # Opens Settings from the user menu, behind the profile picture at the left of the bottom toolbar.
 open_settings() {
-  "$ui" click 27 730
+  "$ui" click "$avatar_x" "$bottom_y"
   "$ui" click-text "Settings" 10
 }
 
@@ -192,7 +195,7 @@ use_top_toolbar() {
   back_to_chat_list || true
   "$ui" shot top-chat-list
   y=$(y_of "Search or paste SimpleX link") || fail "no search field after closing Settings"
-  [ "$y" -lt 200 ] || fail "the search field is still at the bottom (y $y) after switching Reachable app toolbars"
+  [ "$y" -lt $((window_y + 180)) ] || fail "the search field is still at the bottom (y $y) after switching Reachable app toolbars"
 }
 
 # The search field and "Add list" next to it: at the bottom of the chat list, "Add list" above the field; at the top, below it.
@@ -202,10 +205,10 @@ check_layout() {
   "$ui" shot "$layout-layout"
   check "$layout: \"$local_chat\" listed" on_screen "$local_chat"
   if [ "$layout" = bottom ]; then
-    check "bottom: the search field is at the bottom" [ "${field:-0}" -gt 600 ]
+    check "bottom: the search field is at the bottom" [ "${field:-0}" -gt $((bottom_y - 130)) ]
     check "bottom: \"Add list\" above the search field" above "Add list" "Search or paste SimpleX link"
   else
-    check "top: the search field is at the top" [ "${field:-900}" -lt 200 ]
+    check "top: the search field is at the top" [ "${field:-900}" -lt $((window_y + 180)) ]
     check "top: \"Add list\" below the search field" above "Search or paste SimpleX link" "Add list"
   fi
 }
@@ -214,11 +217,11 @@ check_layout() {
 create_local_chat() {
   local y
   # the pencil at the right of the bottom toolbar opens New chat
-  "$ui" click 363 730
+  "$ui" click "$pencil_x" "$bottom_y"
   "$ui" click-text "Create group" 10
   "$ui" wait "Enter group name" 10
   y=$(y_of "Enter group name")
-  "$ui" click 195 $((y + 40))
+  "$ui" click "$pane_centre_x" $((y + 40))
   "$ui" type "$local_chat"
   "$ui" shot new-group
   "$ui" click-text "Create group" 10
@@ -256,7 +259,7 @@ use_names_server() {
   "$ui" click-text "Enter server manually" 10
   "$ui" wait "Your server address" 10
   y=$(y_of "Your server address")
-  "$ui" click 195 $((y + 50))
+  "$ui" click "$pane_centre_x" $((y + 50))
   "$ui" type "$NAMES_SERVER"
   y=$(y_of "Use for new connections")
   "$ui" click "$switch_x" "$y"
@@ -318,7 +321,7 @@ connect_by_name() {
 }
 
 sent_files() {
-  find "$state/data" -name "IMG_*.$1" | wc -l
+  find -H "$state/data" -name "IMG_*.$1" | wc -l
 }
 
 sent_file() {
@@ -335,6 +338,7 @@ latest_shot() {
 
 compose_changed() {
   local changed
+  local compose_area=976x200+$pane_right_x+$((bottom_y - 230))
   convert "$(latest_shot "$1")" -crop "$compose_area" +repage "$UI_OUT/compose-$1.png"
   convert "$(latest_shot "$2")" -crop "$compose_area" +repage "$UI_OUT/compose-$2.png"
   changed=$(compare -metric AE -fuzz 10% "$UI_OUT/compose-$1.png" "$UI_OUT/compose-$2.png" null: 2>&1 || true)
@@ -348,23 +352,27 @@ core_returned_no_image() {
 }
 
 send_image() {
-  local file=$1 ext=$2 sent no_image x y
+  local file=$1 ext=$2 sent no_image
   sent=$(sent_files "$ext")
   no_image=$(core_returned_no_image)
   "$ui" shot "before-$ext"
-  "$ui" click "$paperclip_x" "$compose_y"
+  "$ui" click "$paperclip_x" "$bottom_y"
   "$ui" click-text Image 10
-  "$ui" wait "File Name" 20
+  "$ui" wait "Other Locations" 60
   "$ui" shot "file-dialog-$ext"
-  read -r x y _ < <("$ui" find "File Name")
-  "$ui" click $((x + 250)) "$y"
-  "$ui" type "$fixtures/$file"
+  "$ui" type /
+  sleep 1
+  "$ui" type "${fixtures#/}/$file"
+  "$ui" shot "file-path-$ext"
   "$ui" key Return
+  sleep 2
+  if "$ui" find "Other Locations" > /dev/null 2>&1; then
+    "$ui" click-text Open 5
+  fi
   sleep 3
   "$ui" shot "preview-$ext"
   check "$ext: the compose area shows the picked image" compose_changed "before-$ext" "preview-$ext"
-  "$ui" click "$message_x" "$compose_y"
-  "$ui" key Return
+  "$ui" click "$send_x" "$bottom_y"
   check "$ext: the image is sent as a .$ext file" sent_file "$ext" "$sent"
   "$ui" shot "sent-$ext"
   check "$ext: the core resized the image" [ "$(core_returned_no_image)" -eq "$no_image" ]
@@ -380,7 +388,17 @@ send_images() {
 
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
-"$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
+read -r -a extra_settings <<< "${SMOKE_SETTINGS:-}"
+"$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG "${extra_settings[@]}"
+read -r window_x window_y window_width window_height < "$state/window-rect"
+bottom_y=$((window_y + window_height - bottom_bar_offset))
+switch_x=$((window_x + switch_offset))
+avatar_x=$((window_x + avatar_offset))
+pencil_x=$((window_x + pencil_offset))
+pane_centre_x=$((window_x + pane_centre_offset))
+pane_right_x=$((window_x + pane_right_offset))
+paperclip_x=$((window_x + paperclip_offset))
+send_x=$((window_x + window_width - send_offset))
 
 # onboarding to the chat list
 "$ui" wait "Create your profile" 180

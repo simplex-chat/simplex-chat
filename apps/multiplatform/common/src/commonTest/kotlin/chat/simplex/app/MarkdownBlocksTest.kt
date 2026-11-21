@@ -48,7 +48,7 @@ class MarkdownBlocksTest {
       BlockToken.RowMark::class, BlockToken.CellMark::class, BlockToken.RuleMark::class
     ).forEach { kind -> assert(tokens.any { kind.isInstance(it) }) { "no $kind" } }
     assertIs<BlockToken.QuoteMark>((quote.formattedText!![0].format as Format.Markup).token)
-    val bold = headingAndParagraph.formattedText!!.mapNotNull { it.format as? Format.Bold } + quote.formattedText!!.mapNotNull { it.format as? Format.Bold }
+    val bold = headingAndParagraph.formattedText.mapNotNull { it.format as? Format.Bold } + quote.formattedText.mapNotNull { it.format as? Format.Bold }
     assertEquals(listOf(true, false), bold.map { it.singleStar })
     assertEquals(listOf("text ", "", "*not", "", "*\nmore"), escapes.formattedText!!.map(::display))
     assertNull(escapes.markdownBlocks)
@@ -59,7 +59,7 @@ class MarkdownBlocksTest {
     val heading = assertIs<MarkdownBlock.Heading>(headingAndParagraph.markdownBlocks!![0])
     assertEquals(1, heading.level)
     assertEquals(1 to 3, heading.content.pair)
-    assertEquals(4 to 9, assertIs<MarkdownBlock.Paragraph>(headingAndParagraph.markdownBlocks!![1]).content.pair)
+    assertEquals(4 to 9, assertIs<MarkdownBlock.Paragraph>(headingAndParagraph.markdownBlocks[1]).content.pair)
     val list = assertIs<MarkdownBlock.ItemList>(nestedList.markdownBlocks!!.single())
     assertEquals(listOf(null, "2."), list.items.map { it.number })
     assertEquals(7 to 8, list.items[0].items.single().content.pair)
@@ -67,7 +67,7 @@ class MarkdownBlocksTest {
     val code = assertIs<MarkdownBlock.CodeBlock>(codeBlockAndRule.markdownBlocks!![0])
     assertEquals("bash", code.language)
     assertEquals(2 to 6, code.content.pair)
-    assertEquals(9 to 10, assertIs<MarkdownBlock.Rule>(codeBlockAndRule.markdownBlocks!![1]).mark.pair)
+    assertEquals(9 to 10, assertIs<MarkdownBlock.Rule>(codeBlockAndRule.markdownBlocks[1]).mark.pair)
     val table = assertIs<MarkdownBlock.Table>(tableAligned.markdownBlocks!!.single())
     assertEquals(listOf(TableAlign.None, TableAlign.Left, TableAlign.Right, TableAlign.Center), table.columns)
     assertEquals(listOf(1 to 2, 3 to 4, 5 to 6, 7 to 8), table.header.map { it.pair })
@@ -99,22 +99,22 @@ class MarkdownBlocksTest {
     assertEquals(2, leadingEmptyLines(gapTokens, gaps.markdownBlocks!!))
     assertEquals(0, leadingEmptyLines(headingAndParagraph.formattedText!!, headingAndParagraph.markdownBlocks!!))
     assertEquals(2, emptyLines(gapTokens, 2, 4, between = true))
-    assertEquals(0, emptyLines(headingAndParagraph.formattedText!!, 3, 4, between = true))
+    assertEquals(0, emptyLines(headingAndParagraph.formattedText, 3, 4, between = true))
     assertEquals(0, emptyLines(nestedList.formattedText!!, 5, 7, between = true))
     assertEquals(MAX_EMPTY_LINES, emptyLines(listOf(FormattedText("\n".repeat(5000), Format.Markup(BlockToken.ParagraphBreak(5000)))), 0, 1, between = true))
     val entries = listEntries(assertIs<MarkdownBlock.ItemList>(looseList.markdownBlocks!!.single()).items, 0).map { it.first.content }
     assertEquals(listOf(1, 2), entries.zipWithNext { a, b -> emptyLines(looseList.formattedText!!, a.to, b.from, between = true) })
-    assertEquals(1, trailingEmptyLines("\n\na\n\n\n# h\n\n", gapTokens, gaps.markdownBlocks!!))
+    assertEquals(1, trailingEmptyLines("\n\na\n\n\n# h\n\n", gapTokens, gaps.markdownBlocks))
     assertEquals(0, trailingEmptyLines("# a\n  ", trailingSpaces.formattedText!!, trailingSpaces.markdownBlocks!!))
     assertEquals(1, trailingEmptyLines("# a\n\n  ", emptyLineAndSpaces.formattedText!!, emptyLineAndSpaces.markdownBlocks!!))
-    assertEquals(0, trailingEmptyLines("# Title *x*\nPara a\nb  \nc\n", headingAndParagraph.formattedText!!, headingAndParagraph.markdownBlocks!!))
+    assertEquals(0, trailingEmptyLines("# Title *x*\nPara a\nb  \nc\n", headingAndParagraph.formattedText, headingAndParagraph.markdownBlocks))
   }
 
   @Test
   fun testHeadingSegments() {
     assertEquals(listOf(1, 2), headingSegments(9, headingAndParagraph.markdownBlocks!!).withIndex().filter { it.value }.map { it.index })
     assertEquals(listOf(4), headingSegments(6, gaps.markdownBlocks!!).withIndex().filter { it.value }.map { it.index })
-    assertEquals(listOf(1), headingSegments(2, headingAndParagraph.markdownBlocks!!).withIndex().filter { it.value }.map { it.index })
+    assertEquals(listOf(1), headingSegments(2, headingAndParagraph.markdownBlocks).withIndex().filter { it.value }.map { it.index })
   }
 
   @Test

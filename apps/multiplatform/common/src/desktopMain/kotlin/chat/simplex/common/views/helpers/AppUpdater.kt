@@ -385,7 +385,7 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
 
 private fun isRunningFromAppImage(): Boolean = System.getenv("APPIMAGE") != null
 
-private fun isRunningFromFlatpak(): Boolean = System.getenv("container") == "flatpak"
+internal fun isRunningFromFlatpak(): Boolean = System.getenv("container") == "flatpak"
 
 private fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset> {
   val res = if (isRunningFromFlatpak()) {

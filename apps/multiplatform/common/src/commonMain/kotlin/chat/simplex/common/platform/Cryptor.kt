@@ -7,4 +7,6 @@ interface CryptorInterface {
   fun keyStorage(alias: String): String?
 }
 
+class KeyUnavailableException(message: String?) : Exception(message)
+
 expect val cryptor: CryptorInterface

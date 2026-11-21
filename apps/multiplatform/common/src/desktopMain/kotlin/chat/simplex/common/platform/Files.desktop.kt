@@ -8,11 +8,36 @@ import chat.simplex.res.*
 import java.awt.Desktop
 import java.io.*
 import java.net.URI
+import java.nio.file.Files
+import java.nio.file.attribute.PosixFilePermissions
 
 actual val dataDir: File = File(desktopPlatform.dataPath)
 // No deleteOnExit() here: a transient second instance also inits this val, and its exit
 // would delete the shared folder while the primary runs. Registered in Main instead.
-actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex")
+actual val tmpDir: File =
+  if (desktopPlatform.isLinux()) File(File(unixCacheHome, "simplex"), "tmp")
+  else File(System.getProperty("java.io.tmpdir") + File.separator + "simplex")
+
+private val ownerOnly = PosixFilePermissions.fromString("rwx------")
+
+fun createTmpDir() {
+  tmpDir.mkdirs()
+  if (desktopPlatform.isLinux()) restrictToOwner(tmpDir.parentFile)
+}
+
+fun restrictPreferencesDir() {
+  if (!desktopPlatform.isLinux()) return
+  preferencesDir.mkdirs()
+  restrictToOwner(preferencesDir)
+}
+
+private fun restrictToOwner(dir: File) {
+  try {
+    Files.setPosixFilePermissions(dir.toPath(), ownerOnly)
+  } catch (e: IOException) {
+    Log.e(TAG, "Cannot restrict $dir: ${e.message}")
+  }
+}
 actual val filesDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_files")
 actual val appFilesDir: File = filesDir
 actual val wallpapersDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_assets" + File.separator + "wallpapers").also { it.mkdirs() }
@@ -34,19 +59,27 @@ actual fun desktopOpenDatabaseDir() {
   desktopOpenDir(dataDir)
 }
 
-actual fun desktopOpenDir(dir: File) {
-  if (Desktop.isDesktopSupported()) {
-    try {
-      Desktop.getDesktop().open(dir);
-    } catch (e: IOException) {
-      Log.e(TAG, e.stackTraceToString())
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.unknown_error),
-        text = e.stackTraceToString()
-      )
-    }
+fun desktopOpen(file: File) {
+  if (desktopPlatform.isLinux()) {
+    ProcessBuilder(XDG_OPEN, file.absolutePath).start()
+  } else if (Desktop.isDesktopSupported()) {
+    Desktop.getDesktop().open(file)
   }
 }
+
+actual fun desktopOpenDir(dir: File) {
+  try {
+    desktopOpen(dir)
+  } catch (e: IOException) {
+    Log.e(TAG, e.stackTraceToString())
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.unknown_error),
+      text = e.stackTraceToString()
+    )
+  }
+}
+
+private const val XDG_OPEN = "xdg-open"
 
 @Composable
 actual fun rememberFileChooserLauncher(getContent: Boolean, rememberedValue: Any?, onResult: (URI?) -> Unit): FileChooserLauncher =
@@ -70,7 +103,7 @@ actual class FileChooserLauncher actual constructor() {
     if (getContent) {
       val params = DialogParams(
         allowMultiple = false,
-        fileFilter = fileFilter(input),
+        fileExtensions = fileExtensions(input),
         fileFilterDescription = fileFilterDescription(input),
       )
       res = simplexWindowState.openDialog.awaitResult(params)
@@ -95,18 +128,17 @@ actual class FileChooserMultipleLauncher actual constructor() {
   actual suspend fun launch(input: String) {
     val params = DialogParams(
         allowMultiple = true,
-        fileFilter = fileFilter(input),
+        fileExtensions = fileExtensions(input),
         fileFilterDescription = fileFilterDescription(input),
       )
     onResult(simplexWindowState.openMultipleDialog.awaitResult(params).map { it.toURI() })
   }
 }
 
-private fun fileFilter(input: String): (File?) -> Boolean = when(input) {
-  "image/*" -> { file -> if (file?.isDirectory == true) true else if (file != null) isImage(file.toURI()) else false }
-  "video/*" -> { file -> if (file?.isDirectory == true) true else if (file != null) isVideo(file.toURI()) else false }
-  "*/*" -> { _ -> true }
-  else -> { _ -> true }
+private fun fileExtensions(input: String): List<String>? = when(input) {
+  "image/*" -> imageFileExtensions
+  "video/*" -> videoFileExtensions
+  else -> null
 }
 
 private fun fileFilterDescription(input: String): String = when(input) {

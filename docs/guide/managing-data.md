@@ -33,7 +33,8 @@ passphrase**. To change a passphrase that you set before, also enter it in
 **Current passphrase…**.
 
 The app saves the passphrase on the device, in iOS Keychain, in Android Keystore,
-or in the app settings as plaintext on desktop. After you set your own
+or in the app settings on desktop: on Linux encrypted with a key kept in the
+system keyring when one is available, otherwise as plaintext. After you set your own
 passphrase, you can turn off **Save passphrase in Keychain** (iOS), **Save
 passphrase in Keystore** (Android) or **Save passphrase in settings** (desktop).
 The app then asks for the passphrase each time it starts, and notifications on
