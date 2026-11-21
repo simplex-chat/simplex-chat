@@ -41,7 +41,8 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), signRecoverable)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
-import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
+import Simplex.Messaging.Encoding (Encoding (..))
+import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
@@ -244,7 +245,7 @@ editRows Setup {store} = withTransaction store $ \db -> do
 -- | As the relay keys a sent request: each signed digest and its signature, in order.
 bodyHashOf :: EditRequest -> ByteString
 bodyHashOf EditRequest {erChanges} =
-  C.sha256Hash $ B.concat [digestOf scChange scNonce scDeadline <> serializeSignature scSignature | SignedChange {scChange, scNonce, scDeadline, scSignature} <- L.toList erChanges]
+  C.sha256Hash $ B.concat [digestOf scChange scNonce scDeadline <> smpEncode scSignature | SignedChange {scChange, scNonce, scDeadline, scSignature} <- L.toList erChanges]
 
 -- | Saves an edit as a request does before it joins the sender, as if the service stopped right after.
 saveUnsent :: Setup -> EditRequest -> IO ()
@@ -718,7 +719,7 @@ testBadRowSkipped g = withSetup g $ \s@Setup {store, clock} -> do
     DB.execute
       db
       "INSERT INTO sx_badge_service_name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) SELECT name_record_edit_id, 5, 'simplex.channel', NULL, ?, ? FROM sx_badge_service_name_record_edits WHERE nonce = 5"
-      (deadline, Binary $ serializeSignature viemSetSignature)
+      (deadline, viemSetSignature)
   req <- ownerEdit s viemChannelLink
   saveUnsent s req
   s' <- restart s
@@ -949,7 +950,7 @@ changeJson SignedChange {scChange, scNonce, scDeadline, scSignature} =
   KM.fromList $
     [ ("nonce", J.toJSON scNonce),
       ("deadline", J.toJSON scDeadline),
-      ("signature", J.String $ hex $ serializeSignature scSignature)
+      ("signature", J.String $ hex $ smpEncode scSignature)
     ]
       <> case scChange of
         RCSetText key value -> [("key", J.String key), ("value", J.String value)]

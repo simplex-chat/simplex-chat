@@ -40,8 +40,9 @@ import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (sha256Hash)
+import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
-import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
+import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
@@ -168,7 +169,7 @@ relayEdit rs@Records {rsPendingAfter, rsEditsPerYear, rsNow} req@EditRequest {er
   where
     signed = L.map (\change -> (changeDigest rs erLabelHash change, change)) erChanges
     -- one change hashes as edits stored before requests took two, so their repeats still match
-    bodyHash = sha256Hash $ B.concat [digest <> serializeSignature scSignature | (digest, SignedChange {scSignature}) <- L.toList signed]
+    bodyHash = sha256Hash $ B.concat [digest <> smpEncode scSignature | (digest, SignedChange {scSignature}) <- L.toList signed]
 
 newEdit :: Records -> TVar Bool -> EditRequest -> Address -> ByteString -> IO EditAnswer
 newEdit rs timer req signer bodyHash =

@@ -128,7 +128,6 @@ import Simplex.Messaging.Crypto (sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, unAddress)
-import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, tshow)
 import StoreService.Names.Abi (addressFromBytes, hex)
@@ -791,8 +790,8 @@ updateRegistration db r now = do
           )))
       |]
       ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice)
-          :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
-          :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, Binary . serializeSignature . taSignature <$> acceptance)
+          :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, rvSignature <$> nrReveal)
+          :. (Binary . taTermsHash <$> acceptance, int64 . taNonce <$> acceptance, taSignature <$> acceptance)
           :. (txHashField <$> nrCommitTx, int64 <$> nrCommitBlock, txHashField <$> nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
           :. (truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
           :. (rid, nrVersion, BI live, rid, Binary nrCommitment, Binary $ unAddress nrOwner, Binary lh)
@@ -1479,7 +1478,7 @@ insertRecordEdit db NewRecordEdit {nreLabelHash = LabelHash lh, nreOwner, nreCha
       DB.execute
         db
         "INSERT INTO sx_badge_service_name_record_changes (name_record_edit_id, nonce, record_key, record_value, deadline, signature) VALUES (?,?,?,?,?,?)"
-        (editId, int64 scNonce, key, value, int64 scDeadline, Binary $ serializeSignature scSignature)
+        (editId, int64 scNonce, key, value, int64 scDeadline, scSignature)
       where
         (key, value) = case scChange of
           RCSetText k v -> (Just k, Just v)
