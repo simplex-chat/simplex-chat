@@ -33,7 +33,8 @@ With this package, Claude Code can join channels and groups, talk to bots, and e
 - Agents ask before they act in other chats or use a tool such as Bash.
 - A live stream of agent's work: tasks, tool calls, etc.
 - Session and machine status.
-- 🏗️ Code diffs, almost every waiting state answered from the chat, etc.
+- Answer Claude's questions, plans and subagents' tool prompts in the chat, and see when Claude Code stops or waits in its terminal.
+- 🏗️ Code diffs, etc.
 
 ## Start
 

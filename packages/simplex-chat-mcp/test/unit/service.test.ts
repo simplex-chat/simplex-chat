@@ -655,7 +655,7 @@ describe("service", () => {
     const {d, agents} = deps(root)
     service = await Service.start(d, readDefaultConfig)
     await register(id1)
-    const prompt = {id: id1, tool: "Bash", description: "", preview: "ls", agent: "reviewer"}
+    const prompt = {id: id1, kind: "tool" as const, tool: "Bash", description: "", preview: "ls", agent: "reviewer"}
     const lines: unknown[] = []
     await streamLines(socketPath(root), token, "/ask", prompt, line => lines.push(line))
     expect(lines).toEqual([{decision: {behavior: "allow"}}])

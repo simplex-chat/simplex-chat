@@ -3,7 +3,7 @@ import {open} from "fs/promises"
 import {dirname, join} from "path"
 import {CC, CEvt, ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {Action, Actions, HostTexts, Mode, ToolError, isDecided, maxPending} from "./actions"
+import {Action, Actions, HostTexts, Mode, NewAction, PlanAction, QuestionAction, ToolError, isDecided, maxPending} from "./actions"
 import {Config} from "./config"
 import {Control, canSend, controlCommands, controlDataOf, createGroup, isControlEvent, isGroupMessage, parseCommand, rightsText, safeName, sessionApproverRoles} from "./control"
 import {openCore} from "./core"
@@ -11,7 +11,7 @@ import {SessionFile, hubFolder, readSessionFile, sessionFolder, writeSessionFile
 import {chatErrorOf, errorText, log, logError, oneLine} from "./log"
 import {MainGroup, SessionGroups, createMainGroup, findMainGroup} from "./main-group"
 import {Changes, ChatItemsWatch, ReplyTo, ToolCall, duration, getChat, isLive, nextChange, quoteLine, storedName, toReplyTo, validName} from "./messages"
-import {AskRequest, AttachLine, Decision, LimitWindow, Limits, OwnerState, PermissionRequest, ResetReply, Step, TextBatch, TurnRequest} from "./protocol"
+import {AskRequest, AttachLine, Decision, Failure, LimitWindow, Limits, OwnerState, PermissionRequest, Prompt, ResetReply, Step, TextBatch, TurnRequest, Waiting} from "./protocol"
 import {waitForCancelledCards} from "./serve"
 import {Machine, limitParts, machineParts, machineState} from "./status-line"
 import {AgentTools, ToolName, featureOff, fitsMessage, maxMessageLength, ownerOf, refusedFeature} from "./tools"
@@ -63,6 +63,14 @@ const stoppedLine = "⏹️ Stopped"
 const relayWait = 3_000
 // spec: spec/architecture.md#hub-constants
 const relayAge = 5_000
+// spec: spec/api.md#waiting-lines
+const cardQuietMs = 30_000
+// spec: spec/api.md#waiting-lines
+const waitingKinds = ["permission_prompt", "worker_permission_prompt", "elicitation_dialog", "elicitation_url_dialog", "agent_needs_input"]
+// spec: spec/api.md#waiting-lines
+const limitResetLine = "🔄 The usage limit has reset. Send a message here to continue."
+// spec: spec/api.md#waiting-lines
+const noContinueLine = "⛔ Claude Code will not continue by itself after the usage limit. Send a message here when the limit has reset."
 // spec: spec/api.md#list-of-sessions
 const listCheckMs = 2_000
 // spec: spec/api.md#list-of-sessions
@@ -178,6 +186,8 @@ export class Session {
   private recordRead?: Promise<void>
   private readonly relays = new Changes()
   private readonly linked = new WeakSet<Action>()
+  private cardAt = -Infinity
+  private failedText?: string
 
   constructor(
     private readonly hub: Hub,
@@ -339,7 +349,15 @@ export class Session {
   private pass(ci: T.AChatItem, member: T.GroupMember, text: string): void {
     if (this.refusesCommand(text, member)) return this.queue(() => this.post([{text: commandsApproversOnly}], ci.chatItem.meta.itemId))
     if (parseCommand(text) !== undefined) return this.control.onMessage(ci)
+    const card = this.repliedCard(ci.chatItem.quotedItem?.itemId)
+    if (card !== undefined && this.approves(member)) return this.control.reply(member, card, text)
     this.queue(() => this.prompt(ci, text, member, ci.chatItem.file, this.replyTo(ci)))
+  }
+
+  // spec: spec/architecture.md#hub-session-onmessage
+  private repliedCard(itemId: number | undefined): QuestionAction | PlanAction | undefined {
+    if (itemId === undefined) return undefined
+    return this.actions.pending().find((action): action is QuestionAction | PlanAction => (action.tool === "question" || action.tool === "plan") && action.card === itemId)
   }
 
   // spec: spec/architecture.md#hub-session-onupdate
@@ -385,6 +403,7 @@ export class Session {
   permission({requestId, toolName, description, inputPreview}: PermissionRequest): void {
     const toolApproved = this.control.approvedTools().some(({tool}) => tool === toolName)
     const action = this.actions.create(`permission ${requestId}`, {tool: "permission", input: {requestId, toolName, description, inputPreview}, toolApproved}, undefined, this.number, "requests")
+    this.cardAt = Date.now()
     this.relays.notify()
     const unsubscribe = action.changes.subscribe(() => {
       const behavior = action.state === "performing" ? "allow" : action.state === "rejected" ? "deny" : undefined
@@ -396,24 +415,24 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-ask
-  async ask({at, tool, description, preview, agent, terminalOnly}: AskRequest, signal: AbortSignal): Promise<Decision | undefined> {
-    if (agent === undefined && (await this.relayed(tool, at ?? Date.now(), signal))) return undefined
+  async ask(request: AskRequest, signal: AbortSignal): Promise<Decision | undefined> {
+    if (request.kind === "tool" && request.agent === undefined && (await this.relayed(request.tool, request.at ?? Date.now(), signal))) return undefined
     if (signal.aborted) return undefined
-    const toolApproved = this.control.approvedTools().some(approved => approved.tool === tool)
+    const fields = await this.promptAction(request)
     let action: Action
     try {
-      action = this.actions.create(`ask ${tool}`, {tool: "permission", input: {toolName: tool, description, inputPreview: preview, agent, terminalOnly}, toolApproved}, undefined, this.number, "requests")
+      action = this.actions.create(`ask ${request.kind}`, fields, undefined, this.number, "requests")
     } catch (error) {
       if (error instanceof ToolError) return undefined
       throw error
     }
+    this.cardAt = Date.now()
     return new Promise(resolve => {
       const end = (): void => {
         if (action.state === "pending") this.actions.end(action)
       }
       const unsubscribe = action.changes.subscribe(() => {
-        if (action.state === "performing") resolve({behavior: "allow"})
-        if (action.state === "rejected") resolve({behavior: "deny", message: `${action.decidedBy} rejected this in the SimpleX group.`})
+        if (action.state === "performing" || action.state === "rejected") resolve(decisionOf(action))
         if (!isDecided(action.state)) return
         unsubscribe()
         signal.removeEventListener("abort", end)
@@ -422,6 +441,26 @@ export class Session {
       })
       signal.addEventListener("abort", end, {once: true})
     })
+  }
+
+  // spec: spec/architecture.md#hub-session-ask
+  private async promptAction(prompt: Prompt): Promise<NewAction> {
+    switch (prompt.kind) {
+      case "tool": {
+        const {tool, description, preview, agent, terminalOnly} = prompt
+        return {tool: "permission", input: {toolName: tool, description, inputPreview: preview, agent, terminalOnly}, toolApproved: this.control.approvedTools().some(approved => approved.tool === tool)}
+      }
+      case "question":
+        return {tool: "question", input: {questions: prompt.questions}}
+      case "plan": {
+        const [first] = prompt.plan.trim() === "" ? [] : await this.post(textParts(prompt.plan).map(text => ({text, priority: -1}))).catch(error => (logError(`plan of session ${this.number}`, error), []))
+        return {tool: "plan", input: {plan: prompt.plan}, quote: first?.chatItem.meta.itemId}
+      }
+      case "link": {
+        const {server, message, url} = prompt
+        return {tool: "link", input: {server, message, url}}
+      }
+    }
   }
 
   // spec: spec/architecture.md#hub-session-ask
@@ -439,9 +478,10 @@ export class Session {
   }
 
   // spec: spec/architecture.md#hub-session-turn
-  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine}: TurnRequest): Promise<void> {
+  async turn({at, prompt, typed, note, midTurn, answer, model, switched, effort, step, text, usage, limits, statusLine, failure, waiting}: TurnRequest): Promise<void> {
     const startsTurn = prompt !== undefined && midTurn !== true
-    if (startsTurn || answer !== undefined) {
+    if (answer !== undefined) this.failedText = undefined
+    if (startsTurn || answer !== undefined || failure !== undefined) {
       this.endPermissions(at)
       this.endSteps(at)
     }
@@ -475,19 +515,40 @@ export class Session {
       if (note !== undefined) await this.post([{text: note, priority: -1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
       const typedPrompt = prompt !== undefined && typed !== false && prompt.replace(channelPrompt, "").trim() !== "" && matched.length === 0 && parseCommand(prompt) === undefined
       const userPost = typedPrompt ? this.hub.user?.post(this.number, textParts(prompt)).catch(error => this.postRefusal(error, "User's prompt was not posted", notAllowedForUser)) : undefined
-      if (startsTurn && (typedPrompt || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) this.openTurn(at ?? Date.now(), matched[0]?.item, userPost)
+      if (startsTurn && (typedPrompt || matched.length > 0) && (at ?? Date.now()) >= this.answeredAt) {
+        this.failedText = undefined
+        this.openTurn(at ?? Date.now(), matched[0]?.item, userPost)
+      }
       await userPost
       if (answer !== undefined && end !== undefined) await this.answer(answer, quoted, at ?? Date.now(), (await streamed) === true, end)
+      if (failure !== undefined) await this.fail(failure, at ?? Date.now())
+      if (waiting !== undefined) await this.waits(waiting, at ?? Date.now())
     } finally {
       const {model: shown, effort: level} = this.description
       if (described) await this.control.describe([shown, level === undefined ? undefined : `effort ${level}`].filter(part => part !== undefined).join(" · "))
     }
   }
 
+  // spec: spec/architecture.md#hub-session-fail
+  private async fail(failure: Failure, at: number): Promise<void> {
+    await this.endTexts(at)
+    this.closeOpenings(({at: start, until}) => (until ?? start) <= at)
+    if (failure.text === this.failedText) return
+    this.failedText = failure.text
+    await this.post([{text: failureLine(failure), priority: 1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+  }
+
+  // spec: spec/architecture.md#hub-session-fail
+  private async waits({kind, text}: Waiting, at: number): Promise<void> {
+    const line = kind === "quota_auto_resume_stale" ? limitResetLine : kind === "quota_auto_resume_disabled" ? noContinueLine : waitingKinds.includes(kind) && this.cardAt < at - cardQuietMs ? `⏸️ Claude Code waits in its terminal: ${text}` : undefined
+    if (line !== undefined) await this.post([{text: line, priority: 1}]).catch(error => this.postRefusal(error, noteRefused, featureOff))
+  }
+
   // spec: spec/architecture.md#hub-session-endpermissions
   endPermissions(before = Infinity): void {
     for (const action of this.actions.pending()) {
-      if (action.tool === "permission" && action.input.agent === undefined && action.created < before) this.actions.end(action)
+      const ofTurn = (action.tool === "permission" && action.input.agent === undefined) || action.tool === "question" || action.tool === "plan" || action.tool === "link"
+      if (ofTurn && action.created < before) this.actions.end(action)
     }
   }
 
@@ -1257,6 +1318,29 @@ export class Hub implements SessionGroups {
       this.controlEvents = this.controlEvents.then(() => session.control.onEvent(event)).then(() => session.sendTools()).then(() => session.announceRights(event)).then(() => session.askMode()).catch(error => logError(`${event.type} in the group of session ${session.number}`, error))
     }
   }
+}
+
+// spec: spec/api.md#waiting-lines
+function failureLine({error, text, autoContinue, menu}: Failure): string {
+  const lifted = "Send a message here when the limit is lifted."
+  const menuLine = "Claude Code shows its usage menu in its terminal. It holds messages from this group until someone closes the menu there."
+  const next = error === "rate_limit"
+    ? autoContinue ? "Claude Code continues by itself at the reset. When the limit is lifted earlier, send a message here." : menu ? `${lifted}\n${menuLine}` : lifted
+    : error === "authentication_failed" ? "Sign in again in a terminal on this computer, with `/login` in Claude Code or with `claude auth login`, then send a message here." : "Send a message here to try again."
+  return `⛔ Claude Code stopped: ${text === "" ? error : text}\n${next}`
+}
+
+// spec: spec/architecture.md#hub-session-ask
+function decisionOf(action: Action): Decision {
+  const by = action.decidedBy
+  if (action.state === "rejected") {
+    const refusal = action.tool === "question" ? `${by} declined to answer in the SimpleX group.` : action.tool === "plan" ? `${by} rejected the plan in the SimpleX group.` : `${by} rejected this in the SimpleX group.`
+    return {behavior: "deny", message: refusal}
+  }
+  if (action.tool === "plan" && action.answer !== undefined && "reply" in action.answer) return {behavior: "deny", message: `Keep planning. ${by} wrote in the SimpleX group: ${action.answer.reply}`}
+  if (action.tool !== "question" || action.answer === undefined) return {behavior: "allow"}
+  const {answer} = action
+  return {behavior: "allow", answers: Object.fromEntries(action.input.questions.map(({question}) => [question, "option" in answer ? answer.option : answer.reply]))}
 }
 
 // spec: spec/architecture.md#hub-notallowedforuser

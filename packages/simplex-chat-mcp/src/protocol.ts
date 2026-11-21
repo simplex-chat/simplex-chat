@@ -54,19 +54,24 @@ export interface PermissionRequest {
 }
 
 // spec: spec/architecture.md#protocol-askrequest
-export interface AskRequest {
-  id: string
-  pid?: number
-  at?: number
-  tool: string
-  description: string
-  preview: string
-  agent?: string
-  terminalOnly?: boolean
+export type AskRequest = {id: string; pid?: number; at?: number} & Prompt
+
+// spec: spec/architecture.md#protocol-askrequest
+export type Prompt =
+  | {kind: "tool"; tool: string; description: string; preview: string; agent?: string; terminalOnly?: boolean}
+  | {kind: "question"; questions: Question[]}
+  | {kind: "plan"; plan: string}
+  | {kind: "link"; server: string; message: string; url: string}
+
+// spec: spec/architecture.md#protocol-askrequest
+export interface Question {
+  question: string
+  options: {label: string; description: string}[]
+  multiSelect: boolean
 }
 
 // spec: spec/architecture.md#protocol-askrequest
-export type Decision = {behavior: "allow"} | {behavior: "deny"; message: string}
+export type Decision = {behavior: "allow"; answers?: {[question: string]: string}} | {behavior: "deny"; message: string}
 
 // spec: spec/architecture.md#protocol-askrequest
 export interface AskLine {
@@ -91,6 +96,22 @@ export interface TurnRequest {
   switched?: boolean
   limits?: Limits
   statusLine?: boolean
+  failure?: Failure
+  waiting?: Waiting
+}
+
+// spec: spec/architecture.md#protocol-failure
+export interface Failure {
+  error: string
+  text: string
+  autoContinue: boolean
+  menu: boolean
+}
+
+// spec: spec/architecture.md#protocol-failure
+export interface Waiting {
+  kind: string
+  text: string
 }
 
 // spec: spec/architecture.md#protocol-limits

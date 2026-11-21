@@ -391,7 +391,7 @@ Usage:
   simplex-mcp service                  the shared SimpleX service of the plugin (started on demand)
   simplex-mcp hook session-start       Claude Code SessionStart hook (run by the plugin)
   simplex-mcp hook turn                Claude Code hooks of prompts, answers, model changes, tool uses and compactions (run by the plugin)
-  simplex-mcp hook ask                 Claude Code PermissionRequest hook (run by the plugin)
+  simplex-mcp hook ask                 Claude Code PermissionRequest and Elicitation hooks (run by the plugin)
   simplex-mcp link                     show the Main group link, or its owners
   simplex-mcp reset-owners             replace the Main group and its owners
 
@@ -502,7 +502,8 @@ The plugin adds:
 | UserPromptSubmit, Stop, PostModelSwitch and PostCompact hooks | Post your terminal prompts, Claude's answers, the usage of each turn and a line for each summary of the session's context in the session's group, keep the model and effort in its description, and post their switches. They run in the background. |
 | PreToolUse, PostToolUse and PostToolUseFailure hooks of every tool | Post a line for each step of Claude's work when it starts, and complete it when it ends. They run in the background. |
 | PreToolUse hook of every tool, of type `mcp_tool` | Calls the tool `pre_tool_use` of the session's MCP server, which allows a tool approved for the rest of the session, see [Tool use](#tool-use). It waits up to 5 seconds. |
-| PermissionRequest hook | Posts the tool prompts that the channel doesn't relay as cards, and answers them with the decision in the group, see [Tool use](#tool-use). It waits for the decision up to 24 hours. |
+| PermissionRequest and Elicitation hooks | Post the tool prompts that the channel doesn't relay, Claude's questions, plans and MCP servers' links as cards, and answer them with the decision in the group, see [Tool use](#tool-use). They wait for the decision up to 24 hours. |
+| StopFailure and Notification hooks | Post a line when a turn fails or Claude Code waits in its terminal, see [When Claude Code waits](#when-claude-code-waits). They run in the background. |
 
 The server and hooks run `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The PreToolUse hook of the plugin's tools runs `node ${CLAUDE_PLUGIN_ROOT}/plugin/allow.js` instead. The package, a 4 MB download, bundles its dependencies and has no lockfile, so Claude Code installs nothing after unpacking it. Node.js loads the modules from the plugin's folder, so a project's `node_modules` can't replace them. The first session start downloads the SimpleX core library. Claude Code waits up to 600 seconds for the SessionStart hook.
 
@@ -727,7 +728,43 @@ The plugin's PermissionRequest hook posts the prompts that the channel doesn't r
 
   `/reject 13` denies it, and the dialog closes. Claude Code takes the approval of reading a public artifact from outside your organization only from the terminal. In a subagent, such a prompt gets no card.
 
-Claude's questions and plan approvals get no card yet.
+Claude's questions, plans and the links that MCP servers ask you to open get cards too:
+
+```
+Claude: ❓ Which library should we use for dates?
+        1. date-fns: Small modular functions /answer 14 1
+        2. Luxon: Immutable time zones /answer 14 2
+        Reply to this message to answer in your own words, or /reject 14.
+```
+
+- A question: `/answer 14 1` answers it with the option. Several questions, or a question of several choices, list the options without commands. Reply to the card to answer every question with your text. `/reject 14` declines to answer. The terminal shows the question too, and the first answer applies.
+- A plan: Claude posts the plan, then `📋 Claude Code asks to approve this plan.` as a reply to it. `/approve 15` starts the work, a reply to the card keeps Claude planning with your text, and `/reject 15` rejects the plan.
+- A link: ``🔗 MCP server `tracker` asks you to open: URL``. Open it from the card, then `/approve 16`, or `/reject 16` to decline. Claude Code shows the link in the terminal only after the card ends without a decision.
+
+A reply of a member who is not an admin or owner is a prompt, as is a reply to a card that is no longer pending. A form of an MCP server and the questions and plans of subagents get no card.
+
+### When Claude Code waits
+
+Claude posts a line when Claude Code stops or waits for something the group can't answer:
+
+```
+Claude: ⛔ Claude Code stopped: You've hit your weekly limit · resets Nov 18, 3am (UTC)
+        Send a message here when the limit is lifted.
+        Claude Code shows its usage menu in its terminal. It holds messages from this group until someone closes the menu there.
+```
+
+| When | Line |
+|---|---|
+| A turn ends at a usage limit | `⛔ Claude Code stopped: TEXT` with `Send a message here when the limit is lifted.` When Claude Code continues by itself at a reset within 24 hours, the line says so. When Claude Code opens its usage menu, the line says that the menu holds the group's messages until someone closes it in the terminal. |
+| A turn ends at a refused login | `⛔ Claude Code stopped: TEXT` with how to sign in again: `/login` in Claude Code or `claude auth login` in a terminal on that computer. Claude Code takes the new login at its next request. |
+| A turn ends at another API error | `⛔ Claude Code stopped: TEXT` with `Send a message here to try again.` |
+| The limit has reset, and Claude Code waits for a key | `🔄 The usage limit has reset. Send a message here to continue.` |
+| The automatic continue is turned off | `⛔ Claude Code will not continue by itself after the usage limit. Send a message here when the limit has reset.` |
+| A dialog without a card waits in the terminal, such as a prompt for you only, a form of an MCP server, a sandboxed command's network access or `Session paused` | `⏸️ Claude Code waits in its terminal: MESSAGE`, with Claude Code's notification text. It comes about 6 seconds after the dialog, and not when a card was posted in the 30 seconds before. |
+
+The same stop line is posted once until an answer or your next prompt. Dialogs at the start, such as the workspace trust, and menus opened in the terminal, such as `/model`, post nothing.
+
+To keep tool prompts from waiting in the terminal at all, set `permissions.denyInsteadOfPrompting` to `true` in your user settings, `~/.claude/settings.json`; a repository's settings can't set it. Claude Code 2.1.319 or later then denies a tool use that would wait for a prompt, unless a card in the group allows it first: the plugin's hook holds the prompt for its card. The cost: Claude Code leaves out Claude's questions and plan mode, denies prompts that only you can answer, and denies a tool use whose card ends without a decision.
 
 `/approve 5 all` allows the tool use and approves its tool for the rest of the session. Claude replies `` Approved `Bash` for the rest of this session by Alice. /revoke Bash ``.
 
