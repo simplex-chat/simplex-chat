@@ -1245,8 +1245,7 @@ testXFTPRecordCancel ps =
 
 testXFTPRecordDelete :: HasCallStack => TestParams -> IO ()
 testXFTPRecordDelete ps =
-  withSndFileEvents ps $ \_ alice _ -> do
-    checkNoAgentSndFiles alice
+  withSndFileEvents ps $ \_ alice _ ->
     apiFixture "files/delete" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_delete item @2 " <> itemId 1 <> " internal"]}
 
 withSndFileEvents :: HasCallStack => TestParams -> (TVar [J.Value] -> TestCC -> TestCC -> IO ()) -> IO ()

@@ -224,14 +224,17 @@ processAgentMessageNoConn = \case
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
 processAgentMsgSndFile _ "" (SFERR e) =
   eToView $ chatErrorAgent e
-processAgentMsgSndFile _corrId aFileId msg = flip allFinally (when sndFileEnded deleteAgentFile) $ do
-  (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
-  withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
-    withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
-      Just user -> process user fileId `catchAllErrors` eToView
-      _ -> do
-        unless sndFileEnded deleteAgentFile
-        throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
+processAgentMsgSndFile _corrId aFileId msg = flip allFinally (when sndFileEnded deleteAgentFile) $
+  withStore' (\db -> runExceptT $ getXFTPSndFileDBIds db $ AgentSndFileId aFileId) >>= \case
+    Left SESndFileNotFoundXFTP {} -> unless sndFileEnded deleteAgentFile
+    Left e -> throwError $ ChatErrorStore e
+    Right (cRef_, fileId) ->
+      withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
+        withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
+          Just user -> process user fileId `catchAllErrors` eToView
+          _ -> do
+            unless sndFileEnded deleteAgentFile
+            throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
   where
     sndFileEnded :: Bool
     sndFileEnded = case msg of
