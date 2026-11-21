@@ -177,9 +177,9 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - Globs:
   - apps/simplex-domains
   - tests/fixtures/store-service/rest-api/**
-- CI, in build-linux: `scope-tests.sh names-page` (step "Test changed scopes"): `npm ci`, `npm test` and `npm run build` in apps/simplex-domains/webapp, at the commit the submodule pins, which build-linux checks out with the submodules. `npm test` runs with STORE_FIXTURES set to tests/fixtures/store-service/rest-api, so the page's contract tests (webapp/test/contract) read the answers the store service's tests record there; without it they are skipped.
+- CI, in build-linux: `scope-tests.sh names-page` (step "Test changed scopes"): `npm ci` in apps/simplex-domains/webapp, at the commit the submodule pins, which build-linux checks out with the submodules, then `npx vitest run test/contract test/terms-vectors.test.ts` with STORE_FIXTURES set to tests/fixtures/store-service/rest-api. These are the page's only tests that read STORE_FIXTURES: they read the answers and vectors the store service's tests record there, and without it they are skipped.
 - Store fixtures: the store service's tests write their answers to tests/fixtures/store-service/rest-api and fail when an answer differs from the committed file; the rewritten files are committed.
-- The page's browser tests run in the CI of its own repository (simplex-chat/simplex.domains, webapp.yml), and against the store service in names-e2e.
+- The page's other unit tests, its build and its browser tests run in the CI of its own repository (simplex-chat/simplex.domains, webapp.yml); its cases run against the store service in names-e2e.
 - Local: `scripts/ci/scope-tests.sh names-page`.
 
 #### names-e2e

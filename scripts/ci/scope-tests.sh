@@ -38,8 +38,7 @@ case "${1:-}" in
     fixtures="$PWD/tests/fixtures/store-service/rest-api"
     cd apps/simplex-domains/webapp
     npm ci --no-audit --no-fund
-    STORE_FIXTURES="$fixtures" npm test
-    npm run build
+    STORE_FIXTURES="$fixtures" npx vitest run test/contract test/terms-vectors.test.ts
     ;;
   names-e2e)
     export TMPDIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
