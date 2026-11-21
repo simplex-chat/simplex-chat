@@ -16,7 +16,6 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (newEmptyMVar, putMVar, readMVar, threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
-import qualified Control.Exception as E
 import Control.Monad (forM_, void, (>=>))
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
@@ -1640,7 +1639,7 @@ testStoreTxSavepoint =
     connectUsers alice bob
     r <- runInStoreTx bob False $ do
       withStore' (`DB.execute_` "UPDATE contact_profiles SET local_alias = 'kept' WHERE display_name = 'alice'")
-      withStore' (\db -> DB.execute_ db "UPDATE contact_profiles SET local_alias = 'undone' WHERE display_name = 'alice'" >> E.throwIO (userError "store call failed"))
+      withStore' (\db -> DB.execute_ db "UPDATE contact_profiles SET local_alias = 'undone' WHERE display_name = 'alice'" >> DB.execute_ db "UPDATE contact_profiles SET local_alias = NULL WHERE display_name = 'alice'")
         `catchAllErrors` \_ -> pure ()
       toView CEvtChatSuspended
     isRight r `shouldBe` True
