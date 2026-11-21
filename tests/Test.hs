@@ -111,7 +111,7 @@ main = do
 #else
       sequential $ describe "Schema dump" schemaDumpTest
       sequential $
-        ifCI (if os == "darwin" then xdescribe else describe) describe "Store service schema dump" $
+        ifCI (if os /= "linux" then xdescribe else describe) describe "Store service schema dump" $
           sqliteSchemaDumpTest
             storeServiceSchemaMigrations
             [ -- sqlite_sequence stays once an AUTOINCREMENT table exists
