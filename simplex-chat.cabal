@@ -463,6 +463,7 @@ executable simplex-store-service
       StoreService.Names.Community
       StoreService.Names.Contracts
       StoreService.Names.Env
+      StoreService.Names.Label
       StoreService.Names.LateCredits
       StoreService.Names.Orders
       StoreService.Names.Phases
@@ -842,6 +843,7 @@ test-suite simplex-chat-test
       StoreService.Names.Community
       StoreService.Names.Contracts
       StoreService.Names.Env
+      StoreService.Names.Label
       StoreService.Names.LateCredits
       StoreService.Names.Orders
       StoreService.Names.Phases

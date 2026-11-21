@@ -8,7 +8,7 @@ import qualified Data.Aeson as J
 import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
-import StoreService.Names.Registration (LabelError (..), validLabel)
+import StoreService.Names.Label (LabelError (..), validLabel)
 import Test.Hspec
 
 namesLabelTests :: Spec

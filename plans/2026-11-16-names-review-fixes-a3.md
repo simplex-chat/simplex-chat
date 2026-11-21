@@ -18,7 +18,7 @@ A3-13: `RCSetText LinkKind Text`.
 - `contactRecordKey`, `channelRecordKey` and `recordKinds` go, replaced by `recordKey LKContact` and `recordKey LKChannel`; `setTextDigest` and `setTextWithSigCalldata` take the kind.
 - The edit body's key is parsed into the kind with the other formats; the stored key text is unchanged.
 
-A3-31 (label): `LabelError` and `validLabel` move into Names/Registration.hs; Label.hs is removed.
+A3-31 (label): `LabelError` and `validLabel` stay in Names/Label.hs.
 
 A3-18: the lowercase test goes; `domain == label` refuses an upper-case label, as `mkDomain` lowers the domain.
 

@@ -24,8 +24,6 @@ module StoreService.Names.Registration
     labelNode,
     childNode,
     tldLabel,
-    LabelError (..),
-    validLabel,
     LinkKind (..),
     recordKey,
     linkMaxBytes,
@@ -69,13 +67,13 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
-import Data.Maybe (catMaybes, isNothing)
+import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word64)
-import Simplex.Chat.Badges.Code (NameLength, nameLength, nameLengthInt)
+import Simplex.Chat.Badges.Code (NameLength, nameLengthInt)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), ContactConnType (..))
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Crypto (keccak256, sha256Hash)
@@ -85,7 +83,7 @@ import Simplex.Messaging.Encoding.String (StrEncoding (..), TextEncoding (..))
 import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexDomain (..), SimplexTLD (..), labelHash)
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
 import StoreService.Names.Chain (AbiValue (..), Hex32 (..), abiArray, abiBytes, abiTuple, abiWordSize, addressWord, hex, lowerHexP, parseText, selector, uint256)
@@ -113,16 +111,6 @@ newtype Node = Node ByteString
 
 nodeBytes :: Node -> ByteString
 nodeBytes (Node node) = node
-
-data LabelError = LELength | LEChars
-  deriving (Eq, Show)
-
-validLabel :: SimplexTLD -> Text -> Either LabelError Text
-validLabel tld label
-  | isNothing (nameLength $ T.length label) = Left LELength
-  | otherwise = case strDecode (encodeUtf8 $ label <> decodeLatin1 (strEncode tld)) of
-      Right SimplexDomain {domain, subDomain = []} | domain == label -> Right label
-      _ -> Left LEChars
 
 data LinkKind = LKContact | LKChannel
   deriving (Eq, Show)

@@ -40,7 +40,8 @@ import StoreService.Names.Chain (Hex32)
 import StoreService.Names.Orders (OrderRefusal (..), signedRequestSeconds)
 import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
-import StoreService.Names.Registration (LinkKind (..), OrderFields (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, validLabel, verifyAcceptance, verifyRegisterIntent)
+import StoreService.Names.Label (validLabel)
+import StoreService.Names.Registration (LinkKind (..), OrderFields (..), RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, nameLink, policyDomain, sponsorDomain, termsKind, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Store (NameReveal (..))
 
 data RevealRefusal = RVBadRequest Text | RVInvalidLink LinkKind | RVChainUnavailable
