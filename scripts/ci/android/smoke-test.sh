@@ -172,9 +172,8 @@ switch_of() {
     awk -v y="$y" '$2 <= y && y <= $2 + $4 { print $1 + int($3 / 2), $2 + int($4 / 2); exit }'
 }
 
-# The user picker's button in the toolbar, before the list has chats: chats show the same profile image placeholder.
 open_settings() {
-  "$ui" click-text "profile image placeholder" 10
+  open_user_menu
   "$ui" click-text "Settings" 10
 }
 
@@ -324,7 +323,12 @@ send_images() {
 }
 
 open_user_menu() {
-  "$ui" click-text "profile image placeholder" 10
+  local x y
+  "$ui" wait "profile image placeholder" 10 || return 1
+  read -r x y < <("$ui" tree |
+    sed -n -E 's/.*profile image placeholder.* at ([0-9]+),([0-9]+) size ([0-9]+)x([0-9]+).*/\1 \2 \3 \4/p' |
+    awk '{ print $1 + int($3 / 2), $2 + int($4 / 2) }' | sort -k 2 -n | tail -n 1) || return 1
+  "$ui" click "$x" "$y"
   "$ui" wait "Settings" 10
 }
 
@@ -395,7 +399,9 @@ tour() {
 # private routing to unknown servers only: the preset servers that would proxy to the test SMP server can't reach the
 # runner's 127.0.0.1; developer tools at the debug level put the app's debug log in logcat
 started=$SECONDS
-"$ui" start "$apk" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
+tour_settings=()
+[ "$cases" = tour ] && tour_settings=(LANoticeShown=true)
+"$ui" start "$apk" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG "${tour_settings[@]}"
 first_screen || fail "no first onboarding screen 180 s after the start, or the app stopped: its crashes in logcat are below"
 echo "first screen after $((SECONDS - started)) s"
 "$ui" shot first-screen

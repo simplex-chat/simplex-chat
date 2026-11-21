@@ -6,7 +6,13 @@
 import sys
 import xml.etree.ElementTree as ET
 
-TYPES = {"OneHandUI": "boolean", "DeveloperTools": "boolean", "NetworkSMPProxyMode": "string", "LogLevel": "string"}
+TYPES = {
+    "OneHandUI": "boolean",
+    "DeveloperTools": "boolean",
+    "NetworkSMPProxyMode": "string",
+    "LogLevel": "string",
+    "LANoticeShown": "boolean",
+}
 
 
 def main():
