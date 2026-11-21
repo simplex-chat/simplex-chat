@@ -36,13 +36,6 @@ module StoreService.Names.Chain
     sendRawTransaction,
     httpFailure,
     httpFailureDetail,
-    RevertName (..),
-    actedReverts,
-    otherRevertSignatures,
-    RevertReason (..),
-    maxNodeMessageLength,
-    decodeRevert,
-    revertName,
   )
 where
 
@@ -59,16 +52,13 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (isHexDigit)
 import Data.List (foldl', sort)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Text.Encoding (decodeLatin1)
 import Data.Word (Word64)
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
@@ -78,12 +68,13 @@ import Numeric (showHex)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), FromField (..), ToField (..), blobFieldDecoder)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey)
-import Simplex.Messaging.Encoding.String (StrEncoding (..), StrJSON (..), TextEncoding (..))
+import Simplex.Messaging.Encoding.String (StrEncoding (..), StrJSON (..))
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, recoverAddress)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), decodeEip1559Tx, eip1559SigningHash, signEip1559Tx)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), SystemSeconds)
 import Simplex.Messaging.Util (AnyError (..), tryAllOwnErrors', tshow)
-import StoreService.Names.Abi (abiWordSize, decodeString, hex, lowerHexP, parseText, selector)
+import StoreService.Names.Abi (abiWordSize, hex, lowerHexP, parseText)
+import StoreService.Names.Revert (RevertReason (..), decodeRevert, maxNodeMessageLength)
 import System.Timeout (timeout)
 
 data ChainConfig = ChainConfig
@@ -360,158 +351,3 @@ bytes = nodeHex "data" "not hex data" $ A.takeWhile isHexDigit >>= either fail p
 
 nodeHex :: String -> String -> A.Parser a -> J.Value -> JT.Parser a
 nodeHex name failure p = J.withText name $ either (const $ fail failure) pure . parseText (A.string "0x" *> p)
-
--- | The custom errors of SimplexController, SimplexSponsor, BaseRegistrarImplementation and SimplexResolver, and the reservation and terms errors of SimplexNamePolicy, that the service acts on, and RNOther for the others.
--- The sponsor passes the controller's and the base registrar's reverts through, so any call can revert with any of them.
-data RevertName
-  = RNCommitmentNotFound
-  | RNCommitmentTooNew
-  | RNCommitmentTooOld
-  | RNDurationTooLong
-  | RNDurationTooShort
-  | RNInsufficientAllowance
-  | RNInvalidNonce
-  | RNInvalidSignature
-  | RNLabelTooLong
-  | RNNameNotAvailable
-  | RNNameReserved
-  | RNNameTooShort
-  | RNReentrantCall
-  | RNResolverRequiredWhenDataSupplied
-  | RNReverseRecordNotSupported
-  | RNSignatureExpired
-  | RNTermsMismatch
-  | RNTermsNotAccepted
-  | RNOther Text
-  deriving (Eq, Show)
-
-data RevertReason = RRWithoutData | RRNamed RevertName | RRUnnamed Text
-  deriving (Eq, Show)
-
-revertSignature :: RevertName -> ByteString
-revertSignature = \case
-  RNCommitmentNotFound -> "CommitmentNotFound(bytes32)"
-  RNCommitmentTooNew -> "CommitmentTooNew(bytes32,uint256,uint256)"
-  RNCommitmentTooOld -> "CommitmentTooOld(bytes32,uint256,uint256)"
-  RNDurationTooLong -> "DurationTooLong(uint256)"
-  RNDurationTooShort -> "DurationTooShort(uint256)"
-  RNInsufficientAllowance -> "InsufficientAllowance(uint256,uint256)"
-  RNInvalidNonce -> "InvalidNonce()"
-  RNInvalidSignature -> "InvalidSignature()"
-  RNLabelTooLong -> "LabelTooLong(uint256,uint256)"
-  RNNameNotAvailable -> "NameNotAvailable(string)"
-  RNNameReserved -> "NameReserved(string)"
-  RNNameTooShort -> "NameTooShort(string,uint8)"
-  RNReentrantCall -> "ReentrantCall()"
-  RNResolverRequiredWhenDataSupplied -> "ResolverRequiredWhenDataSupplied()"
-  RNReverseRecordNotSupported -> "ReverseRecordNotSupported()"
-  RNSignatureExpired -> "SignatureExpired()"
-  RNTermsMismatch -> "TermsMismatch(bytes32,bytes32)"
-  RNTermsNotAccepted -> "TermsNotAccepted(string)"
-  RNOther name -> encodeUtf8 name
-
-actedReverts :: [RevertName]
-actedReverts =
-  [ RNCommitmentNotFound,
-    RNCommitmentTooNew,
-    RNCommitmentTooOld,
-    RNDurationTooLong,
-    RNDurationTooShort,
-    RNInsufficientAllowance,
-    RNInvalidNonce,
-    RNInvalidSignature,
-    RNLabelTooLong,
-    RNNameNotAvailable,
-    RNNameReserved,
-    RNNameTooShort,
-    RNReentrantCall,
-    RNResolverRequiredWhenDataSupplied,
-    RNReverseRecordNotSupported,
-    RNSignatureExpired,
-    RNTermsMismatch,
-    RNTermsNotAccepted
-  ]
-
-otherRevertSignatures :: [ByteString]
-otherRevertSignatures =
-  [ "AlreadyFrozen()",
-    "Frozen()",
-    "InsufficientValue()",
-    "InvalidEVMAddress(bytes)",
-    "MaxCommitmentAgeTooHigh()",
-    "MaxCommitmentAgeTooLow()",
-    "MinCharLengthCanOnlyDecrease()",
-    "MinCharLengthZero()",
-    "MinCommitmentAgeZero()",
-    "NameNotReserved(string)",
-    "NftGateCanOnlyBeDisabled()",
-    "NftRequired()",
-    "NodeNotOwnedByRegistrar()",
-    "NotBeneficiary()",
-    "NotController()",
-    "NotNameOwner()",
-    "NotOffered()",
-    "NotOwnerOrBeneficiary()",
-    "NotProxy()",
-    "NotSponsor()",
-    "NotSubnameRegistrar()",
-    "OffsetOutOfBoundsError(uint256,uint256)",
-    "OwnerMustBeCaller()",
-    "PublicSalesClosed()",
-    "ReasonRequired()",
-    "RecipientMustBeCaller()",
-    "TransferFailed()",
-    "TransferToSelf()",
-    "UnexpiredCommitmentExists(bytes32)",
-    "ZeroAddress()"
-  ]
-
-signatureName :: ByteString -> Text
-signatureName = decodeLatin1 . BC.takeWhile (/= '(')
-
-instance TextEncoding RevertName where
-  textEncode = signatureName . revertSignature
-  textDecode = \case
-    "CommitmentNotFound" -> Just RNCommitmentNotFound
-    "CommitmentTooNew" -> Just RNCommitmentTooNew
-    "CommitmentTooOld" -> Just RNCommitmentTooOld
-    "DurationTooLong" -> Just RNDurationTooLong
-    "DurationTooShort" -> Just RNDurationTooShort
-    "InsufficientAllowance" -> Just RNInsufficientAllowance
-    "InvalidNonce" -> Just RNInvalidNonce
-    "InvalidSignature" -> Just RNInvalidSignature
-    "LabelTooLong" -> Just RNLabelTooLong
-    "NameNotAvailable" -> Just RNNameNotAvailable
-    "NameReserved" -> Just RNNameReserved
-    "NameTooShort" -> Just RNNameTooShort
-    "ReentrantCall" -> Just RNReentrantCall
-    "ResolverRequiredWhenDataSupplied" -> Just RNResolverRequiredWhenDataSupplied
-    "ReverseRecordNotSupported" -> Just RNReverseRecordNotSupported
-    "SignatureExpired" -> Just RNSignatureExpired
-    "TermsMismatch" -> Just RNTermsMismatch
-    "TermsNotAccepted" -> Just RNTermsNotAccepted
-    name
-      | name `elem` map signatureName otherRevertSignatures -> Just $ RNOther name
-      | otherwise -> Nothing
-
-revertName :: RevertReason -> Maybe RevertName
-revertName = \case
-  RRNamed n -> Just n
-  _ -> Nothing
-
-revertSelectors :: Map ByteString RevertName
-revertSelectors = M.fromList $ [(selector $ revertSignature n, n) | n <- actedReverts] <> [(selector s, RNOther $ signatureName s) | s <- otherRevertSignatures]
-
--- | A node's error message is cut to this many characters.
-maxNodeMessageLength :: Int
-maxNodeMessageLength = 200
-
-decodeRevert :: ByteString -> RevertReason
-decodeRevert revertData
-  | B.null revertData = RRWithoutData
-  | Just n <- M.lookup revertSelector revertSelectors = RRNamed n
-  | revertSelector == selector "Error(string)", Right message <- decodeString arguments = RRUnnamed $ T.take maxNodeMessageLength message
-  | otherwise = RRUnnamed $ hex revertSelector
-  where
-    (revertSelector, arguments) = B.splitAt selectorSize revertData
-    selectorSize = 4

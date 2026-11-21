@@ -63,6 +63,7 @@ import StoreService.Names.Chain
 import StoreService.Names.Community (currentAcceptance)
 import StoreService.Names.Contracts
 import StoreService.Names.Registration (labelNode, namehash, nodeBytes, tldLabel)
+import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Store (getTermsText, setTermsText)
 import Test.Hspec
 

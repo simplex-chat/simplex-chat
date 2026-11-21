@@ -50,6 +50,7 @@ import StoreService.Names.Chain
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Records
 import StoreService.Names.Registration (LinkKind (..), Node, labelNode, linkMaxBytes, multicallCalldata, nodeBytes, parseSignature, resolverDomain, setTextDigest, setTextWithSigCalldata)
+import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (Sender, followTransactions, newSender)
 import StoreService.Names.Store (BodyHash, EditOutcome (..), EditState (..), NewRecordEdit (..), RecordChange (..), RecordEdit (..), SignedChange (..), getRecordEditByBody, insertRecordEdit)
 import StoreService.Names.Turns (newTurns)

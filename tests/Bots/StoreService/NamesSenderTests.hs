@@ -29,6 +29,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain
 import StoreService.Names.Registration (RegistrationId (..), commitCalldata)
+import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import StoreService.Names.Sender
 import StoreService.Names.Store (NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), TxStatus (..), pendingTransactions, recordTransactionOutcome, registrationTransactions)
 import StoreService.Names.View (addressText)

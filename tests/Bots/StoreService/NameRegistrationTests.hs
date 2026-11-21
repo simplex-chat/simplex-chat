@@ -6,6 +6,7 @@ module Bots.StoreService.NameRegistrationTests (badgeNameRegistrationTests) wher
 
 import StoreService.Names.Chain
 import StoreService.Names.Registration
+import StoreService.Names.Revert (RevertName (..), RevertReason (..))
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.WebUIMock
 import ChatTests.Utils (writeFixture)
