@@ -1,0 +1,36 @@
+{
+  "commands": {
+    "/_connect plan 1 acme.simplex": {
+      "error": {
+        "errorType": {
+          "simplexDomain": {
+            "domain": "acme",
+            "nameTLD": "simplex",
+            "subDomain": []
+          },
+          "simplexDomainError": {
+            "nameWarning": {
+              "type": "notRegistered"
+            },
+            "type": "nameWarning"
+          },
+          "type": "simplexDomainNotReady"
+        },
+        "type": "error"
+      }
+    }
+  },
+  "markdown": {
+    "acme.simplex": {
+      "formattedText": [
+        {
+          "format": {
+            "type": "uri"
+          },
+          "text": "acme.simplex"
+        }
+      ]
+    }
+  },
+  "uris": {}
+}
