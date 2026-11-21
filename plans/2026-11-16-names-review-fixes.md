@@ -127,7 +127,7 @@ A1-15: BTCPay invoice, payment and additional statuses as sums with an unknown c
 - A1-19: maybeFirstRow' at the four sites.
 - A1-20: orderHash over `smpEncode` of the fields; no order is stored before launch.
 - A1-21: ToField and FromField for TxHash; those of Address, LabelHash and RecoverableSignature belong beside the types in simplexmq (escalated).
-- A1-22: `enumTextDecode`; TextEncoding with field instances for ServicePaymentMethod, CryptoCurrency and InvoiceStatus in the core, `EditTag` and `TxKind` for the edit state and the transaction kind; TextEncoding for CodeState and LateWait.
+- A1-22: each `textDecode` by its own cases, as the core's `StoreServiceErrorCode`; TextEncoding with field instances for ServicePaymentMethod, CryptoCurrency and InvoiceStatus in the core, `EditTag` and `TxKind` for the edit state and the transaction kind; TextEncoding for CodeState and LateWait.
 - A1-23: `EONew` without the list.
 - A1-24: one function for the signer, turn and existingOrder pipeline of the three order handlers; codeOrderHandler uses refused.
 - A1-25: `paymentInvoice` at the five sites.

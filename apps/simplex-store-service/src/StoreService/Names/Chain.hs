@@ -84,7 +84,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (isDigit, isHexDigit)
-import Data.List (find, foldl', mapAccumL, sort)
+import Data.List (foldl', mapAccumL, sort)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
@@ -617,7 +617,56 @@ revertText = decodeLatin1 . BC.takeWhile (/= '(') . revertSignature
 
 instance TextEncoding RevertName where
   textEncode = revertText
-  textDecode t = find ((== t) . revertText) [minBound .. maxBound]
+  textDecode = \case
+    "AlreadyFrozen" -> Just RNAlreadyFrozen
+    "CommitmentNotFound" -> Just RNCommitmentNotFound
+    "CommitmentTooNew" -> Just RNCommitmentTooNew
+    "CommitmentTooOld" -> Just RNCommitmentTooOld
+    "DurationTooLong" -> Just RNDurationTooLong
+    "DurationTooShort" -> Just RNDurationTooShort
+    "Frozen" -> Just RNFrozen
+    "InsufficientAllowance" -> Just RNInsufficientAllowance
+    "InsufficientValue" -> Just RNInsufficientValue
+    "InvalidEVMAddress" -> Just RNInvalidEVMAddress
+    "InvalidNonce" -> Just RNInvalidNonce
+    "InvalidSignature" -> Just RNInvalidSignature
+    "LabelTooLong" -> Just RNLabelTooLong
+    "MaxCommitmentAgeTooHigh" -> Just RNMaxCommitmentAgeTooHigh
+    "MaxCommitmentAgeTooLow" -> Just RNMaxCommitmentAgeTooLow
+    "MinCharLengthCanOnlyDecrease" -> Just RNMinCharLengthCanOnlyDecrease
+    "MinCharLengthZero" -> Just RNMinCharLengthZero
+    "MinCommitmentAgeZero" -> Just RNMinCommitmentAgeZero
+    "NameNotAvailable" -> Just RNNameNotAvailable
+    "NameNotReserved" -> Just RNNameNotReserved
+    "NameReserved" -> Just RNNameReserved
+    "NameTooShort" -> Just RNNameTooShort
+    "NftGateCanOnlyBeDisabled" -> Just RNNftGateCanOnlyBeDisabled
+    "NftRequired" -> Just RNNftRequired
+    "NodeNotOwnedByRegistrar" -> Just RNNodeNotOwnedByRegistrar
+    "NotBeneficiary" -> Just RNNotBeneficiary
+    "NotController" -> Just RNNotController
+    "NotNameOwner" -> Just RNNotNameOwner
+    "NotOffered" -> Just RNNotOffered
+    "NotOwnerOrBeneficiary" -> Just RNNotOwnerOrBeneficiary
+    "NotProxy" -> Just RNNotProxy
+    "NotSponsor" -> Just RNNotSponsor
+    "NotSubnameRegistrar" -> Just RNNotSubnameRegistrar
+    "OffsetOutOfBoundsError" -> Just RNOffsetOutOfBoundsError
+    "OwnerMustBeCaller" -> Just RNOwnerMustBeCaller
+    "PublicSalesClosed" -> Just RNPublicSalesClosed
+    "ReasonRequired" -> Just RNReasonRequired
+    "RecipientMustBeCaller" -> Just RNRecipientMustBeCaller
+    "ReentrantCall" -> Just RNReentrantCall
+    "ResolverRequiredWhenDataSupplied" -> Just RNResolverRequiredWhenDataSupplied
+    "ReverseRecordNotSupported" -> Just RNReverseRecordNotSupported
+    "SignatureExpired" -> Just RNSignatureExpired
+    "TermsMismatch" -> Just RNTermsMismatch
+    "TermsNotAccepted" -> Just RNTermsNotAccepted
+    "TransferFailed" -> Just RNTransferFailed
+    "TransferToSelf" -> Just RNTransferToSelf
+    "UnexpiredCommitmentExists" -> Just RNUnexpiredCommitmentExists
+    "ZeroAddress" -> Just RNZeroAddress
+    _ -> Nothing
 
 revertName :: RevertReason -> Maybe RevertName
 revertName = \case

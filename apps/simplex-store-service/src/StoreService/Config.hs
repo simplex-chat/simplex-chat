@@ -43,7 +43,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (..), convertFromBase)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit, isHexDigit)
-import Data.List (find, intercalate, nub, partition)
+import Data.List (intercalate, nub, partition)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -94,7 +94,12 @@ instance TextEncoding SpeedPolicy where
     MediumSpeed -> "MediumSpeed"
     LowMediumSpeed -> "LowMediumSpeed"
     LowSpeed -> "LowSpeed"
-  textDecode t = find ((== t) . textEncode) speedPolicies
+  textDecode = \case
+    "HighSpeed" -> Just HighSpeed
+    "MediumSpeed" -> Just MediumSpeed
+    "LowMediumSpeed" -> Just LowMediumSpeed
+    "LowSpeed" -> Just LowSpeed
+    _ -> Nothing
 
 data BTCPayConfig = BTCPayConfig
   { bHost :: Text,
