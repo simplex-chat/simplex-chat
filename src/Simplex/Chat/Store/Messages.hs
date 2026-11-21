@@ -27,6 +27,7 @@ module Simplex.Chat.Store.Messages
     deleteGroupChatItemsMessages,
     createNewSndMessage,
     createSndMsgDelivery,
+    setSndMsgDeliveryAgentMsgId,
     createNewMessageAndRcvMsgDelivery,
     getLastRcvMsgInfo,
     createNewRcvMessage,
@@ -277,8 +278,16 @@ createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId} messageId = do
         (message_id, connection_id, agent_msg_id, chat_ts, created_at, updated_at, delivery_status)
       VALUES (?,?,?,?,?,?,?)
     |]
-    (messageId, connId, agentMsgId, currentTs, currentTs, currentTs, MDSSndAgent)
+    (messageId, connId, agentMsgId, currentTs, currentTs, currentTs, maybe MDSSndPending (const MDSSndAgent) agentMsgId)
   insertedRowId db
+
+setSndMsgDeliveryAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO ()
+setSndMsgDeliveryAgentMsgId db msgDeliveryId agentMsgId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE msg_deliveries SET agent_msg_id = ?, delivery_status = ?, updated_at = ? WHERE msg_delivery_id = ?"
+    (agentMsgId, MDSSndAgent, currentTs, msgDeliveryId)
 
 createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
 createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} authorGroupMemberId_ = do

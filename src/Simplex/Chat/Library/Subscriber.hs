@@ -3373,7 +3373,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       void $ withStore $ \db -> do
                         reMember <- createIntroReMember db cxt user gInfo memInfo (memberInfoPresHeader gInfo memInfo) memRestrictions
                         createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
-                      withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff True subMode
+                      afterCommitE $ withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff True subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
     sendXGrpMemInv :: Int64 -> XGrpMemIntroCont -> CM ()

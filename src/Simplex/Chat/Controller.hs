@@ -99,7 +99,7 @@ import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
-import Simplex.Messaging.Util (AnyError (..), catchAllErrors, catchOwn', (<$$>))
+import Simplex.Messaging.Util (AnyError (..), catchAllErrors, catchAllErrors', catchOwn', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -1836,6 +1836,12 @@ afterCommit :: CM' () -> CM' ()
 afterCommit action =
   ownStoreTx >>= \case
     Just StoreTx {txAfterCommit} -> atomically $ modifyTVar' txAfterCommit (action :)
+    Nothing -> action
+
+afterCommitE :: CM () -> CM ()
+afterCommitE action =
+  lift ownStoreTx >>= \case
+    Just _ -> lift . afterCommit $ action `catchAllErrors'` eToView'
     Nothing -> action
 
 ownStoreTx :: CM' (Maybe StoreTx)

@@ -94,6 +94,7 @@ chatDirectTests = do
     it "commit store transaction without the writes of a failed store call" testStoreTxSavepoint
     it "rethrow the error of a nested store transaction" testStoreTxNested
     it "receive message again after its handling failed to commit" testRedeliveredUncommittedMessage
+    it "receive contact deletion again after its handling failed to commit" testRedeliveredUncommittedContactDeletion
 #if !defined(dbPostgres)
     it "roll back store transaction after a failed savepoint rollback" testStoreTxAborted
 #endif
@@ -1668,6 +1669,22 @@ testRedeliveredUncommittedMessage =
     alice #> "@bob hi"
     bob <# "alice> hi"
     bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testRedeliveredUncommittedContactDeletion :: HasCallStack => TestParams -> IO ()
+testRedeliveredUncommittedContactDeletion =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice <##> bob
+    withFailingCommits bob "messages" "NEW.chat_msg_event = 'x.direct.del'" $ do
+      alice ##> "/_delete @2 entity notify=on"
+      alice <## "bob: contact is deleted"
+      bob <##. "critical error: "
+      bob <## "please restart the app"
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 1 connections on server localhost", "alice (Alice) deleted contact with you"]
+    bob @@@ [("@alice", "contact deleted")]
 
 #if !defined(dbPostgres)
 testStoreTxAborted :: HasCallStack => TestParams -> IO ()

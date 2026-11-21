@@ -1432,7 +1432,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
   let (batches, dropped) = batchElements maxForwardBatchLength (fwdEls <> maybe [] (: []) welcomeEl)
   when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
   forM_ batches $ \body ->
-    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
+    afterCommitE . void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
   where
     welcomeElement :: CM (Maybe ByteString)
     welcomeElement = case descrEvent_ of
@@ -2633,10 +2633,23 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 deliverMessagesB :: NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
 deliverMessagesB msgReqs = do
   msgReqs' <- liftIO compressBodies
-  sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` snd (mapAccumL toAgent Nothing msgReqs'))
-  lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
-  lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
+  lift ownStoreTx >>= \case
+    Nothing -> do
+      sent <- sendToAgent msgReqs'
+      lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
+      lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
+    Just _ -> do
+      pending <- lift . withStoreBatch $ \db -> L.map (bindRight $ createPendingDelivery db) msgReqs'
+      afterCommitE $ sendPending msgReqs' pending
+      pure pending
   where
+    sendToAgent reqs = L.zipWith prepareBatch reqs <$> withAgent (`sendMessagesB` snd (mapAccumL toAgent Nothing reqs))
+    sendPending reqs pending = do
+      sent <- L.toList . L.zip pending <$> sendToAgent reqs
+      let deliveries = [(deliveryId, agentMsgId) | (Right (deliveryIds, _), Right (_, (agentMsgId, _))) <- sent, deliveryId <- deliveryIds]
+          errs = [e | (Right _, Left e) <- sent]
+      lift . void . withStoreBatch' $ \db -> map (uncurry $ setSndMsgDeliveryAgentMsgId db) deliveries
+      unless (null errs) $ toView $ CEvtChatErrors errs
     -- group sends share bodies between connections via VRRef, so the smallest limit applies to the batch
     maxLen = if any connSupportsPQ msgReqs then maxEncodedMsgLengthPQ else maxEncodedMsgLength
     connSupportsPQ = \case
@@ -2660,7 +2673,10 @@ deliverMessagesB msgReqs = do
     prepareBatch _ (Left ae) = Left $ chatErrorAgent ae
     createDelivery :: DB.Connection -> (ChatMsgReq, (AgentMsgId, PQEncryption)) -> IO (Either ChatError ([Int64], PQEncryption))
     createDelivery db ((Connection {connId}, _, (_, msgIds)), (agentMsgId, pqEnc')) = do
-      Right . (,pqEnc') <$> mapM (createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId})) msgIds
+      Right . (,pqEnc') <$> mapM (createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId = Just agentMsgId})) msgIds
+    createPendingDelivery :: DB.Connection -> ChatMsgReq -> IO (Either ChatError ([Int64], PQEncryption))
+    createPendingDelivery db (Connection {connId, pqSndEnabled}, _, (_, msgIds)) =
+      Right . (,fromMaybe PQEncOff pqSndEnabled) <$> mapM (createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId = Nothing}) msgIds
     updatePQSndEnabled :: DB.Connection -> (ChatMsgReq, (AgentMsgId, PQEncryption)) -> IO ()
     updatePQSndEnabled db ((Connection {connId, pqSndEnabled}, _, _), (_, pqSndEnabled')) =
       case (pqSndEnabled, pqSndEnabled') of
@@ -2963,7 +2979,7 @@ sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM 
 sendFwdMemberMessage member fwd verifiedMsg =
   forM_ (readyMemberConn member) $ \(_, conn) -> do
     let body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
-    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags {notification = msgHasNotification verifiedMsg}, VRValue Nothing body)]
+    afterCommitE . void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags {notification = msgHasNotification verifiedMsg}, VRValue Nothing body)]
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM ()
@@ -3181,7 +3197,7 @@ prepareAgentJoin user enableNtfs cReqUri = do
 
 joinAgentConnectionAsync :: CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
 joinAgentConnectionAsync cmdId updateConn connId enableNtfs cReqUri cInfo subMode =
-  withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
+  afterCommitE $ withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 
 allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> Maybe GroupInfoKeys -> ChatMsgEvent e -> CM ()
 allowAgentConnectionAsync user conn@Connection {pqSupport} confId gInfo_ msg = do
@@ -3214,7 +3230,7 @@ deleteAgentConnectionAsync acId = deleteAgentConnectionAsync' acId False
 
 deleteAgentConnectionAsync' :: ConnId -> Bool -> CM ()
 deleteAgentConnectionAsync' acId waitDelivery = do
-  withAgent (\a -> deleteConnectionAsync a waitDelivery acId) `catchAllErrors` eToView
+  afterCommitE $ withAgent (\a -> deleteConnectionAsync a waitDelivery acId) `catchAllErrors` eToView
 
 deleteAgentConnectionsAsync :: [ConnId] -> CM ()
 deleteAgentConnectionsAsync acIds = deleteAgentConnectionsAsync' acIds False
@@ -3223,12 +3239,12 @@ deleteAgentConnectionsAsync acIds = deleteAgentConnectionsAsync' acIds False
 deleteAgentConnectionsAsync' :: [ConnId] -> Bool -> CM ()
 deleteAgentConnectionsAsync' [] _ = pure ()
 deleteAgentConnectionsAsync' acIds waitDelivery = do
-  withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchAllErrors` eToView
+  afterCommitE $ withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchAllErrors` eToView
 
 setAgentConnShortLinkAsync :: User -> Connection -> UserConnLinkData 'CMContact -> Maybe CRClientData -> CM ()
 setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientData_ = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetShortLink
-  withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
+  afterCommitE $ withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
 
 getAgentConnShortLinkAsync :: User -> CommandFunction -> Connection -> ShortLinkContact -> CM ()
 getAgentConnShortLinkAsync user cmdFunc conn@Connection {connId} shortLink = do
