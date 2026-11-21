@@ -1833,12 +1833,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       logInfo $ label <> ": " <> eInfo
       tryAllErrors (withStoreTx criticalErr $ handleOnce eInfo) >>= \case
         Right (withRcpt, shouldDelConns) ->
-          unless shouldDelConns $ withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
+          unless shouldDelConns $ withLog (eInfo <> " ok") $ ackHandledMsg $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ chatErrorAgent $ CRITICAL True message
         Left e -> do
-          withLog (eInfo <> " error: " <> tshow e) $ ackMsg msgMeta Nothing
+          withLog (eInfo <> " error: " <> tshow e) $ ackHandledMsg Nothing
           throwError e
       where
         Connection {connId = handledConnId} = entityConnection entity
@@ -1846,12 +1846,16 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           ChatErrorStore SEDBBusyError {} -> showCritical
           _ -> False
         handleOnce eInfo =
-          (if redelivered then withStore' (\db -> getRcvMsgDeliveryRcpt db handledConnId aMsgId) else pure Nothing) >>= \case
+          (if redelivered then withStore' (\db -> getHandledRcvMsg db handledConnId aMsgId) else pure Nothing) >>= \case
             Just handledRcpt -> pure (handledRcpt, False)
             Nothing -> do
+              withStore' $ \db -> createHandledRcvMsg db handledConnId aMsgId
               r@(withRcpt, _) <- liftEither =<< tryAllErrors (action eInfo)
-              when withRcpt $ withStore' $ \db -> setRcvMsgDeliveryRcpt db handledConnId aMsgId
+              when withRcpt $ withStore' $ \db -> setHandledRcvMsgRcpt db handledConnId aMsgId
               pure r
+        ackHandledMsg rcpt = do
+          ackMsg msgMeta rcpt
+          withStore' (\db -> deleteHandledRcvMsg db handledConnId aMsgId) `catchAllErrors` eToView
         eventInfo = do
           v <- asks eventSeq
           eId <- atomically $ stateTVar' v $ \i -> (i + 1, i + 1)
