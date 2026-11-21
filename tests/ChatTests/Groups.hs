@@ -2319,13 +2319,9 @@ testGroupMsgErrorsTimeLimit =
       connId <- relayConnIdToMember alice "bob"
       alice ##> "/_stop"
       alice <## "chat stopped"
-      locked <- newEmptyMVar
-      release <- newEmptyMVar
-      withAsync (withCCTransaction alice $ \db -> DB.execute_ db "LOCK TABLE msg_deliveries" >> putMVar locked () >> takeMVar release) $ \holder -> do
-        takeMVar locked
-        r <- timeout 1000000 $ runReaderT (runExceptT $ processAgentMessage "" connId $ MERRS (1 :| []) (INTERNAL "")) cc
-        putMVar release () >> wait holder
-        r `shouldSatisfy` isNothing
+      let lockDeliveries inside = withCCTransaction alice $ \db -> DB.execute_ db "LOCK TABLE msg_deliveries" >> inside
+      r <- holdDuring lockDeliveries (timeout 1000000 $ runReaderT (runExceptT $ processAgentMessage "" connId $ MERRS (1 :| []) (INTERNAL "")) cc)
+      r `shouldSatisfy` isNothing
 #endif
 
 testSendMulti :: HasCallStack => TestParams -> IO ()

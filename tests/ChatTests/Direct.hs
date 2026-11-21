@@ -55,8 +55,6 @@ import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
 #else
-import Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.Async (withAsync)
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Terminal.Input (updateTermState)
@@ -3104,13 +3102,8 @@ testNameCompletionTimeLimit :: HasCallStack => TestParams -> IO ()
 testNameCompletionTimeLimit ps =
   withNewTestChat ps "alice" aliceProfile $ \alice@TestCC {chatController = ChatController {chatStore}} ->
     withCCUser alice $ \user -> do
-      held <- newEmptyMVar
-      release <- newEmptyMVar
-      withAsync (withCCTransaction alice $ \_ -> putMVar held () >> takeMVar release) $ \holder -> do
-        takeMVar held
-        r <- timeout 100000 $ updateTermState (Just user) chatStore "" False 80 (TabKey, mempty) mkTermState {inputString = "@a"}
-        putMVar release () >> wait holder
-        isNothing r `shouldBe` True
+      let complete = updateTermState (Just user) chatStore "" False 80 (TabKey, mempty) mkTermState {inputString = "@a"}
+      holdDuring (withCCTransaction alice . const) (timeout 100000 $ void complete) `shouldReturn` Nothing
 #endif
 
 testSwitchContact :: HasCallStack => TestParams -> IO ()

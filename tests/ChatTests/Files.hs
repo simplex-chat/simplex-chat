@@ -10,8 +10,8 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBadgeType, testBadgeKeys)
 import ChatTests.Utils
-import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
-import Control.Concurrent.Async (concurrently_, wait, withAsync)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Logger.Simple
 import Control.Monad.Except (runExceptT)
@@ -1576,10 +1576,6 @@ testCloseFileTimeLimit :: HasCallStack => TestParams -> IO ()
 testCloseFileTimeLimit ps =
   withNewTestChat ps "alice" aliceProfile $ \TestCC {chatController = cc} -> do
     Right h <- runReaderT (runExceptT $ getFileHandle 1 (tmpFile ps "test.txt") rcvFiles AppendMode) cc
-    held <- newEmptyMVar
-    release <- newEmptyMVar
-    withAsync (withHandle_ "testCloseFileTimeLimit" h $ \_ -> putMVar held () >> takeMVar release) $ \holder -> do
-      takeMVar held
-      r <- timeout 100000 $ runReaderT (closeFileHandle 1 rcvFiles) cc
-      putMVar release () >> wait holder >> hClose h
-      r `shouldBe` Nothing
+    r <- holdDuring (withHandle_ "testCloseFileTimeLimit" h . const) (timeout 100000 $ runReaderT (closeFileHandle 1 rcvFiles) cc)
+    hClose h
+    r `shouldBe` Nothing
