@@ -192,7 +192,7 @@ sweepEndedRegistrations, every hour
   equal           unchanged
   read failed     the order read again at the next pass, the pass going on
   block unread    the pass stopped
-  log             the pass's first failed read, once; each order set ended, at note, with the value read
+  log             the pass's first failed read, once, with its registration id; a failed block read, with the pass stopped; each order set ended, at note, with the value read
 
 checkLanded, a register mined at block M
   M above the confirmed block     unread, a warning naming both blocks, checked again

@@ -1159,7 +1159,8 @@ dispute period has not ended or ended less than 7 days ago, if its registration 
 block. When the value differs from the one read at the registration, the order's phase is set to
 `ended`, and it stays `ended` when the name is registered again. An order whose read fails is read
 again at the next pass, and the other orders are read in the same pass; when the block cannot be
-read, the pass is stopped. The first failed read of each pass is logged once. Each order set
+read, the pass is stopped. The first failed read of each pass is logged once, with its order's
+registration id, and a failed block read with the pass stopped. Each order set
 `ended`, by the pass or by the check below, is logged at note with its registration id, the
 `disputeUntil(id)` read and the end it was compared with.
 

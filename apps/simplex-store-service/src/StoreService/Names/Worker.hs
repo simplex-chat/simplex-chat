@@ -36,6 +36,7 @@ import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logNote, logWarn)
 import Control.Monad (forM, forM_, forever, unless, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
+import Data.Bifunctor (first)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Either (lefts)
 import Data.Functor ((<&>))
@@ -593,10 +594,10 @@ sweepEndedRegistrations w@Worker {wkOrders = OrdersEnv {oeStore, oeContracts, oe
   disputable <- withTransaction oeStore (`disputableRegistrations` fromInteger (unixSeconds now - disputeReadMargin))
   unless (null disputable) $
     confirmedBlock oeContracts >>= \case
-      Left e -> unread e
-      Right confirmed -> mapM (endIfUnregistered now confirmed) disputable >>= mapM_ unread . take 1 . lefts
+      Left e -> logWarn $ "names ended sweep: a chain read failed, the pass is stopped: " <> tshow e
+      Right confirmed -> mapM (\rid -> first (rid,) <$> endIfUnregistered now confirmed rid) disputable >>= mapM_ unread . take 1 . lefts
   where
-    unread e = logWarn $ "names ended sweep: a chain read failed; the next pass will run: " <> tshow e
+    unread (RegistrationId ridText, e) = logWarn $ "names ended sweep: registration " <> ridText <> ": a chain read failed, read again at the next pass: " <> tshow e
     endIfUnregistered now Block {blockNumber, blockTimestamp} rid@(RegistrationId ridText) =
       safelyWith ("names ended sweep: registration " <> ridText) (Right ()) $
         withTransaction oeStore (`getRegistration` rid) >>= \case
