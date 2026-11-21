@@ -438,8 +438,8 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | DesktopApp.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt) | `showApp()`, `SimplexWindowState` |
 | SingleInstance.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt) | `acquireSingleInstance()`, `startShowFileWatcher()`, signal file hand-over |
 | DesktopTaoApp.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/DesktopTaoApp.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/DesktopTaoApp.kt) | `showTaoApp()`: the Linux window on Nucleus Tao, GTK file dialogs |
-| LinuxTray.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/LinuxTray.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/LinuxTray.kt) | `LinuxTray()`: StatusNotifierItem through ComposeNativeTray |
-| LinuxNative.desktop.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxNative.desktop.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxNative.desktop.kt) | JNI to `libsimplex_linux.so`: GTK file chooser (through the portal when `org.freedesktop.portal.FileChooser` answers before the first dialog) and confirmation, GTK theme name, GL renderer, Secret Service; `prepareLinuxRuntime()` |
+| LinuxTray.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/LinuxTray.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/LinuxTray.kt) | `LinuxTray()`: StatusNotifierItem through ComposeNativeTray; in the Flatpak, the Background portal request at the first hide |
+| LinuxNative.desktop.kt | [`common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxNative.desktop.kt`](../common/src/desktopMain/kotlin/chat/simplex/common/platform/LinuxNative.desktop.kt) | JNI to `libsimplex_linux.so`: GTK file chooser (through the portal when `org.freedesktop.portal.FileChooser` answers before the first dialog) and confirmation, Background portal request, GTK theme name, GL renderer, Secret Service; `prepareLinuxRuntime()` |
 
 ### Theme
 

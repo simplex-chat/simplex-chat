@@ -327,6 +327,7 @@ sequenceDiagram
 - Tray icon files are written to the app's temporary directory and passed by path.
 - The tray item re-registers when the watcher restarts (fork).
 - Flatpak: the tray connects through the host's xdg-dbus-proxy; versions before 0.1.6 (Ubuntu 24.04, Linux Mint 22, Debian 12) reject sd-bus connections, and the tray is unavailable there.
+- Flatpak: at the first hide to the tray, the app calls the Background portal's `RequestBackground` (`reason`, `autostart` false); an unset permission becomes yes without a dialog, so the portal's background monitor does not ask the user about the windowless app.
 
 ```mermaid
 stateDiagram-v2
@@ -335,6 +336,9 @@ stateDiagram-v2
   Check --> Shown: host registered, minimize to tray chosen
   Shown --> Shown: unread changes icon
   Shown --> Shown: watcher restarts, item re-registered
+  Shown --> Hidden: window closed
+  Hidden --> Hidden: first hide in Flatpak, RequestBackground
+  Hidden --> Shown: tray activated
   Shown --> [*]: quit
 ```
 
@@ -461,6 +465,7 @@ flowchart LR
 | dark mode | Settings portal |
 | keyring | libsecret → Secret portal, keyring file in the app's data |
 | tray | StatusNotifierWatcher talk name |
+| running hidden in the tray | Background portal, `RequestBackground` |
 | links in the browser | `xdg-open` → OpenURI portal |
 
 - Flathub manifest, in a later pull request to `flathub/chat.simplex.simplex`: the in-repo manifest with release URLs in place of the local AppImage, and the launcher's `pkill gsettings` trap removed.
@@ -534,6 +539,7 @@ Checks per cell (`e2e.sh`):
 | keyring | `settings.properties` holds the passphrase as ciphertext; `secret-tool lookup` finds the key; config directory mode 700 |
 | keyring absent, then migration (deb, AppImage) | first start on a session bus without service activation: passphrase record with `data == iv`, "Secret Service is absent" in `app.log`; next start with gnome-keyring on that bus: "Passphrase protected", ciphertext record, `secret-tool lookup` finds the key, the database opens |
 | tray | `RegisterStatusNotifierItem` in the services log |
+| background permission (Flatpak) | after the window hides, `flatpak permission-show` lists `background` `yes`; the GNOME back-end serves only Background |
 | dark mode | light window above 0.6 mean brightness; 0.25 darker after `color-scheme prefer-dark`; back within 0.05 after `default` |
 | tray activation | window hidden after a close request, shown after `Activate` |
 | message notifications | CLI peer's link pasted from the clipboard; notification replaced per chat, titled with the peer, `desktop-entry` hint, default action opens the chat, closed when the chat is opened from the list; launcher entry urgent |

@@ -4,10 +4,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import chat.simplex.common.platform.LinuxNative
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.tmpDir
 import chat.simplex.common.views.helpers.generateNewFileName
+import chat.simplex.common.views.helpers.isRunningFromFlatpak
 import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -66,4 +68,17 @@ fun ApplicationScope.LinuxTray() {
   DisposableEffect(tray) {
     onDispose { tray.dispose() }
   }
+  val hidden = !simplexWindowState.windowVisible.value
+  val backgroundReason = stringResource(MR.strings.tray_background_reason)
+  LaunchedEffect(hidden) {
+    if (hidden) requestBackground(backgroundReason)
+  }
+}
+
+private var backgroundRequested = false
+
+private fun requestBackground(reason: String) {
+  if (backgroundRequested || !isRunningFromFlatpak() || !LinuxNative.isLoaded) return
+  backgroundRequested = true
+  LinuxNative.nativeRequestBackground(reason)
 }

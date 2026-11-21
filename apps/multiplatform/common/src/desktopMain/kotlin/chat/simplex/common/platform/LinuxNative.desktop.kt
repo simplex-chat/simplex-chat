@@ -51,6 +51,9 @@ internal object LinuxNative {
   external fun nativeGtkThemeName(): String?
 
   @JvmStatic
+  external fun nativeRequestBackground(reason: String)
+
+  @JvmStatic
   external fun nativeGlRenderer(): String?
 
   @JvmStatic

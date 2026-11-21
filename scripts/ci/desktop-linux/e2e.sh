@@ -16,7 +16,7 @@ services_log=$out/desktop-services.log
 mkdir -p "$out" "$UI_STATE"
 : > "$checks"
 mkdir -p "$HOME/.config/xdg-desktop-portal"
-printf '[preferred]\ndefault=gtk\norg.freedesktop.impl.portal.Secret=gnome-keyring\n' > "$HOME/.config/xdg-desktop-portal/portals.conf"
+printf '[preferred]\ndefault=gtk\norg.freedesktop.impl.portal.Secret=gnome-keyring\norg.freedesktop.impl.portal.Background=gnome\n' > "$HOME/.config/xdg-desktop-portal/portals.conf"
 
 case "$kind" in
   deb)
@@ -81,6 +81,7 @@ light_luminance=0.6
 luminance_drop=0.25
 luminance_tolerance=0.05
 scheme_wait=20
+background_wait=20
 pane_right_offset=390
 # the peer reaches the app through the preset servers: it stays online after each message until it is sent
 peer_online=15
@@ -123,6 +124,12 @@ follow_colour_scheme() {
   check "the window turns light with the desktop's default colour scheme again" eventually "$scheme_wait" window_above "$(awk -v v="$light" -v d="$luminance_tolerance" 'BEGIN { print v - d }')"
 }
 
+background_allowed() {
+  local permissions
+  permissions=$(flatpak permission-show "$FLATPAK_APP_ID")
+  grep -qE "^background[[:space:]]+background[[:space:]]+${FLATPAK_APP_ID}[[:space:]]+yes" <<< "$permissions"
+}
+
 activate_from_tray() {
   local item service destination path
   item=$(jq -c 'select(.event == "tray_registered")' "$services_log" | tail -n 1)
@@ -140,6 +147,9 @@ activate_from_tray() {
   fi
   "$ui" close || true
   check "closing the window hides it to the tray" "$ui" hidden 15
+  if [ "$kind" = flatpak ]; then
+    check "the hidden Flatpak app is allowed to run in the background" eventually "$background_wait" background_allowed
+  fi
   gdbus call --session --dest "$destination" --object-path "$path" --method org.kde.StatusNotifierItem.Activate 0 0 || true
   check "activating the tray item shows the window" "$ui" shown 15
   "$ui" shot tray-activated

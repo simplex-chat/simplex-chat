@@ -28,6 +28,12 @@
 #define FILE_CHOOSER_INTERFACE "org.freedesktop.portal.FileChooser"
 #define VERSION_PROPERTY "version"
 #define PORTAL_PROBE_TIMEOUT_MS 2000
+#define BACKGROUND_INTERFACE "org.freedesktop.portal.Background"
+#define REQUEST_BACKGROUND "RequestBackground"
+#define BACKGROUND_REASON_OPTION "reason"
+#define BACKGROUND_AUTOSTART_OPTION "autostart"
+#define NO_PARENT_WINDOW ""
+#define DBUS_DEFAULT_TIMEOUT (-1)
 
 #define LIBEGL "libEGL.so.1"
 #define GL_RENDERER_NAME 0x1F01
@@ -212,6 +218,39 @@ Java_chat_simplex_common_platform_LinuxNative_nativeChooseFiles(
     request->callback = (*env)->NewGlobalRef(env, callback);
     g_signal_connect(dialog, "response", G_CALLBACK(on_response), request);
     show_chooser(dialog);
+}
+
+static void on_background_requested(GObject *source, GAsyncResult *result, gpointer data) {
+    (void)data;
+    GError *error = NULL;
+    GVariant *reply = g_dbus_connection_call_finish(G_DBUS_CONNECTION(source), result, &error);
+    if (reply != NULL) {
+        g_message("background: requested");
+        g_variant_unref(reply);
+    } else {
+        g_message("background: not requested, %s", error->message);
+        g_error_free(error);
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_chat_simplex_common_platform_LinuxNative_nativeRequestBackground(JNIEnv *env, jclass clazz, jstring reason)
+{
+    (void)clazz;
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    if (bus == NULL) return;
+    char *reason_utf8 = java_to_utf8(env, reason);
+    GVariantBuilder options;
+    g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
+    if (reason_utf8 != NULL) {
+        g_variant_builder_add(&options, "{sv}", BACKGROUND_REASON_OPTION, g_variant_new_string(reason_utf8));
+    }
+    g_variant_builder_add(&options, "{sv}", BACKGROUND_AUTOSTART_OPTION, g_variant_new_boolean(FALSE));
+    g_dbus_connection_call(bus, PORTAL_BUS_NAME, PORTAL_OBJECT_PATH, BACKGROUND_INTERFACE, REQUEST_BACKGROUND,
+                           g_variant_new("(sa{sv})", NO_PARENT_WINDOW, &options), G_VARIANT_TYPE("(o)"),
+                           G_DBUS_CALL_FLAGS_NONE, DBUS_DEFAULT_TIMEOUT, NULL, on_background_requested, NULL);
+    g_free(reason_utf8);
+    g_object_unref(bus);
 }
 
 JNIEXPORT jstring JNICALL

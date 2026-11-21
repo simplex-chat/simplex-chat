@@ -599,7 +599,8 @@ jobs:
             sway xwayland grim wtype jq dbus gnome-keyring libsecret-tools python3-dbus python3-gi libwayland-dev libxkbcommon-dev pkg-config \
             libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri flatpak xdg-desktop-portal xdg-desktop-portal-gtk fuse3 \
             wmctrl xclip wl-clipboard libglib2.0-bin dconf-gsettings-backend gsettings-desktop-schemas
-          dpkg-query -W sway grim wtype gnome-keyring libegl-mesa0 flatpak xdg-desktop-portal
+          sudo apt-get install -y --no-install-recommends xdg-desktop-portal-gnome
+          dpkg-query -W sway grim wtype gnome-keyring libegl-mesa0 flatpak xdg-desktop-portal xdg-desktop-portal-gnome
 
       - name: Install the CLI peer
         env:

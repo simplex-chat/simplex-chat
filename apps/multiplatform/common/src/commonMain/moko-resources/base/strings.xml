@@ -3198,6 +3198,7 @@
   <string name="tray_quit">Quit SimpleX</string>
   <string name="tray_tooltip">SimpleX</string>
   <string name="tray_tooltip_unread">SimpleX — %d unread</string>
+  <string name="tray_background_reason">SimpleX keeps running in the tray to receive messages.</string>
   <string name="appearance_minimize_to_tray">Close to tray</string>
   <string name="appearance_minimize_to_tray_desc">Runs in background to receive messages</string>
   <string name="badge_supports_simplex">%s supports SimpleX Chat.</string>
