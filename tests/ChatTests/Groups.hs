@@ -12581,8 +12581,11 @@ testChannelRemoveRelay = testChannelRemoveRelay_ (const id)
 #if defined(dbPostgres)
 testChannelRemoveRelayConnSavedLate :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelayConnSavedLate = testChannelRemoveRelay_ $ \cc refresh -> do
+  withCCTransaction cc $ \db -> do
+    DB.execute_ db "CREATE FUNCTION wait_test_lock() RETURNS trigger AS $$ BEGIN PERFORM pg_advisory_xact_lock(1); RETURN NEW; END $$ LANGUAGE plpgsql"
+    DB.execute_ db "CREATE TRIGGER wait_test_lock BEFORE INSERT ON connections FOR EACH ROW EXECUTE FUNCTION wait_test_lock()"
   locked <- newEmptyMVar
-  withAsync (withCCTransaction cc $ \db -> DB.execute_ db "LOCK TABLE connections IN EXCLUSIVE MODE" >> putMVar locked () >> threadDelay 2000000) $ \a ->
+  withAsync (withCCTransaction cc $ \db -> DB.execute_ db "DO $$ BEGIN PERFORM pg_advisory_xact_lock(1); END $$" >> putMVar locked () >> threadDelay 2000000) $ \a ->
     takeMVar locked >> refresh >> wait a
 #endif
 
