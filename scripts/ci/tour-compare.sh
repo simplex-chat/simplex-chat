@@ -22,5 +22,8 @@ for side in base head; do
     cp "$shot" "$result/$side/${name#*-}"
   done
 done
-find "$result/head" -maxdepth 1 -name '*.png' -printf '%f\n' | sort | jq -R '{file: .}' | jq -s . > "$result/head/index-tour.json"
-python3 "$here/snapshots-compare.py" "$result/base" "$result/head" "$result/diff" || true
+for shot in "$result/head"/*.png; do
+  [ -e "$shot" ] && echo "${shot##*/}"
+done | sort | jq -R '{file: .}' | jq -s . > "$result/head/index-tour.json"
+python=$(command -v python3 || command -v python)
+"$python" "$here/snapshots-compare.py" "$result/base" "$result/head" "$result/diff" || true

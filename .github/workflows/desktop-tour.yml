@@ -1,0 +1,162 @@
+name: desktop-tour
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: Commit to compare with; the merge base with master when empty
+        type: string
+        default: ""
+      libraries:
+        description: Release whose native libraries both apps get
+        type: string
+        default: v7.1.4
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-tour-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VER: 17
+  PYTHON_VER: "3.12"
+
+jobs:
+  tour:
+    name: app tour on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            asset: simplex-desktop-macos-aarch64.dmg
+            links: macos-arm64
+            app: release/main/app/SimpleX.app/Contents/MacOS/SimpleX
+            data: .local/share/simplex
+            config: .config/simplex
+          - os: windows-latest
+            asset: simplex-desktop-windows-x86_64.msi
+            links: windows-x64
+            app: release/main/app/SimpleX/SimpleX.exe
+            data: AppData/Roaming/SimpleX
+            config: AppData/Roaming/SimpleX
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VER }}
+
+      - name: Install tour tools
+        run: |
+          python -m pip install pyautogui==0.9.54 pytesseract==0.3.13 pillow==11.3.0
+          if [ "$RUNNER_OS" = macOS ]; then
+            brew install tesseract
+          else
+            choco install -y tesseract
+            echo "C:\\Program Files\\Tesseract-OCR" >> "$GITHUB_PATH"
+          fi
+
+      - name: Check out the base
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          git fetch --no-tags "$GITHUB_SERVER_URL/simplex-chat/simplex-chat" master
+          base=${BASE:-$(git merge-base HEAD FETCH_HEAD)}
+          echo "base: $base, head: $(git rev-parse HEAD)" | tee -a "$GITHUB_STEP_SUMMARY"
+          git worktree add "$RUNNER_TEMP/base" "$base"
+          git -C "$RUNNER_TEMP/base" submodule update --init --recursive
+
+      - name: Download the release's app
+        env:
+          RELEASE: ${{ inputs.libraries }}
+          ASSET: ${{ matrix.asset }}
+        run: |
+          url=$GITHUB_SERVER_URL/simplex-chat/simplex-chat/releases/download/$RELEASE
+          mkdir -p "$RUNNER_TEMP/release"
+          cd "$RUNNER_TEMP/release"
+          curl -fsSL -o "$ASSET" "$url/$ASSET"
+          curl -fsSL -o _sha256sums "$url/_sha256sums"
+          if command -v sha256sum > /dev/null; then
+            grep " $ASSET\$" _sha256sums | sha256sum -c -
+          else
+            grep " $ASSET\$" _sha256sums | shasum -a 256 -c -
+          fi
+
+      - name: Extract the release's native libraries (macOS)
+        if: runner.os == 'macOS'
+        env:
+          ASSET: ${{ matrix.asset }}
+        run: |
+          hdiutil attach -nobrowse -readonly -mountpoint "$RUNNER_TEMP/dmg" "$RUNNER_TEMP/release/$ASSET"
+          lib=$(find "$RUNNER_TEMP/dmg" -name libapp-lib.dylib | head -n 1)
+          mkdir -p "$RUNNER_TEMP/libraries"
+          cp -R "$(dirname "$lib")/." "$RUNNER_TEMP/libraries/"
+          hdiutil detach "$RUNNER_TEMP/dmg"
+          ls "$RUNNER_TEMP/libraries"
+
+      - name: Extract the release's native libraries (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          ASSET: ${{ matrix.asset }}
+        run: |
+          $msi = Join-Path $env:RUNNER_TEMP "release\$env:ASSET"
+          $target = Join-Path $env:RUNNER_TEMP "msi"
+          Start-Process msiexec.exe -Wait -ArgumentList "/a `"$msi`" /qn TARGETDIR=`"$target`""
+          $lib = Get-ChildItem -Path $target -Recurse -Filter libapp-lib.dll | Select-Object -First 1
+          $libraries = Join-Path $env:RUNNER_TEMP "libraries"
+          New-Item -ItemType Directory -Force -Path $libraries | Out-Null
+          Copy-Item -Recurse -Path (Join-Path $lib.DirectoryName "*") -Destination $libraries
+          Get-ChildItem $libraries
+
+      - name: Build both apps
+        env:
+          LINKS: ${{ matrix.links }}
+        run: |
+          for tree in "$PWD" "$RUNNER_TEMP/base"; do
+            mkdir -p "$tree/apps/multiplatform/build/links/$LINKS"
+            cp -R "$RUNNER_TEMP/libraries/." "$tree/apps/multiplatform/build/links/$LINKS/"
+            (cd "$tree/apps/multiplatform" && ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :desktop:createDistributable -x :desktop:cmakeBuildAndCopy)
+          done
+
+      - name: Tour the base's app and this app
+        env:
+          APP: ${{ matrix.app }}
+          DATA: ${{ matrix.data }}
+          CONFIG: ${{ matrix.config }}
+        run: |
+          for side in base head; do
+            tree=$PWD
+            [ "$side" = base ] && tree=$RUNNER_TEMP/base
+            rm -rf "${HOME:?}/$DATA" "${HOME:?}/$CONFIG"
+            python scripts/ci/desktop-tour.py "$tree/apps/multiplatform/$APP" "$RUNNER_TEMP/tour/$side" || true
+          done
+          scripts/ci/tour-compare.sh "$RUNNER_TEMP/tour/base" "$RUNNER_TEMP/tour/head" "$RUNNER_TEMP/tour/pairs"
+
+      - name: Upload tour
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-tour-${{ matrix.os }}
+          path: ${{ runner.temp }}/tour
+          retention-days: 14
+          if-no-files-found: warn
