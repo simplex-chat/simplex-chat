@@ -1967,7 +1967,7 @@ the Stripe key, so the dev server shows its stand-in card form. Its controls:
 | `/control/confirming/<invoice>` | BTCPay processes the invoice paid in full; Stripe processes the card payment |
 | `/control/expire/<invoice>` | BTCPay expires the invoice; Stripe cancels the payment intent |
 | `/control/take` `{"label"}` | the mock's own: the holder registers the name, through a registrar of its own |
-| `/control/general-terms`, `/control/community-terms` | the mock's own: the contracts' owner sets the terms |
+| `/control/general-terms` | the mock's own: the contracts' owner sets the terms |
 | `/control/search` with the reset that `search.spec.ts` sends after each case | answered as done |
 
 After each change at a provider, the runner sends the service that provider's webhook and answers

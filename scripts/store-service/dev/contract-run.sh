@@ -301,7 +301,7 @@ const RUNNER_CONTROL = /^\/control\/(code|(settle|partial|confirming|expire|refu
 
 writeFileSync(rivalChainFile, JSON.stringify({ ...JSON.parse(readFileSync(chainFile, "utf8")), registrarKey: toHex(rival.getHdKey().privateKey) }))
 process.env.LOCAL_CHAIN_OUT = rivalChainFile
-const { controlCommunityTerms, controlGeneralTerms, controlTake, HttpError } = await import("./dev/mock/service.ts")
+const { controlGeneralTerms, controlTake, HttpError } = await import("./dev/mock/service.ts")
 const { holder, ownerOf, send, sponsor } = await import("./dev/mock/chain.ts")
 await send(sponsor, "setRegistrarAllowance", [rival.address, ALLOWANCE], undefined, guardian)
 
@@ -327,7 +327,6 @@ const CHAIN_CONTROLS = {
     return answer
   },
   "/control/general-terms": controlGeneralTerms,
-  "/control/community-terms": controlCommunityTerms,
 }
 
 async function bodyOf(req) {
