@@ -49,7 +49,7 @@ GENERATED = (
     Media("hevc.mp4", True, False, ("-c:v", "libx265", "-tag:v", "hvc1", "-pix_fmt", "yuv420p", "-c:a", "aac", *STEREO)),
     Media("av1.mp4", True, False, ("-c:v", "libaom-av1", "-cpu-used", "8", "-crf", "50", "-b:v", "0", "-pix_fmt", "yuv420p", "-c:a", "aac", *STEREO)),
     Media("h264.mov", True, False, (*H264, "-c:a", "aac", *STEREO)),
-    Media("h263.3gp", True, False, ("-s", "176x144", "-c:v", "h263", "-c:a", "libopencore_amrnb", "-ar", "8000", "-ac", "1")),
+    Media("h263.3gp", True, False, ("-s", "176x144", "-c:v", "h263", "-c:a", "aac", "-ar", "8000", "-ac", "1")),
     Media("vp9.webm", True, False, ("-c:v", "libvpx-vp9", "-pix_fmt", "yuv420p", "-c:a", "libopus", *STEREO)),
     Media("vp8.webm", True, False, ("-c:v", "libvpx", "-pix_fmt", "yuv420p", "-c:a", "libvorbis", *STEREO)),
     Media("h264.mkv", True, False, (*H264, "-c:a", "ac3", *STEREO)),
