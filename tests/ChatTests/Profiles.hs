@@ -29,7 +29,7 @@ import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
-import Simplex.Chat.Controller (CM, ChatCommand (APIAddMyAddressShortLink, APIConnectPreparedContact, APIRotateAddressRatchetKeys, APISetAddressSettings, APISetConnectionIncognito), ChatConfig (..), ChatController (ChatController, chatLock, smpAgent), ChatHooks (..), ChatResponse (CRConnectionIncognitoUpdated, CRContactAlreadyExists), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Controller (CM, ChatCommand (APIAddMyAddressShortLink, APIConnectPreparedContact, APICreateMyAddress, APIRotateAddressRatchetKeys, APISetAddressSettings, APISetConnectionIncognito), ChatConfig (..), ChatController (ChatController, chatLock, smpAgent), ChatHooks (..), ChatResponse (CRConnectionIncognitoUpdated, CRContactAlreadyExists), defaultChatHooks, storeCxt, withAgent)
 import Simplex.Chat.Library.Commands (execChatCommand')
 import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage', withUserProfileLock)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
@@ -1438,10 +1438,8 @@ testRotateAddressRatchetKeys =
 testAddressDataProfileLock :: HasCallStack => TestParams -> IO ()
 testAddressDataProfileLock =
   testChat aliceProfile $ \alice -> do
-    alice ##> "/ad"
-    _ <- getContactLink alice True
     let settings = AddressSettings {businessAddress = False, autoAccept = Nothing, chatLayout = Nothing, autoReply = Just $ MCText "hello"}
-    forM_ [APIAddMyAddressShortLink 1 Nothing, APISetAddressSettings 1 Nothing settings, APIRotateAddressRatchetKeys 1] $
+    forM_ [APICreateMyAddress 1 Nothing Nothing, APIAddMyAddressShortLink 1 Nothing, APISetAddressSettings 1 Nothing settings, APIRotateAddressRatchetKeys 1] $
       waitsForProfileLock alice
   where
     waitsForProfileLock alice cmd = do
