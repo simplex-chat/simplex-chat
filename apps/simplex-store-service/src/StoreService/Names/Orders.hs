@@ -82,9 +82,8 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Chain (Hex32 (..), TxHash)
 import StoreService.Names.Registration (Commitment, LinkKind)
 import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), parseChecksumAddress, personalDigest)
-import StoreService.Names.Store (CodeInsertRefused (..), FailReason (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Store (CodeInsertRefused (..), LiveOrder (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderPhase (..), PrepaidCode (..), TxHistory (..), NameTransaction (..), RegistrationTx (..), TxFor (..), TxSettlement (..), TxState (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, labelHolder, markRead, registrationTransactions, retargetRegistration, spendBalance, updateRegistration)
 import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
-import StoreService.Names.View (lapsedAt)
 import StoreService.Store.Invoices (currentSecond)
 
 data OrdersEnv = OrdersEnv
@@ -304,13 +303,10 @@ checkPrice ct len years price =
       | chainPrice /= price -> pure $ Left $ ORCatalogChanged chainPrice
       | otherwise -> pure $ Right ()
 
--- | A failed order and one whose commitment lapsed unsigned can move to another name.
-movable :: UTCTime -> NameRegistration -> Bool
-movable now r@NameRegistration {nrPhase} = case nrPhase of
-  OFailed _ FRMonthEnded -> False
-  OFailed _ FRSignatureRefused -> False
-  OFailed {} -> True
-  OCommitted _ -> lapsedAt now r
+-- | Only a taken order can move to another name.
+movable :: NameRegistration -> Bool
+movable NameRegistration {nrPhase} = case nrPhase of
+  OTaken -> True
   _ -> False
 
 readNoteSeconds :: NominalDiffTime
@@ -330,33 +326,34 @@ checkMoveMeets st NameRegistration {nrId = rid, nrOwner} OrderFields {ofLabelHas
   orders <- withTransaction st $ \db -> getLiveOrders db ofCommitment nrOwner ofLabelHash now
   pure $ if any ((/= rid) . nrId . loRegistration) orders then Left OROrderExists else Right ()
 
--- | The new name's chain price for its years, at most what the order is worth, becomes its price.
-checkMovePrice :: Contracts -> NameRegistration -> NameLength -> Int -> IO (Either OrderRefusal USDCents)
+-- | The new name's chain price for its years must be the order's price.
+checkMovePrice :: Contracts -> NameRegistration -> NameLength -> Int -> IO (Either OrderRefusal ())
 checkMovePrice ct NameRegistration {nrPrice} len years =
   chainPriceCents ct len years >>= \case
     Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: a move's price read failed: " <> tshow e)
     Right price
       | price > nrPrice -> pure $ Left $ ORPriceTooHigh price
-      | otherwise -> pure $ Right price
+      | price < nrPrice -> pure $ Left $ ORCatalogChanged price
+      | otherwise -> pure $ Right ()
 
--- | The move's write, a compare-and-set on the version read. A code order's code is checked and reserved again in the code's turn,
--- keeping its price. A paid order takes the new name's price, and moved to a cheaper name keeps the difference as its balance,
--- credited in the move's transaction and the balance's turn.
+-- | The move's write, a compare-and-set on the version read, keeping the order's price. A code order's code is checked and reserved
+-- again in the code's turn. A paid order's price is spent from its own balance in the move's transaction and the balance's turn.
 retargetOrder :: OrdersEnv -> NameRegistration -> OrderFields -> NameReveal -> IO (Either WriteRefusal Int64)
 retargetOrder OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrPayment, nrPrice, nrYears} fields@OrderFields {ofLength} reveal = do
   now <- oeNow
-  let write price db = versionWritten <$> retargetRegistration db r fields reveal price now
-      paidMove =
-        checkMovePrice oeContracts r ofLength (orderYears fields nrYears) >>= \case
-          Left refusal -> pure $ Left $ WRRefused refusal
-          Right price
-            | price < nrPrice -> withBalanceTurn oeTurns nrId $ withTransaction oeStore $ \db -> write price db >>= traverse (\v -> v <$ creditBalance db nrId (nrPrice - price) now)
-            | otherwise -> withTransaction oeStore (write price)
+  let write db = versionWritten <$> retargetRegistration db r fields reveal nrPrice now
+      spent db v =
+        spendBalance db nrId nrPrice now >>= \case
+          True -> pure v
+          False -> E.throwIO $ OrderRefused $ ORBadRequest "the order's balance does not hold its price"
   case nrPayment of
-    OPInvoice {} -> paidMove
+    OPInvoice {} ->
+      checkMovePrice oeContracts r ofLength (orderYears fields nrYears) >>= \case
+        Left refusal -> pure $ Left $ WRRefused refusal
+        Right () -> withBalanceTurn oeTurns nrId $ either (\(OrderRefused refusal) -> Left $ WRRefused refusal) id <$> E.try (withTransaction oeStore $ \db -> write db >>= traverse (spent db))
     OPCode codeId -> do
       PrepaidCode {pcCodeHash} <- withTransaction oeStore (`getPrepaidCodeById` codeId)
-      either (Left . WRRefused . ORCode) id <$> reserveCode oeTurns oeStore now pcCodeHash nrId ofLength (write nrPrice)
+      either (Left . WRRefused . ORCode) id <$> reserveCode oeTurns oeStore now pcCodeHash nrId ofLength write
 
 versionWritten :: VersionWrite -> Either WriteRefusal Int64
 versionWritten = \case

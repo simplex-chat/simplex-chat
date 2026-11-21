@@ -276,7 +276,7 @@ DROP TABLE @subscription_charges;
 
 -- A registration is live as Names.Store's orderLive decides.
 -- reserved_by is added after the registrations table, which references the codes table.
--- A balance's amount = credited - refunded, less the cents taken back at reversals.
+-- A balance's amount = credited - refunded, less the prices of its order's moves and the cents taken back at reversals.
 -- Crypto is counted in integer units (satoshi, piconero), so every sum is exact; rates are decimal text, never summed.
 -- invoiced_units is the crypto a payment's invoice asks, network fee included, which late and overpaid crypto is a price share of.
 m20261013_names :: Query

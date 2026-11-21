@@ -94,6 +94,7 @@ module StoreService.Names.Store
     balanceByReference,
     balanceLink,
     creditBalance,
+    spendBalance,
     refundBalance,
     recordReversal,
     takeBackBalance,
@@ -964,7 +965,7 @@ closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion, nrPaym
 
 -- | Whether an order can still progress to a registration for its name. The unique live indexes allow one such order per commitment,
 -- and one per owner and label hash, so a wallet can order a name again once its registration is done.
--- An unpaid order is live while its invoice is open; a taken order is final, its worth kept as a balance.
+-- An unpaid order is live while its invoice is open; a taken order, its worth kept as a balance, is live again only by its move.
 orderLive :: NameRegistration -> Bool
 orderLive NameRegistration {nrPhase} = case nrPhase of
   OUnpaid _ -> True
@@ -979,7 +980,8 @@ orderLive NameRegistration {nrPhase} = case nrPhase of
   ORegistered {} -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
--- A closed order is never made live again, and a write that would make the order meet another live one changes nothing.
+-- A closed order is never made live again, a taken one only by a write that counts its move, and a write that would make the order meet
+-- another live one changes nothing.
 updateRegistration :: DB.Connection -> NameRegistration -> UTCTime -> IO VersionWrite
 updateRegistration db r now = do
   changed <-
@@ -993,7 +995,7 @@ updateRegistration db r now = do
           accept_terms = ?, accept_nonce = ?, accept_signature = ?, commit_tx = ?, commit_block = ?, register_tx = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
           registered_at = ?, failed_at = ?, fail_reason = ?, closed_by = ?, live = ?, moves = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
-          AND (? = 0 OR (live = 1 AND NOT EXISTS (
+          AND (? = 0 OR ((live = 1 OR (phase = ? AND moves < ?)) AND NOT EXISTS (
             SELECT 1 FROM @name_registrations o
             WHERE o.live = 1 AND o.registration_id <> ? AND (o.commitment = ? OR (o.owner = ? AND o.label_hash = ?))
           )))
@@ -1003,7 +1005,7 @@ updateRegistration db r now = do
           :. revealRow nrReveal
           :. (commitTx, int64 <$> commitBlock, registerTx, roundedSeconds <$> revealAfter, roundedSeconds <$> revealBefore, roundedSeconds <$> expiresAt)
           :. (registeredAt, failedAt, failReason, closedBy, BI live, nrMoves, now)
-          :. (rid, nrVersion, BI live, rid, nrCommitment, nrOwner, nrLabelHash)
+          :. (rid, nrVersion, BI live, PTaken, nrMoves, rid, nrCommitment, nrOwner, nrLabelHash)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
@@ -1025,8 +1027,8 @@ updateRegistration db r now = do
       _ -> (Nothing, Nothing, Nothing, Nothing, Nothing)
     live = orderLive r
     refusal =
-      DB.query db (mkQuery "SELECT version, live FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case
-        [(version, BI storedLive)] | version == nrVersion -> pure $ if storedLive then LiveOrderExists else NotLive
+      DB.query db (mkQuery "SELECT version, live, phase, moves FROM @name_registrations WHERE registration_id = ?") (Only rid) >>= \case
+        [(version, BI storedLive, storedPhase, storedMoves)] | version == nrVersion -> pure $ if storedLive || (storedPhase == PTaken && storedMoves < nrMoves) then LiveOrderExists else NotLive
         _ -> pure VersionChanged
 
 type RevealRow = (Maybe Text, Maybe Hex32, Maybe Text, Maybe Text, Maybe Int64, Maybe Int64, Maybe RecoverableSignature) :. (Maybe TermsHash, Maybe Int64, Maybe RecoverableSignature)
@@ -1263,6 +1265,15 @@ creditBalance db (RegistrationId rid) cents now =
     |]
     )
     (rid, cents, cents, now, now, rid)
+
+-- | The price, above 0, where the amount holds it.
+spendBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool
+spendBalance db (RegistrationId rid) price now =
+  (> 0)
+    <$> executeChanging
+      db
+      (mkQuery "UPDATE @name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ? AND amount >= ? AND ? > 0")
+      (price, now, rid, price, price)
 
 -- | All of the balance, where it is the cents given and above 0; refunded counts every refund.
 refundBalance :: DB.Connection -> RegistrationId -> USDCents -> UTCTime -> IO Bool

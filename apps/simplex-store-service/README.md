@@ -1195,7 +1195,12 @@ fails the price read, and the service logs a warning with the price:
 
 - a search answers `503 provider_unavailable`;
 - an order answers `503 name_check_unavailable` before any payment;
-- a move answers `503 name_check_unavailable` and credits nothing.
+- a move answers `503 name_check_unavailable`.
+
+A paid order moves only to a name of its own price: a dearer one answers `409 price_too_high` and a
+cheaper one `409 catalog_changed`, each with the name's price. The price is spent from the order's
+balance, and a balance that no longer holds it, refunded or taken back at a dispute, answers
+`400 bad_request`.
 
 Code orders and their moves read no price, so the floor does not apply to them. The default is the
 launch price of a name of 8 letters or more, $100 for 2 years. One floor bounds every length, so a
@@ -1473,7 +1478,7 @@ commitment, and a commit's dry run that reverts for one of the reasons above tow
 `max_dry_run_failures`. At either cap the order fails with the reason `registryRefused`, logged at error and
 posted in the managed group as `names worker: registration <id> failed: its register failed <n> times
 at its dry run, last: <reason>`, and support closes it with `//close` (see
-[Closing a failed order](#closing-a-failed-order)). A move starts both counts again. Any other
+[Closing a failed order](#closing-a-failed-order)). A taken order's move starts both counts again. Any other
 failure after which the order's phase is kept, such as a node that does not answer, funds, the fee
 cap, the allowance or an exception in its step, is posted in the group after 10 minutes of
 consecutive failures, of any reasons, with the latest reason; an exception is logged at error
@@ -1494,10 +1499,10 @@ A signature past its deadline is cleared, and the page signs again. A signature 
 that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `resolver`, or of
 `[names] tld`, fails the order before its acceptance relay or its register is sent, with the reason `signatureRefused`; the log line is
 `[ERROR …] names worker: registration <id> failed: its stored signature is refused under the service's current configuration, …`,
-and the same text is posted in the managed group. Such an order is not moved to any name, its own
-included; its page asks the buyer to contact support.
+and the same text is posted in the managed group. Its page asks the buyer to contact support. Only
+an order whose name was taken moves to another name.
 
-A move or a close of a failed order, and the worker's judgment of a register that did not go
+A close of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation
 depth shows the order's owner holding the name, even if this order's register never landed: an
 owner who got the name another way counts as served, and a code order spends its code.
@@ -1778,9 +1783,10 @@ them later is logged as not applied and changes nothing.
 
 A paid name order keeps its money as a balance when it ends `taken` (another buyer registered the
 name first, or support closed the failed order with `//close`, which also records the refund; see
-[Closing a failed order](#closing-a-failed-order)), when it moves to a cheaper name (the difference), when a payment reaches its invoice
+[Closing a failed order](#closing-a-failed-order)), when a payment reaches its invoice
 after the invoice closed, and when its invoice was paid more crypto than it asked (the extra). The
-buyer asks for a balance back: the page tells them to
+balance of an order another buyer's name took pays that order's move to another name of its price,
+and no other order. Otherwise the buyer asks for a balance back: the page tells them to
 write to chat@simplex.chat with the order's reference, which is its invoice id, or its registration
 id for an order without an invoice. Nothing is refunded automatically, and the service never learns
 where to send money. A reference is not proof of who paid: a registration id is in the service's
@@ -1817,8 +1823,8 @@ group](#balances-and-failed-orders-in-the-group)):
    balance.
 3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats what
    paid. Pay the balance's amount in US dollars back now, by the method it lists. The refund is
-   recorded before the money is paid back. The service logs each recorded refund at note with the
-   order's registration id and the cents.
+   recorded first so that a move cannot spend the money while it is paid back. The service logs
+   each recorded refund at note with the order's registration id and the cents.
 
 The commands also answer when the reference matches no order, when the order has no balance, and
 when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
@@ -1844,11 +1850,11 @@ The reference is the order's invoice id, or its registration id. The command rea
 needs `[names]` and `[chain]` in `store_service.ini`; without `[names]` it answers that names are not
 enabled. It:
 
-1. checks the chain first, as a move does: when a register of the order mined, or its owner holds
+1. checks the chain first: when a register of the order mined, or its owner holds
    the name at the confirmation depth, the order is set `registered`, nothing is refunded, and the
    change is logged at note with its registration id;
 2. otherwise, in one transaction, sets the order `taken`, clears its stored signatures, credits its
-   price to its balance, which may already hold a move's difference or an overpayment, and records all
+   price to its balance, which may already hold an overpayment or late money, and records all
    of that balance as refunded, as `//record_refund` does.
 
 The answer, `Closed order <id>, failed or lapsed unsigned at <time>, as taken and recorded a refund of $100.00. Check at
@@ -1867,8 +1873,9 @@ the orders refunded by hand with `//close` and pay nothing, so that their record
 psql "$BADGE_DB_CONN" -Atc "SELECT r.registration_id, r.phase, r.failed_at, r.reveal_before, ni.invoice_id, i.provider_ref FROM simplex_v1_chat_schema.sx_badge_service_name_registrations r LEFT JOIN simplex_v1_chat_schema.sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id LEFT JOIN simplex_v1_chat_schema.sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id WHERE r.name_prepaid_code_id IS NULL AND (r.phase = 'failed' OR (r.phase = 'committed' AND r.label IS NULL AND r.reveal_before < EXTRACT(EPOCH FROM now()))) ORDER BY r.created_at"
 ```
 
-A closed order reads `taken` in Your names, with its refund. `/retry` and a move answer
-`400 bad_request`, `//balance` finds nothing to refund, and the wallet can order the name again.
+A closed order reads `taken` in Your names, with its refund. `/retry` answers `400 bad_request`, and so
+does a move, as the balance no longer holds the price; `//balance` finds nothing to refund, and the
+wallet can order the name again.
 
 The command records nothing for an order that is neither failed nor lapsed unsigned, or was paid with
 a prepaid code, whose code is released when the month from its reservation ends; for a failed chain read;

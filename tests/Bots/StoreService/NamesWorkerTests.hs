@@ -98,7 +98,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "stores each failed dry run, fails an order at the fifth for a permanent reason, keeping a code, and retries one without data past the lapse, storing it once" testRevertFailed
     it "keeps an order committed while the sponsor allowance is used up, and registers it after a top-up" testAllowanceUsedUp
     it "keeps an order waiting on the allowance past its commitment's lapse, sending nothing, then commits again and registers with its stored intent" testAllowanceAcrossLapse
-    it "fails an order at its fifth register mined with status 0 for its commitment, sending nothing, refuses its Try again, and registers it on a move once its owner holds the name" testSendsCapped
+    it "fails an order at its fifth register mined with status 0 for its commitment, sending nothing, and refuses its Try again and a move" testSendsCapped
     it "clears the reveal on InvalidNonce or TermsNotAccepted, staying committed, and reads the name policy again on TermsNotAccepted" testInvalidNonce
     it "relays no intent past its deadline, clearing the reveal and staying committed" testExpiredIntent
     it "fails an order at once, logging and reporting it, when its stored signature is refused under another chain id, sending nothing, and refuses its move to any name" testSignatureUnderOtherConfig
@@ -768,10 +768,8 @@ testSendsCapped = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}} -> do
   fst <$> retryOf ctx x `shouldReturn` 400
   answerFree ctx "alicebakers"
   to <- moveTo ctx "alicebakers" 10
-  answerOwner ctx "alicebakery" (nrOwner x)
-  answerExpiry ctx "alicebakery" expiry
-  fst <$> move ctx keyA x to `shouldReturn` 409
-  namePhase . nrPhase <$> stored ctx x `shouldReturn` PRegistered
+  move ctx keyA x to `shouldReturn` refusedWith 400 "bad_request"
+  stored ctx r `shouldReturn` x
 
 testInvalidNonce :: IO ()
 testInvalidNonce = forM_ [("InvalidNonce()", fakeNamePolicy), ("TermsNotAccepted(string)", newPolicy)] $ \(revert, policyAfter) -> withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders = OrdersEnv {oeContracts}}} -> do

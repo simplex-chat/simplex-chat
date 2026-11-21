@@ -8,7 +8,7 @@
 module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
 
 import Control.Concurrent.STM (atomically)
-import Control.Logger.Simple (logError, logNote)
+import Control.Logger.Simple (logError)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
@@ -120,16 +120,10 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow, o
     inTurns fields timestamp reveal stored = do
       now <- oeNow
       moveTo now stored fields timestamp reveal
-    moveTo now r@NameRegistration {nrPhase} fields timestamp reveal
+    moveTo now r fields timestamp reveal
       | orderFieldsOf r == fields = answerNow . jsonResponse status200 . J.toJSON <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
-      | not (movable now r) = refuse $ ORBadRequest "the order is not movable"
-      | namePhase nrPhase == PFailed =
-          confirmLanded env r >>= \case
-            LNotLanded -> moveChecked now r fields reveal
-            LRegistered v -> written env rid v . refusalAnswer <$> registrationChanged env rid
-            LChanged -> changed
-            LUnread -> refusalAnswer NRProviderUnavailable <$ logNote (what <> " refused: the register check's chain read failed")
+      | not (movable r) = refuse $ ORBadRequest "the order is not movable"
       | otherwise = moveChecked now r fields reveal
     moveChecked now r@NameRegistration {nrOwner, nrMoves, nrYears, nrReveal} fields@OrderFields {ofLabelHash, ofDuration} reveal
       | nrMoves >= nMaxOrderMoves oeConfig = refusalAnswer <$> registrationRefusal env NRMoveLimit rid

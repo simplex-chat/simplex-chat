@@ -73,7 +73,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "closes nothing from a stale version" testCloseOverdueStale
     it "bumps the version on every write and changes nothing for a stale one" testVersionBumps
     it "writes and reads back every changeable field, and clears the reveal" testRoundTrip
-    it "keeps live in step with the phase" testLiveFollowsPhase
+    it "keeps live in step with the phase, a taken order live again only by a write that counts a move" testLiveFollowsPhase
     it "is live while an order can still progress to a registration for its name" testOrderLive
     it "refuses to queue a closed order, also when a newer live order holds its name" testLatePayment
     it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
@@ -512,6 +512,8 @@ testLiveFollowsPhase = withServiceStore $ \st -> do
   step "r1" OTaken False
   r1 <- reg st "r1"
   write st r1 {nrPhase = failedPhase} `shouldReturn` NotLive
+  write st r1 {nrPhase = OQueued, nrMoves = nrMoves r1 + 1} `shouldReturn` Written (nrVersion r1 + 1)
+  orderLive <$> reg st "r1" `shouldReturn` True
   step "r2" (ORegistering commitFixture $ TxHash $ hashFixture 9) True
   step "r2" OTaken False
   placePaid st "r3" ownerA (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()

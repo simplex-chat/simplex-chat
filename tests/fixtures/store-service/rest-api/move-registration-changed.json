@@ -1,7 +1,10 @@
 {
   "body": {
     "registration": {
-      "balance": null,
+      "balance": {
+        "amount": 10000,
+        "refunded": 0
+      },
       "commitTx": null,
       "commitment": "0xbd3ab23bccfdbcb0ac4f8445afd1b34eb67b0c8274b89e6870fa7e084ed4b184",
       "community": null,
@@ -17,8 +20,7 @@
         "type": "invoice"
       },
       "phase": {
-        "expiresAt": 1855646100,
-        "type": "registered"
+        "type": "taken"
       },
       "price": 10000,
       "registerTx": null,
@@ -27,7 +29,7 @@
         "communityName": false,
         "termsHash": "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"
       },
-      "version": 4,
+      "version": 5,
       "years": 2
     },
     "type": "registration_changed"
