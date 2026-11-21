@@ -26,6 +26,7 @@ SCROLL_CLICKS = -10
 LABEL_SCROLLS = 4
 LABEL_WAIT = 5
 LABEL_SCROLL_CLICKS = -3
+TYPE_ATTEMPTS = 2
 BACK_PRESSES = 6
 AVATAR_OFFSET = 27
 BOTTOM_BAR_OFFSET = 30
@@ -189,11 +190,25 @@ class App:
         return any(key(SEARCH_FIELD) in p for p in phrases)
 
     def back_to_chat_list(self):
-        for _ in range(BACK_PRESSES):
+        for attempt in range(BACK_PRESSES):
             if self.on_chat_list():
                 return True
-            self.press("escape")
+            if attempt % 2:
+                self.click(self.x + AVATAR_OFFSET, self.bottom)
+            else:
+                self.press("escape")
+            time.sleep(SETTLE)
         return self.on_chat_list()
+
+    def type_into(self, x, y, text):
+        for _ in range(TYPE_ATTEMPTS):
+            self.click(x, y)
+            time.sleep(SETTLE)
+            self.click(x, y)
+            self.type(text)
+            if self.wait(text, LABEL_WAIT):
+                return True
+        return False
 
     def open_user_menu(self):
         self.click(self.x + AVATAR_OFFSET, self.bottom)
@@ -241,14 +256,11 @@ class App:
         self.check(f"tour: {name} opens", opened)
 
     def onboarding(self):
-        steps = [
-            ("Create your profile", FIRST_SCREEN_WAIT),
-            ("Enter profile name", NETWORK_WAIT),
-        ]
-        for text, secs in steps:
-            if not self.click_text(text, secs):
-                return False
-        self.type(PROFILE_NAME)
+        if not self.click_text("Create your profile", FIRST_SCREEN_WAIT):
+            return False
+        field = self.wait("Enter profile name", NETWORK_WAIT)
+        if not field or not self.type_into(*field, PROFILE_NAME):
+            return False
         self.shot("profile-name")
         for text in ("Create profile", "Use random passphrase", "OK", "Continue", "Accept"):
             if not self.click_text(text, NETWORK_WAIT):
@@ -261,8 +273,8 @@ class App:
         label = self.wait("Enter group name")
         if not label:
             return False
-        self.click(self.x + PANE_CENTRE_OFFSET, label[1] + FIELD_BELOW_LABEL)
-        self.type(LOCAL_CHAT)
+        if not self.type_into(self.x + PANE_CENTRE_OFFSET, label[1] + FIELD_BELOW_LABEL, LOCAL_CHAT):
+            return False
         if not self.click_text("Create group"):
             return False
         self.click_text("Skip inviting members")
