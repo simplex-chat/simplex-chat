@@ -97,6 +97,7 @@ class ChatItemUpdateTest {
     ChatModel.currentUser.value = User.sampleData.copy(userId = 2)
     receive(received)
     withBGApi {}.join()
+    withContext(Dispatchers.Main) {}
     assertEquals(0, ChatModel.users[0].unreadCount)
     receive(mentioned)
     assertEquals(1, ChatModel.users[0].unreadCount)
