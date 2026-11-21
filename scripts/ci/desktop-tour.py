@@ -28,6 +28,8 @@ LABEL_WAIT = 5
 LABEL_SCROLL_CLICKS = -3
 TYPE_ATTEMPTS = 3
 TITLE_LENGTH = 256
+SW_MAXIMIZE = 3
+LAYOUT_SETTLE = 3
 BACK_PRESSES = 6
 AVATAR_OFFSET = 27
 BOTTOM_BAR_OFFSET = 30
@@ -147,14 +149,15 @@ class App:
         pyautogui.screenshot().save(path)
         self.log(f"shot {path.name}")
 
-    def window_rect(self):
+    def window_rect(self, maximize=False):
         if sys.platform == "win32":
             import ctypes.wintypes
             user32 = ctypes.windll.user32
             hwnd = user32.FindWindowW(None, "SimpleX")
             if not hwnd:
                 return None
-            user32.ShowWindow(hwnd, 3)
+            if maximize:
+                user32.ShowWindow(hwnd, SW_MAXIMIZE)
             user32.SetForegroundWindow(hwnd)
             time.sleep(SETTLE)
             rect = ctypes.wintypes.RECT()
@@ -177,6 +180,8 @@ class App:
     def await_window(self, secs=FIRST_SCREEN_WAIT):
         deadline = time.time() + secs
         while time.time() < deadline:
+            if self.window_rect(maximize=True):
+                time.sleep(LAYOUT_SETTLE)
             rect = self.window_rect()
             if rect and rect[2] > 0:
                 self.x, top, width, height = rect
