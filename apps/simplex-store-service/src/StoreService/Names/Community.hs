@@ -30,7 +30,8 @@ import Simplex.Messaging.SimplexName (LabelHash)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (ChainError (..))
 import StoreService.Names.Contracts (Contracts, Terms (..), TermsRefusal (..), communityName, concurrent, kindTerms, namePolicy, policyNonce, termsLinks, termsText, together)
-import StoreService.Names.Registration (AgreedTerms (AgreedTerms), CommunityName, TermsHash)
+import StoreService.Names.Registration (CommunityName, TermsHash)
+import StoreService.Names.Signatures (AgreedTerms (AgreedTerms))
 
 data Community = Community {for :: Maybe Text, years :: Int}
   deriving (Eq, Show)

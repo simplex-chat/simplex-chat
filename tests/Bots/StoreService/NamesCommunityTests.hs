@@ -23,7 +23,7 @@ import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, addressWord, h
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Community (communityFor, termsFor)
 import StoreService.Names.Contracts (Terms (..))
-import StoreService.Names.Registration (AgreedTerms (..))
+import StoreService.Names.Signatures (AgreedTerms (..))
 import StoreService.Names.View (addressText)
 import StoreService.Service (logNamePolicy)
 import Test.Hspec

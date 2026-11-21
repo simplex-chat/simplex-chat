@@ -474,6 +474,7 @@ executable simplex-store-service
       StoreService.Names.Reveal
       StoreService.Names.Revert
       StoreService.Names.Sender
+      StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
       StoreService.Names.View
@@ -856,6 +857,7 @@ test-suite simplex-chat-test
       StoreService.Names.Reveal
       StoreService.Names.Revert
       StoreService.Names.Sender
+      StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
       StoreService.Names.View

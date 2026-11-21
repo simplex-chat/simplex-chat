@@ -32,7 +32,7 @@ import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Codes
 import StoreService.Names.Orders (OrderRefusal (..))
-import StoreService.Names.Registration (RegistrationId (..))
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, insertPrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Store (RevokeResult (..))

@@ -27,7 +27,9 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import StoreService.Names.Abi (AbiError (..), AbiValue (..), abiBytes, abiTuple, decodeAddress, decodeBool, decodeBytes, decodeBytes32, decodeLabels, decodeString, decodeUint256, uint256)
 import StoreService.Names.Chain (Hex32 (..))
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration
+import StoreService.Names.Signatures
 import Test.Hspec
 
 namesSignatureTests :: Spec

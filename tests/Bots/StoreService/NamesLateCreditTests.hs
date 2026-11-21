@@ -24,7 +24,7 @@ import Simplex.Messaging.Names.Record (USDCents)
 import StoreService.Config (PollConfig (..))
 import StoreService.Names.Balances (recordRefund)
 import StoreService.Names.LateCredits (CreditOutcome (..), LateDue (..), creditLateInvoice, lateCreditOf)
-import StoreService.Names.Registration (RegistrationId (..))
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns)
 import StoreService.Names.View (balanceView)

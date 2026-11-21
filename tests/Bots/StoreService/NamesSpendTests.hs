@@ -52,7 +52,8 @@ import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Balances (RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (Hex32 (..))
 import StoreService.Names.Orders (OrdersEnv (..))
-import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), personalDigest, spendMessage)
+import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Signatures (OrderFields (..), personalDigest, spendMessage)
 import StoreService.Names.Store
 import StoreService.Names.View (addressText)
 import qualified StoreService.Names.View as View

@@ -49,11 +49,12 @@ import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recor
 import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), Hex32 (..), TxHash (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Contracts (namePolicy)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
-import StoreService.Names.Phases (awaitChange, phasesWaiting, publish)
-import StoreService.Names.Registration (OrderFields (..), RegisterIntent (..), RegistrationId (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
+import StoreService.Names.Phases (RegistrationId (..), awaitChange, phasesWaiting, publish)
+import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain, termsKind)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..), RevertReason (..), actedReverts)
 import StoreService.Names.Sender
+import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store
 import StoreService.Names.Turns (labelTurnCount, turnsCount, withLabelTurn)
 import StoreService.Names.Worker

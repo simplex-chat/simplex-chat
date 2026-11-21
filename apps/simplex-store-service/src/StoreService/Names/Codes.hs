@@ -37,7 +37,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import StoreService.Group.Command (maxNameYears)
 import StoreService.Names.Chain (Hex32 (..))
-import StoreService.Names.Registration (RegistrationId)
+import StoreService.Names.Phases (RegistrationId)
 import StoreService.Names.Store (CmdSource, CodeHash, CodeHashTaken (..), CodeId, NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))

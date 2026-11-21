@@ -60,7 +60,7 @@ where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), NamesConfig, PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultLogLevel, providerCheckoutTimeoutMicros, providerTimeoutMicros)
-import StoreService.Names.Registration (AgreedTerms)
+import StoreService.Names.Signatures (AgreedTerms)
 import StoreService.Names.Store (BrokenInvariant (..))
 import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
 import StoreService.Poller

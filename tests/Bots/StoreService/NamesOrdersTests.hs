@@ -117,8 +117,9 @@ import StoreService.Names.Codes (CodeRefusal (..), prepaidCodeHash)
 import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
-import StoreService.Names.Phases (awaitChange, newPhases)
-import StoreService.Names.Registration (AgreedTerms (..), OrderFields (..), Registration (..), RegistrationId (..), acceptanceDigest, makeCommitment, orderMessage, parseChecksumAddress, personalDigest, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
+import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
+import StoreService.Names.Registration (Registration (..), acceptanceDigest, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain, termsKind)
+import StoreService.Names.Signatures (AgreedTerms (..), OrderFields (..), orderMessage, parseChecksumAddress, personalDigest)
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (PaidWith (PWInvoice), PhaseView (PVClosed, PVCommitted, PVFailed, PVRegistered, PVTaken, PVUnpaid), RegistrationView (..), Signing (SAwaiting, SLapsed, SSigned), ToSign (TSRead, TSUnread), phaseView, readToSign, registrationView, toRegistrationView)

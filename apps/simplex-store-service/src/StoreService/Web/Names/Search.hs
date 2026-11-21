@@ -41,7 +41,8 @@ import StoreService.Names.Community (Community, TermsLink, communityOf, readable
 import StoreService.Names.Contracts
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Records (EditsLeft, nameEditsLeft)
-import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink, parseChecksumAddress)
+import StoreService.Names.Registration (CommunityName, LinkKind (..), nameLink)
+import StoreService.Names.Signatures (parseChecksumAddress)
 import StoreService.Names.Store (labelHolder)
 import StoreService.Names.View (NameRefusal (NRBadRequest, NRInvalidLink, NRInvalidName, NRNameCheckUnavailable, NRNotFound, NRProviderUnavailable, NRRateLimited, NRTermsUnavailable), ToSign (..), readToSign)
 import StoreService.Web.Http (HttpEnv, Respond, jsonResponse, maxBodyBytes, readBoundedBody, searchSlot)

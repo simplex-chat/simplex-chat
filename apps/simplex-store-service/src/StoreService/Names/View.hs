@@ -48,8 +48,10 @@ import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Chain (Hex32 (..), TxHash (..))
 import StoreService.Names.Community (AcceptanceAsked, Community, TermsLink, communityOf, currentAcceptance)
 import StoreService.Names.Contracts (Contracts (ctDeadline, ctViewSlots), sponsorNonce)
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (deadlineIn, withSlot)
-import StoreService.Names.Registration (AgreedTerms (..), LinkKind, RegistrationId (..))
+import StoreService.Names.Registration (LinkKind)
+import StoreService.Names.Signatures (AgreedTerms (..))
 import StoreService.Names.Store (AttemptStage, Balance (..), BalanceHold (..), BalanceUse (..), Commit (..), FailReason, HoldState, InvoiceClose, LateWait, NameAttempt (..), NameRegistration (..), NameReveal (..), OrderPayment (..), OrderPhase (..), RegistrationTx, TxHistory (..), getBalance, getRegistration, heldBy, lateWait, lastAttempt, orderLive, paymentInvoice)
 
 data PaidWith

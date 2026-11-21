@@ -14,7 +14,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.SimplexName (LabelHash)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import StoreService.Names.Registration (RegistrationId (..))
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (CodeHash, NameRegistration (..), getRegistration)
 
 -- | Each lock counts the requests holding or waiting for it, and its entry goes when none are left.

@@ -50,8 +50,9 @@ import StoreService.Names.Balances (Spend (..), checkSpendBalance, coveredOrderI
 import StoreService.Names.Codes (CodeRefusal (..), readPrepaidCode)
 import StoreService.Names.Community (termsLink)
 import StoreService.Names.Orders
-import StoreService.Names.Registration (OrderFields (..), RegistrationId (..), orderMessage, spendMessage)
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Reveal (RevealRequest, orderReveal)
+import StoreService.Names.Signatures (OrderFields (..), orderMessage, spendMessage)
 import StoreService.Names.Store (BalanceInsertRefused (..), BrokenInvariant (..), NameRegistration (..), NameReveal, NewRegistration (..), OrderHash, OrderPayment (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, paymentInvoice)
 import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (NameRefusal (..), balanceView, registrationView)
