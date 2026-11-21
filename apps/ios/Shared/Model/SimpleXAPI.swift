@@ -581,6 +581,7 @@ private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async
                 cItem = cItemLast
                 chatModel.messageDelivery[cItemLast.id] = endTask
             }
+            await beginFileUploadTasks(cItems)
             return cItems
         }
         if let networkErrorAlert = networkErrorAlert(r) {
@@ -593,10 +594,35 @@ private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async
     } else {
         r = await chatApiSendCmd(cmd, bgDelay: msgDelay)
         if case let .result(.newChatItems(_, aChatItems)) = r {
-            return aChatItems.map { $0.chatItem }
+            let cItems = aChatItems.map { $0.chatItem }
+            await beginFileUploadTasks(cItems)
+            return cItems
         }
         sendMessageErrorAlert(r.unexpected)
         return nil
+    }
+}
+
+@MainActor
+func beginFileUploadTasks(_ items: [ChatItem]) {
+    let m = ChatModel.shared
+    for case let file? in items.map(\.file) where file.fileProtocol == .xftp {
+        let fileId = file.fileId
+        m.fileUploads[fileId] = beginBGTask {
+            m.fileUploads.removeValue(forKey: fileId)
+        }
+    }
+}
+
+@MainActor
+private func endFileUploadTask(_ fileId: Int64) {
+    ChatModel.shared.fileUploads[fileId]?()
+}
+
+@MainActor
+private func endFileUploadTasks(_ deletions: [ChatItemDeletion]) {
+    for case let file? in deletions.map(\.deletedChatItem.chatItem.file) {
+        endFileUploadTask(file.fileId)
     }
 }
 
@@ -659,13 +685,19 @@ func apiGetReactionMembers(groupId: Int64, itemId: Int64, reaction: MsgReaction)
 
 func apiDeleteChatItems(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
     let r: ChatResponse1 = try await chatSendCmd(.apiDeleteChatItem(type: type, id: id, scope: scope, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
-    if case let .chatItemsDeleted(_, items, _) = r { return items }
+    if case let .chatItemsDeleted(_, items, _) = r {
+        await endFileUploadTasks(items)
+        return items
+    }
     throw r.unexpected
 }
 
 func apiDeleteMemberChatItems(groupId: Int64, itemIds: [Int64]) async throws -> [ChatItemDeletion] {
     let r: ChatResponse1 = try await chatSendCmd(.apiDeleteMemberChatItem(groupId: groupId, itemIds: itemIds), bgDelay: msgDelay)
-    if case let .chatItemsDeleted(_, items, _) = r { return items }
+    if case let .chatItemsDeleted(_, items, _) = r {
+        await endFileUploadTasks(items)
+        return items
+    }
     throw r.unexpected
 }
 
@@ -1732,7 +1764,9 @@ func cancelFile(user: User, fileId: Int64) async {
 func apiCancelFile(fileId: Int64, ctrl: chat_ctrl? = nil) async -> AChatItem? {
     let r: APIResult<ChatResponse2> = await chatApiSendCmd(.cancelFile(fileId: fileId), ctrl: ctrl)
     switch r {
-    case let .result(.sndFileCancelled(_, chatItem, _, _)) : return chatItem
+    case let .result(.sndFileCancelled(_, chatItem, fileTransferMeta, _)) :
+        await endFileUploadTask(fileTransferMeta.fileId)
+        return chatItem
     case let .result(.rcvFileCancelled(_, chatItem, _)) : return chatItem
     default:
         logger.error("apiCancelFile error: \(responseError(r.unexpected))")
@@ -2772,6 +2806,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             }
         }
     case let .chatItemsDeleted(user, items, _):
+        await endFileUploadTasks(items)
         if !active(user) {
             for item in items {
                 let d = item.deletedChatItem
@@ -3002,13 +3037,15 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
         }
-    case let .sndFileCompleteXFTP(user, aChatItem, _):
+    case let .sndFileCompleteXFTP(user, aChatItem, fileTransferMeta):
         await chatItemSimpleUpdate(user, aChatItem)
-    case let .sndFileError(user, aChatItem, _, _):
+        await endFileUploadTask(fileTransferMeta.fileId)
+    case let .sndFileError(user, aChatItem, fileTransferMeta, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
             Task { cleanupFile(aChatItem) }
         }
+        await endFileUploadTask(fileTransferMeta.fileId)
     case let .sndFileWarning(user, aChatItem, _, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)

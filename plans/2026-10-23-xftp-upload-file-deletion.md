@@ -103,6 +103,34 @@ Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
   - `SFDONE`: the file descriptions are not sent, since the agent sends no further `SFDONE` for a complete file; the agent file is deleted at the next activation;
   - `SFERR`: the error status of the item is not recorded.
 - The NSE's share extension subscriber: unchanged. The NSE does not act on `.sendingMessage` (its subscriber is never created). The wait therefore ends at the first check, every 100 ms, at which both stored states equal `.suspended`, or after 2 s; the stored NSE state is `.suspended` before the first NSE start and after the NSE suspends on its own. `.created` is stored at the first use of `NSEChatState.shared` in an NSE process, at a start without a chat controller, and after a failed start; in this state the wait lasts the full 2 s. The app's instant suspension can start the chat of an NSE instance waiting for the app, and that chat then runs concurrently with the share extension.
+- App, upload background tasks:
+  - one task per XFTP file of a sent item, in direct and group chats, keyed by file ID;
+  - begun on the response to a send or a forward;
+  - ended once and removed on the first of:
+
+    | Ending | Source |
+    |---|---|
+    | `sndFileCompleteXFTP` | event; direct: after the file description is sent; group: after the file descriptions are queued |
+    | `sndFileError` | event |
+    | `sndFileCancelled` | response to `/fcancel` |
+    | `chatItemsDeleted` with the item | response to an item deletion, or event |
+    | expiration | iOS |
+
+  - message delivery tasks: unchanged; groups keep `msgDelay`.
+
+  ```mermaid
+  sequenceDiagram
+    participant App
+    participant Core
+    participant iOS
+    App->>Core: send or forward with an XFTP file
+    Core-->>App: newChatItems
+    App->>iOS: beginBackgroundTask, stored in fileUploads by file ID
+    Core-->>App: sndFileCompleteXFTP, sndFileError, sndFileCancelled or chatItemsDeleted
+    App->>iOS: endBackgroundTask, removed from fileUploads
+    iOS-->>App: or expiration: the same end
+  ```
+
 - `cabal.project`: simplexmq pinned to commit `bdda2fa4` of the simplexmq fork during review.
 - After the simplexmq pull request in simplex-chat/simplexmq is merged and before the final pull request is opened in simplex-chat/simplex-chat:
   - the pin is replaced by the merged simplex-chat/simplexmq commit;
@@ -135,6 +163,12 @@ Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
     - `.sendingMessage` (:45-50): under `suspendLockQueue`, `_suspendChatInstantly()` when the app state is `.suspending`.
   - `terminateChat`, `.suspending` (:73-75): `_suspendChatInstantly()`.
   - new: `_suspendChatInstantly` (:87-91): `apiSuspendChat(timeoutMicroseconds: 0)` when `ChatModel.ok`, with its comment from `terminateChat`, then `_chatSuspended()`.
+- `apps/ios/Shared/Model/ChatModel.swift`, `fileUploads` (:470).
+- `apps/ios/Shared/Model/SimpleXAPI.swift`:
+  - `processSendMessageCmd`: `beginFileUploadTasks(cItems)` in the direct (:584) and group (:598) branches;
+  - new: `beginFileUploadTasks` (:606-615), `endFileUploadTask` (:617-620), `endFileUploadTasks` (:622-627);
+  - `apiDeleteChatItems` (:689), `apiDeleteMemberChatItems` (:698), `apiCancelFile` (:1768);
+  - `processReceivedMsg`: `chatItemsDeleted` (:2809), `sndFileCompleteXFTP` (:3042), `sndFileError` (:3048).
 - `cabal.project` (:23-24):
   - `location: https://github.com/evgeny-simplex/simplexmq.git`;
   - `tag: bdda2fa40960f7c433138adda00ecfedad0c93f5`.
@@ -194,7 +228,26 @@ Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
 | `testShareSetupWaitsForSuspendingApp` | `.suspending`, NSE `.suspended`, `prepareToStartChat` | `.sendingMessage` stored; the app suspended before it returns |
 | `testShareSetupDoesNotWaitForActiveApp` | `.active`, NSE `.active`, `prepareToStartChat` | `.sendingMessage` stored; returns within 1 s |
 
+`tests/ChatTests/Files.hs`, "record upload: …", recordings in `tests/fixtures/api/files`, each item received by bob before its recording:
+- "send and complete": responses to a direct text send (`send-text`) and a direct file send (`send-file`); `sndFileCompleteXFTP` after the XFTP server starts (`upload-complete`).
+- "error": `sndFileError` from an XFTP server with another password (`upload-error`).
+- "cancel and delete", without an XFTP server: responses to `/fcancel 1` (`cancel`), to the internal deletion of the item of file 2 (`delete`) and to a group file send (`send-group-file`).
+
+`apps/ios/SimpleX Unit Tests/FileUploadTests.swift`, `sendSimpleXCmdStr` replaced by the recorded response:
+
+| Test | Path | Asserted `fileUploads` keys |
+|---|---|---|
+| `testSentFileBeginsTask` | `apiSendMessages`, direct, `send-file` | `[1]` |
+| `testSentGroupFileBeginsTask` | `apiSendMessages`, group, `send-group-file` | `[3]` |
+| `testSentTextBeginsNoTask` | `apiSendMessages`, direct, `send-text` | `[]` |
+| `testCompletedUploadEndsTask` | task of file 1, `processReceivedMsg`, `upload-complete` | `[]` |
+| `testUploadErrorEndsTask` | task of file 1, `processReceivedMsg`, `upload-error` | `[]` |
+| `testCancelledUploadEndsTask` | task of file 1, `apiCancelFile`, `cancel` | `[]` |
+| `testDeletedItemEndsTask` | task of file 2, `apiDeleteChatItems`, `delete` | `[]` |
+| `testDeletedItemEventEndsTask` | task of file 2, `processReceivedMsg`, `delete` decoded as the event | `[]` |
+
 Device tests, run by the user:
+- A 20 MB file is sent, and the app leaves the foreground at once: the upload completes and the recipient receives the file, when the upload takes less than the background time iOS grants.
 - During a 20 MB upload, the app leaves the foreground; within 15 s, a link is shared through the share sheet; then the app is opened:
   - both sends complete, unless a chunk upload of the app was in flight when the share sheet opened; then the app's file can fail with an upload error, as on master;
   - the app log shows `_chatSuspended` right after the share sheet opens.

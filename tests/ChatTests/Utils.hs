@@ -30,7 +30,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems), storeCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (CEvtChatItemUpdated, CEvtNameMoved, CEvtNewChatItems, CEvtSndFileCompleteXFTP, CEvtSndFileError), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Mobile (chatParseMarkdown, chatParseUri, chatSendCmd, eitherToResult)
@@ -1025,11 +1025,18 @@ nameMovedFixture fixture cc contacts groups = withCCUser cc $ \user -> do
 
 recordItemEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
 recordItemEvent events evt = case evt of
-  Right CEvtNewChatItems {} -> record
-  Right CEvtChatItemUpdated {} -> record
+  Right CEvtNewChatItems {} -> recordEvent events evt
+  Right CEvtChatItemUpdated {} -> recordEvent events evt
   _ -> pure ()
-  where
-    record = atomically $ modifyTVar' events (<> [J.toJSON $ eitherToResult Nothing evt])
+
+recordSndFileEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
+recordSndFileEvent events evt = case evt of
+  Right CEvtSndFileCompleteXFTP {} -> recordEvent events evt
+  Right CEvtSndFileError {} -> recordEvent events evt
+  _ -> pure ()
+
+recordEvent :: TVar [J.Value] -> Either ChatError ChatEvent -> IO ()
+recordEvent events evt = atomically $ modifyTVar' events (<> [J.toJSON $ eitherToResult Nothing evt])
 
 eventsFixture :: String -> TVar [J.Value] -> IO () -> IO ()
 eventsFixture fixture events steps = do
@@ -1056,6 +1063,6 @@ stableJSON = \case
   where
     stableField k v
       | k `elem` ["createdAt", "updatedAt", "chatTs", "userMemberProfileSentAt", "itemTs", "deletedTs", "fileExpires"] = J.String "1970-01-01T00:00:00Z"
-      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText"] = J.String $ JK.toText k
+      | k `elem` ["agentConnId", "xContactId", "connFullLink", "connShortLink", "contactLink", "groupLink", "viaGroupLinkUri", "simplexUri", "memberId", "memberPubKey", "publicGroupId", "businessId", "customerId", "itemSharedMsgId", "fileDescrText", "agentSndFileId", "privateSndFileDescr", "errorMessage"] = J.String $ JK.toText k
       | k == "groupRelays", J.Array a <- v = J.Array $ J.String "groupRelay" <$ a
       | otherwise = stableJSON v
