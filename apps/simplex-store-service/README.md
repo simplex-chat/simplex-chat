@@ -1851,10 +1851,10 @@ ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contra
 With `LIGHTNING_ENV` set to the `lightning.env` that `scripts/store-service/dev/lightning.sh` writes,
 the cases are paid ones instead, in every browser project of each site's Playwright config: the names
 webapp's `e2e/lightning-node.spec.ts`, against the names site, and `web/e2e/lightning-node.spec.ts`,
-against the badges site. Each orders with Lightning, pays the BOLT11 of the page's wallet link at the
-payer's node and waits for the page to show the name registered, the badge's code, or a cancelled
-order with what arrived. `[btcpay]` is written from that file, the service listens on 0.0.0.0, as
-BTCPay's webhook comes from its container, and the badges port defaults to
+against the badges site. In each case, an order is placed with Lightning, the BOLT11 of the page's
+wallet link is paid at the payer's node, and the case ends when the page displays the name registered,
+the badge's code, or a cancelled order with what arrived. `[btcpay]` is written from that file, the
+service listens on 0.0.0.0, as BTCPay sends its webhook from its container, and the badges port defaults to
 `STORE_LIGHTNING_SERVICE_PORT`, where the webhook is sent. `BADGES_SITE` is the built badges site
 (`npm run build` in `web/`, its `dist/`), and the browsers are installed with
 `npx playwright install chromium firefox webkit`. CI runs them in store-lightning-e2e.yml.

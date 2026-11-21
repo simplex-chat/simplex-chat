@@ -1,5 +1,5 @@
 {
-  "_fixture": "The same list response with an invoice paid by LNURL-pay (BTC-LNURL), a method unknown to this build, which is made possible by LNURL switched on at the store. Hand-written from the documented schema. The alien entry must be skipped, and the healthy one in the same response must still settle.",
+  "_fixture": "The same list response with an invoice paid by LNURL-pay (BTC-LNURL), a method unknown to this build, which is made possible by LNURL switched on at the store. Hand-written from the documented schema. The entry of the unknown method must be skipped, and the known one in the same response must still settle.",
   "response": [
     {
       "metadata": {},
