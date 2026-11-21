@@ -23,6 +23,9 @@ STEP_WAIT = 10
 NETWORK_WAIT = 60
 SETTLE = 1
 SCROLL_CLICKS = -10
+LABEL_SCROLLS = 4
+LABEL_WAIT = 5
+LABEL_SCROLL_CLICKS = -3
 BACK_PRESSES = 6
 AVATAR_OFFSET = 27
 BOTTOM_BAR_OFFSET = 30
@@ -219,9 +222,16 @@ class App:
                 return True
         return False
 
+    def click_scrolled(self, text):
+        for _ in range(LABEL_SCROLLS):
+            if self.click_text(text, LABEL_WAIT):
+                return True
+            self.scroll(self.x + PANE_CENTRE_OFFSET, self.bottom - PANE_RIGHT_OFFSET, LABEL_SCROLL_CLICKS)
+        return False
+
     def visit(self, name, opener, *labels):
         self.back_to_chat_list()
-        opened = opener() and all(self.click_text(label) for label in labels)
+        opened = opener() and all(self.click_scrolled(label) for label in labels)
         if opened:
             time.sleep(SETTLE)
             self.shot(f"tour-{name}")

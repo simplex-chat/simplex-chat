@@ -321,38 +321,6 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
-      - name: Download the compared app
-        id: compared
-        if: ${{ !cancelled() && inputs.compare != '' && steps.build.outcome == 'success' }}
-        uses: actions/download-artifact@v8
-        with:
-          name: desktop-app
-          path: ${{ runner.temp }}/compared-app
-          run-id: ${{ inputs.compare }}
-          github-token: ${{ github.token }}
-
-      - name: Tour the compared app and this app
-        if: ${{ !cancelled() && steps.compared.outcome == 'success' }}
-        run: |
-          UI_OUT="$RUNNER_TEMP/smoke-test" scripts/ci/desktop-linux/ui stop || true
-          tar -xzf "$RUNNER_TEMP/compared-app/desktop-app.tar.gz" -C "$RUNNER_TEMP/compared-app"
-          for side in base head; do
-            app=apps/multiplatform/release/main/app/simplex
-            [ "$side" = base ] && app=$RUNNER_TEMP/compared-app/simplex
-            UI_STATE="$RUNNER_TEMP/tour-state-$side" scripts/ci/desktop-linux/smoke-test.sh "$app" "$RUNNER_TEMP/tour/$side" tour || true
-            UI_STATE="$RUNNER_TEMP/tour-state-$side" UI_OUT="$RUNNER_TEMP/tour/$side" scripts/ci/desktop-linux/ui stop || true
-          done
-          scripts/ci/tour-compare.sh "$RUNNER_TEMP/tour/base" "$RUNNER_TEMP/tour/head" "$RUNNER_TEMP/tour/pairs"
-
-      - name: Upload tour
-        if: ${{ !cancelled() && steps.compared.outcome == 'success' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: desktop-tour
-          path: ${{ runner.temp }}/tour
-          retention-days: 14
-          if-no-files-found: warn
-
       - name: Upload desktop test report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
@@ -612,6 +580,54 @@ jobs:
           compression-level: 0
           retention-days: 14
           if-no-files-found: error
+
+  tour:
+    name: tour of this app and the compared run's
+    needs: app
+    if: ${{ !cancelled() && inputs.compare != '' && needs.app.result != 'cancelled' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xdotool openbox x11-utils imagemagick tesseract-ocr sqlite3 fonts-dejavu-core jq \
+            libgtk-3-0 libsecret-1-0 libegl1 libegl-mesa0 libgl1-mesa-dri
+
+      - name: Download this app
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-app
+          path: ${{ runner.temp }}/apps/head
+
+      - name: Download the compared app
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-app
+          path: ${{ runner.temp }}/apps/base
+          run-id: ${{ inputs.compare }}
+          github-token: ${{ github.token }}
+
+      - name: Tour the compared app and this app
+        run: |
+          for side in base head; do
+            tar -xzf "$RUNNER_TEMP/apps/$side/desktop-app.tar.gz" -C "$RUNNER_TEMP/apps/$side"
+            UI_STATE="$RUNNER_TEMP/tour-state-$side" scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/apps/$side/simplex" "$RUNNER_TEMP/tour/$side" tour || true
+            UI_STATE="$RUNNER_TEMP/tour-state-$side" UI_OUT="$RUNNER_TEMP/tour/$side" scripts/ci/desktop-linux/ui stop || true
+          done
+          scripts/ci/tour-compare.sh "$RUNNER_TEMP/tour/base" "$RUNNER_TEMP/tour/head" "$RUNNER_TEMP/tour/pairs"
+
+      - name: Upload tour
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-tour
+          path: ${{ runner.temp }}/tour
+          retention-days: 14
+          if-no-files-found: warn
 
   e2e:
     name: ${{ matrix.kind }} under ${{ matrix.session }}

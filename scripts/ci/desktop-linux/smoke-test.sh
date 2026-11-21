@@ -44,6 +44,8 @@ paperclip_offset=415
 send_offset=27
 tour_settle=1
 tour_scroll=10
+tour_label_scrolls=4
+tour_label_wait=5
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -421,6 +423,14 @@ open_group_info() {
   return 1
 }
 
+click_scrolled() {
+  for _ in $(seq "$tour_label_scrolls"); do
+    "$ui" click-text "$1" "$tour_label_wait" && return 0
+    "$ui" scroll "$pane_centre_x" $((window_y + 380)) down
+  done
+  return 1
+}
+
 visit() {
   local name=$1 opener=$2 label
   shift 2
@@ -430,7 +440,7 @@ visit() {
     return
   fi
   for label in "$@"; do
-    if ! "$ui" click-text "$label" 10; then
+    if ! click_scrolled "$label"; then
       check "tour: $name opens" false
       return
     fi

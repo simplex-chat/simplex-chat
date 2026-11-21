@@ -29,6 +29,8 @@ package=chat.simplex.app
 local_chat="seeded notes"
 tour_settle=1
 tour_scroll=10
+tour_label_scrolls=4
+tour_label_wait=5
 search_field="Search or paste SimpleX link"
 ui=$(dirname "$0")/ui
 fixtures=$(dirname "$0")/../../../tests/fixtures
@@ -346,6 +348,14 @@ open_group_info() {
   "$ui" click-text "$local_chat" 10
 }
 
+click_scrolled() {
+  for _ in $(seq "$tour_label_scrolls"); do
+    "$ui" click-text "$1" "$tour_label_wait" && return 0
+    "$ui" scroll "$(($(screen_width) / 2))" "$(($(screen_height) / 2))" down
+  done
+  return 1
+}
+
 visit() {
   local name=$1 opener=$2 label
   shift 2
@@ -355,7 +365,7 @@ visit() {
     return
   fi
   for label in "$@"; do
-    if ! "$ui" click-text "$label" 10; then
+    if ! click_scrolled "$label"; then
       check "tour: $name opens" false
       return
     fi
