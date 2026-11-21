@@ -12,7 +12,7 @@ import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBa
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Concurrent.STM (atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, writeTVar)
+import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Logger.Simple
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
@@ -35,7 +35,6 @@ import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol (MsgContent (MCImage, MCText))
 import Simplex.Chat.Types (ImageData (..))
-import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -78,9 +77,13 @@ chatFileTests = do
     it "delete agent file when file user is missing during upload" testXFTPMissingUserDuringUpload
     it "complete upload before chat is suspended" testXFTPSuspendDuringUpload
     it "suspend chat instantly during upload" testXFTPSuspendInstantlyDuringUpload
-    it "record upload: send and complete" testXFTPRecordUploadComplete
+    it "record upload: send text" testXFTPRecordSendText
+    it "record upload: send file" testXFTPRecordSendFile
+    it "record upload: send group file" testXFTPRecordSendGroupFile
+    it "record upload: complete" testXFTPRecordUploadComplete
     it "record upload: error" testXFTPRecordUploadError
-    it "record upload: cancel and delete" testXFTPRecordUploadCancelDelete
+    it "record upload: cancel" testXFTPRecordCancel
+    it "record upload: delete" testXFTPRecordDelete
     it "show agent file error without file ID" testXFTPAgentErrorWithoutFileId
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
@@ -1210,23 +1213,56 @@ testXFTPSuspendInstantlyDuringUpload =
     alice <## "ok"
     apiFixture "suspend/suspend-instantly" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_app suspend 0"]}
 
+testXFTPRecordSendText :: HasCallStack => TestParams -> IO ()
+testXFTPRecordSendText =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    apiFixture "files/send-text" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}]"]}
+    bob <# "alice> hi"
+
+testXFTPRecordSendFile :: HasCallStack => TestParams -> IO ()
+testXFTPRecordSendFile =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    apiFixture "files/send-file" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_send @2 " <> sendFileJSON]}
+    bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+testXFTPRecordSendGroupFile :: HasCallStack => TestParams -> IO ()
+testXFTPRecordSendGroupFile =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    createGroup2 "team" alice bob
+    apiFixture "files/send-group-file" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_send #1 " <> sendFileJSON]}
+    bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
 testXFTPRecordUploadComplete :: HasCallStack => TestParams -> IO ()
-testXFTPRecordUploadComplete ps = do
-  events <- newTVarIO []
-  withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just $ \_ evt -> evt <$ recordSndFileEvent events evt}} "alice" aliceProfile $ \alice ->
-    withNewTestChat ps "bob" bobProfile $ \bob -> do
-      connectUsers alice bob
-      apiFixture "files/send-text" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}]"]}
-      bob <# "alice> hi"
-      apiFixture "files/send-file" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_send @2 " <> sendFileJSON]}
-      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      checkFileItemsReceived alice 1
-      eventsFixture "files/upload-complete" events $
-        withXFTPServer ps $ alice <## "completed uploading file 1 (test.pdf) for bob"
+testXFTPRecordUploadComplete ps =
+  withSndFileEvents ps $ \events alice _ ->
+    eventsFixture "files/upload-complete" events $
+      withXFTPServer ps $ alice <## "completed uploading file 1 (test.pdf) for bob"
 
 testXFTPRecordUploadError :: HasCallStack => TestParams -> IO ()
-testXFTPRecordUploadError ps = do
+testXFTPRecordUploadError ps =
+  withSndFileEvents ps $ \events alice _ ->
+    eventsFixture "files/upload-error" events $
+      withXFTPServer' (xftpServerConfig ps) {newFileBasicAuth = Just "abcd"} $ do
+        alice <## "error uploading file 1 (test.pdf) for bob"
+        alice <##. "XFTP "
+
+testXFTPRecordCancel :: HasCallStack => TestParams -> IO ()
+testXFTPRecordCancel ps =
+  withSndFileEvents ps $ \_ alice bob -> do
+    apiFixture "files/cancel" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/fcancel 1"]}
+    bob <## "alice cancelled sending file 1 (test.pdf)"
+
+testXFTPRecordDelete :: HasCallStack => TestParams -> IO ()
+testXFTPRecordDelete ps =
+  withSndFileEvents ps $ \_ alice _ ->
+    apiFixture "files/delete" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_delete item @2 " <> itemId 1 <> " internal"]}
+
+withSndFileEvents :: HasCallStack => TestParams -> (TVar [J.Value] -> TestCC -> TestCC -> IO ()) -> IO ()
+withSndFileEvents ps recordings = do
   events <- newTVarIO []
   withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just $ \_ evt -> evt <$ recordSndFileEvent events evt}} "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -1235,39 +1271,11 @@ testXFTPRecordUploadError ps = do
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      checkFileItemsReceived alice 1
-      eventsFixture "files/upload-error" events $
-        withXFTPServer' (xftpServerConfig ps) {newFileBasicAuth = Just "abcd"} $ do
-          alice <## "error uploading file 1 (test.pdf) for bob"
-          alice <##. "XFTP "
-
-testXFTPRecordUploadCancelDelete :: HasCallStack => TestParams -> IO ()
-testXFTPRecordUploadCancelDelete =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
-    connectUsers alice bob
-    alice #> "/f @bob ./tests/fixtures/test.pdf"
-    alice <## "use /fc 1 to cancel sending"
-    bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
-    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-    alice #> "/f @bob ./tests/fixtures/test.pdf"
-    alice <## "use /fc 2 to cancel sending"
-    bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
-    bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
-    checkFileItemsReceived alice 2
-    apiFixture "files/cancel" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/fcancel 1"]}
-    bob <## "alice cancelled sending file 1 (test.pdf)"
-    apiFixture "files/delete" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_delete item @2 " <> itemId 2 <> " internal"]}
-    createGroup2' "team" alice (bob, GRAdmin) False
-    apiFixture "files/send-group-file" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_send #1 " <> sendFileJSON]}
-    bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
-    bob <## "use /fr 3 [<dir>/ | <path>] to receive it"
+      (withCCTransaction alice $ \db -> DB.query_ db "SELECT item_status FROM chat_items WHERE chat_item_id IN (SELECT chat_item_id FROM files)" :: IO [[String]]) `shouldEventuallyReturn` [["snd_rcvd ok complete"]]
+      recordings events alice bob
 
 sendFileJSON :: String
 sendFileJSON = "json [{\"filePath\": \"./tests/fixtures/test.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
-
-checkFileItemsReceived :: HasCallStack => TestCC -> Int -> Expectation
-checkFileItemsReceived cc n =
-  (withCCTransaction cc $ \db -> DB.query_ db "SELECT item_status FROM chat_items WHERE chat_item_id IN (SELECT chat_item_id FROM files) ORDER BY chat_item_id" :: IO [[String]]) `shouldEventuallyReturn` replicate n ["snd_rcvd ok complete"]
 
 testXFTPAgentErrorWithoutFileId :: HasCallStack => TestParams -> IO ()
 testXFTPAgentErrorWithoutFileId =

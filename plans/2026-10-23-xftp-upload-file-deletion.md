@@ -228,23 +228,26 @@ Agent side: https://github.com/simplex-chat/simplexmq/pull/2010
 | `testShareSetupWaitsForSuspendingApp` | `.suspending`, NSE `.suspended`, `prepareToStartChat` | `.sendingMessage` stored; the app suspended before it returns |
 | `testShareSetupDoesNotWaitForActiveApp` | `.active`, NSE `.active`, `prepareToStartChat` | `.sendingMessage` stored; returns within 1 s |
 
-`tests/ChatTests/Files.hs`, "record upload: …", recordings in `tests/fixtures/api/files`, each item received by bob before its recording:
-- "send and complete": responses to a direct text send (`send-text`) and a direct file send (`send-file`); `sndFileCompleteXFTP` after the XFTP server starts (`upload-complete`).
-- "error": `sndFileError` from an XFTP server with another password (`upload-error`).
-- "cancel and delete", without an XFTP server: responses to `/fcancel 1` (`cancel`), to the internal deletion of the item of file 2 (`delete`) and to a group file send (`send-group-file`).
+`tests/ChatTests/Files.hs`, "record upload: …", one recording in `tests/fixtures/api/files` each:
+- "send text", "send file", "send group file": the responses to a direct text send (`send-text`), a direct file send (`send-file`) and a group file send (`send-group-file`).
+- With file 1 sent while the XFTP server is down, and its item received by bob (`withSndFileEvents`):
+  - "complete": `sndFileCompleteXFTP` after the XFTP server starts (`upload-complete`);
+  - "error": `sndFileError` from an XFTP server with another password (`upload-error`);
+  - "cancel": the response to `/fcancel 1` (`cancel`);
+  - "delete": the response to the internal deletion of the item (`delete`).
 
 `apps/ios/SimpleX Unit Tests/FileUploadTests.swift`, `sendSimpleXCmdStr` replaced by the recorded response:
 
 | Test | Path | Asserted `fileUploads` keys |
 |---|---|---|
 | `testSentFileBeginsTask` | `apiSendMessages`, direct, `send-file` | `[1]` |
-| `testSentGroupFileBeginsTask` | `apiSendMessages`, group, `send-group-file` | `[3]` |
+| `testSentGroupFileBeginsTask` | `apiSendMessages`, group, `send-group-file` | `[1]` |
 | `testSentTextBeginsNoTask` | `apiSendMessages`, direct, `send-text` | `[]` |
 | `testCompletedUploadEndsTask` | task of file 1, `processReceivedMsg`, `upload-complete` | `[]` |
 | `testUploadErrorEndsTask` | task of file 1, `processReceivedMsg`, `upload-error` | `[]` |
 | `testCancelledUploadEndsTask` | task of file 1, `apiCancelFile`, `cancel` | `[]` |
-| `testDeletedItemEndsTask` | task of file 2, `apiDeleteChatItems`, `delete` | `[]` |
-| `testDeletedItemEventEndsTask` | task of file 2, `processReceivedMsg`, `delete` decoded as the event | `[]` |
+| `testDeletedItemEndsTask` | task of file 1, `apiDeleteChatItems`, `delete` | `[]` |
+| `testDeletedItemEventEndsTask` | task of file 1, `processReceivedMsg`, `delete` decoded as the event | `[]` |
 
 Device tests, run by the user:
 - A 20 MB file is sent, and the app leaves the foreground at once: the upload completes and the recipient receives the file, when the upload takes less than the background time iOS grants.

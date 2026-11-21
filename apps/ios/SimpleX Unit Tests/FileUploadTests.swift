@@ -23,7 +23,7 @@ final class FileUploadTests: XCTestCase {
     func testSentGroupFileBeginsTask() async throws {
         try replay("files/send-group-file")
         _ = await apiSendMessages(type: .group, id: 1, scope: nil, composedMessages: [ComposedMessage(fileSource: .plain("test.pdf"), msgContent: .file(""))])
-        XCTAssertEqual(Array(ChatModel.shared.fileUploads.keys), [3])
+        XCTAssertEqual(Array(ChatModel.shared.fileUploads.keys), [1])
     }
 
     @MainActor
@@ -57,15 +57,15 @@ final class FileUploadTests: XCTestCase {
 
     @MainActor
     func testDeletedItemEndsTask() async throws {
-        beginUploadTask(fileId: 2)
+        beginUploadTask(fileId: 1)
         try replay("files/delete")
-        _ = try await apiDeleteChatItems(type: .direct, id: 2, scope: nil, itemIds: [2], mode: .cidmInternal)
+        _ = try await apiDeleteChatItems(type: .direct, id: 2, scope: nil, itemIds: [1], mode: .cidmInternal)
         XCTAssertEqual(Array(ChatModel.shared.fileUploads.keys), [])
     }
 
     @MainActor
     func testDeletedItemEventEndsTask() async throws {
-        beginUploadTask(fileId: 2)
+        beginUploadTask(fileId: 1)
         await processReceivedMsg(try event(try response("files/delete")))
         XCTAssertEqual(Array(ChatModel.shared.fileUploads.keys), [])
     }
