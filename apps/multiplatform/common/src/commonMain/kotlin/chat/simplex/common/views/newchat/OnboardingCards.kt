@@ -111,7 +111,7 @@ internal fun gradientPoints(aspectRatio: Float, scale: Float): GradientEndpoints
   )
 }
 
-internal val lightStops = arrayOf(
+internal val lightStops = gradientStops(
   0.0f to oklch(0.9219f, 0.0431f, 249.4f),
   0.5f to oklch(0.9198f, 0.0471f, 240.7f),
   0.9f to oklch(0.9772f, 0.0358f, 196.6f),
@@ -119,13 +119,16 @@ internal val lightStops = arrayOf(
   1.0f to oklch(0.9886f, 0.0272f, 99.1f)
 )
 
-internal val darkStops = arrayOf(
+internal val darkStops = gradientStops(
   0.4f to oklch(0.1578f, 0.0609f, 267.3f),
   0.72f to oklch(0.4729f, 0.1574f, 267.3f),
   0.9f to oklch(0.9024f, 0.0760f, 202.8f),
   0.95f to oklch(0.9384f, 0.0354f, 65.0f),
   1.0f to oklch(0.9744f, 0.0370f, 88.4f)
 )
+
+internal fun gradientStops(vararg stops: Pair<Float, Color>): Array<Pair<Float, Color>> =
+  if (appPlatform.isDesktop) Array(stops.size) { i -> stops[i].first to stops[i].second.convert(ColorSpaces.Srgb) } else arrayOf(*stops)
 
 private fun Modifier.maxHeightByWidthRatio(ratio: Float) = layout { measurable, constraints ->
   val maxH = (constraints.maxWidth * ratio).toInt().coerceAtMost(constraints.maxHeight)
