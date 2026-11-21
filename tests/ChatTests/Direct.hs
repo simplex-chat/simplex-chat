@@ -92,6 +92,7 @@ chatDirectTests = do
     it "skip integrity error of handled message redelivered after chat stop" testRedeliveredHandledIntegrity
     it "roll back writes and events of a failed store transaction" testStoreTxRollback
     it "commit store transaction without the writes of a failed store call" testStoreTxSavepoint
+    it "rethrow the error of a nested store transaction" testStoreTxNested
     it "receive message again after its handling failed to commit" testRedeliveredUncommittedMessage
 #if !defined(dbPostgres)
     it "roll back store transaction after a failed savepoint rollback" testStoreTxAborted
@@ -1642,9 +1643,15 @@ testStoreTxSavepoint =
       withStore' (\db -> DB.execute_ db "UPDATE contact_profiles SET local_alias = 'undone' WHERE display_name = 'alice'" >> DB.execute_ db "UPDATE contact_profiles SET local_alias = NULL WHERE display_name = 'alice'")
         `catchAllErrors` \_ -> pure ()
       toView CEvtChatSuspended
-    isRight r `shouldBe` True
+    either (const False) isRight r `shouldBe` True
     aliceAlias bob `shouldReturn` [Only ("kept" :: T.Text)]
     bob <## "chat suspended"
+
+testStoreTxNested :: HasCallStack => TestParams -> IO ()
+testStoreTxNested ps =
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    r <- runInStoreTx bob False $ withStoreTx (const False) (throwChatError (CEInternalError "nested") :: CM ())
+    either (const False) isLeft r `shouldBe` True
 
 testRedeliveredUncommittedMessage :: HasCallStack => TestParams -> IO ()
 testRedeliveredUncommittedMessage =

@@ -99,7 +99,7 @@ import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
-import Simplex.Messaging.Util (AnyError (..), catchAllErrors, catchOwn', tryAllErrors, (<$$>))
+import Simplex.Messaging.Util (AnyError (..), catchAllErrors, catchOwn', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -1902,7 +1902,7 @@ withStoreTx :: (ChatError -> Bool) -> CM a -> CM (Either ChatError a)
 withStoreTx rollbackOn action = do
   cc@ChatController {chatStore} <- ask
   lift ownStoreTx >>= \case
-    Just _ -> tryAllErrors action
+    Just _ -> Right <$> action
     Nothing -> do
       afterCommitQ <- newTVarIO []
       aborted <- newTVarIO Nothing
