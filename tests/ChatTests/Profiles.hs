@@ -15,9 +15,11 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently, concurrently_)
+import Control.Concurrent.Async (concurrently, concurrently_, poll, wait, withAsync)
+import Control.Concurrent.STM (atomically, newEmptyTMVarIO, putTMVar, takeTMVar)
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -29,11 +31,13 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
 import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeProof, BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeProof, generateMasterKey, issueBadge, verifyPayment)
-import Simplex.Chat.Controller (CM, ChatConfig (..), ChatController (ChatController, smpAgent), ChatHooks (..), defaultChatHooks, storeCxt, withAgent)
-import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage')
+import Simplex.Chat.Controller (CM, ChatCommand (APIAddMyAddressShortLink, APIConnectPreparedContact, APICreateMyAddress, APIRotateAddressRatchetKeys, APISetAddressSettings, APISetConnectionIncognito), ChatConfig (..), ChatController (ChatController, chatLock, smpAgent), ChatHooks (..), ChatResponse (CRConnectionIncognitoUpdated, CRContactAlreadyExists), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Library.Commands (execChatCommand')
+import Simplex.Chat.Library.Internal (encodeConnInfo, encodeShortLinkData, getShortLinkConnReq, groupMemberKey, redactedMemberProfile, sendDirectContactMessage, sendGroupMessage', withUserProfileLock)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XContact, XInfo, XOk), ContactShortLinkData (ContactShortLinkData), GroupShortLinkData (GroupShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
+import Simplex.Chat.Store.Profiles (AddressSettings (..))
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
 import Simplex.Chat.Types (AgentConnId (..), B64UrlByteString (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), GroupProfile (publicGroup), GroupType (..), ImageData (..), Profile (..), PublicGroupProfile (PublicGroupProfile), GroupRejectionReason (..), ShortLinkContact, User (..), aUserId, fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
@@ -108,6 +112,7 @@ chatProfileTests = do
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "rotate address ratchet keys" testRotateAddressRatchetKeys
+    it "address link data changes wait for the profile lock" testAddressDataProfileLock
     it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "retry connecting via address in contact profile after address keys rotation" testRetryConnectingContactViaAddress
@@ -118,6 +123,7 @@ chatProfileTests = do
     it "duplicate contact request from connected contact" testDuplicateContactRequestConnected
     it "contact requests with invalid or unsupported messages" testContactRequestsInvalidMessages
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
+    it "contact requests are received while a request is accepted" testAcceptContactReceivesRequests
     it "reject contact and notify the sender" testRejectContactNotifySender
     it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
@@ -140,6 +146,7 @@ chatProfileTests = do
     it "set connection incognito prohibited during negotiation" testSetConnectionIncognitoProhibitedDuringNegotiation
     it "connection incognito unchanged errors" testConnectionIncognitoUnchangedErrors
     it "set, reset, set connection incognito" testSetResetSetConnectionIncognito
+    it "set connection incognito returns the link error when the connection is deleted" testSetConnectionIncognitoDeleted
     it "join group incognito" testJoinGroupIncognito
     it "join group incognito as bot" $ testJoinGroupIncognitoPeerType (Just CPTBot)
     it "join group incognito as human" $ testJoinGroupIncognitoPeerType Nothing
@@ -212,6 +219,7 @@ shortLinkTests = do
   it "prepare contact via address and connect after it is deleted" testShortLinkDeletedAddress
   it "prepare contact via address and connect with retry after error" testShortLinkAddressConnectRetry
   it "prepare contact via address and connect incognito with retry" testShortLinkAddressConnectRetryIncognito
+  it "prepare contact via address and connect twice at once" testShortLinkAddressConnectTwice
   it "prepare business chat using address short link data and connect" testShortLinkAddressPrepareBusiness
   it "connect to business address with request message" testBusinessAddressRequestMessage
   it "prepare group using group short link data and connect" testShortLinkPrepareGroup
@@ -1453,6 +1461,31 @@ testRotateAddressRatchetKeys =
       (alice <## "bob (Bob): contact is connected")
     alice <##> bob
 
+testAddressDataProfileLock :: HasCallStack => TestParams -> IO ()
+testAddressDataProfileLock =
+  testChat aliceProfile $ \alice -> do
+    let settings = AddressSettings {businessAddress = False, autoAccept = Nothing, chatLayout = Nothing, autoReply = Just $ MCText "hello"}
+    forM_ [APICreateMyAddress 1 Nothing Nothing, APIAddMyAddressShortLink 1 Nothing, APISetAddressSettings 1 Nothing settings, APIRotateAddressRatchetKeys 1] $
+      waitsForProfileLock alice
+  where
+    waitsForProfileLock alice cmd = do
+      held <- newEmptyTMVarIO
+      release <- newEmptyTMVarIO
+      let cc = chatController alice
+          holdLock = runExceptT (withUserProfileLock "test" . liftIO $ atomically (putTMVar held ()) >> atomically (takeTMVar release)) `runReaderT` cc
+      withAsync holdLock $ \h -> do
+        atomically $ takeTMVar held
+        withAsync (execChatCommand' cmd 0 `runReaderT` cc) $ \a -> do
+          threadDelay 1000000
+          poll a >>= \case
+            Nothing -> pure ()
+            Just _ -> expectationFailure "address command does not wait for the profile lock"
+          atomically $ putTMVar release ()
+          void $ wait h
+          wait a >>= \case
+            Right _ -> pure ()
+            Left e -> expectationFailure $ show e
+
 testCreateAddressOnServer :: HasCallStack => TestParams -> IO ()
 testCreateAddressOnServer ps = testChat aliceProfile test ps
   where
@@ -1929,6 +1962,20 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
 
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+
+testAcceptContactReceivesRequests :: HasCallStack => TestParams -> IO ()
+testAcceptContactReceivesRequests =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    cath ##> ("/c " <> cLink)
+    alice <#? cath
+    withUnresponsiveServer (smpTestPort2 alice) $ do
+      useUnresponsiveServer alice
+      alice ##> "/ac cath"
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice <##. "smp agent error: BROKER"
 
 testRejectContactNotifySender :: HasCallStack => TestParams -> IO ()
 testRejectContactNotifySender =
@@ -2792,6 +2839,33 @@ testSetResetSetConnectionIncognito = testChat2 aliceProfile bobProfile $
     alice ?<# ("bob> hey")
     alice `hasContactProfiles` ["alice", "bob", T.pack aliceIncognito]
     bob `hasContactProfiles` ["bob", T.pack aliceIncognito]
+
+testSetConnectionIncognitoDeleted :: HasCallStack => TestParams -> IO ()
+testSetConnectionIncognitoDeleted ps =
+  withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice -> do
+    withSmpServer' serverCfg' $ do
+      alice ##> "/connect"
+      void $ getInvitation alice
+    alice <## "disconnected 1 connections on server 127.0.0.1"
+    withUnresponsiveServer (smpTestPort2 ps) $ do
+      r <- withAsync (execChatCommand' (APISetConnectionIncognito 1 True) 0 `runReaderT` chatController alice) $ \a -> do
+        threadDelay 1000000
+        alice ##> "/_delete :1"
+        alice <## "connection :1 deleted"
+        wait a
+      case r of
+        Right CRConnectionIncognitoUpdated {} -> expectationFailure "deleted connection is reported as changed to incognito"
+        _ -> pure ()
+  where
+    serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
+    cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003"]
+              }
+        }
 
 testJoinGroupIncognito :: HasCallStack => TestParams -> IO ()
 testJoinGroupIncognito =
@@ -4792,6 +4866,32 @@ testShortLinkAddressConnectRetryIncognito ps =
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+testShortLinkAddressConnectTwice :: HasCallStack => TestParams -> IO ()
+testShortLinkAddressConnectTwice = testChat2 aliceProfile bobProfile test
+  where
+    test alice bob = do
+      alice ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks alice True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      let lock = chatLock $ chatController bob
+          connect = execChatCommand' (APIConnectPreparedContact 2 False Nothing) 0 `runReaderT` chatController bob
+          alreadyExists = \case
+            Right CRContactAlreadyExists {} -> True
+            _ -> False
+      atomically $ putTMVar lock "test"
+      (r1, r2) <- withAsync (concurrently connect connect) $ \a -> do
+        threadDelay 1000000
+        void . atomically $ takeTMVar lock
+        wait a
+      length (filter alreadyExists [r1, r2]) `shouldBe` 1
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
 
 testShortLinkAddressPrepareBusiness :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressPrepareBusiness = testChat3 businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile test

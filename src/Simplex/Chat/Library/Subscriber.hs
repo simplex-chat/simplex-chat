@@ -819,8 +819,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     -- GSMemLeft (not GSMemRejected): owner UI treats this identically to an explicit /leave from the relay; GSMemRejected has knocking-admission semantics.
                     (relay', m') <- withStore $ \db -> do
                       relay <- getGroupRelayByGMId db (groupMemberId' m)
-                      relay' <- if relayStatus relay == RSInvited
-                        then liftIO $ updateRelayStatusFromTo db relay RSInvited RSRejected
+                      relay' <- if relayStatus relay `elem` ([RSNew, RSInvited] :: [RelayStatus])
+                        then liftIO $ updateRelayStatusFromTo db relay (relayStatus relay) RSRejected
                         else pure relay
                       liftIO $ updateGroupMemberStatus db userId m GSMemLeft
                       pure (relay', m {memberStatus = GSMemLeft})
@@ -4353,7 +4353,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   throwChatError $ CEInternalError "delivery job worker: relay removed job in wrong worker scope"
               | otherwise -> do
                   sendBodyToMembers
-                  deleteGroupConnections user gInfo True
+                  withGroupLock "relayRemoved" groupId $ deleteGroupConnections user gInfo True
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
             MessageDeliveryJob {jobId, jobScope, senderGMIds, body, notification, cursorGMId_ = startingCursor} = job
