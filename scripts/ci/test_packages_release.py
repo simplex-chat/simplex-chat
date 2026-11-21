@@ -486,6 +486,15 @@ class ChangesTest(GitRepoTest):
     def test_other_ci_script_builds_the_core(self):
         self.assertEqual(self.builds("scripts/ci/prune-old-builds.sh"), {"haskell"})
 
+    def test_vlc_packaging_change_builds_the_core_and_tests_the_vlc_bundles(self):
+        self.assertEqual(self.builds("scripts/desktop/prepare-vlc-mac.sh", "scripts/desktop/vlc-plugins.txt"), {"haskell", "vlc"})
+
+    def test_vlc_test_change_tests_only_the_vlc_bundles(self):
+        self.assertEqual(self.builds("scripts/ci/vlc-test.py"), {"vlc"})
+
+    def test_other_desktop_script_does_not_test_the_vlc_bundles(self):
+        self.assertEqual(self.builds("scripts/desktop/build-lib-linux.sh"), {"haskell"})
+
     def test_app_test_scripts_build_nothing(self):
         self.assertEqual(self.builds("scripts/ci/ios-sim/smoke-test.sh", "scripts/ci/desktop-linux/smoke-test.sh", "scripts/ci/android/ui", "scripts/ci/snapshots-compare.py", "scripts/ci/README.md"), set())
 
