@@ -17,14 +17,14 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Util (catchAll)
+import Simplex.Messaging.Util (catchOwn')
 
 withDB' :: Text -> ChatController -> (DB.Connection -> IO a) -> IO (Either String a)
 withDB' cxt cc a = withDB cxt cc $ ExceptT . fmap Right . a
 
 withDB :: Text -> ChatController -> (DB.Connection -> ExceptT String IO a) -> IO (Either String a)
 withDB cxt ChatController {chatStore} action = do
-  r_ <- withTransaction chatStore (runExceptT . action) `catchAll` (pure . Left . show)
+  r_ <- withTransaction chatStore (runExceptT . action) `catchOwn'` (pure . Left . show)
   case r_ of
     Left e -> logError $ "Database error: " <> cxt <> " " <> T.pack e
     Right _ -> pure ()
