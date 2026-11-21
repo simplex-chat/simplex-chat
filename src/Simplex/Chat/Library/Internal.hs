@@ -109,10 +109,9 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import System.FilePath (takeFileName, (</>))
-import System.IO (Handle, IOMode (..), hFlush)
+import System.IO (Handle)
 import UnliftIO.Concurrent (forkFinally, mkWeakThreadId)
 import UnliftIO.Directory
-import UnliftIO.IO (hClose, openFile)
 import UnliftIO.STM
 
 maxMsgReactions :: Int
@@ -505,7 +504,6 @@ cancelFilesInProgress :: User -> [CIFileInfo] -> CM ()
 cancelFilesInProgress user filesInfo = do
   let filesInfo' = filter (not . fileEnded) filesInfo
   (sfs, rfs) <- lift $ splitFTTypes <$> withStoreBatch (\db -> map (getFT db) filesInfo')
-  forM_ rfs $ \RcvFileTransfer {fileId} -> lift (closeFileHandle fileId rcvFiles) `catchAllErrors` \_ -> pure ()
   lift . void . withStoreBatch' $ \db -> map (updateSndFileCancelled db) sfs
   lift . void . withStoreBatch' $ \db -> map (updateRcvFileCancelled db) rfs
   let xsfIds = mapMaybe (\(FileTransferMeta {fileId, xftpSndFile}, _) -> (,fileId) <$> xftpSndFile) sfs
@@ -788,7 +786,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
     -- XFTP
     (Just XFTPRcvFile {userApprovedRelays = approvedBeforeReady}, _) -> do
       let userApproved = approvedBeforeReady || userApprovedRelays
-      filePath <- getRcvFilePath fileId filePath_ fName False
+      filePath <- getRcvFilePath filePath_ fName
       (ci, rfd) <- withStore $ \db -> do
         -- marking file as accepted and reading description in the same transaction
         -- to prevent race condition with appending description
@@ -815,7 +813,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
   where
     acceptFile :: (ChatMsgEvent 'Json -> CM ()) -> CM AChatItem
     acceptFile send = do
-      filePath <- getRcvFilePath fileId filePath_ fName True
+      filePath <- getRcvFilePath filePath_ fName
       inline <- receiveInline
       cxt <- chatStoreCxt
       if
@@ -945,8 +943,8 @@ startReceivingFile user fileId = do
     getChatItemByFileId db cxt user fileId
   toView $ CEvtRcvFileStart user ci
 
-getRcvFilePath :: FileTransferId -> Maybe FilePath -> String -> Bool -> CM FilePath
-getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
+getRcvFilePath :: Maybe FilePath -> String -> CM FilePath
+getRcvFilePath fPath_ fn = case fPath_ of
   Nothing ->
     chatReadVar filesFolder >>= \case
       Nothing -> do
@@ -971,14 +969,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
       fPath <- liftIO $ fPathDir `uniqueCombine` fn
       createEmptyFile fPath $> fPath
     createEmptyFile :: FilePath -> CM ()
-    createEmptyFile fPath = emptyFile `catchThrow` (ChatError . CEFileWrite fPath . show)
-      where
-        emptyFile :: CM ()
-        emptyFile
-          | keepHandle = do
-              h <- getFileHandle fileId fPath rcvFiles AppendMode
-              liftIO $ B.hPut h "" >> hFlush h
-          | otherwise = liftIO $ B.writeFile fPath ""
+    createEmptyFile fPath = liftIO (B.writeFile fPath "") `catchThrow` (ChatError . CEFileWrite fPath . show)
 
 -- TODO [short links]
 -- Please note:
@@ -2103,11 +2094,9 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitati
     append_ :: FilePath -> CM ()
     append_ filePath = do
       fsFilePath <- lift $ toFSFilePath filePath
-      h <- getFileHandle fileId fsFilePath rcvFiles AppendMode
-      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` (fileErr . show)
+      liftIO (B.appendFile fsFilePath chunk) `catchThrow` (fileErr . show)
       withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
-      when final $ do
-        lift $ closeFileHandle fileId rcvFiles
+      when final $
         forM_ cryptoArgs $ \cfArgs -> do
           tmpFile <- lift getChatTempDirectory >>= liftIO . (`uniqueCombine` fileName)
           tryAllErrors (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
@@ -2122,17 +2111,6 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitati
         encryptErr e = fileErr $ e <> ", received file not encrypted"
         fileErr = ChatError . CEFileWrite filePath
 
-getFileHandle :: Int64 -> FilePath -> (ChatController -> TVar (Map Int64 Handle)) -> IOMode -> CM Handle
-getFileHandle fileId filePath files ioMode = do
-  fs <- asks files
-  h_ <- M.lookup fileId <$> readTVarIO fs
-  maybe (newHandle fs) pure h_
-  where
-    newHandle fs = do
-      h <- openFile filePath ioMode `catchThrow` (ChatError . CEFileInternal . show)
-      atomically . modifyTVar fs $ M.insert fileId h
-      pure h
-
 isFileActive :: Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> CM Bool
 isFileActive fileId files = do
   fs <- asks files
@@ -2143,7 +2121,6 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile} =
   cancel' `catchAllErrors` \e -> eToView e
   where
     cancel' = do
-      lift $ closeFileHandle fileId rcvFiles
       withStore' $ \db -> do
         updateFileCancelled db user fileId CIFSRcvCancelled
         updateRcvFileStatus db fileId FSCancelled
@@ -2178,25 +2155,17 @@ cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, fil
           void $ sendDirectMessage_ conn (BFileChunk sharedMsgId FileChunkCancel) (ConnectionId connId)
         _ -> throwChatError $ CEException "cancelSndFileTransfer: cancelling file via a separate connection is deprecated"
 
-closeFileHandle :: Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> CM' ()
-closeFileHandle fileId files = do
-  fs <- asks files
-  h_ <- atomically . stateTVar' fs $ \m -> (M.lookup fileId m, M.delete fileId m)
-  liftIO $ mapM_ hClose h_ `catchOwn'` \_ -> pure ()
-
 -- The roster file has no chat item, so chat-item file enumeration misses it; clean it up by group.
 cleanupGroupRosterFile :: User -> GroupInfo -> CM ()
 cleanupGroupRosterFile User {userId} GroupInfo {groupId} = do
   infos <- withStore' $ \db -> getGroupRosterFileInfo db userId groupId
-  forM_ infos $ \(fileId, filePath_) -> do
-    lift $ closeFileHandle fileId rcvFiles
-    forM_ filePath_ removeFsFile
+  forM_ infos $ \(_, filePath_) -> forM_ filePath_ removeFsFile
   withStore' $ \db -> do
     deleteGroupRosterFile db userId groupId
     deleteGroupRosterTransfers db groupId
 
--- Supersede/cancel one source relay's in-flight roster transfer: remove its on-disk file + cached
--- handle first (the cascade only does rows), then the files + transfer rows.
+-- Supersede/cancel one source relay's in-flight roster transfer: remove its on-disk file
+-- first (the cascade only does rows), then the files + transfer rows.
 cleanupRosterTransfer :: GroupInfo -> GroupMemberId -> CM ()
 cleanupRosterTransfer gInfo fromMemberId =
   withStore' (\db -> getRosterTransferId db gInfo fromMemberId) >>= mapM_ cleanupRosterTransferById
@@ -2204,18 +2173,15 @@ cleanupRosterTransfer gInfo fromMemberId =
 cleanupRosterTransferById :: Int64 -> CM ()
 cleanupRosterTransferById transferId = do
   file_ <- withStore' $ \db -> getRosterTransferFile db transferId
-  forM_ file_ $ \(fileId, filePath_) -> do
-    lift $ closeFileHandle fileId rcvFiles
-    forM_ filePath_ removeFsFile
+  forM_ file_ $ \(_, filePath_) -> forM_ filePath_ removeFsFile
   withStore' $ \db -> do
     deleteRosterTransferFile db transferId
     deleteRosterTransfer db transferId
 
--- MUST evict the cached AppendMode handle before deleting chunks, else re-driven bytes append
+-- MUST remove the partial file before deleting chunks, else re-driven bytes append
 -- after the stale prefix and corrupt the blob.
 resetRosterPartialChunks :: RcvFileTransfer -> CM ()
-resetRosterPartialChunks ft@RcvFileTransfer {fileId, fileStatus} = do
-  lift $ closeFileHandle fileId rcvFiles
+resetRosterPartialChunks ft@RcvFileTransfer {fileStatus} = do
   forM_ (rcvFilePath fileStatus) removeFsFile
   withStore' $ \db -> deleteRcvFileChunks db ft
   where

@@ -322,7 +322,6 @@ data ChatController = ChatController
     chatLock :: Lock,
     entityLocks :: TMap ChatLockEntity Lock,
     sndFiles :: TVar (Map Int64 Handle),
-    rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
     localDeviceName :: TVar Text,
     multicastSubscribers :: TMVar Int,

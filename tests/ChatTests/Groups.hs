@@ -32,14 +32,15 @@ import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
-import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Controller (CM, ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, storeCxt, withAgent)
+import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, sendDirectMemberMessage, sendGroupMessage', sendInlineBlobChunks, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (AChatItemUpdate (..), CIMention (..), CIMentionMember (..), ChatItem (ChatItem, mentions), ChatItemId, isUserMention)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (BFileChunk, XFile, XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FileChunk (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
+import Simplex.Chat.Store.Shared (getGroupInfoKeys)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -59,7 +60,7 @@ import Simplex.Messaging.Protocol (MsgFlags (..), SubscriptionMode (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
-import System.Directory (copyFile, doesFileExist)
+import System.Directory (copyFile, doesFileExist, listDirectory)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
@@ -377,6 +378,9 @@ chatGroupTests = do
         it "observer cannot post until promoted" testChannelObserverCannotPost
         it "promoted member re-connecting via a new relay is accepted via the roster-pinned key" testChannelPromotedMemberRejoinViaRelay
         it "2 relays: multi-chunk roster reassembles per source (no stream interleaving)" testChannelRosterMultiRelayMultipart
+        it "partial roster is reset when its first chunk is sent again" testChannelPartialRosterReset
+        it "partial roster is removed when the relay cancels it" testChannelPartialRosterCancel
+        it "partial roster is removed with the channel" testChannelPartialRosterDeleted
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -12585,6 +12589,83 @@ testChannelRosterMultiRelayMultipart ps =
       rows <- withCCTransaction cc $ \db ->
         DB.query_ db "SELECT member_pub_key FROM group_members WHERE member_role = 'moderator'" :: IO [Only (Maybe ByteString)]
       map (\(Only k) -> isJust k) rows `shouldBe` [True]
+
+testChannelPartialRosterReset :: HasCallStack => TestParams -> IO ()
+testChannelPartialRosterReset =
+  testPartialRoster $ \_ bob dan smId blob -> do
+    sendFromRelay bob "dan" $ \u g m -> sendInlineBlobChunks u g [m] smId blob
+    memberRoleCount dan `shouldEventuallyReturn` 1
+    rosterFiles dan `shouldEventuallyReturn` []
+
+testChannelPartialRosterCancel :: HasCallStack => TestParams -> IO ()
+testChannelPartialRosterCancel =
+  testPartialRoster $ \_ bob dan smId _ -> do
+    sendFromRelay bob "dan" $ \u g m -> void $ sendGroupMessage' u g [m] (BFileChunk smId FileChunkCancel)
+    rosterFiles dan `shouldEventuallyReturn` []
+    memberRoleCount dan `shouldReturn` 0
+
+testChannelPartialRosterDeleted :: HasCallStack => TestParams -> IO ()
+testChannelPartialRosterDeleted =
+  testPartialRoster $ \alice bob dan _ _ -> do
+    dan ##> "/l team"
+    concurrentlyN_
+      [ do
+          dan <## "#team: you left the group"
+          dan <## "use /d #team to delete the group",
+        bob <## "#team: dan left the group (signed)",
+        alice <## "#team: dan left the group (signed)"
+      ]
+    dan ##> "/d #team"
+    dan <## "#team: you deleted your local copy of the group"
+    rosterFiles dan `shouldReturn` []
+
+testPartialRoster :: HasCallStack => (TestCC -> TestCC -> TestCC -> SharedMsgId -> ByteString -> IO ()) -> TestParams -> IO ()
+testPartialRoster test ps =
+  withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfgOpts ps cfg testOpts "cath" cathProfile $ \cath ->
+        withNewTestChatCfgOpts ps cfg testOpts "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          threadDelay 100000
+          promoteChannelMember "team" alice bob cath []
+          threadDelay 100000
+          blob <- storedRoster bob
+          setStoredRoster bob $ B.take 30 blob
+          dan #$> ("/_temp_folder " <> rosterTempFolder dan, id, "ok")
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          rosterFiles dan `shouldEventuallyReturn` [B.take 30 blob]
+          setStoredRoster bob blob
+          [Only smId] <- withCCTransaction dan $ \db -> DB.query_ db "SELECT shared_msg_id FROM files WHERE roster_transfer_id IS NOT NULL"
+          test alice bob dan smId blob
+  where
+    cfg = testCfg {fileChunkSize = 30}
+
+storedRoster :: TestCC -> IO ByteString
+storedRoster cc = do
+  [Only (Binary blob)] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT roster_blob FROM groups WHERE roster_blob IS NOT NULL"
+  pure blob
+
+setStoredRoster :: TestCC -> ByteString -> IO ()
+setStoredRoster cc blob = withCCTransaction cc $ \db -> DB.execute db "UPDATE groups SET roster_blob = ? WHERE roster_blob IS NOT NULL" (Only (Binary blob))
+
+sendFromRelay :: HasCallStack => TestCC -> ContactName -> (User -> GroupInfoKeys -> GroupMember -> CM ()) -> IO ()
+sendFromRelay relay mName sendToMember = do
+  m@GroupMember {groupId = gId} <- getTestMember relay "team" mName
+  withCCUser relay $ \u -> do
+    g <- withCCTransaction relay $ \db -> runExceptT (getGroupInfoKeys db (storeCxt $ chatController relay) u gId) >>= either (fail . show) pure
+    runExceptT (sendToMember u g m) `runReaderT` chatController relay >>= either (fail . show) pure
+
+memberRoleCount :: TestCC -> IO Int
+memberRoleCount cc = do
+  [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM group_members WHERE member_role = 'member'"
+  pure n
+
+rosterFiles :: TestCC -> IO [ByteString]
+rosterFiles cc = listDirectory (rosterTempFolder cc) >>= mapM (B.readFile . (rosterTempFolder cc </>))
+
+rosterTempFolder :: TestCC -> FilePath
+rosterTempFolder cc = tmpFile cc "roster_temp"
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelay = testChannelRemoveRelay_ (const id)

@@ -8,6 +8,7 @@ module ChatTests.Files where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Groups (itemSharedMsgId)
 import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBadgeType, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
@@ -27,14 +28,14 @@ import Simplex.Chat.Badges (BadgeProof, BadgeStatus (..), BadgeType (..), FileSi
 import Simplex.Chat.Controller (ChatCommand (APIGetChat), ChatConfig (..), ChatEvent (CEvtChatItemUpdated, CEvtRcvFileDescrReady), ChatHooks (..), ChatPagination (CPLast), ChatResponse (CRApiChat, CRNewChatItems), defaultChatHooks)
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Commands (execChatCommand')
-import Simplex.Chat.Library.Internal (badgeProofStatus, roundedFDCount)
+import Simplex.Chat.Library.Internal (badgeProofStatus, roundedFDCount, sendDirectContactMessage, sendDirectMemberMessage)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIFile (..), CIQuote (CIQuote, content, formattedText), Chat (..), ChatItem (..), ChatRef (..), ChatType (..))
+import Simplex.Chat.Messages (AChat (..), AChatItem (..), AChatItemUpdate (..), CChatItem (..), CIFile (..), CIQuote (CIQuote, content, formattedText), Chat (..), ChatItem (..), ChatRef (..), ChatType (..), SndMessage (..))
 import Simplex.Chat.Messages.CIContent (MsgDirectionI, ciMsgContent)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Protocol (MsgContent (MCImage, MCText))
-import Simplex.Chat.Types (ImageData (..))
+import Simplex.Chat.Protocol (ChatMsgEvent (BFileChunk, XMsgNew), FileChunk (..), MsgContainer (file), MsgContent (MCImage, MCText, MCVoice), mcSimple)
+import Simplex.Chat.Types (FileInvitation (..), GroupMember (..), ImageData (..), InlineFileMode (..), SharedMsgId)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, bbsKeyGen)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -61,6 +62,14 @@ chatFileTests = do
   describe "batch send messages with files" $ do
     it "with files folder: send multiple files to contact" testSendMultiFilesDirect
     it "with files folder: send multiple files to group" testSendMultiFilesGroup
+  describe "inline file transfer" $ do
+    it "received file is closed between chunks sent without acceptance" testInlineFileSentChunks
+    it "received file is closed between chunks after acceptance" testInlineFileAcceptedChunks
+    it "received file is encrypted after its last chunk" testInlineFileEncryptedChunks
+    it "sender cancelling the file keeps its received part" testInlineFileSenderCancel
+    it "recipient cancelling the file keeps its received part" testInlineFileRecipientCancel
+    it "deleting the message removes its partly received file" testInlineFileMessageDeleted
+    it "file is completed after the chat restarts between chunks" testInlineFileChatRestart
   describe "file transfer over XFTP" $ do
     it "round file description count" $ const testXFTPRoundFDCount
     it "send and receive file" testXFTPFileTransfer
@@ -74,6 +83,8 @@ chatFileTests = do
     it "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
+    it "file chunks after the file is received are ignored" testXFTPChunksAfterReceived
+    it "file chunks after the file is received are ignored in group" testXFTPGroupChunksAfterReceived
     it "receiving file from unknown relays resets it, the event has the previous item" testXFTPRcvRelaysNotApproved
     it "should accept file automatically with CLI option" testAutoAcceptFile
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
@@ -714,6 +725,141 @@ testSendMultiFilesGroup =
       bob #$> ("/_get chat #1 count=3", chatF, [((0, "message without file"), Nothing), ((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
       cath #$> ("/_get chat #1 count=3", chatF, [((0, "message without file"), Nothing), ((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
 
+testInlineFileSentChunks :: HasCallStack => TestParams -> IO ()
+testInlineFileSentChunks =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> receiveVoiceInvitation alice bob IFMSent >>= receiveInlineChunks alice bob
+
+testInlineFileAcceptedChunks :: HasCallStack => TestParams -> IO ()
+testInlineFileAcceptedChunks =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMOffer
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice ##> "/fr 1"
+      alice <## "saving file 1 from bob to voice.m4a"
+      receiveInlineChunks alice bob smId
+
+testInlineFileEncryptedChunks :: HasCallStack => TestParams -> IO ()
+testInlineFileEncryptedChunks =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMOffer
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice #$> ("/_temp_folder " <> tmpFile alice "alice_temp", id, "ok")
+      alice ##> "/fr 1 encrypt=on"
+      alice <## "saving file 1 from bob to voice.m4a"
+      receiveFirstChunk alice bob smId
+      sendFileChunk bob smId $ FileChunk 2 voiceChunk2
+      alice <## "completed receiving file 1 (voice.m4a) from bob"
+      Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine alice
+      chatReadFile (voiceFile alice) (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict voiceBytes)
+
+testInlineFileSenderCancel :: HasCallStack => TestParams -> IO ()
+testInlineFileSenderCancel =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMSent
+      receiveFirstChunk alice bob smId
+      sendFileChunk bob smId FileChunkCancel
+      alice <## "bob cancelled sending file 1 (voice.m4a)"
+      sendIgnoredChunk alice bob smId
+      B.readFile (voiceFile alice) `shouldReturn` voiceChunk1
+
+testInlineFileRecipientCancel :: HasCallStack => TestParams -> IO ()
+testInlineFileRecipientCancel =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMSent
+      receiveFirstChunk alice bob smId
+      alice ##> "/fc 1"
+      alice <## "cancelled receiving file 1 (voice.m4a) from bob"
+      sendIgnoredChunk alice bob smId
+      B.readFile (voiceFile alice) `shouldReturn` voiceChunk1
+
+testInlineFileMessageDeleted :: HasCallStack => TestParams -> IO ()
+testInlineFileMessageDeleted =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMSent
+      receiveFirstChunk alice bob smId
+      alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
+      doesFileExist (voiceFile alice) `shouldReturn` False
+      sendIgnoredChunk alice bob smId
+      doesFileExist (voiceFile alice) `shouldReturn` False
+
+testInlineFileChatRestart :: HasCallStack => TestParams -> IO ()
+testInlineFileChatRestart =
+  testChatCfg2 (testCfg {fileChunkSize = 30}) aliceProfile bobProfile $
+    \alice bob -> do
+      smId <- receiveVoiceInvitation alice bob IFMSent
+      receiveFirstChunk alice bob smId
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> "/_start"
+      alice <### ["chat started", "subscribed 1 connections on server localhost"]
+      receiveLastChunk alice bob smId
+
+receiveVoiceInvitation :: HasCallStack => TestCC -> TestCC -> InlineFileMode -> IO SharedMsgId
+receiveVoiceInvitation alice bob fileMode = do
+  connectUsers alice bob
+  alice #$> ("/_files_folder " <> tmpFile alice "alice_app_files", id, "ok")
+  smId <- sendInlineVoice bob fileMode
+  alice <# "bob> voice message (00:01)"
+  alice <# "bob> sends file voice.m4a (40 bytes / 40 bytes)"
+  pure smId
+
+sendInlineVoice :: TestCC -> InlineFileMode -> IO SharedMsgId
+sendInlineVoice cc fileMode = do
+  ct <- getTestCCContact cc 2
+  withCCUser cc $ \user ->
+    runExceptT (sendDirectContactMessage user ct $ XMsgNew voiceMsg) `runReaderT` chatController cc
+      >>= either (fail . show) (\(SndMessage {sharedMsgId = smId}, _) -> pure smId)
+  where
+    voiceMsg :: MsgContainer
+    voiceMsg = (mcSimple $ MCVoice "" 1) {file = Just fInv}
+    fInv = FileInvitation {fileName = "voice.m4a", fileSize = 40, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Just fileMode, fileDescr = Nothing, fileBadge = Nothing}
+
+sendFileChunk :: TestCC -> SharedMsgId -> FileChunk -> IO ()
+sendFileChunk cc smId chunk = do
+  ct <- getTestCCContact cc 2
+  withCCUser cc $ \user ->
+    runExceptT (sendDirectContactMessage user ct $ BFileChunk smId chunk) `runReaderT` chatController cc
+      >>= either (fail . show) (\_ -> pure ())
+
+receiveInlineChunks :: HasCallStack => TestCC -> TestCC -> SharedMsgId -> IO ()
+receiveInlineChunks alice bob smId = do
+  B.readFile (voiceFile alice) `shouldReturn` ""
+  receiveFirstChunk alice bob smId
+  receiveLastChunk alice bob smId
+
+receiveFirstChunk :: HasCallStack => TestCC -> TestCC -> SharedMsgId -> IO ()
+receiveFirstChunk alice bob smId = do
+  sendFileChunk bob smId $ FileChunk 1 voiceChunk1
+  alice <## "started receiving file 1 (voice.m4a) from bob"
+  bob #> "@alice hi"
+  alice <# "bob> hi"
+  B.readFile (voiceFile alice) `shouldReturn` voiceChunk1
+
+receiveLastChunk :: HasCallStack => TestCC -> TestCC -> SharedMsgId -> IO ()
+receiveLastChunk alice bob smId = do
+  sendFileChunk bob smId $ FileChunk 2 voiceChunk2
+  alice <## "completed receiving file 1 (voice.m4a) from bob"
+  B.readFile (voiceFile alice) `shouldReturn` voiceBytes
+
+sendIgnoredChunk :: HasCallStack => TestCC -> TestCC -> SharedMsgId -> IO ()
+sendIgnoredChunk alice bob smId = do
+  sendFileChunk bob smId $ FileChunk 2 voiceChunk2
+  bob #> "@alice hi"
+  alice <# "bob> hi"
+
+voiceFile :: TestCC -> FilePath
+voiceFile alice = tmpFile alice "alice_app_files" </> "voice.m4a"
+
+voiceBytes, voiceChunk1, voiceChunk2 :: B.ByteString
+voiceBytes = B.replicate 40 'v'
+(voiceChunk1, voiceChunk2) = B.splitAt 30 voiceBytes
+
 testXFTPRoundFDCount :: Expectation
 testXFTPRoundFDCount = do
   roundedFDCount (-100) `shouldBe` 4
@@ -1281,6 +1427,70 @@ testXFTPCancelRcvRepeat =
       dest `shouldBe` src
   where
     cfg = testCfg {xftpDescrPartSize = 200}
+
+testXFTPChunksAfterReceived :: HasCallStack => TestParams -> IO ()
+testXFTPChunksAfterReceived =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer alice $ do
+      connectUsers alice bob
+      let logoPng = tmpFile bob "logo-large-rgba.png"
+
+      alice #> "/f @bob ./tests/fixtures/logo-large-rgba.png"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file logo-large-rgba.png (28.0 KiB / 28676 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> ("/fr 1 " <> tmpDir bob)
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (logo-large-rgba.png) for bob",
+          bob
+            <### [ ConsoleString $ "saving file 1 from alice to " <> logoPng,
+                   "started receiving file 1 (logo-large-rgba.png) from alice"
+                 ]
+        ]
+      bob <## "completed receiving file 1 (logo-large-rgba.png) from alice"
+
+      smId <- itemSharedMsgId alice
+      mapM_ (sendFileChunk alice smId) [FileChunk 1 "", FileChunkCancel, FileChunk 1 "", FileChunk 2 "alice's bytes"]
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+
+      bob ##> "/fs 1"
+      bob <## ("receiving file 1 (logo-large-rgba.png) complete, path: " <> logoPng)
+      src <- B.readFile "./tests/fixtures/logo-large-rgba.png"
+      B.readFile logoPng `shouldReturn` src
+
+testXFTPGroupChunksAfterReceived :: HasCallStack => TestParams -> IO ()
+testXFTPGroupChunksAfterReceived =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer alice $ do
+      createGroup2 "team" alice bob
+      let logoPng = tmpFile bob "logo-large-rgba.png"
+
+      alice #> "/f #team ./tests/fixtures/logo-large-rgba.png"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "#team alice> sends file logo-large-rgba.png (28.0 KiB / 28676 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (logo-large-rgba.png) for #team"
+      bob ##> ("/fr 1 " <> tmpDir bob)
+      bob
+        <### [ ConsoleString $ "saving file 1 from alice to " <> logoPng,
+               "started receiving file 1 (logo-large-rgba.png) from alice"
+             ]
+      bob <## "completed receiving file 1 (logo-large-rgba.png) from alice"
+
+      smId <- itemSharedMsgId alice
+      GroupMember {groupId = gId, activeConn = Just conn} <- getTestMember alice "team" "bob"
+      let sendChunk chunk =
+            runExceptT (sendDirectMemberMessage conn (BFileChunk smId chunk) gId) `runReaderT` chatController alice
+              >>= either (fail . show) (\_ -> pure ())
+      mapM_ sendChunk [FileChunk 1 "", FileChunkCancel, FileChunk 1 "", FileChunk 2 "alice's bytes"]
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+
+      bob ##> "/fs 1"
+      bob <## ("receiving file 1 (logo-large-rgba.png) complete, path: " <> logoPng)
+      src <- B.readFile "./tests/fixtures/logo-large-rgba.png"
+      B.readFile logoPng `shouldReturn` src
 
 testXFTPRcvRelaysNotApproved :: HasCallStack => TestParams -> IO ()
 testXFTPRcvRelaysNotApproved ps = do

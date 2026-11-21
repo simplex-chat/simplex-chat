@@ -380,7 +380,7 @@ getGroupRcvFileId db userId groupId fromMemberId sharedMsgId = do
         WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ? AND r.group_member_id = ?
       |]
 
--- The roster scratch file for a transfer (for fs/handle cleanup before deleting the transfer).
+-- The roster scratch file for a transfer (for fs cleanup before deleting the transfer).
 -- A transfer owns exactly one file (created together in one transaction), so this is single-valued.
 getRosterTransferFile :: DB.Connection -> Int64 -> IO (Maybe (Int64, Maybe FilePath))
 getRosterTransferFile db transferId =
@@ -392,7 +392,7 @@ deleteRosterTransferFile db transferId =
   DB.execute db "DELETE FROM files WHERE roster_transfer_id = ?" (Only transferId)
 
 -- For roster-file cleanup keyed on the group (not a chat item): every matching file_id and its on-disk
--- path, so the caller evicts the handle and removes the file for each — delete-all like deleteGroupRosterFile.
+-- path, so the caller removes the file for each — delete-all like deleteGroupRosterFile.
 getGroupRosterFileInfo :: DB.Connection -> UserId -> Int64 -> IO [(Int64, Maybe FilePath)]
 getGroupRosterFileInfo db userId groupId =
   DB.query

@@ -187,7 +187,6 @@ newChatController
         chatLock <- newEmptyTMVarIO
         entityLocks <- TM.emptyIO
         sndFiles <- newTVarIO M.empty
-        rcvFiles <- newTVarIO M.empty
         currentCalls <- TM.emptyIO
         localDeviceName <- newTVarIO $ fromMaybe deviceNameForRemote deviceName
         multicastSubscribers <- newTMVarIO 0
@@ -236,7 +235,6 @@ newChatController
               chatLock,
               entityLocks,
               sndFiles,
-              rcvFiles,
               currentCalls,
               localDeviceName,
               multicastSubscribers,
