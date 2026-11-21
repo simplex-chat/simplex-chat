@@ -58,7 +58,7 @@ storeMetricsTests :: Spec
 storeMetricsTests = describe "StoreService: metrics" $ do
   g <- runIO C.newRandom
   it "counts open invoices by provider with those the sweep would expire, badge purchases by status, subscriptions by state and open badge codes, with the providers' last list and webhook, and 0 for a provider, status or state without rows" testServiceCounts
-  it "counts name orders by phase, the oldest change among the orders the service moves on, pending transactions by nonce, open name invoices, held balances and pending record edits" testNamesCounts
+  it "counts name orders by phase, the oldest change among the orders the service moves on, pending transactions by nonce, open name invoices and pending record edits" testNamesCounts
   it "reads the registrar's funds, the latest block and which terms texts are held, and keeps each part while a read fails" $ testChainRead g
   it "answers GET /metrics with the service metrics alone without names, and with the names metrics while the node holds the chain read" $ testScrape g
   it "counts live names and owned subnames by level and records, with their label lengths, and keeps the last read while one fails" $ testRegisteredNames g
