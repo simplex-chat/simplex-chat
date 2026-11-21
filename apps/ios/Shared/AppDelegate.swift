@@ -19,6 +19,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         removePasscodesIfReinstalled()
         prepareForLaunch()
         deleteOldChatArchive()
+        RemoteCtrlKeepAlive.shared.observeSession()
         return true
     }
 
@@ -86,6 +87,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             removeFile($0)
         }
         ChatModel.shared.filesToDelete = []
+        RemoteCtrlKeepAlive.shared.stop()
         terminateChat()
     }
 

@@ -15,6 +15,10 @@ import SimpleXChat
 let ntfActionAcceptContact = "NTF_ACT_ACCEPT_CONTACT"
 let ntfActionAcceptCall = "NTF_ACT_ACCEPT_CALL"
 let ntfActionRejectCall = "NTF_ACT_REJECT_CALL"
+let ntfActionDisconnectDesktop = "NTF_ACT_DISCONNECT_DESKTOP"
+
+let ntfCategoryRemoteCtrl = "NTF_CAT_REMOTE_CTRL"
+private let remoteCtrlNotificationId = "chat.simplex.app.remote-ctrl"
 
 private let ntfTimeInterval: TimeInterval = 1
 
@@ -73,6 +77,10 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 CallController.shared.callAction(invitation: invitation, action: ntfAction)
             } else {
                 chatModel.ntfCallInvitationAction = (chatId, ntfAction)
+            }
+        } else if content.categoryIdentifier == ntfCategoryRemoteCtrl {
+            if action == ntfActionDisconnectDesktop {
+                Task { await RemoteCtrlKeepAlive.shared.disconnect() }
             }
         } else {
             if let chatId = content.targetContentIdentifier {
@@ -134,6 +142,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 // when the app is in foreground it does not need to be shown
             case ntfCategoryCheckMessage: return []
             case ntfCategoryCallInvitation: return []
+            case ntfCategoryRemoteCtrl: return [.list]
             default: return [.sound, .banner, .list]
             }
         } else {
@@ -207,6 +216,18 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 actions: [],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("New events", comment: "notification")
+            ),
+            UNNotificationCategory(
+                identifier: ntfCategoryRemoteCtrl,
+                actions: [
+                    UNNotificationAction(
+                        identifier: ntfActionDisconnectDesktop,
+                        title: NSLocalizedString("Disconnect", comment: "disconnect desktop via notification"),
+                        options: .destructive
+                    )
+                ],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("Connected to desktop", comment: "notification")
             )
         ])
     }
@@ -261,6 +282,30 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     func notifyCallInvitation(_ invitation: RcvCallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
         addNotification(createCallInvitationNtf(invitation, 0))
+    }
+
+    func notifyRemoteCtrlConnected(_ desktopName: String?) {
+        logger.debug("NtfManager.notifyRemoteCtrlConnected")
+        if !granted { return }
+        let content = UNMutableNotificationContent()
+        content.categoryIdentifier = ntfCategoryRemoteCtrl
+        content.title = NSLocalizedString("Connected to desktop", comment: "notification title")
+        if let desktopName {
+            content.body = String.localizedStringWithFormat(NSLocalizedString("%@ is connected. The app keeps running in the background until you disconnect.", comment: "notification body"), desktopName)
+        } else {
+            content.body = NSLocalizedString("The app keeps running in the background until you disconnect.", comment: "notification body")
+        }
+        content.interruptionLevel = .passive
+        let request = UNNotificationRequest(identifier: remoteCtrlNotificationId, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error { logger.error("notifyRemoteCtrlConnected error: \(error.localizedDescription)") }
+        }
+    }
+
+    func removeRemoteCtrlNotification() {
+        let nc = UNUserNotificationCenter.current()
+        nc.removePendingNotificationRequests(withIdentifiers: [remoteCtrlNotificationId])
+        nc.removeDeliveredNotifications(withIdentifiers: [remoteCtrlNotificationId])
     }
 
     // Spec: spec/services/notifications.md#setNtfBadgeCount

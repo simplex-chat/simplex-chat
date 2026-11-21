@@ -154,7 +154,7 @@ Sheets are presented modally on top of the navigation stack:
 | [`NewChatView`](../../Shared/Views/NewChat/NewChatView.swift#L78) | Tap FAB / "+" button | Create link, scan QR, paste link, new group |
 | WhatsNew | App update detected | Release notes |
 | AddGroupView | "New Group" action | Group creation wizard |
-| ConnectDesktopView | Settings > Desktop | Remote desktop pairing |
+| ConnectDesktopView | UserPicker > Use from desktop; shown again by `ChatListView.onAppear` while a desktop session is connected | Remote desktop pairing and session (see [Desktop Screen Presentation](../architecture.md#desktop-screen-presentation)) |
 | MigrateFromDevice | Settings > Migration | Device export |
 | MigrateToDevice | Onboarding migration | Device import |
 | [LocalAuthView](../../Shared/ContentView.swift#L95) | App foreground after background | Biometric/passcode auth |

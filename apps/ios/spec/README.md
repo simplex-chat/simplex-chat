@@ -28,7 +28,8 @@ SimpleXApp (root entry point)
 │   └── ThemeManager (theme resolution engine)
 └── Extensions
     ├── SimpleX NSE (Notification Service Extension -- decrypts push payloads)
-    └── SimpleX SE (Share Extension)
+    ├── SimpleX SE (Share Extension)
+    └── SimpleX Live Activity (WidgetKit extension -- desktop session Live Activity)
 ```
 
 ## Specification Documents

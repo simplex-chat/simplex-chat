@@ -147,14 +147,6 @@ final class ChatItemUpdateTests: XCTestCase {
         XCTAssertEqual(item.text, "hello there")
     }
 
-    private func recordedEvents(_ fixture: String) throws -> [ChatEvent] {
-        try XCTUnwrap(try fixtureJSON(fixture) as? [Any]).map { json in
-            let decoded: APIResult<ChatEvent> = decodeAPIResult(try JSONSerialization.data(withJSONObject: singleFieldJSON(json)))
-            let event: ChatEvent? = if case let .result(r) = decoded { r } else { nil }
-            return try XCTUnwrap(event, "event not decoded: \(decoded.responseType)")
-        }
-    }
-
     private func otherUser() -> User {
         var user = User.sampleData
         user.userId = 2
@@ -194,6 +186,14 @@ final class ChatItemUpdateTests: XCTestCase {
         }
         try? await waitFor { counts() == [unread, mentions, userUnread] }
         XCTAssertEqual(counts(), [unread, mentions, userUnread], file: file, line: line)
+    }
+}
+
+func recordedEvents(_ fixture: String) throws -> [ChatEvent] {
+    try XCTUnwrap(try fixtureJSON(fixture) as? [Any]).map { json in
+        let decoded: APIResult<ChatEvent> = decodeAPIResult(try JSONSerialization.data(withJSONObject: singleFieldJSON(json)))
+        let event: ChatEvent? = if case let .result(r) = decoded { r } else { nil }
+        return try XCTUnwrap(event, "event not decoded: \(decoded.responseType)")
     }
 }
 

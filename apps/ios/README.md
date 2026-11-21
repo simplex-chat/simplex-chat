@@ -4,15 +4,16 @@ This file provides guidance when working with code in this repository.
 
 ## iOS App Overview
 
-The iOS app is a SwiftUI application that interfaces with the Haskell core library via FFI. It shares the SimpleXChat framework with two extensions: Notification Service Extension (NSE) for push notifications and Share Extension (SE) for sharing content from other apps.
+The iOS app is a SwiftUI application that interfaces with the Haskell core library via FFI. It shares the SimpleXChat framework with two extensions: Notification Service Extension (NSE) for push notifications and Share Extension (SE) for sharing content from other apps. A third extension, SimpleX Live Activity, shows the Live Activity of a connected desktop session and does not use SimpleXChat.
 
 ## Build & Development
 
-Open `SimpleX.xcodeproj` in Xcode. The project has five targets:
+Open `SimpleX.xcodeproj` in Xcode. The project has six targets:
 - **SimpleX (iOS)** - Main app (Bundle ID: `chat.simplex.app`)
 - **SimpleXChat** - Framework containing FFI bridge and shared types
 - **SimpleX NSE** - Notification Service Extension
 - **SimpleX SE** - Share Extension
+- **SimpleX Live Activity** - WidgetKit extension for the desktop session Live Activity (iOS 16.1+)
 - **Tests iOS** - UI tests
 
 Build and run via Xcode (Product > Build/Run). Tests run via Product > Test or:

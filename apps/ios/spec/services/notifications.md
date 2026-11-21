@@ -65,7 +65,7 @@ The mode is stored in `ChatModel.notificationMode` and persisted in `GroupDefaul
 
 Central notification coordinator. Singleton: `NtfManager.shared`, a `var` that unit tests replace with a subclass overriding `addNotification`.
 
-### [Class Definition](../../Shared/Model/NtfManager.swift#L27)
+### [Class Definition](../../Shared/Model/NtfManager.swift#L31)
 
 ```swift
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
@@ -80,27 +80,29 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
 
 | Method | Purpose | Line |
 |--------|---------|------|
-| [`registerCategories()`](../../Shared/Model/NtfManager.swift#L156) | Registers notification action categories with iOS | [156](../../Shared/Model/NtfManager.swift#L156) |
-| [`requestAuthorization()`](../../Shared/Model/NtfManager.swift#L215) | Requests notification permission from user | [215](../../Shared/Model/NtfManager.swift#L215) |
-| [`setNtfBadgeCount(_:)`](../../Shared/Model/NtfManager.swift#L264) | Updates app icon badge | [264](../../Shared/Model/NtfManager.swift#L264) |
-| [`processNotificationResponse(_:)`](../../Shared/Model/NtfManager.swift#L54) | Handles user interaction with notification | [54](../../Shared/Model/NtfManager.swift#L54) |
-| [`notifyContactRequest(_:)`](../../Shared/Model/NtfManager.swift#L239) | Shows contact request notification | [239](../../Shared/Model/NtfManager.swift#L239) |
-| [`notifyCallInvitation(_:)`](../../Shared/Model/NtfManager.swift#L258) | Shows incoming call notification | [258](../../Shared/Model/NtfManager.swift#L258) |
-| [`notifyMessageReceived(_:)`](../../Shared/Model/NtfManager.swift#L250) | Shows message received notification | [250](../../Shared/Model/NtfManager.swift#L250) |
+| [`registerCategories()`](../../Shared/Model/NtfManager.swift#L165) | Registers notification action categories with iOS | [165](../../Shared/Model/NtfManager.swift#L165) |
+| [`requestAuthorization()`](../../Shared/Model/NtfManager.swift#L236) | Requests notification permission from user | [236](../../Shared/Model/NtfManager.swift#L236) |
+| [`setNtfBadgeCount(_:)`](../../Shared/Model/NtfManager.swift#L312) | Updates app icon badge | [312](../../Shared/Model/NtfManager.swift#L312) |
+| [`processNotificationResponse(_:)`](../../Shared/Model/NtfManager.swift#L58) | Handles user interaction with notification | [58](../../Shared/Model/NtfManager.swift#L58) |
+| [`notifyContactRequest(_:)`](../../Shared/Model/NtfManager.swift#L263) | Shows contact request notification | [263](../../Shared/Model/NtfManager.swift#L263) |
+| [`notifyCallInvitation(_:)`](../../Shared/Model/NtfManager.swift#L282) | Shows incoming call notification | [282](../../Shared/Model/NtfManager.swift#L282) |
+| [`notifyMessageReceived(_:)`](../../Shared/Model/NtfManager.swift#L274) | Shows message received notification | [274](../../Shared/Model/NtfManager.swift#L274) |
+| [`notifyRemoteCtrlConnected(_:)`](../../Shared/Model/NtfManager.swift#L287) | Shows the desktop session indicator when a Live Activity is not available | [287](../../Shared/Model/NtfManager.swift#L287) |
+| [`removeRemoteCtrlNotification()`](../../Shared/Model/NtfManager.swift#L305) | Removes the desktop session indicator | [305](../../Shared/Model/NtfManager.swift#L305) |
 
-### [Notification Response Processing](../../Shared/Model/NtfManager.swift#L40)
+### [Notification Response Processing](../../Shared/Model/NtfManager.swift#L44)
 
 When user taps a notification:
 
 1. `userNotificationCenter(didReceive:)` delegate method fires
 2. If app is active: calls `processNotificationResponse()` immediately
 3. If app is inactive: stores in `ChatModel.notificationResponse` for later processing
-4. [`processNotificationResponse()`](../../Shared/Model/NtfManager.swift#L54):
+4. [`processNotificationResponse()`](../../Shared/Model/NtfManager.swift#L58):
    - Extracts `userId` from `userInfo` -- switches user if needed
    - Extracts `chatId` -- navigates to the conversation
-   - Handles action identifiers (accept contact, accept/reject call)
+   - Handles action identifiers (accept contact, accept/reject call, disconnect desktop)
 
-### [Rate Limiting](../../Shared/Model/NtfManager.swift#L144)
+### [Rate Limiting](../../Shared/Model/NtfManager.swift#L153)
 
 `prevNtfTime` dictionary prevents notification flooding:
 - Each chat has a timestamp of its last notification
@@ -240,7 +242,7 @@ Called when:
 
 ## 6. Notification Categories & Actions
 
-Registered in [`NtfManager.registerCategories()`](../../Shared/Model/NtfManager.swift#L156):
+Registered in [`NtfManager.registerCategories()`](../../Shared/Model/NtfManager.swift#L165):
 
 ### Contact Request Category
 
@@ -277,6 +279,16 @@ Standard tap-to-open behavior navigates to the chat.
 
 Batch notification for multiple events -- navigates to the app without specific chat context.
 
+### Desktop Session Category
+
+```swift
+// Category: "NTF_CAT_REMOTE_CTRL" (app only, defined in NtfManager.swift)
+// Actions:
+//   - "NTF_ACT_DISCONNECT_DESKTOP": Disconnect desktop (destructive, runs in background)
+```
+
+The indicator of a connected desktop session (see [Architecture: Background Keepalive](../architecture.md#background-keepalive)) on iOS 15.0-16.0, when Live Activities are disabled or fail to start, and after the system or the user ends the Live Activity. It is posted with the fixed identifier `chat.simplex.app.remote-ctrl`, passive interruption level and no sound; in the foreground it is only added to the notification list. The desktop name is omitted when notification previews are hidden. When user taps "Disconnect", `processNotificationResponse()` calls `RemoteCtrlKeepAlive.shared.disconnect()`. Tapping the notification opens the app on the desktop screen.
+
 ---
 
 ## 7. Badge Management
@@ -302,8 +314,8 @@ NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
 | Method | Purpose | Line |
 |--------|---------|------|
 | [`setBadgeCount()`](../../SimpleX NSE/NotificationService.swift#L592) | Increments badge via `ntfBadgeCountGroupDefault` | [592](../../SimpleX NSE/NotificationService.swift#L592) |
-| [`setNtfBadgeCount(_:)`](../../Shared/Model/NtfManager.swift#L264) | Sets badge on `UIApplication` | [264](../../Shared/Model/NtfManager.swift#L264) |
-| [`changeNtfBadgeCount(by:)`](../../Shared/Model/NtfManager.swift#L270) | Adjusts badge by delta | [270](../../Shared/Model/NtfManager.swift#L270) |
+| [`setNtfBadgeCount(_:)`](../../Shared/Model/NtfManager.swift#L312) | Sets badge on `UIApplication` | [312](../../Shared/Model/NtfManager.swift#L312) |
+| [`changeNtfBadgeCount(by:)`](../../Shared/Model/NtfManager.swift#L318) | Adjusts badge by delta | [318](../../Shared/Model/NtfManager.swift#L318) |
 
 ---
 

@@ -3221,6 +3221,20 @@ func switchToLocalSession() {
     }
 }
 
+func stopRemoteCtrlSession() async throws {
+    try await stopRemoteCtrl()
+    await MainActor.run { clearRemoteCtrlSession() }
+}
+
+func clearRemoteCtrlSession() {
+    let m = ChatModel.shared
+    if m.activeRemoteCtrl {
+        switchToLocalSession()
+    } else if m.remoteCtrlSession != nil {
+        m.remoteCtrlSession = nil
+    }
+}
+
 func active(_ user: any UserLike) -> Bool {
     user.userId == ChatModel.shared.currentUser?.id
 }

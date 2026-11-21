@@ -52,6 +52,28 @@ While the double-ratchet protocol provides forward secrecy, there is no UI indic
 
 ---
 
+## Remote Desktop
+
+### GAP: Chat is activated in background after the share extension sends during a desktop session
+**Source:** [spec/architecture.md](../spec/architecture.md#desktop-session-exception)
+When the share extension sends a message while the app runs in background for a desktop session, the app suspends the chat, which ends the desktop session and the keepalive. When the extension finishes, `seSubscriber` activates the chat again, without checking whether the app is in background, and iOS then suspends the app, which no longer plays audio, with the chat active.
+
+**REC:** Activate the chat after the share extension only when the app is in foreground, and suspend it with `suspendChatInBackground()` otherwise.
+
+### GAP: Live Activity remains after the app is terminated by the system
+**Source:** [spec/architecture.md](../spec/architecture.md#background-keepalive)
+When iOS terminates the app during a desktop session (memory pressure), the Live Activity or the notification stays until the next launch, which ends it in `RemoteCtrlKeepAlive.observeSession()`, or until the system removes the Live Activity (8 hours, then up to 4 hours on the Lock Screen).
+
+**REC:** Set a stale date and update it periodically (iOS 16.2+), so the Live Activity shows that the session is not current.
+
+### GAP: Live Activity strings are not localized
+**Source:** [spec/architecture.md](../spec/architecture.md#live-activity-extension)
+The Live Activity extension has no `Localizable.strings`, so "Connected to desktop" and "Disconnect" are shown in English.
+
+**REC:** Add the extension to the localization export and import, as for the share extension.
+
+---
+
 ## Documentation
 
 ### GAP: Haskell Store layer not fully specified

@@ -5,7 +5,7 @@
 > Related specs: [README](README.md) | [API Reference](api.md) | [State Management](state.md) | [Database](database.md)
 > Related product: [Product Overview](../product/README.md)
 
-**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L183) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L209) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L513) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1373) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L2915) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2357) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1071) | [`API.swift`](../SimpleXChat/API.swift#L1-L388)
+**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L183) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L213) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L513) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1373) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L2915) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2357) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1071) | [`API.swift`](../SimpleXChat/API.swift#L1-L388)
 
 ---
 
@@ -21,7 +21,7 @@
 
 ---
 
-## [1. Layered Architecture](../Shared/SimpleXApp.swift#L17-L184)
+## [1. Layered Architecture](../Shared/SimpleXApp.swift#L17-L183)
 
 The app follows a strict layered model where each layer communicates only with its immediate neighbor:
 
@@ -184,7 +184,7 @@ See [Database & Storage specification](database.md) for full details.
 
 ---
 
-## [5. App Lifecycle](../Shared/SimpleXApp.swift#L17-L184)
+## [5. App Lifecycle](../Shared/SimpleXApp.swift#L17-L183)
 
 ### [Initialization Sequence (SimpleXApp.swift)](../Shared/SimpleXApp.swift#L17-L38)
 
@@ -226,15 +226,23 @@ See [Database & Storage specification](database.md) for full details.
               └──────────┘
 ```
 
-### [Scene Phase Handling (SimpleXApp.swift)](../Shared/SimpleXApp.swift#L38-L123)
+### [Scene Phase Handling (SimpleXApp.swift)](../Shared/SimpleXApp.swift#L38-L121)
 
 - **`.active`**: Calls `startChatAndActivate()`, processes pending notification responses, refreshes chat list and call invitations
-- **`.background`**: Records authentication timestamp, calls `suspendChat()` (unless CallKit call active), schedules `BGManager` background refresh, updates badge count
+- **`.background`**: Records authentication timestamp, calls [`suspendChatInBackground()`](../Shared/Model/SuspendChat.swift#L58-L65) unless the desktop session keepalive is running (see [Background Keepalive](#background-keepalive)), updates badge count
 - **`.inactive`**: No explicit handling (transitional state)
+
+`suspendChatInBackground()` calls `suspendChat()` and schedules `BGManager` background refresh, unless a CallKit call is active.
 
 ### CallKit Exception
 
 When a CallKit call is active during backgrounding, chat suspension is deferred (`CallController.shared.shouldSuspendChat = true`) until the call ends, to maintain the WebRTC session.
+
+### Desktop Session Exception
+
+While [`RemoteCtrlKeepAlive.shared.running`](../Shared/Model/RemoteCtrlKeepAlive.swift#L31) is true, the chat is not suspended when the app enters background, so the connected desktop keeps using it. When the session ends in background, the keepalive restores the local session and calls `suspendChatInBackground()`.
+
+Suspension stops the desktop session in the core without a `remoteCtrlStopped` event, so [`_suspendChat`](../Shared/Model/SuspendChat.swift#L24-L38) calls [`clearRemoteCtrlSession()`](../Shared/Model/SimpleXAPI.swift#L3229-L3236) on the main queue. This covers suspension requested by the share extension and at the end of a CallKit call while a desktop is connected.
 
 ---
 
@@ -258,17 +266,46 @@ The NSE ([`SimpleX NSE/NotificationService.swift`](../SimpleX%20NSE/Notification
 
 The Share Extension (`SimpleX SE/`) allows sharing content (text, images, files) from other apps into SimpleX conversations.
 
+### Live Activity Extension
+
+The WidgetKit extension (`SimpleX Live Activity/`, iOS 16.1+) only renders the Live Activity of a connected desktop session: [`RemoteCtrlLiveActivity`](../SimpleX%20Live%20Activity/RemoteCtrlLiveActivity.swift#L9-L77) shows "Connected to desktop", the desktop name (omitted when notification previews are hidden) with the connection time, and on iOS 17+ a Disconnect button. It does not access the database or the app group. [`RemoteCtrlActivity.swift`](../Shared/Model/RemoteCtrlActivity.swift) is compiled into both the app and the extension:
+
+- [`RemoteCtrlActivityAttributes`](../Shared/Model/RemoteCtrlActivity.swift#L6-L11): `desktopName: String?`, `connectedAt: Date`; the content state is empty, the activity is never updated.
+- [`DisconnectDesktopIntent`](../Shared/Model/RemoteCtrlActivity.swift#L14-L24) (iOS 17+): `LiveActivityIntent`, so the system performs it in the app process, where it calls `RemoteCtrlKeepAlive.shared.disconnect()`. The extension is built with the `LIVE_ACTIVITY_EXTENSION` compilation condition, which removes that call from its copy.
+
 ---
 
-## [7. Remote Desktop Control](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L545)
+## [7. Remote Desktop Control](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L546)
 
 Optional desktop pairing allows controlling the mobile app from a desktop client:
 
 - **Pairing**: Encrypted QR code scanned by desktop client establishes a session
-- **Commands**: [`connectRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1613), [`findKnownRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1620), [`confirmRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1624), [`verifyRemoteCtrlSession`](../Shared/Model/SimpleXAPI.swift#L1630), [`listRemoteCtrls`](../Shared/Model/SimpleXAPI.swift#L1636), [`stopRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1642), [`deleteRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1646)
-- **State**: [`ChatModel.remoteCtrlSession`](../Shared/Model/ChatModel.swift#L395)`: RemoteCtrlSession?` tracks the active session
+- **Commands**: [`connectRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1748), [`findKnownRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1755), [`confirmRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1759), [`verifyRemoteCtrlSession`](../Shared/Model/SimpleXAPI.swift#L1765), [`listRemoteCtrls`](../Shared/Model/SimpleXAPI.swift#L1771), [`stopRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1777), [`deleteRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1781)
+- **State**: [`ChatModel.remoteCtrlSession`](../Shared/Model/ChatModel.swift#L455)`: RemoteCtrlSession?` tracks the active session
+- **Ending a session**: [`stopRemoteCtrlSession()`](../Shared/Model/SimpleXAPI.swift#L3224-L3227) stops it in the core and calls [`clearRemoteCtrlSession()`](../Shared/Model/SimpleXAPI.swift#L3229-L3236), which restores the local session with [`switchToLocalSession()`](../Shared/Model/SimpleXAPI.swift#L3213-L3222) when the session was connected. The `remoteCtrlStopped` event handler ends sessions stopped by the desktop or by errors.
 - **Transport**: Encrypted reverse HTTP transport between mobile and desktop
-- **Source**: [`Shared/Views/RemoteAccess/ConnectDesktopView.swift`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L545), see `Remote.hs` in `../../src/Simplex/Chat/`
+- **Source**: [`Shared/Views/RemoteAccess/ConnectDesktopView.swift`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L546), see `Remote.hs` in `../../src/Simplex/Chat/`
+
+### Desktop Screen Presentation
+
+While a session is connected, the desktop screen (`UserPickerSheet.useFromDesktop`) is the only UI of the app, because the mobile UI is not updated while the desktop uses the chat:
+
+- The sheet cannot be dismissed by swiping (`interactiveDismissDisabled(m.activeRemoteCtrl)`).
+- The session ends only by Disconnect (on the screen, in the Live Activity or in the notification), by the desktop, by an error, or by chat suspension.
+- When `ConnectDesktopView` disappears while the scene is active (`AppSheetState.shared.scenePhaseActive`), it disconnects as before. When it disappears while the scene is not active, a connected session continues: this happens when SimpleX Lock hides the app content in background.
+- [`ChatListView`](../Shared/Views/ChatList/ChatListView.swift#L249-L256) presents the desktop sheet again when it appears while the session is connected, e.g. after unlocking. `ConnectDesktopView.onAppear` keeps a connected session and disconnects a session that did not connect.
+
+### Background Keepalive
+
+[`RemoteCtrlKeepAlive`](../Shared/Model/RemoteCtrlKeepAlive.swift#L28-L97) keeps the app running in background while a desktop session is connected. [`observeSession()`](../Shared/Model/RemoteCtrlKeepAlive.swift#L35-L49), called from `AppDelegate.didFinishLaunching`, ends indicators left by a terminated process and subscribes to `ChatModel.remoteCtrlSession`; the keepalive starts when the session becomes `.connected` and stops when it changes from `.connected`, whichever code path changes it. The audio session, playback and indicator are behind the protocol [`RemoteCtrlKeepAliveServices`](../Shared/Model/RemoteCtrlKeepAlive.swift#L21-L26), implemented by [`RemoteCtrlSystemServices`](../Shared/Model/RemoteCtrlKeepAlive.swift#L99-L269) and replaced by a recorder in `RemoteCtrlKeepAliveTests`.
+
+- **Start** ([`sessionConnected`](../Shared/Model/RemoteCtrlKeepAlive.swift#L66-L72)): skipped while a call is active, because the call owns the audio session. [`startAudio`](../Shared/Model/RemoteCtrlKeepAlive.swift#L107-L136) sets the audio session to `.playback` with `.mixWithOthers` and `prefersNoInterruptionsFromSystemAlerts`, and [`playSilence()`](../Shared/Model/RemoteCtrlKeepAlive.swift#L178-L194) loops a zero-filled buffer with `AVAudioEngine`. The `audio` background mode keeps the app running while it plays. The screen is kept on only when the keepalive could not start, as before.
+- **Indicator** ([`showIndicator`](../Shared/Model/RemoteCtrlKeepAlive.swift#L155-L158)): a Live Activity on iOS 16.1+ when Live Activities are enabled, otherwise the notification of the `NTF_CAT_REMOTE_CTRL` category (see [notifications](services/notifications.md#desktop-session-category)). When the system ends the Live Activity (after 8 hours) or the user removes it, the notification is posted instead.
+- **Interruptions** ([`audioInterrupted`](../Shared/Model/RemoteCtrlKeepAlive.swift#L207-L222)): when an interruption ends, or when the app runs again after the system suspended it, the audio session is activated and playback restarts; an engine configuration change (route or format change) also restarts playback. When restarting fails, or media services are reset, the `onFailure` closure of `startAudio` calls [`audioFailed`](../Shared/Model/RemoteCtrlKeepAlive.swift#L88-L96), which disconnects the desktop.
+- **Stop** ([`sessionEnded`](../Shared/Model/RemoteCtrlKeepAlive.swift#L74-L86)): stops playback, restores the previous audio session configuration, ends the Live Activity and removes the notification. In background it then restores the local session and calls `suspendChatInBackground()`. `AppDelegate.applicationWillTerminate` calls [`stop()`](../Shared/Model/RemoteCtrlKeepAlive.swift#L59-L64).
+- **Disconnect** ([`disconnect()`](../Shared/Model/RemoteCtrlKeepAlive.swift#L51-L57)): `stopRemoteCtrlSession()`, used by the Live Activity intent, the notification action and audio failures.
+
+**Threat model**: a verified desktop, including a malicious or stalled one, can keep the app running in background and using network and battery until the user disconnects or the desktop disconnects; it cannot start a session, which requires the user to scan or confirm on the phone in the foreground. The indicator and the "Disconnect" button in the Live Activity are available on the Lock Screen without unlocking: anyone holding the locked phone can end the session, and can see that a desktop is connected; the desktop name is shown only when notification previews are not hidden.
 
 ---
 

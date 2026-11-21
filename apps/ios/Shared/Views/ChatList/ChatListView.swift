@@ -250,6 +250,9 @@ struct ChatListView: View {
             if #unavailable(iOS 16.0), !viewOnScreen {
                 viewOnScreen = true
             }
+            if chatModel.activeRemoteCtrl {
+                activeUserPickerSheet = .useFromDesktop
+            }
         }
         .onDisappear {
             activeUserPickerSheet = nil

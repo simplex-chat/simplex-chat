@@ -19,7 +19,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
 import Data.Word (Word32)
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatEvent (CEvtRemoteCtrlSessionCode, CEvtRemoteCtrlStopped), ChatHooks (..), defaultChatHooks, versionNumber)
 import Simplex.Chat.Files (safeFileNameStr)
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
@@ -96,6 +96,7 @@ remoteTests = describe "Remote" $ do
       r `shouldSatisfy` \case
         Left (RPEInvalidBody _) -> True
         _ -> False
+  it "sends session events to mobile app" remoteSessionEventsTest
   describe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
   describe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
   describe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
@@ -599,6 +600,23 @@ multipleProfilesTest = testRemote4 $ \compress mobile desktop bob cath -> do
 
   stopDesktop mobile desktop
 
+remoteSessionEventsTest :: HasCallStack => TestParams -> IO ()
+remoteSessionEventsTest ps = do
+  events <- newTVarIO []
+  let hook _ evt = evt <$ case evt of
+        Right CEvtRemoteCtrlSessionCode {} -> recordEvent events evt
+        Right CEvtRemoteCtrlStopped {} -> recordEvent events evt
+        _ -> pure ()
+      compress = " (with compression)"
+  withNewTestChatCfg ps testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}} "mobile" aliceProfile $ \mobile ->
+    withNewTestChat ps "desktop" aliceDesktopProfile $ \desktop -> do
+      eventsFixture "remote/session" events $ do
+        startRemote_ compress mobile desktop $ recordResponse events mobile
+        stopDesktop mobile desktop
+      startRemoteStored compress mobile desktop
+      apiFixture "remote/stop-response" mobile [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/stop remote ctrl"]}
+      eventually 3 $ desktop <## "remote host 1 stopped"
+
 -- * Utils
 
 testRemote :: HasCallStack => (String -> TestCC -> TestCC -> IO()) -> ((Bool, Bool), TestParams) -> IO ()
@@ -622,7 +640,13 @@ testRemote4 test ps =
     ps
 
 startRemote :: String -> TestCC -> TestCC -> IO ()
-startRemote compress mobile desktop = do
+startRemote compress mobile desktop =
+  startRemote_ compress mobile desktop $ \verify -> do
+    mobile ##> verify
+    mobile <## ("remote controller 1 session started with My desktop" <> compress)
+
+startRemote_ :: String -> TestCC -> TestCC -> (String -> IO ()) -> IO ()
+startRemote_ compress mobile desktop verify = do
   desktop ##> "/set device name My desktop"
   desktop <## "ok"
   mobile ##> "/set device name Mobile"
@@ -634,8 +658,7 @@ startRemote compress mobile desktop = do
   mobile <## ("connecting new remote controller: My desktop, v" <> versionNumber)
   desktop <## "new remote host connecting"
   mobile <## "new remote controller connected"
-  verifyRemoteCtrl mobile desktop
-  mobile <## ("remote controller 1 session started with My desktop" <> compress)
+  verifyRemoteCtrl_ mobile desktop verify
   desktop <## "new remote host 1 added: Mobile"
   desktop <## ("remote host 1 connected" <> compress)
 
@@ -678,12 +701,15 @@ getRemoteInvitation desktop = do
   (addrs,) <$> getTermLine desktop
 
 verifyRemoteCtrl :: TestCC -> TestCC -> IO ()
-verifyRemoteCtrl mobile desktop = do
+verifyRemoteCtrl mobile desktop = verifyRemoteCtrl_ mobile desktop (mobile ##>)
+
+verifyRemoteCtrl_ :: TestCC -> TestCC -> (String -> IO ()) -> IO ()
+verifyRemoteCtrl_ mobile desktop verify = do
   desktop <## "Compare session code with host:"
   sessId <- getTermLine desktop
   mobile <## "Compare session code with controller and use:"
   mobile <## ("/verify remote ctrl " <> sessId)
-  mobile ##> ("/verify remote ctrl " <> sessId)
+  verify ("/verify remote ctrl " <> sessId)
 
 contactBob :: TestCC -> TestCC -> IO ()
 contactBob desktop bob = do

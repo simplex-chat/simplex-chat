@@ -29,6 +29,7 @@ private func _suspendChat(timeout: Int) {
     } else if ChatModel.ok {
         AppChatState.shared.set(.suspending)
         apiSuspendChat(timeoutMicroseconds: timeout * 1000000)
+        DispatchQueue.main.async { clearRemoteCtrlSession() }
         let endTask = beginBGTask(chatSuspended)
         DispatchQueue.global().asyncAfter(deadline: .now() + Double(timeout) + 1, execute: endTask)
     } else {
@@ -51,6 +52,15 @@ let seSubscriber = seMessageSubscriber {
 func suspendChat() {
     suspendLockQueue.sync {
         _suspendChat(timeout: appSuspendTimeout)
+    }
+}
+
+func suspendChatInBackground() {
+    if CallController.useCallKit() && ChatModel.shared.activeCall != nil {
+        CallController.shared.shouldSuspendChat = true
+    } else {
+        suspendChat()
+        BGManager.shared.schedule()
     }
 }
 

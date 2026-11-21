@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Bumps CURRENT_PROJECT_VERSION (build number) and MARKETING_VERSION in
-# apps/ios/SimpleX.xcodeproj/project.pbxproj. Each appears in 10 places.
+# apps/ios/SimpleX.xcodeproj/project.pbxproj. Each appears in 12 places.
 #
 # Usage: ./scripts/ios/update-version.sh <build_number> <marketing_version>
 # Example: ./scripts/ios/update-version.sh 333 6.5.3
@@ -33,7 +33,7 @@ if [ ! -f "$PBXPROJ" ]; then
 fi
 
 # Detect current values; head -1 covers the (unexpected) mixed-values case,
-# which the 10-line sanity check below will reject.
+# which the 12-line sanity check below will reject.
 OLD_BUILD=$(grep -hoE 'CURRENT_PROJECT_VERSION = [^;]+;' "$PBXPROJ" \
     | sed -E 's/^.*= ([^;]+);$/\1/' | sort -u | head -1)
 OLD_MARKETING=$(grep -hoE 'MARKETING_VERSION = [^;]+;' "$PBXPROJ" \
@@ -48,11 +48,11 @@ if [ "$OLD_BUILD" = "$NEW_BUILD" ] && [ "$OLD_MARKETING" = "$NEW_MARKETING" ]; t
     exit 0
 fi
 
-# Each field must appear in exactly 10 lines with a single uniform value.
+# Each field must appear in exactly 12 lines with a single uniform value.
 OLD_BUILD_LINES=$(grep -cF "CURRENT_PROJECT_VERSION = $OLD_BUILD;" "$PBXPROJ" || true)
 OLD_MARKETING_LINES=$(grep -cF "MARKETING_VERSION = $OLD_MARKETING;" "$PBXPROJ" || true)
-if [ "$OLD_BUILD_LINES" -ne 10 ] || [ "$OLD_MARKETING_LINES" -ne 10 ]; then
-    echo "Error: expected 10 + 10 lines, found $OLD_BUILD_LINES CURRENT_PROJECT_VERSION and $OLD_MARKETING_LINES MARKETING_VERSION (mixed values?)." >&2
+if [ "$OLD_BUILD_LINES" -ne 12 ] || [ "$OLD_MARKETING_LINES" -ne 12 ]; then
+    echo "Error: expected 12 + 12 lines, found $OLD_BUILD_LINES CURRENT_PROJECT_VERSION and $OLD_MARKETING_LINES MARKETING_VERSION (mixed values?)." >&2
     exit 1
 fi
 
@@ -77,8 +77,8 @@ mv "$TMP" "$PBXPROJ"
 
 NEW_BUILD_LINES=$(grep -cF "CURRENT_PROJECT_VERSION = $NEW_BUILD;" "$PBXPROJ" || true)
 NEW_MARKETING_LINES=$(grep -cF "MARKETING_VERSION = $NEW_MARKETING;" "$PBXPROJ" || true)
-if [ "$NEW_BUILD_LINES" -ne 10 ] || [ "$NEW_MARKETING_LINES" -ne 10 ]; then
-    echo "Error: post-replacement: $NEW_BUILD_LINES CURRENT_PROJECT_VERSION + $NEW_MARKETING_LINES MARKETING_VERSION (expected 10+10)." >&2
+if [ "$NEW_BUILD_LINES" -ne 12 ] || [ "$NEW_MARKETING_LINES" -ne 12 ]; then
+    echo "Error: post-replacement: $NEW_BUILD_LINES CURRENT_PROJECT_VERSION + $NEW_MARKETING_LINES MARKETING_VERSION (expected 12+12)." >&2
     exit 1
 fi
-echo "Updated 20 lines (10 + 10)."
+echo "Updated 24 lines (12 + 12)."

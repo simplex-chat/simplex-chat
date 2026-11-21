@@ -173,6 +173,9 @@ Remote control of the mobile app from a desktop client.
 |---------|-------------|--------------------|
 | Remote control pairing | Pair with desktop app via QR code | `Shared/Views/RemoteAccess/ConnectDesktopView.swift` |
 | Session management | Manage active desktop control sessions | `Shared/Views/RemoteAccess/ConnectDesktopView.swift` |
+| Background session | A connected session continues while the app is in background or the phone is locked; a Live Activity (iOS 16.1+) or a notification shows it, with a Disconnect action | `Shared/Model/RemoteCtrlKeepAlive.swift`, `SimpleX Live Activity/RemoteCtrlLiveActivity.swift` |
+
+While connected, the desktop screen is the only screen of the app: it cannot be swiped away, and it is shown again after the app is unlocked. Its footer says that the app keeps running in the background until the user disconnects. The session ends when the user disconnects on this screen, in the Live Activity (iOS 17+) or in the notification, when the desktop disconnects, or when the app cannot keep running in background (audio failure, chat suspension for the share extension). The Live Activity and the notification show the desktop name only when notification previews are not hidden.
 
 ---
 

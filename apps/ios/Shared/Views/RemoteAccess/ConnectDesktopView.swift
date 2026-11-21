@@ -13,6 +13,7 @@ import CodeScanner
 struct ConnectDesktopView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @ObservedObject private var keepAlive = RemoteCtrlKeepAlive.shared
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS) private var deviceName = UIDevice.current.name
     @AppStorage(DEFAULT_CONFIRM_REMOTE_SESSIONS) private var confirmRemoteSessions = false
@@ -88,8 +89,10 @@ struct ConnectDesktopView: View {
             setDeviceName(deviceName)
             updateRemoteCtrls()
             showConnectScreen = !useMulticast
-            if m.remoteCtrlSession != nil {
-                disconnectDesktop()
+            if let session = m.remoteCtrlSession {
+                if !session.active {
+                    disconnectDesktop()
+                }
             } else if useMulticast {
                 findKnownDesktop()
             }
@@ -103,16 +106,13 @@ struct ConnectDesktopView: View {
             }
         }
         .onDisappear {
-            if m.remoteCtrlSession != nil {
+            if let session = m.remoteCtrlSession, AppSheetState.shared.scenePhaseActive || !session.active {
                 showConnectScreen = false
                 disconnectDesktop()
             }
         }
         .onChange(of: deviceName) {
             setDeviceName($0)
-        }
-        .onChange(of: m.activeRemoteCtrl) {
-            UIApplication.shared.isIdleTimerDisabled = $0
         }
         .alert(item: $alert) { a in
             switch a {
@@ -298,9 +298,14 @@ struct ConnectDesktopView: View {
             Section {
                 disconnectButton()
             } footer: {
-                // This is specific to iOS
-                Text("Keep the app open to use it from desktop")
-                    .foregroundColor(theme.colors.secondary)
+                Group {
+                    if keepAlive.running {
+                        Text("The app keeps running in the background until you disconnect.")
+                    } else {
+                        Text("Keep the app open to use it from desktop")
+                    }
+                }
+                .foregroundColor(theme.colors.secondary)
             }
         }
         .navigationTitle("Connected to desktop")
@@ -498,13 +503,8 @@ struct ConnectDesktopView: View {
     private func disconnectDesktop(_ action: UserDisconnectAction? = nil) {
         Task {
             do {
-                try await stopRemoteCtrl()
+                try await stopRemoteCtrlSession()
                 await MainActor.run {
-                    if case .connected = m.remoteCtrlSession?.sessionState {
-                        switchToLocalSession()
-                    } else {
-                        m.remoteCtrlSession = nil
-                    }
                     switch action {
                     case .back: dismiss()
                     case .dismiss: dismiss()

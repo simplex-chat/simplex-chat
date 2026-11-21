@@ -195,6 +195,11 @@ After completing all changes (code + documentation), you MUST run an adversarial
 | Shared/Model/AppAPITypes.swift | spec/api.md | product/concepts.md |
 | Shared/Model/NtfManager.swift | spec/services/notifications.md | product/flows/messaging.md |
 | Shared/Model/BGManager.swift | spec/services/notifications.md | product/flows/messaging.md |
+| Shared/Model/SuspendChat.swift | spec/architecture.md | product/rules.md |
+| Shared/Model/RemoteCtrlKeepAlive.swift | spec/architecture.md, spec/services/notifications.md | product/README.md, product/rules.md |
+| Shared/Model/RemoteCtrlActivity.swift | spec/architecture.md | product/README.md |
+| Shared/Views/RemoteAccess/ConnectDesktopView.swift | spec/architecture.md | product/README.md |
+| SimpleX Live Activity/RemoteCtrlLiveActivity.swift | spec/architecture.md | product/README.md |
 | Shared/Theme/ThemeManager.swift | spec/services/theme.md | product/views/settings.md |
 | SimpleXChat/ChatTypes.swift | spec/state.md, spec/api.md | product/glossary.md |
 | SimpleXChat/APITypes.swift | spec/api.md | product/concepts.md |

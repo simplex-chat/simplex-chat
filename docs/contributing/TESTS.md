@@ -153,10 +153,10 @@ Helpers of [ChatTests/Utils.hs](../../tests/ChatTests/Utils.hs), called in a cha
 |---|---|
 | `apiFixture fixture cc placeholders FixtureRequests {frCommands, frMarkdown, frUris}` | an object with `commands`, `markdown` and `uris`, keyed by the request: the response to each command, encoded by `chatSendCmd` of the core library's API; `chatParseMarkdown` of each text; `chatParseUri` of each link |
 | `nameFixture fixture cc name` | `apiFixture` of `/_connect plan 1 <name>` and of the markdown of the name, in `names/` |
-| `eventsFixture fixture events steps` | an array of the events appended by `recordItemEvent events`, in `eventHook` of `chatHooks`, during `steps`: `newChatItems` and `chatItemUpdated`, encoded as `chatRecvMsg` encodes them |
+| `eventsFixture fixture events steps` | an array of the events appended by `recordItemEvent events`, in `eventHook` of `chatHooks`, during `steps`: `newChatItems` and `chatItemUpdated`, encoded as `chatRecvMsg` encodes them; `recordEvent events` appends any event, and `recordResponse events cc command` the response to a command, encoded by `chatSendCmd` |
 | `nameMovedFixture` | a `nameMoved` event, built from the IDs of the named contacts and groups |
 
-Examples: `testPlanKnownNameAvailable` in ChatTests/Names.hs, `testDirectMessageUpdatePrevItem` and `testMissedCall` in ChatTests/Direct.hs.
+Examples: `testPlanKnownNameAvailable` in ChatTests/Names.hs, `testDirectMessageUpdatePrevItem` and `testMissedCall` in ChatTests/Direct.hs, `remoteSessionEventsTest` in RemoteTests.hs.
 
 Stable recordings:
 
@@ -165,7 +165,7 @@ Stable recordings:
   | Fields | Replaced by |
   |---|---|
   | `createdAt`<br>`updatedAt`<br>`chatTs`<br>`userMemberProfileSentAt`<br>`itemTs` | `1970-01-01T00:00:00Z` |
-  | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId` | the field name |
+  | `agentConnId`<br>`xContactId`<br>`connFullLink`<br>`connShortLink`<br>`contactLink`<br>`groupLink`<br>`viaGroupLinkUri`<br>`simplexUri`<br>`memberId`<br>`memberPubKey`<br>`publicGroupId`<br>`businessId`<br>`customerId`<br>`itemSharedMsgId`<br>`sessionCode` | the field name |
   | `groupRelays` | `"groupRelay"` per element |
 
   A field with a new value in each run is added to this list.
@@ -184,9 +184,9 @@ Stable recordings:
 | Events | `ChatController.processReceivedMsg`, model/SimpleXAPI.kt | `processReceivedMsg`, Shared/Model/SimpleXAPI.swift |
 | Notifications | `ntfManager`, platform/NtfManager.kt | `NtfManager.shared`, Shared/Model/NtfManager.swift |
 | Recording read by | `fixtureText` | `fixtureJSON`, then `singleFieldJSON` to the Swift JSON form |
-| Tests | [NameAlertsTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/NameAlertsTest.kt), [ChatItemUpdateTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ChatItemUpdateTest.kt) | [NameAlertsTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/NameAlertsTests.swift), [ChatItemUpdateTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/ChatItemUpdateTests.swift) |
+| Tests | [NameAlertsTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/NameAlertsTest.kt), [ChatItemUpdateTest.kt](../../apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ChatItemUpdateTest.kt) | [NameAlertsTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/NameAlertsTests.swift), [ChatItemUpdateTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/ChatItemUpdateTests.swift), [RemoteCtrlKeepAliveTests.swift](../../apps/ios/SimpleX%20Unit%20Tests/RemoteCtrlKeepAliveTests.swift) |
 
-- Pattern: `recorded(fixture)` in the NameAlerts tests sets the first three seams to lookups in the recording; the test fails at tear-down on a request without a recorded response, unless the request is checked with `assertRequested`. The ChatItemUpdate tests decode the recorded events, pass each to `processReceivedMsg` and compare `ChatModel`. Tear-down restores the seams and clears the model.
+- Pattern: `recorded(fixture)` in the NameAlerts tests sets the first three seams to lookups in the recording; the test fails at tear-down on a request without a recorded response, unless the request is checked with `assertRequested`. The ChatItemUpdate tests decode the recorded events, pass each to `processReceivedMsg` and compare `ChatModel`. The RemoteCtrlKeepAlive tests also replace `services` of `RemoteCtrlKeepAlive.shared`, the audio session, playback and indicator, with a recorder. Tear-down restores the seams and clears the model.
 - Run and CI: [Kotlin apps](#kotlin-apps), [SimpleX Unit Tests](#simplex-unit-tests). CI runs the kotlin and ios scopes for a change in tests/fixtures/api (`BUILD_CHANGES` in scripts/ci/packages_release.py). The recording tests are core tests, selected in the `ci-tests` block by the patterns of the [CI guide, core](../../scripts/ci/README.md#core).
 - Pitfalls:
   - `singleFieldJSON` converts each object with a `type` field, except `MsgContent`, recognized by its tags. The core encodes other types with `type` in both JSON forms: the types of `taggedObjectJSON` in src, such as `MsgChatLink`, `LinkContent`, `MsgScope` and `ChatBotCommand`, and `MsgReaction`, by its own instance. A recording with them requires another conversion rule.
@@ -241,7 +241,7 @@ A new test file is added to its target in project.pbxproj: a PBXBuildFile, a PBX
 ### SimpleX Unit Tests
 
 - Checked: app code on [app fixtures](#app-fixtures) and other logic of the app.
-- Write: an `XCTestCase` in [apps/ios/SimpleX Unit Tests](../../apps/ios/SimpleX%20Unit%20Tests); `fixtureJSON`, `singleFieldJSON` and `waitFor` are at file scope of NameAlertsTests.swift.
+- Write: an `XCTestCase` in [apps/ios/SimpleX Unit Tests](../../apps/ios/SimpleX%20Unit%20Tests); `fixtureJSON`, `singleFieldJSON` and `waitFor` are at file scope of NameAlertsTests.swift, `recordedEvents` of ChatItemUpdateTests.swift.
 - Run, on macOS: `scripts/ci/ios-stub-libs.sh`, then the `xcodebuild test` command of the step "Run iOS unit tests" of build-ios in build.yml; or Product > Test with the scheme SimpleX Unit Tests.
 - Pitfalls:
   - The stubs replace the libraries in apps/ios/Libraries/sim, where scripts/ios/prepare.sh puts the core built for the simulator.

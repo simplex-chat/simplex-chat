@@ -146,3 +146,12 @@
 **Rule:** CallKit MUST be disabled in regions where it is restricted (China). The app uses in-app call UI as fallback.
 **Enforced by:** `CallController.swift` checks `useCallKit()` based on region; `ActiveCallView.swift` provides fallback UI.
 **Spec:** [spec/services/calls.md](../spec/services/calls.md)
+
+---
+
+## Remote Desktop
+
+### RULE-24: Desktop session in background is visible
+**Rule:** The app MUST keep running in background only while a verified desktop session is connected, and MUST show it outside the app with a way to disconnect: a Live Activity on iOS 16.1+ when enabled, otherwise a notification. The keepalive audio MUST be silent and mixable, so it does not stop or duck other audio and does not make the app the Now Playing app. When the session ends, the indicator MUST be removed and the chat suspended as usual in background.
+**Enforced by:** `RemoteCtrlKeepAlive.swift` (session subscription, `.playback` with `.mixWithOthers`, zero-filled buffer, `endIndicator()`, `suspendChatInBackground()`), `SimpleXApp.swift` (background suspension skipped while `running`), `NtfManager.swift` (`notifyRemoteCtrlConnected`).
+**Spec:** [spec/architecture.md](../spec/architecture.md#background-keepalive)

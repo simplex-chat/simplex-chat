@@ -81,6 +81,11 @@
 | Shared/Model/AppAPITypes.swift | PC1 through PC31 | High | Command/response types — all API communication |
 | Shared/Model/NtfManager.swift | PC18 | High | Notification delivery |
 | Shared/Model/BGManager.swift | PC18 | Medium | Background fetch scheduling |
+| Shared/Model/SuspendChat.swift | PC18, PC27 | High | Chat suspension in background; ends the desktop session in the UI when suspension stops it |
+| Shared/Model/RemoteCtrlKeepAlive.swift | PC17, PC18, PC27 | High | Desktop session background keepalive: shared audio session, chat suspension, indicator |
+| Shared/Model/RemoteCtrlActivity.swift | PC27 | Low | Live Activity attributes and disconnect intent, shared with the Live Activity extension |
+| Shared/Views/RemoteAccess/ConnectDesktopView.swift | PC27 | Medium | Desktop pairing and session screen |
+| SimpleX Live Activity/RemoteCtrlLiveActivity.swift | PC27 | Low | Live Activity UI for a connected desktop session |
 | Shared/Theme/ThemeManager.swift | PC24 | Medium | Theme resolution engine |
 | SimpleXChat/ChatTypes.swift | PC1 through PC31 | High | Core data types — all features use them |
 | SimpleXChat/APITypes.swift | PC1 through PC31 | High | API result types and error handling |
