@@ -35,7 +35,7 @@ The user's answers to revision 2: Q4 B, Q5 A, Q6 A. PR 2 is dropped; the ⛔ lin
 
 Case of 2026-11-21: Claude Code 2.1.311 asked in its terminal to read a public artifact from outside the organization, from 17:17:44 to 17:50:52 UTC, and the group showed nothing. In 2.1.311 the relay skips a prompt marked `localDisplayOnly` (`qt`, at byte 272516270), and the PermissionRequest hooks run beside the dialog unless the prompt is `personOnly` (`if(!S&&y.personOnly!==!0)`, at byte 272520909). The plugin had no PermissionRequest hook.
 
-PR 1 is delivered in two pull requests:
+PR 1 is one pull request, built in two stages:
 ```
 stage   content                                                            sections
 1       tool prompts from the PermissionRequest hook: subagents' cards,    1.2 rows 5 to 7; decisions 32 to 35, 39, 40
