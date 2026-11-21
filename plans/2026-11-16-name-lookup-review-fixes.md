@@ -20,6 +20,9 @@ Base: master.
 | A5-22 | a known business chat's name written only when changed |
 | A5-24 | user guide |
 | A5-26 | one check of the badge service address |
+| review R1 | your own expired name, when you set it: the owner's alert with Renew |
+| review C1 | mcp: the moved name's earlier chat of the session on the connect card |
+| review F5 | TypeScript types: a field named as its union member references the top-level type |
 | 326cff68c | cherry-picked: a name warning matched in the same case |
 
 Not changed: A5-1, A5-3, A5-6, A5-20, A5-21, A5-23.
@@ -38,7 +41,39 @@ In #8243, as their code is only on `names`: A5-13, A5-25.
 
 `resolveNameRecord user nm domain :: CM NameRecord`
 - `resolveName`, a warning thrown as `CESimplexDomainNotReady domain (SDENameWarning w)`
-- callers: setting the user's name, setting a channel's name, a service request to a name
+- caller: a service request to a name
+
+`checkOwnName user nm domain ownRecord :: CM ()`, setting the user's name or a channel's name:
+- own: the registration's record, expired included, has the user's address or the channel's link
+
+| `nameRecordOrWarning` | own | Result |
+|---|---|---|
+| record | yes | the name is set |
+| record | no | `SDENoValidLink` |
+| `NWExpired e g` | yes | `SDEOwnNameExpired e g` |
+| warning | — | `SDENameWarning w` |
+
+```haskell
+data SimplexDomainError
+  = SDENoValidLink
+  | SDEUnknownDomain
+  | SDENameWarning {nameWarning :: NameWarning}
+  | SDEOwnNameExpired {expiredAt :: UTCTime, graceUntil :: Maybe UTCTime}
+```
+
+`SDEOwnNameExpired` is shown as the owner's expired name:
+- View.hs: `viewNameWarning True`
+- iOS and Kotlin `apiConnectResponseAlert`: `showNameWarningAlert` with `own`, "Your name has expired" and Renew
+
+```mermaid
+flowchart LR
+  A["resolveSimplexName"] --> O["own: the record has<br>the address or channel link"]
+  O --> W{"nameRecordOrWarning"}
+  W -->|record, own| S["name set"]
+  W -->|record, not own| N["SDENoValidLink"]
+  W -->|expired, own| E["SDEOwnNameExpired"]
+  W -->|other warning| X["SDENameWarning"]
+```
 
 The core creates no `NAME NOT_FOUND` error.
 
@@ -182,6 +217,17 @@ sequenceDiagram
 - A known business chat of a contact plan: its domain and verification written when they differ from the plan's domain and `DVVerified`.
 - `requestBadgeIssue`: `requireBadgeService`.
 - docs/guide/register-simplex-name.md: the moved indicator, the name warning alerts.
+- bots/src/API/Docs/Generate/TypeScript.hs: types.ts imports itself as `T`; in a union namespace, a field type with the name of a member is written `T.<type>`. Fields changed, wire unchanged:
+  - `CIContent.RcvMsgError.rcvMsgError`
+  - `CIContent.RcvDirectEvent.rcvDirectEvent`
+  - `CIContent.RcvGroupEvent.rcvGroupEvent`
+  - `CIContent.SndGroupEvent.sndGroupEvent`
+  - `CIContent.RcvConnEvent.rcvConnEvent`
+  - `CIContent.SndConnEvent.sndConnEvent`
+  - `CIStatus.SndError.agentError`
+  - `CIStatus.SndWarning.agentError`
+  - `ChatErrorType.BadgeRedeemError.badgeRedeemError`
+  - `SimplexDomainError.NameWarning.nameWarning`, without the cast in mcp `chatErrorTypeText`
 
 ## Apps
 
@@ -202,8 +248,9 @@ packages/simplex-chat-mcp. Scope `mcp` of scripts/ci/scope-tests.sh runs `npm ci
 | `nameWarningText` | the apps' words of the alerts, for the agent's own name or another user's; another user's available name of a known chat: "Name no longer registered" |
 | `classifyPlan`, `planChat` | `lapsed`: the text of `nameWarningText`, own for an `ownLink` plan, and the plan's chat |
 | `AgentTools.plan` | `lapsed`: a tool error, with ` Your chat: CHAT.` for the plan's chat after `ownChat` |
-| `classifyPlan` | `moved`: `movedFrom`, the reference of the known chat |
+| `classifyPlan` | `moved`: `movedFrom`, the reference of the known chat, when `owns` holds for it |
 | `planFields` | `moved_from` in the result of `connect` |
+| `requestLines` | `movedFrom` on the connect card: "The SimpleX name was moved to this link from my chat CHAT." |
 
 ```mermaid
 flowchart LR
@@ -221,7 +268,7 @@ flowchart LR
 Core, tests/ChatTests/Names.hs:
 - `testNameRecordOrWarning`: the block time before and after `expires`.
 - `testChannelDomainVerify`: an expired name not verified.
-- `testSetNameExpired`: an expired name not set.
+- `testSetNameExpired`: an expired name not set; recorded as set-expired for another link and set-own-expired for the user's address.
 - New plans, recorded as fixtures:
   - `testPlanNameChannelUpdateRequired`
   - `testPlanOwnNameOtherKind`
@@ -250,6 +297,8 @@ Fixtures, tests/fixtures/api/names:
   - plan-own-channel-other-kind
   - plan-update-required
   - search-moved-known
+  - set-expired
+  - set-own-expired
 
 iOS, NameAlertsTests, added; a `/_prepare` command looked up in the mock without its JSON argument:
 - testOnOpenAfterPrepareWithoutCheckingItsJSON
@@ -263,17 +312,22 @@ iOS, NameAlertsTests, added; a `/_prepare` command looked up in the mock without
 - testFailedNameIsVerifiedAgain
 - testMovedNameIsVerifiedAgain
 - testCrossColorOfNameState
+- testSetOwnNameExpired
+- testSetNameExpired
 
 Android and desktop, NameAlertsTest, added:
 - channelUpdateRequired
 - contactConnecting
 - chatListRowShowsChatsOfName
 - crossColorOfNameState
+- setOwnNameExpired
+- setNameExpired
 
 mcp:
 - name warning texts
 - a lapsed name refused, with the known chat
 - the agent's own lapsed name, of its address and of its channel
 - the chat of a lapsed name claimed without an owner, refused of another session
-- `movedFrom`
+- `movedFrom`, for a chat of the session only
+- the connect card with the moved name's chat
 - `simplexName` of a verified chat only
