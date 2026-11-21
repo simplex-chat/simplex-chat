@@ -1,7 +1,15 @@
 diff --git a/src/Simplex/FileTransfer/Agent.hs b/src/Simplex/FileTransfer/Agent.hs
 --- a/src/Simplex/FileTransfer/Agent.hs
 +++ b/src/Simplex/FileTransfer/Agent.hs
-@@ -140,7 +140,6 @@
+@@ -83,6 +83,7 @@ import Simplex.Messaging.Protocol (ProtocolServer, ProtocolType (..), XFTPServer
+ import qualified Simplex.Messaging.TMap as TM
+ import Simplex.Messaging.Util (allFinally, catchAll_, catchAllErrors, liftError, tshow, unlessM, whenM)
+ import System.FilePath (takeFileName, (</>))
++import System.IO.Error (isAlreadyExistsError)
+ import UnliftIO
+ import UnliftIO.Directory
+ import qualified UnliftIO.Exception as E
+@@ -140,7 +141,6 @@
  xftpPrepareReceiveFile' c userId (ValidFileDescription fd@FileDescription {redirect}) cfArgs approvedRelays = do
    g <- asks random
    prefixPath <- lift $ getPrefixPath "rcv.xftp"
@@ -9,7 +17,7 @@ diff --git a/src/Simplex/FileTransfer/Agent.hs b/src/Simplex/FileTransfer/Agent.
    let relPrefixPath = takeFileName prefixPath
        relTmpPath = relPrefixPath </> "xftp.encrypted"
        relSavePath = relPrefixPath </> "xftp.decrypted"
-@@ -174,8 +173,21 @@
+@@ -174,8 +174,21 @@
  getPrefixPath suffix = do
    workPath <- getXFTPWorkPath
    ts <- liftIO getCurrentTime
@@ -33,7 +41,7 @@ diff --git a/src/Simplex/FileTransfer/Agent.hs b/src/Simplex/FileTransfer/Agent.
  
  toFSFilePath :: FilePath -> AM' FilePath
  toFSFilePath f = (</> f) <$> getXFTPWorkPath
-@@ -376,7 +388,6 @@
+@@ -376,7 +389,6 @@
  xftpPrepareSendFile' c userId file numRecipients storageHours = do
    g <- asks random
    prefixPath <- lift $ getPrefixPath "snd.xftp"
@@ -41,7 +49,7 @@ diff --git a/src/Simplex/FileTransfer/Agent.hs b/src/Simplex/FileTransfer/Agent.
    let relPrefixPath = takeFileName prefixPath
    key <- atomically $ C.randomSbKey g
    nonce <- atomically $ C.randomCbNonce g
-@@ -392,7 +403,6 @@
+@@ -392,7 +404,6 @@
  xftpPrepareSendDescription' c userId (ValidFileDescription fdDirect@FileDescription {size, digest}) numRecipients = do
    g <- asks random
    prefixPath <- lift $ getPrefixPath "snd.xftp"
