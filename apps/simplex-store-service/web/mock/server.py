@@ -10,7 +10,7 @@ Environment:
                             it from its ini. Public by design, but still not
                             committed: unset, the page has NO card form and
                             choosing Card reaches "The card form did not load",
-                            so drive a purchase with btc or xmr and settle it
+                            so drive a purchase with btc, ln or xmr and settle it
                             with POST /control/settle/<invoiceId> below.
                             Set it to a `pk_test_...` key to drive the real
                             Stripe path; a secret key here is refused at start.
@@ -39,7 +39,15 @@ MIME = {".html": "text/html", ".css": "text/css", ".js": "text/javascript",
         ".svg": "image/svg+xml", ".json": "application/json", ".webmanifest": "application/manifest+json"}
 # BTCPay's default speed policy asks for one confirmation.
 REQUIRED_CONFIRMATIONS = 1
-ADDRESSES = {"btc": "bc1qexampleaddress0k3jq2wvcgmqz", "xmr": "48HqK2XmVexampleAddress9fRtWc"}
+COINS = ("btc", "ln", "xmr")
+BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+MOCK_BOLT11_LENGTH = 360
+ADDRESSES = {
+    "btc": "bc1qexampleaddress0k3jq2wvcgmqz",
+    "ln": ("lnbc500u1" + BECH32_CHARSET * MOCK_BOLT11_LENGTH)[:MOCK_BOLT11_LENGTH],
+    "xmr": "48HqK2XmVexampleAddress9fRtWc",
+}
+CRYPTO_AMOUNTS = {"btc": "1.482", "ln": "0.00050000", "xmr": "1.482"}
 
 LOCK = threading.Lock()
 INVOICES = {}
@@ -103,7 +111,8 @@ def public_view(inv):
         view["address"] = inv["address"]
         view["cryptoAmount"] = inv["cryptoAmount"]
         view["cryptoCurrency"] = inv["method"]
-        view["requiredConfirmations"] = REQUIRED_CONFIRMATIONS
+        if inv["method"] != "ln":
+            view["requiredConfirmations"] = REQUIRED_CONFIRMATIONS
     return view
 
 
@@ -166,6 +175,8 @@ class Handler(BaseHTTPRequestHandler):
                     # Monero reports the payment as paid in full while its figures are still zero.
                     inv["paidInFull"] = True
                 elif action == "partial":
+                    if inv["method"] == "ln":
+                        return self._send(400, {"error": "bad_request"})
                     inv["amountPaid"] = inv["amount"] // 2
                     inv["paidInFull"] = False
                     if inv["method"] != "card":
@@ -201,7 +212,7 @@ class Handler(BaseHTTPRequestHandler):
             body = self._read_json()
             if not body or not isinstance(body.get("codeHash"), str) or not body["codeHash"]:
                 return self._send(400, {"error": "bad_request"})
-            if body.get("method") not in ("card", "btc", "xmr"):
+            if body.get("method") not in ("card", *COINS):
                 return self._send(400, {"error": "bad_request"})
             with LOCK:
                 if body["codeHash"] in HASHES:
@@ -219,7 +230,7 @@ class Handler(BaseHTTPRequestHandler):
                         .replace(microsecond=0).isoformat().replace("+00:00", "Z"),
                     "clientSecret": f"cs_test_{secrets.token_hex(12)}" if is_card else None,
                     "address": None if is_card else ADDRESSES[body["method"]],
-                    "cryptoAmount": None if is_card else "1.482",
+                    "cryptoAmount": None if is_card else CRYPTO_AMOUNTS[body["method"]],
                 }
                 INVOICES[invoice_id] = inv
                 HASHES[body["codeHash"]] = invoice_id
@@ -300,7 +311,7 @@ def main():
     print(f"mock store service on http://localhost:{port}", flush=True)
     print("stripe: " + (f"publishable key {STRIPE_PUBLISHABLE_KEY[:11]}… — the real card form"
                         if STRIPE_PUBLISHABLE_KEY
-                        else "no STRIPE_PUBLISHABLE_KEY — no card form; pay with btc or xmr"),
+                        else "no STRIPE_PUBLISHABLE_KEY — no card form; pay with btc, ln or xmr"),
           flush=True)
     server.serve_forever()
 

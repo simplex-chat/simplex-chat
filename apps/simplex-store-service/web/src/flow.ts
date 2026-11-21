@@ -264,6 +264,7 @@ class WatchLoop implements Watch {
             this.emit({
               screen: "awaitingConfirmation", gaveUp: true, invoice: undefined,
               order: withoutCode(this.record ?? recordFromView(this.orderId, { status: "open" }, this.d.now())),
+              ...(this.method !== undefined ? { method: this.method } : {}),
             });
             return;
           }

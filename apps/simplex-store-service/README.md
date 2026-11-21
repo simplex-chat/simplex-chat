@@ -140,7 +140,7 @@ so below `note` the SMP agent's lines print too. With
 ### Running the web checkout
 
 `store_service.ini` holds the listener bind address, its ports and `badges_static_dir`, an optional
-`[btcpay]` section (omitting it disables Bitcoin and Monero), an optional `[stripe]`
+`[btcpay]` section (omitting it disables Bitcoin, Monero and Lightning), an optional `[stripe]`
 section (omitting it disables card payments), an optional `[group]` section (omitting it
 turns off the group's commands, though a group created earlier still has its code messages updated),
 the poll cadence, optional `[apple]` and `[google]` sections that verify store purchases (see
@@ -231,8 +231,8 @@ hours and the invoice expiry minutes, and a webhook can name an older one; past 
 such crypto. Crypto sent to a badge invoice after it was paid is reported by nothing.
 
 BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
-The invoice view reports `paidInFull` on such an invoice only once BTCPay reads it `PaidLate` or
-`PaidOver`: BTCPay's paid amount counts unconfirmed payments too, so a due of 0 or less is not
+The invoice view reports `paidInFull` on such an on-chain invoice only once BTCPay reads it `PaidLate`
+or `PaidOver`: BTCPay's paid amount counts unconfirmed payments too, so a due of 0 or less is not
 enough. It reports an overpaid invoice's `cryptoAmountDue` as `0`, never below.
 
 **Set the Monero plugin's settled-confirmation threshold (`InvoiceSettledConfirmationThreshold`) to
@@ -241,6 +241,22 @@ threshold, so late Monero is credited only on an invoice made while it was 1 or 
 credited as late bitcoin is. Left unset (the plugin's default) or at 0,
 every late Monero payment stays pending and goes to support, as under `HighSpeed`. Each invoice
 keeps the threshold it was made with, so raising it later credits nothing already paid.
+
+**Lightning** is BTCPay's `BTC-LN` method: the buyer pays a BOLT11 invoice made by the store's
+Lightning node, for the whole amount or not at all. Enable it on the store with the node BTCPay
+runs; at startup the service names, in one logged error, each of `BTC-CHAIN`, `XMR-CHAIN` and
+`BTC-LN` that the store has not enabled, since BTCPay refuses every checkout on it. BTCPay records a
+Lightning payment only once the node reports it settled, so the service credits it under every
+`speed_policy`, `requiredConfirmations` is omitted from its invoice view, and a closed invoice with
+a due of 0 or less is read as paid in full. BTCPay gives the method's amounts in whole satoshi; in
+the logs Lightning is counted in millisatoshi. The BOLT11 invoice expires with the order.
+After a cancellation it stays payable: BTCPay 2.4.4 marks the invoice `Invalid` but leaves the
+BOLT11 payable at the node until it expires. While BTCPay keeps running, it records a payment to
+that BOLT11: the service credits it to a name order's balance as late money, and for a badge order
+it logs an error, and support refunds the payment by hand. After a restart BTCPay watches only open
+invoices, so such a payment is recorded by the node alone; support finds it among the node's
+settled invoices by the BOLT11. The node needs inbound channel capacity of at least the largest
+order: without it the buyer's wallet finds no route and the payment fails there.
 
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
@@ -258,7 +274,7 @@ without a read.
 
 An optional `[stripe]` section enables the card lane; omitting it disables card payments
 and `POST /api/invoice` answers `provider_unavailable` for a card order, the same as an
-absent `[btcpay]` does for Bitcoin and Monero. Its keys:
+absent `[btcpay]` does for Bitcoin, Monero and Lightning. Its keys:
 
 - `secret_key` — a **restricted** key (`rk_...`), never a full secret key (`sk_...`). Grant it
   **PaymentIntents: write**, to create and cancel intents, plus **Charges: read** — the poller
@@ -349,7 +365,7 @@ the service's operators.
 | `POST /api/invoice` | `{invoiceId, badgeType, months, amount, currency, expiresAt}` plus a destination: `clientSecret` for a card, or `address`, `cryptoAmount`, `cryptoCurrency`. Refuses with `code_conflict`, `catalog_changed`, `bad_request`, `provider_unavailable` or `rate_limited`. |
 | `GET /api/invoice/:id` | `{status, badgeType, months, amount, currency, expiresAt}` and the same destination — no `invoiceId`, since the caller already has it — plus `amountPaid`, `cryptoAmountPaid`, `cryptoAmountDue`, `paidInFull`, `settledAt` and `requiredConfirmations` once each has a value. Never the code, which this service has never seen. |
 | `GET /api/invoice/:id?wait=<status>&seenPaid=<figure>&seenFull=<0\|1>` | The same, held for up to 30 seconds while the invoice's status is still `<status>` **and** its payment is the one the caller says it has rendered. `wait=paid` and any value that is not a status answer at once, since neither can change. A status the caller has not seen, or a payment it has not seen, answers at once — the provider's verdict counts as much as the figure, because Monero reports an invoice as confirming while its figures are still zero. A request that omits `seenPaid` holds on the status alone. |
-| `POST /api/invoice/:id/cancel` | Invalidates an open invoice at the provider and expires it here. Refuses a settled or expired one with `not_open`, and one that already holds a payment with `funded`. The provider is told first, and a payment landing in between does not keep the invoice open: nothing can reach that address any more, so the row is expired either way and the poller settles or reports what arrived. |
+| `POST /api/invoice/:id/cancel` | Invalidates an open invoice at the provider and expires it here. Refuses a settled or expired one with `not_open`, and one that already holds a payment with `funded`. The provider is told first, and a payment made in between does not keep the invoice open: the row is expired either way, and the poller settles or reports what arrived, also a payment BTCPay records afterwards (for Lightning, see the Lightning paragraph above). |
 | `POST /webhooks/btcpay` | Verifies `BTCPay-Sig` over the bytes as received and queues a read. A hint only: the poller is what carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
 | `POST /webhooks/stripe` | Verifies `Stripe-Signature` over the bytes as received and queues a read. The card lane's equivalent of the row above, and a hint just the same: the poller carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
 
@@ -1675,7 +1691,7 @@ group](#balances-and-failed-orders-in-the-group)):
 
    `Paid by` starts at this order and follows every balance the money came through back to the
    first order: each order with its owner, the address that signed it, what its invoice paid and by
-   which method (`card`, `btc` or `xmr`), the part paid from the balance of the next order listed,
+   which method (`card`, `btc`, `ln` or `xmr`), the part paid from the balance of the next order listed,
    and money credited from its invoice later: marked `late` when it arrived after the invoice
    closed, and `overpaid` when it is the extra of an invoice that paid the order. The provider
    reference is the BTCPay invoice id or the Stripe PaymentIntent id, which finds the payment in the
@@ -1814,8 +1830,8 @@ Playwright's Chromium (`npm install`, `npx playwright install chromium`); and th
 `ens-contracts` submodule (simplex-network/ens-contracts#47) of a simplex-namespace-contract checkout
 (brenzi/simplex-namespace-contract main, since #10), whose `test/fixtures/terms/` the deploy links
 as the terms, as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
-`dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
-`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8098, 8180, 8181 and 8199 must be free:
+`dev/local-chain-0.json`, so the script stops when its deployment differs from it, and writes it when
+the webapp has none. Ports 8545, 8098, 8180, 8181 and 8199 must be free:
 the script stops before starting anything when one of them answers, and stops at once when anvil,
 the terms server, the service or the code server exits before it answers.
 
@@ -1828,7 +1844,20 @@ ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/dev/contra
 - `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
 - `SERVICE_PORT`, `BADGES_PORT`, `CODES_PORT`: the service's names and badges ports and the code
   server's (8180, 8181 and 8199).
+- `STORE_DB`: a Postgres connection string, for a service built with `+client_postgres`, whose
+  database must exist (default: a SQLite database in the run's folder).
 - Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
+
+With `LIGHTNING_ENV` set to the `lightning.env` that `scripts/store-service/dev/lightning.sh` writes,
+the cases are paid ones instead, in every browser project of each site's Playwright config: the names
+webapp's `e2e/lightning-node.spec.ts`, against the names site, and `web/e2e/lightning-node.spec.ts`,
+against the badges site. In each case, an order is placed with Lightning, the BOLT11 of the page's
+wallet link is paid at the payer's node, and the case ends when the page displays the name registered,
+the badge's code, or a cancelled order with what arrived. `[btcpay]` is written from that file, the
+service listens on 0.0.0.0, as BTCPay sends its webhook from its container, and the badges port defaults to
+`STORE_LIGHTNING_SERVICE_PORT`, where the webhook is sent. `BADGES_SITE` is the built badges site
+(`npm run build` in `web/`, its `dist/`), and the browsers are installed with
+`npx playwright install chromium firefox webkit`. CI runs them in store-lightning-e2e.yml.
 
 The default cases cover search answers for an available name, Check your code and its rate-limit
 countdown, code orders to `registered` with and without links, one whose register records its buyer's

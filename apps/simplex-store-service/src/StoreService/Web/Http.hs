@@ -86,7 +86,7 @@ import Numeric (readHex, showHex)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, stateTVar', tshow)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
-import StoreService.Providers (Provider (..))
+import StoreService.Providers (Provider (..), settlesOnReceipt)
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), cryptoCurrencyText, invoiceStatusText, paymentHolds)
 import Text.Read (readMaybe)
 
@@ -452,7 +452,7 @@ destinationPairs confirmations = \case
       "cryptoAmount" .= cryptoAmount,
       "cryptoCurrency" .= cryptoCurrencyText currency
     ]
-      <> maybe [] (\n -> ["requiredConfirmations" .= n]) confirmations
+      <> [("requiredConfirmations" .= n) | Just n <- [confirmations], not (settlesOnReceipt currency)]
 
 amountJSON :: CurrencyAmount -> J.Value
 amountJSON (CurrencyAmount a) = J.toJSON a

@@ -1,4 +1,5 @@
 .env
+dev/lightning.env
 config/
 data/
 webapps/

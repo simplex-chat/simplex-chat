@@ -5,10 +5,12 @@
   "scripts": {
     "build": "rm -rf build && tsc -p tsconfig.json && tsc -p tsconfig.test.json && node build.js",
     "test": "rm -rf build && tsc -p tsconfig.json && tsc -p tsconfig.test.json && node check-tests.js && TZ=UTC node --test 'build/test/**/*.test.js'",
-    "mock": "python3 mock/server.py"
+    "mock": "python3 mock/server.py",
+    "e2e": "playwright test"
   },
   "devDependencies": {
-    "typescript": "^6.0.0",
-    "@types/node": "^24.0.0"
+    "@playwright/test": "1.64.1",
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.0"
   }
 }

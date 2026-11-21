@@ -1,0 +1,242 @@
+name: store-lightning-e2e
+
+on:
+  workflow_dispatch:
+    inputs:
+      names_repository:
+        description: "the names webapp's repository"
+        default: simplex-chat/simplex.domains
+      names_ref:
+        description: "its branch or commit; empty: the apps/simplex-domains submodule's commit"
+        default: ""
+
+env:
+  ghc: 9.6.3
+  branch: ${{ github.ref_name }}
+  image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:22.04-x86_64-ghc9.6.3
+  lightning_stack: scripts/store-service/dev/lightning.yml
+  cabal_flags: --constraint 'simplexmq +client_postgres' --constraint 'simplex-chat +client_postgres'
+  namespace_commit: e3ba0a50d9475dab8336b5a4026ab0fc5f79ebd4
+  ens_contracts_commit: 6ccb5c52c80619493db32a4128ee5067f4274ac2
+  foundry_version: v1.5.1
+
+jobs:
+  test:
+    name: "ubuntu-22.04-x86_64 (store service, Lightning e2e), GHC: 9.6.3"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 150
+    permissions:
+      contents: read
+      packages: read
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Free disk space
+        shell: bash
+        run: ./scripts/ci/linux_util_free_space.sh
+
+      - name: Start BTCPay and the Lightning nodes
+        shell: bash
+        run: ./scripts/store-service/dev/lightning.sh
+
+      - name: Get UID and GID
+        id: ids
+        run: |
+          echo "uid=$(id -u)" >> $GITHUB_OUTPUT
+          echo "gid=$(id -g)" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: simplex-chat/docker-setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Compute image cache week
+        id: week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and cache Docker image
+        uses: simplex-chat/docker-build-push-action@v6
+        with:
+          context: .
+          load: true
+          file: Dockerfile.build
+          tags: build/22.04:latest
+          build-args: |
+            TAG=22.04
+            HASH=sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5
+            GHC=${{ env.ghc }}
+            USER_UID=${{ steps.ids.outputs.uid }}
+            USER_GID=${{ steps.ids.outputs.gid }}
+          cache-from: type=registry,ref=${{ env.image_cache }}-${{ steps.week.outputs.week }}
+
+      - name: Start PostgreSQL
+        shell: bash
+        run: |
+          docker run -d --name postgres --network host -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17 \
+            -c listen_addresses=127.0.0.1 -c max_connections=1500
+          for _ in $(seq 60); do
+            docker exec postgres pg_isready -q -h 127.0.0.1 && exit 0
+            sleep 1
+          done
+          docker logs postgres
+          exit 1
+
+      - name: Start container
+        shell: bash
+        run: |
+          mkdir -p ~/.cabal
+          docker run -t -d \
+            --name builder \
+            --network host \
+            -e CABAL_DIR=/home/builder/.cabal \
+            -e PGHOST=127.0.0.1 \
+            -e LANG=C.UTF-8 \
+            -v ~/.cabal:/home/builder/.cabal \
+            -v /home/runner/work/_temp:/home/runner/work/_temp \
+            -v ${{ github.workspace }}:/project \
+            build/22.04:latest
+
+      - name: Compute cache key prefix
+        id: keys
+        run: |
+          toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
+          echo "deps=deps-ubuntu-22.04-x86_64-postgres-tests-ghc${{ env.ghc }}-$toolchain" >> "$GITHUB_OUTPUT"
+
+      - name: Restore dependencies from cache
+        id: restore-deps
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.deps }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.deps }}-
+
+      - name: Prepare cabal.project.local
+        shell: bash
+        run: |
+          echo "ignore-project: False"    >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    flags: +openssl"      >> cabal.project.local
+
+      - name: Build tests
+        id: build
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          cabal update
+          cabal build -j --enable-tests --ghc-options=-O0 ${{ env.cabal_flags }} simplex-chat-test exe:simplex-store-service
+          echo "${{ github.workspace }}$(cabal list-bin --enable-tests --ghc-options=-O0 ${{ env.cabal_flags }} exe:simplex-store-service | tail -n 1 | sed 's|^/project||')" > store-service-bin
+
+      - name: Compute dependency cache key
+        if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
+        id: hash-deps
+        shell: bash
+        run: echo "hash=$(ls ~/.cabal/store/ghc-*/ | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Save dependencies to cache
+        if: ${{ !cancelled() && steps.hash-deps.outcome == 'success' && steps.restore-deps.outputs.cache-matched-key != format('{0}-{1}-{2}', steps.keys.outputs.deps, env.branch, steps.hash-deps.outputs.hash) }}
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
+
+      - name: Run the Lightning tests
+        timeout-minutes: 20
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          set -a
+          . scripts/store-service/dev/lightning.env
+          set +a
+          test=$(cabal list-bin ${{ env.cabal_flags }} simplex-chat-test | tail -n 1)
+          "$test" --fail-on=empty,pending -m "StoreService Lightning e2e"
+
+      - name: Find the names webapp's commit
+        id: names
+        shell: bash
+        run: |
+          ref="${{ inputs.names_ref }}"
+          if [ -z "$ref" ]; then ref="$(git ls-tree HEAD apps/simplex-domains | awk '{print $3}')"; fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout the names webapp
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.names_repository || 'simplex-chat/simplex.domains' }}
+          ref: ${{ steps.names.outputs.ref }}
+          path: names-webapp
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Restore the compiled contracts from cache
+        id: contracts
+        uses: actions/cache@v4
+        with:
+          path: ens-contracts-artifacts
+          key: ens-contracts-${{ env.namespace_commit }}-${{ env.ens_contracts_commit }}
+
+      - name: Compile the contracts
+        shell: bash
+        run: |
+          git clone -q https://github.com/brenzi/simplex-namespace-contract.git contracts
+          git -C contracts fetch -q origin "$namespace_commit"
+          git -C contracts checkout -q "$namespace_commit"
+          git -C contracts submodule update -q --init ens-contracts
+          git -C contracts/ens-contracts checkout -q "$ens_contracts_commit"
+          if [ "${{ steps.contracts.outputs.cache-hit }}" = "true" ]; then
+            cp -r ens-contracts-artifacts contracts/ens-contracts/artifacts
+          else
+            (cd contracts/ens-contracts && npx --yes pnpm@9 install --frozen-lockfile --ignore-scripts && npx hardhat compile)
+            cp -r contracts/ens-contracts/artifacts ens-contracts-artifacts
+          fi
+
+      - name: Install anvil
+        shell: bash
+        run: |
+          curl -fsSL "https://github.com/foundry-rs/foundry/releases/download/$foundry_version/foundry_${foundry_version}_linux_amd64.tar.gz" | tar -xz -C "$RUNNER_TEMP" anvil
+
+      - name: Build the badges site and install the browsers
+        shell: bash
+        run: |
+          (cd apps/simplex-store-service/web && npm ci && npm run build)
+          (cd names-webapp/webapp && npm ci && npx playwright install --with-deps chromium firefox webkit)
+
+      - name: Run the browser cases, paid at the Lightning node
+        timeout-minutes: 40
+        shell: bash
+        run: |
+          docker exec postgres createdb -U postgres -h 127.0.0.1 store_e2e
+          LIGHTNING_ENV="$PWD/scripts/store-service/dev/lightning.env" \
+          ENS_CONTRACTS_DIR="$PWD/contracts/ens-contracts" \
+          ANVIL="$RUNNER_TEMP/anvil" \
+          WEBAPP_DIR="$PWD/names-webapp/webapp" \
+          STORE_SERVICE_BIN="$(cat store-service-bin)" \
+          STORE_DB="postgresql://postgres@127.0.0.1/store_e2e" \
+          BADGES_SITE="$PWD/apps/simplex-store-service/web/dist" \
+          TMPDIR="$RUNNER_TEMP" \
+            scripts/store-service/dev/contract-run.sh
+
+      - name: Upload the browser cases' logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-cases
+          path: ${{ runner.temp }}/names-contract-run.*
+          retention-days: 7
+
+      - name: Show the stack's logs
+        if: failure()
+        shell: bash
+        run: |
+          docker compose -f "$lightning_stack" ps -a
+          docker compose -f "$lightning_stack" logs --no-color --tail 400 btcpay merchant_lnd payer_lnd

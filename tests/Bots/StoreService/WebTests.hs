@@ -38,6 +38,11 @@ module Bots.StoreService.WebTests
     supporterPriceId,
     codeHashText,
     sampleCode,
+    stringField,
+    viewInvoice,
+    CodeRow (..),
+    settledCode,
+    loggedError,
   )
 where
 
@@ -241,6 +246,7 @@ badgeWebTests = do
     it "answers the read fields, with cryptoCurrency lowercase" testInvoiceView
     it "names the confirmations settlement needs, from the speed policy" testViewNamesTheConfirmationsSettlementNeeds
     it "omits the confirmations where no provider is configured" testViewOmitsConfirmationsWithoutBTCPay
+    it "shows a Lightning invoice's BOLT11, with no confirmations to wait for" testViewShowsALightningInvoice
     it "carries the provider's paid-in-full verdict, which the amounts cannot give" testViewCarriesTheProvidersPaidVerdict
     it "never withdraws a paid-in-full verdict on a later read" testPaidVerdictIsNotWithdrawnByALaterRead
     it "carries a closed invoice's paid-in-full verdict, the status staying expired" testViewCarriesAClosedPaidVerdict
@@ -361,7 +367,8 @@ badgeWebTests = do
   describe "store service checkout" $ do
     it "answers the checkout fields and writes the three rows" testCreateInvoice
     it "carries no code and no code hash, over the raw bytes" testCreateCarriesNoCode
-    it "tells the provider xmr rather than the chain another request used" testXmrReachesTheProviderAsXmr
+    it "tells the provider xmr rather than the chain another request used" (testCoinReachesTheProvider "xmr" CCXmr)
+    it "tells the provider ln for a Lightning checkout" (testCoinReachesTheProvider "ln" CCLn)
     it "derives badgeType, months and amount from the catalog, never from the body" testCreateDerivesFromCatalog
     it "refuses every catalog_changed condition before the provider" testCatalogRefusalCostsNothing
     it "refuses a code_hash already sold before the provider" testCodeConflictCostsNothing
@@ -2170,12 +2177,12 @@ testCreateInvoice = bounded "create invoice" $ withCheckout $ \ref env client ->
       InvoiceId (odReference draft) `shouldBe` invId
     other -> expectationFailure ("provider calls: " <> show other)
 
-testXmrReachesTheProviderAsXmr :: IO ()
-testXmrReachesTheProviderAsXmr = bounded "xmr is xmr" $ withCheckout $ \ref _ client -> do
-  r <- postCreateAs client 1 (createBody supporterPriceId Nothing "xmr" (codeHashText sampleCode))
+testCoinReachesTheProvider :: Text -> CryptoCurrency -> IO ()
+testCoinReachesTheProvider methodName coin = bounded (T.unpack methodName <> " reaches the provider") $ withCheckout $ \ref _ client -> do
+  r <- postCreateAs client 1 (createBody supporterPriceId Nothing methodName (codeHashText sampleCode))
   statusOf r `shouldBe` 200
   stubCalls ref >>= \case
-    [StubCreate method _] -> method `shouldBe` SPMCrypto CCXmr
+    [StubCreate method _] -> method `shouldBe` SPMCrypto coin
     other -> expectationFailure ("provider calls: " <> show other)
 
 testCreateCarriesNoCode :: IO ()
@@ -4204,6 +4211,20 @@ testViewOmitsConfirmationsWithoutBTCPay = bounded "no confirmations" $ withWebAp
   iid <- seedOpenInvoice env
   r <- webGet client (invoicePath iid)
   o <- jsonObject r
+  fieldOf o "requiredConfirmations" `shouldBe` Nothing
+
+testViewShowsALightningInvoice :: IO ()
+testViewShowsALightningInvoice = bounded "lightning invoice" $ withCheckout $ \_ env client -> do
+  let bolt11 = "lnbc500u1pfakeinvoicedestinationforthetestsonly"
+      inv = sampleInvoice {niDestination = SPDCrypto CCLn bolt11 "0.00050000"}
+  seedBadgePrice (weStore env) "price1"
+  createInvoiceRows (weStore env) inv `shouldReturn` Right ()
+  r <- webGet client (invoicePath (niInvoiceId inv))
+  statusOf r `shouldBe` 200
+  o <- jsonObject r
+  fieldOf o "cryptoCurrency" `shouldBe` Just (J.String "ln")
+  fieldOf o "address" `shouldBe` Just (J.String bolt11)
+  fieldOf o "cryptoAmount" `shouldBe` Just (J.String "0.00050000")
   fieldOf o "requiredConfirmations" `shouldBe` Nothing
 
 testHeldWaitWakesOnAPaymentThatDoesNotSettle :: IO ()

@@ -7,6 +7,7 @@ import { applyView, historyRows, offlineInvoice, recordFromView, orderPhase, sel
 import { countdown, money, moneyCompact, startedAgo } from "../src/format.js";
 import { type OrderRecord } from "../src/domain.js";
 import { Store, type StorageLike } from "../src/store.js";
+import { BOLT11 } from "./open-order.js";
 
 const apiTest = timedTest(2000);
 
@@ -806,6 +807,23 @@ apiTest("flow: the confirming screen gives up after exactly fifteen minutes, cou
   assert.equal(last.screen, "awaitingConfirmation");
   assert.equal(last.screen === "awaitingConfirmation" ? last.gaveUp : false, true);
   assert.equal(h.net.pendingCount, 0, "giving up must not leave a connection held");
+});
+
+apiTest("flow: after the wait for a Lightning payment still settling, the give-up view is given the Lightning method, so it is worded with settle", async () => {
+  const h = harness();
+  const processingLn = {
+    ...openXmr, address: BOLT11, cryptoAmount: "0.00050000",
+    cryptoCurrency: "ln", amountPaid: 42000, cryptoAmountPaid: "0.00050000", paidInFull: true,
+  } as const;
+  const w = h.flow.watch("inv_9f3a", { initial: processingLn, method: "ln" });
+  await settle();
+  assert.deepEqual(h.views.map((v) => v.screen), ["awaitingConfirmation"]);
+  await h.clock.advance(GIVE_UP_MS);
+  await w.done;
+  const last = h.views.at(-1)!;
+  assert.equal(last.screen === "awaitingConfirmation" && last.gaveUp, true);
+  assert.equal(last.screen === "awaitingConfirmation" ? last.method : undefined, "ln",
+    "a give-up view without the method is worded for a confirmation");
 });
 
 apiTest("flow: nothing else gives up — the payment screen is still waiting an hour later", async () => {

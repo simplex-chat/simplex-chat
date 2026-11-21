@@ -13,6 +13,7 @@ module StoreService.Providers
     Rate (..),
     unitDecimals,
     unitName,
+    settlesOnReceipt,
     PaymentSignal (..),
     ProviderInvoice (..),
     Funded (..),
@@ -82,11 +83,19 @@ unitDecimals :: CryptoCurrency -> Int
 unitDecimals = \case
   CCBtc -> 8
   CCXmr -> 12
+  CCLn -> 11
 
 unitName :: CryptoCurrency -> Text
 unitName = \case
   CCBtc -> "satoshi"
   CCXmr -> "piconero"
+  CCLn -> "millisatoshi"
+
+settlesOnReceipt :: CryptoCurrency -> Bool
+settlesOnReceipt = \case
+  CCBtc -> False
+  CCXmr -> False
+  CCLn -> True
 
 -- The provider applies its own tolerance, so this cannot be recomputed from the amounts.
 data Funded = PaidInFull | PaidInPart
@@ -133,7 +142,7 @@ data Provider = Provider
   { pProvider :: PaymentProvider,
     pCreateInvoice :: ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice),
     pReadInvoice :: Text -> IO (Either ProviderError (Maybe PaymentSignal)),
-    -- Stops the provider from accepting payment for this order.
+    -- The order is closed at the provider, which refuses a settled one; BTCPay still records a payment made afterwards.
     pCancelInvoice :: Text -> IO (Either ProviderError ()),
     pListOpen :: IO (Either ProviderError ListPass),
     -- | Nothing for a provider of card payments, which needs no rate.

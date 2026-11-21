@@ -281,11 +281,14 @@ urlHost url = T.toLower $ case T.stripPrefix "[" hostPort of
     authority = T.takeWhile (`notElem` ['/', '?', '#']) (T.drop 2 (snd (T.breakOn "//" url)))
     hostPort = snd (T.breakOnEnd "@" authority)
 
--- | An http host would carry the API key in the clear on every call.
-requireHttps :: Text -> Either String Text
-requireHttps u
-  | "https://" `T.isPrefixOf` u = Right u
-  | otherwise = Left "btcpay.host must be an absolute https URL"
+httpsOrLoopback :: Text -> Bool
+httpsOrLoopback u = "https://" `T.isPrefixOf` u || ("http://" `T.isPrefixOf` u && isLoopbackHost (urlHost u))
+
+-- | To an http host, the API key is sent in the clear on every call, so such a host is accepted only on loopback.
+btcpayHost :: Text -> Either String Text
+btcpayHost u
+  | httpsOrLoopback u = Right u
+  | otherwise = Left "btcpay.host must be an https URL, or http to BTCPay on loopback: 127.0.0.1, ::1 or localhost"
 
 publishableKey :: Text -> Bool
 publishableKey k = case T.stripPrefix "pk_live_" k <|> T.stripPrefix "pk_test_" k of
@@ -596,7 +599,7 @@ parseConfig ini = do
     btcpaySection
       | not (hasSection "btcpay") = Right Nothing
       | otherwise = do
-          bHost <- required "btcpay" "host" >>= requireHttps
+          bHost <- required "btcpay" "host" >>= btcpayHost
           bApiKey <- required "btcpay" "api_key"
           bStoreId <- required "btcpay" "store_id"
           bWebhookSecret <- required "btcpay" "webhook_secret"
@@ -739,7 +742,7 @@ parseConfig ini = do
     -- http only to a node on the same machine, as the URL can carry a provider's API key
     rpcUrl = do
       v <- required "chain" "rpc_url"
-      unless ("https://" `T.isPrefixOf` v || ("http://" `T.isPrefixOf` v && isLoopbackHost (urlHost v))) $
+      unless (httpsOrLoopback v) $
         Left "chain.rpc_url must be an https URL, or http to a node on loopback: 127.0.0.1, ::1 or localhost"
       Right (T.unpack v)
     positiveWord k d = case (present "chain" k, d) of

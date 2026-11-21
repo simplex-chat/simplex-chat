@@ -1,0 +1,34 @@
+{
+  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- recorded from BTCPay Server 2.4.4 with LND on regtest, BTC_USD fixed at 108000.12: a BTC-LN invoice marked Invalid through the API, then paid in full by another LND node, its status Invalid and additionalStatus Marked. The response is verbatim.",
+  "response": [
+    {
+      "activated": true,
+      "destination": "lnbcrt46300n1p40c5fdpp5sjmu3p2tedwvyvjjurwv0fw6kwxvstqxyk27f6vss3p4rh2r5vcqdpd2pskjepqw3hjqcmpwp682un9yq5y7unyv4ezqj2y8gszjcqzzsxqrrsssp5hq4mpklapc2ymrsfgc50c5cn6tm5tpatmnx6epmk9aqppf44rejs9qxpqysgq94c8xlslmygdp7l6lfna5sshfhlefskjl5twfg0gru9pcz3ejve8fyus2w32gt9g8fjute097yjzvmuhcknawcntech34kvwsufq6zcp0u06wm",
+      "paymentLink": "lightning:lnbcrt46300n1p40c5fdpp5sjmu3p2tedwvyvjjurwv0fw6kwxvstqxyk27f6vss3p4rh2r5vcqdpd2pskjepqw3hjqcmpwp682un9yq5y7unyv4ezqj2y8gszjcqzzsxqrrsssp5hq4mpklapc2ymrsfgc50c5cn6tm5tpatmnx6epmk9aqppf44rejs9qxpqysgq94c8xlslmygdp7l6lfna5sshfhlefskjl5twfg0gru9pcz3ejve8fyus2w32gt9g8fjute097yjzvmuhcknawcntech34kvwsufq6zcp0u06wm",
+      "rate": "108000.12",
+      "paymentMethodPaid": "0.0000463",
+      "totalPaid": "0.0000463",
+      "due": "0",
+      "amount": "0.0000463",
+      "paymentMethodFee": "0",
+      "payments": [
+        {
+          "id": "84b7c8854bcb5cc23252e0dcc7a5dab38cc82c062595e4e990844351dd43a330",
+          "receivedDate": 1794920749,
+          "value": "0.0000463",
+          "fee": "0",
+          "status": "Settled",
+          "destination": "lnbcrt46300n1p40c5fdpp5sjmu3p2tedwvyvjjurwv0fw6kwxvstqxyk27f6vss3p4rh2r5vcqdpd2pskjepqw3hjqcmpwp682un9yq5y7unyv4ezqj2y8gszjcqzzsxqrrsssp5hq4mpklapc2ymrsfgc50c5cn6tm5tpatmnx6epmk9aqppf44rejs9qxpqysgq94c8xlslmygdp7l6lfna5sshfhlefskjl5twfg0gru9pcz3ejve8fyus2w32gt9g8fjute097yjzvmuhcknawcntech34kvwsufq6zcp0u06wm"
+        }
+      ],
+      "paymentMethodId": "BTC-LN",
+      "additionalData": {
+        "paymentHash": "84b7c8854bcb5cc23252e0dcc7a5dab38cc82c062595e4e990844351dd43a330",
+        "preimage": "008eb57619ec238ec048f62c986c98b7fda803f7f084b7f8b06fa6237922d929",
+        "invoiceId": "84b7c8854bcb5cc23252e0dcc7a5dab38cc82c062595e4e990844351dd43a330",
+        "nodeInfo": "02593bd3166ffccf35e9c49dbc1e6bb199afa9b39a47cdabc7eb6991bc8379cbd4@172.18.0.5:9735"
+      },
+      "currency": "BTC"
+    }
+  ]
+}

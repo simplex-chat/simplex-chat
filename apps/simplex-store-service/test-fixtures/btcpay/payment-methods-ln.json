@@ -1,0 +1,31 @@
+{
+  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- InvoicePaymentMethodDataModel[] for BTC-LN, shaped after the bodies recorded from BTCPay 2.4.4 (payment-methods-ln-settled.json, payment-methods-ln-cancelled-paid.json), in which amounts have no trailing zeros. The amounts here have 8 and 11 decimals, and both forms are read alike. `totalPaid` is set unequal to `paymentMethodPaid` on purpose. `paymentMethodFee` is non-zero only so that it differs from `due`.",
+  "response": [
+    {
+      "paymentMethodId": "BTC-LN",
+      "currency": "BTC",
+      "destination": "lnbc500u1pfakeinvoicedestinationforthetestsonly",
+      "paymentLink": "lightning:lnbc500u1pfakeinvoicedestinationforthetestsonly",
+      "rate": "108000.12",
+      "paymentMethodPaid": "0.00050000",
+      "totalPaid": "9.99999999",
+      "due": "0.00000000",
+      "amount": "0.00050000",
+      "paymentMethodFee": "0.00000001",
+      "activated": true,
+      "payments": [
+        {
+          "id": "7a1c2b3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9",
+          "receivedDate": 1700003600,
+          "value": "0.00050000000",
+          "fee": "0.00000000",
+          "status": "Settled",
+          "destination": "lnbc500u1pfakeinvoicedestinationforthetestsonly"
+        }
+      ],
+      "additionalData": {
+        "paymentHash": "7a1c2b3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9"
+      }
+    }
+  ]
+}

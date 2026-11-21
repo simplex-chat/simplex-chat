@@ -132,6 +132,7 @@ namesOrdersTests :: Spec
 namesOrdersTests = describe "StoreService names: orders" $ do
   describe "paid orders" $ do
     it "places an order as an unpaid live registration and answers the name invoice view" testPaidOrder
+    it "places a Lightning order, sent to the provider as ln, and stores its method" testLnOrder
     it "answers an exact resend with its invoice, also with a new timestamp and signature, and after the timestamp window" testExactResend
     it "answers an exact resend after its order went past unpaid, before any chain read" testResendPastUnpaid
     it "reads an exact resend's unpaid invoice past its expiry as expired, and its lapsed commitment as failed, writing neither" testResendReadsTime
@@ -535,6 +536,14 @@ vectorSignature = "0x9fb22e344357679a4deffdd3d75d6bfb6be860e4d2d307661445812dc4e
 -- so the term starts later by as much for the vector to pass the duration check at its timestamp.
 vectorTermStart :: NamesConfig -> NamesConfig
 vectorTermStart cfg = cfg {nTermStart = posixSecondsToUTCTime $ fromIntegral $ oTimestamp vectorOrder + oDuration vectorOrder - 2 * yearSeconds}
+
+testLnOrder :: IO ()
+testLnOrder = withOrders $ \ctx -> do
+  (invId, _) <- placed ctx aliceOrder {oMethod = "ln"}
+  stubCalls (cStub ctx) >>= \case
+    [StubCreate method _] -> method `shouldBe` SPMCrypto CCLn
+    other -> expectationFailure ("provider calls: " <> show other)
+  nrPayment <$> invoiceRegistration ctx invId `shouldReturn` RPInvoice (SPMCrypto CCLn) invId
 
 testExactResend :: IO ()
 testExactResend = withOrders $ \ctx -> do

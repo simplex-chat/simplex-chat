@@ -50,7 +50,7 @@ badgeConfigTests = describe "store service config" $ do
   it "accepts a poll cadence and refuses a zero or negative one" testPollCadence
   it "accepts an expiry window and refuses a zero or negative one" testExpiryMinutes
   it "accepts a payment tolerance and refuses one that settles for a satoshi" testPaymentTolerance
-  it "refuses a host that would send the api key in the clear" testHostMustBeHttps
+  it "refuses a BTCPay host that would send the api key in the clear off the machine, and takes http on loopback" testHostMustBeHttps
   it "names a setting nothing reads, in every section it parses" testUnknownKeysAreNamed
   it "ignores a section nothing reads rather than refusing the file" testUnknownSectionStillBoots
   it "refuses a file one malformed line would silently truncate" testMalformedLineRefused
@@ -386,11 +386,17 @@ testPaymentTolerance = do
     withTolerance key act = withIni (fullIni <> key) $ \p -> readServiceConfig p >>= act
 
 testHostMustBeHttps :: IO ()
-testHostMustBeHttps =
-  withIni (T.replace "https://" "http://" fullIni) $ \p ->
-    readServiceConfig p >>= \r -> case r of
-      Left e -> e `shouldContain` "https"
-      Right _ -> expectationFailure "an http host carries the api key in the clear"
+testHostMustBeHttps = do
+  forM_ ["http://btcpay.example.org", "http://127.0.0.1.example.org:49392", "http://localhost@btcpay.example.org", "http://10.0.0.5:49392"] $ \host ->
+    withIni (T.replace "https://btcpay.example.org" host fullIni) $ \p ->
+      readServiceConfig p >>= \case
+        Left e -> e `shouldBe` "btcpay.host must be an https URL, or http to BTCPay on loopback: 127.0.0.1, ::1 or localhost"
+        Right _ -> expectationFailure (T.unpack host <> " carries the api key in the clear off the machine")
+  forM_ ["http://127.0.0.1:49392", "http://localhost:49392", "http://[::1]:49392"] $ \host ->
+    withIni (T.replace "https://btcpay.example.org" host fullIni) $ \p ->
+      readServiceConfig p >>= \case
+        Right cfg -> bHost <$> btcpay cfg `shouldBe` Just host
+        Left e -> expectationFailure (T.unpack host <> " is on loopback, refused: " <> e)
 
 -- A real 32-byte base64url secret, as `simplex-chat badge keygen` prints it.
 issuerSecret :: T.Text

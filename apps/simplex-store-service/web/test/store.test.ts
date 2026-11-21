@@ -2,6 +2,7 @@ import { timedTest } from "./boot.js";
 import assert from "node:assert/strict";
 import { type OrderRecord } from "../src/domain.js";
 import { Store } from "../src/store.js";
+import { BOLT11 } from "./open-order.js";
 
 const storeTest = timedTest(2000);
 
@@ -168,6 +169,20 @@ storeTest("store: a session or theme outside the known set falls back to the def
   mem.map.set("sb.session.v1", JSON.stringify({ step: "months", priceId: "price_legend", method: "paypal" }));
   assert.deepEqual(new Store(mem).session(), { step: "months", priceId: "price_legend" },
     "a good step keeps what reads beside it, and only that");
+});
+
+storeTest("store: a Lightning order, its BOLT11 destination and the session's method are kept across a reload", () => {
+  const mem = new MemoryStorage();
+  const s = new Store(mem);
+  s.saveOrder(order("1", { method: "ln", address: BOLT11, cryptoAmount: "0.00050000", cryptoCurrency: "ln" }));
+  s.saveSession({ step: "checkout", method: "ln" });
+  const reloaded = new Store(mem);
+  const o = reloaded.order("1")!;
+  assert.equal(o.method, "ln", "without the method, the reopened order is shown on no payment screen");
+  assert.equal(o.cryptoCurrency, "ln");
+  assert.equal(o.address, BOLT11);
+  assert.equal(o.cryptoAmount, "0.00050000", "the amount is kept as sent");
+  assert.equal(reloaded.session().method, "ln");
 });
 
 storeTest("store: saveOrder replaces the stored entry rather than merging into it", () => {
