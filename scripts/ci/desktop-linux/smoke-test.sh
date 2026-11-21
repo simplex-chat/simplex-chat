@@ -405,7 +405,6 @@ open_local_chat() {
   "$ui" click "$x" "$y"
 }
 
-# The open chat's name in its toolbar, in the right pane, opens the group's info.
 open_group_info() {
   local target line
   open_local_chat || return 1
@@ -422,8 +421,6 @@ open_group_info() {
   return 1
 }
 
-# Opens a screen with the opener, then the labels clicked in turn, and saves "tour-<name>"; a screen that scrolls also
-# saves "tour-<name>-end", scrolled down.
 visit() {
   local name=$1 opener=$2 label
   shift 2
