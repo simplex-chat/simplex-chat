@@ -20,13 +20,14 @@ Skia m138 adds the paragraph's default metrics to every line (`TextWrapper.cpp` 
 |---|---|---|
 | Windows | 25 of 262 | 1 px vertical shifts; Segoe UI Emoji drawn from its COLR v1 table |
 | macOS | 23 of 262 | 1 px vertical shifts |
-| Linux | re-recorded references | 1 px vertical shifts and FreeType glyph pixels |
+| Linux | 57 of 260 | 1 px vertical shifts and FreeType glyph pixels; lines with an emoji 1 px taller |
 
-No preview changes size.
+On Windows and macOS no preview changes size; on Linux the chat help is 2 px taller.
 
 ## Tests
 
 - `FallbackFontTest` builds a fontconfig cache for one BDF font with `fc-cache`, then lays out U+2603 in a child JVM.
 - `SkikoVersionTest` checks the resolved Skiko version.
 - `Dockerfile.build` installs `fontconfig`, which provides `fc-cache` in CI.
-- The desktop snapshot references are re-recorded with Skiko 0.9.24.
+- `BubbleLayoutTest.timeDrawnOnTextBaseline` asserts the offset of the time from the text baseline for each text style and font scale: 0 px, or 1 px either way in 6 of 27 cases.
+- The 57 desktop snapshot references that differ by more than the comparison tolerance are re-recorded with Skiko 0.9.24.

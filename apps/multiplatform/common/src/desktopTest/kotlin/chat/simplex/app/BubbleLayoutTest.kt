@@ -35,13 +35,13 @@ import kotlin.test.assertEquals
 
 private val TIME_BELOW_TEXT_PX = mapOf(
   0.7f to listOf(0, 0, 0),
-  0.8f to listOf(0, 0, 0),
-  0.9f to listOf(0, 0, 0),
-  1f to listOf(0, 0, 0),
+  0.8f to listOf(1, 0, 0),
+  0.9f to listOf(-1, 0, 0),
+  1f to listOf(0, 0, -1),
   1.1f to listOf(0, 0, 0),
-  1.2f to listOf(0, 0, 0),
+  1.2f to listOf(1, 1, 0),
   1.3f to listOf(0, 0, 0),
-  1.4f to listOf(0, 0, 0),
+  1.4f to listOf(-1, 0, 0),
   1.5f to listOf(0, 0, 0),
 )
 
