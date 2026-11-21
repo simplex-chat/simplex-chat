@@ -737,7 +737,7 @@ struct ScannerInView: View {
     @Binding var showQRCodeScanner: Bool
     var scannerPaused: Binding<Bool>? = nil
     let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
-    @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
+    @State private var cameraAuthorizationStatus: AVAuthorizationStatus? = AVCaptureDevice.authorizationStatus(for: .video)
     var scanMode: ScanMode = .continuous
     var placeholderBackground = Color(uiColor: .secondarySystemGroupedBackground)
 

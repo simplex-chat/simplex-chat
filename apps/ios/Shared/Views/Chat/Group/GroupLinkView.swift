@@ -25,7 +25,7 @@ struct GroupLinkView: View {
     @State private var showShortLink = true
     @State private var creatingLink = false
     @State private var alert: GroupLinkAlert?
-    @State private var shouldCreate = true
+    @State var shouldCreate = true
 
     private enum GroupLinkAlert: Identifiable {
         case deleteLink
@@ -251,7 +251,7 @@ struct GroupLinkView_Previews: PreviewProvider {
 
         return Group {
             GroupLinkView(groupId: 1, groupLink: $groupLink, groupLinkMemberRole: Binding.constant(.member))
-            GroupLinkView(groupId: 1, groupLink: $noGroupLink, groupLinkMemberRole: Binding.constant(.member))
+            GroupLinkView(groupId: 1, groupLink: $noGroupLink, groupLinkMemberRole: Binding.constant(.member), shouldCreate: false)
         }
     }
 }
