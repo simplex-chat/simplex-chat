@@ -12,7 +12,7 @@ ANVIL="${ANVIL:-anvil}"
 LIGHTNING_ENV="${LIGHTNING_ENV:-}"
 if [ -n "$LIGHTNING_ENV" ]; then
   set -a
-  # shellcheck disable=SC1090 # the file lightning.sh writes
+  # shellcheck disable=SC1090
   . "$LIGHTNING_ENV"
   set +a
 fi
@@ -144,10 +144,10 @@ build_site() {
   (cd "$WEBAPP_DIR" && npx vite build --outDir "$RUN_DIR/names" --emptyOutDir --logLevel warn) > "$RUN_DIR/build.log" 2>&1
 }
 
-# No [stripe], and [btcpay] only with LIGHTNING_ENV, whose cases pay at its Lightning node. The names
-# site is served on the port the tests open; the badges site on its own port, from BADGES_SITE or an
-# empty folder. BTCPay's webhook comes from its container, so with LIGHTNING_ENV the service listens
-# beyond loopback.
+# No [stripe], and [btcpay] only with LIGHTNING_ENV, under which each case's order is paid at the
+# payer's Lightning node. The names site is served on the port opened in the tests; the badges site on
+# its own port, from BADGES_SITE or an empty folder. BTCPay sends its webhook from its container, so
+# with LIGHTNING_ENV the service listens beyond loopback.
 write_ini() {
   local chain="$RUN_DIR/chain.json" host=127.0.0.1 badges="$BADGES_SITE"
   if [ -n "$LIGHTNING_ENV" ]; then host=0.0.0.0; fi

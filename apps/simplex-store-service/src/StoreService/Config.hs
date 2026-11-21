@@ -284,7 +284,7 @@ urlHost url = T.toLower $ case T.stripPrefix "[" hostPort of
 httpsOrLoopback :: Text -> Bool
 httpsOrLoopback u = "https://" `T.isPrefixOf` u || ("http://" `T.isPrefixOf` u && isLoopbackHost (urlHost u))
 
--- | An http host would carry the API key in the clear on every call, so it is accepted only on loopback.
+-- | To an http host, the API key is sent in the clear on every call, so such a host is accepted only on loopback.
 btcpayHost :: Text -> Either String Text
 btcpayHost u
   | httpsOrLoopback u = Right u
