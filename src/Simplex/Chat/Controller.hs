@@ -1527,6 +1527,7 @@ data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   | SDENameWarning {nameWarning :: NameWarning}
+  | SDEOwnNameExpired {expiredAt :: UTCTime, graceUntil :: Maybe UTCTime}
   deriving (Eq, Show)
 
 -- | Why acquiring a badge failed, for a code and for a store purchase alike.

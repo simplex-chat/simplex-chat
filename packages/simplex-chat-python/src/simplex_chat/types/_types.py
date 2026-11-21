@@ -3365,13 +3365,19 @@ class SimplexDomainError_nameWarning(TypedDict):
     type: Literal["nameWarning"]
     nameWarning: "NameWarning"
 
+class SimplexDomainError_ownNameExpired(TypedDict):
+    type: Literal["ownNameExpired"]
+    expiredAt: str  # ISO-8601 timestamp
+    graceUntil: NotRequired[str]  # ISO-8601 timestamp
+
 SimplexDomainError = (
     SimplexDomainError_noValidLink
     | SimplexDomainError_unknownDomain
     | SimplexDomainError_nameWarning
+    | SimplexDomainError_ownNameExpired
 )
 
-SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain", "nameWarning"]
+SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain", "nameWarning", "ownNameExpired"]
 
 class SimplexDomainProof(TypedDict):
     linkOwnerId: NotRequired[str]

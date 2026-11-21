@@ -4819,9 +4819,10 @@ export type SimplexDomainError =
   | SimplexDomainError.NoValidLink
   | SimplexDomainError.UnknownDomain
   | SimplexDomainError.NameWarning
+  | SimplexDomainError.OwnNameExpired
 
 export namespace SimplexDomainError {
-  export type Tag = "noValidLink" | "unknownDomain" | "nameWarning"
+  export type Tag = "noValidLink" | "unknownDomain" | "nameWarning" | "ownNameExpired"
 
   interface Interface {
     type: Tag
@@ -4838,6 +4839,12 @@ export namespace SimplexDomainError {
   export interface NameWarning extends Interface {
     type: "nameWarning"
     nameWarning: T.NameWarning
+  }
+
+  export interface OwnNameExpired extends Interface {
+    type: "ownNameExpired"
+    expiredAt: string // ISO-8601 timestamp
+    graceUntil?: string // ISO-8601 timestamp
   }
 }
 

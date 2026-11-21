@@ -60,6 +60,20 @@ final class NameAlertsTests: XCTestCase {
     }
 
     @MainActor
+    func testSetOwnNameExpired() async throws {
+        try recorded("names/set-own-expired")
+        _ = try? await apiSetUserDomain("alice.simplex")
+        try await assertTexts(["Your name has expired", "Your name alice.simplex expired on January 1, 2026. Renew it before January 1, 2099.", "Renew", "Ok"])
+    }
+
+    @MainActor
+    func testSetNameExpired() async throws {
+        try recorded("names/set-expired")
+        _ = try? await apiSetUserDomain("alice.simplex")
+        try await assertTexts(["Name expired", "alice.simplex expired on January 1, 2026. Its owner can renew it until January 1, 2099.", "Ok"])
+    }
+
+    @MainActor
     func testKnownNameAvailable() async throws {
         try recorded("names/plan-known-available")
         connect("@alice.simplex")

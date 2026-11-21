@@ -96,6 +96,18 @@ class NameAlertsTest {
   }
 
   @Test
+  fun setOwnNameExpired() = recordedAlerts("names/set-own-expired") {
+    setName("alice.simplex")
+    assertTexts("Your name has expired", "Your name alice.simplex expired on January 1, 2026. Renew it before January 1, 2099.", "Renew", "OK")
+  }
+
+  @Test
+  fun setNameExpired() = recordedAlerts("names/set-expired") {
+    setName("alice.simplex")
+    assertTexts("Name expired", "alice.simplex expired on January 1, 2026. Its owner can renew it until January 1, 2099.", "OK")
+  }
+
+  @Test
   fun knownNameAvailable() = recordedAlerts("names/plan-known-available") {
     connect("@alice.simplex")
     assertTexts("Name no longer registered", "alice.simplex is available for registration for \$20 for 2 years.", "Register", "Open chat", "OK")
@@ -451,6 +463,11 @@ class NameAlertsTest {
 
   private fun ComposeUiTest.connect(name: String, cleanup: (() -> Unit)? = null) {
     runBlocking { planAndConnect(rhId = null, name, close = null, cleanup = cleanup, showLocalChats = { chats -> shownLocalChats += chats.map { it.id } }) }
+    waitForIdle()
+  }
+
+  private fun ComposeUiTest.setName(name: String) {
+    runBlocking { runCatching { ChatController.apiSetUserDomain(rh = null, name) } }
     waitForIdle()
   }
 

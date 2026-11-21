@@ -2858,6 +2858,7 @@ viewChatError isCmd logLevel testView = \case
       let notReady reason = [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
        in case domainErr of
             SDENameWarning w -> [viewNameNotConnectable domain w]
+            SDEOwnNameExpired e g -> [viewNameWarning True domain (NWExpired e g)]
             SDENoValidLink -> notReady "has no valid connection link"
             SDEUnknownDomain -> notReady "is not included in the connection link's profile"
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]

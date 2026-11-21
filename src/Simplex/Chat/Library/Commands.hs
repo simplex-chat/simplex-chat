@@ -1636,8 +1636,7 @@ processChatCommand cxt nm = \case
             UserContactLink {shortLinkDataSet, connLinkContact = CCLink _ sl_} <- withFastStore (`getUserAddress` user)
             case sl_ of
               Just sl | shortLinkDataSet -> do
-                NameRecord {nrSimplexContact} <- resolveNameRecord user nm domain
-                unless (nameResolvesTo sl nrSimplexContact) $ throwChatError $ CESimplexDomainNotReady domain SDENoValidLink
+                checkOwnName user nm domain (nameResolvesTo sl . nrSimplexContact)
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
         let p' = (fromLocalProfile p :: Profile) {contactDomain = mkDomainClaim <$> domain_, contactLink = cl'}
@@ -3379,9 +3378,7 @@ processChatCommand cxt nm = \case
       Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
         let domainChanged = (claimDomain <$> newClaim) /= (claimDomain <$> (existingAccess >>= groupDomainClaim))
         forM_ (claimDomain <$> newClaim) $ \newDomain ->
-          when domainChanged $ do
-            NameRecord {nrSimplexChannel} <- resolveNameRecord user nm newDomain
-            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomainNotReady newDomain SDENoValidLink
+          when domainChanged $ checkOwnName user nm newDomain (nameResolvesTo groupLink . nrSimplexChannel)
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} (isJust newClaim && domainChanged)
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
@@ -5281,6 +5278,22 @@ nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . st
 
 resolveNameRecord :: User -> NetworkRequestMode -> SimplexDomain -> CM NameRecord
 resolveNameRecord user nm domain = resolveName user nm domain >>= either (throwChatError . CESimplexDomainNotReady domain . SDENameWarning) pure
+
+checkOwnName :: User -> NetworkRequestMode -> SimplexDomain -> (NameRecord -> Bool) -> CM ()
+checkOwnName user nm domain ownRecord = do
+  r@NameResponse {registration} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+  now <- liftIO getSystemSeconds
+  let own = case registration of
+        NRRegistered {nameRecord} -> ownRecord nameRecord
+        _ -> False
+  case nameRecordOrWarning now domain r of
+    Right _
+      | own -> pure ()
+      | otherwise -> notReady SDENoValidLink
+    Left (NWExpired e g) | own -> notReady $ SDEOwnNameExpired e g
+    Left w -> notReady $ SDENameWarning w
+  where
+    notReady = throwChatError . CESimplexDomainNotReady domain
 
 resolveName :: User -> NetworkRequestMode -> SimplexDomain -> CM (Either NameWarning NameRecord)
 resolveName user nm domain = do

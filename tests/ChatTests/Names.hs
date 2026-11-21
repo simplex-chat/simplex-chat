@@ -34,7 +34,7 @@ chatNamesTests = do
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name reports it is available" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
-  it "set expired name is rejected" testSetNameExpired
+  it "set expired name is rejected, as own when its record has the address" testSetNameExpired
   it "channel name is not verified just by joining via link" testChannelDomainLinkJoinUnverified
   it "verify channel name, fail on re-point, retain status on refresh" testChannelDomainVerify
   it "connect by channel name" testConnectByChannelName
@@ -292,9 +292,14 @@ testSetNameExpired ps = withSmpServerAndNames ps $ \reg ->
     enableNamesRole alice
     alice ##> "/ad"
     (shortLink, _) <- getContactLinks alice True
-    registerExpiredName reg aliceSimplexName (aliceRecord shortLink)
+    registerExpiredName reg aliceSimplexName (aliceRecord "https://simplex.chat/other")
     alice ##> "/_set domain 1 alice.simplex"
     alice <##. "SimpleX name alice.simplex expired on "
+    apiFixture "names/set-expired" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_set domain 1 alice.simplex"]}
+    registerExpiredName reg aliceSimplexName (aliceRecord shortLink)
+    alice ##> "/_set domain 1 alice.simplex"
+    alice <##. "your SimpleX name alice.simplex expired on "
+    apiFixture "names/set-own-expired" alice [] FixtureRequests {frMarkdown = [], frUris = [], frCommands = ["/_set domain 1 alice.simplex"]}
 
 -- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()
