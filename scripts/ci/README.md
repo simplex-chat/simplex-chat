@@ -44,7 +44,7 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
 - CI, in build-linux:
   - Docker image (step "Build and cache Docker image");
   - caches (the steps "Restore ... from cache");
-  - `cabal build -j --enable-tests --ghc-options=-O0` (step "Build CLI");
+  - `cabal build -j --enable-tests --ghc-options=-O0 --constraint 'simplex-chat +test_hooks'` (step "Build CLI"); the flag test_hooks builds the hooks that tests use, and builds of v* tags are made without it;
   - the badge service web app, `npm ci` and `npm run build` in apps/simplex-badge-service/web with Node.js 22, for the test "serves the built web app" (step "Build badge web app for tests");
   - simplex-chat-test with the selected tests (step "Run tests"), each attempt limited to 35 minutes by `timeout`; an attempt that reaches the limit fails, and "Attempt <n> timed out." is printed;
   - step "Check generated files": it fails if a test changed a tracked file, and uploads the change as artifact `generated-files-<job>`. The tests "verify and overwrite schema dump", "verify and overwrite query plans" and the "generate ..." tests of the API docs overwrite their files, so a stale file fails here even when the test passes on retry.
@@ -67,7 +67,7 @@ The reduced build runs the Linux job build-linux (ubuntu-22.04 x86_64) for every
   ```sh
   TESTS='/SimpleX chat client/group tests/' scripts/ci/run-tests.sh "$(cabal list-bin simplex-chat-test --ghc-options=-O0)"
   ```
-  `--ghc-options=-O0` matches the reduced build; the library and test-suite stanzas of simplex-chat.cabal set -O2. Test directories are created under tests/tmp (`tmpBracket` in tests/Test.hs).
+  `--ghc-options=-O0` matches the reduced build; the library and test-suite stanzas of simplex-chat.cabal set -O2. Tests that use the hooks of the flag test_hooks run only in a build with `--constraint 'simplex-chat +test_hooks'`. Test directories are created under tests/tmp (`tmpBracket` in tests/Test.hs).
 
   On PostgreSQL, with pg_dump 15 or newer on PATH:
   ```sh

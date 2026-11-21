@@ -265,10 +265,16 @@ data ChatHooks = ChatHooks
     eventHook :: Maybe (ChatController -> Either ChatError ChatEvent -> IO (Either ChatError ChatEvent)),
     -- acceptMember hook can be used to accept or reject member connecting via group link without API calls
     acceptMember :: Maybe (GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole)))
+#if defined(test_hooks)
+    , storeTxHook :: Maybe (ChatController -> IO ())
+#endif
   }
 
 defaultChatHooks :: ChatHooks
 defaultChatHooks = ChatHooks Nothing Nothing Nothing Nothing Nothing
+#if defined(test_hooks)
+  Nothing
+#endif
 
 data PresetServers = PresetServers
   { operators :: NonEmpty PresetOperator,
@@ -1914,6 +1920,9 @@ withStoreTx rollbackOn action = do
       aborted <- newTVarIO Nothing
       tId <- liftIO myThreadId
       let run db = do
+#if defined(test_hooks)
+            mapM_ ($ cc) $ storeTxHook $ chatHooks $ config cc
+#endif
             r <- runReaderT (runExceptT action) cc {storeTx = Just StoreTx {txThread = tId, txConn = db, txAfterCommit = afterCommitQ, txAborted = aborted}}
             readTVarIO aborted >>= mapM_ E.throwIO
             case r of
