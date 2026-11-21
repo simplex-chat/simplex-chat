@@ -463,7 +463,6 @@ tour() {
   visit whats-new open_settings "Help & support" "What's new"
   visit about open_settings "Help & support" "About SimpleX Chat"
   visit chat-data open_settings "Chat data"
-  visit migrate open_settings "Migrate to another device"
   visit support open_settings "Support SimpleX"
   visit network open_settings "Network"
   visit your-servers open_settings "Network" "Your servers"
@@ -485,7 +484,7 @@ tour() {
     "$ui" shot tour-attachment-menu
     "$ui" key Escape
   fi
-  back_to_chat_list || true
+  visit migrate open_settings "Migrate to another device"
 }
 
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP

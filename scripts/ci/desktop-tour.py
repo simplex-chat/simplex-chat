@@ -279,7 +279,6 @@ class App:
         self.visit("whats-new", self.open_settings, "Help & support", "What's new")
         self.visit("about", self.open_settings, "Help & support", "About SimpleX Chat")
         self.visit("chat-data", self.open_settings, "Chat data")
-        self.visit("migrate", self.open_settings, "Migrate to another device")
         self.visit("support", self.open_settings, "Support SimpleX")
         self.visit("network", self.open_settings, "Network")
         self.visit("your-servers", self.open_settings, "Network", "Your servers")
@@ -300,6 +299,7 @@ class App:
             time.sleep(SETTLE)
             self.shot("tour-attachment-menu")
             self.press("escape")
+        self.visit("migrate", self.open_settings, "Migrate to another device")
 
     def stop(self):
         self.process.terminate()
