@@ -8,6 +8,7 @@
 // Spec: spec/client/navigation.md
 
 import SwiftUI
+import AVFoundation
 import CoreImage.CIFilterBuiltins
 import SimpleXChat
 
@@ -54,6 +55,15 @@ extension EnvironmentValues {
     var fixedQRCode: UIImage? {
         get { self[FixedQRCode.self] }
         set { self[FixedQRCode.self] = newValue }
+    }
+
+    struct FixedCameraAuthorization: EnvironmentKey {
+        static let defaultValue: AVAuthorizationStatus? = nil
+    }
+
+    var fixedCameraAuthorization: AVAuthorizationStatus? {
+        get { self[FixedCameraAuthorization.self] }
+        set { self[FixedCameraAuthorization.self] = newValue }
     }
 }
 

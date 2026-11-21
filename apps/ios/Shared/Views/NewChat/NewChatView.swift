@@ -740,10 +740,11 @@ struct ScannerInView: View {
     @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
     var scanMode: ScanMode = .continuous
     var placeholderBackground = Color(uiColor: .secondarySystemGroupedBackground)
+    @Environment(\.fixedCameraAuthorization) private var fixedCameraAuthorization
 
     var body: some View {
         Group {
-            if showQRCodeScanner, case .authorized = cameraAuthorizationStatus {
+            if showQRCodeScanner, case .authorized = fixedCameraAuthorization ?? cameraAuthorizationStatus {
                 CodeScannerView(codeTypes: [.qr], scanMode: scanMode, isPaused: scannerPaused?.wrappedValue ?? false, completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
                     .cornerRadius(12)
@@ -766,7 +767,7 @@ struct ScannerInView: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .foregroundColor(Color.clear)
-                        switch cameraAuthorizationStatus {
+                        switch fixedCameraAuthorization ?? cameraAuthorizationStatus {
                         case .authorized, nil: EmptyView()
                         case .restricted: Text("Camera not available")
                         case .denied:  Label("Enable camera access", systemImage: "camera")
@@ -784,10 +785,11 @@ struct ScannerInView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .disabled(cameraAuthorizationStatus == .restricted)
+                .disabled((fixedCameraAuthorization ?? cameraAuthorizationStatus) == .restricted)
             }
         }
         .task {
+            guard fixedCameraAuthorization == nil else { return }
             let status = AVCaptureDevice.authorizationStatus(for: .video)
             cameraAuthorizationStatus = status
             if showQRCodeScanner {
