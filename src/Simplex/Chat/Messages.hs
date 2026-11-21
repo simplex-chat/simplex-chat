@@ -1251,7 +1251,7 @@ msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId
 
 data MsgDeliveryStatus (d :: MsgDirection) where
   MDSRcvAgent :: MsgDeliveryStatus 'MDRcv
-  MDSRcvAcknowledged :: MsgDeliveryStatus 'MDRcv -- not used
+  MDSRcvAcknowledged :: MsgDeliveryStatus 'MDRcv
   MDSSndPending :: MsgDeliveryStatus 'MDSnd
   MDSSndAgent :: MsgDeliveryStatus 'MDSnd
   MDSSndSent :: MsgDeliveryStatus 'MDSnd

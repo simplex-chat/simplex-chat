@@ -14,7 +14,7 @@ module ChatTests.Direct where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (readMVar, threadDelay)
 import Control.Concurrent.Async (concurrently_, poll, wait)
 import Control.Monad (forM_, void, (>=>))
 import Data.Aeson (ToJSON)
@@ -79,6 +79,12 @@ chatDirectTests = do
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
     it "initial chat pagination" testChatPaginationInitial
+    it "skip handled message redelivered after failed acknowledgement" testRedeliveredMessage
+    it "skip saved message redelivered after chat stop" testRedeliveredSavedMessage
+    it "handle unsaved messages of redelivered batch" testRedeliveredBatch
+    it "skip integrity error of redelivered receipt" testRedeliveredReceiptIntegrity
+    it "create integrity error of unsaved message redelivered after chat stop" testRedeliveredUnsavedIntegrity
+    it "skip integrity error of saved message redelivered after chat stop" testRedeliveredSavedIntegrity
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -1441,6 +1447,107 @@ testExpireCallInvitation ps =
       M.member 2 <$> readTVarIO (currentCalls $ chatController bob) `shouldReturn` False
       callRowCount bob `shouldReturn` 0
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
+
+testRedeliveredMessage :: HasCallStack => TestParams -> IO ()
+testRedeliveredMessage =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers bob alice
+    withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands RENAME TO commands_")
+    alice #> "@bob hello"
+    bob <# "alice> hello"
+    bob <##. "internal error: "
+    withCCAgentTransaction bob (`DB.execute_` "ALTER TABLE commands_ RENAME TO commands")
+    bob ##> "/_stop"
+    bob <## "chat stopped"
+    bob ##> "/_start"
+    bob <### ["chat started", "subscribed 1 connections on server localhost"]
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testRedeliveredSavedMessage :: HasCallStack => TestParams -> IO ()
+testRedeliveredSavedMessage ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice #> "@bob hello"
+      readMVar received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hi")])
+
+testRedeliveredBatch :: HasCallStack => TestParams -> IO ()
+testRedeliveredBatch ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"hello\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"hey\"}}]"
+      alice <# "@bob hello"
+      alice <# "@bob hey"
+      readMVar received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost", WithTime "alice> hey"]
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello"), (0, "hey")])
+
+testRedeliveredReceiptIntegrity :: HasCallStack => TestParams -> IO ()
+testRedeliveredReceiptIntegrity ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("skipped message" `T.isPrefixOf`)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers bob alice
+      withCCAgentTransaction bob (`DB.execute_` "UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1")
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      readMVar received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hey"
+      bob <# "alice> hey"
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM chat_items WHERE item_content LIKE '%rcvIntegrityError%'") `shouldReturn` [Only (1 :: Int)]
+
+testRedeliveredUnsavedIntegrity :: HasCallStack => TestParams -> IO ()
+testRedeliveredUnsavedIntegrity ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("skipped message" `T.isPrefixOf`)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      withCCAgentTransaction bob (`DB.execute_` "UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1")
+      alice #> "@bob hello"
+      readMVar received
+      withCCTransaction bob (`DB.execute_` "DELETE FROM chat_items WHERE item_content LIKE '%rcvIntegrityError%'")
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost", Predicate (maybe False ("alice> skipped message ID " `isPrefixOf`) . dropTime_), WithTime "alice> hello"]
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM chat_items WHERE item_content LIKE '%rcvIntegrityError%'") `shouldReturn` [Only (1 :: Int)]
+
+testRedeliveredSavedIntegrity :: HasCallStack => TestParams -> IO ()
+testRedeliveredSavedIntegrity ps = do
+  (received, cfg) <- blockFirstEventCfg $ newItemText ("hello" ==)
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      withCCAgentTransaction bob (`DB.execute_` "UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1")
+      alice #> "@bob hello"
+      bob <#. "alice> skipped message ID "
+      readMVar received
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      bob ##> "/_start"
+      bob <### ["chat started", "subscribed 1 connections on server localhost"]
+      alice #> "@bob hey"
+      bob <# "alice> hey"
+      withCCTransaction bob (\db -> DB.query_ db "SELECT count(1) FROM chat_items WHERE item_content LIKE '%rcvIntegrityError%'") `shouldReturn` [Only (1 :: Int)]
 
 testStopStartChat :: HasCallStack => TestParams -> IO ()
 testStopStartChat ps =

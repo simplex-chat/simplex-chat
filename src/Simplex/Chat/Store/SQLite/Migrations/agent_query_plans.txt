@@ -369,14 +369,14 @@ Query:
           m.msg_type, m.msg_body, m.pq_encryption, s.internal_id, s.rcpt_status, r.user_ack
         FROM rcv_messages r
         JOIN messages m ON r.conn_id = m.conn_id AND r.internal_id = m.internal_id
-        JOIN connections c ON r.conn_id = c.conn_id AND c.last_internal_msg_id = r.internal_id
+        JOIN connections c ON r.conn_id = c.conn_id AND c.last_internal_rcv_msg_id = r.internal_rcv_id
         LEFT JOIN snd_messages s ON s.conn_id = r.conn_id AND s.rcpt_internal_id = r.internal_id
         WHERE r.conn_id = ? AND r.broker_id = ?
       
 Plan:
 SEARCH c USING PRIMARY KEY (conn_id=?)
+SEARCH r USING PRIMARY KEY (conn_id=? AND internal_rcv_id=?)
 SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
-SEARCH r USING PRIMARY KEY (conn_id=?)
 SEARCH s USING PRIMARY KEY (conn_id=?) LEFT-JOIN
 
 Query: 
@@ -1173,6 +1173,12 @@ SEARCH q USING INDEX idx_rcv_queues_to_subscribe (to_subscribe=? AND host=? AND 
 SEARCH c USING PRIMARY KEY (conn_id=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
+Query: ALTER TABLE commands RENAME TO commands_
+Plan:
+
+Query: ALTER TABLE commands_ RENAME TO commands
+Error: SQLite3 returned ErrorError while attempting to perform prepare "explain query plan ALTER TABLE commands_ RENAME TO commands": no such table: commands_
+
 Query: DELETE FROM client_services WHERE user_id = ?
 Plan:
 SEARCH client_services USING COVERING INDEX idx_server_certs_user_id_host_port (user_id=?)
@@ -1371,6 +1377,10 @@ Query: SELECT 1 FROM snd_message_deliveries WHERE conn_id = ? AND failed = 0 LIM
 Plan:
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
 
+Query: SELECT 1 FROM snd_queues WHERE host = ? AND port = ? AND snd_id = ? AND status != ? LIMIT 1
+Plan:
+SEARCH snd_queues USING PRIMARY KEY (host=? AND port=? AND snd_id=?)
+
 Query: SELECT conn_id FROM connections WHERE deleted = 0
 Plan:
 SEARCH connections USING COVERING INDEX idx_connections_deleted (deleted=?)
@@ -1398,6 +1408,10 @@ SEARCH rcv_queues USING INDEX idx_rcv_queues_switch_status (switch_status=?)
 Query: SELECT conn_id, rc_verify_code_ad, rc_verify_code_pq, CASE WHEN rc_verify_code_ad IS NULL THEN ratchet_state END FROM ratchets WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
+
+Query: SELECT count(*) FROM snd_message_deliveries WHERE conn_id = ? AND internal_id = ? AND failed = 0
+Plan:
+SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
 
 Query: SELECT count(1) FROM commands
 Plan:
@@ -1515,6 +1529,10 @@ Query: UPDATE connections SET enable_ntfs = ? WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
 
+Query: UPDATE connections SET last_external_snd_msg_id = last_external_snd_msg_id - 1
+Plan:
+SCAN connections USING COVERING INDEX idx_connections_deleted
+
 Query: UPDATE connections SET pq_support = ? WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
@@ -1530,6 +1548,10 @@ SEARCH connections USING PRIMARY KEY (conn_id=?)
 Query: UPDATE connections SET smp_agent_version = ?, pq_support = ?, enable_ntfs = ? WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
+
+Query: UPDATE deleted_snd_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE deleted_snd_chunk_replica_id = ?
+Plan:
+SEARCH deleted_snd_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE messages SET msg_body = x'' WHERE conn_id = ? AND internal_id = ?
 Plan:
