@@ -74,7 +74,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveRefusal, spendLandedCode)
+import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
 import StoreService.Names.Community (Community, communityOf, nameTerms, readableTerms, termsFor, yearsFor)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), Terms, chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
@@ -304,7 +304,7 @@ checkPrice ct len years price =
       | chainPrice /= price -> pure $ Left $ ORCatalogChanged chainPrice
       | otherwise -> pure $ Right ()
 
--- | Only a taken order paid by invoice can move to another name, within the month from its payment.
+-- | Only a taken order can move to another name, within the month from its payment or its code's placement.
 movable :: UTCTime -> NameRegistration -> Bool
 movable now = maybe False (now <) . movableUntil
 
@@ -334,19 +334,24 @@ checkMovePrice ct NameRegistration {nrPrice} len years =
       | price /= nrPrice -> pure $ Left $ ORPriceTooHigh price
       | otherwise -> pure $ Right ()
 
--- | The move's write, a compare-and-set on the version read, keeping the order's price, which is spent from its own balance
--- in the move's transaction and the balance's turn.
+-- | The move's write, a compare-and-set on the version read, keeping the order's price. A code order's code is checked and reserved
+-- again in the code's turn. A paid order's price is spent from its own balance in the move's transaction and the balance's turn.
 retargetOrder :: OrdersEnv -> NameRegistration -> OrderFields -> NameReveal -> IO (Either WriteRefusal Int64)
-retargetOrder OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrPrice, nrYears} fields@OrderFields {ofLength} reveal = do
+retargetOrder OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrPayment, nrPrice, nrYears} fields@OrderFields {ofLength} reveal = do
   now <- oeNow
   let write db = versionWritten <$> retargetRegistration db r fields reveal nrPrice now
       spent db v =
         spendBalance db nrId nrPrice now >>= \case
           True -> pure v
           False -> E.throwIO $ OrderRefused $ ORBadRequest "the order's balance does not hold its price"
-  checkMovePrice oeContracts r ofLength (orderYears fields nrYears) >>= \case
-    Left refusal -> pure $ Left $ WRRefused refusal
-    Right () -> withBalanceTurn oeTurns nrId $ either (\(OrderRefused refusal) -> Left $ WRRefused refusal) id <$> E.try (withTransaction oeStore $ \db -> write db >>= traverse (spent db))
+  case nrPayment of
+    OPInvoice {} ->
+      checkMovePrice oeContracts r ofLength (orderYears fields nrYears) >>= \case
+        Left refusal -> pure $ Left $ WRRefused refusal
+        Right () -> withBalanceTurn oeTurns nrId $ either (\(OrderRefused refusal) -> Left $ WRRefused refusal) id <$> E.try (withTransaction oeStore $ \db -> write db >>= traverse (spent db))
+    OPCode codeId -> do
+      PrepaidCode {pcCodeHash} <- withTransaction oeStore (`getPrepaidCodeById` codeId)
+      either (Left . WRRefused . ORCode) id <$> reserveCode oeTurns oeStore now pcCodeHash nrId ofLength write
 
 versionWritten :: VersionWrite -> Either WriteRefusal Int64
 versionWritten = \case

@@ -240,5 +240,5 @@ lapseMoment = \case
 
 movableUntil :: NameRegistration -> Maybe UTCTime
 movableUntil = \case
-  NameRegistration {nrPhase = OTaken, nrPayment = OPInvoice {}, nrPaidAt} -> addMonths 1 <$> nrPaidAt
+  NameRegistration {nrPhase = OTaken, nrPaidAt} -> addMonths 1 <$> nrPaidAt
   _ -> Nothing

@@ -1203,7 +1203,7 @@ answers `409 price_too_high` with the name's price. The price is spent from the 
 and a balance that no longer holds it, refunded or taken back at a dispute, answers
 `400 bad_request`.
 
-Code orders read no price, so the floor does not apply to them. The default is the
+Code orders and their moves read no price, so the floor does not apply to them. The default is the
 launch price of a name of 8 letters or more, $100 for 2 years. One floor bounds every length, so a
 node answering the floor price for a 6- or 7-letter name passes the check even when those names
 cost more on chain. To lower prices on chain below the floor, lower the setting and restart first.
@@ -1501,7 +1501,7 @@ that no longer verifies, as after a change of `[chain] chain_id`, `sponsor` or `
 `[names] tld`, fails the order before its acceptance relay or its register is sent, with the reason `signatureRefused`; the log line is
 `[ERROR …] names worker: registration <id> failed: its stored signature is refused under the service's current configuration, …`,
 and the same text is posted in the managed group. Its page asks the buyer to contact support. Only
-a taken order paid by invoice moves to another name, within the month from its payment.
+a taken order moves to another name, within the month from its payment or its code's placement.
 
 A close of a failed order, and the worker's judgment of a register that did not go
 through, first run `confirmLanded`. It marks the order registered when `ownerOf` at the confirmation

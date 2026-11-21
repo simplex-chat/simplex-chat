@@ -82,7 +82,7 @@ stateDiagram-v2
   Queued --> Failed: sends used up
   Committing --> Failed: sends used up
   Failed --> Queued: retry
-  Taken --> Queued: move of a paid order
+  Taken --> Queued: move
   Failed --> Registered: landed check
   Failed --> Taken: close
 ```
@@ -128,7 +128,7 @@ A1-15: BTCPay invoice, payment and additional statuses as sums with an unknown c
 - A1-23: `EONew` without the list.
 - A1-24: one function for the signer, turn and existingOrder pipeline of the two order handlers; codeOrderHandler uses refused.
 - A1-25: `paymentInvoice` at the five sites.
-- A1-26: retargetOrder reads the move's price; only a paid order moves, so it has no branch; moveChecked dispatches no more.
+- A1-26: retargetOrder reads the move's price in its paid branch; moveChecked dispatches no more.
 - A1-27: the move uses retry's shared check and its wire answers.
 - A1-28: `ORBadRequest Text`, the same 400 answer.
 - A1-29: dropped.

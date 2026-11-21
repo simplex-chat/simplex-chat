@@ -1,0 +1,32 @@
+{
+  "body": {
+    "balance": null,
+    "commitTx": null,
+    "commitment": "0x798eae92f6eeaf4b461486319eca83995d00a0a6a1bfdcab7ca5d4037541026b",
+    "community": null,
+    "duration": 69259500,
+    "id": "registration",
+    "label": null,
+    "labelHash": "0xb4a2bb2579b4630a31c801c2f237348de8a0b210a7a3049167d8e567e6a543a5",
+    "latePayment": null,
+    "moves": 0,
+    "owner": "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73",
+    "payment": {
+      "type": "code"
+    },
+    "phase": {
+      "heldUntil": "2026-11-21T09:15:00Z",
+      "type": "taken"
+    },
+    "price": 0,
+    "registerTx": null,
+    "sealed": "sealed-carolbakery-2",
+    "terms": {
+      "communityName": false,
+      "termsHash": "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"
+    },
+    "version": 2,
+    "years": 2
+  },
+  "status": 200
+}
