@@ -63,6 +63,8 @@ import System.Directory (copyFile, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
+import Control.Concurrent.Async (wait, withAsync)
 import Database.PostgreSQL.Simple (Only (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
@@ -347,6 +349,9 @@ chatGroupTests = do
       it "should not add relay when the invitation group id differs from link data" testChannelAddRelayGroupIdMismatch
       it "should ignore relay invitation without the owner's signature" testChannelRelayInvUnsigned
       it "should remove relay from channel" testChannelRemoveRelay
+#if defined(dbPostgres)
+      it "should connect to re-added relay when its connection is saved late" testChannelRemoveRelayConnSavedLate
+#endif
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
         it "relay rejects fresh invitation after leaving the same channel" testRelayRejectAfterLeave
@@ -12582,7 +12587,21 @@ testChannelRosterMultiRelayMultipart ps =
       map (\(Only k) -> isJust k) rows `shouldBe` [True]
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
-testChannelRemoveRelay ps =
+testChannelRemoveRelay = testChannelRemoveRelay_ (const id)
+
+#if defined(dbPostgres)
+testChannelRemoveRelayConnSavedLate :: HasCallStack => TestParams -> IO ()
+testChannelRemoveRelayConnSavedLate = testChannelRemoveRelay_ $ \cc refresh -> do
+  withCCTransaction cc $ \db -> do
+    DB.execute_ db "CREATE FUNCTION wait_test_lock() RETURNS trigger AS $$ BEGIN PERFORM pg_advisory_xact_lock(1); RETURN NEW; END $$ LANGUAGE plpgsql"
+    DB.execute_ db "CREATE TRIGGER wait_test_lock BEFORE INSERT ON connections FOR EACH ROW EXECUTE FUNCTION wait_test_lock()"
+  locked <- newEmptyMVar
+  withAsync (withCCTransaction cc $ \db -> DB.execute_ db "DO $$ BEGIN PERFORM pg_advisory_xact_lock(1); END $$" >> putMVar locked () >> threadDelay 2000000) $ \a ->
+    takeMVar locked >> refresh >> wait a
+#endif
+
+testChannelRemoveRelay_ :: HasCallStack => (TestCC -> IO () -> IO ()) -> TestParams -> IO ()
+testChannelRemoveRelay_ refreshLinkData ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
@@ -12658,7 +12677,7 @@ testChannelRemoveRelay ps =
           threadDelay 100000
 
           -- subscriber discovers and connects to new relay
-          dan ##> "/_get group link data #1"
+          refreshLinkData dan $ dan ##> "/_get group link data #1"
           dan <## "group ID: 1"
           void $ getTermLine dan -- subscribers: N
           concurrentlyN_
