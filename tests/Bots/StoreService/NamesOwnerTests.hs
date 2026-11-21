@@ -711,7 +711,9 @@ testMoveRefusedSigner = withOwner $ \ctx -> do
 testMoveLostRace :: IO ()
 testMoveLostRace = withOwner $ \ctx@Ctx {cNode} -> do
   answerFree ctx "alicebakers"
-  r <- takenIn ctx aliceOrder id
+  (invId, _) <- placed ctx aliceOrder
+  settleNow ctx invId settled `shouldReturn` ISPaid
+  r <- invoiceRegistration ctx invId >>= retaken ctx
   to <- moveTo ctx "alicebakers" 10
   -- held at its first chain read, inside the turns
   (moving, gate) <- pausedAt cNode "eth_call" $ move ctx keyA r to

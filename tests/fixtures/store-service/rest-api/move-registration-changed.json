@@ -10,7 +10,7 @@
       "community": null,
       "duration": 69259500,
       "id": "registration",
-      "label": null,
+      "label": "alicebakery",
       "labelHash": "0xbcc46b7948ff6be55bc3ff4db5bc4be16638f29e818a89244dae11caaed7c9c6",
       "latePayment": null,
       "moves": 0,
@@ -30,7 +30,7 @@
         "communityName": false,
         "termsHash": "0x67b989cccc7ae150142daa4029304c7b7e78ab0a4ccebeba2ec1ef8a30f8147e"
       },
-      "version": 5,
+      "version": 4,
       "years": 2
     },
     "type": "registration_changed"
