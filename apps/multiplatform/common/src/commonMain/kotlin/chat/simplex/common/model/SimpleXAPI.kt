@@ -1742,6 +1742,9 @@ object ChatController {
           )
         } else if (r.err.errorType.simplexDomainError is SimplexDomainError.NameWarning) {
           showNameWarningAlert(r.rhId, r.err.errorType.simplexDomain, r.err.errorType.simplexDomainError.nameWarning, own = false, openExistingChat = null, cleanup = null)
+        } else if (r.err.errorType.simplexDomainError is SimplexDomainError.OwnNameExpired) {
+          val expired = r.err.errorType.simplexDomainError
+          showNameWarningAlert(r.rhId, r.err.errorType.simplexDomain, NameWarning.Expired(expired.expiredAt, expired.graceUntil), own = true, openExistingChat = null, cleanup = null)
         } else {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.simplex_name_unconfirmed),
@@ -7514,6 +7517,7 @@ sealed class SimplexDomainError {
   @Serializable @SerialName("noValidLink") object NoValidLink : SimplexDomainError()
   @Serializable @SerialName("unknownDomain") object UnknownDomain : SimplexDomainError()
   @Serializable @SerialName("nameWarning") class NameWarning(val nameWarning: chat.simplex.common.model.NameWarning) : SimplexDomainError()
+  @Serializable @SerialName("ownNameExpired") class OwnNameExpired(val expiredAt: Instant, val graceUntil: Instant? = null) : SimplexDomainError()
 }
 
 @Serializable
@@ -7689,7 +7693,7 @@ sealed class ConnectionPlan {
 
 @Serializable
 sealed class NameChange {
-  @Serializable @SerialName("lapsed") class Lapsed(val nameWarning: NameWarning): NameChange()
+  @Serializable @SerialName("lapsed") class Lapsed(val nameDomain: SimplexDomain, val nameWarning: NameWarning): NameChange()
   @Serializable @SerialName("moved") class Moved(val knownChat: ChatInfo): NameChange()
 }
 

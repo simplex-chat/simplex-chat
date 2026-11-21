@@ -1466,26 +1466,30 @@ struct SimplexNameView: View {
                 ProgressView()
             }
         } else if verified == .verified {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                nameText
-                Image(systemName: "checkmark").font(iconFont).foregroundColor(theme.colors.primary)
-                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
+            Button {
                 UIPasteboard.general.string = simplexName
                 UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    nameText
+                    Image(systemName: "checkmark").font(iconFont).foregroundColor(theme.colors.primary)
+                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
         } else if !verifiable {
             nameText
         } else if verified == .failed || verified == .moved {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                nameText
-                Image(systemName: "xmark").font(iconFont).foregroundColor(verified == .failed ? .red : theme.colors.secondary)
-                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
+            Button { runVerify(manual: true) } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    nameText
+                    Image(systemName: "xmark").font(iconFont).foregroundColor(Self.crossColor(verified, secondary: theme.colors.secondary))
+                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
+                }
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
-            .onTapGesture { runVerify(manual: true) }
+            .buttonStyle(.plain)
         } else {
             HStack(spacing: 6) {
                 nameText
@@ -1494,6 +1498,10 @@ struct SimplexNameView: View {
                 }
             }
         }
+    }
+
+    static func crossColor(_ verified: DomainVerification?, secondary: Color) -> Color {
+        verified == .failed ? .red : secondary
     }
 
     private func runVerify(manual: Bool) {

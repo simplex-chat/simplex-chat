@@ -1422,7 +1422,7 @@ func planAndConnect(
                 } else {
                     nil
                 }
-                if case let .some(.lapsed(nameWarning)) = connectionPlan.nameChange, let nameDomain = planSimplexName?.nameDomain {
+                if case let .some(.lapsed(nameDomain, nameWarning)) = connectionPlan.nameChange {
                     let openExisting: (() -> Void)? = connectionPlan.planChat.map { chatInfo in { openKnownChat(chatInfo.id, dismiss: dismiss, cleanup: cleanup, onOpen: onOpen) } }
                     await MainActor.run {
                         showNameWarningAlert(domain: nameDomain, warning: nameWarning, own: connectionPlan.isOwnLink, openExistingChat: openExisting, cleanup: cleanup)

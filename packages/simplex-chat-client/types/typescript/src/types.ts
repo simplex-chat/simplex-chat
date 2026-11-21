@@ -1,6 +1,8 @@
 // API Types
 // This file is generated automatically.
 
+import * as T from "./types"
+
 export interface ACIReaction {
   chatInfo: ChatInfo
   chatReaction: CIReaction
@@ -671,7 +673,7 @@ export namespace CIContent {
 
   export interface RcvMsgError extends Interface {
     type: "rcvMsgError"
-    rcvMsgError: RcvMsgError
+    rcvMsgError: T.RcvMsgError
   }
 
   export interface RcvGroupInvitation extends Interface {
@@ -688,27 +690,27 @@ export namespace CIContent {
 
   export interface RcvDirectEvent extends Interface {
     type: "rcvDirectEvent"
-    rcvDirectEvent: RcvDirectEvent
+    rcvDirectEvent: T.RcvDirectEvent
   }
 
   export interface RcvGroupEvent extends Interface {
     type: "rcvGroupEvent"
-    rcvGroupEvent: RcvGroupEvent
+    rcvGroupEvent: T.RcvGroupEvent
   }
 
   export interface SndGroupEvent extends Interface {
     type: "sndGroupEvent"
-    sndGroupEvent: SndGroupEvent
+    sndGroupEvent: T.SndGroupEvent
   }
 
   export interface RcvConnEvent extends Interface {
     type: "rcvConnEvent"
-    rcvConnEvent: RcvConnEvent
+    rcvConnEvent: T.RcvConnEvent
   }
 
   export interface SndConnEvent extends Interface {
     type: "sndConnEvent"
-    sndConnEvent: SndConnEvent
+    sndConnEvent: T.SndConnEvent
   }
 
   export interface RcvChatFeature extends Interface {
@@ -1183,12 +1185,12 @@ export namespace CIStatus {
 
   export interface SndError extends Interface {
     type: "sndError"
-    agentError: SndError
+    agentError: T.SndError
   }
 
   export interface SndWarning extends Interface {
     type: "sndWarning"
-    agentError: SndError
+    agentError: T.SndError
   }
 
   export interface RcvNew extends Interface {
@@ -1784,7 +1786,7 @@ export namespace ChatErrorType {
 
   export interface BadgeRedeemError extends Interface {
     type: "badgeRedeemError"
-    badgeRedeemError: BadgeRedeemError
+    badgeRedeemError: T.BadgeRedeemError
   }
 
   export interface AgentCommandError extends Interface {
@@ -3795,6 +3797,7 @@ export namespace NameChange {
 
   export interface Lapsed extends Interface {
     type: "lapsed"
+    nameDomain: SimplexDomain
     nameWarning: NameWarning
   }
 
@@ -4816,9 +4819,10 @@ export type SimplexDomainError =
   | SimplexDomainError.NoValidLink
   | SimplexDomainError.UnknownDomain
   | SimplexDomainError.NameWarning
+  | SimplexDomainError.OwnNameExpired
 
 export namespace SimplexDomainError {
-  export type Tag = "noValidLink" | "unknownDomain" | "nameWarning"
+  export type Tag = "noValidLink" | "unknownDomain" | "nameWarning" | "ownNameExpired"
 
   interface Interface {
     type: Tag
@@ -4834,7 +4838,13 @@ export namespace SimplexDomainError {
 
   export interface NameWarning extends Interface {
     type: "nameWarning"
-    nameWarning: NameWarning
+    nameWarning: T.NameWarning
+  }
+
+  export interface OwnNameExpired extends Interface {
+    type: "ownNameExpired"
+    expiredAt: string // ISO-8601 timestamp
+    graceUntil?: string // ISO-8601 timestamp
   }
 }
 

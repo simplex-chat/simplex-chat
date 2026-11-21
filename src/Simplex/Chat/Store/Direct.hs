@@ -51,8 +51,10 @@ module Simplex.Chat.Store.Direct
     getContactViaShortLinkToConnect,
     getContactIdByName,
     updateContactProfile,
+    NameVerified,
+    MovedChats,
     setContactDomainVerified,
-    setNameContactsMoved,
+    setOtherNameChatsMoved,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -112,7 +114,7 @@ import Data.Type.Equality
 import Simplex.Chat.Badges (ProofPresHeader, badgeToRow)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Names (SimplexDomainClaim (..))
+import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
@@ -405,15 +407,15 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> StoreCxt -> User -> Maybe ProofPresHeader -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe ChatLayout -> Maybe Bool -> ExceptT StoreError IO Contact
+createPreparedContact :: DB.Connection -> StoreCxt -> User -> Maybe ProofPresHeader -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe ChatLayout -> Maybe Bool -> ExceptT StoreError IO (Contact, MovedChats)
 createPreparedContact db cxt user presHeader_ p connLinkToConnect welcomeSharedMsgId chatLayout verified_ = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
   ct <- getContact db cxt user =<< createContact_ db cxt user presHeader_ p ctUserPreferences prepared chatLayout "" currentTs
-  liftIO $ maybe (pure ct) (setContactDomainVerified db user ct) verified_
+  liftIO $ maybe (pure (ct, mempty)) (setContactDomainVerified db user ct) verified_
 
-updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
+updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO (Contact, MovedChats)
 updatePreparedContactUser
   db
   cxt
@@ -449,7 +451,8 @@ updatePreparedContactUser
           |]
           (newUserId, currentTs, contactId)
         safeDeleteLDN db user oldLDN
-      getContact db cxt newUser contactId
+      ct' <- getContact db cxt newUser contactId
+      (ct',) <$> liftIO (setOtherNameChatsMoved db newUser (DirectChat ct'))
 
 createDirectContact :: DB.Connection -> StoreCxt -> User -> Connection -> Maybe ProofPresHeader -> Profile -> ExceptT StoreError IO Contact
 createDirectContact db cxt user Connection {connId, localAlias} presHeader_ p = do
@@ -591,31 +594,62 @@ updateContactProfile db cxt user@User {userId} c presHeader_ p' = do
             clearVerificationIfClaimChanged
             pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
 
-setContactDomainVerified :: DB.Connection -> User -> Contact -> Bool -> IO Contact
-setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} verified = do
+type NameVerified = Bool
+
+type MovedChats = ([ContactId], [GroupId])
+
+setContactDomainVerified :: DB.Connection -> User -> Contact -> NameVerified -> IO (Contact, MovedChats)
+setContactDomainVerified db user@User {userId} ct@Contact {contactId, profile = p} verified = do
   DB.execute
     db
     [sql|
       UPDATE contact_profiles SET contact_domain_verified = ?
       WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
     |]
-    (BI verified, userId, contactId)
-  pure (ct {profile = p {contactDomainVerified = Just $ if verified then DVVerified else DVFailed}} :: Contact)
+    (dv, userId, contactId)
+  let ct' = ct {profile = p {contactDomainVerified = Just dv}} :: Contact
+  (ct',) <$> setOtherNameChatsMoved db user (DirectChat ct')
+  where
+    dv = if verified then DVVerified else DVFailed
 
-setNameContactsMoved :: DB.Connection -> User -> SimplexDomain -> Maybe ContactId -> IO [ContactId]
-setNameContactsMoved db User {userId} domain exceptContactId_ = do
-  cts <-
-    DB.query
-      db
+setOtherNameChatsMoved :: DB.Connection -> User -> ChatInfo c -> IO MovedChats
+setOtherNameChatsMoved db User {userId} = \case
+  DirectChat Contact {contactId, profile = LocalProfile {contactDomain = Just d, contactDomainVerified = Just DVVerified}} ->
+    contactNameMoved (claimDomain d) (Just contactId) Nothing
+  GroupChat GroupInfo {groupId, groupDomainVerified = Just DVVerified, businessChat = Just BusinessChatInfo {businessDomain = Just d}} _ ->
+    contactNameMoved (claimDomain d) Nothing (Just groupId)
+  GroupChat GroupInfo {groupId, groupDomainVerified = Just DVVerified, businessChat = Nothing, groupProfile} _
+    | Just d <- groupClaim groupProfile -> ([],) <$> groupsMoved d (Just groupId) " AND business_chat IS NULL"
+  _ -> pure mempty
+  where
+    contactNameMoved :: SimplexDomain -> Maybe ContactId -> Maybe GroupId -> IO MovedChats
+    contactNameMoved d ctId_ gId_ = (,) <$> contactsMoved d ctId_ <*> groupsMoved d gId_ " AND business_chat IS NOT NULL"
+    contactsMoved :: SimplexDomain -> Maybe ContactId -> IO [ContactId]
+    contactsMoved d ctId_ = do
+      ctIds <- map fromOnly <$> DB.query db ("SELECT ct.contact_id" <> verifiedContacts) (userId, ctId_, d, DVVerified)
+      DB.execute db ("UPDATE contact_profiles SET contact_domain_verified = ? WHERE contact_profile_id IN (SELECT ct.contact_profile_id" <> verifiedContacts <> ")") (DVMoved, userId, ctId_, d, DVVerified)
+      pure ctIds
+    verifiedContacts :: Query
+    verifiedContacts =
       [sql|
-        SELECT ct.contact_id, ct.contact_profile_id FROM contacts ct
+        FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
-        WHERE ct.user_id = ? AND ct.contact_id IS DISTINCT FROM ? AND cp.contact_domain = ? AND cp.contact_domain_verified = 1
+        WHERE ct.user_id = ? AND ct.contact_id IS DISTINCT FROM ? AND cp.contact_domain = ? AND cp.contact_domain_verified = ?
       |]
-      (userId, exceptContactId_, domain)
-  forM_ cts $ \(_ :: ContactId, profileId :: ProfileId) ->
-    DB.execute db "UPDATE contact_profiles SET contact_domain_verified = 2 WHERE contact_profile_id = ?" (Only profileId)
-  pure $ map fst cts
+    groupsMoved :: SimplexDomain -> Maybe GroupId -> Query -> IO [GroupId]
+    groupsMoved d gId_ businessCond =
+      map fromOnly
+        <$> DB.query
+          db
+          ( [sql|
+              UPDATE groups SET group_domain_verified = ?
+              WHERE user_id = ? AND group_domain_verified = ? AND group_id IS DISTINCT FROM ?
+                AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE user_id = ? AND group_domain = ?)
+            |]
+              <> businessCond
+              <> " RETURNING group_id"
+          )
+          (DVMoved, userId, DVVerified, gId_, userId, d)
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do
@@ -820,7 +854,7 @@ getContactToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink ->
 getContactToConnect db cxt user@User {userId} = \case
   CTLink sl -> first (`CCLink` Just sl) <$$> getContactViaShortLinkToConnect db cxt user sl
   CTName ni ->
-    liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, nameDomain ni)) >>= \case
+    liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, nameDomain ni, DVVerified)) >>= \case
       Just (ctId :: Int64, Just (ACR cMode cReq), Just (sLnk :: ShortLinkContact)) | Just Refl <- testEquality cMode SCMContact ->
         Just . (CCLink cReq (Just sLnk),) <$> getContact db cxt user ctId
       _ -> pure Nothing
@@ -829,7 +863,7 @@ getContactToConnect db cxt user@User {userId} = \case
       [sql|
         SELECT ct.contact_id, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
-        WHERE ct.user_id = ? AND cp.contact_domain = ? AND cp.contact_domain_verified = 1 AND ct.deleted = 0
+        WHERE ct.user_id = ? AND cp.contact_domain = ? AND cp.contact_domain_verified = ? AND ct.deleted = 0
       |]
 
 getUserContacts :: DB.Connection -> StoreCxt -> User -> IO [Contact]

@@ -1183,7 +1183,7 @@ data ConnectionPlan
   deriving (Show)
 
 data NameChange
-  = NCLapsed {nameWarning :: NameWarning}
+  = NCLapsed {nameDomain :: SimplexDomain, nameWarning :: NameWarning}
   | NCMoved {knownChat :: AChatInfo}
   deriving (Show)
 
@@ -1522,11 +1522,12 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
--- why a resolved SimpleX name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
+-- why a resolved SimpleX name could not be used
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   | SDENameWarning {nameWarning :: NameWarning}
+  | SDEOwnNameExpired {expiredAt :: UTCTime, graceUntil :: Maybe UTCTime}
   deriving (Eq, Show)
 
 -- | Why acquiring a badge failed, for a code and for a store purchase alike.

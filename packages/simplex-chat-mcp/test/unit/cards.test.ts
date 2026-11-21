@@ -74,6 +74,19 @@ describe("connect cards", () => {
     expect(lines(action(fields, "performing", {interrupted: true}), "host")).toEqual([...request, "Performed without approval (mode host); interrupted: the server stopped."])
   })
 
+  it("names the chat of a SimpleX name moved to this link", () => {
+    const fields = connect({description: "Search."})
+    if (fields.tool === "connect") fields.plan.movedFrom = "@7"
+    expect(cardText(action(fields, "pending"), mode)).toBe(
+      [
+        "I want to connect to bot SimpleX Directory (@directory.simplex), as myself.",
+        "The SimpleX name was moved to this link from my chat @7.",
+        "`Search.`",
+        "/'approve 1' or /'reject 1'",
+      ].join("\n"),
+    )
+  })
+
   it("names an unnamed contact", () => {
     const fields = connect()
     if (fields.tool === "connect") Object.assign(fields, {subject: {kind: "contact", incognito: false}})

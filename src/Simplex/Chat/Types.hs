@@ -55,7 +55,7 @@ import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), ProofPresHeader, acceptedBadge, localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
-import Simplex.Chat.Names (SimplexDomainClaim (..))
+import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -927,6 +927,9 @@ data GroupProfile = GroupProfile
     chatLayout :: Maybe ChatLayout
   }
   deriving (Eq, Show)
+
+groupClaim :: GroupProfile -> Maybe SimplexDomain
+groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
 
 data GroupMemberAdmission = GroupMemberAdmission
   { -- names :: Maybe MemberCriteria,
@@ -2406,6 +2409,12 @@ instance FromField DomainVerification where
     1 -> Just DVVerified
     2 -> Just DVMoved
     _ -> Nothing
+
+instance ToField DomainVerification where
+  toField = toField . \case
+    DVFailed -> 0 :: Int
+    DVVerified -> 1
+    DVMoved -> 2
 
 $(JQ.deriveJSON defaultJSON ''CReqClientData)
 

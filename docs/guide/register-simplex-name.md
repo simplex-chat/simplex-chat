@@ -124,10 +124,11 @@ Anyone can now reach you by name, and their app confirms it is really you.
 
 When a contact or a channel has a SimpleX name, its chat info shows the name. A
 check mark next to the name means that the app verified it, and a red cross
-means that the verification failed. To verify a name, tap **Verify name** next
-to it. To verify names automatically when you open the chat info, turn on
-**Verify SimpleX names** in **Your privacy** > **More privacy**. It is off by
-default.
+means that the verification failed. A grey cross means that the name was moved
+to the link of another of your chats, which the app verified later. To verify a
+name, tap **Verify name** next to it, or tap the cross. To verify names
+automatically when you open the chat info, turn on **Verify SimpleX names** in
+**Your privacy** > **More privacy**. It is off by default.
 
 ## If something doesn't work
 
@@ -135,6 +136,9 @@ default.
 |---|---|---|
 | Unconfirmed name | The name points at a link, but the link's profile does not claim the name yet. | Do step 4: set the name on the profile it points at. |
 | Name not found | No name is registered. | Check the spelling, or register it (step 2). |
+| Name not registered, or Name no longer registered | Nobody holds the name, or it is reserved. For an available name, the alert includes its price. | Check the spelling, or register the name (step 2). For a name reserved for a community, tap **Connect to SimpleX team**. |
+| Name expired | The name's registration has expired, and the app does not connect by it. | Connect by a link, or ask the owner to renew the name. Tap **Open chat**, and the app will open your existing chat. |
+| Your name has expired | The registration of your own name has expired, or the name is available again. | Renew the name, or register it again (step 2). |
 | No valid link | The name has no contact or channel link. | Add a link to the name on the website, on its **Records** tab. |
 | Error saving name | You tried to claim a name that has no matching link on the website. | Add your contact address or channel link to the name, then set the name again. |
 | None of your servers are set to resolve SimpleX names | No server in the app is set to resolve names. | In **Network & servers**, open a server operator and turn on **To resolve names**. |

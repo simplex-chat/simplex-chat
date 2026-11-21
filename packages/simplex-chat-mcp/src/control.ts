@@ -829,7 +829,8 @@ function requestLines(action: Action): string[] {
       const {input} = action
       const verb = !done ? "I want to connect" : action.connected ? "I connected" : "I asked to connect"
       const message = input.message === undefined ? [] : ["With the message:", ...codeLines(input.message)]
-      return [`${verb} to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...fittedLines([...codeLines(action.plan.description), ...codeLines(action.plan.welcome)], action.linkTextBytes), ...message]
+      const moved = action.plan.movedFrom === undefined ? [] : [`The SimpleX name was moved to this link from my chat ${action.plan.movedFrom}.`]
+      return [`${verb} to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...moved, ...fittedLines([...codeLines(action.plan.description), ...codeLines(action.plan.welcome)], action.linkTextBytes), ...message]
     }
     case "send": {
       const {file, replyTo, mentions} = action

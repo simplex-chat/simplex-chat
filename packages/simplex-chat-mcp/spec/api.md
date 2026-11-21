@@ -102,7 +102,7 @@ Output fields by case:
 | Case | Fields | Code |
 |---|---|---|
 | `known` | `status` and the chat fields of the known chat. The plugin's rules for a known chat are in [4.1](#41-tools-in-the-plugin) | [`AgentTools.connect`, `ownChat`](../src/tools.ts) |
-| `done`, chat unknown | `action`, `status`, `type`, `connected: false`, plan fields `name`, `peer_type`, `description`, `welcome`, `commands`, `known_as` when present | [`AgentTools.connectResult`, `planFields`](../src/tools.ts) |
+| `done`, chat unknown | `action`, `status`, `type`, `connected: false`, plan fields `name`, `peer_type`, `description`, `welcome`, `commands`, `known_as`, `moved_from` when present | [`AgentTools.connectResult`, `planFields`](../src/tools.ts) |
 | `done`, chat known | `action`, `status`, chat fields, `messages` | [`AgentTools.connectedChat`](../src/tools.ts) |
 | `failed` | `action`, `status`, `error` | [`AgentTools.actionResult`](../src/tools.ts) |
 | `rejected`, `expired` | `action`, `status` | [`AgentTools.actionResult`](../src/tools.ts) |
@@ -123,6 +123,8 @@ Output fields by case:
 | `role` | | the agent's member role |
 | `connected` | active connection status `ready` | membership status `connected` or `complete` |
 
+`moved_from`: the chat reference of the agent's chat that had the SimpleX name of `target` before the name was moved to the link of the plan (`nameChange` `moved`), in each case with a plan, only for a chat of this session ([`classifyPlan`, `owns`, `planFields`](../src/tools.ts)). The approval card includes it ([2.2](#22-cards)).
+
 `messages`: message items among the last 50 items of the chat when the result is built, replaced by their collected copies, followed by the items collected since the connection; live items are left out; new items are marked read ([`AgentTools.connectedChat`](../src/tools.ts)).
 
 Tool errors:
@@ -131,6 +133,7 @@ Tool errors:
 |---|---|---|
 | `Not a SimpleX link or name: TARGET` | whitespace in `target`, or `invalidConnReq` from `apiConnectPlan` | [`AgentTools.plan`](../src/tools.ts) |
 | an app error text, for example `Name not found: This SimpleX name is not registered. Please check the name.`, or `SimpleX error: CHAIN: DETAILS` | other errors of `apiConnectPlan`, or a plan of type `error` | [`AgentTools.plan`, `classifyPlan`](../src/tools.ts), [`chatErrorText`](../src/log.ts) |
+| the app text of a name warning, for example `Name expired: NAME expired on DATE.`, or `Your name has expired: Your name NAME expired on DATE.` for the agent's own address or channel (`ownLink`); with the plan's chat, followed by ` Your chat: CHAT.` | a plan with `nameChange` `lapsed`, for an expired name, an available name or a name reserved for community. The plan's chat follows the rules of a known chat in [4.1](#41-tools-in-the-plugin) | [`classifyPlan`, `planChat`, `AgentTools.plan`, `ownChat`](../src/tools.ts), [`nameWarningText`](../src/log.ts) |
 | `TARGET can't be joined now: PLAN.` | `invitationLink` other than `ok` and `known`<br>`contactAddress` other than `ok`, `known`, `contactViaAddress` and `connectingConfirmReconnect`<br>`groupLink` other than `ok`, `known` and `connectingConfirmReconnect` | `notJoinable` in [`classifyPlan`](../src/tools.ts) |
 | `message: TARGET is not a contact or business address with short link data, or its contact exists without a connection.` | `message` given and the plan has `takesMessage: false` | [`AgentTools.connect`](../src/tools.ts) |
 | refusals | see [1.9](#19-action-refusals) | |
@@ -472,7 +475,7 @@ Request lines:
 
 | Tool | First line | Further lines |
 |---|---|---|
-| `connect` | `I want to connect to SUBJECT, as myself.` or `, incognito.`<br>done and connected: `I connected to ...`<br>done and not connected: `I asked to connect to ...` | link description, one code span per line<br>welcome, one code span per line<br>both cut to fit the card ([1.9](#19-action-refusals))<br>with `message`: `With the message:` and its lines |
+| `connect` | `I want to connect to SUBJECT, as myself.` or `, incognito.`<br>done and connected: `I connected to ...`<br>done and not connected: `I asked to connect to ...` | with `moved_from`: `The SimpleX name was moved to this link from my chat CHAT.`<br>link description, one code span per line<br>welcome, one code span per line<br>both cut to fit the card ([1.9](#19-action-refusals))<br>with `message`: `With the message:` and its lines |
 | `send` | `I want to send a message to SUBJECT:`, with `, where I am incognito` before the colon in incognito chats<br>done: `I sent a message to ...` | text, one code span per line<br>with `file`: ``attaching TYPE `PATH`, SIZE``<br>`replying to NAME: QUOTE` with `reply_to`, the quote cut to 100 characters<br>`mentioning @A, @'B C'` with `mention` |
 | `download` | `I want to download a file from SENDER in KIND NAME (CHAT):`, without `SENDER in ` outside groups<br>done: `I downloaded a file from ...` | ``` `NAME`, SIZE ```<br>an XFTP file: `Servers: known.`, or ``Servers: `HOST`, `HOST`, unknown: downloading shows them this computer's IP address.`` (`it` for one) |
 | `leave` | `I want to delete KIND NAME (@N).` or `I want to leave KIND NAME (#N).`<br>done: `I deleted ...` or `I left ...` | |

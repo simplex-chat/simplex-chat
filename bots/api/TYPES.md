@@ -3502,6 +3502,7 @@ SigMissing:
 
 Lapsed:
 - type: "lapsed"
+- nameDomain: [SimplexDomain](#simplexdomain)
 - nameWarning: [NameWarning](#namewarning)
 
 Moved:
@@ -4452,6 +4453,11 @@ UnknownDomain:
 NameWarning:
 - type: "nameWarning"
 - nameWarning: [NameWarning](#namewarning)
+
+OwnNameExpired:
+- type: "ownNameExpired"
+- expiredAt: UTCTime
+- graceUntil: UTCTime?
 
 
 ---

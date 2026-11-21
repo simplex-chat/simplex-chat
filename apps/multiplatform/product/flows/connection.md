@@ -68,7 +68,7 @@ sealed class ConnectionPlan {
 }
 
 sealed class NameChange {
-  class Lapsed(val nameWarning: NameWarning): NameChange()
+  class Lapsed(val nameDomain: SimplexDomain, val nameWarning: NameWarning): NameChange()
   class Moved(val knownChat: ChatInfo): NameChange()
 }
 ```

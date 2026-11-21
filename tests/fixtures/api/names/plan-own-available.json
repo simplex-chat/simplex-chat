@@ -11,6 +11,11 @@
             "type": "ownLink"
           },
           "nameChange": {
+            "nameDomain": {
+              "domain": "alice",
+              "nameTLD": "simplex",
+              "subDomain": []
+            },
             "nameWarning": {
               "price": {
                 "amount": 2000,

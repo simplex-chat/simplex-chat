@@ -172,11 +172,10 @@ private suspend fun planAndConnectTask(
       val label = if (it.nameType == SimplexNameType.publicGroup) MR.strings.connect_plan_join_name else MR.strings.connect_plan_connect_to_name
       generalGetString(label).format(it.shortStr)
     }
-    val nameWarning = (connectionPlan.nameChange as? NameChange.Lapsed)?.nameWarning
-    val nameDomain = planSimplexName?.nameDomain
-    if (nameWarning != null && nameDomain != null) {
+    val lapsed = connectionPlan.nameChange as? NameChange.Lapsed
+    if (lapsed != null) {
       val openExisting: (() -> Unit)? = connectionPlan.planChat?.let { chatInfo -> { withBGApi { close(); openChat(secondaryChatsCtx = null, rhId, chatInfo) } } }
-      showNameWarningAlert(rhId, nameDomain, nameWarning, connectionPlan.isOwnLink, openExisting, cleanup)
+      showNameWarningAlert(rhId, lapsed.nameDomain, lapsed.nameWarning, connectionPlan.isOwnLink, openExisting, cleanup)
       return completable
     }
     when (connectionPlan) {
