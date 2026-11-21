@@ -62,10 +62,11 @@ Claude Code plugin ([participants](#claude-code-plugin-flows)):
 33. [A reaction in the session group](#33-a-reaction-in-the-session-group)
 34. [A tool approved for the rest of a session](#34-a-tool-approved-for-the-rest-of-a-session)
 35. [A summary of the session's context](#35-a-summary-of-the-sessions-context)
-36. [The list of sessions](#36-the-list-of-sessions)
+36. [The board of sessions](#36-the-board-of-sessions)
 37. [The texts of a turn](#37-the-texts-of-a-turn)
 38. [The status line command](#38-the-status-line-command)
 39. [An edit and a live message in the session group](#39-an-edit-and-a-live-message-in-the-session-group)
+40. [A subagent and a workflow in the session group](#40-a-subagent-and-a-workflow-in-the-session-group)
 
 ---
 
@@ -823,7 +824,7 @@ sequenceDiagram
   O->>C: joins #35;G from the invitation in #35;M
   C->>N: joinedGroupMember
   N->>O: Alice is an owner and can send prompts to Claude and the group's commands, and approve tool use.
-  M->>O: within 2 s, the list of sessions, silent, as in flow 36
+  M->>O: within 2 s, the board of sessions, silent, as in flow 36
 ```
 
 Notes:
@@ -1676,51 +1677,54 @@ Source: [`sessionStart`, `turn`, `eventFields`, `compactionNote`, `recentBoundar
 
 ---
 
-## 36. The list of sessions
+## 36. The board of sessions
 
 ```mermaid
 sequenceDiagram
   participant CC as Claude Code
-  participant R as Claude Code's record
+  participant R as record, global config, transcript
   participant S as Session process
+  participant K as SessionStart hook
   participant D as Service
   participant N as Session N
+  participant G as Session group
   participant M as MainGroup
   participant C as Core _hub
   participant O as Owner
-  S->>D: POST /session {id, pid, project, config, record: CONFIG/sessions/PID.json}
-  D->>N: record
-  CC->>R: status busy
+  S->>D: POST /session {id, pid, project, config, record, globalConfig}
+  K->>D: POST /title {..., transcript}
+  D->>N: record, globalConfig, transcript
+  CC->>R: status busy; oauthAccount; goal_status, away_summary, ai-title
   D->>N: every 2 s: readRecord, the session attached
-  N->>R: read status
-  D->>M: showList: 🟢 N · NAME: working, then the not running line
-  M->>C: no list yet, an owner in the group: apiSendMessages #35;M, priority -1
-  M->>C: apiSetGroupCustomData #35;M {simplexMcpMain: true, simplexMcpList: {item, at}}
-  C->>O: the list
+  N->>R: read status; the config when it changed; the transcript's new lines
+  N->>G: account, goal or recap changed: short description and description
+  D->>M: showBoard: each session's message, by number
+  M->>C: no message of N, an owner in the group: apiSendMessages #35;M, priority -1
+  M->>C: no summary: apiSendMessages #35;M "1 session 🟢", priority -1
+  M->>C: apiSetGroupCustomData #35;M {simplexMcpMain: true, simplexMcpBoard}
   CC->>R: status waiting, a permission dialog
   CC->>S: permission_request
   S->>D: POST /permission
-  D->>M: showList: 🟠 N · NAME: waiting for you, 1 approval
-  M->>C: apiUpdateChatItem #35;M item
-  C->>O: the list edited, no alert
-  CC->>R: status idle
-  D->>M: showList: 🔴 N · NAME: idle
-  M->>C: apiUpdateChatItem #35;M item
-  Note over D,M: the list 23 hours old, or its edit refused
-  M->>C: apiSendMessages #35;M the new list, priority -1, and its item saved
+  D->>M: showBoard: 🟠 N · NAME: waiting for you, 1 approval
+  M->>C: apiUpdateChatItem #35;M the message of N, and the summary
+  C->>O: edited, no alert
+  Note over D,M: an edit refused, as 24 hours after the post
   M->>C: apiDeleteChatItems #35;M the old item, broadcast
+  M->>C: apiSendMessages #35;M the message again, priority -1, and the items saved
+  Note over D,M: Claude Code ends; 23 hours after the message's post
+  M->>C: apiDeleteChatItems #35;M the message of the stopped session, broadcast
 ```
 
 Notes:
 
-- The session process sends the absolute path of Claude Code's record of its parent process, `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions/PID.json`, and the service keeps it in the session ([`startSession`](../src/session.ts), [`Service.onSession`](../src/service.ts)).
+- The session process sends the absolute paths of Claude Code's record of its parent process, `CLAUDE_CONFIG_DIR` or `~/.claude`, then `sessions/PID.json`, and of Claude Code's global config, `CLAUDE_CONFIG_DIR` or `~`, then `.claude.json`. The SessionStart hook sends the transcript's path. The service keeps them in the session ([`startSession`](../src/session.ts), [`sessionStart`](../src/hook.ts), [`Service.onSession`, `applyTitle`](../src/service.ts)).
+- The summary is only edited, so later posts, such as a new session's message, an invitation or a reply, follow it ([`MainGroup.renderSummary`](../src/main-group.ts)).
 - Claude Code writes `status` in its record at each change of its state: `busy` while a query runs or delegated work is active, `waiting` while a dialog or another request waits for the person, `idle` otherwise, and `shell` in place of `idle` while a background Bash task runs. It writes the file in place, so a read can find it half written; the hub then keeps the last status. The hub opens the record without blocking and reads only a regular file, and a render waits at most 1 s for a read; a slower read keeps the last status ([`Session.readRecord`, `recordStatus`](../src/hub.ts)).
-- A tool-use card counts while the status is `waiting` or unknown. When someone answers the dialog in the terminal, the status leaves `waiting`, and the card, which stays until the turn ends, no longer counts ([`Session.stateLine`](../src/hub.ts)).
-- When the session process detaches, the session's permissions end and the session moves into the last line. At the service's stop, the hub renders the list once more, with every session there, before it waits for the cancelled cards ([`Hub.stop`](../src/hub.ts)).
-- The text fits one message: the last line keeps the newest names that fit and counts the others ([`Hub.sessionsText`](../src/hub.ts)).
-- The first list waits for an owner, so it follows the greeting. The item and its time are kept in the Main group's custom data, so a new service edits the same list. A reset of the owners creates a new Main group, which gets its own list once an owner joins ([`MainGroup.showList`, `postList`, `replace`](../src/main-group.ts)).
-- SimpleX allows edits of a message for 24 hours and deletions for everyone for 30 hours. The hub replaces a list 23 hours old, by the wall clock, at its next render, and deletes the old one; a refused deletion is logged ([`MainGroup.replaceList`](../src/main-group.ts)).
-- An edit sends no SMP notification, and the apps alert for an edit only when it creates the item. The list's posts carry `priority: -1`; an app without silent messages alerts for them.
+- Every pending card counts, whatever the status: a subagent's tool-use card has no dialog in the terminal, so the status stays `busy` while it waits. A card answered in the terminal stays, and counts, until the turn ends ([`Session.state`](../src/hub.ts)).
+- When the session process detaches, the session's permissions end and its message shows `⚪ N · NAME: stopped`. At the service's stop, the hub renders the board once more, with every session stopped, before it waits for the cancelled cards ([`Hub.stop`](../src/hub.ts)).
+- The first messages wait for an owner, so they follow the greeting. The items and their times are kept in the Main group's custom data, so a new service edits the same messages. A reset of the owners creates a new Main group, which gets its own board once an owner joins ([`MainGroup.showBoard`, `saveBoard`, `replace`](../src/main-group.ts)).
+- SimpleX allows edits of a message for 24 hours and deletions for everyone for 30 hours. A message whose edit is refused is posted again, and a stopped session's message is deleted 23 hours after its post, by the wall clock; a refused deletion is logged ([`MainGroup.renderEntry`](../src/main-group.ts)).
+- An edit sends no SMP notification, and the apps alert for an edit only when it creates the item. The board's posts carry `priority: -1`; an app without silent messages alerts for them.
 
 Source: [`Hub.showSessions`, `Hub.sessionsText`, `Session.readRecord`, `Session.stateLine`](../src/hub.ts), [`MainGroup.showList`](../src/main-group.ts).
 
@@ -1876,3 +1880,57 @@ Notes:
 - A live message deleted before it is sent passes nothing, unless the member sends another message first.
 
 Source: [`Session.onMessage`, `onUpdate`, `pass`, `keepLive`, `passLive`, `replyTo`, `prompt`, `deliver`, `bounded`, `Hub.onEvent`](../src/hub.ts), [`channelNotification`](../src/session.ts).
+
+---
+
+## 40. A subagent and a workflow in the session group
+
+```mermaid
+sequenceDiagram
+  participant L as lead
+  participant A as subagent
+  participant K as hook turn
+  participant F as session folder
+  participant D as Service
+  participant N as Session N
+  participant G as session group
+  participant M as Main group
+  L->>K: PreToolUse Agent: no step line
+  A->>K: SubagentStart agent_id, agent_type
+  K->>F: read subagents/agent-ID.meta.json
+  K->>D: POST /turn agent.start {type, description, toolUse, transcript}
+  D->>N: turn
+  N->>G: live 🤖 TYPE · DESCRIPTION, priority -1
+  loop each tool use of A
+    A->>K: PreToolUse, PostToolUse with agent_id
+    K->>D: POST /turn agent.step
+  end
+  loop every 2 s, attached
+    N->>F: last 256 KiB of agent-ID.jsonl: tokens
+    N->>G: edit when the text changed, at most every 5 s
+    N->>M: the session's board message: 🤖 N agents working
+  end
+  A->>K: SubagentStop last_assistant_message
+  K->>D: POST /turn agent.stop
+  N->>G: edit, liveMessage false: ✅ M:SS · N steps · X tokens, result
+  L->>K: UserPromptSubmit task notification, or PostToolUse Agent
+  K->>D: POST /turn task {toolUse, status, tokens, steps, ms}, with its note
+  N->>G: edit with the figures; the note not posted
+  L->>K: PostToolUse Workflow {runId, workflowName, transcriptDir}
+  K->>D: POST /turn workflow
+  N->>G: live ⚙️ NAME
+  loop every 2 s
+    N->>F: journal.jsonl appended lines; tokens of its working agents
+    N->>G: edit phases, working agents, tokens, time
+  end
+  L->>K: the workflow's task notification
+  N->>G: edit final, liveMessage false
+```
+
+Notes:
+
+- Workflow agents, teammates and Claude Code's internal agents get no message: their SubagentStart finds no record beside the transcript, a record with `taskKind`, or none, so the service drops their steps ([`agentStart`](../src/hook.ts), [`Agents.step`](../src/agents.ts)).
+- The state is in memory: after a service restart, the messages keep their last edit. The last detach and the hub's stop end the live ones with ⏹️ ([`Session.endLive`](../src/hub.ts)).
+- Edits leave the messages where they were posted.
+
+Source: [`agentStart`, `agentStep`, `leadTask`, `taskOf`](../src/hook.ts), [`Agents`, `cardText`, `agentsLine`, `applyJournal`](../src/agents.ts), [`lastUsage`, `AppendedLines`](../src/claude-code.ts), [`Session.onAgents`, `readAgents`, `showCard`](../src/hub.ts).
