@@ -210,6 +210,7 @@ processAgentMessageNoConn = \case
   SERVICE_DOWN srv ss -> serviceEvent srv $ ServiceSubDown $ smpQueueCount ss
   SERVICE_ALL srv -> serviceEvent srv ServiceSubAll
   SERVICE_END srv ss -> serviceEvent srv $ ServiceSubEnd $ smpQueueCount ss
+  CLIENT_SUPPORT _ -> pure ()
   ERRS cErrs -> errsEvent $ L.toList cErrs
   where
     hostEvent :: ChatEvent -> CM ()
